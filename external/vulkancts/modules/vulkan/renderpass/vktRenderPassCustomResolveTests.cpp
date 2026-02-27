@@ -4592,13 +4592,10 @@ void FDMCase::initPrograms(vk::SourceCollections &programCollection) const
 
         std::ostringstream frag;
         frag << "#version 460\n"
-             << "layout (set=0, binding=0) uniform " << descType << " inColor0;\n"
-             << "layout (set=0, binding=1) uniform " << descType << " inColor1;\n"
-             << "layout (location=0) out vec4 outColor0;\n"
-             << "layout (location=1) out vec4 outColor1;\n"
+             << "layout (set=0, binding=0) uniform " << descType << " inColor;\n"
+             << "layout (location=0) out vec4 outColor;\n"
              << "void main(void) {\n"
-             << "    outColor0 = texture(inColor0, " << coords << ", 0);\n"
-             << "    outColor1 = texture(inColor1, " << coords << ", 0);\n"
+             << "    outColor = texture(inColor, " << coords << ", 0);\n"
              << "}\n";
         programCollection.glslSources.add("frag-copy") << glu::FragmentSource(frag.str()) << spvOpts;
     }
@@ -4694,13 +4691,14 @@ tcu::TestStatus FDMInstance::iterate(void)
     const auto dsSRR =
         makeImageSubresourceRange((VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT), 0u, 1u, 0u, layerCount);
 
-    const auto fdmFormat      = VK_FORMAT_R8G8_UNORM;
-    const auto colorFormat    = VK_FORMAT_R8G8B8A8_UNORM;
-    const auto imageType      = VK_IMAGE_TYPE_2D;
-    const auto imageTiling    = VK_IMAGE_TILING_OPTIMAL;
-    const auto sharingMode    = VK_SHARING_MODE_EXCLUSIVE;
-    const auto msColorUsage   = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
-    const auto ssColorUsage   = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    const auto fdmFormat    = VK_FORMAT_R8G8_UNORM;
+    const auto colorFormat  = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto imageType    = VK_IMAGE_TYPE_2D;
+    const auto imageTiling  = VK_IMAGE_TILING_OPTIMAL;
+    const auto sharingMode  = VK_SHARING_MODE_EXCLUSIVE;
+    const auto msColorUsage = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
+    const auto ssColorUsage =
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
     const auto copyColorUsage = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
     const auto fdmUsage       = (VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
     const auto bindPoint      = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -4763,7 +4761,7 @@ tcu::TestStatus FDMInstance::iterate(void)
 
     auto dsImageCreateInfo   = msImageCreateInfo;
     dsImageCreateInfo.format = chosenDSFormat;
-    dsImageCreateInfo.usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    dsImageCreateInfo.usage  = (VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
 
     ImageWithMemory dsBuffer(ctx.vkd, ctx.device, ctx.allocator, dsImageCreateInfo, MemoryRequirement::Any);
     const auto dsView = makeImageView(ctx.vkd, ctx.device, *dsBuffer, imageViewType, chosenDSFormat, dsSRR);
@@ -4867,8 +4865,8 @@ tcu::TestStatus FDMInstance::iterate(void)
     const auto setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
 
     DescriptorSetLayoutBuilder copySetLayoutBuilder;
-    copySetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    copySetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    copySetLayoutBuilder.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                                 VK_SHADER_STAGE_FRAGMENT_BIT, &sampler.get());
     const auto copySetLayout = copySetLayoutBuilder.build(ctx.vkd, ctx.device);
 
     PipelineLayoutWrapper pipelineLayout(m_params.groupParams->pipelineConstructionType, ctx.vkd, ctx.device,
@@ -4879,24 +4877,25 @@ tcu::TestStatus FDMInstance::iterate(void)
     // Descriptor pool and set.
     DescriptorPoolBuilder poolBuilder;
     poolBuilder.addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT);
-    poolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2);
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2u);
     const auto descriptorPool =
-        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u);
-    const auto descriptorSet     = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
-    const auto copyDescriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *copySetLayout);
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 3u);
+    const auto descriptorSet      = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+    const auto copyDescriptorSet0 = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *copySetLayout);
+    const auto copyDescriptorSet1 = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *copySetLayout);
 
     // Update descriptor sets.
     DescriptorSetUpdateBuilder setUpdateBuilder;
     const auto binding    = DescriptorSetUpdateBuilder::Location::binding;
     const auto inputDesc0 = makeDescriptorImageInfo(VK_NULL_HANDLE, *colorView0, inputAttLayout);
     const auto samplerDesc0 =
-        makeDescriptorImageInfo(*sampler, *resolveView0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *resolveView0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     const auto samplerDesc1 =
-        makeDescriptorImageInfo(*sampler, *resolveView1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *resolveView1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     setUpdateBuilder.writeSingle(*descriptorSet, binding(0u), VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &inputDesc0);
-    setUpdateBuilder.writeSingle(*copyDescriptorSet, binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+    setUpdateBuilder.writeSingle(*copyDescriptorSet0, binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                                  &samplerDesc0);
-    setUpdateBuilder.writeSingle(*copyDescriptorSet, binding(1u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+    setUpdateBuilder.writeSingle(*copyDescriptorSet1, binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                                  &samplerDesc1);
     setUpdateBuilder.update(ctx.vkd, ctx.device);
 
@@ -4906,7 +4905,8 @@ tcu::TestStatus FDMInstance::iterate(void)
 
     // For the texture copy pass.
     Move<VkRenderPass> renderPassCopy;
-    Move<VkFramebuffer> framebufferCopy;
+    Move<VkFramebuffer> framebufferCopy0;
+    Move<VkFramebuffer> framebufferCopy1;
 
     std::unique_ptr<VkCustomResolveCreateInfoEXT> fillCustomResolveCreateInfo;
     std::unique_ptr<VkCustomResolveCreateInfoEXT> resolveCustomResolveCreateInfo;
@@ -4917,9 +4917,7 @@ tcu::TestStatus FDMInstance::iterate(void)
 
     if (m_params.useDynamicRendering())
     {
-        drColorFormats.reserve(2u);
-        drColorFormats.push_back(colorFormat);
-        drColorFormats.push_back(colorFormat);
+        drColorFormats.resize(2u, colorFormat);
 
         fillCustomResolveCreateInfo.reset(new VkCustomResolveCreateInfoEXT);
         *fillCustomResolveCreateInfo = VkCustomResolveCreateInfoEXT{
@@ -4970,8 +4968,8 @@ tcu::TestStatus FDMInstance::iterate(void)
             VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
             nullptr,
             0u, // Never multiview.
-            de::sizeU32(drColorFormats),
-            de::dataOrNull(drColorFormats),
+            1u,
+            &colorFormat,
             VK_FORMAT_UNDEFINED,
             VK_FORMAT_UNDEFINED,
         };
@@ -5069,14 +5067,9 @@ tcu::TestStatus FDMInstance::iterate(void)
                                        VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
                                        VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED,
                                        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
-            makeAttachmentDescription2(0u, colorFormat, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR,
-                                       VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                                       VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED,
-                                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
         };
         const std::vector<VkAttachmentReference2> copyAttRefs{
             makeAttachmentReference2(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 0u),
-            makeAttachmentReference2(1u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 0u),
         };
         const auto copySubpass = makeSubpassDescription2(0u, bindPoint, 0u, 0u, nullptr, de::sizeU32(copyAttRefs),
                                                          de::dataOrNull(copyAttRefs), nullptr, nullptr, 0u, nullptr);
@@ -5094,9 +5087,14 @@ tcu::TestStatus FDMInstance::iterate(void)
             nullptr,
         };
         renderPassCopy = createRenderPass2(ctx.vkd, ctx.device, &copyRPCreateInfo);
-        const std::vector<VkImageView> copyViews{*copyView0, *copyView1};
-        framebufferCopy = makeFramebuffer(ctx.vkd, ctx.device, *renderPassCopy, de::sizeU32(copyViews),
-                                          de::dataOrNull(copyViews), extentVk.width, extentVk.height, layerCount);
+
+        const std::vector<VkImageView> copyViews0{*copyView0};
+        const std::vector<VkImageView> copyViews1{*copyView1};
+
+        framebufferCopy0 = makeFramebuffer(ctx.vkd, ctx.device, *renderPassCopy, de::sizeU32(copyViews0),
+                                           de::dataOrNull(copyViews0), extentVk.width, extentVk.height, layerCount);
+        framebufferCopy1 = makeFramebuffer(ctx.vkd, ctx.device, *renderPassCopy, de::sizeU32(copyViews1),
+                                           de::dataOrNull(copyViews1), extentVk.width, extentVk.height, layerCount);
     }
 
     const auto &binaries = m_context.getBinaryCollection();
@@ -5182,6 +5180,9 @@ tcu::TestStatus FDMInstance::iterate(void)
         {0.0f, 0.0f, 0.0f, 0.0f},
     };
 
+    auto copyColorBlendState            = colorBlendState;
+    copyColorBlendState.attachmentCount = 1u;
+
     GraphicsPipelineWrapper fillPipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,
                                          m_context.getDeviceExtensions(),
                                          m_params.groupParams->pipelineConstructionType, pipelineCreateFlags);
@@ -5229,7 +5230,7 @@ tcu::TestStatus FDMInstance::iterate(void)
                                           copyPipelineRenderingCreateInfo.get())
         .setupFragmentShaderState(copyPipelineLayout, *renderPassCopy, 0u, fragCopyShader, &dsStateCreateInfoCopy,
                                   &multisampleStateCreateInfoCopy)
-        .setupFragmentOutputState(*renderPassCopy, 0u, &colorBlendState, &multisampleStateCreateInfoCopy)
+        .setupFragmentOutputState(*renderPassCopy, 0u, &copyColorBlendState, &multisampleStateCreateInfoCopy)
         .buildPipeline();
 
     CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
@@ -5245,9 +5246,8 @@ tcu::TestStatus FDMInstance::iterate(void)
     const auto vertexCount   = 4u; // For the full-screen triangle strip.
     const auto instanceCount = (m_params.multiLayer ? layerCount : 1u);
 
-    beginCommandBuffer(ctx.vkd, cmdBuffer);
-
-    // Fill FDM with the proper density values.
+    // Auxiliar function to fill the FDM with proper density values.
+    const auto fillFDM = [&](VkCommandBuffer fillCmdBuffer)
     {
         const auto densityValue =
             (0.5f - 1.0f / 255.0f); // The delta makes sure the implementation accepts density (2,2)
@@ -5255,18 +5255,29 @@ tcu::TestStatus FDMInstance::iterate(void)
 
         const auto preBarrier = makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
                                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *fdmBuffer, fdmSRR);
-        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        cmdPipelineImageMemoryBarrier(ctx.vkd, fillCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                       VK_PIPELINE_STAGE_TRANSFER_BIT, &preBarrier);
 
-        ctx.vkd.cmdClearColorImage(cmdBuffer, *fdmBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &fdmClearValue.color,
-                                   1u, &fdmSRR);
+        ctx.vkd.cmdClearColorImage(fillCmdBuffer, *fdmBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                   &fdmClearValue.color, 1u, &fdmSRR);
 
         const auto postBarrier = makeImageMemoryBarrier(
             VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT, *fdmBuffer, fdmSRR);
-        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        cmdPipelineImageMemoryBarrier(ctx.vkd, fillCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                       VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT, &postBarrier);
+    };
+
+    {
+        // Fill FDM and wait so the FDM can be read from the CPU if needed.
+        const auto fillCmd = allocateCommandBuffer(ctx.vkd, ctx.device, *cmd.cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        beginCommandBuffer(ctx.vkd, *fillCmd);
+        fillFDM(*fillCmd);
+        endCommandBuffer(ctx.vkd, *fillCmd);
+        submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, *fillCmd);
     }
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
 
     VkImageLayout ssFinalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
@@ -5459,31 +5470,17 @@ tcu::TestStatus FDMInstance::iterate(void)
                                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, de::dataOrNull(prepareCopies),
                                           prepareCopies.size());
 
-            const std::vector<VkRenderingAttachmentInfo> copyAttInfos{
-                VkRenderingAttachmentInfo{
-                    VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                    nullptr,
-                    *copyView0,
-                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                    VK_RESOLVE_MODE_NONE,
-                    VK_NULL_HANDLE,
-                    VK_IMAGE_LAYOUT_UNDEFINED,
-                    VK_ATTACHMENT_LOAD_OP_CLEAR,
-                    VK_ATTACHMENT_STORE_OP_STORE,
-                    clearValues.front(),
-                },
-                VkRenderingAttachmentInfo{
-                    VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                    nullptr,
-                    *copyView1,
-                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                    VK_RESOLVE_MODE_NONE,
-                    VK_NULL_HANDLE,
-                    VK_IMAGE_LAYOUT_UNDEFINED,
-                    VK_ATTACHMENT_LOAD_OP_CLEAR,
-                    VK_ATTACHMENT_STORE_OP_STORE,
-                    clearValues.front(),
-                },
+            VkRenderingAttachmentInfo copyAttInfo{
+                VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                nullptr,
+                VK_NULL_HANDLE, // Will be overwritten below in each iteration.
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_RESOLVE_MODE_NONE,
+                VK_NULL_HANDLE,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_ATTACHMENT_LOAD_OP_CLEAR,
+                VK_ATTACHMENT_STORE_OP_STORE,
+                clearValues.front(),
             };
 
             const VkRenderingInfo copyRenderingInfo = {
@@ -5493,49 +5490,68 @@ tcu::TestStatus FDMInstance::iterate(void)
                 scissors.front(),
                 layerCount,
                 0u,
-                de::sizeU32(copyAttInfos),
-                de::dataOrNull(copyAttInfos),
+                1u,
+                &copyAttInfo,
                 nullptr,
                 nullptr,
             };
-            ctx.vkd.cmdBeginRendering(cmdBuffer, &copyRenderingInfo);
-            ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *copyPipelineLayout, 0u, 1u, &copyDescriptorSet.get(),
-                                          0u, nullptr);
+
+            const std::vector<VkImageView> attViews{*copyView0, *copyView1};
+            const std::vector<VkDescriptorSet> descriptorSets{*copyDescriptorSet0, *copyDescriptorSet1};
+            DE_ASSERT(attViews.size() == descriptorSets.size());
+
             copyPipeline.bind(cmdBuffer);
-            ctx.vkd.cmdDraw(cmdBuffer, vertexCount, layerCount, 0u, 0u);
-            endRendering(ctx.vkd, cmdBuffer);
+            for (size_t i = 0; i < attViews.size(); ++i)
+            {
+                const auto &view = attViews.at(i);
+                const auto &ds   = descriptorSets.at(i);
+
+                copyAttInfo.imageView = view;
+                ctx.vkd.cmdBeginRendering(cmdBuffer, &copyRenderingInfo);
+                ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *copyPipelineLayout, 0u, 1u, &ds, 0u, nullptr);
+                ctx.vkd.cmdDraw(cmdBuffer, vertexCount, layerCount, 0u, 0u);
+                endRendering(ctx.vkd, cmdBuffer);
+            }
         }
         else
         {
             const std::vector<VkClearValue> copyClearValues{clearValues.front(), clearValues.front()};
+            const std::vector<VkFramebuffer> framebuffers{*framebufferCopy0, *framebufferCopy1};
+            const std::vector<VkDescriptorSet> descriptorSets{*copyDescriptorSet0, *copyDescriptorSet1};
+            DE_ASSERT(framebuffers.size() == descriptorSets.size());
 
-            const VkRenderPassBeginInfo renderPassBeginInfo = {
-                VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-                nullptr,
-                *renderPassCopy,
-                *framebufferCopy,
-                scissors.front(),
-                de::sizeU32(copyClearValues),
-                de::dataOrNull(copyClearValues),
-            };
-
-            const VkSubpassBeginInfo subpassBeginInfo = {
-                VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO,
-                nullptr,
-                VK_SUBPASS_CONTENTS_INLINE,
-            };
-
-            const VkSubpassEndInfo subpassEndInfo = {
-                VK_STRUCTURE_TYPE_SUBPASS_END_INFO,
-                nullptr,
-            };
-
-            ctx.vkd.cmdBeginRenderPass2(cmdBuffer, &renderPassBeginInfo, &subpassBeginInfo);
-            ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *copyPipelineLayout, 0u, 1u, &copyDescriptorSet.get(),
-                                          0u, nullptr);
             copyPipeline.bind(cmdBuffer);
-            ctx.vkd.cmdDraw(cmdBuffer, vertexCount, layerCount, 0u, 0u);
-            ctx.vkd.cmdEndRenderPass2(cmdBuffer, &subpassEndInfo);
+            for (size_t i = 0; i < framebuffers.size(); ++i)
+            {
+                const auto &fb = framebuffers.at(i);
+                const auto &ds = descriptorSets.at(i);
+
+                const VkRenderPassBeginInfo renderPassBeginInfo = {
+                    VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                    nullptr,
+                    *renderPassCopy,
+                    fb,
+                    scissors.front(),
+                    de::sizeU32(copyClearValues),
+                    de::dataOrNull(copyClearValues),
+                };
+
+                const VkSubpassBeginInfo subpassBeginInfo = {
+                    VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO,
+                    nullptr,
+                    VK_SUBPASS_CONTENTS_INLINE,
+                };
+
+                const VkSubpassEndInfo subpassEndInfo = {
+                    VK_STRUCTURE_TYPE_SUBPASS_END_INFO,
+                    nullptr,
+                };
+
+                ctx.vkd.cmdBeginRenderPass2(cmdBuffer, &renderPassBeginInfo, &subpassBeginInfo);
+                ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *copyPipelineLayout, 0u, 1u, &ds, 0u, nullptr);
+                ctx.vkd.cmdDraw(cmdBuffer, vertexCount, layerCount, 0u, 0u);
+                ctx.vkd.cmdEndRenderPass2(cmdBuffer, &subpassEndInfo);
+            }
         }
     }
 
