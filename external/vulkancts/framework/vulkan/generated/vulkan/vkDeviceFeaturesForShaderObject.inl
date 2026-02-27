@@ -126,6 +126,7 @@ auto fPrimitivesGeneratedQueryFeaturesEXT               = m_context.getPrimitive
 auto fPrivateDataFeatures                               = m_context.getPrivateDataFeatures();
 auto fProtectedMemoryFeatures                           = m_context.getProtectedMemoryFeatures();
 auto fProvokingVertexFeaturesEXT                        = m_context.getProvokingVertexFeaturesEXT();
+auto fPushConstantBankFeaturesNV                        = m_context.getPushConstantBankFeaturesNV();
 auto fRGBA10X6FormatsFeaturesEXT                        = m_context.getRGBA10X6FormatsFeaturesEXT();
 auto fRasterizationOrderAttachmentAccessFeaturesEXT     = m_context.getRasterizationOrderAttachmentAccessFeaturesEXT();
 auto fRawAccessChainsFeaturesNV                         = m_context.getRawAccessChainsFeaturesNV();
@@ -324,6 +325,7 @@ std::vector<void *> pNextFeatures = {
 	&fPrivateDataFeatures,
 	&fProtectedMemoryFeatures,
 	&fProvokingVertexFeaturesEXT,
+	&fPushConstantBankFeaturesNV,
 	&fRGBA10X6FormatsFeaturesEXT,
 	&fRasterizationOrderAttachmentAccessFeaturesEXT,
 	&fRawAccessChainsFeaturesNV,

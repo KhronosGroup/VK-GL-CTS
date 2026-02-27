@@ -1225,6 +1225,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProtectedMemory
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProtectedMemoryProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProvokingVertexFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProvokingVertexPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePushConstantBankFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePushConstantBankPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePushDescriptorProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceQueueFamilyDataGraphProcessingEngineInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT& value);
@@ -1413,6 +1415,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPresentTimingsInfoEXT& value)
 std::ostream&	operator<<	(std::ostream& s, const VkPresentWait2InfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPrivateDataSlotCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkProtectedSubmitInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPushConstantBankInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPushConstantRange& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPushConstantsInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPushDataInfoEXT& value);

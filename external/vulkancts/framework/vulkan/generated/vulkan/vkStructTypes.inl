@@ -6824,6 +6824,23 @@ struct VkPhysicalDeviceProvokingVertexPropertiesEXT
 	VkBool32		transformFeedbackPreservesTriangleFanProvokingVertex;
 };
 
+struct VkPhysicalDevicePushConstantBankFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		pushConstantBank;
+};
+
+struct VkPhysicalDevicePushConstantBankPropertiesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxGraphicsPushConstantBanks;
+	uint32_t		maxComputePushConstantBanks;
+	uint32_t		maxGraphicsPushDataBanks;
+	uint32_t		maxComputePushDataBanks;
+};
+
 struct VkPhysicalDevicePushDescriptorProperties
 {
 	VkStructureType	sType;
@@ -8565,6 +8582,13 @@ struct VkProtectedSubmitInfo
 	VkStructureType	sType;
 	const void*		pNext;
 	VkBool32		protectedSubmit;
+};
+
+struct VkPushConstantBankInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		bank;
 };
 
 struct VkPushConstantRange

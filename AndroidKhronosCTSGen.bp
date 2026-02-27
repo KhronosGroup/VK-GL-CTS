@@ -1336,6 +1336,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/binding_model/vktBindingDynamicOffsetTests.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingModelTests.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingMutableTests.cpp",
+        "external/vulkancts/modules/vulkan/binding_model/vktBindingPushConstantBankTests.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingShaderAccessTests.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingStagesTests.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingUnusedInvalidDescriptorTests.cpp",

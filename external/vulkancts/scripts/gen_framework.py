@@ -269,6 +269,7 @@ VK_NV_framebuffer_mixed_samples
 VK_NV_inherited_viewport_scissor
 VK_NV_linear_color_attachment
 VK_NV_mesh_shader
+VK_NV_push_constant_bank
 VK_NV_raw_access_chains
 VK_NV_ray_tracing
 VK_NV_ray_tracing_linear_swept_spheres

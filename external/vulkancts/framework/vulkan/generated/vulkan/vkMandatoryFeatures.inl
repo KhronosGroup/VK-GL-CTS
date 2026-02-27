@@ -621,6 +621,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_provoking_vertex"))
 		addFeatures(&physicalDeviceProvokingVertexFeaturesEXT);
 
+	// VkPhysicalDevicePushConstantBankFeaturesNV for ext [VK_NV_push_constant_bank]
+	vk::VkPhysicalDevicePushConstantBankFeaturesNV physicalDevicePushConstantBankFeaturesNV = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_push_constant_bank"))
+		addFeatures(&physicalDevicePushConstantBankFeaturesNV);
+
 	// VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT for ext [VK_EXT_rgba10x6_formats]
 	vk::VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT physicalDeviceRGBA10X6FormatsFeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_rgba10x6_formats"))
@@ -2514,6 +2519,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceDeviceGeneratedCommandsFeaturesEXT.deviceGeneratedCommands == VK_FALSE )
 			failMesages.push_back("deviceGeneratedCommands");
+	}
+
+	// VkPhysicalDevicePushConstantBankFeaturesNV
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_push_constant_bank")) )
+	{
+		if ( physicalDevicePushConstantBankFeaturesNV.pushConstantBank == VK_FALSE )
+			failMesages.push_back("pushConstantBank");
 	}
 
 	// VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT

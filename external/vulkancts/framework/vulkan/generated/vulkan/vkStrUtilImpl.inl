@@ -14514,6 +14514,29 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceProvokingVertex
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePushConstantBankFeaturesNV& value)
+{
+	s << "VkPhysicalDevicePushConstantBankFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpushConstantBank = " << value.pushConstantBank << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePushConstantBankPropertiesNV& value)
+{
+	s << "VkPhysicalDevicePushConstantBankPropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxGraphicsPushConstantBanks = " << value.maxGraphicsPushConstantBanks << '\n';
+	s << "\tmaxComputePushConstantBanks = " << value.maxComputePushConstantBanks << '\n';
+	s << "\tmaxGraphicsPushDataBanks = " << value.maxGraphicsPushDataBanks << '\n';
+	s << "\tmaxComputePushDataBanks = " << value.maxComputePushDataBanks << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePushDescriptorProperties& value)
 {
 	s << "VkPhysicalDevicePushDescriptorProperties = {\n";
@@ -16910,6 +16933,16 @@ std::ostream& operator<< (std::ostream& s, const VkProtectedSubmitInfo& value)
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tprotectedSubmit = " << value.protectedSubmit << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPushConstantBankInfoNV& value)
+{
+	s << "VkPushConstantBankInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tbank = " << value.bank << '\n';
 	s << '}';
 	return s;
 }

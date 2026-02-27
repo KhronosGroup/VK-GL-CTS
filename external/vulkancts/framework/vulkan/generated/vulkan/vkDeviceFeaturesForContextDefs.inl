@@ -125,6 +125,7 @@ const vk::VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT&				Context::getPr
 const vk::VkPhysicalDevicePrivateDataFeatures&								Context::getPrivateDataFeatures								(void) const { return m_device->getPrivateDataFeatures();							}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							Context::getProtectedMemoryFeatures							(void) const { return m_device->getProtectedMemoryFeatures();						}
 const vk::VkPhysicalDeviceProvokingVertexFeaturesEXT&						Context::getProvokingVertexFeaturesEXT						(void) const { return m_device->getProvokingVertexFeaturesEXT();					}
+const vk::VkPhysicalDevicePushConstantBankFeaturesNV&						Context::getPushConstantBankFeaturesNV						(void) const { return m_device->getPushConstantBankFeaturesNV();					}
 const vk::VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT&						Context::getRGBA10X6FormatsFeaturesEXT						(void) const { return m_device->getRGBA10X6FormatsFeaturesEXT();					}
 const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&	Context::getRasterizationOrderAttachmentAccessFeaturesEXT	(void) const { return m_device->getRasterizationOrderAttachmentAccessFeaturesEXT();	}
 const vk::VkPhysicalDeviceRawAccessChainsFeaturesNV&						Context::getRawAccessChainsFeaturesNV						(void) const { return m_device->getRawAccessChainsFeaturesNV();						}

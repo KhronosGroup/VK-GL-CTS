@@ -2683,6 +2683,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceProvokingVertexPrope
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROVOKING_VERTEX_PROPERTIES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePushConstantBankFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_CONSTANT_BANK_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePushConstantBankPropertiesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_CONSTANT_BANK_PROPERTIES_NV;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevicePushDescriptorProperties> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES;
@@ -3571,6 +3581,11 @@ template<> VkStructureType getStructureType<VkPrivateDataSlotCreateInfo> (void)
 template<> VkStructureType getStructureType<VkProtectedSubmitInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO;
+}
+
+template<> VkStructureType getStructureType<VkPushConstantBankInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PUSH_CONSTANT_BANK_INFO_NV;
 }
 
 template<> VkStructureType getStructureType<VkPushConstantsInfo> (void)

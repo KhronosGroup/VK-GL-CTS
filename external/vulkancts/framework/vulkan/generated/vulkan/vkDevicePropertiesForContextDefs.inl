@@ -68,6 +68,7 @@ const vk::VkPhysicalDevicePointClippingProperties&					Context::getPointClipping
 const vk::VkPhysicalDevicePortabilitySubsetPropertiesKHR&			Context::getPortabilitySubsetProperties					(void) const { return m_device->getPortabilitySubsetProperties();				}
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				Context::getProtectedMemoryProperties					(void) const { return m_device->getProtectedMemoryProperties();					}
 const vk::VkPhysicalDeviceProvokingVertexPropertiesEXT&				Context::getProvokingVertexPropertiesEXT				(void) const { return m_device->getProvokingVertexPropertiesEXT();				}
+const vk::VkPhysicalDevicePushConstantBankPropertiesNV&				Context::getPushConstantBankPropertiesNV				(void) const { return m_device->getPushConstantBankPropertiesNV();				}
 const vk::VkPhysicalDevicePushDescriptorProperties&					Context::getPushDescriptorProperties					(void) const { return m_device->getPushDescriptorProperties();					}
 const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesEXT&	Context::getRayTracingInvocationReorderPropertiesEXT	(void) const { return m_device->getRayTracingInvocationReorderPropertiesEXT();	}
 const vk::VkPhysicalDeviceRayTracingPipelinePropertiesKHR&			Context::getRayTracingPipelineProperties				(void) const { return m_device->getRayTracingPipelineProperties();				}

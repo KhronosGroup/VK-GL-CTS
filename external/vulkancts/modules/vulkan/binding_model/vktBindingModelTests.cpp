@@ -34,6 +34,7 @@
 #include "vktBindingMutableTests.hpp"
 #include "vktBindingDescriptorBufferTests.hpp"
 #include "vktBindingDescriptorCombinationTests.hpp"
+#include "vktBindingPushConstantBankTests.hpp"
 #include "vktBindingDescriptorHeapTests.hpp"
 #include "vktBindingStagesTests.hpp"
 #include "vktBindingDescriptorInlineUniformTests.hpp"
@@ -62,6 +63,7 @@ void createChildren(tcu::TestCaseGroup *group)
     group->addChild(createDescriptorMutableTests(testCtx));
     group->addChild(createDescriptorBufferTests(testCtx));
     group->addChild(createDescriptorCombinationTests(testCtx));
+    group->addChild(createPushConstantBankTests(testCtx));
     group->addChild(createDescriptorHeapTests(testCtx));
     group->addChild(createStagesTests(testCtx));
     group->addChild(createDescriptorInlineUniformTests(testCtx));
