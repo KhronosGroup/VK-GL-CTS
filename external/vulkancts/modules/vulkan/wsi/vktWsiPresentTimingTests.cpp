@@ -970,12 +970,12 @@ uint32_t getPastPresentationTiming(const DeviceInterface &vkd, vk::VkDevice devi
         if (pth.timings[i].presentStageCount < 1)
             TCU_FAIL("Unexpected present stage count");
 
+        if (!(pth.pastPresentationTimingFlags & VK_PAST_PRESENTATION_TIMING_ALLOW_PARTIAL_RESULTS_BIT_EXT) &&
+            !pth.timings[i].reportComplete)
+            TCU_FAIL("Received partial result when disallowed");
+
         if (pth.timings[i].reportComplete)
         {
-            if (!(pth.pastPresentationTimingFlags & VK_PAST_PRESENTATION_TIMING_ALLOW_PARTIAL_RESULTS_BIT_EXT) &&
-                !pth.timings[i].reportComplete)
-                TCU_FAIL("Received partial result when disallowed");
-
             PresentResult result;
 
             if (pth.timings[i].presentStageCount != pth.stageCount)
