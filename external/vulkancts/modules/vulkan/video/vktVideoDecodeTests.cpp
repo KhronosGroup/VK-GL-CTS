@@ -729,11 +729,6 @@ public:
         {
             m_params.stream.framesToCheck = m_info->totalFrames;
         }
-
-        if (params.type == TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE_DPB)
-        {
-            m_pictureParameterUpdateTriggerHack = 3;
-        }
     }
 
     TestType getTestType() const
@@ -805,11 +800,6 @@ public:
         return m_generalLayout;
     }
 
-    int getParamaterUpdateHackRequirement() const
-    {
-        return m_pictureParameterUpdateTriggerHack;
-    }
-
     VideoDevice::VideoDeviceFlags requiredDeviceFlags() const
     {
         VideoDevice::VideoDeviceFlags flags = VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED;
@@ -874,13 +864,6 @@ private:
     bool m_isLayeredDpb{};
     bool m_generalLayout{};
     std::vector<VkVideoCoreProfile> m_profiles;
-    // The 1-based count of parameter set updates after which to force
-    // a parameter object release.  This is required due to the design
-    // of the NVIDIA decode-client API. It sends parameter updates and
-    // expects constructed parameter objects back synchronously,
-    // before the next video session is created in a following
-    // BeginSequence call.
-    int m_pictureParameterUpdateTriggerHack{0}; // Zero is "off"
 };
 
 // Vulkan video is not supported on android platform
@@ -896,22 +879,21 @@ static std::shared_ptr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext
                                             vkVideoFrameBuffer));
 
     VideoBaseDecoder::Parameters params;
-    params.profile                           = test.getProfile(0);
-    params.context                           = devctx;
-    params.framebuffer                       = vkVideoFrameBuffer;
-    params.framesToCheck                     = test.framesToCheck();
-    params.layeredDpb                        = test.isLayered();
-    params.queryDecodeStatus                 = test.hasOption(DecoderOption::UseStatusQueries);
-    params.useInlineQueries                  = test.hasOption(DecoderOption::UseInlineStatusQueries);
-    params.useInlineSessionParams            = test.hasOption(DecoderOption::UseInlineSessionParams);
-    params.resetCodecNoSessionParams         = test.hasOption(DecoderOption::ResetCodecNoSessionParams);
-    params.resourcesWithoutProfiles          = test.hasOption(DecoderOption::ResourcesWithoutProfiles);
-    params.outOfOrderDecoding                = test.hasOption(DecoderOption::CachedDecoding);
-    params.alwaysRecreateDPB                 = test.hasOption(DecoderOption::RecreateDPBImages);
-    params.intraOnlyDecodingNoSetupRef       = test.hasOption(DecoderOption::IntraOnlyDecodingNoSetupRef);
-    params.pictureParameterUpdateTriggerHack = test.getParamaterUpdateHackRequirement();
-    params.forceDisableFilmGrain             = forceDisableFilmGrain;
-    params.useGeneralLayout                  = test.usesGeneralLayout();
+    params.profile                     = test.getProfile(0);
+    params.context                     = devctx;
+    params.framebuffer                 = vkVideoFrameBuffer;
+    params.framesToCheck               = test.framesToCheck();
+    params.layeredDpb                  = test.isLayered();
+    params.queryDecodeStatus           = test.hasOption(DecoderOption::UseStatusQueries);
+    params.useInlineQueries            = test.hasOption(DecoderOption::UseInlineStatusQueries);
+    params.useInlineSessionParams      = test.hasOption(DecoderOption::UseInlineSessionParams);
+    params.resetCodecNoSessionParams   = test.hasOption(DecoderOption::ResetCodecNoSessionParams);
+    params.resourcesWithoutProfiles    = test.hasOption(DecoderOption::ResourcesWithoutProfiles);
+    params.outOfOrderDecoding          = test.hasOption(DecoderOption::CachedDecoding);
+    params.alwaysRecreateDPB           = test.hasOption(DecoderOption::RecreateDPBImages);
+    params.intraOnlyDecodingNoSetupRef = test.hasOption(DecoderOption::IntraOnlyDecodingNoSetupRef);
+    params.forceDisableFilmGrain       = forceDisableFilmGrain;
+    params.useGeneralLayout            = test.usesGeneralLayout();
 
     return std::make_shared<VideoBaseDecoder>(std::move(params));
 }

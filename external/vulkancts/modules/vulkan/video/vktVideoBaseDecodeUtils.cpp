@@ -421,7 +421,6 @@ VideoBaseDecoder::VideoBaseDecoder(Parameters &&params)
     , m_videoFrameBuffer(params.framebuffer)
     , m_decodeFramesData(params.context->getDeviceDriver(), params.context->device,
                          params.context->decodeQueueFamilyIdx())
-    , m_resetPictureParametersFrameTriggerHack(params.pictureParameterUpdateTriggerHack)
     , m_forceDisableFilmGrain(params.forceDisableFilmGrain)
     , m_queryResultWithStatus(params.queryDecodeStatus)
     , m_useInlineQueries(params.useInlineQueries)
@@ -2306,8 +2305,6 @@ bool VideoBaseDecoder::UpdatePictureParameters(
     VkSharedBaseObj<StdVideoPictureParametersSet> &pictureParametersObject, /* in */
     VkSharedBaseObj<VkVideoRefCountBase> &client)
 {
-    triggerPictureParameterSequenceCount();
-
     VkResult result = VkParserVideoPictureParameters::AddPictureParameters(
         *m_deviceContext, m_videoSession, pictureParametersObject, m_currentPictureParameters);
     client = m_currentPictureParameters;
@@ -3727,12 +3724,17 @@ bool VkParserVideoPictureParameters::CheckStdObjectBeforeUpdate(
 }
 
 VkResult VkParserVideoPictureParameters::AddPictureParameters(
-    DeviceContext &deviceContext, VkSharedBaseObj<VulkanVideoSession> & /*videoSession*/,
+    DeviceContext &deviceContext, VkSharedBaseObj<VulkanVideoSession> &videoSession,
     VkSharedBaseObj<StdVideoPictureParametersSet> &stdPictureParametersSet, /* from the parser */
     VkSharedBaseObj<VkParserVideoPictureParameters>
         &currentVideoPictureParameters /* reference to member field of decoder */)
 {
     TCU_CHECK_AND_THROW(InternalError, stdPictureParametersSet, "Standard picture parameters set must be valid");
+
+    if (currentVideoPictureParameters)
+    {
+        currentVideoPictureParameters->FlushPictureParametersQueue(videoSession);
+    }
 
     VkResult result;
     if (CheckStdObjectBeforeUpdate(stdPictureParametersSet, currentVideoPictureParameters))
@@ -3741,7 +3743,18 @@ VkResult VkParserVideoPictureParameters::AddPictureParameters(
                                                         currentVideoPictureParameters);
     }
 
-    result = currentVideoPictureParameters->AddPictureParametersToQueue(stdPictureParametersSet);
+    // When a video session exists, immediately create/update the
+    // VkVideoSessionParametersKHR object so that the parameters are
+    // bound to the correct session. Only queue when no session exists
+    // yet (parameters will be flushed when the session is created).
+    if (videoSession)
+    {
+        result = currentVideoPictureParameters->HandleNewPictureParametersSet(videoSession, stdPictureParametersSet);
+    }
+    else
+    {
+        result = currentVideoPictureParameters->AddPictureParametersToQueue(stdPictureParametersSet);
+    }
 
     return result;
 }

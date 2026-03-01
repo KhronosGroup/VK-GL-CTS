@@ -844,7 +844,6 @@ public:
         bool outOfOrderDecoding{};
         bool alwaysRecreateDPB{};
         bool intraOnlyDecodingNoSetupRef{};
-        size_t pictureParameterUpdateTriggerHack{0};
         bool forceDisableFilmGrain{false};
         bool useGeneralLayout{false};
         VkSharedBaseObj<VulkanVideoFrameBuffer> framebuffer;
@@ -976,23 +975,6 @@ public:
     VkParserDetectedVideoFormat m_videoFormat{};
 
     VkSharedBaseObj<VkParserVideoPictureParameters> m_currentPictureParameters{};
-    int m_pictureParameterUpdateCount{0};
-    // Due to the design of the NVIDIA decoder client library, there is not a clean way to reset parameter objects
-    // in between GOPs. This becomes a problem when the session object needs to change, and then the parameter
-    // objects get stored in the wrong session. This field contains a nonnegative integer, such that when it
-    // becomes equal to m_pictureParameterUpdateCount, it will forcibly reset the current picture parameters.
-    // This could be more general by taking a modulo formula, or a list of trigger numbers. But it is currently
-    // only required for the h264_resolution_change_dpb test plan, so no need for complication.
-    size_t m_resetPictureParametersFrameTriggerHack{};
-    void triggerPictureParameterSequenceCount()
-    {
-        ++m_pictureParameterUpdateCount;
-        if (m_resetPictureParametersFrameTriggerHack > 0 &&
-            m_pictureParameterUpdateCount == m_resetPictureParametersFrameTriggerHack)
-        {
-            m_currentPictureParameters = nullptr;
-        }
-    }
 
     bool m_forceDisableFilmGrain{false};
     bool m_queryResultWithStatus{false};
