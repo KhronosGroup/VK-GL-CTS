@@ -609,7 +609,7 @@ void VideoBaseDecoder::StartVideoSequence(const VkParserDetectedVideoFormat *pVi
         if (m_layeredDpb)
         {
             m_useImageArray     = true;
-            m_useImageViewArray = true;
+            m_useImageViewArray = false;
         }
         else
         {
@@ -1832,9 +1832,12 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
         // For the Output Coincide, the DPB and destination output resources are the same.
         pPicParams->decodeFrameInfo.dstPictureResource = pPicParams->dpbSetupPictureResource;
 
-        // Also, when we are copying the output we need to know which layer is used for the current frame.
-        // This is if a multi-layered image is used for the DPB and the output (since they coincide).
-        cachedParameters->decodedPictureInfo.imageLayerIndex = pPicParams->dpbSetupPictureResource.baseArrayLayer;
+        // Track which image array layer is used for this frame, for readback/copy operations.
+        // Use the baseArrayLayer from the DPB resource info (derived from the image view's
+        // subresource range), which is the actual image layer index regardless of whether
+        // we use a shared multi-layer view or per-slot single-layer views.
+        cachedParameters->decodedPictureInfo.imageLayerIndex =
+            cachedParameters->currentDpbPictureResourceInfo.baseArrayLayer;
 
         // Intra-only, no setup ref: pSetupReferenceSlot is NULL so the image must be in dstLayout,
         // not dpbLayout. In the coincide case the DPB and dst images are the same resource, so we

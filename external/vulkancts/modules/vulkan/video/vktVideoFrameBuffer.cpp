@@ -133,6 +133,7 @@ public:
             pDpbPictureResourceInfo->image       = m_frameDpbImageView->GetImageResource()->GetImage();
             pDpbPictureResourceInfo->imageFormat = m_frameDpbImageView->GetImageResource()->GetImageCreateInfo().format;
             pDpbPictureResourceInfo->currentImageLayout = m_currentDpbImageLayerLayout;
+            pDpbPictureResourceInfo->baseArrayLayer = m_frameDpbImageView->GetImageSubresourceRange().baseArrayLayer;
         }
 
         if (VK_IMAGE_LAYOUT_MAX_ENUM != newDpbImageLayout)
