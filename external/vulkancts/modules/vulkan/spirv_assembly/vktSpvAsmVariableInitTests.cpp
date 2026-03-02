@@ -60,7 +60,7 @@ struct TestParams
 
 struct ShaderParams
 {
-    InstanceContext context;
+    InstanceContextPtr context;
     string type;
 };
 
@@ -329,7 +329,7 @@ tcu::TestStatus outputTest(Context &context, ShaderParams params)
 void addShaderCodeOutput(vk::SourceCollections &dst, ShaderParams params)
 {
 
-    SpirvVersion targetSpirvVersion = params.context.resources.spirvVersion;
+    SpirvVersion targetSpirvVersion = params.context->resources.spirvVersion;
     map<string, string> spec;
     const uint32_t vulkanVersion = dst.usedVulkanVersion;
 
@@ -602,7 +602,6 @@ void addShaderCodeOutput(vk::SourceCollections &dst, ShaderParams params)
 void addGraphicsVariableInitOutputTest(tcu::TestCaseGroup *group)
 {
     tcu::TestContext &testCtx = group->getTestContext();
-    map<string, string> fragments;
     RGBA defaultColors[4];
     // Tests OpVariable initialization in output storage class.
     tcu::TestCaseGroup *outputGroup = new tcu::TestCaseGroup(testCtx, "output");
@@ -641,7 +640,7 @@ void addGraphicsVariableInitOutputTest(tcu::TestCaseGroup *group)
             Resource(BufferSp(new Float32Buffer(expectedOutput)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
         {
-            const InstanceContext &instanceContext = createInstanceContext(
+            InstanceContextPtr instanceContext = createInstanceContext(
                 pipelineStages, defaultColors, defaultColors, noFragments, specConstantMap, noPushConstants, resources,
                 noInterfaces, extensions, requiredFeatures, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                 QP_TEST_RESULT_FAIL, string());

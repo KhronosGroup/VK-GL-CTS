@@ -393,24 +393,24 @@ InstanceContext::InstanceContext(const InstanceContext &other)
     outputColors[3] = other.outputColors[3];
 }
 
-string InstanceContext::getSpecializedFailMessage(const string &failureReason)
+string InstanceContext::getSpecializedFailMessage(const string &failureReason) const
 {
     map<string, string> parameters;
     parameters["reason"] = failureReason;
     return StringTemplate(failMessageTemplate).specialize(parameters);
 }
 
-InstanceContext createInstanceContext(const std::vector<ShaderElement> &elements, const tcu::RGBA (&inputColors)[4],
-                                      const tcu::RGBA (&outputColors)[4],
-                                      const std::map<std::string, std::string> &testCodeFragments,
-                                      const StageToSpecConstantMap &specConstants, const PushConstants &pushConstants,
-                                      const GraphicsResources &resources, const GraphicsInterfaces &interfaces,
-                                      const std::vector<std::string> &extensions, VulkanFeatures vulkanFeatures,
-                                      VkShaderStageFlags customizedStages, const qpTestResult failResult,
-                                      const std::string &failMessageTemplate)
+InstanceContextPtr createInstanceContext(
+    const std::vector<ShaderElement> &elements, const tcu::RGBA (&inputColors)[4], const tcu::RGBA (&outputColors)[4],
+    const std::map<std::string, std::string> &testCodeFragments, const StageToSpecConstantMap &specConstants,
+    const PushConstants &pushConstants, const GraphicsResources &resources, const GraphicsInterfaces &interfaces,
+    const std::vector<std::string> &extensions, VulkanFeatures vulkanFeatures, VkShaderStageFlags customizedStages,
+    const qpTestResult failResult, const std::string &failMessageTemplate)
 {
-    InstanceContext ctx(inputColors, outputColors, testCodeFragments, specConstants, pushConstants, resources,
-                        interfaces, extensions, vulkanFeatures, customizedStages);
+    InstanceContextUniquePtr ctxPtr(new InstanceContext(inputColors, outputColors, testCodeFragments, specConstants,
+                                                        pushConstants, resources, interfaces, extensions,
+                                                        vulkanFeatures, customizedStages));
+    auto &ctx = *ctxPtr;
     for (size_t i = 0; i < elements.size(); ++i)
     {
         ctx.moduleMap[elements[i].moduleName].push_back(std::make_pair(elements[i].entryName, elements[i].stage));
@@ -419,20 +419,20 @@ InstanceContext createInstanceContext(const std::vector<ShaderElement> &elements
     ctx.failResult = failResult;
     if (!failMessageTemplate.empty())
         ctx.failMessageTemplate = failMessageTemplate;
-    return ctx;
+    return ctxPtr;
 }
 
-InstanceContext createInstanceContext(const std::vector<ShaderElement> &elements, tcu::RGBA (&inputColors)[4],
-                                      const tcu::RGBA (&outputColors)[4],
-                                      const std::map<std::string, std::string> &testCodeFragments)
+InstanceContextPtr createInstanceContext(const std::vector<ShaderElement> &elements, tcu::RGBA (&inputColors)[4],
+                                         const tcu::RGBA (&outputColors)[4],
+                                         const std::map<std::string, std::string> &testCodeFragments)
 {
     return createInstanceContext(elements, inputColors, outputColors, testCodeFragments, StageToSpecConstantMap(),
                                  PushConstants(), GraphicsResources(), GraphicsInterfaces(), std::vector<std::string>(),
                                  VulkanFeatures(), vk::VK_SHADER_STAGE_ALL);
 }
 
-InstanceContext createInstanceContext(const std::vector<ShaderElement> &elements,
-                                      const std::map<std::string, std::string> &testCodeFragments)
+InstanceContextPtr createInstanceContext(const std::vector<ShaderElement> &elements,
+                                         const std::map<std::string, std::string> &testCodeFragments)
 {
     tcu::RGBA defaultColors[4];
     getDefaultColors(defaultColors);
@@ -497,10 +497,11 @@ void getInvertedDefaultColors(RGBA (&colors)[4])
 }
 
 // For the current InstanceContext, constructs the required modules and shader stage create infos.
-void createPipelineShaderStages(const DeviceInterface &vk, const VkDevice vkDevice, InstanceContext &instance,
+void createPipelineShaderStages(const DeviceInterface &vk, const VkDevice vkDevice, InstanceContextPtr instancePtr,
                                 Context &context, vector<ModuleHandleSp> &modules,
                                 vector<VkPipelineShaderStageCreateInfo> &createInfos)
 {
+    auto &instance = *instancePtr;
     for (ModuleMap::const_iterator moduleNdx = instance.moduleMap.begin(); moduleNdx != instance.moduleMap.end();
          ++moduleNdx)
     {
@@ -1297,9 +1298,10 @@ map<string, string> passthruFragments(void)
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Vertex shader gets custom code from context, the rest are pass-through.
-void addShaderCodeCustomVertex(vk::SourceCollections &dst, InstanceContext &context,
+void addShaderCodeCustomVertex(vk::SourceCollections &dst, InstanceContextPtr contextPtr,
                                const SpirVAsmBuildOptions *spirVAsmBuildOptions)
 {
+    auto &context                = *contextPtr;
     const uint32_t vulkanVersion = dst.usedVulkanVersion;
     const SpirvVersion targetSpirvVersion =
         ((spirVAsmBuildOptions == nullptr) ? context.resources.spirvVersion : spirVAsmBuildOptions->targetVersion);
@@ -1335,14 +1337,14 @@ void addShaderCodeCustomVertex(vk::SourceCollections &dst, InstanceContext &cont
 using SpirVAsmBuildOptionsPtr = std::unique_ptr<SpirVAsmBuildOptions>;
 
 SpirVAsmBuildOptionsPtr getSpirVAsmBuildOptionsFromTestInstanceContext(const vk::SourceCollections &dst,
-                                                                       const InstanceContext &context)
+                                                                       InstanceContextPtr context)
 {
     SpirVAsmBuildOptionsPtr opts;
 
 #ifndef CTS_USES_VULKANSC
-    if (context.requestedFeatures.maint9Features.maintenance9)
+    if (context->requestedFeatures.maint9Features.maintenance9)
     {
-        opts.reset(new SpirVAsmBuildOptions(dst.usedVulkanVersion, context.resources.spirvVersion));
+        opts.reset(new SpirVAsmBuildOptions(dst.usedVulkanVersion, context->resources.spirvVersion));
         opts->supports_VK_KHR_maintenance9 = true;
     }
 #else
@@ -1353,7 +1355,7 @@ SpirVAsmBuildOptionsPtr getSpirVAsmBuildOptionsFromTestInstanceContext(const vk:
     return opts;
 }
 
-void addShaderCodeCustomVertex(vk::SourceCollections &dst, InstanceContext context)
+void addShaderCodeCustomVertex(vk::SourceCollections &dst, InstanceContextPtr context)
 {
     const auto opts = getSpirVAsmBuildOptionsFromTestInstanceContext(dst, context);
     addShaderCodeCustomVertex(dst, context, opts.get());
@@ -1362,9 +1364,10 @@ void addShaderCodeCustomVertex(vk::SourceCollections &dst, InstanceContext conte
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Tessellation control shader gets custom code from context, the rest are
 // pass-through.
-void addShaderCodeCustomTessControl(vk::SourceCollections &dst, InstanceContext &context,
+void addShaderCodeCustomTessControl(vk::SourceCollections &dst, InstanceContextPtr contextPtr,
                                     const SpirVAsmBuildOptions *spirVAsmBuildOptions)
 {
+    const auto &context          = *contextPtr;
     const uint32_t vulkanVersion = dst.usedVulkanVersion;
     const SpirvVersion targetSpirvVersion =
         ((spirVAsmBuildOptions == nullptr) ? context.resources.spirvVersion : spirVAsmBuildOptions->targetVersion);
@@ -1407,7 +1410,7 @@ void addShaderCodeCustomTessControl(vk::SourceCollections &dst, InstanceContext 
     }
 }
 
-void addShaderCodeCustomTessControl(vk::SourceCollections &dst, InstanceContext context)
+void addShaderCodeCustomTessControl(vk::SourceCollections &dst, InstanceContextPtr context)
 {
     const auto opts = getSpirVAsmBuildOptionsFromTestInstanceContext(dst, context);
     addShaderCodeCustomTessControl(dst, context, opts.get());
@@ -1416,9 +1419,10 @@ void addShaderCodeCustomTessControl(vk::SourceCollections &dst, InstanceContext 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Tessellation evaluation shader gets custom code from context, the rest are
 // pass-through.
-void addShaderCodeCustomTessEval(vk::SourceCollections &dst, InstanceContext &context,
+void addShaderCodeCustomTessEval(vk::SourceCollections &dst, InstanceContextPtr contextPtr,
                                  const SpirVAsmBuildOptions *spirVAsmBuildOptions)
 {
+    const auto &context          = *contextPtr;
     const uint32_t vulkanVersion = dst.usedVulkanVersion;
     const SpirvVersion targetSpirvVersion =
         ((spirVAsmBuildOptions == nullptr) ? context.resources.spirvVersion : spirVAsmBuildOptions->targetVersion);
@@ -1460,7 +1464,7 @@ void addShaderCodeCustomTessEval(vk::SourceCollections &dst, InstanceContext &co
     }
 }
 
-void addShaderCodeCustomTessEval(vk::SourceCollections &dst, InstanceContext context)
+void addShaderCodeCustomTessEval(vk::SourceCollections &dst, InstanceContextPtr context)
 {
     const auto opts = getSpirVAsmBuildOptionsFromTestInstanceContext(dst, context);
     addShaderCodeCustomTessEval(dst, context, opts.get());
@@ -1468,9 +1472,10 @@ void addShaderCodeCustomTessEval(vk::SourceCollections &dst, InstanceContext con
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Geometry shader gets custom code from context, the rest are pass-through.
-void addShaderCodeCustomGeometry(vk::SourceCollections &dst, InstanceContext &context,
+void addShaderCodeCustomGeometry(vk::SourceCollections &dst, InstanceContextPtr contextPtr,
                                  const SpirVAsmBuildOptions *spirVAsmBuildOptions)
 {
+    const auto &context          = *contextPtr;
     const uint32_t vulkanVersion = dst.usedVulkanVersion;
     const SpirvVersion targetSpirvVersion =
         ((spirVAsmBuildOptions == nullptr) ? context.resources.spirvVersion : spirVAsmBuildOptions->targetVersion);
@@ -1507,7 +1512,7 @@ void addShaderCodeCustomGeometry(vk::SourceCollections &dst, InstanceContext &co
     }
 }
 
-void addShaderCodeCustomGeometry(vk::SourceCollections &dst, InstanceContext context)
+void addShaderCodeCustomGeometry(vk::SourceCollections &dst, InstanceContextPtr context)
 {
     const auto opts = getSpirVAsmBuildOptionsFromTestInstanceContext(dst, context);
     addShaderCodeCustomGeometry(dst, context, opts.get());
@@ -1515,9 +1520,10 @@ void addShaderCodeCustomGeometry(vk::SourceCollections &dst, InstanceContext con
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Fragment shader gets custom code from context, the rest are pass-through.
-void addShaderCodeCustomFragment(vk::SourceCollections &dst, InstanceContext &context,
+void addShaderCodeCustomFragment(vk::SourceCollections &dst, InstanceContextPtr contextPtr,
                                  const SpirVAsmBuildOptions *spirVAsmBuildOptions)
 {
+    const auto &context          = *contextPtr;
     const uint32_t vulkanVersion = dst.usedVulkanVersion;
     const SpirvVersion targetSpirvVersion =
         ((spirVAsmBuildOptions == nullptr) ? context.resources.spirvVersion : spirVAsmBuildOptions->targetVersion);
@@ -1549,14 +1555,15 @@ void addShaderCodeCustomFragment(vk::SourceCollections &dst, InstanceContext &co
     }
 }
 
-void addShaderCodeCustomFragment(vk::SourceCollections &dst, InstanceContext context)
+void addShaderCodeCustomFragment(vk::SourceCollections &dst, InstanceContextPtr context)
 {
     const auto opts = getSpirVAsmBuildOptionsFromTestInstanceContext(dst, context);
     addShaderCodeCustomFragment(dst, context, opts.get());
 }
 
-void createCombinedModule(vk::SourceCollections &dst, InstanceContext ctx)
+void createCombinedModule(vk::SourceCollections &dst, InstanceContextPtr ctxPtr)
 {
+    auto &ctx = *ctxPtr;
     const bool useTessellation(
         ctx.requiredStages & (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
     const bool useGeometry(ctx.requiredStages & VK_SHADER_STAGE_GEOMETRY_BIT);
@@ -2314,7 +2321,7 @@ void createUnusedVariableModules(vk::SourceCollections &dst, UnusedVariableConte
     }
 }
 
-void createMultipleEntries(vk::SourceCollections &dst, InstanceContext)
+void createMultipleEntries(vk::SourceCollections &dst, InstanceContextPtr)
 {
     dst.spirvAsmSources.add("vert") <<
         // This module contains 2 vertex shaders. One that is a passthrough
@@ -3120,8 +3127,9 @@ VkImageAspectFlags getImageAspectFlags(VkFormat format)
     return aspectFlags;
 }
 
-void defaultCheckSupport(Context &context, InstanceContext instance)
+void defaultCheckSupport(Context &context, InstanceContextPtr instancePtr)
 {
+    auto &instance = *instancePtr;
     if (getMinRequiredVulkanVersion(instance.resources.spirvVersion) > context.getEquivalentApiVersion())
     {
         auto vulkanName = getVulkanName(getMinRequiredVulkanVersion(instance.resources.spirvVersion));
@@ -3249,8 +3257,9 @@ TestStatus runAndVerifyUnusedVariablePipeline(Context &context, UnusedVariableCo
     return runAndVerifyDefaultPipeline(context, unusedVariableContext.instanceContext);
 }
 
-TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instance)
+TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContextPtr instancePtr)
 {
+    const auto &instance            = *instancePtr;
     const DeviceInterface &vk       = context.getDeviceInterface();
     const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
     const VkQueue queue             = context.getUniversalQueue();
@@ -3277,28 +3286,34 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
     const bool hasTessellation = (instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ||
                                  (instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
 
-    de::Random(seed).shuffle(instance.inputColors, instance.inputColors + 4);
-    de::Random(seed).shuffle(instance.outputColors, instance.outputColors + 4);
+    decltype(instance.inputColors) inputColors;
+    decltype(instance.outputColors) outputColors;
+
+    memcpy(inputColors, instance.inputColors, sizeof(inputColors));
+    memcpy(outputColors, instance.outputColors, sizeof(outputColors));
+
+    de::Random(seed).shuffle(inputColors, inputColors + 4);
+    de::Random(seed).shuffle(outputColors, outputColors + 4);
     const Vec4 vertexData[] = {
         // Upper left corner:
-        Vec4(-1.0f, -1.0f, 0.0f, 1.0f), instance.inputColors[0].toVec(), //1
-        Vec4(-0.5f, -1.0f, 0.0f, 1.0f), instance.inputColors[0].toVec(), //2
-        Vec4(-1.0f, -0.5f, 0.0f, 1.0f), instance.inputColors[0].toVec(), //3
+        Vec4(-1.0f, -1.0f, 0.0f, 1.0f), inputColors[0].toVec(), //1
+        Vec4(-0.5f, -1.0f, 0.0f, 1.0f), inputColors[0].toVec(), //2
+        Vec4(-1.0f, -0.5f, 0.0f, 1.0f), inputColors[0].toVec(), //3
 
         // Upper right corner:
-        Vec4(+0.5f, -1.0f, 0.0f, 1.0f), instance.inputColors[1].toVec(), //4
-        Vec4(+1.0f, -1.0f, 0.0f, 1.0f), instance.inputColors[1].toVec(), //5
-        Vec4(+1.0f, -0.5f, 0.0f, 1.0f), instance.inputColors[1].toVec(), //6
+        Vec4(+0.5f, -1.0f, 0.0f, 1.0f), inputColors[1].toVec(), //4
+        Vec4(+1.0f, -1.0f, 0.0f, 1.0f), inputColors[1].toVec(), //5
+        Vec4(+1.0f, -0.5f, 0.0f, 1.0f), inputColors[1].toVec(), //6
 
         // Lower left corner:
-        Vec4(-1.0f, +0.5f, 0.0f, 1.0f), instance.inputColors[2].toVec(), //7
-        Vec4(-0.5f, +1.0f, 0.0f, 1.0f), instance.inputColors[2].toVec(), //8
-        Vec4(-1.0f, +1.0f, 0.0f, 1.0f), instance.inputColors[2].toVec(), //9
+        Vec4(-1.0f, +0.5f, 0.0f, 1.0f), inputColors[2].toVec(), //7
+        Vec4(-0.5f, +1.0f, 0.0f, 1.0f), inputColors[2].toVec(), //8
+        Vec4(-1.0f, +1.0f, 0.0f, 1.0f), inputColors[2].toVec(), //9
 
         // Lower right corner:
-        Vec4(+1.0f, +0.5f, 0.0f, 1.0f), instance.inputColors[3].toVec(), //10
-        Vec4(+1.0f, +1.0f, 0.0f, 1.0f), instance.inputColors[3].toVec(), //11
-        Vec4(+0.5f, +1.0f, 0.0f, 1.0f), instance.inputColors[3].toVec(), //12
+        Vec4(+1.0f, +0.5f, 0.0f, 1.0f), inputColors[3].toVec(), //10
+        Vec4(+1.0f, +1.0f, 0.0f, 1.0f), inputColors[3].toVec(), //11
+        Vec4(+0.5f, +1.0f, 0.0f, 1.0f), inputColors[3].toVec(), //12
 
         // The rest is used only renderFullSquare specified. Fills area already filled with clear color
         // Left 1
@@ -3985,7 +4000,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
         if (!instance.resources.verifyBinary(binary))
             return tcu::TestStatus::fail("Binary verification of SPIR-V in the test failed");
     }
-    createPipelineShaderStages(vk, device, instance, context, modules, shaderStageParams);
+    createPipelineShaderStages(vk, device, instancePtr, context, modules, shaderStageParams);
 
     // And we don't want the reallocation of these vectors to invalidate pointers pointing to their contents.
     specConstantEntries.reserve(shaderStageParams.size());
@@ -4558,19 +4573,19 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
     const RGBA threshold(1, 1, 1, 1);
 
     const RGBA upperLeft(pixelBuffer.getPixel(1, 1));
-    if (!tcu::compareThreshold(upperLeft, instance.outputColors[0], threshold))
+    if (!tcu::compareThreshold(upperLeft, outputColors[0], threshold))
         return TestStatus(instance.failResult, instance.getSpecializedFailMessage("Upper left corner mismatch"));
 
     const RGBA upperRight(pixelBuffer.getPixel(pixelBuffer.getWidth() - 1, 1));
-    if (!tcu::compareThreshold(upperRight, instance.outputColors[1], threshold))
+    if (!tcu::compareThreshold(upperRight, outputColors[1], threshold))
         return TestStatus(instance.failResult, instance.getSpecializedFailMessage("Upper right corner mismatch"));
 
     const RGBA lowerLeft(pixelBuffer.getPixel(1, pixelBuffer.getHeight() - 1));
-    if (!tcu::compareThreshold(lowerLeft, instance.outputColors[2], threshold))
+    if (!tcu::compareThreshold(lowerLeft, outputColors[2], threshold))
         return TestStatus(instance.failResult, instance.getSpecializedFailMessage("Lower left corner mismatch"));
 
     const RGBA lowerRight(pixelBuffer.getPixel(pixelBuffer.getWidth() - 1, pixelBuffer.getHeight() - 1));
-    if (!tcu::compareThreshold(lowerRight, instance.outputColors[3], threshold))
+    if (!tcu::compareThreshold(lowerRight, outputColors[3], threshold))
         return TestStatus(instance.failResult, instance.getSpecializedFailMessage("Lower right corner mismatch"));
 
     // Check that the contents in the ouput variable matches expected.
@@ -4809,7 +4824,7 @@ const vector<ShaderElement> &getGeomPipelineStages(void)
 struct StageData
 {
     typedef const vector<ShaderElement> &(*GetPipelineStagesFn)();
-    typedef void (*AddShaderCodeCustomStageFn)(vk::SourceCollections &, InstanceContext);
+    typedef void (*AddShaderCodeCustomStageFn)(vk::SourceCollections &, InstanceContextPtr);
 
     GetPipelineStagesFn getPipelineFn;
     AddShaderCodeCustomStageFn initProgramsFn;
@@ -4861,8 +4876,10 @@ void createTestForStage(vk::VkShaderStageFlagBits stage, const std::string &name
     if (!specConstants.empty())
         specConstantMap[stage] = specConstants;
 
-    InstanceContext ctx(inputColors, outputColors, testCodeFragments, specConstantMap, pushConstants, resources,
-                        interfaces, extensions, vulkanFeatures, stage);
+    InstanceContextUniquePtr ctxPtr(new InstanceContext(inputColors, outputColors, testCodeFragments, specConstantMap,
+                                                        pushConstants, resources, interfaces, extensions,
+                                                        vulkanFeatures, stage));
+    auto &ctx           = *ctxPtr;
     ctx.splitRenderArea = splitRenderArea;
     for (size_t i = 0; i < pipeline.size(); ++i)
     {
@@ -4876,8 +4893,10 @@ void createTestForStage(vk::VkShaderStageFlagBits stage, const std::string &name
 
     ctx.renderFullSquare = renderFullSquare;
     ctx.splitRenderArea  = splitRenderArea;
-    addFunctionCaseWithPrograms<InstanceContext>(tests, name, defaultCheckSupport, stageData.initProgramsFn,
-                                                 runAndVerifyDefaultPipeline, ctx);
+
+    InstanceContextPtr sharedCtx(std::move(ctxPtr));
+    addFunctionCaseWithPrograms<InstanceContextPtr>(tests, name, defaultCheckSupport, stageData.initProgramsFn,
+                                                    runAndVerifyDefaultPipeline, sharedCtx);
 }
 
 void createTestsForAllStages(const std::string &name, const RGBA (&inputColors)[4], const RGBA (&outputColors)[4],

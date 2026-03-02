@@ -9726,7 +9726,7 @@ tcu::TestCaseGroup *createModuleTests(tcu::TestContext &testCtx)
             const ShaderElement combinedPipeline[] = {ShaderElement("module", "main", VK_SHADER_STAGE_VERTEX_BIT),
                                                       ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)};
 
-            addFunctionCaseWithPrograms<InstanceContext>(
+            addFunctionCaseWithPrograms<InstanceContextPtr>(
                 moduleTests.get(), "same_module", defaultCheckSupport, createCombinedModule,
                 runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
         }
@@ -9737,7 +9737,7 @@ tcu::TestCaseGroup *createModuleTests(tcu::TestContext &testCtx)
                                                       ShaderElement("module", "main", VK_SHADER_STAGE_GEOMETRY_BIT),
                                                       ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)};
 
-            addFunctionCaseWithPrograms<InstanceContext>(
+            addFunctionCaseWithPrograms<InstanceContextPtr>(
                 moduleTests.get(), "same_module_geom", defaultCheckSupport, createCombinedModule,
                 runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
         }
@@ -9750,7 +9750,7 @@ tcu::TestCaseGroup *createModuleTests(tcu::TestContext &testCtx)
                 ShaderElement("module", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT),
                 ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)};
 
-            addFunctionCaseWithPrograms<InstanceContext>(
+            addFunctionCaseWithPrograms<InstanceContextPtr>(
                 moduleTests.get(), "same_module_tessc_tesse", defaultCheckSupport, createCombinedModule,
                 runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
         }
@@ -9764,7 +9764,7 @@ tcu::TestCaseGroup *createModuleTests(tcu::TestContext &testCtx)
                 ShaderElement("module", "main", VK_SHADER_STAGE_GEOMETRY_BIT),
                 ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)};
 
-            addFunctionCaseWithPrograms<InstanceContext>(
+            addFunctionCaseWithPrograms<InstanceContextPtr>(
                 moduleTests.get(), "same_module_tessc_tesse_geom", defaultCheckSupport, createCombinedModule,
                 runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
         }
@@ -9797,13 +9797,13 @@ tcu::TestCaseGroup *createModuleTests(tcu::TestContext &testCtx)
                 2 ==
             0)
         {
-            addFunctionCaseWithPrograms<InstanceContext>(
+            addFunctionCaseWithPrograms<InstanceContextPtr>(
                 moduleTests.get(), name, defaultCheckSupport, createMultipleEntries, runAndVerifyDefaultPipeline,
                 createInstanceContext(pipeline, defaultColors, defaultColors, map<string, string>()));
         }
         else
         {
-            addFunctionCaseWithPrograms<InstanceContext>(
+            addFunctionCaseWithPrograms<InstanceContextPtr>(
                 moduleTests.get(), name, defaultCheckSupport, createMultipleEntries, runAndVerifyDefaultPipeline,
                 createInstanceContext(pipeline, defaultColors, invertedColors, map<string, string>()));
         }

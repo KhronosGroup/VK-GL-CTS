@@ -38,6 +38,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <memory>
 
 namespace vkt
 {
@@ -314,8 +315,11 @@ struct InstanceContext
 
     InstanceContext(const InstanceContext &other);
 
-    std::string getSpecializedFailMessage(const std::string &failureReason);
+    std::string getSpecializedFailMessage(const std::string &failureReason) const;
 };
+
+using InstanceContextPtr       = std::shared_ptr<const InstanceContext>;
+using InstanceContextUniquePtr = std::unique_ptr<InstanceContext>;
 
 enum ShaderTask
 {
@@ -340,11 +344,11 @@ typedef ShaderTask ShaderTaskArray[SHADER_TASK_INDEX_LAST];
 
 struct UnusedVariableContext
 {
-    InstanceContext instanceContext;
+    InstanceContextPtr instanceContext;
     ShaderTaskArray shaderTasks;
     VariableLocation variableLocation;
 
-    UnusedVariableContext(const InstanceContext &ctx, const ShaderTaskArray &tasks, const VariableLocation &location)
+    UnusedVariableContext(InstanceContextPtr ctx, const ShaderTaskArray &tasks, const VariableLocation &location)
         : instanceContext(ctx)
         , shaderTasks()
         , variableLocation(location)
@@ -387,19 +391,19 @@ void getInvertedDefaultColors(tcu::RGBA (&colors)[4]);
 std::map<std::string, std::string> passthruFragments(void);
 
 // Creates a combined shader module based on VkShaderStageFlagBits defined in InstanceContext.
-void createCombinedModule(vk::SourceCollections &dst, InstanceContext ctx);
+void createCombinedModule(vk::SourceCollections &dst, InstanceContextPtr ctx);
 
 // Creates shaders with unused variables based on the UnusedVariableContext.
 void createUnusedVariableModules(vk::SourceCollections &dst, UnusedVariableContext ctx);
 
 // This has two shaders of each stage. The first
 // is a passthrough, the second inverts the color.
-void createMultipleEntries(vk::SourceCollections &dst, InstanceContext);
+void createMultipleEntries(vk::SourceCollections &dst, InstanceContextPtr);
 
 // Turns a vector of ShaderElements into an instance-context by setting up the mapping of modules
 // to their contained shaders and stages. The inputs and expected outputs are given by inputColors
 // and outputColors
-InstanceContext createInstanceContext(
+InstanceContextPtr createInstanceContext(
     const std::vector<ShaderElement> &elements, const tcu::RGBA (&inputColors)[4], const tcu::RGBA (&outputColors)[4],
     const std::map<std::string, std::string> &testCodeFragments, const StageToSpecConstantMap &specConstants,
     const PushConstants &pushConstants, const GraphicsResources &resources, const GraphicsInterfaces &interfaces,
@@ -408,7 +412,7 @@ InstanceContext createInstanceContext(
 
 // Same as above but using a statically sized array.
 template <size_t N>
-inline InstanceContext createInstanceContext(
+inline InstanceContextPtr createInstanceContext(
     const ShaderElement (&elements)[N], const tcu::RGBA (&inputColors)[4], const tcu::RGBA (&outputColors)[4],
     const std::map<std::string, std::string> &testCodeFragments, const StageToSpecConstantMap &specConstants,
     const PushConstants &pushConstants, const GraphicsResources &resources, const GraphicsInterfaces &interfaces,
@@ -422,28 +426,28 @@ inline InstanceContext createInstanceContext(
 }
 
 // The same as createInstanceContext above, without extensions, spec constants, and resources.
-InstanceContext createInstanceContext(const std::vector<ShaderElement> &elements, tcu::RGBA (&inputColors)[4],
-                                      const tcu::RGBA (&outputColors)[4],
-                                      const std::map<std::string, std::string> &testCodeFragments);
+InstanceContextPtr createInstanceContext(const std::vector<ShaderElement> &elements, tcu::RGBA (&inputColors)[4],
+                                         const tcu::RGBA (&outputColors)[4],
+                                         const std::map<std::string, std::string> &testCodeFragments);
 
 // Same as above, but using a statically sized array.
 template <size_t N>
-inline InstanceContext createInstanceContext(const ShaderElement (&elements)[N], tcu::RGBA (&inputColors)[4],
-                                             const tcu::RGBA (&outputColors)[4],
-                                             const std::map<std::string, std::string> &testCodeFragments)
+inline InstanceContextPtr createInstanceContext(const ShaderElement (&elements)[N], tcu::RGBA (&inputColors)[4],
+                                                const tcu::RGBA (&outputColors)[4],
+                                                const std::map<std::string, std::string> &testCodeFragments)
 {
     std::vector<ShaderElement> elementsVector(elements, elements + N);
     return createInstanceContext(elementsVector, inputColors, outputColors, testCodeFragments);
 }
 
 // The same as createInstanceContext above, but with default colors.
-InstanceContext createInstanceContext(const std::vector<ShaderElement> &elements,
-                                      const std::map<std::string, std::string> &testCodeFragments);
+InstanceContextPtr createInstanceContext(const std::vector<ShaderElement> &elements,
+                                         const std::map<std::string, std::string> &testCodeFragments);
 
 // Same as above, but using a statically sized array.
 template <size_t N>
-inline InstanceContext createInstanceContext(const ShaderElement (&elements)[N],
-                                             const std::map<std::string, std::string> &testCodeFragments)
+inline InstanceContextPtr createInstanceContext(const ShaderElement (&elements)[N],
+                                                const std::map<std::string, std::string> &testCodeFragments)
 {
     std::vector<ShaderElement> elementsVector(elements, elements + N);
     return createInstanceContext(elementsVector, testCodeFragments);
@@ -452,15 +456,15 @@ inline InstanceContext createInstanceContext(const ShaderElement (&elements)[N],
 // Create an unused variable context for the given combination.
 UnusedVariableContext createUnusedVariableContext(const ShaderTaskArray &shaderTasks, const VariableLocation &location);
 
-void addShaderCodeCustomVertex(vk::SourceCollections &dst, InstanceContext &context,
+void addShaderCodeCustomVertex(vk::SourceCollections &dst, InstanceContextPtr context,
                                const SpirVAsmBuildOptions *spirVAsmBuildOptions);
-void addShaderCodeCustomTessControl(vk::SourceCollections &dst, InstanceContext &context,
+void addShaderCodeCustomTessControl(vk::SourceCollections &dst, InstanceContextPtr context,
                                     const SpirVAsmBuildOptions *spirVAsmBuildOptions);
-void addShaderCodeCustomTessEval(vk::SourceCollections &dst, InstanceContext &context,
+void addShaderCodeCustomTessEval(vk::SourceCollections &dst, InstanceContextPtr context,
                                  const SpirVAsmBuildOptions *spirVAsmBuildOptions);
-void addShaderCodeCustomGeometry(vk::SourceCollections &dst, InstanceContext &context,
+void addShaderCodeCustomGeometry(vk::SourceCollections &dst, InstanceContextPtr context,
                                  const SpirVAsmBuildOptions *spirVAsmBuildOptions);
-void addShaderCodeCustomFragment(vk::SourceCollections &dst, InstanceContext &context,
+void addShaderCodeCustomFragment(vk::SourceCollections &dst, InstanceContextPtr context,
                                  const SpirVAsmBuildOptions *spirVAsmBuildOptions);
 
 void createTestForStage(vk::VkShaderStageFlagBits stage, const std::string &name, const tcu::RGBA (&inputColors)[4],
@@ -568,13 +572,13 @@ inline void createTestsForAllStages(const std::string &name, const tcu::RGBA (&i
                             failMessageTemplate);
 }
 
-void defaultCheckSupport(Context &context, InstanceContext instance);
+void defaultCheckSupport(Context &context, InstanceContextPtr instance);
 
 // Sets up and runs a Vulkan pipeline, then spot-checks the resulting image.
 // Feeds the pipeline a set of colored triangles, which then must occur in the
 // rendered image.  The surface is cleared before executing the pipeline, so
 // whatever the shaders draw can be directly spot-checked.
-tcu::TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instance);
+tcu::TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContextPtr instance);
 
 // Use the instance context in the UnusedVariableContext to run the function above.
 tcu::TestStatus runAndVerifyUnusedVariablePipeline(Context &context, UnusedVariableContext unusedVariableContext);
