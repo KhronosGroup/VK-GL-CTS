@@ -45,6 +45,8 @@ enum class CommandFlagTestMode
     COPY_FROM_MEMORY_WITH_UNBOUND_RANGES,
 
     USE_ALL_VERTEX_INDEX_BINDS,
+    BASIC_SET_STRIDE,
+    COMPLEX_SET_STRIDE,
 };
 
 struct TestParams
@@ -328,6 +330,9 @@ public:
     tcu::TestStatus iterate(void) override;
 
 protected:
+    void setVertexInput(VkCommandBuffer cmdBuffer, VkDeviceSize stride) const;
+    void drawUsingBasicSetStride(VkCommandBuffer cmdBuffer) const;
+    void drawUsingComplexSetStride(VkCommandBuffer cmdBuffer) const;
     void drawUsingAllVertexIndexBinds(VkCommandBuffer cmdBuffer) const;
 
 private:
@@ -357,6 +362,22 @@ VertexIndexBindingTestInstance::VertexIndexBindingTestInstance(Context &context,
     : vkt::TestInstance(context)
     , m_params(params)
 {
+    // configure test parameters based on the test mode
+    if (m_params.mode == CommandFlagTestMode::BASIC_SET_STRIDE)
+    {
+        m_unusedVertexFloats = {4u, 4u};
+        m_useIndexBuffers    = false;
+        m_useRegularPipeline = false;
+    }
+    else if (m_params.mode == CommandFlagTestMode::COMPLEX_SET_STRIDE)
+    {
+        // note first three values from m_unusedVertexFloats are used for strides calculation in drawUsingComplexSetStride
+        // but remaining values in m_unusedVertexFloats are adjusted so that vertex buffers have proper values
+        m_unusedVertexFloats         = {3u, 2u, 4u, 2u, 3u, 3u};
+        m_useIndexBuffers            = false;
+        m_useRegularPipeline         = false;
+        m_useVertexInputDynamicState = true;
+    }
 }
 
 tcu::TestStatus VertexIndexBindingTestInstance::iterate(void)
@@ -487,7 +508,12 @@ tcu::TestStatus VertexIndexBindingTestInstance::iterate(void)
     // for test to properly work we need to clear red channel with 0
     beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, scissors[0], tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
-    drawUsingAllVertexIndexBinds(*cmdBuffer);
+    if (m_params.mode == CommandFlagTestMode::BASIC_SET_STRIDE)
+        drawUsingBasicSetStride(*cmdBuffer);
+    else if (m_params.mode == CommandFlagTestMode::COMPLEX_SET_STRIDE)
+        drawUsingComplexSetStride(*cmdBuffer);
+    else // CommandFlagTestMode::USE_ALL_VERTEX_INDEX_BINDS
+        drawUsingAllVertexIndexBinds(*cmdBuffer);
 
     endRenderPass(vk, *cmdBuffer);
 
@@ -531,6 +557,99 @@ tcu::TestStatus VertexIndexBindingTestInstance::iterate(void)
 
     m_context.getTestContext().getLog() << tcu::TestLog::Image("Result", "", resultAccess);
     return tcu::TestStatus::fail("Fail");
+}
+
+void VertexIndexBindingTestInstance::setVertexInput(VkCommandBuffer cmdBuffer, VkDeviceSize stride) const
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+
+    VkVertexInputBindingDescription2EXT vertexBindingDescriptions     = initVulkanStructure();
+    vertexBindingDescriptions.stride                                  = (uint32_t)stride;
+    vertexBindingDescriptions.inputRate                               = VK_VERTEX_INPUT_RATE_VERTEX;
+    vertexBindingDescriptions.divisor                                 = 1;
+    VkVertexInputAttributeDescription2EXT vertexAttributeDescriptions = initVulkanStructure();
+    vertexAttributeDescriptions.format                                = VK_FORMAT_R32G32_SFLOAT;
+    vertexAttributeDescriptions.offset                                = 0;
+
+    vk.cmdSetVertexInputEXT(cmdBuffer, 1, &vertexBindingDescriptions, 1, &vertexAttributeDescriptions);
+}
+
+void VertexIndexBindingTestInstance::drawUsingBasicSetStride(VkCommandBuffer cmdBuffer) const
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    auto device               = m_context.getDevice();
+
+    vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineDS);
+
+    VkBuffer vertexBuffer                        = **m_vertexBuffers[0];
+    auto vertexBufferAddress                     = getBufferDeviceAddress(vk, device, vertexBuffer);
+    VkBindVertexBuffer3InfoKHR vertexBuffer3Info = initVulkanStructure();
+    vertexBuffer3Info.addressRange               = {vertexBufferAddress, m_vertexBufferSizes[0], 24};
+    vertexBuffer3Info.setStride                  = true;
+
+    vk.cmdBindVertexBuffers3KHR(cmdBuffer, 0, 1, &vertexBuffer3Info);
+    vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+
+    // we set stride to 0 but expect 16 will be used
+    vertexBuffer                   = **m_vertexBuffers[1];
+    vertexBufferAddress            = getBufferDeviceAddress(vk, device, vertexBuffer);
+    vertexBuffer3Info.addressRange = {vertexBufferAddress, m_vertexBufferSizes[1], 0};
+    vertexBuffer3Info.setStride    = false;
+
+    vk.cmdBindVertexBuffers3KHR(cmdBuffer, 0, 1, &vertexBuffer3Info);
+    vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+}
+
+void VertexIndexBindingTestInstance::drawUsingComplexSetStride(VkCommandBuffer cmdBuffer) const
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    auto device               = m_context.getDevice();
+
+    const VkDeviceSize vertexStrideA = (2u + m_unusedVertexFloats[0]) * sizeof(float);
+    const VkDeviceSize vertexStrideB = (2u + m_unusedVertexFloats[1]) * sizeof(float);
+    const VkDeviceSize vertexStrideC = (2u + m_unusedVertexFloats[2]) * sizeof(float);
+
+    vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineDS);
+
+    // use vkCmdSetVertexInputEXT to set stride to vertexStrideA
+    VkDeviceSize vertexOffset = 0;
+    VkBuffer vertexBuffer     = **m_vertexBuffers[0];
+    setVertexInput(cmdBuffer, vertexStrideA);
+    vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer, &vertexOffset);
+    vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+
+    // use vkCmdBindVertexBuffers2 to set stride to vertexStrideB
+    vertexBuffer = **m_vertexBuffers[1];
+    vk.cmdBindVertexBuffers2(cmdBuffer, 0u, 1u, &vertexBuffer, &vertexOffset, &m_vertexBufferSizes[1], &vertexStrideB);
+    vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+
+    // use vkCmdBindVertexBuffers3 to set stride to vertexStrideC
+    vertexBuffer                                 = **m_vertexBuffers[2];
+    auto vertexBufferAddress                     = getBufferDeviceAddress(vk, device, vertexBuffer);
+    VkBindVertexBuffer3InfoKHR vertexBuffer3Info = initVulkanStructure();
+    vertexBuffer3Info.addressRange               = {vertexBufferAddress, m_vertexBufferSizes[2], vertexStrideC};
+    vertexBuffer3Info.setStride                  = true;
+    vk.cmdBindVertexBuffers3KHR(cmdBuffer, 0, 1, &vertexBuffer3Info);
+    vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+
+    // use vkCmdBindVertexBuffers2 again to set stride to vertexStrideB
+    vertexBuffer = **m_vertexBuffers[3];
+    vk.cmdBindVertexBuffers2(cmdBuffer, 0u, 1u, &vertexBuffer, &vertexOffset, &m_vertexBufferSizes[3], &vertexStrideB);
+    vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+
+    // use cmdBindVertexBuffers again to set stride to vertexStrideA
+    vertexBuffer = **m_vertexBuffers[4];
+    setVertexInput(cmdBuffer, vertexStrideA);
+    vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer, &vertexOffset);
+    vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+
+    // use vkCmdBindVertexBuffers3 with setStride false; we expect that strideA will be used
+    vertexBuffer                   = **m_vertexBuffers[5];
+    vertexBufferAddress            = getBufferDeviceAddress(vk, device, vertexBuffer);
+    vertexBuffer3Info.setStride    = false;
+    vertexBuffer3Info.addressRange = {vertexBufferAddress, m_vertexBufferSizes[5], 0};
+    vk.cmdBindVertexBuffers3KHR(cmdBuffer, 0, 1, &vertexBuffer3Info);
+    vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
 }
 
 void VertexIndexBindingTestInstance::drawUsingAllVertexIndexBinds(VkCommandBuffer cmdBuffer) const
@@ -614,7 +733,9 @@ void BufferAddressCommandTestCase::initPrograms(vk::SourceCollections &programCo
 {
     auto &glslSources = programCollection.glslSources;
 
-    if (m_params.mode == CommandFlagTestMode::USE_ALL_VERTEX_INDEX_BINDS)
+    if ((m_params.mode == CommandFlagTestMode::USE_ALL_VERTEX_INDEX_BINDS) ||
+        (m_params.mode == CommandFlagTestMode::BASIC_SET_STRIDE) ||
+        (m_params.mode == CommandFlagTestMode::COMPLEX_SET_STRIDE))
     {
         glslSources.add("vert") << glu::VertexSource(R"(
             #version 450
@@ -654,6 +775,8 @@ tcu::TestCaseGroup *createDeviceAddressCommandsTests(tcu::TestContext &testCtx)
         {"copy_to_memory_with_unbound_ranges", TM::COPY_TO_MEMORY_WITH_UNBOUND_RANGES},
         {"copy_from_memory_with_unbound_ranges", TM::COPY_FROM_MEMORY_WITH_UNBOUND_RANGES},
         {"use_all_vertex_index_binds", TM::USE_ALL_VERTEX_INDEX_BINDS},
+        {"basic_set_stride", TM::BASIC_SET_STRIDE},
+        {"complex_set_stride", TM::COMPLEX_SET_STRIDE},
     };
     for (auto &[name, mode] : caseVect)
     {
