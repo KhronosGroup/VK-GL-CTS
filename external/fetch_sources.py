@@ -374,14 +374,14 @@ PACKAGES = [
         "126038020c2bd47efaa942ccc364ca5353ffccde",
         "spirv-headers"),
     GitRepo(
-        "https://github.com/KhronosGroup/Vulkan-Docs.git",
-        "git@github.com:KhronosGroup/Vulkan-Docs.git",
-        "81b1d516cbf42f04a3c7f781977c499945b5e5dc",
+        "https://github.com/mahkoh/Vulkan-Docs.git",
+        "git@github.com:mahkoh/Vulkan-Docs.git",
+        "jorth/syncobj",
         "vulkan-docs"),
     GitRepo(
-        "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
-        "git@github.com:KhronosGroup/Vulkan-ValidationLayers.git",
-        "3d79815f35c2c54d5eaa261204e2e3fc2e90bebb",
+        "https://github.com/mahkoh/Vulkan-ValidationLayers.git",
+        "git@github.com:mahkoh/Vulkan-ValidationLayers.git",
+        "jorth/syncobj",
         "vulkan-validationlayers",
         postCheckout="python3 scripts/update_deps.py --dir external  --optional tests  --api vulkan"),
     GitRepo(
