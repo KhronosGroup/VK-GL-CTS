@@ -6085,6 +6085,13 @@ struct VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX
 	VkBool32		screenBufferImport;
 };
 
+struct VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		externalSemaphoreDrmSyncobj;
+};
+
 struct VkPhysicalDeviceExternalSemaphoreInfo
 {
 	VkStructureType							sType;

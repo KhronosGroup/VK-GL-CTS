@@ -198,6 +198,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		functions.push_back("vkEnumeratePhysicalDeviceShaderInstrumentationMetricsARM");
 		return;
 	}
+	if (extName == "VK_ARM_tensor_controls")
+	{
+		return;
+	}
 	if (extName == "VK_ARM_tensors")
 	{
 		functions.push_back("vkGetPhysicalDeviceExternalTensorPropertiesARM");
@@ -392,6 +396,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_EXT_external_memory_metal")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_external_semaphore_drm_syncobj")
 	{
 		return;
 	}
@@ -2222,6 +2230,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkClearShaderInstrumentationMetricsARM");
 		return;
 	}
+	if (extName == "VK_ARM_tensor_controls")
+	{
+		return;
+	}
 	if (extName == "VK_ARM_tensors")
 	{
 		functions.push_back("vkCreateTensorARM");
@@ -2583,6 +2595,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkGetMemoryMetalHandleEXT");
 		functions.push_back("vkGetMemoryMetalHandlePropertiesEXT");
+		return;
+	}
+	if (extName == "VK_EXT_external_semaphore_drm_syncobj")
+	{
 		return;
 	}
 	if (extName == "VK_EXT_filter_cubic")
@@ -5065,6 +5081,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_command_buffer_inheritance",
 	"VK_NV_shader_atomic_float16_vector",
 	"VK_EXT_shader_replicated_composites",
+	"VK_ARM_tensor_controls",
 	"VK_EXT_shader_float8",
 	"VK_NV_ray_tracing_validation",
 	"VK_NV_cluster_acceleration_structure",
@@ -5100,6 +5117,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_VALVE_shader_mixed_float_dot_product",
 	"VK_SEC_throttle_hint",
 	"VK_ARM_data_graph_neural_accelerator_statistics",
+	"VK_EXT_external_semaphore_drm_syncobj",
 	"VK_EXT_primitive_restart_index",
 	"VK_NV_cooperative_matrix_decode_vector",
 	"VK_KHR_acceleration_structure",

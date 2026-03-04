@@ -1177,6 +1177,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalFormatR
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalImageFormatInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemoryHostPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalSemaphoreInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalTensorInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFaultFeaturesEXT& value);
