@@ -18,6 +18,7 @@ vk-main-2026-03-01/image/depth-stencil-descriptor.txt
 vk-main-2026-03-01/image/general-layout.txt
 vk-main-2026-03-01/image/host-image-copy.txt
 vk-main-2026-03-01/image/load-store.txt
+vk-main-2026-03-01/image/mismatched-write-op.txt
 vk-main-2026-03-01/image/mutable.txt
 vk-main-2026-03-01/image/non-uniform-offset-sample.txt
 vk-main-2026-03-01/image/queue-transfer.txt

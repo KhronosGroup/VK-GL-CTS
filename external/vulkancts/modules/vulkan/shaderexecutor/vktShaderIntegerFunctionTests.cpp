@@ -187,7 +187,20 @@ static vector<void *> getInputOutputPointers(const vector<Symbol> &symbols, vect
 
 static std::string getIntegerFuncCaseName(glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
 {
-    return string(glu::getDataTypeName(baseType)) + getPrecisionPostfix(precision) + getShaderTypePostfix(shaderType);
+    std::string baseName = glu::getDataTypeName(baseType);
+    switch (baseType)
+    {
+    case glu::TYPE_INT_VEC5:
+        baseName = "ivec5";
+        break;
+    case glu::TYPE_UINT_VEC5:
+        baseName = "uvec5";
+        break;
+    default:
+        baseName = glu::getDataTypeName(baseType);
+        break;
+    }
+    return baseName + getPrecisionPostfix(precision) + getShaderTypePostfix(shaderType);
 }
 
 static inline uint32_t reverseBits(uint32_t v)
@@ -225,7 +238,12 @@ static void addFunctionCases(tcu::TestCaseGroup *parent, const char *functionNam
         if ((!intTypes && scalarType == glu::TYPE_INT) || (!uintTypes && scalarType == glu::TYPE_UINT))
             continue;
 
-        for (int vecSize = 1; vecSize <= 4; vecSize++)
+#ifndef CTS_USES_VULKANSC
+        int maxVecSize = 5;
+#else
+        int maxVecSize = 4;
+#endif
+        for (int vecSize = 1; vecSize <= maxVecSize; vecSize++)
         {
             for (int prec = glu::PRECISION_MEDIUMP; prec <= glu::PRECISION_HIGHP; prec++)
             {
@@ -235,8 +253,12 @@ static void addFunctionCases(tcu::TestCaseGroup *parent, const char *functionNam
                 for (int shaderTypeNdx = 0; shaderTypeNdx < glu::SHADERTYPE_LAST; shaderTypeNdx++)
                 {
                     if (shaderBits & (1 << shaderTypeNdx))
+                    {
+                        if (vecSize == 5 && shaderTypeNdx != glu::SHADERTYPE_COMPUTE)
+                            continue;
                         group->addChild(new TestClass(parent->getTestContext(), glu::DataType(scalarType + vecSize - 1),
                                                       glu::Precision(prec), glu::ShaderType(shaderTypeNdx)));
+                    }
                 }
             }
         }
@@ -287,6 +309,23 @@ IntegerFunctionCase::~IntegerFunctionCase(void)
 void IntegerFunctionCase::checkSupport(Context &context) const
 {
     checkSupportShader(context, m_shaderType);
+
+#ifndef CTS_USES_VULKANSC
+    bool usesVec5Types = false;
+    for (const auto &symbol : m_spec.inputs)
+    {
+        usesVec5Types = usesVec5Types || (getDataTypeScalarSize(symbol.varType.getBasicType()) == 5);
+    }
+
+    for (const auto &symbol : m_spec.outputs)
+    {
+        usesVec5Types = usesVec5Types || (getDataTypeScalarSize(symbol.varType.getBasicType()) == 5);
+    }
+    if (usesVec5Types && !context.getShaderLongVectorFeaturesEXT().longVector)
+    {
+        TCU_THROW(NotSupportedError, "longVector not supported");
+    }
+#endif
 }
 
 // IntegerFunctionTestInstance

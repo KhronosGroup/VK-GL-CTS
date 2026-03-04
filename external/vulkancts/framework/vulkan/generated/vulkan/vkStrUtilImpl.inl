@@ -14702,6 +14702,26 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderIntegerDo
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderLongVectorFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceShaderLongVectorFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlongVector = " << value.longVector << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderLongVectorPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceShaderLongVectorPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxVectorComponents = " << value.maxVectorComponents << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR& value)
 {
 	s << "VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR = {\n";

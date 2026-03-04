@@ -156,6 +156,7 @@ auto fShaderFloatControls2Features                      = m_context.getShaderFlo
 auto fShaderFmaFeatures                                 = m_context.getShaderFmaFeatures();
 auto fShaderImageAtomicInt64FeaturesEXT                 = m_context.getShaderImageAtomicInt64FeaturesEXT();
 auto fShaderIntegerDotProductFeatures                   = m_context.getShaderIntegerDotProductFeatures();
+auto fShaderLongVectorFeaturesEXT                       = m_context.getShaderLongVectorFeaturesEXT();
 auto fShaderMaximalReconvergenceFeatures                = m_context.getShaderMaximalReconvergenceFeatures();
 auto fShaderModuleIdentifierFeaturesEXT                 = m_context.getShaderModuleIdentifierFeaturesEXT();
 auto fShaderQuadControlFeatures                         = m_context.getShaderQuadControlFeatures();
@@ -352,6 +353,7 @@ std::vector<void *> pNextFeatures = {
 	&fShaderFmaFeatures,
 	&fShaderImageAtomicInt64FeaturesEXT,
 	&fShaderIntegerDotProductFeatures,
+	&fShaderLongVectorFeaturesEXT,
 	&fShaderMaximalReconvergenceFeatures,
 	&fShaderModuleIdentifierFeaturesEXT,
 	&fShaderQuadControlFeatures,

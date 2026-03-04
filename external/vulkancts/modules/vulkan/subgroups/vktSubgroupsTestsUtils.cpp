@@ -39,6 +39,8 @@ using namespace tcu;
 using namespace std;
 using namespace vk;
 using namespace vkt;
+using namespace glu;
+using vkt::subgroups::VecType;
 
 namespace
 {
@@ -90,82 +92,63 @@ uint32_t getNextWidth(const uint32_t width)
     return nextPOT - 1;
 }
 
-uint32_t getFormatSizeInBytes(const VkFormat format)
+uint32_t getFormatSizeInBytes(VecType vecType)
 {
-    switch (format)
+    uint32_t components = vecType.components == 3 ? 4 : vecType.components;
+
+    switch (vecType.type)
     {
     default:
         DE_FATAL("Unhandled format!");
         return 0;
-    case VK_FORMAT_R8_SINT:
-    case VK_FORMAT_R8_UINT:
-        return static_cast<uint32_t>(sizeof(int8_t));
-    case VK_FORMAT_R8G8_SINT:
-    case VK_FORMAT_R8G8_UINT:
-        return static_cast<uint32_t>(sizeof(int8_t) * 2);
-    case VK_FORMAT_R8G8B8_SINT:
-    case VK_FORMAT_R8G8B8_UINT:
-    case VK_FORMAT_R8G8B8A8_SINT:
-    case VK_FORMAT_R8G8B8A8_UINT:
-        return static_cast<uint32_t>(sizeof(int8_t) * 4);
-    case VK_FORMAT_R16_SINT:
-    case VK_FORMAT_R16_UINT:
-    case VK_FORMAT_R16_SFLOAT:
-        return static_cast<uint32_t>(sizeof(int16_t));
-    case VK_FORMAT_R16G16_SINT:
-    case VK_FORMAT_R16G16_UINT:
-    case VK_FORMAT_R16G16_SFLOAT:
-        return static_cast<uint32_t>(sizeof(int16_t) * 2);
-    case VK_FORMAT_R16G16B16_UINT:
-    case VK_FORMAT_R16G16B16_SINT:
-    case VK_FORMAT_R16G16B16_SFLOAT:
-    case VK_FORMAT_R16G16B16A16_SINT:
-    case VK_FORMAT_R16G16B16A16_UINT:
-    case VK_FORMAT_R16G16B16A16_SFLOAT:
-        return static_cast<uint32_t>(sizeof(int16_t) * 4);
-    case VK_FORMAT_R32_SINT:
+    case TYPE_INT8:
+    case TYPE_UINT8:
+        return components * 1;
+    case TYPE_INT16:
+    case TYPE_UINT16:
+    case TYPE_FLOAT16:
+        return components * 2;
+    case TYPE_INT:
+    case TYPE_UINT:
+    case TYPE_FLOAT:
+        return components * 4;
+    case TYPE_INT64:
+    case TYPE_UINT64:
+    case TYPE_DOUBLE:
+        return components * 8;
+    case TYPE_BOOL:
+        // The below formats are used to represent bool and bvec* types. These
+        // types are passed to the shader as int and ivec* types, before the
+        // calculations are done as booleans. We need a distinct type here so
+        // that the shader generators can switch on it and generate the correct
+        // shader source for testing.
+        return components * 4;
+    }
+}
+
+uint32_t getFormatSizeInBytes(VkFormat format)
+{
+    switch (format)
+    {
     case VK_FORMAT_R32_UINT:
-    case VK_FORMAT_R32_SFLOAT:
-        return static_cast<uint32_t>(sizeof(int32_t));
-    case VK_FORMAT_R32G32_SINT:
-    case VK_FORMAT_R32G32_UINT:
-    case VK_FORMAT_R32G32_SFLOAT:
-        return static_cast<uint32_t>(sizeof(int32_t) * 2);
-    case VK_FORMAT_R32G32B32_SINT:
-    case VK_FORMAT_R32G32B32_UINT:
-    case VK_FORMAT_R32G32B32_SFLOAT:
-    case VK_FORMAT_R32G32B32A32_SINT:
+        return 4;
     case VK_FORMAT_R32G32B32A32_UINT:
     case VK_FORMAT_R32G32B32A32_SFLOAT:
-        return static_cast<uint32_t>(sizeof(int32_t) * 4);
-    case VK_FORMAT_R64_SINT:
-    case VK_FORMAT_R64_UINT:
-    case VK_FORMAT_R64_SFLOAT:
-        return static_cast<uint32_t>(sizeof(int64_t));
-    case VK_FORMAT_R64G64_SINT:
-    case VK_FORMAT_R64G64_UINT:
-    case VK_FORMAT_R64G64_SFLOAT:
-        return static_cast<uint32_t>(sizeof(int64_t) * 2);
-    case VK_FORMAT_R64G64B64_SINT:
-    case VK_FORMAT_R64G64B64_UINT:
-    case VK_FORMAT_R64G64B64_SFLOAT:
-    case VK_FORMAT_R64G64B64A64_SINT:
-    case VK_FORMAT_R64G64B64A64_UINT:
-    case VK_FORMAT_R64G64B64A64_SFLOAT:
-        return static_cast<uint32_t>(sizeof(int64_t) * 4);
-    // The below formats are used to represent bool and bvec* types. These
-    // types are passed to the shader as int and ivec* types, before the
-    // calculations are done as booleans. We need a distinct type here so
-    // that the shader generators can switch on it and generate the correct
-    // shader source for testing.
-    case VK_FORMAT_R8_USCALED:
-        return static_cast<uint32_t>(sizeof(int32_t));
-    case VK_FORMAT_R8G8_USCALED:
-        return static_cast<uint32_t>(sizeof(int32_t) * 2);
-    case VK_FORMAT_R8G8B8_USCALED:
-    case VK_FORMAT_R8G8B8A8_USCALED:
-        return static_cast<uint32_t>(sizeof(int32_t) * 4);
+        return 16;
+    default:
+        TCU_THROW(InternalError, "Unhandled format");
     }
+    return 0;
+}
+
+uint32_t getElementSizeInBytes(const VecType vecType, const subgroups::SSBOData::InputDataLayoutType layout)
+{
+    const uint32_t bytes = getFormatSizeInBytes(vecType);
+
+    if (layout == subgroups::SSBOData::LayoutStd140)
+        return bytes < 16 ? 16 : bytes;
+    else
+        return bytes;
 }
 
 uint32_t getElementSizeInBytes(const VkFormat format, const subgroups::SSBOData::InputDataLayoutType layout)
@@ -1264,7 +1247,7 @@ void vkt::subgroups::addNoSubgroupShader(SourceCollections &programCollection)
     }
 }
 
-static std::string getFramebufferBufferDeclarations(const VkFormat &format,
+static std::string getFramebufferBufferDeclarations(const VecType &vecType,
                                                     const std::vector<std::string> &declarations, const uint32_t stage)
 {
     if (declarations.empty())
@@ -1276,7 +1259,7 @@ static std::string getFramebufferBufferDeclarations(const VkFormat &format,
                                    "layout(set = 0, binding = 0) uniform Buffer1\n"
                                    "{\n"
                                    "  " +
-                                   de::toString(subgroups::getFormatNameForGLSL(format)) + " data[" +
+                                   de::toString(subgroups::getFormatNameForGLSL(vecType)) + " data[" +
                                    de::toString(subgroups::maxSupportedSubgroupSize()) +
                                    "];\n"
                                    "};\n";
@@ -1291,7 +1274,7 @@ static std::string getFramebufferBufferDeclarations(const VkFormat &format,
 
 void vkt::subgroups::initStdFrameBufferPrograms(SourceCollections &programCollection,
                                                 const vk::ShaderBuildOptions &buildOptions,
-                                                VkShaderStageFlags shaderStage, VkFormat format, bool gsPointSize,
+                                                VkShaderStageFlags shaderStage, VecType vecType, bool gsPointSize,
                                                 const std::string &extHeader, const std::string &testSrc,
                                                 const std::string &helperStr,
                                                 const std::vector<std::string> &declarations)
@@ -1307,7 +1290,7 @@ void vkt::subgroups::initStdFrameBufferPrograms(SourceCollections &programCollec
 
         vertex << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
                << extHeader << "layout(location = 0) in highp vec4 in_position;\n"
-               << getFramebufferBufferDeclarations(format, declarations, 0) << "\n"
+               << getFramebufferBufferDeclarations(vecType, declarations, 0) << "\n"
                << helperStr << "void main (void)\n"
                << "{\n"
                << "  uint tempRes;\n"
@@ -1325,7 +1308,7 @@ void vkt::subgroups::initStdFrameBufferPrograms(SourceCollections &programCollec
         geometry << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
                  << extHeader << "layout(points) in;\n"
                  << "layout(points, max_vertices = 1) out;\n"
-                 << getFramebufferBufferDeclarations(format, declarations, 1) << "\n"
+                 << getFramebufferBufferDeclarations(vecType, declarations, 1) << "\n"
                  << helperStr << "void main (void)\n"
                  << "{\n"
                  << "  uint tempRes;\n"
@@ -1343,7 +1326,7 @@ void vkt::subgroups::initStdFrameBufferPrograms(SourceCollections &programCollec
 
         controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
                       << extHeader << "layout(vertices = 2) out;\n"
-                      << getFramebufferBufferDeclarations(format, declarations, 2) << "\n"
+                      << getFramebufferBufferDeclarations(vecType, declarations, 2) << "\n"
                       << helperStr << "void main (void)\n"
                       << "{\n"
                       << "  if (gl_InvocationID == 0)\n"
@@ -1369,7 +1352,7 @@ void vkt::subgroups::initStdFrameBufferPrograms(SourceCollections &programCollec
 
         evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
                          << extHeader << "layout(isolines, equal_spacing, ccw ) in;\n"
-                         << getFramebufferBufferDeclarations(format, declarations, 3) << "\n"
+                         << getFramebufferBufferDeclarations(vecType, declarations, 3) << "\n"
                          << helperStr << "void main (void)\n"
                          << "{\n"
                          << "  uint tempRes;\n"
@@ -1422,12 +1405,12 @@ static std::string getBufferDeclarations(vk::VkShaderStageFlags shaderStage, con
 
 void vkt::subgroups::initStdPrograms(vk::SourceCollections &programCollection,
                                      const vk::ShaderBuildOptions &buildOptions, vk::VkShaderStageFlags shaderStage,
-                                     vk::VkFormat format, bool gsPointSize, const std::string &extHeader,
+                                     VecType vecType, bool gsPointSize, const std::string &extHeader,
                                      const std::string &testSrc, const std::string &helperStr,
                                      const std::vector<std::string> &declarations, const bool avoidHelperInvocations,
                                      const std::string &tempRes)
 {
-    const std::string formatName = subgroups::getFormatNameForGLSL(format);
+    const std::string formatName = subgroups::getFormatNameForGLSL(vecType);
 
     if (isAllComputeStages(shaderStage))
     {
@@ -1751,7 +1734,7 @@ bool vkt::subgroups::is8BitUBOStorageSupported(Context &context)
     return context.get8BitStorageFeatures().uniformAndStorageBuffer8BitAccess ? true : false;
 }
 
-bool vkt::subgroups::isFormatSupportedForDevice(Context &context, vk::VkFormat format)
+bool vkt::subgroups::isFormatSupportedForDevice(Context &context, VecType vecType)
 {
     const VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures &subgroupExtendedTypesFeatures =
         context.getShaderSubgroupExtendedTypesFeatures();
@@ -1782,46 +1765,29 @@ bool vkt::subgroups::isFormatSupportedForDevice(Context &context, vk::VkFormat f
             storageBuffer8BitAccess = storage8bit.storageBuffer8BitAccess ? true : false;
     }
 
-    switch (format)
+#ifndef CTS_USES_VULKANSC
+    if (vecType.components > 4 && !context.getShaderLongVectorFeaturesEXT().longVector)
+    {
+        TCU_THROW(NotSupportedError, "longVector not supported");
+    }
+#endif
+
+    switch (vecType.type)
     {
     default:
         return true;
-    case VK_FORMAT_R16_SFLOAT:
-    case VK_FORMAT_R16G16_SFLOAT:
-    case VK_FORMAT_R16G16B16_SFLOAT:
-    case VK_FORMAT_R16G16B16A16_SFLOAT:
+    case TYPE_FLOAT16:
         return shaderSubgroupExtendedTypes && shaderFloat16 && storageBuffer16BitAccess;
-    case VK_FORMAT_R64_SFLOAT:
-    case VK_FORMAT_R64G64_SFLOAT:
-    case VK_FORMAT_R64G64B64_SFLOAT:
-    case VK_FORMAT_R64G64B64A64_SFLOAT:
+    case TYPE_DOUBLE:
         return shaderFloat64;
-    case VK_FORMAT_R8_SINT:
-    case VK_FORMAT_R8G8_SINT:
-    case VK_FORMAT_R8G8B8_SINT:
-    case VK_FORMAT_R8G8B8A8_SINT:
-    case VK_FORMAT_R8_UINT:
-    case VK_FORMAT_R8G8_UINT:
-    case VK_FORMAT_R8G8B8_UINT:
-    case VK_FORMAT_R8G8B8A8_UINT:
+    case TYPE_INT8:
+    case TYPE_UINT8:
         return shaderSubgroupExtendedTypes && shaderInt8 && storageBuffer8BitAccess;
-    case VK_FORMAT_R16_SINT:
-    case VK_FORMAT_R16G16_SINT:
-    case VK_FORMAT_R16G16B16_SINT:
-    case VK_FORMAT_R16G16B16A16_SINT:
-    case VK_FORMAT_R16_UINT:
-    case VK_FORMAT_R16G16_UINT:
-    case VK_FORMAT_R16G16B16_UINT:
-    case VK_FORMAT_R16G16B16A16_UINT:
+    case TYPE_INT16:
+    case TYPE_UINT16:
         return shaderSubgroupExtendedTypes && shaderInt16 && storageBuffer16BitAccess;
-    case VK_FORMAT_R64_SINT:
-    case VK_FORMAT_R64G64_SINT:
-    case VK_FORMAT_R64G64B64_SINT:
-    case VK_FORMAT_R64G64B64A64_SINT:
-    case VK_FORMAT_R64_UINT:
-    case VK_FORMAT_R64G64_UINT:
-    case VK_FORMAT_R64G64B64_UINT:
-    case VK_FORMAT_R64G64B64A64_UINT:
+    case TYPE_INT64:
+    case TYPE_UINT64:
         return shaderSubgroupExtendedTypes && shaderInt64;
     }
 }
@@ -1852,332 +1818,166 @@ bool vkt::subgroups::isSubgroupRotateSpecVersionValid(Context &context)
     return true;
 }
 
-std::string vkt::subgroups::getFormatNameForGLSL(VkFormat format)
+std::string vkt::subgroups::getFormatNameForGLSL(VecType vecType)
 {
-    switch (format)
+    if (vecType.components > 4)
     {
-    case VK_FORMAT_R8_SINT:
-        return "int8_t";
-    case VK_FORMAT_R8G8_SINT:
-        return "i8vec2";
-    case VK_FORMAT_R8G8B8_SINT:
-        return "i8vec3";
-    case VK_FORMAT_R8G8B8A8_SINT:
-        return "i8vec4";
-    case VK_FORMAT_R8_UINT:
-        return "uint8_t";
-    case VK_FORMAT_R8G8_UINT:
-        return "u8vec2";
-    case VK_FORMAT_R8G8B8_UINT:
-        return "u8vec3";
-    case VK_FORMAT_R8G8B8A8_UINT:
-        return "u8vec4";
-    case VK_FORMAT_R16_SINT:
-        return "int16_t";
-    case VK_FORMAT_R16G16_SINT:
-        return "i16vec2";
-    case VK_FORMAT_R16G16B16_SINT:
-        return "i16vec3";
-    case VK_FORMAT_R16G16B16A16_SINT:
-        return "i16vec4";
-    case VK_FORMAT_R16_UINT:
-        return "uint16_t";
-    case VK_FORMAT_R16G16_UINT:
-        return "u16vec2";
-    case VK_FORMAT_R16G16B16_UINT:
-        return "u16vec3";
-    case VK_FORMAT_R16G16B16A16_UINT:
-        return "u16vec4";
-    case VK_FORMAT_R32_SINT:
-        return "int";
-    case VK_FORMAT_R32G32_SINT:
-        return "ivec2";
-    case VK_FORMAT_R32G32B32_SINT:
-        return "ivec3";
-    case VK_FORMAT_R32G32B32A32_SINT:
-        return "ivec4";
-    case VK_FORMAT_R32_UINT:
-        return "uint";
-    case VK_FORMAT_R32G32_UINT:
-        return "uvec2";
-    case VK_FORMAT_R32G32B32_UINT:
-        return "uvec3";
-    case VK_FORMAT_R32G32B32A32_UINT:
-        return "uvec4";
-    case VK_FORMAT_R64_SINT:
-        return "int64_t";
-    case VK_FORMAT_R64G64_SINT:
-        return "i64vec2";
-    case VK_FORMAT_R64G64B64_SINT:
-        return "i64vec3";
-    case VK_FORMAT_R64G64B64A64_SINT:
-        return "i64vec4";
-    case VK_FORMAT_R64_UINT:
-        return "uint64_t";
-    case VK_FORMAT_R64G64_UINT:
-        return "u64vec2";
-    case VK_FORMAT_R64G64B64_UINT:
-        return "u64vec3";
-    case VK_FORMAT_R64G64B64A64_UINT:
-        return "u64vec4";
-    case VK_FORMAT_R16_SFLOAT:
-        return "float16_t";
-    case VK_FORMAT_R16G16_SFLOAT:
-        return "f16vec2";
-    case VK_FORMAT_R16G16B16_SFLOAT:
-        return "f16vec3";
-    case VK_FORMAT_R16G16B16A16_SFLOAT:
-        return "f16vec4";
-    case VK_FORMAT_R32_SFLOAT:
-        return "float";
-    case VK_FORMAT_R32G32_SFLOAT:
-        return "vec2";
-    case VK_FORMAT_R32G32B32_SFLOAT:
-        return "vec3";
-    case VK_FORMAT_R32G32B32A32_SFLOAT:
-        return "vec4";
-    case VK_FORMAT_R64_SFLOAT:
-        return "double";
-    case VK_FORMAT_R64G64_SFLOAT:
-        return "dvec2";
-    case VK_FORMAT_R64G64B64_SFLOAT:
-        return "dvec3";
-    case VK_FORMAT_R64G64B64A64_SFLOAT:
-        return "dvec4";
-    case VK_FORMAT_R8_USCALED:
-        return "bool";
-    case VK_FORMAT_R8G8_USCALED:
-        return "bvec2";
-    case VK_FORMAT_R8G8B8_USCALED:
-        return "bvec3";
-    case VK_FORMAT_R8G8B8A8_USCALED:
-        return "bvec4";
-    default:
-        TCU_THROW(InternalError, "Unhandled format");
+        std::string ret = "vector<";
+        ret += getDataTypeName(vecType.type);
+        ret += ", ";
+        ret += std::to_string(vecType.components);
+        ret += ">";
+        return ret;
     }
+    return getDataTypeName(getDataTypeVector(vecType.type, vecType.components));
 }
 
-std::string vkt::subgroups::getAdditionalExtensionForFormat(vk::VkFormat format)
+std::string vkt::subgroups::getFormatNameForTest(VecType vecType)
 {
-    switch (format)
+    if (vecType.components > 4)
     {
-    default:
-        return "";
-    case VK_FORMAT_R8_SINT:
-    case VK_FORMAT_R8G8_SINT:
-    case VK_FORMAT_R8G8B8_SINT:
-    case VK_FORMAT_R8G8B8A8_SINT:
-    case VK_FORMAT_R8_UINT:
-    case VK_FORMAT_R8G8_UINT:
-    case VK_FORMAT_R8G8B8_UINT:
-    case VK_FORMAT_R8G8B8A8_UINT:
-        return "#extension GL_EXT_shader_subgroup_extended_types_int8 : enable\n";
-    case VK_FORMAT_R16_SINT:
-    case VK_FORMAT_R16G16_SINT:
-    case VK_FORMAT_R16G16B16_SINT:
-    case VK_FORMAT_R16G16B16A16_SINT:
-    case VK_FORMAT_R16_UINT:
-    case VK_FORMAT_R16G16_UINT:
-    case VK_FORMAT_R16G16B16_UINT:
-    case VK_FORMAT_R16G16B16A16_UINT:
-        return "#extension GL_EXT_shader_subgroup_extended_types_int16 : enable\n";
-    case VK_FORMAT_R64_SINT:
-    case VK_FORMAT_R64G64_SINT:
-    case VK_FORMAT_R64G64B64_SINT:
-    case VK_FORMAT_R64G64B64A64_SINT:
-    case VK_FORMAT_R64_UINT:
-    case VK_FORMAT_R64G64_UINT:
-    case VK_FORMAT_R64G64B64_UINT:
-    case VK_FORMAT_R64G64B64A64_UINT:
-        return "#extension GL_EXT_shader_subgroup_extended_types_int64 : enable\n";
-    case VK_FORMAT_R16_SFLOAT:
-    case VK_FORMAT_R16G16_SFLOAT:
-    case VK_FORMAT_R16G16B16_SFLOAT:
-    case VK_FORMAT_R16G16B16A16_SFLOAT:
-        return "#extension GL_EXT_shader_subgroup_extended_types_float16 : enable\n";
+        std::string ret = "vec";
+        ret += std::to_string(vecType.components);
+        ret += "_";
+        ret += getDataTypeName(vecType.type);
+        return ret;
     }
+    return getFormatNameForGLSL(vecType);
 }
 
-const std::vector<vk::VkFormat> vkt::subgroups::getAllFormats()
+std::string vkt::subgroups::getAdditionalExtensionForFormat(VecType vecType)
 {
-    std::vector<VkFormat> formats;
+    std::string ret;
+    if (vecType.components > 4)
+    {
+        ret += "#extension GL_EXT_long_vector : enable\n";
+    }
+    switch (vecType.type)
+    {
+    default:
+        break;
+    case TYPE_INT8:
+    case TYPE_UINT8:
+        ret += "#extension GL_EXT_shader_subgroup_extended_types_int8 : enable\n";
+        break;
+    case TYPE_INT16:
+    case TYPE_UINT16:
+        ret += "#extension GL_EXT_shader_subgroup_extended_types_int16 : enable\n";
+        break;
+    case TYPE_INT64:
+    case TYPE_UINT64:
+        ret += "#extension GL_EXT_shader_subgroup_extended_types_int64 : enable\n";
+        break;
+    case TYPE_FLOAT16:
+        ret += "#extension GL_EXT_shader_subgroup_extended_types_float16 : enable\n";
+        break;
+    }
+    return ret;
+}
 
-    formats.push_back(VK_FORMAT_R8_SINT);
-    formats.push_back(VK_FORMAT_R8G8_SINT);
-    formats.push_back(VK_FORMAT_R8G8B8_SINT);
-    formats.push_back(VK_FORMAT_R8G8B8A8_SINT);
-    formats.push_back(VK_FORMAT_R8_UINT);
-    formats.push_back(VK_FORMAT_R8G8_UINT);
-    formats.push_back(VK_FORMAT_R8G8B8_UINT);
-    formats.push_back(VK_FORMAT_R8G8B8A8_UINT);
-    formats.push_back(VK_FORMAT_R16_SINT);
-    formats.push_back(VK_FORMAT_R16G16_SINT);
-    formats.push_back(VK_FORMAT_R16G16B16_SINT);
-    formats.push_back(VK_FORMAT_R16G16B16A16_SINT);
-    formats.push_back(VK_FORMAT_R16_UINT);
-    formats.push_back(VK_FORMAT_R16G16_UINT);
-    formats.push_back(VK_FORMAT_R16G16B16_UINT);
-    formats.push_back(VK_FORMAT_R16G16B16A16_UINT);
-    formats.push_back(VK_FORMAT_R32_SINT);
-    formats.push_back(VK_FORMAT_R32G32_SINT);
-    formats.push_back(VK_FORMAT_R32G32B32_SINT);
-    formats.push_back(VK_FORMAT_R32G32B32A32_SINT);
-    formats.push_back(VK_FORMAT_R32_UINT);
-    formats.push_back(VK_FORMAT_R32G32_UINT);
-    formats.push_back(VK_FORMAT_R32G32B32_UINT);
-    formats.push_back(VK_FORMAT_R32G32B32A32_UINT);
-    formats.push_back(VK_FORMAT_R64_SINT);
-    formats.push_back(VK_FORMAT_R64G64_SINT);
-    formats.push_back(VK_FORMAT_R64G64B64_SINT);
-    formats.push_back(VK_FORMAT_R64G64B64A64_SINT);
-    formats.push_back(VK_FORMAT_R64_UINT);
-    formats.push_back(VK_FORMAT_R64G64_UINT);
-    formats.push_back(VK_FORMAT_R64G64B64_UINT);
-    formats.push_back(VK_FORMAT_R64G64B64A64_UINT);
-    formats.push_back(VK_FORMAT_R16_SFLOAT);
-    formats.push_back(VK_FORMAT_R16G16_SFLOAT);
-    formats.push_back(VK_FORMAT_R16G16B16_SFLOAT);
-    formats.push_back(VK_FORMAT_R16G16B16A16_SFLOAT);
-    formats.push_back(VK_FORMAT_R32_SFLOAT);
-    formats.push_back(VK_FORMAT_R32G32_SFLOAT);
-    formats.push_back(VK_FORMAT_R32G32B32_SFLOAT);
-    formats.push_back(VK_FORMAT_R32G32B32A32_SFLOAT);
-    formats.push_back(VK_FORMAT_R64_SFLOAT);
-    formats.push_back(VK_FORMAT_R64G64_SFLOAT);
-    formats.push_back(VK_FORMAT_R64G64B64_SFLOAT);
-    formats.push_back(VK_FORMAT_R64G64B64A64_SFLOAT);
-    formats.push_back(VK_FORMAT_R8_USCALED);
-    formats.push_back(VK_FORMAT_R8G8_USCALED);
-    formats.push_back(VK_FORMAT_R8G8B8_USCALED);
-    formats.push_back(VK_FORMAT_R8G8B8A8_USCALED);
+const std::vector<VecType> vkt::subgroups::getAllFormats()
+{
+    std::vector<VecType> formats;
+
+#ifndef CTS_USES_VULKANSC
+#define PUSH_ALL(T)                   \
+    formats.push_back(VecType{T, 1}); \
+    formats.push_back(VecType{T, 2}); \
+    formats.push_back(VecType{T, 3}); \
+    formats.push_back(VecType{T, 4}); \
+    formats.push_back(VecType{T, 8});
+#else
+#define PUSH_ALL(T)                   \
+    formats.push_back(VecType{T, 1}); \
+    formats.push_back(VecType{T, 2}); \
+    formats.push_back(VecType{T, 3}); \
+    formats.push_back(VecType{T, 4});
+#endif
+
+    PUSH_ALL(TYPE_INT8)
+    PUSH_ALL(TYPE_UINT8)
+    PUSH_ALL(TYPE_INT16)
+    PUSH_ALL(TYPE_UINT16)
+    PUSH_ALL(TYPE_INT)
+    PUSH_ALL(TYPE_UINT)
+    PUSH_ALL(TYPE_INT64)
+    PUSH_ALL(TYPE_UINT64)
+
+    PUSH_ALL(TYPE_FLOAT16)
+    PUSH_ALL(TYPE_FLOAT)
+    PUSH_ALL(TYPE_DOUBLE)
+    PUSH_ALL(TYPE_BOOL)
 
     return formats;
 }
 
-bool vkt::subgroups::isFormatSigned(VkFormat format)
+bool vkt::subgroups::isFormatSigned(VecType vecType)
 {
-    switch (format)
+    switch (vecType.type)
     {
     default:
         return false;
-    case VK_FORMAT_R8_SINT:
-    case VK_FORMAT_R8G8_SINT:
-    case VK_FORMAT_R8G8B8_SINT:
-    case VK_FORMAT_R8G8B8A8_SINT:
-    case VK_FORMAT_R16_SINT:
-    case VK_FORMAT_R16G16_SINT:
-    case VK_FORMAT_R16G16B16_SINT:
-    case VK_FORMAT_R16G16B16A16_SINT:
-    case VK_FORMAT_R32_SINT:
-    case VK_FORMAT_R32G32_SINT:
-    case VK_FORMAT_R32G32B32_SINT:
-    case VK_FORMAT_R32G32B32A32_SINT:
-    case VK_FORMAT_R64_SINT:
-    case VK_FORMAT_R64G64_SINT:
-    case VK_FORMAT_R64G64B64_SINT:
-    case VK_FORMAT_R64G64B64A64_SINT:
+    case TYPE_INT8:
+    case TYPE_INT16:
+    case TYPE_INT:
+    case TYPE_INT64:
         return true;
     }
 }
 
-bool vkt::subgroups::isFormatUnsigned(VkFormat format)
+bool vkt::subgroups::isFormatUnsigned(VecType vecType)
 {
-    switch (format)
+    switch (vecType.type)
     {
     default:
         return false;
-    case VK_FORMAT_R8_UINT:
-    case VK_FORMAT_R8G8_UINT:
-    case VK_FORMAT_R8G8B8_UINT:
-    case VK_FORMAT_R8G8B8A8_UINT:
-    case VK_FORMAT_R16_UINT:
-    case VK_FORMAT_R16G16_UINT:
-    case VK_FORMAT_R16G16B16_UINT:
-    case VK_FORMAT_R16G16B16A16_UINT:
-    case VK_FORMAT_R32_UINT:
-    case VK_FORMAT_R32G32_UINT:
-    case VK_FORMAT_R32G32B32_UINT:
-    case VK_FORMAT_R32G32B32A32_UINT:
-    case VK_FORMAT_R64_UINT:
-    case VK_FORMAT_R64G64_UINT:
-    case VK_FORMAT_R64G64B64_UINT:
-    case VK_FORMAT_R64G64B64A64_UINT:
+    case TYPE_UINT8:
+    case TYPE_UINT16:
+    case TYPE_UINT:
+    case TYPE_UINT64:
         return true;
     }
 }
 
-bool vkt::subgroups::isFormatFloat(VkFormat format)
+bool vkt::subgroups::isFormatFloat(VecType vecType)
 {
-    switch (format)
+    switch (vecType.type)
     {
     default:
         return false;
-    case VK_FORMAT_R16_SFLOAT:
-    case VK_FORMAT_R16G16_SFLOAT:
-    case VK_FORMAT_R16G16B16_SFLOAT:
-    case VK_FORMAT_R16G16B16A16_SFLOAT:
-    case VK_FORMAT_R32_SFLOAT:
-    case VK_FORMAT_R32G32_SFLOAT:
-    case VK_FORMAT_R32G32B32_SFLOAT:
-    case VK_FORMAT_R32G32B32A32_SFLOAT:
-    case VK_FORMAT_R64_SFLOAT:
-    case VK_FORMAT_R64G64_SFLOAT:
-    case VK_FORMAT_R64G64B64_SFLOAT:
-    case VK_FORMAT_R64G64B64A64_SFLOAT:
+    case TYPE_FLOAT16:
+    case TYPE_FLOAT:
+    case TYPE_DOUBLE:
         return true;
     }
 }
 
-bool vkt::subgroups::isFormatBool(VkFormat format)
+bool vkt::subgroups::isFormatBool(VecType vecType)
 {
-    switch (format)
+    return vecType.type == TYPE_BOOL;
+}
+
+bool vkt::subgroups::isFormat8bitTy(VecType vecType)
+{
+    switch (vecType.type)
     {
     default:
         return false;
-    case VK_FORMAT_R8_USCALED:
-    case VK_FORMAT_R8G8_USCALED:
-    case VK_FORMAT_R8G8B8_USCALED:
-    case VK_FORMAT_R8G8B8A8_USCALED:
+    case TYPE_INT8:
+    case TYPE_UINT8:
         return true;
     }
 }
 
-bool vkt::subgroups::isFormat8bitTy(VkFormat format)
+bool vkt::subgroups::isFormat16BitTy(VecType vecType)
 {
-    switch (format)
+    switch (vecType.type)
     {
     default:
         return false;
-    case VK_FORMAT_R8_SINT:
-    case VK_FORMAT_R8G8_SINT:
-    case VK_FORMAT_R8G8B8_SINT:
-    case VK_FORMAT_R8G8B8A8_SINT:
-    case VK_FORMAT_R8_UINT:
-    case VK_FORMAT_R8G8_UINT:
-    case VK_FORMAT_R8G8B8_UINT:
-    case VK_FORMAT_R8G8B8A8_UINT:
-        return true;
-    }
-}
-
-bool vkt::subgroups::isFormat16BitTy(VkFormat format)
-{
-    switch (format)
-    {
-    default:
-        return false;
-    case VK_FORMAT_R16_SFLOAT:
-    case VK_FORMAT_R16G16_SFLOAT:
-    case VK_FORMAT_R16G16B16_SFLOAT:
-    case VK_FORMAT_R16G16B16A16_SFLOAT:
-    case VK_FORMAT_R16_SINT:
-    case VK_FORMAT_R16G16_SINT:
-    case VK_FORMAT_R16G16B16_SINT:
-    case VK_FORMAT_R16G16B16A16_SINT:
-    case VK_FORMAT_R16_UINT:
-    case VK_FORMAT_R16G16_UINT:
-    case VK_FORMAT_R16G16B16_UINT:
-    case VK_FORMAT_R16G16B16A16_UINT:
+    case TYPE_INT16:
+    case TYPE_UINT16:
+    case TYPE_FLOAT16:
         return true;
     }
 }
@@ -2492,26 +2292,20 @@ void vkt::subgroups::addGeometryShadersFromTemplate(const std::string &spirvTemp
 
 void initializeMemory(Context &context, const Allocation &alloc, const subgroups::SSBOData &data)
 {
-    const vk::VkFormat format = data.format;
-    const vk::VkDeviceSize size =
-        data.numElements * (data.isImage() ? getFormatSizeInBytes(format) : getElementSizeInBytes(format, data.layout));
+    const VecType vecType       = data.vecType;
+    const vk::VkDeviceSize size = data.numElements * (data.isImage() ? getFormatSizeInBytes(vecType) :
+                                                                       getElementSizeInBytes(vecType, data.layout));
     if (subgroups::SSBOData::InitializeNonZero == data.initializeType)
     {
         de::Random rnd(context.getTestContext().getCommandLine().getBaseSeed());
 
-        switch (format)
+        switch (vecType.type)
         {
         default:
             DE_FATAL("Illegal buffer format");
             break;
-        case VK_FORMAT_R8_SINT:
-        case VK_FORMAT_R8G8_SINT:
-        case VK_FORMAT_R8G8B8_SINT:
-        case VK_FORMAT_R8G8B8A8_SINT:
-        case VK_FORMAT_R8_UINT:
-        case VK_FORMAT_R8G8_UINT:
-        case VK_FORMAT_R8G8B8_UINT:
-        case VK_FORMAT_R8G8B8A8_UINT:
+        case TYPE_INT8:
+        case TYPE_UINT8:
         {
             uint8_t *ptr = reinterpret_cast<uint8_t *>(alloc.getHostPtr());
 
@@ -2521,14 +2315,8 @@ void initializeMemory(Context &context, const Allocation &alloc, const subgroups
             }
         }
         break;
-        case VK_FORMAT_R16_SINT:
-        case VK_FORMAT_R16G16_SINT:
-        case VK_FORMAT_R16G16B16_SINT:
-        case VK_FORMAT_R16G16B16A16_SINT:
-        case VK_FORMAT_R16_UINT:
-        case VK_FORMAT_R16G16_UINT:
-        case VK_FORMAT_R16G16B16_UINT:
-        case VK_FORMAT_R16G16B16A16_UINT:
+        case TYPE_INT16:
+        case TYPE_UINT16:
         {
             uint16_t *ptr = reinterpret_cast<uint16_t *>(alloc.getHostPtr());
 
@@ -2538,10 +2326,7 @@ void initializeMemory(Context &context, const Allocation &alloc, const subgroups
             }
         }
         break;
-        case VK_FORMAT_R8_USCALED:
-        case VK_FORMAT_R8G8_USCALED:
-        case VK_FORMAT_R8G8B8_USCALED:
-        case VK_FORMAT_R8G8B8A8_USCALED:
+        case TYPE_BOOL:
         {
             uint32_t *ptr = reinterpret_cast<uint32_t *>(alloc.getHostPtr());
 
@@ -2552,14 +2337,8 @@ void initializeMemory(Context &context, const Allocation &alloc, const subgroups
             }
         }
         break;
-        case VK_FORMAT_R32_SINT:
-        case VK_FORMAT_R32G32_SINT:
-        case VK_FORMAT_R32G32B32_SINT:
-        case VK_FORMAT_R32G32B32A32_SINT:
-        case VK_FORMAT_R32_UINT:
-        case VK_FORMAT_R32G32_UINT:
-        case VK_FORMAT_R32G32B32_UINT:
-        case VK_FORMAT_R32G32B32A32_UINT:
+        case TYPE_INT:
+        case TYPE_UINT:
         {
             uint32_t *ptr = reinterpret_cast<uint32_t *>(alloc.getHostPtr());
 
@@ -2569,14 +2348,8 @@ void initializeMemory(Context &context, const Allocation &alloc, const subgroups
             }
         }
         break;
-        case VK_FORMAT_R64_SINT:
-        case VK_FORMAT_R64G64_SINT:
-        case VK_FORMAT_R64G64B64_SINT:
-        case VK_FORMAT_R64G64B64A64_SINT:
-        case VK_FORMAT_R64_UINT:
-        case VK_FORMAT_R64G64_UINT:
-        case VK_FORMAT_R64G64B64_UINT:
-        case VK_FORMAT_R64G64B64A64_UINT:
+        case TYPE_INT64:
+        case TYPE_UINT64:
         {
             uint64_t *ptr = reinterpret_cast<uint64_t *>(alloc.getHostPtr());
 
@@ -2586,10 +2359,7 @@ void initializeMemory(Context &context, const Allocation &alloc, const subgroups
             }
         }
         break;
-        case VK_FORMAT_R16_SFLOAT:
-        case VK_FORMAT_R16G16_SFLOAT:
-        case VK_FORMAT_R16G16B16_SFLOAT:
-        case VK_FORMAT_R16G16B16A16_SFLOAT:
+        case TYPE_FLOAT16:
         {
             float16_t *const ptr = reinterpret_cast<float16_t *>(alloc.getHostPtr());
 
@@ -2599,10 +2369,7 @@ void initializeMemory(Context &context, const Allocation &alloc, const subgroups
             }
         }
         break;
-        case VK_FORMAT_R32_SFLOAT:
-        case VK_FORMAT_R32G32_SFLOAT:
-        case VK_FORMAT_R32G32B32_SFLOAT:
-        case VK_FORMAT_R32G32B32A32_SFLOAT:
+        case TYPE_FLOAT:
         {
             float *ptr = reinterpret_cast<float *>(alloc.getHostPtr());
 
@@ -2612,10 +2379,7 @@ void initializeMemory(Context &context, const Allocation &alloc, const subgroups
             }
         }
         break;
-        case VK_FORMAT_R64_SFLOAT:
-        case VK_FORMAT_R64G64_SFLOAT:
-        case VK_FORMAT_R64G64B64_SFLOAT:
-        case VK_FORMAT_R64G64B64A64_SFLOAT:
+        case TYPE_DOUBLE:
         {
             double *ptr = reinterpret_cast<double *>(alloc.getHostPtr());
 
@@ -2711,13 +2475,13 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTestRequire
         if (extraData[i].isImage())
         {
             inputBuffers[i] = de::SharedPtr<BufferOrImage>(
-                new Image(context, static_cast<uint32_t>(extraData[i].numElements), 1u, extraData[i].format));
+                new Image(context, static_cast<uint32_t>(extraData[i].numElements), 1u, extraData[i].format()));
         }
         else
         {
             DE_ASSERT(extraData[i].isUBO());
             vk::VkDeviceSize size =
-                getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
+                getElementSizeInBytes(extraData[i].vecType, extraData[i].layout) * extraData[i].numElements;
             inputBuffers[i] =
                 de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
         }
@@ -2945,13 +2709,13 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTestRequiredSubgroupSize(
         if (extraData[i].isImage())
         {
             inputBuffers[i] = de::SharedPtr<BufferOrImage>(
-                new Image(context, static_cast<uint32_t>(extraData[i].numElements), 1u, extraData[i].format));
+                new Image(context, static_cast<uint32_t>(extraData[i].numElements), 1u, extraData[i].format()));
         }
         else
         {
             DE_ASSERT(extraData[i].isUBO());
             vk::VkDeviceSize size =
-                getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
+                getElementSizeInBytes(extraData[i].vecType, extraData[i].layout) * extraData[i].numElements;
             inputBuffers[i] =
                 de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
         }
@@ -3250,13 +3014,13 @@ tcu::TestStatus vkt::subgroups::allStagesRequiredSubgroupSize(
         if (extraDatas[datasNdx].isImage())
         {
             inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Image(
-                context, static_cast<uint32_t>(extraDatas[datasNdx].numElements), 1, extraDatas[datasNdx].format));
+                context, static_cast<uint32_t>(extraDatas[datasNdx].numElements), 1, extraDatas[datasNdx].format()));
         }
         else
         {
             const auto usage = (extraDatas[datasNdx].isUBO() ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT :
                                                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-            const auto size  = getElementSizeInBytes(extraDatas[datasNdx].format, extraDatas[datasNdx].layout) *
+            const auto size  = getElementSizeInBytes(extraDatas[datasNdx].vecType, extraDatas[datasNdx].layout) *
                               extraDatas[datasNdx].numElements;
             inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, usage));
         }
@@ -3513,13 +3277,13 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTestRequiredSubgroupSize(
         if (extraData[i].isImage())
         {
             inputBuffers[i] = de::SharedPtr<BufferOrImage>(
-                new Image(context, static_cast<uint32_t>(extraData[i].numElements), 1u, extraData[i].format));
+                new Image(context, static_cast<uint32_t>(extraData[i].numElements), 1u, extraData[i].format()));
         }
         else
         {
             DE_ASSERT(extraData[i].isUBO());
             vk::VkDeviceSize size =
-                getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
+                getElementSizeInBytes(extraData[i].vecType, extraData[i].layout) * extraData[i].numElements;
             inputBuffers[i] =
                 de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
         }
@@ -3716,14 +3480,14 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTestRequiredSubgroupSize(
         if (extraDatas[i].isImage())
         {
             inputBuffers[i] = de::SharedPtr<BufferOrImage>(
-                new Image(context, static_cast<uint32_t>(extraDatas[i].numElements), 1, extraDatas[i].format));
+                new Image(context, static_cast<uint32_t>(extraDatas[i].numElements), 1, extraDatas[i].format()));
         }
         else
         {
             DE_ASSERT(extraDatas[i].isUBO());
 
             const vk::VkDeviceSize size =
-                getElementSizeInBytes(extraDatas[i].format, extraDatas[i].layout) * extraDatas[i].numElements;
+                getElementSizeInBytes(extraDatas[i].vecType, extraDatas[i].layout) * extraDatas[i].numElements;
 
             inputBuffers[i] =
                 de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
@@ -4047,13 +3811,13 @@ tcu::TestStatus makeComputeOrMeshTestRequiredSubgroupSize(
         if (inputs[i].isImage())
         {
             inputBuffers[i] = de::SharedPtr<BufferOrImage>(
-                new Image(context, static_cast<uint32_t>(inputs[i].numElements), 1, inputs[i].format));
+                new Image(context, static_cast<uint32_t>(inputs[i].numElements), 1, inputs[i].format()));
         }
         else
         {
             const auto usage =
                 (inputs[i].isUBO() ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-            const auto size = getElementSizeInBytes(inputs[i].format, inputs[i].layout) * inputs[i].numElements;
+            const auto size = getElementSizeInBytes(inputs[i].vecType, inputs[i].layout) * inputs[i].numElements;
             inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, usage));
         }
 
@@ -4126,7 +3890,7 @@ tcu::TestStatus makeComputeOrMeshTestRequiredSubgroupSize(
         }
         else
         {
-            vk::VkDeviceSize size = getElementSizeInBytes(inputs[i].format, inputs[i].layout) * inputs[i].numElements;
+            vk::VkDeviceSize size = getElementSizeInBytes(inputs[i].vecType, inputs[i].layout) * inputs[i].numElements;
             VkDescriptorBufferInfo info =
                 makeDescriptorBufferInfo(inputBuffers[i]->getAsBuffer()->getBuffer(), 0ull, size);
 
@@ -4423,32 +4187,35 @@ enum ShaderGroups
     GROUP_COUNT
 };
 
-const std::vector<vk::VkFormat> getAllRayTracingFormats()
+const std::vector<VecType> getAllRayTracingFormats()
 {
-    std::vector<VkFormat> formats;
+    std::vector<VecType> formats;
 
-    formats.push_back(VK_FORMAT_R8G8B8_SINT);
-    formats.push_back(VK_FORMAT_R8_UINT);
-    formats.push_back(VK_FORMAT_R8G8B8A8_UINT);
-    formats.push_back(VK_FORMAT_R16G16B16_SINT);
-    formats.push_back(VK_FORMAT_R16_UINT);
-    formats.push_back(VK_FORMAT_R16G16B16A16_UINT);
-    formats.push_back(VK_FORMAT_R32G32B32_SINT);
-    formats.push_back(VK_FORMAT_R32_UINT);
-    formats.push_back(VK_FORMAT_R32G32B32A32_UINT);
-    formats.push_back(VK_FORMAT_R64G64B64_SINT);
-    formats.push_back(VK_FORMAT_R64_UINT);
-    formats.push_back(VK_FORMAT_R64G64B64A64_UINT);
-    formats.push_back(VK_FORMAT_R16G16B16A16_SFLOAT);
-    formats.push_back(VK_FORMAT_R32_SFLOAT);
-    formats.push_back(VK_FORMAT_R32G32B32A32_SFLOAT);
-    formats.push_back(VK_FORMAT_R64_SFLOAT);
-    formats.push_back(VK_FORMAT_R64G64B64_SFLOAT);
-    formats.push_back(VK_FORMAT_R64G64B64A64_SFLOAT);
-    formats.push_back(VK_FORMAT_R8_USCALED);
-    formats.push_back(VK_FORMAT_R8G8_USCALED);
-    formats.push_back(VK_FORMAT_R8G8B8_USCALED);
-    formats.push_back(VK_FORMAT_R8G8B8A8_USCALED);
+    formats.push_back(VecType{TYPE_INT8, 3});
+    formats.push_back(VecType{TYPE_UINT8, 1});
+    formats.push_back(VecType{TYPE_UINT8, 4});
+    formats.push_back(VecType{TYPE_INT16, 3});
+    formats.push_back(VecType{TYPE_UINT16, 1});
+    formats.push_back(VecType{TYPE_UINT16, 4});
+    formats.push_back(VecType{TYPE_INT, 3});
+    formats.push_back(VecType{TYPE_UINT, 1});
+    formats.push_back(VecType{TYPE_UINT, 4});
+    formats.push_back(VecType{TYPE_INT64, 3});
+    formats.push_back(VecType{TYPE_UINT64, 1});
+    formats.push_back(VecType{TYPE_UINT64, 4});
+    formats.push_back(VecType{TYPE_FLOAT16, 4});
+    formats.push_back(VecType{TYPE_FLOAT, 1});
+    formats.push_back(VecType{TYPE_FLOAT, 4});
+#ifndef CTS_USES_VULKANSC
+    formats.push_back(VecType{TYPE_FLOAT, 8});
+#endif
+    formats.push_back(VecType{TYPE_DOUBLE, 1});
+    formats.push_back(VecType{TYPE_DOUBLE, 3});
+    formats.push_back(VecType{TYPE_DOUBLE, 4});
+    formats.push_back(VecType{TYPE_BOOL, 1});
+    formats.push_back(VecType{TYPE_BOOL, 2});
+    formats.push_back(VecType{TYPE_BOOL, 3});
+    formats.push_back(VecType{TYPE_BOOL, 4});
 
     return formats;
 }
@@ -4579,13 +4346,13 @@ static vectorBufferOrImage makeRayTracingInputBuffers(Context &context, VkFormat
         if (extraDatas[datasNdx].isImage())
         {
             inputBuffers[stageNdx] = de::SharedPtr<BufferOrImage>(new Image(
-                context, static_cast<uint32_t>(extraDatas[datasNdx].numElements), 1, extraDatas[datasNdx].format));
+                context, static_cast<uint32_t>(extraDatas[datasNdx].numElements), 1, extraDatas[datasNdx].format()));
         }
         else
         {
             const auto usage = (extraDatas[datasNdx].isUBO() ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT :
                                                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-            const auto size  = getElementSizeInBytes(extraDatas[datasNdx].format, extraDatas[datasNdx].layout) *
+            const auto size  = getElementSizeInBytes(extraDatas[datasNdx].vecType, extraDatas[datasNdx].layout) *
                               extraDatas[datasNdx].numElements;
             inputBuffers[stageNdx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, usage));
         }

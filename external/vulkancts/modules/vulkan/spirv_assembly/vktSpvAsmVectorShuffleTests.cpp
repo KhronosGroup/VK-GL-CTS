@@ -46,6 +46,7 @@ void createTests(tcu::TestCaseGroup *tests, const char *data_dir)
     const Case cases[] = {
         // OpVectorShuffle with indices including -1
         {"vector_shuffle", {"VariablePointerFeatures.variablePointers"}},
+        {"long_vector_shuffle", {"VariablePointerFeatures.variablePointers", "ShaderLongVectorFeaturesEXT.longVector"}},
     };
 
     for (unsigned i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i)

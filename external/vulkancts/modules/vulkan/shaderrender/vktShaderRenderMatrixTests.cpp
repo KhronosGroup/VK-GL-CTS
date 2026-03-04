@@ -1411,10 +1411,10 @@ MatrixShaderEvalFunc getEvalFunc(const ShaderInput &in0, const ShaderInput &in1,
     // For efficient lookup the types and op enums are packed together to form a 19-bit key:
     // [18..14 OP] [13..7 TYPE0] [6..0 TYPE1]
 
-    DE_STATIC_ASSERT(TYPE_LAST <= (1 << 7));
+    DE_STATIC_ASSERT(TYPE_LAST <= (1 << 8));
     DE_STATIC_ASSERT(OP_LAST <= (1 << 5));
 
-#define PACK_EVAL_CASE(OP, IN0DATATYPE, IN1DATATYPE) (((OP) << 14) | ((IN0DATATYPE) << 7) | (IN1DATATYPE))
+#define PACK_EVAL_CASE(OP, IN0DATATYPE, IN1DATATYPE) (((OP) << 16) | ((IN0DATATYPE) << 8) | (IN1DATATYPE))
 
 #define MAKE_EVAL_CASE(OP, IN0DATATYPE, IN1DATATYPE)   \
     case PACK_EVAL_CASE(OP, IN0DATATYPE, IN1DATATYPE): \

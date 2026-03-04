@@ -1169,8 +1169,11 @@ The test will try to verify everything works properly and all shader record buff
 struct ShaderGroupHandleAlignmentParams
 {
     const uint32_t alignment;
+    const bool useLongVec;
 
-    ShaderGroupHandleAlignmentParams(uint32_t alignment_) : alignment(alignment_)
+    ShaderGroupHandleAlignmentParams(uint32_t alignment_, bool useLongVec_)
+        : alignment(alignment_)
+        , useLongVec(useLongVec_)
     {
         DE_ASSERT(alignment >= 1u && alignment <= 32u);
         DE_ASSERT(deIsPowerOfTwo32(static_cast<int>(alignment)));
@@ -1311,6 +1314,11 @@ void ShaderGroupHandleAlignmentCase::checkSupport(Context &context) const
     default:
         break;
     }
+
+    if (m_params.useLongVec && !context.getShaderLongVectorFeaturesEXT().longVector)
+    {
+        TCU_THROW(NotSupportedError, "longVector not supported");
+    }
 }
 
 void ShaderGroupHandleAlignmentCase::initPrograms(vk::SourceCollections &programCollection) const
@@ -1332,6 +1340,7 @@ void ShaderGroupHandleAlignmentCase::initPrograms(vk::SourceCollections &program
     std::ostringstream commonHeader;
     commonHeader << "#version 460 core\n"
                  << "#extension GL_EXT_ray_tracing : require\n"
+                 << "#extension GL_EXT_long_vector : enable\n"
                  << "#extension " << extension << " : require\n";
     const auto commontHeaderStr = commonHeader.str();
 
@@ -1357,9 +1366,16 @@ void ShaderGroupHandleAlignmentCase::initPrograms(vk::SourceCollections &program
     std::ostringstream chit;
     chit << commontHeaderStr << "\n"
          << descriptorsStr << "layout(location=0) rayPayloadInEXT vec4 unused;\n"
-         << "layout(shaderRecordEXT, std430) buffer srbBlock {\n"
-         << "  " << elemType << " data[" << elementCount << "];\n"
-         << "} srb;\n"
+         << "layout(shaderRecordEXT, std430) buffer srbBlock {\n";
+    if (m_params.useLongVec)
+    {
+        chit << "  vector<" << elemType << ", " << elementCount << "> data;\n";
+    }
+    else
+    {
+        chit << "  " << elemType << " data[" << elementCount << "];\n";
+    }
+    chit << "} srb;\n"
          << "\n"
          << "void main()\n"
          << "{\n"
@@ -1715,8 +1731,12 @@ tcu::TestCaseGroup *createShaderBindingTableTests(tcu::TestContext &testCtx)
             const auto alignStr = std::to_string(alignment);
             const auto testName = "alignment_" + alignStr;
             // Check aligning shader group handles
-            handleAlignmentGroup->addChild(
-                new ShaderGroupHandleAlignmentCase(testCtx, testName, ShaderGroupHandleAlignmentParams{alignment}));
+            handleAlignmentGroup->addChild(new ShaderGroupHandleAlignmentCase(
+                testCtx, testName, ShaderGroupHandleAlignmentParams{alignment, false}));
+#ifndef CTS_USES_VULKANSC
+            handleAlignmentGroup->addChild(new ShaderGroupHandleAlignmentCase(
+                testCtx, testName + "_longvec", ShaderGroupHandleAlignmentParams{alignment, true}));
+#endif
         }
 
         group->addChild(handleAlignmentGroup.release());
