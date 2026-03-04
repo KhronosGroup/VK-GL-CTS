@@ -178,6 +178,7 @@ public:
     void reportDurations(tcu::TestContext &testCtx, const std::string &packageName, const int64_t &duration,
                          const std::map<std::string, uint64_t> &groupsDurationTime) override;
     int getCurrentSubprocessCount(const std::string &casePath, int defaultSubprocessCount);
+    de::SharedPtr<Context> getCurrentContext(tcu::TestCase *testCase) const;
     de::SharedPtr<Context> getDefaultContext() const;
 
 private:
@@ -389,7 +390,9 @@ TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
         std::clamp(testCtx.getCommandLine().getMaxCustomDevices(), 1, std::numeric_limits<int>::max());
     m_defaultContextManager = ContextManager::create(m_library->getPlatformInterface(), testCtx.getCommandLine(),
                                                      m_resourceInterface, maxCustomDevices, *m_defaultInstCaps);
-    m_deviceProperties      = getPhysicalDeviceProperties(m_defaultContextManager);
+    m_defaultContextManager->createDefaultDevice(m_defaultContextManager, m_progCollection, testCtx);
+
+    m_deviceProperties = getPhysicalDeviceProperties(m_defaultContextManager);
 
     tcu::SessionInfo sessionInfo(m_deviceProperties.vendorID, m_deviceProperties.deviceID,
                                  m_deviceProperties.deviceName, testCtx.getCommandLine().getInitialCmdLine());
@@ -471,14 +474,14 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     m_contextManager->setContextManager(m_contextManager, vktCase);
 
     tcu::TestLog &log                           = testCase->getTestContext().getLog();
-    const uint32_t usedVulkanVersion            = getUsedApiVersion(m_contextManager);
+    const uint32_t usedVulkanVersion            = getUsedApiVersion(m_defaultContextManager);
     const vk::SpirvVersion baselineSpirvVersion = vk::getBaselineSpirvVersion(usedVulkanVersion);
     vk::ShaderBuildOptions defaultGlslBuildOptions(usedVulkanVersion, baselineSpirvVersion, 0u);
     vk::ShaderBuildOptions defaultHlslBuildOptions(usedVulkanVersion, baselineSpirvVersion, 0u);
     vk::SpirVAsmBuildOptions defaultSpirvAsmBuildOptions(usedVulkanVersion, baselineSpirvVersion);
     vk::SourceCollections sourceProgs(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions,
                                       defaultSpirvAsmBuildOptions);
-    const tcu::CommandLine &commandLine = m_contextManager->getCommandLine();
+    const tcu::CommandLine &commandLine = m_defaultContextManager->getCommandLine();
     const bool doShaderLog              = commandLine.isLogDecompiledSpirvEnabled() && log.isShaderLoggingEnabled();
 
     // Some functions, such as checkSupport() or initDeviceCapabilities(), and especially
@@ -487,7 +490,7 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     // so in the event of an exception, control will immediately jump to the exception handler
     // without any information about the situation. To handle this, we put the test on the list
     // of tests to run in the subprocess before calling the functions that may throw an exception.
-    auto onBeforeRunTestCase = [&](de::SharedPtr<Context> foundContext, bool callCheckSupport) -> void
+    auto onBeforeRunTestCase = [&](de::SharedPtr<Context> outTestContext, bool callCheckSupport) -> void
     {
         {
 #ifdef CTS_USES_VULKANSC
@@ -520,7 +523,7 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
         vktCase->delayedInit();
         if (callCheckSupport)
         {
-            vktCase->checkSupport(*foundContext);
+            vktCase->checkSupport(*outTestContext);
         }
         m_progCollection.clear();
         vktCase->initPrograms(sourceProgs);
@@ -595,7 +598,7 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     }
 
     if (m_renderDoc)
-        m_renderDoc->startFrame(m_defaultContextManager->getInstanceHandle());
+        m_renderDoc->startFrame(m_contextManager->getInstanceHandle());
 
     DE_ASSERT(nullptr == m_testInstance);
 
@@ -609,24 +612,20 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
     delete m_testInstance;
     m_testInstance = nullptr;
 
-    // Sometimes even the default context may not be created correctly,
-    // e.g. due to incorrect program input parameters. To eliminate potential
-    // null pointer dereference we introduce an appropriate variable and use
-    // the test context taken from the test.
-    const bool validContext = m_context.get() != nullptr;
+    auto currentContext = getCurrentContext(testCase);
 
     if (m_contextManager && m_renderDoc)
         m_renderDoc->endFrame(m_contextManager->getInstanceHandle());
 
         // Collect and report any debug messages
 #ifndef CTS_USES_VULKANSC
-    if (validContext && m_context->hasDebugReportRecorders())
+    if (currentContext->hasDebugReportRecorders())
     {
-        const auto recorders = m_context->getDebugReportRecorders();
+        const auto recorders = currentContext->getDebugReportRecorders();
         for (const auto &r : recorders)
         {
             if (r != nullptr)
-                collectAndReportDebugMessages(*r, *m_context);
+                collectAndReportDebugMessages(*r, *currentContext);
         }
     }
 #endif // CTS_USES_VULKANSC
@@ -648,24 +647,18 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
 
             // Clean up data after performing tests in subprocess and prepare system for another batch of tests
             m_testsForSubprocess.clear();
-            bool validDriver = false;
-            if (validContext)
-            {
-                const vk::DeviceInterface &vkd = getDefaultContext()->getDeviceInterface();
-                const vk::DeviceDriverSC *dds  = dynamic_cast<const vk::DeviceDriverSC *>(&vkd);
-                if (validDriver = dds != nullptr; validDriver)
-                    dds->reset();
-            }
+            const vk::DeviceInterface &vkd = getDefaultContext()->getDeviceInterface();
+            const vk::DeviceDriverSC *dds  = dynamic_cast<const vk::DeviceDriverSC *>(&vkd);
+            if (dds == nullptr)
+                TCU_THROW(InternalError, "Undefined device driver for Vulkan SC");
+            dds->reset();
             m_resourceInterface->resetObjects();
 
             suppressStandardOutput();
             log.supressLogging(true);
-
-            if (false == validDriver)
-                TCU_THROW(InternalError, "Undefined device driver for Vulkan SC");
         }
     }
-    else if (validContext)
+    else
     {
         bool faultFail = false;
         std::lock_guard<std::mutex> lock(Context::m_faultDataMutex);
@@ -682,11 +675,12 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
             Context::m_faultData.clear();
         }
 
-        const vk::DeviceInterface &vkd = m_context->getDeviceInterface();
+        const vk::DeviceInterface &vkd = currentContext->getDeviceInterface();
         VkBool32 unrecordedFaults      = VK_FALSE;
         uint32_t faultCount            = 0;
-        VkResult result = vkd.getFaultData(m_context->getDevice(), VK_FAULT_QUERY_BEHAVIOR_GET_AND_CLEAR_ALL_FAULTS,
-                                           &unrecordedFaults, &faultCount, nullptr);
+        VkResult result =
+            vkd.getFaultData(currentContext->getDevice(), VK_FAULT_QUERY_BEHAVIOR_GET_AND_CLEAR_ALL_FAULTS,
+                             &unrecordedFaults, &faultCount, nullptr);
         if (result != VK_SUCCESS)
         {
             log << TestLog::Message << "vkGetFaultData returned error: " << getResultName(result)
@@ -701,7 +695,7 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
                 faultData[i]       = {};
                 faultData[i].sType = VK_STRUCTURE_TYPE_FAULT_DATA;
             }
-            result = vkd.getFaultData(m_context->getDevice(), VK_FAULT_QUERY_BEHAVIOR_GET_AND_CLEAR_ALL_FAULTS,
+            result = vkd.getFaultData(currentContext->getDevice(), VK_FAULT_QUERY_BEHAVIOR_GET_AND_CLEAR_ALL_FAULTS,
                                       &unrecordedFaults, &faultCount, faultData.data());
             if (result != VK_SUCCESS)
             {
@@ -772,7 +766,7 @@ void TestCaseExecutor::logUnusedShaders(tcu::TestCase *testCase)
     }
 }
 
-tcu::TestNode::IterateResult TestCaseExecutor::iterate(tcu::TestCase *)
+tcu::TestNode::IterateResult TestCaseExecutor::iterate(tcu::TestCase *testCase)
 {
     DE_ASSERT(m_testInstance);
 
@@ -780,15 +774,15 @@ tcu::TestNode::IterateResult TestCaseExecutor::iterate(tcu::TestCase *)
 
     if (result.isComplete())
     {
-        auto defaultContext = getDefaultContext();
+        auto currentContext = getCurrentContext(testCase);
 
         // Vulkan tests shouldn't set result directly except when using a debug report messenger to catch validation errors.
-        DE_ASSERT(defaultContext->getTestContext().getTestResult() == QP_TEST_RESULT_LAST ||
-                  defaultContext->resultSetOnValidation());
+        DE_ASSERT(currentContext->getTestContext().getTestResult() == QP_TEST_RESULT_LAST ||
+                  currentContext->resultSetOnValidation());
 
         // Override result if not set previously by a debug report messenger.
-        if (!defaultContext->resultSetOnValidation())
-            defaultContext->getTestContext().setTestResult(result.getCode(), result.getDescription().c_str());
+        if (!currentContext->resultSetOnValidation())
+            currentContext->getTestContext().setTestResult(result.getCode(), result.getDescription().c_str());
         return tcu::TestNode::STOP;
     }
     else
@@ -806,11 +800,13 @@ void TestCaseExecutor::deinitTestPackage(tcu::TestContext &testCtx)
 
             // Clean up data after performing tests in subprocess and prepare system for another batch of tests
             m_testsForSubprocess.clear();
+
             const vk::DeviceInterface &vkd = getDefaultContext()->getDeviceInterface();
             const vk::DeviceDriverSC *dds  = dynamic_cast<const vk::DeviceDriverSC *>(&vkd);
             if (dds == nullptr)
                 TCU_THROW(InternalError, "Undefined device driver for Vulkan SC");
             dds->reset();
+
             m_resourceInterface->resetObjects();
         }
 
@@ -828,6 +824,20 @@ void TestCaseExecutor::deinitTestPackage(tcu::TestContext &testCtx)
 de::SharedPtr<Context> TestCaseExecutor::getDefaultContext() const
 {
     return m_defaultContextManager->getContextForDevice(DevCaps::DefDevId);
+}
+
+de::SharedPtr<Context> TestCaseExecutor::getCurrentContext(tcu::TestCase *testCase) const
+{
+    TestCase *vktCase = dynamic_cast<TestCase *>(testCase);
+    DE_ASSERT(vktCase);
+    const auto defaultContext = getDefaultContext();
+    if (m_contextManager)
+    {
+        const auto currentContext = m_contextManager->getContextForDevice(vktCase->getRequiredCapabilitiesId());
+        if (currentContext)
+            return currentContext;
+    }
+    return defaultContext;
 }
 
 bool TestCaseExecutor::usesLocalStatus(tcu::TestContext &testContext)

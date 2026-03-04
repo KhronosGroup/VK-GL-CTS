@@ -497,7 +497,7 @@ struct InstCaps
     // Creates InstCaps class with id=id_ parameter. This allows the ContextManager class to distinguish
     // whether the test needs a different instance than the default one.
     InstCaps(const vk::PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine, const std::string &id_,
-             vkt::TestCase *testCase, const InstCaps *hint = nullptr, bool dontCreateDefaultDeviceFlag = true);
+             vkt::TestCase *testCase, const InstCaps *hint = nullptr, bool dontCreateDefaultDeviceFlag = false);
 
     // All fields below are initialized in the same way as in the default instance.
     const uint32_t maximumFrameworkVulkanVersion;
@@ -708,8 +708,10 @@ public:
     uint32_t removeInstancesThatShouldBeRemovedOnTestExit(ContextManager *mgr);
     // In de::SharedPtr<> there is no such thing as std::shared_from_this(), so to the function
     // is passed a pointer _self_ to ContextManager, for which the findContext function is called.
+    auto createDefaultDevice(de::SharedPtr<ContextManager> owner, vk::BinaryCollection &programs,
+                             tcu::TestContext &testContext, bool *alreadyExists = nullptr) -> de::SharedPtr<Context>;
     auto findContext(de::SharedPtr<ContextManager> self, vkt::TestCase *testCase,
-                     de::SharedPtr<Context> &defaultContext, de::SharedPtr<ContextManager> defaultManager,
+                     de::SharedPtr<Context> &outTestContext, de::SharedPtr<ContextManager> defaultManager,
                      vk::BinaryCollection &programs,
                      std::function<void(de::SharedPtr<Context>, bool)> onBeforeRunTestCase) -> de::SharedPtr<Context>;
     auto findCustomManager(vkt::TestCase *testCase, de::SharedPtr<ContextManager> defaultContextManager,

@@ -590,7 +590,7 @@ void ContextManager::keepMaxCustomDeviceCount()
 }
 
 InstCaps::InstCaps(const PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine)
-    : InstCaps(vkPlatform, commandLine, InstCaps::DefInstId, nullptr)
+    : InstCaps(vkPlatform, commandLine, InstCaps::DefInstId, nullptr, nullptr, false)
 {
 }
 
@@ -684,41 +684,49 @@ de::SharedPtr<ContextManager> ContextManager::findCustomManager(vkt::TestCase *t
     return defaultContextManager;
 }
 
+de::SharedPtr<Context> ContextManager::createDefaultDevice(de::SharedPtr<ContextManager> owner,
+                                                           vk::BinaryCollection &programs,
+                                                           tcu::TestContext &testContext, bool *alreadyExists)
+
+{
+    if (alreadyExists)
+    {
+        *alreadyExists = true;
+    }
+    auto isDef = [](const Item &item) { return item.first->isDefaultContext(); };
+    auto def   = std::find_if(owner->m_contexts.begin(), owner->m_contexts.end(), isDef);
+    if (owner->m_contexts.end() == def)
+    {
+        de::SharedPtr<DevCaps> caps(new DevCaps(DevCaps::DefDevId, this, testContext));
+        de::SharedPtr<DevCaps::RuntimeData> runtimeData(new DevCaps::RuntimeData(*caps));
+        de::SharedPtr<Context> ctx(new Context(testContext, m_platformInterface, programs, owner,
+                                               vk::Move<vk::VkDevice>(), caps->id, runtimeData,
+                                               &getDeviceExtensions()));
+        owner->m_contexts.emplace_back(std::make_pair(ctx, caps));
+        def = std::find_if(owner->m_contexts.begin(), owner->m_contexts.end(), isDef);
+        if (alreadyExists)
+        {
+            *alreadyExists = true;
+        }
+    }
+
+    DE_ASSERT(owner->m_contexts.end() != def);
+
+    return def->first;
+}
+
 de::SharedPtr<Context> ContextManager::findContext(
-    de::SharedPtr<ContextManager> self, TestCase *testCase, de::SharedPtr<Context> &defaultContext,
+    de::SharedPtr<ContextManager> self, TestCase *testCase, de::SharedPtr<Context> &outTestContext,
     de::SharedPtr<ContextManager> defaultManager, vk::BinaryCollection &programs,
     std::function<void(de::SharedPtr<Context>, bool)> onBeforeRunTestCase)
 {
-    de::SharedPtr<Context> checkContext;
+    bool alreadyExists = false;
+    de::SharedPtr<Context> fallbackContext;
 
     tcu::TestContext &testContext = testCase->getTestContext();
 
-    // Create context with default device for compatibility with existing code.
-    // If any of the calls throws an exception, the context with the default
-    // device will be returned from this function.
-    // The ddm parameter is a pointer to the ContextManager on which to create
-    // a default device in case the function fails.
-    auto createDefaultDevice = [&](de::SharedPtr<ContextManager> ddm) -> void
-    {
-        auto isDef = [](const Item &item) { return item.first->isDefaultContext(); };
-        auto def   = std::find_if(ddm->m_contexts.begin(), ddm->m_contexts.end(), isDef);
-        if (ddm->m_contexts.end() == def)
-        {
-            de::SharedPtr<DevCaps> caps(new DevCaps(DevCaps::DefDevId, this, testContext));
-            de::SharedPtr<DevCaps::RuntimeData> runtimeData(new DevCaps::RuntimeData(*caps));
-            de::SharedPtr<Context> ctx(new Context(testContext, m_platformInterface, programs, ddm,
-                                                   vk::Move<vk::VkDevice>(), caps->id, runtimeData,
-                                                   &getDeviceExtensions()));
-            ddm->m_contexts.emplace_back(std::make_pair(ctx, caps));
-            def = std::find_if(ddm->m_contexts.begin(), ddm->m_contexts.end(), isDef);
-        }
-
-        DE_ASSERT(ddm->m_contexts.end() != def);
-
-        defaultContext = def->first;
-    };
-
-    createDefaultDevice(defaultManager);
+    // Create or get context with default device for compatibility with existing code.
+    outTestContext = createDefaultDevice(defaultManager, programs, testContext, &alreadyExists);
 
     auto initDeviceCapabilities = [&](DevCaps &caps) -> void
     {
@@ -728,9 +736,7 @@ de::SharedPtr<Context> ContextManager::findContext(
         }
         catch (const tcu::Exception &)
         {
-            createDefaultDevice(defaultManager);
-            onBeforeRunTestCase(defaultContext, false);
-
+            fallbackContext = {};
             throw;
         }
     };
@@ -740,6 +746,9 @@ de::SharedPtr<Context> ContextManager::findContext(
         // check if context with specified capabilities id already exists
         const auto searchedId = testCase->getRequiredCapabilitiesId();
 
+        // The default ContextManager will never want to destroy its devices,
+        // but any other ContextManager may want to, including destroying the
+        // default device, by calling InstCaps::setDestroyAllDevices().
         const auto wantsDestroyDevices = getDestroyAllDevices();
         if (wantsDestroyDevices.first)
         {
@@ -749,28 +758,39 @@ de::SharedPtr<Context> ContextManager::findContext(
         {
             for (Item &ctx : m_contexts)
             {
-                if (ctx.second->shouldRecreateDeviceOnTestEnter())
-                {
-                    destroyDevice(ctx.second->id);
-                    break;
-                }
-
                 if (ctx.second->id == searchedId)
                 {
-                    checkContext = ctx.first;
-                    onBeforeRunTestCase(checkContext, ctx.second->getCallCheckSupport());
-                    return checkContext;
+                    if (ctx.second->shouldRecreateDeviceOnTestEnter())
+                    {
+                        destroyDevice(ctx.second->id);
+                        break;
+                    }
+
+                    fallbackContext = ctx.first;
+                    outTestContext  = fallbackContext;
+                    onBeforeRunTestCase(fallbackContext, ctx.second->getCallCheckSupport());
+                    return fallbackContext;
                 }
             }
         }
 
-        if (false == dontCreateDefaultDevice())
+        if (dontCreateDefaultDevice() && (searchedId == DevCaps::DefDevId))
         {
-            createDefaultDevice(self);
+            std::ostringstream os;
+            os << '\"' << this->id
+               << " declared not to create a default device "
+                  "but did not overwrite the TestCase::getRequiredCapabilitiesId() method.";
+            TCU_THROW(EnforceDefaultContext, os.str());
+        }
+
+        if (false == dontCreateDefaultDevice() || (searchedId == DevCaps::DefDevId))
+        {
+            outTestContext = createDefaultDevice(self, programs, testContext, &alreadyExists);
             if (searchedId == DevCaps::DefDevId)
             {
-                onBeforeRunTestCase(defaultContext, true);
-                return defaultContext;
+                fallbackContext = outTestContext;
+                onBeforeRunTestCase(outTestContext, true);
+                return outTestContext;
             }
         }
 
@@ -789,25 +809,23 @@ de::SharedPtr<Context> ContextManager::findContext(
 
             de::SharedPtr<Context> ctx(new Context(testContext, m_platformInterface, programs, self, dev, caps->id,
                                                    runtimeData, &caps->getPhysicalDeviceExtensions()));
-            checkContext = ctx;
+            fallbackContext = ctx;
+            outTestContext  = ctx;
             keepMaxCustomDeviceCount();
-            onBeforeRunTestCase(ctx, caps->getCallCheckSupport());
             m_contexts.emplace_back(std::make_pair(ctx, caps));
+            onBeforeRunTestCase(ctx, caps->getCallCheckSupport());
 
             return m_contexts.back().first;
         }
     }
     catch (const tcu::Exception &)
     {
-        if (checkContext)
-            defaultContext = checkContext;
-        else
-            createDefaultDevice(defaultManager);
-
+        outTestContext = fallbackContext ? fallbackContext :
+                                           createDefaultDevice(defaultManager, programs, testContext, &alreadyExists);
         throw;
     }
 
-    return checkContext;
+    return fallbackContext;
 }
 
 DevCaps::RuntimeData_::RuntimeData_(const DevCaps &caps)
