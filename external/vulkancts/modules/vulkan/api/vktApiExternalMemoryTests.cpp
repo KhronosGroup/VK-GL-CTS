@@ -228,12 +228,24 @@ vk::Move<vk::VkDevice> createTestDevice(const Context &context, const vk::Platfo
     bool useExternalFence     = false;
     bool useExternalMemory    = false;
     std::vector<const char *> deviceExtensions;
+    void *enabledFeatures = protectedFeatures;
+    vk::VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT drmDrmSyncobjFeatures;
 
     if ((externalSemaphoreTypes & (vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT |
-                                   vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)) != 0)
+                                   vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT |
+                                   vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_DRM_SYNCOBJ_BIT_EXT)) != 0)
     {
         deviceExtensions.push_back("VK_KHR_external_semaphore_fd");
         useExternalSemaphore = true;
+    }
+
+    if ((externalSemaphoreTypes & vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_DRM_SYNCOBJ_BIT_EXT) != 0)
+    {
+        drmDrmSyncobjFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_DRM_SYNCOBJ_FEATURES_EXT;
+        drmDrmSyncobjFeatures.pNext = enabledFeatures;
+        drmDrmSyncobjFeatures.externalSemaphoreDrmSyncobj = VK_TRUE;
+        enabledFeatures = &drmDrmSyncobjFeatures;
+        deviceExtensions.push_back("VK_EXT_external_semaphore_drm_syncobj");
     }
 
     if ((externalFenceTypes &
@@ -339,7 +351,7 @@ vk::Move<vk::VkDevice> createTestDevice(const Context &context, const vk::Platfo
 
                                                       queueFamilyIndex, 1u, &priority}};
     const vk::VkDeviceCreateInfo deviceCreateInfo = {vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                                                     protectedFeatures,
+                                                     enabledFeatures,
                                                      0u,
 
                                                      DE_LENGTH_OF_ARRAY(queues),
@@ -850,6 +862,14 @@ tcu::TestStatus testSemaphoreQueries(Context &context, const TestSemaphoreQuerie
 
         if (properties.exportFromImportedHandleTypes & vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT)
             return tcu::TestStatus::fail("Timeline semaphores imported from SYNC_FD");
+    }
+    else
+    {
+        if (properties.compatibleHandleTypes & vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_DRM_SYNCOBJ_BIT_EXT)
+            return tcu::TestStatus::fail("Binary semaphores are not compatible with DRM_SYNCOBJ");
+
+        if (properties.exportFromImportedHandleTypes & vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_DRM_SYNCOBJ_BIT_EXT)
+            return tcu::TestStatus::fail("Binary semaphores imported from DRM_SYNCOBJ");
     }
 
     return tcu::TestStatus::pass("Pass");
@@ -5349,7 +5369,8 @@ de::MovePtr<tcu::TestCaseGroup> createSemaphoreTests(tcu::TestContext &testCtx,
         }
 
         if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT ||
-            externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)
+            externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT ||
+            externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_DRM_SYNCOBJ_BIT_EXT)
         {
             // \note Not supported on WIN32 handles
             // Test exporting semaphore multiple times.
@@ -5402,6 +5423,8 @@ de::MovePtr<tcu::TestCaseGroup> createSemaphoreTests(tcu::TestContext &testCtx)
         createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT).release());
     semaphoreGroup->addChild(
         createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA).release());
+    semaphoreGroup->addChild(
+        createSemaphoreTests(testCtx, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_DRM_SYNCOBJ_BIT_EXT).release());
 
     return semaphoreGroup;
 }

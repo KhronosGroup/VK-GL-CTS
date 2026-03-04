@@ -58,4 +58,5 @@ Move<VkDataGraphPipelineSessionARM>	createDataGraphPipelineSessionARM	(const Dev
 Move<VkIndirectCommandsLayoutEXT>	createIndirectCommandsLayoutEXT		(const DeviceInterface& vk, VkDevice device, const VkIndirectCommandsLayoutCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkIndirectExecutionSetEXT>		createIndirectExecutionSetEXT		(const DeviceInterface& vk, VkDevice device, const VkIndirectExecutionSetCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkSurfaceKHR>					createSurfaceOHOS					(const InstanceInterface& vk, VkInstance instance, const VkSurfaceCreateInfoOHOS* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
+Move<VkSurfaceKHR>					createUbmSurfaceSEC					(const InstanceInterface& vk, VkInstance instance, const VkUbmSurfaceCreateInfoSEC* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkAccelerationStructureKHR>	createAccelerationStructureKHR		(const DeviceInterface& vk, VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);

@@ -1072,6 +1072,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalFormatR
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalImageFormatInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemoryHostPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalSemaphoreInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalTensorInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFaultFeaturesEXT& value);
@@ -1536,6 +1537,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkTimelineSemaphoreSubmitInfo& 
 std::ostream&	operator<<	(std::ostream& s, const VkTraceRaysIndirectCommand2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkTraceRaysIndirectCommandKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkTransformMatrixKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkUbmSurfaceCreateInfoSEC& value);
 std::ostream&	operator<<	(std::ostream& s, const VkValidationFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkValidationFlagsEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputAttributeDescription& value);

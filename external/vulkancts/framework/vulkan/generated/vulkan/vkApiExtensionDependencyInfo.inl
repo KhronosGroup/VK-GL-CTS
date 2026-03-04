@@ -400,6 +400,18 @@ bool check_VK_QNX_screen_surface(const tcu::UVec2& v, const ExtPropVect& vIEP, c
 	return isSupported(vIEP, "VK_KHR_surface");
 }
 
+bool check_VK_SEC_ubm_surface(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vDEP);
+
+	if (!isSupported(vIEP, "VK_SEC_ubm_surface"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_surface
+	return isSupported(vIEP, "VK_KHR_surface");
+}
+
 static const DependencyCheckVect instanceExtensionDependencies
 {
 	std::make_pair("VK_EXT_acquire_drm_display",				&check_VK_EXT_acquire_drm_display),
@@ -433,6 +445,7 @@ static const DependencyCheckVect instanceExtensionDependencies
 	std::make_pair("VK_NV_display_stereo",						&check_VK_NV_display_stereo),
 	std::make_pair("VK_OHOS_surface",							&check_VK_OHOS_surface),
 	std::make_pair("VK_QNX_screen_surface",						&check_VK_QNX_screen_surface),
+	std::make_pair("VK_SEC_ubm_surface",						&check_VK_SEC_ubm_surface),
 };
 
 bool check_VK_AMDX_dense_geometry_format(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1125,6 +1138,18 @@ bool check_VK_EXT_external_memory_metal(const tcu::UVec2& v, const ExtPropVect& 
 
 	// depends attribute in xml: VK_KHR_external_memory,VK_VERSION_1_1
 	return (isSupported(vDEP, "VK_KHR_external_memory") || isCompatible(1, 1, v));
+}
+
+bool check_VK_EXT_external_semaphore_drm_syncobj(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_external_semaphore_drm_syncobj"))
+		return true;
+
+	// depends attribute in xml: VK_VERSION_1_2
+	return isCompatible(1, 2, v);
 }
 
 bool check_VK_EXT_fragment_density_map(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -4533,6 +4558,18 @@ bool check_VK_VALVE_mutable_descriptor_type(const tcu::UVec2& v, const ExtPropVe
 	return (isCompatible(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance3"));
 }
 
+bool check_VK_VALVE_shader_mixed_float_dot_product(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_VALVE_shader_mixed_float_dot_product"))
+		return true;
+
+	// depends attribute in xml: (VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+(VK_KHR_shader_float16_int8,VK_VERSION_1_2)
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && (isSupported(vDEP, "VK_KHR_shader_float16_int8") || isCompatible(1, 2, v)));
+}
+
 bool check_VK_VALVE_video_encode_rgb_conversion(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4604,6 +4641,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_external_memory_dma_buf",						&check_VK_EXT_external_memory_dma_buf),
 	std::make_pair("VK_EXT_external_memory_host",							&check_VK_EXT_external_memory_host),
 	std::make_pair("VK_EXT_external_memory_metal",							&check_VK_EXT_external_memory_metal),
+	std::make_pair("VK_EXT_external_semaphore_drm_syncobj",					&check_VK_EXT_external_semaphore_drm_syncobj),
 	std::make_pair("VK_EXT_fragment_density_map",							&check_VK_EXT_fragment_density_map),
 	std::make_pair("VK_EXT_fragment_density_map2",							&check_VK_EXT_fragment_density_map2),
 	std::make_pair("VK_EXT_fragment_density_map_offset",					&check_VK_EXT_fragment_density_map_offset),
@@ -4878,6 +4916,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_VALVE_descriptor_set_host_mapping",					&check_VK_VALVE_descriptor_set_host_mapping),
 	std::make_pair("VK_VALVE_fragment_density_map_layered",					&check_VK_VALVE_fragment_density_map_layered),
 	std::make_pair("VK_VALVE_mutable_descriptor_type",						&check_VK_VALVE_mutable_descriptor_type),
+	std::make_pair("VK_VALVE_shader_mixed_float_dot_product",				&check_VK_VALVE_shader_mixed_float_dot_product),
 	std::make_pair("VK_VALVE_video_encode_rgb_conversion",					&check_VK_VALVE_video_encode_rgb_conversion),
 };
 
@@ -4972,6 +5011,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_external_memory_dma_buf"),
 	std::make_tuple(1, 0, "VK_EXT_external_memory_host"),
 	std::make_tuple(1, 0, "VK_EXT_external_memory_metal"),
+	std::make_tuple(1, 2, "VK_EXT_external_semaphore_drm_syncobj"),
 	std::make_tuple(1, 0, "VK_EXT_filter_cubic"),
 	std::make_tuple(1, 0, "VK_EXT_fragment_density_map"),
 	std::make_tuple(1, 0, "VK_EXT_fragment_density_map2"),
@@ -5331,8 +5371,10 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_QNX_screen_surface"),
 	std::make_tuple(1, 0, "VK_SEC_amigo_profiling"),
 	std::make_tuple(1, 0, "VK_SEC_pipeline_cache_incremental_mode"),
+	std::make_tuple(1, 0, "VK_SEC_ubm_surface"),
 	std::make_tuple(1, 0, "VK_VALVE_descriptor_set_host_mapping"),
 	std::make_tuple(1, 0, "VK_VALVE_fragment_density_map_layered"),
 	std::make_tuple(1, 0, "VK_VALVE_mutable_descriptor_type"),
+	std::make_tuple(1, 0, "VK_VALVE_shader_mixed_float_dot_product"),
 	std::make_tuple(1, 0, "VK_VALVE_video_encode_rgb_conversion"),
 };

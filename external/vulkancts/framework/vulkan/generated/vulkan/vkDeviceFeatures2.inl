@@ -1407,6 +1407,45 @@ tcu::TestStatus testPhysicalDeviceFeatureExtendedDynamicStateFeaturesEXT (Contex
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureExternalSemaphoreDrmSyncobjFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT deviceExternalSemaphoreDrmSyncobjFeaturesEXT[count];
+    const bool                                             isExternalSemaphoreDrmSyncobjFeaturesEXT = checkExtension(properties, "VK_EXT_external_semaphore_drm_syncobj");
+
+    if (!isExternalSemaphoreDrmSyncobjFeaturesEXT)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceExternalSemaphoreDrmSyncobjFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT));
+        deviceExternalSemaphoreDrmSyncobjFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_DRM_SYNCOBJ_FEATURES_EXT;
+        deviceExternalSemaphoreDrmSyncobjFeaturesEXT[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceExternalSemaphoreDrmSyncobjFeaturesEXT[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceExternalSemaphoreDrmSyncobjFeaturesEXT[0] << TestLog::EndMessage;
+
+    if (
+        deviceExternalSemaphoreDrmSyncobjFeaturesEXT[0].externalSemaphoreDrmSyncobj != deviceExternalSemaphoreDrmSyncobjFeaturesEXT[1].externalSemaphoreDrmSyncobj)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureFaultFeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -7117,6 +7156,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "extended_dynamic_state2_features_ext", testPhysicalDeviceFeatureExtendedDynamicState2FeaturesEXT);
 	addFunctionCase(testGroup, "extended_dynamic_state3_features_ext", testPhysicalDeviceFeatureExtendedDynamicState3FeaturesEXT);
 	addFunctionCase(testGroup, "extended_dynamic_state_features_ext", testPhysicalDeviceFeatureExtendedDynamicStateFeaturesEXT);
+	addFunctionCase(testGroup, "external_semaphore_drm_syncobj_features_ext", testPhysicalDeviceFeatureExternalSemaphoreDrmSyncobjFeaturesEXT);
 	addFunctionCase(testGroup, "fault_features_ext", testPhysicalDeviceFeatureFaultFeaturesEXT);
 	addFunctionCase(testGroup, "fragment_density_map2_features_ext", testPhysicalDeviceFeatureFragmentDensityMap2FeaturesEXT);
 	addFunctionCase(testGroup, "fragment_density_map_features_ext", testPhysicalDeviceFeatureFragmentDensityMapFeaturesEXT);
