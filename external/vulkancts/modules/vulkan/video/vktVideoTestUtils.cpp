@@ -740,6 +740,19 @@ de::MovePtr<VkVideoEncodeUsageInfoKHR> getEncodeUsageInfo(void *pNext, VkVideoEn
     return result;
 }
 
+de::MovePtr<VkVideoDecodeUsageInfoKHR> getDecodeUsageInfo(void *pNext, VkVideoDecodeUsageFlagsKHR videoUsageHints)
+{
+    VkVideoDecodeUsageInfoKHR *decodeUsageInfo = new VkVideoDecodeUsageInfoKHR{
+        VK_STRUCTURE_TYPE_VIDEO_DECODE_USAGE_INFO_KHR, //  VkStructureType sType
+        pNext,                                         //  const void* pNext
+        videoUsageHints,                               //  VkVideoDecodeUsageFlagsKHR videoUsageHints
+    };
+
+    de::MovePtr<VkVideoDecodeUsageInfoKHR> result = de::MovePtr<VkVideoDecodeUsageInfoKHR>(decodeUsageInfo);
+
+    return result;
+}
+
 de::MovePtr<VkVideoProfileInfoKHR> getVideoProfile(VkVideoCodecOperationFlagBitsKHR videoCodecOperation, void *pNext,
                                                    VkVideoChromaSubsamplingFlagsKHR chromaSubsampling,
                                                    VkVideoComponentBitDepthFlagsKHR lumaBitDepth,
