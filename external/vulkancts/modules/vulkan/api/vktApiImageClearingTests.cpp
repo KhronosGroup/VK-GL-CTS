@@ -516,6 +516,8 @@ public:
 
     void checkSupport(Context &context) const override
     {
+        const vk::InstanceInterface &vki = context.getInstanceInterface();
+
 #ifndef CTS_USES_VULKANSC
         if (m_params.imageFormat == VK_FORMAT_A8_UNORM_KHR ||
             m_params.imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
@@ -527,6 +529,17 @@ public:
 
         if (m_params.separateDepthStencilLayoutMode != SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE)
             context.requireDeviceFunctionality("VK_KHR_separate_depth_stencil_layouts");
+
+        {
+            const VkFormatProperties props =
+                vk::getPhysicalDeviceFormatProperties(vki, context.getPhysicalDevice(), m_params.imageFormat);
+            const VkFormatFeatureFlags features = m_params.imageTiling == VK_IMAGE_TILING_OPTIMAL ?
+                                                      props.optimalTilingFeatures :
+                                                      props.linearTilingFeatures;
+
+            if ((features & (vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_DST_BIT)) == 0)
+                TCU_THROW(NotSupportedError, "Format not supported for transfer");
+        }
     }
 
 private:

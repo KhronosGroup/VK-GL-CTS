@@ -583,6 +583,12 @@ void MismatchedWriteOpTest::checkSupport(Context &context) const
     {
         TCU_THROW(NotSupportedError, "Creating storage image with this format is not supported");
     }
+
+    if ((formatProperties.optimalTilingFeatures &
+         (VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT)) == 0)
+    {
+        TCU_THROW(NotSupportedError, "Format is not supported for transfer");
+    }
 }
 
 TextureFormat MismatchedWriteOpTest::getBufferFormat(void) const
