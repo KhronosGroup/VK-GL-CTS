@@ -26,15 +26,11 @@
 #include "deSharedPtr.hpp"
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
-#include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
-#include "vkMemUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkQueryUtil.hpp"
-#include "vkCmdUtil.hpp"
-#include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "deRandom.hpp"
 #include "deUniquePtr.hpp"
@@ -46,9 +42,7 @@
 #include <cstdint>
 #include <string>
 
-namespace vkt
-{
-namespace synchronization
+namespace vkt::synchronization
 {
 namespace
 {
@@ -839,6 +833,15 @@ public:
         , m_maintenance9(maintenance9)
         , m_computeQueue(computeQueue)
     {
+        if (m_syncPrimitive == SYNC_PRIMITIVE_TIMELINE_SEMAPHORE)
+        {
+            for (auto copyOp : s_copyOps)
+            {
+                if (isResourceSupported(copyOp, m_resourceDesc))
+                    m_copyOpVec.push_back(
+                        de::SharedPtr<OperationSupport>(makeOperationSupport(copyOp, m_resourceDesc).release()));
+            }
+        }
     }
 
     void initPrograms(SourceCollections &programCollection) const
@@ -848,11 +851,8 @@ public:
 
         if (m_syncPrimitive == SYNC_PRIMITIVE_TIMELINE_SEMAPHORE)
         {
-            for (uint32_t copyOpNdx = 0; copyOpNdx < DE_LENGTH_OF_ARRAY(s_copyOps); copyOpNdx++)
-            {
-                if (isResourceSupported(s_copyOps[copyOpNdx], m_resourceDesc))
-                    makeOperationSupport(s_copyOps[copyOpNdx], m_resourceDesc, false)->initPrograms(programCollection);
-            }
+            for (auto &copyOp : m_copyOpVec)
+                copyOp->initPrograms(programCollection);
         }
     }
 
@@ -870,9 +870,14 @@ public:
         }
 #endif // CTS_USES_VULKANSC
 
-        if (m_syncPrimitive == SYNC_PRIMITIVE_TIMELINE_SEMAPHORE &&
-            !context.getTimelineSemaphoreFeatures().timelineSemaphore)
-            TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
+        if (m_syncPrimitive == SYNC_PRIMITIVE_TIMELINE_SEMAPHORE)
+        {
+            if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
+                TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
+
+            for (auto &copyOp : m_copyOpVec)
+                copyOp->checkSupport(context);
+        }
 
         if (m_resourceDesc.type == RESOURCE_TYPE_IMAGE)
         {
@@ -896,6 +901,9 @@ public:
 
         if (m_computeQueue)
             context.getComputeQueue(); // Will throw NotSupportedError if not available.
+
+        m_writeOp->checkSupport(context);
+        m_readOp->checkSupport(context);
     }
 
     TestInstance *createInstance(Context &context) const
@@ -926,6 +934,7 @@ private:
     const ResourceDescription m_resourceDesc;
     const de::SharedPtr<OperationSupport> m_writeOp;
     const de::SharedPtr<OperationSupport> m_readOp;
+    std::vector<de::SharedPtr<OperationSupport>> m_copyOpVec;
     const SyncPrimitive m_syncPrimitive;
     PipelineCacheData &m_pipelineCacheData;
     const bool m_maintenance9;
@@ -1290,5 +1299,4 @@ tcu::TestCaseGroup *createSynchronizedOperationSingleQueueTests(tcu::TestContext
     return createTestGroup(testCtx, "single_queue", createTests, data);
 }
 
-} // namespace synchronization
-} // namespace vkt
+} // namespace vkt::synchronization

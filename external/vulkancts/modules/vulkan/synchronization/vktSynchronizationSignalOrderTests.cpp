@@ -24,9 +24,7 @@
 
 #include "vktSynchronizationSignalOrderTests.hpp"
 #include "vktSynchronizationOperation.hpp"
-#include "vktSynchronizationOperationTestData.hpp"
 #include "vktSynchronizationOperationResources.hpp"
-#include "vktTestCaseUtil.hpp"
 #include "vktSynchronizationUtil.hpp"
 #include "vktExternalMemoryUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
@@ -36,23 +34,16 @@
 #include "vkPlatform.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
-#include "vkImageUtil.hpp"
 #include "vkRef.hpp"
-#include "vkTypeUtil.hpp"
 
-#include "tcuTestLog.hpp"
 #include "tcuCommandLine.hpp"
 
 #include "deRandom.hpp"
-#include "deThread.hpp"
 #include "deUniquePtr.hpp"
 
 #include <limits>
-#include <set>
 
-namespace vkt
-{
-namespace synchronization
+namespace vkt::synchronization
 {
 namespace
 {
@@ -458,30 +449,6 @@ public:
         , m_rng(1234)
 
     {
-        const InstanceInterface &vki                         = context.getInstanceInterface();
-        const VkSemaphoreTypeCreateInfoKHR semaphoreTypeInfo = {
-            VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR,
-            nullptr,
-            semaphoreType,
-            0,
-        };
-        const VkPhysicalDeviceExternalSemaphoreInfo info = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO,
-                                                            &semaphoreTypeInfo, semaphoreHandleType};
-        VkExternalSemaphoreProperties properties = {VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES, nullptr, 0u, 0u,
-                                                    0u};
-
-        vki.getPhysicalDeviceExternalSemaphoreProperties(context.getPhysicalDevice(), &info, &properties);
-
-        if (m_semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR &&
-            !context.getTimelineSemaphoreFeatures().timelineSemaphore)
-            TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
-
-        if ((properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT_KHR) == 0 ||
-            (properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT_KHR) == 0)
-            TCU_THROW(NotSupportedError, "Exporting and importing semaphore type not supported");
-
-        if (!isResourceExportable())
-            TCU_THROW(NotSupportedError, "Resource not exportable");
     }
 
     Move<VkImage> createImage(const vk::DeviceInterface &vkd, vk::VkDevice device, const vk::VkExtent3D &extent,
@@ -848,10 +815,43 @@ private:
                                  m_rng.getInt(1, 100));
     }
 
-    bool isResourceExportable()
+    SynchronizationType m_type;
+    SharedPtr<OperationSupport> m_writeOpSupport;
+    SharedPtr<OperationSupport> m_readOpSupport;
+    const ResourceDescription &m_resourceDesc;
+    VkExternalMemoryHandleTypeFlagBits m_memoryHandleType;
+    VkSemaphoreType m_semaphoreType;
+    VkExternalSemaphoreHandleTypeFlagBits m_semaphoreHandleType;
+    PipelineCacheData &m_pipelineCacheData;
+    de::Random m_rng;
+};
+
+class QueueSubmitSignalOrderSharedTestCase : public TestCase
+{
+public:
+    QueueSubmitSignalOrderSharedTestCase(tcu::TestContext &testCtx, SynchronizationType type, const std::string &name,
+                                         OperationName writeOp, OperationName readOp,
+                                         const ResourceDescription &resourceDesc,
+                                         VkExternalMemoryHandleTypeFlagBits memoryHandleType,
+                                         VkSemaphoreType semaphoreType,
+                                         VkExternalSemaphoreHandleTypeFlagBits semaphoreHandleType,
+                                         PipelineCacheData &pipelineCacheData)
+        : TestCase(testCtx, name.c_str())
+        , m_type(type)
+        , m_writeOpSupport(makeOperationSupport(writeOp, resourceDesc).release())
+        , m_readOpSupport(makeOperationSupport(readOp, resourceDesc).release())
+        , m_resourceDesc(resourceDesc)
+        , m_memoryHandleType(memoryHandleType)
+        , m_semaphoreType(semaphoreType)
+        , m_semaphoreHandleType(semaphoreHandleType)
+        , m_pipelineCacheData(pipelineCacheData)
     {
-        const InstanceInterface &vki    = m_context.getInstanceInterface();
-        VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+    }
+
+    bool isResourceExportable(Context &context) const
+    {
+        const InstanceInterface &vki    = context.getInstanceInterface();
+        VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
 
         if (m_resourceDesc.type == RESOURCE_TYPE_IMAGE)
         {
@@ -865,17 +865,8 @@ private:
                 VK_IMAGE_TILING_OPTIMAL,
                 m_readOpSupport->getInResourceUsageFlags() | m_writeOpSupport->getOutResourceUsageFlags(),
                 0u};
-            VkExternalImageFormatProperties externalProperties = {
-                VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES, nullptr, {0u, 0u, 0u}};
-            VkImageFormatProperties2 formatProperties = {VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
-                                                         &externalProperties,
-                                                         {
-                                                             {0u, 0u, 0u},
-                                                             0u,
-                                                             0u,
-                                                             0u,
-                                                             0u,
-                                                         }};
+            VkExternalImageFormatProperties externalProperties = initVulkanStructure();
+            VkImageFormatProperties2 formatProperties          = initVulkanStructure(&externalProperties);
 
             {
                 const VkResult res =
@@ -918,57 +909,41 @@ private:
         }
     }
 
-    SynchronizationType m_type;
-    SharedPtr<OperationSupport> m_writeOpSupport;
-    SharedPtr<OperationSupport> m_readOpSupport;
-    const ResourceDescription &m_resourceDesc;
-    VkExternalMemoryHandleTypeFlagBits m_memoryHandleType;
-    VkSemaphoreType m_semaphoreType;
-    VkExternalSemaphoreHandleTypeFlagBits m_semaphoreHandleType;
-    PipelineCacheData &m_pipelineCacheData;
-    de::Random m_rng;
-};
-
-class QueueSubmitSignalOrderSharedTestCase : public TestCase
-{
-public:
-    QueueSubmitSignalOrderSharedTestCase(tcu::TestContext &testCtx, SynchronizationType type, const std::string &name,
-                                         OperationName writeOp, OperationName readOp,
-                                         const ResourceDescription &resourceDesc,
-                                         VkExternalMemoryHandleTypeFlagBits memoryHandleType,
-                                         VkSemaphoreType semaphoreType,
-                                         VkExternalSemaphoreHandleTypeFlagBits semaphoreHandleType,
-                                         PipelineCacheData &pipelineCacheData)
-        : TestCase(testCtx, name.c_str())
-        , m_type(type)
-        , m_writeOpSupport(makeOperationSupport(writeOp, resourceDesc).release())
-        , m_readOpSupport(makeOperationSupport(readOp, resourceDesc).release())
-        , m_resourceDesc(resourceDesc)
-        , m_memoryHandleType(memoryHandleType)
-        , m_semaphoreType(semaphoreType)
-        , m_semaphoreHandleType(semaphoreHandleType)
-        , m_pipelineCacheData(pipelineCacheData)
-    {
-    }
-
     virtual void checkSupport(Context &context) const
     {
         if (m_semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR &&
             !context.getTimelineSemaphoreFeatures().timelineSemaphore)
             TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 
-        if ((m_semaphoreHandleType == VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT ||
-             m_semaphoreHandleType == VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT) &&
-            !context.isDeviceFunctionalitySupported("VK_KHR_external_semaphore_fd"))
-            TCU_THROW(NotSupportedError, "VK_KHR_external_semaphore_fd not supported");
+        if (m_semaphoreHandleType == VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT ||
+            m_semaphoreHandleType == VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)
+            context.requireDeviceFunctionality("VK_KHR_external_semaphore_fd");
 
-        if ((m_semaphoreHandleType == VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT ||
-             m_semaphoreHandleType == VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT) &&
-            !context.isDeviceFunctionalitySupported("VK_KHR_external_semaphore_win32"))
-            TCU_THROW(NotSupportedError, "VK_KHR_external_semaphore_win32 not supported");
+        if (m_semaphoreHandleType == VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT ||
+            m_semaphoreHandleType == VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
+            context.requireDeviceFunctionality("VK_KHR_external_semaphore_win32");
 
         if (m_type == SynchronizationType::SYNCHRONIZATION2)
             context.requireDeviceFunctionality("VK_KHR_synchronization2");
+
+        const InstanceInterface &vki                     = context.getInstanceInterface();
+        VkSemaphoreTypeCreateInfoKHR semaphoreTypeInfo   = initVulkanStructure();
+        semaphoreTypeInfo.semaphoreType                  = m_semaphoreType;
+        const VkPhysicalDeviceExternalSemaphoreInfo info = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO,
+                                                            &semaphoreTypeInfo, m_semaphoreHandleType};
+        VkExternalSemaphoreProperties properties         = initVulkanStructure();
+
+        vki.getPhysicalDeviceExternalSemaphoreProperties(context.getPhysicalDevice(), &info, &properties);
+
+        if ((properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT_KHR) == 0 ||
+            (properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT_KHR) == 0)
+            TCU_THROW(NotSupportedError, "Exporting and importing semaphore type not supported");
+
+        if (!isResourceExportable(context))
+            TCU_THROW(NotSupportedError, "Resource not exportable");
+
+        m_writeOpSupport->checkSupport(context);
+        m_readOpSupport->checkSupport(context);
     }
 
     TestInstance *createInstance(Context &context) const
@@ -1181,36 +1156,37 @@ public:
         , m_rng(1234)
 
     {
-        const std::vector<VkQueueFamilyProperties> queueFamilyProperties =
-            getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+        const auto &vki                  = context.getInstanceInterface();
+        const auto queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(vki, context.getPhysicalDevice());
 
-        if (m_semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR &&
-            !context.getTimelineSemaphoreFeatures().timelineSemaphore)
-            TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
+        auto isQueueValid = [&queueFamilyProperties](uint32_t familyIdx, VkQueueFlags requiredFlags)
+        {
+            return (
+                ((queueFamilyProperties[familyIdx].queueFlags & requiredFlags) == requiredFlags) ||
+                ((requiredFlags == VK_QUEUE_TRANSFER_BIT) &&
+                 (((queueFamilyProperties[familyIdx].queueFlags & VK_QUEUE_GRAPHICS_BIT) == VK_QUEUE_GRAPHICS_BIT) ||
+                  ((queueFamilyProperties[familyIdx].queueFlags & VK_QUEUE_COMPUTE_BIT) == VK_QUEUE_COMPUTE_BIT))));
+        };
 
         VkQueueFlags writeOpQueueFlags = m_writeOpSupport->getQueueFlags(*m_operationContext);
         for (uint32_t familyIdx = 0; familyIdx < queueFamilyProperties.size(); familyIdx++)
         {
-            if (((queueFamilyProperties[familyIdx].queueFlags & writeOpQueueFlags) == writeOpQueueFlags) ||
-                ((writeOpQueueFlags == VK_QUEUE_TRANSFER_BIT) &&
-                 (((queueFamilyProperties[familyIdx].queueFlags & VK_QUEUE_GRAPHICS_BIT) == VK_QUEUE_GRAPHICS_BIT) ||
-                  ((queueFamilyProperties[familyIdx].queueFlags & VK_QUEUE_COMPUTE_BIT) == VK_QUEUE_COMPUTE_BIT))))
+            if (isQueueValid(familyIdx, writeOpQueueFlags))
             {
                 m_queueA            = getDeviceQueue(m_deviceInterface, *m_device, familyIdx, 0);
                 m_queueFamilyIndexA = familyIdx;
                 break;
             }
         }
+
+        // note moving this to checkSupport is not feasible
         if (m_queueA == nullptr)
             TCU_THROW(NotSupportedError, "No queue supporting write operation");
 
         VkQueueFlags readOpQueueFlags = m_readOpSupport->getQueueFlags(*m_operationContext);
         for (uint32_t familyIdx = 0; familyIdx < queueFamilyProperties.size(); familyIdx++)
         {
-            if (((queueFamilyProperties[familyIdx].queueFlags & readOpQueueFlags) == readOpQueueFlags) ||
-                ((readOpQueueFlags == VK_QUEUE_TRANSFER_BIT) &&
-                 (((queueFamilyProperties[familyIdx].queueFlags & VK_QUEUE_GRAPHICS_BIT) == VK_QUEUE_GRAPHICS_BIT) ||
-                  ((queueFamilyProperties[familyIdx].queueFlags & VK_QUEUE_COMPUTE_BIT) == VK_QUEUE_COMPUTE_BIT))))
+            if (isQueueValid(familyIdx, readOpQueueFlags))
             {
                 for (uint32_t queueIdx = 0; queueIdx < queueFamilyProperties[familyIdx].queueCount; queueIdx++)
                 {
@@ -1517,6 +1493,9 @@ public:
             TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
         if (m_type == SynchronizationType::SYNCHRONIZATION2)
             context.requireDeviceFunctionality("VK_KHR_synchronization2");
+
+        m_writeOpSupport->checkSupport(context);
+        m_readOpSupport->checkSupport(context);
     }
 
     TestInstance *createInstance(Context &context) const
@@ -1665,5 +1644,4 @@ tcu::TestCaseGroup *createSignalOrderTests(tcu::TestContext &testCtx, Synchroniz
     return orderingTests.release();
 }
 
-} // namespace synchronization
-} // namespace vkt
+} // namespace vkt::synchronization

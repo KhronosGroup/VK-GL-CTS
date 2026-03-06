@@ -27,7 +27,6 @@
 #include "vktCustomInstancesDevices.hpp"
 
 #include "vkDefs.hpp"
-#include "vkPlatform.hpp"
 #include "vkRef.hpp"
 #include "vkCmdUtil.hpp"
 

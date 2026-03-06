@@ -28,7 +28,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktSynchronizationNoneStageTests.hpp"
-#include "vktSynchronizationOperation.hpp"
 #include "vktSynchronizationUtil.hpp"
 #include "vktTestCase.hpp"
 
@@ -48,9 +47,7 @@
 
 #include <vector>
 
-namespace vkt
-{
-namespace synchronization
+namespace vkt::synchronization
 {
 
 using namespace vk;
@@ -1448,5 +1445,4 @@ tcu::TestCaseGroup *createNoneStageTests(tcu::TestContext &testCtx)
     return noneStageTests.release();
 }
 
-} // namespace synchronization
-} // namespace vkt
+} // namespace vkt::synchronization

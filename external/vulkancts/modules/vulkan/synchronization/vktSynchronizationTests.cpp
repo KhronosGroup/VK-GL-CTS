@@ -22,8 +22,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktSynchronizationTests.hpp"
-#include "synchronization/vktSynchronizationImplicitTests.hpp"
-#include "vktTestGroupUtil.hpp"
 #include "vktSynchronizationSmokeTests.hpp"
 #include "vktSynchronizationBasicFenceTests.hpp"
 #include "vktSynchronizationBasicSemaphoreTests.hpp"

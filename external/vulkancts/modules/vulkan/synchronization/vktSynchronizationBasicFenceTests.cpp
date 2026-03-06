@@ -26,7 +26,6 @@
 #include "vktSynchronizationUtil.hpp"
 
 #include "vkDefs.hpp"
-#include "vkPlatform.hpp"
 #include "vkRef.hpp"
 #include "vkCmdUtil.hpp"
 

@@ -25,21 +25,18 @@
 #include "vktCustomInstancesDevices.hpp"
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
-#include "vktTestCaseUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkDeviceUtil.hpp"
-#include "vkTypeUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkSafetyCriticalUtil.hpp"
 #include "deRandom.hpp"
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
-#include "tcuTestLog.hpp"
 #include "vktSynchronizationUtil.hpp"
 #include "vktSynchronizationOperation.hpp"
 #include "vktSynchronizationOperationTestData.hpp"
@@ -47,13 +44,9 @@
 #include "vktTestGroupUtil.hpp"
 #include "tcuCommandLine.hpp"
 
-#include <set>
 #include <unordered_map>
 
-namespace vkt
-{
-
-namespace synchronization
+namespace vkt::synchronization
 {
 
 namespace
@@ -267,9 +260,7 @@ class MultiQueues
     }
 
 public:
-    ~MultiQueues()
-    {
-    }
+    ~MultiQueues() = default;
 
     std::vector<QueuePair> getQueuesPairs(const VkQueueFlags flagsWrite, const VkQueueFlags flagsRead,
                                           bool requireDifferent) const
@@ -309,15 +300,12 @@ public:
                         if (write->second.queue[writeNdx] != read->second.queue[readNdx] &&
                             (!requireDifferent || write->first != read->first))
                         {
-                            queuesPairs.push_back(QueuePair(write->first, read->first, write->second.queue[writeNdx],
-                                                            read->second.queue[readNdx]));
+                            queuesPairs.emplace_back(write->first, read->first, write->second.queue[writeNdx],
+                                                     read->second.queue[readNdx]);
                             writeNdx = readNdx = std::max(writeSize, readSize); //exit from the loops
                         }
                     }
             }
-
-        if (queuesPairs.empty())
-            TCU_THROW(NotSupportedError, "Queue not found");
 
         return queuesPairs;
     }
@@ -1268,6 +1256,16 @@ public:
                       SYNC_PRIMITIVE_BINARY_SEMAPHORE);          // Not *required* but we'll restrict cases to this.
             DE_ASSERT(sharingMode == VK_SHARING_MODE_EXCLUSIVE); // These cases are about QFOT.
         }
+
+        if (m_syncPrimitive == SYNC_PRIMITIVE_TIMELINE_SEMAPHORE)
+        {
+            for (auto copyOp : s_copyOps)
+            {
+                if (isResourceSupported(copyOp, m_resourceDesc))
+                    m_copyOpVec.push_back(
+                        SharedPtr<OperationSupport>(makeOperationSupport(copyOp, m_resourceDesc).release()));
+            }
+        }
     }
 
     void initPrograms(SourceCollections &programCollection) const override
@@ -1277,11 +1275,8 @@ public:
 
         if (m_syncPrimitive == SYNC_PRIMITIVE_TIMELINE_SEMAPHORE)
         {
-            for (uint32_t copyOpNdx = 0; copyOpNdx < DE_LENGTH_OF_ARRAY(s_copyOps); copyOpNdx++)
-            {
-                if (isResourceSupported(s_copyOps[copyOpNdx], m_resourceDesc))
-                    makeOperationSupport(s_copyOps[copyOpNdx], m_resourceDesc)->initPrograms(programCollection);
-            }
+            for (auto &copyOp : m_copyOpVec)
+                copyOp->initPrograms(programCollection);
         }
     }
 
@@ -1310,14 +1305,19 @@ public:
 
         const InstanceInterface &instance     = context.getInstanceInterface();
         const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
-        const std::vector<VkQueueFamilyProperties> queueFamilyProperties =
-            getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
+        const auto queueFamilyProperties      = getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
+
         if (m_sharingMode == VK_SHARING_MODE_CONCURRENT && queueFamilyProperties.size() < 2)
             TCU_THROW(NotSupportedError, "Concurrent requires more than 1 queue family");
 
-        if (m_syncPrimitive == SYNC_PRIMITIVE_TIMELINE_SEMAPHORE &&
-            !context.getTimelineSemaphoreFeatures().timelineSemaphore)
-            TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
+        if (m_syncPrimitive == SYNC_PRIMITIVE_TIMELINE_SEMAPHORE)
+        {
+            if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
+                TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
+
+            for (auto &copyOp : m_copyOpVec)
+                copyOp->checkSupport(context);
+        }
 
         if (m_resourceDesc.type == RESOURCE_TYPE_IMAGE)
         {
@@ -1330,6 +1330,9 @@ public:
 
         if (m_maintenance9)
             context.requireDeviceFunctionality("VK_KHR_maintenance9");
+
+        m_writeOp->checkSupport(context);
+        m_readOp->checkSupport(context);
     }
 
     TestInstance *createInstance(Context &context) const override
@@ -1356,6 +1359,7 @@ protected:
     const ResourceDescription m_resourceDesc;
     const SharedPtr<OperationSupport> m_writeOp;
     const SharedPtr<OperationSupport> m_readOp;
+    std::vector<de::SharedPtr<OperationSupport>> m_copyOpVec;
     const SyncPrimitive m_syncPrimitive;
     const VkSharingMode m_sharingMode;
     const bool m_maintenance9;
@@ -1414,6 +1418,11 @@ public:
 
         if (m_maintenance9)
             context.requireDeviceFunctionality("VK_KHR_maintenance9");
+
+        m_writeOp->checkSupport(context);
+        m_readOp->checkSupport(context);
+        m_extraReadOp->checkSupport(context);
+        m_extraWriteOp->checkSupport(context);
     }
 
     TestInstance *createInstance(Context &context) const
@@ -1655,5 +1664,4 @@ tcu::TestCaseGroup *createSynchronizedOperationMultiQueueTests(tcu::TestContext 
     return createTestGroup(testCtx, "multi_queue", createTests, data, cleanupGroup);
 }
 
-} // namespace synchronization
-} // namespace vkt
+} // namespace vkt::synchronization

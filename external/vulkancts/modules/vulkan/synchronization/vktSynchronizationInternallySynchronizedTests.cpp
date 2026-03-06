@@ -31,7 +31,6 @@
 #include "vkQueryUtil.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkBufferWithMemory.hpp"
-#include "tcuTextureUtil.hpp"
 #include "vkWsiUtil.hpp"
 #include "vkWsiPlatform.hpp"
 #include "tcuPlatform.hpp"
@@ -39,9 +38,7 @@
 
 #include <cassert>
 
-namespace vkt
-{
-namespace synchronization
+namespace vkt::synchronization
 {
 
 using namespace vk;
@@ -1718,5 +1715,4 @@ tcu::TestCaseGroup *createInternallySynchronizedTests(tcu::TestContext &testCtx,
     return internallySynchronizedTests.release();
 }
 
-} // namespace synchronization
-} // namespace vkt
+} // namespace vkt::synchronization
