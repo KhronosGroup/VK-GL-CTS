@@ -22285,9 +22285,6 @@ dEQP-VK.pipeline.monolithic.stencil.nocolor.format.s8_uint.states.fail_zero.pass
 dEQP-VK.pipeline.monolithic.stencil.nocolor.format.s8_uint.states.fail_zero.pass_zero.dfail_zero.comp_equal.general
 dEQP-VK.pipeline.monolithic.stencil.nocolor.format.s8_uint.states.fail_zero.pass_zero.dfail_zero.comp_less.general
 dEQP-VK.pipeline.monolithic.stencil.nocolor.format.s8_uint.states.fail_zero.pass_zero.dfail_zero.comp_never.general
-dEQP-VK.pipeline.monolithic.timestamp.calibrated.calibration_test
-dEQP-VK.pipeline.monolithic.timestamp.calibrated.dev_domain_test
-dEQP-VK.pipeline.monolithic.timestamp.calibrated.host_domain_test
 dEQP-VK.pipeline.monolithic.timestamp.misc_tests.sequential_timestamps
 dEQP-VK.pipeline.monolithic.vertex_input.component_mismatch.r64g64_to_double
 dEQP-VK.pipeline.monolithic.vertex_input.component_mismatch.r64g64b64_to_double

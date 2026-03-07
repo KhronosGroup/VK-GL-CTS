@@ -1,3 +1,0 @@
-dEQP-VK.geometry.basic.side_effect_with_condition
-dEQP-VK.geometry.basic.side_effect_with_degenerate
-dEQP-VK.geometry.builtin_variable.outside_block.position

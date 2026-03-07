@@ -28,10 +28,14 @@
 		<option name="push" value="deqp-binary32-&gt;/data/local/tmp/deqp-binary32"/>
 		<option name="push" value="deqp-binary64-&gt;/data/local/tmp/deqp-binary64"/>
 		<option name="push" value="gles2-&gt;/data/local/tmp/gles2"/>
+		<option name="push" value="gles2-incremental-deqp-baseline.txt-&gt;/data/local/tmp/gles2-incremental-deqp-baseline.txt"/>
 		<option name="push" value="gles3-&gt;/data/local/tmp/gles3"/>
+		<option name="push" value="gles3-incremental-deqp-baseline.txt-&gt;/data/local/tmp/gles3-incremental-deqp-baseline.txt"/>
 		<option name="push" value="gles3-incremental-deqp.txt-&gt;/data/local/tmp/gles3-incremental-deqp.txt"/>
 		<option name="push" value="gles31-&gt;/data/local/tmp/gles31"/>
+		<option name="push" value="gles31-incremental-deqp-baseline.txt-&gt;/data/local/tmp/gles31-incremental-deqp-baseline.txt"/>
 		<option name="push" value="internal-&gt;/data/local/tmp/internal"/>
+		<option name="push" value="vk-incremental-deqp-baseline.txt-&gt;/data/local/tmp/vk-incremental-deqp-baseline.txt"/>
 		<option name="push" value="vk-incremental-deqp.txt-&gt;/data/local/tmp/vk-incremental-deqp.txt"/>
 		<option name="push" value="vulkan-&gt;/data/local/tmp/vulkan"/>
 	</target_preparer>
