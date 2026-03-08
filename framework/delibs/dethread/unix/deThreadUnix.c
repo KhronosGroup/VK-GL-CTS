@@ -165,7 +165,7 @@ void deYield(void)
 
 uint32_t deGetNumAvailableLogicalCores(void)
 {
-#if !defined(__FreeBSD__)
+#if !defined(__FreeBSD__) && defined(__NR_sched_getaffinity)
     unsigned long mask          = 0;
     const unsigned int maskSize = sizeof(mask);
     long ret;
@@ -192,7 +192,7 @@ uint32_t deGetNumAvailableLogicalCores(void)
     return 1;
 #endif
 
-#if !defined(__FreeBSD__)
+#if !defined(__FreeBSD__) && defined(__NR_sched_getaffinity)
     }
 #endif
 }
