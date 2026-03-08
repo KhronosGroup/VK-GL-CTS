@@ -51,6 +51,7 @@ const vk::VkPhysicalDeviceExtendedDynamicState3FeaturesEXT&					Context::getExte
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&					Context::getExtendedDynamicStateFeaturesEXT					(void) const { return m_device->getExtendedDynamicStateFeaturesEXT();				}
 const vk::VkPhysicalDeviceExternalFormatResolveFeaturesANDROID&				Context::getExternalFormatResolveFeaturesANDROID			(void) const { return m_device->getExternalFormatResolveFeaturesANDROID();			}
 const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&			Context::getExternalMemoryScreenBufferFeaturesQNX			(void) const { return m_device->getExternalMemoryScreenBufferFeaturesQNX();			}
+const vk::VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT&			Context::getExternalSemaphoreDrmSyncobjFeaturesEXT			(void) const { return m_device->getExternalSemaphoreDrmSyncobjFeaturesEXT();		}
 const vk::VkPhysicalDeviceFaultFeaturesEXT&									Context::getFaultFeaturesEXT								(void) const { return m_device->getFaultFeaturesEXT();								}
 const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&					Context::getFragmentDensityMap2FeaturesEXT					(void) const { return m_device->getFragmentDensityMap2FeaturesEXT();				}
 const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&					Context::getFragmentDensityMapFeaturesEXT					(void) const { return m_device->getFragmentDensityMapFeaturesEXT();					}

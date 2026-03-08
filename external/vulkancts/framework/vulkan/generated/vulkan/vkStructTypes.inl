@@ -5471,6 +5471,13 @@ struct VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX
 	VkBool32		screenBufferImport;
 };
 
+struct VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		externalSemaphoreDrmSyncobj;
+};
+
 struct VkPhysicalDeviceExternalSemaphoreInfo
 {
 	VkStructureType							sType;
@@ -10133,6 +10140,22 @@ struct VkAccelerationStructureMatrixMotionInstanceNV
 	uint64_t					accelerationStructureReference;
 };
 
+struct VkUbmSurfaceCreateInfoSEC
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkUbmSurfaceCreateFlagsSEC	flags;
+	struct ubm_device*			device;
+	struct ubm_surface*			surface;
+};
+
+union VkAccelerationStructureMotionInstanceDataNV
+{
+	VkAccelerationStructureInstanceKHR				staticInstance;
+	VkAccelerationStructureMatrixMotionInstanceNV	matrixMotionInstance;
+	VkAccelerationStructureSRTMotionInstanceNV		srtMotionInstance;
+};
+
 struct VkValidationFeaturesEXT
 {
 	VkStructureType							sType;
@@ -10143,11 +10166,11 @@ struct VkValidationFeaturesEXT
 	const VkValidationFeatureDisableEXT*	pDisabledValidationFeatures;
 };
 
-union VkAccelerationStructureMotionInstanceDataNV
+struct VkAccelerationStructureMotionInstanceNV
 {
-	VkAccelerationStructureInstanceKHR				staticInstance;
-	VkAccelerationStructureMatrixMotionInstanceNV	matrixMotionInstance;
-	VkAccelerationStructureSRTMotionInstanceNV		srtMotionInstance;
+	VkAccelerationStructureMotionInstanceTypeNV		type;
+	VkAccelerationStructureMotionInstanceFlagsNV	flags;
+	VkAccelerationStructureMotionInstanceDataNV		data;
 };
 
 struct VkValidationFlagsEXT
@@ -10156,13 +10179,6 @@ struct VkValidationFlagsEXT
 	const void*					pNext;
 	uint32_t					disabledValidationCheckCount;
 	const VkValidationCheckEXT*	pDisabledValidationChecks;
-};
-
-struct VkAccelerationStructureMotionInstanceNV
-{
-	VkAccelerationStructureMotionInstanceTypeNV		type;
-	VkAccelerationStructureMotionInstanceFlagsNV	flags;
-	VkAccelerationStructureMotionInstanceDataNV		data;
 };
 
 struct VkVertexInputAttributeDescription

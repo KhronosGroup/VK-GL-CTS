@@ -573,6 +573,13 @@ Move<VkTensorViewARM> createTensorViewARM (const DeviceInterface& vk, VkDevice d
 	return Move<VkTensorViewARM>(check<VkTensorViewARM>(object), Deleter<VkTensorViewARM>(vk, device, pAllocator));
 }
 
+Move<VkSurfaceKHR> createUbmSurfaceSEC (const InstanceInterface& vk, VkInstance instance, const VkUbmSurfaceCreateInfoSEC* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkSurfaceKHR object = VK_NULL_HANDLE;
+	VK_CHECK(vk.createUbmSurfaceSEC(instance, pCreateInfo, pAllocator, &object));
+	return Move<VkSurfaceKHR>(check<VkSurfaceKHR>(object), Deleter<VkSurfaceKHR>(vk, instance, pAllocator));
+}
+
 Move<VkSurfaceKHR> createViSurfaceNN (const InstanceInterface& vk, VkInstance instance, const VkViSurfaceCreateInfoNN* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	VkSurfaceKHR object = VK_NULL_HANDLE;

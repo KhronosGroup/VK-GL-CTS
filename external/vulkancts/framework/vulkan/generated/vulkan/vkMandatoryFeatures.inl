@@ -256,6 +256,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_QNX_external_memory_screen_buffer"))
 		addFeatures(&physicalDeviceExternalMemoryScreenBufferFeaturesQNX);
 
+	// VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT for ext [VK_EXT_external_semaphore_drm_syncobj]
+	vk::VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT physicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_external_semaphore_drm_syncobj"))
+		addFeatures(&physicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT);
+
 	// VkPhysicalDeviceFaultFeaturesEXT for ext [VK_EXT_device_fault]
 	vk::VkPhysicalDeviceFaultFeaturesEXT physicalDeviceFaultFeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_device_fault"))
@@ -2593,6 +2598,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceShaderSubgroupPartitionedFeaturesEXT.shaderSubgroupPartitioned == VK_FALSE )
 			failMesages.push_back("shaderSubgroupPartitioned");
+	}
+
+	// VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_external_semaphore_drm_syncobj")) )
+	{
+		if ( physicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT.externalSemaphoreDrmSyncobj == VK_FALSE )
+			failMesages.push_back("externalSemaphoreDrmSyncobj");
 	}
 
 	// VkPhysicalDeviceAccelerationStructureFeaturesKHR

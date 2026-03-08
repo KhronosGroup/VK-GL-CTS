@@ -2013,6 +2013,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceExternalMemoryScreen
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_DRM_SYNCOBJ_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceExternalSemaphoreInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO;
@@ -4111,6 +4116,11 @@ template<> VkStructureType getStructureType<VkTextureLODGatherFormatPropertiesAM
 template<> VkStructureType getStructureType<VkTimelineSemaphoreSubmitInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+}
+
+template<> VkStructureType getStructureType<VkUbmSurfaceCreateInfoSEC> (void)
+{
+	return VK_STRUCTURE_TYPE_UBM_SURFACE_CREATE_INFO_SEC;
 }
 
 template<> VkStructureType getStructureType<VkValidationFeaturesEXT> (void)

@@ -283,6 +283,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceExtendedDynamicState3Feature
 template<> void initFeatureFromBlob<VkPhysicalDeviceExtendedDynamicStateFeaturesEXT>(VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceExternalFormatResolveFeaturesANDROID>(VkPhysicalDeviceExternalFormatResolveFeaturesANDROID&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX>(VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT>(VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceFaultFeaturesEXT>(VkPhysicalDeviceFaultFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceFragmentDensityMap2FeaturesEXT>(VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceFragmentDensityMapFeaturesEXT>(VkPhysicalDeviceFragmentDensityMapFeaturesEXT&, const AllFeaturesBlobs&) {}
@@ -443,6 +444,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceExtendedDynamicState3Feat
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceExtendedDynamicStateFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT, VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceExternalFormatResolveFeaturesANDROID>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FORMAT_RESOLVE_FEATURES_ANDROID, VK_ANDROID_EXTERNAL_FORMAT_RESOLVE_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX, VK_QNX_EXTERNAL_MEMORY_SCREEN_BUFFER_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_DRM_SYNCOBJ_FEATURES_EXT, VK_EXT_EXTERNAL_SEMAPHORE_DRM_SYNCOBJ_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceFaultFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT, VK_EXT_DEVICE_FAULT_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceFragmentDensityMap2FeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT, VK_EXT_FRAGMENT_DENSITY_MAP_2_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceFragmentDensityMapFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_EXT, VK_EXT_FRAGMENT_DENSITY_MAP_EXTENSION_NAME}; }
@@ -644,6 +646,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceExtendedDynamicStateFeaturesEXT>, VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceExternalFormatResolveFeaturesANDROID>, VK_ANDROID_EXTERNAL_FORMAT_RESOLVE_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX>, VK_QNX_EXTERNAL_MEMORY_SCREEN_BUFFER_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT>, VK_EXT_EXTERNAL_SEMAPHORE_DRM_SYNCOBJ_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceFaultFeaturesEXT>, VK_EXT_DEVICE_FAULT_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceFragmentDensityMap2FeaturesEXT>, VK_EXT_FRAGMENT_DENSITY_MAP_2_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceFragmentDensityMapFeaturesEXT>, VK_EXT_FRAGMENT_DENSITY_MAP_EXTENSION_NAME },

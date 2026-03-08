@@ -111,3 +111,5 @@ GetPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARMFunc	getPhysic
 CreateSurfaceOHOSFunc													createSurfaceOHOS;
 GetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNVFunc	getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV;
 EnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARMFunc	enumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM;
+CreateUbmSurfaceSECFunc													createUbmSurfaceSEC;
+GetPhysicalDeviceUbmPresentationSupportSECFunc							getPhysicalDeviceUbmPresentationSupportSEC;

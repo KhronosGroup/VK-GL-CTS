@@ -85,6 +85,7 @@ VK_EXT_display_control
 VK_EXT_dynamic_rendering_unused_attachments
 VK_EXT_external_memory_host
 VK_EXT_external_memory_metal
+VK_EXT_external_semaphore_drm_syncobj
 VK_EXT_extended_dynamic_state3
 VK_EXT_filter_cubic
 VK_EXT_fragment_density_map

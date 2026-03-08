@@ -371,6 +371,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_external_semaphore_drm_syncobj")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_filter_cubic")
 	{
 		return;
@@ -1883,6 +1887,12 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_SEC_ubm_surface")
+	{
+		functions.push_back("vkCreateUbmSurfaceSEC");
+		functions.push_back("vkGetPhysicalDeviceUbmPresentationSupportSEC");
+		return;
+	}
 	if (extName == "VK_VALVE_descriptor_set_host_mapping")
 	{
 		return;
@@ -1892,6 +1902,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_VALVE_mutable_descriptor_type")
+	{
+		return;
+	}
+	if (extName == "VK_VALVE_shader_mixed_float_dot_product")
 	{
 		return;
 	}
@@ -2438,6 +2452,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkGetMemoryMetalHandleEXT");
 		functions.push_back("vkGetMemoryMetalHandlePropertiesEXT");
+		return;
+	}
+	if (extName == "VK_EXT_external_semaphore_drm_syncobj")
+	{
 		return;
 	}
 	if (extName == "VK_EXT_filter_cubic")
@@ -4339,6 +4357,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_SEC_ubm_surface")
+	{
+		return;
+	}
 	if (extName == "VK_VALVE_descriptor_set_host_mapping")
 	{
 		functions.push_back("vkGetDescriptorSetLayoutHostMappingInfoVALVE");
@@ -4350,6 +4372,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_VALVE_mutable_descriptor_type")
+	{
+		return;
+	}
+	if (extName == "VK_VALVE_shader_mixed_float_dot_product")
 	{
 		return;
 	}
@@ -4403,6 +4429,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_layer_settings",
 	"VK_NV_display_stereo",
 	"VK_OHOS_surface",
+	"VK_SEC_ubm_surface",
 };
 
 ::std::string deviceExtensionNames[] =
@@ -4805,6 +4832,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_shader_uniform_buffer_unsized_array",
 	"VK_NV_compute_occupancy_priority",
 	"VK_EXT_shader_subgroup_partitioned",
+	"VK_VALVE_shader_mixed_float_dot_product",
+	"VK_EXT_external_semaphore_drm_syncobj",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_KHR_ray_query",
