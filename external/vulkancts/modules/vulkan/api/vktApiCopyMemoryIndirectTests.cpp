@@ -23,6 +23,7 @@
 
 #include "vktApiCopyMemoryIndirectTests.hpp"
 #include "vktApiCopyImageToBufferTests.hpp"
+#include "vktApiUseAfterCopyTests.hpp"
 
 namespace vkt
 {
@@ -2423,6 +2424,8 @@ tcu::TestCaseGroup *createCopyMemoryIndirectTests(tcu::TestContext &testCtx)
                     MandatoryFormats::checkIndirectCopyMandatoryFormatSupport,
                     MandatoryFormats::addIndirectCopyMandatoryFormatSupportTests);
     group->addChild(mandatoryFormats.release());
+
+    group->addChild(createUseAfterXferGroup(testCtx, true));
 
     return group.release();
 }

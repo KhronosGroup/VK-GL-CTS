@@ -377,6 +377,90 @@ void checkTransferQueueGranularity(Context &context, const VkExtent3D &extent, V
     }
 }
 
+void checkTransferQueueGranularity(const Context &context, const VkImageCreateInfo &imgInfo,
+                                   const VkBufferImageCopy &region)
+{
+    const auto queueIndex = context.getTransferQueueFamilyIndex();
+    if (queueIndex == -1)
+        TCU_THROW(NotSupportedError, "No queue family found that only supports transfer queue.");
+
+    const auto ctx = context.getContextCommonData();
+
+    const auto queueProps = getPhysicalDeviceQueueFamilyProperties(ctx.vki, ctx.physicalDevice);
+    DE_ASSERT(queueProps.size() > static_cast<size_t>(queueIndex));
+    const auto &granularity   = queueProps[queueIndex].minImageTransferGranularity;
+    const auto intGranularity = tcu::UVec3(granularity.width, granularity.height, granularity.depth).asInt();
+
+    const bool isZero    = (granularity.width == 0u && granularity.height == 0u && granularity.depth == 0u);
+    const auto mipExtent = mipLevelExtents(imgInfo.extent, region.imageSubresource.mipLevel);
+
+    if (isZero)
+    {
+        if (region.imageOffset.x != 0 || region.imageOffset.y != 0 || region.imageOffset.z != 0)
+            TCU_THROW(NotSupportedError, "Transfer granularity is zero and offset is not");
+
+        if (region.imageExtent.width < mipExtent.width || region.imageExtent.height < mipExtent.height ||
+            region.imageExtent.depth < mipExtent.depth)
+            TCU_THROW(NotSupportedError, "Transfer granularity is zero and extent does not match the subresource");
+    }
+    else
+    {
+        if (region.imageOffset.x % intGranularity.x() != 0)
+        {
+            std::ostringstream msg;
+            msg << "Offset X (" << region.imageOffset.x << ") not a multiple of the granularity width ("
+                << intGranularity.x() << ")";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
+
+        if (imgInfo.imageType > VK_IMAGE_TYPE_1D && region.imageOffset.y % intGranularity.y() != 0)
+        {
+            std::ostringstream msg;
+            msg << "Offset Y (" << region.imageOffset.y << ") not a multiple of the granularity height ("
+                << intGranularity.y() << ")";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
+
+        if (imgInfo.imageType > VK_IMAGE_TYPE_2D && region.imageOffset.z % intGranularity.z() != 0)
+        {
+            std::ostringstream msg;
+            msg << "Offset Z (" << region.imageOffset.z << ") not a multiple of the granularity depth ("
+                << intGranularity.z() << ")";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
+
+        if (region.imageExtent.width % granularity.width != 0u &&
+            region.imageOffset.x + region.imageExtent.width < mipExtent.width)
+        {
+            std::ostringstream msg;
+            msg << "Transfer extent width (" << region.imageExtent.width << ") and offset X (" << region.imageOffset.x
+                << ") not valid for granularity width (" << granularity.width << ") and mip extent width ("
+                << mipExtent.width << ")";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
+
+        if (imgInfo.imageType > VK_IMAGE_TYPE_1D && region.imageExtent.height % granularity.height != 0u &&
+            region.imageOffset.y + region.imageExtent.height < mipExtent.height)
+        {
+            std::ostringstream msg;
+            msg << "Transfer extent height (" << region.imageExtent.height << ") and offset Y (" << region.imageOffset.y
+                << ") not valid for granularity height (" << granularity.height << ") and mip extent height ("
+                << mipExtent.height << ")";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
+
+        if (imgInfo.imageType > VK_IMAGE_TYPE_3D && region.imageExtent.depth % granularity.depth != 0u &&
+            region.imageOffset.z + region.imageExtent.depth < mipExtent.depth)
+        {
+            std::ostringstream msg;
+            msg << "Transfer extent depth (" << region.imageExtent.depth << ") and offset Z (" << region.imageOffset.z
+                << ") not valid for granularity depth (" << granularity.depth << ") and mip extent depth ("
+                << mipExtent.depth << ")";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
+    }
+}
+
 std::string getSampleCountCaseName(VkSampleCountFlagBits sampleFlag)
 {
     return de::toLower(de::toString(getSampleCountFlagsStr(sampleFlag)).substr(16));

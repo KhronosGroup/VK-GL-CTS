@@ -370,6 +370,8 @@ void submitCommandsAndWaitWithTransferSync(const DeviceInterface &vkd, VkDevice 
                                            bool indirectCopy = false);
 
 void checkTransferQueueGranularity(Context &context, const VkExtent3D &extent, VkImageType imageType);
+void checkTransferQueueGranularity(const Context &context, const VkImageCreateInfo &imgInfo,
+                                   const VkBufferImageCopy &region);
 
 std::string getSampleCountCaseName(VkSampleCountFlagBits sampleFlag);
 

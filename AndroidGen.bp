@@ -134,6 +134,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/api/vktApiSmokeTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiToolingInfoTests.cpp",
+        "external/vulkancts/modules/vulkan/api/vktApiUseAfterCopyTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiVersionCheck.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingBufferDeviceAddressTests.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorBufferTests.cpp",

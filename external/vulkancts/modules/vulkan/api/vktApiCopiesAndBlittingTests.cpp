@@ -43,6 +43,7 @@
 #include "vktApiCopiesAndBlittingReinterpretTests.hpp"
 #include "vktApiCopyMultiplaneImageTransferQueueTests.hpp"
 #include "vktApiCopyMemoryIndirectTests.hpp"
+#include "vktApiUseAfterCopyTests.hpp"
 
 namespace vkt
 {
@@ -70,9 +71,11 @@ void addSparseCopyTests(tcu::TestCaseGroup *group, AllocationKind allocationKind
     }
 }
 
-void addIndirectCopyTests(tcu::TestCaseGroup *group, AllocationKind allocationKind, uint32_t extensionFlags)
+void addIndirectCopyTests(tcu::TestCaseGroup *group, AllocationKind allocationKind)
 {
-    (void)group;
+#ifndef CTS_USES_VULKANSC
+    const auto extensionFlags = INDIRECT_COPY;
+
     TestGroupParamsPtr universalGroupParams(new TestGroupParams{
         allocationKind,
         extensionFlags,
@@ -81,11 +84,9 @@ void addIndirectCopyTests(tcu::TestCaseGroup *group, AllocationKind allocationKi
         false,
         false,
     });
-#ifndef CTS_USES_VULKANSC
     addTestGroup(group, "memory_to_image_indirect", addCopyMemoryToImageTests, universalGroupParams);
     addTestGroup(group, "memory_to_depthstencil_indirect", addCopyBufferToDepthStencilTests, universalGroupParams);
     addTestGroup(group, "image_to_buffer_indirect", addCopyImageToBufferIndirectTests, universalGroupParams);
-#endif
 
     TestGroupParamsPtr transferOnlyGroup(new TestGroupParams{
         allocationKind,
@@ -95,11 +96,9 @@ void addIndirectCopyTests(tcu::TestCaseGroup *group, AllocationKind allocationKi
         false,
         false,
     });
-#ifndef CTS_USES_VULKANSC
     addTestGroup(group, "memory_to_image_indirect_transfer_queue", addCopyMemoryToImageTests, transferOnlyGroup);
     addTestGroup(group, "image_to_buffer_indirect_transfer_queue", addCopyImageToBufferIndirectTests,
                  transferOnlyGroup);
-#endif
 
     TestGroupParamsPtr computeOnlyGroup(new TestGroupParams{
         allocationKind,
@@ -109,10 +108,12 @@ void addIndirectCopyTests(tcu::TestCaseGroup *group, AllocationKind allocationKi
         false,
         false,
     });
-#ifndef CTS_USES_VULKANSC
     addTestGroup(group, "memory_to_image_indirect_compute_queue", addCopyMemoryToImageTests, computeOnlyGroup);
     addTestGroup(group, "image_to_buffer_indirect_compute_queue", addCopyImageToBufferIndirectTests, computeOnlyGroup);
-#endif
+#else
+    DE_UNREF(group);
+    DE_UNREF(allocationKind);
+#endif // CTS_USES_VULKANSC
 }
 
 void addCopiesAndBlittingTests(tcu::TestCaseGroup *group, AllocationKind allocationKind, uint32_t extensionFlags)
@@ -232,15 +233,16 @@ void addCoreCopiesAndBlittingTests(tcu::TestCaseGroup *group)
 {
     uint32_t extensionFlags = 0;
     addCopiesAndBlittingTests(group, ALLOCATION_KIND_SUBALLOCATED, extensionFlags);
-    addIndirectCopyTests(group, ALLOCATION_KIND_SUBALLOCATED, INDIRECT_COPY);
+    addIndirectCopyTests(group, ALLOCATION_KIND_SUBALLOCATED);
     addCopyBufferToBufferOffsetTests(group);
+    group->addChild(createUseAfterXferGroup(group->getTestContext(), false));
 }
 
 void addDedicatedAllocationCopiesAndBlittingTests(tcu::TestCaseGroup *group)
 {
     uint32_t extensionFlags = 0;
     addCopiesAndBlittingTests(group, ALLOCATION_KIND_DEDICATED, extensionFlags);
-    addIndirectCopyTests(group, ALLOCATION_KIND_DEDICATED, INDIRECT_COPY);
+    addIndirectCopyTests(group, ALLOCATION_KIND_DEDICATED);
 }
 
 static void cleanupGroup(tcu::TestCaseGroup *)
