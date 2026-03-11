@@ -706,7 +706,7 @@ de::SharedPtr<Context> ContextManager::createDefaultDevice(de::SharedPtr<Context
         def = std::find_if(owner->m_contexts.begin(), owner->m_contexts.end(), isDef);
         if (alreadyExists)
         {
-            *alreadyExists = true;
+            *alreadyExists = false;
         }
     }
 

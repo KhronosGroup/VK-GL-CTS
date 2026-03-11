@@ -715,7 +715,8 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
     }
 #endif // CTS_USES_VULKANSC
 
-    m_context = {/* conscious release of the references counter */};
+    currentContext = {/* conscious release of the references counter */};
+    m_context      = {/* conscious release of the references counter */};
     m_defaultContextManager->removeDevicesThatShouldBeRemovedOnTestExit(m_contextManager);
     // Intentionally reset m_context to allow devices cleanup.
     // At this point the old Context may be destroyed.
