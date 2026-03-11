@@ -50,6 +50,7 @@ auto fExclusiveScissorFeatures                          = m_context.getExclusive
 auto fExtendedDynamicState2FeaturesEXT                  = m_context.getExtendedDynamicState2FeaturesEXT();
 auto fExtendedDynamicState3FeaturesEXT                  = m_context.getExtendedDynamicState3FeaturesEXT();
 auto fExtendedDynamicStateFeaturesEXT                   = m_context.getExtendedDynamicStateFeaturesEXT();
+auto fExtendedFlagsFeatures                             = m_context.getExtendedFlagsFeatures();
 auto fExternalFormatResolveFeaturesANDROID              = m_context.getExternalFormatResolveFeaturesANDROID();
 auto fExternalMemoryScreenBufferFeaturesQNX             = m_context.getExternalMemoryScreenBufferFeaturesQNX();
 auto fFaultFeaturesEXT                                  = m_context.getFaultFeaturesEXT();
@@ -246,6 +247,7 @@ std::vector<void *> pNextFeatures = {
 	&fExtendedDynamicState2FeaturesEXT,
 	&fExtendedDynamicState3FeaturesEXT,
 	&fExtendedDynamicStateFeaturesEXT,
+	&fExtendedFlagsFeatures,
 	&fExternalFormatResolveFeaturesANDROID,
 	&fExternalMemoryScreenBufferFeaturesQNX,
 	&fFaultFeaturesEXT,

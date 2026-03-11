@@ -1799,6 +1799,7 @@ const char* getFormatName (VkFormat value)
 		case VK_FORMAT_R16G16_UNORM:									return "VK_FORMAT_R16G16_UNORM";
 		case VK_FORMAT_R16G16_USCALED:									return "VK_FORMAT_R16G16_USCALED";
 		case VK_FORMAT_R16_SFLOAT:										return "VK_FORMAT_R16_SFLOAT";
+		case VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM:				return "VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM";
 		case VK_FORMAT_R16_SINT:										return "VK_FORMAT_R16_SINT";
 		case VK_FORMAT_R16_SNORM:										return "VK_FORMAT_R16_SNORM";
 		case VK_FORMAT_R16_SSCALED:										return "VK_FORMAT_R16_SSCALED";
@@ -1855,6 +1856,8 @@ const char* getFormatName (VkFormat value)
 		case VK_FORMAT_R8G8_UNORM:										return "VK_FORMAT_R8G8_UNORM";
 		case VK_FORMAT_R8G8_USCALED:									return "VK_FORMAT_R8G8_USCALED";
 		case VK_FORMAT_R8_BOOL_ARM:										return "VK_FORMAT_R8_BOOL_ARM";
+		case VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM:				return "VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM";
+		case VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM:				return "VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM";
 		case VK_FORMAT_R8_SINT:											return "VK_FORMAT_R8_SINT";
 		case VK_FORMAT_R8_SNORM:										return "VK_FORMAT_R8_SNORM";
 		case VK_FORMAT_R8_SRGB:											return "VK_FORMAT_R8_SRGB";
@@ -3158,6 +3161,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO:									return "VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO";
 		case VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2:															return "VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2";
 		case VK_STRUCTURE_TYPE_IMAGE_SPARSE_MEMORY_REQUIREMENTS_INFO_2:									return "VK_STRUCTURE_TYPE_IMAGE_SPARSE_MEMORY_REQUIREMENTS_INFO_2";
+		case VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_2_CREATE_INFO_KHR:									return "VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_2_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO:											return "VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2:														return "VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2";
 		case VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR:											return "VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR";
@@ -3171,6 +3175,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT:										return "VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_SAMPLE_WEIGHT_CREATE_INFO_QCOM:								return "VK_STRUCTURE_TYPE_IMAGE_VIEW_SAMPLE_WEIGHT_CREATE_INFO_QCOM";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT:										return "VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_2_CREATE_INFO_KHR:										return "VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_2_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO:											return "VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID:								return "VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID";
 		case VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR:												return "VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR";
@@ -3369,6 +3374,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_PROPERTIES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_FLAGS_FEATURES_KHR:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_FLAGS_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_FEATURES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_PROPERTIES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO:									return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO";
@@ -3587,6 +3593,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_LONG_VECTOR_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_LONG_VECTOR_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_LONG_VECTOR_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_LONG_VECTOR_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MAXIMAL_RECONVERGENCE_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MAXIMAL_RECONVERGENCE_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MIXED_FLOAT_DOT_PRODUCT_FEATURES_VALVE:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MIXED_FLOAT_DOT_PRODUCT_FEATURES_VALVE";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT";
@@ -3826,6 +3833,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO:												return "VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT:											return "VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT";
 		case VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_2_KHR:								return "VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_2_KHR";
 		case VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR:									return "VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR";
 		case VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2:										return "VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2";
 		case VK_STRUCTURE_TYPE_SPARSE_IMAGE_MEMORY_REQUIREMENTS_2:										return "VK_STRUCTURE_TYPE_SPARSE_IMAGE_MEMORY_REQUIREMENTS_2";
@@ -3886,6 +3894,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_TILE_MEMORY_SIZE_INFO_QCOM:												return "VK_STRUCTURE_TYPE_TILE_MEMORY_SIZE_INFO_QCOM";
 		case VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM:													return "VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM";
 		case VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO:											return "VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO";
+		case VK_STRUCTURE_TYPE_UBM_SURFACE_CREATE_INFO_SEC:												return "VK_STRUCTURE_TYPE_UBM_SURFACE_CREATE_INFO_SEC";
 		case VK_STRUCTURE_TYPE_VALIDATION_CACHE_CREATE_INFO_EXT:										return "VK_STRUCTURE_TYPE_VALIDATION_CACHE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT:													return "VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT:													return "VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT";
@@ -10482,6 +10491,16 @@ std::ostream& operator<< (std::ostream& s, const VkImageSparseMemoryRequirements
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkImageStencilUsage2CreateInfoKHR& value)
+{
+	s << "VkImageStencilUsage2CreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstencilUsage = " << getImageUsageFlags2KHRStr(value.stencilUsage) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkImageStencilUsageCreateInfo& value)
 {
 	s << "VkImageStencilUsageCreateInfo = {\n";
@@ -10634,6 +10653,16 @@ std::ostream& operator<< (std::ostream& s, const VkImageViewSlicedCreateInfoEXT&
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tsliceOffset = " << value.sliceOffset << '\n';
 	s << "\tsliceCount = " << value.sliceCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageViewUsage2CreateInfoKHR& value)
+{
+	s << "VkImageViewUsage2CreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tusage = " << getImageUsageFlags2KHRStr(value.usage) << '\n';
 	s << '}';
 	return s;
 }
@@ -12589,6 +12618,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExtendedDynamic
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\textendedDynamicState = " << value.extendedDynamicState << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExtendedFlagsFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceExtendedFlagsFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\textendedFlags = " << value.extendedFlags << '\n';
 	s << '}';
 	return s;
 }
@@ -17684,6 +17723,16 @@ std::ostream& operator<< (std::ostream& s, const VkShadingRatePaletteNV& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkSharedPresentSurfaceCapabilities2KHR& value)
+{
+	s << "VkSharedPresentSurfaceCapabilities2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsharedPresentSupportedUsageFlags = " << getImageUsageFlags2KHRStr(value.sharedPresentSupportedUsageFlags) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkSharedPresentSurfaceCapabilitiesKHR& value)
 {
 	s << "VkSharedPresentSurfaceCapabilitiesKHR = {\n";
@@ -18508,6 +18557,18 @@ std::ostream& operator<< (std::ostream& s, const VkTransformMatrixKHR& value)
 	s << "\tmatrix = " << '\n';
 	for(uint32_t i0 = 0 ; i0 < 3 ; ++i0)
 		s << tcu::formatArray(DE_ARRAY_BEGIN(value.matrix[i0]), DE_ARRAY_END(value.matrix[i0])) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkUbmSurfaceCreateInfoSEC& value)
+{
+	s << "VkUbmSurfaceCreateInfoSEC = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tdevice = " << value.device << '\n';
+	s << "\tsurface = " << value.surface << '\n';
 	s << '}';
 	return s;
 }

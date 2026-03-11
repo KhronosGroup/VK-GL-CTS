@@ -3529,7 +3529,7 @@ struct VkImageCompressionPropertiesEXT
 struct VkImageCreateFlags2CreateInfoKHR
 {
 	VkStructureType			sType;
-	const void*				pNext;
+	void*					pNext;
 	VkImageCreateFlags2KHR	flags;
 };
 
@@ -3636,6 +3636,13 @@ struct VkImageSparseMemoryRequirementsInfo2
 	VkImage			image;
 };
 
+struct VkImageStencilUsage2CreateInfoKHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkImageUsageFlags2KHR	stencilUsage;
+};
+
 struct VkImageStencilUsageCreateInfo
 {
 	VkStructureType		sType;
@@ -3732,7 +3739,7 @@ struct VkImageSwapchainCreateInfoKHR
 struct VkImageUsageFlags2CreateInfoKHR
 {
 	VkStructureType			sType;
-	const void*				pNext;
+	void*					pNext;
 	VkImageUsageFlags2KHR	usage;
 };
 
@@ -3775,6 +3782,13 @@ struct VkImageViewSlicedCreateInfoEXT
 	const void*		pNext;
 	uint32_t		sliceOffset;
 	uint32_t		sliceCount;
+};
+
+struct VkImageViewUsage2CreateInfoKHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkImageUsageFlags2KHR	usage;
 };
 
 struct VkImageViewUsageCreateInfo
@@ -5439,6 +5453,13 @@ struct VkPhysicalDeviceExtendedDynamicStateFeaturesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		extendedDynamicState;
+};
+
+struct VkPhysicalDeviceExtendedFlagsFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		extendedFlags;
 };
 
 struct VkPhysicalDeviceExternalBufferInfo
@@ -9291,6 +9312,13 @@ struct VkPipelineViewportShadingRateImageStateCreateInfoNV
 	const VkShadingRatePaletteNV*	pShadingRatePalettes;
 };
 
+struct VkSharedPresentSurfaceCapabilities2KHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkImageUsageFlags2KHR	sharedPresentSupportedUsageFlags;
+};
+
 struct VkSharedPresentSurfaceCapabilitiesKHR
 {
 	VkStructureType		sType;
@@ -10142,6 +10170,22 @@ struct VkAccelerationStructureMatrixMotionInstanceNV
 	uint64_t					accelerationStructureReference;
 };
 
+struct VkUbmSurfaceCreateInfoSEC
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkUbmSurfaceCreateFlagsSEC	flags;
+	struct ubm_device*			device;
+	struct ubm_surface*			surface;
+};
+
+union VkAccelerationStructureMotionInstanceDataNV
+{
+	VkAccelerationStructureInstanceKHR				staticInstance;
+	VkAccelerationStructureMatrixMotionInstanceNV	matrixMotionInstance;
+	VkAccelerationStructureSRTMotionInstanceNV		srtMotionInstance;
+};
+
 struct VkValidationFeaturesEXT
 {
 	VkStructureType							sType;
@@ -10152,11 +10196,11 @@ struct VkValidationFeaturesEXT
 	const VkValidationFeatureDisableEXT*	pDisabledValidationFeatures;
 };
 
-union VkAccelerationStructureMotionInstanceDataNV
+struct VkAccelerationStructureMotionInstanceNV
 {
-	VkAccelerationStructureInstanceKHR				staticInstance;
-	VkAccelerationStructureMatrixMotionInstanceNV	matrixMotionInstance;
-	VkAccelerationStructureSRTMotionInstanceNV		srtMotionInstance;
+	VkAccelerationStructureMotionInstanceTypeNV		type;
+	VkAccelerationStructureMotionInstanceFlagsNV	flags;
+	VkAccelerationStructureMotionInstanceDataNV		data;
 };
 
 struct VkValidationFlagsEXT
@@ -10165,13 +10209,6 @@ struct VkValidationFlagsEXT
 	const void*					pNext;
 	uint32_t					disabledValidationCheckCount;
 	const VkValidationCheckEXT*	pDisabledValidationChecks;
-};
-
-struct VkAccelerationStructureMotionInstanceNV
-{
-	VkAccelerationStructureMotionInstanceTypeNV		type;
-	VkAccelerationStructureMotionInstanceFlagsNV	flags;
-	VkAccelerationStructureMotionInstanceDataNV		data;
 };
 
 struct VkVertexInputAttributeDescription

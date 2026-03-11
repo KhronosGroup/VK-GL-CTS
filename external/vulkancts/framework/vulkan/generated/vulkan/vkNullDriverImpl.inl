@@ -319,6 +319,12 @@ VKAPI_ATTR VkResult VKAPI_CALL createTensorViewARM (VkDevice device, const VkTen
 	VK_NULL_RETURN((*pView = allocateNonDispHandle<TensorViewARM, VkTensorViewARM>(device, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createUbmSurfaceSEC (VkInstance instance, const VkUbmSurfaceCreateInfoSEC* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createViSurfaceNN (VkInstance instance, const VkViSurfaceCreateInfoNN* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 {
 	DE_UNREF(pAllocator);
@@ -3929,6 +3935,14 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceToolPropertiesEXT (VkPhysicalDev
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceUbmPresentationSupportSEC (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, struct ubm_device* device)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(device);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceVideoCapabilitiesKHR (VkPhysicalDevice physicalDevice, const VkVideoProfileInfoKHR* pVideoProfile, VkVideoCapabilitiesKHR* pCapabilities)
 {
 	DE_UNREF(physicalDevice);
@@ -4842,6 +4856,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCreateScreenSurfaceQNX,												createScreenSurfaceQNX),
 	VK_NULL_FUNC_ENTRY(vkCreateStreamDescriptorSurfaceGGP,										createStreamDescriptorSurfaceGGP),
 	VK_NULL_FUNC_ENTRY(vkCreateSurfaceOHOS,														createSurfaceOHOS),
+	VK_NULL_FUNC_ENTRY(vkCreateUbmSurfaceSEC,													createUbmSurfaceSEC),
 	VK_NULL_FUNC_ENTRY(vkCreateViSurfaceNN,														createViSurfaceNN),
 	VK_NULL_FUNC_ENTRY(vkCreateWaylandSurfaceKHR,												createWaylandSurfaceKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateWin32SurfaceKHR,													createWin32SurfaceKHR),
@@ -4910,6 +4925,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfacePresentModesKHR,								getPhysicalDeviceSurfacePresentModesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceSupportKHR,									getPhysicalDeviceSurfaceSupportKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceToolProperties,										getPhysicalDeviceToolProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceUbmPresentationSupportSEC,							getPhysicalDeviceUbmPresentationSupportSEC),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceVideoCapabilitiesKHR,									getPhysicalDeviceVideoCapabilitiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR,					getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceVideoFormatPropertiesKHR,								getPhysicalDeviceVideoFormatPropertiesKHR),

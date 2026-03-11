@@ -20,6 +20,7 @@ virtual VkResult	createMetalSurfaceEXT												(VkInstance instance, const Vk
 virtual VkResult	createScreenSurfaceQNX												(VkInstance instance, const VkScreenSurfaceCreateInfoQNX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const;
 virtual VkResult	createStreamDescriptorSurfaceGGP									(VkInstance instance, const VkStreamDescriptorSurfaceCreateInfoGGP* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const;
 virtual VkResult	createSurfaceOHOS													(VkInstance instance, const VkSurfaceCreateInfoOHOS* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const;
+virtual VkResult	createUbmSurfaceSEC													(VkInstance instance, const VkUbmSurfaceCreateInfoSEC* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const;
 virtual VkResult	createViSurfaceNN													(VkInstance instance, const VkViSurfaceCreateInfoNN* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const;
 virtual VkResult	createWaylandSurfaceKHR												(VkInstance instance, const VkWaylandSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const;
 virtual VkResult	createWin32SurfaceKHR												(VkInstance instance, const VkWin32SurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const;
@@ -88,6 +89,7 @@ virtual VkResult	getPhysicalDeviceSurfacePresentModes2EXT							(VkPhysicalDevic
 virtual VkResult	getPhysicalDeviceSurfacePresentModesKHR								(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t* pPresentModeCount, VkPresentModeKHR* pPresentModes) const;
 virtual VkResult	getPhysicalDeviceSurfaceSupportKHR									(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, VkSurfaceKHR surface, VkBool32* pSupported) const;
 virtual VkResult	getPhysicalDeviceToolProperties										(VkPhysicalDevice physicalDevice, uint32_t* pToolCount, VkPhysicalDeviceToolProperties* pToolProperties) const;
+virtual VkBool32	getPhysicalDeviceUbmPresentationSupportSEC							(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, struct ubm_device* device) const;
 virtual VkResult	getPhysicalDeviceVideoCapabilitiesKHR								(VkPhysicalDevice physicalDevice, const VkVideoProfileInfoKHR* pVideoProfile, VkVideoCapabilitiesKHR* pCapabilities) const;
 virtual VkResult	getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR				(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR* pQualityLevelInfo, VkVideoEncodeQualityLevelPropertiesKHR* pQualityLevelProperties) const;
 virtual VkResult	getPhysicalDeviceVideoFormatPropertiesKHR							(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceVideoFormatInfoKHR* pVideoFormatInfo, uint32_t* pVideoFormatPropertyCount, VkVideoFormatPropertiesKHR* pVideoFormatProperties) const;

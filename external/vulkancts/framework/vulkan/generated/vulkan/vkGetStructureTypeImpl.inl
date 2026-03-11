@@ -1243,6 +1243,11 @@ template<> VkStructureType getStructureType<VkImageSparseMemoryRequirementsInfo2
 	return VK_STRUCTURE_TYPE_IMAGE_SPARSE_MEMORY_REQUIREMENTS_INFO_2;
 }
 
+template<> VkStructureType getStructureType<VkImageStencilUsage2CreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_2_CREATE_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkImageStencilUsageCreateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO;
@@ -1296,6 +1301,11 @@ template<> VkStructureType getStructureType<VkImageViewSampleWeightCreateInfoQCO
 template<> VkStructureType getStructureType<VkImageViewSlicedCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImageViewUsage2CreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_2_CREATE_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkImageViewUsageCreateInfo> (void)
@@ -1991,6 +2001,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceExtendedDynamicState
 template<> VkStructureType getStructureType<VkPhysicalDeviceExtendedDynamicStateFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceExtendedFlagsFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_FLAGS_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceExternalBufferInfo> (void)
@@ -3878,6 +3893,11 @@ template<> VkStructureType getStructureType<VkShaderModuleIdentifierEXT> (void)
 	return VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT;
 }
 
+template<> VkStructureType getStructureType<VkSharedPresentSurfaceCapabilities2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_2_KHR;
+}
+
 template<> VkStructureType getStructureType<VkSharedPresentSurfaceCapabilitiesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR;
@@ -4116,6 +4136,11 @@ template<> VkStructureType getStructureType<VkTextureLODGatherFormatPropertiesAM
 template<> VkStructureType getStructureType<VkTimelineSemaphoreSubmitInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+}
+
+template<> VkStructureType getStructureType<VkUbmSurfaceCreateInfoSEC> (void)
+{
+	return VK_STRUCTURE_TYPE_UBM_SURFACE_CREATE_INFO_SEC;
 }
 
 template<> VkStructureType getStructureType<VkValidationFeaturesEXT> (void)

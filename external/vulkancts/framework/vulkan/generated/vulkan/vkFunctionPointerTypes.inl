@@ -763,6 +763,8 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* EnumeratePhysicalDeviceQueueFamilyPe
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRendering2EXTFunc)													(VkCommandBuffer commandBuffer, const VkRenderingEndInfoKHR* pRenderingEndInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRendering2KHRFunc)													(VkCommandBuffer commandBuffer, const VkRenderingEndInfoKHR* pRenderingEndInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginCustomResolveEXTFunc)												(VkCommandBuffer commandBuffer, const VkBeginCustomResolveInfoEXT* pBeginCustomResolveInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateUbmSurfaceSECFunc)													(VkInstance instance, const VkUbmSurfaceCreateInfoSEC* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
+typedef VKAPI_ATTR VkBool32				(VKAPI_CALL* GetPhysicalDeviceUbmPresentationSupportSECFunc)							(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, struct ubm_device* device);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateAccelerationStructureKHRFunc)										(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyAccelerationStructureKHRFunc)										(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBuildAccelerationStructuresKHRFunc)										(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos);
