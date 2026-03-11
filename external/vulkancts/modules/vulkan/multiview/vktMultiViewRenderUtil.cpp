@@ -159,8 +159,11 @@ template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc,
 Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice device, const VkFormat colorFormat,
                                   const vector<uint32_t> &viewMasks, const VkSampleCountFlagBits samples,
                                   const VkAttachmentLoadOp colorLoadOp, const VkFormat dsFormat,
-                                  const bool useGeneralLayout)
+                                  const bool useGeneralLayout, const bool useResolveAttachment)
 {
+    if (useResolveAttachment)
+        DE_ASSERT(samples != VK_SAMPLE_COUNT_1_BIT);
+
     const bool dsAttachmentAvailable    = (dsFormat != vk::VK_FORMAT_UNDEFINED);
     const bool colorAttachmentAvailable = (colorFormat != vk::VK_FORMAT_UNDEFINED);
     const uint32_t colorAttachmentCount = (colorAttachmentAvailable ? 1u : 0u);
@@ -171,6 +174,9 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
     const VkImageLayout dsAttachmentLayout =
         useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+    const auto mainColorStoreOp =
+        (useResolveAttachment ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE);
+
     const AttachmentDesc
         colorAttachmentDescription // VkAttachmentDescription                                        ||  VkAttachmentDescription2KHR
         (
@@ -180,12 +186,17 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
             colorFormat,                     //  VkFormat format; ||  VkFormat format;
             samples,                         //  VkSampleCountFlagBits samples; ||  VkSampleCountFlagBits samples;
             colorLoadOp,                     //  VkAttachmentLoadOp loadOp; ||  VkAttachmentLoadOp loadOp;
-            VK_ATTACHMENT_STORE_OP_STORE,    //  VkAttachmentStoreOp storeOp; ||  VkAttachmentStoreOp storeOp;
+            mainColorStoreOp,                //  VkAttachmentStoreOp storeOp; ||  VkAttachmentStoreOp storeOp;
             VK_ATTACHMENT_LOAD_OP_DONT_CARE, //  VkAttachmentLoadOp stencilLoadOp; ||  VkAttachmentLoadOp stencilLoadOp;
             VK_ATTACHMENT_STORE_OP_DONT_CARE, //  VkAttachmentStoreOp stencilStoreOp; ||  VkAttachmentStoreOp stencilStoreOp;
             colorAttachmentLayout,            //  VkImageLayout initialLayout; ||  VkImageLayout initialLayout;
             colorAttachmentLayout             //  VkImageLayout finalLayout; ||  VkImageLayout finalLayout;
         );
+
+    AttachmentDesc resolveAttachmentDescription = colorAttachmentDescription;
+    resolveAttachmentDescription.loadOp         = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    resolveAttachmentDescription.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+    resolveAttachmentDescription.samples        = VK_SAMPLE_COUNT_1_BIT;
 
     const AttachmentRef
         colorAttachmentReference //  VkAttachmentReference                                        ||  VkAttachmentReference2KHR
@@ -196,6 +207,9 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
             colorAttachmentLayout, //  VkImageLayout layout; ||  VkImageLayout layout;
             0u                     // ||  VkImageAspectFlags aspectMask;
         );
+
+    const auto resolveAttachmentIndex = (1u + (dsAttachmentAvailable ? 1u : 0u));
+    const AttachmentRef resolveAttachmentReference(nullptr, resolveAttachmentIndex, colorAttachmentLayout, 0u);
 
     const AttachmentDesc
         dsAttachmentDescription //  VkAttachmentDescription                                        ||  VkAttachmentDescription2KHR
@@ -229,9 +243,13 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
         attachmentDescriptions.push_back(colorAttachmentDescription);
     if (dsAttachmentAvailable)
         attachmentDescriptions.push_back(dsAttachmentDescription);
+    if (colorAttachmentAvailable && useResolveAttachment)
+        attachmentDescriptions.push_back(resolveAttachmentDescription);
 
     const auto *colorAttachmentReferencePtr = (colorAttachmentAvailable ? &colorAttachmentReference : nullptr);
     const auto *dsAttachmentReferencePtr    = (dsAttachmentAvailable ? &dsAttachmentReference : nullptr);
+    const auto *resolveAttachmentReferencePtr =
+        (colorAttachmentAvailable && useResolveAttachment ? &resolveAttachmentReference : nullptr);
 
     DE_ASSERT((typeid(RenderPassCreateInfo) == typeid(RenderPassCreateInfo1)) ||
               (typeid(RenderPassCreateInfo) == typeid(RenderPassCreateInfo2)));
@@ -253,7 +271,7 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
                 nullptr, //  const VkAttachmentReference* pInputAttachments; ||  const VkAttachmentReference2KHR* pInputAttachments;
                 colorAttachmentCount, //  uint32_t colorAttachmentCount; ||  uint32_t colorAttachmentCount;
                 colorAttachmentReferencePtr, //  const VkAttachmentReference* pColorAttachments; ||  const VkAttachmentReference2KHR* pColorAttachments;
-                nullptr, //  const VkAttachmentReference* pResolveAttachments; ||  const VkAttachmentReference2KHR* pResolveAttachments;
+                resolveAttachmentReferencePtr, //  const VkAttachmentReference* pResolveAttachments; ||  const VkAttachmentReference2KHR* pResolveAttachments;
                 dsAttachmentReferencePtr, //  const VkAttachmentReference* pDepthStencilAttachment; ||  const VkAttachmentReference2KHR* pDepthStencilAttachment;
                 0u,     //  uint32_t preserveAttachmentCount; ||  uint32_t preserveAttachmentCount;
                 nullptr //  const uint32_t* pPreserveAttachments; ||  const uint32_t* pPreserveAttachments;
@@ -365,14 +383,14 @@ template Move<VkRenderPass> makeRenderPass<AttachmentDescription1, AttachmentRef
                                            SubpassDependency1, RenderPassCreateInfo1>(
     const DeviceInterface &vk, const VkDevice device, const VkFormat colorFormat, const vector<uint32_t> &viewMasks,
     const VkSampleCountFlagBits samples, const VkAttachmentLoadOp colorLoadOp, const VkFormat dsFormat,
-    const bool useGeneralLayout);
+    const bool useGeneralLayout, const bool useResolveAttachment);
 
 // Instantiate function for renderpass2 structures
 template Move<VkRenderPass> makeRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2,
                                            SubpassDependency2, RenderPassCreateInfo2>(
     const DeviceInterface &vk, const VkDevice device, const VkFormat colorFormat, const vector<uint32_t> &viewMasks,
     const VkSampleCountFlagBits samples, const VkAttachmentLoadOp colorLoadOp, const VkFormat dsFormat,
-    const bool useGeneralLayout);
+    const bool useGeneralLayout, const bool useResolveAttachment);
 
 template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep,
           typename RenderPassCreateInfo>
@@ -382,7 +400,7 @@ Move<VkRenderPass> makeRenderPassWithDepth(const DeviceInterface &vk, const VkDe
 {
     return makeRenderPass<AttachmentDesc, AttachmentRef, SubpassDesc, SubpassDep, RenderPassCreateInfo>(
         vk, device, colorFormat, viewMasks, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR, dsFormat,
-        useGeneralLayout);
+        useGeneralLayout, false);
 }
 
 // Instantiate function for legacy renderpass structures

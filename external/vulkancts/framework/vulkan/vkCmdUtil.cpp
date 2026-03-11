@@ -188,16 +188,20 @@ void endRenderPass(const DeviceInterface &vk, const VkCommandBuffer commandBuffe
 void beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkImageView colorImageView,
                     const VkRect2D &renderArea, const VkClearValue &clearValue, const VkImageLayout imageLayout,
                     const VkAttachmentLoadOp loadOperation, VkRenderingFlagsKHR renderingFlags,
-                    const uint32_t layerCount, const uint32_t viewMask)
+                    const uint32_t layerCount, const uint32_t viewMask, const VkImageView resolveImageView)
 {
+    const bool doResolve = (resolveImageView != VK_NULL_HANDLE);
+    const auto resolveMode =
+        (doResolve ? VK_RESOLVE_MODE_AVERAGE_BIT : VK_RESOLVE_MODE_NONE); // TO-DO: choose resolve mode better?
+
     VkRenderingAttachmentInfoKHR colorAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
         nullptr,                                         // const void* pNext;
         colorImageView,                                  // VkImageView imageView;
         imageLayout,                                     // VkImageLayout imageLayout;
-        VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-        VK_NULL_HANDLE,                                  // VkImageView resolveImageView;
-        VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
+        resolveMode,                                     // VkResolveModeFlagBits resolveMode;
+        resolveImageView,                                // VkImageView resolveImageView;
+        imageLayout,                                     // VkImageLayout resolveImageLayout;
         loadOperation,                                   // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
         clearValue                                       // VkClearValue clearValue;

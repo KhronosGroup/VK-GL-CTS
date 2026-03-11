@@ -86,7 +86,7 @@ void beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuff
                     const VkImageLayout imageLayout        = VK_IMAGE_LAYOUT_GENERAL,
                     const VkAttachmentLoadOp loadOperation = VK_ATTACHMENT_LOAD_OP_LOAD,
                     VkRenderingFlagsKHR renderingFlags = 0, const uint32_t layerCount = 1u,
-                    const uint32_t viewMask = 0u);
+                    const uint32_t viewMask = 0u, const VkImageView resolveImageView = VK_NULL_HANDLE);
 
 void beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkImageView colorImageView,
                     const VkImageView depthStencilImageView, const bool useStencilAttachment,
