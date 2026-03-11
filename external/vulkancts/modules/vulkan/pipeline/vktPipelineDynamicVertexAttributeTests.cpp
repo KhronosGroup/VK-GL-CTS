@@ -145,7 +145,7 @@ tcu::TestStatus NonSequentialInstance::iterate(void)
     const vk::VkQueue queue                         = m_context.getDeviceQueueInfo(0).queue;
     const std::vector<std::string> deviceExtensions = [this]
     {
-        const std::vector<const char *> &src = m_context.getContextManager()->getDeviceCreationExtensions();
+        const std::vector<const char *> &src = m_context.getDeviceCreationExtensions();
         std::vector<std::string> exts(src.size());
         std::transform(src.begin(), src.end(), exts.begin(), [](const char *s) { return std::string(s); });
         return exts;
