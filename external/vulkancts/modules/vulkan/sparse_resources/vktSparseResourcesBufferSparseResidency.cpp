@@ -1212,6 +1212,9 @@ void TexelBufferSparseResidencyCase::checkSupport(Context &context) const
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_BUFFER);
 
+    if ((m_texelBufferOp == TEXEL_OP_SPARSE_FETCH) || (m_texelBufferOp == TEXEL_OP_SPARSE_READ))
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_RESOURCE_RESIDENCY);
+
     const VkFormatProperties3 formatProperties(context.getFormatProperties(m_format));
     if ((m_bufferType == TexelBufferType::TEXEL_BUFF_UNIFORM) &&
         !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT))
