@@ -1584,6 +1584,7 @@ void QueryPoolOcclusionTests::init(void)
     baseTestVector.queryResultsMode         = RESULTS_MODE_GET;
     baseTestVector.queryResultsStride       = sizeof(uint64_t);
     baseTestVector.queryResultsAvailability = false;
+    baseTestVector.queryResultsDstOffset    = false;
     baseTestVector.primitiveTopology        = vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
     baseTestVector.discardHalf              = false;
     baseTestVector.clearOp                  = CLEAR_NOOP;
