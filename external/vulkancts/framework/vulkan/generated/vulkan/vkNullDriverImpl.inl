@@ -663,6 +663,14 @@ VKAPI_ATTR VkResult VKAPI_CALL acquireNextImageKHR (VkDevice device, VkSwapchain
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL acquirePerformanceConfigurationINTEL (VkDevice device, const VkPerformanceConfigurationAcquireInfoINTEL* pAcquireInfo, VkPerformanceConfigurationINTEL* pConfiguration)
+{
+	DE_UNREF(device);
+	DE_UNREF(pAcquireInfo);
+	DE_UNREF(pConfiguration);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL acquireProfilingLockKHR (VkDevice device, const VkAcquireProfilingLockInfoKHR* pInfo)
 {
 	DE_UNREF(device);
@@ -2257,6 +2265,27 @@ VKAPI_ATTR void VKAPI_CALL cmdSetPatchControlPointsEXT (VkCommandBuffer commandB
 	DE_UNREF(patchControlPoints);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL cmdSetPerformanceMarkerINTEL (VkCommandBuffer commandBuffer, const VkPerformanceMarkerInfoINTEL* pMarkerInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pMarkerInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL cmdSetPerformanceOverrideINTEL (VkCommandBuffer commandBuffer, const VkPerformanceOverrideInfoINTEL* pOverrideInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pOverrideInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL cmdSetPerformanceStreamMarkerINTEL (VkCommandBuffer commandBuffer, const VkPerformanceStreamMarkerInfoINTEL* pMarkerInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pMarkerInfo);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdSetPolygonModeEXT (VkCommandBuffer commandBuffer, VkPolygonMode polygonMode)
 {
 	DE_UNREF(commandBuffer);
@@ -3448,6 +3477,13 @@ VKAPI_ATTR VkResult VKAPI_CALL getImageViewOpaqueCaptureDescriptorDataEXT (VkDev
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL getLatencyTimingsNV (VkDevice device, VkSwapchainKHR swapchain, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pLatencyMarkerInfo);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getMemoryFdKHR (VkDevice device, const VkMemoryGetFdInfoKHR* pGetFdInfo, int* pFd)
 {
 	DE_UNREF(device);
@@ -3547,6 +3583,14 @@ VKAPI_ATTR VkResult VKAPI_CALL getPastPresentationTimingGOOGLE (VkDevice device,
 	DE_UNREF(swapchain);
 	DE_UNREF(pPresentationTimingCount);
 	DE_UNREF(pPresentationTimings);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPerformanceParameterINTEL (VkDevice device, VkPerformanceParameterTypeINTEL parameter, VkPerformanceValueINTEL* pValue)
+{
+	DE_UNREF(device);
+	DE_UNREF(parameter);
+	DE_UNREF(pValue);
 	return VK_SUCCESS;
 }
 
@@ -4363,11 +4407,26 @@ VKAPI_ATTR VkResult VKAPI_CALL importSemaphoreZirconHandleFUCHSIA (VkDevice devi
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL initializePerformanceApiINTEL (VkDevice device, const VkInitializePerformanceApiInfoINTEL* pInitializeInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInitializeInfo);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL invalidateMappedMemoryRanges (VkDevice device, uint32_t memoryRangeCount, const VkMappedMemoryRange* pMemoryRanges)
 {
 	DE_UNREF(device);
 	DE_UNREF(memoryRangeCount);
 	DE_UNREF(pMemoryRanges);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL latencySleepNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepInfoNV* pSleepInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pSleepInfo);
 	return VK_SUCCESS;
 }
 
@@ -4422,10 +4481,23 @@ VKAPI_ATTR void VKAPI_CALL queueInsertDebugUtilsLabelEXT (VkQueue queue, const V
 	DE_UNREF(pLabelInfo);
 }
 
+VKAPI_ATTR void VKAPI_CALL queueNotifyOutOfBandNV (VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo)
+{
+	DE_UNREF(queue);
+	DE_UNREF(pQueueTypeInfo);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL queuePresentKHR (VkQueue queue, const VkPresentInfoKHR* pPresentInfo)
 {
 	DE_UNREF(queue);
 	DE_UNREF(pPresentInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL queueSetPerformanceConfigurationINTEL (VkQueue queue, VkPerformanceConfigurationINTEL configuration)
+{
+	DE_UNREF(queue);
+	DE_UNREF(configuration);
 	return VK_SUCCESS;
 }
 
@@ -4500,6 +4572,13 @@ VKAPI_ATTR VkResult VKAPI_CALL releaseFullScreenExclusiveModeEXT (VkDevice devic
 {
 	DE_UNREF(device);
 	DE_UNREF(swapchain);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL releasePerformanceConfigurationINTEL (VkDevice device, VkPerformanceConfigurationINTEL configuration)
+{
+	DE_UNREF(device);
+	DE_UNREF(configuration);
 	return VK_SUCCESS;
 }
 
@@ -4604,6 +4683,21 @@ VKAPI_ATTR void VKAPI_CALL setHdrMetadataEXT (VkDevice device, uint32_t swapchai
 	DE_UNREF(pMetadata);
 }
 
+VKAPI_ATTR void VKAPI_CALL setLatencyMarkerNV (VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pLatencyMarkerInfo);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL setLatencySleepModeNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pSleepModeInfo);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL setPrivateData (VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlot privateDataSlot, uint64_t data)
 {
 	DE_UNREF(device);
@@ -4682,6 +4776,11 @@ VKAPI_ATTR void VKAPI_CALL trimCommandPoolKHR (VkDevice device, VkCommandPool co
 	DE_UNREF(device);
 	DE_UNREF(commandPool);
 	DE_UNREF(flags);
+}
+
+VKAPI_ATTR void VKAPI_CALL uninitializePerformanceApiINTEL (VkDevice device)
+{
+	DE_UNREF(device);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL unmapMemory2 (VkDevice device, const VkMemoryUnmapInfo* pMemoryUnmapInfo)
@@ -4927,6 +5026,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkAcquireFullScreenExclusiveModeEXT,							acquireFullScreenExclusiveModeEXT),
 	VK_NULL_FUNC_ENTRY(vkAcquireNextImage2KHR,										acquireNextImage2KHR),
 	VK_NULL_FUNC_ENTRY(vkAcquireNextImageKHR,										acquireNextImageKHR),
+	VK_NULL_FUNC_ENTRY(vkAcquirePerformanceConfigurationINTEL,						acquirePerformanceConfigurationINTEL),
 	VK_NULL_FUNC_ENTRY(vkAcquireProfilingLockKHR,									acquireProfilingLockKHR),
 	VK_NULL_FUNC_ENTRY(vkAllocateCommandBuffers,									allocateCommandBuffers),
 	VK_NULL_FUNC_ENTRY(vkAllocateDescriptorSets,									allocateDescriptorSets),
@@ -5105,6 +5205,9 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdSetLogicOpEXT,											cmdSetLogicOpEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetLogicOpEnableEXT,									cmdSetLogicOpEnableEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPatchControlPointsEXT,								cmdSetPatchControlPointsEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetPerformanceMarkerINTEL,								cmdSetPerformanceMarkerINTEL),
+	VK_NULL_FUNC_ENTRY(vkCmdSetPerformanceOverrideINTEL,							cmdSetPerformanceOverrideINTEL),
+	VK_NULL_FUNC_ENTRY(vkCmdSetPerformanceStreamMarkerINTEL,						cmdSetPerformanceStreamMarkerINTEL),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPolygonModeEXT,										cmdSetPolygonModeEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveRestartEnable,								cmdSetPrimitiveRestartEnable),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveTopology,									cmdSetPrimitiveTopology),
@@ -5303,6 +5406,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetImageSubresourceLayout,									getImageSubresourceLayout),
 	VK_NULL_FUNC_ENTRY(vkGetImageSubresourceLayout2,								getImageSubresourceLayout2),
 	VK_NULL_FUNC_ENTRY(vkGetImageViewOpaqueCaptureDescriptorDataEXT,				getImageViewOpaqueCaptureDescriptorDataEXT),
+	VK_NULL_FUNC_ENTRY(vkGetLatencyTimingsNV,										getLatencyTimingsNV),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryAndroidHardwareBufferANDROID,						getMemoryAndroidHardwareBufferANDROID),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryFdKHR,											getMemoryFdKHR),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryFdPropertiesKHR,									getMemoryFdPropertiesKHR),
@@ -5316,6 +5420,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetMicromapBuildSizesEXT,									getMicromapBuildSizesEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPastPresentationTimingEXT,								getPastPresentationTimingEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPastPresentationTimingGOOGLE,							getPastPresentationTimingGOOGLE),
+	VK_NULL_FUNC_ENTRY(vkGetPerformanceParameterINTEL,								getPerformanceParameterINTEL),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineBinaryDataKHR,									getPipelineBinaryDataKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineCacheData,										getPipelineCacheData),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutableInternalRepresentationsKHR,			getPipelineExecutableInternalRepresentationsKHR),
@@ -5356,7 +5461,9 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkImportSemaphoreFdKHR,										importSemaphoreFdKHR),
 	VK_NULL_FUNC_ENTRY(vkImportSemaphoreWin32HandleKHR,								importSemaphoreWin32HandleKHR),
 	VK_NULL_FUNC_ENTRY(vkImportSemaphoreZirconHandleFUCHSIA,						importSemaphoreZirconHandleFUCHSIA),
+	VK_NULL_FUNC_ENTRY(vkInitializePerformanceApiINTEL,								initializePerformanceApiINTEL),
 	VK_NULL_FUNC_ENTRY(vkInvalidateMappedMemoryRanges,								invalidateMappedMemoryRanges),
+	VK_NULL_FUNC_ENTRY(vkLatencySleepNV,											latencySleepNV),
 	VK_NULL_FUNC_ENTRY(vkMapMemory,													mapMemory),
 	VK_NULL_FUNC_ENTRY(vkMapMemory2,												mapMemory2),
 	VK_NULL_FUNC_ENTRY(vkMergePipelineCaches,										mergePipelineCaches),
@@ -5364,7 +5471,9 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkQueueBindSparse,											queueBindSparse),
 	VK_NULL_FUNC_ENTRY(vkQueueEndDebugUtilsLabelEXT,								queueEndDebugUtilsLabelEXT),
 	VK_NULL_FUNC_ENTRY(vkQueueInsertDebugUtilsLabelEXT,								queueInsertDebugUtilsLabelEXT),
+	VK_NULL_FUNC_ENTRY(vkQueueNotifyOutOfBandNV,									queueNotifyOutOfBandNV),
 	VK_NULL_FUNC_ENTRY(vkQueuePresentKHR,											queuePresentKHR),
+	VK_NULL_FUNC_ENTRY(vkQueueSetPerformanceConfigurationINTEL,						queueSetPerformanceConfigurationINTEL),
 	VK_NULL_FUNC_ENTRY(vkQueueSubmit,												queueSubmit),
 	VK_NULL_FUNC_ENTRY(vkQueueSubmit2,												queueSubmit2),
 	VK_NULL_FUNC_ENTRY(vkQueueWaitIdle,												queueWaitIdle),
@@ -5372,6 +5481,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkRegisterDisplayEventEXT,									registerDisplayEventEXT),
 	VK_NULL_FUNC_ENTRY(vkReleaseCapturedPipelineDataKHR,							releaseCapturedPipelineDataKHR),
 	VK_NULL_FUNC_ENTRY(vkReleaseFullScreenExclusiveModeEXT,							releaseFullScreenExclusiveModeEXT),
+	VK_NULL_FUNC_ENTRY(vkReleasePerformanceConfigurationINTEL,						releasePerformanceConfigurationINTEL),
 	VK_NULL_FUNC_ENTRY(vkReleaseProfilingLockKHR,									releaseProfilingLockKHR),
 	VK_NULL_FUNC_ENTRY(vkReleaseSwapchainImagesKHR,									releaseSwapchainImagesKHR),
 	VK_NULL_FUNC_ENTRY(vkResetCommandBuffer,										resetCommandBuffer),
@@ -5385,11 +5495,14 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkSetDeviceMemoryPriorityEXT,								setDeviceMemoryPriorityEXT),
 	VK_NULL_FUNC_ENTRY(vkSetEvent,													setEvent),
 	VK_NULL_FUNC_ENTRY(vkSetHdrMetadataEXT,											setHdrMetadataEXT),
+	VK_NULL_FUNC_ENTRY(vkSetLatencyMarkerNV,										setLatencyMarkerNV),
+	VK_NULL_FUNC_ENTRY(vkSetLatencySleepModeNV,										setLatencySleepModeNV),
 	VK_NULL_FUNC_ENTRY(vkSetPrivateData,											setPrivateData),
 	VK_NULL_FUNC_ENTRY(vkSetSwapchainPresentTimingQueueSizeEXT,						setSwapchainPresentTimingQueueSizeEXT),
 	VK_NULL_FUNC_ENTRY(vkSignalSemaphore,											signalSemaphore),
 	VK_NULL_FUNC_ENTRY(vkTransitionImageLayout,										transitionImageLayout),
 	VK_NULL_FUNC_ENTRY(vkTrimCommandPool,											trimCommandPool),
+	VK_NULL_FUNC_ENTRY(vkUninitializePerformanceApiINTEL,							uninitializePerformanceApiINTEL),
 	VK_NULL_FUNC_ENTRY(vkUnmapMemory,												unmapMemory),
 	VK_NULL_FUNC_ENTRY(vkUnmapMemory2,												unmapMemory2),
 	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSetWithTemplate,							updateDescriptorSetWithTemplate),

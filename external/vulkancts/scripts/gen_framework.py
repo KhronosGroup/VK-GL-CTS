@@ -175,6 +175,7 @@ VK_KHR_fragment_shading_rate
 VK_KHR_get_display_properties2
 VK_KHR_get_surface_capabilities2
 VK_KHR_incremental_present
+VK_KHR_internally_synchronized_queues
 VK_KHR_maintenance7
 VK_KHR_maintenance8
 VK_KHR_maintenance9
@@ -250,6 +251,7 @@ VK_FUCHSIA_external_semaphore
 VK_GOOGLE_display_timing
 VK_HUAWEI_cluster_culling_shader
 VK_HUAWEI_invocation_mask
+VK_INTEL_performance_query
 VK_NV_clip_space_w_scaling
 VK_NV_cooperative_matrix
 VK_NV_cooperative_matrix2
@@ -267,6 +269,7 @@ VK_NV_fragment_shading_rate_enums
 VK_NV_framebuffer_mixed_samples
 VK_NV_inherited_viewport_scissor
 VK_NV_linear_color_attachment
+VK_NV_low_latency2
 VK_NV_mesh_shader
 VK_NV_raw_access_chains
 VK_NV_ray_tracing

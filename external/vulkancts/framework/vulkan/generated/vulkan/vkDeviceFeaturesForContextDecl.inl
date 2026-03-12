@@ -75,6 +75,7 @@ const vk::VkPhysicalDeviceImagelessFramebufferFeatures&						getImagelessFramebu
 const vk::VkPhysicalDeviceIndexTypeUint8Features&							getIndexTypeUint8Features							(void) const;
 const vk::VkPhysicalDeviceInheritedViewportScissorFeaturesNV&				getInheritedViewportScissorFeatures					(void) const;
 const vk::VkPhysicalDeviceInlineUniformBlockFeatures&						getInlineUniformBlockFeatures						(void) const;
+const vk::VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR&			getInternallySynchronizedQueuesFeatures				(void) const;
 const vk::VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&						getInvocationMaskFeaturesHUAWEI						(void) const;
 const vk::VkPhysicalDeviceLegacyDitheringFeaturesEXT&						getLegacyDitheringFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT&				getLegacyVertexAttributesFeaturesEXT				(void) const;

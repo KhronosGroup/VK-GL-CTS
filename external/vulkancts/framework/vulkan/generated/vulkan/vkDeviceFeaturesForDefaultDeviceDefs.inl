@@ -75,6 +75,7 @@ const VkPhysicalDeviceImagelessFramebufferFeatures&						getImagelessFramebuffer
 const VkPhysicalDeviceIndexTypeUint8Features&							getIndexTypeUint8Features							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceIndexTypeUint8Features>();						}
 const VkPhysicalDeviceInheritedViewportScissorFeaturesNV&				getInheritedViewportScissorFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceInheritedViewportScissorFeaturesNV>();			}
 const VkPhysicalDeviceInlineUniformBlockFeatures&						getInlineUniformBlockFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceInlineUniformBlockFeatures>();					}
+const VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR&			getInternallySynchronizedQueuesFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR>();		}
 const VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&						getInvocationMaskFeaturesHUAWEI						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceInvocationMaskFeaturesHUAWEI>();					}
 const VkPhysicalDeviceLegacyDitheringFeaturesEXT&						getLegacyDitheringFeaturesEXT						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceLegacyDitheringFeaturesEXT>();					}
 const VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT&				getLegacyVertexAttributesFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT>();				}

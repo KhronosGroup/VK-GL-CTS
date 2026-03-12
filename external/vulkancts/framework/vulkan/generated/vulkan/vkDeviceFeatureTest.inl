@@ -3218,6 +3218,48 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestInlineUniformBlockFeature
 }
 
 
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestInternallySynchronizedQueuesFeaturesKHR (Context& context)
+{
+    const PlatformInterface&                vkp = context.getPlatformInterface();
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const InstanceDriver&                    instanceDriver            (instance.getDriver());
+    const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+    const tcu::CommandLine&                    commandLine = context.getTestContext().getCommandLine();
+    bool                                    isSubProcess = context.getTestContext().getCommandLine().isSubProcess();
+
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR, internallySynchronizedQueues),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR*>(featuresStruct);
+        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTestInvocationMaskFeaturesHUAWEI (Context& context)
 {
     const PlatformInterface&                vkp = context.getPlatformInterface();
@@ -8904,6 +8946,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "index_type_uint8_features", createDeviceWithUnsupportedFeaturesTestIndexTypeUint8Features);
 	addFunctionCase(testGroup, "inherited_viewport_scissor_features_nv", createDeviceWithUnsupportedFeaturesTestInheritedViewportScissorFeaturesNV);
 	addFunctionCase(testGroup, "inline_uniform_block_features", createDeviceWithUnsupportedFeaturesTestInlineUniformBlockFeatures);
+	addFunctionCase(testGroup, "internally_synchronized_queues_features_khr", createDeviceWithUnsupportedFeaturesTestInternallySynchronizedQueuesFeaturesKHR);
 	addFunctionCase(testGroup, "invocation_mask_features_huawei", createDeviceWithUnsupportedFeaturesTestInvocationMaskFeaturesHUAWEI);
 	addFunctionCase(testGroup, "legacy_dithering_features_ext", createDeviceWithUnsupportedFeaturesTestLegacyDitheringFeaturesEXT);
 	addFunctionCase(testGroup, "legacy_vertex_attributes_features_ext", createDeviceWithUnsupportedFeaturesTestLegacyVertexAttributesFeaturesEXT);

@@ -376,6 +376,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_inline_uniform_block"))
 		addFeatures(&physicalDeviceInlineUniformBlockFeatures);
 
+	// VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR for ext [VK_KHR_internally_synchronized_queues]
+	vk::VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR physicalDeviceInternallySynchronizedQueuesFeaturesKHR = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_internally_synchronized_queues"))
+		addFeatures(&physicalDeviceInternallySynchronizedQueuesFeaturesKHR);
+
 	// VkPhysicalDeviceInvocationMaskFeaturesHUAWEI for ext [VK_HUAWEI_invocation_mask]
 	vk::VkPhysicalDeviceInvocationMaskFeaturesHUAWEI physicalDeviceInvocationMaskFeaturesHUAWEI = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_HUAWEI_invocation_mask"))
@@ -1319,6 +1324,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceSwapchainMaintenance1FeaturesKHR.swapchainMaintenance1 == VK_FALSE )
 			failMesages.push_back("swapchainMaintenance1");
+	}
+
+	// VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_internally_synchronized_queues")) )
+	{
+		if ( physicalDeviceInternallySynchronizedQueuesFeaturesKHR.internallySynchronizedQueues == VK_FALSE )
+			failMesages.push_back("internallySynchronizedQueues");
 	}
 
 	// VkPhysicalDeviceCooperativeMatrixFeaturesKHR
