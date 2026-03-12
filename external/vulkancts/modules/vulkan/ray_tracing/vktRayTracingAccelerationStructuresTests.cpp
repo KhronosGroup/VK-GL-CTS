@@ -129,6 +129,7 @@ enum class UpdateCase
     VERTICES,
     INDICES,
     TRANSFORM,
+    GEOMETRY_TRANSFORM,
     DEGENERATE,
 };
 
@@ -1070,6 +1071,9 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> UpdateableASConfigu
         }
 
         bottomLevelAccelerationStructure->addGeometry(geometry);
+
+        if (testParams.updateCase == UpdateCase::GEOMETRY_TRANSFORM)
+            bottomLevelAccelerationStructure->setGeometryTransform(0u, identityMatrix3x4);
 
         result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
     }
@@ -5362,6 +5366,17 @@ TestStatus ASUpdateInstance::iterate(void)
             topLevelAccelerationStructure->updateInstanceMatrix(vkd, device, 0, translatedMatrix);
             topLevelAccelerationStructure->build(vkd, device, *cmdBuffer, topLevelAccelerationStructure.get());
         }
+        else if (m_data.updateCase == UpdateCase::GEOMETRY_TRANSFORM)
+        {
+            const VkTransformMatrixKHR translatedMatrix = {
+                {{1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, -0.5f}}};
+
+            for (auto &blas : bottomLevelAccelerationStructures)
+            {
+                blas->setGeometryTransform(0u, translatedMatrix);
+                blas->build(vkd, device, *cmdBuffer, blas.get());
+            }
+        }
         else if (m_data.updateCase == UpdateCase::DEGENERATE)
         {
             for (auto &blas : bottomLevelAccelerationStructures)
@@ -6926,9 +6941,8 @@ void addUpdateTests(TestCaseGroup *group)
         UpdateCase updateType;
         const char *name;
     } updateTypes[] = {
-        {UpdateCase::VERTICES, "vertices"},
-        {UpdateCase::INDICES, "indices"},
-        {UpdateCase::TRANSFORM, "transform"},
+        {UpdateCase::VERTICES, "vertices"},     {UpdateCase::INDICES, "indices"},
+        {UpdateCase::TRANSFORM, "transform"},   {UpdateCase::GEOMETRY_TRANSFORM, "geometry_transform"},
         {UpdateCase::DEGENERATE, "degenerate"},
     };
 
@@ -6963,6 +6977,9 @@ void addUpdateTests(TestCaseGroup *group)
                 {
                     if ((buildTypes[buildTypeIdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
                         (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
+                        continue;
+                    if ((buildTypes[buildTypeIdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
+                        (updateTypes[updateTypesIdx].updateType == UpdateCase::GEOMETRY_TRANSFORM))
                         continue;
 
                     // Base build flags for update
