@@ -23,6 +23,7 @@
 
 #include "vktReconvergenceTests.hpp"
 
+#include "vkBarrierUtil.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkQueryUtil.hpp"
@@ -5199,12 +5200,17 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
 
     PushConstant pc{/* pcinvocationStride is initialized with 0, the rest of fields as well */};
 
+    // use a memory barrier for simplicity
+    const VkMemoryBarrier computeFinishBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+
     // compute "maxLoc", the maximum number of locations written
     beginCommandBuffer(vk, *cmdBuffer, 0u);
     vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, nullptr);
     vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
     vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, m_data.shaderStage, 0, sizeof(pc), &pc);
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u,
+                          &computeFinishBarrier, 0u, nullptr, 0u, nullptr);
     endCommandBuffer(vk, *cmdBuffer);
 
     submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
@@ -5269,6 +5275,8 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
     vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
     vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, m_data.shaderStage, 0, sizeof(pc), &pc);
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u,
+                          &computeFinishBarrier, 0u, nullptr, 0u, nullptr);
     endCommandBuffer(vk, *cmdBuffer);
 
     submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
