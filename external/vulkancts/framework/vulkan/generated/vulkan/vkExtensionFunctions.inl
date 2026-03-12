@@ -174,6 +174,11 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_ARM_shader_instrumentation")
+	{
+		functions.push_back("vkEnumeratePhysicalDeviceShaderInstrumentationMetricsARM");
+		return;
+	}
 	if (extName == "VK_ARM_tensors")
 	{
 		functions.push_back("vkGetPhysicalDeviceExternalTensorPropertiesARM");
@@ -1883,6 +1888,12 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_SEC_ubm_surface")
+	{
+		functions.push_back("vkCreateUbmSurfaceSEC");
+		functions.push_back("vkGetPhysicalDeviceUbmPresentationSupportSEC");
+		return;
+	}
 	if (extName == "VK_VALVE_descriptor_set_host_mapping")
 	{
 		return;
@@ -1892,6 +1903,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_VALVE_mutable_descriptor_type")
+	{
+		return;
+	}
+	if (extName == "VK_VALVE_shader_mixed_float_dot_product")
 	{
 		return;
 	}
@@ -2075,6 +2090,16 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	}
 	if (extName == "VK_ARM_shader_core_properties")
 	{
+		return;
+	}
+	if (extName == "VK_ARM_shader_instrumentation")
+	{
+		functions.push_back("vkCreateShaderInstrumentationARM");
+		functions.push_back("vkDestroyShaderInstrumentationARM");
+		functions.push_back("vkCmdBeginShaderInstrumentationARM");
+		functions.push_back("vkCmdEndShaderInstrumentationARM");
+		functions.push_back("vkGetShaderInstrumentationValuesARM");
+		functions.push_back("vkClearShaderInstrumentationMetricsARM");
 		return;
 	}
 	if (extName == "VK_ARM_tensors")
@@ -4339,6 +4364,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_SEC_ubm_surface")
+	{
+		return;
+	}
 	if (extName == "VK_VALVE_descriptor_set_host_mapping")
 	{
 		functions.push_back("vkGetDescriptorSetLayoutHostMappingInfoVALVE");
@@ -4350,6 +4379,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_VALVE_mutable_descriptor_type")
+	{
+		return;
+	}
+	if (extName == "VK_VALVE_shader_mixed_float_dot_product")
 	{
 		return;
 	}
@@ -4403,6 +4436,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_layer_settings",
 	"VK_NV_display_stereo",
 	"VK_OHOS_surface",
+	"VK_SEC_ubm_surface",
 };
 
 ::std::string deviceExtensionNames[] =
@@ -4791,6 +4825,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_ARM_pipeline_opacity_micromap",
 	"VK_EXT_external_memory_metal",
 	"VK_ARM_performance_counters_by_region",
+	"VK_ARM_shader_instrumentation",
 	"VK_EXT_vertex_attribute_robustness",
 	"VK_ARM_format_pack",
 	"VK_VALVE_fragment_density_map_layered",
@@ -4805,6 +4840,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_shader_uniform_buffer_unsized_array",
 	"VK_NV_compute_occupancy_priority",
 	"VK_EXT_shader_subgroup_partitioned",
+	"VK_VALVE_shader_mixed_float_dot_product",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_KHR_ray_query",

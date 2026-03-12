@@ -629,7 +629,7 @@ class ConformanceItemLists:
         self.structsIncludingVideo = self.structs + self.filterToSupportedByCTS(vkObject.videoStd.structs)
         self.structsIncludingVideo = sorted(self.structsIncludingVideo, key=lambda item: item.name)
 
-    # <vulkan_object_issue_workaround>
+    # <vulkan_sc_workaround>
     # some functions and structures for Vulkan SC use names from regular Vulkan e.g.
     # vkCmdBindVertexBuffers2 is provided instead of non promoted vkCmdBindVertexBuffers2EXT
     def scPostProcess(self):
@@ -714,7 +714,32 @@ class ConformanceItemLists:
         for s in self.structs:
             if s.name in khrStructs:
                 s.alias = s.name + 'KHR'
-    # </vulkan_object_issue_workaround>
+        # add missing structs that are needed by vulkan_json_parser.hpp (to be removed when vulkan_json_parser.hpp is fixed)
+        structNames = [s.name for s in self.structs]
+        commonMemberParams = (False, None, False, None, False, False, [], False, False, None, '', None, None, [])
+        dfmp2StructName = 'VkDrmFormatModifierProperties2EXT'
+        if dfmp2StructName not in structNames:
+            members = [
+                Member('drmFormatModifier', 'uint64_t', 'uint64_t', *commonMemberParams),
+                Member('drmFormatModifierPlaneCount', 'uint32_t', 'uint32_t', *commonMemberParams),
+                Member('drmFormatModifierTilingFeatures', 'VkFormatFeatureFlags2', 'VkFormatFeatureFlags2', *commonMemberParams)
+            ]
+            self.structs.append(Struct(dfmp2StructName, [], [], None, None, members, False, False, '', False, None, None))
+        dfmpl2StructName = 'VkDrmFormatModifierPropertiesList2EXT'
+        if dfmpl2StructName not in structNames:
+            members = [
+                Member('sType', 'VkStructureType', 'VkStructureType', *commonMemberParams),
+                Member('pNext', 'void', 'void*', *commonMemberParams),
+                Member('drmFormatModifierCount', 'uint32_t', 'uint32_t', *commonMemberParams),
+                Member('pDrmFormatModifierProperties', dfmp2StructName, 'VkDrmFormatModifierProperties2EXT*', *commonMemberParams)
+            ]
+            sType = 'VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT'
+            self.structs.append(Struct(dfmpl2StructName, [], [], None, None, members, False, False, sType, False, None, None))
+            # add sType to VkStructureType enum
+            for e in self.enums:
+                if e.name == 'VkStructureType':
+                    e.fields.append(EnumField(sType, [], None, False, 1000158006, '1000158006', []))
+    # </vulkan_sc_workaround>
 
     def filterToSupportedByCTS(self, items):
         # generate framework enums/structs/commands only for items that are tested by CTS;
