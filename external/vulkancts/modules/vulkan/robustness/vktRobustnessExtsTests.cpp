@@ -3622,6 +3622,7 @@ tcu::TestStatus OutOfBoundsStrideInstance::iterate(void)
     void *vertexBufferPtr   = vertexBufferAlloc.getHostPtr();
 
     deMemcpy(vertexBufferPtr, de::dataOrNull(vertexBufferData), static_cast<size_t>(vertexBufferSize));
+    flushAlloc(vkd, device, vertexBufferAlloc);
 
     // Create the pipeline.
     const auto &binaries  = m_context.getBinaryCollection();
