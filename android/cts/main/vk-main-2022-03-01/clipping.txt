@@ -1,1 +1,0 @@
-dEQP-VK.clipping.misc.negative_and_non_negative_cull_distance

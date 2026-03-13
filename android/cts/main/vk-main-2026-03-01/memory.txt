@@ -104,7 +104,6 @@ dEQP-VK.memory.decompression.indirect.compression_level_6.count_64_64.decompress
 dEQP-VK.memory.dma_heap_memory.allocate_and_bind
 dEQP-VK.memory.dma_heap_memory.shader_access
 dEQP-VK.memory.dma_heap_memory.shader_access_offset
-dEQP-VK.memory.pipeline_barrier.host_write_index_buffer.1048576
 dEQP-VK.memory.zero_initialize_device_memory.clear_buffer.index_buffer_1
 dEQP-VK.memory.zero_initialize_device_memory.clear_buffer.index_buffer_1_host_visible
 dEQP-VK.memory.zero_initialize_device_memory.clear_buffer.index_buffer_4

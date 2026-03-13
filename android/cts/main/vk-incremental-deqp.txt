@@ -6,6 +6,12 @@ dEQP-VK.api.driver_properties.driver_id_match
 dEQP-VK.api.driver_properties.info_zero_terminated
 dEQP-VK.api.driver_properties.name_is_not_empty
 dEQP-VK.api.driver_properties.name_zero_terminated
+dEQP-VK.api.external.fence.sync_fd.signal_export_import_wait_temporary
+dEQP-VK.api.external.memory.android_hardware_buffer.dedicated.image.bind_export_import_bind
+dEQP-VK.api.external.memory.android_hardware_buffer.dedicated.image.info
+dEQP-VK.api.external.memory.android_hardware_buffer.suballocated.buffer.bind_export_import_bind
+dEQP-VK.api.external.memory.android_hardware_buffer.suballocated.buffer.info
+dEQP-VK.api.external.semaphore.sync_fd.signal_export_import_wait_temporary
 dEQP-VK.api.info.format_properties.b16g16r16g16_422_unorm
 dEQP-VK.api.info.format_properties.b4g4r4a4_unorm_pack16
 dEQP-VK.api.info.format_properties.g16_b16_r16_3plane_420_unorm

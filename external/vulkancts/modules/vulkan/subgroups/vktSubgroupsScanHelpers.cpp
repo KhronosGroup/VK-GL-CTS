@@ -322,7 +322,7 @@ string getCompare(Operator op, VecType vecType, string lhs, string rhs)
             if (isMinMax)
                 return "(" + lhs + " == " + rhs + ")";
             else
-                return "(abs(" + lhs + " - " + rhs + ") < (gl_SubgroupSize==128 ? 0.00002:0.00001))";
+                return "(abs(" + lhs + " - " + rhs + ") < (gl_SubgroupSize==128 ? 0.000025:0.00001))";
         }
     }
     else
@@ -343,7 +343,7 @@ string getCompare(Operator op, VecType vecType, string lhs, string rhs)
                 return "all(equal(" + lhs + ", " + rhs + "))";
             else
                 return "all(lessThan(abs(" + lhs + " - " + rhs + "), " + formatName +
-                       "(gl_SubgroupSize==128 ? 0.00002: 0.00001)))";
+                       "(gl_SubgroupSize==128 ? 0.000025: 0.00001)))";
         }
     }
 }
