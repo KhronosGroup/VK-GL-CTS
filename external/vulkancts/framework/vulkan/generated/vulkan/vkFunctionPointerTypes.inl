@@ -554,6 +554,15 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetSwapchainPresentTimingQueueSizeEX
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSwapchainTimingPropertiesEXTFunc)										(VkDevice device, VkSwapchainKHR swapchain, VkSwapchainTimingPropertiesEXT* pSwapchainTimingProperties, uint64_t* pSwapchainTimingPropertiesCounter);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSwapchainTimeDomainPropertiesEXTFunc)									(VkDevice device, VkSwapchainKHR swapchain, VkSwapchainTimeDomainPropertiesEXT* pSwapchainTimeDomainProperties, uint64_t* pTimeDomainsCounter);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPastPresentationTimingEXTFunc)											(VkDevice device, const VkPastPresentationTimingInfoEXT* pPastPresentationTimingInfo, VkPastPresentationTimingPropertiesEXT* pPastPresentationTimingProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* InitializePerformanceApiINTELFunc)											(VkDevice device, const VkInitializePerformanceApiInfoINTEL* pInitializeInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* UninitializePerformanceApiINTELFunc)										(VkDevice device);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CmdSetPerformanceMarkerINTELFunc)											(VkCommandBuffer commandBuffer, const VkPerformanceMarkerInfoINTEL* pMarkerInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CmdSetPerformanceStreamMarkerINTELFunc)									(VkCommandBuffer commandBuffer, const VkPerformanceStreamMarkerInfoINTEL* pMarkerInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CmdSetPerformanceOverrideINTELFunc)										(VkCommandBuffer commandBuffer, const VkPerformanceOverrideInfoINTEL* pOverrideInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquirePerformanceConfigurationINTELFunc)									(VkDevice device, const VkPerformanceConfigurationAcquireInfoINTEL* pAcquireInfo, VkPerformanceConfigurationINTEL* pConfiguration);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ReleasePerformanceConfigurationINTELFunc)									(VkDevice device, VkPerformanceConfigurationINTEL configuration);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* QueueSetPerformanceConfigurationINTELFunc)									(VkQueue queue, VkPerformanceConfigurationINTEL configuration);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPerformanceParameterINTELFunc)											(VkDevice device, VkPerformanceParameterTypeINTEL parameter, VkPerformanceValueINTEL* pValue);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateImagePipeSurfaceFUCHSIAFunc)											(VkInstance instance, const VkImagePipeSurfaceCreateInfoFUCHSIA* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateMetalSurfaceEXTFunc)													(VkInstance instance, const VkMetalSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 typedef VKAPI_ATTR VkDeviceAddress		(VKAPI_CALL* GetBufferDeviceAddressEXTFunc)												(VkDevice device, const VkBufferDeviceAddressInfo* pInfo);
@@ -731,6 +740,11 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDepthClampRangeEXTFunc)										
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeVectorPropertiesNVFunc)						(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeVectorPropertiesNV* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ConvertCooperativeVectorMatrixNVFunc)										(VkDevice device, const VkConvertCooperativeVectorMatrixInfoNV* pInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdConvertCooperativeVectorMatrixNVFunc)									(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkConvertCooperativeVectorMatrixInfoNV* pInfos);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetLatencySleepModeNVFunc)													(VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* LatencySleepNVFunc)														(VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepInfoNV* pSleepInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* SetLatencyMarkerNVFunc)													(VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetLatencyTimingsNVFunc)													(VkDevice device, VkSwapchainKHR swapchain, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* QueueNotifyOutOfBandNVFunc)												(VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDataGraphPipelinesARMFunc)											(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkDataGraphPipelineCreateInfoARM* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDataGraphPipelineSessionARMFunc)										(VkDevice device, const VkDataGraphPipelineSessionCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDataGraphPipelineSessionARM* pSession);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDataGraphPipelineSessionBindPointRequirementsARMFunc)					(VkDevice device, const VkDataGraphPipelineSessionBindPointRequirementsInfoARM* pInfo, uint32_t* pBindPointRequirementCount, VkDataGraphPipelineSessionBindPointRequirementARM* pBindPointRequirements);

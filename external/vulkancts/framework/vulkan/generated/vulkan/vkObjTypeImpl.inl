@@ -34,6 +34,7 @@ template<> inline VkObjectType	getObjectType<VkIndirectCommandsLayoutNV>		(void)
 template<> inline VkObjectType	getObjectType<VkIndirectExecutionSetEXT>		(void) { return VK_OBJECT_TYPE_INDIRECT_EXECUTION_SET_EXT;		}
 template<> inline VkObjectType	getObjectType<VkInstance>						(void) { return VK_OBJECT_TYPE_INSTANCE;						}
 template<> inline VkObjectType	getObjectType<VkMicromapEXT>					(void) { return VK_OBJECT_TYPE_MICROMAP_EXT;					}
+template<> inline VkObjectType	getObjectType<VkPerformanceConfigurationINTEL>	(void) { return VK_OBJECT_TYPE_PERFORMANCE_CONFIGURATION_INTEL;	}
 template<> inline VkObjectType	getObjectType<VkPhysicalDevice>					(void) { return VK_OBJECT_TYPE_PHYSICAL_DEVICE;					}
 template<> inline VkObjectType	getObjectType<VkPipeline>						(void) { return VK_OBJECT_TYPE_PIPELINE;						}
 template<> inline VkObjectType	getObjectType<VkPipelineBinaryKHR>				(void) { return VK_OBJECT_TYPE_PIPELINE_BINARY_KHR;				}

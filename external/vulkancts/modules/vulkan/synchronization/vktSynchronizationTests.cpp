@@ -40,6 +40,7 @@
 #include "vktSynchronizationImageLayoutTransitionTests.hpp"
 #include "vktGlobalPriorityQueueTests.hpp"
 #include "vktSynchronizationImplicitTests.hpp"
+#include "vktSynchronizationInternallySynchronizedTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -128,6 +129,7 @@ tcu::TestCaseGroup *createTestsInternal(tcu::TestContext &testCtx, Synchronizati
             testGroup->addChild(createSynchronization2TimelineSemaphoreTests(testCtx));
 #ifndef CTS_USES_VULKANSC
             testGroup->addChild(createNoneStageTests(testCtx));
+            testGroup->addChild(createInternallySynchronizedTests(testCtx, type));
 #endif // CTS_USES_VULKANSC
             testGroup->addChild(createImageLayoutTransitionTests(testCtx));
         }
