@@ -17322,6 +17322,11 @@ public:
             }
         }
         checkFormatSupport(context, m_params.dst.image.format);
+
+        if (m_params.useConditionalRender)
+        {
+            context.requireDeviceFunctionality("VK_EXT_conditional_rendering");
+        }
     }
 
 private:
