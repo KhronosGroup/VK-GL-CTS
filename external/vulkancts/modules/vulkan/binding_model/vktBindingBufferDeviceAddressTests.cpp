@@ -2217,6 +2217,151 @@ void FragmentStoreTestCase::checkSupport(Context &context) const
     context.requireDeviceCoreFeature(vkt::DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
 }
 
+class BufferDeviceAddressMiscTestInstance : public TestInstance
+{
+public:
+    BufferDeviceAddressMiscTestInstance(Context &context) : vkt::TestInstance(context)
+    {
+    }
+    ~BufferDeviceAddressMiscTestInstance(void)
+    {
+    }
+
+private:
+    tcu::TestStatus iterate(void);
+};
+
+tcu::TestStatus BufferDeviceAddressMiscTestInstance::iterate(void)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    Allocator &allocator      = m_context.getDefaultAllocator();
+    const VkQueue queue       = m_context.getUniversalQueue();
+
+    Move<VkCommandPool> cmdPool     = createCommandPool(vk, device, 0, m_context.getUniversalQueueFamilyIndex());
+    Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    const uint32_t bufferSize = 16u;
+    BufferWithMemory buffer(
+        vk, device, allocator,
+        makeBufferCreateInfo(nullptr, bufferSize,
+                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, 0u),
+        MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+
+    BufferWithMemory storageBuffer(vk, device, allocator,
+                                   makeBufferCreateInfo(nullptr, bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 0u),
+                                   MemoryRequirement::HostVisible);
+
+    VkBufferDeviceAddressInfo bufferDeviceAddressInfo = {
+        VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType    sType;
+        nullptr,                                      // const void*        pNext;
+        *buffer,                                      // VkBuffer           buffer
+    };
+
+    VkDeviceAddress address = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+
+    uint8_t *storageBufferPtr = reinterpret_cast<uint8_t *>(storageBuffer.getAllocation().getHostPtr());
+    deMemset(storageBufferPtr, 0, bufferSize);
+    deMemcpy(storageBufferPtr + sizeof(uint32_t) * 2, &address, sizeof(VkDeviceAddress));
+    flushAlloc(vk, device, storageBuffer.getAllocation());
+
+    const Unique<VkShaderModule> shaderModule(
+        createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0));
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+    DescriptorSetLayoutBuilder descriptorBuilder;
+    descriptorBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
+
+    const auto descriptorSetLayout(descriptorBuilder.build(vk, device));
+    const auto descriptorPool = poolBuilder.build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
+
+    const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
+    const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+
+    const Move<vk::VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+    VkDescriptorBufferInfo bufferInfo;
+    bufferInfo.buffer = *storageBuffer;
+    bufferInfo.offset = 0u;
+    bufferInfo.range  = VK_WHOLE_SIZE;
+
+    vk::DescriptorSetUpdateBuilder updateBuilder;
+    updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                              vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo);
+    updateBuilder.update(vk, device);
+
+    beginCommandBuffer(vk, *cmdBuffer);
+    vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u,
+                             nullptr);
+    vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+    invalidateAlloc(vk, device, buffer.getAllocation());
+
+    int *a                  = reinterpret_cast<int *>(buffer.getAllocation().getHostPtr());
+    const int expectedValue = 2;
+    if (*a != expectedValue)
+        TCU_FAIL("Unexpected result");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class BufferDeviceAddressMiscTestCase : public TestCase
+{
+public:
+    BufferDeviceAddressMiscTestCase(tcu::TestContext &context, const char *name) : vkt::TestCase(context, name)
+    {
+    }
+    ~BufferDeviceAddressMiscTestCase(void)
+    {
+    }
+    virtual void initPrograms(SourceCollections &programCollection) const;
+    virtual TestInstance *createInstance(Context &context) const
+    {
+        return new BufferDeviceAddressMiscTestInstance(context);
+    }
+    virtual void checkSupport(Context &context) const;
+};
+
+void BufferDeviceAddressMiscTestCase::initPrograms(SourceCollections &programCollection) const
+{
+    std::stringstream comp;
+    comp << "#version 450\n"
+            "#extension GL_EXT_buffer_reference : require\n"
+            "\n"
+            "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+            "\n"
+            "layout(std430, buffer_reference) buffer T1 {\n"
+            "    int a;\n"
+            "} block_buffer;\n"
+            "\n"
+            "struct Foo {\n"
+            "    T1 b;\n"
+            "};\n"
+            "\n"
+            "layout(set = 0, binding = 0, std430) buffer storage_buffer {\n"
+            "    uint index;\n"
+            "    // offset 4..7 is std430 padding\n"
+            "    Foo f[];  // each item is 8 bytes: one buffer reference\n"
+            "} foo;\n"
+            "\n"
+            "void main() {\n"
+            "    Foo new_foo = foo.f[foo.index];\n"
+            "    new_foo.b.a = 2;\n"
+            "}\n";
+
+    programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+}
+
+void BufferDeviceAddressMiscTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_KHR_buffer_device_address");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createBufferDeviceAddressTests(tcu::TestContext &testCtx)
@@ -2382,6 +2527,11 @@ tcu::TestCaseGroup *createBufferDeviceAddressTests(tcu::TestContext &testCtx)
         memoryModelGroup->addChild(new FragmentStoreTestCase(testCtx, "fragment_store"));
     }
     group->addChild(memoryModelGroup.release());
+    de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
+    {
+        miscGroup->addChild(new BufferDeviceAddressMiscTestCase(testCtx, "copy_struct"));
+    }
+    group->addChild(miscGroup.release());
     return group.release();
 }
 
