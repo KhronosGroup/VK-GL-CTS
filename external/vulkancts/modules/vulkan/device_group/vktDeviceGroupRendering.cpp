@@ -1837,6 +1837,793 @@ private:
     }
 };
 
+enum ComputeTestModeType
+{
+    COMPUTE_TEST_MODE_SPLIT_DISPATCH     = 1 << 0, //!< Equivalent to SFR
+    COMPUTE_TEST_MODE_ALTERNATE_DISPATCH = 1 << 1, //!< Equivalent to AFR
+    COMPUTE_TEST_MODE_HOSTMEMORY         = 1 << 2, //!< Use host memory for resources
+    COMPUTE_TEST_MODE_DEDICATED          = 1 << 3, //!< Use dedicated memory allocations
+    COMPUTE_TEST_MODE_PEER_MEMORY        = 1 << 4, //!< Memory fetch from peer
+};
+
+class DeviceGroupComputeTestInstance : public TestInstance
+{
+public:
+    DeviceGroupComputeTestInstance(Context &context, uint32_t mode);
+    ~DeviceGroupComputeTestInstance(void);
+
+private:
+    void init(void);
+    uint32_t getMemoryIndex(uint32_t memoryTypeBits, uint32_t memoryPropertyFlag);
+    bool isPeerFetchAllowed(uint32_t memoryTypeIndex, uint32_t firstdeviceID, uint32_t seconddeviceID);
+    void submitBufferAndWaitForIdle(const vk::DeviceInterface &vk, VkCommandBuffer cmdBuf, uint32_t deviceMask);
+
+    virtual tcu::TestStatus iterate(void);
+
+    std::shared_ptr<CustomInstanceWrapper> m_instanceWrapper;
+    Move<VkDevice> m_deviceGroup;
+#ifndef CTS_USES_VULKANSC
+    de::MovePtr<vk::DeviceDriver> m_deviceDriver;
+#else
+    de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> m_deviceDriver;
+#endif // CTS_USES_VULKANSC
+
+    uint32_t m_physicalDeviceCount;
+    VkQueue m_deviceGroupQueue;
+    vector<VkPhysicalDevice> m_physicalDevices;
+    uint32_t m_queueFamilyIndex;
+
+    uint32_t m_testMode;
+    bool m_useHostMemory;
+    bool m_useDedicated;
+    bool m_usePeerMemory;
+    bool m_subsetAllocation;
+};
+
+DeviceGroupComputeTestInstance::DeviceGroupComputeTestInstance(Context &context, const uint32_t mode)
+    : TestInstance(context)
+    , m_instanceWrapper(new CustomInstanceWrapper(context))
+    , m_physicalDeviceCount(0)
+    , m_deviceGroupQueue(VK_NULL_HANDLE)
+    , m_testMode(mode)
+    , m_useHostMemory(m_testMode & COMPUTE_TEST_MODE_HOSTMEMORY)
+    , m_useDedicated(m_testMode & COMPUTE_TEST_MODE_DEDICATED)
+    , m_usePeerMemory(m_testMode & COMPUTE_TEST_MODE_PEER_MEMORY)
+    , m_subsetAllocation(true)
+{
+    init();
+}
+
+DeviceGroupComputeTestInstance::~DeviceGroupComputeTestInstance()
+{
+}
+
+uint32_t DeviceGroupComputeTestInstance::getMemoryIndex(const uint32_t memoryTypeBits,
+                                                        const uint32_t memoryPropertyFlag)
+{
+    const VkPhysicalDeviceMemoryProperties deviceMemProps =
+        getPhysicalDeviceMemoryProperties(m_instanceWrapper->instance.getDriver(), m_context.getPhysicalDevice());
+    for (uint32_t memoryTypeNdx = 0; memoryTypeNdx < deviceMemProps.memoryTypeCount; memoryTypeNdx++)
+    {
+        if ((memoryTypeBits & (1u << memoryTypeNdx)) != 0 &&
+            (deviceMemProps.memoryTypes[memoryTypeNdx].propertyFlags & memoryPropertyFlag) == memoryPropertyFlag)
+            return memoryTypeNdx;
+    }
+    TCU_THROW(NotSupportedError, "No compatible memory type found");
+}
+
+bool DeviceGroupComputeTestInstance::isPeerFetchAllowed(uint32_t memoryTypeIndex, uint32_t firstdeviceID,
+                                                        uint32_t seconddeviceID)
+{
+    VkPeerMemoryFeatureFlags peerMemFeatures1;
+    VkPeerMemoryFeatureFlags peerMemFeatures2;
+    const DeviceDriver vk(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup,
+                          m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine());
+    const VkPhysicalDeviceMemoryProperties deviceMemProps1 =
+        getPhysicalDeviceMemoryProperties(m_instanceWrapper->instance.getDriver(), m_physicalDevices[firstdeviceID]);
+    const VkPhysicalDeviceMemoryProperties deviceMemProps2 =
+        getPhysicalDeviceMemoryProperties(m_instanceWrapper->instance.getDriver(), m_physicalDevices[seconddeviceID]);
+
+    vk.getDeviceGroupPeerMemoryFeatures(*m_deviceGroup, deviceMemProps2.memoryTypes[memoryTypeIndex].heapIndex,
+                                        firstdeviceID, seconddeviceID, &peerMemFeatures1);
+    vk.getDeviceGroupPeerMemoryFeatures(*m_deviceGroup, deviceMemProps1.memoryTypes[memoryTypeIndex].heapIndex,
+                                        seconddeviceID, firstdeviceID, &peerMemFeatures2);
+
+    return (peerMemFeatures1 & VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT) &&
+           (peerMemFeatures2 & VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT);
+}
+
+void DeviceGroupComputeTestInstance::submitBufferAndWaitForIdle(const vk::DeviceInterface &vk, VkCommandBuffer cmdBuf,
+                                                                uint32_t deviceMask)
+{
+    submitCommandsAndWait(vk, *m_deviceGroup, m_deviceGroupQueue, cmdBuf, true, deviceMask);
+    VK_CHECK(vk.deviceWaitIdle(*m_deviceGroup));
+}
+
+void DeviceGroupComputeTestInstance::init(void)
+{
+    if (!m_context.isInstanceFunctionalitySupported("VK_KHR_device_group_creation"))
+        TCU_THROW(NotSupportedError,
+                  "Device Group tests are not supported, no device group creation extension present.");
+
+    if (!m_context.isDeviceFunctionalitySupported("VK_KHR_device_group"))
+        TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_device_group");
+
+    vector<string> deviceExtensions;
+
+    if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_device_group"))
+        deviceExtensions.push_back("VK_KHR_device_group");
+
+    if (m_useDedicated)
+    {
+        if (!m_context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
+            TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_dedicated_allocation");
+
+        if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_dedicated_allocation"))
+            deviceExtensions.push_back("VK_KHR_dedicated_allocation");
+    }
+
+    const InstanceInterface &instanceDriver = m_instanceWrapper->instance.getDriver();
+
+    m_queueFamilyIndex        = m_context.getComputeQueueFamilyIndex();
+    const float queuePriority = 1.0f;
+    vector<const char *> extensionPtrs;
+
+    {
+        const tcu::CommandLine &cmdLine = m_context.getTestContext().getCommandLine();
+        const vector<vk::VkPhysicalDeviceGroupProperties> properties =
+            enumeratePhysicalDeviceGroups(instanceDriver, m_instanceWrapper->instance);
+        const int kGroupId    = cmdLine.getVKDeviceGroupId();
+        const int kGroupIndex = kGroupId - 1;
+        const int kDevId      = cmdLine.getVKDeviceId();
+        const int kDevIndex   = kDevId - 1;
+
+        if (kGroupId < 1 || static_cast<size_t>(kGroupId) > properties.size())
+        {
+            std::ostringstream msg;
+            msg << "Invalid device group id " << kGroupId << " (only " << properties.size() << " device groups found)";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
+
+        m_physicalDeviceCount = properties[kGroupIndex].physicalDeviceCount;
+        for (uint32_t idx = 0; idx < m_physicalDeviceCount; idx++)
+        {
+            m_physicalDevices.push_back(properties[kGroupIndex].physicalDevices[idx]);
+        }
+
+        if (m_usePeerMemory && m_physicalDeviceCount < 2)
+            TCU_THROW(NotSupportedError, "Peer fetching needs more than 1 physical device.");
+
+        if (!(m_testMode & COMPUTE_TEST_MODE_ALTERNATE_DISPATCH) || (m_physicalDeviceCount > 1))
+        {
+            if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(),
+                              std::string("VK_KHR_bind_memory2")))
+                TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_bind_memory2");
+            if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_bind_memory2"))
+                deviceExtensions.push_back("VK_KHR_bind_memory2");
+        }
+
+        const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
+            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType             sType;
+            nullptr,                                    // const void*                 pNext;
+            (VkDeviceQueueCreateFlags)0u,               // VkDeviceQueueCreateFlags    flags;
+            m_queueFamilyIndex,                         // uint32_t                    queueFamilyIndex;
+            1u,                                         // uint32_t                    queueCount;
+            &queuePriority,                             // const float*                pQueuePriorities;
+        };
+
+        VkDeviceGroupDeviceCreateInfo deviceGroupInfo = {
+            VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO, // VkStructureType            sType;
+            nullptr,                                           // const void*                pNext;
+            properties[kGroupIndex].physicalDeviceCount,       // uint32_t                   physicalDeviceCount;
+            properties[kGroupIndex].physicalDevices            // const VkPhysicalDevice*    pPhysicalDevices;
+        };
+
+        if (kDevId < 1 || static_cast<uint32_t>(kDevId) > m_physicalDeviceCount)
+        {
+            std::ostringstream msg;
+            msg << "Device id " << kDevId << " invalid for group " << kGroupId << " (group " << kGroupId << " has "
+                << m_physicalDeviceCount << " devices)";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
+
+        VkPhysicalDevice physicalDevice                = properties[kGroupIndex].physicalDevices[kDevIndex];
+        VkPhysicalDeviceFeatures enabledDeviceFeatures = getPhysicalDeviceFeatures(instanceDriver, physicalDevice);
+        m_subsetAllocation                             = properties[kGroupIndex].subsetAllocation;
+
+        uint32_t queueFamilyPropertyCount = 0;
+        instanceDriver.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
+        std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyPropertyCount);
+        instanceDriver.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount,
+                                                              queueFamilyProperties.data());
+        if (m_queueFamilyIndex >= queueFamilyPropertyCount)
+            TCU_THROW(NotSupportedError, "Compute queue family index out of bounds for this physical device.");
+
+        extensionPtrs.resize(deviceExtensions.size());
+        for (size_t ndx = 0; ndx < deviceExtensions.size(); ++ndx)
+            extensionPtrs[ndx] = deviceExtensions[ndx].c_str();
+
+        void *pNext = &deviceGroupInfo;
+
+#ifdef CTS_USES_VULKANSC
+        VkDeviceObjectReservationCreateInfo memReservationInfo = cmdLine.isSubProcess() ?
+                                                                     m_context.getResourceInterface()->getStatMax() :
+                                                                     resetDeviceObjectReservationCreateInfo();
+        memReservationInfo.pNext                               = pNext;
+        pNext                                                  = &memReservationInfo;
+
+        VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
+        sc10Features.pNext                              = pNext;
+        pNext                                           = &sc10Features;
+        VkPipelineCacheCreateInfo pcCI;
+        std::vector<VkPipelinePoolSize> poolSizes;
+        if (m_context.getTestContext().getCommandLine().isSubProcess())
+        {
+            if (m_context.getResourceInterface()->getCacheDataSize() > 0)
+            {
+                pcCI = {VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, nullptr,
+                        VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT | VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,
+                        m_context.getResourceInterface()->getCacheDataSize(),
+                        m_context.getResourceInterface()->getCacheData()};
+                memReservationInfo.pipelineCacheCreateInfoCount = 1;
+                memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
+            }
+
+            poolSizes = m_context.getResourceInterface()->getPipelinePoolSizes();
+            if (!poolSizes.empty())
+            {
+                memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
+                memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
+            }
+        }
+#endif // CTS_USES_VULKANSC
+
+        const VkDeviceCreateInfo deviceCreateInfo = {
+            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType                    sType;
+            pNext,                                // const void*                        pNext;
+            (VkDeviceCreateFlags)0u,              // VkDeviceCreateFlags                flags;
+            1,                                    // uint32_t                           queueCreateInfoCount;
+            &deviceQueueCreateInfo,               // const VkDeviceQueueCreateInfo*     pQueueCreateInfos;
+            0u,                                   // uint32_t                           enabledLayerCount;
+            nullptr,                              // const char* const*                 ppEnabledLayerNames;
+            (uint32_t)extensionPtrs.size(),       // uint32_t                           enabledExtensionCount;
+            (extensionPtrs.empty() ? nullptr :
+                                     &extensionPtrs[0]), // const char* const*                 ppEnabledExtensionNames;
+            &enabledDeviceFeatures,                      // const VkPhysicalDeviceFeatures*    pEnabledFeatures;
+        };
+
+        m_deviceGroup = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
+                                           m_context.getPlatformInterface(), m_instanceWrapper->instance,
+                                           instanceDriver, physicalDevice, &deviceCreateInfo);
+#ifndef CTS_USES_VULKANSC
+        m_deviceDriver = de::MovePtr<DeviceDriver>(
+            new DeviceDriver(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup,
+                             m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
+#else
+        m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
+            new DeviceDriverSC(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup,
+                               m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(),
+                               m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(),
+                               m_context.getUsedApiVersion()),
+            vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_deviceGroup));
+#endif // CTS_USES_VULKANSC
+    }
+
+    m_deviceGroupQueue = getDeviceQueue(*m_deviceDriver, *m_deviceGroup, m_queueFamilyIndex, 0);
+}
+
+tcu::TestStatus DeviceGroupComputeTestInstance::iterate(void)
+{
+    const InstanceInterface &vki = m_instanceWrapper->instance.getDriver();
+    const DeviceInterface &vk    = *m_deviceDriver;
+
+    const tcu::UVec2 renderSize(256, 256);
+    const VkFormat colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const tcu::Vec4 drawColor(1.0f, 1.0f, 0.0f, 1.0f); // The color to write in compute shader
+
+    SimpleAllocator memAlloc(vk, *m_deviceGroup, getPhysicalDeviceMemoryProperties(vki, m_context.getPhysicalDevice()));
+    bool iterateResultSuccess = false;
+
+    // Loop through all physical devices in the device group
+    for (uint32_t physDevID = 0; physDevID < m_physicalDeviceCount; physDevID++)
+    {
+        const uint32_t firstDeviceID  = physDevID;
+        const uint32_t secondDeviceID = (firstDeviceID + 1) % m_physicalDeviceCount;
+        vector<uint32_t> deviceIndices(m_physicalDeviceCount);
+
+        // Setup allocation mask
+        const uint32_t allocDeviceMask =
+            m_subsetAllocation ? (1 << firstDeviceID) | (1 << secondDeviceID) : (1 << m_physicalDeviceCount) - 1;
+
+        for (uint32_t i = 0; i < m_physicalDeviceCount; i++)
+            deviceIndices[i] = i;
+        deviceIndices[firstDeviceID]  = secondDeviceID;
+        deviceIndices[secondDeviceID] = firstDeviceID;
+
+        // Resource handlers
+        de::MovePtr<Allocation> stagingUniformBufferMemory;
+        vk::Move<vk::VkDeviceMemory> uniformBufferMemory;
+        vk::Move<vk::VkDeviceMemory> storageImageMemory;
+
+        Move<VkBuffer> stagingUniformBuffer;
+        Move<VkBuffer> uniformBuffer;
+        Move<VkImage> storageImage;
+
+        Move<VkDescriptorSetLayout> descriptorSetLayout;
+        Move<VkDescriptorPool> descriptorPool;
+        Move<VkDescriptorSet> descriptorSet;
+
+        Move<VkPipelineLayout> pipelineLayout;
+        Move<VkPipeline> pipeline;
+        Move<VkImageView> storageImageView;
+
+        Move<VkCommandPool> cmdPool;
+        Move<VkCommandBuffer> cmdBuffer;
+
+        // Memory allocation structures
+        VkMemoryDedicatedAllocateInfo dedicatedAllocInfo = {
+            VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType    sType;
+            nullptr,                                          // const void*        pNext;
+            VK_NULL_HANDLE,                                   // VkImage            image;
+            VK_NULL_HANDLE                                    // VkBuffer           buffer;
+        };
+
+        VkMemoryAllocateFlagsInfo allocDeviceMaskInfo = {
+            VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,   // VkStructureType          sType;
+            m_useDedicated ? &dedicatedAllocInfo : nullptr, // const void*              pNext;
+            VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT,             // VkMemoryAllocateFlags    flags;
+            allocDeviceMask,                                // uint32_t                 deviceMask;
+        };
+
+        VkMemoryAllocateInfo allocInfo = {
+            VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // VkStructureType    sType;
+            &allocDeviceMaskInfo,                   // const void*        pNext;
+            0u,                                     // VkDeviceSize       allocationSize;
+            0u,                                     // uint32_t           memoryTypeIndex;
+        };
+
+        {
+            const VkBufferCreateInfo stagingParams = {
+                VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType;
+                nullptr,                              // const void*            pNext;
+                0u,                                   // VkBufferCreateFlags    flags;
+                (VkDeviceSize)sizeof(drawColor),      // VkDeviceSize           size;
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags     usage;
+                VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode          sharingMode;
+                1u,                                   // uint32_t               queueFamilyIndexCount;
+                &m_queueFamilyIndex,                  // const uint32_t*        pQueueFamilyIndices;
+            };
+            stagingUniformBuffer       = createBuffer(vk, *m_deviceGroup, &stagingParams);
+            stagingUniformBufferMemory = memAlloc.allocate(
+                getBufferMemoryRequirements(vk, *m_deviceGroup, *stagingUniformBuffer), MemoryRequirement::HostVisible);
+            VK_CHECK(vk.bindBufferMemory(*m_deviceGroup, *stagingUniformBuffer, stagingUniformBufferMemory->getMemory(),
+                                         stagingUniformBufferMemory->getOffset()));
+
+            void *uniformBufPtr = stagingUniformBufferMemory->getHostPtr();
+            deMemcpy(uniformBufPtr, &drawColor[0], sizeof(drawColor));
+            flushAlloc(vk, *m_deviceGroup, *stagingUniformBufferMemory);
+        }
+
+        {
+            const VkBufferCreateInfo uniformParams = {
+                VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                  // VkStructureType        sType;
+                nullptr,                                                               // const void*            pNext;
+                0u,                                                                    // VkBufferCreateFlags    flags;
+                (VkDeviceSize)sizeof(drawColor),                                       // VkDeviceSize           size;
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, // VkBufferUsageFlags     usage;
+                VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode          sharingMode;
+                1u,                        // uint32_t               queueFamilyIndexCount;
+                &m_queueFamilyIndex,       // const uint32_t*        pQueueFamilyIndices;
+            };
+            uniformBuffer = createBuffer(vk, *m_deviceGroup, &uniformParams);
+
+            VkMemoryRequirements memReqs = getBufferMemoryRequirements(vk, *m_deviceGroup, uniformBuffer.get());
+            uint32_t memoryTypeNdx       = getMemoryIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+            dedicatedAllocInfo.buffer = uniformBuffer.get();
+            allocInfo.allocationSize  = memReqs.size;
+            allocInfo.memoryTypeIndex = memoryTypeNdx;
+            uniformBufferMemory       = allocateMemory(vk, *m_deviceGroup, &allocInfo);
+
+            if (m_usePeerMemory && !isPeerFetchAllowed(memoryTypeNdx, firstDeviceID, secondDeviceID))
+                TCU_THROW(NotSupportedError, "Peer memory fetch is not supported.");
+
+            if (m_usePeerMemory)
+            {
+                VkBindBufferMemoryDeviceGroupInfo devGroupBindInfo = {
+                    VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_DEVICE_GROUP_INFO, // VkStructureType    sType;
+                    nullptr,                                                // const void*        pNext;
+                    m_physicalDeviceCount,                                  // uint32_t           deviceIndexCount;
+                    &deviceIndices[0],                                      // const uint32_t*    pDeviceIndices;
+                };
+
+                VkBindBufferMemoryInfo bindInfo = {
+                    VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO, // VkStructureType    sType;
+                    &devGroupBindInfo,                         // const void*        pNext;
+                    uniformBuffer.get(),                       // VkBuffer           buffer;
+                    uniformBufferMemory.get(),                 // VkDeviceMemory     memory;
+                    0u,                                        // VkDeviceSize       memoryOffset;
+                };
+                VK_CHECK(vk.bindBufferMemory2(*m_deviceGroup, 1, &bindInfo));
+            }
+            else
+            {
+                VK_CHECK(vk.bindBufferMemory(*m_deviceGroup, uniformBuffer.get(), uniformBufferMemory.get(), 0));
+            }
+        }
+
+        {
+            VkImageCreateFlags imageCreateFlags = VK_IMAGE_CREATE_ALIAS_BIT;
+            if ((m_testMode & COMPUTE_TEST_MODE_SPLIT_DISPATCH) && (m_physicalDeviceCount > 1))
+            {
+                imageCreateFlags |= VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT;
+            }
+
+            const VkImageCreateInfo imageParams = {
+                VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                          // VkStructureType          sType;
+                nullptr,                                                      // const void*              pNext;
+                imageCreateFlags,                                             // VkImageCreateFlags       flags;
+                VK_IMAGE_TYPE_2D,                                             // VkImageType              imageType;
+                colorFormat,                                                  // VkFormat                 format;
+                {renderSize.x(), renderSize.y(), 1},                          // VkExtent3D               extent;
+                1u,                                                           // uint32_t                 mipLevels;
+                1u,                                                           // uint32_t                 arrayLayers;
+                VK_SAMPLE_COUNT_1_BIT,                                        // VkSampleCountFlagBits    samples;
+                VK_IMAGE_TILING_OPTIMAL,                                      // VkImageTiling            tiling;
+                VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage;
+                VK_SHARING_MODE_EXCLUSIVE,                                    // VkSharingMode            sharingMode;
+                1u,                        // uint32_t                 queueFamilyIndexCount;
+                &m_queueFamilyIndex,       // const uint32_t*          pQueueFamilyIndices;
+                VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout            initialLayout;
+            };
+
+            storageImage = createImage(vk, *m_deviceGroup, &imageParams);
+
+            dedicatedAllocInfo.image     = *storageImage;
+            dedicatedAllocInfo.buffer    = VK_NULL_HANDLE;
+            VkMemoryRequirements memReqs = getImageMemoryRequirements(vk, *m_deviceGroup, storageImage.get());
+            uint32_t memoryTypeNdx =
+                getMemoryIndex(memReqs.memoryTypeBits, m_useHostMemory ? 0 : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+            allocInfo.allocationSize  = memReqs.size;
+            allocInfo.memoryTypeIndex = memoryTypeNdx;
+            storageImageMemory        = allocateMemory(vk, *m_deviceGroup, &allocInfo);
+
+            // Bind image memory. Handle split region bindings if split dispatch is used
+            if ((m_testMode & COMPUTE_TEST_MODE_SPLIT_DISPATCH) && (m_physicalDeviceCount > 1))
+            {
+                VkRect2D zeroRect = {{0, 0}, {0, 0}};
+                vector<VkRect2D> sfrRects(m_physicalDeviceCount * m_physicalDeviceCount, zeroRect);
+
+                // Split into 2 vertical halves for binding
+                sfrRects[firstDeviceID * m_physicalDeviceCount + firstDeviceID].extent.width  = renderSize.x() / 2;
+                sfrRects[firstDeviceID * m_physicalDeviceCount + firstDeviceID].extent.height = renderSize.y();
+                sfrRects[firstDeviceID * m_physicalDeviceCount + secondDeviceID] =
+                    sfrRects[firstDeviceID * m_physicalDeviceCount + firstDeviceID];
+                sfrRects[firstDeviceID * m_physicalDeviceCount + secondDeviceID].offset.x = renderSize.x() / 2;
+
+                sfrRects[secondDeviceID * m_physicalDeviceCount + firstDeviceID] =
+                    sfrRects[firstDeviceID * m_physicalDeviceCount + firstDeviceID];
+                sfrRects[secondDeviceID * m_physicalDeviceCount + secondDeviceID] =
+                    sfrRects[firstDeviceID * m_physicalDeviceCount + secondDeviceID];
+
+                VkBindImageMemoryDeviceGroupInfo devGroupBindInfo = {
+                    VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO, // VkStructureType    sType;
+                    nullptr,                                               // const void*        pNext;
+                    0u,                                                    // uint32_t           deviceIndexCount;nt
+                    nullptr,                                               // const uint32_t*    pDeviceIndices;
+                    m_physicalDeviceCount * m_physicalDeviceCount, // uint32_t           splitInstanceBindRegionCount;
+                    &sfrRects[0],                                  // const VkRect2D*    pSplitInstanceBindRegions;
+                };
+
+                VkBindImageMemoryInfo bindInfo = {
+                    VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO, // VkStructureType    sType;
+                    &devGroupBindInfo,                        // const void*        pNext;
+                    *storageImage,                            // VkImage            image;
+                    storageImageMemory.get(),                 // VkDeviceMemory     memory;
+                    0u,                                       // VkDeviceSize       memoryOffset;
+                };
+                VK_CHECK(vk.bindImageMemory2(*m_deviceGroup, 1, &bindInfo));
+            }
+            else
+            {
+                VK_CHECK(vk.bindImageMemory(*m_deviceGroup, *storageImage, storageImageMemory.get(), 0));
+            }
+        }
+
+        {
+            const VkImageViewCreateInfo viewParams = {
+                VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType            sType;
+                nullptr,                                  // const void*                pNext;
+                0u,                                       // VkImageViewCreateFlags     flags;
+                *storageImage,                            // VkImage                    image;
+                VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType            viewType;
+                colorFormat,                              // VkFormat                   format;
+                {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B,
+                 VK_COMPONENT_SWIZZLE_A},                    // VkComponentMapping         components;
+                {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}, // VkImageSubresourceRange    subresourceRange;
+            };
+            storageImageView = createImageView(vk, *m_deviceGroup, &viewParams);
+        }
+
+        {
+            const VkDescriptorSetLayoutBinding bindings[] = {
+                {0u, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1u, VK_SHADER_STAGE_COMPUTE_BIT, nullptr},
+                {1u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_COMPUTE_BIT, nullptr}};
+
+            const VkDescriptorSetLayoutCreateInfo layoutParams = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+                                                                  nullptr, 0u, DE_LENGTH_OF_ARRAY(bindings), bindings};
+            descriptorSetLayout = createDescriptorSetLayout(vk, *m_deviceGroup, &layoutParams);
+
+            const VkDescriptorPoolSize poolSizes[]      = {{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1u},
+                                                           {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u}};
+            const VkDescriptorPoolCreateInfo poolParams = {
+                VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,     // VkStructureType                sType;
+                nullptr,                                           // const void*                    pNext;
+                VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, // VkDescriptorPoolCreateFlags    flags;
+                1u,                                                // uint32_t                       maxSets;
+                DE_LENGTH_OF_ARRAY(poolSizes),                     // uint32_t                       poolSizeCount;
+                poolSizes                                          // const VkDescriptorPoolSize*    pPoolSizes;
+            };
+            descriptorPool = createDescriptorPool(vk, *m_deviceGroup, &poolParams);
+
+            const VkDescriptorSetAllocateInfo allocSetParams = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
+                                                                *descriptorPool, 1u, &descriptorSetLayout.get()};
+            descriptorSet = allocateDescriptorSet(vk, *m_deviceGroup, &allocSetParams);
+
+            const VkDescriptorImageInfo imgInfo  = {VK_NULL_HANDLE, *storageImageView, VK_IMAGE_LAYOUT_GENERAL};
+            const VkDescriptorBufferInfo bufInfo = {*uniformBuffer, 0, sizeof(drawColor)};
+
+            const VkWriteDescriptorSet writes[] = {
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, *descriptorSet, 0u, 0u, 1u,
+                 VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imgInfo, nullptr, nullptr},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, *descriptorSet, 1u, 0u, 1u,
+                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, nullptr, &bufInfo, nullptr}};
+            vk.updateDescriptorSets(*m_deviceGroup, DE_LENGTH_OF_ARRAY(writes), writes, 0u, nullptr);
+        }
+
+        {
+            const VkPipelineLayoutCreateInfo layoutParams = {
+                VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType                 sType;
+                nullptr,                                       // const void*                     pNext;
+                0u,                                            // VkPipelineLayoutCreateFlags     flags;
+                1u,                                            // uint32_t                        setLayoutCount;
+                &descriptorSetLayout.get(),                    // const VkDescriptorSetLayout*    pSetLayouts;
+                0u,     // uint32_t                        pushConstantRangeCount;
+                nullptr // const VkPushConstantRange*      pPushConstantRanges;
+            };
+            pipelineLayout = createPipelineLayout(vk, *m_deviceGroup, &layoutParams);
+
+            Move<VkShaderModule> compShaderModule =
+                createShaderModule(vk, *m_deviceGroup, m_context.getBinaryCollection().get("comp"), 0);
+
+            const VkPipelineShaderStageCreateInfo shaderStageParams = {
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType;
+                nullptr,                                             // const void*                         pNext;
+                0u,                                                  // VkPipelineShaderStageCreateFlags    flags;
+                VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits               stage;
+                *compShaderModule,                                   // VkShaderModule                      module;
+                "main",                                              // const char*                         pName;
+                nullptr // const VkSpecializationInfo*         pSpecializationInfo;
+            };
+
+            const VkComputePipelineCreateInfo pipelineParams = {
+                VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType                    sType;
+                nullptr,                                        // const void*                        pNext;
+                0u,                                             // VkPipelineCreateFlags              flags;
+                shaderStageParams,                              // VkPipelineShaderStageCreateInfo    stage;
+                *pipelineLayout,                                // VkPipelineLayout                   layout;
+                VK_NULL_HANDLE, // VkPipeline                         basePipelineHandle;
+                0               // int32_t                            basePipelineIndex;
+            };
+            pipeline = createComputePipeline(vk, *m_deviceGroup, VK_NULL_HANDLE, &pipelineParams);
+        }
+
+        {
+            const VkCommandPoolCreateInfo poolParams = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, nullptr,
+                                                        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+                                                        m_queueFamilyIndex};
+            cmdPool                                  = createCommandPool(vk, *m_deviceGroup, &poolParams);
+
+            const VkCommandBufferAllocateInfo bufParams = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, nullptr,
+                                                           *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1u};
+            cmdBuffer                                   = allocateCommandBuffer(vk, *m_deviceGroup, &bufParams);
+
+            beginCommandBuffer(vk, *cmdBuffer);
+
+            VkBufferCopy copyRegion = {0u, 0u, sizeof(drawColor)};
+            vk.cmdCopyBuffer(*cmdBuffer, *stagingUniformBuffer, *uniformBuffer, 1u, &copyRegion);
+
+            const VkBufferMemoryBarrier bufBarrier = {
+                VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType    sType;
+                nullptr,                                 // const void*        pNext;
+                VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags      srcAccessMask;
+                VK_ACCESS_UNIFORM_READ_BIT,              // VkAccessFlags      dstAccessMask;
+                VK_QUEUE_FAMILY_IGNORED,                 // uint32_t           srcQueueFamilyIndex;
+                VK_QUEUE_FAMILY_IGNORED,                 // uint32_t           dstQueueFamilyIndex;
+                *uniformBuffer,                          // VkBuffer           buffer;
+                0u,                                      // VkDeviceSize       offset;
+                sizeof(drawColor)                        // VkDeviceSize       size;
+            };
+
+            const VkImageMemoryBarrier imgBarrierSetup = {
+                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType            sType;
+                nullptr,                                    // const void*                pNext;
+                0u,                                         // VkAccessFlags              srcAccessMask;
+                VK_ACCESS_SHADER_WRITE_BIT,                 // VkAccessFlags              dstAccessMask;
+                VK_IMAGE_LAYOUT_UNDEFINED,                  // VkImageLayout              oldLayout;
+                VK_IMAGE_LAYOUT_GENERAL,                    // VkImageLayout              newLayout;
+                VK_QUEUE_FAMILY_IGNORED,                    // uint32_t                   srcQueueFamilyIndex;
+                VK_QUEUE_FAMILY_IGNORED,                    // uint32_t                   dstQueueFamilyIndex;
+                *storageImage,                              // VkImage                    image;
+                {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u} // VkImageSubresourceRange    subresourceRange;
+            };
+
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &bufBarrier, 1,
+                                  &imgBarrierSetup);
+
+            vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+            vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
+                                     &*descriptorSet, 0u, nullptr);
+
+            const uint32_t workGroupCountX = renderSize.x() / 16;
+            const uint32_t workGroupCountY = renderSize.y() / 16;
+
+            if (m_testMode & COMPUTE_TEST_MODE_ALTERNATE_DISPATCH)
+            {
+                vk.cmdSetDeviceMask(*cmdBuffer, 1 << secondDeviceID);
+                vk.cmdDispatch(*cmdBuffer, workGroupCountX, workGroupCountY, 1);
+            }
+            else // SPLIT_DISPATCH
+            {
+                if (m_physicalDeviceCount == 1u)
+                {
+                    vk.cmdSetDeviceMask(*cmdBuffer, 1 << firstDeviceID);
+                    vk.cmdDispatch(*cmdBuffer, workGroupCountX, workGroupCountY, 1);
+                }
+                else
+                {
+                    vk.cmdSetDeviceMask(*cmdBuffer, 1 << firstDeviceID);
+                    vk.cmdDispatchBase(*cmdBuffer, 0, 0, 0, workGroupCountX / 2, workGroupCountY, 1);
+
+                    vk.cmdSetDeviceMask(*cmdBuffer, 1 << secondDeviceID);
+                    vk.cmdDispatchBase(*cmdBuffer, workGroupCountX / 2, 0, 0, workGroupCountX / 2, workGroupCountY, 1);
+                }
+            }
+
+            // Reset mask to both so the layout transition happens globally
+            vk.cmdSetDeviceMask(*cmdBuffer, (1 << firstDeviceID) | (1 << secondDeviceID));
+
+            const VkImageMemoryBarrier imgBarrierRead = {
+                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType            sType;
+                nullptr,                                    // const void*                pNext;
+                VK_ACCESS_SHADER_WRITE_BIT,                 // VkAccessFlags              srcAccessMask;
+                VK_ACCESS_TRANSFER_READ_BIT,                // VkAccessFlags              dstAccessMask;
+                VK_IMAGE_LAYOUT_GENERAL,                    // VkImageLayout              oldLayout;
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,       // VkImageLayout              newLayout;
+                VK_QUEUE_FAMILY_IGNORED,                    // uint32_t                   srcQueueFamilyIndex;
+                VK_QUEUE_FAMILY_IGNORED,                    // uint32_t                   dstQueueFamilyIndex;
+                *storageImage,                              // VkImage                    image;
+                {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u} // VkImageSubresourceRange    subresourceRange;
+            };
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+                                  0, nullptr, 0, nullptr, 1, &imgBarrierRead);
+
+            endCommandBuffer(vk, *cmdBuffer);
+
+            const uint32_t deviceMask = (1 << firstDeviceID) | (1 << secondDeviceID);
+            submitBufferAndWaitForIdle(vk, *cmdBuffer, deviceMask);
+            m_context.resetCommandPoolForVKSC(*m_deviceGroup, *cmdPool);
+        }
+
+        {
+            const VkDeviceSize imageSizeBytes      = (VkDeviceSize)(sizeof(uint32_t) * renderSize.x() * renderSize.y());
+            const VkBufferCreateInfo readBufParams = {
+                VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType;
+                nullptr,                              // const void*            pNext;
+                0u,                                   // VkBufferCreateFlags    flags;
+                imageSizeBytes,                       // VkDeviceSize           size;
+                VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags     usage;
+                VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode          sharingMode;
+                1u,                                   // uint32_t               queueFamilyIndexCount;
+                &m_queueFamilyIndex,                  // const uint32_t*        pQueueFamilyIndices;
+            };
+            Move<VkBuffer> readImageBuffer                = createBuffer(vk, *m_deviceGroup, &readBufParams);
+            de::MovePtr<Allocation> readImageBufferMemory = memAlloc.allocate(
+                getBufferMemoryRequirements(vk, *m_deviceGroup, *readImageBuffer), MemoryRequirement::HostVisible);
+            VK_CHECK(vk.bindBufferMemory(*m_deviceGroup, *readImageBuffer, readImageBufferMemory->getMemory(),
+                                         readImageBufferMemory->getOffset()));
+
+            beginCommandBuffer(vk, *cmdBuffer);
+
+            // Copy from image to buffer
+            const VkBufferImageCopy copyParams = {
+                0u,                                      // VkDeviceSize                bufferOffset;
+                renderSize.x(),                          // uint32_t                    bufferRowLength;
+                renderSize.y(),                          // uint32_t                    bufferImageHeight;
+                {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u}, // VkImageSubresourceLayers    imageSubresource;
+                {0, 0, 0},                               // VkOffset3D                  imageOffset;
+                {renderSize.x(), renderSize.y(), 1u}     // VkExtent3D                  imageExtent;
+            };
+
+            uint32_t readDeviceID =
+                (m_testMode & COMPUTE_TEST_MODE_ALTERNATE_DISPATCH) ? secondDeviceID : firstDeviceID;
+            vk.cmdSetDeviceMask(*cmdBuffer, 1 << readDeviceID);
+            vk.cmdCopyImageToBuffer(*cmdBuffer, *storageImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer,
+                                    1u, &copyParams);
+
+            const VkBufferMemoryBarrier readBarrier = {
+                VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType    sType;
+                nullptr,                                 // const void*        pNext;
+                VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags      srcAccessMask;
+                VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags      dstAccessMask;
+                VK_QUEUE_FAMILY_IGNORED,                 // uint32_t           srcQueueFamilyIndex;
+                VK_QUEUE_FAMILY_IGNORED,                 // uint32_t           dstQueueFamilyIndex;
+                *readImageBuffer,                        // VkBuffer           buffer;
+                0u,                                      // VkDeviceSize       offset;
+                imageSizeBytes                           // VkDeviceSize       size;
+            };
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0, nullptr,
+                                  1, &readBarrier, 0, nullptr);
+            endCommandBuffer(vk, *cmdBuffer);
+
+            submitBufferAndWaitForIdle(vk, *cmdBuffer, 1 << firstDeviceID);
+            m_context.resetCommandPoolForVKSC(*m_deviceGroup, *cmdPool);
+
+            invalidateAlloc(vk, *m_deviceGroup, *readImageBufferMemory);
+            const tcu::ConstPixelBufferAccess resultAccess(vk::mapVkFormat(colorFormat), renderSize.x(), renderSize.y(),
+                                                           1, readImageBufferMemory->getHostPtr());
+
+            tcu::TextureLevel refImage(vk::mapVkFormat(colorFormat), (int32_t)renderSize.x(), (int32_t)renderSize.y());
+            tcu::clear(refImage.getAccess(), drawColor);
+
+            const tcu::UVec4 threshold(0u);
+            const tcu::IVec3 posDeviation(0, 0, 0);
+            iterateResultSuccess = tcu::intThresholdPositionDeviationCompare(
+                m_context.getTestContext().getLog(), "ComparisonResult", "Image comparison result",
+                refImage.getAccess(), resultAccess, threshold, posDeviation, false, tcu::COMPARE_LOG_RESULT);
+        }
+
+        if (!iterateResultSuccess)
+            return tcu::TestStatus::fail("Compute output comparison failed");
+    }
+
+    return tcu::TestStatus(QP_TEST_RESULT_PASS, "Device group compute verification passed");
+}
+
+template <class Instance>
+class DeviceGroupComputeTestCase : public TestCase
+{
+public:
+    DeviceGroupComputeTestCase(tcu::TestContext &context, const char *name, uint32_t mode)
+        : TestCase(context, name)
+        , m_testMode(mode)
+    {
+    }
+
+private:
+    uint32_t m_testMode;
+
+    TestInstance *createInstance(Context &context) const
+    {
+        return new Instance(context, m_testMode);
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const
+    {
+        programCollection.glslSources.add("comp")
+            << glu::ComputeSource("#version 450\n"
+                                  "layout(local_size_x = 16, local_size_y = 16) in;\n"
+                                  "layout(set = 0, binding = 0, rgba8) uniform writeonly image2D resultImage;\n"
+                                  "layout(set = 0, binding = 1, std140) uniform bufferData { vec4 color; };\n"
+                                  "void main() {\n"
+                                  "    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);\n"
+                                  "    imageStore(resultImage, pos, color);\n"
+                                  "}\n");
+    }
+};
+
 } // namespace
 
 class DeviceGroupTestRendering : public tcu::TestCaseGroup
@@ -1903,6 +2690,30 @@ void DeviceGroupTestRendering::init(void)
     addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(
         m_testCtx, "afr_tessellated_linefill",
         TEST_MODE_AFR | TEST_MODE_TESSELLATION | TEST_MODE_LINEFILL | TEST_MODE_DEDICATED | TEST_MODE_PEER_FETCH));
+
+#ifndef CTS_USES_VULKANSC
+    // Test split dispatch
+    addChild(new DeviceGroupComputeTestCase<DeviceGroupComputeTestInstance>(m_testCtx, "compute_split_dispatch",
+                                                                            COMPUTE_TEST_MODE_SPLIT_DISPATCH));
+    // Test split dispatch with dedicated memory allocations
+    addChild(new DeviceGroupComputeTestCase<DeviceGroupComputeTestInstance>(
+        m_testCtx, "compute_split_dispatch_dedicated", COMPUTE_TEST_MODE_SPLIT_DISPATCH | COMPUTE_TEST_MODE_DEDICATED));
+    // Test split dispatch with dedicated memory allocations and peer fetching
+    addChild(new DeviceGroupComputeTestCase<DeviceGroupComputeTestInstance>(
+        m_testCtx, "compute_split_dispatch_peer", COMPUTE_TEST_MODE_SPLIT_DISPATCH | COMPUTE_TEST_MODE_PEER_MEMORY));
+#endif // CTS_USES_VULKANSC
+
+    // Test alternate dispatch
+    addChild(new DeviceGroupComputeTestCase<DeviceGroupComputeTestInstance>(m_testCtx, "compute_alternate_dispatch",
+                                                                            COMPUTE_TEST_MODE_ALTERNATE_DISPATCH));
+    // Test alternate dispatch with dedicated memory allocations
+    addChild(new DeviceGroupComputeTestCase<DeviceGroupComputeTestInstance>(
+        m_testCtx, "compute_alternate_dispatch_dedicated",
+        COMPUTE_TEST_MODE_ALTERNATE_DISPATCH | COMPUTE_TEST_MODE_DEDICATED));
+    // Test alternate dispatch with dedicated memory allocations and peer fetching
+    addChild(new DeviceGroupComputeTestCase<DeviceGroupComputeTestInstance>(
+        m_testCtx, "compute_alternate_dispatch_peer",
+        COMPUTE_TEST_MODE_ALTERNATE_DISPATCH | COMPUTE_TEST_MODE_PEER_MEMORY));
 }
 
 tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
