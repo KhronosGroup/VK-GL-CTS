@@ -89,7 +89,23 @@ enum class HitObjectTestType
     HIT_OBJECT_GET_ATTRIBUTE,
     HIT_OBJECT_ARRAY,
     HIT_OBJECT_GET_ATTRIBUTE_FROM_INT_SHADER,
-    HIT_OBJECT_GROUP_END = HIT_OBJECT_GET_ATTRIBUTE_FROM_INT_SHADER,
+    HIT_OBJECT_RECORD_FROM_QUERY_TRI_ATTRIBS,
+    HIT_OBJECT_RECORD_FROM_QUERY_PROCEDURAL_ATTRIBS,
+    HIT_OBJECT_RECORD_FROM_QUERY_SBT_INDEX,
+    HIT_OBJECT_RECORD_FROM_QUERY_MISS,
+    HIT_OBJECT_RECORD_FROM_QUERY_SBT_INDEX_AABB,
+    HIT_OBJECT_RECORD_FROM_QUERY_TRI_ATTRIBS_LOC1,
+    HIT_OBJECT_RECORD_FROM_QUERY_PROCEDURAL_ATTRIBS_LOC1,
+    HIT_OBJECT_GEOMETRY_INDEX_MULTI,
+    HIT_OBJECT_MULTI_ATTRIB_LOCATIONS,
+    HIT_OBJECT_ARRAY_NONUNIFORM,
+    HIT_OBJECT_FROM_CHIT,
+    HIT_OBJECT_FROM_MISS,
+    HIT_OBJECT_QUERY_FROM_CHIT,
+    HIT_OBJECT_QUERY_FROM_MISS,
+    HIT_OBJECT_QUERY_HITKIND_AABB,
+    HIT_OBJECT_QUERY_HITKIND_TRI,
+    HIT_OBJECT_GROUP_END = HIT_OBJECT_QUERY_HITKIND_TRI,
 
     // Group 2: Reorder tests
     REORDER_GROUP_BEGIN,
@@ -153,6 +169,22 @@ std::string HitObjectTestNames[] = {
     "get_attribute",
     "array",
     "get_attr_from_intersection",
+    "record_from_query_tri_attribs",
+    "record_from_query_procedural_attribs",
+    "record_from_query_sbt_index",
+    "record_from_query_miss",
+    "record_from_query_sbt_index_aabb",
+    "record_from_query_tri_attribs_loc1",
+    "record_from_query_procedural_attribs_loc1",
+    "geometry_index_multi",
+    "multi_attrib_locations",
+    "array_nonuniform",
+    "hit_object_from_chit",
+    "hit_object_from_miss",
+    "query_from_chit",
+    "query_from_miss",
+    "query_hitkind_aabb",
+    "query_hitkind_tri",
     "reorder_hint",
     "reorder_hit_object",
     "reorder_execute",
@@ -268,7 +300,12 @@ RayTracingSERTestInstance::RayTracingSERTestInstance(Context &context, const Tes
         m_isMotion = true;
     }
 
-    if (m_data.testType == HitObjectTestType::HIT_OBJECT_GET_ATTRIBUTE_FROM_INT_SHADER)
+    if (m_data.testType == HitObjectTestType::HIT_OBJECT_GET_ATTRIBUTE_FROM_INT_SHADER ||
+        m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_PROCEDURAL_ATTRIBS ||
+        m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_SBT_INDEX_AABB ||
+        m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_PROCEDURAL_ATTRIBS_LOC1 ||
+        m_data.testType == HitObjectTestType::HIT_OBJECT_MULTI_ATTRIB_LOCATIONS ||
+        m_data.testType == HitObjectTestType::HIT_OBJECT_QUERY_HITKIND_AABB)
     {
         m_isAABB = true;
     }
@@ -349,6 +386,25 @@ void RayTracingTestCase::checkSupport(Context &context) const
                       "Requires VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR.rayTracingPositionFetch");
     }
 
+    if (m_data.testType == HitObjectTestType::HIT_OBJECT_QUERY_HITKIND_AABB ||
+        m_data.testType == HitObjectTestType::HIT_OBJECT_QUERY_HITKIND_TRI)
+    {
+        uint32_t specVersion           = 0;
+        const auto extensionProperties = vk::enumerateDeviceExtensionProperties(context.getInstanceInterface(),
+                                                                                context.getPhysicalDevice(), nullptr);
+        for (const auto &extProp : extensionProperties)
+        {
+            if (strcmp(extProp.extensionName, "VK_EXT_ray_tracing_invocation_reorder") == 0)
+            {
+                specVersion = extProp.specVersion;
+                break;
+            }
+        }
+        if (specVersion < 2)
+            TCU_THROW(NotSupportedError, "Requires VK_EXT_ray_tracing_invocation_reorder specVersion >= 2 for "
+                                         "5-parameter hitObjectRecordFromQueryEXT overload");
+    }
+
     // For large dimension tests, validate against device limits
     const VkPhysicalDeviceLimits &deviceLimits = context.getDeviceProperties().limits;
     if (HitObjectTestType::LARGE_DIM_GROUP_BEGIN <= m_data.testType &&
@@ -389,7 +445,17 @@ void RayTracingTestCase::initPrograms(SourceCollections &programCollection) cons
         if (m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_EMPTY ||
             m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_PROCEED ||
             m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_TRACE_EXECUTE ||
-            m_data.testType == HitObjectTestType::HIT_OBJECT_SET_SBT_RECORD_INDEX)
+            m_data.testType == HitObjectTestType::HIT_OBJECT_SET_SBT_RECORD_INDEX ||
+            m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_TRI_ATTRIBS ||
+            m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_PROCEDURAL_ATTRIBS ||
+            m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_SBT_INDEX ||
+            m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_MISS ||
+            m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_SBT_INDEX_AABB ||
+            m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_TRI_ATTRIBS_LOC1 ||
+            m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_PROCEDURAL_ATTRIBS_LOC1 ||
+            m_data.testType == HitObjectTestType::HIT_OBJECT_MULTI_ATTRIB_LOCATIONS ||
+            m_data.testType == HitObjectTestType::HIT_OBJECT_QUERY_HITKIND_AABB ||
+            m_data.testType == HitObjectTestType::HIT_OBJECT_QUERY_HITKIND_TRI)
         {
             extensions << "#extension GL_EXT_ray_query : require\n";
         }
@@ -400,9 +466,41 @@ void RayTracingTestCase::initPrograms(SourceCollections &programCollection) cons
             m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_TRACE_EXECUTE ||
             m_data.testType == HitObjectTestType::HIT_OBJECT_GET_ATTRIBUTE_FROM_INT_SHADER ||
             m_data.testType == HitObjectTestType::HIT_OBJECT_SET_SBT_RECORD_INDEX ||
-            m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_MISS)
+            m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_MISS ||
+            m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_TRI_ATTRIBS ||
+            m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_SBT_INDEX ||
+            m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_MISS ||
+            m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_SBT_INDEX_AABB ||
+            m_data.testType == HitObjectTestType::HIT_OBJECT_QUERY_HITKIND_AABB ||
+            m_data.testType == HitObjectTestType::HIT_OBJECT_QUERY_HITKIND_TRI)
         {
             extensions << "layout(location = 0) hitObjectAttributeEXT vec2 attr;\n";
+        }
+
+        if (m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_PROCEDURAL_ATTRIBS)
+        {
+            extensions << "layout(location = 0) hitObjectAttributeEXT vec4 attr;\n";
+        }
+
+        if (m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_TRI_ATTRIBS_LOC1)
+        {
+            extensions << "layout(location = 1) hitObjectAttributeEXT vec2 attr;\n";
+        }
+
+        if (m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_PROCEDURAL_ATTRIBS_LOC1)
+        {
+            extensions << "layout(location = 1) hitObjectAttributeEXT vec4 attr;\n";
+        }
+
+        if (m_data.testType == HitObjectTestType::HIT_OBJECT_MULTI_ATTRIB_LOCATIONS)
+        {
+            extensions << "layout(location = 0) hitObjectAttributeEXT vec2 attr0;\n";
+            extensions << "layout(location = 1) hitObjectAttributeEXT vec2 attr1;\n";
+        }
+
+        if (m_data.testType == HitObjectTestType::HIT_OBJECT_ARRAY_NONUNIFORM)
+        {
+            extensions << "#extension GL_EXT_nonuniform_qualifier : require\n";
         }
 
         if (m_data.testType == HitObjectTestType::MOTION_TRACERAY ||
@@ -633,6 +731,7 @@ void RayTracingTestCase::initPrograms(SourceCollections &programCollection) cons
             break;
 
         case HitObjectTestType::HIT_OBJECT_GEOMETRY_INDEX:
+        case HitObjectTestType::HIT_OBJECT_GEOMETRY_INDEX_MULTI:
             css << "  hitObjectEXT hObj;\n"
                    "  vec4 color = vec4(1,0,0,1);\n"
                    "  hitObjectTraceRayEXT(hObj, topLevelAS, rayFlags, cullMask, sbtRecordOffset0, sbtRecordStride, "
@@ -641,6 +740,104 @@ void RayTracingTestCase::initPrograms(SourceCollections &programCollection) cons
                    "    color = vec4(float(hitObjectGetGeometryIndexEXT(hObj)),0,0,1);\n"
                    "  else\n"
                    "    color = vec4(5,0,0,1);\n"
+                   "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), color);\n";
+            break;
+
+        case HitObjectTestType::HIT_OBJECT_MULTI_ATTRIB_LOCATIONS:
+            css << "  hitObjectEXT hObj1;\n"
+                   "  hitObjectEXT hObj2;\n"
+                   "  vec4 color = vec4(1,0,0,1);\n"
+                   "  rayQueryEXT rq;\n"
+                   "  rayQueryInitializeEXT(rq, topLevelAS, rayFlags, cullMask, origin, tmin, direct, tmax);\n"
+                   "  while (rayQueryProceedEXT(rq)) {\n"
+                   "      if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionAABBEXT) {\n"
+                   "          rayQueryGenerateIntersectionEXT(rq, 1.0);\n"
+                   "      }\n"
+                   "  }\n"
+                   "  if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionGeneratedEXT) {\n"
+                   "      attr0 = vec2(11.0, 22.0);\n"
+                   "      hitObjectRecordFromQueryEXT(hObj1, rq, 0, 0);\n"
+                   "      attr1 = vec2(33.0, 44.0);\n"
+                   "      hitObjectRecordFromQueryEXT(hObj2, rq, 0, 1);\n"
+                   "      attr0 = vec2(0.0); attr1 = vec2(0.0);\n"
+                   "      hitObjectGetAttributesEXT(hObj1, 0);\n"
+                   "      hitObjectGetAttributesEXT(hObj2, 1);\n"
+                   "      if (attr0.x == 11.0 && attr0.y == 22.0 && attr1.x == 33.0 && attr1.y == 44.0)\n"
+                   "          color = vec4(3,0,0,1);\n"
+                   "      else\n"
+                   "          color = vec4(5,0,0,1);\n"
+                   "  } else {\n"
+                   "      color = vec4(4,0,0,1);\n"
+                   "  }\n"
+                   "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), color);\n";
+            break;
+
+        case HitObjectTestType::HIT_OBJECT_ARRAY_NONUNIFORM:
+            css << "  hitObjectEXT hObj[4];\n"
+                   "  vec4 color = vec4(1,0,0,1);\n"
+                   "  for (int i = 0; i < 4; i++) {\n"
+                   "    hitObjectRecordEmptyEXT(hObj[i]);\n"
+                   "  }\n"
+                   "  uint idx = gl_LaunchIDEXT.x % 4u;\n"
+                   "  hitObjectTraceRayEXT(hObj[nonuniformEXT(idx)], topLevelAS, rayFlags, cullMask, "
+                   "sbtRecordOffset0, sbtRecordStride, missIndex0, origin, tmin, direct, tmax, 0);\n"
+                   "  if (hitObjectIsHitEXT(hObj[nonuniformEXT(idx)])) color = vec4(3,0,0,1);\n"
+                   "  else if (hitObjectIsMissEXT(hObj[nonuniformEXT(idx)])) color = vec4(4,0,0,1);\n"
+                   "  else if (hitObjectIsEmptyEXT(hObj[nonuniformEXT(idx)])) color = vec4(5,0,0,1);\n"
+                   "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), color);\n";
+            break;
+
+        case HitObjectTestType::HIT_OBJECT_FROM_CHIT:
+        case HitObjectTestType::HIT_OBJECT_FROM_MISS:
+        case HitObjectTestType::HIT_OBJECT_QUERY_FROM_CHIT:
+        case HitObjectTestType::HIT_OBJECT_QUERY_FROM_MISS:
+            css << "  hitObjectEXT hObj;\n"
+                   "  payload = vec4(1,0,0,1);\n"
+                   "  hitObjectTraceRayEXT(hObj, topLevelAS, rayFlags, cullMask, sbtRecordOffset0, sbtRecordStride, "
+                   "missIndex0, origin, tmin, direct, tmax, 0);\n"
+                   "  hitObjectExecuteShaderEXT(hObj, 0);\n"
+                   "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), payload);\n";
+            break;
+
+        case HitObjectTestType::HIT_OBJECT_QUERY_HITKIND_AABB:
+            css << "  hitObjectEXT hObj;\n"
+                   "  vec4 color = vec4(1,0,0,1);\n"
+                   "  rayQueryEXT rq;\n"
+                   "  rayQueryInitializeEXT(rq, topLevelAS, rayFlags, cullMask, origin, tmin, direct, tmax);\n"
+                   "  while (rayQueryProceedEXT(rq)) {\n"
+                   "      if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionAABBEXT) {\n"
+                   "          rayQueryGenerateIntersectionEXT(rq, 1.0);\n"
+                   "      }\n"
+                   "  }\n"
+                   "  if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionGeneratedEXT) {\n"
+                   "      hitObjectRecordFromQueryEXT(hObj, rq, 0, 0, 0x42);\n"
+                   "      if (hitObjectIsHitEXT(hObj) && hitObjectGetHitKindEXT(hObj) == 0x42)\n"
+                   "          color = vec4(3,0,0,1);\n"
+                   "      else\n"
+                   "          color = vec4(5,0,0,1);\n"
+                   "  } else {\n"
+                   "      color = vec4(4,0,0,1);\n"
+                   "  }\n"
+                   "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), color);\n";
+            break;
+
+        case HitObjectTestType::HIT_OBJECT_QUERY_HITKIND_TRI:
+            css << "  attr = vec2(99.0, 99.0);\n"
+                   "  hitObjectEXT hObj;\n"
+                   "  vec4 color = vec4(1,0,0,1);\n"
+                   "  rayQueryEXT rq;\n"
+                   "  rayQueryInitializeEXT(rq, topLevelAS, rayFlags, cullMask, origin, tmin, direct, tmax);\n"
+                   "  rayQueryProceedEXT(rq);\n"
+                   "  hitObjectRecordFromQueryEXT(hObj, rq, 0, 0, 0xFF);\n"
+                   "  if (hitObjectIsHitEXT(hObj)) {\n"
+                   "      uint hk = hitObjectGetHitKindEXT(hObj);\n"
+                   "      if (hk == gl_HitKindFrontFacingTriangleEXT)\n"
+                   "          color = vec4(3,0,0,1);\n"
+                   "      else\n"
+                   "          color = vec4(5,0,0,1);\n"
+                   "  } else {\n"
+                   "      color = vec4(4,0,0,1);\n"
+                   "  }\n"
                    "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), color);\n";
             break;
 
@@ -749,7 +946,7 @@ void RayTracingTestCase::initPrograms(SourceCollections &programCollection) cons
                    "  bool pass  = (wto[0].x == 1.0) && (wto[0].y == 0.0) && (wto[0].z == 0.0f);\n"
                    "  pass = pass && (wto[1].x == 0.0) && (wto[1].y == 1.0) && (wto[1].z == 0.0f);\n"
                    "  pass = pass && (wto[2].x == 0.0) && (wto[2].y == 0.0) && (wto[2].z == 1.0f);\n"
-                   "  pass = pass && (wto[3].x == 0.0) && (wto[3].y == 0.0) && (wto[3].z == 0.0f);\n"
+                   "  pass = pass && (wto[3].x == -0.5) && (wto[3].y == 0.0) && (wto[3].z == 0.0f);\n"
                    "  if (pass && hitObjectIsHitEXT(hObj))\n"
                    "      color = vec4(3,0,0,1);\n"
                    "  if (hitObjectIsMissEXT(hObj))\n"
@@ -824,6 +1021,140 @@ void RayTracingTestCase::initPrograms(SourceCollections &programCollection) cons
                    "  if (hitObjectIsHitEXT(hObj[3])) color = vec4(3,0,0,1);\n"
                    "  else if (hitObjectIsMissEXT(hObj[3])) color = vec4(4,0,0,1);\n"
                    "  else if (hitObjectIsEmptyEXT(hObj[3])) color = vec4(5,0,0,1); // Must not be empty\n"
+                   "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), color);\n";
+            break;
+
+        case HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_TRI_ATTRIBS:
+            css << "  attr = vec2(99.0, 99.0);\n"
+                   "  hitObjectEXT hObj;\n"
+                   "  vec4 color = vec4(1,0,0,1);\n"
+                   "  rayQueryEXT rq;\n"
+                   "  rayQueryInitializeEXT(rq, topLevelAS, rayFlags, cullMask, origin, tmin, direct, tmax);\n"
+                   "  rayQueryProceedEXT(rq);\n"
+                   "  hitObjectRecordFromQueryEXT(hObj, rq, 0, 0);\n"
+                   "  if (hitObjectIsHitEXT(hObj)) {\n"
+                   "      hitObjectGetAttributesEXT(hObj, 0);\n"
+                   "      if (attr.x >= 0.0 && attr.x <= 1.0 && attr.y >= 0.0 && attr.y <= 1.0)\n"
+                   "          color = vec4(3,0,0,1);\n"
+                   "      else\n"
+                   "          color = vec4(5,0,0,1);\n"
+                   "  } else {\n"
+                   "      if (attr.x == 99.0 && attr.y == 99.0)\n"
+                   "          color = vec4(4,0,0,1);\n"
+                   "      else\n"
+                   "          color = vec4(5,0,0,1);\n"
+                   "  }\n"
+                   "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), color);\n";
+            break;
+
+        case HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_PROCEDURAL_ATTRIBS:
+            css << "  hitObjectEXT hObj;\n"
+                   "  vec4 color = vec4(1,0,0,1);\n"
+                   "  rayQueryEXT rq;\n"
+                   "  rayQueryInitializeEXT(rq, topLevelAS, rayFlags, cullMask, origin, tmin, direct, tmax);\n"
+                   "  while (rayQueryProceedEXT(rq)) {\n"
+                   "      if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionAABBEXT) {\n"
+                   "          rayQueryGenerateIntersectionEXT(rq, 1.0);\n"
+                   "      }\n"
+                   "  }\n"
+                   "  if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionGeneratedEXT) {\n"
+                   "      attr = vec4(55.0, 66.0, 77.0, 88.0);\n"
+                   "      hitObjectRecordFromQueryEXT(hObj, rq, 0, 0);\n"
+                   "      attr = vec4(0.0);\n"
+                   "      hitObjectGetAttributesEXT(hObj, 0);\n"
+                   "      if (attr.x == 55.0 && attr.y == 66.0 && attr.z == 77.0 && attr.w == 88.0)\n"
+                   "          color = vec4(3,0,0,1);\n"
+                   "      else\n"
+                   "          color = vec4(5,0,0,1);\n"
+                   "  } else {\n"
+                   "      color = vec4(4,0,0,1);\n"
+                   "  }\n"
+                   "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), color);\n";
+            break;
+
+        case HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_SBT_INDEX:
+            css << "  hitObjectEXT hObj;\n"
+                   "  payload = vec4(2,0,0,1);\n"
+                   "  rayQueryEXT rq;\n"
+                   "  rayQueryInitializeEXT(rq, topLevelAS, rayFlags, cullMask, origin, tmin, direct, tmax);\n"
+                   "  rayQueryProceedEXT(rq);\n"
+                   "  hitObjectRecordFromQueryEXT(hObj, rq, 1, 0);\n"
+                   "  hitObjectExecuteShaderEXT(hObj, 0);\n"
+                   "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), payload);\n";
+            break;
+
+        case HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_MISS:
+            css << "  hitObjectEXT hObj;\n"
+                   "  vec4 color = vec4(1,0,0,1);\n"
+                   "  rayQueryEXT rq;\n"
+                   "  vec3 missDir = vec3(0.0, 0.0, 1.0);\n"
+                   "  rayQueryInitializeEXT(rq, topLevelAS, rayFlags, cullMask, origin, tmin, missDir, tmax);\n"
+                   "  rayQueryProceedEXT(rq);\n"
+                   "  hitObjectRecordFromQueryEXT(hObj, rq, 0, 0);\n"
+                   "  if (hitObjectIsEmptyEXT(hObj)) color = vec4(2,0,0,1);\n"
+                   "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), color);\n";
+            break;
+
+        case HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_SBT_INDEX_AABB:
+            css << "  hitObjectEXT hObj;\n"
+                   "  payload = vec4(2,0,0,1);\n"
+                   "  rayQueryEXT rq;\n"
+                   "  rayQueryInitializeEXT(rq, topLevelAS, rayFlags, cullMask, origin, tmin, direct, tmax);\n"
+                   "  while (rayQueryProceedEXT(rq)) {\n"
+                   "      if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionAABBEXT) {\n"
+                   "          rayQueryGenerateIntersectionEXT(rq, 1.0);\n"
+                   "      }\n"
+                   "  }\n"
+                   "  hitObjectRecordFromQueryEXT(hObj, rq, 1, 0);\n"
+                   "  hitObjectExecuteShaderEXT(hObj, 0);\n"
+                   "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), payload);\n";
+            break;
+
+        case HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_TRI_ATTRIBS_LOC1:
+            css << "  attr = vec2(99.0, 99.0);\n"
+                   "  hitObjectEXT hObj;\n"
+                   "  vec4 color = vec4(1,0,0,1);\n"
+                   "  rayQueryEXT rq;\n"
+                   "  rayQueryInitializeEXT(rq, topLevelAS, rayFlags, cullMask, origin, tmin, direct, tmax);\n"
+                   "  rayQueryProceedEXT(rq);\n"
+                   "  hitObjectRecordFromQueryEXT(hObj, rq, 0, 1);\n"
+                   "  if (hitObjectIsHitEXT(hObj)) {\n"
+                   "      hitObjectGetAttributesEXT(hObj, 1);\n"
+                   "      if (attr.x >= 0.0 && attr.x <= 1.0 && attr.y >= 0.0 && attr.y <= 1.0)\n"
+                   "          color = vec4(3,0,0,1);\n"
+                   "      else\n"
+                   "          color = vec4(5,0,0,1);\n"
+                   "  } else {\n"
+                   "      if (attr.x == 99.0 && attr.y == 99.0)\n"
+                   "          color = vec4(4,0,0,1);\n"
+                   "      else\n"
+                   "          color = vec4(5,0,0,1);\n"
+                   "  }\n"
+                   "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), color);\n";
+            break;
+
+        case HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_PROCEDURAL_ATTRIBS_LOC1:
+            css << "  hitObjectEXT hObj;\n"
+                   "  vec4 color = vec4(1,0,0,1);\n"
+                   "  rayQueryEXT rq;\n"
+                   "  rayQueryInitializeEXT(rq, topLevelAS, rayFlags, cullMask, origin, tmin, direct, tmax);\n"
+                   "  while (rayQueryProceedEXT(rq)) {\n"
+                   "      if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionAABBEXT) {\n"
+                   "          rayQueryGenerateIntersectionEXT(rq, 1.0);\n"
+                   "      }\n"
+                   "  }\n"
+                   "  if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionGeneratedEXT) {\n"
+                   "      attr = vec4(55.0, 66.0, 77.0, 88.0);\n"
+                   "      hitObjectRecordFromQueryEXT(hObj, rq, 0, 1);\n"
+                   "      attr = vec4(0.0);\n"
+                   "      hitObjectGetAttributesEXT(hObj, 1);\n"
+                   "      if (attr.x == 55.0 && attr.y == 66.0 && attr.z == 77.0 && attr.w == 88.0)\n"
+                   "          color = vec4(3,0,0,1);\n"
+                   "      else\n"
+                   "          color = vec4(5,0,0,1);\n"
+                   "  } else {\n"
+                   "      color = vec4(4,0,0,1);\n"
+                   "  }\n"
                    "  imageStore(result, ivec2(gl_LaunchIDEXT.xy), color);\n";
             break;
 
@@ -1084,17 +1415,64 @@ void RayTracingTestCase::initPrograms(SourceCollections &programCollection) cons
         programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
     }
 
-    // Closest hit shader with payload 3
+    // Closest hit shader with payload 3 (or custom for FROM_CHIT / QUERY_FROM_CHIT tests)
     {
         std::stringstream css;
-        css << "#version 460 core\n"
-               "#extension GL_EXT_ray_tracing : require\n"
-               "layout(location = 0) rayPayloadInEXT vec4 payload;\n"
-               "layout(r32f, set = 0, binding = 0) uniform image2D result;\n"
-               "void main()\n"
-               "{\n"
-               "  payload = vec4(3,0,0,1);\n"
-               "}\n";
+        if (m_data.testType == HitObjectTestType::HIT_OBJECT_FROM_CHIT)
+        {
+            css << "#version 460 core\n"
+                   "#extension GL_EXT_ray_tracing : require\n"
+                   "#extension GL_EXT_shader_invocation_reorder : require\n"
+                   "layout(location = 0) rayPayloadInEXT vec4 payloadIn;\n"
+                   "layout(location = 1) rayPayloadEXT vec4 secondaryPayload;\n"
+                   "layout(r32f, set = 0, binding = 0) uniform image2D result;\n"
+                   "layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;\n"
+                   "void main()\n"
+                   "{\n"
+                   "  hitObjectEXT hObj;\n"
+                   "  hitObjectTraceRayEXT(hObj, topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 1, 0,\n"
+                   "      gl_WorldRayOriginEXT, 0.5, gl_WorldRayDirectionEXT, 9.0, 1);\n"
+                   "  if (hitObjectIsHitEXT(hObj))\n"
+                   "      payloadIn = vec4(3,0,0,1);\n"
+                   "  else\n"
+                   "      payloadIn = vec4(5,0,0,1);\n"
+                   "}\n";
+        }
+        else if (m_data.testType == HitObjectTestType::HIT_OBJECT_QUERY_FROM_CHIT)
+        {
+            css << "#version 460 core\n"
+                   "#extension GL_EXT_ray_tracing : require\n"
+                   "#extension GL_EXT_shader_invocation_reorder : require\n"
+                   "#extension GL_EXT_ray_query : require\n"
+                   "layout(location = 0) rayPayloadInEXT vec4 payloadIn;\n"
+                   "layout(r32f, set = 0, binding = 0) uniform image2D result;\n"
+                   "layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;\n"
+                   "layout(location = 0) hitObjectAttributeEXT vec2 attr;\n"
+                   "void main()\n"
+                   "{\n"
+                   "  hitObjectEXT hObj;\n"
+                   "  rayQueryEXT rq;\n"
+                   "  rayQueryInitializeEXT(rq, topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF,\n"
+                   "      gl_WorldRayOriginEXT, 0.5, gl_WorldRayDirectionEXT, 9.0);\n"
+                   "  while (rayQueryProceedEXT(rq)) {}\n"
+                   "  hitObjectRecordFromQueryEXT(hObj, rq, 0, 0);\n"
+                   "  if (hitObjectIsHitEXT(hObj))\n"
+                   "      payloadIn = vec4(3,0,0,1);\n"
+                   "  else\n"
+                   "      payloadIn = vec4(5,0,0,1);\n"
+                   "}\n";
+        }
+        else
+        {
+            css << "#version 460 core\n"
+                   "#extension GL_EXT_ray_tracing : require\n"
+                   "layout(location = 0) rayPayloadInEXT vec4 payload;\n"
+                   "layout(r32f, set = 0, binding = 0) uniform image2D result;\n"
+                   "void main()\n"
+                   "{\n"
+                   "  payload = vec4(3,0,0,1);\n"
+                   "}\n";
+        }
         programCollection.glslSources.add("chit1")
             << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
     }
@@ -1114,17 +1492,62 @@ void RayTracingTestCase::initPrograms(SourceCollections &programCollection) cons
             << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
     }
 
-    // Miss shader with payload 4
+    // Miss shader with payload 4 (or custom for FROM_MISS / QUERY_FROM_MISS tests)
     {
         std::stringstream css;
-        css << "#version 460 core\n"
-               "#extension GL_EXT_ray_tracing : require\n"
-               "layout(location = 0) rayPayloadInEXT vec4 payload;\n"
-               "layout(r32f, set = 0, binding = 0) uniform image2D result;\n"
-               "void main()\n"
-               "{\n"
-               "  payload = vec4(4,0,0,1);\n"
-               "}\n";
+        if (m_data.testType == HitObjectTestType::HIT_OBJECT_FROM_MISS)
+        {
+            css << "#version 460 core\n"
+                   "#extension GL_EXT_ray_tracing : require\n"
+                   "#extension GL_EXT_shader_invocation_reorder : require\n"
+                   "layout(location = 0) rayPayloadInEXT vec4 payload;\n"
+                   "layout(r32f, set = 0, binding = 0) uniform image2D result;\n"
+                   "void main()\n"
+                   "{\n"
+                   "  hitObjectEXT hObj;\n"
+                   "  hitObjectRecordMissEXT(hObj, gl_IncomingRayFlagsEXT, 0,\n"
+                   "      gl_WorldRayOriginEXT, 0.5, gl_WorldRayDirectionEXT, 9.0);\n"
+                   "  if (hitObjectIsMissEXT(hObj))\n"
+                   "      payload = vec4(4,0,0,1);\n"
+                   "  else\n"
+                   "      payload = vec4(5,0,0,1);\n"
+                   "}\n";
+        }
+        else if (m_data.testType == HitObjectTestType::HIT_OBJECT_QUERY_FROM_MISS)
+        {
+            css << "#version 460 core\n"
+                   "#extension GL_EXT_ray_tracing : require\n"
+                   "#extension GL_EXT_shader_invocation_reorder : require\n"
+                   "#extension GL_EXT_ray_query : require\n"
+                   "layout(location = 0) rayPayloadInEXT vec4 payload;\n"
+                   "layout(r32f, set = 0, binding = 0) uniform image2D result;\n"
+                   "layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;\n"
+                   "layout(location = 0) hitObjectAttributeEXT vec2 attr;\n"
+                   "void main()\n"
+                   "{\n"
+                   "  hitObjectEXT hObj;\n"
+                   "  rayQueryEXT rq;\n"
+                   "  rayQueryInitializeEXT(rq, topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF,\n"
+                   "      gl_WorldRayOriginEXT, 0.5, gl_WorldRayDirectionEXT, 9.0);\n"
+                   "  while (rayQueryProceedEXT(rq)) {}\n"
+                   "  hitObjectRecordFromQueryEXT(hObj, rq, 0, 0);\n"
+                   "  if (hitObjectIsEmptyEXT(hObj))\n"
+                   "      payload = vec4(4,0,0,1);\n"
+                   "  else\n"
+                   "      payload = vec4(5,0,0,1);\n"
+                   "}\n";
+        }
+        else
+        {
+            css << "#version 460 core\n"
+                   "#extension GL_EXT_ray_tracing : require\n"
+                   "layout(location = 0) rayPayloadInEXT vec4 payload;\n"
+                   "layout(r32f, set = 0, binding = 0) uniform image2D result;\n"
+                   "void main()\n"
+                   "{\n"
+                   "  payload = vec4(4,0,0,1);\n"
+                   "}\n";
+        }
         programCollection.glslSources.add("miss1") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
     }
 
@@ -1216,7 +1639,8 @@ auto RayTracingSERTestInstance::initTopAccelerationStructure(const BlasPool &poo
 
     // Translate in X by 0.5 for some test cases, this shifts the 2 triangles on left to right
     if (m_data.testType == HitObjectTestType::HIT_OBJECT_OBJECT_RAY_ORIGIN ||
-        m_data.testType == HitObjectTestType::HIT_OBJECT_OBJECT_TO_WORLD)
+        m_data.testType == HitObjectTestType::HIT_OBJECT_OBJECT_TO_WORLD ||
+        m_data.testType == HitObjectTestType::HIT_OBJECT_WORLD_TO_OBJECT)
     {
         transformMatrix.matrix[0][3] += 0.5f;
     }
@@ -1288,8 +1712,10 @@ void RayTracingSERTestInstance::initMotionBuffer()
 
 void RayTracingSERTestInstance::initBottomAccelerationStructure(BlasPtr blas) const
 {
+    const bool isMultiGeometry = (m_data.testType == HitObjectTestType::HIT_OBJECT_GEOMETRY_INDEX_MULTI);
+
     blas->setBuildType(VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR);
-    blas->setGeometryCount(1);
+    blas->setGeometryCount(isMultiGeometry ? 2 : 1);
 
     std::vector<tcu::Vec3> geometryData;
 
@@ -1328,6 +1754,23 @@ void RayTracingSERTestInstance::initBottomAccelerationStructure(BlasPtr blas) co
     else
     {
         blas->addGeometry(geometryData, !m_isAABB);
+    }
+
+    if (isMultiGeometry)
+    {
+        std::vector<tcu::Vec3> geometryData1;
+        geometryData1.reserve(6u);
+        {
+            geometryData1.push_back(tcu::Vec3(0.5, 0, -1.0f));
+            geometryData1.push_back(tcu::Vec3(1.0, 0, -1.0f));
+            geometryData1.push_back(tcu::Vec3(1.0, 1, -1.0f));
+        }
+        {
+            geometryData1.push_back(tcu::Vec3(0.5, 0, -1.0f));
+            geometryData1.push_back(tcu::Vec3(1.0, 1, -1.0f));
+            geometryData1.push_back(tcu::Vec3(0.5, 1, -1.0f));
+        }
+        blas->addGeometry(geometryData1, true);
     }
 }
 
@@ -1639,6 +2082,17 @@ bool RayTracingSERTestInstance::validateBuffer(de::MovePtr<BufferWithMemory> buf
         missValue   = 2.0f; //Empty object, miss shader should not be called
         break;
 
+    case HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_SBT_INDEX:
+    case HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_SBT_INDEX_AABB:
+        anyHitValue = 7.0f; // chit2 via sbtRecordIndex=1
+        missValue   = 2.0f; // Empty object, payload unchanged
+        break;
+
+    case HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_MISS:
+        anyHitValue = 2.0f; // All rays miss - hit object is empty
+        missValue   = 2.0f;
+        break;
+
     case HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_TRACE_EXECUTE:
         anyHitValue = 3.0f;  // Hit shader
         missValue   = 11.0f; // Miss shader at index 1
@@ -1657,6 +2111,11 @@ bool RayTracingSERTestInstance::validateBuffer(de::MovePtr<BufferWithMemory> buf
     case HitObjectTestType::HIT_OBJECT_GEOMETRY_INDEX:
         anyHitValue = 0.0f; // Hit rays should have geometry ID
         missValue   = 5.0f;
+        break;
+
+    case HitObjectTestType::HIT_OBJECT_GEOMETRY_INDEX_MULTI:
+        anyHitValue = 0.0f; // Left half hits geometry 0
+        missValue   = 1.0f; // Right half hits geometry 1
         break;
 
     case HitObjectTestType::HIT_OBJECT_HIT_KIND:
@@ -1678,6 +2137,7 @@ bool RayTracingSERTestInstance::validateBuffer(de::MovePtr<BufferWithMemory> buf
 
     case HitObjectTestType::HIT_OBJECT_OBJECT_RAY_ORIGIN:
     case HitObjectTestType::HIT_OBJECT_OBJECT_TO_WORLD:
+    case HitObjectTestType::HIT_OBJECT_WORLD_TO_OBJECT:
         // Due to the +X shift in the transformation, the hit rays appear in the right half
         // so hit/miss values get reversed for the check below
         anyHitValue = 4.0f;
@@ -1691,10 +2151,10 @@ bool RayTracingSERTestInstance::validateBuffer(de::MovePtr<BufferWithMemory> buf
 
     case HitObjectTestType::HIT_OBJECT_TRACE_RAY:
     case HitObjectTestType::HIT_OBJECT_ARRAY:
+    case HitObjectTestType::HIT_OBJECT_ARRAY_NONUNIFORM:
     case HitObjectTestType::HIT_OBJECT_INSTANCE_ID:
     case HitObjectTestType::HIT_OBJECT_PRIMITIVE_INDEX:
     case HitObjectTestType::HIT_OBJECT_OBJECT_RAY_DIRECTION:
-    case HitObjectTestType::HIT_OBJECT_WORLD_TO_OBJECT:
     case HitObjectTestType::HIT_OBJECT_GET_SBT_RECORD_INDEX:
     case HitObjectTestType::HIT_OBJECT_GET_ATTRIBUTE:
     case HitObjectTestType::HIT_OBJECT_GET_TRI_VERTICES:
@@ -1703,6 +2163,17 @@ bool RayTracingSERTestInstance::validateBuffer(de::MovePtr<BufferWithMemory> buf
     case HitObjectTestType::REORDER_EXECUTE_HINT:
     case HitObjectTestType::REORDER_TRACE_EXECUTE:
     case HitObjectTestType::REORDER_TRACE_EXECUTE_HINT:
+    case HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_PROCEDURAL_ATTRIBS:
+    case HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_TRI_ATTRIBS:
+    case HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_TRI_ATTRIBS_LOC1:
+    case HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_PROCEDURAL_ATTRIBS_LOC1:
+    case HitObjectTestType::HIT_OBJECT_MULTI_ATTRIB_LOCATIONS:
+    case HitObjectTestType::HIT_OBJECT_FROM_CHIT:
+    case HitObjectTestType::HIT_OBJECT_FROM_MISS:
+    case HitObjectTestType::HIT_OBJECT_QUERY_FROM_CHIT:
+    case HitObjectTestType::HIT_OBJECT_QUERY_FROM_MISS:
+    case HitObjectTestType::HIT_OBJECT_QUERY_HITKIND_AABB:
+    case HitObjectTestType::HIT_OBJECT_QUERY_HITKIND_TRI:
         anyHitValue = 3.0f;
         missValue   = 4.0f;
         break;
