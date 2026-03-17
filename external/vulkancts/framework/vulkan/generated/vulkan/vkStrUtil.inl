@@ -1227,6 +1227,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentModeFifo
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentTimingFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentWait2FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentWaitFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePrivateDataFeatures& value);
@@ -1577,6 +1578,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkTimelineSemaphoreSubmitInfo& 
 std::ostream&	operator<<	(std::ostream& s, const VkTraceRaysIndirectCommand2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkTraceRaysIndirectCommandKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkTransformMatrixKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkUbmSurfaceCreateInfoSEC& value);
 std::ostream&	operator<<	(std::ostream& s, const VkValidationFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkValidationFlagsEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputAttributeDescription& value);

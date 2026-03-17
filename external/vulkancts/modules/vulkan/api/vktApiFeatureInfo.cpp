@@ -8464,9 +8464,11 @@ tcu::TestStatus FormatPropsTest::iterate(void)
     VkFormatProperties2 retryProps = initVulkanStructure();
     const auto addProperties       = makeStructChainAdder(&retryProps);
 
-    VkDrmFormatModifierPropertiesListEXT drmModProps   = initVulkanStructure();
+    VkDrmFormatModifierPropertiesListEXT drmModProps = initVulkanStructure();
+#ifndef CTS_USES_VULKANSC
     VkDrmFormatModifierPropertiesList2EXT drmModProps2 = initVulkanStructure();
-    VkFormatProperties3 props3                         = initVulkanStructure();
+#endif // CTS_USES_VULKANSC
+    VkFormatProperties3 props3 = initVulkanStructure();
 #ifndef CTS_USES_VULKANSC
     VkSubpassResolvePerformanceQueryEXT subpassResolveProps = initVulkanStructure();
 #endif // CTS_USES_VULKANSC
@@ -8474,8 +8476,10 @@ tcu::TestStatus FormatPropsTest::iterate(void)
     if (m_params.pNextFlags & PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST)
         addProperties(&drmModProps);
 
+#ifndef CTS_USES_VULKANSC
     if (m_params.pNextFlags & PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2)
         addProperties(&drmModProps2);
+#endif // CTS_USES_VULKANSC
 
     if (m_params.pNextFlags & PNEXT_FORMAT_PROPERTIES_3)
         addProperties(&props3);

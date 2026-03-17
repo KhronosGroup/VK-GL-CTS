@@ -533,3 +533,13 @@ VkResult InstanceDriver::enumeratePhysicalDeviceQueueFamilyPerformanceCountersBy
     return m_vk.enumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM(physicalDevice, queueFamilyIndex, pCounterCount, pCounters, pCounterDescriptions);
 }
 
+VkResult InstanceDriver::createUbmSurfaceSEC (VkInstance instance, const VkUbmSurfaceCreateInfoSEC* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const
+{
+    return m_vk.createUbmSurfaceSEC(instance, pCreateInfo, pAllocator, pSurface);
+}
+
+VkBool32 InstanceDriver::getPhysicalDeviceUbmPresentationSupportSEC (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, struct ubm_device* device) const
+{
+    return m_vk.getPhysicalDeviceUbmPresentationSupportSEC(physicalDevice, queueFamilyIndex, device);
+}
+

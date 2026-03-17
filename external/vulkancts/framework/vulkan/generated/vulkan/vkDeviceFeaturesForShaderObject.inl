@@ -120,6 +120,7 @@ auto fPresentModeFifoLatestReadyFeatures                = m_context.getPresentMo
 auto fPresentTimingFeaturesEXT                          = m_context.getPresentTimingFeaturesEXT();
 auto fPresentWait2Features                              = m_context.getPresentWait2Features();
 auto fPresentWaitFeatures                               = m_context.getPresentWaitFeatures();
+auto fPrimitiveRestartIndexFeaturesEXT                  = m_context.getPrimitiveRestartIndexFeaturesEXT();
 auto fPrimitiveTopologyListRestartFeaturesEXT           = m_context.getPrimitiveTopologyListRestartFeaturesEXT();
 auto fPrimitivesGeneratedQueryFeaturesEXT               = m_context.getPrimitivesGeneratedQueryFeaturesEXT();
 auto fPrivateDataFeatures                               = m_context.getPrivateDataFeatures();
@@ -318,6 +319,7 @@ std::vector<void *> pNextFeatures = {
 	&fPresentTimingFeaturesEXT,
 	&fPresentWait2Features,
 	&fPresentWaitFeatures,
+	&fPrimitiveRestartIndexFeaturesEXT,
 	&fPrimitiveTopologyListRestartFeaturesEXT,
 	&fPrimitivesGeneratedQueryFeaturesEXT,
 	&fPrivateDataFeatures,

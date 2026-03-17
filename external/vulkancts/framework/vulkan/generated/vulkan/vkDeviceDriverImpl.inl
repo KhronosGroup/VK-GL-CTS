@@ -2469,6 +2469,12 @@ void DeviceDriver::cmdBeginCustomResolveEXT (VkCommandBuffer commandBuffer, cons
     m_vk.cmdBeginCustomResolveEXT(commandBuffer, pBeginCustomResolveInfo);
 }
 
+void DeviceDriver::cmdSetPrimitiveRestartIndexEXT (VkCommandBuffer commandBuffer, uint32_t primitiveRestartIndex) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetPrimitiveRestartIndexEXT(commandBuffer, primitiveRestartIndex);
+}
+
 VkResult DeviceDriver::createAccelerationStructureKHR (VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const
 {
     return m_vk.createAccelerationStructureKHR(device, pCreateInfo, pAllocator, pAccelerationStructure);

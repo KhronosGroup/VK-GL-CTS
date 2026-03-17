@@ -350,9 +350,9 @@ PACKAGES = [
         "04f10f650d514df88b76d25e83db360142c7b174",
         "spirv-headers"),
     GitRepo(
-        "https://github.com/KhronosGroup/Vulkan-Docs.git",
-        "git@github.com:KhronosGroup/Vulkan-Docs.git",
-        "98b6c43a7672a68cdf2e3225b29577165c584fbf",
+        "https://gitlab.khronos.org/vulkan/vulkan.git",
+        "git@gitlab.khronos.org:vulkan/vulkan.git",
+        "aeddb7822d8c3dde245796dcb8fade6188ccbfe8",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",

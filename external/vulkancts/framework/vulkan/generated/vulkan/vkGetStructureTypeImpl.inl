@@ -2658,6 +2658,11 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePresentWaitFeaturesK
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_RESTART_INDEX_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT;
@@ -4191,6 +4196,11 @@ template<> VkStructureType getStructureType<VkTextureLODGatherFormatPropertiesAM
 template<> VkStructureType getStructureType<VkTimelineSemaphoreSubmitInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+}
+
+template<> VkStructureType getStructureType<VkUbmSurfaceCreateInfoSEC> (void)
+{
+	return VK_STRUCTURE_TYPE_UBM_SURFACE_CREATE_INFO_SEC;
 }
 
 template<> VkStructureType getStructureType<VkValidationFeaturesEXT> (void)

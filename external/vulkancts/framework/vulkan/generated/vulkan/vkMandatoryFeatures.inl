@@ -591,6 +591,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_present_wait"))
 		addFeatures(&physicalDevicePresentWaitFeaturesKHR);
 
+	// VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT for ext [VK_EXT_primitive_restart_index]
+	vk::VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT physicalDevicePrimitiveRestartIndexFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_primitive_restart_index"))
+		addFeatures(&physicalDevicePrimitiveRestartIndexFeaturesEXT);
+
 	// VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT for ext [VK_EXT_primitive_topology_list_restart]
 	vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT physicalDevicePrimitiveTopologyListRestartFeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_primitive_topology_list_restart"))
@@ -2605,6 +2610,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceShaderSubgroupPartitionedFeaturesEXT.shaderSubgroupPartitioned == VK_FALSE )
 			failMesages.push_back("shaderSubgroupPartitioned");
+	}
+
+	// VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_primitive_restart_index")) )
+	{
+		if ( physicalDevicePrimitiveRestartIndexFeaturesEXT.primitiveRestartIndex == VK_FALSE )
+			failMesages.push_back("primitiveRestartIndex");
 	}
 
 	// VkPhysicalDeviceAccelerationStructureFeaturesKHR

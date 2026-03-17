@@ -471,6 +471,7 @@ UpdateIndirectExecutionSetShaderEXTFunc						updateIndirectExecutionSetShaderEXT
 GetMemoryMetalHandleEXTFunc									getMemoryMetalHandleEXT;
 GetMemoryMetalHandlePropertiesEXTFunc						getMemoryMetalHandlePropertiesEXT;
 CmdBeginCustomResolveEXTFunc								cmdBeginCustomResolveEXT;
+CmdSetPrimitiveRestartIndexEXTFunc							cmdSetPrimitiveRestartIndexEXT;
 CreateAccelerationStructureKHRFunc							createAccelerationStructureKHR;
 DestroyAccelerationStructureKHRFunc							destroyAccelerationStructureKHR;
 CmdBuildAccelerationStructuresKHRFunc						cmdBuildAccelerationStructuresKHR;

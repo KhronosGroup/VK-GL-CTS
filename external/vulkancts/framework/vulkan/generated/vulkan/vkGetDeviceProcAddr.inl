@@ -105,6 +105,15 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		// "VK_ARM_performance_counters_by_region
 		"vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM",
 
+		// "VK_ARM_shader_instrumentation
+		"vkClearShaderInstrumentationMetricsARM",
+		"vkCmdBeginShaderInstrumentationARM",
+		"vkCmdEndShaderInstrumentationARM",
+		"vkCreateShaderInstrumentationARM",
+		"vkDestroyShaderInstrumentationARM",
+		"vkEnumeratePhysicalDeviceShaderInstrumentationMetricsARM",
+		"vkGetShaderInstrumentationValuesARM",
+
 		// "VK_ARM_tensors
 		"vkBindTensorMemoryARM",
 		"vkCmdCopyTensorARM",
@@ -378,6 +387,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetSwapchainTimeDomainPropertiesEXT",
 		"vkGetSwapchainTimingPropertiesEXT",
 		"vkSetSwapchainPresentTimingQueueSizeEXT",
+
+		// "VK_EXT_primitive_restart_index
+		"vkCmdSetPrimitiveRestartIndexEXT",
 
 		// "VK_EXT_private_data
 		"vkCreatePrivateDataSlotEXT",
@@ -1010,6 +1022,10 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		// "VK_QNX_screen_surface
 		"vkCreateScreenSurfaceQNX",
 		"vkGetPhysicalDeviceScreenPresentationSupportQNX",
+
+		// "VK_SEC_ubm_surface
+		"vkCreateUbmSurfaceSEC",
+		"vkGetPhysicalDeviceUbmPresentationSupportSEC",
 
 		// "VK_VALVE_descriptor_set_host_mapping
 		"vkGetDescriptorSetHostMappingVALVE",

@@ -1,0 +1,18 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT": [
+            {
+                "features": [
+                    "primitiveRestartIndex"
+                ],
+                "requirements": [
+                    "VK_EXT_primitive_restart_index"
+                ]
+            }
+        ]
+    }
+}
