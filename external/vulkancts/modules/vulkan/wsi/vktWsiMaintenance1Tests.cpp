@@ -179,7 +179,7 @@ VkPhysicalDeviceFeatures getDeviceFeaturesForWsi(void)
 Move<VkDevice> createDeviceWithWsi(Context &context, VkInstance instance, const InstanceInterface &vki,
                                    VkPhysicalDevice physicalDevice, const Extensions &supportedExtensions,
                                    const uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator,
-                                   bool requireSwapchainMaintenance1, bool requireDeviceGroup, bool preferExt)
+                                   bool requireSwapchainMaintenance1, bool bindImageMemory, bool preferExt)
 {
     const float queuePriorities[]              = {1.0f};
     const VkDeviceQueueCreateInfo queueInfos[] = {{
@@ -200,9 +200,13 @@ Move<VkDevice> createDeviceWithWsi(Context &context, VkInstance instance, const 
                                       RequiredExtension("VK_KHR_swapchain_maintenance1"), preferExt);
         extensions.push_back(useExt ? "VK_EXT_swapchain_maintenance1" : "VK_KHR_swapchain_maintenance1");
     }
-    if (requireDeviceGroup)
+    if (bindImageMemory)
     {
         extensions.push_back("VK_KHR_device_group");
+        if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
+        {
+            extensions.push_back("VK_KHR_bind_memory2");
+        }
     }
     if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_present_mode_fifo_latest_ready")))
     {
@@ -284,13 +288,13 @@ struct DeviceHelper
     const VkQueue queue;
 
     DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
-                 bool requireSwapchainMaintenance1, bool requireDeviceGroup, bool preferExt,
+                 bool requireSwapchainMaintenance1, bool bindImageMemory, bool preferExt,
                  const VkAllocationCallbacks *pAllocator = nullptr)
         : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
         , device(createDeviceWithWsi(context, instance, vki, physicalDevice,
                                      enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr), queueFamilyIndex,
-                                     pAllocator, requireSwapchainMaintenance1, requireDeviceGroup, preferExt))
+                                     pAllocator, requireSwapchainMaintenance1, bindImageMemory, preferExt))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
