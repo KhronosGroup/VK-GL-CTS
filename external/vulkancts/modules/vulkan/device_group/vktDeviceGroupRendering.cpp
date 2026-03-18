@@ -57,9 +57,7 @@
 
 #include <sstream>
 
-namespace vkt
-{
-namespace DeviceGroup
+namespace vkt::DeviceGroup
 {
 namespace
 {
@@ -230,12 +228,6 @@ bool DeviceGroupTestInstance::isPeerFetchAllowed(uint32_t memoryTypeIndex, uint3
 
 void DeviceGroupTestInstance::init(void)
 {
-    if (!m_context.isInstanceFunctionalitySupported("VK_KHR_device_group_creation"))
-        TCU_THROW(NotSupportedError, "Device Group tests are not supported, no device group extension present.");
-
-    if (!m_context.isDeviceFunctionalitySupported("VK_KHR_device_group"))
-        TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_device_group");
-
     vector<string> deviceExtensions;
 
     if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_device_group"))
@@ -243,9 +235,6 @@ void DeviceGroupTestInstance::init(void)
 
     if (m_useDedicated)
     {
-        if (!m_context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
-            TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_dedicated_allocation");
-
         if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_dedicated_allocation"))
             deviceExtensions.push_back("VK_KHR_dedicated_allocation");
     }
@@ -267,32 +256,19 @@ void DeviceGroupTestInstance::init(void)
         const int kDevId      = cmdLine.getVKDeviceId();
         const int kDevIndex   = kDevId - 1;
 
-        if (kGroupId < 1 || static_cast<size_t>(kGroupId) > properties.size())
-        {
-            std::ostringstream msg;
-            msg << "Invalid device group id " << kGroupId << " (only " << properties.size() << " device groups found)";
-            TCU_THROW(NotSupportedError, msg.str());
-        }
-
         m_physicalDeviceCount = properties[kGroupIndex].physicalDeviceCount;
         for (uint32_t idx = 0; idx < m_physicalDeviceCount; idx++)
         {
             m_physicalDevices.push_back(properties[kGroupIndex].physicalDevices[idx]);
         }
 
-        if (m_usePeerFetch && m_physicalDeviceCount < 2)
-            TCU_THROW(NotSupportedError, "Peer fetching needs more than 1 physical device.");
-
         if (!(m_testMode & TEST_MODE_AFR) || (m_physicalDeviceCount > 1))
         {
-            if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(),
-                              std::string("VK_KHR_bind_memory2")))
-                TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_bind_memory2");
             if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_bind_memory2"))
                 deviceExtensions.push_back("VK_KHR_bind_memory2");
         }
 
-        const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
+        const VkDeviceQueueCreateInfo deviceQueueCreateInfo{
             VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, //type
             nullptr,                                    //pNext
             (VkDeviceQueueCreateFlags)0u,               //flags
@@ -300,30 +276,16 @@ void DeviceGroupTestInstance::init(void)
             1u,                                         //queueCount;
             &queuePriority,                             //pQueuePriorities;
         };
-        VkDeviceGroupDeviceCreateInfo deviceGroupInfo = {
+        VkDeviceGroupDeviceCreateInfo deviceGroupInfo{
             VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO, //stype
             nullptr,                                           //pNext
             properties[kGroupIndex].physicalDeviceCount,       //physicalDeviceCount
             properties[kGroupIndex].physicalDevices            //physicalDevices
         };
 
-        if (kDevId < 1 || static_cast<uint32_t>(kDevId) > m_physicalDeviceCount)
-        {
-            std::ostringstream msg;
-            msg << "Device id " << kDevId << " invalid for group " << kGroupId << " (group " << kGroupId << " has "
-                << m_physicalDeviceCount << " devices)";
-            TCU_THROW(NotSupportedError, msg.str());
-        }
-
         VkPhysicalDevice physicalDevice                = properties[kGroupIndex].physicalDevices[kDevIndex];
         VkPhysicalDeviceFeatures enabledDeviceFeatures = getPhysicalDeviceFeatures(instanceDriver, physicalDevice);
         m_subsetAllocation                             = properties[kGroupIndex].subsetAllocation;
-
-        if (m_drawTessellatedSphere & static_cast<bool>(!enabledDeviceFeatures.tessellationShader))
-            TCU_THROW(NotSupportedError, "Tessellation is not supported.");
-
-        if (m_fillModeNonSolid & static_cast<bool>(!enabledDeviceFeatures.fillModeNonSolid))
-            TCU_THROW(NotSupportedError, "Line polygon mode is not supported.");
 
         extensionPtrs.resize(deviceExtensions.size());
         for (size_t ndx = 0; ndx < deviceExtensions.size(); ++ndx)
@@ -1754,6 +1716,62 @@ private:
         return new Instance(context, m_testMode);
     }
 
+    void checkSupport(Context &context) const
+    {
+        if (std::is_same_v<Instance, DeviceGroupTestInstance>)
+        {
+            context.requireInstanceFunctionality("VK_KHR_device_group_creation");
+            context.requireDeviceFunctionality("VK_KHR_device_group");
+
+            if (m_testMode & TEST_MODE_DEDICATED)
+                context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
+
+            const auto &vki                 = context.getInstanceInterface();
+            const tcu::CommandLine &cmdLine = context.getTestContext().getCommandLine();
+            const auto properties           = enumeratePhysicalDeviceGroups(vki, context.getInstance());
+            const int kGroupId              = cmdLine.getVKDeviceGroupId();
+            const int kGroupIndex           = kGroupId - 1;
+            const int kDevId                = cmdLine.getVKDeviceId();
+            const int kDevIndex             = kDevId - 1;
+
+            if (kGroupId < 1 || static_cast<size_t>(kGroupId) > properties.size())
+            {
+                std::ostringstream msg;
+                msg << "Invalid device group id " << kGroupId << " (only " << properties.size()
+                    << " device groups found)";
+                TCU_THROW(NotSupportedError, msg.str());
+            }
+
+            auto physicalDeviceCount = properties[kGroupIndex].physicalDeviceCount;
+
+            if ((m_testMode & TEST_MODE_PEER_FETCH) && physicalDeviceCount < 2)
+                TCU_THROW(NotSupportedError, "Peer fetching needs more than 1 physical device.");
+
+            if (!(m_testMode & TEST_MODE_AFR) || (physicalDeviceCount > 1))
+            {
+                if (!de::contains(context.getDeviceExtensions(), std::string("VK_KHR_bind_memory2")))
+                    TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_bind_memory2");
+            }
+
+            if (kDevId < 1 || static_cast<uint32_t>(kDevId) > physicalDeviceCount)
+            {
+                std::ostringstream msg;
+                msg << "Device id " << kDevId << " invalid for group " << kGroupId << " (group " << kGroupId << " has "
+                    << physicalDeviceCount << " devices)";
+                TCU_THROW(NotSupportedError, msg.str());
+            }
+
+            VkPhysicalDevice physicalDevice                = properties[kGroupIndex].physicalDevices[kDevIndex];
+            VkPhysicalDeviceFeatures enabledDeviceFeatures = getPhysicalDeviceFeatures(vki, physicalDevice);
+
+            if ((m_testMode & TEST_MODE_TESSELLATION) && static_cast<bool>(!enabledDeviceFeatures.tessellationShader))
+                TCU_THROW(NotSupportedError, "Tessellation is not supported.");
+
+            if ((m_testMode & TEST_MODE_LINEFILL) && static_cast<bool>(!enabledDeviceFeatures.fillModeNonSolid))
+                TCU_THROW(NotSupportedError, "Line polygon mode is not supported.");
+        }
+    }
+
     void initPrograms(vk::SourceCollections &programCollection) const
     {
         programCollection.glslSources.add("vert")
@@ -1825,9 +1843,7 @@ class DeviceGroupTestRendering : public tcu::TestCaseGroup
 {
 public:
     DeviceGroupTestRendering(tcu::TestContext &testCtx, const std::string &name);
-    ~DeviceGroupTestRendering(void)
-    {
-    }
+    ~DeviceGroupTestRendering(void) = default;
     void init(void);
 
 private:
@@ -1893,5 +1909,4 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
 {
     return new DeviceGroupTestRendering(testCtx, name);
 }
-} // namespace DeviceGroup
-} // namespace vkt
+} // namespace vkt::DeviceGroup

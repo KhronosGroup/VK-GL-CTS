@@ -40,9 +40,7 @@
 #include "vktProtectedMemUtils.hpp"
 #include "vktProtectedMemImageValidator.hpp"
 
-namespace vkt
-{
-namespace ProtectedMem
+namespace vkt::ProtectedMem
 {
 
 namespace
@@ -81,9 +79,7 @@ public:
     {
     }
 
-    virtual ~AttachmentClearTestCase(void)
-    {
-    }
+    virtual ~AttachmentClearTestCase(void) = default;
     virtual TestInstance *createInstance(Context &ctx) const
     {
         return new AttachmentClearTestInstance(ctx, m_clearValue, m_refData, m_validator, m_cmdBufferType);
@@ -94,7 +90,7 @@ public:
     }
     virtual void checkSupport(Context &context) const
     {
-        checkProtectedQueueSupport(context);
+        checkProtectedContextSupport(context);
     }
 
 private:
@@ -415,5 +411,4 @@ tcu::TestCaseGroup *createAttachmentClearTests(tcu::TestContext &testCtx)
     return clearTests.release();
 }
 
-} // namespace ProtectedMem
-} // namespace vkt
+} // namespace vkt::ProtectedMem

@@ -37,9 +37,7 @@
 #include "deStringUtil.hpp"
 #include "deRandom.hpp"
 
-namespace vkt
-{
-namespace clipping
+namespace vkt::clipping
 {
 namespace
 {
@@ -320,6 +318,11 @@ bool checkFragColors(const tcu::ConstPixelBufferAccess pixels, IVec2 clipRegion,
     return true;
 }
 
+std::vector<VulkanShader> getShaderVector(vk::BinaryCollection &bc)
+{
+    return {{VK_SHADER_STAGE_VERTEX_BIT, bc.get("vert")}, {VK_SHADER_STAGE_FRAGMENT_BIT, bc.get("frag")}};
+}
+
 //! Clipping against the default clip volume.
 namespace ClipVolume
 {
@@ -410,6 +413,40 @@ void initProgramsPointSize(SourceCollections &programCollection)
     addSimplePrograms(programCollection, 0.75f * static_cast<float>(RENDER_SIZE));
 }
 
+void checkTopologySupport(Context &context, const VkPrimitiveTopology topology)
+{
+#ifndef CTS_USES_VULKANSC
+    if (topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
+        context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+        !context.getPortabilitySubsetFeatures().triangleFans)
+    {
+        TCU_THROW(NotSupportedError,
+                  "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+    }
+#else
+    DE_UNREF(context);
+    DE_UNREF(topology);
+#endif // CTS_USES_VULKANSC
+}
+
+void primitivesInsideOutsideCheckSupport(Context &context, const VkPrimitiveTopology topology)
+{
+    checkTopologySupport(context, topology);
+
+    switch (topology)
+    {
+    case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+    case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+    case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+    case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+        requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_GEOMETRY_SHADER);
+        break;
+
+    default:
+        break;
+    }
+}
+
 //! Primitives fully inside the clip volume.
 tcu::TestStatus testPrimitivesInside(Context &context, const VkPrimitiveTopology topology)
 {
@@ -424,8 +461,6 @@ tcu::TestStatus testPrimitivesInside(Context &context, const VkPrimitiveTopology
 
     case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
     case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
-        requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_GEOMETRY_SHADER);
-        // Fallthrough
     case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
     case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
         // Allow for some error.
@@ -434,8 +469,6 @@ tcu::TestStatus testPrimitivesInside(Context &context, const VkPrimitiveTopology
 
     case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
     case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
-        requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_GEOMETRY_SHADER);
-        // Fallthrough
     case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
     case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
     case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
@@ -448,12 +481,9 @@ tcu::TestStatus testPrimitivesInside(Context &context, const VkPrimitiveTopology
         break;
     }
 
-    std::vector<VulkanShader> shaders;
-    shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert")));
-    shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("frag")));
-
-    tcu::TestLog &log = context.getTestContext().getLog();
-    int numPassed     = 0;
+    const auto shaders = getShaderVector(context.getBinaryCollection());
+    tcu::TestLog &log  = context.getTestContext().getLog();
+    int numPassed      = 0;
 
     static const struct
     {
@@ -500,24 +530,9 @@ tcu::TestStatus testPrimitivesInside(Context &context, const VkPrimitiveTopology
 //! Primitives fully outside the clip volume.
 tcu::TestStatus testPrimitivesOutside(Context &context, const VkPrimitiveTopology topology)
 {
-    switch (topology)
-    {
-    case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
-    case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
-    case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-    case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
-        requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_GEOMETRY_SHADER);
-        break;
-    default:
-        break;
-    }
-
-    std::vector<VulkanShader> shaders;
-    shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert")));
-    shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("frag")));
-
-    tcu::TestLog &log = context.getTestContext().getLog();
-    int numPassed     = 0;
+    const auto shaders = getShaderVector(context.getBinaryCollection());
+    tcu::TestLog &log  = context.getTestContext().getLog();
+    int numPassed      = 0;
 
     static const struct
     {
@@ -561,15 +576,16 @@ tcu::TestStatus testPrimitivesOutside(Context &context, const VkPrimitiveTopolog
                                                      tcu::TestStatus::fail("Rendered image(s) are incorrect"));
 }
 
+void primitivesDepthClampCheckSupport(Context &context, const VkPrimitiveTopology topology)
+{
+    checkTopologySupport(context, topology);
+    requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_DEPTH_CLAMP);
+}
+
 //! Primitives partially outside the clip volume, but depth clamped
 tcu::TestStatus testPrimitivesDepthClamp(Context &context, const VkPrimitiveTopology topology)
 {
-    requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_DEPTH_CLAMP);
-
-    std::vector<VulkanShader> shaders;
-    shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert")));
-    shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("frag")));
-
+    const auto shaders     = getShaderVector(context.getBinaryCollection());
     const int numCases     = 4;
     const IVec2 regionSize = IVec2(RENDER_SIZE / 2, RENDER_SIZE); //! size of the clamped region
     const int regionPixels = regionSize.x() * regionSize.y();
@@ -657,16 +673,18 @@ tcu::TestStatus testPrimitivesDepthClamp(Context &context, const VkPrimitiveTopo
                                     tcu::TestStatus::fail("Rendered image(s) are incorrect"));
 }
 
+void primitivesDepthClipCheckSupport(Context &context, const VkPrimitiveTopology topology)
+{
+    checkTopologySupport(context, topology);
+
+    if (!context.getDepthClipEnableFeaturesEXT().depthClipEnable)
+        throw tcu::NotSupportedError("VK_EXT_depth_clip_enable not supported");
+}
+
 //! Primitives partially outside the clip volume, but depth clipped with explicit depth clip control
 tcu::TestStatus testPrimitivesDepthClip(Context &context, const VkPrimitiveTopology topology)
 {
-    if (!context.getDepthClipEnableFeaturesEXT().depthClipEnable)
-        throw tcu::NotSupportedError("VK_EXT_depth_clip_enable not supported");
-
-    std::vector<VulkanShader> shaders;
-    shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert")));
-    shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("frag")));
-
+    const auto shaders     = getShaderVector(context.getBinaryCollection());
     const int numCases     = 4;
     const IVec2 regionSize = IVec2(RENDER_SIZE / 2, RENDER_SIZE); //! size of the clamped region
     const int regionPixels = regionSize.x() * regionSize.y();
@@ -797,13 +815,16 @@ tcu::TestStatus testPrimitivesDepthClip(Context &context, const VkPrimitiveTopol
     return tcu::TestStatus::pass("OK");
 }
 
+void largePointsCheckSupport(Context &context)
+{
+    requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_LARGE_POINTS);
+}
+
 //! Large point clipping
 //! Spec: If the primitive under consideration is a point, then clipping passes it unchanged if it lies within the clip volume;
 //!       otherwise, it is discarded.
 tcu::TestStatus testLargePoints(Context &context)
 {
-    requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_LARGE_POINTS);
-
     bool pointClippingOutside = true;
 
     if (context.isDeviceFunctionalitySupported("VK_KHR_maintenance2"))
@@ -828,24 +849,20 @@ tcu::TestStatus testLargePoints(Context &context)
         }
     }
 
-    std::vector<VulkanShader> shaders;
-    shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert")));
-    shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("frag")));
+    const auto shaders = getShaderVector(context.getBinaryCollection());
 
-    std::vector<Vec4> vertices;
-    {
-        const float delta = 0.1f; // much smaller than the point size
-        const float p     = 1.0f + delta;
-
-        vertices.push_back(Vec4(-p, -p, 0.1f, 1.0f));
-        vertices.push_back(Vec4(-p, p, 0.2f, 1.0f));
-        vertices.push_back(Vec4(p, p, 0.4f, 1.0f));
-        vertices.push_back(Vec4(p, -p, 0.6f, 1.0f));
-        vertices.push_back(Vec4(0.0f, -p, 0.8f, 1.0f));
-        vertices.push_back(Vec4(p, 0.0f, 0.7f, 1.0f));
-        vertices.push_back(Vec4(0.0f, p, 0.5f, 1.0f));
-        vertices.push_back(Vec4(-p, 0.0f, 0.3f, 1.0f));
-    }
+    const float delta = 0.1f; // much smaller than the point size
+    const float p     = 1.0f + delta;
+    std::vector<Vec4> vertices{
+        {-p, -p, 0.1f, 1.0f},   //
+        {-p, p, 0.2f, 1.0f},    //
+        {p, p, 0.4f, 1.0f},     //
+        {p, -p, 0.6f, 1.0f},    //
+        {0.0f, -p, 0.8f, 1.0f}, //
+        {p, 0.0f, 0.7f, 1.0f},  //
+        {0.0f, p, 0.5f, 1.0f},  //
+        {-p, 0.0f, 0.3f, 1.0f}, //
+    };
 
     tcu::TestLog &log = context.getTestContext().getLog();
 
@@ -896,9 +913,7 @@ public:
         m_outputs[0].type = rr::GENERICVECTYPE_FLOAT;
     }
 
-    virtual ~WideLineVertexShader()
-    {
-    }
+    virtual ~WideLineVertexShader() = default;
 
     void shadeVertices(const rr::VertexAttrib *inputs, rr::VertexPacket *const *packets, const int numPackets) const
     {
@@ -922,9 +937,7 @@ public:
         m_outputs[0].type = rr::GENERICVECTYPE_FLOAT;
     }
 
-    virtual ~WideLineFragmentShader()
-    {
-    }
+    virtual ~WideLineFragmentShader() = default;
 
     void shadeFragments(rr::FragmentPacket *packets, const int numPackets,
                         const rr::FragmentShadingContext &context) const
@@ -939,16 +952,17 @@ public:
         }
     }
 };
+
+void wideLinesCheckSupport(Context &context, const LineOrientation)
+{
+    requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_WIDE_LINES);
+}
+
 //! Wide line clipping
 tcu::TestStatus testWideLines(Context &context, const LineOrientation lineOrientation)
 {
-    requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_WIDE_LINES);
-
-    std::vector<VulkanShader> shaders;
-    shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert")));
-    shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("frag")));
-
-    const float delta = 0.1f; // much smaller than the line width
+    const auto shaders = getShaderVector(context.getBinaryCollection());
+    const float delta  = 0.1f; // much smaller than the line width
 
     std::vector<Vec4> vertices;
     if (lineOrientation == LINE_ORIENTATION_AXIS_ALIGNED)
@@ -957,28 +971,28 @@ tcu::TestStatus testWideLines(Context &context, const LineOrientation lineOrient
         const float p = 1.0f + delta;
         const float q = 0.9f;
 
-        vertices.push_back(Vec4(-p, -q, 0.1f, 1.0f));
-        vertices.push_back(Vec4(-p, q, 0.9f, 1.0f)); // line 0
-        vertices.push_back(Vec4(-q, p, 0.1f, 1.0f));
-        vertices.push_back(Vec4(q, p, 0.9f, 1.0f)); // line 1
-        vertices.push_back(Vec4(p, q, 0.1f, 1.0f));
-        vertices.push_back(Vec4(p, -q, 0.9f, 1.0f)); // line 2
-        vertices.push_back(Vec4(q, -p, 0.1f, 1.0f));
-        vertices.push_back(Vec4(-q, -p, 0.9f, 1.0f)); // line 3
+        vertices = {{-p, -q, 0.1f, 1.0f},  //
+                    {-p, q, 0.9f, 1.0f},   // line 0
+                    {-q, p, 0.1f, 1.0f},   //
+                    {q, p, 0.9f, 1.0f},    // line 1
+                    {p, q, 0.1f, 1.0f},    //
+                    {p, -q, 0.9f, 1.0f},   // line 2
+                    {q, -p, 0.1f, 1.0f},   //
+                    {-q, -p, 0.9f, 1.0f}}; // line 3
     }
     else if (lineOrientation == LINE_ORIENTATION_DIAGONAL)
     {
         // Diagonal lines just outside the clip volume.
         const float p = 2.0f + delta;
 
-        vertices.push_back(Vec4(-p, 0.0f, 0.1f, 1.0f));
-        vertices.push_back(Vec4(0.0f, -p, 0.9f, 1.0f)); // line 0
-        vertices.push_back(Vec4(0.0f, -p, 0.1f, 1.0f));
-        vertices.push_back(Vec4(p, 0.0f, 0.9f, 1.0f)); // line 1
-        vertices.push_back(Vec4(p, 0.0f, 0.1f, 1.0f));
-        vertices.push_back(Vec4(0.0f, p, 0.9f, 1.0f)); // line 2
-        vertices.push_back(Vec4(0.0f, p, 0.1f, 1.0f));
-        vertices.push_back(Vec4(-p, 0.0f, 0.9f, 1.0f)); // line 3
+        vertices = {{-p, 0.0f, 0.1f, 1.0f},  //
+                    {0.0f, -p, 0.9f, 1.0f},  // line 0
+                    {0.0f, -p, 0.1f, 1.0f},  //
+                    {p, 0.0f, 0.9f, 1.0f},   // line 1
+                    {p, 0.0f, 0.1f, 1.0f},   //
+                    {0.0f, p, 0.9f, 1.0f},   // line 2
+                    {0.0f, p, 0.1f, 1.0f},   //
+                    {-p, 0.0f, 0.9f, 1.0f}}; // line 3
     }
     else
         DE_ASSERT(0);
@@ -1433,28 +1447,32 @@ void initPrograms(SourceCollections &programCollection, const CaseDefinition cas
     }
 }
 
+void checkSupport(Context &context, const CaseDefinition caseDef)
+{
+    const InstanceInterface &vki      = context.getInstanceInterface();
+    const VkPhysicalDevice physDevice = context.getPhysicalDevice();
+
+    FeatureFlags requirements = (FeatureFlags)0;
+
+    if (caseDef.numClipDistances > 0)
+        requirements |= FEATURE_SHADER_CLIP_DISTANCE;
+    if (caseDef.numCullDistances > 0)
+        requirements |= FEATURE_SHADER_CULL_DISTANCE;
+    if (caseDef.enableTessellation)
+        requirements |= FEATURE_TESSELLATION_SHADER;
+    if (caseDef.enableGeometry)
+        requirements |= FEATURE_GEOMETRY_SHADER;
+
+    requireFeatures(vki, physDevice, requirements);
+}
+
 tcu::TestStatus testClipDistance(Context &context, const CaseDefinition caseDef)
 {
-    // Check test requirements
+    // Check limits for supported features
     {
         const InstanceInterface &vki        = context.getInstanceInterface();
         const VkPhysicalDevice physDevice   = context.getPhysicalDevice();
         const VkPhysicalDeviceLimits limits = getPhysicalDeviceProperties(vki, physDevice).limits;
-
-        FeatureFlags requirements = (FeatureFlags)0;
-
-        if (caseDef.numClipDistances > 0)
-            requirements |= FEATURE_SHADER_CLIP_DISTANCE;
-        if (caseDef.numCullDistances > 0)
-            requirements |= FEATURE_SHADER_CULL_DISTANCE;
-        if (caseDef.enableTessellation)
-            requirements |= FEATURE_TESSELLATION_SHADER;
-        if (caseDef.enableGeometry)
-            requirements |= FEATURE_GEOMETRY_SHADER;
-
-        requireFeatures(vki, physDevice, requirements);
-
-        // Check limits for supported features
 
         if (caseDef.numClipDistances > 0 && limits.maxClipDistances < MAX_CLIP_DISTANCES)
             return tcu::TestStatus::fail("maxClipDistances smaller than the minimum required by the spec");
@@ -1466,18 +1484,15 @@ tcu::TestStatus testClipDistance(Context &context, const CaseDefinition caseDef)
                 "maxCombinedClipAndCullDistances smaller than the minimum required by the spec");
     }
 
-    std::vector<VulkanShader> shaders;
-    shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert")));
-    shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("frag")));
+    auto &bc     = context.getBinaryCollection();
+    auto shaders = getShaderVector(bc);
     if (caseDef.enableTessellation)
     {
-        shaders.push_back(
-            VulkanShader(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, context.getBinaryCollection().get("tesc")));
-        shaders.push_back(
-            VulkanShader(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, context.getBinaryCollection().get("tese")));
+        shaders.emplace_back(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, bc.get("tesc"));
+        shaders.emplace_back(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, bc.get("tese"));
     }
     if (caseDef.enableGeometry)
-        shaders.push_back(VulkanShader(VK_SHADER_STAGE_GEOMETRY_BIT, context.getBinaryCollection().get("geom")));
+        shaders.emplace_back(VK_SHADER_STAGE_GEOMETRY_BIT, bc.get("geom"));
 
     const int numBars = MAX_COMBINED_CLIP_AND_CULL_DISTANCES;
 
@@ -1488,13 +1503,13 @@ tcu::TestStatus testClipDistance(Context &context, const CaseDefinition caseDef)
         {
             const float x = -1.0f + dx * static_cast<float>(i);
 
-            vertices.push_back(Vec4(x, -1.0f, 0.0f, 1.0f));
-            vertices.push_back(Vec4(x, 1.0f, 0.0f, 1.0f));
-            vertices.push_back(Vec4(x + dx, -1.0f, 0.0f, 1.0f));
+            vertices.emplace_back(x, -1.0f, 0.0f, 1.0f);
+            vertices.emplace_back(x, 1.0f, 0.0f, 1.0f);
+            vertices.emplace_back(x + dx, -1.0f, 0.0f, 1.0f);
 
-            vertices.push_back(Vec4(x, 1.0f, 0.0f, 1.0f));
-            vertices.push_back(Vec4(x + dx, 1.0f, 0.0f, 1.0f));
-            vertices.push_back(Vec4(x + dx, -1.0f, 0.0f, 1.0f));
+            vertices.emplace_back(x, 1.0f, 0.0f, 1.0f);
+            vertices.emplace_back(x + dx, 1.0f, 0.0f, 1.0f);
+            vertices.emplace_back(x + dx, -1.0f, 0.0f, 1.0f);
         }
     }
 
@@ -1587,19 +1602,17 @@ void initPrograms(SourceCollections &programCollection, const int numClipDistanc
     }
 }
 
+void checkSupport(Context &context, const int)
+{
+    const InstanceInterface &vki      = context.getInstanceInterface();
+    const VkPhysicalDevice physDevice = context.getPhysicalDevice();
+
+    requireFeatures(vki, physDevice, FEATURE_SHADER_CLIP_DISTANCE);
+}
+
 tcu::TestStatus testComplementarity(Context &context, const int numClipDistances)
 {
-    // Check test requirements
-    {
-        const InstanceInterface &vki      = context.getInstanceInterface();
-        const VkPhysicalDevice physDevice = context.getPhysicalDevice();
-
-        requireFeatures(vki, physDevice, FEATURE_SHADER_CLIP_DISTANCE);
-    }
-
-    std::vector<VulkanShader> shaders;
-    shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert")));
-    shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("frag")));
+    const auto shaders = getShaderVector(context.getBinaryCollection());
 
     std::vector<Vec4> vertices;
     {
@@ -1712,9 +1725,7 @@ void initPrograms(SourceCollections &programCollection)
 
 tcu::TestStatus testCullDistance(Context &context)
 {
-    std::vector<VulkanShader> shaders{
-        VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert")),
-        VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("frag"))};
+    const auto shaders = getShaderVector(context.getBinaryCollection());
 
     std::vector<Vec4> vertices{
         {-3.0f, 0.0f, 0.0f, 1.0f},
@@ -1743,22 +1754,6 @@ tcu::TestStatus testCullDistance(Context &context)
 }
 
 } // namespace CullDistance
-
-void checkTopologySupport(Context &context, const VkPrimitiveTopology topology)
-{
-#ifndef CTS_USES_VULKANSC
-    if (topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
-        context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
-        !context.getPortabilitySubsetFeatures().triangleFans)
-    {
-        TCU_THROW(NotSupportedError,
-                  "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
-    }
-#else
-    DE_UNREF(context);
-    DE_UNREF(topology);
-#endif // CTS_USES_VULKANSC
-}
 
 void addClippingTests(tcu::TestCaseGroup *clippingTestsGroup)
 {
@@ -1789,8 +1784,8 @@ void addClippingTests(tcu::TestCaseGroup *clippingTestsGroup)
 
             for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
                 addFunctionCaseWithPrograms<VkPrimitiveTopology>(
-                    group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), checkTopologySupport, initPrograms,
-                    testPrimitivesInside, cases[caseNdx]);
+                    group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), primitivesInsideOutsideCheckSupport,
+                    initPrograms, testPrimitivesInside, cases[caseNdx]);
 
             clipVolumeGroup->addChild(group.release());
         }
@@ -1801,8 +1796,8 @@ void addClippingTests(tcu::TestCaseGroup *clippingTestsGroup)
 
             for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
                 addFunctionCaseWithPrograms<VkPrimitiveTopology>(
-                    group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), checkTopologySupport, initPrograms,
-                    testPrimitivesOutside, cases[caseNdx]);
+                    group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), primitivesInsideOutsideCheckSupport,
+                    initPrograms, testPrimitivesOutside, cases[caseNdx]);
 
             clipVolumeGroup->addChild(group.release());
         }
@@ -1813,8 +1808,8 @@ void addClippingTests(tcu::TestCaseGroup *clippingTestsGroup)
 
             for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
                 addFunctionCaseWithPrograms<VkPrimitiveTopology>(
-                    group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), checkTopologySupport, initPrograms,
-                    testPrimitivesDepthClamp, cases[caseNdx]);
+                    group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), primitivesDepthClampCheckSupport,
+                    initPrograms, testPrimitivesDepthClamp, cases[caseNdx]);
 
             clipVolumeGroup->addChild(group.release());
         }
@@ -1825,8 +1820,8 @@ void addClippingTests(tcu::TestCaseGroup *clippingTestsGroup)
 
             for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
                 addFunctionCaseWithPrograms<VkPrimitiveTopology>(
-                    group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), checkTopologySupport, initPrograms,
-                    testPrimitivesDepthClip, cases[caseNdx]);
+                    group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), primitivesDepthClipCheckSupport,
+                    initPrograms, testPrimitivesDepthClip, cases[caseNdx]);
 
             clipVolumeGroup->addChild(group.release());
         }
@@ -1838,12 +1833,13 @@ void addClippingTests(tcu::TestCaseGroup *clippingTestsGroup)
 
             MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "clipped"));
 
-            addFunctionCaseWithPrograms(group.get(), "large_points", initProgramsPointSize, testLargePoints);
+            addFunctionCaseWithPrograms(group.get(), "large_points", largePointsCheckSupport, initProgramsPointSize,
+                                        testLargePoints);
 
-            addFunctionCaseWithPrograms<LineOrientation>(group.get(), "wide_lines_axis_aligned", initPrograms,
-                                                         testWideLines, LINE_ORIENTATION_AXIS_ALIGNED);
-            addFunctionCaseWithPrograms<LineOrientation>(group.get(), "wide_lines_diagonal", initPrograms,
-                                                         testWideLines, LINE_ORIENTATION_DIAGONAL);
+            addFunctionCaseWithPrograms<LineOrientation>(group.get(), "wide_lines_axis_aligned", wideLinesCheckSupport,
+                                                         initPrograms, testWideLines, LINE_ORIENTATION_AXIS_ALIGNED);
+            addFunctionCaseWithPrograms<LineOrientation>(group.get(), "wide_lines_diagonal", wideLinesCheckSupport,
+                                                         initPrograms, testWideLines, LINE_ORIENTATION_DIAGONAL);
 
             clipVolumeGroup->addChild(group.release());
         }
@@ -1917,7 +1913,7 @@ void addClippingTests(tcu::TestCaseGroup *clippingTestsGroup)
                                                        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
                                 addFunctionCaseWithPrograms<CaseDefinition>(
-                                    shaderGroup.get(), caseName, initPrograms, testClipDistance,
+                                    shaderGroup.get(), caseName, checkSupport, initPrograms, testClipDistance,
                                     CaseDefinition(topology, numClipPlanes, numCullPlanes, useTessellation, useGeometry,
                                                    dynamicIndexing,
                                                    fragmentShaderReads[fragmentShaderReadNdx].readInFragmentShader));
@@ -1936,8 +1932,8 @@ void addClippingTests(tcu::TestCaseGroup *clippingTestsGroup)
             MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "complementarity"));
 
             for (int numClipDistances = 1; numClipDistances <= MAX_CLIP_DISTANCES; ++numClipDistances)
-                addFunctionCaseWithPrograms<int>(group.get(), de::toString(numClipDistances).c_str(), initPrograms,
-                                                 testComplementarity, numClipDistances);
+                addFunctionCaseWithPrograms<int>(group.get(), de::toString(numClipDistances).c_str(), checkSupport,
+                                                 initPrograms, testComplementarity, numClipDistances);
 
             clippingTestsGroup->addChild(group.release());
         }
@@ -1962,5 +1958,4 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     return createTestGroup(testCtx, name.c_str(), addClippingTests);
 }
 
-} // namespace clipping
-} // namespace vkt
+} // namespace vkt::clipping

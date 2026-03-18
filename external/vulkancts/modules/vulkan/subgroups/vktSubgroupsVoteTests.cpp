@@ -396,13 +396,16 @@ void supportedCheck(Context &context, CaseDefinition caseDef)
     subgroups::supportedCheckShader(context, caseDef.shaderStage);
 }
 
+void ssboTestSupportCheck(Context &context, CaseDefinition caseDef)
+{
+    supportedCheck(context, caseDef);
+
+    if (caseDef.opType > OPTYPE_LAST_NON_ARB)
+        context.requireDeviceFunctionality("VK_EXT_shader_subgroup_vote");
+}
+
 TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
 {
-    if (caseDef.opType > OPTYPE_LAST_NON_ARB)
-    {
-        context.requireDeviceFunctionality("VK_EXT_shader_subgroup_vote");
-    }
-
     const subgroups::SSBOData::InputDataInitializeType initializeType =
         (OPTYPE_ALLEQUAL == caseDef.opType || OPTYPE_ALLEQUAL_ARB == caseDef.opType) ?
             subgroups::SSBOData::InitializeZero :
@@ -537,9 +540,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
 }
 } // namespace
 
-namespace vkt
-{
-namespace subgroups
+namespace vkt::subgroups
 {
 TestCaseGroup *createSubgroupsVoteTests(TestContext &testCtx)
 {
@@ -687,8 +688,8 @@ TestCaseGroup *createSubgroupsVoteTests(TestContext &testCtx)
                     };
                     const string testName = name + "_" + getShaderStageName(caseDef.shaderStage);
 
-                    addFunctionCaseWithPrograms(framebufferGroupPtr, testName, supportedCheck, initFrameBufferPrograms,
-                                                noSSBOtest, caseDef);
+                    addFunctionCaseWithPrograms(framebufferGroupPtr, testName, ssboTestSupportCheck,
+                                                initFrameBufferPrograms, noSSBOtest, caseDef);
                 }
 
                 {
@@ -703,7 +704,7 @@ TestCaseGroup *createSubgroupsVoteTests(TestContext &testCtx)
                     };
                     const string testName = name + "_" + getShaderStageName(caseDef.shaderStage);
 
-                    addFunctionCaseWithPrograms(fragHelperGroupPtr, testName, supportedCheck,
+                    addFunctionCaseWithPrograms(fragHelperGroupPtr, testName, ssboTestSupportCheck,
                                                 initFrameBufferProgramsFrag, noSSBOtest, caseDef);
                 }
             }
@@ -766,5 +767,4 @@ TestCaseGroup *createSubgroupsVoteTests(TestContext &testCtx)
     return group.release();
 }
 
-} // namespace subgroups
-} // namespace vkt
+} // namespace vkt::subgroups

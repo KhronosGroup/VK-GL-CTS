@@ -99,6 +99,33 @@ void checkProtectedQueueSupport(Context &context)
     TCU_THROW(NotSupportedError, "No protected queue found.");
 }
 
+void checkProtectedContextSupport(Context &context, bool useYCbCr, bool useProtectedAccess)
+{
+    DE_UNREF(useProtectedAccess);
+
+    const auto apiVersion = context.getUsedApiVersion();
+    if (apiVersion < VK_API_VERSION_1_1)
+        TCU_THROW(NotSupportedError, "Vulkan 1.1 is not supported");
+
+#ifndef NOT_PROTECTED
+    const auto &protectedFeature = context.getProtectedMemoryFeatures();
+    if (protectedFeature.protectedMemory == VK_FALSE)
+        TCU_THROW(NotSupportedError, "Protected Memory feature not supported by the device");
+#endif
+
+    const auto &ycbcrFeature = context.getSamplerYcbcrConversionFeatures();
+    if (useYCbCr && !ycbcrFeature.samplerYcbcrConversion)
+        TCU_THROW(NotSupportedError, "VK_KHR_sampler_ycbcr_conversion is not supported");
+
+#ifndef CTS_USES_VULKANSC
+    const auto &protectedAccessFeature = context.getPipelineProtectedAccessFeatures();
+    if (useProtectedAccess && !protectedAccessFeature.pipelineProtectedAccess)
+        TCU_THROW(NotSupportedError, "VK_EXT_pipeline_protected_access is not supported");
+#endif
+
+    checkProtectedQueueSupport(context);
+}
+
 uint32_t chooseProtectedMemQueueFamilyIndex(const vk::InstanceDriver &vkd, vk::VkPhysicalDevice physicalDevice,
                                             vk::VkSurfaceKHR surface)
 {
@@ -145,15 +172,6 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice(const vk::PlatformInterface &vkp, 
     std::vector<std::string> requiredExtensions;
     std::vector<std::string> extensions = extraExtensions;
 
-    if (apiVersion < VK_API_VERSION_1_1)
-        TCU_THROW(NotSupportedError, "Vulkan 1.1 is not supported");
-
-    bool useYCbCr = de::contains(extensions.begin(), extensions.end(), std::string("VK_KHR_sampler_ycbcr_conversion"));
-#ifndef CTS_USES_VULKANSC
-    bool useProtectedAccess =
-        de::contains(extensions.begin(), extensions.end(), std::string("VK_EXT_pipeline_protected_access"));
-#endif
-
     // Check if the physical device supports the protected memory extension name
     for (uint32_t ndx = 0; ndx < extensions.size(); ++ndx)
     {
@@ -191,27 +209,8 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice(const vk::PlatformInterface &vkp, 
         &ycbcrFeature,                                                   // pNext
         VK_FALSE                                                         // protectedMemory
     };
-    vk::VkPhysicalDeviceFeatures features;
-    deMemset(&features, 0, sizeof(vk::VkPhysicalDeviceFeatures));
-
-    vk::VkPhysicalDeviceFeatures2 featuresExt = {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, // sType
-                                                 &protectedFeature,                                // pNext
-                                                 features};
-
+    vk::VkPhysicalDeviceFeatures2 featuresExt = initVulkanStructure(&protectedFeature);
     vkd.getPhysicalDeviceFeatures2(physicalDevice, &featuresExt);
-
-#ifndef NOT_PROTECTED
-    if (protectedFeature.protectedMemory == VK_FALSE)
-        TCU_THROW(NotSupportedError, "Protected Memory feature not supported by the device");
-#endif
-
-    if (useYCbCr && !ycbcrFeature.samplerYcbcrConversion)
-        TCU_THROW(NotSupportedError, "VK_KHR_sampler_ycbcr_conversion is not supported");
-
-#ifndef CTS_USES_VULKANSC
-    if (useProtectedAccess && !protectedAccessFeature.pipelineProtectedAccess)
-        TCU_THROW(NotSupportedError, "VK_EXT_pipeline_protected_access is not supported");
-#endif
 
     const float queuePriorities[]                  = {1.0f};
     const vk::VkDeviceQueueCreateInfo queueInfos[] = {
