@@ -172,11 +172,10 @@ VkPhysicalDeviceFeatures getDeviceFeaturesForWsi(void)
     return features;
 }
 
-Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance instance, const InstanceInterface &vki,
+Move<VkDevice> createDeviceWithWsi(Context &context, VkInstance instance, const InstanceInterface &vki,
                                    VkPhysicalDevice physicalDevice, const Extensions &supportedExtensions,
                                    const uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator,
-                                   bool requireSwapchainMaintenance1, bool requireDeviceGroup, bool validationEnabled,
-                                   bool preferExt)
+                                   bool requireSwapchainMaintenance1, bool requireDeviceGroup, bool preferExt)
 {
     const float queuePriorities[]              = {1.0f};
     const VkDeviceQueueCreateInfo queueInfos[] = {{
@@ -252,7 +251,8 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance 
         nullptr,
     };
 
-    return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
+                              context.getPlatformInterface(), instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 struct InstanceHelper
@@ -284,10 +284,9 @@ struct DeviceHelper
                  const VkAllocationCallbacks *pAllocator = nullptr)
         : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
-        , device(createDeviceWithWsi(context.getPlatformInterface(), instance, vki, physicalDevice,
+        , device(createDeviceWithWsi(context, instance, vki, physicalDevice,
                                      enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr), queueFamilyIndex,
-                                     pAllocator, requireSwapchainMaintenance1, requireDeviceGroup,
-                                     context.getTestContext().getCommandLine().isValidationEnabled(), preferExt))
+                                     pAllocator, requireSwapchainMaintenance1, requireDeviceGroup, preferExt))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
