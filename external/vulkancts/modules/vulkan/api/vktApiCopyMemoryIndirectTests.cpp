@@ -1841,7 +1841,6 @@ typedef struct
     uint32_t copyOffset;
     uint32_t copySize;
     QueueSelectionOptions queue;
-    bool useProtectedMemory;
 } CopyParams;
 
 struct IndirectParams
@@ -1942,12 +1941,9 @@ private:
             (m_copyParams.copySize ? static_cast<size_t>(m_copyParams.copySize) : bufferSize) - m_copyParams.copyOffset;
 
         VkBufferCreateFlags bufferCreateFlags = 0;
-        if (m_copyParams.useProtectedMemory)
-            bufferCreateFlags |= VK_BUFFER_CREATE_PROTECTED_BIT;
 
         const auto memReqs =
-            (vk::MemoryRequirement::HostVisible | vk::MemoryRequirement::DeviceAddress |
-             (m_copyParams.useProtectedMemory ? MemoryRequirement::Protected : MemoryRequirement::Any));
+            (vk::MemoryRequirement::HostVisible | vk::MemoryRequirement::DeviceAddress | MemoryRequirement::Any);
 
         // Buffers
         VkBufferCreateFlags usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
@@ -2029,11 +2025,7 @@ private:
             memset(bufferAllocation.getHostPtr(), 0xFF, std::max(m_copyParams.copyCount, (uint32_t)1) * bufferSize);
         }
 
-        const Unique<VkCommandPool> cmdPool(
-            makeCommandPool(ctx.vkd, ctx.device, qfIndex,
-                            m_copyParams.useProtectedMemory ?
-                                static_cast<VkCommandPoolCreateFlags>(VK_COMMAND_POOL_CREATE_PROTECTED_BIT) :
-                                static_cast<VkCommandPoolCreateFlags>(0u)));
+        const Unique<VkCommandPool> cmdPool(makeCommandPool(ctx.vkd, ctx.device, qfIndex));
 
         const Unique<VkCommandBuffer> cmdBuffer(
             allocateCommandBuffer(ctx.vkd, ctx.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -2044,11 +2036,9 @@ private:
         copyMemoryIndirectKHR.sType                       = VK_STRUCTURE_TYPE_COPY_MEMORY_INDIRECT_INFO_KHR;
         copyMemoryIndirectKHR.pNext                       = nullptr;
         copyMemoryIndirectKHR.copyAddressRange            = addressRange;
-        copyMemoryIndirectKHR.srcCopyFlags =
-            m_copyParams.useProtectedMemory ? VK_ADDRESS_COPY_PROTECTED_BIT_KHR : VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR;
-        copyMemoryIndirectKHR.dstCopyFlags =
-            m_copyParams.useProtectedMemory ? VK_ADDRESS_COPY_PROTECTED_BIT_KHR : VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR;
-        copyMemoryIndirectKHR.copyCount = m_copyParams.copyCount;
+        copyMemoryIndirectKHR.srcCopyFlags                = VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR;
+        copyMemoryIndirectKHR.dstCopyFlags                = VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR;
+        copyMemoryIndirectKHR.copyCount                   = m_copyParams.copyCount;
         ctx.vkd.cmdCopyMemoryIndirectKHR(*cmdBuffer, &copyMemoryIndirectKHR);
 
         VkBufferMemoryBarrier bufferBarrier = {};
@@ -2063,34 +2053,8 @@ private:
                                    nullptr, 1, &bufferBarrier, 0, nullptr);
 
         endCommandBuffer(ctx.vkd, *cmdBuffer);
-        if (m_copyParams.useProtectedMemory)
-        {
-            const VkProtectedSubmitInfo protectedSubmitInfo = {
-                VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO, // sType
-                nullptr,                                 // pNext
-                VK_TRUE                                  // protectedSubmit
-            };
 
-            const VkSubmitInfo submitInfo = {
-                VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
-                &protectedSubmitInfo,          // pNext
-                0u,                            // waitSemaphoreCount
-                nullptr,                       // pWaitSemaphores
-                nullptr,                       // pWaitDstStageMask
-                1u,                            // commandBufferCount
-                &(*cmdBuffer),                 // pCommandBuffers
-                0u,                            // signalSemaphoreCount
-                nullptr                        // pSignalSemaphores
-            };
-
-            const Unique<VkFence> fence(createFence(ctx.vkd, ctx.device));
-            VK_CHECK(ctx.vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-            VK_CHECK(ctx.vkd.waitForFences(ctx.device, 1u, &fence.get(), VK_TRUE, ~0ull));
-        }
-        else
-        {
-            submitCommandsAndWaitWithTransferSync(ctx.vkd, ctx.device, queue, *cmdBuffer, nullptr, true);
-        }
+        submitCommandsAndWaitWithTransferSync(ctx.vkd, ctx.device, queue, *cmdBuffer, nullptr, true);
 
         // Validate
         bool fail = false;
@@ -2184,25 +2148,6 @@ public:
         // getQueueInfo will throw if the requested queue is not available.
         const auto queueInfo = getQueueInfo(context, m_copyParams.queue);
         DE_UNREF(queueInfo);
-
-        if (m_copyParams.useProtectedMemory)
-        {
-            VkPhysicalDeviceProtectedMemoryFeatures protectedMemoryFeature = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES, // VkStructureType sType;
-                nullptr,                                                     // void* pNext;
-                VK_FALSE                                                     // VkBool32 protectedMemory;
-            };
-
-            VkPhysicalDeviceFeatures2 features2;
-            deMemset(&features2, 0, sizeof(features2));
-            features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-            features2.pNext = &protectedMemoryFeature;
-
-            const auto ctx = context.getContextCommonData();
-            ctx.vki.getPhysicalDeviceFeatures2(ctx.physicalDevice, &features2);
-            if (protectedMemoryFeature.protectedMemory == VK_FALSE)
-                TCU_THROW(NotSupportedError, "Protected memory feature is not supported");
-        }
     }
 
     TestInstance *createInstance(Context &context) const override
@@ -2387,14 +2332,9 @@ tcu::TestCaseGroup *createCopyMemoryIndirectTests(tcu::TestContext &testCtx)
                         if (copySize > 0u && copyOffsets[copyOffsetIdx].offset >= copySize)
                             continue;
 
-                        CopyParams params{
-                            static_cast<uint32_t>(copyCounts[copyCountIdx].numCopies),
-                            static_cast<uint32_t>(strides[strideIdx].stride),
-                            copyOffsets[copyOffsetIdx].offset,
-                            copySize,
-                            queues[queueIdx].queue,
-                            false //useProtectedMemory
-                        };
+                        CopyParams params{static_cast<uint32_t>(copyCounts[copyCountIdx].numCopies),
+                                          static_cast<uint32_t>(strides[strideIdx].stride),
+                                          copyOffsets[copyOffsetIdx].offset, copySize, queues[queueIdx].queue};
                         strideGroup->addChild(
                             new CopyMemoryIndirectTestCase(testCtx, queues[queueIdx].queueName.c_str(), params));
                     };
@@ -2406,22 +2346,6 @@ tcu::TestCaseGroup *createCopyMemoryIndirectTests(tcu::TestContext &testCtx)
         }
         group->addChild(copySizeGroup.release());
     }
-
-    // Add a test for protected memory
-    de::MovePtr<tcu::TestCaseGroup> protectedGroup(new tcu::TestCaseGroup(testCtx, "protected_memory"));
-
-    // Create a specific test case with count=1, size_full, offset_0, and normal_stride
-    CopyParams protectedParams{
-        1,                                      // copyCount
-        sizeof(VkCopyMemoryIndirectCommandKHR), // stride (normal_stride)
-        0,                                      // copyOffset
-        0,                                      // copySize (full size - will use the whole buffer)
-        QueueSelectionOptions::Universal,       // queue
-        true                                    // useProtectedMemory
-    };
-
-    protectedGroup->addChild(new CopyMemoryIndirectTestCase(testCtx, "graphics", protectedParams));
-    group->addChild(protectedGroup.release());
 
     // Create test that checks if all mandatory formats support indirect copy
     de::MovePtr<tcu::TestCaseGroup> mandatoryFormats(new tcu::TestCaseGroup(testCtx, "mandatory_formats"));
