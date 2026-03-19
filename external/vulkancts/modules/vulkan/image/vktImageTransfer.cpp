@@ -127,6 +127,15 @@ void TransferQueueCase::checkSupport(Context &context) const
         else
             TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
     }
+
+    {
+        const VkFormatProperties props =
+            vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, m_params.imageFormat);
+        const VkFormatFeatureFlags features = props.optimalTilingFeatures;
+
+        if ((features & (vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_DST_BIT)) == 0)
+            TCU_THROW(NotSupportedError, "Format not supported for transfer");
+    }
 }
 
 TransferQueueInstance::TransferQueueInstance(Context &context, const TransferQueueCase::TestParams &params)
