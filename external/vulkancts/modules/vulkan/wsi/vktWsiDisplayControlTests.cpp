@@ -715,8 +715,8 @@ void SwapchainCounterTestInstance::render(void)
 
     // Acquire next image
     uint32_t imageIndex;
-    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, kAcquireImageTimeout, currentAcquireSemaphore,
-                                       VK_NULL_HANDLE, &imageIndex));
+    VK_CHECK_WSI(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, kAcquireImageTimeout, currentAcquireSemaphore,
+                                           VK_NULL_HANDLE, &imageIndex));
 
     // Create command buffer
     commandBuffer = createCommandBuffer(m_vkd, *m_device, *m_commandPool, *m_renderPass, m_swapchainImages[imageIndex],

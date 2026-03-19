@@ -761,8 +761,8 @@ void DisplayTimingTestInstance::render(void)
     uint32_t imageIndex;
 
     // Acquire next image
-    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, kAcquireImageTimeout, currentAcquireSemaphore,
-                                       VK_NULL_HANDLE, &imageIndex));
+    VK_CHECK_WSI(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, kAcquireImageTimeout, currentAcquireSemaphore,
+                                           VK_NULL_HANDLE, &imageIndex));
 
     // Create command buffer
     m_commandBuffers[m_frameNdx % m_commandBuffers.size()] =

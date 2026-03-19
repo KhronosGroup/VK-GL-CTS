@@ -972,8 +972,8 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
 
                 if (!isSharedPresentMode[j] || i == 0)
                 {
-                    VK_CHECK(vkd.acquireNextImageKHR(device, *swapchains[j], kAcquireImageTimeout, acquireSem.back(),
-                                                     VK_NULL_HANDLE, &imageIndex[j]));
+                    VK_CHECK_WSI(vkd.acquireNextImageKHR(device, *swapchains[j], kAcquireImageTimeout,
+                                                         acquireSem.back(), VK_NULL_HANDLE, &imageIndex[j]));
                 }
                 else
                 {
@@ -1817,8 +1817,8 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
 
             if (!isSharedPresentMode || i == 0)
             {
-                VK_CHECK(vkd.acquireNextImageKHR(device, *swapchain, kAcquireImageTimeout, acquireSem, VK_NULL_HANDLE,
-                                                 &imageIndex));
+                VK_CHECK_WSI(vkd.acquireNextImageKHR(device, *swapchain, kAcquireImageTimeout, acquireSem,
+                                                     VK_NULL_HANDLE, &imageIndex));
             }
             else
             {
@@ -2306,7 +2306,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                                                  presentIndex == 0 ? acquireSem : VK_NULL_HANDLE, **acquireFences[0],
                                                  &acquiredIndices[0]);
 
-                if (result == VK_SUCCESS)
+                if (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR)
                 {
                     VK_CHECK(vkd.waitForFences(device, 1u, &**acquireFences[0], VK_TRUE, kMaxFenceWaitTimeout));
                     VK_CHECK(vkd.resetFences(device, 1u, &**acquireFences[0]));
@@ -2334,7 +2334,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                 result = vkd.acquireNextImageKHR(device, *swapchain, kAcquireImageTimeout,
                                                  presentIndex == 0 ? acquireSem : VK_NULL_HANDLE, **acquireFences[0],
                                                  &acquiredIndices[0]);
-                if (result == VK_SUCCESS)
+                if (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR)
                 {
                     VK_CHECK(vkd.waitForFences(device, 1u, &**acquireFences[0], VK_TRUE, kMaxFenceWaitTimeout));
                     VK_CHECK(vkd.resetFences(device, 1u, &**acquireFences[0]));
