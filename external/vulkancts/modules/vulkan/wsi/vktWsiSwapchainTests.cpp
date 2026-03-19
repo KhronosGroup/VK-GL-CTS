@@ -697,6 +697,23 @@ tcu::TestStatus createSwapchainTest(Context &context, TestParameters params)
                         << e.getError() << TestLog::EndMessage;
                 }
             }
+            else if (params.dimension == TEST_DIMENSION_MIN_IMAGE_COUNT &&
+                     curParams.minImageCount > capabilities.minImageCount)
+            {
+                try
+                {
+                    const Unique<VkSwapchainKHR> swapchain(
+                        createWsiSwapchain(params.wsiType, devHelper.vkd, *devHelper.device, &curParams));
+
+                    log << TestLog::Message << subcase.str() << "Creating swapchain succeeded" << TestLog::EndMessage;
+                }
+                catch (const OutOfMemoryError &e)
+                {
+                    log << TestLog::Message << subcase.str()
+                        << "vkCreateSwapchainKHR with minImageCount=" << capabilities.minImageCount << " encountered "
+                        << e.getError() << TestLog::EndMessage;
+                }
+            }
             else
             {
                 const Unique<VkSwapchainKHR> swapchain(
