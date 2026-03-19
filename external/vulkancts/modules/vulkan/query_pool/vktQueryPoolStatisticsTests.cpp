@@ -5386,13 +5386,11 @@ tcu::TestStatus TessellationGeometryShaderTestInstance::checkResult(VkQueryPool 
             errorMsg = result.getDescription();
     }
 
+    // keep resource counter stable
+    const volatile bool checkImageResult = checkImage();
+
     // Verify image output if needed
-#ifdef CTS_USES_VULKANSC
-    const bool checkImageResult = checkImage();
     if (!m_parametersGraphic.noColorAttachments && errorMsg.empty() && !checkImageResult)
-#else
-    if (!m_parametersGraphic.noColorAttachments && errorMsg.empty() && !checkImage())
-#endif
         errorMsg = "Result image doesn't match expected image";
 
     if (!errorMsg.empty())
