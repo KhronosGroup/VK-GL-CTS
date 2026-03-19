@@ -722,8 +722,16 @@ void RobustnessExtsTestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
 #endif
 
-    if (m_data.useComputeQueue && (context.getComputeQueueFamilyIndex() == -1))
-        TCU_THROW(NotSupportedError, "Exclusive compute queue not supported.");
+    if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ||
+        m_data.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+    {
+        const VkFormatProperties props =
+            vk::getPhysicalDeviceFormatProperties(vki, context.getPhysicalDevice(), m_data.format);
+        const VkFormatFeatureFlags features = props.optimalTilingFeatures;
+
+        if ((features & (vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_DST_BIT)) == 0)
+            TCU_THROW(NotSupportedError, "Format not supported for transfer");
+    }
 }
 
 void generateLayout(Layout &layout, const CaseDef &caseDef)
@@ -2447,6 +2455,24 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
                 if (m_data.format == VK_FORMAT_R64_UINT)
                     imageViewCreateInfo.format = VK_FORMAT_R32G32_UINT;
+            }
+
+            {
+                const VkImageCreateInfo imgCreateInfo = ((b == 0) ? outputImageCreateInfo : imageCreateInfo);
+                VkImageFormatProperties formatProperties;
+
+                const auto result = vki.getPhysicalDeviceImageFormatProperties(
+                    physicalDevice, imgCreateInfo.format, imgCreateInfo.imageType, imgCreateInfo.tiling,
+                    imgCreateInfo.flags, 0u, &formatProperties);
+
+                if (result != VK_SUCCESS)
+                {
+                    if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+                        TCU_THROW(NotSupportedError,
+                                  "format " + de::toString(m_data.format) + " does not support the required features");
+                    else
+                        TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
+                }
             }
 
             if (b == 0)
