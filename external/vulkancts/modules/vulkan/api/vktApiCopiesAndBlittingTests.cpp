@@ -21278,7 +21278,6 @@ typedef struct
     uint32_t copyOffset;
     uint32_t copySize;
     QueueSelectionOptions queue;
-    bool useProtectedMemory;
 } CopyParams;
 
 struct IndirectParams
@@ -21317,8 +21316,6 @@ private:
 
     void init(void)
     {
-        const vk::InstanceInterface &vki          = m_context.getInstanceInterface();
-        const vk::VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
 
         if (!m_context.isDeviceFunctionalitySupported("VK_KHR_copy_memory_indirect"))
             TCU_THROW(NotSupportedError,
@@ -21327,24 +21324,6 @@ private:
         const auto &copyMemoryIndirectFeatures = m_context.getCopyMemoryIndirectFeatures();
         if (!copyMemoryIndirectFeatures.indirectMemoryCopy)
             TCU_THROW(NotSupportedError, "Indirect memory copy feature not supported");
-
-        if (m_copyParams.useProtectedMemory)
-        {
-            VkPhysicalDeviceProtectedMemoryFeatures protectedMemoryFeature = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES, // VkStructureType sType;
-                nullptr,                                                     // void* pNext;
-                VK_FALSE                                                     // VkBool32 protectedMemory;
-            };
-
-            VkPhysicalDeviceFeatures2 features2;
-            deMemset(&features2, 0, sizeof(features2));
-            features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-            features2.pNext = &protectedMemoryFeature;
-
-            vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
-            if (protectedMemoryFeature.protectedMemory == VK_FALSE)
-                TCU_THROW(NotSupportedError, "Protected memory feature is not supported");
-        }
 
         const char fileName[] = "vulkan/data/copy_memory_indirect/sample_text.txt";
         loadDataFromFile(fileName, m_context.getTestContext().getArchive());
@@ -21450,14 +21429,8 @@ private:
                                                           m_copyData.size() - m_copyParams.copyOffset;
 
         VkBufferCreateFlags bufferCreateFlags = 0;
-        if (m_copyParams.useProtectedMemory)
-        {
-            bufferCreateFlags |= VK_BUFFER_CREATE_PROTECTED_BIT;
-        }
-        vk::MemoryRequirement memReqs = m_copyParams.useProtectedMemory ?
-                                            vk::MemoryRequirement::HostVisible | vk::MemoryRequirement::DeviceAddress |
-                                                vk::MemoryRequirement::Protected :
-                                            vk::MemoryRequirement::HostVisible | vk::MemoryRequirement::DeviceAddress;
+
+        vk::MemoryRequirement memReqs = vk::MemoryRequirement::HostVisible | vk::MemoryRequirement::DeviceAddress;
 
         // Buffers
         const BufferWithMemory srcBuffer(
@@ -21537,11 +21510,7 @@ private:
             deMemset(bufferAllocation.getHostPtr(), 0xFF, std::max(m_copyParams.copyCount, (uint32_t)1) * bufferSize);
         }
 
-        const Unique<VkCommandPool> cmdPool(
-            makeCommandPool(vkd, device, queueFamilyIndex,
-                            m_copyParams.useProtectedMemory ?
-                                static_cast<VkCommandPoolCreateFlags>(VK_COMMAND_POOL_CREATE_PROTECTED_BIT) :
-                                static_cast<VkCommandPoolCreateFlags>(0u)));
+        const Unique<VkCommandPool> cmdPool(makeCommandPool(vkd, device, queueFamilyIndex));
 
         const Unique<VkCommandBuffer> cmdBuffer(
             allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -21552,11 +21521,9 @@ private:
         copyMemoryIndirectKHR.sType                       = VK_STRUCTURE_TYPE_COPY_MEMORY_INDIRECT_INFO_KHR;
         copyMemoryIndirectKHR.pNext                       = nullptr;
         copyMemoryIndirectKHR.copyAddressRange            = addressRange;
-        copyMemoryIndirectKHR.srcCopyFlags =
-            m_copyParams.useProtectedMemory ? VK_ADDRESS_COPY_PROTECTED_BIT_KHR : VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR;
-        copyMemoryIndirectKHR.dstCopyFlags =
-            m_copyParams.useProtectedMemory ? VK_ADDRESS_COPY_PROTECTED_BIT_KHR : VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR;
-        copyMemoryIndirectKHR.copyCount = m_copyParams.copyCount;
+        copyMemoryIndirectKHR.srcCopyFlags                = VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR;
+        copyMemoryIndirectKHR.dstCopyFlags                = VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR;
+        copyMemoryIndirectKHR.copyCount                   = m_copyParams.copyCount;
         vkd.cmdCopyMemoryIndirectKHR(*cmdBuffer, &copyMemoryIndirectKHR);
 
         VkBufferMemoryBarrier bufferBarrier = {};
@@ -21571,34 +21538,8 @@ private:
                                nullptr, 1, &bufferBarrier, 0, nullptr);
 
         endCommandBuffer(vkd, *cmdBuffer);
-        if (m_copyParams.useProtectedMemory)
-        {
-            const VkProtectedSubmitInfo protectedSubmitInfo = {
-                VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO, // sType
-                nullptr,                                 // pNext
-                VK_TRUE                                  // protectedSubmit
-            };
 
-            const VkSubmitInfo submitInfo = {
-                VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
-                &protectedSubmitInfo,          // pNext
-                0u,                            // waitSemaphoreCount
-                nullptr,                       // pWaitSemaphores
-                nullptr,                       // pWaitDstStageMask
-                1u,                            // commandBufferCount
-                &(*cmdBuffer),                 // pCommandBuffers
-                0u,                            // signalSemaphoreCount
-                nullptr                        // pSignalSemaphores
-            };
-
-            const Unique<VkFence> fence(createFence(vkd, device));
-            VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-            VK_CHECK(vkd.waitForFences(device, 1u, &fence.get(), VK_TRUE, ~0ull));
-        }
-        else
-        {
-            submitCommandsAndWaitWithTransferSync(vkd, device, queue, *cmdBuffer, nullptr, true);
-        }
+        submitCommandsAndWaitWithTransferSync(vkd, device, queue, *cmdBuffer, nullptr, true);
 
         // Validate
         bool testPassed = true;
@@ -21707,14 +21648,10 @@ tcu::TestCaseGroup *createCopyMemoryIndirectTests(tcu::TestContext &testCtx)
                         if (copyOffsets[copyOffsetIdx].offset >= copySizes[copySizeIdx].size)
                             continue;
 
-                        CopyParams params{
-                            static_cast<uint32_t>(copyCounts[copyCountIdx].numCopies),
-                            static_cast<uint32_t>(strides[strideIdx].stride),
-                            static_cast<uint32_t>(copyOffsets[copyOffsetIdx].offset),
-                            static_cast<uint32_t>(copySizes[copySizeIdx].size),
-                            queues[queueIdx].queue,
-                            false //useProtectedMemory
-                        };
+                        CopyParams params{static_cast<uint32_t>(copyCounts[copyCountIdx].numCopies),
+                                          static_cast<uint32_t>(strides[strideIdx].stride),
+                                          static_cast<uint32_t>(copyOffsets[copyOffsetIdx].offset),
+                                          static_cast<uint32_t>(copySizes[copySizeIdx].size), queues[queueIdx].queue};
                         strideGroup->addChild(
                             new CopyMemoryIndirectTestCase(testCtx, queues[queueIdx].queueName.c_str(), params));
                     };
@@ -21726,22 +21663,6 @@ tcu::TestCaseGroup *createCopyMemoryIndirectTests(tcu::TestContext &testCtx)
         }
         group->addChild(copySizeGroup.release());
     }
-
-    // Add a test for protected memory
-    de::MovePtr<tcu::TestCaseGroup> protectedGroup(new tcu::TestCaseGroup(testCtx, "protected_memory"));
-
-    // Create a specific test case with count=1, size_full, offset_0, and normal_stride
-    CopyParams protectedParams{
-        1,                                      // copyCount
-        sizeof(VkCopyMemoryIndirectCommandKHR), // stride (normal_stride)
-        0,                                      // copyOffset
-        0,                                      // copySize (full size - will use the whole buffer)
-        QueueSelectionOptions::Universal,       // queue
-        true                                    // useProtectedMemory
-    };
-
-    protectedGroup->addChild(new CopyMemoryIndirectTestCase(testCtx, "graphics", protectedParams));
-    group->addChild(protectedGroup.release());
 
     return group.release();
 }

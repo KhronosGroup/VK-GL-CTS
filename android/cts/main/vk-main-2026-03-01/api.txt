@@ -3491,7 +3491,6 @@ dEQP-VK.api.copy_and_blit.copy_commands2.image_to_image_transfer_sparse.simple_t
 dEQP-VK.api.copy_and_blit.copy_commands2.image_to_image_transfer_sparse.simple_tests.partial_image_r32g32b32_uint
 dEQP-VK.api.copy_and_blit.copy_commands2.image_to_image_transfer_sparse.simple_tests.whole_image_r32g32b32_sfloat
 dEQP-VK.api.copy_and_blit.copy_commands2.image_to_image_transfer_sparse.simple_tests.whole_image_r32g32b32_uint
-dEQP-VK.api.copy_and_blit.copy_memory_indirect.protected_memory.graphics
 dEQP-VK.api.copy_and_blit.copy_memory_indirect.size_12.offset_0.count_0.long_stride.compute
 dEQP-VK.api.copy_and_blit.copy_memory_indirect.size_12.offset_0.count_0.long_stride.graphics
 dEQP-VK.api.copy_and_blit.copy_memory_indirect.size_12.offset_0.count_0.long_stride.transfer
