@@ -38,6 +38,8 @@ set(DEQP_VK_MEMORY_SRCS
 	vktMemoryZeroInitializeDeviceMemoryTests.hpp
 	vktMemoryExternalDmaHeapTests.cpp
 	vktMemoryExternalDmaHeapTests.hpp
+	vktMemoryMapPlacedTests.cpp
+	vktMemoryMapPlacedTests.hpp
 	)
 
 PCH(DEQP_VK_MEMORY_SRCS ../pch.cpp)
