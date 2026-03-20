@@ -1916,6 +1916,12 @@ void populateTextureShadowTests(tcu::TestCaseGroup *textureShadowTests)
                 {
                     for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
                     {
+                        // VUID-VkImageCreateInfo-imageType-00970
+                        if (backingModes[backingNdx].backingMode == TextureBinding::IMAGE_BACKING_MODE_SPARSE)
+                        {
+                            continue;
+                        }
+
                         const string name = string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" +
                                             formats[formatNdx].name;
                         Texture1DShadowTestCaseParameters testParameters;
@@ -1956,6 +1962,12 @@ void populateTextureShadowTests(tcu::TestCaseGroup *textureShadowTests)
                 {
                     for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
                     {
+                        // VUID-VkImageCreateInfo-imageType-00970
+                        if (backingModes[backingNdx].backingMode == TextureBinding::IMAGE_BACKING_MODE_SPARSE)
+                        {
+                            continue;
+                        }
+
                         const string name = string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" +
                                             formats[formatNdx].name;
                         Texture1DArrayShadowTestCaseParameters testParameters;

@@ -209,16 +209,6 @@
         },
         {
             "groups": [
-                "dEQP-VK.spirv_assembly.instruction.compute.ptr_access_chain.workgroup",
-                "dEQP-VK.spirv_assembly.instruction.compute.ptr_access_chain.workgroup_bad_stride"
-            ],
-            "messages": [
-                "VUID-StandaloneSpirv-MemorySemantics-10866"
-            ],
-            "description": "TODO report validation layers issue in google amber shader test framework"
-        },
-        {
-            "groups": [
                 "dEQP-VK.subgroups.subgroup_uniform_control_flow.large_partial_control.subgroup_reconverge_partial00",
                 "dEQP-VK.subgroups.subgroup_uniform_control_flow.large_partial_control.subgroup_reconverge_partial01",
                 "dEQP-VK.subgroups.subgroup_uniform_control_flow.large_partial_control.subgroup_reconverge_partial02",
@@ -251,38 +241,6 @@
                 "Undefined-Value-ShaderOutputNotConsumed-DynamicRendering"
             ],
             "description": "Partial binding depth/stencil test intentionally writes to color outputs when no color attachments are bound, testing depth/stencil-only rendering"
-        },
-        {
-            "groups": [
-                "dEQP-VK.texture.shadow.1d.*.sparse_*"
-            ],
-            "messages": [
-                "VUID-VkImageCreateInfo-imageType-00970"
-            ],
-            "description": "1D texture images  created  with VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT, which intentionally breaks validation rule"
-        },
-        {
-            "groups": [
-                "dEQP-VK.robustness.robustness2.bind.*.r64i.*.uniform_texel_buffer.*",
-                "dEQP-VK.robustness.robustness2.bind.*.r64i.dontunroll.nonvolatile.uniform_texel_buffer.*"
-            ],
-            "messages": [
-                "VUID-vkCmdDispatch-SampledType-04472",
-                "VUID-vkCmdTraceRaysKHR-SampledType-04472",
-                "VUID-vkCmdDraw-SampledType-04472"
-            ],
-            "description": "The validation error occurs because the shader tries to read a 64-bit texel buffer using a 32-bit data type, which violates Vulkan's type matching rules. The issue should have been detected by checking if the buffer format supports property as a uniform texel buffer. Certain implementations erroneously indicate that this format is compatible with uniform texel buffer property, which leads to a mismatch between the declared format and the shader's expected data type"
-        },
-        {
-            "groups": [
-                "dEQP-VK.drm_format_modifiers.export_import.*",
-                "dEQP-VK.drm_format_modifiers.export_import_explicit.*"
-            ],
-            "messages": [
-                "VUID-vkCmdCopyImage-srcImage-01995",
-                "VUID-vkCmdCopyImage-dstImage-01996"
-            ],
-            "description": "TODO report lavapipe driver limitation where DRM format modifier enumeration reports transfer feature support during vkGetPhysicalDeviceFormatProperties2, but actual image creation with VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT returns VkFormatFeatureFlags2(0)"
         },
         {
             "groups": [
