@@ -2,6 +2,7 @@ dEQP-VK.compute.pipeline.64b_indexing.copy_ssbo_64b
 dEQP-VK.compute.pipeline.64b_indexing.copy_ssbo_64b_bounds
 dEQP-VK.compute.pipeline.64b_indexing.copy_ssbo_64b_bounds_local
 dEQP-VK.compute.pipeline.64b_indexing.copy_ssbo_64b_execution_mode
+dEQP-VK.compute.pipeline.64b_indexing.untyped_pointers
 dEQP-VK.compute.pipeline.basic.copy_ssbo_bounds
 dEQP-VK.compute.pipeline.basic.float16_isnan_isinf
 dEQP-VK.compute.pipeline.basic.float64_isnan_isinf
@@ -5229,6 +5230,7 @@ dEQP-VK.compute.shader_object_binary.64b_indexing.copy_ssbo_64b
 dEQP-VK.compute.shader_object_binary.64b_indexing.copy_ssbo_64b_bounds
 dEQP-VK.compute.shader_object_binary.64b_indexing.copy_ssbo_64b_bounds_local
 dEQP-VK.compute.shader_object_binary.64b_indexing.copy_ssbo_64b_execution_mode
+dEQP-VK.compute.shader_object_binary.64b_indexing.untyped_pointers
 dEQP-VK.compute.shader_object_binary.basic.copy_ssbo_bounds
 dEQP-VK.compute.shader_object_binary.basic.indirect_after_base_dispatch
 dEQP-VK.compute.shader_object_binary.basic.read_unbound_ssbo
@@ -10453,6 +10455,7 @@ dEQP-VK.compute.shader_object_spirv.64b_indexing.copy_ssbo_64b
 dEQP-VK.compute.shader_object_spirv.64b_indexing.copy_ssbo_64b_bounds
 dEQP-VK.compute.shader_object_spirv.64b_indexing.copy_ssbo_64b_bounds_local
 dEQP-VK.compute.shader_object_spirv.64b_indexing.copy_ssbo_64b_execution_mode
+dEQP-VK.compute.shader_object_spirv.64b_indexing.untyped_pointers
 dEQP-VK.compute.shader_object_spirv.basic.copy_ssbo_bounds
 dEQP-VK.compute.shader_object_spirv.basic.indirect_after_base_dispatch
 dEQP-VK.compute.shader_object_spirv.basic.read_unbound_ssbo

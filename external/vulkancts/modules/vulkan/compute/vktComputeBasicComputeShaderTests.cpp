@@ -1838,6 +1838,112 @@ tcu::TestStatus InvertSSBOInPlaceTestInstance::iterate(void)
     return tcu::TestStatus::pass("Compute succeeded");
 }
 
+class UntypedPointerTest : public vkt::TestCase
+{
+public:
+    UntypedPointerTest(tcu::TestContext &testCtx, const std::string &name,
+                       const vk::ComputePipelineConstructionType computePipelineConstructionType)
+        : TestCase(testCtx, name)
+        , m_computePipelineConstructionType(computePipelineConstructionType)
+    {
+    }
+    virtual void checkSupport(Context &context) const;
+    void initPrograms(SourceCollections &sourceCollections) const;
+    TestInstance *createInstance(Context &context) const;
+
+private:
+    const vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+};
+
+void UntypedPointerTest::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_KHR_shader_untyped_pointers");
+    context.requireDeviceFunctionality("VK_EXT_shader_64bit_indexing");
+    checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                  m_computePipelineConstructionType);
+}
+
+void UntypedPointerTest::initPrograms(SourceCollections &sourceCollections) const
+{
+    const std::string src = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability Int64
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %b
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %_runtimearr_float ArrayStride 4
+               OpDecorate %B Block
+               OpMemberDecorate %B 0 NonWritable
+               OpMemberDecorate %B 0 Offset 0
+               OpDecorate %b NonWritable
+               OpDecorate %b Binding 0
+               OpDecorate %b DescriptorSet 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_runtimearr_float = OpTypeRuntimeArray %float
+          %B = OpTypeStruct %_runtimearr_float
+        %ptr = OpTypeUntypedPointerKHR StorageBuffer
+          %b = OpUntypedVariableKHR %ptr StorageBuffer %B
+      %ulong = OpTypeInt 64 0
+       %long = OpTypeInt 64 1
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+         %13 = OpUntypedArrayLengthKHR %ulong %B %b 0
+         %15 = OpBitcast %long %13
+               OpReturn
+               OpFunctionEnd
+    )";
+
+    const SpirVAsmBuildOptions spvOptions(sourceCollections.usedVulkanVersion, SPIRV_VERSION_1_5);
+    sourceCollections.spirvAsmSources.add("comp") << src << spvOptions;
+}
+
+class UntypedPointerTestInstance : public vkt::TestInstance
+{
+public:
+    UntypedPointerTestInstance(Context &context,
+                               const vk::ComputePipelineConstructionType computePipelineConstructionType)
+        : TestInstance(context)
+        , m_computePipelineConstructionType(computePipelineConstructionType)
+    {
+    }
+
+    tcu::TestStatus iterate(void);
+
+private:
+    const vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+};
+
+TestInstance *UntypedPointerTest::createInstance(Context &context) const
+{
+    return new UntypedPointerTestInstance(context, m_computePipelineConstructionType);
+}
+
+tcu::TestStatus UntypedPointerTestInstance::iterate(void)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+
+    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vk, device));
+
+    ComputePipelineWrapper pipeline(vk, device, m_computePipelineConstructionType,
+                                    m_context.getBinaryCollection().get("comp"));
+
+#ifndef CTS_USES_VULKANSC
+    pipeline.setPipelineCreateFlags2(VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT);
+#endif
+    pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+    pipeline.buildPipeline();
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 class WriteToMultipleSSBOTest : public vkt::TestCase
 {
 public:
@@ -6156,6 +6262,8 @@ tcu::TestCaseGroup *create64bIndexingComputeShaderTests(
     indexing64b->addChild(BufferToBufferInvertTest::CopyInvertSSBOCase(
         testCtx, "copy_ssbo_64b_execution_mode", numElems64b, tcu::IVec3(1024, 1, 1), tcu::IVec3(1024, 1, 1),
         computePipelineConstructionType, false, false, true));
+
+    indexing64b->addChild(new UntypedPointerTest(testCtx, "untyped_pointers", computePipelineConstructionType));
 #endif
 
     return indexing64b.release();
