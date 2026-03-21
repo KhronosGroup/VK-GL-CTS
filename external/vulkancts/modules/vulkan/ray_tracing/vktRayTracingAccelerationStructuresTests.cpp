@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktRayTracingAccelerationStructuresTests.hpp"
+#include "vktRayTracingAccelerationStructuresTestsModels.hpp"
 
 #include "vkDefs.hpp"
 #include "deClock.h"
@@ -43,11 +44,14 @@
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuFloat.hpp"
+#include "tcuSurface.hpp"
 #include "deModularCounter.hpp"
 
 #include <cmath>
 #include <cstddef>
 #include <set>
+#include <map>
+#include <string>
 #include <limits>
 #include <iostream>
 
@@ -133,6 +137,15 @@ enum class UpdateCase
     DEGENERATE,
 };
 
+enum class ComplexGeometryModel
+{
+    NONE = 0,
+    ICOSPHERE,
+    TERRAIN,
+    TORUSKNOT,
+    TRIANGLESOUP,
+};
+
 static const uint32_t RTAS_DEFAULT_SIZE = 8u;
 
 // Chosen to have the most significant bit set to 1 when represented using 24 bits.
@@ -197,6 +210,7 @@ struct TestParams
     uint32_t cullMask;
     UpdateCase updateCase;
     ResourceResidency resResidency; // Resource residency for acceleration buffer
+    ComplexGeometryModel complexGeometryModel;
 };
 
 uint32_t getShaderGroupSize(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice)
@@ -302,6 +316,35 @@ static uint32_t getMisalignBytes(VkFormat vertexFormat)
     }
 
     return minAlign;
+}
+
+struct ComplexModelData
+{
+    const float *vertices;
+    uint32_t numTriangles;
+    uint32_t numVertices;
+};
+
+static ComplexModelData getComplexModelData(ComplexGeometryModel model)
+{
+    switch (model)
+    {
+    case ComplexGeometryModel::ICOSPHERE:
+        return {vkt::RayTracing::icosphere::kVertices, vkt::RayTracing::icosphere::kNumTriangles,
+                vkt::RayTracing::icosphere::kNumVertices};
+    case ComplexGeometryModel::TERRAIN:
+        return {vkt::RayTracing::terrain::kVertices, vkt::RayTracing::terrain::kNumTriangles,
+                vkt::RayTracing::terrain::kNumVertices};
+    case ComplexGeometryModel::TORUSKNOT:
+        return {vkt::RayTracing::torusknot::kVertices, vkt::RayTracing::torusknot::kNumTriangles,
+                vkt::RayTracing::torusknot::kNumVertices};
+    case ComplexGeometryModel::TRIANGLESOUP:
+        return {vkt::RayTracing::trianglesoup::kVertices, vkt::RayTracing::trianglesoup::kNumTriangles,
+                vkt::RayTracing::trianglesoup::kNumVertices};
+    default:
+        DE_ASSERT(false);
+        return {};
+    }
 }
 
 class CheckerboardConfiguration : public TestConfiguration
@@ -1191,6 +1234,426 @@ VkClearValue UpdateableASConfiguration::getClearValue()
     return makeClearValueColorF32(32.0f, 0.0f, 0.0f, 0.0f);
 }
 
+// Visualization helpers for complex geometry tests
+namespace
+{
+// Convert complex geometry results to hit visualization surface (hit = white, miss = black)
+void complexGeometryResultsToHitSurface(tcu::Surface &surface, const uint32_t *imageData, uint32_t width,
+                                        uint32_t height)
+{
+    DE_ASSERT(surface.getWidth() == static_cast<int>(width));
+    DE_ASSERT(surface.getHeight() == static_cast<int>(height));
+
+    for (uint32_t y = 0; y < height; ++y)
+    {
+        for (uint32_t x = 0; x < width; ++x)
+        {
+            const uint32_t pixelIndex = y * width + x;
+            const uint32_t baseOffset = pixelIndex * 4u;
+            const uint32_t hit        = imageData[baseOffset + 0];
+            const tcu::RGBA color     = (hit != 0u) ? tcu::RGBA::white() : tcu::RGBA::black();
+            surface.setPixel(static_cast<int>(x), static_cast<int>(y), color);
+        }
+    }
+}
+
+// Convert complex geometry results to depth visualization (closer = brighter)
+void complexGeometryResultsToDepthSurface(tcu::Surface &surface, const uint32_t *imageData, uint32_t width,
+                                          uint32_t height)
+{
+    DE_ASSERT(surface.getWidth() == static_cast<int>(width));
+    DE_ASSERT(surface.getHeight() == static_cast<int>(height));
+
+    // First pass: find min/max t values for normalization
+    float tMin = FLT_MAX;
+    float tMax = 0.0f;
+    for (uint32_t y = 0; y < height; ++y)
+    {
+        for (uint32_t x = 0; x < width; ++x)
+        {
+            const uint32_t pixelIndex = y * width + x;
+            const uint32_t baseOffset = pixelIndex * 4u;
+            const uint32_t hit        = imageData[baseOffset + 0];
+            if (hit != 0u)
+            {
+                const float tValue = deUint32BitsToFloat(imageData[baseOffset + 1]);
+                tMin               = de::min(tMin, tValue);
+                tMax               = de::max(tMax, tValue);
+            }
+        }
+    }
+
+    // Second pass: generate grayscale visualization
+    const float tRange = tMax - tMin;
+    for (uint32_t y = 0; y < height; ++y)
+    {
+        for (uint32_t x = 0; x < width; ++x)
+        {
+            const uint32_t pixelIndex = y * width + x;
+            const uint32_t baseOffset = pixelIndex * 4u;
+            const uint32_t hit        = imageData[baseOffset + 0];
+
+            tcu::RGBA color;
+            if (hit != 0u)
+            {
+                const float tValue = deUint32BitsToFloat(imageData[baseOffset + 1]);
+                // Normalize to [0, 1] - closer hits are brighter
+                const float normalized  = (tRange > 0.0f) ? (1.0f - (tValue - tMin) / tRange) : 1.0f;
+                const uint8_t intensity = static_cast<uint8_t>(de::clamp(normalized * 255.0f, 0.0f, 255.0f));
+                color                   = tcu::RGBA(intensity, intensity, intensity, 255);
+            }
+            else
+            {
+                color = tcu::RGBA::black();
+            }
+            surface.setPixel(static_cast<int>(x), static_cast<int>(y), color);
+        }
+    }
+}
+
+// Convert complex geometry results to primitive ID visualization (different colors for different primitives)
+void complexGeometryResultsToPrimitiveIdSurface(tcu::Surface &surface, const uint32_t *imageData, uint32_t width,
+                                                uint32_t height)
+{
+    DE_ASSERT(surface.getWidth() == static_cast<int>(width));
+    DE_ASSERT(surface.getHeight() == static_cast<int>(height));
+
+    static const uint32_t knuthPrime = 2654435761u;
+
+    for (uint32_t y = 0; y < height; ++y)
+    {
+        for (uint32_t x = 0; x < width; ++x)
+        {
+            const uint32_t pixelIndex = y * width + x;
+            const uint32_t baseOffset = pixelIndex * 4u;
+            const uint32_t hit        = imageData[baseOffset + 0];
+
+            tcu::RGBA color;
+            if (hit != 0u)
+            {
+                const uint32_t primIndex = imageData[baseOffset + 2];
+                // Generate pseudo-random color from primitive index
+                const uint32_t hash = primIndex * knuthPrime;
+                const uint8_t r     = static_cast<uint8_t>((hash >> 16) & 0xFFu);
+                const uint8_t g     = static_cast<uint8_t>((hash >> 8) & 0xFFu);
+                const uint8_t b     = static_cast<uint8_t>(hash & 0xFFu);
+                color               = tcu::RGBA(r, g, b, 255);
+            }
+            else
+            {
+                color = tcu::RGBA::black();
+            }
+            surface.setPixel(static_cast<int>(x), static_cast<int>(y), color);
+        }
+    }
+}
+} // anonymous namespace
+
+class ComplexGeometryConfiguration : public TestConfiguration
+{
+public:
+    std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> initBottomAccelerationStructures(
+        Context &context, TestParams &testParams) override;
+    de::MovePtr<TopLevelAccelerationStructure> initTopAccelerationStructure(
+        Context &context, TestParams &testParams,
+        std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> &bottomLevelAccelerationStructures) override;
+    void initRayTracingShaders(de::MovePtr<RayTracingPipeline> &rayTracingPipeline, Context &context,
+                               TestParams &testParams) override;
+    void initShaderBindingTables(de::MovePtr<RayTracingPipeline> &rayTracingPipeline, Context &context,
+                                 TestParams &testParams, VkPipeline pipeline, uint32_t shaderGroupHandleSize,
+                                 uint32_t shaderGroupBaseAlignment,
+                                 de::MovePtr<BufferWithMemory> &raygenShaderBindingTable,
+                                 de::MovePtr<BufferWithMemory> &hitShaderBindingTable,
+                                 de::MovePtr<BufferWithMemory> &missShaderBindingTable) override;
+    bool verifyImage(BufferWithMemory *resultBuffer, Context &context, TestParams &testParams) override;
+    VkFormat getResultImageFormat() override;
+    size_t getResultImageFormatSize() override;
+    VkClearValue getClearValue() override;
+};
+
+std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> ComplexGeometryConfiguration::
+    initBottomAccelerationStructures(Context &context, TestParams &testParams)
+{
+    DE_UNREF(context);
+    DE_ASSERT(testParams.complexGeometryModel != ComplexGeometryModel::NONE);
+    DE_ASSERT(testParams.instanceCustomIndexCase == InstanceCustomIndexCase::NONE);
+
+    std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> result;
+
+    ComplexModelData modelData = getComplexModelData(testParams.complexGeometryModel);
+
+    de::MovePtr<BottomLevelAccelerationStructure> bottomLevelAccelerationStructure =
+        makeBottomLevelAccelerationStructure();
+    bottomLevelAccelerationStructure->setGeometryCount(1);
+
+    de::SharedPtr<RaytracedGeometryBase> geometry;
+    geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
+
+    // Load vertices from the complex model
+    for (uint32_t i = 0; i < modelData.numVertices; ++i)
+    {
+        const float *v = &modelData.vertices[i * 3];
+        geometry->addVertex(tcu::Vec3(v[0], v[1], v[2]));
+    }
+
+    // Add indices if needed (models are already triangulated)
+    if (testParams.indexType != VK_INDEX_TYPE_NONE_KHR)
+    {
+        for (uint32_t i = 0; i < modelData.numTriangles * 3; ++i)
+        {
+            geometry->addIndex(i);
+        }
+    }
+
+    bottomLevelAccelerationStructure->addGeometry(geometry);
+    result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
+
+    return result;
+}
+
+de::MovePtr<TopLevelAccelerationStructure> ComplexGeometryConfiguration::initTopAccelerationStructure(
+    Context &context, TestParams &testParams,
+    std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> &bottomLevelAccelerationStructures)
+{
+    DE_UNREF(context);
+    DE_ASSERT(testParams.instanceCustomIndexCase == InstanceCustomIndexCase::NONE);
+
+    de::MovePtr<TopLevelAccelerationStructure> result = makeTopLevelAccelerationStructure();
+
+    if (testParams.topTestType == TopTestType::DIFFERENT_INSTANCES)
+    {
+        const uint32_t instanceCount = 4u;
+        result->setInstanceCount(instanceCount);
+
+        const auto instanceFlags = getCullFlags(testParams.cullFlags);
+
+        for (uint32_t i = 0; i < instanceCount; ++i)
+        {
+            const float quadrantSize = 1.5f;
+            const float offsetX      = (static_cast<float>(i % 2u)) * quadrantSize - quadrantSize / 2.0f;
+            const float offsetY      = (static_cast<float>(i / 2u)) * quadrantSize - quadrantSize / 2.0f;
+            const float scale        = 0.75f;
+
+            const VkTransformMatrixKHR transform = {
+                {{scale, 0.0f, 0.0f, offsetX}, {0.0f, scale, 0.0f, offsetY}, {0.0f, 0.0f, scale, 0.0f}}};
+
+            result->addInstance(bottomLevelAccelerationStructures[0], transform, i, 0xFFu, 0u, instanceFlags);
+        }
+    }
+    else
+    {
+        result->setInstanceCount(1);
+
+        const float scale                    = 1.5f;
+        const VkTransformMatrixKHR transform = {
+            {{scale, 0.0f, 0.0f, 0.0f}, {0.0f, scale, 0.0f, 0.0f}, {0.0f, 0.0f, scale, 0.0f}}};
+
+        result->addInstance(bottomLevelAccelerationStructures[0], transform);
+    }
+
+    return result;
+}
+
+void ComplexGeometryConfiguration::initRayTracingShaders(de::MovePtr<RayTracingPipeline> &rayTracingPipeline,
+                                                         Context &context, TestParams &testParams)
+{
+    DE_UNREF(testParams);
+    const DeviceInterface &vkd = context.getDeviceInterface();
+    const VkDevice device      = context.getDevice();
+
+    rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+                                  createShaderModule(vkd, device, context.getBinaryCollection().get("rgen_complex"), 0),
+                                  0);
+    rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
+                                  createShaderModule(vkd, device, context.getBinaryCollection().get("chit_complex"), 0),
+                                  1);
+    rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR,
+                                  createShaderModule(vkd, device, context.getBinaryCollection().get("miss_complex"), 0),
+                                  2);
+}
+
+void ComplexGeometryConfiguration::initShaderBindingTables(de::MovePtr<RayTracingPipeline> &rayTracingPipeline,
+                                                           Context &context, TestParams &testParams,
+                                                           VkPipeline pipeline, uint32_t shaderGroupHandleSize,
+                                                           uint32_t shaderGroupBaseAlignment,
+                                                           de::MovePtr<BufferWithMemory> &raygenShaderBindingTable,
+                                                           de::MovePtr<BufferWithMemory> &hitShaderBindingTable,
+                                                           de::MovePtr<BufferWithMemory> &missShaderBindingTable)
+{
+    DE_UNREF(testParams);
+    const DeviceInterface &vkd = context.getDeviceInterface();
+    const VkDevice device      = context.getDevice();
+    Allocator &allocator       = context.getDefaultAllocator();
+
+    raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
+        vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
+    hitShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
+        vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
+    missShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
+        vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1);
+}
+
+VkFormat ComplexGeometryConfiguration::getResultImageFormat()
+{
+    return VK_FORMAT_R32G32B32A32_UINT;
+}
+
+size_t ComplexGeometryConfiguration::getResultImageFormatSize()
+{
+    return sizeof(uint32_t) * 4;
+}
+
+VkClearValue ComplexGeometryConfiguration::getClearValue()
+{
+    return makeClearValueColorU32(0u, 0u, 0u, 0u);
+}
+
+bool ComplexGeometryConfiguration::verifyImage(BufferWithMemory *resultBuffer, Context &context, TestParams &testParams)
+{
+    DE_UNREF(context);
+
+    // Read results from storage image (R32G32B32A32_UINT format)
+    // Each ray maps to one pixel at (x, y) = (gl_LaunchIDEXT.x, gl_LaunchIDEXT.y)
+    // Each pixel contains uvec4(hit, tValue_bits, primitiveIndex, geometryIndex)
+    const uint32_t width      = testParams.width;
+    const uint32_t height     = testParams.height;
+    const uint32_t totalRays  = width * height;
+    const uint32_t *imageData = reinterpret_cast<const uint32_t *>(resultBuffer->getAllocation().getHostPtr());
+
+    uint32_t hitCount          = 0u;
+    uint32_t maxPrimitiveIndex = 0u;
+    float minTValue            = FLT_MAX;
+    float maxTValue            = 0.0f;
+
+    for (uint32_t y = 0; y < height; ++y)
+    {
+        for (uint32_t x = 0; x < width; ++x)
+        {
+            const uint32_t pixelIndex = y * width + x;
+            const uint32_t baseOffset = pixelIndex * 4u;           // 4 components per pixel (rgba32ui)
+            const uint32_t hit        = imageData[baseOffset + 0]; // First component is hit flag
+            if (hit != 0)
+            {
+                ++hitCount;
+                const float tValue       = *reinterpret_cast<const float *>(&imageData[baseOffset + 1]);
+                const uint32_t primIndex = imageData[baseOffset + 2];
+
+                maxPrimitiveIndex = de::max(maxPrimitiveIndex, primIndex);
+                minTValue         = de::min(minTValue, tValue);
+                maxTValue         = de::max(maxTValue, tValue);
+            }
+        }
+    }
+
+    tcu::TestLog &log         = context.getTestContext().getLog();
+    const float hitPercentage = (100.0f * static_cast<float>(hitCount)) / static_cast<float>(totalRays);
+
+    // Expected hit rates based on deterministic geometry testing
+    const std::map<ComplexGeometryModel, float> expectedHitRates = {
+        {ComplexGeometryModel::ICOSPHERE, 63.0},
+        {ComplexGeometryModel::TERRAIN, 36.0},
+        {ComplexGeometryModel::TORUSKNOT, 45.0},
+        {ComplexGeometryModel::TRIANGLESOUP, 31.0},
+    };
+
+    auto it = expectedHitRates.find(testParams.complexGeometryModel);
+    if (it == expectedHitRates.end())
+    {
+        log << tcu::TestLog::Message << "ERROR: Unknown complex geometry model" << tcu::TestLog::EndMessage;
+        return false;
+    }
+
+    const float expectedHitRate = it->second;
+    const float tolerance       = 0.5f;
+    ComplexModelData modelData  = getComplexModelData(testParams.complexGeometryModel);
+
+    log << tcu::TestLog::Message << "Complex geometry test results:" << tcu::TestLog::EndMessage;
+    log << tcu::TestLog::Message << "Total rays: " << totalRays << tcu::TestLog::EndMessage;
+    log << tcu::TestLog::Message << "Hits: " << hitCount << " (" << hitPercentage << "%)" << tcu::TestLog::EndMessage;
+
+    if (hitCount > 0)
+    {
+        log << tcu::TestLog::Message << "Max primitive index: " << maxPrimitiveIndex << " (of "
+            << (modelData.numTriangles - 1) << " max)" << tcu::TestLog::EndMessage;
+        log << tcu::TestLog::Message << "T-value range: [" << minTValue << ", " << maxTValue << "]"
+            << tcu::TestLog::EndMessage;
+    }
+
+    log << tcu::TestLog::Message << "  Expected hit rate: " << expectedHitRate << "% (+/-" << tolerance << "%)"
+        << tcu::TestLog::EndMessage;
+
+    bool testPassed         = true;
+    std::string errorReason = "";
+
+    // Verify hit rate is within acceptable range
+    if (de::abs(hitPercentage - expectedHitRate) > tolerance)
+    {
+        testPassed  = false;
+        errorReason = "Hit rate " + de::toString(hitPercentage) + "% differs from expected " +
+                      de::toString(expectedHitRate) + "% by more than " + de::toString(tolerance) + "%";
+    }
+    // Verify that primitive indices are within valid range
+    else if (maxPrimitiveIndex >= modelData.numTriangles)
+    {
+        testPassed  = false;
+        errorReason = "Invalid primitive index " + de::toString(maxPrimitiveIndex) + " (model has " +
+                      de::toString(modelData.numTriangles) + " triangles)";
+    }
+    // Verify t-values are reasonable based on scene geometry
+    else if (minTValue < 1.0f || maxTValue > 5.0f)
+    {
+        testPassed  = false;
+        errorReason = "T-value out of expected range [1.0, 5.0]: [" + de::toString(minTValue) + ", " +
+                      de::toString(maxTValue) + "]";
+    }
+
+    if (!testPassed)
+    {
+        log << tcu::TestLog::Message << "ERROR: " << errorReason << tcu::TestLog::EndMessage;
+        log << tcu::TestLog::Message << "This indicates an issue with acceleration structure construction or traversal"
+            << tcu::TestLog::EndMessage;
+
+        uint32_t samplesLogged = 0;
+        log << tcu::TestLog::Message << "Sample hits:" << tcu::TestLog::EndMessage;
+        for (uint32_t y = 0; y < height && samplesLogged < 5; ++y)
+        {
+            for (uint32_t x = 0; x < width && samplesLogged < 5; ++x)
+            {
+                const uint32_t pixelIndex = y * width + x;
+                const uint32_t baseOffset = pixelIndex * 4u;
+                const uint32_t hit        = imageData[baseOffset + 0];
+                if (hit != 0)
+                {
+                    const float tValue       = *reinterpret_cast<const float *>(&imageData[baseOffset + 1]);
+                    const uint32_t primIndex = imageData[baseOffset + 2];
+                    const uint32_t geomIndex = imageData[baseOffset + 3];
+                    log << tcu::TestLog::Message << "Ray (" << x << "," << y << "): t=" << tValue
+                        << ", prim=" << primIndex << ", geom=" << geomIndex << tcu::TestLog::EndMessage;
+                    ++samplesLogged;
+                }
+            }
+        }
+
+        tcu::Surface hitSurface(static_cast<int>(width), static_cast<int>(height));
+        tcu::Surface depthSurface(static_cast<int>(width), static_cast<int>(height));
+        tcu::Surface primIdSurface(static_cast<int>(width), static_cast<int>(height));
+
+        complexGeometryResultsToHitSurface(hitSurface, imageData, width, height);
+        complexGeometryResultsToDepthSurface(depthSurface, imageData, width, height);
+        complexGeometryResultsToPrimitiveIdSurface(primIdSurface, imageData, width, height);
+
+        log << tcu::TestLog::ImageSet("ComplexGeometryVisualization", "Results visualization")
+            << tcu::TestLog::Image("HitMask", "Ray hit mask", hitSurface)
+            << tcu::TestLog::Image("Depth", "Ray hit depth", depthSurface)
+            << tcu::TestLog::Image("PrimitiveID", "Primitive ID visualization", primIdSurface)
+            << tcu::TestLog::EndImageSet;
+
+        return false;
+    }
+
+    return true;
+}
+
 void commonASTestsCheckSupport(Context &context)
 {
     context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
@@ -1233,6 +1696,120 @@ public:
 
     void initPrograms(SourceCollections &programCollection) const override;
 };
+
+class RayTracingASBasicTestInstance;
+
+class RayTracingASComplexGeometryTestCase : public TestCase
+{
+public:
+    RayTracingASComplexGeometryTestCase(tcu::TestContext &context, const char *name, const TestParams &data);
+    ~RayTracingASComplexGeometryTestCase(void);
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(SourceCollections &programCollection) const override;
+    TestInstance *createInstance(Context &context) const override;
+
+protected:
+    TestParams m_data;
+};
+
+RayTracingASComplexGeometryTestCase::RayTracingASComplexGeometryTestCase(tcu::TestContext &context, const char *name,
+                                                                         const TestParams &data)
+    : vkt::TestCase(context, name)
+    , m_data(data)
+{
+}
+
+RayTracingASComplexGeometryTestCase::~RayTracingASComplexGeometryTestCase(void)
+{
+}
+
+void RayTracingASComplexGeometryTestCase::checkSupport(Context &context) const
+{
+    context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+    context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+    context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+
+    const VkPhysicalDeviceAccelerationStructureFeaturesKHR &accelerationStructureFeaturesKHR =
+        context.getAccelerationStructureFeatures();
+    if (m_data.buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR &&
+        accelerationStructureFeaturesKHR.accelerationStructureHostCommands == false)
+        TCU_THROW(NotSupportedError,
+                  "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructureHostCommands");
+
+    checkAccelerationStructureVertexBufferFormat(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                                 m_data.vertexFormat);
+}
+
+void RayTracingASComplexGeometryTestCase::initPrograms(SourceCollections &programCollection) const
+{
+    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+    {
+        std::stringstream css;
+        css << "#version 460 core\n"
+            << "#extension GL_EXT_ray_tracing : require\n"
+            << "layout(rgba32ui, set = 0, binding = 0) uniform uimage2D result;\n"
+            << "layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;\n"
+            << "layout(location = 0) rayPayloadEXT vec4 hitValue;\n"
+            << "\n"
+            << "void main()\n"
+            << "{\n"
+            << "  float tmin = 0.0;\n"
+            << "  float tmax = 10.0;\n"
+            << "  float u = (float(gl_LaunchIDEXT.x) / float(gl_LaunchSizeEXT.x - 1u)) * 3.0 - 1.5;\n"
+            << "  float v = (float(gl_LaunchIDEXT.y) / float(gl_LaunchSizeEXT.y - 1u)) * 3.0 - 1.5;\n"
+            << "  vec3 origin = vec3(u, v, 3.0);\n"
+            << "  vec3 direction = vec3(0.0, 0.0, -1.0);\n"
+            << "  hitValue = vec4(0.0);\n"
+            << "  traceRayEXT(topLevelAS, 0, 0xFF, 0, 0, 0, origin, tmin, direction, tmax, 0);\n"
+            << "}\n";
+        programCollection.glslSources.add("rgen_complex")
+            << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
+    }
+
+    {
+        std::stringstream css;
+        css << "#version 460 core\n"
+            << "#extension GL_EXT_ray_tracing : require\n"
+            << "layout(rgba32ui, set = 0, binding = 0) uniform uimage2D result;\n"
+            << "layout(location = 0) rayPayloadInEXT vec4 hitValue;\n"
+            << "\n"
+            << "void main()\n"
+            << "{\n"
+            << "  ivec2 rayPos = ivec2(gl_LaunchIDEXT.xy);\n"
+            << "  \n"
+            << "  uvec4 data = uvec4(\n"
+            << "    1u,                              // hit flag\n"
+            << "    floatBitsToUint(gl_HitTEXT),     // tValue\n"
+            << "    gl_PrimitiveID,                  // primitiveIndex\n"
+            << "    gl_GeometryIndexEXT              // geometryIndex\n"
+            << "  );\n"
+            << "  \n"
+            << "  imageStore(result, rayPos, data);\n"
+            << "  \n"
+            << "  hitValue = vec4(1.0);\n"
+            << "}\n";
+        programCollection.glslSources.add("chit_complex")
+            << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
+    }
+
+    {
+        std::stringstream css;
+        css << "#version 460 core\n"
+            << "#extension GL_EXT_ray_tracing : require\n"
+            << "layout(rgba32ui, set = 0, binding = 0) uniform uimage2D result;\n"
+            << "layout(location = 0) rayPayloadInEXT vec4 hitValue;\n"
+            << "\n"
+            << "void main()\n"
+            << "{\n"
+            << "  ivec2 rayPos = ivec2(gl_LaunchIDEXT.xy);\n"
+            << "  imageStore(result, rayPos, uvec4(0u, 0, 0, 0));\n"
+            << "}\n";
+        programCollection.glslSources.add("miss_complex")
+            << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
+    }
+}
 
 class RayTracingASBasicTestInstance : public TestInstance
 {
@@ -1880,6 +2457,11 @@ RayTracingASBasicTestInstance::RayTracingASBasicTestInstance(Context &context, c
 {
 }
 
+TestInstance *RayTracingASComplexGeometryTestCase::createInstance(Context &context) const
+{
+    return new RayTracingASBasicTestInstance(context, m_data);
+}
+
 de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint32_t workerThreadsCount)
 {
     const InstanceInterface &vki            = m_context.getInstanceInterface();
@@ -2361,7 +2943,8 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint3
     submitCommandsAndWait(vkd, device, queue, cmdBuffer.get());
 
     invalidateMappedMemoryRange(vkd, device, resultBuffer->getAllocation().getMemory(),
-                                resultBuffer->getAllocation().getOffset(), pixelCount * sizeof(uint32_t));
+                                resultBuffer->getAllocation().getOffset(),
+                                pixelCount * m_data.testConfiguration->getResultImageFormatSize());
 
     return resultBuffer;
 }
@@ -7030,6 +7613,128 @@ void addUpdateTests(TestCaseGroup *group)
     }
 }
 
+void addComplexGeometryTests(tcu::TestCaseGroup *group)
+{
+    struct ModelInfo
+    {
+        ComplexGeometryModel model;
+        const char *name;
+    };
+
+    const ModelInfo models[] = {
+        {ComplexGeometryModel::ICOSPHERE, "icosphere"},
+        {ComplexGeometryModel::TERRAIN, "terrain"},
+        {ComplexGeometryModel::TORUSKNOT, "torusknot"},
+        {ComplexGeometryModel::TRIANGLESOUP, "trianglesoup"},
+    };
+
+    const struct
+    {
+        vk::VkAccelerationStructureBuildTypeKHR buildType;
+        const char *name;
+    } buildTypes[] = {
+        {VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, "gpu"},
+        {VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR, "cpu"},
+    };
+
+    const struct
+    {
+        VkIndexType indexType;
+        const char *name;
+    } indexTypes[] = {
+        {VK_INDEX_TYPE_NONE_KHR, "no_indices"},
+        {VK_INDEX_TYPE_UINT16, "uint16_indices"},
+        {VK_INDEX_TYPE_UINT32, "uint32_indices"},
+    };
+
+    const struct
+    {
+        VkBuildAccelerationStructureFlagsKHR flags;
+        const char *name;
+    } buildFlagVariants[] = {
+        {0u, "default"},
+        {VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR, "fast_trace"},
+        {VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR, "fast_build"},
+        {VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR, "compaction"},
+    };
+
+    const struct
+    {
+        TopTestType topType;
+        const char *name;
+    } topTestTypes[] = {
+        {TopTestType::IDENTICAL_INSTANCES, "single_instance"},
+        {TopTestType::DIFFERENT_INSTANCES, "multiple_instances"},
+    };
+
+    auto &ctx = group->getTestContext();
+
+    for (const auto &buildType : buildTypes)
+    {
+        de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildType.name));
+
+        for (const auto &model : models)
+        {
+            de::MovePtr<tcu::TestCaseGroup> modelGroup(new tcu::TestCaseGroup(ctx, model.name));
+
+            for (const auto &indexType : indexTypes)
+            {
+                de::MovePtr<tcu::TestCaseGroup> indexGroup(new tcu::TestCaseGroup(ctx, indexType.name));
+
+                for (const auto &buildFlags : buildFlagVariants)
+                {
+                    de::MovePtr<tcu::TestCaseGroup> flagsGroup(new tcu::TestCaseGroup(ctx, buildFlags.name));
+
+                    for (const auto &topType : topTestTypes)
+                    {
+                        TestParams testParams{
+                            buildType.buildType,
+                            VK_FORMAT_R32G32B32_SFLOAT,
+                            false,
+                            false,
+                            indexType.indexType,
+                            BottomTestType::TRIANGLES,
+                            InstanceCullFlags::NONE,
+                            false,
+                            false,
+                            false,
+                            topType.topType,
+                            false,
+                            false,
+                            false,
+                            buildFlags.flags,
+                            OT_BOTTOM_ACCELERATION,
+                            OP_NONE,
+                            256u,
+                            256u,
+                            de::SharedPtr<TestConfiguration>(new ComplexGeometryConfiguration()),
+                            0u,
+                            EmptyAccelerationStructureCase::NOT_EMPTY,
+                            InstanceCustomIndexCase::NONE,
+                            false,
+                            true,
+                            0xFFu,
+                            UpdateCase::NONE,
+                            ResourceResidency::TRADITIONAL,
+                            model.model,
+                        };
+
+                        flagsGroup->addChild(new RayTracingASComplexGeometryTestCase(ctx, topType.name, testParams));
+                    }
+
+                    indexGroup->addChild(flagsGroup.release());
+                }
+
+                modelGroup->addChild(indexGroup.release());
+            }
+
+            buildTypeGroup->addChild(modelGroup.release());
+        }
+
+        group->addChild(buildTypeGroup.release());
+    }
+}
+
 tcu::TestCaseGroup *createAccelerationStructuresTests(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "acceleration_structures"));
@@ -7064,6 +7769,8 @@ tcu::TestCaseGroup *createAccelerationStructuresTests(tcu::TestContext &testCtx)
     addTestGroup(group.get(), "copy_within_pipeline", addCopyWithinPipelineTests);
     // Tests updating AS via replacing vertex/index/transform buffers
     addTestGroup(group.get(), "update", addUpdateTests);
+    // Tests using complex geometry models to verify AS functionality with realistic geometry
+    addTestGroup(group.get(), "complex_geometry", addComplexGeometryTests);
 
     return group.release();
 }
