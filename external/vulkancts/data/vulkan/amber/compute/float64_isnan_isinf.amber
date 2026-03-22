@@ -1,0 +1,67 @@
+#!amber
+
+DEVICE_FEATURE shaderFloat64
+
+SHADER compute kShader GLSL
+#version 450
+#extension GL_EXT_shader_explicit_arithmetic_types_float64 : enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) buffer OutputBuffer {
+    float invalue;
+};
+
+layout(set = 0, binding = 1) buffer ResultBuffer {
+    uint result;
+};
+
+void main() {
+    float64_t f64 = float64_t(invalue);
+    result = isnan(f64) ? 1u : 0u;
+    result += isinf(f64) ? 1u : 0u;
+}
+END
+
+BUFFER nan_buffer DATA_TYPE float STD430 DATA
+  nan
+END
+
+BUFFER inf_buffer DATA_TYPE uint32 STD430 DATA
+  0x7f800000
+END
+
+BUFFER zero_buffer DATA_TYPE float STD430 DATA
+  0
+END
+
+BUFFER result_buffer DATA_TYPE uint32 STD430 DATA
+  0
+END
+
+PIPELINE compute pipe_nan
+  ATTACH kShader
+  BIND BUFFER nan_buffer AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER result_buffer AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN pipe_nan 1 1 1
+EXPECT result_buffer IDX 0 EQ 1
+
+PIPELINE compute pipe_inf
+  ATTACH kShader
+  BIND BUFFER inf_buffer AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER result_buffer AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN pipe_inf 1 1 1
+EXPECT result_buffer IDX 0 EQ 1
+
+PIPELINE compute pipe_zero
+  ATTACH kShader
+  BIND BUFFER zero_buffer AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER result_buffer AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN pipe_zero 1 1 1
+EXPECT result_buffer IDX 0 EQ 0

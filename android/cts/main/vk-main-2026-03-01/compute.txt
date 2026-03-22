@@ -3,6 +3,8 @@ dEQP-VK.compute.pipeline.64b_indexing.copy_ssbo_64b_bounds
 dEQP-VK.compute.pipeline.64b_indexing.copy_ssbo_64b_bounds_local
 dEQP-VK.compute.pipeline.64b_indexing.copy_ssbo_64b_execution_mode
 dEQP-VK.compute.pipeline.basic.copy_ssbo_bounds
+dEQP-VK.compute.pipeline.basic.float16_isnan_isinf
+dEQP-VK.compute.pipeline.basic.float64_isnan_isinf
 dEQP-VK.compute.pipeline.basic.indirect_after_base_dispatch
 dEQP-VK.compute.pipeline.basic.read_unbound_ssbo
 dEQP-VK.compute.pipeline.basic.undefined_values
