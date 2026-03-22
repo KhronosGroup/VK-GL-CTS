@@ -336,6 +336,44 @@ std::string getResourceAccess(ResourceType type, uint32_t ndx)
     return oss.str();
 }
 
+void checkResourceSupport(ResourceType type, const VkPhysicalDeviceFeatures &deviceFeatures)
+{
+    switch (type)
+    {
+    case UNIFORM_BUFFER:
+    {
+        if (!deviceFeatures.shaderUniformBufferArrayDynamicIndexing)
+            TCU_THROW(NotSupportedError, "Dynamic indexing of uniform buffer arrays is not supported");
+        break;
+    }
+    case STORAGE_BUFFER:
+    {
+        if (!deviceFeatures.shaderStorageBufferArrayDynamicIndexing)
+            TCU_THROW(NotSupportedError, "Dynamic indexing of storage buffer arrays is not supported");
+        break;
+    }
+    case SAMPLED_IMAGE:
+    case COMBINED_IMAGE_SAMPLER:
+    {
+        if (!deviceFeatures.shaderSampledImageArrayDynamicIndexing)
+            TCU_THROW(NotSupportedError, "Dynamic indexing of sampled image arrays is not supported");
+        break;
+    }
+    case STORAGE_IMAGE:
+    {
+        if (!deviceFeatures.shaderStorageImageArrayDynamicIndexing)
+            TCU_THROW(NotSupportedError, "Dynamic indexing of storage image arrays is not supported");
+        break;
+    }
+    default:
+    {
+        DE_ASSERT(false);
+        DE_FATAL("Invalid resource type");
+        break;
+    }
+    }
+}
+
 class Resource
 {
 public:
@@ -661,7 +699,8 @@ TestInstance *UnusedInvalidDescriptorWriteTestCase::createInstance(Context &cont
 
 void UnusedInvalidDescriptorWriteTestCase::checkSupport(Context &context) const
 {
-    DE_UNREF(context);
+    const VkPhysicalDeviceFeatures &deviceFeatures = context.getDeviceFeatures();
+    checkResourceSupport(m_params.type, deviceFeatures);
 }
 
 tcu::TestStatus UnusedInvalidDescriptorWriteTestInstance::queuePass(const QueueData &queueData)
@@ -973,7 +1012,8 @@ TestInstance *InvalidDescriptorCopyTestCase::createInstance(Context &context) co
 
 void InvalidDescriptorCopyTestCase::checkSupport(Context &context) const
 {
-    DE_UNREF(context);
+    const VkPhysicalDeviceFeatures &deviceFeatures = context.getDeviceFeatures();
+    checkResourceSupport(m_params.type, deviceFeatures);
 }
 
 tcu::TestStatus InvalidDescriptorCopyTestInstance::queuePass(const QueueData &queueData)
