@@ -2520,9 +2520,9 @@ struct VkDeviceEventInfoEXT
 	VkDeviceEventTypeEXT	deviceEvent;
 };
 
-struct VkDeviceFaultAddressInfoEXT
+struct VkDeviceFaultAddressInfoKHR
 {
-	VkDeviceFaultAddressTypeEXT	addressType;
+	VkDeviceFaultAddressTypeKHR	addressType;
 	VkDeviceAddress				reportedAddress;
 	VkDeviceSize				addressPrecision;
 };
@@ -2536,10 +2536,10 @@ struct VkDeviceFaultCountsEXT
 	VkDeviceSize	vendorBinarySize;
 };
 
-struct VkDeviceFaultVendorBinaryHeaderVersionOneEXT
+struct VkDeviceFaultVendorBinaryHeaderVersionOneKHR
 {
 	uint32_t									headerSize;
-	VkDeviceFaultVendorBinaryHeaderVersionEXT	headerVersion;
+	VkDeviceFaultVendorBinaryHeaderVersionKHR	headerVersion;
 	uint32_t									vendorID;
 	uint32_t									deviceID;
 	uint32_t									driverVersion;
@@ -2551,7 +2551,7 @@ struct VkDeviceFaultVendorBinaryHeaderVersionOneEXT
 	uint32_t									apiVersion;
 };
 
-struct VkDeviceFaultVendorInfoEXT
+struct VkDeviceFaultVendorInfoKHR
 {
 	char		description[VK_MAX_DESCRIPTION_SIZE];
 	uint64_t	vendorFaultCode;
@@ -2563,8 +2563,8 @@ struct VkDeviceFaultInfoEXT
 	VkStructureType					sType;
 	void*							pNext;
 	char							description[VK_MAX_DESCRIPTION_SIZE];
-	VkDeviceFaultAddressInfoEXT*	pAddressInfos;
-	VkDeviceFaultVendorInfoEXT*		pVendorInfos;
+	VkDeviceFaultAddressInfoKHR*	pAddressInfos;
+	VkDeviceFaultVendorInfoKHR*		pVendorInfos;
 	void*							pVendorBinaryData;
 };
 
@@ -11789,6 +11789,15 @@ typedef VkDescriptorUpdateTemplateEntry VkDescriptorUpdateTemplateEntryKHR;
 
 
 typedef VkDeviceBufferMemoryRequirements VkDeviceBufferMemoryRequirementsKHR;
+
+
+typedef VkDeviceFaultAddressInfoKHR VkDeviceFaultAddressInfoEXT;
+
+
+typedef VkDeviceFaultVendorBinaryHeaderVersionOneKHR VkDeviceFaultVendorBinaryHeaderVersionOneEXT;
+
+
+typedef VkDeviceFaultVendorInfoKHR VkDeviceFaultVendorInfoEXT;
 
 
 typedef VkDeviceGroupBindSparseInfo VkDeviceGroupBindSparseInfoKHR;

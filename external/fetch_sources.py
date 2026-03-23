@@ -336,34 +336,34 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Tools.git",
         "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "d4671f690ac42f196795272114daadc5088967ce",
+        "8a13595dd4ae5049ef42d0f30297d0c427db54b5",
         "spirv-tools"),
     GitRepo(
         "https://github.com/KhronosGroup/glslang.git",
         "git@github.com:KhronosGroup/glslang.git",
-        "43023b117abb3153e2ca400010d51dabebaae446",
+        "36ee985cde10ae4592ba37c09f376ade86ed18c2",
         "glslang",
         removeTags = ["main-tot", "master-tot"]),
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Headers.git",
         "git@github.com:KhronosGroup/SPIRV-Headers.git",
-        "04f10f650d514df88b76d25e83db360142c7b174",
+        "465055f6c9128772e20082e893d974146acf7a02",
         "spirv-headers"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Docs.git",
         "git@github.com:KhronosGroup/Vulkan-Docs.git",
-        "b0b699e446e3eab9bc0d6b192599871eecf25e1e",
+        "6c112cf1c56fec91d5aa4370fb62cfee25618684",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
         "git@github.com:KhronosGroup/Vulkan-ValidationLayers.git",
-        "0a11cf1257471c22b9e7d620ab48057fb2f53cf9",
+        "eb51484e6039752b56e8f70b5c33f04874224bfb",
         "vulkan-validationlayers",
         postCheckout="python3 scripts/update_deps.py --dir external  --optional tests  --api vulkan"),
     GitRepo(
         "https://github.com/google/amber.git",
         "git@github.com:google/amber.git",
-        "4e0fc4278326ade38048ffcb48a39f3579365649",
+        "53a4c8934bf7335d27c694e9fdac9ae1b180c0d2",
         "amber"),
     GitRepo(
         "https://github.com/open-source-parsers/jsoncpp.git",

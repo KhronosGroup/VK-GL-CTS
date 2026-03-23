@@ -2258,6 +2258,12 @@ enum VkPipelineCacheCreateFlagBits
 };
 typedef uint32_t VkPipelineCacheCreateFlags;
 
+enum VkPipelineColorBlendStateCreateFlagBits
+{
+	VK_PIPELINE_COLOR_BLEND_STATE_CREATE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF
+};
+typedef uint32_t VkPipelineColorBlendStateCreateFlags;
+
 enum VkPipelineCreateFlagBits
 {
 	VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT					= 0x00000001,
@@ -2294,6 +2300,12 @@ enum VkPipelineCreationFeedbackFlagBits
 	VK_PIPELINE_CREATION_FEEDBACK_FLAG_BITS_MAX_ENUM					= 0x7FFFFFFF
 };
 typedef uint32_t VkPipelineCreationFeedbackFlags;
+
+enum VkPipelineDepthStencilStateCreateFlagBits
+{
+	VK_PIPELINE_DEPTH_STENCIL_STATE_CREATE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF
+};
+typedef uint32_t VkPipelineDepthStencilStateCreateFlags;
 
 enum VkPipelineLayoutCreateFlagBits
 {

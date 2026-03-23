@@ -281,9 +281,9 @@ inline VkDescriptorUpdateTemplateEntry makeDescriptorUpdateTemplateEntry (uint32
 	return res;
 }
 
-inline VkDeviceFaultAddressInfoEXT makeDeviceFaultAddressInfoEXT (VkDeviceFaultAddressTypeEXT addressType, VkDeviceAddress reportedAddress, VkDeviceSize addressPrecision)
+inline VkDeviceFaultAddressInfoKHR makeDeviceFaultAddressInfoKHR (VkDeviceFaultAddressTypeKHR addressType, VkDeviceAddress reportedAddress, VkDeviceSize addressPrecision)
 {
-	VkDeviceFaultAddressInfoEXT res;
+	VkDeviceFaultAddressInfoKHR res;
 	res.addressType			= addressType;
 	res.reportedAddress		= reportedAddress;
 	res.addressPrecision	= addressPrecision;

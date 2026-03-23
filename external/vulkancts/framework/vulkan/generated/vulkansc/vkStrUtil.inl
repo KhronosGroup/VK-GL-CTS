@@ -277,9 +277,11 @@ tcu::Format::Bitfield<32>	getMemoryUnmapFlagsStr						(VkMemoryUnmapFlags value)
 tcu::Format::Bitfield<32>	getPeerMemoryFeatureFlagsStr				(VkPeerMemoryFeatureFlags value);
 tcu::Format::Bitfield<32>	getPerformanceCounterDescriptionFlagsKHRStr	(VkPerformanceCounterDescriptionFlagsKHR value);
 tcu::Format::Bitfield<32>	getPipelineCacheCreateFlagsStr				(VkPipelineCacheCreateFlags value);
+tcu::Format::Bitfield<32>	getPipelineColorBlendStateCreateFlagsStr	(VkPipelineColorBlendStateCreateFlags value);
 tcu::Format::Bitfield<32>	getPipelineCreateFlagsStr					(VkPipelineCreateFlags value);
 tcu::Format::Bitfield<64>	getPipelineCreateFlags2Str					(VkPipelineCreateFlags2 value);
 tcu::Format::Bitfield<32>	getPipelineCreationFeedbackFlagsStr			(VkPipelineCreationFeedbackFlags value);
+tcu::Format::Bitfield<32>	getPipelineDepthStencilStateCreateFlagsStr	(VkPipelineDepthStencilStateCreateFlags value);
 tcu::Format::Bitfield<32>	getPipelineLayoutCreateFlagsStr				(VkPipelineLayoutCreateFlags value);
 tcu::Format::Bitfield<32>	getPipelineShaderStageCreateFlagsStr		(VkPipelineShaderStageCreateFlags value);
 tcu::Format::Bitfield<32>	getPipelineStageFlagsStr					(VkPipelineStageFlags value);

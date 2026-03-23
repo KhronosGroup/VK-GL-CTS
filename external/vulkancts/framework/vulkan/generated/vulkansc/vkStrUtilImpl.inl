@@ -2588,6 +2588,16 @@ tcu::Format::Bitfield<32> getPipelineCacheCreateFlagsStr (VkPipelineCacheCreateF
 }
 
 
+tcu::Format::Bitfield<32> getPipelineColorBlendStateCreateFlagsStr (VkPipelineColorBlendStateCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
 tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -2629,6 +2639,16 @@ tcu::Format::Bitfield<32> getPipelineCreationFeedbackFlagsStr (VkPipelineCreatio
 		tcu::Format::BitDesc(VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT,	"VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT,		"VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT,							"VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
+tcu::Format::Bitfield<32> getPipelineDepthStencilStateCreateFlagsStr (VkPipelineDepthStencilStateCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -7688,7 +7708,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineColorBlendStateCreate
 	s << "VkPipelineColorBlendStateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << value.flags << '\n';
+	s << "\tflags = " << getPipelineColorBlendStateCreateFlagsStr(value.flags) << '\n';
 	s << "\tlogicOpEnable = " << value.logicOpEnable << '\n';
 	s << "\tlogicOp = " << value.logicOp << '\n';
 	s << "\tattachmentCount = " << value.attachmentCount << '\n';
@@ -7745,7 +7765,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineDepthStencilStateCrea
 	s << "VkPipelineDepthStencilStateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << value.flags << '\n';
+	s << "\tflags = " << getPipelineDepthStencilStateCreateFlagsStr(value.flags) << '\n';
 	s << "\tdepthTestEnable = " << value.depthTestEnable << '\n';
 	s << "\tdepthWriteEnable = " << value.depthWriteEnable << '\n';
 	s << "\tdepthCompareOp = " << value.depthCompareOp << '\n';
