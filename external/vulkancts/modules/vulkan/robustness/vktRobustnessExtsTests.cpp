@@ -722,6 +722,9 @@ void RobustnessExtsTestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
 #endif
 
+    if (m_data.useComputeQueue && (context.getComputeQueueFamilyIndex() == -1))
+        TCU_THROW(NotSupportedError, "Exclusive compute queue not supported.");
+
     if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ||
         m_data.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
     {
