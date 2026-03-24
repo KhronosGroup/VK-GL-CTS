@@ -27,7 +27,6 @@
 #include "deRandom.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuImageCompare.hpp"
-#include "vktBindingDescriptorBufferTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
@@ -37,7 +36,6 @@
 #include "vkObjUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
-#include "vkStrUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkRayTracingUtil.hpp"
@@ -54,9 +52,7 @@
 #define VK_PIPELINE_STAGE_2_TRANSFER_BIT VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR
 #endif
 
-namespace vkt
-{
-namespace BindingModel
+namespace vkt::BindingModel
 {
 namespace
 {
@@ -2351,35 +2347,17 @@ void DescriptorBufferTestCase::initPrograms(vk::SourceCollections &programs,
 void DescriptorBufferTestCase::checkSupport(Context &context) const
 {
     // Required to test the extension
-    if (!context.isDeviceFunctionalitySupported("VK_EXT_descriptor_buffer"))
-    {
-        TCU_THROW(NotSupportedError, "VK_EXT_descriptor_buffer is not supported");
-    }
-
-    if (!context.isInstanceFunctionalitySupported("VK_KHR_get_physical_device_properties2"))
-    {
-        TCU_THROW(NotSupportedError, "VK_KHR_get_physical_device_properties2 is not supported");
-    }
-
-    if (!context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
-    {
-        TCU_THROW(NotSupportedError, "VK_KHR_buffer_device_address is not supported");
-    }
-
-    if (!context.isDeviceFunctionalitySupported("VK_KHR_synchronization2"))
-    {
-        TCU_THROW(NotSupportedError, "VK_KHR_synchronization2 is not supported");
-    }
-
-    if (!context.isDeviceFunctionalitySupported("VK_EXT_descriptor_indexing"))
-    {
-        TCU_THROW(NotSupportedError, "VK_EXT_descriptor_indexing is not supported");
-    }
-
+    context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+    context.requireDeviceFunctionality("VK_EXT_descriptor_buffer");
     context.requireDeviceFunctionality("VK_KHR_buffer_device_address");
+    context.requireDeviceFunctionality("VK_KHR_synchronization2");
+    context.requireDeviceFunctionality("VK_EXT_descriptor_indexing");
     context.requireDeviceFunctionality("VK_KHR_maintenance4");
+
     if (m_params.useMaintenance5)
         context.requireDeviceFunctionality("VK_KHR_maintenance5");
+    if (m_params.commands2)
+        context.requireDeviceFunctionality("VK_KHR_maintenance6");
 
     // Optional
     if ((m_params.resourceResidency == ResourceResidency::SPARSE_BINDING) &&
@@ -2395,11 +2373,8 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "sparseResidencyBuffer feature is not supported");
     }
 
-    if ((m_params.descriptor == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK) &&
-        !context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block"))
-    {
-        TCU_THROW(NotSupportedError, "VK_EXT_inline_uniform_block is not supported");
-    }
+    if (m_params.descriptor == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
+        context.requireDeviceFunctionality("VK_EXT_inline_uniform_block");
 
     const auto &descriptorBufferFeatures = context.getDescriptorBufferFeaturesEXT();
     const auto &descriptorBufferProps    = context.getDescriptorBufferPropertiesEXT();
@@ -2416,11 +2391,8 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
             TCU_THROW(NotSupportedError, "descriptorBufferCaptureReplay feature is not supported");
         }
 
-        if ((m_params.subcase == SubCase::CAPTURE_REPLAY_CUSTOM_BORDER_COLOR) &&
-            !context.isDeviceFunctionalitySupported("VK_EXT_custom_border_color"))
-        {
-            TCU_THROW(NotSupportedError, "VK_EXT_custom_border_color is not supported");
-        }
+        if (m_params.subcase == SubCase::CAPTURE_REPLAY_CUSTOM_BORDER_COLOR)
+            context.requireDeviceFunctionality("VK_EXT_custom_border_color");
     }
 
     if (m_params.isTessellation() && (context.getDeviceFeatures().tessellationShader == VK_FALSE))
@@ -2483,6 +2455,9 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "maxResourceDescriptorBufferBindings is too small");
     }
 
+    const auto &vki       = context.getInstanceInterface();
+    const auto physDevice = context.getPhysicalDevice();
+
     if ((m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS) ||
         (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) ||
         (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE))
@@ -2495,7 +2470,7 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
 
             features2.pNext = &robustness2Features;
 
-            context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+            vki.getPhysicalDeviceFeatures2(physDevice, &features2);
 
             if (((m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) ||
                  (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE)) &&
@@ -2514,7 +2489,7 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
         else if (m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS)
         {
             VkPhysicalDeviceFeatures features{};
-            context.getInstanceInterface().getPhysicalDeviceFeatures(context.getPhysicalDevice(), &features);
+            vki.getPhysicalDeviceFeatures(physDevice, &features);
 
             if (features.robustBufferAccess == VK_FALSE)
             {
@@ -2522,11 +2497,8 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
             }
         }
     }
-    else if ((m_params.variant == TestVariant::MUTABLE_DESCRIPTOR_TYPE) &&
-             !context.isDeviceFunctionalitySupported("VK_EXT_mutable_descriptor_type"))
-    {
-        TCU_THROW(NotSupportedError, "VK_EXT_mutable_descriptor_type is not supported");
-    }
+    else if (m_params.variant == TestVariant::MUTABLE_DESCRIPTOR_TYPE)
+        context.requireDeviceFunctionality("VK_EXT_mutable_descriptor_type");
 
     if ((m_params.descriptor == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK) ||
         (m_params.variant == TestVariant::MULTIPLE) || m_params.isPushDescriptorTest())
@@ -2568,21 +2540,80 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_ray_query");
     }
 
+    if (m_params.isAccelerationStructure() && m_params.isAccelerationStructureOptional() &&
+        context.getRayQueryFeatures().rayQuery)
+    {
+        context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+    }
+
     if (m_params.isRayTracing())
     {
         context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
         context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
     }
 
-    if (m_params.isYCbCrSamplerVariant() && !context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion"))
+    if (m_params.isAccelerationStructure() || m_params.isRayTracing())
     {
-        TCU_THROW(NotSupportedError, "VK_KHR_sampler_ycbcr_conversion is not supported");
+        const auto &accelerationStructureFeatures = context.getAccelerationStructureFeatures();
+        if (!accelerationStructureFeatures.accelerationStructure)
+            TCU_THROW(NotSupportedError, "Require accelerationStructureFeatures.accelerationStructure");
+
+        if (m_params.isCaptureReplayDescriptor(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR))
+        {
+            if (!accelerationStructureFeatures.accelerationStructureCaptureReplay)
+                TCU_THROW(NotSupportedError,
+                          "Require accelerationStructureFeatures.accelerationStructureCaptureReplay");
+        }
+
+        const auto &rayQueryFeatures = context.getRayQueryFeatures();
+        if (m_params.isAccelerationStructure())
+        {
+            if (!rayQueryFeatures.rayQuery)
+                TCU_THROW(NotSupportedError, "Require rayQueryFeatures.rayQuery");
+        }
+
+        const auto &rayTracingPipelineFeatures = context.getRayTracingPipelineFeatures();
+        if (m_params.isRayTracing())
+        {
+            if (!rayTracingPipelineFeatures.rayTracingPipeline)
+                TCU_THROW(NotSupportedError, "Require rayTracingPipelineFeatures.rayTracingPipeline");
+
+            if (m_params.isCaptureReplayDescriptor(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR))
+            {
+                if (!rayTracingPipelineFeatures.rayTracingPipelineShaderGroupHandleCaptureReplay)
+                    TCU_THROW(NotSupportedError,
+                              "Require rayTracingPipelineFeatures.rayTracingPipelineShaderGroupHandleCaptureReplay");
+            }
+        }
     }
 
-    if (m_params.commands2)
+    if (m_params.isYCbCrSamplerVariant())
     {
-        context.requireDeviceFunctionality("VK_KHR_maintenance6");
+        context.requireDeviceFunctionality("VK_KHR_sampler_ycbcr_conversion");
     }
+
+    if (context.getUsedApiVersion() >= VK_API_VERSION_1_3)
+    {
+        uint32_t inlineUniformSize = 0u;
+        for (const auto &sb : m_simpleBindings)
+            inlineUniformSize += ConstInlineBlockDwords * (sb.type == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
+        inlineUniformSize *= sizeof(uint32_t);
+
+        const VkPhysicalDeviceVulkan13Properties &vulkan13properties = context.getDeviceVulkan13Properties();
+        if (inlineUniformSize > vulkan13properties.maxInlineUniformTotalSize)
+        {
+            TCU_THROW(NotSupportedError, "Test require more inline uniform total size among all stages. Provided " +
+                                             de::toString(vulkan13properties.maxInlineUniformTotalSize));
+        }
+    }
+
+    if (!(m_params.resourceResidency == ResourceResidency::TRADITIONAL) && !context.getDeviceFeatures().sparseBinding)
+        TCU_THROW(NotSupportedError, "Sparse operations not supported by any queue");
+
+    auto queueProps = getPhysicalDeviceQueueFamilyProperties(vki, physDevice);
+    auto queueFlags = queueProps[context.getUniversalQueueFamilyIndex()].queueFlags;
+    if ((m_params.queue & VK_QUEUE_GRAPHICS_BIT) && !(queueFlags & VK_QUEUE_GRAPHICS_BIT))
+        TCU_THROW(NotSupportedError, "Queue not supported");
 }
 
 // The base class for all test case implementations.
@@ -2820,10 +2851,6 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
                     !simpleBinding.isRayTracingAS)
                     simpleBinding.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         }
-        else
-        {
-            context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
-        }
     }
 
     if ((m_params.variant == TestVariant::MULTIPLE) || (m_params.variant == TestVariant::PUSH_DESCRIPTOR) ||
@@ -2942,15 +2969,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
         m_queueFamilyIndex = graphicsComputeQueue;
     }
 
-    if (m_queueFamilyIndex == VK_QUEUE_FAMILY_IGNORED)
-    {
-        TCU_THROW(NotSupportedError, "Queue not supported");
-    }
-
-    if (sparseCompatibilityDevice && m_sparseQueueFamilyIndex == VK_QUEUE_FAMILY_IGNORED)
-    {
-        TCU_THROW(NotSupportedError, "Sparse operations not supported by any queue");
-    }
+    DE_ASSERT(m_queueFamilyIndex != VK_QUEUE_FAMILY_IGNORED); // if this is hit then add new condition to checkSupport
 
     VkPhysicalDeviceFeatures2 features2                                            = initVulkanStructure();
     VkPhysicalDeviceDescriptorBufferFeaturesEXT descriptorBufferFeatures           = initVulkanStructure();
@@ -2995,12 +3014,9 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     addToChainVulkanStructure(&nextPtr, maintenance4Features);
 
     // NOTE: VK_AMD_shader_fragment_mask must not be enabled
-    std::vector<const char *> extensions;
-    extensions.push_back("VK_EXT_descriptor_buffer");
-    extensions.push_back("VK_KHR_buffer_device_address");
-    extensions.push_back("VK_KHR_synchronization2");
-    extensions.push_back("VK_EXT_descriptor_indexing");
-    extensions.push_back("VK_KHR_maintenance4");
+    std::vector<const char *> extensions{"VK_EXT_descriptor_buffer", "VK_KHR_buffer_device_address",
+                                         "VK_KHR_synchronization2", "VK_EXT_descriptor_indexing",
+                                         "VK_KHR_maintenance4"};
 
     if (m_params.useMaintenance5)
     {
@@ -3093,47 +3109,6 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     if (!m_params.isPushDescriptorTest())
     {
         descriptorBufferFeatures.descriptorBufferPushDescriptors = VK_FALSE;
-    }
-
-    if (!maintenance4Features.maintenance4)
-        TCU_THROW(NotSupportedError, "Execution mode LocalSizeId is used, maintenance4 required");
-
-    if (m_params.isAccelerationStructure() || m_params.isRayTracing())
-    {
-        if (!accelerationStructureFeatures.accelerationStructure)
-            TCU_THROW(NotSupportedError, "Require accelerationStructureFeatures.accelerationStructure");
-
-        if (m_params.isCaptureReplayDescriptor(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR))
-        {
-            if (!accelerationStructureFeatures.accelerationStructureCaptureReplay)
-                TCU_THROW(NotSupportedError,
-                          "Require accelerationStructureFeatures.accelerationStructureCaptureReplay");
-        }
-
-        if (m_params.isAccelerationStructure())
-        {
-            if (!rayQueryFeatures.rayQuery)
-                TCU_THROW(NotSupportedError, "Require rayQueryFeatures.rayQuery");
-        }
-
-        if (m_params.isRayTracing())
-        {
-            if (!rayTracingPipelineFeatures.rayTracingPipeline)
-                TCU_THROW(NotSupportedError, "Require rayTracingPipelineFeatures.rayTracingPipeline");
-
-            if (m_params.isCaptureReplayDescriptor(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR))
-            {
-                if (!rayTracingPipelineFeatures.rayTracingPipelineShaderGroupHandleCaptureReplay)
-                    TCU_THROW(NotSupportedError,
-                              "Require rayTracingPipelineFeatures.rayTracingPipelineShaderGroupHandleCaptureReplay");
-            }
-        }
-    }
-
-    if (m_params.commands2)
-    {
-        if (!maintenance6Features.maintenance6)
-            TCU_THROW(NotSupportedError, "maintenance6 required");
     }
 
     // Should be enabled by default
@@ -5243,8 +5218,6 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
     {
         uint32_t currentSet = INDEX_INVALID;
 
-        uint32_t inlineUniformSize = 0u;
-
         for (const auto &sb : m_simpleBindings)
         {
             if ((currentSet == INDEX_INVALID) || (currentSet < sb.set))
@@ -5273,7 +5246,6 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
             if (sb.type == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
             {
                 binding.descriptorCount = sizeof(uint32_t) * ConstInlineBlockDwords;
-                inlineUniformSize += binding.descriptorCount;
             }
             else
             {
@@ -5295,14 +5267,6 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
             }
 
             dsl.bindings.emplace_back(binding);
-        }
-
-        const VkPhysicalDeviceVulkan13Properties &vulkan13properties = m_context.getDeviceVulkan13Properties();
-        if (m_context.getUsedApiVersion() >= VK_API_VERSION_1_3 &&
-            inlineUniformSize > vulkan13properties.maxInlineUniformTotalSize)
-        {
-            TCU_THROW(NotSupportedError, "Test require more inline uniform total size among all stages. Provided " +
-                                             de::toString(vulkan13properties.maxInlineUniformTotalSize));
         }
     }
 
@@ -7896,5 +7860,4 @@ tcu::TestCaseGroup *createDescriptorBufferTests(tcu::TestContext &testCtx)
     return createTestGroup(testCtx, "descriptor_buffer", populateDescriptorBufferTests);
 }
 
-} // namespace BindingModel
-} // namespace vkt
+} // namespace vkt::BindingModel
