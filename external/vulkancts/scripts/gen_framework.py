@@ -2180,6 +2180,16 @@ class CoreFunctionalitiesGenerator(CTSGenerator):
                     if 'vkCopy' in name or name == 'vkTransitionImageLayout':
                         continue
 
+            if self.targetApiName == 'vulkansc':
+                if apiVersion == 'VK_API_VERSION_1_0' or apiVersion == 'VK_API_VERSION_1_1' or apiVersion == 'VK_API_VERSION_1_2':
+                    # Everything up to Vulkan 1.2 is included in Vulkan SC 1.0
+                    apiVersion = 'VKSC_API_VERSION_1_0'
+                else:
+                    # Everything newer is not supported in Vulkan SC
+                    # Note that normally we would not have to hit this but the vk.xml has the vulkansc API tag
+                    # enabled also for Vulkan 1.3+ due to spec tooling limitations
+                    continue
+
             # add function to dictionary
             if apiVersion in functionNamesPerApiVersionDict:
                 if name not in functionNamesPerApiVersionDict[apiVersion]:
