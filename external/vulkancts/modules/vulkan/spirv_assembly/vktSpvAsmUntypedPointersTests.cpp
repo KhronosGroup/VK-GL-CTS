@@ -7050,6 +7050,8 @@ void addLoadTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
             adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
             adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
             adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+            adjustSpecForSmallContainerType(LOAD_CONTAINER_TYPE_CASES[j], BASE_DATA_TYPE_CASES[i], spec, spvExts,
+                                            spvCaps);
 
             specMap["memModelOp"]       = memModelOp;
             specMap["extensions"]       = toString(spvExts);
@@ -7388,9 +7390,13 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                     adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
                     adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
                     if (BASE_DATA_TYPE_CASES[i] != getCompositeBaseDataType(compositeType))
+                    {
+
                         adjustSpecForDataTypes(getCompositeBaseDataType(compositeType), spec, spvExts, spvCaps);
-                    adjustSpecForSmallContainerType(LOAD_CONTAINER_TYPE_CASES[j], BASE_DATA_TYPE_CASES[i], spec,
-                                                    spvExts, spvCaps);
+                        adjustSpecForSmallContainerType(LOAD_CONTAINER_TYPE_CASES[j],
+                                                        getCompositeBaseDataType(compositeType), spec, spvExts,
+                                                        spvCaps);
+                    }
                     if ((getSizeInBytes(BASE_DATA_TYPE_CASES[i]) !=
                          getSizeInBytes(getCompositeBaseDataType(compositeType))) ||      // diffrent size of data types
                         (LOAD_CONTAINER_TYPE_CASES[j] != ContainerTypes::STORAGE_BUFFER)) // diffrent starage types
