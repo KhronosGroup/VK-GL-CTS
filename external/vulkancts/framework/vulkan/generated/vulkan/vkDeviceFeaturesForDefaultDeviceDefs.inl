@@ -76,6 +76,7 @@ const VkPhysicalDeviceImagelessFramebufferFeatures&						getImagelessFramebuffer
 const VkPhysicalDeviceIndexTypeUint8Features&							getIndexTypeUint8Features							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceIndexTypeUint8Features>();						}
 const VkPhysicalDeviceInheritedViewportScissorFeaturesNV&				getInheritedViewportScissorFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceInheritedViewportScissorFeaturesNV>();			}
 const VkPhysicalDeviceInlineUniformBlockFeatures&						getInlineUniformBlockFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceInlineUniformBlockFeatures>();					}
+const VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR&			getInternallySynchronizedQueuesFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR>();		}
 const VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&						getInvocationMaskFeaturesHUAWEI						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceInvocationMaskFeaturesHUAWEI>();					}
 const VkPhysicalDeviceLegacyDitheringFeaturesEXT&						getLegacyDitheringFeaturesEXT						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceLegacyDitheringFeaturesEXT>();					}
 const VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT&				getLegacyVertexAttributesFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT>();				}
@@ -156,6 +157,7 @@ const VkPhysicalDeviceShaderFloatControls2Features&						getShaderFloatControls2
 const VkPhysicalDeviceShaderFmaFeaturesKHR&								getShaderFmaFeatures								(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderFmaFeaturesKHR>();							}
 const VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&				getShaderImageAtomicInt64FeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT>();				}
 const VkPhysicalDeviceShaderIntegerDotProductFeatures&					getShaderIntegerDotProductFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderIntegerDotProductFeatures>();				}
+const VkPhysicalDeviceShaderLongVectorFeaturesEXT&						getShaderLongVectorFeaturesEXT						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderLongVectorFeaturesEXT>();					}
 const VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR&			getShaderMaximalReconvergenceFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR>();			}
 const VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT&				getShaderModuleIdentifierFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT>();				}
 const VkPhysicalDeviceShaderObjectFeaturesEXT&							getShaderObjectFeaturesEXT							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderObjectFeaturesEXT>();						}

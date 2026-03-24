@@ -6187,6 +6187,80 @@ tcu::TestStatus PipelineShaderObjMixSecondariesRun(Context &context)
 
 #endif // CTS_USES_VULKANSC
 
+void SecondariesXferQueueCheckSupport(Context &context)
+{
+    context.getTransferQueue(); // Will throw if not available.
+}
+
+void SecondariesXferQueuePrograms(vk::SourceCollections &)
+{
+}
+
+tcu::TestStatus SecondariesXferQueueRun(Context &context)
+{
+    const auto ctx     = context.getContextCommonData();
+    const auto queue   = context.getTransferQueue();
+    const auto qfIndex = context.getTransferQueueFamilyIndex();
+
+    const auto cmdPool   = makeCommandPool(ctx.vkd, ctx.device, qfIndex);
+    const auto primary   = allocateCommandBuffer(ctx.vkd, ctx.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    const auto secondary = allocateCommandBuffer(ctx.vkd, ctx.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+    const tcu::Vec4 src(1.0f, 2.0f, 3.0f, 4.0f);
+    tcu::Vec4 dst(0.0f);
+
+    const auto bufferSize    = static_cast<VkDeviceSize>(sizeof(src));
+    const auto srcBufferInfo = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    BufferWithMemory srcBuffer(ctx.vkd, ctx.device, ctx.allocator, srcBufferInfo, HostIntent::W);
+    {
+        auto &alloc = srcBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), &src, sizeof(src));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // We could transfer directly from the source buffer to the destination buffer, but this staging buffer allows us
+    // to insert a barrier in between both that happens to be problematic for some drivers.
+    const auto stagingBufferUsage = (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto stagingBufferInfo  = makeBufferCreateInfo(bufferSize, stagingBufferUsage);
+    BufferWithMemory stagingBuffer(ctx.vkd, ctx.device, ctx.allocator, stagingBufferInfo, HostIntent::NONE);
+
+    const auto dstBufferInfo = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    BufferWithMemory dstBuffer(ctx.vkd, ctx.device, ctx.allocator, dstBufferInfo, HostIntent::R);
+
+    const auto region = makeBufferCopy(0ull, 0ull, bufferSize);
+
+    // Staging to final buffer in the secondary.
+    beginSecondaryCommandBuffer(ctx.vkd, *secondary);
+    ctx.vkd.cmdCopyBuffer(*secondary, *stagingBuffer, *dstBuffer, 1u, &region);
+    endCommandBuffer(ctx.vkd, *secondary);
+
+    // Source to staging in the primary, barrier and execution of the secondary.
+    beginCommandBuffer(ctx.vkd, *primary);
+    ctx.vkd.cmdCopyBuffer(*primary, *srcBuffer, *stagingBuffer, 1u, &region);
+    const auto copyBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
+    cmdPipelineMemoryBarrier(ctx.vkd, *primary, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                             &copyBarrier);
+    ctx.vkd.cmdExecuteCommands(*primary, 1u, &secondary.get());
+    const auto hostBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+    cmdPipelineMemoryBarrier(ctx.vkd, *primary, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                             &hostBarrier);
+    endCommandBuffer(ctx.vkd, *primary);
+    submitCommandsAndWait(ctx.vkd, ctx.device, queue, *primary);
+
+    auto &dstAlloc = dstBuffer.getAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, dstAlloc);
+
+    memcpy(reinterpret_cast<void *>(&dst), dstAlloc.getHostPtr(), sizeof(dst));
+    if (src != dst)
+    {
+        std::ostringstream msg;
+        msg << "Expected " << src << " but found " << dst;
+        TCU_FAIL(msg.str());
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createCommandBuffersTests(tcu::TestContext &testCtx)
@@ -6377,6 +6451,10 @@ tcu::TestCaseGroup *createCommandBuffersTests(tcu::TestContext &testCtx)
                                 PipelineShaderObjMixSecondariesCheck, PipelineShaderObjMixSecondariesPrograms,
                                 PipelineShaderObjMixSecondariesRun);
 #endif // CTS_USES_VULKANSC
+
+    addFunctionCaseWithPrograms(commandBuffersTests.get(), "secondary_on_transfer_queue",
+                                SecondariesXferQueueCheckSupport, SecondariesXferQueuePrograms,
+                                SecondariesXferQueueRun);
 
     return commandBuffersTests.release();
 }

@@ -41,7 +41,8 @@ void createChildren(tcu::TestCaseGroup *cooperativeVectorTests)
 #ifndef CTS_USES_VULKANSC
     tcu::TestContext &testCtx = cooperativeVectorTests->getTestContext();
 
-    cooperativeVectorTests->addChild(createCooperativeVectorBasicTests(testCtx));
+    cooperativeVectorTests->addChild(createCooperativeVectorBasicTests(testCtx, false));
+    cooperativeVectorTests->addChild(createCooperativeVectorBasicTests(testCtx, true));
     cooperativeVectorTests->addChild(createCooperativeVectorMatrixMulTests(testCtx));
     cooperativeVectorTests->addChild(createCooperativeVectorTrainingTests(testCtx));
     cooperativeVectorTests->addChild(createCooperativeVectorMatrixLayoutTests(testCtx));

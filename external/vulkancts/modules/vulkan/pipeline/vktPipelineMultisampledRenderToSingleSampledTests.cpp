@@ -2600,13 +2600,13 @@ void testStart(Context &context, const TestParams &params, WorkingData &wd, Test
 
 void testEnd(Context &context, const TestParams &params, WorkingData &wd, TestObjects &testObjects)
 {
+    const DeviceInterface &vk = context.getDeviceInterface();
+    const VkDevice device     = context.getDevice();
+
     // If not rendering to the whole framebuffer and the images were cleared before the render pass, verify that the area outside the render pass is untouched.
     const bool verifyOutsideRenderArea = params.clearBeforeRenderPass && !params.renderToWholeFramebuffer;
     if (verifyOutsideRenderArea)
     {
-        const DeviceInterface &vk = context.getDeviceInterface();
-        const VkDevice device     = context.getDevice();
-
         const UVec4 verifyAreas[] = {
             UVec4(0, 0, wd.framebufferSize.x(), wd.renderArea.y()),
             UVec4(0, wd.renderArea.y(), wd.renderArea.x(), wd.renderArea.w()),
@@ -2684,11 +2684,16 @@ void testEnd(Context &context, const TestParams &params, WorkingData &wd, TestOb
                                             &verifyStencil, "comp_singleStencil");
             }
         }
-
-        invalidateAlloc(vk, device, *wd.singleVerificationBufferAlloc);
     }
 
     testObjects.submitCommandsAndWait();
+
+    invalidateAlloc(vk, device, *wd.verificationBufferAlloc);
+
+    if (verifyOutsideRenderArea)
+    {
+        invalidateAlloc(vk, device, *wd.singleVerificationBufferAlloc);
+    }
 }
 
 tcu::TestStatus verify(Context &context, const TestParams &params, WorkingData &wd)
@@ -3268,7 +3273,6 @@ void initBasicPrograms(SourceCollections &programCollection, const TestParams pa
 void dispatchVerifyBasic(Context &context, const TestParams &params, WorkingData &wd, TestObjects &testObjects)
 {
     const DeviceInterface &vk = context.getDeviceInterface();
-    const VkDevice device     = context.getDevice();
 
     postDrawBarrier(context, testObjects);
 
@@ -3291,8 +3295,6 @@ void dispatchVerifyBasic(Context &context, const TestParams &params, WorkingData
     vk.cmdDispatch(*testObjects.cmdBuffer, (wd.renderArea.z() + 7) / 8, (wd.renderArea.w() + 7) / 8, 1);
 
     postVerifyBarrier(context, testObjects, wd.verificationBuffer);
-
-    invalidateAlloc(vk, device, *wd.verificationBufferAlloc);
 }
 
 void drawBasic(Context &context, const TestParams &params, WorkingData &wd, TestObjects &testObjects)
@@ -3503,7 +3505,6 @@ void dispatchVerifyClearAttachments(Context &context, const TestParams &params, 
                                     const VkClearValue clearValues[RegionCount - 1][4])
 {
     const DeviceInterface &vk = context.getDeviceInterface();
-    const VkDevice device     = context.getDevice();
 
     postDrawBarrier(context, testObjects);
 
@@ -3602,8 +3603,6 @@ void dispatchVerifyClearAttachments(Context &context, const TestParams &params, 
                                         &verifyStencil, "comp_singleStencil");
         }
     }
-
-    invalidateAlloc(vk, device, *wd.verificationBufferAlloc);
 }
 
 void drawClearAttachments(Context &context, const TestParams &params, WorkingData &wd, TestObjects &testObjects)
@@ -3890,7 +3889,6 @@ void dispatchVerifyMultiPassRendering(Context &context, const TestParams &params
                                       TestObjects &testObjects, UVec4 regions[RegionCount])
 {
     const DeviceInterface &vk = context.getDeviceInterface();
-    const VkDevice device     = context.getDevice();
 
     postDrawBarrier(context, testObjects);
 
@@ -3928,8 +3926,6 @@ void dispatchVerifyMultiPassRendering(Context &context, const TestParams &params
     }
 
     postVerifyBarrier(context, testObjects, wd.verificationBuffer);
-
-    invalidateAlloc(vk, device, *wd.verificationBufferAlloc);
 }
 
 // Finds the attachment reference with the given attachment index. Returns nullptr if not found.

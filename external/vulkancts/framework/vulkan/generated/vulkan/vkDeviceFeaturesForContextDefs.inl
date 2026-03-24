@@ -76,6 +76,7 @@ const vk::VkPhysicalDeviceImagelessFramebufferFeatures&						Context::getImagele
 const vk::VkPhysicalDeviceIndexTypeUint8Features&							Context::getIndexTypeUint8Features							(void) const { return m_device->getIndexTypeUint8Features();						}
 const vk::VkPhysicalDeviceInheritedViewportScissorFeaturesNV&				Context::getInheritedViewportScissorFeatures				(void) const { return m_device->getInheritedViewportScissorFeatures();				}
 const vk::VkPhysicalDeviceInlineUniformBlockFeatures&						Context::getInlineUniformBlockFeatures						(void) const { return m_device->getInlineUniformBlockFeatures();					}
+const vk::VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR&			Context::getInternallySynchronizedQueuesFeatures			(void) const { return m_device->getInternallySynchronizedQueuesFeatures();			}
 const vk::VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&						Context::getInvocationMaskFeaturesHUAWEI					(void) const { return m_device->getInvocationMaskFeaturesHUAWEI();					}
 const vk::VkPhysicalDeviceLegacyDitheringFeaturesEXT&						Context::getLegacyDitheringFeaturesEXT						(void) const { return m_device->getLegacyDitheringFeaturesEXT();					}
 const vk::VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT&				Context::getLegacyVertexAttributesFeaturesEXT				(void) const { return m_device->getLegacyVertexAttributesFeaturesEXT();				}
@@ -156,6 +157,7 @@ const vk::VkPhysicalDeviceShaderFloatControls2Features&						Context::getShaderF
 const vk::VkPhysicalDeviceShaderFmaFeaturesKHR&								Context::getShaderFmaFeatures								(void) const { return m_device->getShaderFmaFeatures();								}
 const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&				Context::getShaderImageAtomicInt64FeaturesEXT				(void) const { return m_device->getShaderImageAtomicInt64FeaturesEXT();				}
 const vk::VkPhysicalDeviceShaderIntegerDotProductFeatures&					Context::getShaderIntegerDotProductFeatures					(void) const { return m_device->getShaderIntegerDotProductFeatures();				}
+const vk::VkPhysicalDeviceShaderLongVectorFeaturesEXT&						Context::getShaderLongVectorFeaturesEXT						(void) const { return m_device->getShaderLongVectorFeaturesEXT();					}
 const vk::VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR&			Context::getShaderMaximalReconvergenceFeatures				(void) const { return m_device->getShaderMaximalReconvergenceFeatures();			}
 const vk::VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT&				Context::getShaderModuleIdentifierFeaturesEXT				(void) const { return m_device->getShaderModuleIdentifierFeaturesEXT();				}
 const vk::VkPhysicalDeviceShaderObjectFeaturesEXT&							Context::getShaderObjectFeaturesEXT							(void) const { return m_device->getShaderObjectFeaturesEXT();						}

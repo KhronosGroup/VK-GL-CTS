@@ -74,6 +74,7 @@ const vk::VkPhysicalDeviceRobustness2PropertiesKHR&					Context::getRobustness2P
 const vk::VkPhysicalDeviceSampleLocationsPropertiesEXT&				Context::getSampleLocationsPropertiesEXT				(void) const { return m_device->getSampleLocationsPropertiesEXT();				}
 const vk::VkPhysicalDeviceSamplerFilterMinmaxProperties&			Context::getSamplerFilterMinmaxProperties				(void) const { return m_device->getSamplerFilterMinmaxProperties();				}
 const vk::VkPhysicalDeviceShaderIntegerDotProductProperties&		Context::getShaderIntegerDotProductProperties			(void) const { return m_device->getShaderIntegerDotProductProperties();			}
+const vk::VkPhysicalDeviceShaderLongVectorPropertiesEXT&			Context::getShaderLongVectorPropertiesEXT				(void) const { return m_device->getShaderLongVectorPropertiesEXT();				}
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		Context::getShaderModuleIdentifierPropertiesEXT			(void) const { return m_device->getShaderModuleIdentifierPropertiesEXT();		}
 const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&				Context::getShaderObjectPropertiesEXT					(void) const { return m_device->getShaderObjectPropertiesEXT();					}
 const vk::VkPhysicalDeviceShaderSMBuiltinsPropertiesNV&				Context::getShaderSMBuiltinsProperties					(void) const { return m_device->getShaderSMBuiltinsProperties();				}

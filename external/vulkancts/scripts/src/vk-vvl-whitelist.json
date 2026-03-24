@@ -340,7 +340,7 @@
             ],
             "description": "TODO clearyfy Vulkan spec .Capture/replay tests may pass NULL opaqueCaptureDescriptorData when imageViewCaptureReplayDescriptorDataSize is 0, indicating the implementation requires no capture data. Validation layer requires non-NULL pointer even when size is 0"
         },
-         {
+        {
             "groups": [
                 "dEQP-VK.protected_memory.image.access.misc.maintenance5_no_protected_access"
             ],

@@ -137,6 +137,7 @@ VK_EXT_shader_atomic_float
 VK_EXT_shader_atomic_float2
 VK_EXT_shader_float8
 VK_EXT_shader_image_atomic_int64
+VK_EXT_shader_long_vector
 VK_EXT_shader_module_identifier
 VK_EXT_shader_object
 VK_EXT_shader_subgroup_partitioned
@@ -175,6 +176,7 @@ VK_KHR_fragment_shading_rate
 VK_KHR_get_display_properties2
 VK_KHR_get_surface_capabilities2
 VK_KHR_incremental_present
+VK_KHR_internally_synchronized_queues
 VK_KHR_maintenance7
 VK_KHR_maintenance8
 VK_KHR_maintenance9
@@ -250,6 +252,7 @@ VK_FUCHSIA_external_semaphore
 VK_GOOGLE_display_timing
 VK_HUAWEI_cluster_culling_shader
 VK_HUAWEI_invocation_mask
+VK_INTEL_performance_query
 VK_NV_clip_space_w_scaling
 VK_NV_cooperative_matrix
 VK_NV_cooperative_matrix2
@@ -267,6 +270,7 @@ VK_NV_fragment_shading_rate_enums
 VK_NV_framebuffer_mixed_samples
 VK_NV_inherited_viewport_scissor
 VK_NV_linear_color_attachment
+VK_NV_low_latency2
 VK_NV_mesh_shader
 VK_NV_raw_access_chains
 VK_NV_ray_tracing
@@ -626,7 +630,7 @@ class ConformanceItemLists:
         self.structsIncludingVideo = self.structs + self.filterToSupportedByCTS(vkObject.videoStd.structs)
         self.structsIncludingVideo = sorted(self.structsIncludingVideo, key=lambda item: item.name)
 
-    # <vulkan_object_issue_workaround>
+    # <vulkan_sc_workaround>
     # some functions and structures for Vulkan SC use names from regular Vulkan e.g.
     # vkCmdBindVertexBuffers2 is provided instead of non promoted vkCmdBindVertexBuffers2EXT
     def scPostProcess(self):
@@ -711,7 +715,32 @@ class ConformanceItemLists:
         for s in self.structs:
             if s.name in khrStructs:
                 s.alias = s.name + 'KHR'
-    # </vulkan_object_issue_workaround>
+        # add missing structs that are needed by vulkan_json_parser.hpp (to be removed when vulkan_json_parser.hpp is fixed)
+        structNames = [s.name for s in self.structs]
+        commonMemberParams = (False, None, False, None, False, False, [], False, False, None, '', None, None, [])
+        dfmp2StructName = 'VkDrmFormatModifierProperties2EXT'
+        if dfmp2StructName not in structNames:
+            members = [
+                Member('drmFormatModifier', 'uint64_t', 'uint64_t', *commonMemberParams),
+                Member('drmFormatModifierPlaneCount', 'uint32_t', 'uint32_t', *commonMemberParams),
+                Member('drmFormatModifierTilingFeatures', 'VkFormatFeatureFlags2', 'VkFormatFeatureFlags2', *commonMemberParams)
+            ]
+            self.structs.append(Struct(dfmp2StructName, [], [], None, None, members, False, False, '', False, None, None))
+        dfmpl2StructName = 'VkDrmFormatModifierPropertiesList2EXT'
+        if dfmpl2StructName not in structNames:
+            members = [
+                Member('sType', 'VkStructureType', 'VkStructureType', *commonMemberParams),
+                Member('pNext', 'void', 'void*', *commonMemberParams),
+                Member('drmFormatModifierCount', 'uint32_t', 'uint32_t', *commonMemberParams),
+                Member('pDrmFormatModifierProperties', dfmp2StructName, 'VkDrmFormatModifierProperties2EXT*', *commonMemberParams)
+            ]
+            sType = 'VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT'
+            self.structs.append(Struct(dfmpl2StructName, [], [], None, None, members, False, False, sType, False, None, None))
+            # add sType to VkStructureType enum
+            for e in self.enums:
+                if e.name == 'VkStructureType':
+                    e.fields.append(EnumField(sType, [], None, False, 1000158006, '1000158006', []))
+    # </vulkan_sc_workaround>
 
     def filterToSupportedByCTS(self, items):
         # generate framework enums/structs/commands only for items that are tested by CTS;
@@ -3444,6 +3473,7 @@ class FormatListsGenerator(CTSGenerator):
             if f.className.endswith("-bit"):
                 bitClassesDict[int(f.className.split('-')[0])] = f.className
 
+        astc3dFormatsCheckFun = lambda f: f.compressed is not None and len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1
         for bitValue, bitClass in bitClassesDict.items():
             arraySubName = bitClass.replace('-b','B')
             def compatibleFormatsCheckFun(f):
@@ -3454,7 +3484,7 @@ class FormatListsGenerator(CTSGenerator):
                     return True
                 if bitValue >= 64:
                     # skip ASTC 3d formats
-                    if f.compressed is not None and len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1:
+                    if astc3dFormatsCheckFun(f):
                         return False
                     # add selected compressed formats to 64-bit+ formats
                     return f.compressed is not None and f.blockSize == (bitValue / 8)
@@ -3495,7 +3525,7 @@ class FormatListsGenerator(CTSGenerator):
                 if 'ASTC' in f.name and 'SFLOAT' in f.name:
                     return False
                 # skip ASTC 3d formats
-                if len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1:
+                if astc3dFormatsCheckFun(f):
                     return False
                 # skip vendor extension formats
                 return not self.isPartOfVendorExtension(f.name)
@@ -3507,10 +3537,15 @@ class FormatListsGenerator(CTSGenerator):
 
         def compressedFormatsSrgbCheckFun(f):
             # skip ASTC 3d formats
-            if f.compressed is not None and len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1:
+            if astc3dFormatsCheckFun(f):
                 return False
             return not self.isPartOfVendorExtension(f.name) and f.compressed is not None and 'SRGB' in f.name
         self.writeList(f'compressedFormatsSrgb', compressedFormatsSrgbCheckFun)
+
+        astcHDRFormatsCheckFun = lambda f: 'ASTC' in f.name and 'SFLOAT' in f.name and not astc3dFormatsCheckFun(f)
+        self.writeList(f'astcHDRFormats', astcHDRFormatsCheckFun)
+
+        self.writeList(f'astc3dFormats', astc3dFormatsCheckFun)
 
         stencilFormatsCheckFun = lambda f: 'S8' in f.className
         self.writeList(f'stencilFormats', stencilFormatsCheckFun)

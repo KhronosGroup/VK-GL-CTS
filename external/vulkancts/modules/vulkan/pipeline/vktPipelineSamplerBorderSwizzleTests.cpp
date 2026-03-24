@@ -1296,13 +1296,16 @@ tcu::TestStatus BorderSwizzleInstance::iterate(void)
     // Verify color buffer.
     const auto attachmentLayout =
         (m_params.useCompute ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    const auto renderSize           = tcu::UVec2(extent.width, extent.height);
-    const auto colorAttachmentLevel = readColorAttachment(vkd, device, queue, qIndex, alloc, colorAttachment.get(),
-                                                          colorAttachmentFormat, renderSize, attachmentLayout);
-    const auto colorPixels          = colorAttachmentLevel->getAccess();
-    const auto tcuTextureFormat     = mapVkFormat(m_params.textureFormat);
-    const auto borderColor          = getBorderClearColorValue(m_params);
-    const auto expectedColor        = getExpectedColor(borderColor, m_params);
+    const auto attachmentAccess =
+        (m_params.useCompute ? VK_ACCESS_SHADER_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+    const auto renderSize = tcu::UVec2(extent.width, extent.height);
+    const auto colorAttachmentLevel =
+        readColorAttachment(vkd, device, queue, qIndex, alloc, colorAttachment.get(), colorAttachmentFormat, renderSize,
+                            attachmentLayout, attachmentAccess);
+    const auto colorPixels      = colorAttachmentLevel->getAccess();
+    const auto tcuTextureFormat = mapVkFormat(m_params.textureFormat);
+    const auto borderColor      = getBorderClearColorValue(m_params);
+    const auto expectedColor    = getExpectedColor(borderColor, m_params);
     std::string resultMsg;
 
     if (!comparePixelToColorClearValue(m_params, colorPixels, tcuTextureFormat, expectedColor, resultMsg))

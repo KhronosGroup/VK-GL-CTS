@@ -133,7 +133,6 @@ protected:
     void draw(void);
     void copyResultImagetoBuffer(void);
     void prepareReferenceImage(tcu::PixelBufferAccess &reference);
-    void verifyFormatProperties(VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage);
 
     TestParams m_testParams;
     Move<VkImage> m_image;
@@ -166,7 +165,6 @@ protected:
     void submitCommands(VkCommandBuffer commandBuffer, VkFence fence);
     Move<VkBuffer> createDataBuffer(VkDeviceSize size, VkBufferUsageFlags usage);
     void fillBuffer(VkDeviceSize size);
-    void verifyBufferProperties(VkBufferUsageFlags usage);
 
     Move<VkBuffer> m_dataBuffer;
     Move<VkCommandPool> m_cmdPoolCopy;
@@ -346,15 +344,6 @@ tcu::TestStatus ExternalMemoryHostRenderImageTestInstance::iterate()
     const VkImageTiling tiling = VK_IMAGE_TILING_LINEAR;
     const VkImageUsageFlags usageFlags =
         (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-
-    // Verify image format properties before proceeding.
-    verifyFormatProperties(m_testParams.m_format, tiling, usageFlags);
-
-    VkFormatProperties formatProperties;
-    m_vki.getPhysicalDeviceFormatProperties(m_physicalDevice, m_testParams.m_format, &formatProperties);
-    if ((formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) !=
-        VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)
-        TCU_THROW(NotSupportedError, "Format does not support linear tiling for color attachment");
 
     // Create image with external host memory.
     m_image = createImage(m_testParams.m_format, tiling, usageFlags);
@@ -760,38 +749,6 @@ Move<VkRenderPass> ExternalMemoryHostRenderImageTestInstance::createRenderPass()
     return vk::createRenderPass(m_vkd, m_device, &renderPassInfo);
 }
 
-void ExternalMemoryHostRenderImageTestInstance::verifyFormatProperties(VkFormat format, VkImageTiling tiling,
-                                                                       VkImageUsageFlags usage)
-{
-    const VkPhysicalDeviceExternalImageFormatInfo externalInfo = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, nullptr,
-        VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT};
-
-    const VkPhysicalDeviceImageFormatInfo2 formatInfo = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2, // VkStructureType       sType;
-        &externalInfo,                                         // const void*           pNext;
-        format,                                                // VkFormat              format;
-        VK_IMAGE_TYPE_2D,                                      // VkImageType           type;
-        tiling,                                                // VkImageTiling         tiling;
-        usage,                                                 // VkImageUsageFlags     usage;
-        0u                                                     // VkImageCreateFlags    flags;
-    };
-
-    vk::VkExternalImageFormatProperties externalProperties = {VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES,
-                                                              nullptr, vk::VkExternalMemoryProperties()};
-
-    vk::VkImageFormatProperties2 formatProperties = {VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2, &externalProperties,
-                                                     vk::VkImageFormatProperties()};
-
-    const auto result = m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(
-        m_context.getPhysicalDevice(), &formatInfo, &formatProperties);
-    if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
-        TCU_THROW(NotSupportedError, "Image format not supported for external host memory");
-
-    VK_CHECK(result);
-    checkExternalMemoryProperties(externalProperties.externalMemoryProperties);
-}
-
 ExternalMemoryHostSynchronizationTestInstance::ExternalMemoryHostSynchronizationTestInstance(Context &context,
                                                                                              TestParams testParams)
     : ExternalMemoryHostRenderImageTestInstance(context, testParams)
@@ -845,9 +802,6 @@ tcu::TestStatus ExternalMemoryHostSynchronizationTestInstance::iterate()
     }
     else
         TCU_THROW(NotSupportedError, "Compatible memory type not found");
-
-    // Verify buffer properties with external host memory.
-    verifyBufferProperties(usageFlags);
 
     VK_CHECK(m_vkd.bindBufferMemory(m_device, *m_dataBuffer, *m_deviceMemoryAllocatedFromHostPointer, 0));
 
@@ -1037,28 +991,6 @@ void ExternalMemoryHostSynchronizationTestInstance::fillBuffer(VkDeviceSize size
                              nullptr, 1u, &bufferBarrier, 0u, nullptr);
 }
 
-void ExternalMemoryHostSynchronizationTestInstance::verifyBufferProperties(VkBufferUsageFlags usage)
-{
-    const VkPhysicalDeviceExternalBufferInfo bufferInfo = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, // VkStructureType                       sType;
-        nullptr,                                                // const void*                           pNext;
-        0,                                                      // VkBufferCreateFlags                   flags;
-        usage,                                                  // VkBufferUsageFlags                    usage;
-        VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT  // VkExternalMemoryHandleTypeFlagBits    handleType;
-    };
-
-    VkExternalBufferProperties props = {
-        VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES, // VkStructureType               sType;
-        nullptr,                                      // void*                         pNext;
-        VkExternalMemoryProperties()                  // VkExternalMemoryProperties    externalMemoryProperties;
-    };
-
-    m_context.getInstanceInterface().getPhysicalDeviceExternalBufferProperties(m_context.getPhysicalDevice(),
-                                                                               &bufferInfo, &props);
-
-    checkExternalMemoryProperties(props.externalMemoryProperties);
-}
-
 struct AddPrograms
 {
     void init(vk::SourceCollections &sources, TestParams testParams) const
@@ -1105,9 +1037,51 @@ void checkSupport(Context &context)
     context.requireDeviceFunctionality("VK_EXT_external_memory_host");
 }
 
-void checkTimelineSemaphore(Context &context)
+void checkRenderImageSupport(Context &context, TestParams params)
 {
     checkSupport(context);
+
+    auto &vki           = context.getInstanceInterface();
+    auto physicalDevice = context.getPhysicalDevice();
+
+    VkFormatProperties formatProperties;
+    vki.getPhysicalDeviceFormatProperties(physicalDevice, params.m_format, &formatProperties);
+    const auto colorAttachmentBit = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
+    if ((formatProperties.linearTilingFeatures & colorAttachmentBit) != colorAttachmentBit)
+        TCU_THROW(NotSupportedError, "Format does not support linear tiling for color attachment");
+
+    const VkImageUsageFlags imageUsage =
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+    VkPhysicalDeviceExternalImageFormatInfo externalInfo = initVulkanStructure();
+    externalInfo.handleType                              = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT;
+
+    const VkPhysicalDeviceImageFormatInfo2 formatInfo{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2, // VkStructureType       sType;
+        &externalInfo,                                         // const void*           pNext;
+        params.m_format,                                       // VkFormat              format;
+        VK_IMAGE_TYPE_2D,                                      // VkImageType           type;
+        VK_IMAGE_TILING_LINEAR,                                // VkImageTiling         tiling;
+        imageUsage,                                            // VkImageUsageFlags     usage;
+        0u                                                     // VkImageCreateFlags    flags;
+    };
+
+    VkExternalImageFormatProperties externalProperties = initVulkanStructure();
+    VkImageFormatProperties2 formatProperties2         = initVulkanStructure(&externalProperties);
+
+    const auto result = vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &formatInfo, &formatProperties2);
+    if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+        TCU_THROW(NotSupportedError, "Image format not supported for external host memory");
+
+    VK_CHECK(result);
+
+    checkExternalMemoryProperties(externalProperties.externalMemoryProperties);
+}
+
+void checkHostSynchronizationSupport(Context &context, TestParams)
+{
+    checkSupport(context);
+
     context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 
 #ifndef CTS_USES_VULKANSC
@@ -1115,6 +1089,23 @@ void checkTimelineSemaphore(Context &context)
         !context.getPortabilitySubsetFeatures().events)
         TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
 #endif // CTS_USES_VULKANSC
+
+    auto &vki           = context.getInstanceInterface();
+    auto physicalDevice = context.getPhysicalDevice();
+
+    const VkBufferUsageFlags bufferUsage = (VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+
+    const VkPhysicalDeviceExternalBufferInfo bufferInfo{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, // VkStructureType                       sType;
+        nullptr,                                                // const void*                           pNext;
+        0,                                                      // VkBufferCreateFlags                   flags;
+        bufferUsage,                                            // VkBufferUsageFlags                    usage;
+        VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT  // VkExternalMemoryHandleTypeFlagBits    handleType;
+    };
+    VkExternalBufferProperties props = initVulkanStructure();
+    vki.getPhysicalDeviceExternalBufferProperties(physicalDevice, &bufferInfo, &props);
+
+    checkExternalMemoryProperties(props.externalMemoryProperties);
 }
 
 } // unnamed namespace
@@ -1147,25 +1138,33 @@ tcu::TestCaseGroup *createMemoryExternalMemoryHostTests(tcu::TestContext &testCt
 
     for (const auto &formatName : testFormats)
     {
-        with_zero_offset->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostRenderImageTestInstance,
-                                                                   TestParams, FunctionSupport0, AddPrograms>(
-            testCtx, formatName.name, AddPrograms(), TestParams(formatName.format), checkSupport));
+        TestParams params(formatName.format);
+        with_zero_offset->addChild(
+            new InstanceFactory1WithSupport<ExternalMemoryHostRenderImageTestInstance, TestParams,
+                                            FunctionSupport1<TestParams>, AddPrograms>(
+                testCtx, formatName.name, AddPrograms(), params,
+                typename FunctionSupport1<TestParams>::Args(checkRenderImageSupport, params)));
     }
     bind_image_memory_and_render->addChild(with_zero_offset.release());
 
     for (const auto &formatName : testFormats)
     {
-        with_non_zero_offset->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostRenderImageTestInstance,
-                                                                       TestParams, FunctionSupport0, AddPrograms>(
-            testCtx, formatName.name, AddPrograms(), TestParams(formatName.format, true), checkSupport));
+        TestParams params(formatName.format, true);
+        with_non_zero_offset->addChild(
+            new InstanceFactory1WithSupport<ExternalMemoryHostRenderImageTestInstance, TestParams,
+                                            FunctionSupport1<TestParams>, AddPrograms>(
+                testCtx, formatName.name, AddPrograms(), params,
+                typename FunctionSupport1<TestParams>::Args(checkRenderImageSupport, params)));
     }
     bind_image_memory_and_render->addChild(with_non_zero_offset.release());
 
     group->addChild(bind_image_memory_and_render.release());
 
+    TestParams params(testFormats[0].format, true);
     synchronization->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostSynchronizationTestInstance, TestParams,
-                                                              FunctionSupport0, AddPrograms>(
-        testCtx, "synchronization", AddPrograms(), TestParams(testFormats[0].format, true), checkTimelineSemaphore));
+                                                              FunctionSupport1<TestParams>, AddPrograms>(
+        testCtx, "synchronization", AddPrograms(), params,
+        typename FunctionSupport1<TestParams>::Args(checkHostSynchronizationSupport, params)));
     group->addChild(synchronization.release());
     return group.release();
 }

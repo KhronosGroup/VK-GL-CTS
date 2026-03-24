@@ -2006,9 +2006,19 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
-    // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
     if (wsiType == TYPE_DIRECT_DRM)
+    {
+        // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
         extensions.push_back("VK_EXT_direct_mode_display");
+
+        // used by VulkanDisplayDirectDrm::initializeDisplay
+        extensions.push_back("VK_EXT_physical_device_drm");
+
+        // required by VK_EXT_physical_device_drm
+        uint32_t apiVersion = context.getUsedApiVersion();
+        if (!isCoreInstanceExtension(apiVersion, "VK_KHR_get_physical_device_properties2"))
+            extensions.push_back("VK_KHR_get_physical_device_properties2");
+    }
 
     // VK_EXT_swapchain_colorspace adds new surface formats. Driver can enumerate
     // the formats regardless of whether VK_EXT_swapchain_colorspace was enabled,

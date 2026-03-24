@@ -43,10 +43,10 @@ namespace
 struct TestParams
 {
     string name;
-    FunctionPrograms1<InstanceContext>::Function createShaders;
+    FunctionPrograms1<InstanceContextPtr>::Function createShaders;
 };
 
-void createShaders(SourceCollections &dst, InstanceContext &context, string dataNameVertShader,
+void createShaders(SourceCollections &dst, const InstanceContext &context, string dataNameVertShader,
                    string dataNameFragShader)
 {
     SpirvVersion targetSpirvVersion = context.resources.spirvVersion;
@@ -172,19 +172,19 @@ void createShaders(SourceCollections &dst, InstanceContext &context, string data
         << fragmentShader << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
 }
 
-void createShadersNamesMatch(vk::SourceCollections &dst, InstanceContext context)
+void createShadersNamesMatch(vk::SourceCollections &dst, InstanceContextPtr context)
 {
-    createShaders(dst, context, "data", "data");
+    createShaders(dst, *context, "data", "data");
 }
 
-void createShadersNamesDiffer(vk::SourceCollections &dst, InstanceContext context)
+void createShadersNamesDiffer(vk::SourceCollections &dst, InstanceContextPtr context)
 {
-    createShaders(dst, context, "dataOut", "dataIn");
+    createShaders(dst, *context, "dataOut", "dataIn");
 }
 
-void createShadersNoNames(vk::SourceCollections &dst, InstanceContext context)
+void createShadersNoNames(vk::SourceCollections &dst, InstanceContextPtr context)
 {
-    createShaders(dst, context, "", "");
+    createShaders(dst, *context, "", "");
 }
 
 void addGraphicsVaryingNameTest(tcu::TestCaseGroup *group, const TestParams &params)
@@ -218,14 +218,14 @@ void addGraphicsVaryingNameTest(tcu::TestCaseGroup *group, const TestParams &par
         Resource(BufferSp(new Float32Buffer(expectedOutput)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
     {
-        const InstanceContext &instanceContext = createInstanceContext(
+        InstanceContextPtr instanceContext = createInstanceContext(
             pipelineStages, defaultColors, defaultColors, noFragments, specConstantMap, noPushConstants, resources,
             noInterfaces, extensions, features, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             QP_TEST_RESULT_FAIL, string());
 
-        addFunctionCaseWithPrograms<InstanceContext>(group, params.name.c_str(), defaultCheckSupport,
-                                                     params.createShaders, runAndVerifyDefaultPipeline,
-                                                     instanceContext);
+        addFunctionCaseWithPrograms<InstanceContextPtr>(group, params.name.c_str(), defaultCheckSupport,
+                                                        params.createShaders, runAndVerifyDefaultPipeline,
+                                                        instanceContext);
     }
 }
 

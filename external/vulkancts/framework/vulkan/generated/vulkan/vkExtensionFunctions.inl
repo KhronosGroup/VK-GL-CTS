@@ -174,6 +174,11 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_ARM_shader_instrumentation")
+	{
+		functions.push_back("vkEnumeratePhysicalDeviceShaderInstrumentationMetricsARM");
+		return;
+	}
 	if (extName == "VK_ARM_tensors")
 	{
 		functions.push_back("vkGetPhysicalDeviceExternalTensorPropertiesARM");
@@ -941,6 +946,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_device_fault")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_device_group")
 	{
 		// Dependencies: VK_KHR_surface
@@ -1245,6 +1254,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_abort")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_shader_atomic_int64")
 	{
 		return;
@@ -1254,6 +1267,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_KHR_shader_clock")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_shader_constant_data")
 	{
 		return;
 	}
@@ -2089,6 +2106,16 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	}
 	if (extName == "VK_ARM_shader_core_properties")
 	{
+		return;
+	}
+	if (extName == "VK_ARM_shader_instrumentation")
+	{
+		functions.push_back("vkCreateShaderInstrumentationARM");
+		functions.push_back("vkDestroyShaderInstrumentationARM");
+		functions.push_back("vkCmdBeginShaderInstrumentationARM");
+		functions.push_back("vkCmdEndShaderInstrumentationARM");
+		functions.push_back("vkGetShaderInstrumentationValuesARM");
+		functions.push_back("vkClearShaderInstrumentationMetricsARM");
 		return;
 	}
 	if (extName == "VK_ARM_tensors")
@@ -3297,6 +3324,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		}
 		return;
 	}
+	if (extName == "VK_KHR_device_fault")
+	{
+		functions.push_back("vkGetDeviceFaultReportsKHR");
+		functions.push_back("vkGetDeviceFaultDebugInfoKHR");
+		return;
+	}
 	if (extName == "VK_KHR_device_group")
 	{
 		functions.push_back("vkGetDeviceGroupPeerMemoryFeaturesKHR");
@@ -3668,6 +3701,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_abort")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_shader_atomic_int64")
 	{
 		return;
@@ -3677,6 +3714,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_KHR_shader_clock")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_shader_constant_data")
 	{
 		return;
 	}
@@ -4536,7 +4577,9 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_vulkan_memory_model",
 	"VK_KHR_shader_terminate_invocation",
 	"VK_KHR_fragment_shading_rate",
+	"VK_KHR_shader_constant_data",
 	"VK_KHR_dynamic_rendering_local_read",
+	"VK_KHR_shader_abort",
 	"VK_KHR_shader_quad_control",
 	"VK_KHR_spirv_1_4",
 	"VK_KHR_separate_depth_stencil_layouts",
@@ -4591,6 +4634,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_video_encode_quantization_map",
 	"VK_KHR_shader_relaxed_extended_instruction",
 	"VK_KHR_maintenance7",
+	"VK_KHR_device_fault",
 	"VK_KHR_maintenance8",
 	"VK_KHR_shader_fma",
 	"VK_KHR_maintenance9",
@@ -4862,6 +4906,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_ARM_pipeline_opacity_micromap",
 	"VK_EXT_external_memory_metal",
 	"VK_ARM_performance_counters_by_region",
+	"VK_ARM_shader_instrumentation",
 	"VK_EXT_vertex_attribute_robustness",
 	"VK_ARM_format_pack",
 	"VK_VALVE_fragment_density_map_layered",

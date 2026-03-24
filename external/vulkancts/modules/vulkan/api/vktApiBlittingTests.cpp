@@ -3046,18 +3046,21 @@ void addBlittingImageAllFormatsColorSrcFormatTests(tcu::TestCaseGroup *group, Bl
     }
     else
 #endif // CTS_USES_VULKANSC
-    {
-        // If testParams.compatibleFormats is nullptr, the destination format will be copied from the source format
-        // When testParams.compatibleFormats is not nullptr but format is compressed we also need to add that format
-        // as it is not on compatibleFormats list
-        if (!testParams.compatibleFormats || isCompressedFormat(srcFormat))
+        // skip astc hdr varians, they would be added as a consequence of changes in isCompressedFormat;
+        // if combnation with those formats is desired then this check should be removed
+        if (!isAstcHdrFormat(srcFormat))
         {
-            testParams.params.dst.image.format = srcFormat;
+            // If testParams.compatibleFormats is nullptr, the destination format will be copied from the source format
+            // When testParams.compatibleFormats is not nullptr but format is compressed we also need to add that format
+            // as it is not on compatibleFormats list
+            if (!testParams.compatibleFormats || isCompressedFormat(srcFormat))
+            {
+                testParams.params.dst.image.format = srcFormat;
 
-            addTestGroup(group, getFormatCaseName(srcFormat), addBlittingImageAllFormatsColorSrcFormatDstFormatTests,
-                         testParams);
+                addTestGroup(group, getFormatCaseName(srcFormat),
+                             addBlittingImageAllFormatsColorSrcFormatDstFormatTests, testParams);
+            }
         }
-    }
 }
 
 const VkFormat dedicatedAllocationBlittingFormatsToTest[] = {

@@ -418,20 +418,15 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate(void)
             imageCreateInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
         }
 
-        // Multi-planar formats require MUTABLE_FORMAT to create plane-compatible views
-        if (formatDescription.numPlanes > 1)
-        {
-            imageCreateInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
-            // EXTENDED_USAGE is required for storage usage on plane-compatible views
-            if (imageCreateInfo.usage & VK_IMAGE_USAGE_STORAGE_BIT)
-            {
-                imageCreateInfo.flags |= VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
-            }
-        }
-
-        // check if we need to create VkImageView with different VkFormat than VkImage format
-        VkFormat planeCompatibleFormat0 = getPlaneCompatibleFormatForWriting(formatDescription, 0);
-        if (planeCompatibleFormat0 != getPlaneCompatibleFormat(formatDescription, 0))
+        // Check if we need to create VkImageView with different VkFormat than VkImage format in case of:
+        // - Multi-planar formats require MUTABLE_FORMAT to create plane-compatible views
+        // - Writing format differs (G8B8G8R8_422 -> R8G8B8A8)
+        // - Storage format differs (R10X6 -> R16)
+        VkFormat planeCompatibleFormat0        = getPlaneCompatibleFormat(formatDescription, 0);
+        VkFormat writingPlaneCompatibleFormat0 = getPlaneCompatibleFormatForWriting(formatDescription, 0);
+        VkFormat storagePlaneCompatibleFormat0 = getStorageCompatibleFormat(planeCompatibleFormat0);
+        if ((formatDescription.numPlanes > 1) || (writingPlaneCompatibleFormat0 != planeCompatibleFormat0) ||
+            (storagePlaneCompatibleFormat0 != planeCompatibleFormat0))
         {
             imageCreateInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
             // EXTENDED_USAGE is required for storage usage on plane-compatible views

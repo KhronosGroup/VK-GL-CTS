@@ -55,33 +55,6 @@ typedef struct
     const char *name;
 } DecompressionParams;
 
-template <class Instance>
-class DecompressionTestCase : public TestCase
-{
-public:
-    DecompressionTestCase(tcu::TestContext &context, const char *testName, const TestModeType testMode,
-                          uint32_t compressionLevel, DecompressionParams decompressionParams,
-                          const char *decompressedFilename)
-        : TestCase(context, testName)
-    {
-        m_mode                 = testMode;
-        m_compressionLevel     = compressionLevel;
-        m_decompressionParams  = decompressionParams;
-        m_decompressedFilename = decompressedFilename;
-    }
-
-private:
-    TestInstance *createInstance(Context &context) const
-    {
-        return new Instance(context, m_mode, m_compressionLevel, m_decompressionParams, m_decompressedFilename);
-    }
-
-    TestModeType m_mode;
-    uint32_t m_compressionLevel;
-    DecompressionParams m_decompressionParams;
-    const char *m_decompressedFilename;
-};
-
 class MemoryDecompressionTestInstance : public TestInstance
 {
 public:
@@ -122,8 +95,8 @@ MemoryDecompressionTestInstance::MemoryDecompressionTestInstance(Context &contex
 
 MemoryDecompressionTestInstance::~MemoryDecompressionTestInstance()
 {
-    delete m_compressedData;
-    delete m_decompressedData;
+    delete[] m_compressedData;
+    delete[] m_decompressedData;
 }
 
 void MemoryDecompressionTestInstance::replaceCRLFInPlace(uint8_t *buffer, size_t *size)
@@ -168,21 +141,6 @@ uint8_t *MemoryDecompressionTestInstance::loadDataFromFile(const char *filename,
 
 void MemoryDecompressionTestInstance::init(void)
 {
-    if (!m_context.isDeviceFunctionalitySupported("VK_EXT_memory_decompression"))
-        TCU_THROW(NotSupportedError,
-                  "Memory decompression tests are not supported, no memory decompression extension present.");
-
-    const auto &decompressionFeatures = m_context.getMemoryDecompressionFeaturesEXT();
-    if (!decompressionFeatures.memoryDecompression)
-        TCU_THROW(NotSupportedError, "memory decompression feature not supported");
-
-    const auto &decompressionProperties = m_context.getMemoryDecompressionPropertiesEXT();
-    if (!(decompressionProperties.decompressionMethods & VK_MEMORY_DECOMPRESSION_METHOD_GDEFLATE_1_0_BIT_EXT))
-        TCU_THROW(NotSupportedError, "Gdeflate 1.0 decompression format not supported");
-
-    if (decompressionProperties.maxDecompressionIndirectCount < m_decompressionParams.decompressionCount)
-        TCU_THROW(NotSupportedError, "Too many decompressions requested");
-
     char compressedFile[64];
     char decompressedFile[64];
     snprintf(compressedFile, 64, "vulkan/data/gdeflate/compressed_%s_level_%u.gdef", m_decompressedFilename,
@@ -382,6 +340,54 @@ tcu::TestStatus MemoryDecompressionTestInstance::iterate(void)
         return tcu::TestStatus(QP_TEST_RESULT_PASS, "Test passed");
     }
     return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Test failed");
+}
+
+template <class Instance>
+class DecompressionTestCase : public TestCase
+{
+public:
+    DecompressionTestCase(tcu::TestContext &context, const char *testName, const TestModeType testMode,
+                          uint32_t compressionLevel, DecompressionParams decompressionParams,
+                          const char *decompressedFilename)
+        : TestCase(context, testName)
+    {
+        m_mode                 = testMode;
+        m_compressionLevel     = compressionLevel;
+        m_decompressionParams  = decompressionParams;
+        m_decompressedFilename = decompressedFilename;
+    }
+
+    void checkSupport(Context &context) const;
+
+private:
+    TestInstance *createInstance(Context &context) const
+    {
+        return new Instance(context, m_mode, m_compressionLevel, m_decompressionParams, m_decompressedFilename);
+    }
+
+    TestModeType m_mode;
+    uint32_t m_compressionLevel;
+    DecompressionParams m_decompressionParams;
+    const char *m_decompressedFilename;
+};
+
+template <typename Instance>
+void DecompressionTestCase<Instance>::checkSupport(Context &context) const
+{
+    static_assert(std::is_same_v<Instance, MemoryDecompressionTestInstance>);
+
+    context.requireDeviceFunctionality("VK_EXT_memory_decompression");
+
+    const auto &decompressionFeatures = context.getMemoryDecompressionFeaturesEXT();
+    if (!decompressionFeatures.memoryDecompression)
+        TCU_THROW(NotSupportedError, "memory decompression feature not supported");
+
+    const auto &decompressionProperties = context.getMemoryDecompressionPropertiesEXT();
+    if (!(decompressionProperties.decompressionMethods & VK_MEMORY_DECOMPRESSION_METHOD_GDEFLATE_1_0_BIT_EXT))
+        TCU_THROW(NotSupportedError, "Gdeflate 1.0 decompression format not supported");
+
+    if (decompressionProperties.maxDecompressionIndirectCount < m_decompressionParams.decompressionCount)
+        TCU_THROW(NotSupportedError, "Too many decompressions requested");
 }
 
 } // namespace

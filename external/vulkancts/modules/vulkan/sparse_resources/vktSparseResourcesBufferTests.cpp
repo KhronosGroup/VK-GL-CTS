@@ -2676,6 +2676,18 @@ void populateTestGroup(tcu::TestCaseGroup *parentGroup)
         parentGroup->addChild(group.release());
     }
 
+    // Texel buffers
+    {
+        MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "texel_buffers"));
+        {
+            MovePtr<tcu::TestCaseGroup> subGroup(
+                new tcu::TestCaseGroup(parentGroup->getTestContext(), "sparse_residency"));
+            addTexelBufferSparseResidencyTests(subGroup.get());
+            group->addChild(subGroup.release());
+        }
+        parentGroup->addChild(group.release());
+    }
+
     // Vertex buffer
     {
         MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(parentGroup->getTestContext(), "vertex_buffer"));

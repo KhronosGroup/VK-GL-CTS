@@ -74,6 +74,7 @@ const vk::VkPhysicalDeviceRobustness2PropertiesKHR&					getRobustness2Properties
 const vk::VkPhysicalDeviceSampleLocationsPropertiesEXT&				getSampleLocationsPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceSamplerFilterMinmaxProperties&			getSamplerFilterMinmaxProperties			(void) const;
 const vk::VkPhysicalDeviceShaderIntegerDotProductProperties&		getShaderIntegerDotProductProperties		(void) const;
+const vk::VkPhysicalDeviceShaderLongVectorPropertiesEXT&			getShaderLongVectorPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		getShaderModuleIdentifierPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&				getShaderObjectPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceShaderSMBuiltinsPropertiesNV&				getShaderSMBuiltinsProperties				(void) const;

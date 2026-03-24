@@ -1,10 +1,7 @@
 # Bug component: 121265
-sergiuferentz@google.com
-kocdemir@google.com
-melihyalcin@google.com
-nexa@google.com
-tanatb@google.com
-vantablack@google.com
-ianelliott@google.com
 chrisforbes@google.com
-pbaiget@google.com
+tomnom@google.com
+ianelliott@google.com
+cgopinathc@google.com
+nikigupta@google.com
+include platform/system/core:/janitors/OWNERS #{LAST_RESORT_SUGGESTION}

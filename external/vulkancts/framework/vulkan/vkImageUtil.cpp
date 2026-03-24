@@ -237,44 +237,12 @@ bool isCompressedFormat(VkFormat format)
     DE_STATIC_ASSERT(VK_CORE_FORMAT_LAST == 185);
 
 #ifndef CTS_USES_VULKANSC
-    switch (format)
-    {
-    case VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT:
+    if (de::contains(formats::astc3dFormats, format))
         return true;
-
-    default:
-        break;
-    }
 #endif // CTS_USES_VULKANSC
+
+    if (de::contains(formats::astcHDRFormats, format))
+        return true;
 
     // skip formats not supported by vkImageUtil
     if (format > VK_CORE_FORMAT_LAST)
@@ -421,46 +389,16 @@ bool isPvrtcFormat(VkFormat format)
 bool isAstc3DFormat(VkFormat format)
 {
 #ifndef CTS_USES_VULKANSC
-    switch (format)
-    {
-    case VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT:
-    case VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT:
-        return true;
-    default:
-        return false;
-    }
+    return de::contains(formats::astc3dFormats, format);
 #else
     DE_UNREF(format);
 #endif
     return false;
+}
+
+bool isAstcHdrFormat(VkFormat format)
+{
+    return de::contains(formats::astcHDRFormats, format);
 }
 
 bool isPvrtc1Format(VkFormat format)
@@ -3133,7 +3071,7 @@ VkFormat mapCompressedTextureFormat(const tcu::CompressedTexFormat format)
     // update this mapping if CompressedTexFormat changes
     // 55 needed for Vulkan and 2 for AHB that won't have mapping here
     // 30 for ASTC 3D formats which do not support VulkanSC
-    DE_STATIC_ASSERT(tcu::COMPRESSEDTEXFORMAT_LAST_VULKAN == 87);
+    DE_STATIC_ASSERT(tcu::COMPRESSEDTEXFORMAT_LAST_VULKAN == 101);
 
     switch (format)
     {
@@ -3277,6 +3215,36 @@ VkFormat mapCompressedTextureFormat(const tcu::CompressedTexFormat format)
     case tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT:
         return VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT;
 #endif // CTS_USES_VULKANSC
+
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x4_SFLOAT_BLOCK:
+        return VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x4_SFLOAT_BLOCK:
+        return VK_FORMAT_ASTC_5x4_SFLOAT_BLOCK;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x5_SFLOAT_BLOCK:
+        return VK_FORMAT_ASTC_5x5_SFLOAT_BLOCK;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x5_SFLOAT_BLOCK:
+        return VK_FORMAT_ASTC_6x5_SFLOAT_BLOCK;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x6_SFLOAT_BLOCK:
+        return VK_FORMAT_ASTC_6x6_SFLOAT_BLOCK;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_8x5_SFLOAT_BLOCK:
+        return VK_FORMAT_ASTC_8x5_SFLOAT_BLOCK;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_8x6_SFLOAT_BLOCK:
+        return VK_FORMAT_ASTC_8x6_SFLOAT_BLOCK;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_8x8_SFLOAT_BLOCK:
+        return VK_FORMAT_ASTC_8x8_SFLOAT_BLOCK;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_10x5_SFLOAT_BLOCK:
+        return VK_FORMAT_ASTC_10x5_SFLOAT_BLOCK;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_10x6_SFLOAT_BLOCK:
+        return VK_FORMAT_ASTC_10x6_SFLOAT_BLOCK;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_10x8_SFLOAT_BLOCK:
+        return VK_FORMAT_ASTC_10x8_SFLOAT_BLOCK;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_10x10_SFLOAT_BLOCK:
+        return VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_12x10_SFLOAT_BLOCK:
+        return VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_12x12_SFLOAT_BLOCK:
+        return VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK;
+
     case tcu::COMPRESSEDTEXFORMAT_BC1_RGB_UNORM_BLOCK:
         return VK_FORMAT_BC1_RGB_UNORM_BLOCK;
     case tcu::COMPRESSEDTEXFORMAT_BC1_RGB_SRGB_BLOCK:
@@ -3796,6 +3764,34 @@ tcu::CompressedTexFormat mapVkCompressedFormat(VkFormat format)
     case VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT:
         return tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT;
 #endif // CTS_USES_VULKANSC
+    case VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_4x4_SFLOAT_BLOCK;
+    case VK_FORMAT_ASTC_5x4_SFLOAT_BLOCK:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_5x4_SFLOAT_BLOCK;
+    case VK_FORMAT_ASTC_5x5_SFLOAT_BLOCK:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_5x5_SFLOAT_BLOCK;
+    case VK_FORMAT_ASTC_6x5_SFLOAT_BLOCK:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_6x5_SFLOAT_BLOCK;
+    case VK_FORMAT_ASTC_6x6_SFLOAT_BLOCK:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_6x6_SFLOAT_BLOCK;
+    case VK_FORMAT_ASTC_8x5_SFLOAT_BLOCK:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_8x5_SFLOAT_BLOCK;
+    case VK_FORMAT_ASTC_8x6_SFLOAT_BLOCK:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_8x6_SFLOAT_BLOCK;
+    case VK_FORMAT_ASTC_8x8_SFLOAT_BLOCK:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_8x8_SFLOAT_BLOCK;
+    case VK_FORMAT_ASTC_10x5_SFLOAT_BLOCK:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_10x5_SFLOAT_BLOCK;
+    case VK_FORMAT_ASTC_10x6_SFLOAT_BLOCK:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_10x6_SFLOAT_BLOCK;
+    case VK_FORMAT_ASTC_10x8_SFLOAT_BLOCK:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_10x8_SFLOAT_BLOCK;
+    case VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_10x10_SFLOAT_BLOCK;
+    case VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_12x10_SFLOAT_BLOCK;
+    case VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_12x12_SFLOAT_BLOCK;
     case VK_FORMAT_BC1_RGB_UNORM_BLOCK:
         return tcu::COMPRESSEDTEXFORMAT_BC1_RGB_UNORM_BLOCK;
     case VK_FORMAT_BC1_RGB_SRGB_BLOCK:
@@ -4137,6 +4133,18 @@ CompressedFormatParameters compressedFormatParameters[VK_FORMAT_ASTC_12x12_SRGB_
                                                             {VK_FORMAT_ASTC_12x10_SRGB_BLOCK, 16, 12, 10, 1},
                                                             {VK_FORMAT_ASTC_12x12_UNORM_BLOCK, 16, 12, 12, 1},
                                                             {VK_FORMAT_ASTC_12x12_SRGB_BLOCK, 16, 12, 12, 1}};
+
+// ASTC HDR formats (VK_EXT_texture_compression_astc_hdr) - values of formats are not contiguous
+// after VK_FORMAT_ASTC_12x12_SRGB_BLOCK so we store them in a separate array
+CompressedFormatParameters compressedAstcHdrFormatParameters[]{
+    {VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK, 16, 4, 4, 1},     {VK_FORMAT_ASTC_5x4_SFLOAT_BLOCK, 16, 5, 4, 1},
+    {VK_FORMAT_ASTC_5x5_SFLOAT_BLOCK, 16, 5, 5, 1},     {VK_FORMAT_ASTC_6x5_SFLOAT_BLOCK, 16, 6, 5, 1},
+    {VK_FORMAT_ASTC_6x6_SFLOAT_BLOCK, 16, 6, 6, 1},     {VK_FORMAT_ASTC_8x5_SFLOAT_BLOCK, 16, 8, 5, 1},
+    {VK_FORMAT_ASTC_8x6_SFLOAT_BLOCK, 16, 8, 6, 1},     {VK_FORMAT_ASTC_8x8_SFLOAT_BLOCK, 16, 8, 8, 1},
+    {VK_FORMAT_ASTC_10x5_SFLOAT_BLOCK, 16, 10, 5, 1},   {VK_FORMAT_ASTC_10x6_SFLOAT_BLOCK, 16, 10, 6, 1},
+    {VK_FORMAT_ASTC_10x8_SFLOAT_BLOCK, 16, 10, 8, 1},   {VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK, 16, 10, 10, 1},
+    {VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK, 16, 12, 10, 1}, {VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK, 16, 12, 12, 1}};
+
 #ifndef CTS_USES_VULKANSC
 CompressedFormatParameters
     compressed3DFormatParameters[VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT - VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT + 1] = {
@@ -4256,21 +4264,30 @@ float getRepresentableDiffSnorm(const VkFormat format, const uint32_t componentN
 static CompressedFormatParameters *getCompressedFormats(const VkFormat compressedFormat)
 {
     uint32_t formatNdx = static_cast<uint32_t>(compressedFormat - VK_FORMAT_BC1_RGB_UNORM_BLOCK);
-#ifdef CTS_USES_VULKANSC
-    DE_ASSERT(deInRange32(formatNdx, 0, DE_LENGTH_OF_ARRAY(compressedFormatParameters)));
-    DE_ASSERT(compressedFormatParameters[formatNdx].format == compressedFormat);
-    return &compressedFormatParameters[formatNdx];
-#else
     if (deInRange32(formatNdx, 0, DE_LENGTH_OF_ARRAY(compressedFormatParameters)))
     {
         DE_ASSERT(compressedFormatParameters[formatNdx].format == compressedFormat);
         return &compressedFormatParameters[formatNdx];
     }
+
+    formatNdx = static_cast<uint32_t>(compressedFormat - VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK);
+    if (deInRange32(formatNdx, 0, DE_LENGTH_OF_ARRAY(compressedAstcHdrFormatParameters)))
+    {
+        DE_ASSERT(compressedAstcHdrFormatParameters[formatNdx].format == compressedFormat);
+        return &compressedAstcHdrFormatParameters[formatNdx];
+    }
+
+#ifndef CTS_USES_VULKANSC
     formatNdx = static_cast<uint32_t>(compressedFormat - VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT);
-    DE_ASSERT(deInRange32(formatNdx, 0, DE_LENGTH_OF_ARRAY(compressed3DFormatParameters)));
-    DE_ASSERT(compressed3DFormatParameters[formatNdx].format == compressedFormat);
-    return &compressed3DFormatParameters[formatNdx];
+    if (deInRange32(formatNdx, 0, DE_LENGTH_OF_ARRAY(compressed3DFormatParameters)))
+    {
+        DE_ASSERT(compressed3DFormatParameters[formatNdx].format == compressedFormat);
+        return &compressed3DFormatParameters[formatNdx];
+    }
 #endif // CTS_USES_VULKANSC
+
+    DE_ASSERT(false); //  "Unsupported compressed format"
+    return &compressedFormatParameters[0];
 }
 
 uint32_t getBlockSizeInBytes(const VkFormat compressedFormat)

@@ -57,7 +57,8 @@ namespace
 
 enum ShaderParameters
 {
-    SIZE_OF_UINT_IN_SHADER = 4u,
+    SIZE_OF_UINT_IN_SHADER   = 4u,
+    SIZE_OF_UINT64_IN_SHADER = 8u,
 };
 
 enum BufferInitCommand
@@ -84,6 +85,22 @@ struct TestPushConstants
 {
     uint32_t bufferSize;
     uint32_t blockSize;
+};
+
+enum class TexelBufferType
+{
+    TEXEL_BUFF_UNIFORM = 0,
+    TEXEL_BUFF_STORAGE,
+    TEXEL_BUFF_NONE
+};
+
+// Valid operations for sparse texel buffers
+enum TexelBufferOperation
+{
+    TEXEL_OP_SPARSE_FETCH = 0u,
+    TEXEL_OP_SPARSE_READ,
+    TEXEL_OP_READ,
+    TEXEL_OP_NONE
 };
 
 class BufferSparseResidencyCase : public TestCase
@@ -233,6 +250,7 @@ tcu::TestStatus BufferSparseResidencyInstance::iterate(void)
 
         {
             std::vector<VkSparseMemoryBind> sparseMemoryBinds;
+
             const uint32_t memoryType = findMatchingMemoryType(instance, getPhysicalDevice(secondDeviceID),
                                                                bufferMemRequirements, MemoryRequirement::Any);
 
@@ -1127,6 +1145,583 @@ std::string getbufferInitCmdName(BufferInitCommand cmd)
     return cmdName[cmd];
 }
 
+class TexelBufferSparseResidencyCase : public TestCase
+{
+public:
+    TexelBufferSparseResidencyCase(tcu::TestContext &testCtx, const std::string &name, const VkFormat format,
+                                   const uint32_t bufferSize, const TexelBufferType bufferType,
+                                   const bool isBufferNonResidentStrict, const TexelBufferOperation texelBufferOp);
+
+    virtual ~TexelBufferSparseResidencyCase(void);
+    void checkSupport(Context &context) const;
+    void initPrograms(SourceCollections &sourceCollections) const;
+    TestInstance *createInstance(Context &context) const;
+
+private:
+    const VkFormat m_format;
+    const uint32_t m_bufferSize;
+    const TexelBufferType m_bufferType;
+    const bool m_isBufferNonResidentStrict;
+    const TexelBufferOperation m_texelBufferOp;
+};
+
+TexelBufferSparseResidencyCase::TexelBufferSparseResidencyCase(tcu::TestContext &testCtx, const std::string &name,
+                                                               const VkFormat format, const uint32_t bufferSize,
+                                                               const TexelBufferType bufferType,
+                                                               const bool isBufferNonResidentStrict,
+                                                               const TexelBufferOperation texelBufferOp)
+    : TestCase(testCtx, name)
+    , m_format(format)
+    , m_bufferSize(bufferSize)
+    , m_bufferType(bufferType)
+    , m_isBufferNonResidentStrict(isBufferNonResidentStrict)
+    , m_texelBufferOp(texelBufferOp)
+{
+}
+
+TexelBufferSparseResidencyCase::~TexelBufferSparseResidencyCase(void)
+{
+}
+
+void TexelBufferSparseResidencyCase::checkSupport(Context &context) const
+{
+    const auto &vki                = context.getInstanceInterface();
+    const auto physicalDevice      = context.getPhysicalDevice();
+    const uint32_t maxDeviceTexels = getPhysicalDeviceProperties(vki, physicalDevice).limits.maxTexelBufferElements;
+    const uint32_t numTexels       = m_bufferSize / getPixelSize(mapVkFormat(m_format));
+
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_BUFFER);
+
+    const VkFormatProperties3 formatProperties(context.getFormatProperties(m_format));
+    if ((m_bufferType == TexelBufferType::TEXEL_BUFF_UNIFORM) &&
+        !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT))
+        TCU_THROW(NotSupportedError, "Format not supported for uniform texel buffers");
+
+    if ((m_bufferType == TexelBufferType::TEXEL_BUFF_STORAGE) &&
+        !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
+        TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+
+    if (numTexels > maxDeviceTexels)
+        TCU_THROW(NotSupportedError, "maxTexelBufferElements not large enough");
+
+    if (formatIsR64(m_format))
+    {
+        context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
+
+        if (!context.getDeviceFeatures().shaderInt64 ||
+            !context.getShaderAtomicInt64Features().shaderBufferInt64Atomics)
+            TCU_THROW(NotSupportedError, "64-bit integers not supported in shaders");
+
+        if (context.getShaderImageAtomicInt64FeaturesEXT().shaderImageInt64Atomics == VK_FALSE)
+        {
+            TCU_THROW(NotSupportedError, "shaderImageInt64Atomics is not supported");
+        }
+
+        // if (context.getShaderImageAtomicInt64FeaturesEXT().sparseImageInt64Atomics == VK_FALSE)
+        // {
+        //     TCU_THROW(NotSupportedError, "sparseImageInt64Atomics is not supported for device");
+        // }
+    }
+}
+
+void TexelBufferSparseResidencyCase::initPrograms(SourceCollections &sourceCollections) const
+{
+    const bool isTexelUniformBuffer = (m_bufferType == TexelBufferType::TEXEL_BUFF_UNIFORM);
+    const bool isformat64b          = formatIsR64(m_format);
+
+    std::ostringstream prog;
+
+    if (m_texelBufferOp == TexelBufferOperation::TEXEL_OP_READ)
+    {
+        const char *const versionDecl = glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450);
+
+        const std::string glslOpStr = isTexelUniformBuffer ? "texelFetch" : "imageLoad";
+        const std::string glslBufferTypeStr =
+            isTexelUniformBuffer ? "utextureBuffer" : (isformat64b ? "u64imageBuffer" : "uimageBuffer");
+        const std::string glslBufferFmtStr = isTexelUniformBuffer ? "" : (isformat64b ? ", r64ui" : ", r32ui");
+        const std::string glslOutTypeStr   = isformat64b ? "uint64_t" : "uint";
+
+        prog << versionDecl << "\n";
+
+        if (isformat64b)
+        {
+            prog << "#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
+                 << "#extension GL_EXT_shader_image_int64 : require\n";
+        }
+
+        prog << "layout(set = 0, binding = 0" << glslBufferFmtStr << ") uniform " << glslBufferTypeStr
+             << " sparseTexelBuffer;\n"
+             << "layout(set = 0, binding = 1, std430) buffer OutputBuffer { \n"
+             << "    " << glslOutTypeStr << " outputData[]; \n"
+             << "} outBuffer;\n"
+             << "layout(local_size_x = 1) in;\n"
+
+             << "void main (void)\n"
+             << "{\n"
+             << "    uint index = gl_WorkGroupID.x;\n"
+             << "    " << glslOutTypeStr << " value = " << glslOpStr << "(sparseTexelBuffer, int(index)).x; \n"
+             << "    outBuffer.outputData[index] = value; \n"
+             << "}\n";
+        sourceCollections.glslSources.add("comp")
+            << glu::ComputeSource(prog.str())
+            << ShaderBuildOptions(sourceCollections.usedVulkanVersion,
+                                  isformat64b ? vk::SPIRV_VERSION_1_3 : vk::SPIRV_VERSION_1_0, 0u, true);
+    }
+    else if ((m_texelBufferOp == TEXEL_OP_SPARSE_FETCH) || (m_texelBufferOp == TEXEL_OP_SPARSE_READ))
+    {
+        // OpImageSparseFetch and OpImageSparseRead have no counterparts in GLSL
+        const std::string spirvBufferTypeStr = isTexelUniformBuffer ? "SampledBuffer" : "ImageBuffer";
+        const std::string spirvBufferFmtStr  = isTexelUniformBuffer ? "Unknown" : (isformat64b ? "R64ui" : "R32ui");
+
+        const std::string spirvOpsStrs[] = {"OpImageSparseFetch", "OpImageSparseRead"};
+        const std::string spirvOpStr     = spirvOpsStrs[m_texelBufferOp];
+
+        const std::string spirvSampledTypeStr = (m_texelBufferOp == TEXEL_OP_SPARSE_READ) ? "2" : "1";
+        const std::string spirvArrStrideStr   = isformat64b ? "8" : "4";
+        const std::string spirvDataTypeVarStr = isformat64b ? "58" : "6";
+        const std::string spirvPtrTypeVarStr  = isformat64b ? "59" : "7";
+        const std::string spirvPtrType2VarStr = isformat64b ? "60" : "34";
+
+        prog << "OpCapability Shader\n"
+             << "OpCapability " << spirvBufferTypeStr << "\n"
+             << "OpCapability SparseResidency\n";
+
+        if (isformat64b)
+        {
+            prog << "OpCapability Int64\n"
+                 << "OpCapability Int64ImageEXT\n"
+                 << "OpExtension \"SPV_EXT_shader_image_int64\"\n";
+        }
+
+        prog << "%1 = OpExtInstImport \"GLSL.std.450\"\n"
+             << "OpMemoryModel Logical GLSL450\n"
+             << "OpEntryPoint GLCompute %4 \"main\" %11\n"
+             << "OpExecutionMode %4 LocalSize 1 1 1\n"
+             << "OpDecorate %11 BuiltIn WorkgroupId\n"
+             << "OpDecorate %19 Binding 0\n"
+             << "OpDecorate %19 DescriptorSet 0\n"
+             << "OpDecorate %27 ArrayStride " << spirvArrStrideStr << "\n"
+             << "OpDecorate %28 BufferBlock\n"
+             << "OpMemberDecorate %28 0 Offset 0\n"
+             << "OpDecorate %30 Binding 1\n"
+             << "OpDecorate %30 DescriptorSet 0\n"
+             << "OpDecorate %37 BuiltIn WorkgroupSize\n"
+             << "%2 = OpTypeVoid\n"
+             << "%3 = OpTypeFunction %2\n"
+             << "%6 = OpTypeInt 32 0\n";
+
+        if (isformat64b)
+            prog << "%58 = OpTypeInt 64 0\n";
+
+        prog << "%52 = OpTypeBool\n"
+             << "%56 = OpConstant %" << spirvDataTypeVarStr << " 1\n"
+             << "%57 = OpConstant %" << spirvDataTypeVarStr << " 0\n"
+             << "%7 = OpTypePointer Function %6\n";
+
+        if (isformat64b)
+            prog << "%59 = OpTypePointer Function %58\n";
+
+        prog << "%53 = OpTypePointer Function %52\n"
+             << "%9 = OpTypeVector %6 3\n"
+             << "%10 = OpTypePointer Input %9\n"
+             << "%11 = OpVariable %10 Input\n"
+             << "%12 = OpConstant %6 0\n"
+             << "%13 = OpTypePointer Input %6\n"
+             << "%17 = OpTypeImage %" << spirvDataTypeVarStr << " Buffer 0 0 0 " << spirvSampledTypeStr << " "
+             << spirvBufferFmtStr << "\n"
+             << "%18 = OpTypePointer UniformConstant %17\n"
+             << "%19 = OpVariable %18 UniformConstant\n"
+             << "%22 = OpTypeInt 32 1\n"
+             << "%24 = OpTypeVector %" << spirvDataTypeVarStr << " 4\n"
+             << "%50 = OpTypeStruct %6 %24\n"
+             << "%27 = OpTypeRuntimeArray %" << spirvDataTypeVarStr << "\n"
+             << "%28 = OpTypeStruct %27\n"
+             << "%29 = OpTypePointer Uniform %28\n"
+             << "%30 = OpVariable %29 Uniform\n"
+             << "%31 = OpConstant %22 0\n"
+             << "%34 = OpTypePointer Uniform %" << spirvDataTypeVarStr << "\n"
+             << "%36 = OpConstant %6 1\n"
+             << "%37 = OpConstantComposite %9 %36 %36 %36\n"
+             << "%4 = OpFunction %2 None %3\n"
+             << "%5 = OpLabel\n"
+             << "%8 = OpVariable %7 Function\n"
+             << "%16 = OpVariable %" << spirvPtrTypeVarStr << " Function\n"
+             << "%14 = OpAccessChain %13 %11 %12\n"
+             << "%15 = OpLoad %6 %14\n"
+             << "OpStore %8 %15\n"
+             << "%20 = OpLoad %17 %19\n"
+             << "%21 = OpLoad %6 %8\n"
+             << "%23 = OpBitcast %22 %21\n"
+             << "%25 = " << spirvOpStr << " %50 %20 %23\n"
+             << "%26 = OpCompositeExtract %6 %25 0\n"
+             << "%51 = OpImageSparseTexelsResident %52 %26\n"
+             << "%55 = OpSelect %" << spirvDataTypeVarStr << " %51 %56 %57\n"
+             << "OpStore %16 %55\n"
+             << "%32 = OpLoad %6 %8\n"
+             << "%33 = OpLoad %" << spirvDataTypeVarStr << " %16\n"
+             << "%35 = OpAccessChain %34 %30 %31 %32\n"
+             << "OpStore %35 %33\n"
+             << "OpReturn\n"
+             << "OpFunctionEnd\n";
+
+        sourceCollections.spirvAsmSources.add("comp")
+            << prog.str() << vk::SpirVAsmBuildOptions(sourceCollections.usedVulkanVersion, SPIRV_VERSION_1_0);
+    }
+}
+
+class TexelBufferSparseResidencyInstance : public SparseResourcesBaseInstance
+{
+public:
+    TexelBufferSparseResidencyInstance(Context &context, const uint32_t bufferSize, const TexelBufferType bufferType,
+                                       const bool isBufferNonResidentStrict, const TexelBufferOperation texelBufferOp,
+                                       const VkFormat format);
+
+    tcu::TestStatus iterate(void);
+
+private:
+    const uint32_t m_bufferSize;
+    const TexelBufferType m_bufferType;
+    const bool m_isBufferNonResidentStrict;
+    const TexelBufferOperation m_texelBufferOp;
+    const VkFormat m_format;
+};
+
+TexelBufferSparseResidencyInstance::TexelBufferSparseResidencyInstance(Context &context, const uint32_t bufferSize,
+                                                                       const TexelBufferType bufferType,
+                                                                       const bool isBufferNonResidentStrict,
+                                                                       const TexelBufferOperation texelBufferOp,
+                                                                       const VkFormat format)
+    : SparseResourcesBaseInstance(context, false /*useDeviceGroups*/)
+    , m_bufferSize(bufferSize)
+    , m_bufferType(bufferType)
+    , m_isBufferNonResidentStrict(isBufferNonResidentStrict)
+    , m_texelBufferOp(texelBufferOp)
+    , m_format(format)
+{
+}
+
+tcu::TestStatus TexelBufferSparseResidencyInstance::iterate(void)
+{
+    const InstanceInterface &instance = m_context.getInstanceInterface();
+    const bool isformat64b            = formatIsR64(m_format);
+    {
+        // Create logical device supporting both sparse and compute operations
+        QueueRequirementsVec queueRequirements;
+        queueRequirements.push_back(QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT, 1u));
+        queueRequirements.push_back(QueueRequirements(VK_QUEUE_COMPUTE_BIT, 1u));
+
+        createDeviceSupportingQueues(queueRequirements, isformat64b);
+    }
+
+    const VkPhysicalDevice physicalDevice                     = getPhysicalDevice();
+    const VkPhysicalDeviceProperties physicalDeviceProperties = getPhysicalDeviceProperties(instance, physicalDevice);
+
+    if (!getPhysicalDeviceFeatures(instance, physicalDevice).sparseResidencyBuffer)
+        TCU_THROW(NotSupportedError, "Sparse partially resident buffers not supported");
+
+    if (m_isBufferNonResidentStrict && !physicalDeviceProperties.sparseProperties.residencyNonResidentStrict)
+        TCU_THROW(NotSupportedError, "Sparse buffers property residencyNonResidentStrict not supported");
+
+    const DeviceInterface &deviceInterface = getDeviceInterface();
+    const Queue &sparseQueue               = getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
+    const Queue &computeQueue              = getQueue(VK_QUEUE_COMPUTE_BIT, 0);
+
+    const bool isTexelUniformBuffer = (m_bufferType == TexelBufferType::TEXEL_BUFF_UNIFORM);
+    const VkBufferUsageFlags bufferUsageFlags =
+        (isTexelUniformBuffer ? VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT);
+
+    VkBufferCreateInfo bufferCreateInfo = {
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                        // VkStructureType sType;
+        nullptr,                                                                     // const void* pNext;
+        VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT, // VkBufferCreateFlags flags;
+        m_bufferSize,                                                                // VkDeviceSize size;
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+            bufferUsageFlags,      // VkBufferUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode sharingMode;
+        0u,                        // uint32_t queueFamilyIndexCount;
+        nullptr                    // const uint32_t* pQueueFamilyIndices;
+    };
+
+    const uint32_t queueFamilyIndices[] = {sparseQueue.queueFamilyIndex, computeQueue.queueFamilyIndex};
+
+    if (sparseQueue.queueFamilyIndex != computeQueue.queueFamilyIndex)
+    {
+        bufferCreateInfo.sharingMode           = VK_SHARING_MODE_CONCURRENT;
+        bufferCreateInfo.queueFamilyIndexCount = 2u;
+        bufferCreateInfo.pQueueFamilyIndices   = queueFamilyIndices;
+    }
+
+    // Create sparse buffer
+    const Unique<VkBuffer> sparseBuffer(createBuffer(deviceInterface, getDevice(), &bufferCreateInfo));
+
+    // Create sparse buffer memory bind semaphore
+    const Unique<VkSemaphore> bufferMemoryBindSemaphore(createSemaphore(deviceInterface, getDevice()));
+
+    const VkMemoryRequirements bufferMemRequirements =
+        getBufferMemoryRequirements(deviceInterface, getDevice(), *sparseBuffer);
+
+    if (bufferMemRequirements.size > physicalDeviceProperties.limits.sparseAddressSpaceSize)
+        TCU_THROW(NotSupportedError, "Required memory size for sparse resources exceeds device limits");
+
+    DE_ASSERT((bufferMemRequirements.size % bufferMemRequirements.alignment) == 0);
+
+    const uint32_t numSparseSlots = static_cast<uint32_t>(bufferMemRequirements.size / bufferMemRequirements.alignment);
+    std::vector<DeviceMemorySp> deviceMemUniquePtrVec;
+
+    VkPhysicalDeviceMemoryProperties memProperties;
+    memProperties = getPhysicalDeviceMemoryProperties(instance, physicalDevice);
+
+    std::vector<VkSparseMemoryBind> sparseMemoryBinds;
+    const uint32_t memoryType =
+        findMatchingMemoryType(instance, getPhysicalDevice(), bufferMemRequirements, MemoryRequirement::Any);
+
+    if (memoryType == NO_MATCH_FOUND)
+        return tcu::TestStatus::fail("No matching memory type found");
+
+    for (uint32_t sparseBindNdx = 0; sparseBindNdx < numSparseSlots; sparseBindNdx += 2)
+    {
+        const VkSparseMemoryBind sparseMemoryBind =
+            makeSparseMemoryBind(deviceInterface, getDevice(), bufferMemRequirements.alignment, memoryType,
+                                 bufferMemRequirements.alignment * sparseBindNdx);
+
+        deviceMemUniquePtrVec.push_back(
+            makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(sparseMemoryBind.memory),
+                                                 Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
+
+        sparseMemoryBinds.push_back(sparseMemoryBind);
+    }
+
+    const VkSparseBufferMemoryBindInfo sparseBufferBindInfo = makeSparseBufferMemoryBindInfo(
+        *sparseBuffer, static_cast<uint32_t>(sparseMemoryBinds.size()), &sparseMemoryBinds[0]);
+
+    const VkBindSparseInfo bindSparseInfo = {VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,
+                                             nullptr,
+                                             0u,
+                                             nullptr,
+                                             1u,
+                                             &sparseBufferBindInfo,
+                                             0u,
+                                             nullptr,
+                                             0u,
+                                             nullptr,
+                                             1u,
+                                             &bufferMemoryBindSemaphore.get()};
+
+    VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, VK_NULL_HANDLE));
+
+    // Wait for sparse queue to become idle
+    deviceInterface.queueWaitIdle(sparseQueue.queueHandle);
+
+    // Create input buffer
+    const VkBufferCreateInfo inputBufferCreateInfo =
+        makeBufferCreateInfo(m_bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    const Unique<VkBuffer> inputBuffer(createBuffer(deviceInterface, getDevice(), &inputBufferCreateInfo));
+    const de::UniquePtr<Allocation> inputBufferAlloc(
+        bindBuffer(deviceInterface, getDevice(), getAllocator(), *inputBuffer, MemoryRequirement::HostVisible));
+
+    std::vector<uint8_t> referenceData;
+    const uint32_t unitSize        = getPixelSize(mapVkFormat(m_format));
+    const uint32_t numOfWorkgroups = m_bufferSize / unitSize;
+
+    const auto maxComputeWorkGroupCount = m_context.getDeviceProperties().limits.maxComputeWorkGroupCount;
+    if (numOfWorkgroups > maxComputeWorkGroupCount[0])
+        TCU_THROW(NotSupportedError, "Compute workgroup count not supported");
+
+    referenceData.resize(m_bufferSize);
+    for (uint32_t i = 0; i < m_bufferSize; ++i)
+        referenceData[i] = static_cast<uint8_t>((i % 255u) + 1u);
+
+    deMemcpy(inputBufferAlloc->getHostPtr(), &referenceData[0], m_bufferSize);
+
+    flushAlloc(deviceInterface, getDevice(), *inputBufferAlloc);
+
+    // Create a texel buffer view
+    Move<VkBufferView> sparseBufferView =
+        makeBufferView(deviceInterface, getDevice(), *sparseBuffer, m_format, 0u, m_bufferSize);
+
+    // Create output buffer
+    const VkBufferCreateInfo outputBufferCreateInfo =
+        makeBufferCreateInfo(m_bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                                               VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const Unique<VkBuffer> outputBuffer(createBuffer(deviceInterface, getDevice(), &outputBufferCreateInfo));
+    const de::UniquePtr<Allocation> outputBufferAlloc(
+        bindBuffer(deviceInterface, getDevice(), getAllocator(), *outputBuffer, MemoryRequirement::HostVisible));
+
+    // Initialize output buffer with all 0xFF
+    {
+        std::vector<uint8_t> randomData(m_bufferSize, 0xFF);
+        deMemcpy(outputBufferAlloc->getHostPtr(), &randomData[0], m_bufferSize);
+        flushAlloc(deviceInterface, getDevice(), *outputBufferAlloc);
+    }
+
+    // Create command buffer for compute and data transfer operations
+    const Unique<VkCommandPool> commandPool(
+        makeCommandPool(deviceInterface, getDevice(), computeQueue.queueFamilyIndex));
+    const Unique<VkCommandBuffer> commandBuffer(
+        allocateCommandBuffer(deviceInterface, getDevice(), *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    // Start recording compute and transfer commands
+    beginCommandBuffer(deviceInterface, *commandBuffer);
+
+    // Create barrier to update input before being copied(read)
+    {
+        const VkBufferMemoryBarrier inputBufferBarrier = makeBufferMemoryBarrier(
+            VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, *inputBuffer, 0ull, m_bufferSize);
+
+        deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                           0u, 0u, nullptr, 1u, &inputBufferBarrier, 0u, nullptr);
+    }
+
+    // Copy initial data to sparse buffer
+    VkBufferCopy copyRegion = makeBufferCopy(0u, 0u, m_bufferSize);
+    deviceInterface.cmdCopyBuffer(*commandBuffer, *inputBuffer, *sparseBuffer, 1u, &copyRegion);
+
+    // Now bind the buffer as a uniform/storage texel buffer in a descriptor set
+    VkDescriptorType descriptorType =
+        (isTexelUniformBuffer ? VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER);
+
+    // Create descriptor set
+    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(descriptorType, VK_SHADER_STAGE_COMPUTE_BIT)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(deviceInterface, getDevice()));
+
+    // Create compute pipeline
+    const Unique<VkShaderModule> shaderModule(
+        createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get("comp"), 0));
+    const Unique<VkPipelineLayout> pipelineLayout(
+        makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout));
+    const Unique<VkPipeline> computePipeline(
+        makeComputePipeline(deviceInterface, getDevice(), *pipelineLayout, *shaderModule));
+
+    deviceInterface.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
+
+    const Unique<VkDescriptorPool> descriptorPool(
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1u)
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u)
+            .build(deviceInterface, getDevice(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+    const Unique<VkDescriptorSet> descriptorSet(
+        makeDescriptorSet(deviceInterface, getDevice(), *descriptorPool, *descriptorSetLayout));
+
+    const VkDescriptorBufferInfo outputBufferInfo = makeDescriptorBufferInfo(*outputBuffer, 0ull, m_bufferSize);
+
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType,
+                     &sparseBufferView.get())
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u),
+                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputBufferInfo)
+        .update(deviceInterface, getDevice());
+
+    deviceInterface.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
+                                          &descriptorSet.get(), 0u, nullptr);
+
+    {
+        const VkBufferMemoryBarrier sparseBufferBarrier = makeBufferMemoryBarrier(
+            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *sparseBuffer, 0ull, m_bufferSize);
+
+        deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 1u,
+                                           &sparseBufferBarrier, 0u, nullptr);
+    }
+
+    deviceInterface.cmdDispatch(*commandBuffer, numOfWorkgroups, 1u, 1u);
+
+    {
+        const VkBufferMemoryBarrier outputBufferBarrier = makeBufferMemoryBarrier(
+            VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0ull, m_bufferSize);
+
+        deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                           VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u, &outputBufferBarrier, 0u,
+                                           nullptr);
+    }
+
+    endCommandBuffer(deviceInterface, *commandBuffer);
+
+    const VkPipelineStageFlags waitStageBits[] = {VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT};
+
+    // Submit transfer commands for execution and wait for completion
+    submitCommandsAndWait(deviceInterface, getDevice(), computeQueue.queueHandle, *commandBuffer, 1u,
+                          &bufferMemoryBindSemaphore.get(), waitStageBits);
+
+    // Retrieve data from output buffer to host memory
+    invalidateAlloc(deviceInterface, getDevice(), *outputBufferAlloc);
+
+    if (m_texelBufferOp == TexelBufferOperation::TEXEL_OP_READ)
+    {
+        const uint8_t *outputData = static_cast<const uint8_t *>(outputBufferAlloc->getHostPtr());
+
+        // Compare output data with reference data
+        for (uint32_t sparseBindNdx = 0; sparseBindNdx < numSparseSlots; ++sparseBindNdx)
+        {
+            const uint32_t alignment = static_cast<uint32_t>(bufferMemRequirements.alignment);
+            const uint32_t offset    = alignment * sparseBindNdx;
+            const uint32_t size      = sparseBindNdx == (numSparseSlots - 1) ? m_bufferSize % alignment : alignment;
+
+            // Bound memory region
+            if (sparseBindNdx % 2u == 0u)
+            {
+                if (deMemCmp(&referenceData[offset], outputData + offset, size) != 0)
+                    return tcu::TestStatus::fail("Failed");
+            }
+
+            // Unbound memory region
+            else if (m_isBufferNonResidentStrict)
+            {
+                deMemset(&referenceData[offset], 0u, size);
+
+                if (deMemCmp(&referenceData[offset], outputData + offset, size) != 0)
+                    return tcu::TestStatus::fail("Failed");
+            }
+        }
+    }
+    else if ((m_texelBufferOp == TexelBufferOperation::TEXEL_OP_SPARSE_FETCH) ||
+             (m_texelBufferOp == TexelBufferOperation::TEXEL_OP_SPARSE_READ))
+    {
+        const uint8_t *outputData = static_cast<const uint8_t *>(outputBufferAlloc->getHostPtr());
+
+        // Compare output residency data known status
+        for (uint32_t sparseBindNdx = 0; sparseBindNdx < numSparseSlots; ++sparseBindNdx)
+        {
+            const uint32_t alignment = static_cast<uint32_t>(bufferMemRequirements.alignment);
+            const uint32_t offset    = alignment * sparseBindNdx;
+            const uint32_t size      = sparseBindNdx == (numSparseSlots - 1) ? m_bufferSize % alignment : alignment;
+
+            uint32_t outputBlockOffset     = offset;
+            const uint32_t outputBlockSize = (isformat64b ? SIZE_OF_UINT64_IN_SHADER : SIZE_OF_UINT_IN_SHADER);
+            const uint32_t outputBlocks    = size / outputBlockSize;
+            for (uint32_t blkIdx = 0; blkIdx < outputBlocks; blkIdx++)
+            {
+                if (isformat64b)
+                {
+                    const uint64_t residencyStatus = (sparseBindNdx % 2u == 0u) ? 1ul : 0ul;
+                    if (deMemCmp(&residencyStatus, outputData + outputBlockOffset, outputBlockSize) != 0)
+                        return tcu::TestStatus::fail("Failed");
+                }
+                else
+                {
+                    const uint32_t residencyStatus = (sparseBindNdx % 2u == 0u) ? 1u : 0u;
+                    if (deMemCmp(&residencyStatus, outputData + outputBlockOffset, outputBlockSize) != 0)
+                        return tcu::TestStatus::fail("Failed");
+                }
+
+                outputBlockOffset += outputBlockSize;
+            }
+        }
+    }
+
+    return tcu::TestStatus::pass("Passed");
+}
+
+TestInstance *TexelBufferSparseResidencyCase::createInstance(Context &context) const
+{
+    return new TexelBufferSparseResidencyInstance(context, m_bufferSize, m_bufferType, m_isBufferNonResidentStrict,
+                                                  m_texelBufferOp, m_format);
+}
+
 } // namespace
 
 void addBufferSparseResidencyTests(tcu::TestCaseGroup *group, const bool useDeviceGroups)
@@ -1209,5 +1804,54 @@ void addBufferSparseResidencyTests(tcu::TestCaseGroup *group, const bool useDevi
         }
     }
 }
+
+void addTexelBufferSparseResidencyTests(tcu::TestCaseGroup *group)
+{
+    const std::string texelBufferNames[] = {"uniform_texel_buffer", "storage_texel_buffer"};
+    const std::string texelOpNames[]     = {"sparse_fetch", "sparse_read", "read"};
+
+    std::vector<VkFormat> formats = {VK_FORMAT_R32_UINT, VK_FORMAT_R64_UINT};
+
+    for (uint32_t texBuffTypeIdx = 0u; texBuffTypeIdx < static_cast<uint32_t>(TexelBufferType::TEXEL_BUFF_NONE);
+         texBuffTypeIdx++)
+    {
+        const TexelBufferType texBuffType = static_cast<TexelBufferType>(texBuffTypeIdx);
+
+        for (uint32_t texOpIdx = 0u; texOpIdx < static_cast<uint32_t>(TexelBufferOperation::TEXEL_OP_NONE); texOpIdx++)
+        {
+            const TexelBufferOperation texelBufferOp = static_cast<TexelBufferOperation>(texOpIdx);
+
+            if (((texBuffType == TexelBufferType::TEXEL_BUFF_UNIFORM) &&
+                 (texelBufferOp == TexelBufferOperation::TEXEL_OP_SPARSE_READ)) ||
+                ((texBuffType == TexelBufferType::TEXEL_BUFF_STORAGE) &&
+                 (texelBufferOp == TexelBufferOperation::TEXEL_OP_SPARSE_FETCH)))
+                continue;
+
+            for (const auto bufferSize : {10, 16, 24})
+            {
+                for (uint32_t fmtIdx = 0u; fmtIdx < de::sizeU32(formats); fmtIdx++)
+                {
+                    const VkFormat format = formats[fmtIdx];
+
+                    for (const auto isBufferNonResidentStrict : {true, false})
+                    {
+                        if ((texBuffType == TexelBufferType::TEXEL_BUFF_UNIFORM) && formatIsR64(format))
+                            continue;
+
+                        const std::string testName = texelBufferNames[texBuffTypeIdx] + "_" + texelOpNames[texOpIdx] +
+                                                     "_size_2_" + de::toString(bufferSize) + "_" +
+                                                     getImageFormatID(format) +
+                                                     (isBufferNonResidentStrict ? "_strict" : "");
+
+                        group->addChild(new TexelBufferSparseResidencyCase(group->getTestContext(), testName, format,
+                                                                           1 << bufferSize, texBuffType,
+                                                                           isBufferNonResidentStrict, texelBufferOp));
+                    }
+                }
+            }
+        }
+    }
+}
+
 } // namespace sparse
 } // namespace vkt

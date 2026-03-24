@@ -43,6 +43,7 @@ struct ComponentTypeInfo
 ComponentTypeInfo const getComponentTypeInfo(uint32_t idx);
 bool isFloatType(vk::VkComponentTypeKHR t);
 bool isSIntType(vk::VkComponentTypeKHR t);
+bool isUIntType(vk::VkComponentTypeKHR t);
 void GetFloatExpManBits(vk::VkComponentTypeKHR dt, uint32_t &expBits, uint32_t &manBits, uint32_t &byteSize);
 void setDataFloat(void *base, vk::VkComponentTypeKHR dt, uint32_t i, float value);
 float getDataFloat(void *base, vk::VkComponentTypeKHR dt, uint32_t i);

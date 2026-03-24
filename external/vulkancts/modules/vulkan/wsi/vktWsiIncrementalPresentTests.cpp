@@ -88,6 +88,10 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
+    // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
+    if (wsiType == vk::wsi::TYPE_DIRECT_DRM)
+        extensions.push_back("VK_EXT_direct_mode_display");
+
     // VUID-VkSwapchainCreateInfoKHR-imageColorSpace-parameter
     if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_EXT_swapchain_colorspace")))
         extensions.push_back("VK_EXT_swapchain_colorspace");

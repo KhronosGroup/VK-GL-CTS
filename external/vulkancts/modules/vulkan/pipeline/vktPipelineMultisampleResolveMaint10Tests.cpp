@@ -349,46 +349,75 @@ void Maint10ResolveCase::initPrograms(vk::SourceCollections &programCollection) 
 // Resolve regions. This is used in ::iterate().
 struct ResolveRegion
 {
-    VkRect2D rect;
-    uint32_t layer;
+    VkOffset2D srcOffset;
+    VkOffset2D dstOffset;
+    VkExtent2D extent;
+    uint32_t srcLayer;
+    uint32_t dstLayer;
 
-    ResolveRegion(VkRect2D rect_, uint32_t layer_) : rect(rect_), layer(layer_)
+    ResolveRegion(VkRect2D rect, uint32_t layer)
+        : srcOffset(rect.offset)
+        , dstOffset(rect.offset)
+        , extent(rect.extent)
+        , srcLayer(layer)
+        , dstLayer(layer)
+    {
+    }
+
+    ResolveRegion(const VkOffset2D &srcOffset_, const VkOffset2D &dstOffset_, const VkExtent2D &extent_,
+                  uint32_t srcLayer_, uint32_t dstLayer_)
+        : srcOffset(srcOffset_)
+        , dstOffset(dstOffset_)
+        , extent(extent_)
+        , srcLayer(srcLayer_)
+        , dstLayer(dstLayer_)
     {
     }
 };
 
-bool inResolveRegion(const tcu::UVec3 &coords, const ResolveRegion &region)
+tcu::Maybe<tcu::UVec3> getSrcRegionCoords(const tcu::UVec3 &coords, const ResolveRegion &region)
 {
-    if (coords.z() != region.layer)
-        return false;
+    if (coords.z() != region.dstLayer)
+        return tcu::Nothing;
 
-    DE_ASSERT(region.rect.offset.x >= 0);
-    DE_ASSERT(region.rect.offset.y >= 0);
+    DE_ASSERT(region.dstOffset.x >= 0);
+    DE_ASSERT(region.dstOffset.y >= 0);
 
-    const auto offsetX = static_cast<uint32_t>(region.rect.offset.x);
-    const auto offsetY = static_cast<uint32_t>(region.rect.offset.y);
+    const auto offsetX = static_cast<uint32_t>(region.dstOffset.x);
+    const auto offsetY = static_cast<uint32_t>(region.dstOffset.y);
 
-    if (coords.x() < offsetX || coords.x() >= offsetX + region.rect.extent.width)
-        return false;
+    if (coords.x() < offsetX || coords.x() >= offsetX + region.extent.width)
+        return tcu::Nothing;
 
-    if (coords.y() < offsetY || coords.y() >= offsetY + region.rect.extent.height)
-        return false;
+    if (coords.y() < offsetY || coords.y() >= offsetY + region.extent.height)
+        return tcu::Nothing;
 
-    return true;
+    const tcu::IVec2 srcOffset(region.srcOffset.x, region.srcOffset.y);
+    const tcu::IVec2 dstOffset(region.dstOffset.x, region.dstOffset.y);
+    const tcu::IVec2 diff   = srcOffset - dstOffset;
+    const tcu::IVec2 origXY = coords.swizzle(0, 1).asInt();
+    const tcu::IVec2 newXY  = origXY + diff;
+
+    DE_ASSERT(newXY.x() >= 0);
+    DE_ASSERT(newXY.y() >= 0);
+
+    const auto uNewXY = newXY.asUint();
+    return tcu::just(tcu::UVec3(uNewXY.x(), uNewXY.y(), region.srcLayer));
 }
 
-bool inAnyResolveRegion(int x, int y, int z, const std::vector<ResolveRegion> &regions)
+tcu::Maybe<tcu::UVec3> getFirstSrcRegionCoords(int x, int y, int z, const std::vector<ResolveRegion> &regions)
 {
     const tcu::IVec3 iCoords(x, y, z);
     const auto coords = iCoords.asUint();
 
     for (const auto &region : regions)
     {
-        if (inResolveRegion(coords, region))
-            return true;
+        const auto srcCoords = getSrcRegionCoords(coords, region);
+        if (static_cast<bool>(srcCoords))
+            return srcCoords;
     }
 
-    return false;
+    return tcu::Nothing;
 }
 
 // Converts floating point width (total or mantissa) to a threshold.
@@ -491,18 +520,25 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
 
         if (m_params.resolveArea == ResolveArea::REGION)
         {
-            // Resolve the bottom-right quadrant only.
-            resolveRegions.push_back(ResolveRegion(
-                makeRect2D(quadrantExtent.x(), quadrantExtent.y(), quadrantExtentU.x(), quadrantExtentU.y()), 0u));
+            // Resolve the top-left quadrant to the bottom-right quadrant.
+            resolveRegions.push_back(ResolveRegion(makeOffset2D(0, 0),
+                                                   makeOffset2D(quadrantExtent.x(), quadrantExtent.y()),
+                                                   makeExtent2D(quadrantExtentU.x(), quadrantExtentU.y()), 0u, 0u));
         }
         else if (m_params.resolveArea == ResolveArea::REGIONS_MULTILAYER)
         {
-            // Resolve bottom-right quadrant in the 1st layer, and the top and bottom-left quadrants in the 2nd one.
-            resolveRegions.push_back(ResolveRegion(
-                makeRect2D(quadrantExtent.x(), quadrantExtent.y(), quadrantExtentU.x(), quadrantExtentU.y()), 0u));
-            resolveRegions.push_back(ResolveRegion(makeRect2D(0, 0, quadrantExtentU.x(), quadrantExtentU.y()), 1u));
-            resolveRegions.push_back(
-                ResolveRegion(makeRect2D(0, quadrantExtent.y(), quadrantExtentU.x(), quadrantExtentU.y()), 1u));
+            // Resolve top-left quadrant in the first layer to the bottom-right quadrant in the second layer.
+            resolveRegions.push_back(ResolveRegion(makeOffset2D(0, 0),
+                                                   makeOffset2D(quadrantExtent.x(), quadrantExtent.y()),
+                                                   makeExtent2D(quadrantExtentU.x(), quadrantExtentU.y()), 0u, 1u));
+            // Resolve top-right quadrant in the second layer to the bottom-left quadrant in the first layer.
+            resolveRegions.push_back(ResolveRegion(makeOffset2D(quadrantExtent.x(), 0),
+                                                   makeOffset2D(0, quadrantExtent.y()),
+                                                   makeExtent2D(quadrantExtentU.x(), quadrantExtentU.y()), 1u, 0u));
+            // Resolve bottom-left quadrant in the second layer to the top-left quadrant in the first layer.
+            resolveRegions.push_back(ResolveRegion(makeOffset2D(0, quadrantExtent.y()),
+                                                   makeOffset2D(quadrantExtent.x(), 0),
+                                                   makeExtent2D(quadrantExtentU.x(), quadrantExtentU.y()), 1u, 0u));
         }
         else
             DE_ASSERT(false);
@@ -529,16 +565,16 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
 
     for (const auto &resolveRegion : resolveRegions)
     {
-        for (uint32_t y = 0u; y < resolveRegion.rect.extent.height; ++y)
+        for (uint32_t y = 0u; y < resolveRegion.extent.height; ++y)
         {
-            const uint32_t yCoord = y + static_cast<uint32_t>(resolveRegion.rect.offset.y);
-            for (uint32_t x = 0u; x < resolveRegion.rect.extent.width; ++x)
+            const uint32_t yCoord = y + static_cast<uint32_t>(resolveRegion.srcOffset.y);
+            for (uint32_t x = 0u; x < resolveRegion.extent.width; ++x)
             {
-                const uint32_t xCoord = x + static_cast<uint32_t>(resolveRegion.rect.offset.x);
+                const uint32_t xCoord = x + static_cast<uint32_t>(resolveRegion.srcOffset.x);
                 for (int s = 0; s < sampleCount; ++s)
                 {
                     const uint32_t pixelIdx =
-                        (yCoord * imageCreateInfo.extent.width + xCoord) + (layerPixelCount * resolveRegion.layer);
+                        (yCoord * imageCreateInfo.extent.width + xCoord) + (layerPixelCount * resolveRegion.srcLayer);
                     const uint32_t sampleIdx = pixelIdx * sampleCount + s;
 
                     auto &pixelData = pixelDataVec.at(sampleIdx);
@@ -981,22 +1017,29 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
 
             for (const auto &region : resolveRegions)
             {
-                const VkImageSubresourceLayers layer = {
+                const VkImageSubresourceLayers srcLayer = {
                     m_params.resolveAspects,
                     0u,
-                    region.layer,
+                    region.srcLayer,
                     1u,
                 };
-                const auto offset = makeOffset3D(region.rect.offset.x, region.rect.offset.y, 0);
-                const auto extent = makeExtent3D(region.rect.extent.width, region.rect.extent.height, 1u);
+                const VkImageSubresourceLayers dstLayer = {
+                    m_params.resolveAspects,
+                    0u,
+                    region.dstLayer,
+                    1u,
+                };
+                const auto srcOffset = makeOffset3D(region.srcOffset.x, region.srcOffset.y, 0);
+                const auto dstOffset = makeOffset3D(region.dstOffset.x, region.dstOffset.y, 0);
+                const auto extent    = makeExtent3D(region.extent.width, region.extent.height, 1u);
 
                 imageResolveRegions.push_back(VkImageResolve2{
                     VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2,
                     nullptr,
-                    layer,
-                    offset,
-                    layer,
-                    offset,
+                    srcLayer,
+                    srcOffset,
+                    dstLayer,
+                    dstOffset,
                     extent,
                 });
             }
@@ -1154,7 +1197,8 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
             for (int y = 0; y < fullExtent.y(); ++y)
                 for (int x = 0; x < fullExtent.x(); ++x)
                 {
-                    if (!inAnyResolveRegion(x, y, z, resolveRegions))
+                    const auto srcCoords = getFirstSrcRegionCoords(x, y, z, resolveRegions);
+                    if (!srcCoords)
                         continue;
 
                     // Gather color samples.
@@ -1162,7 +1206,8 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
                     samples.reserve(perPixelSamples);
 
                     for (uint32_t s = 0; s < perPixelSamples; ++s)
-                        samples.push_back(&pixelDataVec.at(getSampleIndex(x, y, z, s)));
+                        samples.push_back(
+                            &pixelDataVec.at(getSampleIndex(srcCoords->x(), srcCoords->y(), srcCoords->z(), s)));
 
                     if (isInt)
                     {
@@ -1218,7 +1263,8 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
             for (int y = 0; y < fullExtent.y(); ++y)
                 for (int x = 0; x < fullExtent.x(); ++x)
                 {
-                    if (!inAnyResolveRegion(x, y, z, resolveRegions))
+                    const auto srcCoords = getFirstSrcRegionCoords(x, y, z, resolveRegions);
+                    if (!srcCoords)
                         continue;
 
                     // Gather color samples.
@@ -1226,7 +1272,8 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
                     samples.reserve(perPixelSamples);
 
                     for (uint32_t s = 0; s < perPixelSamples; ++s)
-                        samples.push_back(&pixelDataVec.at(getSampleIndex(x, y, z, s)));
+                        samples.push_back(
+                            &pixelDataVec.at(getSampleIndex(srcCoords->x(), srcCoords->y(), srcCoords->z(), s)));
 
                     if (m_params.resolveMode == VK_RESOLVE_MODE_SAMPLE_ZERO_BIT)
                         depthReference.setPixDepth(samples.front()->depthStencil.x(), x, y, z);
@@ -1273,7 +1320,8 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
             for (int y = 0; y < fullExtent.y(); ++y)
                 for (int x = 0; x < fullExtent.x(); ++x)
                 {
-                    if (!inAnyResolveRegion(x, y, z, resolveRegions))
+                    const auto srcCoords = getFirstSrcRegionCoords(x, y, z, resolveRegions);
+                    if (!srcCoords)
                         continue;
 
                     // Gather color samples.
@@ -1281,7 +1329,8 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
                     samples.reserve(perPixelSamples);
 
                     for (uint32_t s = 0; s < perPixelSamples; ++s)
-                        samples.push_back(&pixelDataVec.at(getSampleIndex(x, y, z, s)));
+                        samples.push_back(
+                            &pixelDataVec.at(getSampleIndex(srcCoords->x(), srcCoords->y(), srcCoords->z(), s)));
 
                     if (m_params.resolveMode == VK_RESOLVE_MODE_SAMPLE_ZERO_BIT)
                         stencilReference.setPixStencil(static_cast<int>(samples.front()->depthStencil.y()), x, y, z);

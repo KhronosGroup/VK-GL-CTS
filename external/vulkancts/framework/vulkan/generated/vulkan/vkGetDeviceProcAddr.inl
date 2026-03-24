@@ -105,6 +105,15 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		// "VK_ARM_performance_counters_by_region
 		"vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM",
 
+		// "VK_ARM_shader_instrumentation
+		"vkClearShaderInstrumentationMetricsARM",
+		"vkCmdBeginShaderInstrumentationARM",
+		"vkCmdEndShaderInstrumentationARM",
+		"vkCreateShaderInstrumentationARM",
+		"vkDestroyShaderInstrumentationARM",
+		"vkEnumeratePhysicalDeviceShaderInstrumentationMetricsARM",
+		"vkGetShaderInstrumentationValuesARM",
+
 		// "VK_ARM_tensors
 		"vkBindTensorMemoryARM",
 		"vkCmdCopyTensorARM",
@@ -610,6 +619,10 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdUpdateMemoryKHR",
 		"vkCmdWriteMarkerToMemoryAMD",
 		"vkCreateAccelerationStructure2KHR",
+
+		// "VK_KHR_device_fault
+		"vkGetDeviceFaultDebugInfoKHR",
+		"vkGetDeviceFaultReportsKHR",
 
 		// "VK_KHR_device_group
 		"vkAcquireNextImage2KHR",

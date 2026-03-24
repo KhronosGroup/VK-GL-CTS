@@ -1455,17 +1455,18 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate(void)
         // Create an input buffer
 
         const BufferWithMemory inputBuffer(vk, device, allocator,
-                                           makeBufferCreateInfo(bufferSizeBytes, inputBufferUsageFlags),
-                                           MemoryRequirement::HostVisible | MemoryRequirement::Cached);
+                                           makeBufferCreateInfo(bufferSizeBytes, inputBufferUsageFlags), HostIntent::W);
 
         // Fill the input buffer with data
+        std::vector<tcu::UVec4> inputValues;
         {
+            inputValues.reserve(m_numValues);
             de::Random rnd(randomSeed);
-            const Allocation &inputBufferAllocation = inputBuffer.getAllocation();
-            tcu::UVec4 *bufferPtr                   = static_cast<tcu::UVec4 *>(inputBufferAllocation.getHostPtr());
-            for (uint32_t i = 0; i < m_numValues; ++i)
-                bufferPtr[i].x() = rnd.getUint32();
+            for (uint32_t i = 0u; i < m_numValues; ++i)
+                inputValues.emplace_back(rnd.getUint32(), 0u, 0u, 0u);
 
+            const Allocation &inputBufferAllocation = inputBuffer.getAllocation();
+            memcpy(inputBufferAllocation.getHostPtr(), de::dataOrNull(inputValues), de::dataSize(inputValues));
             flushAlloc(vk, device, inputBufferAllocation);
         }
 
@@ -1475,14 +1476,21 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate(void)
 
         // Create an output buffer
 
-        const BufferWithMemory outputBuffer(
-            vk, device, allocator,
-            makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                                                      VK_BUFFER_USAGE_TRANSFER_DST_BIT),
-            m_deviceLocal ? MemoryRequirement::Local : (MemoryRequirement::HostVisible | MemoryRequirement::Cached));
+        std::unique_ptr<BufferWithMemory> outputBuffer;
+        const auto outputBufferUsage = static_cast<VkBufferUsageFlags>(
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+        const auto outputBufferInfo = makeBufferCreateInfo(bufferSizeBytes, outputBufferUsage);
+        if (m_deviceLocal)
+        {
+            outputBuffer.reset(new BufferWithMemory(vk, device, allocator, outputBufferInfo, MemoryRequirement::Local));
+        }
+        else
+        {
+            outputBuffer.reset(new BufferWithMemory(vk, device, allocator, outputBufferInfo, HostIntent::R));
+        }
+
         beginCommandBuffer(vk, *cmdBuffer);
-        vk.cmdFillBuffer(*cmdBuffer, *outputBuffer, 0, bufferSizeBytes, 0xBEBEBEBE);
+        vk.cmdFillBuffer(*cmdBuffer, outputBuffer->get(), 0, bufferSizeBytes, 0xBEBEBEBE);
         endCommandBuffer(vk, *cmdBuffer);
 
         // Wait for completion
@@ -1490,7 +1498,7 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate(void)
 
         const BufferWithMemory readbackBuffer(vk, device, allocator,
                                               makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
-                                              MemoryRequirement::HostVisible | MemoryRequirement::Cached);
+                                              HostIntent::R);
         const Allocation &readbackBufferAllocation = readbackBuffer.getAllocation();
 
         // Create descriptor set
@@ -1516,7 +1524,7 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate(void)
         const VkDescriptorBufferInfo inputBufferDescriptorInfo =
             makeDescriptorBufferInfo(*inputBuffer, 0ull, inputRange);
         const VkDescriptorBufferInfo outputBufferDescriptorInfo =
-            makeDescriptorBufferInfo(*outputBuffer, 0ull, outputRange);
+            makeDescriptorBufferInfo(outputBuffer->get(), 0ull, outputRange);
         DescriptorSetUpdateBuilder()
             .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), inputBufferDescriptorType,
                          &inputBufferDescriptorInfo)
@@ -1542,7 +1550,7 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate(void)
             VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *inputBuffer, 0ull, bufferSizeBytes);
 
         const VkBufferMemoryBarrier shaderWriteBarrier = makeBufferMemoryBarrier(
-            VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0ull, bufferSizeBytes);
+            VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, outputBuffer->get(), 0ull, bufferSizeBytes);
 
         const VkBufferMemoryBarrier transferWriteBarrier = makeBufferMemoryBarrier(
             VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *readbackBuffer, 0ull, bufferSizeBytes);
@@ -1568,14 +1576,14 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate(void)
         submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
         // Validate the results
-        const Allocation &outputBufferAllocation = outputBuffer.getAllocation();
+        const Allocation &outputBufferAllocation = outputBuffer->getAllocation();
 
         if (m_deviceLocal)
         {
             VkBufferCopy copy{0, 0, bufferSizeBytes};
             beginCommandBuffer(vk, *cmdBuffer);
 
-            vk.cmdCopyBuffer(*cmdBuffer, *outputBuffer, *readbackBuffer, 1, &copy);
+            vk.cmdCopyBuffer(*cmdBuffer, outputBuffer->get(), *readbackBuffer, 1, &copy);
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
                                   (VkDependencyFlags)0, 0, nullptr, 1, &transferWriteBarrier, 0, nullptr);
@@ -1594,7 +1602,7 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate(void)
 
         const tcu::UVec4 *bufferPtr = static_cast<tcu::UVec4 *>(m_deviceLocal ? readbackBufferAllocation.getHostPtr() :
                                                                                 outputBufferAllocation.getHostPtr());
-        const tcu::UVec4 *refBufferPtr = static_cast<tcu::UVec4 *>(inputBuffer.getAllocation().getHostPtr());
+        const tcu::UVec4 *refBufferPtr = &inputValues[0];
 
         for (uint32_t ndx = 0; ndx < m_numValues; ++ndx)
         {
@@ -5322,7 +5330,7 @@ void ReplicatedCompositesTest::initPrograms(SourceCollections &sourceCollections
         << "#extension GL_KHR_memory_scope_semantics : enable\n"
         << "#extension GL_EXT_spec_constant_composites : enable\n"
         << "#pragma use_replicated_composites\n"
-        << "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+        << "layout (local_size_x = " << ((m_compositeType == COOPMAT) ? "64" : "1") << ") in;\n"
         << "layout(binding = 0, scalar) buffer Output {\n";
 
     switch (m_compositeType)
@@ -5507,8 +5515,10 @@ void ReplicatedCompositesTest::initPrograms(SourceCollections &sourceCollections
             << "    sb_out.str[5] = str2.b.c;\n";
         break;
     case COOPMAT:
-        src << "    sb_out.mat[0] = float(mat[0]);\n"
-            << "    sb_out.mat[1] = (mat.length() > 1) ? float(mat[1]) : float(mat[0]);\n";
+        src << "    if (gl_LocalInvocationIndex == 0) {\n"
+            << "        sb_out.mat[0] = float(mat[0]);\n"
+            << "        sb_out.mat[1] = (mat.length() > 1) ? float(mat[1]) : float(mat[0]);\n"
+            << "    }\n";
         break;
     default:
         DE_ASSERT(0);

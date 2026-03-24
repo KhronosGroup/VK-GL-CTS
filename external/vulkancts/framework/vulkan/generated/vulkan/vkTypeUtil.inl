@@ -289,9 +289,9 @@ inline VkDeviceAddressRangeKHR makeDeviceAddressRangeKHR (VkDeviceAddress addres
 	return res;
 }
 
-inline VkDeviceFaultAddressInfoEXT makeDeviceFaultAddressInfoEXT (VkDeviceFaultAddressTypeEXT addressType, VkDeviceAddress reportedAddress, VkDeviceSize addressPrecision)
+inline VkDeviceFaultAddressInfoKHR makeDeviceFaultAddressInfoKHR (VkDeviceFaultAddressTypeKHR addressType, VkDeviceAddress reportedAddress, VkDeviceSize addressPrecision)
 {
-	VkDeviceFaultAddressInfoEXT res;
+	VkDeviceFaultAddressInfoKHR res;
 	res.addressType			= addressType;
 	res.reportedAddress		= reportedAddress;
 	res.addressPrecision	= addressPrecision;
@@ -609,6 +609,17 @@ inline VkPerformanceCounterResultKHR makePerformanceCounterResultKHR (int32_t in
 	res.uint64	= uint64;
 	res.float32	= float32;
 	res.float64	= float64;
+	return res;
+}
+
+inline VkPerformanceValueDataINTEL makePerformanceValueDataINTEL (uint32_t value32, uint64_t value64, float valueFloat, VkBool32 valueBool, const char* valueString)
+{
+	VkPerformanceValueDataINTEL res;
+	res.value32		= value32;
+	res.value64		= value64;
+	res.valueFloat	= valueFloat;
+	res.valueBool	= valueBool;
+	res.valueString	= valueString;
 	return res;
 }
 

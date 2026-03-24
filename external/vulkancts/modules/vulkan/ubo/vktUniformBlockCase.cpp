@@ -1610,8 +1610,9 @@ void generateSingleCompare(std::ostringstream &src, glu::DataType elementType, c
 }
 
 void generateCompareSrc(std::ostringstream &src, const char *resultVar, const VarType &type, const std::string &srcName,
-                        const std::string &apiName, const UniformLayout &layout, int blockNdx, const void *basePtr,
-                        uint32_t unusedMask, MatrixLoadFlags matrixLoadFlag)
+                        const std::string &apiName, const UniformLayout &layout, int blockNdx,
+                        const UniformBlock &block, int instanceNdx, const void *basePtr, uint32_t unusedMask,
+                        MatrixLoadFlags matrixLoadFlag)
 {
     if (type.isBasicType() || (type.isArrayType() && type.getElementType().isBasicType()))
     {
@@ -1632,7 +1633,11 @@ void generateCompareSrc(std::ostringstream &src, const char *resultVar, const Va
 
         if (isArray)
         {
-            for (int elemNdx = 0; elemNdx < type.getArraySize(); elemNdx++)
+            const int arraySize = type.getArraySize() == glu::VarType::UNSIZED_ARRAY ?
+                                      block.getLastUnsizedArraySize(instanceNdx) :
+                                      type.getArraySize();
+
+            for (int elemNdx = 0; elemNdx < arraySize; elemNdx++)
             {
                 src << "\tresult *= compare_" << typeName << "(" << castName << "(" << srcName << "[" << elemNdx
                     << "]), ";
@@ -1654,8 +1659,8 @@ void generateCompareSrc(std::ostringstream &src, const char *resultVar, const Va
             std::string op             = std::string("[") + de::toString(elementNdx) + "]";
             std::string elementSrcName = std::string(srcName) + op;
             std::string elementApiName = std::string(apiName) + op;
-            generateCompareSrc(src, resultVar, elementType, elementSrcName, elementApiName, layout, blockNdx, basePtr,
-                               unusedMask, LOAD_FULL_MATRIX);
+            generateCompareSrc(src, resultVar, elementType, elementSrcName, elementApiName, layout, blockNdx, block,
+                               instanceNdx, basePtr, unusedMask, LOAD_FULL_MATRIX);
         }
     }
     else
@@ -1672,7 +1677,7 @@ void generateCompareSrc(std::ostringstream &src, const char *resultVar, const Va
             std::string memberSrcName = std::string(srcName) + op;
             std::string memberApiName = std::string(apiName) + op;
             generateCompareSrc(src, resultVar, memberIter->getType(), memberSrcName, memberApiName, layout, blockNdx,
-                               basePtr, unusedMask, LOAD_FULL_MATRIX);
+                               block, instanceNdx, basePtr, unusedMask, LOAD_FULL_MATRIX);
         }
     }
 }
@@ -1720,8 +1725,8 @@ void generateCompareSrc(std::ostringstream &src, const char *resultVar, const Sh
 
                 std::string srcName = srcPrefix + uniform.getName();
                 std::string apiName = apiPrefix + uniform.getName();
-                generateCompareSrc(src, resultVar, uniform.getType(), srcName, apiName, layout, blockNdx, basePtr,
-                                   unusedMask, matrixLoadFlag);
+                generateCompareSrc(src, resultVar, uniform.getType(), srcName, apiName, layout, blockNdx, block,
+                                   instanceNdx, basePtr, unusedMask, matrixLoadFlag);
             }
         }
     }

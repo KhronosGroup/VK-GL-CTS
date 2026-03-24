@@ -301,6 +301,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceImageProcessingFeaturesQCOM>
 template<> void initFeatureFromBlob<VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT>(VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceImageViewMinLodFeaturesEXT>(VkPhysicalDeviceImageViewMinLodFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceInheritedViewportScissorFeaturesNV>(VkPhysicalDeviceInheritedViewportScissorFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR>(VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceInvocationMaskFeaturesHUAWEI>(VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceLegacyDitheringFeaturesEXT>(VkPhysicalDeviceLegacyDitheringFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT>(VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT&, const AllFeaturesBlobs&) {}
@@ -361,6 +362,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceShaderEarlyAndLateFragmentTe
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderFloat8FeaturesEXT>(VkPhysicalDeviceShaderFloat8FeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderFmaFeaturesKHR>(VkPhysicalDeviceShaderFmaFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT>(VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderLongVectorFeaturesEXT>(VkPhysicalDeviceShaderLongVectorFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR>(VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT>(VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderObjectFeaturesEXT>(VkPhysicalDeviceShaderObjectFeaturesEXT&, const AllFeaturesBlobs&) {}
@@ -468,6 +470,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImagelessFramebufferFeatu
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceIndexTypeUint8Features>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES, VK_KHR_INDEX_TYPE_UINT8_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceInheritedViewportScissorFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INHERITED_VIEWPORT_SCISSOR_FEATURES_NV, VK_NV_INHERITED_VIEWPORT_SCISSOR_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceInlineUniformBlockFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES, VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INTERNALLY_SYNCHRONIZED_QUEUES_FEATURES_KHR, VK_KHR_INTERNALLY_SYNCHRONIZED_QUEUES_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceInvocationMaskFeaturesHUAWEI>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INVOCATION_MASK_FEATURES_HUAWEI, VK_HUAWEI_INVOCATION_MASK_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceLegacyDitheringFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT, VK_EXT_LEGACY_DITHERING_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_FEATURES_EXT, VK_EXT_LEGACY_VERTEX_ATTRIBUTES_EXTENSION_NAME}; }
@@ -548,6 +551,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderFloatControls2Featu
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderFmaFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FMA_FEATURES_KHR, VK_KHR_SHADER_FMA_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT, VK_EXT_SHADER_IMAGE_ATOMIC_INT64_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderIntegerDotProductFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES, VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderLongVectorFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_LONG_VECTOR_FEATURES_EXT, VK_EXT_SHADER_LONG_VECTOR_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MAXIMAL_RECONVERGENCE_FEATURES_KHR, VK_KHR_SHADER_MAXIMAL_RECONVERGENCE_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_FEATURES_EXT, VK_EXT_SHADER_MODULE_IDENTIFIER_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderObjectFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT, VK_EXT_SHADER_OBJECT_EXTENSION_NAME}; }
@@ -669,6 +673,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceIndexTypeUint8Features>, VK_KHR_INDEX_TYPE_UINT8_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceInheritedViewportScissorFeaturesNV>, VK_NV_INHERITED_VIEWPORT_SCISSOR_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceInlineUniformBlockFeatures>, VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR>, VK_KHR_INTERNALLY_SYNCHRONIZED_QUEUES_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceInvocationMaskFeaturesHUAWEI>, VK_HUAWEI_INVOCATION_MASK_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceLegacyDitheringFeaturesEXT>, VK_EXT_LEGACY_DITHERING_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT>, VK_EXT_LEGACY_VERTEX_ATTRIBUTES_EXTENSION_NAME },
@@ -749,6 +754,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderFmaFeaturesKHR>, VK_KHR_SHADER_FMA_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT>, VK_EXT_SHADER_IMAGE_ATOMIC_INT64_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderIntegerDotProductFeatures>, VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceShaderLongVectorFeaturesEXT>, VK_EXT_SHADER_LONG_VECTOR_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR>, VK_KHR_SHADER_MAXIMAL_RECONVERGENCE_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT>, VK_EXT_SHADER_MODULE_IDENTIFIER_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderObjectFeaturesEXT>, VK_EXT_SHADER_OBJECT_EXTENSION_NAME },

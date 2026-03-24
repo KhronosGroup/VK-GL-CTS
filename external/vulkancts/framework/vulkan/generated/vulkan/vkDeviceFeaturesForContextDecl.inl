@@ -76,6 +76,7 @@ const vk::VkPhysicalDeviceImagelessFramebufferFeatures&						getImagelessFramebu
 const vk::VkPhysicalDeviceIndexTypeUint8Features&							getIndexTypeUint8Features							(void) const;
 const vk::VkPhysicalDeviceInheritedViewportScissorFeaturesNV&				getInheritedViewportScissorFeatures					(void) const;
 const vk::VkPhysicalDeviceInlineUniformBlockFeatures&						getInlineUniformBlockFeatures						(void) const;
+const vk::VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR&			getInternallySynchronizedQueuesFeatures				(void) const;
 const vk::VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&						getInvocationMaskFeaturesHUAWEI						(void) const;
 const vk::VkPhysicalDeviceLegacyDitheringFeaturesEXT&						getLegacyDitheringFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT&				getLegacyVertexAttributesFeaturesEXT				(void) const;
@@ -156,6 +157,7 @@ const vk::VkPhysicalDeviceShaderFloatControls2Features&						getShaderFloatContr
 const vk::VkPhysicalDeviceShaderFmaFeaturesKHR&								getShaderFmaFeatures								(void) const;
 const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&				getShaderImageAtomicInt64FeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceShaderIntegerDotProductFeatures&					getShaderIntegerDotProductFeatures					(void) const;
+const vk::VkPhysicalDeviceShaderLongVectorFeaturesEXT&						getShaderLongVectorFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR&			getShaderMaximalReconvergenceFeatures				(void) const;
 const vk::VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT&				getShaderModuleIdentifierFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceShaderObjectFeaturesEXT&							getShaderObjectFeaturesEXT							(void) const;

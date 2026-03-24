@@ -688,6 +688,18 @@ bool check_VK_ARM_shader_core_properties(const tcu::UVec2& v, const ExtPropVect&
 	return isCompatible(1, 1, v);
 }
 
+bool check_VK_ARM_shader_instrumentation(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_ARM_shader_instrumentation"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
 bool check_VK_ARM_tensors(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -2468,6 +2480,18 @@ bool check_VK_KHR_device_address_commands(const tcu::UVec2& v, const ExtPropVect
 	return (((((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_buffer_device_address")) || isCompatible(1, 2, v)) && isSupported(vDEP, "VK_KHR_synchronization2") && isSupported(vDEP, "VK_EXT_extended_dynamic_state")) || isCompatible(1, 3, v));
 }
 
+bool check_VK_KHR_device_fault(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_device_fault"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2
+	return (isCompatible(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
 bool check_VK_KHR_device_group(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	if (isCompatible(1, 1, v))
@@ -3094,6 +3118,18 @@ bool check_VK_KHR_separate_depth_stencil_layouts(const tcu::UVec2& v, const ExtP
 
 	// depends attribute in xml: ((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_create_renderpass2),VK_VERSION_1_2
 	return (((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_create_renderpass2")) || isCompatible(1, 2, v));
+}
+
+bool check_VK_KHR_shader_abort(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_shader_abort"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2+VK_KHR_device_fault+VK_KHR_shader_constant_data
+	return ((isCompatible(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && isSupported(vDEP, "VK_KHR_device_fault") && isSupported(vDEP, "VK_KHR_shader_constant_data"));
 }
 
 bool check_VK_KHR_shader_atomic_int64(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -4604,6 +4640,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_ARM_scheduling_controls",							&check_VK_ARM_scheduling_controls),
 	std::make_pair("VK_ARM_shader_core_builtins",							&check_VK_ARM_shader_core_builtins),
 	std::make_pair("VK_ARM_shader_core_properties",							&check_VK_ARM_shader_core_properties),
+	std::make_pair("VK_ARM_shader_instrumentation",							&check_VK_ARM_shader_instrumentation),
 	std::make_pair("VK_ARM_tensors",										&check_VK_ARM_tensors),
 	std::make_pair("VK_EXT_4444_formats",									&check_VK_EXT_4444_formats),
 	std::make_pair("VK_EXT_astc_decode_mode",								&check_VK_EXT_astc_decode_mode),
@@ -4748,6 +4785,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_depth_clamp_zero_one",							&check_VK_KHR_depth_clamp_zero_one),
 	std::make_pair("VK_KHR_depth_stencil_resolve",							&check_VK_KHR_depth_stencil_resolve),
 	std::make_pair("VK_KHR_device_address_commands",						&check_VK_KHR_device_address_commands),
+	std::make_pair("VK_KHR_device_fault",									&check_VK_KHR_device_fault),
 	std::make_pair("VK_KHR_device_group",									&check_VK_KHR_device_group),
 	std::make_pair("VK_KHR_display_swapchain",								&check_VK_KHR_display_swapchain),
 	std::make_pair("VK_KHR_driver_properties",								&check_VK_KHR_driver_properties),
@@ -4797,6 +4835,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_robustness2",									&check_VK_KHR_robustness2),
 	std::make_pair("VK_KHR_sampler_ycbcr_conversion",						&check_VK_KHR_sampler_ycbcr_conversion),
 	std::make_pair("VK_KHR_separate_depth_stencil_layouts",					&check_VK_KHR_separate_depth_stencil_layouts),
+	std::make_pair("VK_KHR_shader_abort",									&check_VK_KHR_shader_abort),
 	std::make_pair("VK_KHR_shader_atomic_int64",							&check_VK_KHR_shader_atomic_int64),
 	std::make_pair("VK_KHR_shader_bfloat16",								&check_VK_KHR_shader_bfloat16),
 	std::make_pair("VK_KHR_shader_clock",									&check_VK_KHR_shader_clock),
@@ -4966,6 +5005,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_ARM_scheduling_controls"),
 	std::make_tuple(1, 0, "VK_ARM_shader_core_builtins"),
 	std::make_tuple(1, 1, "VK_ARM_shader_core_properties"),
+	std::make_tuple(1, 0, "VK_ARM_shader_instrumentation"),
 	std::make_tuple(1, 3, "VK_ARM_tensors"),
 	std::make_tuple(1, 0, "VK_EXT_4444_formats"),
 	std::make_tuple(1, 0, "VK_EXT_acquire_drm_display"),
@@ -5151,6 +5191,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_depth_stencil_resolve"),
 	std::make_tuple(1, 0, "VK_KHR_descriptor_update_template"),
 	std::make_tuple(1, 0, "VK_KHR_device_address_commands"),
+	std::make_tuple(1, 0, "VK_KHR_device_fault"),
 	std::make_tuple(1, 0, "VK_KHR_device_group"),
 	std::make_tuple(1, 0, "VK_KHR_device_group_creation"),
 	std::make_tuple(1, 0, "VK_KHR_display"),
@@ -5219,9 +5260,11 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_sampler_mirror_clamp_to_edge"),
 	std::make_tuple(1, 0, "VK_KHR_sampler_ycbcr_conversion"),
 	std::make_tuple(1, 0, "VK_KHR_separate_depth_stencil_layouts"),
+	std::make_tuple(1, 0, "VK_KHR_shader_abort"),
 	std::make_tuple(1, 0, "VK_KHR_shader_atomic_int64"),
 	std::make_tuple(1, 0, "VK_KHR_shader_bfloat16"),
 	std::make_tuple(1, 0, "VK_KHR_shader_clock"),
+	std::make_tuple(1, 0, "VK_KHR_shader_constant_data"),
 	std::make_tuple(1, 0, "VK_KHR_shader_draw_parameters"),
 	std::make_tuple(1, 0, "VK_KHR_shader_expect_assume"),
 	std::make_tuple(1, 0, "VK_KHR_shader_float16_int8"),

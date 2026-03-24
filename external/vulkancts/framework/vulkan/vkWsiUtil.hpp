@@ -100,6 +100,9 @@ std::vector<VkImage> getSwapchainImages(const DeviceInterface &vkd, VkDevice dev
 uint32_t chooseQueueFamilyIndex(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
                                 const std::vector<VkSurfaceKHR> &surfaces);
 
+uint32_t chooseQueueFamilyIndex(const InstanceInterface &vki, const std::vector<VkPhysicalDevice> &physicalDevices,
+                                VkSurfaceKHR surface);
+
 uint32_t chooseQueueFamilyIndex(const InstanceInterface &vki, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 
 std::vector<uint32_t> getCompatibleQueueFamilyIndices(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,

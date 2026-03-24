@@ -72,6 +72,22 @@ class VertexAttribBindingBase : public deqp::SubcaseBase
     }
 
 public:
+    bool IsSSBOInVSAvailable(int required)
+    {
+        GLint blocksVS;
+        glGetIntegerv(GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS, &blocksVS);
+        if (blocksVS >= required)
+            return true;
+        else
+        {
+            std::ostringstream reason;
+            reason << "Required " << required << " VS storage blocks but only " << blocksVS << " available."
+                   << std::endl;
+            OutputNotSupported(reason.str());
+            return false;
+        }
+    }
+
     int getWindowWidth()
     {
         const tcu::RenderTarget &renderTarget = m_context.getRenderContext().getRenderTarget();
@@ -3624,6 +3640,9 @@ class AdvancedLargeStrideAndOffsetsNewAndLegacyAPI : public VertexAttribBindingB
 
     virtual long Run()
     {
+        if (!IsSSBOInVSAvailable(2))
+            return NOT_SUPPORTED;
+
         const char *const glsl_vs =
             "#version 430 core" NL "layout(location = 0) in vec2 vs_in_attrib0;" NL
             "layout(location = 4) in ivec2 vs_in_attrib1;" NL "layout(location = 8) in uvec2 vs_in_attrib2;" NL
