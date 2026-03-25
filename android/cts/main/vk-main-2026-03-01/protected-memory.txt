@@ -1,3 +1,6 @@
+dEQP-VK.protected_memory.buffer.copy.float_buffer.primary.static.test_device_address
+dEQP-VK.protected_memory.buffer.fill.float_buffer.primary.static.test_device_address
+dEQP-VK.protected_memory.buffer.update.float_buffer.primary.static.test_device_address
 dEQP-VK.protected_memory.interaction.wsi.direct.swapchain.create.clipped
 dEQP-VK.protected_memory.interaction.wsi.direct.swapchain.create.composite_alpha
 dEQP-VK.protected_memory.interaction.wsi.direct.swapchain.create.image_array_layers

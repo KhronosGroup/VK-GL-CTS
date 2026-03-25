@@ -186,6 +186,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_descriptor_indexing"))
 		addFeatures(&physicalDeviceDescriptorIndexingFeatures);
 
+	// VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR for ext [VK_KHR_device_address_commands]
+	vk::VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR physicalDeviceDeviceAddressCommandsFeaturesKHR = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_device_address_commands"))
+		addFeatures(&physicalDeviceDeviceAddressCommandsFeaturesKHR);
+
 	// VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV for ext [VK_NV_device_generated_commands_compute]
 	vk::VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_device_generated_commands_compute"))
@@ -1219,6 +1224,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceSynchronization2Features.synchronization2 == VK_FALSE )
 			failMesages.push_back("synchronization2");
+	}
+
+	// VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_device_address_commands")) )
+	{
+		if ( physicalDeviceDeviceAddressCommandsFeaturesKHR.deviceAddressCommands == VK_FALSE )
+			failMesages.push_back("deviceAddressCommands");
 	}
 
 	// VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR

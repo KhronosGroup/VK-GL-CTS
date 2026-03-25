@@ -2497,6 +2497,48 @@ struct VkDeviceAddressBindingCallbackDataEXT
 	VkDeviceAddressBindingTypeEXT	bindingType;
 };
 
+struct VkDeviceAddressRangeKHR
+{
+	VkDeviceAddress	address;
+	VkDeviceSize	size;
+};
+
+struct VkAccelerationStructureCreateInfo2KHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkAccelerationStructureCreateFlagsKHR	createFlags;
+	VkDeviceAddressRangeKHR					addressRange;
+	VkAddressCommandFlagsKHR				addressFlags;
+	VkAccelerationStructureTypeKHR			type;
+};
+
+struct VkBindIndexBuffer3InfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkDeviceAddressRangeKHR		addressRange;
+	VkAddressCommandFlagsKHR	addressFlags;
+	VkIndexType					indexType;
+};
+
+struct VkBindTransformFeedbackBuffer2InfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkDeviceAddressRangeKHR		addressRange;
+	VkAddressCommandFlagsKHR	addressFlags;
+};
+
+struct VkConditionalRenderingBeginInfo2EXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDeviceAddressRangeKHR			addressRange;
+	VkAddressCommandFlagsKHR		addressFlags;
+	VkConditionalRenderingFlagsEXT	flags;
+};
+
 struct VkDeviceBufferMemoryRequirements
 {
 	VkStructureType				sType;
@@ -2625,6 +2667,24 @@ struct VkDeviceGroupSwapchainCreateInfoKHR
 	VkStructureType						sType;
 	const void*							pNext;
 	VkDeviceGroupPresentModeFlagsKHR	modes;
+};
+
+struct VkDeviceMemoryCopyKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkDeviceAddressRangeKHR		srcRange;
+	VkAddressCommandFlagsKHR	srcFlags;
+	VkDeviceAddressRangeKHR		dstRange;
+	VkAddressCommandFlagsKHR	dstFlags;
+};
+
+struct VkCopyDeviceMemoryInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	uint32_t						regionCount;
+	const VkDeviceMemoryCopyKHR*	pRegions;
 };
 
 struct VkDeviceMemoryOpaqueCaptureAddressInfo
@@ -2876,6 +2936,14 @@ struct VkDirectFBSurfaceCreateInfoEXT
 	VkDirectFBSurfaceCreateFlagsEXT	flags;
 	pt::IDirectFB*					dfb;
 	pt::IDirectFBSurface*			surface;
+};
+
+struct VkDispatchIndirect2InfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkDeviceAddressRangeKHR		addressRange;
+	VkAddressCommandFlagsKHR	addressFlags;
 };
 
 struct VkDispatchIndirectCommand
@@ -4238,6 +4306,16 @@ struct VkMemoryMapPlacedInfoEXT
 	void*			pPlacedAddress;
 };
 
+struct VkMemoryMarkerInfoAMD
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkPipelineStageFlags2KHR	stage;
+	VkDeviceAddressRangeKHR		dstRange;
+	VkAddressCommandFlagsKHR	dstFlags;
+	uint32_t					marker;
+};
+
 struct VkMemoryMetalHandlePropertiesEXT
 {
 	VkStructureType	sType;
@@ -4257,6 +4335,28 @@ struct VkMemoryPriorityAllocateInfoEXT
 	VkStructureType	sType;
 	const void*		pNext;
 	float			priority;
+};
+
+struct VkMemoryRangeBarrierKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkPipelineStageFlags2		srcStageMask;
+	VkAccessFlags2				srcAccessMask;
+	VkPipelineStageFlags2		dstStageMask;
+	VkAccessFlags2				dstAccessMask;
+	uint32_t					srcQueueFamilyIndex;
+	uint32_t					dstQueueFamilyIndex;
+	VkDeviceAddressRangeKHR		addressRange;
+	VkAddressCommandFlagsKHR	addressFlags;
+};
+
+struct VkMemoryRangeBarriersInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	uint32_t						memoryRangeBarrierCount;
+	const VkMemoryRangeBarrierKHR*	pMemoryRangeBarriers;
 };
 
 struct VkMemoryRequirements
@@ -4513,6 +4613,20 @@ struct VkCopyMemoryToImageIndirectCommandKHR
 	VkExtent3D					imageExtent;
 };
 
+struct VkDeviceMemoryImageCopyKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkDeviceAddressRangeKHR		addressRange;
+	VkAddressCommandFlagsKHR	addressFlags;
+	uint32_t					addressRowLength;
+	uint32_t					addressImageHeight;
+	VkImageSubresourceLayers	imageSubresource;
+	VkImageLayout				imageLayout;
+	VkOffset3D					imageOffset;
+	VkExtent3D					imageExtent;
+};
+
 struct VkDisplayPlaneCapabilities2KHR
 {
 	VkStructureType					sType;
@@ -4631,6 +4745,15 @@ struct VkCopyBufferToImageInfo2
 	VkImageLayout				dstImageLayout;
 	uint32_t					regionCount;
 	const VkBufferImageCopy2*	pRegions;
+};
+
+struct VkCopyDeviceMemoryImageInfoKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkImage								image;
+	uint32_t							regionCount;
+	const VkDeviceMemoryImageCopyKHR*	pRegions;
 };
 
 struct VkCopyImageInfo2
@@ -5340,6 +5463,13 @@ struct VkPhysicalDeviceDescriptorIndexingProperties
 	uint32_t		maxDescriptorSetUpdateAfterBindSampledImages;
 	uint32_t		maxDescriptorSetUpdateAfterBindStorageImages;
 	uint32_t		maxDescriptorSetUpdateAfterBindInputAttachments;
+};
+
+struct VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		deviceAddressCommands;
 };
 
 struct VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV
@@ -9657,6 +9787,15 @@ struct VkStridedDeviceAddressRangeKHR
 	VkDeviceSize	stride;
 };
 
+struct VkBindVertexBuffer3InfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkBool32						setStride;
+	VkStridedDeviceAddressRangeKHR	addressRange;
+	VkAddressCommandFlagsKHR		addressFlags;
+};
+
 struct VkCopyMemoryIndirectInfoKHR
 {
 	VkStructureType					sType;
@@ -9677,6 +9816,26 @@ struct VkCopyMemoryToImageIndirectInfoKHR
 	VkImage							dstImage;
 	VkImageLayout					dstImageLayout;
 	const VkImageSubresourceLayers*	pImageSubresources;
+};
+
+struct VkDrawIndirect2InfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkStridedDeviceAddressRangeKHR	addressRange;
+	VkAddressCommandFlagsKHR		addressFlags;
+	uint32_t						drawCount;
+};
+
+struct VkDrawIndirectCount2InfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkStridedDeviceAddressRangeKHR	addressRange;
+	VkAddressCommandFlagsKHR		addressFlags;
+	VkDeviceAddressRangeKHR			countAddressRange;
+	VkAddressCommandFlagsKHR		countAddressFlags;
+	uint32_t						maxDrawCount;
 };
 
 struct VkStridedDeviceAddressRegionKHR
@@ -11786,6 +11945,9 @@ typedef VkDescriptorUpdateTemplateCreateInfo VkDescriptorUpdateTemplateCreateInf
 
 
 typedef VkDescriptorUpdateTemplateEntry VkDescriptorUpdateTemplateEntryKHR;
+
+
+typedef VkDeviceAddressRangeKHR VkDeviceAddressRangeEXT;
 
 
 typedef VkDeviceBufferMemoryRequirements VkDeviceBufferMemoryRequirementsKHR;

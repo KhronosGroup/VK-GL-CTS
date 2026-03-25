@@ -1,5 +1,3 @@
-#ifndef _VKTAPICOPYBUFFERTOIMAGETESTS_HPP
-#define _VKTAPICOPYBUFFERTOIMAGETESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -25,10 +23,7 @@
 
 #include "vktApiCopyBufferToDepthStencilTests.hpp"
 
-namespace vkt
-{
-
-namespace api
+namespace vkt::api
 {
 
 namespace
@@ -183,10 +178,10 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context &context, TestParams 
     // Create source buffer, this is where the depth & stencil data will go that's used by test's regions.
     {
         VkBufferUsageFlags usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        if (useIndirectCopy)
+        if (useIndirectCopy || (m_params.extensionFlags & DEVICE_ADDRESS_COMMANDS))
             usageFlags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
-        MemoryRequirement memReq = useIndirectCopy ?
+        MemoryRequirement memReq = (useIndirectCopy || (m_params.extensionFlags & DEVICE_ADDRESS_COMMANDS)) ?
                                        (MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress) :
                                        MemoryRequirement::HostVisible;
 
@@ -279,19 +274,10 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
                    m_params.dst.image.extent.height, m_params.dst.image.extent.depth);
 
     // Fill m_extendedTextureLevel with copy of m_destinationTextureLevel
-    // Then iterate over each of the regions given in m_params.regions and copy m_sourceTextureLevel content to m_extendedTextureLevel
+    // Then iterate over each of the regions given in m_params.regions and copy m_sourceTextureLevel content to m_expectedTextureLevel
     // This emulates what the HW will be doing.
     generateExpectedResult();
 
-    // Upload our source depth/stencil content to the source buffer
-    // This is the buffer that will be used by region commands
-    std::vector<VkBufferImageCopy> bufferImageCopies;
-    std::vector<VkBufferImageCopy2KHR> bufferImageCopies2KHR;
-#ifndef CTS_USES_VULKANSC
-    std::vector<VkCopyMemoryToImageIndirectCommandKHR> memoryImageCopiesKHR;
-    VkDeviceAddress srcBufferAddress      = 0;
-    VkDeviceAddress indirectBufferAddress = 0;
-#endif
     VkDeviceSize bufferOffset  = 0;
     const VkDevice vkDevice    = m_device;
     const DeviceInterface &vk  = m_context.getDeviceInterface();
@@ -301,28 +287,34 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
     VkDeviceSize depthOffset   = 0;
     VkDeviceSize stencilOffset = 0;
 
+    // Upload our source depth/stencil content to the source buffer
+    // This is the buffer that will be used by region commands
+    std::vector<VkBufferImageCopy> bufferImageCopies;
+    std::vector<VkBufferImageCopy2KHR> bufferImageCopies2KHR;
+
 #ifndef CTS_USES_VULKANSC
+    std::vector<VkCopyMemoryToImageIndirectCommandKHR> memoryImageCopiesKHR;
+    std::vector<VkDeviceMemoryImageCopyKHR> memoryImageCopies2KHR;
+    VkDeviceAddress srcBufferAddress      = 0;
+    VkDeviceAddress indirectBufferAddress = 0;
+
     const VkDeviceSize indirectBufferSize =
         de::max(m_params.regions.size(), (size_t)1) * sizeof(VkCopyMemoryToImageIndirectCommandKHR);
     Allocator &memAlloc = m_context.getDefaultAllocator();
-    const BufferWithMemory indirectBuffer(
-        vk, vkDevice, memAlloc,
-        makeBufferCreateInfo(indirectBufferSize,
-                             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT),
-        MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    auto indirectUsage  = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+    const BufferWithMemory indirectBuffer(vk, vkDevice, memAlloc,
+                                          makeBufferCreateInfo(indirectBufferSize, indirectUsage),
+                                          MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
 
-    if (m_params.extensionFlags & INDIRECT_COPY)
+    if ((m_params.extensionFlags & INDIRECT_COPY) || (m_params.extensionFlags & DEVICE_ADDRESS_COMMANDS))
     {
-        VkBufferDeviceAddressInfo srcBufferAddressInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr,
-                                                       m_source.get()};
-        srcBufferAddress = vk.getBufferDeviceAddress(m_device, &srcBufferAddressInfo);
-
-        // indirectBuffer Address
-        VkBufferDeviceAddressInfo indirectBufferAddressInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr,
-                                                            indirectBuffer.get()};
-        indirectBufferAddress = vk.getBufferDeviceAddress(m_device, &indirectBufferAddressInfo);
+        srcBufferAddress      = getBufferDeviceAddress(vk, m_device, *m_source);
+        indirectBufferAddress = getBufferDeviceAddress(vk, m_device, *indirectBuffer);
     }
 #endif
+
+    tcu::ConstPixelBufferAccess bufferAccess = m_sourceTextureLevel->getAccess();
+    const uint32_t channelSize = bufferAccess.getWidth() * bufferAccess.getHeight() * bufferAccess.getDepth();
 
     // To be able to test ordering depth & stencil differently
     // we take the given copy regions and use that as the desired order
@@ -330,8 +322,7 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
     // data offsets to be used in the copy command.
     for (uint32_t i = 0; i < m_params.regions.size(); i++)
     {
-        tcu::ConstPixelBufferAccess bufferAccess = m_sourceTextureLevel->getAccess();
-        uint32_t bufferSize        = bufferAccess.getWidth() * bufferAccess.getHeight() * bufferAccess.getDepth();
+        uint32_t bufferSize        = channelSize;
         VkBufferImageCopy copyData = m_params.regions[i].bufferImageCopy;
         char *srcPtr;
 
@@ -363,6 +354,7 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
             tcu::copy(stencilTexture.getAccess(),
                       tcu::getEffectiveDepthStencilAccess(bufferAccess, tcu::Sampler::MODE_STENCIL));
             srcPtr = (char *)stencilTexture.getAccess().getDataPtr();
+
             // Copy packed stencil-only data to output buffer
             deMemcpy(dstPtr, srcPtr, bufferSize);
             stencilLoaded = true;
@@ -381,6 +373,11 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
         if (m_params.extensionFlags & INDIRECT_COPY)
         {
             memoryImageCopiesKHR.push_back(convertvkBufferImageCopyTovkMemoryImageCopyKHR(srcBufferAddress, copyData));
+        }
+        else if (m_params.extensionFlags & DEVICE_ADDRESS_COMMANDS)
+        {
+            memoryImageCopies2KHR.push_back(convertvkBufferImageCopyTovkDeviceMemoryImageCopyKHR(
+                copyData, srcBufferAddress, bufferSize, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
         }
         else
 #endif
@@ -432,10 +429,10 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
     vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                           (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
 
-#ifndef CTS_USES_VULKANSC
     // Copy commands -> indirectBuffer
     if (m_params.extensionFlags & INDIRECT_COPY)
     {
+#ifndef CTS_USES_VULKANSC
         const Allocation &bufferAllocation = indirectBuffer.getAllocation();
         invalidateAlloc(vk, vkDevice, bufferAllocation);
         uint8_t *hostPtr = (uint8_t *)bufferAllocation.getHostPtr();
@@ -494,9 +491,39 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
             }
         }
     }
-    else
+    else if (m_params.extensionFlags & DEVICE_ADDRESS_COMMANDS)
+    {
+        if (m_params.singleCommand)
+        {
+            VkCopyDeviceMemoryImageInfoKHR memorImageInfo = initVulkanStructure();
+            memorImageInfo.image                          = *m_destination;
+            memorImageInfo.regionCount                    = (uint32_t)m_params.regions.size();
+            memorImageInfo.pRegions                       = memoryImageCopies2KHR.data();
+
+            vk.cmdCopyMemoryToImageKHR(*m_universalCmdBuffer, &memorImageInfo);
+        }
+        else
+        {
+            // Issue a a copy command per region defined by the test.
+            for (uint32_t i = 0; i < memoryImageCopies2KHR.size(); i++)
+            {
+                if (i > 0)
+                    vk.cmdPipelineBarrier(*m_universalCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                          VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, nullptr, 0, nullptr,
+                                          1, &imageBarrier);
+
+                VkCopyDeviceMemoryImageInfoKHR memorImageInfo = initVulkanStructure();
+                memorImageInfo.image                          = *m_destination;
+                memorImageInfo.regionCount                    = 1u;
+                memorImageInfo.pRegions                       = &memoryImageCopies2KHR[i];
+
+                // Issue a single copy command with regions defined by the test.
+                vk.cmdCopyMemoryToImageKHR(*m_universalCmdBuffer, &memorImageInfo);
+            }
+        }
 #endif
-        if (!(m_params.extensionFlags & COPY_COMMANDS_2))
+    }
+    else if (!(m_params.extensionFlags & COPY_COMMANDS_2))
     {
         if (m_params.singleCommand)
         {
@@ -595,9 +622,7 @@ public:
     {
     }
 
-    virtual ~CopyBufferToDepthStencilTestCase(void)
-    {
-    }
+    virtual ~CopyBufferToDepthStencilTestCase(void) = default;
 
     virtual TestInstance *createInstance(Context &context) const
     {
@@ -780,9 +805,6 @@ void addCopyBufferToDepthStencilTests(tcu::TestCaseGroup *group, TestGroupParams
     for (const VkFormat format : formats::depthAndStencilFormats)
         for (const auto offset : useOffset)
         {
-            // TODO: Check that this format is supported before creating tests?
-            //if (isSupportedDepthStencilFormat(vki, physDevice, VK_FORMAT_D24_UNORM_S8_UINT))
-
             CopyRegion copyDepthRegion;
             CopyRegion copyStencilRegion;
             TestParams params;
@@ -855,7 +877,4 @@ void addCopyBufferToDepthStencilTests(tcu::TestCaseGroup *group, TestGroupParams
         }
 }
 
-} // namespace api
-} // namespace vkt
-
-#endif // _VKTAPICOPYBUFFERTOBUFFERTESTS_HPP
+} // namespace vkt::api

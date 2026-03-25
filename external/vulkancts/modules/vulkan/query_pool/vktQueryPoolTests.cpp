@@ -33,9 +33,7 @@
 #include "vktQueryMaintenance7Tests.hpp"
 #include "vktQueryPoolDiscardTests.hpp"
 
-namespace vkt
-{
-namespace QueryPool
+namespace vkt::QueryPool
 {
 
 namespace
@@ -63,5 +61,4 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     return createTestGroup(testCtx, name, createChildren);
 }
 
-} // namespace QueryPool
-} // namespace vkt
+} // namespace vkt::QueryPool

@@ -245,6 +245,19 @@ void addDedicatedAllocationCopiesAndBlittingTests(tcu::TestCaseGroup *group)
     addIndirectCopyTests(group, ALLOCATION_KIND_DEDICATED);
 }
 
+#ifndef CTS_USES_VULKANSC
+void addDeviceAddressTests(tcu::TestCaseGroup *group)
+{
+    TestGroupParamsPtr groupParams(new TestGroupParams{ALLOCATION_KIND_SUBALLOCATED, DEVICE_ADDRESS_COMMANDS,
+                                                       QueueSelectionOptions::Universal, false, false, false});
+
+    addTestGroup(group, "image_to_buffer", addCopyImageToBufferTests, groupParams);
+    addTestGroup(group, "buffer_to_image", addCopyBufferToImageTests, groupParams);
+    addTestGroup(group, "buffer_to_depthstencil", addCopyBufferToDepthStencilTests, groupParams);
+    addTestGroup(group, "buffer_to_buffer", addCopyBufferToBufferTests, groupParams);
+}
+#endif
+
 static void cleanupGroup(tcu::TestCaseGroup *)
 {
 }
@@ -272,6 +285,7 @@ tcu::TestCaseGroup *createCopiesAndBlittingTests(tcu::TestContext &testCtx)
 #ifndef CTS_USES_VULKANSC
     copiesAndBlittingTests->addChild(createDynamicStateMetaOperationsTests(testCtx));
     copiesAndBlittingTests->addChild(createCopyMemoryIndirectTests(testCtx));
+    copiesAndBlittingTests->addChild(createTestGroup(testCtx, "device_address", addDeviceAddressTests));
 #endif
     copiesAndBlittingTests->addChild(createReinterpretationTests(testCtx));
 

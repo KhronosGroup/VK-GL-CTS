@@ -63,20 +63,28 @@ CopyBufferToImage::CopyBufferToImage(Context &context, TestParams testParams)
 
     // Create source buffer
     {
-        const VkBufferCreateInfo sourceBufferParams = {
+        VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        if (m_params.extensionFlags & DEVICE_ADDRESS_COMMANDS)
+            usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+        MemoryRequirement memReq = (m_params.extensionFlags & DEVICE_ADDRESS_COMMANDS) ?
+                                       MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress :
+                                       MemoryRequirement::HostVisible;
+
+        const VkBufferCreateInfo sourceBufferParams{
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
             nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_bufferSize,                         // VkDeviceSize size;
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags usage;
+            usage,                                // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
             nullptr,                              // const uint32_t* pQueueFamilyIndices;
         };
 
-        m_source            = createBuffer(vk, m_device, &sourceBufferParams);
-        m_sourceBufferAlloc = allocateBuffer(vki, vk, vkPhysDevice, m_device, *m_source, MemoryRequirement::HostVisible,
-                                             *m_allocator, m_params.allocationKind);
+        m_source = createBuffer(vk, m_device, &sourceBufferParams);
+        m_sourceBufferAlloc =
+            allocateBuffer(vki, vk, vkPhysDevice, m_device, *m_source, memReq, *m_allocator, m_params.allocationKind);
         VK_CHECK(vk.bindBufferMemory(m_device, *m_source, m_sourceBufferAlloc->getMemory(),
                                      m_sourceBufferAlloc->getOffset()));
     }
@@ -181,19 +189,9 @@ tcu::TestStatus CopyBufferToImage::iterate(void)
     // Copy from buffer to image
     std::vector<VkBufferImageCopy> bufferImageCopies;
     std::vector<VkBufferImageCopy2KHR> bufferImageCopies2KHR;
-    for (uint32_t i = 0; i < m_params.regions.size(); i++)
-    {
-        if (!(m_params.extensionFlags & COPY_COMMANDS_2))
-        {
-            bufferImageCopies.push_back(m_params.regions[i].bufferImageCopy);
-        }
-        else
-        {
-            DE_ASSERT(m_params.extensionFlags & COPY_COMMANDS_2);
-            bufferImageCopies2KHR.push_back(
-                convertvkBufferImageCopyTovkBufferImageCopy2KHR(m_params.regions[i].bufferImageCopy));
-        }
-    }
+#ifndef CTS_USES_VULKANSC
+    std::vector<VkDeviceMemoryImageCopyKHR> memoryImageCopies2KHR;
+#endif // CTS_USES_VULKANSC
 
     beginCommandBuffer(vk, commandBuffer);
     vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -202,15 +200,40 @@ tcu::TestStatus CopyBufferToImage::iterate(void)
 
     const VkImageLayout layout =
         m_params.useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    if (!(m_params.extensionFlags & COPY_COMMANDS_2))
+
+    if (m_params.extensionFlags & DEVICE_ADDRESS_COMMANDS)
     {
-        vk.cmdCopyBufferToImage(commandBuffer, m_source.get(), m_destination.get(), layout,
-                                (uint32_t)m_params.regions.size(), bufferImageCopies.data());
+#ifndef CTS_USES_VULKANSC
+        VkDeviceAddress srcBufferDeviceAddress = getBufferDeviceAddress(vk, vkDevice, *m_source);
+        int pixelSize                          = m_textureFormat.getPixelSize();
+
+        memoryImageCopies2KHR.reserve(m_params.regions.size());
+        for (const auto &r : m_params.regions)
+        {
+            auto size = std::max(r.bufferImageCopy.bufferRowLength, r.bufferImageCopy.imageExtent.width) *
+                        std::max(r.bufferImageCopy.bufferImageHeight, r.bufferImageCopy.imageExtent.height) * pixelSize;
+            if (r.bufferImageCopy.imageSubresource.layerCount == VK_REMAINING_ARRAY_LAYERS)
+                size *= (m_params.dst.image.extent.depth - r.bufferImageCopy.imageSubresource.baseArrayLayer);
+
+            memoryImageCopies2KHR.push_back(convertvkBufferImageCopyTovkDeviceMemoryImageCopyKHR(
+                r.bufferImageCopy, srcBufferDeviceAddress, size, layout));
+        }
+
+        VkCopyDeviceMemoryImageInfoKHR memorImageInfo = initVulkanStructure();
+        memorImageInfo.image                          = *m_destination;
+        memorImageInfo.regionCount                    = (uint32_t)m_params.regions.size();
+        memorImageInfo.pRegions                       = memoryImageCopies2KHR.data();
+
+        vk.cmdCopyMemoryToImageKHR(commandBuffer, &memorImageInfo);
+#endif // CTS_USES_VULKANSC
     }
-    else
+    else if (m_params.extensionFlags & COPY_COMMANDS_2)
     {
-        DE_ASSERT(m_params.extensionFlags & COPY_COMMANDS_2);
-        const VkCopyBufferToImageInfo2KHR copyBufferToImageInfo2KHR = {
+        bufferImageCopies2KHR.reserve(m_params.regions.size());
+        for (const auto &r : m_params.regions)
+            bufferImageCopies2KHR.push_back(convertvkBufferImageCopyTovkBufferImageCopy2KHR(r.bufferImageCopy));
+
+        const VkCopyBufferToImageInfo2KHR copyBufferToImageInfo2KHR{
             VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR, // VkStructureType sType;
             nullptr,                                           // const void* pNext;
             m_source.get(),                                    // VkBuffer srcBuffer;
@@ -219,9 +242,19 @@ tcu::TestStatus CopyBufferToImage::iterate(void)
             (uint32_t)m_params.regions.size(),                 // uint32_t regionCount;
             bufferImageCopies2KHR.data()                       // const VkBufferImageCopy2KHR* pRegions;
         };
-
         vk.cmdCopyBufferToImage2(commandBuffer, &copyBufferToImageInfo2KHR);
     }
+    else
+    {
+        DE_ASSERT(~m_params.extensionFlags & (COPY_COMMANDS_2 | DEVICE_ADDRESS_COMMANDS));
+
+        bufferImageCopies.reserve(m_params.regions.size());
+        for (const auto &r : m_params.regions)
+            bufferImageCopies.push_back(r.bufferImageCopy);
+
+        vk.cmdCopyBufferToImage(commandBuffer, m_source.get(), m_destination.get(), layout,
+                                (uint32_t)m_params.regions.size(), bufferImageCopies.data());
+    };
 
     endCommandBuffer(vk, commandBuffer);
 
@@ -699,13 +732,14 @@ void add2dBufferToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
             params.useGeneralLayout          = testGroupParams->useGeneralLayout;
 
             CopyRegion region;
-            uint32_t divisor = 1;
+            uint32_t divisor          = 1;
+            VkDeviceSize bufferOffset = 0;
             for (int offset = 0;
                  (offset + defaultQuarterSize / divisor < defaultSize) && (defaultQuarterSize > divisor);
                  offset += defaultQuarterSize / divisor++)
             {
                 const VkBufferImageCopy bufferImageCopy = {
-                    0u,                           // VkDeviceSize bufferOffset;
+                    bufferOffset,                 // VkDeviceSize bufferOffset;
                     0u,                           // uint32_t bufferRowLength;
                     0u,                           // uint32_t bufferImageHeight;
                     defaultSourceLayer,           // VkImageSubresourceLayers imageSubresource;
@@ -714,6 +748,12 @@ void add2dBufferToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
                 };
                 region.bufferImageCopy = bufferImageCopy;
                 params.regions.push_back(region);
+
+                // for cmdCopyMemoryToImageKHR, we need to respect VUID-VkCopyDeviceMemoryImageInfoKHR-addressRange-13026;
+                // copying the same location from the buffer to different parts of the image would trigerr the validation error,
+                // so we need to increase the buffer offset for each region
+                if (params.extensionFlags & DEVICE_ADDRESS_COMMANDS)
+                    bufferOffset += pixelSize * bufferImageCopy.imageExtent.width * bufferImageCopy.imageExtent.height;
             }
 
             const auto testName = std::string("regions") + formatAndSuffix.suffix;

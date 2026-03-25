@@ -111,6 +111,8 @@ struct TestParams
     tcu::Maybe<uint32_t> indirectCountOffset;              // Only used for DRAW_INDIRECT_COUNT.
     bool useTask;
     bool useSecondaryCmdBuffer;
+    bool useDeviceAddressCommands; // Used to test cmdDrawMeshTasksIndirect2EXT and
+                                   // cmdDrawMeshTasksIndirectCount2EXT VK_KHR_device_address_commands.
 };
 
 // The framebuffer will have a number of rows and 32 columns. Each mesh shader workgroup will generate geometry to fill a single
@@ -351,6 +353,9 @@ void MeshApiCase::checkSupport(Context &context) const
     // VUID-vkCmdDrawMeshTasksIndirectCountEXT-None-04445
     if (m_params.drawType == DrawType::DRAW_INDIRECT_COUNT)
         context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
+
+    if (m_params.useDeviceAddressCommands)
+        context.requireDeviceFunctionality("VK_KHR_device_address_commands");
 }
 
 template <typename T>
@@ -364,7 +369,11 @@ BufferWithMemoryPtr makeStridedBuffer(const DeviceInterface &vkd, VkDevice devic
                             static_cast<size_t>(endPadding);
     const auto bufferInfo = makeBufferCreateInfo(static_cast<VkDeviceSize>(bufferSize), usage);
 
-    BufferWithMemoryPtr buffer(new BufferWithMemory(vkd, device, alloc, bufferInfo, MemoryRequirement::HostVisible));
+    const MemoryRequirement memReq = (usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) ?
+                                         MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress :
+                                         MemoryRequirement::HostVisible;
+
+    BufferWithMemoryPtr buffer(new BufferWithMemory(vkd, device, alloc, bufferInfo, memReq));
     auto &bufferAlloc   = buffer->getAllocation();
     char *bufferDataPtr = reinterpret_cast<char *>(bufferAlloc.getHostPtr());
 
@@ -555,6 +564,8 @@ tcu::TestStatus MeshApiInstance::iterate(void)
     // Indirect and count buffers if needed.
     BufferWithMemoryPtr indirectBuffer;
     BufferWithMemoryPtr countBuffer;
+    VkDeviceAddress indirectBufferAddress = 0ull;
+    VkDeviceAddress countBufferAddress    = 0ull;
 
     if (m_params.drawType != DrawType::DRAW)
     {
@@ -575,9 +586,13 @@ tcu::TestStatus MeshApiInstance::iterate(void)
         std::transform(begin(blockSizes), end(blockSizes), std::back_inserter(commands),
                        [dimCoord](uint32_t blockSize) { return getIndirectCommand(blockSize, dimCoord); });
 
+        VkBufferUsageFlags usage = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
+                                   (m_params.useDeviceAddressCommands ? VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT : 0);
         const auto padding = static_cast<uint32_t>(sizeof(VkDrawMeshTasksIndirectCommandEXT));
-        indirectBuffer     = makeStridedBuffer(vkd, device, alloc, commands, indirectArgs.offset, indirectArgs.stride,
-                                               VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, padding);
+        indirectBuffer =
+            makeStridedBuffer(vkd, device, alloc, commands, indirectArgs.offset, indirectArgs.stride, usage, padding);
+        if (m_params.useDeviceAddressCommands)
+            indirectBufferAddress = getBufferDeviceAddress(vkd, device, **indirectBuffer);
 
         // Prepare count buffer if needed.
         if (m_params.drawType == DrawType::DRAW_INDIRECT_COUNT)
@@ -590,9 +605,10 @@ tcu::TestStatus MeshApiInstance::iterate(void)
                                                                                                largeDrawCount);
 
             const std::vector<uint32_t> singleCount(1u, countBufferValue);
-            countBuffer =
-                makeStridedBuffer(vkd, device, alloc, singleCount, m_params.indirectCountOffset.get(),
-                                  static_cast<uint32_t>(sizeof(uint32_t)), VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 0u);
+            countBuffer = makeStridedBuffer(vkd, device, alloc, singleCount, *m_params.indirectCountOffset,
+                                            static_cast<uint32_t>(sizeof(uint32_t)), usage, 0u);
+            if (m_params.useDeviceAddressCommands)
+                countBufferAddress = getBufferDeviceAddress(vkd, device, **countBuffer);
         }
     }
 
@@ -643,8 +659,25 @@ tcu::TestStatus MeshApiInstance::iterate(void)
     else if (m_params.drawType == DrawType::DRAW_INDIRECT)
     {
         const auto &indirectArgs = m_params.indirectArgs.get();
-        vkd.cmdDrawMeshTasksIndirectEXT(rpCmdBuffer, indirectBuffer->get(), indirectArgs.offset, m_params.drawCount,
-                                        indirectArgs.stride);
+        if (m_params.useDeviceAddressCommands)
+        {
+            VkDrawIndirect2InfoKHR drawIndirect2Info = initVulkanStructure();
+            drawIndirect2Info.addressRange           = {indirectBufferAddress + indirectArgs.offset,
+                                                        indirectBuffer->getBufferSize(), indirectArgs.stride};
+            drawIndirect2Info.drawCount              = m_params.drawCount;
+
+            // use different valid addressFlags in some cases to test them
+            drawIndirect2Info.addressFlags = (m_params.drawCount > 1) ?
+                                                 VK_ADDRESS_COMMAND_UNKNOWN_STORAGE_BUFFER_USAGE_BIT_KHR :
+                                                 VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
+
+            vkd.cmdDrawMeshTasksIndirect2EXT(rpCmdBuffer, &drawIndirect2Info);
+        }
+        else
+        {
+            vkd.cmdDrawMeshTasksIndirectEXT(rpCmdBuffer, **indirectBuffer, indirectArgs.offset, m_params.drawCount,
+                                            indirectArgs.stride);
+        }
     }
     else if (m_params.drawType == DrawType::DRAW_INDIRECT_COUNT)
     {
@@ -654,8 +687,30 @@ tcu::TestStatus MeshApiInstance::iterate(void)
 
         const auto maxCount =
             ((indirectCountLimit == IndirectCountLimitType::MAX_COUNT) ? m_params.drawCount : largeDrawCount);
-        vkd.cmdDrawMeshTasksIndirectCountEXT(rpCmdBuffer, indirectBuffer->get(), indirectArgs.offset,
-                                             countBuffer->get(), indirectCountOffset, maxCount, indirectArgs.stride);
+        if (m_params.useDeviceAddressCommands)
+        {
+            VkDrawIndirectCount2InfoKHR drawIndirectCount2Info = initVulkanStructure();
+
+            drawIndirectCount2Info.addressRange      = {indirectBufferAddress + indirectArgs.offset,
+                                                        indirectBuffer->getBufferSize(), indirectArgs.stride};
+            drawIndirectCount2Info.countAddressRange = {countBufferAddress + indirectCountOffset,
+                                                        countBuffer->getBufferSize()};
+            drawIndirectCount2Info.maxDrawCount      = maxCount;
+
+            // use different valid addressFlags in some cases to test them
+            VkAddressCommandFlagsKHR addressFlags = VK_ADDRESS_COMMAND_UNKNOWN_STORAGE_BUFFER_USAGE_BIT_KHR |
+                                                    VK_ADDRESS_COMMAND_UNKNOWN_TRANSFORM_FEEDBACK_BUFFER_USAGE_BIT_KHR |
+                                                    VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
+            drawIndirectCount2Info.addressFlags      = m_params.useTask ? 0u : addressFlags;
+            drawIndirectCount2Info.countAddressFlags = (m_params.drawCount > 1) ? addressFlags : 0u;
+
+            vkd.cmdDrawMeshTasksIndirectCount2EXT(rpCmdBuffer, &drawIndirectCount2Info);
+        }
+        else
+        {
+            vkd.cmdDrawMeshTasksIndirectCountEXT(rpCmdBuffer, **indirectBuffer, indirectArgs.offset, **countBuffer,
+                                                 indirectCountOffset, maxCount, indirectArgs.stride);
+        }
     }
     else
         DE_ASSERT(false);
@@ -813,10 +868,12 @@ tcu::TestCaseGroup *createMeshShaderApiTestsEXT(tcu::TestContext &testCtx)
             const auto drawCountName = "draw_count_" + de::toString(drawCountCase);
             GroupPtr drawCountGroup(new tcu::TestCaseGroup(testCtx, drawCountName.c_str()));
 
-            for (const auto &indirectArgsCase : indirectArgsCases)
+            for (std::size_t indirectArgsIndex = 0; indirectArgsIndex < std::size(indirectArgsCases);
+                 ++indirectArgsIndex)
             {
-                const bool hasIndirectArgs = static_cast<bool>(indirectArgsCase.indirectArgs);
-                const bool strideZero      = (hasIndirectArgs && indirectArgsCase.indirectArgs.get().stride == 0u);
+                const auto &indirectArgsCase = indirectArgsCases[indirectArgsIndex];
+                const bool hasIndirectArgs   = static_cast<bool>(indirectArgsCase.indirectArgs);
+                const bool strideZero        = (hasIndirectArgs && indirectArgsCase.indirectArgs.get().stride == 0u);
 
                 if (isIndirect != hasIndirectArgs)
                     continue;
@@ -848,8 +905,8 @@ tcu::TestCaseGroup *createMeshShaderApiTestsEXT(tcu::TestContext &testCtx)
                         {
                             for (const auto &cmdBufferCase : cmdBufferCases)
                             {
-                                const auto testName     = std::string(taskCase.name) + cmdBufferCase.suffix;
-                                const TestParams params = {
+                                auto testName = std::string(taskCase.name) + cmdBufferCase.suffix;
+                                TestParams params{
                                     drawCase,                      // DrawType drawType;
                                     seed++,                        // uint32_t seed;
                                     drawCountCase,                 // uint32_t drawCount;
@@ -858,9 +915,20 @@ tcu::TestCaseGroup *createMeshShaderApiTestsEXT(tcu::TestContext &testCtx)
                                     countOffsetCase.countOffset, // tcu::Maybe<uint32_t> indirectCountOffset;
                                     taskCase.useTask,            // bool useTask;
                                     cmdBufferCase.secondaryCmd,  // bool useSecondaryCmdBuffer;
+                                    false,                       // bool useDeviceAddressCommands;
                                 };
 
                                 countOffsetGroup->addChild(new MeshApiCase(testCtx, testName, params));
+
+                                // limit number of tests repeated for device_address_commands
+                                if ((drawCase != DrawType::DRAW) &&
+                                    (indirectArgsIndex % 2 == cmdBufferCase.secondaryCmd) &&
+                                    (taskCase.useTask == hasCountLimit))
+                                {
+                                    params.useDeviceAddressCommands = true;
+                                    testName += "_device_address";
+                                    countOffsetGroup->addChild(new MeshApiCase(testCtx, testName, params));
+                                }
                             }
                         }
 

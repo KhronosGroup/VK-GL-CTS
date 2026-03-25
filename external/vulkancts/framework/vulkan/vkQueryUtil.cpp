@@ -378,7 +378,19 @@ std::vector<vk::VkSparseImageMemoryRequirements> getDeviceImageSparseMemoryRequi
 
     return result;
 }
+
 #endif // CTS_USES_VULKANSC
+
+VkDeviceAddress getBufferDeviceAddress(const DeviceInterface &vk, VkDevice device, VkBuffer buffer)
+{
+    if (buffer == VK_NULL_HANDLE)
+        return 0;
+
+    VkBufferDeviceAddressInfo deviceAddressInfo = initVulkanStructure();
+    deviceAddressInfo.buffer                    = buffer;
+
+    return vk.getBufferDeviceAddress(device, &deviceAddressInfo);
+}
 
 VkMemoryRequirements getBufferMemoryRequirements(const DeviceInterface &vk, VkDevice device, VkBuffer buffer)
 {

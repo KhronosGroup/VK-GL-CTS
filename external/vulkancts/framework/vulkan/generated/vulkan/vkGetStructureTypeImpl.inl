@@ -18,6 +18,11 @@ template<> VkStructureType getStructureType<VkAccelerationStructureCaptureDescri
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkAccelerationStructureCreateInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_2_KHR;
+}
+
 template<> VkStructureType getStructureType<VkAccelerationStructureCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
@@ -228,6 +233,11 @@ template<> VkStructureType getStructureType<VkBindImagePlaneMemoryInfo> (void)
 	return VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO;
 }
 
+template<> VkStructureType getStructureType<VkBindIndexBuffer3InfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_BIND_INDEX_BUFFER_3_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkBindMemoryStatus> (void)
 {
 	return VK_STRUCTURE_TYPE_BIND_MEMORY_STATUS;
@@ -241,6 +251,16 @@ template<> VkStructureType getStructureType<VkBindSparseInfo> (void)
 template<> VkStructureType getStructureType<VkBindTensorMemoryInfoARM> (void)
 {
 	return VK_STRUCTURE_TYPE_BIND_TENSOR_MEMORY_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkBindTransformFeedbackBuffer2InfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_BIND_TRANSFORM_FEEDBACK_BUFFER_2_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkBindVertexBuffer3InfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_BIND_VERTEX_BUFFER_3_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkBindVideoSessionMemoryInfoKHR> (void)
@@ -368,6 +388,11 @@ template<> VkStructureType getStructureType<VkComputePipelineIndirectBufferInfoN
 	return VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_INDIRECT_BUFFER_INFO_NV;
 }
 
+template<> VkStructureType getStructureType<VkConditionalRenderingBeginInfo2EXT> (void)
+{
+	return VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_2_EXT;
+}
+
 template<> VkStructureType getStructureType<VkConditionalRenderingBeginInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT;
@@ -421,6 +446,16 @@ template<> VkStructureType getStructureType<VkCopyBufferToImageInfo2> (void)
 template<> VkStructureType getStructureType<VkCopyDescriptorSet> (void)
 {
 	return VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET;
+}
+
+template<> VkStructureType getStructureType<VkCopyDeviceMemoryImageInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_DEVICE_MEMORY_IMAGE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyDeviceMemoryInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_DEVICE_MEMORY_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkCopyImageInfo2> (void)
@@ -773,6 +808,16 @@ template<> VkStructureType getStructureType<VkDeviceImageSubresourceInfo> (void)
 	return VK_STRUCTURE_TYPE_DEVICE_IMAGE_SUBRESOURCE_INFO;
 }
 
+template<> VkStructureType getStructureType<VkDeviceMemoryCopyKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_MEMORY_COPY_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDeviceMemoryImageCopyKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_MEMORY_IMAGE_COPY_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDeviceMemoryOpaqueCaptureAddressInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO;
@@ -826,6 +871,11 @@ template<> VkStructureType getStructureType<VkDirectDriverLoadingListLUNARG> (vo
 template<> VkStructureType getStructureType<VkDirectFBSurfaceCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDispatchIndirect2InfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DISPATCH_INDIRECT_2_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkDisplayEventInfoEXT> (void)
@@ -886,6 +936,16 @@ template<> VkStructureType getStructureType<VkDisplaySurfaceCreateInfoKHR> (void
 template<> VkStructureType getStructureType<VkDisplaySurfaceStereoCreateInfoNV> (void)
 {
 	return VK_STRUCTURE_TYPE_DISPLAY_SURFACE_STEREO_CREATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkDrawIndirect2InfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DRAW_INDIRECT_2_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDrawIndirectCount2InfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DRAW_INDIRECT_COUNT_2_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkDrmFormatModifierPropertiesList2EXT> (void)
@@ -1528,6 +1588,11 @@ template<> VkStructureType getStructureType<VkMemoryMapPlacedInfoEXT> (void)
 	return VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkMemoryMarkerInfoAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_MARKER_INFO_AMD;
+}
+
 template<> VkStructureType getStructureType<VkMemoryMetalHandlePropertiesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_MEMORY_METAL_HANDLE_PROPERTIES_EXT;
@@ -1541,6 +1606,16 @@ template<> VkStructureType getStructureType<VkMemoryOpaqueCaptureAddressAllocate
 template<> VkStructureType getStructureType<VkMemoryPriorityAllocateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkMemoryRangeBarrierKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_RANGE_BARRIER_KHR;
+}
+
+template<> VkStructureType getStructureType<VkMemoryRangeBarriersInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_RANGE_BARRIERS_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkMemoryRequirements2> (void)
@@ -1941,6 +2016,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorIndexingFe
 template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorIndexingProperties> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_ADDRESS_COMMANDS_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV> (void)

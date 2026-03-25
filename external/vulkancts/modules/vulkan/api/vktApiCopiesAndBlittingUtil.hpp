@@ -140,6 +140,7 @@ enum ExtensionUseBits
     MAINTENANCE_8                 = (1 << 5),
     INDIRECT_COPY                 = (1 << 6),
     MAINTENANCE_10                = (1 << 7),
+    DEVICE_ADDRESS_COMMANDS       = (1 << 8),
 };
 
 template <typename Type>
@@ -187,6 +188,10 @@ VkBufferCopy2KHR convertvkBufferCopyTovkBufferCopy2KHR(VkBufferCopy bufferCopy);
 VkBufferImageCopy2KHR convertvkBufferImageCopyTovkBufferImageCopy2KHR(VkBufferImageCopy bufferImageCopy);
 
 #ifndef CTS_USES_VULKANSC
+VkDeviceMemoryImageCopyKHR convertvkBufferImageCopyTovkDeviceMemoryImageCopyKHR(
+    VkBufferImageCopy bufferImageCopy, VkDeviceAddress address, VkDeviceSize size, VkImageLayout imageLayout,
+    VkAddressCommandFlagsKHR addressFlags = 0);
+
 VkCopyMemoryToImageIndirectCommandKHR convertvkBufferImageCopyTovkMemoryImageCopyKHR(VkDeviceAddress srcBufferAddress,
                                                                                      VkBufferImageCopy bufferImageCopy);
 #endif
@@ -440,7 +445,7 @@ protected:
     std::vector<uint32_t> m_queueFamilyIndices;
 
     void generateBuffer(tcu::PixelBufferAccess buffer, int width, int height, int depth = 1,
-                        FillMode = FILL_MODE_GRADIENT);
+                        FillMode = FILL_MODE_GRADIENT) const;
     virtual void generateExpectedResult(void);
     virtual void generateExpectedResult(CopyRegion *region);
     void uploadBuffer(const tcu::ConstPixelBufferAccess &bufferAccess, const Allocation &bufferAlloc);

@@ -47,9 +47,7 @@
 #include <tuple>
 #include <vector>
 
-namespace vkt
-{
-namespace robustness
+namespace vkt::robustness
 {
 
 using namespace vk;
@@ -78,10 +76,44 @@ enum OOTypes
 
 struct TestParams
 {
-    TestMode mode;
-    OOTypes ooType;
-    uint32_t leadingCount;
+    TestMode mode                 = TM_DRAW_INDEXED;
+    OOTypes ooType                = OO_NONE;
+    uint32_t leadingCount         = 0;
+    uint32_t robustnessVersion    = 2;
+    bool useDeviceAddressCommands = false;
 };
+
+// helper function that executes cmdCopyImageToBuffer or cmdCopyImageToMemoryKHR
+static void copyImageToMemory(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, VkImage image,
+                              const VkExtent3D &imageExtent, VkBuffer buffer, VkDeviceAddress bufferAddress,
+                              [[maybe_unused]] VkDeviceSize bufferSize)
+{
+    const VkImageSubresourceLayers colorSL = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+    if (bufferAddress == 0)
+    {
+        const VkBufferImageCopy copyRegion = makeBufferImageCopy(imageExtent, colorSL);
+        vk.cmdCopyImageToBuffer(cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1u, &copyRegion);
+    }
+
+#ifndef CTS_USES_VULKANSC
+    if (bufferAddress)
+    {
+        VkDeviceAddressRangeKHR addressRange{bufferAddress, bufferSize};
+        VkDeviceMemoryImageCopyKHR region = initVulkanStructure();
+        region.addressRange               = addressRange;
+        region.imageSubresource           = colorSL;
+        region.imageLayout                = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        region.imageOffset                = makeOffset3D(0, 0, 0);
+        region.imageExtent                = imageExtent;
+
+        VkCopyDeviceMemoryImageInfoKHR copyMemoryInfo = initVulkanStructure();
+        copyMemoryInfo.image                          = image;
+        copyMemoryInfo.regionCount                    = 1u;
+        copyMemoryInfo.pRegions                       = &region;
+        vk.cmdCopyImageToMemoryKHR(cmdBuffer, &copyMemoryInfo);
+    }
+#endif // CTS_USES_VULKANSC
+}
 
 class DrawIndexedInstance : public vkt::TestInstance
 {
@@ -90,7 +122,7 @@ public:
 #ifdef CTS_USES_VULKANSC
                         de::MovePtr<CustomInstance> customInstance,
 #endif // CTS_USES_VULKANSC
-                        Move<VkDevice> device, DeviceDriverPtr deviceDriver, TestMode mode, uint32_t robustnessVersion);
+                        Move<VkDevice> device, DeviceDriverPtr deviceDriver, const TestParams &testParams);
 
     virtual ~DrawIndexedInstance(void) = default;
 
@@ -102,24 +134,22 @@ protected:
 #endif // CTS_USES_VULKANSC
     Move<VkDevice> m_device;
     DeviceDriverPtr m_deviceDriver;
-    TestMode m_mode;
-    uint32_t m_robustnessVersion;
+    const TestParams m_params;
 };
 
 DrawIndexedInstance::DrawIndexedInstance(Context &context,
 #ifdef CTS_USES_VULKANSC
                                          de::MovePtr<CustomInstance> customInstance,
 #endif // CTS_USES_VULKANSC
-                                         Move<VkDevice> device, DeviceDriverPtr deviceDriver, TestMode mode,
-                                         uint32_t robustnessVersion)
+                                         Move<VkDevice> device, DeviceDriverPtr deviceDriver,
+                                         const TestParams &testParams)
     : vkt::TestInstance(context)
 #ifdef CTS_USES_VULKANSC
     , m_customInstance(customInstance)
 #endif
     , m_device(device)
     , m_deviceDriver(deviceDriver)
-    , m_mode(mode)
-    , m_robustnessVersion(robustnessVersion)
+    , m_params(testParams)
 {
 }
 
@@ -139,15 +169,25 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     const tcu::UVec2 renderSize{16};
     const std::vector<VkViewport> viewports{makeViewport(renderSize)};
     const std::vector<VkRect2D> scissors{makeRect2D(renderSize)};
+    VkPipelineDynamicStateCreateInfo *dynamicStatePtr = nullptr;
+
+    VkBufferUsageFlags commonUsage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    if (m_params.useDeviceAddressCommands)
+        commonUsage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+    MemoryRequirement memReq = m_params.useDeviceAddressCommands ?
+                                   MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress :
+                                   MemoryRequirement::HostVisible;
 
     // create vertex buffer
     const std::vector<float> vertices{
         0.0f, -0.8f, 0.0f, 1.0f, 0.0f,  0.8f,  0.0f, 1.0f, 0.8f,  -0.8f, 0.0f, 1.0f,
         0.8f, 0.8f,  0.0f, 1.0f, -0.8f, -0.8f, 0.0f, 1.0f, -0.8f, 0.8f,  0.0f, 1.0f,
     };
-    const VkBufferCreateInfo vertexBufferInfo = makeBufferCreateInfo(
-        vertices.size() * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory vertexBuffer(vk, *m_device, memAlloc, vertexBufferInfo, MemoryRequirement::HostVisible);
+    VkDeviceSize vertexBufferSize = vertices.size() * sizeof(float);
+    const auto vertexBufferInfo =
+        makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | commonUsage);
+    BufferWithMemory vertexBuffer(vk, *m_device, memAlloc, vertexBufferInfo, memReq);
     deMemcpy(vertexBuffer.getAllocation().getHostPtr(), vertices.data(), vertices.size() * sizeof(float));
     flushAlloc(vk, *m_device, vertexBuffer.getAllocation());
 
@@ -155,10 +195,10 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     // 4--0--2
     // |  |  |
     // 5--1--3
-    const std::vector<uint32_t> index        = {0, 1, 2, 3, 4, 5};
-    const VkBufferCreateInfo indexBufferInfo = makeBufferCreateInfo(
-        index.size() * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory indexBuffer(vk, *m_device, memAlloc, indexBufferInfo, MemoryRequirement::HostVisible);
+    const std::vector<uint32_t> index = {0, 1, 2, 3, 4, 5};
+    VkDeviceSize indexBufferSize      = index.size() * sizeof(uint32_t);
+    const auto indexBufferInfo = makeBufferCreateInfo(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | commonUsage);
+    BufferWithMemory indexBuffer(vk, *m_device, memAlloc, indexBufferInfo, memReq);
     deMemcpy(indexBuffer.getAllocation().getHostPtr(), index.data(), index.size() * sizeof(uint32_t));
     flushAlloc(vk, *m_device, indexBuffer.getAllocation());
 
@@ -170,21 +210,22 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
         0u,                     // vertexOffset
         0u,                     // firstInstance
     };
-    const VkBufferCreateInfo indirectBufferInfo = makeBufferCreateInfo(
-        sizeof(drawIndirectCommand), VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory indirectBuffer(vk, *m_device, memAlloc, indirectBufferInfo, MemoryRequirement::HostVisible);
-    if ((m_mode == TM_DRAW_INDEXED_INDIRECT) || (m_mode == TM_DRAW_INDEXED_INDIRECT_COUNT))
+    VkDeviceSize indirectBufferSize = sizeof(drawIndirectCommand);
+    const auto indirectBufferInfo =
+        makeBufferCreateInfo(indirectBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | commonUsage);
+    BufferWithMemory indirectBuffer(vk, *m_device, memAlloc, indirectBufferInfo, memReq);
+    if ((m_params.mode == TM_DRAW_INDEXED_INDIRECT) || (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT))
     {
         deMemcpy(indirectBuffer.getAllocation().getHostPtr(), &drawIndirectCommand, sizeof(drawIndirectCommand));
         flushAlloc(vk, *m_device, indirectBuffer.getAllocation());
     }
 
     // create indirect count buffer
-    const VkBufferCreateInfo indirectCountBufferInfo =
-        makeBufferCreateInfo(sizeof(uint32_t), VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory indirectCountBuffer(vk, *m_device, memAlloc, indirectCountBufferInfo,
-                                         MemoryRequirement::HostVisible);
-    if (m_mode == TM_DRAW_INDEXED_INDIRECT_COUNT)
+    VkDeviceSize indirectCountBufferSize = sizeof(uint32_t);
+    const auto indirectCountBufferInfo =
+        makeBufferCreateInfo(indirectCountBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | commonUsage);
+    BufferWithMemory indirectCountBuffer(vk, *m_device, memAlloc, indirectCountBufferInfo, memReq);
+    if (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT)
     {
         *(reinterpret_cast<uint32_t *>(indirectCountBuffer.getAllocation().getHostPtr())) = 1;
         flushAlloc(vk, *m_device, indirectCountBuffer.getAllocation());
@@ -192,9 +233,33 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
 
     // create output buffer that will be used to read rendered image
     const VkDeviceSize outputBufferSize = renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
-    const VkBufferCreateInfo outputBufferInfo =
-        makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory outputBuffer(vk, *m_device, memAlloc, outputBufferInfo, MemoryRequirement::HostVisible);
+    const auto outputBufferInfo =
+        makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | commonUsage);
+    BufferWithMemory outputBuffer(vk, *m_device, memAlloc, outputBufferInfo, memReq);
+    VkDeviceAddress outputBufferAddress = 0ull;
+
+#ifndef CTS_USES_VULKANSC
+    VkDynamicState dynamicState{VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE};
+    VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = initVulkanStructure();
+
+    VkDeviceAddress vertexBufferAddress        = 0ull;
+    VkDeviceAddress indexBufferAddress         = 0ull;
+    VkDeviceAddress indirectBufferAddress      = 0ull;
+    VkDeviceAddress indirectCountBufferAddress = 0ull;
+
+    if (m_params.useDeviceAddressCommands)
+    {
+        dynamicStateCreateInfo.dynamicStateCount = 1u;
+        dynamicStateCreateInfo.pDynamicStates    = &dynamicState;
+        dynamicStatePtr                          = &dynamicStateCreateInfo;
+
+        vertexBufferAddress        = getBufferDeviceAddress(vk, *m_device, *vertexBuffer);
+        indexBufferAddress         = getBufferDeviceAddress(vk, *m_device, *indexBuffer);
+        indirectBufferAddress      = getBufferDeviceAddress(vk, *m_device, *indirectBuffer);
+        indirectCountBufferAddress = getBufferDeviceAddress(vk, *m_device, *indirectCountBuffer);
+        outputBufferAddress        = getBufferDeviceAddress(vk, *m_device, *outputBuffer);
+    }
+#endif
 
     // create color buffer
     VkExtent3D imageExtent = makeExtent3D(renderSize.x(), renderSize.y(), 1u);
@@ -217,21 +282,18 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     };
     const VkImageSubresourceRange colorSRR = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
     ImageWithMemory colorImage(vk, *m_device, memAlloc, imageCreateInfo, MemoryRequirement::Any);
-    Move<VkImageView> colorImageView =
-        makeImageView(vk, *m_device, colorImage.get(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSRR);
+    auto colorImageView = makeImageView(vk, *m_device, colorImage.get(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSRR);
 
     // create shader modules, renderpass, framebuffer and pipeline
-    Move<VkShaderModule> vertShaderModule =
-        createShaderModule(vk, *m_device, m_context.getBinaryCollection().get("vert"), 0);
-    Move<VkShaderModule> fragShaderModule =
-        createShaderModule(vk, *m_device, m_context.getBinaryCollection().get("frag"), 0);
-    Move<VkRenderPass> renderPass         = makeRenderPass(vk, *m_device, colorFormat);
-    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, *m_device, VK_NULL_HANDLE);
-    Move<VkFramebuffer> framebuffer =
-        makeFramebuffer(vk, *m_device, *renderPass, *colorImageView, renderSize.x(), renderSize.y());
+    auto vertShaderModule = createShaderModule(vk, *m_device, m_context.getBinaryCollection().get("vert"));
+    auto fragShaderModule = createShaderModule(vk, *m_device, m_context.getBinaryCollection().get("frag"));
+    auto renderPass       = makeRenderPass(vk, *m_device, colorFormat);
+    auto pipelineLayout   = makePipelineLayout(vk, *m_device, VK_NULL_HANDLE);
+    auto framebuffer = makeFramebuffer(vk, *m_device, *renderPass, *colorImageView, renderSize.x(), renderSize.y());
     Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
         vk, *m_device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
-        *fragShaderModule, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
+        *fragShaderModule, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0, 0, nullptr, nullptr,
+        nullptr, nullptr, nullptr, dynamicStatePtr);
 
     Move<VkCommandPool> cmdPool =
         createCommandPool(vk, *m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
@@ -250,29 +312,81 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     const VkRect2D renderArea = makeRect2D(0, 0, renderSize.x(), renderSize.y());
     beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
-    const VkDeviceSize vBuffOffset = 0;
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
-    vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer.get(), &vBuffOffset);
-    vk.cmdBindIndexBuffer(*cmdBuffer, indexBuffer.get(), 0, VK_INDEX_TYPE_UINT32);
 
-    // we will draw all points at index 0
-    if (m_mode == TM_DRAW_INDEXED)
-        vk.cmdDrawIndexed(*cmdBuffer, (uint32_t)index.size(), 1, oobFirstIndex, 0, 0);
-    else if (m_mode == TM_DRAW_INDEXED_INDIRECT)
-        vk.cmdDrawIndexedIndirect(*cmdBuffer, indirectBuffer.get(), 0, 1, 0);
-    else if (m_mode == TM_DRAW_INDEXED_INDIRECT_COUNT)
-        vk.cmdDrawIndexedIndirectCount(*cmdBuffer, indirectBuffer.get(), 0, indirectCountBuffer.get(), 0, 1,
-                                       sizeof(VkDrawIndexedIndirectCommand));
-    else if (m_mode == TM_DRAW_MULTI_INDEXED)
+    if (!m_params.useDeviceAddressCommands)
     {
+        const VkDeviceSize vBuffOffset = 0;
+        vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer.get(), &vBuffOffset);
+        vk.cmdBindIndexBuffer(*cmdBuffer, indexBuffer.get(), 0, VK_INDEX_TYPE_UINT32);
+
+        // we will draw all points at index 0
+        if (m_params.mode == TM_DRAW_INDEXED)
+            vk.cmdDrawIndexed(*cmdBuffer, (uint32_t)index.size(), 1, oobFirstIndex, 0, 0);
+        else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT)
+            vk.cmdDrawIndexedIndirect(*cmdBuffer, indirectBuffer.get(), 0, 1, 0);
+        else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT)
+            vk.cmdDrawIndexedIndirectCount(*cmdBuffer, indirectBuffer.get(), 0, indirectCountBuffer.get(), 0, 1,
+                                           sizeof(VkDrawIndexedIndirectCommand));
+        else if (m_params.mode == TM_DRAW_MULTI_INDEXED)
+        {
 #ifndef CTS_USES_VULKANSC
-        VkMultiDrawIndexedInfoEXT indexInfo[]{
-            {oobFirstIndex, 3, 0},
-            {oobFirstIndex - 3, 3, 0},
-        };
-        vk.cmdDrawMultiIndexedEXT(*cmdBuffer, 2, indexInfo, 1, 0, sizeof(VkMultiDrawIndexedInfoEXT), nullptr);
+            VkMultiDrawIndexedInfoEXT indexInfo[]{
+                {oobFirstIndex, 3, 0},
+                {oobFirstIndex - 3, 3, 0},
+            };
+            vk.cmdDrawMultiIndexedEXT(*cmdBuffer, 2, indexInfo, 1, 0, sizeof(VkMultiDrawIndexedInfoEXT), nullptr);
 #endif // CTS_USES_VULKANSC
+        }
     }
+#ifndef CTS_USES_VULKANSC
+    if (m_params.useDeviceAddressCommands)
+    {
+        // use different valid addressFlags in some cases to test them
+        VkAddressCommandFlagsKHR addressFlags = VK_ADDRESS_COMMAND_UNKNOWN_TRANSFORM_FEEDBACK_BUFFER_USAGE_BIT_KHR;
+        if (m_params.mode == TM_DRAW_INDEXED)
+            addressFlags |= VK_ADDRESS_COMMAND_UNKNOWN_STORAGE_BUFFER_USAGE_BIT_KHR;
+        if (m_params.mode == TM_DRAW_INDEXED_INDIRECT)
+            addressFlags |= VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
+
+        VkBindVertexBuffer3InfoKHR vertexBuffer3Info = initVulkanStructure();
+        vertexBuffer3Info.setStride                  = true;
+        vertexBuffer3Info.addressRange               = {vertexBufferAddress, vertexBufferSize, 4u * sizeof(float)};
+        vertexBuffer3Info.addressFlags               = addressFlags;
+        vk.cmdBindVertexBuffers3KHR(*cmdBuffer, 0, 1, &vertexBuffer3Info);
+
+        VkBindIndexBuffer3InfoKHR bindIndexBuffer3Info = initVulkanStructure();
+        bindIndexBuffer3Info.addressRange              = {indexBufferAddress, indexBufferSize};
+        bindIndexBuffer3Info.indexType                 = VK_INDEX_TYPE_UINT32;
+        bindIndexBuffer3Info.addressFlags              = addressFlags;
+        vk.cmdBindIndexBuffer3KHR(*cmdBuffer, &bindIndexBuffer3Info);
+
+        // we will draw all points at index 0
+        if (m_params.mode == TM_DRAW_INDEXED)
+            vk.cmdDrawIndexed(*cmdBuffer, (uint32_t)index.size(), 1, oobFirstIndex, 0, 0);
+        else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT)
+        {
+            VkDrawIndirect2InfoKHR drawIndirect2Info = initVulkanStructure();
+            drawIndirect2Info.addressRange           = {indirectBufferAddress, indirectBufferSize, 0};
+            drawIndirect2Info.addressFlags           = addressFlags;
+            drawIndirect2Info.drawCount              = 1u;
+
+            vk.cmdDrawIndexedIndirect2KHR(*cmdBuffer, &drawIndirect2Info);
+        }
+        else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT)
+        {
+            VkDrawIndirectCount2InfoKHR drawIndirectCount2Info = initVulkanStructure();
+            drawIndirectCount2Info.addressRange                = {indirectBufferAddress, indirectBufferSize,
+                                                                  sizeof(VkDrawIndexedIndirectCommand)};
+            drawIndirectCount2Info.countAddressRange           = {indirectCountBufferAddress, indirectCountBufferSize};
+            drawIndirectCount2Info.maxDrawCount                = 1;
+
+            vk.cmdDrawIndexedIndirectCount2KHR(*cmdBuffer, &drawIndirectCount2Info);
+        }
+        else if (m_params.mode == TM_DRAW_MULTI_INDEXED)
+            DE_ASSERT(false);
+    }
+#endif // CTS_USES_VULKANSC
 
     endRenderPass(vk, *cmdBuffer);
 
@@ -284,10 +398,7 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
                           0u, 0u, 0u, 0u, 1u, &imageBarrier);
 
     // read back color image
-    const VkImageSubresourceLayers colorSL = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
-    const VkBufferImageCopy copyRegion     = makeBufferImageCopy(imageExtent, colorSL);
-    vk.cmdCopyImageToBuffer(*cmdBuffer, colorImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, outputBuffer.get(), 1u,
-                            &copyRegion);
+    copyImageToMemory(vk, *cmdBuffer, *colorImage, imageExtent, *outputBuffer, outputBufferAddress, outputBufferSize);
 
     auto bufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
                                                  outputBuffer.get(), 0u, VK_WHOLE_SIZE);
@@ -303,7 +414,7 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
 
     // for robustBufferAccess (the original feature) OOB access will return undefined value;
     // we can only expect that above drawing will be executed without errors (we can't expect any specific result)
-    if (m_robustnessVersion < 2u)
+    if (m_params.robustnessVersion < 2u)
         return tcu::TestStatus::pass("Pass");
 
     // get output buffer
@@ -353,8 +464,7 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
 class DrawIndexedTestCase : public vkt::TestCase
 {
 public:
-    DrawIndexedTestCase(tcu::TestContext &testContext, const std::string &name, TestMode mode,
-                        uint32_t robustnessVersion);
+    DrawIndexedTestCase(tcu::TestContext &testContext, const std::string &name, const TestParams &params);
 
     virtual ~DrawIndexedTestCase(void) = default;
 
@@ -368,16 +478,14 @@ protected:
                                de::MovePtr<CustomInstance> &customInstance,
 #endif // CTS_USES_VULKANSC
                                Move<VkDevice> &device, DeviceDriverPtr &driver) const;
-    const TestMode m_testMode;
-    const uint32_t m_robustnessVersion;
+    const TestParams m_params;
 };
 
-DrawIndexedTestCase::DrawIndexedTestCase(tcu::TestContext &testContext, const std::string &name, TestMode mode,
-                                         uint32_t robustnessVersion)
+DrawIndexedTestCase::DrawIndexedTestCase(tcu::TestContext &testContext, const std::string &name,
+                                         const TestParams &params)
 
     : vkt::TestCase(testContext, name)
-    , m_testMode(mode)
-    , m_robustnessVersion(robustnessVersion)
+    , m_params(params)
 {
 }
 
@@ -388,11 +496,11 @@ void DrawIndexedTestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError,
                   "VK_KHR_portability_subset: robustBufferAccess not supported by this implementation");
 
-    if (m_testMode == TestMode::TM_DRAW_INDEXED_INDIRECT_COUNT)
+    if (m_params.mode == TestMode::TM_DRAW_INDEXED_INDIRECT_COUNT)
         context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
-    if (m_testMode == TestMode::TM_DRAW_MULTI_INDEXED)
+    if (m_params.mode == TestMode::TM_DRAW_MULTI_INDEXED)
         context.requireDeviceFunctionality("VK_EXT_multi_draw");
-    if (m_robustnessVersion == 2)
+    if (m_params.robustnessVersion == 2)
     {
         if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
             !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
@@ -410,6 +518,8 @@ void DrawIndexedTestCase::checkSupport(Context &context) const
         if (!robustness2Features.robustBufferAccess2)
             TCU_THROW(NotSupportedError, "robustBufferAccess2 not supported");
     }
+    if (m_params.useDeviceAddressCommands)
+        context.requireDeviceFunctionality("VK_KHR_device_address_commands");
 }
 
 void DrawIndexedTestCase::createDeviceAndDriver(Context &context,
@@ -428,15 +538,23 @@ void DrawIndexedTestCase::createDeviceAndDriver(Context &context,
 
 #ifndef CTS_USES_VULKANSC
     VkPhysicalDeviceMultiDrawFeaturesEXT multiDrawFeatures = initVulkanStructure();
-    if (m_testMode == TestMode::TM_DRAW_MULTI_INDEXED)
+    if (m_params.mode == TestMode::TM_DRAW_MULTI_INDEXED)
     {
         multiDrawFeatures.multiDraw = true;
         addToChainVulkanStructure(&nextPtr, multiDrawFeatures);
     }
+
+    VkPhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures  = initVulkanStructure();
+    VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR addressCommandsFeatures = initVulkanStructure();
+    if (m_params.useDeviceAddressCommands)
+    {
+        addressCommandsFeatures.deviceAddressCommands = true;
+        addToChainVulkanStructure(&nextPtr, addressCommandsFeatures);
+    }
 #endif // CTS_USES_VULKANSC
 
     VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = initVulkanStructure();
-    if (m_robustnessVersion > 1u)
+    if (m_params.robustnessVersion > 1u)
     {
         robustness2Features.robustBufferAccess2 = true;
         addToChainVulkanStructure(&nextPtr, robustness2Features);
@@ -444,15 +562,26 @@ void DrawIndexedTestCase::createDeviceAndDriver(Context &context,
 
     uint32_t apiVersion                               = context.getUsedApiVersion();
     VkPhysicalDeviceVulkan12Features vulkan12Features = initVulkanStructure();
-    if ((m_testMode == TestMode::TM_DRAW_INDEXED_INDIRECT_COUNT) && (apiVersion > VK_MAKE_API_VERSION(0, 1, 1, 0)))
+    if ((m_params.mode == TestMode::TM_DRAW_INDEXED_INDIRECT_COUNT) && (apiVersion > VK_MAKE_API_VERSION(0, 1, 1, 0)))
     {
         vulkan12Features.drawIndirectCount = true;
         vulkan12Features.scalarBlockLayout = true;
+        if (m_params.useDeviceAddressCommands)
+            vulkan12Features.bufferDeviceAddress = true;
+
         addToChainVulkanStructure(&nextPtr, vulkan12Features);
     }
     else
     {
         addToChainVulkanStructure(&nextPtr, sblFeatures);
+
+#ifndef CTS_USES_VULKANSC
+        if (m_params.useDeviceAddressCommands)
+        {
+            bufferDeviceAddressFeatures.bufferDeviceAddress = true;
+            addToChainVulkanStructure(&nextPtr, bufferDeviceAddressFeatures);
+        }
+#endif // CTS_USES_VULKANSC
     }
 
 #ifndef CTS_USES_VULKANSC
@@ -474,6 +603,7 @@ TestInstance *DrawIndexedTestCase::createInstance(Context &context) const
 {
     Move<VkDevice> device;
     DeviceDriverPtr deviceDriver;
+
 #ifndef CTS_USES_VULKANSC
     createDeviceAndDriver(context, device, deviceDriver);
 #else
@@ -485,7 +615,7 @@ TestInstance *DrawIndexedTestCase::createInstance(Context &context) const
 #ifdef CTS_USES_VULKANSC
                                    customInstance,
 #endif // CTS_USES_VULKANSC
-                                   device, deviceDriver, m_testMode, m_robustnessVersion);
+                                   device, deviceDriver, m_params);
 }
 
 void DrawIndexedTestCase::initPrograms(SourceCollections &sourceCollections) const
@@ -587,17 +717,11 @@ public:
     void checkSupport(Context &context) const override;
     TestInstance *createInstance(Context &context) const override;
     void initPrograms(SourceCollections &programs) const override;
-
-protected:
-    const OOTypes m_ooType;
-    const uint32_t m_leadingCount;
 };
 
 BindIndexBuffer2TestCase::BindIndexBuffer2TestCase(tcu::TestContext &testContext, const std::string &name,
                                                    const TestParams &params)
-    : DrawIndexedTestCase(testContext, name, params.mode, 2)
-    , m_ooType(params.ooType)
-    , m_leadingCount(params.leadingCount)
+    : DrawIndexedTestCase(testContext, name, params)
 {
 }
 
@@ -633,12 +757,8 @@ void BindIndexBuffer2TestCase::initPrograms(SourceCollections &programs) const
 
 TestInstance *BindIndexBuffer2TestCase::createInstance(Context &context) const
 {
-    TestParams params;
     Move<VkDevice> device;
     DeviceDriverPtr deviceDriver;
-    params.mode         = m_testMode;
-    params.ooType       = m_ooType;
-    params.leadingCount = m_leadingCount;
 
 #ifndef CTS_USES_VULKANSC
     createDeviceAndDriver(context, device, deviceDriver);
@@ -652,7 +772,7 @@ TestInstance *BindIndexBuffer2TestCase::createInstance(Context &context) const
 #ifdef CTS_USES_VULKANSC
                                         customInstance,
 #endif // CTS_USES_VULKANSC
-                                        device, deviceDriver, params);
+                                        device, deviceDriver, m_params);
 }
 
 tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
@@ -668,36 +788,44 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     const tcu::UVec2 renderSize{64, 64};
     const std::vector<VkViewport> viewports{makeViewport(renderSize)};
     const std::vector<VkRect2D> scissors{makeRect2D(renderSize)};
+    VkPipelineDynamicStateCreateInfo *dynamicStatePtr = nullptr;
 
     // build vertices data
-    std::vector<tcu::Vec4> vertices;
+    std::vector<tcu::Vec4> vertices{// first triangle in 2nd quarter, it should not be drawn
+                                    {-1.0f, 0.1f, 0.0f, 1.0f},
+                                    {-1.0f, 1.0f, 0.0f, 1.0f},
+                                    {-0.1f, 0.1f, 0.0f, 1.0f},
 
-    // first triangle in 2nd quarter, it should not be drawn
-    vertices.emplace_back(-1.0f, 0.1f, 0.0f, 1.0f);
-    vertices.emplace_back(-1.0f, 1.0f, 0.0f, 1.0f);
-    vertices.emplace_back(-0.1f, 0.1f, 0.0f, 1.0f);
+                                    // second triangle in 2nd quarter, it should not be drawn
+                                    {-0.1f, 0.1f, 0.0f, 1.0f},
+                                    {-1.0f, 1.0f, 0.0f, 1.0f},
+                                    {-0.1f, 1.0f, 0.0f, 1.0f},
 
-    // second triangle in 2nd quarter, it should not be drawn
-    vertices.emplace_back(-0.1f, 0.1f, 0.0f, 1.0f);
-    vertices.emplace_back(-1.0f, 1.0f, 0.0f, 1.0f);
-    vertices.emplace_back(-0.1f, 1.0f, 0.0f, 1.0f);
+                                    // first triangle in 3rd quarter, it must be drawn
+                                    {0.0f, -1.0f, 0.0f, 1.0f},
+                                    {-1.0f, -1.0f, 0.0f, 1.0f},
+                                    {-1.0f, 0.0f, 0.0f, 1.0f},
 
-    // first triangle in 3rd quarter, it must be drawn
-    vertices.emplace_back(0.0f, -1.0f, 0.0f, 1.0f);
-    vertices.emplace_back(-1.0f, -1.0f, 0.0f, 1.0f);
-    vertices.emplace_back(-1.0f, 0.0f, 0.0f, 1.0f);
+                                    // second triangle in 3rd quarter if robustness works as expected,
+                                    // otherwise will be drawn in 1st quarter as well
+                                    {0.0f, -1.0f, 0.0f, 1.0f},
+                                    {-1.0f, 0.0f, 0.0f, 1.0f},
+                                    {1.0f, 1.0f, 0.0f, 1.0f}};
 
-    // second triangle in 3rd quarter if robustness works as expected,
-    // otherwise will be drawn in 1st quarter as well
-    vertices.emplace_back(0.0f, -1.0f, 0.0f, 1.0f);
-    vertices.emplace_back(-1.0f, 0.0f, 0.0f, 1.0f);
-    vertices.emplace_back(1.0f, 1.0f, 0.0f, 1.0f);
+    const VkBufferUsageFlags commonUsage =
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+        (m_params.useDeviceAddressCommands ? VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT : 0);
+
+    MemoryRequirement memReq = m_params.useDeviceAddressCommands ?
+                                   MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress :
+                                   MemoryRequirement::HostVisible;
 
     // create vertex buffer
-    const VkBufferCreateInfo vertexBufferInfo = makeBufferCreateInfo(
-        vertices.size() * sizeof(tcu::Vec4), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory vertexBuffer(vk, device, allocator, vertexBufferInfo, MemoryRequirement::HostVisible);
-    deMemcpy(vertexBuffer.getAllocation().getHostPtr(), vertices.data(), vertices.size() * sizeof(tcu::Vec4));
+    const VkDeviceSize vertexBufferSize = vertices.size() * sizeof(tcu::Vec4);
+    const VkBufferCreateInfo vertexBufferInfo =
+        makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | commonUsage);
+    BufferWithMemory vertexBuffer(vk, device, allocator, vertexBufferInfo, memReq);
+    deMemcpy(vertexBuffer.getAllocation().getHostPtr(), vertices.data(), (size_t)vertexBufferSize);
     flushAlloc(vk, device, vertexBuffer.getAllocation());
 
     // build index data
@@ -713,8 +841,8 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     const uint32_t firstIndex        = 0;
     const uint32_t indexCount        = 6;
     const VkDeviceSize bindingOffset = leadingCount * 6 * sizeof(uint32_t);
-    VkDeviceSize bindingSize         = 6 * sizeof(uint32_t);
-    VkDeviceSize allocSize           = indices.size() * sizeof(uint32_t);
+    VkDeviceSize indexBindingSize    = 6 * sizeof(uint32_t);
+    VkDeviceSize indexBufferSize     = indices.size() * sizeof(uint32_t);
     switch (m_params.ooType)
     {
     case OOTypes::OO_NONE:
@@ -724,43 +852,44 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
         indices.back() = 33; // out of range index
         break;
     case OOTypes::OO_SIZE:
-        bindingSize = 5 * sizeof(uint32_t);
+        indexBindingSize = 5 * sizeof(uint32_t);
         break;
     case OOTypes::OO_WHOLE_SIZE:
-        bindingSize = VK_WHOLE_SIZE;
-        allocSize   = (indices.size() - 1) * sizeof(uint32_t);
+        indexBindingSize = VK_WHOLE_SIZE;
+        indexBufferSize  = (indices.size() - 1) * sizeof(uint32_t);
         break;
     }
 
     // create index buffer
     const VkBufferCreateInfo indexBufferInfo =
-        makeBufferCreateInfo(allocSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory indexBuffer(vk, device, allocator, indexBufferInfo, MemoryRequirement::HostVisible);
-    deMemcpy(indexBuffer.getAllocation().getHostPtr(), indices.data(), size_t(allocSize));
+        makeBufferCreateInfo(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | commonUsage);
+    BufferWithMemory indexBuffer(vk, device, allocator, indexBufferInfo, memReq);
+    deMemcpy(indexBuffer.getAllocation().getHostPtr(), indices.data(), size_t(indexBufferSize));
     flushAlloc(vk, device, indexBuffer.getAllocation());
 
     // create indirect buffer
-    const vk::VkDrawIndexedIndirectCommand drawIndirectCommand{
+    const VkDrawIndexedIndirectCommand drawIndirectCommand{
         indexCount, // indexCount
         1u,         // instanceCount
         firstIndex, // firstIndex
         0u,         // vertexOffset
         0u,         // firstInstance
     };
-    const VkBufferCreateInfo indirectBufferInfo = makeBufferCreateInfo(
-        sizeof(drawIndirectCommand), VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory indirectBuffer(vk, *m_device, allocator, indirectBufferInfo, MemoryRequirement::HostVisible);
+    const VkDeviceSize indirectBufferSize = sizeof(drawIndirectCommand);
+    const VkBufferCreateInfo indirectBufferInfo =
+        makeBufferCreateInfo(indirectBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | commonUsage);
+    BufferWithMemory indirectBuffer(vk, *m_device, allocator, indirectBufferInfo, memReq);
     if ((m_params.mode == TM_DRAW_INDEXED_INDIRECT) || (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT))
     {
-        deMemcpy(indirectBuffer.getAllocation().getHostPtr(), &drawIndirectCommand, sizeof(drawIndirectCommand));
+        deMemcpy(indirectBuffer.getAllocation().getHostPtr(), &drawIndirectCommand, indirectBufferSize);
         flushAlloc(vk, device, indirectBuffer.getAllocation());
     }
 
     // create indirect count buffer
+    const VkDeviceSize indirectCountBufferSize = sizeof(uint32_t);
     const VkBufferCreateInfo indirectCountBufferInfo =
-        makeBufferCreateInfo(sizeof(uint32_t), VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory indirectCountBuffer(vk, *m_device, allocator, indirectCountBufferInfo,
-                                         MemoryRequirement::HostVisible);
+        makeBufferCreateInfo(indirectCountBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | commonUsage);
+    BufferWithMemory indirectCountBuffer(vk, *m_device, allocator, indirectCountBufferInfo, memReq);
     if (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT)
     {
         *static_cast<uint32_t *>(indirectCountBuffer.getAllocation().getHostPtr()) = 1u;
@@ -770,8 +899,32 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     // create output buffer that will be used to read rendered image
     const VkDeviceSize outputBufferSize = renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
     const VkBufferCreateInfo outputBufferInfo =
-        makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory outputBuffer(vk, device, allocator, outputBufferInfo, MemoryRequirement::HostVisible);
+        makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | commonUsage);
+    BufferWithMemory outputBuffer(vk, device, allocator, outputBufferInfo, memReq);
+    VkDeviceAddress outputBufferAddress = 0ull;
+
+#ifndef CTS_USES_VULKANSC
+    VkDynamicState dynamicState{VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE};
+    VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = initVulkanStructure();
+
+    VkDeviceAddress vertexBufferAddress        = 0ull;
+    VkDeviceAddress indexBufferAddress         = 0ull;
+    VkDeviceAddress indirectBufferAddress      = 0ull;
+    VkDeviceAddress indirectCountBufferAddress = 0ull;
+
+    if (m_params.useDeviceAddressCommands)
+    {
+        dynamicStateCreateInfo.dynamicStateCount = 1u;
+        dynamicStateCreateInfo.pDynamicStates    = &dynamicState;
+        dynamicStatePtr                          = &dynamicStateCreateInfo;
+
+        vertexBufferAddress        = getBufferDeviceAddress(vk, *m_device, *vertexBuffer);
+        indexBufferAddress         = getBufferDeviceAddress(vk, *m_device, *indexBuffer);
+        indirectBufferAddress      = getBufferDeviceAddress(vk, *m_device, *indirectBuffer);
+        indirectCountBufferAddress = getBufferDeviceAddress(vk, *m_device, *indirectCountBuffer);
+        outputBufferAddress        = getBufferDeviceAddress(vk, *m_device, *outputBuffer);
+    }
+#endif
 
     // create color buffer
     const VkExtent3D imageExtent = makeExtent3D(renderSize.x(), renderSize.y(), 1u);
@@ -795,26 +948,21 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
     const VkImageSubresourceRange colorSRR = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
     ImageWithMemory colorImage(vk, *m_device, allocator, imageCreateInfo, MemoryRequirement::Any);
-    Move<VkImageView> colorImageView =
-        makeImageView(vk, *m_device, colorImage.get(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSRR);
+    auto colorImageView = makeImageView(vk, *m_device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSRR);
 
     // create shader modules, renderpass, framebuffer and pipeline
-    Move<VkShaderModule> vertShaderModule =
-        createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
-    Move<VkShaderModule> fragShaderModule =
-        createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0);
+    auto vertShaderModule                 = createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"));
+    auto fragShaderModule                 = createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"));
     Move<VkRenderPass> renderPass         = makeRenderPass(vk, device, colorFormat);
     Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device);
-    Move<VkFramebuffer> framebuffer =
-        makeFramebuffer(vk, device, *renderPass, *colorImageView, renderSize.x(), renderSize.y());
+    auto framebuffer = makeFramebuffer(vk, device, *renderPass, *colorImageView, renderSize.x(), renderSize.y());
     Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
         vk, device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
-        *fragShaderModule, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        *fragShaderModule, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, 0, nullptr,
+        nullptr, nullptr, nullptr, nullptr, dynamicStatePtr);
 
-    Move<VkCommandPool> cmdPool =
-        createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIdx);
-    vk::Move<vk::VkCommandBuffer> cmdBuffer =
-        allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    auto cmdPool   = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIdx);
+    auto cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
     beginCommandBuffer(vk, *cmdBuffer);
 
@@ -829,59 +977,102 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
 
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
-    vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer.get(), &static_cast<const VkDeviceSize &>(0));
+
+    if (!m_params.useDeviceAddressCommands)
+        vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer.get(), &static_cast<const VkDeviceSize &>(0));
 
 #ifndef CTS_USES_VULKANSC
-    vk.cmdBindIndexBuffer2(*cmdBuffer, indexBuffer.get(), bindingOffset, bindingSize, VK_INDEX_TYPE_UINT32);
+    if (m_params.useDeviceAddressCommands)
+    {
+        VkBindVertexBuffer3InfoKHR vertexBuffer3Info = initVulkanStructure();
+        vertexBuffer3Info.setStride                  = true;
+        vertexBuffer3Info.addressRange               = {vertexBufferAddress, vertexBufferSize, sizeof(tcu::Vec4)};
+        vk.cmdBindVertexBuffers3KHR(*cmdBuffer, 0, 1, &vertexBuffer3Info);
+
+        VkBindIndexBuffer3InfoKHR bindIndexBuffer3Info = initVulkanStructure();
+        bindIndexBuffer3Info.addressRange              = {indexBufferAddress + bindingOffset, indexBindingSize};
+        bindIndexBuffer3Info.indexType                 = VK_INDEX_TYPE_UINT32;
+        vk.cmdBindIndexBuffer3KHR(*cmdBuffer, &bindIndexBuffer3Info);
+    }
+    else
+        vk.cmdBindIndexBuffer2(*cmdBuffer, indexBuffer.get(), bindingOffset, indexBindingSize, VK_INDEX_TYPE_UINT32);
 #else
     DE_UNREF(bindingOffset);
-    DE_UNREF(bindingSize);
+    DE_UNREF(indexBindingSize);
 #endif
 
     // we will draw all points at index 0
-    switch (m_params.mode)
+    if (!m_params.useDeviceAddressCommands)
     {
-    case TM_DRAW_INDEXED:
-        vk.cmdDrawIndexed(*cmdBuffer, indexCount, 1u, firstIndex, 0, 0);
-        break;
+        switch (m_params.mode)
+        {
+        case TM_DRAW_INDEXED:
+            vk.cmdDrawIndexed(*cmdBuffer, indexCount, 1u, firstIndex, 0, 0);
+            break;
 
-    case TM_DRAW_INDEXED_INDIRECT:
-        vk.cmdDrawIndexedIndirect(*cmdBuffer, indirectBuffer.get(), 0, 1, uint32_t(sizeof(drawIndirectCommand)));
-        break;
+        case TM_DRAW_INDEXED_INDIRECT:
+            vk.cmdDrawIndexedIndirect(*cmdBuffer, indirectBuffer.get(), 0, 1, uint32_t(sizeof(drawIndirectCommand)));
+            break;
 
-    case TM_DRAW_INDEXED_INDIRECT_COUNT:
-        vk.cmdDrawIndexedIndirectCount(*cmdBuffer, indirectBuffer.get(), 0, indirectCountBuffer.get(), 0, 1,
-                                       uint32_t(sizeof(drawIndirectCommand)));
-        break;
+        case TM_DRAW_INDEXED_INDIRECT_COUNT:
+            vk.cmdDrawIndexedIndirectCount(*cmdBuffer, indirectBuffer.get(), 0, indirectCountBuffer.get(), 0, 1,
+                                           uint32_t(sizeof(drawIndirectCommand)));
+            break;
 
-    case TM_DRAW_MULTI_INDEXED:
+        case TM_DRAW_MULTI_INDEXED:
 #ifndef CTS_USES_VULKANSC
-    {
-        const VkMultiDrawIndexedInfoEXT indexInfo[/* { firstIndex, indexCount, vertexOffset } */]{
-            {firstIndex + 3, 3, 0},
-            {firstIndex, 3, 0},
-        };
-        vk.cmdDrawMultiIndexedEXT(*cmdBuffer, DE_LENGTH_OF_ARRAY(indexInfo), indexInfo, 1, 0,
-                                  sizeof(VkMultiDrawIndexedInfoEXT), nullptr);
-    }
+        {
+            const VkMultiDrawIndexedInfoEXT indexInfo[/* { firstIndex, indexCount, vertexOffset } */]{
+                {firstIndex + 3, 3, 0},
+                {firstIndex, 3, 0},
+            };
+            vk.cmdDrawMultiIndexedEXT(*cmdBuffer, DE_LENGTH_OF_ARRAY(indexInfo), indexInfo, 1, 0,
+                                      sizeof(VkMultiDrawIndexedInfoEXT), nullptr);
+        }
 #endif
-    break;
+        break;
+        }
     }
+
+#ifndef CTS_USES_VULKANSC
+    if (m_params.useDeviceAddressCommands)
+    {
+        if (m_params.mode == TM_DRAW_INDEXED)
+            vk.cmdDrawIndexed(*cmdBuffer, (uint32_t)indexCount, 1, firstIndex, 0, 0);
+        else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT)
+        {
+            VkDrawIndirect2InfoKHR drawIndirect2Info = initVulkanStructure();
+            drawIndirect2Info.addressRange = {indirectBufferAddress, indirectBufferSize, sizeof(drawIndirectCommand)};
+            drawIndirect2Info.drawCount    = 1u;
+
+            vk.cmdDrawIndexedIndirect2KHR(*cmdBuffer, &drawIndirect2Info);
+        }
+        else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT)
+        {
+            VkDrawIndirectCount2InfoKHR drawIndirectCount2Info = initVulkanStructure();
+            drawIndirectCount2Info.addressRange                = {indirectBufferAddress, indirectBufferSize,
+                                                                  sizeof(drawIndirectCommand)};
+            drawIndirectCount2Info.countAddressRange           = {indirectCountBufferAddress, indirectCountBufferSize};
+            drawIndirectCount2Info.maxDrawCount                = 1;
+
+            vk.cmdDrawIndexedIndirectCount2KHR(*cmdBuffer, &drawIndirectCount2Info);
+        }
+        else // TM_DRAW_MULTI_INDEXED
+            DE_ASSERT(false);
+    }
+#endif // CTS_USES_VULKANSC
 
     endRenderPass(vk, *cmdBuffer);
 
     // wait till data is transfered to image
     imageBarrier = makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
                                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorImage.get(), colorSRR);
+                                          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorImage, colorSRR);
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
                           0u, 0u, 0u, 0u, 1u, &imageBarrier);
 
     // read back color image
-    const VkImageSubresourceLayers colorSL = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
-    const VkBufferImageCopy copyRegion     = makeBufferImageCopy(imageExtent, colorSL);
-    vk.cmdCopyImageToBuffer(*cmdBuffer, colorImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, outputBuffer.get(), 1u,
-                            &copyRegion);
+    copyImageToMemory(vk, *cmdBuffer, *colorImage, imageExtent, *outputBuffer, outputBufferAddress, outputBufferSize);
 
     endCommandBuffer(vk, *cmdBuffer);
     submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -940,7 +1131,8 @@ tcu::TestCaseGroup *createCmdBindIndexBuffer2Tests(tcu::TestContext &testCtx)
 
     const uint32_t offsets[] = {0, 100};
 
-    // Test access outside of the buffer with using the vkCmdBindIndexBuffer2 function from VK_KHR_maintenance5 extension.
+    // Test access outside of the buffer with using the vkCmdBindIndexBuffer2 function from
+    // VK_KHR_maintenance5 and with vkCmdBindIndexBuffer3KHR from VK_KHR_device_address_commands.
     de::MovePtr<tcu::TestCaseGroup> gRoot(new tcu::TestCaseGroup(testCtx, "bind_index_buffer2"));
     for (uint32_t offset : offsets)
     {
@@ -955,7 +1147,21 @@ tcu::TestCaseGroup *createCmdBindIndexBuffer2Tests(tcu::TestContext &testCtx)
                 p.mode         = mode.second;
                 p.ooType       = ooType.second;
                 p.leadingCount = offset;
+
                 gMode->addChild(new BindIndexBuffer2TestCase(testCtx, ooType.first, p));
+
+#ifndef CTS_USES_VULKANSC
+                // skip testing VK_WHOLE_SIZE for device_address_commands, as it is not supported
+                if (ooType.second == OOTypes::OO_WHOLE_SIZE)
+                    continue;
+
+                // limit number of tests repeated for device_address_commands
+                if ((mode.second != TestMode::TM_DRAW_MULTI_INDEXED) && (offset == 100))
+                {
+                    p.useDeviceAddressCommands = true;
+                    gMode->addChild(new BindIndexBuffer2TestCase(testCtx, ooType.first + "_device_address", p));
+                }
+#endif // CTS_USES_VULKANSC
             }
             gOffset->addChild(gMode.release());
         }
@@ -970,28 +1176,32 @@ tcu::TestCaseGroup *createIndexAccessTests(tcu::TestContext &testCtx)
     // Test access outside of the buffer for indices
     de::MovePtr<tcu::TestCaseGroup> indexAccessTests(new tcu::TestCaseGroup(testCtx, "index_access"));
 
-    struct TestConfig
-    {
-        std::string name;
-        TestMode mode;
-    };
-
-    const std::vector<TestConfig> testConfigs{
+    const std::pair<std::string, TestMode> testModes[]{
         {"draw_indexed", TestMode::TM_DRAW_INDEXED},
         {"draw_indexed_indirect", TestMode::TM_DRAW_INDEXED_INDIRECT},
         {"draw_indexed_indirect_count", TestMode::TM_DRAW_INDEXED_INDIRECT_COUNT},
         {"draw_multi_indexed", TestMode::TM_DRAW_MULTI_INDEXED},
     };
 
-    const uint32_t robustnessVersion = 2;
-    for (const auto &c : testConfigs)
+    for (const auto &[n, mode] : testModes)
     {
-        std::string name = c.name + "_" + std::to_string(robustnessVersion);
-        indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name, c.mode, robustnessVersion));
+        TestParams params;
+        params.mode              = mode;
+        params.robustnessVersion = 2;
+
+        std::string name = n + "_" + std::to_string(params.robustnessVersion);
+        indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name, params));
+
+#ifndef CTS_USES_VULKANSC
+        if (mode != TestMode::TM_DRAW_MULTI_INDEXED)
+        {
+            params.useDeviceAddressCommands = true;
+            indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name + "_device_address", params));
+        }
+#endif // CTS_USES_VULKANSC
     }
 
     return indexAccessTests.release();
 }
 
-} // namespace robustness
-} // namespace vkt
+} // namespace vkt::robustness

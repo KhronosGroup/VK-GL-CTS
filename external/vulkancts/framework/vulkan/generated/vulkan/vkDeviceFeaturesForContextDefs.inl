@@ -37,6 +37,7 @@ const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&						Context::getDepthClip
 const vk::VkPhysicalDeviceDescriptorBufferFeaturesEXT&						Context::getDescriptorBufferFeaturesEXT						(void) const { return m_device->getDescriptorBufferFeaturesEXT();					}
 const vk::VkPhysicalDeviceDescriptorBufferTensorFeaturesARM&				Context::getDescriptorBufferTensorFeaturesARM				(void) const { return m_device->getDescriptorBufferTensorFeaturesARM();				}
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&						Context::getDescriptorIndexingFeatures						(void) const { return m_device->getDescriptorIndexingFeatures();					}
+const vk::VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR&					Context::getDeviceAddressCommandsFeatures					(void) const { return m_device->getDeviceAddressCommandsFeatures();					}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV&			Context::getDeviceGeneratedCommandsComputeFeaturesNV		(void) const { return m_device->getDeviceGeneratedCommandsComputeFeaturesNV();		}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT&				Context::getDeviceGeneratedCommandsFeaturesEXT				(void) const { return m_device->getDeviceGeneratedCommandsFeaturesEXT();			}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&				Context::getDeviceGeneratedCommandsFeatures					(void) const { return m_device->getDeviceGeneratedCommandsFeatures();				}

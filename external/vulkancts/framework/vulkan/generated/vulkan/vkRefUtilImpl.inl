@@ -237,6 +237,13 @@ Move<VkDeviceMemory> allocateMemory (const DeviceInterface& vk, VkDevice device,
 	return Move<VkDeviceMemory>(check<VkDeviceMemory>(object), Deleter<VkDeviceMemory>(vk, device, pAllocator));
 }
 
+Move<VkAccelerationStructureKHR> createAccelerationStructure2KHR (const DeviceInterface& vk, VkDevice device, const VkAccelerationStructureCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkAccelerationStructureKHR object = VK_NULL_HANDLE;
+	VK_CHECK(vk.createAccelerationStructure2KHR(device, pCreateInfo, pAllocator, &object));
+	return Move<VkAccelerationStructureKHR>(check<VkAccelerationStructureKHR>(object), Deleter<VkAccelerationStructureKHR>(vk, device, pAllocator));
+}
+
 Move<VkAccelerationStructureKHR> createAccelerationStructureKHR (const DeviceInterface& vk, VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	VkAccelerationStructureKHR object = VK_NULL_HANDLE;

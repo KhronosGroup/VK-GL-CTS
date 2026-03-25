@@ -771,19 +771,6 @@ PreprocessBufferExt::PreprocessBufferExt(const DeviceInterface &vkd, VkDevice de
     }
 }
 
-VkDeviceAddress getBufferDeviceAddress(const DeviceInterface &vkd, VkDevice device, VkBuffer buffer)
-{
-    if (buffer == VK_NULL_HANDLE)
-        return 0ull;
-
-    const VkBufferDeviceAddressInfo deviceAddressInfo{
-        VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType    sType
-        nullptr,                                      // const void*        pNext
-        buffer                                        // VkBuffer           buffer;
-    };
-    return vkd.getBufferDeviceAddress(device, &deviceAddressInfo);
-}
-
 DGCBuffer::DGCBuffer(const vk::DeviceInterface &vk, const vk::VkDevice device, vk::Allocator &allocator,
                      const vk::VkDeviceSize size, const vk::VkBufferUsageFlags extraUsageFlags,
                      const vk::MemoryRequirement extraMemReqs)

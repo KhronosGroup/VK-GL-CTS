@@ -281,6 +281,14 @@ inline VkDescriptorUpdateTemplateEntry makeDescriptorUpdateTemplateEntry (uint32
 	return res;
 }
 
+inline VkDeviceAddressRangeKHR makeDeviceAddressRangeKHR (VkDeviceAddress address, VkDeviceSize size)
+{
+	VkDeviceAddressRangeKHR res;
+	res.address	= address;
+	res.size	= size;
+	return res;
+}
+
 inline VkDeviceFaultAddressInfoKHR makeDeviceFaultAddressInfoKHR (VkDeviceFaultAddressTypeKHR addressType, VkDeviceAddress reportedAddress, VkDeviceSize addressPrecision)
 {
 	VkDeviceFaultAddressInfoKHR res;

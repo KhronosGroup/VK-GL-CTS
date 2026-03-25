@@ -609,7 +609,7 @@ MovePtr<Allocation> allocateExtended(const InstanceInterface &vki, const DeviceI
 {
     const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(vki, physDevice);
     const uint32_t memoryTypeNdx = selectMatchingMemoryType(memoryProperties, memReqs.memoryTypeBits, requirement);
-    const VkMemoryAllocateInfo allocInfo = {
+    const VkMemoryAllocateInfo allocInfo{
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, //    VkStructureType    sType
         pNext,                                  //    const void*        pNext
         memReqs.size,                           //    VkDeviceSize    allocationSize
@@ -663,12 +663,19 @@ de::MovePtr<Allocation> allocateDedicated(const InstanceInterface &vki, const De
     const auto memoryRequirements = getBufferMemoryRequirements(vkd, device, buffer);
     const auto flagsInfo          = getMemoryAllocateFlagsInfo(requirement);
 
-    const VkMemoryDedicatedAllocateInfo dedicatedAllocationInfo = {
+    VkMemoryDedicatedAllocateInfo dedicatedAllocationInfo{
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType        sType
         flagsInfo.get(),                                  // const void*            pNext
         VK_NULL_HANDLE,                                   // VkImage                image
         buffer                                            // VkBuffer                buffer
     };
+
+    VkMemoryAllocateFlagsInfo allocFlagsInfo = initVulkanStructure();
+    if (requirement & MemoryRequirement::DeviceAddress)
+    {
+        allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+        dedicatedAllocationInfo.pNext = &allocFlagsInfo;
+    }
 
     return allocateExtended(vki, vkd, physDevice, device, memoryRequirements, requirement, &dedicatedAllocationInfo);
 }

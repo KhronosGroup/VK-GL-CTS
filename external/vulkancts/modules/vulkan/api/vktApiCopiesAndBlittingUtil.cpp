@@ -33,7 +33,7 @@ namespace api
 
 VkImageCopy2KHR convertvkImageCopyTovkImageCopy2KHR(VkImageCopy imageCopy)
 {
-    const VkImageCopy2KHR imageCopy2 = {
+    return {
         VK_STRUCTURE_TYPE_IMAGE_COPY_2_KHR, // VkStructureType sType;
         nullptr,                            // const void* pNext;
         imageCopy.srcSubresource,           // VkImageSubresourceLayers srcSubresource;
@@ -42,23 +42,22 @@ VkImageCopy2KHR convertvkImageCopyTovkImageCopy2KHR(VkImageCopy imageCopy)
         imageCopy.dstOffset,                // VkOffset3D dstOffset;
         imageCopy.extent                    // VkExtent3D extent;
     };
-    return imageCopy2;
 }
+
 VkBufferCopy2KHR convertvkBufferCopyTovkBufferCopy2KHR(VkBufferCopy bufferCopy)
 {
-    const VkBufferCopy2KHR bufferCopy2 = {
+    return {
         VK_STRUCTURE_TYPE_BUFFER_COPY_2_KHR, // VkStructureType sType;
         nullptr,                             // const void* pNext;
         bufferCopy.srcOffset,                // VkDeviceSize srcOffset;
         bufferCopy.dstOffset,                // VkDeviceSize dstOffset;
         bufferCopy.size,                     // VkDeviceSize size;
     };
-    return bufferCopy2;
 }
 
 VkBufferImageCopy2KHR convertvkBufferImageCopyTovkBufferImageCopy2KHR(VkBufferImageCopy bufferImageCopy)
 {
-    const VkBufferImageCopy2KHR bufferImageCopy2 = {
+    return {
         VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR, // VkStructureType sType;
         nullptr,                                   // const void* pNext;
         bufferImageCopy.bufferOffset,              // VkDeviceSize bufferOffset;
@@ -68,14 +67,31 @@ VkBufferImageCopy2KHR convertvkBufferImageCopyTovkBufferImageCopy2KHR(VkBufferIm
         bufferImageCopy.imageOffset,               // VkOffset3D imageOffset;
         bufferImageCopy.imageExtent                // VkExtent3D imageExtent;
     };
-    return bufferImageCopy2;
 }
 
 #ifndef CTS_USES_VULKANSC
+VkDeviceMemoryImageCopyKHR convertvkBufferImageCopyTovkDeviceMemoryImageCopyKHR(VkBufferImageCopy bufferImageCopy,
+                                                                                VkDeviceAddress address,
+                                                                                VkDeviceSize size,
+                                                                                VkImageLayout imageLayout,
+                                                                                VkAddressCommandFlagsKHR addressFlags)
+{
+    return {VK_STRUCTURE_TYPE_DEVICE_MEMORY_IMAGE_COPY_KHR,
+            nullptr,
+            {address + bufferImageCopy.bufferOffset, size},
+            addressFlags,
+            bufferImageCopy.bufferRowLength,
+            bufferImageCopy.bufferImageHeight,
+            bufferImageCopy.imageSubresource,
+            imageLayout,
+            bufferImageCopy.imageOffset,
+            bufferImageCopy.imageExtent};
+}
+
 VkCopyMemoryToImageIndirectCommandKHR convertvkBufferImageCopyTovkMemoryImageCopyKHR(VkDeviceAddress srcBufferAddress,
                                                                                      VkBufferImageCopy bufferImageCopy)
 {
-    const VkCopyMemoryToImageIndirectCommandKHR memoryImageCopy = {
+    return {
         srcBufferAddress + bufferImageCopy.bufferOffset, // VkDeviceAddress srcAddress;
         bufferImageCopy.bufferRowLength,                 // uint32_t bufferRowLength;
         bufferImageCopy.bufferImageHeight,               // uint32_t bufferImageHeight;
@@ -83,7 +99,6 @@ VkCopyMemoryToImageIndirectCommandKHR convertvkBufferImageCopyTovkMemoryImageCop
         bufferImageCopy.imageOffset,                     // VkOffset3D imageOffset;
         bufferImageCopy.imageExtent                      // VkExtent3D imageExtent;
     };
-    return memoryImageCopy;
 }
 #endif
 
@@ -238,34 +253,19 @@ de::MovePtr<Allocation> allocateImage(const InstanceInterface &vki, const Device
 void checkExtensionSupport(Context &context, uint32_t flags)
 {
     if (flags & COPY_COMMANDS_2)
-    {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_copy_commands2"))
-            TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
-    }
+        context.requireDeviceFunctionality("VK_KHR_copy_commands2");
 
     if (flags & SEPARATE_DEPTH_STENCIL_LAYOUT)
-    {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_separate_depth_stencil_layouts"))
-            TCU_THROW(NotSupportedError, "VK_KHR_separate_depth_stencil_layouts is not supported");
-    }
+        context.requireDeviceFunctionality("VK_KHR_separate_depth_stencil_layouts");
 
     if (flags & MAINTENANCE_1)
-    {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance1"))
-            TCU_THROW(NotSupportedError, "VK_KHR_maintenance1 is not supported");
-    }
+        context.requireDeviceFunctionality("VK_KHR_maintenance1");
 
     if (flags & MAINTENANCE_5)
-    {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance5"))
-            TCU_THROW(NotSupportedError, "VK_KHR_maintenance5 is not supported");
-    }
+        context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
     if (flags & INDIRECT_COPY)
-    {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_copy_memory_indirect"))
-            TCU_THROW(NotSupportedError, "VK_KHR_copy_memory_indirect is not supported");
-    }
+        context.requireDeviceFunctionality("VK_KHR_copy_memory_indirect");
 
     if (flags & SPARSE_BINDING)
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
@@ -275,6 +275,9 @@ void checkExtensionSupport(Context &context, uint32_t flags)
 
     if (flags & MAINTENANCE_10)
         context.requireDeviceFunctionality("VK_KHR_maintenance10");
+
+    if (flags & DEVICE_ADDRESS_COMMANDS)
+        context.requireDeviceFunctionality("VK_KHR_device_address_commands");
 }
 
 uint32_t getArraySize(const ImageParms &parms)
@@ -1103,7 +1106,7 @@ CopiesAndBlittingTestInstance::CopiesAndBlittingTestInstance(Context &context, T
 }
 
 void CopiesAndBlittingTestInstance::generateBuffer(tcu::PixelBufferAccess buffer, int width, int height, int depth,
-                                                   FillMode mode)
+                                                   FillMode mode) const
 {
     const tcu::TextureChannelClass channelClass = tcu::getTextureChannelClass(buffer.getFormat().type);
     tcu::Vec4 maxValue(1.0f);

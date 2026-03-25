@@ -38,6 +38,7 @@ auto fDepthClipEnableFeaturesEXT                        = m_context.getDepthClip
 auto fDescriptorBufferFeaturesEXT                       = m_context.getDescriptorBufferFeaturesEXT();
 auto fDescriptorBufferTensorFeaturesARM                 = m_context.getDescriptorBufferTensorFeaturesARM();
 auto fDescriptorIndexingFeatures                        = m_context.getDescriptorIndexingFeatures();
+auto fDeviceAddressCommandsFeatures                     = m_context.getDeviceAddressCommandsFeatures();
 auto fDeviceGeneratedCommandsComputeFeaturesNV          = m_context.getDeviceGeneratedCommandsComputeFeaturesNV();
 auto fDeviceGeneratedCommandsFeaturesEXT                = m_context.getDeviceGeneratedCommandsFeaturesEXT();
 auto fDeviceGeneratedCommandsFeatures                   = m_context.getDeviceGeneratedCommandsFeatures();
@@ -236,6 +237,7 @@ std::vector<void *> pNextFeatures = {
 	&fDescriptorBufferFeaturesEXT,
 	&fDescriptorBufferTensorFeaturesARM,
 	&fDescriptorIndexingFeatures,
+	&fDeviceAddressCommandsFeatures,
 	&fDeviceGeneratedCommandsComputeFeaturesNV,
 	&fDeviceGeneratedCommandsFeaturesEXT,
 	&fDeviceGeneratedCommandsFeatures,

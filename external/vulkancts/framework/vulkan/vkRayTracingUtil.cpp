@@ -1203,6 +1203,7 @@ public:
     void setDeferredOperation(const bool deferredOperation, const uint32_t workerThreadCount) override;
     void setUseArrayOfPointers(const bool useArrayOfPointers) override;
     void setUseMaintenance5(const bool useMaintenance5) override;
+    void setUseDeviceAddressCommands(const bool useDeviceAddressCommands) override;
     void setIndirectBuildParameters(const VkBuffer indirectBuffer, const VkDeviceSize indirectBufferOffset,
                                     const uint32_t indirectBufferStride) override;
     VkBuildAccelerationStructureFlagsKHR getBuildFlags() const override;
@@ -1245,6 +1246,7 @@ protected:
     uint32_t m_workerThreadCount;
     bool m_useArrayOfPointers;
     bool m_useMaintenance5;
+    bool m_useDeviceAddressCommands;
     Move<VkBuffer> m_accelerationStructureBuffer;
     de::MovePtr<BufferWithMemory> m_copyBuffer;
     de::MovePtr<Allocation> m_accelerationStructureAlloc;
@@ -1361,6 +1363,7 @@ BottomLevelAccelerationStructureKHR::BottomLevelAccelerationStructureKHR()
     , m_workerThreadCount(0)
     , m_useArrayOfPointers(false)
     , m_useMaintenance5(false)
+    , m_useDeviceAddressCommands(false)
     , m_accelerationStructureBuffer()
     , m_vertexBuffer()
     , m_indexBuffer()
@@ -1434,6 +1437,11 @@ void BottomLevelAccelerationStructureKHR::setUseArrayOfPointers(const bool useAr
 void BottomLevelAccelerationStructureKHR::setUseMaintenance5(const bool useMaintenance5)
 {
     m_useMaintenance5 = useMaintenance5;
+}
+
+void BottomLevelAccelerationStructureKHR::setUseDeviceAddressCommands(const bool useDeviceAddressCommands)
+{
+    m_useDeviceAddressCommands = useDeviceAddressCommands;
 }
 
 void BottomLevelAccelerationStructureKHR::setIndirectBuildParameters(const VkBuffer indirectBuffer,
@@ -1599,10 +1607,45 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
         (externalCreationBuffer ? bufferProps.extBuffer.buffer : getAccelerationStructureBuffer());
     const auto createInfoOffset =
         (externalCreationBuffer ? static_cast<VkDeviceSize>(0) : getAccelerationStructureBufferOffset());
+
+    const VkAccelerationStructureTypeKHR structureType =
+        (m_createGeneric ? VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR :
+                           VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+
+    const VkBufferCreateInfo copyBufferCreateInfo =
+        makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR |
+                                                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+
+    if (m_useDeviceAddressCommands)
     {
-        const VkAccelerationStructureTypeKHR structureType =
-            (m_createGeneric ? VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR :
-                               VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+        auto bufferDeviceAddress = getBufferDeviceAddress(vk, device, createInfoBuffer);
+        VkAccelerationStructureCreateInfo2KHR accelerationStructureCreateInfo2KHR{
+            VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_2_KHR, // VkStructureType sType;
+            pNext,                                                      // const void *pNext;
+            m_createFlags, // VkAccelerationStructureCreateFlagsKHR createFlags;
+            {bufferDeviceAddress + createInfoOffset, m_structureSize}, // VkDeviceAddressRangeKHR addressRange;
+            0,                                                         // VkAddressCommandFlagsKHR addressFlags;
+            structureType,                                             // VkAccelerationStructureTypeKHR type;
+        };
+        m_accelerationStructureKHR = createAccelerationStructure2KHR(vk, device, &accelerationStructureCreateInfo2KHR);
+
+        if (!m_geometriesData.empty() && m_geometriesData.front()->doBLASCopy())
+        {
+            m_copyBuffer                 = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+                vk, device, allocator, copyBufferCreateInfo,
+                MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+            auto copyBufferDeviceAddress = getBufferDeviceAddress(vk, device, **m_copyBuffer);
+
+            // Update acceleration structure create info to use the copy buffer
+            accelerationStructureCreateInfo2KHR.addressRange.address = copyBufferDeviceAddress + createInfoOffset;
+
+            // Create acceleration structure with the copy buffer
+            m_accelerationStructureCopyKHR =
+                createAccelerationStructure2KHR(vk, device, &accelerationStructureCreateInfo2KHR);
+        }
+    }
+    else
+    {
         VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfoKHR{
             VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR, //  VkStructureType sType;
             pNext,                                                    //  const void* pNext;
@@ -1616,6 +1659,7 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
 
         m_accelerationStructureKHR =
             createAccelerationStructureKHR(vk, device, &accelerationStructureCreateInfoKHR, nullptr);
+
         if (!m_geometriesData.empty() && m_geometriesData.front()->doBLASCopy())
         {
             const VkBufferCreateInfo bufferCreateInfo =
@@ -1623,7 +1667,7 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
                                                           VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 
             m_copyBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-                vk, device, allocator, bufferCreateInfo,
+                vk, device, allocator, copyBufferCreateInfo,
                 MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
 
             memset(m_copyBuffer->getAllocation().getHostPtr(), kPoisonValue,
@@ -3147,19 +3191,34 @@ void BottomLevelAccelerationStructurePoolMember::createAccellerationStructure(co
     const VkAccelerationStructureTypeKHR structureType =
         (m_createGeneric ? VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR :
                            VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
-    const VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfoKHR{
-        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR, //  VkStructureType sType;
-        nullptr,                                                  //  const void* pNext;
-        m_createFlags,                                            //  VkAccelerationStructureCreateFlagsKHR createFlags;
-        getAccelerationStructureBuffer(),                         //  VkBuffer buffer;
-        getAccelerationStructureBufferOffset(),                   //  VkDeviceSize offset;
-        m_structureSize,                                          //  VkDeviceSize size;
-        structureType,                                            //  VkAccelerationStructureTypeKHR type;
-        deviceAddress                                             //  VkDeviceAddress deviceAddress;
-    };
 
-    m_accelerationStructureKHR =
-        createAccelerationStructureKHR(vk, device, &accelerationStructureCreateInfoKHR, nullptr);
+    if (m_useDeviceAddressCommands)
+    {
+        auto bufferDeviceAddress = getBufferDeviceAddress(vk, device, getAccelerationStructureBuffer());
+        const VkAccelerationStructureCreateInfo2KHR accelerationStructureCreateInfo2KHR{
+            VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_2_KHR, // VkStructureType sType;
+            nullptr,                                                    // const void *pNext;
+            m_createFlags, // VkAccelerationStructureCreateFlagsKHR createFlags;
+            {bufferDeviceAddress + getAccelerationStructureBufferOffset(), m_structureSize}, // addressRange
+            0,             // VkAddressCommandFlagsKHR addressFlags;
+            structureType, // VkAccelerationStructureTypeKHR type;
+        };
+        m_accelerationStructureKHR = createAccelerationStructure2KHR(vk, device, &accelerationStructureCreateInfo2KHR);
+    }
+    else
+    {
+        const VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfoKHR{
+            VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR, //  VkStructureType sType;
+            nullptr,                                                  //  const void* pNext;
+            m_createFlags,                          //  VkAccelerationStructureCreateFlagsKHR createFlags;
+            getAccelerationStructureBuffer(),       //  VkBuffer buffer;
+            getAccelerationStructureBufferOffset(), //  VkDeviceSize offset;
+            m_structureSize,                        //  VkDeviceSize size;
+            structureType,                          //  VkAccelerationStructureTypeKHR type;
+            deviceAddress                           //  VkDeviceAddress deviceAddress;
+        };
+        m_accelerationStructureKHR = createAccelerationStructureKHR(vk, device, &accelerationStructureCreateInfoKHR);
+    }
 }
 
 TopLevelAccelerationStructure::~TopLevelAccelerationStructure()
@@ -3371,7 +3430,7 @@ public:
 
     TopLevelAccelerationStructureKHR();
     TopLevelAccelerationStructureKHR(const TopLevelAccelerationStructureKHR &other) = delete;
-    virtual ~TopLevelAccelerationStructureKHR();
+    virtual ~TopLevelAccelerationStructureKHR()                                     = default;
 
     void setBuildType(const VkAccelerationStructureBuildTypeKHR buildType) override;
     void setCreateFlags(const VkAccelerationStructureCreateFlagsKHR createFlags) override;
@@ -3386,6 +3445,7 @@ public:
                                     const uint32_t indirectBufferStride) override;
     void setUsePPGeometries(const bool usePPGeometries) override;
     void setTryCachedMemory(const bool tryCachedMemory) override;
+    void setUseDeviceAddressCommands(const bool useDeviceAddressCommands) override;
     void setMaxMotionInstances(const uint32_t maxMotionInstances) override;
     VkBuildAccelerationStructureFlagsKHR getBuildFlags() const override;
 
@@ -3451,6 +3511,7 @@ protected:
     bool m_tryCachedMemory;
     uint32_t m_maxMotionInstances;
     int32_t m_instanceBufferAddressOffset;
+    bool m_useDeviceAddressCommands;
 
     void prepareInstances(const DeviceInterface &vk, const VkDevice device,
                           VkAccelerationStructureGeometryKHR &accelerationStructureGeometryKHR,
@@ -3499,10 +3560,7 @@ TopLevelAccelerationStructureKHR::TopLevelAccelerationStructureKHR()
     , m_tryCachedMemory(true)
     , m_maxMotionInstances(0)
     , m_instanceBufferAddressOffset(0)
-{
-}
-
-TopLevelAccelerationStructureKHR::~TopLevelAccelerationStructureKHR()
+    , m_useDeviceAddressCommands(false)
 {
 }
 
@@ -3561,6 +3619,11 @@ void TopLevelAccelerationStructureKHR::setUsePPGeometries(const bool usePPGeomet
 void TopLevelAccelerationStructureKHR::setTryCachedMemory(const bool tryCachedMemory)
 {
     m_tryCachedMemory = tryCachedMemory;
+}
+
+void TopLevelAccelerationStructureKHR::setUseDeviceAddressCommands(const bool useDeviceAddressCommands)
+{
+    m_useDeviceAddressCommands = useDeviceAddressCommands;
 }
 
 void TopLevelAccelerationStructureKHR::setMaxMotionInstances(const uint32_t maxMotionInstances)
@@ -3775,19 +3838,33 @@ void TopLevelAccelerationStructureKHR::create(const DeviceInterface &vk, const V
 
     const auto createInfoBuffer =
         (externalCreationBuffer ? bufferProps.extBuffer.buffer : *m_accelerationStructureBuffer);
-    {
-        const VkAccelerationStructureTypeKHR structureType =
-            (m_createGeneric ? VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR :
-                               VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
+    const VkAccelerationStructureTypeKHR structureType =
+        (m_createGeneric ? VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR : VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
 
-        VkAccelerationStructureMotionInfoNV motionInfo = {};
-        if (m_maxMotionInstances)
-        {
-            motionInfo.sType        = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MOTION_INFO_NV;
-            motionInfo.pNext        = pNext;
-            motionInfo.maxInstances = m_maxMotionInstances;
-            motionInfo.flags        = 0;
-        }
+    VkAccelerationStructureMotionInfoNV motionInfo = {};
+    if (m_maxMotionInstances)
+    {
+        motionInfo.sType        = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MOTION_INFO_NV;
+        motionInfo.pNext        = pNext;
+        motionInfo.maxInstances = m_maxMotionInstances;
+        motionInfo.flags        = 0;
+    }
+
+    if (m_useDeviceAddressCommands)
+    {
+        auto bufferDeviceAddress = getBufferDeviceAddress(vk, device, createInfoBuffer);
+        const VkAccelerationStructureCreateInfo2KHR accelerationStructureCreateInfo2KHR{
+            VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_2_KHR, // VkStructureType sType;
+            m_maxMotionInstances ? &motionInfo : pNext,                 // const void *pNext;
+            m_createFlags,                          // VkAccelerationStructureCreateFlagsKHR createFlags;
+            {bufferDeviceAddress, m_structureSize}, // VkDeviceAddressRangeKHR addressRange;
+            0,                                      // VkAddressCommandFlagsKHR addressFlags;
+            structureType,                          // VkAccelerationStructureTypeKHR type;
+        };
+        m_accelerationStructureKHR = createAccelerationStructure2KHR(vk, device, &accelerationStructureCreateInfo2KHR);
+    }
+    else
+    {
         const VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfoKHR = {
             VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR, //  VkStructureType sType;
             m_maxMotionInstances ? &motionInfo : pNext,               //  const void* pNext;
@@ -3798,9 +3875,7 @@ void TopLevelAccelerationStructureKHR::create(const DeviceInterface &vk, const V
             structureType,    //  VkAccelerationStructureTypeKHR type;
             deviceAddress     //  VkDeviceAddress deviceAddress;
         };
-
-        m_accelerationStructureKHR =
-            createAccelerationStructureKHR(vk, device, &accelerationStructureCreateInfoKHR, nullptr);
+        m_accelerationStructureKHR = createAccelerationStructureKHR(vk, device, &accelerationStructureCreateInfoKHR);
     }
 
     if ((!externalCreationBuffer) && (m_creationBufferUnbounded))
@@ -5443,7 +5518,8 @@ void generateRayQueryShaders(SourceCollections &programCollection, RayQueryTestP
                       "layout(std430, set = 0, binding = 0) buffer Results { ResultType results[]; };\n"
                       "void main()\n"
                       "{\n"
-                      "  uint index = (gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y) + (gl_LaunchIDEXT.y "
+                      "  uint index = (gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y) + "
+                      "(gl_LaunchIDEXT.y "
                       "* gl_LaunchSizeEXT.x) + gl_LaunchIDEXT.x;\n"
                       "  param.index = index;\n"
                       "  param.hitAttrib = vec4(0, 0, 0, 0);\n"
@@ -5468,7 +5544,8 @@ void generateRayQueryShaders(SourceCollections &programCollection, RayQueryTestP
                       "  payload = vec4("
                    << NO_INT_VALUE << "," << max_t * 2
                    << ",0,0);\n"
-                      "  uint index = (gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y) + (gl_LaunchIDEXT.y "
+                      "  uint index = (gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y) + "
+                      "(gl_LaunchIDEXT.y "
                       "* gl_LaunchSizeEXT.x) + gl_LaunchIDEXT.x;\n"
                       "  traceRayEXT(traceEXTAccel, 0, 0xFF, 0, 0, 0, vec3(0.1, 0.1, 0.0), 0.0, vec3(0.0, 0.0, 1.0), "
                       "500.0, 0);\n"

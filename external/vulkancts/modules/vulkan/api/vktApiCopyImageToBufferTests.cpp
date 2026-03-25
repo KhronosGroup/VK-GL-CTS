@@ -148,21 +148,28 @@ CopyImageToBuffer::CopyImageToBuffer(Context &context, TestParams testParams)
 
     // Create destination buffer
     {
+        VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        if (m_params.extensionFlags & DEVICE_ADDRESS_COMMANDS)
+            usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+        const MemoryRequirement memReq = (m_params.extensionFlags & DEVICE_ADDRESS_COMMANDS) ?
+                                             MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress :
+                                             MemoryRequirement::HostVisible;
+
         const VkBufferCreateInfo destinationBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
             nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_bufferSize,                         // VkDeviceSize size;
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
+            usage,                                // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
             nullptr,                              // const uint32_t* pQueueFamilyIndices;
         };
 
-        m_destination = createBuffer(vk, m_device, &destinationBufferParams);
-        m_destinationBufferAlloc =
-            allocateBuffer(vki, vk, vkPhysDevice, m_device, *m_destination, MemoryRequirement::HostVisible,
-                           *m_allocator, m_params.allocationKind);
+        m_destination            = createBuffer(vk, m_device, &destinationBufferParams);
+        m_destinationBufferAlloc = allocateBuffer(vki, vk, vkPhysDevice, m_device, *m_destination, memReq, *m_allocator,
+                                                  m_params.allocationKind);
         VK_CHECK(vk.bindBufferMemory(m_device, *m_destination, m_destinationBufferAlloc->getMemory(),
                                      m_destinationBufferAlloc->getOffset()));
     }
@@ -229,22 +236,11 @@ tcu::TestStatus CopyImageToBuffer::iterate(void)
         m_bufferSize                             // VkDeviceSize size;
     };
 
-    // Copy from image to buffer
     std::vector<VkBufferImageCopy> bufferImageCopies;
     std::vector<VkBufferImageCopy2KHR> bufferImageCopies2KHR;
-    for (uint32_t i = 0; i < m_params.regions.size(); i++)
-    {
-        if (!(m_params.extensionFlags & COPY_COMMANDS_2))
-        {
-            bufferImageCopies.push_back(m_params.regions[i].bufferImageCopy);
-        }
-        else
-        {
-            DE_ASSERT(m_params.extensionFlags & COPY_COMMANDS_2);
-            bufferImageCopies2KHR.push_back(
-                convertvkBufferImageCopyTovkBufferImageCopy2KHR(m_params.regions[i].bufferImageCopy));
-        }
-    }
+#ifndef CTS_USES_VULKANSC
+    std::vector<VkDeviceMemoryImageCopyKHR> memoryImageCopies2KHR;
+#endif // CTS_USES_VULKANSC
 
     beginCommandBuffer(vk, commandBuffer);
     vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -253,15 +249,38 @@ tcu::TestStatus CopyImageToBuffer::iterate(void)
 
     const VkImageLayout layout =
         m_params.useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    if (!(m_params.extensionFlags & COPY_COMMANDS_2))
+
+    // Copy from image to buffer
+    if (m_params.extensionFlags & DEVICE_ADDRESS_COMMANDS)
     {
-        vk.cmdCopyImageToBuffer(commandBuffer, m_source.get(), layout, m_destination.get(),
-                                (uint32_t)m_params.regions.size(), &bufferImageCopies[0]);
+#ifndef CTS_USES_VULKANSC
+        VkDeviceAddress dstBufferDeviceAddress = getBufferDeviceAddress(vk, vkDevice, *m_destination);
+        int pixelSize                          = m_textureFormat.getPixelSize();
+
+        memoryImageCopies2KHR.reserve(m_params.regions.size());
+        for (const auto &r : m_params.regions)
+        {
+            auto size = std::max(r.bufferImageCopy.bufferRowLength, r.bufferImageCopy.imageExtent.width) *
+                        std::max(r.bufferImageCopy.bufferImageHeight, r.bufferImageCopy.imageExtent.height) * pixelSize;
+            memoryImageCopies2KHR.push_back(convertvkBufferImageCopyTovkDeviceMemoryImageCopyKHR(
+                r.bufferImageCopy, dstBufferDeviceAddress, size, layout));
+        }
+
+        VkCopyDeviceMemoryImageInfoKHR memorImageInfo = initVulkanStructure();
+        memorImageInfo.image                          = *m_source;
+        memorImageInfo.regionCount                    = (uint32_t)m_params.regions.size();
+        memorImageInfo.pRegions                       = memoryImageCopies2KHR.data();
+
+        vk.cmdCopyImageToMemoryKHR(commandBuffer, &memorImageInfo);
+#endif // CTS_USES_VULKANSC
     }
-    else
+    else if (m_params.extensionFlags & COPY_COMMANDS_2)
     {
-        DE_ASSERT(m_params.extensionFlags & COPY_COMMANDS_2);
-        const VkCopyImageToBufferInfo2KHR copyImageToBufferInfo2KHR = {
+        bufferImageCopies2KHR.reserve(m_params.regions.size());
+        for (const auto &r : m_params.regions)
+            bufferImageCopies2KHR.push_back(convertvkBufferImageCopyTovkBufferImageCopy2KHR(r.bufferImageCopy));
+
+        const VkCopyImageToBufferInfo2KHR copyImageToBufferInfo2KHR{
             VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2_KHR, // VkStructureType sType;
             nullptr,                                           // const void* pNext;
             m_source.get(),                                    // VkImage srcImage;
@@ -272,6 +291,17 @@ tcu::TestStatus CopyImageToBuffer::iterate(void)
         };
 
         vk.cmdCopyImageToBuffer2(commandBuffer, &copyImageToBufferInfo2KHR);
+    }
+    else
+    {
+        DE_ASSERT(~m_params.extensionFlags & (COPY_COMMANDS_2 | DEVICE_ADDRESS_COMMANDS));
+
+        bufferImageCopies.reserve(m_params.regions.size());
+        for (const auto &r : m_params.regions)
+            bufferImageCopies.push_back(r.bufferImageCopy);
+
+        vk.cmdCopyImageToBuffer(commandBuffer, *m_source, layout, *m_destination, (uint32_t)m_params.regions.size(),
+                                bufferImageCopies.data());
     }
 
     vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
