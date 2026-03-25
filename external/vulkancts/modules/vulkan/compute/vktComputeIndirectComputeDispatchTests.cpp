@@ -519,12 +519,13 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate(void)
         if (m_params.useDeviceAddressCommands)
         {
             vk::VkDispatchIndirect2InfoKHR dispatchIndirect2Info = vk::initVulkanStructure();
-            dispatchIndirect2Info.addressRange = {indirectBufferAddress + offset, m_params.bufferSize};
+            dispatchIndirect2Info.addressRange = {indirectBufferAddress + offset, m_params.bufferSize - offset};
             dispatchIndirect2Info.addressFlags = vk::VK_ADDRESS_COMMAND_UNKNOWN_STORAGE_BUFFER_USAGE_BIT_KHR;
 
             // use different valid addressFlags in some cases to test them
             if (m_params.workGroupSize.x() > 1)
-                dispatchIndirect2Info.addressFlags |= vk::VK_ADDRESS_COMMAND_STORAGE_BUFFER_USAGE_BIT_KHR;
+                dispatchIndirect2Info.addressFlags |=
+                    vk::VK_ADDRESS_COMMAND_UNKNOWN_TRANSFORM_FEEDBACK_BUFFER_USAGE_BIT_KHR;
             if (m_params.workGroupSize.y() > 1)
                 dispatchIndirect2Info.addressFlags |= vk::VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
 

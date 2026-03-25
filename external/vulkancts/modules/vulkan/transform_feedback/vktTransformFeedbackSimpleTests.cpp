@@ -1090,7 +1090,7 @@ void TransformFeedbackTestInstance::cmdDrawIndirectCount(const DeviceInterface &
     if (m_parameters.useDeviceAddressCommands)
     {
         VkDrawIndirectCount2InfoKHR drawIndirectCount2Info = initVulkanStructure();
-        drawIndirectCount2Info.addressRange                = {bufferDeviceAddress + offset, size, stride};
+        drawIndirectCount2Info.addressRange                = {bufferDeviceAddress + offset, size - offset, stride};
         drawIndirectCount2Info.countAddressRange           = {countBufferDeviceAddress + countOffset, countSize};
         drawIndirectCount2Info.maxDrawCount                = maxDrawCount;
 

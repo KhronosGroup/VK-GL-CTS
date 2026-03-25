@@ -663,7 +663,8 @@ tcu::TestStatus MeshApiInstance::iterate(void)
         {
             VkDrawIndirect2InfoKHR drawIndirect2Info = initVulkanStructure();
             drawIndirect2Info.addressRange           = {indirectBufferAddress + indirectArgs.offset,
-                                                        indirectBuffer->getBufferSize(), indirectArgs.stride};
+                                                        indirectBuffer->getBufferSize() - indirectArgs.offset,
+                                                        indirectArgs.stride};
             drawIndirect2Info.drawCount              = m_params.drawCount;
 
             // use different valid addressFlags in some cases to test them

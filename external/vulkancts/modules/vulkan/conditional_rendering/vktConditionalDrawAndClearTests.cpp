@@ -1108,7 +1108,7 @@ tcu::TestStatus ConditionalRenderingDrawTestInstance::iterate(void)
         VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_2_EXT, //VkStructureType sType;
         nullptr,                                                  //const void* pNext;
         {conditionalRenderingBufferAddress + m_conditionalRenderingBufferOffset,
-         sizeof(uint32_t) + m_conditionalRenderingBufferOffset}, // VkDeviceAddressRangeKHR addressRange;
+         sizeof(uint32_t)},                                      // VkDeviceAddressRangeKHR addressRange;
         VK_ADDRESS_COMMAND_UNKNOWN_STORAGE_BUFFER_USAGE_BIT_KHR, // VkAddressCommandFlagsKHR addressFlags;
         (m_testParams.m_invert ? (VkConditionalRenderingFlagsEXT)VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT :
                                  (VkConditionalRenderingFlagsEXT)0) //VkConditionalRenderingFlagsEXT flags;

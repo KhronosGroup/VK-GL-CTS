@@ -1028,7 +1028,7 @@ void OcclusionQueryTestInstance::cmdCopyQueryPoolResults(VkCommandBuffer cmdBuff
 #ifndef CTS_USES_VULKANSC
     if (m_testVector.useDeviceAddressCommands)
     {
-        VkStridedDeviceAddressRangeKHR range{dstBufferDeviceAddress + dstOffset, dstSize, stride};
+        VkStridedDeviceAddressRangeKHR range{dstBufferDeviceAddress + dstOffset, dstSize - dstOffset, stride};
         vk.cmdCopyQueryPoolResultsToMemoryKHR(cmdBuffer, queryPool, firstQuery, queryCount, &range, 0, resultFlags);
     }
 #else
