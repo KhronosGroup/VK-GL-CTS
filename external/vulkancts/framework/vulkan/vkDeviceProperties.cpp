@@ -180,7 +180,7 @@ bool DeviceProperties::verifyPropertyAddCriteria(const PropertyStructCreationDat
     const auto &propertyName = item.name;
 
     // check if this is core property
-    bool isPropertyAvailable = (propertyName == "core_property");
+    bool isPropertyAvailable = (propertyName == DECL_CORE_PROPERTIES_NAME);
 
     // check if this property is available on current device
     if (!isPropertyAvailable)
