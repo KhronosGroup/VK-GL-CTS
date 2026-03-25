@@ -606,13 +606,23 @@ ShaderRenderCase::~ShaderRenderCase(void)
 
 void ShaderRenderCase::initPrograms(vk::SourceCollections &programCollection) const
 {
-    const ShaderBuildOptions vertBuildOptions =
-        (m_vertShaderBuildOptions ? *m_vertShaderBuildOptions : ShaderBuildOptions());
-    const ShaderBuildOptions fragBuildOptions =
-        (m_fragShaderBuildOptions ? *m_fragShaderBuildOptions : ShaderBuildOptions());
+    if (!m_compShaderSource.empty())
+    {
+        const ShaderBuildOptions compBuildOptions =
+            (m_compShaderBuildOptions ? *m_compShaderBuildOptions : ShaderBuildOptions());
 
-    programCollection.glslSources.add("vert") << glu::VertexSource(m_vertShaderSource) << vertBuildOptions;
-    programCollection.glslSources.add("frag") << glu::FragmentSource(m_fragShaderSource) << fragBuildOptions;
+        programCollection.glslSources.add("comp") << glu::ComputeSource(m_compShaderSource) << compBuildOptions;
+    }
+    else
+    {
+        const ShaderBuildOptions vertBuildOptions =
+            (m_vertShaderBuildOptions ? *m_vertShaderBuildOptions : ShaderBuildOptions());
+        const ShaderBuildOptions fragBuildOptions =
+            (m_fragShaderBuildOptions ? *m_fragShaderBuildOptions : ShaderBuildOptions());
+
+        programCollection.glslSources.add("vert") << glu::VertexSource(m_vertShaderSource) << vertBuildOptions;
+        programCollection.glslSources.add("frag") << glu::FragmentSource(m_fragShaderSource) << fragBuildOptions;
+    }
 }
 
 TestInstance *ShaderRenderCase::createInstance(Context &context) const

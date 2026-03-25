@@ -373,8 +373,10 @@ public:
 protected:
     std::string m_vertShaderSource;
     std::string m_fragShaderSource;
+    std::string m_compShaderSource;
     de::MovePtr<vk::ShaderBuildOptions> m_vertShaderBuildOptions;
     de::MovePtr<vk::ShaderBuildOptions> m_fragShaderBuildOptions;
+    de::MovePtr<vk::ShaderBuildOptions> m_compShaderBuildOptions;
 
     const bool m_isVertexCase;
     const de::UniquePtr<const ShaderEvaluator> m_evaluator;
@@ -603,7 +605,6 @@ protected:
     std::string m_computeShaderName;
     tcu::UVec2 m_renderSize;
     vk::VkFormat m_colorFormat;
-
     bool m_useCompute;
 
     de::SharedPtr<vk::Unique<vk::VkCommandPool>> m_externalCommandPool;

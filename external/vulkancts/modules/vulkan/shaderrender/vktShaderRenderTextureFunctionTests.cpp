@@ -1464,7 +1464,8 @@ public:
     ShaderTextureFunctionInstance(Context &context, const bool isVertexCase, const ShaderEvaluator &evaluator,
                                   const UniformSetup &uniformSetup, const TextureLookupSpec &lookupSpec,
                                   const TextureSpec &textureSpec, const TexLookupParams &lookupParams,
-                                  const ImageBackingMode imageBackingMode = IMAGE_BACKING_MODE_REGULAR);
+                                  const ImageBackingMode imageBackingMode = IMAGE_BACKING_MODE_REGULAR,
+                                  const bool useCompute                   = false);
     virtual ~ShaderTextureFunctionInstance(void);
 
     void updatePushConstants(vk::VkCommandBuffer commandBuffer, vk::VkPipelineLayout pipelineLayout) override;
@@ -1483,9 +1484,9 @@ private:
 ShaderTextureFunctionInstance::ShaderTextureFunctionInstance(
     Context &context, const bool isVertexCase, const ShaderEvaluator &evaluator, const UniformSetup &uniformSetup,
     const TextureLookupSpec &lookupSpec, const TextureSpec &textureSpec, const TexLookupParams &lookupParams,
-    const ImageBackingMode imageBackingMode)
+    const ImageBackingMode imageBackingMode, const bool useCompute)
     : ShaderRenderCaseInstance(context, isVertexCase, evaluator, uniformSetup, nullptr, imageBackingMode,
-                               (isVertexCase ? 92 : GRID_SIZE_DEFAULT_FRAGMENT))
+                               (isVertexCase ? 92 : GRID_SIZE_DEFAULT_FRAGMENT), true, useCompute)
     , m_lookupSpec(lookupSpec)
     , m_textureSpec(textureSpec)
     , m_lookupParams(lookupParams)
@@ -1562,6 +1563,49 @@ void ShaderTextureFunctionInstance::setupUniforms(const tcu::Vec4 &)
     useSampler(0u, 0u);
     addUniform(1u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(tcu::Vec4), m_lookupParams.scale.getPtr());
     addUniform(2u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(tcu::Vec4), m_lookupParams.bias.getPtr());
+
+    // Inject QuadCoords UBO for Compute pipeline to simulate vertex inputs
+    if (m_useCompute)
+    {
+        std::vector<tcu::Vec4> quadCoords;
+
+        // Calculating 4 corner coordinates using the test's attribute transforms
+        auto addTransformCoords = [&](int attrNdx)
+        {
+            if (attrNdx < (int)m_userAttribTransforms.size())
+            {
+                const tcu::Mat4 &transform = m_userAttribTransforms[attrNdx];
+                quadCoords.push_back(transform * tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+                quadCoords.push_back(transform * tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+                quadCoords.push_back(transform * tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
+                quadCoords.push_back(transform * tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f));
+            }
+            else
+            {
+                for (int i = 0; i < 4; ++i)
+                    quadCoords.push_back(tcu::Vec4(0.0f));
+            }
+        };
+
+        // Always calculate base texture coordinates (u_in0)
+        addTransformCoords(0);
+
+        const bool isGrad     = functionHasGrad(m_lookupSpec.function);
+        const bool hasLodBias = functionHasLod(m_lookupSpec.function) || m_lookupSpec.useBias;
+
+        if (isGrad)
+        {
+            addTransformCoords(1); // u_in1 (gradX)
+            addTransformCoords(2); // u_in2 (gradY)
+        }
+        else if (hasLodBias)
+        {
+            addTransformCoords(1); // u_in1 (lodBias)
+        }
+
+        // Bind the assembled quad coordinates vector to binding 3
+        addUniform(3u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, quadCoords.size() * sizeof(tcu::Vec4), quadCoords.data());
+    }
 }
 
 void ShaderTextureFunctionInstance::initTexture(void)
@@ -1929,8 +1973,9 @@ void ShaderTextureFunctionInstance::setup(void)
 
     if (m_lookupSpec.pcOffset)
     {
-        const auto pcStages = (vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT);
-        const auto pcSize   = static_cast<uint32_t>(sizeof(m_lookupParams.offset));
+        const auto pcStages =
+            (vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT | vk::VK_SHADER_STAGE_COMPUTE_BIT);
+        const auto pcSize = static_cast<uint32_t>(sizeof(m_lookupParams.offset));
 
         const std::vector<vk::VkPushConstantRange> pcRanges{
             vk::makePushConstantRange(pcStages, 0u, pcSize),
@@ -1945,9 +1990,10 @@ void ShaderTextureFunctionInstance::updatePushConstants(vk::VkCommandBuffer comm
 {
     if (m_lookupSpec.pcOffset)
     {
-        const auto &vkd     = m_context.getDeviceInterface();
-        const auto pcStages = (vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT);
-        const auto pcSize   = static_cast<uint32_t>(sizeof(m_lookupParams.offset));
+        const auto &vkd = m_context.getDeviceInterface();
+        const auto pcStages =
+            (vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT | vk::VK_SHADER_STAGE_COMPUTE_BIT);
+        const auto pcSize = static_cast<uint32_t>(sizeof(m_lookupParams.offset));
         vkd.cmdPushConstants(commandBuffer, pipelineLayout, pcStages, 0u, pcSize, &m_lookupParams.offset);
     }
 }
@@ -1956,7 +2002,8 @@ class ShaderTextureFunctionCase : public ShaderRenderCase
 {
 public:
     ShaderTextureFunctionCase(tcu::TestContext &testCtx, const std::string &name, const TextureLookupSpec &lookup,
-                              const TextureSpec &texture, TexEvalFunc evalFunc, bool isVertexCase);
+                              const TextureSpec &texture, TexEvalFunc evalFunc, bool isVertexCase,
+                              bool useCompute = false);
     virtual ~ShaderTextureFunctionCase(void);
 
     virtual TestInstance *createInstance(Context &context) const;
@@ -1966,16 +2013,18 @@ protected:
     const TextureLookupSpec m_lookupSpec;
     const TextureSpec m_textureSpec;
     const TexLookupParams m_lookupParams;
+    const bool m_useCompute;
 
     void initShaderSources(void);
 };
 
 ShaderTextureFunctionCase::ShaderTextureFunctionCase(tcu::TestContext &testCtx, const std::string &name,
                                                      const TextureLookupSpec &lookup, const TextureSpec &texture,
-                                                     TexEvalFunc evalFunc, bool isVertexCase)
+                                                     TexEvalFunc evalFunc, bool isVertexCase, bool useCompute)
     : ShaderRenderCase(testCtx, name, isVertexCase, new TexLookupEvaluator(evalFunc, m_lookupParams), NULL, NULL)
     , m_lookupSpec(lookup)
     , m_textureSpec(texture)
+    , m_useCompute(useCompute)
 {
     initShaderSources();
 }
@@ -1989,7 +2038,8 @@ TestInstance *ShaderTextureFunctionCase::createInstance(Context &context) const
     DE_ASSERT(m_evaluator);
     DE_ASSERT(m_uniformSetup);
     return new ShaderTextureFunctionInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_lookupSpec,
-                                             m_textureSpec, m_lookupParams);
+                                             m_textureSpec, m_lookupParams,
+                                             ShaderRenderCaseInstance::IMAGE_BACKING_MODE_REGULAR, m_useCompute);
 }
 
 void ShaderTextureFunctionCase::checkSupport(Context &context) const
@@ -2114,84 +2164,177 @@ void ShaderTextureFunctionCase::initShaderSources(void)
 
     std::ostringstream vert;
     std::ostringstream frag;
-    std::ostringstream &op = isVtxCase ? vert : frag;
+    std::ostringstream comp;
+    std::ostringstream &op = m_useCompute ? comp : (isVtxCase ? vert : frag);
 
     const auto pcOffsetExt = "#extension GL_EXT_texture_offset_non_const : enable\n";
 
-    vert << "#version 450 core\n"
-         << (m_lookupSpec.pcOffset && isVtxCase ? pcOffsetExt : "")
-         << "layout(location = 0) in highp vec4 a_position;\n"
-         << "layout(location = 4) in " << coordPrecName << " " << coordTypeName << " a_in0;\n";
-
-    if (isGrad)
+    if (m_useCompute)
     {
-        vert << "layout(location = 5) in " << coordPrecName << " " << gradTypeName << " a_in1;\n";
-        vert << "layout(location = 6) in " << coordPrecName << " " << gradTypeName << " a_in2;\n";
-    }
-    else if (hasLodBias)
-        vert << "layout(location = 5) in " << coordPrecName << " float a_in1;\n";
+        comp << "#version 450 core\n";
 
-    frag << "#version 450 core\n";
+        if (m_lookupSpec.useClamp)
+            comp << "#extension GL_ARB_sparse_texture_clamp : require\n";
 
-    if (m_lookupSpec.useClamp)
-        frag << "#extension GL_ARB_sparse_texture_clamp : require\n";
+        if (m_lookupSpec.pcOffset)
+            comp << pcOffsetExt;
 
-    if (m_lookupSpec.pcOffset && !isVtxCase)
-        frag << pcOffsetExt;
+        comp << "layout(local_size_x = 8, local_size_y = 8) in;\n\n";
 
-    frag << "layout(location = 0) out mediump vec4 o_color;\n";
+        comp << "layout(set = 0, binding = 0) uniform highp " << glu::getDataTypeName(samplerType) << " u_sampler;\n"
+             << "layout(set = 0, binding = 1) uniform buf0 { highp vec4 u_scale; };\n"
+             << "layout(set = 0, binding = 2) uniform buf1 { highp vec4 u_bias; };\n";
 
-    if (isVtxCase)
-    {
-        vert << "layout(location = 0) out mediump vec4 v_color;\n";
-        frag << "layout(location = 0) in mediump vec4 v_color;\n";
-    }
-    else
-    {
-        vert << "layout(location = 0) out " << coordPrecName << " " << coordTypeName << " v_texCoord;\n";
-        frag << "layout(location = 0) in " << coordPrecName << " " << coordTypeName << " v_texCoord;\n";
+        comp << "layout(set = 0, binding = 3) uniform QuadCoords {\n"
+             << "    highp vec4 u_in0[4];\n";
+        if (isGrad)
+        {
+            comp << "    highp vec4 u_in1[4];\n"
+                 << "    highp vec4 u_in2[4];\n";
+        }
+        else if (hasLodBias)
+            comp << "    highp vec4 u_in1[4];\n";
+        comp << "};\n";
+
+        comp << "layout(set = 0, binding = 4, rgba8) writeonly uniform highp image2D destImage;\n\n";
+
+        if (m_lookupSpec.pcOffset)
+            comp << "layout(push_constant, std430) uniform PCBlock { ivec3 offset; } pc;\n\n";
+
+        comp << "void main()\n{\n"
+             << "\tivec2 pixCoord = ivec2(gl_GlobalInvocationID.xy);\n"
+             << "\tivec2 renderSize = imageSize(destImage);\n"
+             << "\tif (pixCoord.x >= renderSize.x || pixCoord.y >= renderSize.y) return;\n\n"
+             << "\tvec2 v_normalizedCoord = (vec2(pixCoord) + 0.5) / vec2(renderSize);\n"
+             << "\tfloat xFactor = v_normalizedCoord.x;\n"
+             << "\tfloat yFactor = v_normalizedCoord.y;\n\n";
+
+        comp << "\t" << coordPrecName << " " << coordTypeName << " v_texCoord;\n"
+             << "\tif (xFactor + yFactor < 1.0) {\n"
+             << "\t\tv_texCoord = " << coordTypeName << "(u_in0[0]) + (" << coordTypeName << "(u_in0[1]) - "
+             << coordTypeName << "(u_in0[0])) * xFactor + (" << coordTypeName << "(u_in0[2]) - " << coordTypeName
+             << "(u_in0[0])) * yFactor;\n"
+             << "\t} else {\n"
+             << "\t\tv_texCoord = " << coordTypeName << "(u_in0[3]) + (" << coordTypeName << "(u_in0[2]) - "
+             << coordTypeName << "(u_in0[3])) * (1.0 - xFactor) + (" << coordTypeName << "(u_in0[1]) - "
+             << coordTypeName << "(u_in0[3])) * (1.0 - yFactor);\n"
+             << "\t}\n\n";
 
         if (isGrad)
         {
-            vert << "layout(location = 1) out " << coordPrecName << " " << gradTypeName << " v_gradX;\n";
-            vert << "layout(location = 2) out " << coordPrecName << " " << gradTypeName << " v_gradY;\n";
-            frag << "layout(location = 1) in " << coordPrecName << " " << gradTypeName << " v_gradX;\n";
-            frag << "layout(location = 2) in " << coordPrecName << " " << gradTypeName << " v_gradY;\n";
+            comp << "\t" << coordPrecName << " " << gradTypeName << " v_gradX;\n"
+                 << "\tif (xFactor + yFactor < 1.0) {\n"
+                 << "\t\tv_gradX = " << gradTypeName << "(u_in1[0]) + (" << gradTypeName << "(u_in1[1]) - "
+                 << gradTypeName << "(u_in1[0])) * xFactor + (" << gradTypeName << "(u_in1[2]) - " << gradTypeName
+                 << "(u_in1[0])) * yFactor;\n"
+                 << "\t} else {\n"
+                 << "\t\tv_gradX = " << gradTypeName << "(u_in1[3]) + (" << gradTypeName << "(u_in1[2]) - "
+                 << gradTypeName << "(u_in1[3])) * (1.0 - xFactor) + (" << gradTypeName << "(u_in1[1]) - "
+                 << gradTypeName << "(u_in1[3])) * (1.0 - yFactor);\n"
+                 << "\t}\n\n";
+
+            comp << "\t" << coordPrecName << " " << gradTypeName << " v_gradY;\n"
+                 << "\tif (xFactor + yFactor < 1.0) {\n"
+                 << "\t\tv_gradY = " << gradTypeName << "(u_in2[0]) + (" << gradTypeName << "(u_in2[1]) - "
+                 << gradTypeName << "(u_in2[0])) * xFactor + (" << gradTypeName << "(u_in2[2]) - " << gradTypeName
+                 << "(u_in2[0])) * yFactor;\n"
+                 << "\t} else {\n"
+                 << "\t\tv_gradY = " << gradTypeName << "(u_in2[3]) + (" << gradTypeName << "(u_in2[2]) - "
+                 << gradTypeName << "(u_in2[3])) * (1.0 - xFactor) + (" << gradTypeName << "(u_in2[1]) - "
+                 << gradTypeName << "(u_in2[3])) * (1.0 - yFactor);\n"
+                 << "\t}\n\n";
         }
         else if (hasLodBias)
         {
-            vert << "layout(location = 1) out " << coordPrecName << " float v_lodBias;\n";
-            frag << "layout(location = 1) in " << coordPrecName << " float v_lodBias;\n";
+            comp << "\t" << coordPrecName << " float v_lodBias;\n"
+                 << "\tif (xFactor + yFactor < 1.0) {\n"
+                 << "\t\tv_lodBias = float(u_in1[0].x) + (float(u_in1[1].x) - float(u_in1[0].x)) * xFactor + "
+                    "(float(u_in1[2].x) - float(u_in1[0].x)) * yFactor;\n"
+                 << "\t} else {\n"
+                 << "\t\tv_lodBias = float(u_in1[3].x) + (float(u_in1[2].x) - float(u_in1[3].x)) * (1.0 - xFactor) + "
+                    "(float(u_in1[1].x) - float(u_in1[3].x)) * (1.0 - yFactor);\n"
+                 << "\t}\n\n";
         }
     }
+    else
+    {
+        vert << "#version 450 core\n"
+             << (m_lookupSpec.pcOffset && isVtxCase ? pcOffsetExt : "")
+             << "layout(location = 0) in highp vec4 a_position;\n"
+             << "layout(location = 4) in " << coordPrecName << " " << coordTypeName << " a_in0;\n";
 
-    // Uniforms
-    op << "layout(set = 0, binding = 0) uniform highp " << glu::getDataTypeName(samplerType) << " u_sampler;\n"
-       << "layout(set = 0, binding = 1) uniform buf0 { highp vec4 u_scale; };\n"
-       << "layout(set = 0, binding = 2) uniform buf1 { highp vec4 u_bias; };\n";
+        if (isGrad)
+        {
+            vert << "layout(location = 5) in " << coordPrecName << " " << gradTypeName << " a_in1;\n";
+            vert << "layout(location = 6) in " << coordPrecName << " " << gradTypeName << " a_in2;\n";
+        }
+        else if (hasLodBias)
+            vert << "layout(location = 5) in " << coordPrecName << " float a_in1;\n";
 
-    if (m_lookupSpec.pcOffset)
-        op << "layout(push_constant, std430) uniform PCBlock { ivec3 offset; } pc;\n";
+        frag << "#version 450 core\n";
 
-    vert << "out gl_PerVertex {\n"
-         << "\tvec4 gl_Position;\n"
-         << "};\n";
+        if (m_lookupSpec.useClamp)
+            frag << "#extension GL_ARB_sparse_texture_clamp : require\n";
 
-    vert << "\nvoid main()\n{\n"
-         << "\tgl_Position = a_position;\n";
-    frag << "\nvoid main()\n{\n";
+        if (m_lookupSpec.pcOffset && !isVtxCase)
+            frag << pcOffsetExt;
 
-    if (isVtxCase)
+        frag << "layout(location = 0) out mediump vec4 o_color;\n";
+
+        if (isVtxCase)
+        {
+            vert << "layout(location = 0) out mediump vec4 v_color;\n";
+            frag << "layout(location = 0) in mediump vec4 v_color;\n";
+        }
+        else
+        {
+            vert << "layout(location = 0) out " << coordPrecName << " " << coordTypeName << " v_texCoord;\n";
+            frag << "layout(location = 0) in " << coordPrecName << " " << coordTypeName << " v_texCoord;\n";
+
+            if (isGrad)
+            {
+                vert << "layout(location = 1) out " << coordPrecName << " " << gradTypeName << " v_gradX;\n";
+                vert << "layout(location = 2) out " << coordPrecName << " " << gradTypeName << " v_gradY;\n";
+                frag << "layout(location = 1) in " << coordPrecName << " " << gradTypeName << " v_gradX;\n";
+                frag << "layout(location = 2) in " << coordPrecName << " " << gradTypeName << " v_gradY;\n";
+            }
+            else if (hasLodBias)
+            {
+                vert << "layout(location = 1) out " << coordPrecName << " float v_lodBias;\n";
+                frag << "layout(location = 1) in " << coordPrecName << " float v_lodBias;\n";
+            }
+        }
+
+        // Uniforms
+        op << "layout(set = 0, binding = 0) uniform highp " << glu::getDataTypeName(samplerType) << " u_sampler;\n"
+           << "layout(set = 0, binding = 1) uniform buf0 { highp vec4 u_scale; };\n"
+           << "layout(set = 0, binding = 2) uniform buf1 { highp vec4 u_bias; };\n";
+
+        if (m_lookupSpec.pcOffset)
+            op << "layout(push_constant, std430) uniform PCBlock { ivec3 offset; } pc;\n";
+
+        vert << "out gl_PerVertex {\n"
+             << "\tvec4 gl_Position;\n"
+             << "};\n";
+
+        vert << "\nvoid main()\n{\n"
+             << "\tgl_Position = a_position;\n";
+        frag << "\nvoid main()\n{\n";
+    }
+
+    if (m_useCompute)
+        comp << "\tvec4 result = ";
+    else if (isVtxCase)
         vert << "\tv_color = ";
     else
         frag << "\to_color = ";
 
     // Op.
     {
-        const char *texCoord = isVtxCase ? "a_in0" : "v_texCoord";
-        const char *gradX    = isVtxCase ? "a_in1" : "v_gradX";
-        const char *gradY    = isVtxCase ? "a_in2" : "v_gradY";
-        const char *lodBias  = isVtxCase ? "a_in1" : "v_lodBias";
+        const char *texCoord = (isVtxCase && !m_useCompute) ? "a_in0" : "v_texCoord";
+        const char *gradX    = (isVtxCase && !m_useCompute) ? "a_in1" : "v_gradX";
+        const char *gradY    = (isVtxCase && !m_useCompute) ? "a_in2" : "v_gradY";
+        const char *lodBias  = (isVtxCase && !m_useCompute) ? "a_in1" : "v_lodBias";
 
         op << "vec4(" << baseFuncName;
         if (m_lookupSpec.useOffset)
@@ -2258,35 +2401,51 @@ void ShaderTextureFunctionCase::initShaderSources(void)
         op << ";\n";
     }
 
-    if (isVtxCase)
-        frag << "\to_color = v_color;\n";
+    if (m_useCompute)
+    {
+        comp << "\timageStore(destImage, pixCoord, result);\n"
+             << "}\n";
+        m_compShaderSource = comp.str();
+    }
     else
     {
-        vert << "\tv_texCoord = a_in0;\n";
-
-        if (isGrad)
+        if (isVtxCase)
+            frag << "\to_color = v_color;\n";
+        else
         {
-            vert << "\tv_gradX = a_in1;\n";
-            vert << "\tv_gradY = a_in2;\n";
+            vert << "\tv_texCoord = a_in0;\n";
+
+            if (isGrad)
+            {
+                vert << "\tv_gradX = a_in1;\n";
+                vert << "\tv_gradY = a_in2;\n";
+            }
+            else if (hasLodBias)
+                vert << "\tv_lodBias = a_in1;\n";
         }
-        else if (hasLodBias)
-            vert << "\tv_lodBias = a_in1;\n";
+
+        vert << "}\n";
+        frag << "}\n";
+
+        m_vertShaderSource = vert.str();
+        m_fragShaderSource = frag.str();
     }
-
-    vert << "}\n";
-    frag << "}\n";
-
-    m_vertShaderSource = vert.str();
-    m_fragShaderSource = frag.str();
 
     if (m_lookupSpec.pcOffset)
     {
         vk::ShaderBuildOptions buildOptions;
         buildOptions.flags |= vk::ShaderBuildOptions::FLAG_ALLOW_NON_CONST_OFFSETS;
 
-        de::MovePtr<vk::ShaderBuildOptions> &targetOptions =
-            (isVtxCase ? m_vertShaderBuildOptions : m_fragShaderBuildOptions);
-        targetOptions = de::MovePtr<vk::ShaderBuildOptions>(new vk::ShaderBuildOptions(buildOptions));
+        if (m_useCompute)
+        {
+            m_compShaderBuildOptions = de::MovePtr<vk::ShaderBuildOptions>(new vk::ShaderBuildOptions(buildOptions));
+        }
+        else
+        {
+            de::MovePtr<vk::ShaderBuildOptions> &targetOptions =
+                (isVtxCase ? m_vertShaderBuildOptions : m_fragShaderBuildOptions);
+            targetOptions = de::MovePtr<vk::ShaderBuildOptions>(new vk::ShaderBuildOptions(buildOptions));
+        }
     }
 }
 
@@ -2318,7 +2477,8 @@ enum QueryLodTestModes
 class TextureQueryInstance : public ShaderRenderCaseInstance
 {
 public:
-    TextureQueryInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec);
+    TextureQueryInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec,
+                         bool useCompute = false);
     virtual ~TextureQueryInstance(void) = default;
 
 protected:
@@ -2331,8 +2491,11 @@ protected:
     const TextureSpec &m_textureSpec;
 };
 
-TextureQueryInstance::TextureQueryInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec)
-    : ShaderRenderCaseInstance(context, isVertexCase, nullptr, nullptr, nullptr)
+TextureQueryInstance::TextureQueryInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec,
+                                           bool useCompute)
+    : ShaderRenderCaseInstance(context, isVertexCase, nullptr, nullptr, nullptr,
+                               ShaderRenderCaseInstance::IMAGE_BACKING_MODE_REGULAR,
+                               static_cast<uint32_t>(GRID_SIZE_DEFAULTS), true, useCompute)
     , m_textureSpec(textureSpec)
 {
     m_colorFormat = vk::VK_FORMAT_R32G32B32A32_SFLOAT;
@@ -2574,7 +2737,8 @@ static inline glu::DataType getTextureSizeFuncResultType(TextureType textureType
 class TextureSizeInstance : public TextureQueryInstance
 {
 public:
-    TextureSizeInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec);
+    TextureSizeInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec,
+                        bool useCompute = false);
     virtual ~TextureSizeInstance(void);
 
     virtual tcu::TestStatus iterate(void);
@@ -2599,8 +2763,9 @@ private:
     int m_iterationCounter;
 };
 
-TextureSizeInstance::TextureSizeInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec)
-    : TextureQueryInstance(context, isVertexCase, textureSpec)
+TextureSizeInstance::TextureSizeInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec,
+                                         bool useCompute)
+    : TextureQueryInstance(context, isVertexCase, textureSpec, useCompute)
     , m_testSize()
     , m_expectedSize()
     , m_iterationCounter(0)
@@ -3090,7 +3255,8 @@ void TextureSizeMSInstance::initTexture(vk::VkSampleCountFlagBits samples, const
 class TextureSamplesInstance : public TextureQueryInstance
 {
 public:
-    TextureSamplesInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec);
+    TextureSamplesInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec,
+                           const bool useCompute = false);
     virtual ~TextureSamplesInstance(void);
 
     virtual tcu::TestStatus iterate(void);
@@ -3103,8 +3269,8 @@ private:
 };
 
 TextureSamplesInstance::TextureSamplesInstance(Context &context, const bool isVertexCase,
-                                               const TextureSpec &textureSpec)
-    : TextureQueryInstance(context, isVertexCase, textureSpec)
+                                               const TextureSpec &textureSpec, const bool useCompute)
+    : TextureQueryInstance(context, isVertexCase, textureSpec, useCompute)
     , m_iterationCounter(0)
 {
     m_renderSize = tcu::UVec2(1, 1);
@@ -3242,7 +3408,8 @@ void TextureSamplesInstance::initTexture(void)
 class TextureQueryLevelsInstance : public TextureQueryInstance
 {
 public:
-    TextureQueryLevelsInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec);
+    TextureQueryLevelsInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec,
+                               const bool useCompute = false);
     virtual ~TextureQueryLevelsInstance(void);
 
     virtual tcu::TestStatus iterate(void);
@@ -3263,8 +3430,8 @@ private:
 };
 
 TextureQueryLevelsInstance::TextureQueryLevelsInstance(Context &context, const bool isVertexCase,
-                                                       const TextureSpec &textureSpec)
-    : TextureQueryInstance(context, isVertexCase, textureSpec)
+                                                       const TextureSpec &textureSpec, const bool useCompute)
+    : TextureQueryInstance(context, isVertexCase, textureSpec, useCompute)
     , m_testSize()
     , m_levels(0)
     , m_iterationCounter(0)
@@ -3457,13 +3624,14 @@ class TextureQueryLodInstance : public TextureQueryInstance
 {
 public:
     TextureQueryLodInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec,
-                            const TestMode mode);
+                            const TestMode mode, const bool useCompute = false);
     virtual ~TextureQueryLodInstance(void) = default;
 
     virtual tcu::TestStatus iterate(void);
 
 protected:
     virtual void setupDefaultInputs(void);
+    virtual void setupUniforms(const tcu::Vec4 &constCoords);
 
 private:
     void initTexture(int baseMipLevel, MinMaxLodT minMaxLod);
@@ -3478,8 +3646,9 @@ private:
 };
 
 TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool isVertexCase,
-                                                 const TextureSpec &textureSpec, const TestMode mode)
-    : TextureQueryInstance(context, isVertexCase, textureSpec)
+                                                 const TextureSpec &textureSpec, const TestMode mode,
+                                                 const bool useCompute)
+    : TextureQueryInstance(context, isVertexCase, textureSpec, useCompute)
     , m_mode(mode)
     , m_minCoord()
     , m_maxCoord()
@@ -3665,6 +3834,18 @@ void TextureQueryLodInstance::setupDefaultInputs(void)
                  texCoord.data());
 }
 
+void TextureQueryLodInstance::setupUniforms(const tcu::Vec4 &constCoords)
+{
+    TextureQueryInstance::setupUniforms(constCoords);
+    if (m_useCompute)
+    {
+        const tcu::Vec4 u_texCoords[4] = {
+            tcu::Vec4(-1.0f, -1.0f, 0.670f, 1.275f), tcu::Vec4(1.0f, -1.0f, -1.330f, 0.725f),
+            tcu::Vec4(-1.0f, 1.0f, 1.330f, -0.725f), tcu::Vec4(1.0f, 1.0f, -0.670f, -1.275f)};
+        addUniform(1u, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(u_texCoords), u_texCoords);
+    }
+}
+
 void TextureQueryLodInstance::initTexture(int baseMipLevel, MinMaxLodT minMaxLod)
 {
     tcu::TestLog &log = m_context.getTestContext().getLog();
@@ -3747,7 +3928,8 @@ class TextureQueryCase : public ShaderRenderCase
 {
 public:
     TextureQueryCase(tcu::TestContext &testCtx, const std::string &name, const std::string &samplerType,
-                     const TextureSpec &texture, bool isVertexCase, QueryFunction function, TestMode mode = 0);
+                     const TextureSpec &texture, bool isVertexCase, QueryFunction function, TestMode mode = 0,
+                     bool useCompute = false);
     virtual ~TextureQueryCase(void);
 
     virtual TestInstance *createInstance(Context &context) const;
@@ -3760,15 +3942,18 @@ protected:
     const TextureSpec m_textureSpec;
     const QueryFunction m_function;
     const TestMode m_mode;
+    const bool m_useCompute;
 };
 
 TextureQueryCase::TextureQueryCase(tcu::TestContext &testCtx, const std::string &name, const std::string &samplerType,
-                                   const TextureSpec &texture, bool isVertexCase, QueryFunction function, TestMode mode)
+                                   const TextureSpec &texture, bool isVertexCase, QueryFunction function, TestMode mode,
+                                   bool useCompute)
     : ShaderRenderCase(testCtx, name, isVertexCase, (ShaderEvaluator *)nullptr, nullptr, nullptr)
     , m_samplerTypeStr(samplerType)
     , m_textureSpec(texture)
     , m_function(function)
     , m_mode(mode)
+    , m_useCompute(useCompute)
 {
     initShaderSources();
 }
@@ -3782,15 +3967,15 @@ TestInstance *TextureQueryCase::createInstance(Context &context) const
     switch (m_function)
     {
     case QUERYFUNCTION_TEXTURESIZE:
-        return new TextureSizeInstance(context, m_isVertexCase, m_textureSpec);
+        return new TextureSizeInstance(context, m_isVertexCase, m_textureSpec, m_useCompute);
     case QUERYFUNCTION_TEXTURESIZEMS:
         return new TextureSizeMSInstance(context, m_isVertexCase, m_textureSpec);
     case QUERYFUNCTION_TEXTUREQUERYLOD:
-        return new TextureQueryLodInstance(context, m_isVertexCase, m_textureSpec, m_mode);
+        return new TextureQueryLodInstance(context, m_isVertexCase, m_textureSpec, m_mode, m_useCompute);
     case QUERYFUNCTION_TEXTUREQUERYLEVELS:
-        return new TextureQueryLevelsInstance(context, m_isVertexCase, m_textureSpec);
+        return new TextureQueryLevelsInstance(context, m_isVertexCase, m_textureSpec, m_useCompute);
     case QUERYFUNCTION_TEXTURESAMPLES:
-        return new TextureSamplesInstance(context, m_isVertexCase, m_textureSpec);
+        return new TextureSamplesInstance(context, m_isVertexCase, m_textureSpec, m_useCompute);
     default:
         DE_ASSERT(false);
         return nullptr;
@@ -3804,55 +3989,60 @@ void TextureQueryCase::checkSupport(Context &context) const
 
 void TextureQueryCase::initShaderSources(void)
 {
-    std::ostringstream vert;
-    std::ostringstream frag;
-    std::ostringstream &op = m_isVertexCase ? vert : frag;
-
-    DE_ASSERT(m_function != QUERYFUNCTION_TEXTUREQUERYLOD || !m_isVertexCase);
-
-    vert << "#version 450 core\n"
-         << "layout(location = 0) in highp vec4 a_position;\n";
-
-    frag << "#version 450 core\n"
-         << "layout(location = 0) out mediump vec4 o_color;\n";
-
-    if (m_isVertexCase)
+    if (m_useCompute)
     {
-        vert << "layout(location = 0) out mediump vec4 v_color;\n";
-        frag << "layout(location = 0) in mediump vec4 v_color;\n";
-    }
+        std::ostringstream comp;
 
-    if (m_function == QUERYFUNCTION_TEXTUREQUERYLOD)
-    {
-        const int texCoordComps   = getQueryLodFuncTextCoordComps(m_textureSpec.type);
-        const char *coordTypeName = glu::getDataTypeName(glu::getDataTypeFloatVec(texCoordComps));
+        comp << "#version 450 core\n";
+        comp << "layout(local_size_x = 8, local_size_y = 8) in;\n\n";
 
-        vert << "layout (location = 1) in highp " << coordTypeName << " a_texCoord;\n";
-        vert << "layout (location = 0) out highp " << coordTypeName << " v_texCoord;\n";
-        frag << "layout (location = 0) in highp " << coordTypeName << " v_texCoord;\n";
-    }
+        uint32_t binding = 0;
 
-    // uniforms
-    op << "layout(set = 0, binding = 0) uniform highp " << m_samplerTypeStr << " u_sampler;\n";
-    if (m_function == QUERYFUNCTION_TEXTURESIZE)
-        op << "layout(set = 0, binding = 1) uniform buf0 { highp int u_lod; };\n";
+        // uniforms
+        comp << "layout(set = 0, binding = " << binding++ << ") uniform highp " << m_samplerTypeStr << " u_sampler;\n";
 
-    vert << "out gl_PerVertex {\n"
-         << "\tvec4 gl_Position;\n"
-         << "};\n";
+        if (m_function == QUERYFUNCTION_TEXTURESIZE)
+            comp << "layout(set = 0, binding = " << binding++ << ") uniform buf0 { highp int u_lod; };\n";
 
-    vert << "\nvoid main()\n{\n"
-         << "\tgl_Position = a_position;\n";
-    frag << "\nvoid main()\n{\n";
+        // Inject QuadCoords UBO only when we need to interpolate texture coordinates
+        if (m_function == QUERYFUNCTION_TEXTUREQUERYLOD)
+        {
+            comp << "layout(set = 0, binding = " << binding++ << ") uniform QuadCoords {\n"
+                 << "    highp vec4 u_texCoords[4];\n"
+                 << "};\n";
+        }
 
-    if (m_isVertexCase)
-        vert << "\tv_color = ";
-    else
-        frag << "\to_color = ";
+        // Output storage image
+        comp << "layout(set = 0, binding = " << binding++
+             << ", rgba32f) writeonly uniform highp image2D destImage;\n\n";
 
-    // op
-    {
-        op << "vec4(";
+        comp << "void main()\n{\n"
+             << "\tivec2 pixCoord = ivec2(gl_GlobalInvocationID.xy);\n"
+             << "\tivec2 renderSize = imageSize(destImage);\n"
+             << "\tif (pixCoord.x >= renderSize.x || pixCoord.y >= renderSize.y) return;\n\n";
+
+        if (m_function == QUERYFUNCTION_TEXTUREQUERYLOD)
+        {
+            const int texCoordComps   = getQueryLodFuncTextCoordComps(m_textureSpec.type);
+            const char *coordTypeName = glu::getDataTypeName(glu::getDataTypeFloatVec(texCoordComps));
+
+            // Simulate fragment shader interpolation
+            comp << "\tvec2 v_normalizedCoord = (vec2(pixCoord) + 0.5) / vec2(renderSize);\n"
+                 << "\tfloat xFactor = v_normalizedCoord.x;\n"
+                 << "\tfloat yFactor = v_normalizedCoord.y;\n\n"
+                 << "\t" << coordTypeName << " v_texCoord;\n"
+                 << "\tif (xFactor + yFactor < 1.0) {\n"
+                 << "\t\tv_texCoord = " << coordTypeName << "(u_texCoords[0]) + (" << coordTypeName
+                 << "(u_texCoords[1]) - " << coordTypeName << "(u_texCoords[0])) * xFactor + (" << coordTypeName
+                 << "(u_texCoords[2]) - " << coordTypeName << "(u_texCoords[0])) * yFactor;\n"
+                 << "\t} else {\n"
+                 << "\t\tv_texCoord = " << coordTypeName << "(u_texCoords[3]) + (" << coordTypeName
+                 << "(u_texCoords[2]) - " << coordTypeName << "(u_texCoords[3])) * (1.0 - xFactor) + (" << coordTypeName
+                 << "(u_texCoords[1]) - " << coordTypeName << "(u_texCoords[3])) * (1.0 - yFactor);\n"
+                 << "\t}\n\n";
+        }
+
+        comp << "\tvec4 result = vec4(";
 
         switch (m_function)
         {
@@ -3860,10 +4050,10 @@ void TextureQueryCase::initShaderSources(void)
         {
             const int resultComponents = glu::getDataTypeScalarSize(getTextureSizeFuncResultType(m_textureSpec.type));
 
-            op << "textureSize(u_sampler, u_lod)";
+            comp << "textureSize(u_sampler, u_lod)";
             for (int ndx = 0; ndx < 3 - resultComponents; ndx++)
-                op << ", 0.0";
-            op << ", 1.0";
+                comp << ", 0.0";
+            comp << ", 1.0";
 
             break;
         }
@@ -3872,24 +4062,24 @@ void TextureQueryCase::initShaderSources(void)
         {
             const int resultComponents = glu::getDataTypeScalarSize(getTextureSizeFuncResultType(m_textureSpec.type));
 
-            op << "textureSize(u_sampler)";
+            comp << "textureSize(u_sampler)";
             for (int ndx = 0; ndx < 3 - resultComponents; ndx++)
-                op << ", 0.0";
-            op << ", 1.0";
+                comp << ", 0.0";
+            comp << ", 1.0";
 
             break;
         }
 
         case QUERYFUNCTION_TEXTUREQUERYLOD:
-            op << "textureQueryLod(u_sampler, v_texCoord), 0.0, 1.0";
+            comp << "textureQueryLod(u_sampler, v_texCoord), 0.0, 1.0";
             break;
 
         case QUERYFUNCTION_TEXTUREQUERYLEVELS:
-            op << "textureQueryLevels(u_sampler), 0.0, 0.0, 1.0";
+            comp << "textureQueryLevels(u_sampler), 0.0, 0.0, 1.0";
             break;
 
         case QUERYFUNCTION_TEXTURESAMPLES:
-            op << "textureSamples(u_sampler), 0.0, 0.0, 1.0";
+            comp << "textureSamples(u_sampler), 0.0, 0.0, 1.0";
             break;
 
         default:
@@ -3897,20 +4087,125 @@ void TextureQueryCase::initShaderSources(void)
             break;
         }
 
-        op << ");\n";
+        comp << ");\n\n";
+
+        comp << "\timageStore(destImage, pixCoord, result);\n"
+             << "}\n";
+
+        m_compShaderSource = comp.str();
     }
+    else
+    {
+        std::ostringstream vert;
+        std::ostringstream frag;
+        std::ostringstream &op = m_isVertexCase ? vert : frag;
 
-    if (m_isVertexCase)
-        frag << "\to_color = v_color;\n";
+        DE_ASSERT(m_function != QUERYFUNCTION_TEXTUREQUERYLOD || !m_isVertexCase);
 
-    if (m_function == QUERYFUNCTION_TEXTUREQUERYLOD)
-        vert << "\tv_texCoord = a_texCoord;\n";
+        vert << "#version 450 core\n"
+             << "layout(location = 0) in highp vec4 a_position;\n";
 
-    vert << "}\n";
-    frag << "}\n";
+        frag << "#version 450 core\n"
+             << "layout(location = 0) out mediump vec4 o_color;\n";
 
-    m_vertShaderSource = vert.str();
-    m_fragShaderSource = frag.str();
+        if (m_isVertexCase)
+        {
+            vert << "layout(location = 0) out mediump vec4 v_color;\n";
+            frag << "layout(location = 0) in mediump vec4 v_color;\n";
+        }
+
+        if (m_function == QUERYFUNCTION_TEXTUREQUERYLOD)
+        {
+            const int texCoordComps   = getQueryLodFuncTextCoordComps(m_textureSpec.type);
+            const char *coordTypeName = glu::getDataTypeName(glu::getDataTypeFloatVec(texCoordComps));
+
+            vert << "layout (location = 1) in highp " << coordTypeName << " a_texCoord;\n";
+            vert << "layout (location = 0) out highp " << coordTypeName << " v_texCoord;\n";
+            frag << "layout (location = 0) in highp " << coordTypeName << " v_texCoord;\n";
+        }
+
+        // uniforms
+        op << "layout(set = 0, binding = 0) uniform highp " << m_samplerTypeStr << " u_sampler;\n";
+        if (m_function == QUERYFUNCTION_TEXTURESIZE)
+            op << "layout(set = 0, binding = 1) uniform buf0 { highp int u_lod; };\n";
+
+        vert << "out gl_PerVertex {\n"
+             << "\tvec4 gl_Position;\n"
+             << "};\n";
+
+        vert << "\nvoid main()\n{\n"
+             << "\tgl_Position = a_position;\n";
+        frag << "\nvoid main()\n{\n";
+
+        if (m_isVertexCase)
+            vert << "\tv_color = ";
+        else
+            frag << "\to_color = ";
+
+        // op
+        {
+            op << "vec4(";
+
+            switch (m_function)
+            {
+            case QUERYFUNCTION_TEXTURESIZE:
+            {
+                const int resultComponents =
+                    glu::getDataTypeScalarSize(getTextureSizeFuncResultType(m_textureSpec.type));
+
+                op << "textureSize(u_sampler, u_lod)";
+                for (int ndx = 0; ndx < 3 - resultComponents; ndx++)
+                    op << ", 0.0";
+                op << ", 1.0";
+
+                break;
+            }
+
+            case QUERYFUNCTION_TEXTURESIZEMS:
+            {
+                const int resultComponents =
+                    glu::getDataTypeScalarSize(getTextureSizeFuncResultType(m_textureSpec.type));
+
+                op << "textureSize(u_sampler)";
+                for (int ndx = 0; ndx < 3 - resultComponents; ndx++)
+                    op << ", 0.0";
+                op << ", 1.0";
+
+                break;
+            }
+
+            case QUERYFUNCTION_TEXTUREQUERYLOD:
+                op << "textureQueryLod(u_sampler, v_texCoord), 0.0, 1.0";
+                break;
+
+            case QUERYFUNCTION_TEXTUREQUERYLEVELS:
+                op << "textureQueryLevels(u_sampler), 0.0, 0.0, 1.0";
+                break;
+
+            case QUERYFUNCTION_TEXTURESAMPLES:
+                op << "textureSamples(u_sampler), 0.0, 0.0, 1.0";
+                break;
+
+            default:
+                DE_ASSERT(false);
+                break;
+            }
+
+            op << ");\n";
+        }
+
+        if (m_isVertexCase)
+            frag << "\to_color = v_color;\n";
+
+        if (m_function == QUERYFUNCTION_TEXTUREQUERYLOD)
+            vert << "\tv_texCoord = a_texCoord;\n";
+
+        vert << "}\n";
+        frag << "}\n";
+
+        m_vertShaderSource = vert.str();
+        m_fragShaderSource = frag.str();
+    }
 }
 
 namespace SpecialCases
@@ -4110,7 +4405,9 @@ enum CaseFlags
 {
     VERTEX   = (1 << 0),
     FRAGMENT = (1 << 1),
-    BOTH     = VERTEX | FRAGMENT
+    COMPUTE  = (1 << 2),
+    BOTH     = VERTEX | FRAGMENT,
+    ALL      = BOTH | COMPUTE
 };
 
 struct TexFuncCaseSpec
@@ -4163,16 +4460,17 @@ public:
     SparseShaderTextureFunctionInstance(Context &context, const bool isVertexCase, const ShaderEvaluator &evaluator,
                                         const UniformSetup &uniformSetup, const TextureLookupSpec &lookupSpec,
                                         const TextureSpec &textureSpec, const TexLookupParams &lookupParams,
-                                        const ImageBackingMode imageBackingMode = IMAGE_BACKING_MODE_SPARSE);
+                                        const ImageBackingMode imageBackingMode = IMAGE_BACKING_MODE_SPARSE,
+                                        const bool useCompute                   = false);
     virtual ~SparseShaderTextureFunctionInstance(void);
 };
 
 SparseShaderTextureFunctionInstance::SparseShaderTextureFunctionInstance(
     Context &context, const bool isVertexCase, const ShaderEvaluator &evaluator, const UniformSetup &uniformSetup,
     const TextureLookupSpec &lookupSpec, const TextureSpec &textureSpec, const TexLookupParams &lookupParams,
-    const ImageBackingMode imageBackingMode)
+    const ImageBackingMode imageBackingMode, const bool useCompute)
     : ShaderTextureFunctionInstance(context, isVertexCase, evaluator, uniformSetup, lookupSpec, textureSpec,
-                                    lookupParams, imageBackingMode)
+                                    lookupParams, imageBackingMode, useCompute)
 {
     if (lookupSpec.useClamp)
     {
@@ -4191,7 +4489,8 @@ class SparseShaderTextureFunctionCase : public ShaderTextureFunctionCase
 {
 public:
     SparseShaderTextureFunctionCase(tcu::TestContext &testCtx, const std::string &name, const TextureLookupSpec &lookup,
-                                    const TextureSpec &texture, TexEvalFunc evalFunc, bool isVertexCase);
+                                    const TextureSpec &texture, TexEvalFunc evalFunc, bool isVertexCase,
+                                    bool useCompute = false);
 
     virtual ~SparseShaderTextureFunctionCase(void);
 
@@ -4205,8 +4504,8 @@ protected:
 SparseShaderTextureFunctionCase::SparseShaderTextureFunctionCase(tcu::TestContext &testCtx, const std::string &name,
                                                                  const TextureLookupSpec &lookup,
                                                                  const TextureSpec &texture, TexEvalFunc evalFunc,
-                                                                 bool isVertexCase)
-    : ShaderTextureFunctionCase(testCtx, name, lookup, texture, evalFunc, isVertexCase)
+                                                                 bool isVertexCase, bool useCompute)
+    : ShaderTextureFunctionCase(testCtx, name, lookup, texture, evalFunc, isVertexCase, useCompute)
 {
     initShaderSources();
 }
@@ -4279,72 +4578,167 @@ void SparseShaderTextureFunctionCase::initShaderSources(void)
 
     std::ostringstream vert;
     std::ostringstream frag;
-    std::ostringstream &op = isVtxCase ? vert : frag;
+    std::ostringstream comp;
+    std::ostringstream &op = m_useCompute ? comp : (isVtxCase ? vert : frag);
 
     const auto pcOffsetExt = "#extension GL_EXT_texture_offset_non_const : enable\n";
 
-    vert << "#version 450\n"
-         << (m_lookupSpec.pcOffset && isVtxCase ? pcOffsetExt : "") << "#extension GL_ARB_sparse_texture2 : require\n"
-         << "layout(location = 0) in highp vec4 a_position;\n"
-         << "layout(location = 4) in " << coordPrecName << " " << coordTypeName << " a_in0;\n";
-
-    if (isGrad)
+    if (m_useCompute)
     {
-        vert << "layout(location = 5) in " << coordPrecName << " " << gradTypeName << " a_in1;\n";
-        vert << "layout(location = 6) in " << coordPrecName << " " << gradTypeName << " a_in2;\n";
-    }
-    else if (hasLodBias)
-        vert << "layout(location = 5) in " << coordPrecName << " float a_in1;\n";
+        comp << "#version 450\n"
+             << "#extension GL_ARB_sparse_texture2 : require\n";
 
-    frag << "#version 450\n"
-         << "#extension GL_ARB_sparse_texture2 : require\n";
+        if (m_lookupSpec.pcOffset)
+            comp << pcOffsetExt;
 
-    if (m_lookupSpec.pcOffset)
-        frag << pcOffsetExt;
+        if (m_lookupSpec.useClamp)
+            comp << "#extension GL_ARB_sparse_texture_clamp : require\n";
 
-    if (m_lookupSpec.useClamp)
-        frag << "#extension GL_ARB_sparse_texture_clamp : require\n";
+        comp << "layout(local_size_x = 8, local_size_y = 8) in;\n\n";
 
-    frag << "layout(location = 0) out mediump vec4 o_color;\n";
+        comp << "layout(set = 0, binding = 0) uniform highp " << glu::getDataTypeName(samplerType) << " u_sampler;\n"
+             << "layout(set = 0, binding = 1) uniform buf0 { highp vec4 u_scale; };\n"
+             << "layout(set = 0, binding = 2) uniform buf1 { highp vec4 u_bias; };\n";
 
-    if (isVtxCase)
-    {
-        vert << "layout(location = 0) out mediump vec4 v_color;\n";
-        frag << "layout(location = 0) in mediump vec4 v_color;\n";
-    }
-    else
-    {
-        vert << "layout(location = 0) out " << coordPrecName << " " << coordTypeName << " v_texCoord;\n";
-        frag << "layout(location = 0) in " << coordPrecName << " " << coordTypeName << " v_texCoord;\n";
+        comp << "layout(set = 0, binding = 3) uniform QuadCoords {\n"
+             << "    highp vec4 u_in0[4];\n";
+        if (isGrad)
+        {
+            comp << "    highp vec4 u_in1[4];\n"
+                 << "    highp vec4 u_in2[4];\n";
+        }
+        else if (hasLodBias)
+            comp << "    highp vec4 u_in1[4];\n";
+        comp << "};\n";
+
+        comp << "layout(set = 0, binding = 4, rgba8) writeonly uniform highp image2D destImage;\n\n";
+
+        if (m_lookupSpec.pcOffset)
+            comp << "layout(push_constant, std430) uniform PCBlock { ivec3 offset; } pc;\n\n";
+
+        comp << "void main()\n{\n"
+             << "\tivec2 pixCoord = ivec2(gl_GlobalInvocationID.xy);\n"
+             << "\tivec2 renderSize = imageSize(destImage);\n"
+             << "\tif (pixCoord.x >= renderSize.x || pixCoord.y >= renderSize.y) return;\n\n"
+             << "\tvec2 v_normalizedCoord = (vec2(pixCoord) + 0.5) / vec2(renderSize);\n"
+             << "\tfloat xFactor = v_normalizedCoord.x;\n"
+             << "\tfloat yFactor = v_normalizedCoord.y;\n\n";
+
+        comp << "\t" << coordPrecName << " " << coordTypeName << " v_texCoord;\n"
+             << "\tif (xFactor + yFactor < 1.0) {\n"
+             << "\t\tv_texCoord = " << coordTypeName << "(u_in0[0]) + (" << coordTypeName << "(u_in0[1]) - "
+             << coordTypeName << "(u_in0[0])) * xFactor + (" << coordTypeName << "(u_in0[2]) - " << coordTypeName
+             << "(u_in0[0])) * yFactor;\n"
+             << "\t} else {\n"
+             << "\t\tv_texCoord = " << coordTypeName << "(u_in0[3]) + (" << coordTypeName << "(u_in0[2]) - "
+             << coordTypeName << "(u_in0[3])) * (1.0 - xFactor) + (" << coordTypeName << "(u_in0[1]) - "
+             << coordTypeName << "(u_in0[3])) * (1.0 - yFactor);\n"
+             << "\t}\n\n";
 
         if (isGrad)
         {
-            vert << "layout(location = 1) out " << coordPrecName << " " << gradTypeName << " v_gradX;\n";
-            vert << "layout(location = 2) out " << coordPrecName << " " << gradTypeName << " v_gradY;\n";
-            frag << "layout(location = 1) in " << coordPrecName << " " << gradTypeName << " v_gradX;\n";
-            frag << "layout(location = 2) in " << coordPrecName << " " << gradTypeName << " v_gradY;\n";
+            comp << "\t" << coordPrecName << " " << gradTypeName << " v_gradX;\n"
+                 << "\tif (xFactor + yFactor < 1.0) {\n"
+                 << "\t\tv_gradX = " << gradTypeName << "(u_in1[0]) + (" << gradTypeName << "(u_in1[1]) - "
+                 << gradTypeName << "(u_in1[0])) * xFactor + (" << gradTypeName << "(u_in1[2]) - " << gradTypeName
+                 << "(u_in1[0])) * yFactor;\n"
+                 << "\t} else {\n"
+                 << "\t\tv_gradX = " << gradTypeName << "(u_in1[3]) + (" << gradTypeName << "(u_in1[2]) - "
+                 << gradTypeName << "(u_in1[3])) * (1.0 - xFactor) + (" << gradTypeName << "(u_in1[1]) - "
+                 << gradTypeName << "(u_in1[3])) * (1.0 - yFactor);\n"
+                 << "\t}\n\n";
+
+            comp << "\t" << coordPrecName << " " << gradTypeName << " v_gradY;\n"
+                 << "\tif (xFactor + yFactor < 1.0) {\n"
+                 << "\t\tv_gradY = " << gradTypeName << "(u_in2[0]) + (" << gradTypeName << "(u_in2[1]) - "
+                 << gradTypeName << "(u_in2[0])) * xFactor + (" << gradTypeName << "(u_in2[2]) - " << gradTypeName
+                 << "(u_in2[0])) * yFactor;\n"
+                 << "\t} else {\n"
+                 << "\t\tv_gradY = " << gradTypeName << "(u_in2[3]) + (" << gradTypeName << "(u_in2[2]) - "
+                 << gradTypeName << "(u_in2[3])) * (1.0 - xFactor) + (" << gradTypeName << "(u_in2[1]) - "
+                 << gradTypeName << "(u_in2[3])) * (1.0 - yFactor);\n"
+                 << "\t}\n\n";
         }
         else if (hasLodBias)
         {
-            vert << "layout(location = 1) out " << coordPrecName << " float v_lodBias;\n";
-            frag << "layout(location = 1) in " << coordPrecName << " float v_lodBias;\n";
+            comp << "\t" << coordPrecName << " float v_lodBias;\n"
+                 << "\tif (xFactor + yFactor < 1.0) {\n"
+                 << "\t\tv_lodBias = float(u_in1[0].x) + (float(u_in1[1].x) - float(u_in1[0].x)) * xFactor + "
+                    "(float(u_in1[2].x) - float(u_in1[0].x)) * yFactor;\n"
+                 << "\t} else {\n"
+                 << "\t\tv_lodBias = float(u_in1[3].x) + (float(u_in1[2].x) - float(u_in1[3].x)) * (1.0 - xFactor) + "
+                    "(float(u_in1[1].x) - float(u_in1[3].x)) * (1.0 - yFactor);\n"
+                 << "\t}\n\n";
         }
+
+        comp << "\tvec4 result;\n";
     }
+    else
+    {
+        vert << "#version 450\n"
+             << (m_lookupSpec.pcOffset && isVtxCase ? pcOffsetExt : "")
+             << "#extension GL_ARB_sparse_texture2 : require\n"
+             << "layout(location = 0) in highp vec4 a_position;\n"
+             << "layout(location = 4) in " << coordPrecName << " " << coordTypeName << " a_in0;\n";
 
-    // Uniforms
-    op << "layout(set = 0, binding = 0) uniform highp " << glu::getDataTypeName(samplerType) << " u_sampler;\n"
-       << "layout(set = 0, binding = 1) uniform buf0 { highp vec4 u_scale; };\n"
-       << "layout(set = 0, binding = 2) uniform buf1 { highp vec4 u_bias; };\n";
+        if (isGrad)
+        {
+            vert << "layout(location = 5) in " << coordPrecName << " " << gradTypeName << " a_in1;\n";
+            vert << "layout(location = 6) in " << coordPrecName << " " << gradTypeName << " a_in2;\n";
+        }
+        else if (hasLodBias)
+            vert << "layout(location = 5) in " << coordPrecName << " float a_in1;\n";
 
-    if (m_lookupSpec.pcOffset)
-        op << "layout(push_constant, std430) uniform PCBlock { ivec3 offset; } pc;\n";
+        frag << "#version 450\n"
+             << "#extension GL_ARB_sparse_texture2 : require\n";
 
-    vert << "out gl_PerVertex {\n"
-         << "    vec4 gl_Position;\n"
-         << "};\n";
-    vert << "\nvoid main()\n{\n"
-         << "\tgl_Position = a_position;\n";
-    frag << "\nvoid main()\n{\n";
+        if (m_lookupSpec.pcOffset)
+            frag << pcOffsetExt;
+
+        if (m_lookupSpec.useClamp)
+            frag << "#extension GL_ARB_sparse_texture_clamp : require\n";
+
+        frag << "layout(location = 0) out mediump vec4 o_color;\n";
+
+        if (isVtxCase)
+        {
+            vert << "layout(location = 0) out mediump vec4 v_color;\n";
+            frag << "layout(location = 0) in mediump vec4 v_color;\n";
+        }
+        else
+        {
+            vert << "layout(location = 0) out " << coordPrecName << " " << coordTypeName << " v_texCoord;\n";
+            frag << "layout(location = 0) in " << coordPrecName << " " << coordTypeName << " v_texCoord;\n";
+
+            if (isGrad)
+            {
+                vert << "layout(location = 1) out " << coordPrecName << " " << gradTypeName << " v_gradX;\n";
+                vert << "layout(location = 2) out " << coordPrecName << " " << gradTypeName << " v_gradY;\n";
+                frag << "layout(location = 1) in " << coordPrecName << " " << gradTypeName << " v_gradX;\n";
+                frag << "layout(location = 2) in " << coordPrecName << " " << gradTypeName << " v_gradY;\n";
+            }
+            else if (hasLodBias)
+            {
+                vert << "layout(location = 1) out " << coordPrecName << " float v_lodBias;\n";
+                frag << "layout(location = 1) in " << coordPrecName << " float v_lodBias;\n";
+            }
+        }
+
+        // Uniforms
+        op << "layout(set = 0, binding = 0) uniform highp " << glu::getDataTypeName(samplerType) << " u_sampler;\n"
+           << "layout(set = 0, binding = 1) uniform buf0 { highp vec4 u_scale; };\n"
+           << "layout(set = 0, binding = 2) uniform buf1 { highp vec4 u_bias; };\n";
+
+        if (m_lookupSpec.pcOffset)
+            op << "layout(push_constant, std430) uniform PCBlock { ivec3 offset; } pc;\n";
+
+        vert << "out gl_PerVertex {\n"
+             << "    vec4 gl_Position;\n"
+             << "};\n";
+        vert << "\nvoid main()\n{\n"
+             << "\tgl_Position = a_position;\n";
+        frag << "\nvoid main()\n{\n";
+    }
 
     // Op.
     {
@@ -4354,10 +4748,10 @@ void SparseShaderTextureFunctionCase::initShaderSources(void)
         else
             op << "\tvec4 texel;\n";
 
-        const char *const texCoord = isVtxCase ? "a_in0" : "v_texCoord";
-        const char *const gradX    = isVtxCase ? "a_in1" : "v_gradX";
-        const char *const gradY    = isVtxCase ? "a_in2" : "v_gradY";
-        const char *const lodBias  = isVtxCase ? "a_in1" : "v_lodBias";
+        const char *const texCoord = (isVtxCase && !m_useCompute) ? "a_in0" : "v_texCoord";
+        const char *const gradX    = (isVtxCase && !m_useCompute) ? "a_in1" : "v_gradX";
+        const char *const gradY    = (isVtxCase && !m_useCompute) ? "a_in2" : "v_gradY";
+        const char *const lodBias  = (isVtxCase && !m_useCompute) ? "a_in1" : "v_lodBias";
 
         op << "\tint success = " << baseFuncName;
 
@@ -4419,7 +4813,9 @@ void SparseShaderTextureFunctionCase::initShaderSources(void)
         // Check sparse validity, and handle each case
         op << "\tif (sparseTexelsResidentARB(success))\n";
 
-        if (isVtxCase)
+        if (m_useCompute)
+            comp << "\t\tresult = ";
+        else if (isVtxCase)
             vert << "\t\tv_color = ";
         else
             frag << "\t\to_color = ";
@@ -4432,32 +4828,60 @@ void SparseShaderTextureFunctionCase::initShaderSources(void)
         op << "\telse\n";
 
         // This color differs from the used colors
-        if (isVtxCase)
+        if (m_useCompute)
+            comp << "\t\tresult = vec4(0.54117647058, 0.16862745098, 0.8862745098, 1.0);\n";
+        else if (isVtxCase)
             vert << "\t\tv_color = vec4(0.54117647058, 0.16862745098, 0.8862745098, 1.0);\n";
         else
             frag << "\t\to_color = vec4(0.54117647058, 0.16862745098, 0.8862745098, 1.0);\n";
     }
 
-    if (isVtxCase)
-        frag << "\to_color = v_color;\n";
+    if (m_useCompute)
+    {
+        comp << "\timageStore(destImage, pixCoord, result);\n"
+             << "}\n";
+        m_compShaderSource = comp.str();
+    }
     else
     {
-        vert << "\tv_texCoord = a_in0;\n";
-
-        if (isGrad)
+        if (isVtxCase)
+            frag << "\to_color = v_color;\n";
+        else
         {
-            vert << "\tv_gradX = a_in1;\n";
-            vert << "\tv_gradY = a_in2;\n";
+            vert << "\tv_texCoord = a_in0;\n";
+
+            if (isGrad)
+            {
+                vert << "\tv_gradX = a_in1;\n";
+                vert << "\tv_gradY = a_in2;\n";
+            }
+            else if (hasLodBias)
+                vert << "\tv_lodBias = a_in1;\n";
         }
-        else if (hasLodBias)
-            vert << "\tv_lodBias = a_in1;\n";
+
+        vert << "}\n";
+        frag << "}\n";
+
+        m_vertShaderSource = vert.str();
+        m_fragShaderSource = frag.str();
     }
 
-    vert << "}\n";
-    frag << "}\n";
+    if (m_lookupSpec.pcOffset)
+    {
+        vk::ShaderBuildOptions buildOptions;
+        buildOptions.flags |= vk::ShaderBuildOptions::FLAG_ALLOW_NON_CONST_OFFSETS;
 
-    m_vertShaderSource = vert.str();
-    m_fragShaderSource = frag.str();
+        if (m_useCompute)
+        {
+            m_compShaderBuildOptions = de::MovePtr<vk::ShaderBuildOptions>(new vk::ShaderBuildOptions(buildOptions));
+        }
+        else
+        {
+            de::MovePtr<vk::ShaderBuildOptions> &targetOptions =
+                (isVtxCase ? m_vertShaderBuildOptions : m_fragShaderBuildOptions);
+            targetOptions = de::MovePtr<vk::ShaderBuildOptions>(new vk::ShaderBuildOptions(buildOptions));
+        }
+    }
 }
 
 SparseShaderTextureFunctionCase::~SparseShaderTextureFunctionCase()
@@ -4469,7 +4893,8 @@ TestInstance *SparseShaderTextureFunctionCase::createInstance(Context &context) 
     DE_ASSERT(m_evaluator);
     DE_ASSERT(m_uniformSetup);
     return new SparseShaderTextureFunctionInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_lookupSpec,
-                                                   m_textureSpec, m_lookupParams);
+                                                   m_textureSpec, m_lookupParams,
+                                                   ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE, m_useCompute);
 }
 
 void SparseShaderTextureFunctionCase::checkSupport(Context &context) const
@@ -4522,6 +4947,21 @@ static void createCaseGroup(tcu::TestCaseGroup *parent, const char *groupName, c
             group->addChild(new ShaderTextureFunctionCase(parent->getTestContext(), (name + "_fragment"),
                                                           cases[ndx].lookupSpec, cases[ndx].texSpec,
                                                           cases[ndx].evalFunc, false));
+        }
+
+        if (cases[ndx].flags & COMPUTE &&
+            !cases[ndx].lookupSpec.pcOffset) // Remove pcOffset cases as spec requires offset to be constant
+        {
+#ifndef CTS_USES_VULKANSC
+            if (sparseSupported)
+                group->addChild(new SparseShaderTextureFunctionCase(
+                    parent->getTestContext(), ("sparse_" + name + "_compute"), cases[ndx].lookupSpec,
+                    cases[ndx].texSpec, cases[ndx].evalFunc, false, true));
+#endif // CTS_USES_VULKANSC
+
+            group->addChild(new ShaderTextureFunctionCase(parent->getTestContext(), (name + "_compute"),
+                                                          cases[ndx].lookupSpec, cases[ndx].texSpec,
+                                                          cases[ndx].evalFunc, false, true));
         }
     }
 
@@ -4862,18 +5302,26 @@ void ShaderTextureFunctionTests::init(void)
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DFixed, evalTexture2D, VERTEX),
         CASE_SPEC(sampler2d_fixed, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapFixed, evalTexture2D, FRAGMENT),
+        CASE_SPEC(sampler2d_fixed, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapFixed, evalTexture2D, COMPUTE),
         CASE_SPEC(sampler2d_float, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DFloat, evalTexture2D, VERTEX),
         CASE_SPEC(sampler2d_float, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapFloat, evalTexture2D, FRAGMENT),
+        CASE_SPEC(sampler2d_float, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapFloat, evalTexture2D, COMPUTE),
         CASE_SPEC(isampler2d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex2DInt, evalTexture2D, VERTEX),
         CASE_SPEC(isampler2d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapInt, evalTexture2D, FRAGMENT),
+        CASE_SPEC(isampler2d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f), false,
+                  0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapInt, evalTexture2D, COMPUTE),
         CASE_SPEC(usampler2d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex2DUint, evalTexture2D, VERTEX),
         CASE_SPEC(usampler2d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapUint, evalTexture2D, FRAGMENT),
+        CASE_SPEC(usampler2d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f), false,
+                  0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapUint, evalTexture2D, COMPUTE),
 
         CASE_SPEC(sampler2d_bias_fixed, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
                   true, -2.0f, 2.0f, false, false, IVec3(0), tex2DMipmapFixed, evalTexture2DBias, FRAGMENT),
@@ -4888,18 +5336,26 @@ void ShaderTextureFunctionTests::init(void)
                   false, 0.0f, 0.0f, false, false, IVec3(0), texCubeFixed, evalTextureCube, VERTEX),
         CASE_SPEC(samplercube_fixed, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, 0.0f), Vec4(1.0f, 1.0f, 1.01f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), texCubeMipmapFixed, evalTextureCube, FRAGMENT),
+        CASE_SPEC(samplercube_fixed, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, 0.0f), Vec4(1.0f, 1.0f, 1.01f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), texCubeMipmapFixed, evalTextureCube, COMPUTE),
         CASE_SPEC(samplercube_float, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, -1.01f, 0.0f), Vec4(1.0f, 1.0f, -1.01f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), texCubeFloat, evalTextureCube, VERTEX),
         CASE_SPEC(samplercube_float, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, -1.01f, 0.0f), Vec4(1.0f, 1.0f, -1.01f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), texCubeMipmapFloat, evalTextureCube, FRAGMENT),
+        CASE_SPEC(samplercube_float, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, -1.01f, 0.0f), Vec4(1.0f, 1.0f, -1.01f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), texCubeMipmapFloat, evalTextureCube, COMPUTE),
         CASE_SPEC(isamplercube, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, 0.0f), Vec4(1.0f, 1.0f, 1.01f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), texCubeInt, evalTextureCube, VERTEX),
         CASE_SPEC(isamplercube, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, 0.0f), Vec4(1.0f, 1.0f, 1.01f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), texCubeMipmapInt, evalTextureCube, FRAGMENT),
+        CASE_SPEC(isamplercube, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, 0.0f), Vec4(1.0f, 1.0f, 1.01f, 0.0f), false,
+                  0.0f, 0.0f, false, false, IVec3(0), texCubeMipmapInt, evalTextureCube, COMPUTE),
         CASE_SPEC(usamplercube, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, -1.01f, 0.0f), Vec4(1.0f, 1.0f, -1.01f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), texCubeUint, evalTextureCube, VERTEX),
         CASE_SPEC(usamplercube, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, -1.01f, 0.0f), Vec4(1.0f, 1.0f, -1.01f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), texCubeMipmapUint, evalTextureCube, FRAGMENT),
+        CASE_SPEC(usamplercube, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, -1.01f, 0.0f), Vec4(1.0f, 1.0f, -1.01f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), texCubeMipmapUint, evalTextureCube, COMPUTE),
 
         CASE_SPEC(samplercube_bias_fixed, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, 0.0f),
                   Vec4(1.0f, 1.0f, 1.01f, 0.0f), true, -2.0f, 2.0f, false, false, IVec3(0), texCubeMipmapFixed,
@@ -4916,18 +5372,26 @@ void ShaderTextureFunctionTests::init(void)
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DArrayFixed, evalTexture2DArray, VERTEX),
         CASE_SPEC(sampler2darray_fixed, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DArrayMipmapFixed, evalTexture2DArray, FRAGMENT),
+        CASE_SPEC(sampler2darray_fixed, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex2DArrayMipmapFixed, evalTexture2DArray, COMPUTE),
         CASE_SPEC(sampler2darray_float, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DArrayFloat, evalTexture2DArray, VERTEX),
         CASE_SPEC(sampler2darray_float, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DArrayMipmapFloat, evalTexture2DArray, FRAGMENT),
+        CASE_SPEC(sampler2darray_float, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex2DArrayMipmapFloat, evalTexture2DArray, COMPUTE),
         CASE_SPEC(isampler2darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DArrayInt, evalTexture2DArray, VERTEX),
         CASE_SPEC(isampler2darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DArrayMipmapInt, evalTexture2DArray, FRAGMENT),
+        CASE_SPEC(isampler2darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex2DArrayMipmapInt, evalTexture2DArray, COMPUTE),
         CASE_SPEC(usampler2darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DArrayUint, evalTexture2DArray, VERTEX),
         CASE_SPEC(usampler2darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DArrayMipmapUint, evalTexture2DArray, FRAGMENT),
+        CASE_SPEC(usampler2darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex2DArrayMipmapUint, evalTexture2DArray, COMPUTE),
 
         CASE_SPEC(sampler2darray_bias_fixed, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                   Vec4(1.5f, 2.3f, 3.5f, 0.0f), true, -2.0f, 2.0f, false, false, IVec3(0), tex2DArrayMipmapFixed,
@@ -4944,18 +5408,26 @@ void ShaderTextureFunctionTests::init(void)
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex3DFixed, evalTexture3D, VERTEX),
         CASE_SPEC(sampler3d_fixed, FUNCTION_TEXTURE, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex3DMipmapFixed, evalTexture3D, FRAGMENT),
+        CASE_SPEC(sampler3d_fixed, FUNCTION_TEXTURE, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex3DMipmapFixed, evalTexture3D, COMPUTE),
         CASE_SPEC(sampler3d_float, FUNCTION_TEXTURE, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex3DFloat, evalTexture3D, VERTEX),
         CASE_SPEC(sampler3d_float, FUNCTION_TEXTURE, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex3DMipmapFloat, evalTexture3D, FRAGMENT),
+        CASE_SPEC(sampler3d_float, FUNCTION_TEXTURE, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex3DMipmapFloat, evalTexture3D, COMPUTE),
         CASE_SPEC(isampler3d, FUNCTION_TEXTURE, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex3DInt, evalTexture3D, VERTEX),
         CASE_SPEC(isampler3d, FUNCTION_TEXTURE, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex3DMipmapInt, evalTexture3D, FRAGMENT),
+        CASE_SPEC(isampler3d, FUNCTION_TEXTURE, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f), false,
+                  0.0f, 0.0f, false, false, IVec3(0), tex3DMipmapInt, evalTexture3D, COMPUTE),
         CASE_SPEC(usampler3d, FUNCTION_TEXTURE, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex3DUint, evalTexture3D, VERTEX),
         CASE_SPEC(usampler3d, FUNCTION_TEXTURE, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex3DMipmapUint, evalTexture3D, FRAGMENT),
+        CASE_SPEC(usampler3d, FUNCTION_TEXTURE, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f), false,
+                  0.0f, 0.0f, false, false, IVec3(0), tex3DMipmapUint, evalTexture3D, COMPUTE),
 
         CASE_SPEC(sampler3d_bias_fixed, FUNCTION_TEXTURE, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
                   true, -2.0f, 1.0f, false, false, IVec3(0), tex3DMipmapFixed, evalTexture3DBias, FRAGMENT),
@@ -4970,18 +5442,26 @@ void ShaderTextureFunctionTests::init(void)
                   0.0f, 0.0f, false, false, IVec3(0), tex1DFixed, evalTexture1D, VERTEX),
         CASE_SPEC(sampler1d_fixed, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapFixed, evalTexture1D, FRAGMENT),
+        CASE_SPEC(sampler1d_fixed, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
+                  0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapFixed, evalTexture1D, COMPUTE),
         CASE_SPEC(sampler1d_float, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex1DFloat, evalTexture1D, VERTEX),
         CASE_SPEC(sampler1d_float, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapFloat, evalTexture1D, FRAGMENT),
+        CASE_SPEC(sampler1d_float, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
+                  0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapFloat, evalTexture1D, COMPUTE),
         CASE_SPEC(isampler1d, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex1DInt, evalTexture1D, VERTEX),
         CASE_SPEC(isampler1d, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapInt, evalTexture1D, FRAGMENT),
+        CASE_SPEC(isampler1d, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
+                  0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapInt, evalTexture1D, COMPUTE),
         CASE_SPEC(usampler1d, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex1DUint, evalTexture1D, VERTEX),
         CASE_SPEC(usampler1d, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapUint, evalTexture1D, FRAGMENT),
+        CASE_SPEC(usampler1d, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
+                  0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapUint, evalTexture1D, COMPUTE),
 
         CASE_SPEC(sampler1d_bias_fixed, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f),
                   true, -2.0f, 2.0f, false, false, IVec3(0), tex1DMipmapFixed, evalTexture1DBias, FRAGMENT),
@@ -4996,18 +5476,26 @@ void ShaderTextureFunctionTests::init(void)
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex1DArrayFixed, evalTexture1DArray, VERTEX),
         CASE_SPEC(sampler1darray_fixed, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex1DArrayMipmapFixed, evalTexture1DArray, FRAGMENT),
+        CASE_SPEC(sampler1darray_fixed, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex1DArrayMipmapFixed, evalTexture1DArray, COMPUTE),
         CASE_SPEC(sampler1darray_float, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex1DArrayFloat, evalTexture1DArray, VERTEX),
         CASE_SPEC(sampler1darray_float, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex1DArrayMipmapFloat, evalTexture1DArray, FRAGMENT),
+        CASE_SPEC(sampler1darray_float, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex1DArrayMipmapFloat, evalTexture1DArray, COMPUTE),
         CASE_SPEC(isampler1darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex1DArrayInt, evalTexture1DArray, VERTEX),
         CASE_SPEC(isampler1darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex1DArrayMipmapInt, evalTexture1DArray, FRAGMENT),
+        CASE_SPEC(isampler1darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex1DArrayMipmapInt, evalTexture1DArray, COMPUTE),
         CASE_SPEC(usampler1darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex1DArrayUint, evalTexture1DArray, VERTEX),
         CASE_SPEC(usampler1darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex1DArrayMipmapUint, evalTexture1DArray, FRAGMENT),
+        CASE_SPEC(usampler1darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex1DArrayMipmapUint, evalTexture1DArray, COMPUTE),
 
         CASE_SPEC(sampler1darray_bias_fixed, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                   Vec4(1.5f, 3.5f, 0.0f, 0.0f), true, -2.0f, 2.0f, false, false, IVec3(0), tex1DArrayMipmapFixed,
@@ -5026,22 +5514,33 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(samplercubearray_fixed, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, -0.5f),
                   Vec4(1.0f, 1.0f, 1.01f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), texCubeArrayMipmapFixed,
                   evalTextureCubeArray, FRAGMENT),
+        CASE_SPEC(samplercubearray_fixed, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, -0.5f),
+                  Vec4(1.0f, 1.0f, 1.01f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), texCubeArrayMipmapFixed,
+                  evalTextureCubeArray, COMPUTE),
         CASE_SPEC(samplercubearray_float, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, -1.01f, -0.5f),
                   Vec4(1.0f, 1.0f, -1.01f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), texCubeArrayFloat,
                   evalTextureCubeArray, VERTEX),
         CASE_SPEC(samplercubearray_float, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, -1.01f, -0.5f),
                   Vec4(1.0f, 1.0f, -1.01f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), texCubeArrayMipmapFloat,
                   evalTextureCubeArray, FRAGMENT),
+        CASE_SPEC(samplercubearray_float, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, -1.01f, -0.5f),
+                  Vec4(1.0f, 1.0f, -1.01f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), texCubeArrayMipmapFloat,
+                  evalTextureCubeArray, COMPUTE),
         CASE_SPEC(isamplercubearray, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, -0.5f), Vec4(1.0f, 1.0f, 1.01f, 1.5f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), texCubeArrayInt, evalTextureCubeArray, VERTEX),
         CASE_SPEC(isamplercubearray, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, -0.5f), Vec4(1.0f, 1.0f, 1.01f, 1.5f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), texCubeArrayMipmapInt, evalTextureCubeArray, FRAGMENT),
+        CASE_SPEC(isamplercubearray, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, -0.5f), Vec4(1.0f, 1.0f, 1.01f, 1.5f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), texCubeArrayMipmapInt, evalTextureCubeArray, COMPUTE),
         CASE_SPEC(usamplercubearray, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, -1.01f, -0.5f),
                   Vec4(1.0f, 1.0f, -1.01f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), texCubeArrayUint,
                   evalTextureCubeArray, VERTEX),
         CASE_SPEC(usamplercubearray, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, -1.01f, -0.5f),
                   Vec4(1.0f, 1.0f, -1.01f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), texCubeArrayMipmapUint,
                   evalTextureCubeArray, FRAGMENT),
+        CASE_SPEC(usamplercubearray, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, -1.01f, -0.5f),
+                  Vec4(1.0f, 1.0f, -1.01f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), texCubeArrayMipmapUint,
+                  evalTextureCubeArray, COMPUTE),
 
         CASE_SPEC(samplercubearray_bias_fixed, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, -0.5f),
                   Vec4(1.0f, 1.0f, 1.01f, 1.5f), true, -2.0f, 2.0f, false, false, IVec3(0), texCubeArrayMipmapFixed,
@@ -5060,6 +5559,8 @@ void ShaderTextureFunctionTests::init(void)
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DShadow, evalTexture2DShadow, VERTEX),
         CASE_SPEC(sampler2dshadow, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 1.0f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapShadow, evalTexture2DShadow, FRAGMENT),
+        CASE_SPEC(sampler2dshadow, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 1.0f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapShadow, evalTexture2DShadow, COMPUTE),
         CASE_SPEC(sampler2dshadow_bias, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 1.0f, 0.0f),
                   true, -2.0f, 2.0f, false, false, IVec3(0), tex2DMipmapShadow, evalTexture2DShadowBias, FRAGMENT),
 
@@ -5067,6 +5568,8 @@ void ShaderTextureFunctionTests::init(void)
                   false, 0.0f, 0.0f, false, false, IVec3(0), texCubeShadow, evalTextureCubeShadow, VERTEX),
         CASE_SPEC(samplercubeshadow, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, 0.0f), Vec4(1.0f, 1.0f, 1.01f, 1.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), texCubeMipmapShadow, evalTextureCubeShadow, FRAGMENT),
+        CASE_SPEC(samplercubeshadow, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, 0.0f), Vec4(1.0f, 1.0f, 1.01f, 1.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), texCubeMipmapShadow, evalTextureCubeShadow, COMPUTE),
         CASE_SPEC(samplercubeshadow_bias, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, 0.0f),
                   Vec4(1.0f, 1.0f, 1.01f, 1.0f), true, -2.0f, 2.0f, false, false, IVec3(0), texCubeMipmapShadow,
                   evalTextureCubeShadowBias, FRAGMENT),
@@ -5076,11 +5579,15 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler2darrayshadow, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 1.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DArrayMipmapShadow, evalTexture2DArrayShadow,
                   FRAGMENT),
+        CASE_SPEC(sampler2darrayshadow, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 1.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex2DArrayMipmapShadow, evalTexture2DArrayShadow, COMPUTE),
 
         CASE_SPEC(sampler1dshadow, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 1.0f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex1DShadow, evalTexture1DShadow, VERTEX),
         CASE_SPEC(sampler1dshadow, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 1.0f, 0.0f), false,
                   0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapShadow, evalTexture1DShadow, FRAGMENT),
+        CASE_SPEC(sampler1dshadow, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 1.0f, 0.0f), false,
+                  0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapShadow, evalTexture1DShadow, COMPUTE),
         CASE_SPEC(sampler1dshadow_bias, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 1.0f, 0.0f),
                   true, -2.0f, 2.0f, false, false, IVec3(0), tex1DMipmapShadow, evalTexture1DShadowBias, FRAGMENT),
 
@@ -5089,6 +5596,8 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler1darrayshadow, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 1.0f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex1DArrayMipmapShadow, evalTexture1DArrayShadow,
                   FRAGMENT),
+        CASE_SPEC(sampler1darrayshadow, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 1.0f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex1DArrayMipmapShadow, evalTexture1DArrayShadow, COMPUTE),
         CASE_SPEC(sampler1darrayshadow_bias, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                   Vec4(1.5f, 3.5f, 1.0f, 0.0f), true, -2.0f, 2.0f, false, false, IVec3(0), tex1DArrayMipmapShadow,
                   evalTexture1DArrayShadowBias, FRAGMENT),
@@ -5096,6 +5605,9 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(samplercubearrayshadow, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, -0.5f),
                   Vec4(1.0f, 1.0f, 1.01f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), texCubeArrayMipmapShadow,
                   evalTextureCubeArrayShadow, FRAGMENT),
+        CASE_SPEC(samplercubearrayshadow, FUNCTION_TEXTURE, Vec4(-1.0f, -1.0f, 1.01f, -0.5f),
+                  Vec4(1.0f, 1.0f, 1.01f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), texCubeArrayMipmapShadow,
+                  evalTextureCubeArrayShadow, COMPUTE),
     };
     createCaseGroup(this, "texture", textureCases, DE_LENGTH_OF_ARRAY(textureCases));
 
@@ -5217,19 +5729,29 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler2d_fixed, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapFixedOffset, evalTexture2DOffset,
                   FRAGMENT),
+        CASE_SPEC(sampler2d_fixed, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapFixedOffset, evalTexture2DOffset,
+                  COMPUTE),
         CASE_SPEC(sampler2d_float, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(-8, 7, 0), tex2DFloatOffset, evalTexture2DOffset, VERTEX),
         CASE_SPEC(sampler2d_float, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapFloatOffset, evalTexture2DOffset,
                   FRAGMENT),
+        CASE_SPEC(sampler2d_float, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapFloatOffset, evalTexture2DOffset,
+                  COMPUTE),
         CASE_SPEC(isampler2d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(-8, 7, 0), tex2DIntOffset, evalTexture2DOffset, VERTEX),
         CASE_SPEC(isampler2d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapIntOffset, evalTexture2DOffset, FRAGMENT),
+        CASE_SPEC(isampler2d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f), false,
+                  0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapIntOffset, evalTexture2DOffset, COMPUTE),
         CASE_SPEC(usampler2d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(-8, 7, 0), tex2DUintOffset, evalTexture2DOffset, VERTEX),
         CASE_SPEC(usampler2d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapUintOffset, evalTexture2DOffset, FRAGMENT),
+        CASE_SPEC(usampler2d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f), false,
+                  0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapUintOffset, evalTexture2DOffset, COMPUTE),
 
         CASE_SPEC(sampler2d_bias_fixed, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
                   true, -2.0f, 2.0f, true, false, IVec3(-8, 7, 0), tex2DFixedOffset, evalTexture2DOffsetBias, FRAGMENT),
@@ -5246,24 +5768,36 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler2darray_fixed, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DArrayMipmapFixedOffset,
                   evalTexture2DArrayOffset, FRAGMENT),
+        CASE_SPEC(sampler2darray_fixed, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DArrayMipmapFixedOffset,
+                  evalTexture2DArrayOffset, COMPUTE),
         CASE_SPEC(sampler2darray_float, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(-8, 7, 0), tex2DArrayFloatOffset, evalTexture2DArrayOffset,
                   VERTEX),
         CASE_SPEC(sampler2darray_float, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DArrayMipmapFloatOffset,
                   evalTexture2DArrayOffset, FRAGMENT),
+        CASE_SPEC(sampler2darray_float, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DArrayMipmapFloatOffset,
+                  evalTexture2DArrayOffset, COMPUTE),
         CASE_SPEC(isampler2darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(-8, 7, 0), tex2DArrayIntOffset, evalTexture2DArrayOffset,
                   VERTEX),
         CASE_SPEC(isampler2darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DArrayMipmapIntOffset, evalTexture2DArrayOffset,
                   FRAGMENT),
+        CASE_SPEC(isampler2darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DArrayMipmapIntOffset, evalTexture2DArrayOffset,
+                  COMPUTE),
         CASE_SPEC(usampler2darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(-8, 7, 0), tex2DArrayUintOffset, evalTexture2DArrayOffset,
                   VERTEX),
         CASE_SPEC(usampler2darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DArrayMipmapUintOffset, evalTexture2DArrayOffset,
                   FRAGMENT),
+        CASE_SPEC(usampler2darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DArrayMipmapUintOffset, evalTexture2DArrayOffset,
+                  COMPUTE),
 
         CASE_SPEC(sampler2darray_bias_fixed, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                   Vec4(1.5f, 2.3f, 3.5f, 0.0f), true, -2.0f, 2.0f, true, false, IVec3(-8, 7, 0), tex2DArrayFixedOffset,
@@ -5283,19 +5817,29 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler3d_fixed, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, 3, -8), tex3DMipmapFixedOffset, evalTexture3DOffset,
                   FRAGMENT),
+        CASE_SPEC(sampler3d_fixed, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, 3, -8), tex3DMipmapFixedOffset, evalTexture3DOffset,
+                  COMPUTE),
         CASE_SPEC(sampler3d_float, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(3, -8, 7), tex3DFloatOffset, evalTexture3DOffset, VERTEX),
         CASE_SPEC(sampler3d_float, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(-8, 7, 3), tex3DMipmapFloatOffset, evalTexture3DOffset,
                   FRAGMENT),
+        CASE_SPEC(sampler3d_float, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(-8, 7, 3), tex3DMipmapFloatOffset, evalTexture3DOffset,
+                  COMPUTE),
         CASE_SPEC(isampler3d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(7, 3, -8), tex3DIntOffset, evalTexture3DOffset, VERTEX),
         CASE_SPEC(isampler3d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(3, -8, 7), tex3DMipmapIntOffset, evalTexture3DOffset, FRAGMENT),
+        CASE_SPEC(isampler3d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f), false,
+                  0.0f, 0.0f, true, false, IVec3(3, -8, 7), tex3DMipmapIntOffset, evalTexture3DOffset, COMPUTE),
         CASE_SPEC(usampler3d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(-8, 7, 3), tex3DUintOffset, evalTexture3DOffset, VERTEX),
         CASE_SPEC(usampler3d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(7, 3, -8), tex3DMipmapUintOffset, evalTexture3DOffset, FRAGMENT),
+        CASE_SPEC(usampler3d, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f), false,
+                  0.0f, 0.0f, true, false, IVec3(7, 3, -8), tex3DMipmapUintOffset, evalTexture3DOffset, COMPUTE),
 
         CASE_SPEC(sampler3d_bias_fixed, FUNCTION_TEXTURE, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
                   true, -2.0f, 1.0f, true, false, IVec3(-8, 7, 3), tex3DFixedOffset, evalTexture3DOffsetBias, FRAGMENT),
@@ -5310,18 +5854,26 @@ void ShaderTextureFunctionTests::init(void)
                   0.0f, 0.0f, true, false, IVec3(-8, 0, 0), tex1DFixedOffset, evalTexture1DOffset, VERTEX),
         CASE_SPEC(sampler1d_fixed, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapFixedOffset, evalTexture1DOffset, FRAGMENT),
+        CASE_SPEC(sampler1d_fixed, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
+                  0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapFixedOffset, evalTexture1DOffset, COMPUTE),
         CASE_SPEC(sampler1d_float, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(-8, 0, 0), tex1DFloatOffset, evalTexture1DOffset, VERTEX),
         CASE_SPEC(sampler1d_float, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapFloatOffset, evalTexture1DOffset, FRAGMENT),
+        CASE_SPEC(sampler1d_float, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
+                  0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapFloatOffset, evalTexture1DOffset, COMPUTE),
         CASE_SPEC(isampler1d, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(-8, 0, 0), tex1DIntOffset, evalTexture1DOffset, VERTEX),
         CASE_SPEC(isampler1d, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapIntOffset, evalTexture1DOffset, FRAGMENT),
+        CASE_SPEC(isampler1d, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
+                  0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapIntOffset, evalTexture1DOffset, COMPUTE),
         CASE_SPEC(usampler1d, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(-8, 0, 0), tex1DUintOffset, evalTexture1DOffset, VERTEX),
         CASE_SPEC(usampler1d, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapUintOffset, evalTexture1DOffset, FRAGMENT),
+        CASE_SPEC(usampler1d, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
+                  0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapUintOffset, evalTexture1DOffset, COMPUTE),
 
         CASE_SPEC(sampler1d_bias_fixed, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f),
                   true, -2.0f, 2.0f, true, false, IVec3(-8, 0, 0), tex1DFixedOffset, evalTexture1DOffsetBias, FRAGMENT),
@@ -5338,24 +5890,36 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler1darray_fixed, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DArrayMipmapFixedOffset, evalTexture1DArrayOffset,
                   FRAGMENT),
+        CASE_SPEC(sampler1darray_fixed, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DArrayMipmapFixedOffset, evalTexture1DArrayOffset,
+                  COMPUTE),
         CASE_SPEC(sampler1darray_float, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(-8, 0, 0), tex1DArrayFloatOffset, evalTexture1DArrayOffset,
                   VERTEX),
         CASE_SPEC(sampler1darray_float, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DArrayMipmapFloatOffset, evalTexture1DArrayOffset,
                   FRAGMENT),
+        CASE_SPEC(sampler1darray_float, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DArrayMipmapFloatOffset, evalTexture1DArrayOffset,
+                  COMPUTE),
         CASE_SPEC(isampler1darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(-8, 0, 0), tex1DArrayIntOffset, evalTexture1DArrayOffset,
                   VERTEX),
         CASE_SPEC(isampler1darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DArrayMipmapIntOffset, evalTexture1DArrayOffset,
                   FRAGMENT),
+        CASE_SPEC(isampler1darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DArrayMipmapIntOffset, evalTexture1DArrayOffset,
+                  COMPUTE),
         CASE_SPEC(usampler1darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(-8, 0, 0), tex1DArrayUintOffset, evalTexture1DArrayOffset,
                   VERTEX),
         CASE_SPEC(usampler1darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DArrayMipmapUintOffset, evalTexture1DArrayOffset,
                   FRAGMENT),
+        CASE_SPEC(usampler1darray, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DArrayMipmapUintOffset, evalTexture1DArrayOffset,
+                  COMPUTE),
 
         CASE_SPEC(sampler1darray_bias_fixed, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                   Vec4(1.5f, 2.3f, 3.5f, 0.0f), true, -2.0f, 2.0f, true, false, IVec3(-8, 0, 0), tex1DArrayFixedOffset,
@@ -5376,6 +5940,9 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler2dshadow, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 1.0f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapShadowOffset, evalTexture2DShadowOffset,
                   FRAGMENT),
+        CASE_SPEC(sampler2dshadow, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 1.0f, 0.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapShadowOffset, evalTexture2DShadowOffset,
+                  COMPUTE),
         CASE_SPEC(sampler2dshadow_bias, FUNCTION_TEXTURE, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 1.0f, 0.0f),
                   true, -2.0f, 2.0f, true, false, IVec3(-8, 7, 0), tex2DShadowOffset, evalTexture2DShadowOffsetBias,
                   FRAGMENT),
@@ -5385,11 +5952,16 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler2darrayshadow, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 1.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DArrayMipmapShadowOffset,
                   evalTexture2DArrayShadowOffset, FRAGMENT),
+        CASE_SPEC(sampler2darrayshadow, FUNCTION_TEXTURE, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 1.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DArrayMipmapShadowOffset,
+                  evalTexture2DArrayShadowOffset, COMPUTE),
         CASE_SPEC(sampler1dshadow, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 1.0f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(-8, 0, 0), tex1DShadowOffset, evalTexture1DShadowOffset, VERTEX),
         CASE_SPEC(sampler1dshadow, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 1.0f, 0.0f), false,
                   0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapShadowOffset, evalTexture1DShadowOffset,
                   FRAGMENT),
+        CASE_SPEC(sampler1dshadow, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 1.0f, 0.0f), false,
+                  0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapShadowOffset, evalTexture1DShadowOffset, COMPUTE),
         CASE_SPEC(sampler1dshadow_bias, FUNCTION_TEXTURE, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 1.0f, 0.0f),
                   true, -2.0f, 2.0f, true, false, IVec3(-8, 0, 0), tex1DShadowOffset, evalTexture1DShadowOffsetBias,
                   FRAGMENT),
@@ -5399,6 +5971,9 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler1darrayshadow, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 1.0f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DArrayMipmapShadowOffset,
                   evalTexture1DArrayShadowOffset, FRAGMENT),
+        CASE_SPEC(sampler1darrayshadow, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 1.0f, 0.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DArrayMipmapShadowOffset,
+                  evalTexture1DArrayShadowOffset, COMPUTE),
         CASE_SPEC(sampler1darrayshadow_bias, FUNCTION_TEXTURE, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                   Vec4(1.5f, 3.5f, 1.0f, 0.0f), true, -2.0f, 2.0f, true, false, IVec3(-8, 0, 0), tex1DArrayShadowOffset,
                   evalTexture1DArrayShadowOffsetBias, FRAGMENT),
@@ -5533,24 +6108,36 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler2d_vec3_fixed, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapFixed,
                   evalTexture2DProj3, FRAGMENT),
+        CASE_SPEC(sampler2d_vec3_fixed, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
+                  Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapFixed,
+                  evalTexture2DProj3, COMPUTE),
         CASE_SPEC(sampler2d_vec3_float, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex2DFloat,
                   evalTexture2DProj3, VERTEX),
         CASE_SPEC(sampler2d_vec3_float, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapFloat,
                   evalTexture2DProj3, FRAGMENT),
+        CASE_SPEC(sampler2d_vec3_float, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
+                  Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapFloat,
+                  evalTexture2DProj3, COMPUTE),
         CASE_SPEC(isampler2d_vec3, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex2DInt,
                   evalTexture2DProj3, VERTEX),
         CASE_SPEC(isampler2d_vec3, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapInt,
                   evalTexture2DProj3, FRAGMENT),
+        CASE_SPEC(isampler2d_vec3, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
+                  Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapInt,
+                  evalTexture2DProj3, COMPUTE),
         CASE_SPEC(usampler2d_vec3, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex2DUint,
                   evalTexture2DProj3, VERTEX),
         CASE_SPEC(usampler2d_vec3, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapUint,
                   evalTexture2DProj3, FRAGMENT),
+        CASE_SPEC(usampler2d_vec3, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
+                  Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapUint,
+                  evalTexture2DProj3, COMPUTE),
 
         CASE_SPEC(sampler2d_vec3_bias_fixed, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), true, -2.0f, 2.0f, false, false, IVec3(0), tex2DMipmapFixed,
@@ -5571,20 +6158,30 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler2d_vec4_fixed, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                   Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapFixed,
                   evalTexture2DProj, FRAGMENT),
+        CASE_SPEC(sampler2d_vec4_fixed, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
+                  Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapFixed,
+                  evalTexture2DProj, COMPUTE),
         CASE_SPEC(sampler2d_vec4_float, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                   Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), tex2DFloat,
                   evalTexture2DProj, VERTEX),
         CASE_SPEC(sampler2d_vec4_float, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                   Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapFloat,
                   evalTexture2DProj, FRAGMENT),
+        CASE_SPEC(sampler2d_vec4_float, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
+                  Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapFloat,
+                  evalTexture2DProj, COMPUTE),
         CASE_SPEC(isampler2d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 0.0f, 1.5f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DInt, evalTexture2DProj, VERTEX),
         CASE_SPEC(isampler2d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 0.0f, 1.5f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapInt, evalTexture2DProj, FRAGMENT),
+        CASE_SPEC(isampler2d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 0.0f, 1.5f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapInt, evalTexture2DProj, COMPUTE),
         CASE_SPEC(usampler2d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 0.0f, 1.5f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DUint, evalTexture2DProj, VERTEX),
         CASE_SPEC(usampler2d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 0.0f, 1.5f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapUint, evalTexture2DProj, FRAGMENT),
+        CASE_SPEC(usampler2d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 0.0f, 1.5f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapUint, evalTexture2DProj, COMPUTE),
 
         CASE_SPEC(sampler2d_vec4_bias_fixed, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                   Vec4(2.25f, 3.45f, 0.0f, 1.5f), true, -2.0f, 2.0f, false, false, IVec3(0), tex2DMipmapFixed,
@@ -5605,24 +6202,36 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler3d_fixed, FUNCTION_TEXTUREPROJ, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, 0.0f, 0.0f, false, false, IVec3(0), tex3DMipmapFixed,
                   evalTexture3DProj, FRAGMENT),
+        CASE_SPEC(sampler3d_fixed, FUNCTION_TEXTUREPROJ, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
+                  Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, 0.0f, 0.0f, false, false, IVec3(0), tex3DMipmapFixed,
+                  evalTexture3DProj, COMPUTE),
         CASE_SPEC(sampler3d_float, FUNCTION_TEXTUREPROJ, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, 0.0f, 0.0f, false, false, IVec3(0), tex3DFloat,
                   evalTexture3DProj, VERTEX),
         CASE_SPEC(sampler3d_float, FUNCTION_TEXTUREPROJ, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, 0.0f, 0.0f, false, false, IVec3(0), tex3DMipmapFloat,
                   evalTexture3DProj, FRAGMENT),
+        CASE_SPEC(sampler3d_float, FUNCTION_TEXTUREPROJ, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
+                  Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, 0.0f, 0.0f, false, false, IVec3(0), tex3DMipmapFloat,
+                  evalTexture3DProj, COMPUTE),
         CASE_SPEC(isampler3d, FUNCTION_TEXTUREPROJ, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, 0.0f, 0.0f, false, false, IVec3(0), tex3DInt,
                   evalTexture3DProj, VERTEX),
         CASE_SPEC(isampler3d, FUNCTION_TEXTUREPROJ, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, 0.0f, 0.0f, false, false, IVec3(0), tex3DMipmapInt,
                   evalTexture3DProj, FRAGMENT),
+        CASE_SPEC(isampler3d, FUNCTION_TEXTUREPROJ, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
+                  Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, 0.0f, 0.0f, false, false, IVec3(0), tex3DMipmapInt,
+                  evalTexture3DProj, COMPUTE),
         CASE_SPEC(usampler3d, FUNCTION_TEXTUREPROJ, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, 0.0f, 0.0f, false, false, IVec3(0), tex3DUint,
                   evalTexture3DProj, VERTEX),
         CASE_SPEC(usampler3d, FUNCTION_TEXTUREPROJ, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, 0.0f, 0.0f, false, false, IVec3(0), tex3DMipmapUint,
                   evalTexture3DProj, FRAGMENT),
+        CASE_SPEC(usampler3d, FUNCTION_TEXTUREPROJ, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
+                  Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, 0.0f, 0.0f, false, false, IVec3(0), tex3DMipmapUint,
+                  evalTexture3DProj, COMPUTE),
 
         CASE_SPEC(sampler3d_bias_fixed, FUNCTION_TEXTUREPROJ, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), true, -2.0f, 1.0f, false, false, IVec3(0), tex3DMipmapFixed,
@@ -5643,20 +6252,30 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler1d_vec2_fixed, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                   Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapFixed,
                   evalTexture1DProj2, FRAGMENT),
+        CASE_SPEC(sampler1d_vec2_fixed, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
+                  Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapFixed,
+                  evalTexture1DProj2, COMPUTE),
         CASE_SPEC(sampler1d_vec2_float, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                   Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex1DFloat,
                   evalTexture1DProj2, VERTEX),
         CASE_SPEC(sampler1d_vec2_float, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                   Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapFloat,
                   evalTexture1DProj2, FRAGMENT),
+        CASE_SPEC(sampler1d_vec2_float, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
+                  Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapFloat,
+                  evalTexture1DProj2, COMPUTE),
         CASE_SPEC(isampler1d_vec2, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f), Vec4(2.25f, 1.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex1DInt, evalTexture1DProj2, VERTEX),
         CASE_SPEC(isampler1d_vec2, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f), Vec4(2.25f, 1.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapInt, evalTexture1DProj2, FRAGMENT),
+        CASE_SPEC(isampler1d_vec2, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f), Vec4(2.25f, 1.5f, 0.0f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapInt, evalTexture1DProj2, COMPUTE),
         CASE_SPEC(usampler1d_vec2, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f), Vec4(2.25f, 1.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex1DUint, evalTexture1DProj2, VERTEX),
         CASE_SPEC(usampler1d_vec2, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f), Vec4(2.25f, 1.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapUint, evalTexture1DProj2, FRAGMENT),
+        CASE_SPEC(usampler1d_vec2, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f), Vec4(2.25f, 1.5f, 0.0f, 0.0f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapUint, evalTexture1DProj2, COMPUTE),
 
         CASE_SPEC(sampler1d_vec2_bias_fixed, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                   Vec4(2.25f, 1.5f, 0.0f, 0.0f), true, -2.0f, 2.0f, false, false, IVec3(0), tex1DMipmapFixed,
@@ -5677,12 +6296,18 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler1d_vec4_fixed, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                   Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapFixed,
                   evalTexture1DProj, FRAGMENT),
+        CASE_SPEC(sampler1d_vec4_fixed, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
+                  Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapFixed,
+                  evalTexture1DProj, COMPUTE),
         CASE_SPEC(sampler1d_vec4_float, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                   Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), tex1DFloat,
                   evalTexture1DProj, VERTEX),
         CASE_SPEC(sampler1d_vec4_float, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                   Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapFloat,
                   evalTexture1DProj, FRAGMENT),
+        CASE_SPEC(sampler1d_vec4_float, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
+                  Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, 0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapFloat,
+                  evalTexture1DProj, COMPUTE),
         CASE_SPEC(isampler1d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f), Vec4(2.25f, 0.0f, 0.0f, 1.5f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex1DInt, evalTexture1DProj, VERTEX),
         CASE_SPEC(isampler1d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f), Vec4(2.25f, 0.0f, 0.0f, 1.5f),
@@ -5709,6 +6334,8 @@ void ShaderTextureFunctionTests::init(void)
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DShadow, evalTexture2DShadowProj, VERTEX),
         CASE_SPEC(sampler2dshadow, FUNCTION_TEXTUREPROJ, Vec4(0.2f, 0.6f, 0.0f, 1.5f), Vec4(-2.25f, -3.45f, 1.5f, 1.5f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapShadow, evalTexture2DShadowProj, FRAGMENT),
+        CASE_SPEC(sampler2dshadow, FUNCTION_TEXTUREPROJ, Vec4(0.2f, 0.6f, 0.0f, 1.5f), Vec4(-2.25f, -3.45f, 1.5f, 1.5f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex2DMipmapShadow, evalTexture2DShadowProj, COMPUTE),
         CASE_SPEC(sampler2dshadow_bias, FUNCTION_TEXTUREPROJ, Vec4(0.2f, 0.6f, 0.0f, 1.5f),
                   Vec4(-2.25f, -3.45f, 1.5f, 1.5f), true, -2.0f, 2.0f, false, false, IVec3(0), tex2DMipmapShadow,
                   evalTexture2DShadowProjBias, FRAGMENT),
@@ -5716,6 +6343,8 @@ void ShaderTextureFunctionTests::init(void)
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex1DShadow, evalTexture1DShadowProj, VERTEX),
         CASE_SPEC(sampler1dshadow, FUNCTION_TEXTUREPROJ, Vec4(0.2f, 0.0f, 0.0f, 1.5f), Vec4(-2.25f, 0.0f, 1.5f, 1.5f),
                   false, 0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapShadow, evalTexture1DShadowProj, FRAGMENT),
+        CASE_SPEC(sampler1dshadow, FUNCTION_TEXTUREPROJ, Vec4(0.2f, 0.0f, 0.0f, 1.5f), Vec4(-2.25f, 0.0f, 1.5f, 1.5f),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex1DMipmapShadow, evalTexture1DShadowProj, COMPUTE),
         CASE_SPEC(sampler1dshadow_bias, FUNCTION_TEXTUREPROJ, Vec4(0.2f, 0.0f, 0.0f, 1.5f),
                   Vec4(-2.25f, 0.0f, 1.5f, 1.5f), true, -2.0f, 2.0f, false, false, IVec3(0), tex1DMipmapShadow,
                   evalTexture1DShadowProjBias, FRAGMENT),
@@ -5732,24 +6361,36 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler2d_vec3_fixed, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0),
                   tex2DMipmapFixedOffset, evalTexture2DProj3Offset, FRAGMENT),
+        CASE_SPEC(sampler2d_vec3_fixed, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
+                  Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0),
+                  tex2DMipmapFixedOffset, evalTexture2DProj3Offset, COMPUTE),
         CASE_SPEC(sampler2d_vec3_float, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, true, false, IVec3(-8, 7, 0), tex2DFloatOffset,
                   evalTexture2DProj3Offset, VERTEX),
         CASE_SPEC(sampler2d_vec3_float, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0),
                   tex2DMipmapFloatOffset, evalTexture2DProj3Offset, FRAGMENT),
+        CASE_SPEC(sampler2d_vec3_float, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
+                  Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0),
+                  tex2DMipmapFloatOffset, evalTexture2DProj3Offset, COMPUTE),
         CASE_SPEC(isampler2d_vec3, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, true, false, IVec3(-8, 7, 0), tex2DIntOffset,
                   evalTexture2DProj3Offset, VERTEX),
         CASE_SPEC(isampler2d_vec3, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapIntOffset,
                   evalTexture2DProj3Offset, FRAGMENT),
+        CASE_SPEC(isampler2d_vec3, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
+                  Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapIntOffset,
+                  evalTexture2DProj3Offset, COMPUTE),
         CASE_SPEC(usampler2d_vec3, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, true, false, IVec3(-8, 7, 0), tex2DUintOffset,
                   evalTexture2DProj3Offset, VERTEX),
         CASE_SPEC(usampler2d_vec3, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0),
                   tex2DMipmapUintOffset, evalTexture2DProj3Offset, FRAGMENT),
+        CASE_SPEC(usampler2d_vec3, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
+                  Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0),
+                  tex2DMipmapUintOffset, evalTexture2DProj3Offset, COMPUTE),
 
         CASE_SPEC(sampler2d_vec3_bias_fixed, FUNCTION_TEXTUREPROJ3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), true, -2.0f, 2.0f, true, false, IVec3(-8, 7, 0), tex2DFixedOffset,
@@ -5770,22 +6411,34 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler2d_vec4_fixed, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                   Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0),
                   tex2DMipmapFixedOffset, evalTexture2DProjOffset, FRAGMENT),
+        CASE_SPEC(sampler2d_vec4_fixed, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
+                  Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0),
+                  tex2DMipmapFixedOffset, evalTexture2DProjOffset, COMPUTE),
         CASE_SPEC(sampler2d_vec4_float, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                   Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, 0.0f, 0.0f, true, false, IVec3(-8, 7, 0), tex2DFloatOffset,
                   evalTexture2DProjOffset, VERTEX),
         CASE_SPEC(sampler2d_vec4_float, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                   Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0),
                   tex2DMipmapFloatOffset, evalTexture2DProjOffset, FRAGMENT),
+        CASE_SPEC(sampler2d_vec4_float, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
+                  Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0),
+                  tex2DMipmapFloatOffset, evalTexture2DProjOffset, COMPUTE),
         CASE_SPEC(isampler2d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 0.0f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(-8, 7, 0), tex2DIntOffset, evalTexture2DProjOffset, VERTEX),
         CASE_SPEC(isampler2d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 0.0f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapIntOffset, evalTexture2DProjOffset,
                   FRAGMENT),
+        CASE_SPEC(isampler2d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 0.0f, 1.5f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapIntOffset, evalTexture2DProjOffset,
+                  COMPUTE),
         CASE_SPEC(usampler2d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 0.0f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(-8, 7, 0), tex2DUintOffset, evalTexture2DProjOffset, VERTEX),
         CASE_SPEC(usampler2d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 0.0f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapUintOffset, evalTexture2DProjOffset,
                   FRAGMENT),
+        CASE_SPEC(usampler2d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 0.0f, 1.5f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapUintOffset, evalTexture2DProjOffset,
+                  COMPUTE),
 
         CASE_SPEC(sampler2d_vec4_bias_fixed, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                   Vec4(2.25f, 3.45f, 0.0f, 1.5f), true, -2.0f, 2.0f, true, false, IVec3(-8, 7, 0), tex2DFixedOffset,
@@ -5805,21 +6458,33 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler3d_fixed, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 2.0f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, 3, -8), tex3DMipmapFixedOffset, evalTexture3DProjOffset,
                   FRAGMENT),
+        CASE_SPEC(sampler3d_fixed, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 2.0f, 1.5f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, 3, -8), tex3DMipmapFixedOffset, evalTexture3DProjOffset,
+                  COMPUTE),
         CASE_SPEC(sampler3d_float, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 2.0f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(3, -8, 7), tex3DFloatOffset, evalTexture3DProjOffset, VERTEX),
         CASE_SPEC(sampler3d_float, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 2.0f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(-8, 7, 3), tex3DMipmapFloatOffset, evalTexture3DProjOffset,
                   FRAGMENT),
+        CASE_SPEC(sampler3d_float, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 2.0f, 1.5f),
+                  false, 0.0f, 0.0f, true, false, IVec3(-8, 7, 3), tex3DMipmapFloatOffset, evalTexture3DProjOffset,
+                  COMPUTE),
         CASE_SPEC(isampler3d, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 2.0f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, 3, -8), tex3DIntOffset, evalTexture3DProjOffset, VERTEX),
         CASE_SPEC(isampler3d, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 2.0f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(3, -8, 7), tex3DMipmapIntOffset, evalTexture3DProjOffset,
                   FRAGMENT),
+        CASE_SPEC(isampler3d, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 2.0f, 1.5f),
+                  false, 0.0f, 0.0f, true, false, IVec3(3, -8, 7), tex3DMipmapIntOffset, evalTexture3DProjOffset,
+                  COMPUTE),
         CASE_SPEC(usampler3d, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 2.0f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(-8, 7, 3), tex3DUintOffset, evalTexture3DProjOffset, VERTEX),
         CASE_SPEC(usampler3d, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 2.0f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, 3, -8), tex3DMipmapUintOffset, evalTexture3DProjOffset,
                   FRAGMENT),
+        CASE_SPEC(usampler3d, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, -0.6f, 0.0f, 1.5f), Vec4(2.25f, 3.45f, 2.0f, 1.5f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, 3, -8), tex3DMipmapUintOffset, evalTexture3DProjOffset,
+                  COMPUTE),
 
         CASE_SPEC(sampler3d_bias_fixed, FUNCTION_TEXTUREPROJ, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), true, -2.0f, 2.0f, true, false, IVec3(-8, 7, 3), tex3DFixedOffset,
@@ -5840,22 +6505,34 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler1d_vec2_fixed, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                   Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapFixedOffset,
                   evalTexture1DProj2Offset, FRAGMENT),
+        CASE_SPEC(sampler1d_vec2_fixed, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
+                  Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapFixedOffset,
+                  evalTexture1DProj2Offset, COMPUTE),
         CASE_SPEC(sampler1d_vec2_float, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                   Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, 0.0f, 0.0f, true, false, IVec3(-8, 0, 0), tex1DFloatOffset,
                   evalTexture1DProj2Offset, VERTEX),
         CASE_SPEC(sampler1d_vec2_float, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                   Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapFloatOffset,
                   evalTexture1DProj2Offset, FRAGMENT),
+        CASE_SPEC(sampler1d_vec2_float, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
+                  Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapFloatOffset,
+                  evalTexture1DProj2Offset, COMPUTE),
         CASE_SPEC(isampler1d_vec2, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f), Vec4(2.25f, 1.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(-8, 0, 0), tex1DIntOffset, evalTexture1DProj2Offset, VERTEX),
         CASE_SPEC(isampler1d_vec2, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f), Vec4(2.25f, 1.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapIntOffset, evalTexture1DProj2Offset,
                   FRAGMENT),
+        CASE_SPEC(isampler1d_vec2, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f), Vec4(2.25f, 1.5f, 0.0f, 0.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapIntOffset, evalTexture1DProj2Offset,
+                  COMPUTE),
         CASE_SPEC(usampler1d_vec2, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f), Vec4(2.25f, 1.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(-8, 0, 0), tex1DUintOffset, evalTexture1DProj2Offset, VERTEX),
         CASE_SPEC(usampler1d_vec2, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f), Vec4(2.25f, 1.5f, 0.0f, 0.0f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapUintOffset, evalTexture1DProj2Offset,
                   FRAGMENT),
+        CASE_SPEC(usampler1d_vec2, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f), Vec4(2.25f, 1.5f, 0.0f, 0.0f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapUintOffset, evalTexture1DProj2Offset,
+                  COMPUTE),
 
         CASE_SPEC(sampler1d_vec2_bias_fixed, FUNCTION_TEXTUREPROJ2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                   Vec4(2.25f, 1.5f, 0.0f, 0.0f), true, -2.0f, 2.0f, true, false, IVec3(-8, 0, 0), tex1DFixedOffset,
@@ -5876,22 +6553,34 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler1d_vec4_fixed, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                   Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapFixedOffset,
                   evalTexture1DProjOffset, FRAGMENT),
+        CASE_SPEC(sampler1d_vec4_fixed, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
+                  Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapFixedOffset,
+                  evalTexture1DProjOffset, COMPUTE),
         CASE_SPEC(sampler1d_vec4_float, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                   Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, 0.0f, 0.0f, true, false, IVec3(-8, 0, 0), tex1DFloatOffset,
                   evalTexture1DProjOffset, VERTEX),
         CASE_SPEC(sampler1d_vec4_float, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                   Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapFloatOffset,
                   evalTexture1DProjOffset, FRAGMENT),
+        CASE_SPEC(sampler1d_vec4_float, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
+                  Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapFloatOffset,
+                  evalTexture1DProjOffset, COMPUTE),
         CASE_SPEC(isampler1d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f), Vec4(2.25f, 0.0f, 0.0f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(-8, 0, 0), tex1DIntOffset, evalTexture1DProjOffset, VERTEX),
         CASE_SPEC(isampler1d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f), Vec4(2.25f, 0.0f, 0.0f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapIntOffset, evalTexture1DProjOffset,
                   FRAGMENT),
+        CASE_SPEC(isampler1d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f), Vec4(2.25f, 0.0f, 0.0f, 1.5f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapIntOffset, evalTexture1DProjOffset,
+                  COMPUTE),
         CASE_SPEC(usampler1d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f), Vec4(2.25f, 0.0f, 0.0f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(-8, 0, 0), tex1DUintOffset, evalTexture1DProjOffset, VERTEX),
         CASE_SPEC(usampler1d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f), Vec4(2.25f, 0.0f, 0.0f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapUintOffset, evalTexture1DProjOffset,
                   FRAGMENT),
+        CASE_SPEC(usampler1d_vec4, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f), Vec4(2.25f, 0.0f, 0.0f, 1.5f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapUintOffset, evalTexture1DProjOffset,
+                  COMPUTE),
 
         CASE_SPEC(sampler1d_vec4_bias_fixed, FUNCTION_TEXTUREPROJ, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                   Vec4(2.25f, 0.0f, 0.0f, 1.5f), true, -2.0f, 2.0f, true, false, IVec3(-8, 0, 0), tex1DFixedOffset,
@@ -5912,6 +6601,9 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler2dshadow, FUNCTION_TEXTUREPROJ, Vec4(0.2f, 0.6f, 0.0f, 1.5f), Vec4(-2.25f, -3.45f, 1.5f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapShadowOffset,
                   evalTexture2DShadowProjOffset, FRAGMENT),
+        CASE_SPEC(sampler2dshadow, FUNCTION_TEXTUREPROJ, Vec4(0.2f, 0.6f, 0.0f, 1.5f), Vec4(-2.25f, -3.45f, 1.5f, 1.5f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, -8, 0), tex2DMipmapShadowOffset,
+                  evalTexture2DShadowProjOffset, COMPUTE),
         CASE_SPEC(sampler2dshadow_bias, FUNCTION_TEXTUREPROJ, Vec4(0.2f, 0.6f, 0.0f, 1.5f),
                   Vec4(-2.25f, -3.45f, 1.5f, 1.5f), true, -2.0f, 2.0f, true, false, IVec3(-8, 7, 0), tex2DShadowOffset,
                   evalTexture2DShadowProjOffsetBias, FRAGMENT),
@@ -5921,6 +6613,9 @@ void ShaderTextureFunctionTests::init(void)
         CASE_SPEC(sampler1dshadow, FUNCTION_TEXTUREPROJ, Vec4(0.2f, 0.0f, 0.0f, 1.5f), Vec4(-2.25f, 0.0f, 1.5f, 1.5f),
                   false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapShadowOffset,
                   evalTexture1DShadowProjOffset, FRAGMENT),
+        CASE_SPEC(sampler1dshadow, FUNCTION_TEXTUREPROJ, Vec4(0.2f, 0.0f, 0.0f, 1.5f), Vec4(-2.25f, 0.0f, 1.5f, 1.5f),
+                  false, 0.0f, 0.0f, true, false, IVec3(7, 0, 0), tex1DMipmapShadowOffset,
+                  evalTexture1DShadowProjOffset, COMPUTE),
         CASE_SPEC(sampler1dshadow_bias, FUNCTION_TEXTUREPROJ, Vec4(0.2f, 0.0f, 0.0f, 1.5f),
                   Vec4(-2.25f, 0.0f, 1.5f, 1.5f), true, -2.0f, 2.0f, true, false, IVec3(-8, 0, 0), tex1DShadowOffset,
                   evalTexture1DShadowProjOffsetBias, FRAGMENT),
@@ -5950,85 +6645,85 @@ void ShaderTextureFunctionTests::init(void)
     static const TexFuncCaseSpec textureLodCases[] = {
         //          Name                            Function                MinCoord                            MaxCoord                            Bias?    MinLod    MaxLod    Offset?    Offset        Format                    EvalFunc                Flags
         CASE_SPEC(sampler2d_fixed, FUNCTION_TEXTURELOD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
-                  false, -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapFixed, evalTexture2DLod, BOTH),
+                  false, -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapFixed, evalTexture2DLod, ALL),
         CASE_SPEC(sampler2d_float, FUNCTION_TEXTURELOD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
-                  false, -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapFloat, evalTexture2DLod, BOTH),
+                  false, -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapFloat, evalTexture2DLod, ALL),
         CASE_SPEC(isampler2d, FUNCTION_TEXTURELOD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f), false,
-                  -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapInt, evalTexture2DLod, BOTH),
+                  -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapInt, evalTexture2DLod, ALL),
         CASE_SPEC(usampler2d, FUNCTION_TEXTURELOD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f), false,
-                  -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapUint, evalTexture2DLod, BOTH),
+                  -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapUint, evalTexture2DLod, ALL),
 
         CASE_SPEC(samplercube_fixed, FUNCTION_TEXTURELOD, Vec4(-1.0f, -1.0f, 1.01f, 0.0f),
                   Vec4(1.0f, 1.0f, 1.01f, 0.0f), false, -1.0f, 9.0f, false, false, IVec3(0), texCubeMipmapFixed,
-                  evalTextureCubeLod, BOTH),
+                  evalTextureCubeLod, ALL),
         CASE_SPEC(samplercube_float, FUNCTION_TEXTURELOD, Vec4(-1.0f, -1.0f, -1.01f, 0.0f),
                   Vec4(1.0f, 1.0f, -1.01f, 0.0f), false, -1.0f, 9.0f, false, false, IVec3(0), texCubeMipmapFloat,
-                  evalTextureCubeLod, BOTH),
+                  evalTextureCubeLod, ALL),
         CASE_SPEC(isamplercube, FUNCTION_TEXTURELOD, Vec4(-1.0f, -1.0f, 1.01f, 0.0f), Vec4(1.0f, 1.0f, 1.01f, 0.0f),
-                  false, -1.0f, 9.0f, false, false, IVec3(0), texCubeMipmapInt, evalTextureCubeLod, BOTH),
+                  false, -1.0f, 9.0f, false, false, IVec3(0), texCubeMipmapInt, evalTextureCubeLod, ALL),
         CASE_SPEC(usamplercube, FUNCTION_TEXTURELOD, Vec4(-1.0f, -1.0f, -1.01f, 0.0f), Vec4(1.0f, 1.0f, -1.01f, 0.0f),
-                  false, -1.0f, 9.0f, false, false, IVec3(0), texCubeMipmapUint, evalTextureCubeLod, BOTH),
+                  false, -1.0f, 9.0f, false, false, IVec3(0), texCubeMipmapUint, evalTextureCubeLod, ALL),
 
         CASE_SPEC(sampler2darray_fixed, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                   Vec4(1.5f, 2.3f, 3.5f, 0.0f), false, -1.0f, 8.0f, false, false, IVec3(0), tex2DArrayMipmapFixed,
-                  evalTexture2DArrayLod, BOTH),
+                  evalTexture2DArrayLod, ALL),
         CASE_SPEC(sampler2darray_float, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                   Vec4(1.5f, 2.3f, 3.5f, 0.0f), false, -1.0f, 8.0f, false, false, IVec3(0), tex2DArrayMipmapFloat,
-                  evalTexture2DArrayLod, BOTH),
+                  evalTexture2DArrayLod, ALL),
         CASE_SPEC(isampler2darray, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
-                  false, -1.0f, 8.0f, false, false, IVec3(0), tex2DArrayMipmapInt, evalTexture2DArrayLod, BOTH),
+                  false, -1.0f, 8.0f, false, false, IVec3(0), tex2DArrayMipmapInt, evalTexture2DArrayLod, ALL),
         CASE_SPEC(usampler2darray, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
-                  false, -1.0f, 8.0f, false, false, IVec3(0), tex2DArrayMipmapUint, evalTexture2DArrayLod, BOTH),
+                  false, -1.0f, 8.0f, false, false, IVec3(0), tex2DArrayMipmapUint, evalTexture2DArrayLod, ALL),
 
         CASE_SPEC(sampler3d_fixed, FUNCTION_TEXTURELOD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
-                  false, -1.0f, 7.0f, false, false, IVec3(0), tex3DMipmapFixed, evalTexture3DLod, BOTH),
+                  false, -1.0f, 7.0f, false, false, IVec3(0), tex3DMipmapFixed, evalTexture3DLod, ALL),
         CASE_SPEC(sampler3d_float, FUNCTION_TEXTURELOD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
-                  false, -1.0f, 7.0f, false, false, IVec3(0), tex3DMipmapFloat, evalTexture3DLod, BOTH),
+                  false, -1.0f, 7.0f, false, false, IVec3(0), tex3DMipmapFloat, evalTexture3DLod, ALL),
         CASE_SPEC(isampler3d, FUNCTION_TEXTURELOD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f), false,
-                  -1.0f, 7.0f, false, false, IVec3(0), tex3DMipmapInt, evalTexture3DLod, BOTH),
+                  -1.0f, 7.0f, false, false, IVec3(0), tex3DMipmapInt, evalTexture3DLod, ALL),
         CASE_SPEC(usampler3d, FUNCTION_TEXTURELOD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f), false,
-                  -1.0f, 7.0f, false, false, IVec3(0), tex3DMipmapUint, evalTexture3DLod, BOTH),
+                  -1.0f, 7.0f, false, false, IVec3(0), tex3DMipmapUint, evalTexture3DLod, ALL),
 
         CASE_SPEC(sampler1d_fixed, FUNCTION_TEXTURELOD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f),
-                  false, -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapFixed, evalTexture1DLod, BOTH),
+                  false, -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapFixed, evalTexture1DLod, ALL),
         CASE_SPEC(sampler1d_float, FUNCTION_TEXTURELOD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f),
-                  false, -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapFloat, evalTexture1DLod, BOTH),
+                  false, -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapFloat, evalTexture1DLod, ALL),
         CASE_SPEC(isampler1d, FUNCTION_TEXTURELOD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
-                  -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapInt, evalTexture1DLod, BOTH),
+                  -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapInt, evalTexture1DLod, ALL),
         CASE_SPEC(usampler1d, FUNCTION_TEXTURELOD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
-                  -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapUint, evalTexture1DLod, BOTH),
+                  -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapUint, evalTexture1DLod, ALL),
 
         CASE_SPEC(sampler1darray_fixed, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                   Vec4(1.5f, 3.5f, 0.0f, 0.0f), false, -1.0f, 9.0f, false, false, IVec3(0), tex1DArrayMipmapFixed,
-                  evalTexture1DArrayLod, BOTH),
+                  evalTexture1DArrayLod, ALL),
         CASE_SPEC(sampler1darray_float, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                   Vec4(1.5f, 3.5f, 0.0f, 0.0f), false, -1.0f, 9.0f, false, false, IVec3(0), tex1DArrayMipmapFloat,
-                  evalTexture1DArrayLod, BOTH),
+                  evalTexture1DArrayLod, ALL),
         CASE_SPEC(isampler1darray, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
-                  false, -1.0f, 9.0f, false, false, IVec3(0), tex1DArrayMipmapInt, evalTexture1DArrayLod, BOTH),
+                  false, -1.0f, 9.0f, false, false, IVec3(0), tex1DArrayMipmapInt, evalTexture1DArrayLod, ALL),
         CASE_SPEC(usampler1darray, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
-                  false, -1.0f, 9.0f, false, false, IVec3(0), tex1DArrayMipmapUint, evalTexture1DArrayLod, BOTH),
+                  false, -1.0f, 9.0f, false, false, IVec3(0), tex1DArrayMipmapUint, evalTexture1DArrayLod, ALL),
 
         CASE_SPEC(samplercubearray_fixed, FUNCTION_TEXTURELOD, Vec4(-1.0f, -1.0f, 1.01f, -0.5f),
                   Vec4(1.0f, 1.0f, 1.01f, 1.5f), false, -1.0f, 7.0f, false, false, IVec3(0), texCubeArrayMipmapFixed,
-                  evalTextureCubeArrayLod, BOTH),
+                  evalTextureCubeArrayLod, ALL),
         CASE_SPEC(samplercubearray_float, FUNCTION_TEXTURELOD, Vec4(-1.0f, -1.0f, -1.01f, -0.5f),
                   Vec4(1.0f, 1.0f, -1.01f, 1.5f), false, -1.0f, 7.0f, false, false, IVec3(0), texCubeArrayMipmapFloat,
-                  evalTextureCubeArrayLod, BOTH),
+                  evalTextureCubeArrayLod, ALL),
         CASE_SPEC(isamplercubearray, FUNCTION_TEXTURELOD, Vec4(-1.0f, -1.0f, 1.01f, -0.5f),
                   Vec4(1.0f, 1.0f, 1.01f, 1.5f), false, -1.0f, 7.0f, false, false, IVec3(0), texCubeArrayMipmapInt,
-                  evalTextureCubeArrayLod, BOTH),
+                  evalTextureCubeArrayLod, ALL),
         CASE_SPEC(usamplercubearray, FUNCTION_TEXTURELOD, Vec4(-1.0f, -1.0f, -1.01f, -0.5f),
                   Vec4(1.0f, 1.0f, -1.01f, 1.5f), false, -1.0f, 7.0f, false, false, IVec3(0), texCubeArrayMipmapUint,
-                  evalTextureCubeArrayLod, BOTH),
+                  evalTextureCubeArrayLod, ALL),
 
         CASE_SPEC(sampler2dshadow, FUNCTION_TEXTURELOD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 1.0f, 0.0f),
-                  false, -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapShadow, evalTexture2DShadowLod, BOTH),
+                  false, -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapShadow, evalTexture2DShadowLod, ALL),
         CASE_SPEC(sampler1dshadow, FUNCTION_TEXTURELOD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 1.0f, 0.0f),
-                  false, -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapShadow, evalTexture1DShadowLod, BOTH),
+                  false, -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapShadow, evalTexture1DShadowLod, ALL),
         CASE_SPEC(sampler1darrayshadow, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                   Vec4(1.5f, 3.5f, 1.0f, 0.0f), false, -1.0f, 9.0f, false, false, IVec3(0), tex1DArrayMipmapShadow,
-                  evalTexture1DArrayShadowLod, BOTH),
+                  evalTexture1DArrayShadowLod, ALL),
     };
     createCaseGroup(this, "texturelod", textureLodCases, DE_LENGTH_OF_ARRAY(textureLodCases));
 
@@ -6037,72 +6732,71 @@ void ShaderTextureFunctionTests::init(void)
         //          Name                            Function                MinCoord                            MaxCoord                            Bias?    MinLod    MaxLod    Offset?    Offset                Format                            EvalFunc                            Flags
         CASE_SPEC(sampler2d_fixed, FUNCTION_TEXTURELOD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
                   false, -1.0f, 9.0f, true, false, IVec3(-8, 7, 0), tex2DMipmapFixedOffset, evalTexture2DLodOffset,
-                  BOTH),
+                  ALL),
         CASE_SPEC(sampler2d_float, FUNCTION_TEXTURELOD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
                   false, -1.0f, 9.0f, true, false, IVec3(7, -8, 0), tex2DMipmapFloatOffset, evalTexture2DLodOffset,
-                  BOTH),
+                  ALL),
         CASE_SPEC(isampler2d, FUNCTION_TEXTURELOD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f), false,
-                  -1.0f, 9.0f, true, false, IVec3(-8, 7, 0), tex2DMipmapIntOffset, evalTexture2DLodOffset, BOTH),
+                  -1.0f, 9.0f, true, false, IVec3(-8, 7, 0), tex2DMipmapIntOffset, evalTexture2DLodOffset, ALL),
         CASE_SPEC(usampler2d, FUNCTION_TEXTURELOD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f), false,
-                  -1.0f, 9.0f, true, false, IVec3(7, -8, 0), tex2DMipmapUintOffset, evalTexture2DLodOffset, BOTH),
+                  -1.0f, 9.0f, true, false, IVec3(7, -8, 0), tex2DMipmapUintOffset, evalTexture2DLodOffset, ALL),
 
         CASE_SPEC(sampler2darray_fixed, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                   Vec4(1.5f, 2.3f, 3.5f, 0.0f), false, -1.0f, 8.0f, true, false, IVec3(-8, 7, 0),
-                  tex2DArrayMipmapFixedOffset, evalTexture2DArrayLodOffset, BOTH),
+                  tex2DArrayMipmapFixedOffset, evalTexture2DArrayLodOffset, ALL),
         CASE_SPEC(sampler2darray_float, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                   Vec4(1.5f, 2.3f, 3.5f, 0.0f), false, -1.0f, 8.0f, true, false, IVec3(7, -8, 0),
-                  tex2DArrayMipmapFloatOffset, evalTexture2DArrayLodOffset, BOTH),
+                  tex2DArrayMipmapFloatOffset, evalTexture2DArrayLodOffset, ALL),
         CASE_SPEC(isampler2darray, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
                   false, -1.0f, 8.0f, true, false, IVec3(-8, 7, 0), tex2DArrayMipmapIntOffset,
-                  evalTexture2DArrayLodOffset, BOTH),
+                  evalTexture2DArrayLodOffset, ALL),
         CASE_SPEC(usampler2darray, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f), Vec4(1.5f, 2.3f, 3.5f, 0.0f),
                   false, -1.0f, 8.0f, true, false, IVec3(7, -8, 0), tex2DArrayMipmapUintOffset,
-                  evalTexture2DArrayLodOffset, BOTH),
+                  evalTexture2DArrayLodOffset, ALL),
 
         CASE_SPEC(sampler3d_fixed, FUNCTION_TEXTURELOD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
                   false, -1.0f, 7.0f, true, false, IVec3(-8, 7, 3), tex3DMipmapFixedOffset, evalTexture3DLodOffset,
-                  BOTH),
+                  ALL),
         CASE_SPEC(sampler3d_float, FUNCTION_TEXTURELOD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
                   false, -1.0f, 7.0f, true, false, IVec3(7, 3, -8), tex3DMipmapFloatOffset, evalTexture3DLodOffset,
-                  BOTH),
+                  ALL),
         CASE_SPEC(isampler3d, FUNCTION_TEXTURELOD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f), false,
-                  -1.0f, 7.0f, true, false, IVec3(3, -8, 7), tex3DMipmapIntOffset, evalTexture3DLodOffset, BOTH),
+                  -1.0f, 7.0f, true, false, IVec3(3, -8, 7), tex3DMipmapIntOffset, evalTexture3DLodOffset, ALL),
         CASE_SPEC(usampler3d, FUNCTION_TEXTURELOD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f), false,
-                  -1.0f, 7.0f, true, false, IVec3(-8, 7, 3), tex3DMipmapUintOffset, evalTexture3DLodOffset, BOTH),
+                  -1.0f, 7.0f, true, false, IVec3(-8, 7, 3), tex3DMipmapUintOffset, evalTexture3DLodOffset, ALL),
 
         CASE_SPEC(sampler1d_fixed, FUNCTION_TEXTURELOD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f),
                   false, -1.0f, 9.0f, true, false, IVec3(-8, 0, 0), tex1DMipmapFixedOffset, evalTexture1DLodOffset,
-                  BOTH),
+                  ALL),
         CASE_SPEC(sampler1d_float, FUNCTION_TEXTURELOD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f),
-                  false, -1.0f, 9.0f, true, false, IVec3(7, 0, 0), tex1DMipmapFloatOffset, evalTexture1DLodOffset,
-                  BOTH),
+                  false, -1.0f, 9.0f, true, false, IVec3(7, 0, 0), tex1DMipmapFloatOffset, evalTexture1DLodOffset, ALL),
         CASE_SPEC(isampler1d, FUNCTION_TEXTURELOD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
-                  -1.0f, 9.0f, true, false, IVec3(-8, 0, 0), tex1DMipmapIntOffset, evalTexture1DLodOffset, BOTH),
+                  -1.0f, 9.0f, true, false, IVec3(-8, 0, 0), tex1DMipmapIntOffset, evalTexture1DLodOffset, ALL),
         CASE_SPEC(usampler1d, FUNCTION_TEXTURELOD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f), false,
-                  -1.0f, 9.0f, true, false, IVec3(7, 0, 0), tex1DMipmapUintOffset, evalTexture1DLodOffset, BOTH),
+                  -1.0f, 9.0f, true, false, IVec3(7, 0, 0), tex1DMipmapUintOffset, evalTexture1DLodOffset, ALL),
 
         CASE_SPEC(sampler1darray_fixed, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                   Vec4(1.5f, 3.5f, 0.0f, 0.0f), false, -1.0f, 9.0f, true, false, IVec3(-8, 0, 0),
-                  tex1DArrayMipmapFixedOffset, evalTexture1DArrayLodOffset, BOTH),
+                  tex1DArrayMipmapFixedOffset, evalTexture1DArrayLodOffset, ALL),
         CASE_SPEC(sampler1darray_float, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                   Vec4(1.5f, 3.5f, 0.0f, 0.0f), false, -1.0f, 9.0f, true, false, IVec3(7, 0, 0),
-                  tex1DArrayMipmapFloatOffset, evalTexture1DArrayLodOffset, BOTH),
+                  tex1DArrayMipmapFloatOffset, evalTexture1DArrayLodOffset, ALL),
         CASE_SPEC(isampler1darray, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
                   false, -1.0f, 9.0f, true, false, IVec3(-8, 0, 0), tex1DArrayMipmapIntOffset,
-                  evalTexture1DArrayLodOffset, BOTH),
+                  evalTexture1DArrayLodOffset, ALL),
         CASE_SPEC(usampler1darray, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f), Vec4(1.5f, 3.5f, 0.0f, 0.0f),
                   false, -1.0f, 9.0f, true, false, IVec3(7, 0, 0), tex1DArrayMipmapUintOffset,
-                  evalTexture1DArrayLodOffset, BOTH),
+                  evalTexture1DArrayLodOffset, ALL),
 
         CASE_SPEC(sampler2dshadow, FUNCTION_TEXTURELOD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 1.0f, 0.0f),
                   false, -1.0f, 9.0f, true, false, IVec3(-8, 7, 0), tex2DMipmapShadowOffset,
-                  evalTexture2DShadowLodOffset, BOTH),
+                  evalTexture2DShadowLodOffset, ALL),
         CASE_SPEC(sampler1dshadow, FUNCTION_TEXTURELOD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 1.0f, 0.0f),
                   false, -1.0f, 9.0f, true, false, IVec3(-8, 0, 0), tex1DMipmapShadowOffset,
-                  evalTexture1DShadowLodOffset, BOTH),
+                  evalTexture1DShadowLodOffset, ALL),
         CASE_SPEC(sampler1darrayshadow, FUNCTION_TEXTURELOD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                   Vec4(1.5f, 3.5f, 1.0f, 0.0f), false, -1.0f, 9.0f, true, false, IVec3(7, 0, 0),
-                  tex1DArrayMipmapShadowOffset, evalTexture1DArrayShadowLodOffset, BOTH),
+                  tex1DArrayMipmapShadowOffset, evalTexture1DArrayShadowLodOffset, ALL),
     };
 
     for (const bool pcOffset : {false, true})
@@ -6130,75 +6824,75 @@ void ShaderTextureFunctionTests::init(void)
         //          Name                            Function                    MinCoord                            MaxCoord                            Bias?    MinLod    MaxLod    Offset?    Offset        Format                    EvalFunc                    Flags
         CASE_SPEC(sampler2d_vec3_fixed, FUNCTION_TEXTUREPROJLOD3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapFixed,
-                  evalTexture2DProjLod3, BOTH),
+                  evalTexture2DProjLod3, ALL),
         CASE_SPEC(sampler2d_vec3_float, FUNCTION_TEXTUREPROJLOD3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapFloat,
-                  evalTexture2DProjLod3, BOTH),
+                  evalTexture2DProjLod3, ALL),
         CASE_SPEC(isampler2d_vec3, FUNCTION_TEXTUREPROJLOD3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapInt,
-                  evalTexture2DProjLod3, BOTH),
+                  evalTexture2DProjLod3, ALL),
         CASE_SPEC(usampler2d_vec3, FUNCTION_TEXTUREPROJLOD3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapUint,
-                  evalTexture2DProjLod3, BOTH),
+                  evalTexture2DProjLod3, ALL),
 
         CASE_SPEC(sampler2d_vec4_fixed, FUNCTION_TEXTUREPROJLOD, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                   Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapFixed,
-                  evalTexture2DProjLod, BOTH),
+                  evalTexture2DProjLod, ALL),
         CASE_SPEC(sampler2d_vec4_float, FUNCTION_TEXTUREPROJLOD, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                   Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapFloat,
-                  evalTexture2DProjLod, BOTH),
+                  evalTexture2DProjLod, ALL),
         CASE_SPEC(isampler2d_vec4, FUNCTION_TEXTUREPROJLOD, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                   Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapInt,
-                  evalTexture2DProjLod, BOTH),
+                  evalTexture2DProjLod, ALL),
         CASE_SPEC(usampler2d_vec4, FUNCTION_TEXTUREPROJLOD, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                   Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapUint,
-                  evalTexture2DProjLod, BOTH),
+                  evalTexture2DProjLod, ALL),
 
         CASE_SPEC(sampler3d_fixed, FUNCTION_TEXTUREPROJLOD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, -1.0f, 7.0f, false, false, IVec3(0), tex3DMipmapFixed,
-                  evalTexture3DProjLod, BOTH),
+                  evalTexture3DProjLod, ALL),
         CASE_SPEC(sampler3d_float, FUNCTION_TEXTUREPROJLOD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, -1.0f, 7.0f, false, false, IVec3(0), tex3DMipmapFloat,
-                  evalTexture3DProjLod, BOTH),
+                  evalTexture3DProjLod, ALL),
         CASE_SPEC(isampler3d, FUNCTION_TEXTUREPROJLOD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, -1.0f, 7.0f, false, false, IVec3(0), tex3DMipmapInt,
-                  evalTexture3DProjLod, BOTH),
+                  evalTexture3DProjLod, ALL),
         CASE_SPEC(usampler3d, FUNCTION_TEXTUREPROJLOD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, -1.0f, 7.0f, false, false, IVec3(0), tex3DMipmapUint,
-                  evalTexture3DProjLod, BOTH),
+                  evalTexture3DProjLod, ALL),
 
         CASE_SPEC(sampler1d_vec2_fixed, FUNCTION_TEXTUREPROJLOD2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                   Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapFixed,
-                  evalTexture1DProjLod2, BOTH),
+                  evalTexture1DProjLod2, ALL),
         CASE_SPEC(sampler1d_vec2_float, FUNCTION_TEXTUREPROJLOD2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                   Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapFloat,
-                  evalTexture1DProjLod2, BOTH),
+                  evalTexture1DProjLod2, ALL),
         CASE_SPEC(isampler1d_vec2, FUNCTION_TEXTUREPROJLOD2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                   Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapInt,
-                  evalTexture1DProjLod2, BOTH),
+                  evalTexture1DProjLod2, ALL),
         CASE_SPEC(usampler1d_vec2, FUNCTION_TEXTUREPROJLOD2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                   Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapUint,
-                  evalTexture1DProjLod2, BOTH),
+                  evalTexture1DProjLod2, ALL),
 
         CASE_SPEC(sampler1d_vec4_fixed, FUNCTION_TEXTUREPROJLOD, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                   Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapFixed,
-                  evalTexture1DProjLod, BOTH),
+                  evalTexture1DProjLod, ALL),
         CASE_SPEC(sampler1d_vec4_float, FUNCTION_TEXTUREPROJLOD, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                   Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapFloat,
-                  evalTexture1DProjLod, BOTH),
+                  evalTexture1DProjLod, ALL),
         CASE_SPEC(isampler1d_vec4, FUNCTION_TEXTUREPROJLOD, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                   Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapInt,
-                  evalTexture1DProjLod, BOTH),
+                  evalTexture1DProjLod, ALL),
         CASE_SPEC(usampler1d_vec4, FUNCTION_TEXTUREPROJLOD, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                   Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapUint,
-                  evalTexture1DProjLod, BOTH),
+                  evalTexture1DProjLod, ALL),
 
         CASE_SPEC(sampler2dshadow, FUNCTION_TEXTUREPROJLOD, Vec4(0.2f, 0.6f, 0.0f, 1.5f),
                   Vec4(-2.25f, -3.45f, 1.5f, 1.5f), false, -1.0f, 9.0f, false, false, IVec3(0), tex2DMipmapShadow,
-                  evalTexture2DShadowProjLod, BOTH),
+                  evalTexture2DShadowProjLod, ALL),
         CASE_SPEC(sampler1dshadow, FUNCTION_TEXTUREPROJLOD, Vec4(0.2f, 0.0f, 0.0f, 1.5f),
                   Vec4(-2.25f, 0.0f, 0.0f, 1.5f), false, -1.0f, 9.0f, false, false, IVec3(0), tex1DMipmapShadow,
-                  evalTexture1DShadowProjLod, BOTH),
+                  evalTexture1DShadowProjLod, ALL),
     };
     createCaseGroup(this, "textureprojlod", textureProjLodCases, DE_LENGTH_OF_ARRAY(textureProjLodCases));
 
@@ -6207,75 +6901,75 @@ void ShaderTextureFunctionTests::init(void)
         //          Name                            Function                    MinCoord                            MaxCoord                            Bias?    MinLod    MaxLod    Offset?    Offset                Format                        EvalFunc                        Flags
         CASE_SPEC(sampler2d_vec3_fixed, FUNCTION_TEXTUREPROJLOD3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, -1.0f, 9.0f, true, false, IVec3(-8, 7, 0),
-                  tex2DMipmapFixedOffset, evalTexture2DProjLod3Offset, BOTH),
+                  tex2DMipmapFixedOffset, evalTexture2DProjLod3Offset, ALL),
         CASE_SPEC(sampler2d_vec3_float, FUNCTION_TEXTUREPROJLOD3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, -1.0f, 9.0f, true, false, IVec3(7, -8, 0),
-                  tex2DMipmapFloatOffset, evalTexture2DProjLod3Offset, BOTH),
+                  tex2DMipmapFloatOffset, evalTexture2DProjLod3Offset, ALL),
         CASE_SPEC(isampler2d_vec3, FUNCTION_TEXTUREPROJLOD3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, -1.0f, 9.0f, true, false, IVec3(-8, 7, 0),
-                  tex2DMipmapIntOffset, evalTexture2DProjLod3Offset, BOTH),
+                  tex2DMipmapIntOffset, evalTexture2DProjLod3Offset, ALL),
         CASE_SPEC(usampler2d_vec3, FUNCTION_TEXTUREPROJLOD3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                   Vec4(2.25f, 3.45f, 1.5f, 0.0f), false, -1.0f, 9.0f, true, false, IVec3(7, -8, 0),
-                  tex2DMipmapUintOffset, evalTexture2DProjLod3Offset, BOTH),
+                  tex2DMipmapUintOffset, evalTexture2DProjLod3Offset, ALL),
 
         CASE_SPEC(sampler2d_vec4_fixed, FUNCTION_TEXTUREPROJLOD, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                   Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, -1.0f, 9.0f, true, false, IVec3(-8, 7, 0),
-                  tex2DMipmapFixedOffset, evalTexture2DProjLodOffset, BOTH),
+                  tex2DMipmapFixedOffset, evalTexture2DProjLodOffset, ALL),
         CASE_SPEC(sampler2d_vec4_float, FUNCTION_TEXTUREPROJLOD, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                   Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, -1.0f, 9.0f, true, false, IVec3(7, -8, 0),
-                  tex2DMipmapFloatOffset, evalTexture2DProjLodOffset, BOTH),
+                  tex2DMipmapFloatOffset, evalTexture2DProjLodOffset, ALL),
         CASE_SPEC(isampler2d_vec4, FUNCTION_TEXTUREPROJLOD, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                   Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, -1.0f, 9.0f, true, false, IVec3(-8, 7, 0),
-                  tex2DMipmapIntOffset, evalTexture2DProjLodOffset, BOTH),
+                  tex2DMipmapIntOffset, evalTexture2DProjLodOffset, ALL),
         CASE_SPEC(usampler2d_vec4, FUNCTION_TEXTUREPROJLOD, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                   Vec4(2.25f, 3.45f, 0.0f, 1.5f), false, -1.0f, 9.0f, true, false, IVec3(7, -8, 0),
-                  tex2DMipmapUintOffset, evalTexture2DProjLodOffset, BOTH),
+                  tex2DMipmapUintOffset, evalTexture2DProjLodOffset, ALL),
 
         CASE_SPEC(sampler3d_fixed, FUNCTION_TEXTUREPROJLOD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, -1.0f, 7.0f, true, false, IVec3(-8, 7, 3),
-                  tex3DMipmapFixedOffset, evalTexture3DProjLodOffset, BOTH),
+                  tex3DMipmapFixedOffset, evalTexture3DProjLodOffset, ALL),
         CASE_SPEC(sampler3d_float, FUNCTION_TEXTUREPROJLOD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, -1.0f, 7.0f, true, false, IVec3(7, 3, -8),
-                  tex3DMipmapFloatOffset, evalTexture3DProjLodOffset, BOTH),
+                  tex3DMipmapFloatOffset, evalTexture3DProjLodOffset, ALL),
         CASE_SPEC(isampler3d, FUNCTION_TEXTUREPROJLOD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, -1.0f, 7.0f, true, false, IVec3(3, -8, 7),
-                  tex3DMipmapIntOffset, evalTexture3DProjLodOffset, BOTH),
+                  tex3DMipmapIntOffset, evalTexture3DProjLodOffset, ALL),
         CASE_SPEC(usampler3d, FUNCTION_TEXTUREPROJLOD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                   Vec4(-1.13f, -1.7f, -1.7f, -0.75f), false, -1.0f, 7.0f, true, false, IVec3(-8, 7, 3),
-                  tex3DMipmapUintOffset, evalTexture3DProjLodOffset, BOTH),
+                  tex3DMipmapUintOffset, evalTexture3DProjLodOffset, ALL),
 
         CASE_SPEC(sampler1d_vec2_fixed, FUNCTION_TEXTUREPROJLOD2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                   Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, -1.0f, 9.0f, true, false, IVec3(-8, 0, 0),
-                  tex1DMipmapFixedOffset, evalTexture1DProjLod2Offset, BOTH),
+                  tex1DMipmapFixedOffset, evalTexture1DProjLod2Offset, ALL),
         CASE_SPEC(sampler1d_vec2_float, FUNCTION_TEXTUREPROJLOD2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                   Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, -1.0f, 9.0f, true, false, IVec3(7, 0, 0),
-                  tex1DMipmapFloatOffset, evalTexture1DProjLod2Offset, BOTH),
+                  tex1DMipmapFloatOffset, evalTexture1DProjLod2Offset, ALL),
         CASE_SPEC(isampler1d_vec2, FUNCTION_TEXTUREPROJLOD2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                   Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, -1.0f, 9.0f, true, false, IVec3(-8, 0, 0), tex1DMipmapIntOffset,
-                  evalTexture1DProjLod2Offset, BOTH),
+                  evalTexture1DProjLod2Offset, ALL),
         CASE_SPEC(usampler1d_vec2, FUNCTION_TEXTUREPROJLOD2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                   Vec4(2.25f, 1.5f, 0.0f, 0.0f), false, -1.0f, 9.0f, true, false, IVec3(7, 0, 0), tex1DMipmapUintOffset,
-                  evalTexture1DProjLod2Offset, BOTH),
+                  evalTexture1DProjLod2Offset, ALL),
 
         CASE_SPEC(sampler1d_vec4_fixed, FUNCTION_TEXTUREPROJLOD, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                   Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, -1.0f, 9.0f, true, false, IVec3(-8, 0, 0),
-                  tex1DMipmapFixedOffset, evalTexture1DProjLodOffset, BOTH),
+                  tex1DMipmapFixedOffset, evalTexture1DProjLodOffset, ALL),
         CASE_SPEC(sampler1d_vec4_float, FUNCTION_TEXTUREPROJLOD, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                   Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, -1.0f, 9.0f, true, false, IVec3(7, 0, 0),
-                  tex1DMipmapFloatOffset, evalTexture1DProjLodOffset, BOTH),
+                  tex1DMipmapFloatOffset, evalTexture1DProjLodOffset, ALL),
         CASE_SPEC(isampler1d_vec4, FUNCTION_TEXTUREPROJLOD, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                   Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, -1.0f, 9.0f, true, false, IVec3(-8, 0, 0), tex1DMipmapIntOffset,
-                  evalTexture1DProjLodOffset, BOTH),
+                  evalTexture1DProjLodOffset, ALL),
         CASE_SPEC(usampler1d_vec4, FUNCTION_TEXTUREPROJLOD, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                   Vec4(2.25f, 0.0f, 0.0f, 1.5f), false, -1.0f, 9.0f, true, false, IVec3(7, 0, 0), tex1DMipmapUintOffset,
-                  evalTexture1DProjLodOffset, BOTH),
+                  evalTexture1DProjLodOffset, ALL),
 
         CASE_SPEC(sampler2dshadow, FUNCTION_TEXTUREPROJLOD, Vec4(0.2f, 0.6f, 0.0f, 1.5f),
                   Vec4(-2.25f, -3.45f, 1.5f, 1.5f), false, -1.0f, 9.0f, true, false, IVec3(-8, 7, 0),
-                  tex2DMipmapShadowOffset, evalTexture2DShadowProjLodOffset, BOTH),
+                  tex2DMipmapShadowOffset, evalTexture2DShadowProjLodOffset, ALL),
         CASE_SPEC(sampler1dshadow, FUNCTION_TEXTUREPROJLOD, Vec4(0.2f, 0.0f, 0.0f, 1.5f),
                   Vec4(-2.25f, 0.0f, 1.5f, 1.5f), false, -1.0f, 9.0f, true, false, IVec3(7, 0, 0),
-                  tex1DMipmapShadowOffset, evalTexture1DShadowProjLodOffset, BOTH),
+                  tex1DMipmapShadowOffset, evalTexture1DShadowProjLodOffset, ALL),
     };
 
     for (const bool pcOffset : {false, true})
@@ -6305,56 +6999,56 @@ void ShaderTextureFunctionTests::init(void)
         GRAD_CASE_SPEC(sampler2d_fixed, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f),
                        Vec4(1.5f, 2.3f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex2DMipmapFixed,
-                       evalTexture2DGrad, BOTH),
+                       evalTexture2DGrad, ALL),
         GRAD_CASE_SPEC(sampler2d_float, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f),
                        Vec4(1.5f, 2.3f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex2DMipmapFloat,
-                       evalTexture2DGrad, BOTH),
+                       evalTexture2DGrad, ALL),
         GRAD_CASE_SPEC(isampler2d, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f),
-                       false, false, IVec3(0), tex2DMipmapInt, evalTexture2DGrad, BOTH),
+                       false, false, IVec3(0), tex2DMipmapInt, evalTexture2DGrad, ALL),
         GRAD_CASE_SPEC(usampler2d, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.2f, 0.0f),
-                       false, false, IVec3(0), tex2DMipmapUint, evalTexture2DGrad, BOTH),
+                       false, false, IVec3(0), tex2DMipmapUint, evalTexture2DGrad, ALL),
 
         GRAD_CASE_SPEC(samplercube_fixed, FUNCTION_TEXTUREGRAD, Vec4(-1.0f, -1.0f, 1.01f, 0.0f),
                        Vec4(1.0f, 1.0f, 1.01f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), texCubeMipmapFixed,
-                       evalTextureCubeGrad, BOTH),
+                       evalTextureCubeGrad, ALL),
         GRAD_CASE_SPEC(samplercube_float, FUNCTION_TEXTUREGRAD, Vec4(-1.0f, -1.0f, -1.01f, 0.0f),
                        Vec4(1.0f, 1.0f, -1.01f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), texCubeMipmapFloat,
-                       evalTextureCubeGrad, BOTH),
+                       evalTextureCubeGrad, ALL),
         GRAD_CASE_SPEC(isamplercube, FUNCTION_TEXTUREGRAD, Vec4(-1.0f, -1.0f, 1.01f, 0.0f),
                        Vec4(1.0f, 1.0f, 1.01f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), false, false, IVec3(0), texCubeMipmapInt,
-                       evalTextureCubeGrad, BOTH),
+                       evalTextureCubeGrad, ALL),
         GRAD_CASE_SPEC(usamplercube, FUNCTION_TEXTUREGRAD, Vec4(-1.0f, -1.0f, -1.01f, 0.0f),
                        Vec4(1.0f, 1.0f, -1.01f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.2f, 0.0f), false, false, IVec3(0), texCubeMipmapUint,
-                       evalTextureCubeGrad, BOTH),
+                       evalTextureCubeGrad, ALL),
 
         GRAD_CASE_SPEC(sampler2darray_fixed, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                        Vec4(1.5f, 2.3f, 3.5f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex2DArrayMipmapFixed,
-                       evalTexture2DArrayGrad, BOTH),
+                       evalTexture2DArrayGrad, ALL),
         GRAD_CASE_SPEC(sampler2darray_float, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                        Vec4(1.5f, 2.3f, 3.5f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex2DArrayMipmapFloat,
-                       evalTexture2DArrayGrad, BOTH),
+                       evalTexture2DArrayGrad, ALL),
         GRAD_CASE_SPEC(isampler2darray, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                        Vec4(1.5f, 2.3f, 3.5f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), false, false, IVec3(0), tex2DArrayMipmapInt,
-                       evalTexture2DArrayGrad, BOTH),
+                       evalTexture2DArrayGrad, ALL),
         GRAD_CASE_SPEC(usampler2darray, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                        Vec4(1.5f, 2.3f, 3.5f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.2f, 0.0f), false, false, IVec3(0), tex2DArrayMipmapUint,
-                       evalTexture2DArrayGrad, BOTH),
+                       evalTexture2DArrayGrad, ALL),
 
         GRAD_CASE_SPEC(sampler3d_fixed, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f),
                        Vec4(1.5f, 2.3f, 2.3f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex3DMipmapFixed,
-                       evalTexture3DGrad, BOTH),
+                       evalTexture3DGrad, ALL),
         GRAD_CASE_SPEC(sampler3d_float, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f),
                        Vec4(1.5f, 2.3f, 2.3f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex3DMipmapFloat,
@@ -6363,73 +7057,80 @@ void ShaderTextureFunctionTests::init(void)
                        Vec4(1.5f, 2.3f, 2.3f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.2f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex3DMipmapFloat,
                        evalTexture3DGrad, FRAGMENT),
+        GRAD_CASE_SPEC(sampler3d_float, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f),
+                       Vec4(1.5f, 2.3f, 2.3f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.2f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex3DMipmapFloat,
+                       evalTexture3DGrad, COMPUTE),
         GRAD_CASE_SPEC(isampler3d, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f),
-                       false, false, IVec3(0), tex3DMipmapInt, evalTexture3DGrad, BOTH),
+                       false, false, IVec3(0), tex3DMipmapInt, evalTexture3DGrad, ALL),
         GRAD_CASE_SPEC(usampler3d, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.2f, 0.0f),
                        false, false, IVec3(0), tex3DMipmapUint, evalTexture3DGrad, VERTEX),
         GRAD_CASE_SPEC(usampler3d, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, -0.2f),
                        false, false, IVec3(0), tex3DMipmapUint, evalTexture3DGrad, FRAGMENT),
+        GRAD_CASE_SPEC(usampler3d, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, -0.2f),
+                       false, false, IVec3(0), tex3DMipmapUint, evalTexture3DGrad, COMPUTE),
 
         GRAD_CASE_SPEC(sampler1d_fixed, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f),
                        Vec4(1.5f, 0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex1DMipmapFixed,
-                       evalTexture1DGrad, BOTH),
+                       evalTexture1DGrad, ALL),
         GRAD_CASE_SPEC(sampler1d_float, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f),
                        Vec4(1.5f, 0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex1DMipmapFloat,
-                       evalTexture1DGrad, BOTH),
+                       evalTexture1DGrad, ALL),
         GRAD_CASE_SPEC(isampler1d, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f),
-                       false, false, IVec3(0), tex1DMipmapInt, evalTexture1DGrad, BOTH),
+                       false, false, IVec3(0), tex1DMipmapInt, evalTexture1DGrad, ALL),
         GRAD_CASE_SPEC(usampler1d, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
-                       false, false, IVec3(0), tex1DMipmapUint, evalTexture1DGrad, BOTH),
+                       false, false, IVec3(0), tex1DMipmapUint, evalTexture1DGrad, ALL),
 
         GRAD_CASE_SPEC(sampler1darray_fixed, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                        Vec4(1.5f, 3.5f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex1DArrayMipmapFixed,
-                       evalTexture1DArrayGrad, BOTH),
+                       evalTexture1DArrayGrad, ALL),
         GRAD_CASE_SPEC(sampler1darray_float, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                        Vec4(1.5f, 3.5f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex1DArrayMipmapFloat,
-                       evalTexture1DArrayGrad, BOTH),
+                       evalTexture1DArrayGrad, ALL),
         GRAD_CASE_SPEC(isampler1darray, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                        Vec4(1.5f, 3.5f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), false, false, IVec3(0), tex1DArrayMipmapInt,
-                       evalTexture1DArrayGrad, BOTH),
+                       evalTexture1DArrayGrad, ALL),
         GRAD_CASE_SPEC(usampler1darray, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                        Vec4(1.5f, 3.5f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f), false, false, IVec3(0), tex1DArrayMipmapUint,
-                       evalTexture1DArrayGrad, BOTH),
+                       evalTexture1DArrayGrad, ALL),
 
         GRAD_CASE_SPEC(samplercubearray_fixed, FUNCTION_TEXTUREGRAD, Vec4(-1.0f, -1.0f, 1.01f, -0.5f),
                        Vec4(1.0f, 1.0f, 1.01f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), texCubeArrayMipmapFixed,
-                       evalTextureCubeArrayGrad, BOTH),
+                       evalTextureCubeArrayGrad, ALL),
         GRAD_CASE_SPEC(samplercubearray_float, FUNCTION_TEXTUREGRAD, Vec4(-1.0f, -1.0f, -1.01f, -0.5f),
                        Vec4(1.0f, 1.0f, -1.01f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), texCubeArrayMipmapFloat,
-                       evalTextureCubeArrayGrad, BOTH),
+                       evalTextureCubeArrayGrad, ALL),
         GRAD_CASE_SPEC(isamplercubearray, FUNCTION_TEXTUREGRAD, Vec4(-1.0f, -1.0f, 1.01f, -0.5f),
                        Vec4(1.0f, 1.0f, 1.01f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), false, false, IVec3(0), texCubeArrayMipmapInt,
-                       evalTextureCubeArrayGrad, BOTH),
+                       evalTextureCubeArrayGrad, ALL),
         GRAD_CASE_SPEC(usamplercubearray, FUNCTION_TEXTUREGRAD, Vec4(-1.0f, -1.0f, -1.01f, -0.5f),
                        Vec4(1.0f, 1.0f, -1.01f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.2f, 0.0f), false, false, IVec3(0), texCubeArrayMipmapUint,
-                       evalTextureCubeArrayGrad, BOTH),
+                       evalTextureCubeArrayGrad, ALL),
 
         GRAD_CASE_SPEC(sampler2dshadow, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f),
                        Vec4(1.5f, 2.3f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex2DMipmapShadow,
-                       evalTexture2DShadowGrad, BOTH),
+                       evalTexture2DShadowGrad, ALL),
         GRAD_CASE_SPEC(samplercubeshadow, FUNCTION_TEXTUREGRAD, Vec4(-1.0f, -1.0f, 1.01f, 0.0f),
                        Vec4(1.0f, 1.0f, 1.01f, 1.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), texCubeMipmapShadow,
-                       evalTextureCubeShadowGrad, BOTH),
+                       evalTextureCubeShadowGrad, ALL),
         GRAD_CASE_SPEC(sampler2darrayshadow, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                        Vec4(1.5f, 2.3f, 3.5f, 1.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f), false, false, IVec3(0), tex2DArrayMipmapShadow,
@@ -6438,10 +7139,14 @@ void ShaderTextureFunctionTests::init(void)
                        Vec4(1.5f, 2.3f, 3.5f, 1.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f), false, false, IVec3(0), tex2DArrayMipmapShadow,
                        evalTexture2DArrayShadowGrad, FRAGMENT),
+        GRAD_CASE_SPEC(sampler2darrayshadow, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
+                       Vec4(1.5f, 2.3f, 3.5f, 1.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f), false, false, IVec3(0), tex2DArrayMipmapShadow,
+                       evalTexture2DArrayShadowGrad, COMPUTE),
         GRAD_CASE_SPEC(sampler1dshadow, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f),
                        Vec4(1.5f, 0.0f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex1DMipmapShadow,
-                       evalTexture1DShadowGrad, BOTH),
+                       evalTexture1DShadowGrad, ALL),
         GRAD_CASE_SPEC(sampler1darrayshadow, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                        Vec4(1.5f, 3.5f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f), false, false, IVec3(0), tex1DArrayMipmapShadow,
@@ -6450,6 +7155,10 @@ void ShaderTextureFunctionTests::init(void)
                        Vec4(1.5f, 3.5f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), false, false, IVec3(0), tex1DArrayMipmapShadow,
                        evalTexture1DArrayShadowGrad, FRAGMENT),
+        GRAD_CASE_SPEC(sampler1darrayshadow, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
+                       Vec4(1.5f, 3.5f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), false, false, IVec3(0), tex1DArrayMipmapShadow,
+                       evalTexture1DArrayShadowGrad, COMPUTE),
     };
     createCaseGroup(this, "texturegrad", textureGradCases, DE_LENGTH_OF_ARRAY(textureGradCases));
 
@@ -6604,39 +7313,39 @@ void ShaderTextureFunctionTests::init(void)
         GRAD_CASE_SPEC(sampler2d_fixed, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f),
                        Vec4(1.5f, 2.3f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(-8, 7, 0),
-                       tex2DMipmapFixedOffset, evalTexture2DGradOffset, BOTH),
+                       tex2DMipmapFixedOffset, evalTexture2DGradOffset, ALL),
         GRAD_CASE_SPEC(sampler2d_float, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f),
                        Vec4(1.5f, 2.3f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(7, -8, 0),
-                       tex2DMipmapFloatOffset, evalTexture2DGradOffset, BOTH),
+                       tex2DMipmapFloatOffset, evalTexture2DGradOffset, ALL),
         GRAD_CASE_SPEC(isampler2d, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f),
-                       true, false, IVec3(-8, 7, 0), tex2DMipmapIntOffset, evalTexture2DGradOffset, BOTH),
+                       true, false, IVec3(-8, 7, 0), tex2DMipmapIntOffset, evalTexture2DGradOffset, ALL),
         GRAD_CASE_SPEC(usampler2d, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f), Vec4(1.5f, 2.3f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.2f, 0.0f),
-                       true, false, IVec3(7, -8, 0), tex2DMipmapUintOffset, evalTexture2DGradOffset, BOTH),
+                       true, false, IVec3(7, -8, 0), tex2DMipmapUintOffset, evalTexture2DGradOffset, ALL),
 
         GRAD_CASE_SPEC(sampler2darray_fixed, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                        Vec4(1.5f, 2.3f, 3.5f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(-8, 7, 0),
-                       tex2DArrayMipmapFixedOffset, evalTexture2DArrayGradOffset, BOTH),
+                       tex2DArrayMipmapFixedOffset, evalTexture2DArrayGradOffset, ALL),
         GRAD_CASE_SPEC(sampler2darray_float, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                        Vec4(1.5f, 2.3f, 3.5f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(7, -8, 0),
-                       tex2DArrayMipmapFloatOffset, evalTexture2DArrayGradOffset, BOTH),
+                       tex2DArrayMipmapFloatOffset, evalTexture2DArrayGradOffset, ALL),
         GRAD_CASE_SPEC(isampler2darray, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                        Vec4(1.5f, 2.3f, 3.5f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), true, false, IVec3(-8, 7, 0),
-                       tex2DArrayMipmapIntOffset, evalTexture2DArrayGradOffset, BOTH),
+                       tex2DArrayMipmapIntOffset, evalTexture2DArrayGradOffset, ALL),
         GRAD_CASE_SPEC(usampler2darray, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                        Vec4(1.5f, 2.3f, 3.5f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.2f, 0.0f), true, false, IVec3(7, -8, 0),
-                       tex2DArrayMipmapUintOffset, evalTexture2DArrayGradOffset, BOTH),
+                       tex2DArrayMipmapUintOffset, evalTexture2DArrayGradOffset, ALL),
 
         GRAD_CASE_SPEC(sampler3d_fixed, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f),
                        Vec4(1.5f, 2.3f, 2.3f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(-8, 7, 3),
-                       tex3DMipmapFixedOffset, evalTexture3DGradOffset, BOTH),
+                       tex3DMipmapFixedOffset, evalTexture3DGradOffset, ALL),
         GRAD_CASE_SPEC(sampler3d_float, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f),
                        Vec4(1.5f, 2.3f, 2.3f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(7, 3, -8),
@@ -6645,47 +7354,54 @@ void ShaderTextureFunctionTests::init(void)
                        Vec4(1.5f, 2.3f, 2.3f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.2f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(3, -8, 7),
                        tex3DMipmapFloatOffset, evalTexture3DGradOffset, FRAGMENT),
+        GRAD_CASE_SPEC(sampler3d_float, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f),
+                       Vec4(1.5f, 2.3f, 2.3f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.2f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(3, -8, 7),
+                       tex3DMipmapFloatOffset, evalTexture3DGradOffset, COMPUTE),
         GRAD_CASE_SPEC(isampler3d, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f),
-                       true, false, IVec3(-8, 7, 3), tex3DMipmapIntOffset, evalTexture3DGradOffset, BOTH),
+                       true, false, IVec3(-8, 7, 3), tex3DMipmapIntOffset, evalTexture3DGradOffset, ALL),
         GRAD_CASE_SPEC(usampler3d, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.2f, 0.0f),
                        true, false, IVec3(7, 3, -8), tex3DMipmapUintOffset, evalTexture3DGradOffset, VERTEX),
         GRAD_CASE_SPEC(usampler3d, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, -0.2f),
                        true, false, IVec3(3, -8, 7), tex3DMipmapUintOffset, evalTexture3DGradOffset, FRAGMENT),
+        GRAD_CASE_SPEC(usampler3d, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -1.4f, 0.1f, 0.0f), Vec4(1.5f, 2.3f, 2.3f, 0.0f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, -0.2f),
+                       true, false, IVec3(3, -8, 7), tex3DMipmapUintOffset, evalTexture3DGradOffset, COMPUTE),
 
         GRAD_CASE_SPEC(sampler1d_fixed, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f),
                        Vec4(1.5f, 0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(-8, 0, 0),
-                       tex1DMipmapFixedOffset, evalTexture1DGradOffset, BOTH),
+                       tex1DMipmapFixedOffset, evalTexture1DGradOffset, ALL),
         GRAD_CASE_SPEC(sampler1d_float, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f),
                        Vec4(1.5f, 0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(7, 0, 0),
-                       tex1DMipmapFloatOffset, evalTexture1DGradOffset, BOTH),
+                       tex1DMipmapFloatOffset, evalTexture1DGradOffset, ALL),
         GRAD_CASE_SPEC(isampler1d, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f),
-                       true, false, IVec3(-8, 0, 0), tex1DMipmapIntOffset, evalTexture1DGradOffset, BOTH),
+                       true, false, IVec3(-8, 0, 0), tex1DMipmapIntOffset, evalTexture1DGradOffset, ALL),
         GRAD_CASE_SPEC(usampler1d, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f), Vec4(1.5f, 0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
-                       true, false, IVec3(7, 0, 0), tex1DMipmapUintOffset, evalTexture1DGradOffset, BOTH),
+                       true, false, IVec3(7, 0, 0), tex1DMipmapUintOffset, evalTexture1DGradOffset, ALL),
 
         GRAD_CASE_SPEC(sampler1darray_fixed, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                        Vec4(1.5f, 3.5f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(-8, 0, 0),
-                       tex1DArrayMipmapFixedOffset, evalTexture1DArrayGradOffset, BOTH),
+                       tex1DArrayMipmapFixedOffset, evalTexture1DArrayGradOffset, ALL),
         GRAD_CASE_SPEC(sampler1darray_float, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                        Vec4(1.5f, 3.5f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(7, 0, 0),
-                       tex1DArrayMipmapFloatOffset, evalTexture1DArrayGradOffset, BOTH),
+                       tex1DArrayMipmapFloatOffset, evalTexture1DArrayGradOffset, ALL),
         GRAD_CASE_SPEC(isampler1darray, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                        Vec4(1.5f, 3.5f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), true, false, IVec3(-8, 0, 0),
-                       tex1DArrayMipmapIntOffset, evalTexture1DArrayGradOffset, BOTH),
+                       tex1DArrayMipmapIntOffset, evalTexture1DArrayGradOffset, ALL),
         GRAD_CASE_SPEC(usampler1darray, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                        Vec4(1.5f, 3.5f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f), true, false, IVec3(7, 0, 0),
-                       tex1DArrayMipmapUintOffset, evalTexture1DArrayGradOffset, BOTH),
+                       tex1DArrayMipmapUintOffset, evalTexture1DArrayGradOffset, ALL),
 
         GRAD_CASE_SPEC(sampler2dshadow, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f),
                        Vec4(1.5f, 2.3f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
@@ -6695,6 +7411,10 @@ void ShaderTextureFunctionTests::init(void)
                        Vec4(1.5f, 2.3f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.2f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(7, -8, 0),
                        tex2DMipmapShadowOffset, evalTexture2DShadowGradOffset, FRAGMENT),
+        GRAD_CASE_SPEC(sampler2dshadow, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, -0.4f, 0.0f, 0.0f),
+                       Vec4(1.5f, 2.3f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.2f, 0.0f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(7, -8, 0),
+                       tex2DMipmapShadowOffset, evalTexture2DShadowGradOffset, COMPUTE),
         GRAD_CASE_SPEC(sampler2darrayshadow, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
                        Vec4(1.5f, 2.3f, 3.5f, 1.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f), true, false, IVec3(-8, 7, 0),
@@ -6703,6 +7423,10 @@ void ShaderTextureFunctionTests::init(void)
                        Vec4(1.5f, 2.3f, 3.5f, 1.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f), true, false, IVec3(7, -8, 0),
                        tex2DArrayMipmapShadowOffset, evalTexture2DArrayShadowGradOffset, FRAGMENT),
+        GRAD_CASE_SPEC(sampler2darrayshadow, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.4f, -0.5f, 0.0f),
+                       Vec4(1.5f, 2.3f, 3.5f, 1.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f), true, false, IVec3(7, -8, 0),
+                       tex2DArrayMipmapShadowOffset, evalTexture2DArrayShadowGradOffset, COMPUTE),
         GRAD_CASE_SPEC(sampler1dshadow, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f),
                        Vec4(1.5f, 0.0f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(-8, 0, 0),
@@ -6711,6 +7435,10 @@ void ShaderTextureFunctionTests::init(void)
                        Vec4(1.5f, 0.0f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(7, 0, 0),
                        tex1DMipmapShadowOffset, evalTexture1DShadowGradOffset, FRAGMENT),
+        GRAD_CASE_SPEC(sampler1dshadow, FUNCTION_TEXTUREGRAD, Vec4(-0.2f, 0.0f, 0.0f, 0.0f),
+                       Vec4(1.5f, 0.0f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(7, 0, 0),
+                       tex1DMipmapShadowOffset, evalTexture1DShadowGradOffset, COMPUTE),
         GRAD_CASE_SPEC(sampler1darrayshadow, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
                        Vec4(1.5f, 3.5f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f), true, false, IVec3(-8, 0, 0),
@@ -6719,6 +7447,10 @@ void ShaderTextureFunctionTests::init(void)
                        Vec4(1.5f, 3.5f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), true, false, IVec3(7, 0, 0),
                        tex1DArrayMipmapShadowOffset, evalTexture1DArrayShadowGradOffset, FRAGMENT),
+        GRAD_CASE_SPEC(sampler1darrayshadow, FUNCTION_TEXTUREGRAD, Vec4(-1.2f, -0.5f, 0.0f, 0.0f),
+                       Vec4(1.5f, 3.5f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), true, false, IVec3(7, 0, 0),
+                       tex1DArrayMipmapShadowOffset, evalTexture1DArrayShadowGradOffset, COMPUTE),
     };
 
     for (const bool pcOffset : {false, true})
@@ -6873,41 +7605,41 @@ void ShaderTextureFunctionTests::init(void)
         GRAD_CASE_SPEC(sampler2d_vec3_fixed, FUNCTION_TEXTUREPROJGRAD3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                        Vec4(2.25f, 3.45f, 1.5f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex2DMipmapFixed,
-                       evalTexture2DProjGrad3, BOTH),
+                       evalTexture2DProjGrad3, ALL),
         GRAD_CASE_SPEC(sampler2d_vec3_float, FUNCTION_TEXTUREPROJGRAD3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                        Vec4(2.25f, 3.45f, 1.5f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex2DMipmapFloat,
-                       evalTexture2DProjGrad3, BOTH),
+                       evalTexture2DProjGrad3, ALL),
         GRAD_CASE_SPEC(isampler2d_vec3, FUNCTION_TEXTUREPROJGRAD3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                        Vec4(2.25f, 3.45f, 1.5f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), false, false, IVec3(0), tex2DMipmapInt,
-                       evalTexture2DProjGrad3, BOTH),
+                       evalTexture2DProjGrad3, ALL),
         GRAD_CASE_SPEC(usampler2d_vec3, FUNCTION_TEXTUREPROJGRAD3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                        Vec4(2.25f, 3.45f, 1.5f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.2f, 0.0f), false, false, IVec3(0), tex2DMipmapUint,
-                       evalTexture2DProjGrad3, BOTH),
+                       evalTexture2DProjGrad3, ALL),
 
         GRAD_CASE_SPEC(sampler2d_vec4_fixed, FUNCTION_TEXTUREPROJGRAD, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                        Vec4(2.25f, 3.45f, 0.0f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex2DMipmapFixed,
-                       evalTexture2DProjGrad, BOTH),
+                       evalTexture2DProjGrad, ALL),
         GRAD_CASE_SPEC(sampler2d_vec4_float, FUNCTION_TEXTUREPROJGRAD, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                        Vec4(2.25f, 3.45f, 0.0f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex2DMipmapFloat,
-                       evalTexture2DProjGrad, BOTH),
+                       evalTexture2DProjGrad, ALL),
         GRAD_CASE_SPEC(isampler2d_vec4, FUNCTION_TEXTUREPROJGRAD, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                        Vec4(2.25f, 3.45f, 0.0f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), false, false, IVec3(0), tex2DMipmapInt,
-                       evalTexture2DProjGrad, BOTH),
+                       evalTexture2DProjGrad, ALL),
         GRAD_CASE_SPEC(usampler2d_vec4, FUNCTION_TEXTUREPROJGRAD, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                        Vec4(2.25f, 3.45f, 0.0f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.2f, 0.0f), false, false, IVec3(0), tex2DMipmapUint,
-                       evalTexture2DProjGrad, BOTH),
+                       evalTexture2DProjGrad, ALL),
 
         GRAD_CASE_SPEC(sampler3d_fixed, FUNCTION_TEXTUREPROJGRAD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                        Vec4(-1.13f, -1.7f, -1.7f, -0.75f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex3DMipmapFixed,
-                       evalTexture3DProjGrad, BOTH),
+                       evalTexture3DProjGrad, ALL),
         GRAD_CASE_SPEC(sampler3d_float, FUNCTION_TEXTUREPROJGRAD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                        Vec4(-1.13f, -1.7f, -1.7f, -0.75f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex3DMipmapFloat,
@@ -6916,10 +7648,14 @@ void ShaderTextureFunctionTests::init(void)
                        Vec4(-1.13f, -1.7f, -1.7f, -0.75f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.2f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex3DMipmapFloat,
                        evalTexture3DProjGrad, FRAGMENT),
+        GRAD_CASE_SPEC(sampler3d_float, FUNCTION_TEXTUREPROJGRAD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
+                       Vec4(-1.13f, -1.7f, -1.7f, -0.75f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.2f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex3DMipmapFloat,
+                       evalTexture3DProjGrad, COMPUTE),
         GRAD_CASE_SPEC(isampler3d, FUNCTION_TEXTUREPROJGRAD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                        Vec4(-1.13f, -1.7f, -1.7f, -0.75f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), false, false, IVec3(0), tex3DMipmapInt,
-                       evalTexture3DProjGrad, BOTH),
+                       evalTexture3DProjGrad, ALL),
         GRAD_CASE_SPEC(usampler3d, FUNCTION_TEXTUREPROJGRAD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                        Vec4(-1.13f, -1.7f, -1.7f, -0.75f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.2f, 0.0f), false, false, IVec3(0), tex3DMipmapUint,
@@ -6928,40 +7664,44 @@ void ShaderTextureFunctionTests::init(void)
                        Vec4(-1.13f, -1.7f, -1.7f, -0.75f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, -0.2f), false, false, IVec3(0), tex3DMipmapUint,
                        evalTexture3DProjGrad, FRAGMENT),
+        GRAD_CASE_SPEC(usampler3d, FUNCTION_TEXTUREPROJGRAD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
+                       Vec4(-1.13f, -1.7f, -1.7f, -0.75f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, -0.2f), false, false, IVec3(0), tex3DMipmapUint,
+                       evalTexture3DProjGrad, COMPUTE),
 
         GRAD_CASE_SPEC(sampler1d_vec2_fixed, FUNCTION_TEXTUREPROJGRAD2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                        Vec4(2.25f, 1.5f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex1DMipmapFixed,
-                       evalTexture1DProjGrad2, BOTH),
+                       evalTexture1DProjGrad2, ALL),
         GRAD_CASE_SPEC(sampler1d_vec2_float, FUNCTION_TEXTUREPROJGRAD2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                        Vec4(2.25f, 1.5f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex1DMipmapFloat,
-                       evalTexture1DProjGrad2, BOTH),
+                       evalTexture1DProjGrad2, ALL),
         GRAD_CASE_SPEC(isampler1d_vec2, FUNCTION_TEXTUREPROJGRAD2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                        Vec4(2.25f, 1.5f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), false, false, IVec3(0), tex1DMipmapInt,
-                       evalTexture1DProjGrad2, BOTH),
+                       evalTexture1DProjGrad2, ALL),
         GRAD_CASE_SPEC(usampler1d_vec2, FUNCTION_TEXTUREPROJGRAD2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                        Vec4(2.25f, 1.5f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f), false, false, IVec3(0), tex1DMipmapUint,
-                       evalTexture1DProjGrad2, BOTH),
+                       evalTexture1DProjGrad2, ALL),
 
         GRAD_CASE_SPEC(sampler1d_vec4_fixed, FUNCTION_TEXTUREPROJGRAD, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                        Vec4(2.25f, 0.0f, 0.0f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex1DMipmapFixed,
-                       evalTexture1DProjGrad, BOTH),
+                       evalTexture1DProjGrad, ALL),
         GRAD_CASE_SPEC(sampler1d_vec4_float, FUNCTION_TEXTUREPROJGRAD, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                        Vec4(2.25f, 0.0f, 0.0f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex1DMipmapFloat,
-                       evalTexture1DProjGrad, BOTH),
+                       evalTexture1DProjGrad, ALL),
         GRAD_CASE_SPEC(isampler1d_vec4, FUNCTION_TEXTUREPROJGRAD, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                        Vec4(2.25f, 0.0f, 0.0f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), false, false, IVec3(0), tex1DMipmapInt,
-                       evalTexture1DProjGrad, BOTH),
+                       evalTexture1DProjGrad, ALL),
         GRAD_CASE_SPEC(usampler1d_vec4, FUNCTION_TEXTUREPROJGRAD, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                        Vec4(2.25f, 0.0f, 0.0f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f), false, false, IVec3(0), tex1DMipmapUint,
-                       evalTexture1DProjGrad, BOTH),
+                       evalTexture1DProjGrad, ALL),
 
         GRAD_CASE_SPEC(sampler2dshadow, FUNCTION_TEXTUREPROJGRAD, Vec4(0.2f, 0.6f, 0.0f, -1.5f),
                        Vec4(-2.25f, -3.45f, -1.5f, -1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
@@ -6971,6 +7711,10 @@ void ShaderTextureFunctionTests::init(void)
                        Vec4(-2.25f, -3.45f, -1.5f, -1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f), false, false, IVec3(0), tex2DMipmapShadow,
                        evalTexture2DShadowProjGrad, FRAGMENT),
+        GRAD_CASE_SPEC(sampler2dshadow, FUNCTION_TEXTUREPROJGRAD, Vec4(0.2f, 0.6f, 0.0f, -1.5f),
+                       Vec4(-2.25f, -3.45f, -1.5f, -1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f), false, false, IVec3(0), tex2DMipmapShadow,
+                       evalTexture2DShadowProjGrad, COMPUTE),
         GRAD_CASE_SPEC(sampler1dshadow, FUNCTION_TEXTUREPROJGRAD, Vec4(0.2f, 0.0f, 0.0f, -1.5f),
                        Vec4(-2.25f, 0.0f, -1.5f, -1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), false, false, IVec3(0), tex1DMipmapShadow,
@@ -6979,6 +7723,10 @@ void ShaderTextureFunctionTests::init(void)
                        Vec4(-2.25f, 0.0f, -1.5f, -1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), false, false, IVec3(0), tex1DMipmapShadow,
                        evalTexture1DShadowProjGrad, FRAGMENT),
+        GRAD_CASE_SPEC(sampler1dshadow, FUNCTION_TEXTUREPROJGRAD, Vec4(0.2f, 0.0f, 0.0f, -1.5f),
+                       Vec4(-2.25f, 0.0f, -1.5f, -1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), false, false, IVec3(0), tex1DMipmapShadow,
+                       evalTexture1DShadowProjGrad, COMPUTE),
     };
     createCaseGroup(this, "textureprojgrad", textureProjGradCases, DE_LENGTH_OF_ARRAY(textureProjGradCases));
 
@@ -6988,41 +7736,41 @@ void ShaderTextureFunctionTests::init(void)
         GRAD_CASE_SPEC(sampler2d_vec3_fixed, FUNCTION_TEXTUREPROJGRAD3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                        Vec4(2.25f, 3.45f, 1.5f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(-8, 7, 0),
-                       tex2DMipmapFixedOffset, evalTexture2DProjGrad3Offset, BOTH),
+                       tex2DMipmapFixedOffset, evalTexture2DProjGrad3Offset, ALL),
         GRAD_CASE_SPEC(sampler2d_vec3_float, FUNCTION_TEXTUREPROJGRAD3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                        Vec4(2.25f, 3.45f, 1.5f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(7, -8, 0),
-                       tex2DMipmapFloatOffset, evalTexture2DProjGrad3Offset, BOTH),
+                       tex2DMipmapFloatOffset, evalTexture2DProjGrad3Offset, ALL),
         GRAD_CASE_SPEC(isampler2d_vec3, FUNCTION_TEXTUREPROJGRAD3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                        Vec4(2.25f, 3.45f, 1.5f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), true, false, IVec3(-8, 7, 0),
-                       tex2DMipmapIntOffset, evalTexture2DProjGrad3Offset, BOTH),
+                       tex2DMipmapIntOffset, evalTexture2DProjGrad3Offset, ALL),
         GRAD_CASE_SPEC(usampler2d_vec3, FUNCTION_TEXTUREPROJGRAD3, Vec4(-0.3f, -0.6f, 1.5f, 0.0f),
                        Vec4(2.25f, 3.45f, 1.5f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.2f, 0.0f), true, false, IVec3(7, -8, 0),
-                       tex2DMipmapUintOffset, evalTexture2DProjGrad3Offset, BOTH),
+                       tex2DMipmapUintOffset, evalTexture2DProjGrad3Offset, ALL),
 
         GRAD_CASE_SPEC(sampler2d_vec4_fixed, FUNCTION_TEXTUREPROJGRAD, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                        Vec4(2.25f, 3.45f, 0.0f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(-8, 7, 0),
-                       tex2DMipmapFixedOffset, evalTexture2DProjGradOffset, BOTH),
+                       tex2DMipmapFixedOffset, evalTexture2DProjGradOffset, ALL),
         GRAD_CASE_SPEC(sampler2d_vec4_float, FUNCTION_TEXTUREPROJGRAD, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                        Vec4(2.25f, 3.45f, 0.0f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(7, -8, 0),
-                       tex2DMipmapFloatOffset, evalTexture2DProjGradOffset, BOTH),
+                       tex2DMipmapFloatOffset, evalTexture2DProjGradOffset, ALL),
         GRAD_CASE_SPEC(isampler2d_vec4, FUNCTION_TEXTUREPROJGRAD, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                        Vec4(2.25f, 3.45f, 0.0f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), true, false, IVec3(-8, 7, 0),
-                       tex2DMipmapIntOffset, evalTexture2DProjGradOffset, BOTH),
+                       tex2DMipmapIntOffset, evalTexture2DProjGradOffset, ALL),
         GRAD_CASE_SPEC(usampler2d_vec4, FUNCTION_TEXTUREPROJGRAD, Vec4(-0.3f, -0.6f, 0.0f, 1.5f),
                        Vec4(2.25f, 3.45f, 0.0f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.2f, 0.0f), true, false, IVec3(7, -8, 0),
-                       tex2DMipmapUintOffset, evalTexture2DProjGradOffset, BOTH),
+                       tex2DMipmapUintOffset, evalTexture2DProjGradOffset, ALL),
 
         GRAD_CASE_SPEC(sampler3d_fixed, FUNCTION_TEXTUREPROJGRAD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                        Vec4(-1.13f, -1.7f, -1.7f, -0.75f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(-8, 7, 3),
-                       tex3DMipmapFixedOffset, evalTexture3DProjGradOffset, BOTH),
+                       tex3DMipmapFixedOffset, evalTexture3DProjGradOffset, ALL),
         GRAD_CASE_SPEC(sampler3d_float, FUNCTION_TEXTUREPROJGRAD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                        Vec4(-1.13f, -1.7f, -1.7f, -0.75f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(7, 3, -8),
@@ -7031,10 +7779,14 @@ void ShaderTextureFunctionTests::init(void)
                        Vec4(-1.13f, -1.7f, -1.7f, -0.75f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.2f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(3, -8, 7),
                        tex3DMipmapFloatOffset, evalTexture3DProjGradOffset, FRAGMENT),
+        GRAD_CASE_SPEC(sampler3d_float, FUNCTION_TEXTUREPROJGRAD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
+                       Vec4(-1.13f, -1.7f, -1.7f, -0.75f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.2f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(3, -8, 7),
+                       tex3DMipmapFloatOffset, evalTexture3DProjGradOffset, COMPUTE),
         GRAD_CASE_SPEC(isampler3d, FUNCTION_TEXTUREPROJGRAD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                        Vec4(-1.13f, -1.7f, -1.7f, -0.75f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), true, false, IVec3(-8, 7, 3),
-                       tex3DMipmapIntOffset, evalTexture3DProjGradOffset, BOTH),
+                       tex3DMipmapIntOffset, evalTexture3DProjGradOffset, ALL),
         GRAD_CASE_SPEC(usampler3d, FUNCTION_TEXTUREPROJGRAD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
                        Vec4(-1.13f, -1.7f, -1.7f, -0.75f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.2f, 0.0f), true, false, IVec3(7, 3, -8),
@@ -7043,40 +7795,44 @@ void ShaderTextureFunctionTests::init(void)
                        Vec4(-1.13f, -1.7f, -1.7f, -0.75f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, -0.2f), true, false, IVec3(3, -8, 7),
                        tex3DMipmapUintOffset, evalTexture3DProjGradOffset, FRAGMENT),
+        GRAD_CASE_SPEC(usampler3d, FUNCTION_TEXTUREPROJGRAD, Vec4(0.9f, 1.05f, -0.08f, -0.75f),
+                       Vec4(-1.13f, -1.7f, -1.7f, -0.75f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, -0.2f), true, false, IVec3(3, -8, 7),
+                       tex3DMipmapUintOffset, evalTexture3DProjGradOffset, COMPUTE),
 
         GRAD_CASE_SPEC(sampler1d_vec2_fixed, FUNCTION_TEXTUREPROJGRAD2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                        Vec4(2.25f, 1.5f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(-8, 7, 0),
-                       tex1DMipmapFixedOffset, evalTexture1DProjGrad2Offset, BOTH),
+                       tex1DMipmapFixedOffset, evalTexture1DProjGrad2Offset, ALL),
         GRAD_CASE_SPEC(sampler1d_vec2_float, FUNCTION_TEXTUREPROJGRAD2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                        Vec4(2.25f, 1.5f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(7, -8, 0),
-                       tex1DMipmapFloatOffset, evalTexture1DProjGrad2Offset, BOTH),
+                       tex1DMipmapFloatOffset, evalTexture1DProjGrad2Offset, ALL),
         GRAD_CASE_SPEC(isampler1d_vec2, FUNCTION_TEXTUREPROJGRAD2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                        Vec4(2.25f, 1.5f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), true, false, IVec3(-8, 7, 0),
-                       tex1DMipmapIntOffset, evalTexture1DProjGrad2Offset, BOTH),
+                       tex1DMipmapIntOffset, evalTexture1DProjGrad2Offset, ALL),
         GRAD_CASE_SPEC(usampler1d_vec2, FUNCTION_TEXTUREPROJGRAD2, Vec4(-0.3f, 1.5f, 0.0f, 0.0f),
                        Vec4(2.25f, 1.5f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f), true, false, IVec3(7, -8, 0),
-                       tex1DMipmapUintOffset, evalTexture1DProjGrad2Offset, BOTH),
+                       tex1DMipmapUintOffset, evalTexture1DProjGrad2Offset, ALL),
 
         GRAD_CASE_SPEC(sampler1d_vec4_fixed, FUNCTION_TEXTUREPROJGRAD, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                        Vec4(2.25f, 0.0f, 0.0f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(-8, 7, 0),
-                       tex1DMipmapFixedOffset, evalTexture1DProjGradOffset, BOTH),
+                       tex1DMipmapFixedOffset, evalTexture1DProjGradOffset, ALL),
         GRAD_CASE_SPEC(sampler1d_vec4_float, FUNCTION_TEXTUREPROJGRAD, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                        Vec4(2.25f, 0.0f, 0.0f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(7, -8, 0),
-                       tex1DMipmapFloatOffset, evalTexture1DProjGradOffset, BOTH),
+                       tex1DMipmapFloatOffset, evalTexture1DProjGradOffset, ALL),
         GRAD_CASE_SPEC(isampler1d_vec4, FUNCTION_TEXTUREPROJGRAD, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                        Vec4(2.25f, 0.0f, 0.0f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), true, false, IVec3(-8, 7, 0),
-                       tex1DMipmapIntOffset, evalTexture1DProjGradOffset, BOTH),
+                       tex1DMipmapIntOffset, evalTexture1DProjGradOffset, ALL),
         GRAD_CASE_SPEC(usampler1d_vec4, FUNCTION_TEXTUREPROJGRAD, Vec4(-0.3f, 0.0f, 0.0f, 1.5f),
                        Vec4(2.25f, 0.0f, 0.0f, 1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f), true, false, IVec3(7, -8, 0),
-                       tex1DMipmapUintOffset, evalTexture1DProjGradOffset, BOTH),
+                       tex1DMipmapUintOffset, evalTexture1DProjGradOffset, ALL),
 
         GRAD_CASE_SPEC(sampler2dshadow, FUNCTION_TEXTUREPROJGRAD, Vec4(0.2f, 0.6f, 0.0f, -1.5f),
                        Vec4(-2.25f, -3.45f, -1.5f, -1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
@@ -7086,6 +7842,10 @@ void ShaderTextureFunctionTests::init(void)
                        Vec4(-2.25f, -3.45f, -1.5f, -1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f), true, false, IVec3(7, -8, 0),
                        tex2DMipmapShadowOffset, evalTexture2DShadowProjGradOffset, FRAGMENT),
+        GRAD_CASE_SPEC(sampler2dshadow, FUNCTION_TEXTUREPROJGRAD, Vec4(0.2f, 0.6f, 0.0f, -1.5f),
+                       Vec4(-2.25f, -3.45f, -1.5f, -1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -0.2f, 0.0f), true, false, IVec3(7, -8, 0),
+                       tex2DMipmapShadowOffset, evalTexture2DShadowProjGradOffset, COMPUTE),
         GRAD_CASE_SPEC(sampler1dshadow, FUNCTION_TEXTUREPROJGRAD, Vec4(0.2f, 0.0f, 0.0f, -1.5f),
                        Vec4(-2.25f, 0.0f, -1.5f, -1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.2f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), true, false, IVec3(-8, 7, 0),
@@ -7094,6 +7854,10 @@ void ShaderTextureFunctionTests::init(void)
                        Vec4(-2.25f, 0.0f, -1.5f, -1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
                        Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), true, false, IVec3(7, -8, 0),
                        tex1DMipmapShadowOffset, evalTexture1DShadowProjGradOffset, FRAGMENT),
+        GRAD_CASE_SPEC(sampler1dshadow, FUNCTION_TEXTUREPROJGRAD, Vec4(0.2f, 0.0f, 0.0f, -1.5f),
+                       Vec4(-2.25f, 0.0f, -1.5f, -1.5f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f),
+                       Vec3(0.0f, 0.0f, 0.0f), Vec3(-0.2f, 0.0f, 0.0f), true, false, IVec3(7, -8, 0),
+                       tex1DMipmapShadowOffset, evalTexture1DShadowProjGradOffset, COMPUTE),
     };
 
     for (const bool pcOffset : {false, true})
@@ -7121,53 +7885,53 @@ void ShaderTextureFunctionTests::init(void)
     static const TexFuncCaseSpec texelFetchCases[] = {
         //          Name                            Function                MinCoord                            MaxCoord                        Bias?    MinLod    MaxLod    Offset?    Offset        Format                        EvalFunc                Flags
         CASE_SPEC(sampler2d_fixed, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(255.9f, 255.9f, 0.0f, 0.0f),
-                  false, 0.0f, 0.0f, false, false, IVec3(0), tex2DTexelFetchFixed, evalTexelFetch2D, BOTH),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex2DTexelFetchFixed, evalTexelFetch2D, ALL),
         CASE_SPEC(sampler2d_float, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(127.9f, 127.9f, 0.0f, 0.0f),
-                  false, 1.0f, 1.0f, false, false, IVec3(0), tex2DTexelFetchFloat, evalTexelFetch2D, BOTH),
+                  false, 1.0f, 1.0f, false, false, IVec3(0), tex2DTexelFetchFloat, evalTexelFetch2D, ALL),
         CASE_SPEC(isampler2d, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(63.9f, 63.9f, 0.0f, 0.0f), false,
-                  2.0f, 2.0f, false, false, IVec3(0), tex2DTexelFetchInt, evalTexelFetch2D, BOTH),
+                  2.0f, 2.0f, false, false, IVec3(0), tex2DTexelFetchInt, evalTexelFetch2D, ALL),
         CASE_SPEC(usampler2d, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(15.9f, 15.9f, 0.0f, 0.0f), false,
-                  4.0f, 4.0f, false, false, IVec3(0), tex2DTexelFetchUint, evalTexelFetch2D, BOTH),
+                  4.0f, 4.0f, false, false, IVec3(0), tex2DTexelFetchUint, evalTexelFetch2D, ALL),
 
         CASE_SPEC(sampler2darray_fixed, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f),
                   Vec4(127.9f, 127.9f, 3.9f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0),
-                  tex2DArrayTexelFetchFixed, evalTexelFetch2DArray, BOTH),
+                  tex2DArrayTexelFetchFixed, evalTexelFetch2DArray, ALL),
         CASE_SPEC(sampler2darray_float, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f),
                   Vec4(63.9f, 63.9f, 3.9f, 0.0f), false, 1.0f, 1.0f, false, false, IVec3(0), tex2DArrayTexelFetchFloat,
-                  evalTexelFetch2DArray, BOTH),
+                  evalTexelFetch2DArray, ALL),
         CASE_SPEC(isampler2darray, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(31.9f, 31.9f, 3.9f, 0.0f),
-                  false, 2.0f, 2.0f, false, false, IVec3(0), tex2DArrayTexelFetchInt, evalTexelFetch2DArray, BOTH),
+                  false, 2.0f, 2.0f, false, false, IVec3(0), tex2DArrayTexelFetchInt, evalTexelFetch2DArray, ALL),
         CASE_SPEC(usampler2darray, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(15.9f, 15.9f, 3.9f, 0.0f),
-                  false, 3.0f, 3.0f, false, false, IVec3(0), tex2DArrayTexelFetchUint, evalTexelFetch2DArray, BOTH),
+                  false, 3.0f, 3.0f, false, false, IVec3(0), tex2DArrayTexelFetchUint, evalTexelFetch2DArray, ALL),
 
         CASE_SPEC(sampler3d_fixed, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(63.9f, 31.9f, 31.9f, 0.0f),
-                  false, 0.0f, 0.0f, false, false, IVec3(0), tex3DTexelFetchFixed, evalTexelFetch3D, BOTH),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex3DTexelFetchFixed, evalTexelFetch3D, ALL),
         CASE_SPEC(sampler3d_float, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(31.9f, 15.9f, 15.9f, 0.0f),
-                  false, 1.0f, 1.0f, false, false, IVec3(0), tex3DTexelFetchFloat, evalTexelFetch3D, BOTH),
+                  false, 1.0f, 1.0f, false, false, IVec3(0), tex3DTexelFetchFloat, evalTexelFetch3D, ALL),
         CASE_SPEC(isampler3d, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(15.9f, 7.9f, 7.9f, 0.0f), false,
-                  2.0f, 2.0f, false, false, IVec3(0), tex3DTexelFetchInt, evalTexelFetch3D, BOTH),
+                  2.0f, 2.0f, false, false, IVec3(0), tex3DTexelFetchInt, evalTexelFetch3D, ALL),
         CASE_SPEC(usampler3d, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(63.9f, 31.9f, 31.9f, 0.0f), false,
-                  0.0f, 0.0f, false, false, IVec3(0), tex3DTexelFetchUint, evalTexelFetch3D, BOTH),
+                  0.0f, 0.0f, false, false, IVec3(0), tex3DTexelFetchUint, evalTexelFetch3D, ALL),
 
         CASE_SPEC(sampler1d_fixed, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(255.9f, 0.0f, 0.0f, 0.0f),
-                  false, 0.0f, 0.0f, false, false, IVec3(0), tex1DTexelFetchFixed, evalTexelFetch1D, BOTH),
+                  false, 0.0f, 0.0f, false, false, IVec3(0), tex1DTexelFetchFixed, evalTexelFetch1D, ALL),
         CASE_SPEC(sampler1d_float, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(127.9f, 0.0f, 0.0f, 0.0f),
-                  false, 1.0f, 1.0f, false, false, IVec3(0), tex1DTexelFetchFloat, evalTexelFetch1D, BOTH),
+                  false, 1.0f, 1.0f, false, false, IVec3(0), tex1DTexelFetchFloat, evalTexelFetch1D, ALL),
         CASE_SPEC(isampler1d, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(63.9f, 0.0f, 0.0f, 0.0f), false,
-                  2.0f, 2.0f, false, false, IVec3(0), tex1DTexelFetchInt, evalTexelFetch1D, BOTH),
+                  2.0f, 2.0f, false, false, IVec3(0), tex1DTexelFetchInt, evalTexelFetch1D, ALL),
         CASE_SPEC(usampler1d, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(15.9f, 0.0f, 0.0f, 0.0f), false,
-                  4.0f, 4.0f, false, false, IVec3(0), tex1DTexelFetchUint, evalTexelFetch1D, BOTH),
+                  4.0f, 4.0f, false, false, IVec3(0), tex1DTexelFetchUint, evalTexelFetch1D, ALL),
 
         CASE_SPEC(sampler1darray_fixed, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f),
                   Vec4(255.9f, 3.9f, 0.0f, 0.0f), false, 0.0f, 0.0f, false, false, IVec3(0), tex1DArrayTexelFetchFixed,
-                  evalTexelFetch1DArray, BOTH),
+                  evalTexelFetch1DArray, ALL),
         CASE_SPEC(sampler1darray_float, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f),
                   Vec4(127.9f, 3.9f, 0.0f, 0.0f), false, 1.0f, 1.0f, false, false, IVec3(0), tex1DArrayTexelFetchFloat,
-                  evalTexelFetch1DArray, BOTH),
+                  evalTexelFetch1DArray, ALL),
         CASE_SPEC(isampler1darray, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(63.9f, 3.9f, 0.0f, 0.0f),
-                  false, 2.0f, 2.0f, false, false, IVec3(0), tex1DArrayTexelFetchInt, evalTexelFetch1DArray, BOTH),
+                  false, 2.0f, 2.0f, false, false, IVec3(0), tex1DArrayTexelFetchInt, evalTexelFetch1DArray, ALL),
         CASE_SPEC(usampler1darray, FUNCTION_TEXELFETCH, Vec4(0.0f, 0.0f, 0.0f, 0.0f), Vec4(15.9f, 3.9f, 0.0f, 0.0f),
-                  false, 4.0f, 4.0f, false, false, IVec3(0), tex1DArrayTexelFetchUint, evalTexelFetch1DArray, BOTH),
+                  false, 4.0f, 4.0f, false, false, IVec3(0), tex1DArrayTexelFetchUint, evalTexelFetch1DArray, ALL),
     };
     createCaseGroup(this, "texelfetch", texelFetchCases, DE_LENGTH_OF_ARRAY(texelFetchCases));
 
@@ -7175,30 +7939,30 @@ void ShaderTextureFunctionTests::init(void)
     // clang-format off
     static TexFuncCaseSpec texelFetchOffsetCases[] = {
         //        Name                   Function              MinCoord                        MaxCoord                         Bias?  MinLod  MaxLod  Offset?  PCOffset?  Offset           Format                           EvalFunc                Flags
-        CASE_SPEC(sampler2d_fixed,       FUNCTION_TEXELFETCH,  Vec4(8.0f, -7.9f, 0.0f, 0.0f),  Vec4(11.9f, -4.0f, 0.0f, 0.0f),  false, 0.0f,   0.0f,   true,    false,     IVec3(-8, 7, 0), tex2DTexelFetchFixedOffset,      evalTexelFetch2D,       BOTH),
-        CASE_SPEC(sampler2d_float,       FUNCTION_TEXELFETCH,  Vec4(-7.9f, 8.0f, 0.0f, 0.0f),  Vec4(-6.0f, 9.9f, 0.0f, 0.0f),   false, 1.0f,   1.0f,   true,    false,     IVec3(7, -8, 0), tex2DTexelFetchFloatOffset,      evalTexelFetch2D,       BOTH),
-        CASE_SPEC(isampler2d,            FUNCTION_TEXELFETCH,  Vec4(8.0f, -7.9f, 0.0f, 0.0f),  Vec4(9.9f, -6.0f, 0.0f, 0.0f),   false, 1.0f,   1.0f,   true,    false,     IVec3(-8, 7, 0), tex2DTexelFetchIntOffset,        evalTexelFetch2D,       BOTH),
-        CASE_SPEC(usampler2d,            FUNCTION_TEXELFETCH,  Vec4(-7.9f, 8.0f, 0.0f, 0.0f),  Vec4(-4.0f, 11.9f, 0.0f, 0.0f),  false, 0.0f,   0.0f,   true,    false,     IVec3(7, -8, 0), tex2DTexelFetchUintOffset,       evalTexelFetch2D,       BOTH),
+        CASE_SPEC(sampler2d_fixed,       FUNCTION_TEXELFETCH,  Vec4(8.0f, -7.9f, 0.0f, 0.0f),  Vec4(11.9f, -4.0f, 0.0f, 0.0f),  false, 0.0f,   0.0f,   true,    false,     IVec3(-8, 7, 0), tex2DTexelFetchFixedOffset,      evalTexelFetch2D,       ALL),
+        CASE_SPEC(sampler2d_float,       FUNCTION_TEXELFETCH,  Vec4(-7.9f, 8.0f, 0.0f, 0.0f),  Vec4(-6.0f, 9.9f, 0.0f, 0.0f),   false, 1.0f,   1.0f,   true,    false,     IVec3(7, -8, 0), tex2DTexelFetchFloatOffset,      evalTexelFetch2D,       ALL),
+        CASE_SPEC(isampler2d,            FUNCTION_TEXELFETCH,  Vec4(8.0f, -7.9f, 0.0f, 0.0f),  Vec4(9.9f, -6.0f, 0.0f, 0.0f),   false, 1.0f,   1.0f,   true,    false,     IVec3(-8, 7, 0), tex2DTexelFetchIntOffset,        evalTexelFetch2D,       ALL),
+        CASE_SPEC(usampler2d,            FUNCTION_TEXELFETCH,  Vec4(-7.9f, 8.0f, 0.0f, 0.0f),  Vec4(-4.0f, 11.9f, 0.0f, 0.0f),  false, 0.0f,   0.0f,   true,    false,     IVec3(7, -8, 0), tex2DTexelFetchUintOffset,       evalTexelFetch2D,       ALL),
 
-        CASE_SPEC(sampler2darray_fixed,  FUNCTION_TEXELFETCH,  Vec4(8.0f, -7.9f, 0.0f, 0.0f),  Vec4(11.9f, -4.0f, 3.9f, 0.0f),  false, 0.0f,   0.0f,   true,    false,     IVec3(-8, 7, 0), tex2DArrayTexelFetchFixedOffset, evalTexelFetch2DArray,  BOTH),
-        CASE_SPEC(sampler2darray_float,  FUNCTION_TEXELFETCH,  Vec4(-7.9f, 8.0f, 0.0f, 0.0f),  Vec4(-6.0f, 9.9f, 3.9f, 0.0f),   false, 1.0f,   1.0f,   true,    false,     IVec3(7, -8, 0), tex2DArrayTexelFetchFloatOffset, evalTexelFetch2DArray,  BOTH),
-        CASE_SPEC(isampler2darray,       FUNCTION_TEXELFETCH,  Vec4(8.0f, -7.9f, 0.0f, 0.0f),  Vec4(9.9f, -6.0f, 3.9f, 0.0f),   false, 1.0f,   1.0f,   true,    false,     IVec3(-8, 7, 0), tex2DArrayTexelFetchIntOffset,   evalTexelFetch2DArray,  BOTH),
-        CASE_SPEC(usampler2darray,       FUNCTION_TEXELFETCH,  Vec4(-7.9f, 8.0f, 0.0f, 0.0f),  Vec4(-4.0f, 11.9f, 3.9f, 0.0f),  false, 0.0f,   0.0f,   true,    false,     IVec3(7, -8, 0), tex2DArrayTexelFetchUintOffset,  evalTexelFetch2DArray,  BOTH),
+        CASE_SPEC(sampler2darray_fixed,  FUNCTION_TEXELFETCH,  Vec4(8.0f, -7.9f, 0.0f, 0.0f),  Vec4(11.9f, -4.0f, 3.9f, 0.0f),  false, 0.0f,   0.0f,   true,    false,     IVec3(-8, 7, 0), tex2DArrayTexelFetchFixedOffset, evalTexelFetch2DArray,  ALL),
+        CASE_SPEC(sampler2darray_float,  FUNCTION_TEXELFETCH,  Vec4(-7.9f, 8.0f, 0.0f, 0.0f),  Vec4(-6.0f, 9.9f, 3.9f, 0.0f),   false, 1.0f,   1.0f,   true,    false,     IVec3(7, -8, 0), tex2DArrayTexelFetchFloatOffset, evalTexelFetch2DArray,  ALL),
+        CASE_SPEC(isampler2darray,       FUNCTION_TEXELFETCH,  Vec4(8.0f, -7.9f, 0.0f, 0.0f),  Vec4(9.9f, -6.0f, 3.9f, 0.0f),   false, 1.0f,   1.0f,   true,    false,     IVec3(-8, 7, 0), tex2DArrayTexelFetchIntOffset,   evalTexelFetch2DArray,  ALL),
+        CASE_SPEC(usampler2darray,       FUNCTION_TEXELFETCH,  Vec4(-7.9f, 8.0f, 0.0f, 0.0f),  Vec4(-4.0f, 11.9f, 3.9f, 0.0f),  false, 0.0f,   0.0f,   true,    false,     IVec3(7, -8, 0), tex2DArrayTexelFetchUintOffset,  evalTexelFetch2DArray,  ALL),
 
-        CASE_SPEC(sampler3d_fixed,       FUNCTION_TEXELFETCH,  Vec4(8.0f, -7.9f, -3.0f, 0.0f), Vec4(11.9f, -4.0f, 0.9f, 0.0f),  false, 0.0f,   0.0f,   true,    false,     IVec3(-8, 7, 3), tex3DTexelFetchFixedOffset,      evalTexelFetch3D,       BOTH),
-        CASE_SPEC(sampler3d_float,       FUNCTION_TEXELFETCH,  Vec4(-7.9f, -3.9f, 8.0f, 0.0f), Vec4(-6.0f, -2.0f, 9.9f, 0.0f),  false, 1.0f,   1.0f,   true,    false,     IVec3(7, 3, -8), tex3DTexelFetchFloatOffset,      evalTexelFetch3D,       BOTH),
-        CASE_SPEC(isampler3d,            FUNCTION_TEXELFETCH,  Vec4(-3.9f, 8.0f, -7.9f, 0.0f), Vec4(-2.0f, 9.9f, -6.0f, 0.0f),  false, 1.0f,   1.0f,   true,    false,     IVec3(3, -8, 7), tex3DTexelFetchIntOffset,        evalTexelFetch3D,       BOTH),
-        CASE_SPEC(usampler3d,            FUNCTION_TEXELFETCH,  Vec4(8.0f, -7.9f, -3.9f, 0.0f), Vec4(9.9f, -6.0f, -2.0f, 0.0f),  false, 1.0f,   1.0f,   true,    false,     IVec3(-8, 7, 3), tex3DTexelFetchUintOffset,       evalTexelFetch3D,       BOTH),
+        CASE_SPEC(sampler3d_fixed,       FUNCTION_TEXELFETCH,  Vec4(8.0f, -7.9f, -3.0f, 0.0f), Vec4(11.9f, -4.0f, 0.9f, 0.0f),  false, 0.0f,   0.0f,   true,    false,     IVec3(-8, 7, 3), tex3DTexelFetchFixedOffset,      evalTexelFetch3D,       ALL),
+        CASE_SPEC(sampler3d_float,       FUNCTION_TEXELFETCH,  Vec4(-7.9f, -3.9f, 8.0f, 0.0f), Vec4(-6.0f, -2.0f, 9.9f, 0.0f),  false, 1.0f,   1.0f,   true,    false,     IVec3(7, 3, -8), tex3DTexelFetchFloatOffset,      evalTexelFetch3D,       ALL),
+        CASE_SPEC(isampler3d,            FUNCTION_TEXELFETCH,  Vec4(-3.9f, 8.0f, -7.9f, 0.0f), Vec4(-2.0f, 9.9f, -6.0f, 0.0f),  false, 1.0f,   1.0f,   true,    false,     IVec3(3, -8, 7), tex3DTexelFetchIntOffset,        evalTexelFetch3D,       ALL),
+        CASE_SPEC(usampler3d,            FUNCTION_TEXELFETCH,  Vec4(8.0f, -7.9f, -3.9f, 0.0f), Vec4(9.9f, -6.0f, -2.0f, 0.0f),  false, 1.0f,   1.0f,   true,    false,     IVec3(-8, 7, 3), tex3DTexelFetchUintOffset,       evalTexelFetch3D,       ALL),
 
-        CASE_SPEC(sampler1d_fixed,       FUNCTION_TEXELFETCH,  Vec4(8.0f, 0.0f, 0.0f, 0.0f),   Vec4(11.9f, 0.0f, 0.0f, 0.0f),   false, 0.0f,   0.0f,   true,    false,     IVec3(-8, 0, 0), tex1DTexelFetchFixedOffset,      evalTexelFetch1D,       BOTH),
-        CASE_SPEC(sampler1d_float,       FUNCTION_TEXELFETCH,  Vec4(-7.9f, 0.0f, 0.0f, 0.0f),  Vec4(-6.0f, 0.0f, 0.0f, 0.0f),   false, 1.0f,   1.0f,   true,    false,     IVec3(7, 0, 0),  tex1DTexelFetchFloatOffset,      evalTexelFetch1D,       BOTH),
-        CASE_SPEC(isampler1d,            FUNCTION_TEXELFETCH,  Vec4(8.0f, 0.0f, 0.0f, 0.0f),   Vec4(9.9f, 0.0f, 0.0f, 0.0f),    false, 1.0f,   1.0f,   true,    false,     IVec3(-8, 0, 0), tex1DTexelFetchIntOffset,        evalTexelFetch1D,       BOTH),
-        CASE_SPEC(usampler1d,            FUNCTION_TEXELFETCH,  Vec4(-7.9f, 0.0f, 0.0f, 0.0f),  Vec4(-4.0f, 0.0f, 0.0f, 0.0f),   false, 0.0f,   0.0f,   true,    false,     IVec3(7, 0, 0),  tex1DTexelFetchUintOffset,       evalTexelFetch1D,       BOTH),
+        CASE_SPEC(sampler1d_fixed,       FUNCTION_TEXELFETCH,  Vec4(8.0f, 0.0f, 0.0f, 0.0f),   Vec4(11.9f, 0.0f, 0.0f, 0.0f),   false, 0.0f,   0.0f,   true,    false,     IVec3(-8, 0, 0), tex1DTexelFetchFixedOffset,      evalTexelFetch1D,       ALL),
+        CASE_SPEC(sampler1d_float,       FUNCTION_TEXELFETCH,  Vec4(-7.9f, 0.0f, 0.0f, 0.0f),  Vec4(-6.0f, 0.0f, 0.0f, 0.0f),   false, 1.0f,   1.0f,   true,    false,     IVec3(7, 0, 0),  tex1DTexelFetchFloatOffset,      evalTexelFetch1D,       ALL),
+        CASE_SPEC(isampler1d,            FUNCTION_TEXELFETCH,  Vec4(8.0f, 0.0f, 0.0f, 0.0f),   Vec4(9.9f, 0.0f, 0.0f, 0.0f),    false, 1.0f,   1.0f,   true,    false,     IVec3(-8, 0, 0), tex1DTexelFetchIntOffset,        evalTexelFetch1D,       ALL),
+        CASE_SPEC(usampler1d,            FUNCTION_TEXELFETCH,  Vec4(-7.9f, 0.0f, 0.0f, 0.0f),  Vec4(-4.0f, 0.0f, 0.0f, 0.0f),   false, 0.0f,   0.0f,   true,    false,     IVec3(7, 0, 0),  tex1DTexelFetchUintOffset,       evalTexelFetch1D,       ALL),
 
-        CASE_SPEC(sampler1darray_fixed,  FUNCTION_TEXELFETCH,  Vec4(8.0f, 0.0f, 0.0f, 0.0f),   Vec4(11.9f, 3.9f, 0.0f, 0.0f),   false, 0.0f,   0.0f,   true,    false,     IVec3(-8, 0, 0), tex1DArrayTexelFetchFixedOffset, evalTexelFetch1DArray,  BOTH),
-        CASE_SPEC(sampler1darray_float,  FUNCTION_TEXELFETCH,  Vec4(-7.9f, 0.0f, 0.0f, 0.0f),  Vec4(-6.0f, 3.9f, 0.0f, 0.0f),   false, 1.0f,   1.0f,   true,    false,     IVec3(7, 0, 0),  tex1DArrayTexelFetchFloatOffset, evalTexelFetch1DArray,  BOTH),
-        CASE_SPEC(isampler1darray,       FUNCTION_TEXELFETCH,  Vec4(8.0f, 0.0f, 0.0f, 0.0f),   Vec4(9.9f, 3.9f, 0.0f, 0.0f),    false, 1.0f,   1.0f,   true,    false,     IVec3(-8, 0, 0), tex1DArrayTexelFetchIntOffset,   evalTexelFetch1DArray,  BOTH),
-        CASE_SPEC(usampler1darray,       FUNCTION_TEXELFETCH,  Vec4(-7.9f, 0.0f, 0.0f, 0.0f),  Vec4(-4.0f, 3.9f, 0.0f, 0.0f),   false, 0.0f,   0.0f,   true,    false,     IVec3(7, 0, 0),  tex1DArrayTexelFetchUintOffset,  evalTexelFetch1DArray,  BOTH),
+        CASE_SPEC(sampler1darray_fixed,  FUNCTION_TEXELFETCH,  Vec4(8.0f, 0.0f, 0.0f, 0.0f),   Vec4(11.9f, 3.9f, 0.0f, 0.0f),   false, 0.0f,   0.0f,   true,    false,     IVec3(-8, 0, 0), tex1DArrayTexelFetchFixedOffset, evalTexelFetch1DArray,  ALL),
+        CASE_SPEC(sampler1darray_float,  FUNCTION_TEXELFETCH,  Vec4(-7.9f, 0.0f, 0.0f, 0.0f),  Vec4(-6.0f, 3.9f, 0.0f, 0.0f),   false, 1.0f,   1.0f,   true,    false,     IVec3(7, 0, 0),  tex1DArrayTexelFetchFloatOffset, evalTexelFetch1DArray,  ALL),
+        CASE_SPEC(isampler1darray,       FUNCTION_TEXELFETCH,  Vec4(8.0f, 0.0f, 0.0f, 0.0f),   Vec4(9.9f, 3.9f, 0.0f, 0.0f),    false, 1.0f,   1.0f,   true,    false,     IVec3(-8, 0, 0), tex1DArrayTexelFetchIntOffset,   evalTexelFetch1DArray,  ALL),
+        CASE_SPEC(usampler1darray,       FUNCTION_TEXELFETCH,  Vec4(-7.9f, 0.0f, 0.0f, 0.0f),  Vec4(-4.0f, 3.9f, 0.0f, 0.0f),   false, 0.0f,   0.0f,   true,    false,     IVec3(7, 0, 0),  tex1DArrayTexelFetchUintOffset,  evalTexelFetch1DArray,  ALL),
     };
     // clang-format on
 
@@ -7284,6 +8048,9 @@ void ShaderTextureFunctionTests::init(void)
                 group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"),
                                                      caseSpec.samplerName, caseSpec.textureSpec, false,
                                                      QUERYFUNCTION_TEXTURESIZE));
+                group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_compute"),
+                                                     caseSpec.samplerName, caseSpec.textureSpec, false,
+                                                     QUERYFUNCTION_TEXTURESIZE, 0u, true));
             }
 
             // additional coverage for textureSize special cases
@@ -7348,6 +8115,9 @@ void ShaderTextureFunctionTests::init(void)
                 group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"),
                                                      caseSpec.samplerName, caseSpec.textureSpec, false,
                                                      QUERYFUNCTION_TEXTURESAMPLES));
+                group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_compute"),
+                                                     caseSpec.samplerName, caseSpec.textureSpec, false,
+                                                     QUERYFUNCTION_TEXTURESAMPLES, 0u, true));
             }
 
             queryGroup->addChild(group.release());
@@ -7404,6 +8174,9 @@ void ShaderTextureFunctionTests::init(void)
                 group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"),
                                                      caseSpec.samplerName, caseSpec.textureSpec, false,
                                                      QUERYFUNCTION_TEXTUREQUERYLEVELS));
+                group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_compute"),
+                                                     caseSpec.samplerName, caseSpec.textureSpec, false,
+                                                     QUERYFUNCTION_TEXTUREQUERYLEVELS, 0u, true));
             }
 
             queryGroup->addChild(group.release());
