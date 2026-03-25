@@ -371,7 +371,7 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
     {
         m_dsFormat             = VK_FORMAT_D32_SFLOAT;
         m_dsAspectMask         = VK_IMAGE_ASPECT_DEPTH_BIT;
-        m_dsClearValue         = makeClearValueDepthStencil(0.6f, 1);
+        m_dsClearValue         = makeClearValueDepthStencil(0.4f, 1);
         m_inputDrawsCount      = 0;
         m_useStencilInReadFrag = false;
         m_colorAttachmentCount = 0;
@@ -381,7 +381,7 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
     {
         m_dsFormat             = VK_FORMAT_S8_UINT;
         m_dsAspectMask         = VK_IMAGE_ASPECT_STENCIL_BIT;
-        m_dsClearValue         = makeClearValueDepthStencil(0.6f, 1);
+        m_dsClearValue         = makeClearValueDepthStencil(0.6f, 5);
         m_inputDrawsCount      = 0;
         m_useDepthInReadFrag   = false;
         m_colorAttachmentCount = 0;
@@ -518,9 +518,15 @@ void BasicLocalReadTestInstance::CalculateExpectedValues()
 
     for (uint32_t outputDraw = 0; outputDraw < m_outputDrawsCount; ++outputDraw)
     {
-        // Depth read is 0.6 and stencil read is 1
-        const uint32_t depthRead   = static_cast<uint32_t>(0.6f * 1000);
-        const uint32_t stencilRead = 1;
+        // Depth read is 0.6 and stencil read is 1, except:
+        //
+        // * For DEPTH_STENCIL_MAPPING_TO_NO_INDEX_DEPTH_CLEAR, depth is cleared to 0.4f.  The draw
+        //   call still outputs 0.6f to depth, but should read 0.4f from input.
+        // * For DEPTH_STENCIL_MAPPING_TO_NO_INDEX_STENCIL_CLEAR, stencil is cleared to 5.  The draw
+        //   call modifies stencil, but should still read back 5.
+        const uint32_t depthRead = static_cast<uint32_t>(
+            (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_DEPTH_CLEAR ? 0.4f : 0.6f) * 1000);
+        const uint32_t stencilRead = m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_STENCIL_CLEAR ? 5 : 1;
 
         if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX)
         {
@@ -868,7 +874,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
                                       VK_NULL_HANDLE, {}, pipelineAttachmentLocationInfo)
             .buildPipeline();
 
-        // writte to depth and stencil only in first pipeline
+        // write to depth and stencil only in first pipeline
         depthStencilStateCreateInfo.depthTestEnable   = false;
         depthStencilStateCreateInfo.stencilTestEnable = false;
     }
@@ -889,6 +895,17 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     uint32_t subpass = (m_inputDrawsCount > 0);
     for (uint32_t pipelineIndex = 0; pipelineIndex < m_outputDrawsCount; ++pipelineIndex)
     {
+        // In some depth/stencil input tests, simultaneously write to depth/stencil.  The read
+        // should happen before depth/stencil write.
+        const bool writeToDepthStencil = m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_DEPTH_CLEAR ||
+                                         m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_STENCIL_CLEAR;
+        VkPipelineDepthStencilStateCreateInfo depthStencilOverwriteState = depthStencilStateCreateInfo;
+        depthStencilOverwriteState.depthCompareOp                        = VK_COMPARE_OP_ALWAYS;
+        depthStencilOverwriteState.front.failOp                          = depthStencilOverwriteState.front.passOp =
+            depthStencilOverwriteState.front.depthFailOp                 = depthStencilOverwriteState.back.failOp =
+                depthStencilOverwriteState.back.passOp                   = depthStencilOverwriteState.back.depthFailOp =
+                    VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+
         renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices =
             de::dataOrNull(m_colorAttachmentInputIndices[pipelineIndex]);
         readGraphicsPipelines[pipelineIndex].reset(
@@ -902,8 +919,9 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
             .setupVertexInputState(&vertexInputState)
             .setupPreRasterizationShaderState(viewports, scissors, readPipelineLayout, VK_NULL_HANDLE, subpass,
                                               vertShader, 0, {}, {}, {}, 0, nullptr, &renderingCreateInfo)
-            .setupFragmentShaderState(readPipelineLayout, VK_NULL_HANDLE, subpass, readFragShader, nullptr, nullptr,
-                                      nullptr, VK_NULL_HANDLE, {}, pipelineInputAttachmentIndexInfo)
+            .setupFragmentShaderState(readPipelineLayout, VK_NULL_HANDLE, subpass, readFragShader,
+                                      writeToDepthStencil ? &depthStencilOverwriteState : nullptr, nullptr, nullptr,
+                                      VK_NULL_HANDLE, {}, pipelineInputAttachmentIndexInfo)
             .setupFragmentOutputState(VK_NULL_HANDLE, subpass, &colorBlendStateCreateInfo)
             .buildPipeline();
     }
