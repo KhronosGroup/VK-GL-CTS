@@ -380,9 +380,23 @@ struct TestNativeObjects
     }
 };
 
+// VUID-VkSwapchainCreateInfoKHR-compositeAlpha-01280
+VkCompositeAlphaFlagBitsKHR pickCompositeAlpha(VkCompositeAlphaFlagsKHR supportedCompositeAlpha)
+{
+    for (VkCompositeAlphaFlagsKHR alpha = 1u; alpha <= supportedCompositeAlpha; alpha <<= 1u)
+    {
+        if ((alpha & supportedCompositeAlpha) != 0)
+            return (VkCompositeAlphaFlagBitsKHR)alpha;
+    }
+
+    DE_ASSERT(false);
+    return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+}
+
 VkSwapchainCreateInfoKHR getBasicSwapchainParameters(VkSurfaceKHR surface, VkSurfaceFormatKHR surfaceFormat,
                                                      const tcu::UVec2 &desiredSize, VkPresentModeKHR presentMode,
                                                      VkSurfaceTransformFlagBitsKHR transform,
+                                                     VkCompositeAlphaFlagsKHR supportedCompositeAlpha,
                                                      uint32_t desiredImageCount, bool deferMemoryAllocation)
 {
     const VkSwapchainCreateInfoKHR parameters = {
@@ -400,7 +414,7 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters(VkSurfaceKHR surface, VkSur
         0u,
         nullptr,
         transform,
-        VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,
+        pickCompositeAlpha(supportedCompositeAlpha),
         presentMode,
         VK_FALSE,       // clipped
         VK_NULL_HANDLE, // oldSwapchain
@@ -878,9 +892,9 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
         if (!isSharedPresentMode[i] && capabilities.maxImageCount > 0)
             imageCount = de::min(imageCount, capabilities.maxImageCount);
 
-        swapchainInfo.push_back(getBasicSwapchainParameters(*surfaces[i], surfaceFormats[0], native.windowSize,
-                                                            testParams.modes[i], transform, imageCount,
-                                                            testParams.deferMemoryAllocation));
+        swapchainInfo.push_back(getBasicSwapchainParameters(
+            *surfaces[i], surfaceFormats[0], native.windowSize, testParams.modes[i], transform,
+            capabilities.supportedCompositeAlpha, imageCount, testParams.deferMemoryAllocation));
 
         VkSwapchainPresentModesCreateInfoEXT compatibleModesCreateInfo = {
             VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT,
@@ -1014,10 +1028,11 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
                 }
 
                 barrier.newLayout =
-                    isSharedPresentMode[j] ? VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                barrier.image = acquiredImage;
+                    isSharedPresentMode[j] ? VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                barrier.image         = acquiredImage;
 
-                vkd.cmdPipelineBarrier(**commandBuffers[i], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                vkd.cmdPipelineBarrier(**commandBuffers[i], VK_PIPELINE_STAGE_TRANSFER_BIT,
                                        VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0, nullptr, 0, nullptr, 1, &barrier);
             }
 
@@ -1034,6 +1049,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
             }
 
             barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrier.dstAccessMask = 0;
 
             for (uint32_t j = 0; j < surfaceCount; ++j)
             {
@@ -1762,8 +1778,9 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
         }
     }
 
-    VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(
-        *surface, surfaceFormats[0], swapchainSize, testParams.mode, transform, capabilities.minImageCount, false);
+    VkSwapchainCreateInfoKHR swapchainInfo =
+        getBasicSwapchainParameters(*surface, surfaceFormats[0], swapchainSize, testParams.mode, transform,
+                                    capabilities.supportedCompositeAlpha, capabilities.minImageCount, false);
 
     VkSwapchainPresentScalingCreateInfoEXT scalingInfo = {
         VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT,
@@ -2280,8 +2297,9 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
     if (capabilities.maxImageCount > 0)
         imageCount = de::min(imageCount, capabilities.maxImageCount);
 
-    VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(*surface, surfaceFormats[0], native.windowSize,
-                                                                         testParams.mode, transform, imageCount, false);
+    VkSwapchainCreateInfoKHR swapchainInfo =
+        getBasicSwapchainParameters(*surface, surfaceFormats[0], native.windowSize, testParams.mode, transform,
+                                    capabilities.supportedCompositeAlpha, imageCount, false);
 
     VkSwapchainPresentScalingCreateInfoEXT scalingInfo = {
         VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT, nullptr, testParams.scaling, 0, 0,
