@@ -236,6 +236,8 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceCustomBorderColorProperties
 template<> void initPropertyFromBlob<VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT>(VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceDescriptorBufferPropertiesEXT>(VkPhysicalDeviceDescriptorBufferPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceDescriptorBufferTensorPropertiesARM>(VkPhysicalDeviceDescriptorBufferTensorPropertiesARM&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceDescriptorHeapPropertiesEXT>(VkPhysicalDeviceDescriptorHeapPropertiesEXT&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceDescriptorHeapTensorPropertiesARM>(VkPhysicalDeviceDescriptorHeapTensorPropertiesARM&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT>(VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV>(VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceDiscardRectanglePropertiesEXT>(VkPhysicalDeviceDiscardRectanglePropertiesEXT&, const AllPropertiesBlobs&) {}
@@ -270,6 +272,7 @@ template<> void initPropertyFromBlob<VkPhysicalDevicePerformanceQueryPropertiesK
 template<> void initPropertyFromBlob<VkPhysicalDevicePipelineBinaryPropertiesKHR>(VkPhysicalDevicePipelineBinaryPropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDevicePortabilitySubsetPropertiesKHR>(VkPhysicalDevicePortabilitySubsetPropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceProvokingVertexPropertiesEXT>(VkPhysicalDeviceProvokingVertexPropertiesEXT&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDevicePushConstantBankPropertiesNV>(VkPhysicalDevicePushConstantBankPropertiesNV&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceRayTracingInvocationReorderPropertiesEXT>(VkPhysicalDeviceRayTracingInvocationReorderPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(VkPhysicalDeviceRayTracingPipelinePropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceRayTracingPropertiesNV>(VkPhysicalDeviceRayTracingPropertiesNV&, const AllPropertiesBlobs&) {}
@@ -299,6 +302,8 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDepthStencilResolveProp
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_DENSITY_MAP_PROPERTIES_EXT, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDescriptorBufferPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDescriptorBufferTensorPropertiesARM>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_TENSOR_PROPERTIES_ARM, VK_ARM_TENSORS_EXTENSION_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDescriptorHeapPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_PROPERTIES_EXT, VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDescriptorHeapTensorPropertiesARM>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_TENSOR_PROPERTIES_ARM, VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDescriptorIndexingProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_EXT, VK_EXT_DEVICE_GENERATED_COMMANDS_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV, VK_NV_DEVICE_GENERATED_COMMANDS_EXTENSION_NAME}; }
@@ -348,6 +353,7 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePointClippingProperties
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePortabilitySubsetPropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_PROPERTIES_KHR, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceProtectedMemoryProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceProvokingVertexPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROVOKING_VERTEX_PROPERTIES_EXT, VK_EXT_PROVOKING_VERTEX_EXTENSION_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePushConstantBankPropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_CONSTANT_BANK_PROPERTIES_NV, VK_NV_PUSH_CONSTANT_BANK_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePushDescriptorProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES, VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceRayTracingInvocationReorderPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_EXT, VK_EXT_RAY_TRACING_INVOCATION_REORDER_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME}; }
@@ -388,6 +394,8 @@ static const PropertyStructCreationData propertyStructCreationArray[]
 	{ createPropertyStructWrapper<VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT>, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceDescriptorBufferPropertiesEXT>, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceDescriptorBufferTensorPropertiesARM>, VK_ARM_TENSORS_EXTENSION_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceDescriptorHeapPropertiesEXT>, VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceDescriptorHeapTensorPropertiesARM>, VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceDescriptorIndexingProperties>, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT>, VK_EXT_DEVICE_GENERATED_COMMANDS_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV>, VK_NV_DEVICE_GENERATED_COMMANDS_EXTENSION_NAME },
@@ -437,6 +445,7 @@ static const PropertyStructCreationData propertyStructCreationArray[]
 	{ createPropertyStructWrapper<VkPhysicalDevicePortabilitySubsetPropertiesKHR>, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceProtectedMemoryProperties>, DECL_CORE_PROPERTIES_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceProvokingVertexPropertiesEXT>, VK_EXT_PROVOKING_VERTEX_EXTENSION_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDevicePushConstantBankPropertiesNV>, VK_NV_PUSH_CONSTANT_BANK_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDevicePushDescriptorProperties>, VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceRayTracingInvocationReorderPropertiesEXT>, VK_EXT_RAY_TRACING_INVOCATION_REORDER_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceRayTracingPipelinePropertiesKHR>, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME },

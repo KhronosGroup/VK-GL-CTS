@@ -18,6 +18,7 @@ auto fBufferDeviceAddressFeaturesEXT                    = m_context.getBufferDev
 auto fClusterCullingShaderFeaturesHUAWEI                = m_context.getClusterCullingShaderFeaturesHUAWEI();
 auto fCoherentMemoryFeaturesAMD                         = m_context.getCoherentMemoryFeaturesAMD();
 auto fColorWriteEnableFeaturesEXT                       = m_context.getColorWriteEnableFeaturesEXT();
+auto fCommandBufferInheritanceFeaturesNV                = m_context.getCommandBufferInheritanceFeaturesNV();
 auto fComputeShaderDerivativesFeatures                  = m_context.getComputeShaderDerivativesFeatures();
 auto fConditionalRenderingFeaturesEXT                   = m_context.getConditionalRenderingFeaturesEXT();
 auto fCooperativeMatrix2FeaturesNV                      = m_context.getCooperativeMatrix2FeaturesNV();
@@ -37,6 +38,7 @@ auto fDepthClipControlFeaturesEXT                       = m_context.getDepthClip
 auto fDepthClipEnableFeaturesEXT                        = m_context.getDepthClipEnableFeaturesEXT();
 auto fDescriptorBufferFeaturesEXT                       = m_context.getDescriptorBufferFeaturesEXT();
 auto fDescriptorBufferTensorFeaturesARM                 = m_context.getDescriptorBufferTensorFeaturesARM();
+auto fDescriptorHeapFeaturesEXT                         = m_context.getDescriptorHeapFeaturesEXT();
 auto fDescriptorIndexingFeatures                        = m_context.getDescriptorIndexingFeatures();
 auto fDeviceAddressCommandsFeatures                     = m_context.getDeviceAddressCommandsFeatures();
 auto fDeviceGeneratedCommandsComputeFeaturesNV          = m_context.getDeviceGeneratedCommandsComputeFeaturesNV();
@@ -126,6 +128,7 @@ auto fPrimitivesGeneratedQueryFeaturesEXT               = m_context.getPrimitive
 auto fPrivateDataFeatures                               = m_context.getPrivateDataFeatures();
 auto fProtectedMemoryFeatures                           = m_context.getProtectedMemoryFeatures();
 auto fProvokingVertexFeaturesEXT                        = m_context.getProvokingVertexFeaturesEXT();
+auto fPushConstantBankFeaturesNV                        = m_context.getPushConstantBankFeaturesNV();
 auto fRGBA10X6FormatsFeaturesEXT                        = m_context.getRGBA10X6FormatsFeaturesEXT();
 auto fRasterizationOrderAttachmentAccessFeaturesEXT     = m_context.getRasterizationOrderAttachmentAccessFeaturesEXT();
 auto fRawAccessChainsFeaturesNV                         = m_context.getRawAccessChainsFeaturesNV();
@@ -217,6 +220,7 @@ std::vector<void *> pNextFeatures = {
 	&fClusterCullingShaderFeaturesHUAWEI,
 	&fCoherentMemoryFeaturesAMD,
 	&fColorWriteEnableFeaturesEXT,
+	&fCommandBufferInheritanceFeaturesNV,
 	&fComputeShaderDerivativesFeatures,
 	&fConditionalRenderingFeaturesEXT,
 	&fCooperativeMatrix2FeaturesNV,
@@ -236,6 +240,7 @@ std::vector<void *> pNextFeatures = {
 	&fDepthClipEnableFeaturesEXT,
 	&fDescriptorBufferFeaturesEXT,
 	&fDescriptorBufferTensorFeaturesARM,
+	&fDescriptorHeapFeaturesEXT,
 	&fDescriptorIndexingFeatures,
 	&fDeviceAddressCommandsFeatures,
 	&fDeviceGeneratedCommandsComputeFeaturesNV,
@@ -325,6 +330,7 @@ std::vector<void *> pNextFeatures = {
 	&fPrivateDataFeatures,
 	&fProtectedMemoryFeatures,
 	&fProvokingVertexFeaturesEXT,
+	&fPushConstantBankFeaturesNV,
 	&fRGBA10X6FormatsFeaturesEXT,
 	&fRasterizationOrderAttachmentAccessFeaturesEXT,
 	&fRawAccessChainsFeaturesNV,

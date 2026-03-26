@@ -1267,6 +1267,26 @@ const char* getDepthClampModeEXTName (VkDepthClampModeEXT value)
 }
 
 
+const char* getDescriptorMappingSourceEXTName (VkDescriptorMappingSourceEXT value)
+{
+	switch (value)
+	{
+		case VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT:		return "VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT";
+		case VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_ARRAY_EXT:	return "VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_ARRAY_EXT";
+		case VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_EXT:			return "VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_EXT";
+		case VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_PUSH_INDEX_EXT:				return "VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_PUSH_INDEX_EXT";
+		case VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_SHADER_RECORD_INDEX_EXT:	return "VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_SHADER_RECORD_INDEX_EXT";
+		case VK_DESCRIPTOR_MAPPING_SOURCE_INDIRECT_ADDRESS_EXT:					return "VK_DESCRIPTOR_MAPPING_SOURCE_INDIRECT_ADDRESS_EXT";
+		case VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT:						return "VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT";
+		case VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_DATA_EXT:						return "VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_DATA_EXT";
+		case VK_DESCRIPTOR_MAPPING_SOURCE_RESOURCE_HEAP_DATA_EXT:				return "VK_DESCRIPTOR_MAPPING_SOURCE_RESOURCE_HEAP_DATA_EXT";
+		case VK_DESCRIPTOR_MAPPING_SOURCE_SHADER_RECORD_ADDRESS_EXT:			return "VK_DESCRIPTOR_MAPPING_SOURCE_SHADER_RECORD_ADDRESS_EXT";
+		case VK_DESCRIPTOR_MAPPING_SOURCE_SHADER_RECORD_DATA_EXT:				return "VK_DESCRIPTOR_MAPPING_SOURCE_SHADER_RECORD_DATA_EXT";
+		default:																return nullptr;
+	}
+}
+
+
 const char* getDescriptorTypeName (VkDescriptorType value)
 {
 	switch (value)
@@ -6087,6 +6107,26 @@ tcu::Format::Bitfield<32> getSparseMemoryBindFlagsStr (VkSparseMemoryBindFlags v
 }
 
 
+tcu::Format::Bitfield<32> getSpirvResourceTypeFlagsEXTStr (VkSpirvResourceTypeFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_SPIRV_RESOURCE_TYPE_ACCELERATION_STRUCTURE_BIT_EXT,		"VK_SPIRV_RESOURCE_TYPE_ACCELERATION_STRUCTURE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SPIRV_RESOURCE_TYPE_ALL_EXT,							"VK_SPIRV_RESOURCE_TYPE_ALL_EXT"),
+		tcu::Format::BitDesc(VK_SPIRV_RESOURCE_TYPE_COMBINED_SAMPLED_IMAGE_BIT_EXT,		"VK_SPIRV_RESOURCE_TYPE_COMBINED_SAMPLED_IMAGE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SPIRV_RESOURCE_TYPE_READ_ONLY_IMAGE_BIT_EXT,			"VK_SPIRV_RESOURCE_TYPE_READ_ONLY_IMAGE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SPIRV_RESOURCE_TYPE_READ_ONLY_STORAGE_BUFFER_BIT_EXT,	"VK_SPIRV_RESOURCE_TYPE_READ_ONLY_STORAGE_BUFFER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SPIRV_RESOURCE_TYPE_READ_WRITE_IMAGE_BIT_EXT,			"VK_SPIRV_RESOURCE_TYPE_READ_WRITE_IMAGE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SPIRV_RESOURCE_TYPE_READ_WRITE_STORAGE_BUFFER_BIT_EXT,	"VK_SPIRV_RESOURCE_TYPE_READ_WRITE_STORAGE_BUFFER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SPIRV_RESOURCE_TYPE_SAMPLED_IMAGE_BIT_EXT,				"VK_SPIRV_RESOURCE_TYPE_SAMPLED_IMAGE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SPIRV_RESOURCE_TYPE_SAMPLER_BIT_EXT,					"VK_SPIRV_RESOURCE_TYPE_SAMPLER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SPIRV_RESOURCE_TYPE_TENSOR_BIT_ARM,						"VK_SPIRV_RESOURCE_TYPE_TENSOR_BIT_ARM"),
+		tcu::Format::BitDesc(VK_SPIRV_RESOURCE_TYPE_UNIFORM_BUFFER_BIT_EXT,				"VK_SPIRV_RESOURCE_TYPE_UNIFORM_BUFFER_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
 tcu::Format::Bitfield<32> getStencilFaceFlagsStr (VkStencilFaceFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -7380,6 +7420,18 @@ std::ostream& operator<< (std::ostream& s, const VkBindDescriptorSetsInfo& value
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkBindHeapInfoEXT& value)
+{
+	s << "VkBindHeapInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\theapRange = " << value.heapRange << '\n';
+	s << "\treservedRangeOffset = " << value.reservedRangeOffset << '\n';
+	s << "\treservedRangeSize = " << value.reservedRangeSize << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkBindImageMemoryDeviceGroupInfo& value)
 {
 	s << "VkBindImageMemoryDeviceGroupInfo = {\n";
@@ -7893,6 +7945,17 @@ std::ostream& operator<< (std::ostream& s, const VkCommandBufferInheritanceCondi
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tconditionalRenderingEnable = " << value.conditionalRenderingEnable << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCommandBufferInheritanceDescriptorHeapInfoEXT& value)
+{
+	s << "VkCommandBufferInheritanceDescriptorHeapInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpSamplerHeapBindInfo = " << value.pSamplerHeapBindInfo << '\n';
+	s << "\tpResourceHeapBindInfo = " << value.pResourceHeapBindInfo << '\n';
 	s << '}';
 	return s;
 }
@@ -8842,6 +8905,124 @@ std::ostream& operator<< (std::ostream& s, const VkDescriptorImageInfo& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkDescriptorMappingSourceConstantOffsetEXT& value)
+{
+	s << "VkDescriptorMappingSourceConstantOffsetEXT = {\n";
+	s << "\theapOffset = " << value.heapOffset << '\n';
+	s << "\theapArrayStride = " << value.heapArrayStride << '\n';
+	s << "\tpEmbeddedSampler = " << value.pEmbeddedSampler << '\n';
+	s << "\tsamplerHeapOffset = " << value.samplerHeapOffset << '\n';
+	s << "\tsamplerHeapArrayStride = " << value.samplerHeapArrayStride << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorMappingSourceDataEXT& value)
+{
+	s << "VkDescriptorMappingSourceDataEXT = {\n";
+	s << "\tconstantOffset = " << value.constantOffset << '\n';
+	s << "\tpushIndex = " << value.pushIndex << '\n';
+	s << "\tindirectIndex = " << value.indirectIndex << '\n';
+	s << "\tindirectIndexArray = " << value.indirectIndexArray << '\n';
+	s << "\theapData = " << value.heapData << '\n';
+	s << "\tpushDataOffset = " << value.pushDataOffset << '\n';
+	s << "\tpushAddressOffset = " << value.pushAddressOffset << '\n';
+	s << "\tindirectAddress = " << value.indirectAddress << '\n';
+	s << "\tshaderRecordIndex = " << value.shaderRecordIndex << '\n';
+	s << "\tshaderRecordDataOffset = " << value.shaderRecordDataOffset << '\n';
+	s << "\tshaderRecordAddressOffset = " << value.shaderRecordAddressOffset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorMappingSourceHeapDataEXT& value)
+{
+	s << "VkDescriptorMappingSourceHeapDataEXT = {\n";
+	s << "\theapOffset = " << value.heapOffset << '\n';
+	s << "\tpushOffset = " << value.pushOffset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorMappingSourceIndirectAddressEXT& value)
+{
+	s << "VkDescriptorMappingSourceIndirectAddressEXT = {\n";
+	s << "\tpushOffset = " << value.pushOffset << '\n';
+	s << "\taddressOffset = " << value.addressOffset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorMappingSourceIndirectIndexArrayEXT& value)
+{
+	s << "VkDescriptorMappingSourceIndirectIndexArrayEXT = {\n";
+	s << "\theapOffset = " << value.heapOffset << '\n';
+	s << "\tpushOffset = " << value.pushOffset << '\n';
+	s << "\taddressOffset = " << value.addressOffset << '\n';
+	s << "\theapIndexStride = " << value.heapIndexStride << '\n';
+	s << "\tpEmbeddedSampler = " << value.pEmbeddedSampler << '\n';
+	s << "\tuseCombinedImageSamplerIndex = " << value.useCombinedImageSamplerIndex << '\n';
+	s << "\tsamplerHeapOffset = " << value.samplerHeapOffset << '\n';
+	s << "\tsamplerPushOffset = " << value.samplerPushOffset << '\n';
+	s << "\tsamplerAddressOffset = " << value.samplerAddressOffset << '\n';
+	s << "\tsamplerHeapIndexStride = " << value.samplerHeapIndexStride << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorMappingSourceIndirectIndexEXT& value)
+{
+	s << "VkDescriptorMappingSourceIndirectIndexEXT = {\n";
+	s << "\theapOffset = " << value.heapOffset << '\n';
+	s << "\tpushOffset = " << value.pushOffset << '\n';
+	s << "\taddressOffset = " << value.addressOffset << '\n';
+	s << "\theapIndexStride = " << value.heapIndexStride << '\n';
+	s << "\theapArrayStride = " << value.heapArrayStride << '\n';
+	s << "\tpEmbeddedSampler = " << value.pEmbeddedSampler << '\n';
+	s << "\tuseCombinedImageSamplerIndex = " << value.useCombinedImageSamplerIndex << '\n';
+	s << "\tsamplerHeapOffset = " << value.samplerHeapOffset << '\n';
+	s << "\tsamplerPushOffset = " << value.samplerPushOffset << '\n';
+	s << "\tsamplerAddressOffset = " << value.samplerAddressOffset << '\n';
+	s << "\tsamplerHeapIndexStride = " << value.samplerHeapIndexStride << '\n';
+	s << "\tsamplerHeapArrayStride = " << value.samplerHeapArrayStride << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorMappingSourcePushIndexEXT& value)
+{
+	s << "VkDescriptorMappingSourcePushIndexEXT = {\n";
+	s << "\theapOffset = " << value.heapOffset << '\n';
+	s << "\tpushOffset = " << value.pushOffset << '\n';
+	s << "\theapIndexStride = " << value.heapIndexStride << '\n';
+	s << "\theapArrayStride = " << value.heapArrayStride << '\n';
+	s << "\tpEmbeddedSampler = " << value.pEmbeddedSampler << '\n';
+	s << "\tuseCombinedImageSamplerIndex = " << value.useCombinedImageSamplerIndex << '\n';
+	s << "\tsamplerHeapOffset = " << value.samplerHeapOffset << '\n';
+	s << "\tsamplerPushOffset = " << value.samplerPushOffset << '\n';
+	s << "\tsamplerHeapIndexStride = " << value.samplerHeapIndexStride << '\n';
+	s << "\tsamplerHeapArrayStride = " << value.samplerHeapArrayStride << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorMappingSourceShaderRecordIndexEXT& value)
+{
+	s << "VkDescriptorMappingSourceShaderRecordIndexEXT = {\n";
+	s << "\theapOffset = " << value.heapOffset << '\n';
+	s << "\tshaderRecordOffset = " << value.shaderRecordOffset << '\n';
+	s << "\theapIndexStride = " << value.heapIndexStride << '\n';
+	s << "\theapArrayStride = " << value.heapArrayStride << '\n';
+	s << "\tpEmbeddedSampler = " << value.pEmbeddedSampler << '\n';
+	s << "\tuseCombinedImageSamplerIndex = " << value.useCombinedImageSamplerIndex << '\n';
+	s << "\tsamplerHeapOffset = " << value.samplerHeapOffset << '\n';
+	s << "\tsamplerShaderRecordOffset = " << value.samplerShaderRecordOffset << '\n';
+	s << "\tsamplerHeapIndexStride = " << value.samplerHeapIndexStride << '\n';
+	s << "\tsamplerHeapArrayStride = " << value.samplerHeapArrayStride << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDescriptorPoolCreateInfo& value)
 {
 	s << "VkDescriptorPoolCreateInfo = {\n";
@@ -8882,6 +9063,21 @@ std::ostream& operator<< (std::ostream& s, const VkDescriptorSetAllocateInfo& va
 	s << "\tdescriptorPool = " << value.descriptorPool << '\n';
 	s << "\tdescriptorSetCount = " << value.descriptorSetCount << '\n';
 	s << "\tpSetLayouts = " << value.pSetLayouts << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorSetAndBindingMappingEXT& value)
+{
+	s << "VkDescriptorSetAndBindingMappingEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdescriptorSet = " << value.descriptorSet << '\n';
+	s << "\tfirstBinding = " << value.firstBinding << '\n';
+	s << "\tbindingCount = " << value.bindingCount << '\n';
+	s << "\tresourceMask = " << getSpirvResourceTypeFlagsEXTStr(value.resourceMask) << '\n';
+	s << "\tsource = " << value.source << '\n';
+	s << "\tsourceData = " << value.sourceData << '\n';
 	s << '}';
 	return s;
 }
@@ -10385,6 +10581,24 @@ std::ostream& operator<< (std::ostream& s, const VkHeadlessSurfaceCreateInfoEXT&
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkHostAddressRangeConstEXT& value)
+{
+	s << "VkHostAddressRangeConstEXT = {\n";
+	s << "\taddress = " << value.address << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkHostAddressRangeEXT& value)
+{
+	s << "VkHostAddressRangeEXT = {\n";
+	s << "\taddress = " << value.address << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkHostImageCopyDevicePerformanceQuery& value)
 {
 	s << "VkHostImageCopyDevicePerformanceQuery = {\n";
@@ -10521,6 +10735,17 @@ std::ostream& operator<< (std::ostream& s, const VkImageCreateInfo& value)
 	s << "\tqueueFamilyIndexCount = " << value.queueFamilyIndexCount << '\n';
 	s << "\tpQueueFamilyIndices = " << value.pQueueFamilyIndices << '\n';
 	s << "\tinitialLayout = " << value.initialLayout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageDescriptorInfoEXT& value)
+{
+	s << "VkImageDescriptorInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpView = " << value.pView << '\n';
+	s << "\tlayout = " << value.layout << '\n';
 	s << '}';
 	return s;
 }
@@ -11036,6 +11261,17 @@ std::ostream& operator<< (std::ostream& s, const VkIndirectCommandsLayoutCreateI
 	s << "\tpTokens = " << value.pTokens << '\n';
 	s << "\tstreamCount = " << value.streamCount << '\n';
 	s << "\tpStreamStrides = " << value.pStreamStrides << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkIndirectCommandsLayoutPushDataTokenNV& value)
+{
+	s << "VkIndirectCommandsLayoutPushDataTokenNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpushDataOffset = " << value.pushDataOffset << '\n';
+	s << "\tpushDataSize = " << value.pushDataSize << '\n';
 	s << '}';
 	return s;
 }
@@ -11845,6 +12081,16 @@ std::ostream& operator<< (std::ostream& s, const VkOffset3D& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkOpaqueCaptureDataCreateInfoEXT& value)
+{
+	s << "VkOpaqueCaptureDataCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpData = " << value.pData << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkOpaqueCaptureDescriptorDataCreateInfoEXT& value)
 {
 	s << "VkOpaqueCaptureDescriptorDataCreateInfoEXT = {\n";
@@ -12271,6 +12517,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceColorWriteEnabl
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCommandBufferInheritanceFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceCommandBufferInheritanceFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcommandBufferInheritance = " << value.commandBufferInheritance << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR& value)
 {
 	s << "VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR = {\n";
@@ -12669,6 +12925,57 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDescriptorBuffe
 	s << "\ttensorCaptureReplayDescriptorDataSize = " << value.tensorCaptureReplayDescriptorDataSize << '\n';
 	s << "\ttensorViewCaptureReplayDescriptorDataSize = " << value.tensorViewCaptureReplayDescriptorDataSize << '\n';
 	s << "\ttensorDescriptorSize = " << value.tensorDescriptorSize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDescriptorHeapFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceDescriptorHeapFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdescriptorHeap = " << value.descriptorHeap << '\n';
+	s << "\tdescriptorHeapCaptureReplay = " << value.descriptorHeapCaptureReplay << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDescriptorHeapPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceDescriptorHeapPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsamplerHeapAlignment = " << value.samplerHeapAlignment << '\n';
+	s << "\tresourceHeapAlignment = " << value.resourceHeapAlignment << '\n';
+	s << "\tmaxSamplerHeapSize = " << value.maxSamplerHeapSize << '\n';
+	s << "\tmaxResourceHeapSize = " << value.maxResourceHeapSize << '\n';
+	s << "\tminSamplerHeapReservedRange = " << value.minSamplerHeapReservedRange << '\n';
+	s << "\tminSamplerHeapReservedRangeWithEmbedded = " << value.minSamplerHeapReservedRangeWithEmbedded << '\n';
+	s << "\tminResourceHeapReservedRange = " << value.minResourceHeapReservedRange << '\n';
+	s << "\tsamplerDescriptorSize = " << value.samplerDescriptorSize << '\n';
+	s << "\timageDescriptorSize = " << value.imageDescriptorSize << '\n';
+	s << "\tbufferDescriptorSize = " << value.bufferDescriptorSize << '\n';
+	s << "\tsamplerDescriptorAlignment = " << value.samplerDescriptorAlignment << '\n';
+	s << "\timageDescriptorAlignment = " << value.imageDescriptorAlignment << '\n';
+	s << "\tbufferDescriptorAlignment = " << value.bufferDescriptorAlignment << '\n';
+	s << "\tmaxPushDataSize = " << value.maxPushDataSize << '\n';
+	s << "\timageCaptureReplayOpaqueDataSize = " << value.imageCaptureReplayOpaqueDataSize << '\n';
+	s << "\tmaxDescriptorHeapEmbeddedSamplers = " << value.maxDescriptorHeapEmbeddedSamplers << '\n';
+	s << "\tsamplerYcbcrConversionCount = " << value.samplerYcbcrConversionCount << '\n';
+	s << "\tsparseDescriptorHeaps = " << value.sparseDescriptorHeaps << '\n';
+	s << "\tprotectedDescriptorHeaps = " << value.protectedDescriptorHeaps << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDescriptorHeapTensorPropertiesARM& value)
+{
+	s << "VkPhysicalDeviceDescriptorHeapTensorPropertiesARM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttensorDescriptorSize = " << value.tensorDescriptorSize << '\n';
+	s << "\ttensorDescriptorAlignment = " << value.tensorDescriptorAlignment << '\n';
+	s << "\ttensorCaptureReplayOpaqueDataSize = " << value.tensorCaptureReplayOpaqueDataSize << '\n';
 	s << '}';
 	return s;
 }
@@ -14716,6 +15023,29 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceProvokingVertex
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tprovokingVertexModePerPipeline = " << value.provokingVertexModePerPipeline << '\n';
 	s << "\ttransformFeedbackPreservesTriangleFanProvokingVertex = " << value.transformFeedbackPreservesTriangleFanProvokingVertex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePushConstantBankFeaturesNV& value)
+{
+	s << "VkPhysicalDevicePushConstantBankFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpushConstantBank = " << value.pushConstantBank << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePushConstantBankPropertiesNV& value)
+{
+	s << "VkPhysicalDevicePushConstantBankPropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxGraphicsPushConstantBanks = " << value.maxGraphicsPushConstantBanks << '\n';
+	s << "\tmaxComputePushConstantBanks = " << value.maxComputePushConstantBanks << '\n';
+	s << "\tmaxGraphicsPushDataBanks = " << value.maxGraphicsPushDataBanks << '\n';
+	s << "\tmaxComputePushDataBanks = " << value.maxComputePushDataBanks << '\n';
 	s << '}';
 	return s;
 }
@@ -17140,6 +17470,16 @@ std::ostream& operator<< (std::ostream& s, const VkProtectedSubmitInfo& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPushConstantBankInfoNV& value)
+{
+	s << "VkPushConstantBankInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tbank = " << value.bank << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPushConstantRange& value)
 {
 	s << "VkPushConstantRange = {\n";
@@ -17160,6 +17500,17 @@ std::ostream& operator<< (std::ostream& s, const VkPushConstantsInfo& value)
 	s << "\toffset = " << value.offset << '\n';
 	s << "\tsize = " << value.size << '\n';
 	s << "\tpValues = " << value.pValues << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPushDataInfoEXT& value)
+{
+	s << "VkPushDataInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\toffset = " << value.offset << '\n';
+	s << "\tdata = " << value.data << '\n';
 	s << '}';
 	return s;
 }
@@ -17770,6 +18121,28 @@ std::ostream& operator<< (std::ostream& s, const VkResolveImageModeInfoKHR& valu
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkResourceDescriptorDataEXT& value)
+{
+	s << "VkResourceDescriptorDataEXT = {\n";
+	s << "\tpImage = " << value.pImage << '\n';
+	s << "\tpTexelBuffer = " << value.pTexelBuffer << '\n';
+	s << "\tpAddressRange = " << value.pAddressRange << '\n';
+	s << "\tpTensorARM = " << value.pTensorARM << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkResourceDescriptorInfoEXT& value)
+{
+	s << "VkResourceDescriptorInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttype = " << value.type << '\n';
+	s << "\tdata = " << value.data << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkSRTDataNV& value)
 {
 	s << "VkSRTDataNV = {\n";
@@ -17868,6 +18241,16 @@ std::ostream& operator<< (std::ostream& s, const VkSamplerCustomBorderColorCreat
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tcustomBorderColor = " << value.customBorderColor << '\n';
 	s << "\tformat = " << value.format << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSamplerCustomBorderColorIndexCreateInfoEXT& value)
+{
+	s << "VkSamplerCustomBorderColorIndexCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tindex = " << value.index << '\n';
 	s << '}';
 	return s;
 }
@@ -18102,6 +18485,17 @@ std::ostream& operator<< (std::ostream& s, const VkShaderCreateInfoEXT& value)
 	s << "\tpushConstantRangeCount = " << value.pushConstantRangeCount << '\n';
 	s << "\tpPushConstantRanges = " << value.pPushConstantRanges << '\n';
 	s << "\tpSpecializationInfo = " << value.pSpecializationInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkShaderDescriptorSetAndBindingMappingInfoEXT& value)
+{
+	s << "VkShaderDescriptorSetAndBindingMappingInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmappingCount = " << value.mappingCount << '\n';
+	s << "\tpMappings = " << value.pMappings << '\n';
 	s << '}';
 	return s;
 }
@@ -18489,6 +18883,16 @@ std::ostream& operator<< (std::ostream& s, const VkSubresourceLayout2& value)
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tsubresourceLayout = " << value.subresourceLayout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSubsampledImageFormatPropertiesEXT& value)
+{
+	s << "VkSubsampledImageFormatPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsubsampledImageDescriptorCount = " << value.subsampledImageDescriptorCount << '\n';
 	s << '}';
 	return s;
 }
@@ -18908,6 +19312,17 @@ std::ostream& operator<< (std::ostream& s, const VkTensorViewCreateInfoARM& valu
 	s << "\tflags = " << getTensorViewCreateFlagsARMStr(value.flags) << '\n';
 	s << "\ttensor = " << value.tensor << '\n';
 	s << "\tformat = " << value.format << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkTexelBufferDescriptorInfoEXT& value)
+{
+	s << "VkTexelBufferDescriptorInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << "\taddressRange = " << value.addressRange << '\n';
 	s << '}';
 	return s;
 }

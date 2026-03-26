@@ -211,7 +211,9 @@ public:
 
     // Commands to add tokens to the layout.
     void addPushConstantToken(uint32_t offset, const vk::VkPushConstantRange &pcRange);
+    void addPushDataToken(uint32_t offset, const vk::VkPushConstantRange &pcRange);
     void addSequenceIndexToken(uint32_t offset, const vk::VkPushConstantRange &pcRange);
+    void addPushDataSequenceIndexToken(uint32_t offset, const vk::VkPushConstantRange &pcRange);
     void addVertexBufferToken(uint32_t offset, uint32_t bindingNumber);
     void addIndexBufferToken(uint32_t offset, vk::VkIndirectCommandsInputModeFlagBitsEXT mode);
     void addExecutionSetToken(uint32_t offset, vk::VkIndirectExecutionSetInfoTypeEXT setType,
@@ -368,7 +370,8 @@ public:
                           vk::VkPipelineShaderStageCreateFlags shaderStageCreateFlags, vk::VkShaderModule module,
                           const vk::VkSpecializationInfo *specializationInfo = nullptr,
                           vk::VkPipeline basePipelineHandle = VK_NULL_HANDLE, int32_t basePipelineIndex = -1,
-                          uint32_t subgroupSize = 0u);
+                          uint32_t subgroupSize                                                = 0u,
+                          const vk::VkShaderDescriptorSetAndBindingMappingInfoEXT *mappingInfo = nullptr);
 
     vk::VkPipeline get(void) const;
     vk::VkPipeline operator*(void) const;
@@ -431,7 +434,8 @@ public:
     DGCComputeShaderExt(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkShaderCreateFlagsEXT shaderFlags,
                         const vk::ProgramBinary &shaderBinary, const std::vector<vk::VkDescriptorSetLayout> &setLayouts,
                         const std::vector<vk::VkPushConstantRange> &pushConstantRanges,
-                        const vk::VkSpecializationInfo *specializationInfo = nullptr, uint32_t subgroupSize = 0u);
+                        const vk::VkSpecializationInfo *specializationInfo = nullptr, uint32_t subgroupSize = 0u,
+                        const vk::VkShaderDescriptorSetAndBindingMappingInfoEXT *mappingInfo = nullptr);
 
     // Forbid accidental copy and assignment.
     DGCComputeShaderExt(const DGCComputeShaderExt &other)       = delete;

@@ -17,6 +17,7 @@ const vk::VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&					Context::getBuffer
 const vk::VkPhysicalDeviceClusterCullingShaderFeaturesHUAWEI&				Context::getClusterCullingShaderFeaturesHUAWEI				(void) const { return m_device->getClusterCullingShaderFeaturesHUAWEI();			}
 const vk::VkPhysicalDeviceCoherentMemoryFeaturesAMD&						Context::getCoherentMemoryFeaturesAMD						(void) const { return m_device->getCoherentMemoryFeaturesAMD();						}
 const vk::VkPhysicalDeviceColorWriteEnableFeaturesEXT&						Context::getColorWriteEnableFeaturesEXT						(void) const { return m_device->getColorWriteEnableFeaturesEXT();					}
+const vk::VkPhysicalDeviceCommandBufferInheritanceFeaturesNV&				Context::getCommandBufferInheritanceFeaturesNV				(void) const { return m_device->getCommandBufferInheritanceFeaturesNV();			}
 const vk::VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR&				Context::getComputeShaderDerivativesFeatures				(void) const { return m_device->getComputeShaderDerivativesFeatures();				}
 const vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT&					Context::getConditionalRenderingFeaturesEXT					(void) const { return m_device->getConditionalRenderingFeaturesEXT();				}
 const vk::VkPhysicalDeviceCooperativeMatrix2FeaturesNV&						Context::getCooperativeMatrix2FeaturesNV					(void) const { return m_device->getCooperativeMatrix2FeaturesNV();					}
@@ -36,6 +37,7 @@ const vk::VkPhysicalDeviceDepthClipControlFeaturesEXT&						Context::getDepthCli
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&						Context::getDepthClipEnableFeaturesEXT						(void) const { return m_device->getDepthClipEnableFeaturesEXT();					}
 const vk::VkPhysicalDeviceDescriptorBufferFeaturesEXT&						Context::getDescriptorBufferFeaturesEXT						(void) const { return m_device->getDescriptorBufferFeaturesEXT();					}
 const vk::VkPhysicalDeviceDescriptorBufferTensorFeaturesARM&				Context::getDescriptorBufferTensorFeaturesARM				(void) const { return m_device->getDescriptorBufferTensorFeaturesARM();				}
+const vk::VkPhysicalDeviceDescriptorHeapFeaturesEXT&						Context::getDescriptorHeapFeaturesEXT						(void) const { return m_device->getDescriptorHeapFeaturesEXT();						}
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&						Context::getDescriptorIndexingFeatures						(void) const { return m_device->getDescriptorIndexingFeatures();					}
 const vk::VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR&					Context::getDeviceAddressCommandsFeatures					(void) const { return m_device->getDeviceAddressCommandsFeatures();					}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV&			Context::getDeviceGeneratedCommandsComputeFeaturesNV		(void) const { return m_device->getDeviceGeneratedCommandsComputeFeaturesNV();		}
@@ -125,6 +127,7 @@ const vk::VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT&				Context::getPr
 const vk::VkPhysicalDevicePrivateDataFeatures&								Context::getPrivateDataFeatures								(void) const { return m_device->getPrivateDataFeatures();							}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							Context::getProtectedMemoryFeatures							(void) const { return m_device->getProtectedMemoryFeatures();						}
 const vk::VkPhysicalDeviceProvokingVertexFeaturesEXT&						Context::getProvokingVertexFeaturesEXT						(void) const { return m_device->getProvokingVertexFeaturesEXT();					}
+const vk::VkPhysicalDevicePushConstantBankFeaturesNV&						Context::getPushConstantBankFeaturesNV						(void) const { return m_device->getPushConstantBankFeaturesNV();					}
 const vk::VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT&						Context::getRGBA10X6FormatsFeaturesEXT						(void) const { return m_device->getRGBA10X6FormatsFeaturesEXT();					}
 const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&	Context::getRasterizationOrderAttachmentAccessFeaturesEXT	(void) const { return m_device->getRasterizationOrderAttachmentAccessFeaturesEXT();	}
 const vk::VkPhysicalDeviceRawAccessChainsFeaturesNV&						Context::getRawAccessChainsFeaturesNV						(void) const { return m_device->getRawAccessChainsFeaturesNV();						}

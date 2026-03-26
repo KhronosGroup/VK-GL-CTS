@@ -540,6 +540,16 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyDebugUtilsMessengerEXTFunc)					
 typedef VKAPI_ATTR void					(VKAPI_CALL* SubmitDebugUtilsMessageEXTFunc)											(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetAndroidHardwareBufferPropertiesANDROIDFunc)								(VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryAndroidHardwareBufferANDROIDFunc)									(VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct pt::AndroidHardwareBufferPtr* pBuffer);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WriteSamplerDescriptorsEXTFunc)											(VkDevice device, uint32_t samplerCount, const VkSamplerCreateInfo* pSamplers, const VkHostAddressRangeEXT* pDescriptors);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WriteResourceDescriptorsEXTFunc)											(VkDevice device, uint32_t resourceCount, const VkResourceDescriptorInfoEXT* pResources, const VkHostAddressRangeEXT* pDescriptors);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindSamplerHeapEXTFunc)													(VkCommandBuffer commandBuffer, const VkBindHeapInfoEXT* pBindInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindResourceHeapEXTFunc)												(VkCommandBuffer commandBuffer, const VkBindHeapInfoEXT* pBindInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdPushDataEXTFunc)														(VkCommandBuffer commandBuffer, const VkPushDataInfoEXT* pPushDataInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetImageOpaqueCaptureDataEXTFunc)											(VkDevice device, uint32_t imageCount, const VkImage* pImages, VkHostAddressRangeEXT* pDatas);
+typedef VKAPI_ATTR VkDeviceSize			(VKAPI_CALL* GetPhysicalDeviceDescriptorSizeEXTFunc)									(VkPhysicalDevice physicalDevice, VkDescriptorType descriptorType);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* RegisterCustomBorderColorEXTFunc)											(VkDevice device, const VkSamplerCustomBorderColorCreateInfoEXT* pBorderColor, VkBool32 requestIndex, uint32_t* pIndex);
+typedef VKAPI_ATTR void					(VKAPI_CALL* UnregisterCustomBorderColorEXTFunc)										(VkDevice device, uint32_t index);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetTensorOpaqueCaptureDataARMFunc)											(VkDevice device, uint32_t tensorCount, const VkTensorARM* pTensors, VkHostAddressRangeEXT* pDatas);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetSampleLocationsEXTFunc)												(VkCommandBuffer commandBuffer, const VkSampleLocationsInfoEXT* pSampleLocationsInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceMultisamplePropertiesEXTFunc)								(VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkMultisamplePropertiesEXT* pMultisampleProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetImageDrmFormatModifierPropertiesEXTFunc)								(VkDevice device, VkImage image, VkImageDrmFormatModifierPropertiesEXT* pProperties);

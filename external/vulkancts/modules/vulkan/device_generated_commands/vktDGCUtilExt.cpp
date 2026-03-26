@@ -398,12 +398,31 @@ void IndirectCommandsLayoutBuilderExt::addPushConstantToken(uint32_t offset, con
     token.pPushConstant.reset(new VkIndirectCommandsPushConstantTokenEXT{pcRange});
 }
 
+void IndirectCommandsLayoutBuilderExt::addPushDataToken(uint32_t offset, const vk::VkPushConstantRange &pcRange)
+{
+    auto &token  = pushBackEmptyToken();
+    token.type   = VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_DATA_EXT;
+    token.offset = offset;
+    token.pPushConstant.reset(new VkIndirectCommandsPushConstantTokenEXT{pcRange});
+}
+
 void IndirectCommandsLayoutBuilderExt::addSequenceIndexToken(uint32_t offset, const VkPushConstantRange &pcRange)
 {
     DE_ASSERT(pcRange.size == 4u); // Must be fixed by the spec.
 
     auto &token  = pushBackEmptyToken();
     token.type   = vk::VK_INDIRECT_COMMANDS_TOKEN_TYPE_SEQUENCE_INDEX_EXT;
+    token.offset = offset;
+    token.pPushConstant.reset(new VkIndirectCommandsPushConstantTokenEXT{pcRange});
+}
+
+void IndirectCommandsLayoutBuilderExt::addPushDataSequenceIndexToken(uint32_t offset,
+                                                                     const vk::VkPushConstantRange &pcRange)
+{
+    DE_ASSERT(pcRange.size == 4u); // Must be fixed by the spec.
+
+    auto &token  = pushBackEmptyToken();
+    token.type   = vk::VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_DATA_SEQUENCE_INDEX_EXT;
     token.offset = offset;
     token.pPushConstant.reset(new VkIndirectCommandsPushConstantTokenEXT{pcRange});
 }
@@ -529,18 +548,27 @@ VkIndirectCommandsLayoutTokenEXT IndirectCommandsLayoutBuilderExt::InternalToken
 {
     VkIndirectCommandsTokenDataEXT tokenData;
 
-    if (type == VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_EXT)
+    switch (type)
+    {
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_EXT:
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_SEQUENCE_INDEX_EXT:
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_DATA_EXT:
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_DATA_SEQUENCE_INDEX_EXT:
         tokenData.pPushConstant = pPushConstant.get();
-    else if (type == vk::VK_INDIRECT_COMMANDS_TOKEN_TYPE_SEQUENCE_INDEX_EXT)
-        tokenData.pPushConstant = pPushConstant.get();
-    else if (type == VK_INDIRECT_COMMANDS_TOKEN_TYPE_VERTEX_BUFFER_EXT)
+        break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_VERTEX_BUFFER_EXT:
         tokenData.pVertexBuffer = pVertexBuffer.get();
-    else if (type == VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_EXT)
+        break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_EXT:
         tokenData.pIndexBuffer = pIndexBuffer.get();
-    else if (type == VK_INDIRECT_COMMANDS_TOKEN_TYPE_EXECUTION_SET_EXT)
+        break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_EXECUTION_SET_EXT:
         tokenData.pExecutionSet = pExecutionSet.get();
-    else
+        break;
+    default:
         deMemset(&tokenData, 0, sizeof(tokenData));
+        break;
+    }
 
     const VkIndirectCommandsLayoutTokenEXT vkToken = {
         VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_TOKEN_EXT, // VkStructureType sType;
@@ -563,6 +591,8 @@ bool isWorkProvokingToken(VkIndirectCommandsTokenTypeEXT token)
     case VK_INDIRECT_COMMANDS_TOKEN_TYPE_EXECUTION_SET_EXT:
     case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_EXT:
     case VK_INDIRECT_COMMANDS_TOKEN_TYPE_SEQUENCE_INDEX_EXT:
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_DATA_EXT:
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_DATA_SEQUENCE_INDEX_EXT:
     case VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_EXT:
     case VK_INDIRECT_COMMANDS_TOKEN_TYPE_VERTEX_BUFFER_EXT:
         isWorkProvoking = false;
@@ -593,6 +623,8 @@ uint32_t tokenDataSize(const VkIndirectCommandsLayoutTokenEXT &token)
     }
     case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_EXT:
     case VK_INDIRECT_COMMANDS_TOKEN_TYPE_SEQUENCE_INDEX_EXT:
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_DATA_EXT:
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_DATA_SEQUENCE_INDEX_EXT:
         return token.data.pPushConstant->updateRange.size;
     case VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_EXT:
         return DE_SIZEOF32(VkBindIndexBufferIndirectCommandEXT);
@@ -788,8 +820,8 @@ DGCComputePipelineExt::DGCComputePipelineExt(const DeviceInterface &vkd, VkDevic
                                              VkPipelineShaderStageCreateFlags shaderStageCreateFlags,
                                              VkShaderModule module, const VkSpecializationInfo *specializationInfo,
                                              VkPipeline basePipelineHandle, int32_t basePipelineIndex,
-                                             uint32_t subgroupSize)
-
+                                             uint32_t subgroupSize,
+                                             const VkShaderDescriptorSetAndBindingMappingInfoEXT *mappingInfo)
     : m_pipeline()
 {
     const VkPipelineShaderStageRequiredSubgroupSizeCreateInfo subgroupSizeInfo = {
@@ -798,7 +830,15 @@ DGCComputePipelineExt::DGCComputePipelineExt(const DeviceInterface &vkd, VkDevic
         subgroupSize,                                                               // uint32_t requiredSubgroupSize;
     };
 
-    const auto shaderPNext = (subgroupSize > 0u ? &subgroupSizeInfo : nullptr);
+    const void *shaderPNext = (subgroupSize > 0u ? &subgroupSizeInfo : nullptr);
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT copyMappingInfo{};
+    if (mappingInfo)
+    {
+        copyMappingInfo       = *mappingInfo;
+        copyMappingInfo.pNext = shaderPNext;
+        shaderPNext           = &copyMappingInfo;
+    }
 
     const VkPipelineShaderStageCreateInfo shaderStageCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
@@ -811,7 +851,12 @@ DGCComputePipelineExt::DGCComputePipelineExt(const DeviceInterface &vkd, VkDevic
     };
 
     // Make sure the required flag is always passed.
-    const auto creationFlags = (pipelineFlags | VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT);
+    auto creationFlags = (pipelineFlags | VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT);
+
+    if (mappingInfo)
+    {
+        creationFlags |= VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+    }
 
     const VkPipelineCreateFlags2CreateInfoKHR pipelineFlagsCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR, // VkStructureType sType;
@@ -928,7 +973,8 @@ DGCComputeShaderExt::DGCComputeShaderExt(const vk::DeviceInterface &vkd, vk::VkD
                                          vk::VkShaderCreateFlagsEXT shaderFlags, const vk::ProgramBinary &shaderBinary,
                                          const std::vector<vk::VkDescriptorSetLayout> &setLayouts,
                                          const std::vector<vk::VkPushConstantRange> &pushConstantRanges,
-                                         const vk::VkSpecializationInfo *specializationInfo, uint32_t subgroupSize)
+                                         const vk::VkSpecializationInfo *specializationInfo, uint32_t subgroupSize,
+                                         const VkShaderDescriptorSetAndBindingMappingInfoEXT *mappingInfo)
 
     : DGCShaderExt()
 {
@@ -938,7 +984,17 @@ DGCComputeShaderExt::DGCComputeShaderExt(const vk::DeviceInterface &vkd, vk::VkD
         subgroupSize,                                                               // uint32_t requiredSubgroupSize;
     };
 
-    const auto pNext = (subgroupSize > 0u ? &subgroupSizeInfo : nullptr);
+    const void *pNext = (subgroupSize > 0u ? &subgroupSizeInfo : nullptr);
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT copyMappingInfo{};
+    if (mappingInfo)
+    {
+        copyMappingInfo       = *mappingInfo;
+        copyMappingInfo.pNext = pNext;
+        pNext                 = &copyMappingInfo;
+
+        shaderFlags |= VK_SHADER_CREATE_DESCRIPTOR_HEAP_BIT_EXT;
+    }
 
     init(vkd, device, VK_SHADER_STAGE_COMPUTE_BIT, shaderFlags, shaderBinary, setLayouts, pushConstantRanges, false,
          false, specializationInfo, pNext);
