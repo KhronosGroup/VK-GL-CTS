@@ -1033,12 +1033,16 @@ class StructTypesGenerator(CTSGenerator):
             result += " : " + str(member.bitFieldWidth)
         return result
 
-    # function that prints single structure definition
+    # function that prints single structure definition and its aliases
     def genCompositeTypeSrc (self, type):
         structLines = "%s %s\n{\n" % ("union" if type.union else "struct", type.name)
         for line in indentLines(['\t'+self.memberAsString(m)+';' for m in type.members]):
             structLines += line + '\n'
-        return structLines + "};\n"
+        structLines += "};\n"
+        # write all alias typedefs, as subsequent structures may use alias (eg. VkDeviceAddressRangeEXT)
+        for alias in sorted(type.aliases):
+            structLines += f"typedef {type.name} {alias};\n"
+        return structLines
 
     # function that prints all structure definitions and alias typedefs
     def genVulkanStructs(self):
@@ -1047,6 +1051,11 @@ class StructTypesGenerator(CTSGenerator):
         allStructureNamesList = [s.name for s in self.cts.structsIncludingVideo]
         savedStructureNamesList = []
         delayedStructureObjectsList = []
+
+        # add aliases to list of all structure names
+        for s in self.cts.structsIncludingVideo:
+            for a in s.aliases or []:
+                allStructureNamesList.append(a)
 
         # helper function that checks if all structure members were already saved
         def canStructBeSaved(compositeObject):
@@ -1060,6 +1069,14 @@ class StructTypesGenerator(CTSGenerator):
                     return False
             return True
 
+        # when structure is saved add it to savedStructureNamesList together with its aliases
+        def markStructAsSaved(ct):
+            nonlocal savedStructureNamesList
+            if ct.name in savedStructureNamesList:
+                return
+            savedStructureNamesList.append(ct.name)
+            savedStructureNamesList += ct.aliases or []
+
         # iterate over all composite types
         lastDelayedComposite = None
         for ct in self.cts.structsIncludingVideo:
@@ -1071,12 +1088,12 @@ class StructTypesGenerator(CTSGenerator):
                     delayedButSaved.append(dct)
             lastDelayedComposite = None
             for dsct in delayedButSaved:
-                savedStructureNamesList.append(dsct.name)
+                markStructAsSaved(dsct)
                 delayedStructureObjectsList.remove(dsct)
             # check if current structure can be saved
             if canStructBeSaved(ct):
                 yield self.genCompositeTypeSrc(ct)
-                savedStructureNamesList.append(ct.name)
+                markStructAsSaved(ct)
             else:
                 delayedStructureObjectsList.append(ct)
                 # memorize structure that was delayed in last iteration to
@@ -1087,7 +1104,7 @@ class StructTypesGenerator(CTSGenerator):
             for dct in delayedStructureObjectsList:
                 if canStructBeSaved(dct):
                     yield self.genCompositeTypeSrc(dct)
-                    savedStructureNamesList.append(dct.name)
+                    markStructAsSaved(dct)
                     delayedStructureObjectsList.remove(dct)
                     break
 
