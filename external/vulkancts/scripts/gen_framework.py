@@ -2534,6 +2534,24 @@ class FeaturesOrPropertiesGenericGenerator(CTSGenerator):
                     if ext.promotedTo == ext2.name:
                         ext = ext2
                 nameString = ext.nameString
+
+            if self.targetApiName == 'vulkansc':
+                # We need to work around the fact that the vk.xml has the vulkansc API tag enabled
+                # also for Vulkan 1.3+ due to spec tooling limitations
+                if struct.version is not None:
+                    if struct.version.name != 'VK_VERSION_1_0' and struct.version.name != 'VK_VERSION_1_1' and struct.version.name != 'VK_VERSION_1_2':
+                        # This would be marked as core, but as it's a Vulkan 1.3+ struct which is not part of Vulkan SC
+                        # we have to check instead whether there is an equivalent extension in Vulkan SC
+                        if struct.extensions:
+                            nameString = self.vk.extensions[struct.extensions[0]].nameString
+                        else:
+                            # If this is a Vulkan 1.3+ core struct that is not present in Vulkan SC as an extension
+                            # then this should not even have to be included in the core, but as the CTS depends on
+                            # the existence of these interfaces we have no better choice but to somehow mark this
+                            # feature/property struct such that it will not match any extension string or the
+                            # special "core_features"/"core_properties" values
+                            nameString = f'"unsupported_{structGroupLow}"'
+
             descDefinitions.append(f"template<> {structGroupSingular}Desc make{structGroupSingular}Desc<{struct.name}>(void) " \
                                    f"{{ return {structGroupSingular}Desc{{{struct.sType}, {nameString}}}; }}")
             pnext = next((m for m in struct.members if m.name == "pNext"), None)
@@ -2549,8 +2567,23 @@ class FeaturesOrPropertiesGenericGenerator(CTSGenerator):
             for bcs in blobData.componentStructs:
                 if bcs.version is None:
                     continue
+
+                apiVersion = bcs.version.nameApi
+                if self.targetApiName == 'vulkansc':
+                    # The CTS Framework uses the API version numbers baked into this table verbatim,
+                    # without the ability to understand relationship between Vulkan and Vulkan SC
+                    # API versions, therefore we have to handle API version relationships here
+                    if apiVersion == 'VK_API_VERSION_1_0' or apiVersion == 'VK_API_VERSION_1_1' or apiVersion == 'VK_API_VERSION_1_2':
+                        # Everything up to Vulkan 1.2 is included in Vulkan SC 1.0
+                        apiVersion = 'VKSC_API_VERSION_1_0'
+                    else:
+                        # Everything newer is not supported in Vulkan SC
+                        # Note that normally we would not have to hit this but the vk.xml has the vulkansc API tag
+                        # enabled also for Vulkan 1.3+ due to spec tooling limitations
+                        continue
+
                 tabs = "\t" * int((88 - len(bcs.sType)) / 4)
-                blobCheckerMap += f'\t{{ {bcs.sType},{tabs}{bcs.version.nameApi} }},\n'
+                blobCheckerMap += f'\t{{ {bcs.sType},{tabs}{apiVersion} }},\n'
         blobCheckerMap += "};\n\n"
         blobChecker = f"uint32_t getBlob{self.structGroup}Version (VkStructureType sType)\n{{\n" \
                        "\tauto it = sTypeBlobMap.find(sType);\n" \
