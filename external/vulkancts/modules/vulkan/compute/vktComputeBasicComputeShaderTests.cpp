@@ -4699,7 +4699,7 @@ void ReplicatedCompositesTest::initPrograms(SourceCollections &sourceCollections
         << "#extension GL_KHR_memory_scope_semantics : enable\n"
         << "#extension GL_EXT_spec_constant_composites : enable\n"
         << "#pragma use_replicated_composites\n"
-        << "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+        << "layout (local_size_x = " << ((m_compositeType == COOPMAT) ? "64" : "1") << ") in;\n"
         << "layout(binding = 0, scalar) buffer Output {\n";
 
     switch (m_compositeType)
@@ -4884,8 +4884,10 @@ void ReplicatedCompositesTest::initPrograms(SourceCollections &sourceCollections
             << "    sb_out.str[5] = str2.b.c;\n";
         break;
     case COOPMAT:
-        src << "    sb_out.mat[0] = float(mat[0]);\n"
-            << "    sb_out.mat[1] = (mat.length() > 1) ? float(mat[1]) : float(mat[0]);\n";
+        src << "    if (gl_LocalInvocationIndex == 0) {\n"
+            << "        sb_out.mat[0] = float(mat[0]);\n"
+            << "        sb_out.mat[1] = (mat.length() > 1) ? float(mat[1]) : float(mat[0]);\n"
+            << "    }\n";
         break;
     default:
         DE_ASSERT(0);

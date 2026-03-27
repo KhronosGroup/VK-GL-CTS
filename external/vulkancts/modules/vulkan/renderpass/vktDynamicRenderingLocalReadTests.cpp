@@ -1811,10 +1811,12 @@ tcu::TestStatus FeedbackLoopTestInstance::iterate()
     endCommandBuffer(vk, cmdBuffer);
     submitCommandsAndWait(vk, device, queue, cmdBuffer);
 
+    invalidateAlloc(vk, device, allocation);
+
     // verify result by repeating logic from the shader;
     // in shader we add/substract 51 but in verification precision is not that important so we check range (40; 60)
     uint32_t failureCount = 0;
-    uint8_t *bufferPtr    = static_cast<uint8_t *>(bufferWithMemory.getAllocation().getHostPtr());
+    uint8_t *bufferPtr    = static_cast<uint8_t *>(allocation.getHostPtr());
     for (uint32_t fragmentIndex = 0; fragmentIndex < proceduralData.size(); ++fragmentIndex)
     {
         uint8_t input  = proceduralData.at(fragmentIndex);
