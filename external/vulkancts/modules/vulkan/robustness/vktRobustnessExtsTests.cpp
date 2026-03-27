@@ -4016,6 +4016,13 @@ static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipeli
                                 continue;
                             }
 
+                            // VUID-vkCmdDispatch-SampledType-04472
+                            if (fmtCases[fmtNdx].count == VK_FORMAT_R64_SINT &&
+                                descCases[descNdx].count == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER)
+                            {
+                                continue;
+                            }
+
                             for (int roNdx = 0; roNdx < DE_LENGTH_OF_ARRAY(readOnlyCases); roNdx++)
                             {
                                 de::MovePtr<tcu::TestCaseGroup> rwGroup(
