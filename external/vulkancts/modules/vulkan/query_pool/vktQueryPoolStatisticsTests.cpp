@@ -5838,6 +5838,9 @@ public:
                 TCU_THROW(NotSupportedError, "Inherited queries are not supported");
         }
 
+        if (m_parametersGraphic.useDeviceAddressCommands)
+            context.requireDeviceFunctionality("VK_KHR_device_address_commands");
+
 #ifndef CTS_USES_VULKANSC
         if (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
             context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
