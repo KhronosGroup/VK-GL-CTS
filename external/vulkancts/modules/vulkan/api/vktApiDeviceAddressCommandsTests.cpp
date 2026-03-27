@@ -22,15 +22,15 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktApiDeviceAddressCommandsTests.hpp"
+#include "vkComputePipelineConstructionUtil.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkBarrierUtil.hpp"
+#include "vkBuilderUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkObjUtil.hpp"
-#include "vktTestCaseUtil.hpp"
 #include "vktTestCase.hpp"
-#include "tcuTextureUtil.hpp"
 
 namespace vkt::api
 {
@@ -47,6 +47,8 @@ enum class CommandFlagTestMode
     USE_ALL_VERTEX_INDEX_BINDS,
     BASIC_SET_STRIDE,
     COMPLEX_SET_STRIDE,
+
+    MEMORY_RANGE_BARRIER,
 };
 
 struct TestParams
@@ -694,6 +696,135 @@ void VertexIndexBindingTestInstance::drawUsingAllVertexIndexBinds(VkCommandBuffe
     vk.cmdDrawIndexed(cmdBuffer, 4u, 1u, 0u, 0u, 0u);
 }
 
+class MemoryRangeBarrierBetweenOperationsTestInstance : public vkt::TestInstance
+{
+public:
+    MemoryRangeBarrierBetweenOperationsTestInstance(Context &context);
+    ~MemoryRangeBarrierBetweenOperationsTestInstance() = default;
+
+    tcu::TestStatus iterate(void) override;
+};
+
+MemoryRangeBarrierBetweenOperationsTestInstance::MemoryRangeBarrierBetweenOperationsTestInstance(Context &context)
+    : vkt::TestInstance(context)
+{
+}
+
+tcu::TestStatus MemoryRangeBarrierBetweenOperationsTestInstance::iterate()
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    Allocator &allocator      = m_context.getDefaultAllocator();
+    const uint32_t groupCount = 16;
+
+    VkDeviceSize outputOffset = 16; // test non-zero offset in buffer address commands
+    VkDeviceSize outputSize   = groupCount * sizeof(uint32_t);
+    VkDeviceSize bufferSize   = outputSize + outputOffset;
+    auto usage                = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    MemoryRequirement memReq = MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress;
+
+    auto bufferCreateInfo = makeBufferCreateInfo(bufferSize, usage);
+    const BufferWithMemory outputBuffer(vk, device, allocator, bufferCreateInfo, memReq);
+    auto outputBufferAddress = getBufferDeviceAddress(vk, device, *outputBuffer);
+
+    // create descriptor set
+    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vk, device));
+
+    const Unique<VkDescriptorPool> descriptorPool(
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u)
+            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+    const auto descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+    const auto outputBufferDescriptorInfo(makeDescriptorBufferInfo(*outputBuffer, outputOffset, outputSize));
+
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputBufferDescriptorInfo)
+        .update(vk, device);
+
+    auto &bc               = m_context.getBinaryCollection();
+    const auto compModule0 = createShaderModule(vk, device, bc.get("comp0"));
+    const auto compModule1 = createShaderModule(vk, device, bc.get("comp1"));
+
+    const auto pipelineLayout = makePipelineLayout(vk, device, *descriptorSetLayout);
+    const auto pipeline0      = makeComputePipeline(vk, device, *pipelineLayout, *compModule0);
+    const auto pipeline1      = makeComputePipeline(vk, device, *pipelineLayout, *compModule1);
+
+    VkMemoryRangeBarrierKHR memoryRangeBarrier{VK_STRUCTURE_TYPE_MEMORY_RANGE_BARRIER_KHR,
+                                               nullptr,
+                                               VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR,
+                                               VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                                               VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR,
+                                               VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+                                               VK_QUEUE_FAMILY_IGNORED,
+                                               VK_QUEUE_FAMILY_IGNORED,
+                                               {outputBufferAddress + outputOffset, outputSize},
+                                               VK_ADDRESS_COMMAND_STORAGE_BUFFER_USAGE_BIT_KHR};
+
+    VkMemoryRangeBarriersInfoKHR memoryRangeBarriersInfo = initVulkanStructure();
+    memoryRangeBarriersInfo.memoryRangeBarrierCount      = 1u;
+    memoryRangeBarriersInfo.pMemoryRangeBarriers         = &memoryRangeBarrier;
+    VkDependencyInfo depInfo                             = initVulkanStructure(&memoryRangeBarriersInfo);
+
+    auto bpc = VK_PIPELINE_BIND_POINT_COMPUTE;
+    const auto cmdPool(makeCommandPool(vk, device, m_context.getUniversalQueueFamilyIndex()));
+    const auto cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    vk.cmdBindDescriptorSets(*cmdBuffer, bpc, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u, nullptr);
+
+    vk.cmdBindPipeline(*cmdBuffer, bpc, *pipeline0);
+    vk.cmdDispatch(*cmdBuffer, groupCount, 1, 1);
+
+    // test that memory range barrier properly works between two dispatches
+    vk.cmdPipelineBarrier2(*cmdBuffer, &depInfo);
+
+    vk.cmdBindPipeline(*cmdBuffer, bpc, *pipeline1);
+    vk.cmdDispatch(*cmdBuffer, 1, groupCount, 1);
+
+    memoryRangeBarrier.srcAccessMask = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
+    memoryRangeBarrier.dstStageMask  = VK_PIPELINE_STAGE_2_HOST_BIT_KHR;
+    memoryRangeBarrier.dstAccessMask = VK_ACCESS_2_HOST_READ_BIT_KHR;
+    vk.cmdPipelineBarrier2(*cmdBuffer, &depInfo);
+
+    endCommandBuffer(vk, *cmdBuffer);
+
+    VkCommandBufferSubmitInfoKHR cmdBufferInfo = initVulkanStructure();
+    cmdBufferInfo.commandBuffer                = *cmdBuffer;
+    VkSubmitInfo2 submitInfo2                  = initVulkanStructure();
+    submitInfo2.commandBufferInfoCount         = 1;
+    submitInfo2.pCommandBufferInfos            = &cmdBufferInfo;
+
+    auto queue = m_context.getUniversalQueue();
+    vk.queueSubmit2(queue, 1u, &submitInfo2, VK_NULL_HANDLE);
+    vk.queueWaitIdle(queue);
+
+    const Allocation &outputAllocation = outputBuffer.getAllocation();
+    invalidateAlloc(vk, device, outputAllocation);
+
+    auto &log                 = m_context.getTestContext().getLog();
+    const uint32_t *bufferPtr = static_cast<uint32_t *>(outputAllocation.getHostPtr());
+    bufferPtr += (outputOffset / sizeof(uint32_t));
+    for (uint32_t i = 0; i < groupCount; ++i)
+    {
+        uint32_t expected = i + 3;
+        if (bufferPtr[i] != expected)
+        {
+            log << tcu::TestLog::Message << "bufferPtr[" << i << "] = " << bufferPtr[i] << ", expected " << expected
+                << tcu::TestLog::EndMessage;
+            return tcu::TestStatus::fail("Fail");
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 class BufferAddressCommandTestCase : public vkt::TestCase
 {
 public:
@@ -720,6 +851,8 @@ void BufferAddressCommandTestCase::checkSupport(Context &context) const
     context.requireDeviceFunctionality("VK_KHR_device_address_commands");
     if (m_params.mode == TM::COPY_TO_MEMORY_WITH_UNBOUND_RANGES || m_params.mode == TM::COMPLEX_SET_STRIDE)
         context.requireDeviceFunctionality("VK_EXT_vertex_input_dynamic_state");
+    else if (m_params.mode == TM::MEMORY_RANGE_BARRIER)
+        context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
     if ((m_params.mode == TM::COPY_TO_MEMORY_WITH_UNBOUND_RANGES) ||
         (m_params.mode == TM::COPY_FROM_MEMORY_WITH_UNBOUND_RANGES))
@@ -752,6 +885,28 @@ void BufferAddressCommandTestCase::initPrograms(vk::SourceCollections &programCo
                 out_color = vec4(1.0, 0.0, 0.0, 1.0);
             })");
     }
+    else if (m_params.mode == CommandFlagTestMode::MEMORY_RANGE_BARRIER)
+    {
+        glslSources.add("comp0") << glu::ComputeSource(R"(
+            #version 450
+            layout (local_size_x = 1) in;
+            layout(binding = 0) writeonly buffer Output {
+                uint v[];
+            };
+            void main (void) {
+                v[gl_WorkGroupID.x] = gl_WorkGroupID.x;
+            })");
+
+        glslSources.add("comp1") << glu::ComputeSource(R"(
+            #version 450
+            layout (local_size_x = 1) in;
+            layout(binding = 0) buffer Output {
+                uint v[];
+            };
+            void main (void) {
+                v[gl_WorkGroupID.y] += 3;
+            })");
+    }
 }
 
 TestInstance *BufferAddressCommandTestCase::createInstance(Context &context) const
@@ -759,6 +914,9 @@ TestInstance *BufferAddressCommandTestCase::createInstance(Context &context) con
     if ((m_params.mode == CommandFlagTestMode::COPY_TO_MEMORY_WITH_UNBOUND_RANGES) ||
         (m_params.mode == CommandFlagTestMode::COPY_FROM_MEMORY_WITH_UNBOUND_RANGES))
         return new BufferAddressCommandFlagsTestInstance(context, m_params);
+
+    if (m_params.mode == CommandFlagTestMode::MEMORY_RANGE_BARRIER)
+        return new MemoryRangeBarrierBetweenOperationsTestInstance(context);
 
     return new VertexIndexBindingTestInstance(context, m_params);
 }
@@ -777,7 +935,7 @@ tcu::TestCaseGroup *createDeviceAddressCommandsTests(tcu::TestContext &testCtx)
         {"use_all_vertex_index_binds", TM::USE_ALL_VERTEX_INDEX_BINDS},
         {"basic_set_stride", TM::BASIC_SET_STRIDE},
         {"complex_set_stride", TM::COMPLEX_SET_STRIDE},
-    };
+        {"memory_range_barrier", TM::MEMORY_RANGE_BARRIER}};
     for (auto &[name, mode] : caseVect)
     {
         TestParams params{

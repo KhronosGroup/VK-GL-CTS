@@ -25550,6 +25550,7 @@ dEQP-VK.api.device_address.misc.basic_set_stride
 dEQP-VK.api.device_address.misc.complex_set_stride
 dEQP-VK.api.device_address.misc.copy_from_memory_with_unbound_ranges
 dEQP-VK.api.device_address.misc.copy_to_memory_with_unbound_ranges
+dEQP-VK.api.device_address.misc.memory_range_barrier
 dEQP-VK.api.device_address.misc.use_all_vertex_index_binds
 dEQP-VK.api.device_init.create_device_unsupported_features.cooperative_vector_features_nv
 dEQP-VK.api.device_init.create_device_unsupported_features.copy_memory_indirect_features_khr
@@ -26963,10 +26964,12 @@ dEQP-VK.api.external.memory.mtltexture.suballocated.image.export_bind_import_bin
 dEQP-VK.api.external.memory.mtltexture.suballocated.image.export_import_bind_bind
 dEQP-VK.api.external.memory.mtltexture.suballocated.image.info
 dEQP-VK.api.fill_and_update_buffer.dedicated_alloc.fill_buffer_second_part_device_address
+dEQP-VK.api.fill_and_update_buffer.dedicated_alloc.fill_buffer_vk_whole_size_device_address
 dEQP-VK.api.fill_and_update_buffer.dedicated_alloc.fill_buffer_whole_device_address
 dEQP-VK.api.fill_and_update_buffer.dedicated_alloc.update_buffer_second_part_device_address
 dEQP-VK.api.fill_and_update_buffer.dedicated_alloc.update_buffer_whole_device_address
 dEQP-VK.api.fill_and_update_buffer.suballocation.fill_buffer_second_part_device_address
+dEQP-VK.api.fill_and_update_buffer.suballocation.fill_buffer_vk_whole_size_device_address
 dEQP-VK.api.fill_and_update_buffer.suballocation.update_buffer_second_part_device_address
 dEQP-VK.api.fill_and_update_buffer.suballocation_transfer_queue.fill_buffer_second_part_device_address
 dEQP-VK.api.fill_and_update_buffer.suballocation_transfer_queue.fill_buffer_vk_whole_size_device_address
