@@ -367,6 +367,40 @@ void ShaderAtomicCounterOpsTestBase::ShaderPipeline::executeComputeShader(deqp::
     GLU_EXPECT_NO_ERROR(gl.getError(), "glu::draw error");
 }
 
+void ShaderAtomicCounterOpsTestBase::addOperation(AtomicOperation *newOp)
+{
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+    for (unsigned int i = 0; i < glu::SHADERTYPE_LAST; ++i)
+    {
+        GLint maxAtomicBuffers = 1;
+        switch (i)
+        {
+        case glu::SHADERTYPE_VERTEX:
+            gl.getIntegerv(GL_MAX_VERTEX_ATOMIC_COUNTER_BUFFERS, &maxAtomicBuffers);
+            break;
+        case glu::SHADERTYPE_GEOMETRY:
+            gl.getIntegerv(GL_MAX_GEOMETRY_ATOMIC_COUNTER_BUFFERS, &maxAtomicBuffers);
+            break;
+        case glu::SHADERTYPE_TESSELLATION_CONTROL:
+            gl.getIntegerv(GL_MAX_TESS_CONTROL_ATOMIC_COUNTER_BUFFERS, &maxAtomicBuffers);
+            break;
+        case glu::SHADERTYPE_TESSELLATION_EVALUATION:
+            gl.getIntegerv(GL_MAX_TESS_EVALUATION_ATOMIC_COUNTER_BUFFERS, &maxAtomicBuffers);
+            break;
+        // rest of the stages must support atomics
+        default:
+            break;
+        }
+
+        if (maxAtomicBuffers < 1)
+        {
+            continue;
+        }
+
+        m_shaderPipelines.push_back(ShaderPipeline((glu::ShaderType)i, newOp, m_contextSupportsGL46));
+    }
+}
+
 void ShaderAtomicCounterOpsTestBase::fillAtomicCounterBuffer(AtomicOperation *atomicOp)
 {
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();

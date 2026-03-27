@@ -293,13 +293,7 @@ protected:
     std::vector<ShaderPipeline> m_shaderPipelines;
 
     /* Protected methods */
-    inline void addOperation(AtomicOperation *newOp)
-    {
-        for (unsigned int i = 0; i < glu::SHADERTYPE_LAST; ++i)
-        {
-            m_shaderPipelines.push_back(ShaderPipeline((glu::ShaderType)i, newOp, m_contextSupportsGL46));
-        }
-    }
+    void addOperation(AtomicOperation *newOp);
 
     virtual void setOperations() = 0;
 
