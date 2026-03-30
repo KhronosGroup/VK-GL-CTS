@@ -1433,8 +1433,16 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate(void)
         const auto instance = m_context.getInstance();
 
         const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+#ifndef CTS_USES_VULKANSC
         auto driver = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device, m_context.getUsedApiVersion(),
                                                                  m_context.getTestContext().getCommandLine()));
+#else
+        auto driver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
+            new DeviceDriverSC(vkp, instance, device, m_context.getTestContext().getCommandLine(),
+                               m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(),
+                               m_context.getDeviceProperties(), m_context.getUsedApiVersion()),
+            vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), device));
+#endif // CTS_USES_VULKANSC
         const DeviceInterface &vk = *driver;
 
         auto queue           = getDeviceQueue(*driver, device, queueFamilyIndex, 0u);
