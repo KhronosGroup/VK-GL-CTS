@@ -359,10 +359,7 @@ public:
 
         vk::VkResult result = vki.acquireDrmDisplayEXT(physDevice, fd, m_native);
         if (result != vk::VK_SUCCESS)
-        {
-            m_vki->releaseDisplayEXT(m_physDevice, m_native);
             TCU_THROW(NotSupportedError, "vkAcquireDrmDisplayEXT failed.");
-        }
 
         m_vki         = &vki;
         m_physDevice  = physDevice;
