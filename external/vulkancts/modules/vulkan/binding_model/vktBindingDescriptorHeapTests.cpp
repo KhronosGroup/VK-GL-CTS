@@ -158,6 +158,7 @@ struct TestParamsGraphics : TestParams
 {
     bool useFragmentShader         = false;
     bool useSecondaryCommandBuffer = false;
+    bool useVectors                = false;
 };
 
 enum class SpirvTestType
@@ -9406,21 +9407,36 @@ private:
 
 void DescriptorHeapTestCaseGraphics::initPrograms(vk::SourceCollections &programCollection) const
 {
-    std::string vertex = R"(#version 450
+    std::string vecDecl = "\n";
+    if (m_params.useVectors)
+        vecDecl = R"(layout(descriptor_heap) uniform UM { mat4 inputData; }  uboMat[];
+layout(descriptor_heap)  buffer OV { vec4 outputData; } ssboVec[];
+)";
+    std::string vecWriteStart = "    ssboVec[";
+    std::string vecWriteEnd   = "].outputData = uboMat[10].inputData * vec4(1, 2, 3, 4);\n";
+
+    std::ostringstream vertex;
+    vertex << R"(#version 450
 #extension GL_EXT_descriptor_heap: require
 
 layout(push_constant, std430) uniform X { uint pushData[5]; };
 layout(descriptor_heap) uniform U { uint  inputData; }  ubo[];
 layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
-
-void main()
+)";
+    vertex << vecDecl;
+    vertex << R"(void main()
 {
     gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
     ssbo[0].outputData = ubo[1].inputData ^ pushData[0];
-}
+)";
+    if (m_params.useVectors)
+        vertex << vecWriteStart << "11" << vecWriteEnd;
+    vertex << R"(}
 )";
 
-    std::string tcs = R"(#version 450
+    std::ostringstream tcs;
+    tcs <<
+        R"(#version 450
 #extension GL_EXT_descriptor_heap: require
 
 layout(vertices = 1) out;
@@ -9428,8 +9444,9 @@ layout(vertices = 1) out;
 layout(push_constant, std430) uniform X { uint pushData[5]; };
 layout(descriptor_heap) uniform U { uint  inputData; }  ubo[];
 layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
-
-void main()
+)";
+    tcs << vecDecl;
+    tcs << R"(void main()
 {
     gl_out[gl_InvocationID].gl_Position = gl_in[0].gl_Position;
     gl_TessLevelInner[0] = 1.0;
@@ -9438,10 +9455,14 @@ void main()
     gl_TessLevelOuter[2] = 1.0;
     gl_TessLevelOuter[3] = 1.0;
     ssbo[2].outputData = ubo[3].inputData ^ pushData[1];
-}
+)";
+    if (m_params.useVectors)
+        tcs << vecWriteStart << "12" << vecWriteEnd;
+    tcs << R"(}
 )";
 
-    std::string tes = R"(#version 450
+    std::ostringstream tes;
+    tes << R"(#version 450
 #extension GL_EXT_descriptor_heap: require
 
 layout(triangles, equal_spacing, cw) in;
@@ -9449,15 +9470,20 @@ layout(triangles, equal_spacing, cw) in;
 layout(push_constant, std430) uniform X { uint pushData[5]; };
 layout(descriptor_heap) uniform U { uint  inputData; }  ubo[];
 layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
-
-void main()
+)";
+    tes << vecDecl;
+    tes << R"(void main()
 {
     gl_Position = vec4(gl_TessCoord.xy, 0, 1);
     ssbo[4].outputData = ubo[5].inputData ^ pushData[2];
-}
+)";
+    if (m_params.useVectors)
+        tes << vecWriteStart << "13" << vecWriteEnd;
+    tes << R"(}
 )";
 
-    std::string geometryWithoutTess = R"(#version 450
+    std::ostringstream geometryWithoutTess;
+    geometryWithoutTess << R"(#version 450
 #extension GL_EXT_descriptor_heap: require
 
 layout(points) in;
@@ -9466,17 +9492,22 @@ layout(points, max_vertices = 1) out;
 layout(push_constant, std430) uniform X { uint pushData[5]; };
 layout(descriptor_heap) uniform U { uint  inputData; }  ubo[];
 layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
-
-void main()
+)";
+    geometryWithoutTess << vecDecl;
+    geometryWithoutTess << R"(void main()
 {
     gl_Position = gl_in[0].gl_Position;
     EmitVertex();
     EndPrimitive();
     ssbo[6].outputData = ubo[7].inputData ^ pushData[3];
-}
+)";
+    if (m_params.useVectors)
+        geometryWithoutTess << vecWriteStart << "14" << vecWriteEnd;
+    geometryWithoutTess << R"(}
 )";
 
-    std::string geometryWithTess = R"(#version 450
+    std::ostringstream geometryWithTess;
+    geometryWithTess << R"(#version 450
 #extension GL_EXT_descriptor_heap: require
 
 layout(triangles) in;
@@ -9485,30 +9516,37 @@ layout(points, max_vertices = 1) out;
 layout(push_constant, std430) uniform X { uint pushData[5]; };
 layout(descriptor_heap) uniform U { uint  inputData; }  ubo[];
 layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
-
-void main()
+)";
+    geometryWithTess << vecDecl;
+    geometryWithTess << R"(void main()
 {
     gl_Position = gl_in[0].gl_Position;
     EmitVertex();
     EndPrimitive();
     ssbo[6].outputData = ubo[7].inputData ^ pushData[3];
-}
+)";
+    if (m_params.useVectors)
+        geometryWithTess << vecWriteStart << "14" << vecWriteEnd;
+    geometryWithTess << R"(}
 )";
 
-    std::string fragment = R"(#version 450
+    std::ostringstream fragment;
+    fragment << R"(#version 450
 #extension GL_EXT_descriptor_heap: require
 
 layout(push_constant, std430) uniform X { uint pushData[5]; };
 layout(descriptor_heap) uniform U { uint  inputData; }  ubo[];
 layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
-
-void main()
+)";
+    fragment << vecDecl;
+    fragment << R"(void main()
 {
     ssbo[8].outputData = ubo[9].inputData ^ pushData[4];
 }
 )";
 
-    std::string mesh = R"(#version 460
+    std::ostringstream mesh;
+    mesh << R"(#version 460
 #extension GL_EXT_descriptor_heap: require
 #extension GL_EXT_mesh_shader: enable
 
@@ -9519,17 +9557,22 @@ layout(max_vertices = 1, max_primitives = 1) out;
 layout(push_constant, std430) uniform X { uint pushData[5]; };
 layout(descriptor_heap) uniform U { uint  inputData; }  ubo[];
 layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
-
-void main()
+)";
+    mesh << vecDecl;
+    mesh << R"(void main()
 {
     SetMeshOutputsEXT(1, 1);
     gl_MeshVerticesEXT[0].gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
     gl_PrimitivePointIndicesEXT[0] = 0;
     ssbo[2].outputData = ubo[3].inputData ^ pushData[1];
-}
+)";
+    if (m_params.useVectors)
+        mesh << vecWriteStart << "15" << vecWriteEnd;
+    mesh << R"(}
 )";
 
-    std::string task = R"(#version 460
+    std::ostringstream task;
+    task << R"(#version 460
 #extension GL_EXT_mesh_shader: enable
 #extension GL_EXT_descriptor_heap: require
 
@@ -9538,48 +9581,53 @@ layout(local_size_x = 1) in;
 layout(push_constant, std430) uniform X { uint pushData[5]; };
 layout(descriptor_heap) uniform U { uint  inputData; }  ubo[];
 layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
-
-void main() {
+)";
+    task << vecDecl;
+    task << R"(void main() {
     ssbo[0].outputData = ubo[1].inputData ^ pushData[0];
     EmitMeshTasksEXT(1, 1, 1);
-}
+)";
+    if (m_params.useVectors)
+        task << vecWriteStart << "16" << vecWriteEnd;
+    task << R"(}
 )";
 
     vk::ShaderBuildOptions options(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_6, 0);
 
     if (m_params.enableMeshShader)
     {
-        programCollection.glslSources.add("mesh") << glu::MeshSource(mesh) << options;
+        programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << options;
 
         if (m_params.enableTaskShader)
         {
-            programCollection.glslSources.add("task") << glu::TaskSource(task) << options;
+            programCollection.glslSources.add("task") << glu::TaskSource(task.str()) << options;
         }
     }
     else
     {
-        programCollection.glslSources.add("vertex") << glu::VertexSource(vertex) << options;
+        programCollection.glslSources.add("vertex") << glu::VertexSource(vertex.str()) << options;
 
         if (m_params.enableTessellationShader)
         {
-            programCollection.glslSources.add("tcs") << glu::TessellationControlSource(tcs) << options;
-            programCollection.glslSources.add("tes") << glu::TessellationEvaluationSource(tes) << options;
+            programCollection.glslSources.add("tcs") << glu::TessellationControlSource(tcs.str()) << options;
+            programCollection.glslSources.add("tes") << glu::TessellationEvaluationSource(tes.str()) << options;
         }
         if (m_params.enableGeometryShader)
         {
             if (m_params.enableTessellationShader)
             {
-                programCollection.glslSources.add("geometry") << glu::GeometrySource(geometryWithTess) << options;
+                programCollection.glslSources.add("geometry") << glu::GeometrySource(geometryWithTess.str()) << options;
             }
             else
             {
-                programCollection.glslSources.add("geometry") << glu::GeometrySource(geometryWithoutTess) << options;
+                programCollection.glslSources.add("geometry")
+                    << glu::GeometrySource(geometryWithoutTess.str()) << options;
             }
         }
     }
     if (m_params.useFragmentShader)
     {
-        programCollection.glslSources.add("fragment") << glu::FragmentSource(fragment) << options;
+        programCollection.glslSources.add("fragment") << glu::FragmentSource(fragment.str()) << options;
     }
 }
 
@@ -9589,7 +9637,7 @@ tcu::TestStatus DescriptorHeapTestInstanceGraphics::iterate()
 
     const VkDeviceSize bufferDescriptorStride = getBufferDescriptorStride(m_descriptorHeapProperties);
     const VkDeviceSize resourceHeapAlignment  = m_descriptorHeapProperties.resourceHeapAlignment;
-    const VkDeviceSize userHeapSize           = alignUp(10 * bufferDescriptorStride, resourceHeapAlignment);
+    const VkDeviceSize userHeapSize           = alignUp(12 * bufferDescriptorStride, resourceHeapAlignment);
     const VkDeviceSize heapSize               = userHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
 
     auto heap               = createBufferAndMemory(heapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
@@ -9612,6 +9660,8 @@ tcu::TestStatus DescriptorHeapTestInstanceGraphics::iterate()
     std::array<VkDeviceAddressRangeEXT, 10> resourceDeviceAddressRanges{};
     std::array<VkResourceDescriptorInfoEXT, 10> resourceDescriptorInfos{};
     std::array<uint32_t, 5> expectedOutput{};
+    std::unique_ptr<Buffer> matrixBuffer;
+    std::array<std::unique_ptr<Buffer>, 6> vectorBuffers;
 
     for (size_t i = 0; i < resourceHostRanges.size(); ++i)
     {
@@ -9654,6 +9704,53 @@ tcu::TestStatus DescriptorHeapTestInstanceGraphics::iterate()
     }
     VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, de::sizeU32(buffers), resourceDescriptorInfos.data(),
                                              resourceHostRanges.data()));
+
+    if (m_params.useVectors)
+    {
+        const size_t heapIndex          = resourceHostRanges.size();
+        const uint32_t matrixBufferSize = sizeof(float) * 16;
+        matrixBuffer      = createBufferAndMemory(matrixBufferSize, VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR |
+                                                                        VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT_KHR);
+        float *matrixData = reinterpret_cast<float *>(matrixBuffer->memory->getHostPtr());
+        for (uint32_t i = 0; i < 16; ++i)
+            matrixData[i] = static_cast<float>(i);
+
+        VkDeviceAddressRangeEXT matrixAddressRange{};
+        matrixAddressRange.address = matrixBuffer->address;
+        matrixAddressRange.size    = matrixBufferSize;
+
+        VkResourceDescriptorInfoEXT matrixDescriptorInfo = initVulkanStructure();
+        matrixDescriptorInfo.type                        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        matrixDescriptorInfo.data.pAddressRange          = &matrixAddressRange;
+
+        VkHostAddressRangeEXT matrixHostRange = {};
+        matrixHostRange.address               = heapHostPtr + heapIndex * bufferDescriptorStride;
+        matrixHostRange.size                  = static_cast<size_t>(bufferDescriptorStride);
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1u, &matrixDescriptorInfo, &matrixHostRange));
+
+        const uint32_t vectorBufferSize = sizeof(float) * 4;
+        for (uint32_t i = 0; i < vectorBuffers.size(); ++i)
+        {
+            vectorBuffers[i] = createBufferAndMemory(vectorBufferSize, VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR |
+                                                                           VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT_KHR);
+            deMemset(vectorBuffers[i]->memory->getHostPtr(), 0, static_cast<size_t>(vectorBufferSize));
+
+            VkDeviceAddressRangeEXT vectorAddressRange{};
+            vectorAddressRange.address = vectorBuffers[i]->address;
+            vectorAddressRange.size    = vectorBufferSize;
+
+            VkResourceDescriptorInfoEXT vectorDescriptorInfo = initVulkanStructure();
+            vectorDescriptorInfo.type                        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            vectorDescriptorInfo.data.pAddressRange          = &vectorAddressRange;
+
+            VkHostAddressRangeEXT vectorHostRange = {};
+            vectorHostRange.address               = heapHostPtr + (heapIndex + 1 + i) * bufferDescriptorStride;
+            vectorHostRange.size                  = static_cast<size_t>(bufferDescriptorStride);
+
+            VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1u, &vectorDescriptorInfo, &vectorHostRange));
+        }
+    }
 
     std::array<uint32_t, 5> pushData{};
     for (size_t i = 0; i < pushData.size(); ++i)
@@ -9948,6 +10045,34 @@ tcu::TestStatus DescriptorHeapTestInstanceGraphics::iterate()
             msg << std::hex << "Output value for the " << stages[i] << " shader is 0x" << outputValue
                 << " but expected 0x" << expectedOutput[i];
             return tcu::TestStatus::fail(msg.str());
+        }
+    }
+    if (m_params.useVectors)
+    {
+        for (uint32_t j = 0; j < 6; ++j)
+        {
+            if ((j == 1 || j == 2) && !m_params.enableTessellationShader)
+                continue;
+            if ((j == 3) && !m_params.enableGeometryShader)
+                continue;
+            if ((j == 4) && !m_params.enableMeshShader)
+                continue;
+            if ((j == 5) && !m_params.enableTaskShader)
+                continue;
+            float *vectorOutput = reinterpret_cast<float *>(vectorBuffers[j]->memory->getHostPtr());
+            for (uint32_t i = 0; i < 4; ++i)
+            {
+                float expected = static_cast<float>(i) * 10.0f + 80.0f;
+                float result   = vectorOutput[i];
+                if (de::abs(result - expected) > 0.001f)
+                {
+                    std::stringstream msg;
+                    msg << std::fixed << std::setprecision(2) << "Vector output is (" << vectorOutput[0] << ", "
+                        << vectorOutput[1] << ", " << vectorOutput[2] << ", " << vectorOutput[3] << ") but expected ("
+                        << expected << ", " << expected * 2 << ", " << expected * 3 << ", " << expected * 4 << ")";
+                    return tcu::TestStatus::fail(msg.str());
+                }
+            }
         }
     }
 
@@ -14597,33 +14722,39 @@ void populateGraphicsTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
             {
                 for (const bool geometry : {false, true})
                 {
-                    std::string testName = "vertex";
-                    if (tessellation)
+                    for (const bool vectors : {false, true})
                     {
-                        testName += "_tessellation";
-                    }
-                    if (geometry)
-                    {
-                        testName += "_geometry";
-                    }
-                    if (fragment)
-                    {
-                        testName += "_fragment";
-                    }
-                    if (secondary)
-                    {
-                        testName += "_secondary_cmdbuf";
-                    }
+                        std::string testName = "vertex";
+                        if (tessellation)
+                        {
+                            testName += "_tessellation";
+                        }
+                        if (geometry)
+                        {
+                            testName += "_geometry";
+                        }
+                        if (fragment)
+                        {
+                            testName += "_fragment";
+                        }
+                        if (secondary)
+                        {
+                            testName += "_secondary_cmdbuf";
+                        }
+                        if (vectors)
+                            testName += "_vectors";
 
-                    TestParamsGraphics params{};
-                    params.queue                          = VK_QUEUE_GRAPHICS_BIT;
-                    params.enableTessellationShader       = tessellation;
-                    params.enableGeometryShader           = geometry;
-                    params.enableFragmentStoresAndAtomics = fragment;
-                    params.useFragmentShader              = fragment;
-                    params.useSecondaryCommandBuffer      = secondary;
-                    params.seed                           = baseSeed ^ deStringHash(testName.c_str());
-                    graphicsGroup->addChild(new DescriptorHeapTestCaseGraphics(testCtx, testName, params));
+                        TestParamsGraphics params{};
+                        params.queue                          = VK_QUEUE_GRAPHICS_BIT;
+                        params.enableTessellationShader       = tessellation;
+                        params.enableGeometryShader           = geometry;
+                        params.enableFragmentStoresAndAtomics = fragment;
+                        params.useFragmentShader              = fragment;
+                        params.useSecondaryCommandBuffer      = secondary;
+                        params.useVectors                     = vectors;
+                        params.seed                           = baseSeed ^ deStringHash(testName.c_str());
+                        graphicsGroup->addChild(new DescriptorHeapTestCaseGraphics(testCtx, testName, params));
+                    }
                 }
             }
         }
