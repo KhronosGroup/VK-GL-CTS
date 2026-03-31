@@ -49,6 +49,8 @@
 #include "tcuVectorUtil.hpp"
 #include "rrRenderer.hpp"
 
+#include <numeric>
+
 namespace vkt
 {
 namespace Draw
@@ -1009,6 +1011,593 @@ void checkSupport(Context &context, DrawIndexed::TestSpec testSpec)
 #endif
 }
 
+// Pseudorandom 8-bit index multi-draws. The goal of these tests is trying different variations of the following
+// pattern:
+//
+// * vkCmdBindIndexBuffer(8-bit indices)
+// * vkCmdDrawIndexed()
+// * vkCmdBindIndexBuffer(8-bit indices)
+// * vkCmdDrawIndexed()
+//
+// The mechanism uses a large framebuffer and draws one point over each pixel. To use multiple draws, the total number
+// of pixels is divided into 8 blocks of pseudorandom size. Sometimes the blocks are sorted in increasing size order and
+// sometimes they're left as-is. For each block we also pseudorandomly decide if we will use a new command buffer or
+// reuse the last one.
+struct Multibind8BitParams
+{
+    uint32_t caseIndex;
+    bool sortSizes;
+};
+
+class Multibind8BitInstance : public vkt::TestInstance
+{
+public:
+    Multibind8BitInstance(Context &context, const Multibind8BitParams &params)
+        : vkt::TestInstance(context)
+        , m_params(params)
+    {
+    }
+    virtual ~Multibind8BitInstance(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    const Multibind8BitParams m_params;
+};
+
+class Multibind8BitCase : public vkt::TestCase
+{
+public:
+    Multibind8BitCase(tcu::TestContext &testCtx, const std::string &name, const Multibind8BitParams &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~Multibind8BitCase(void) = default;
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new Multibind8BitInstance(context, m_params);
+    }
+
+protected:
+    const Multibind8BitParams m_params;
+};
+
+void Multibind8BitCase::checkSupport(Context &context) const
+{
+    const auto &index8Features = context.getIndexTypeUint8Features();
+    if (!index8Features.indexTypeUint8)
+        TCU_THROW(NotSupportedError, "indexTypeUint8 not supported");
+}
+
+void bluePointsPrograms(vk::SourceCollections &programCollection)
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "layout (location=0) in vec4 inPos;\n"
+         << "void main(void) {\n"
+         << "    gl_Position = inPos;\n"
+         << "    gl_PointSize = 1.0;\n"
+         << "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main(void) {\n"
+         << "    outColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+void Multibind8BitCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    bluePointsPrograms(programCollection);
+}
+
+tcu::TestStatus Multibind8BitInstance::iterate(void)
+{
+    const uint32_t seed =
+        (1768315279u & 0xffffff00u) + (static_cast<uint32_t>(m_params.sortSizes) << 7) + m_params.caseIndex;
+    de::Random rng(seed);
+
+    const auto ctx = m_context.getContextCommonData();
+    const tcu::IVec3 extent(16, 16, 1);
+    const auto floatExtent = extent.asFloat();
+    const auto extentVk    = vk::makeExtent3D(extent);
+    const auto format      = vk::VK_FORMAT_R8G8B8A8_UNORM;
+    const auto usage       = (vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                        vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+    const auto imageType   = vk::VK_IMAGE_TYPE_2D;
+    const auto pointCount  = extentVk.width * extentVk.height * extentVk.depth;
+
+    DE_ASSERT(pointCount - 1u <= static_cast<uint32_t>(std::numeric_limits<uint8_t>::max()));
+
+    vk::ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, format, usage, imageType);
+
+    // Vertex buffer.
+    std::vector<tcu::Vec4> vertices;
+    vertices.reserve(pointCount);
+    for (int y = 0; y < extent.y(); ++y)
+        for (int x = 0; x < extent.x(); ++x)
+        {
+            const float xCoord = (static_cast<float>(x) + 0.5f) / floatExtent.x() * 2.0f - 1.0f;
+            const float yCoord = (static_cast<float>(y) + 0.5f) / floatExtent.y() * 2.0f - 1.0f;
+            vertices.emplace_back(xCoord, yCoord, 0.0f, 1.0f);
+        }
+
+    const auto vertexBufferSize  = static_cast<vk::VkDeviceSize>(de::dataSize(vertices));
+    const auto vertexBufferUsage = vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    const auto vertexBufferInfo  = vk::makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage);
+    vk::BufferWithMemory vertexBuffer(ctx.vkd, ctx.device, ctx.allocator, vertexBufferInfo, vk::HostIntent::W);
+    {
+        auto &alloc = vertexBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
+        vk::flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    constexpr auto replicaFactor = 512u; // If repeating indices.
+    constexpr auto blockCount    = 8u;   // How many blocks we aim to have.
+    constexpr auto pieceSize     = 4u;   // We want to make index buffer sizes multiples of 4-bytes.
+    const auto pieceCount        = pointCount / pieceSize;
+
+    struct DrawInfo
+    {
+        uint32_t firstPiece;
+        uint32_t drawPieces;
+        bool newCmdBuffer;
+        bool repeat; // Repeat each index multiple times or not.
+
+        uint32_t firstIndex() const
+        {
+            return firstPiece * pieceSize;
+        }
+
+        uint32_t indexCount() const
+        {
+            return drawPieces * pieceSize;
+        }
+
+        // How many times to repeat each index in the buffer.
+        uint32_t repetitions() const
+        {
+            return (repeat ? replicaFactor : 1u);
+        }
+
+        // How many indices to store in the buffer.
+        uint32_t bufferIndexCount() const
+        {
+            return indexCount() * repetitions();
+        }
+
+        // If we need to sort DrawInfos, we need to do so by size of the index buffer.
+        bool operator<(const DrawInfo &other) const
+        {
+            return (drawPieces < other.drawPieces);
+        }
+    };
+
+    std::vector<DrawInfo> drawInfos;
+    drawInfos.reserve(blockCount);
+
+    // Lets pseudorandomly choose how many pieces in each block.
+    uint32_t prevPieces      = 0u;
+    uint32_t remainingPieces = pieceCount;
+
+    for (uint32_t blockNdx = 0u; blockNdx < blockCount; ++blockNdx)
+    {
+        const auto remainingBlocks = (blockCount - blockNdx - 1u); // After the current one.
+        const auto minPieces       = 1;
+        const auto maxPieces =
+            static_cast<int>(remainingPieces - remainingBlocks); // Leave at least 1 piece for each remaining block.
+        const auto drawPieces =
+            ((blockNdx == blockCount - 1u) ? remainingPieces : static_cast<uint32_t>(rng.getInt(minPieces, maxPieces)));
+        const bool newCmdBuffer = rng.getBool();
+        const bool repeat       = (rng.getInt(1, 4) == 1);
+        drawInfos.push_back(DrawInfo{prevPieces, drawPieces, newCmdBuffer, repeat});
+
+        prevPieces += drawPieces;
+        remainingPieces -= drawPieces;
+    }
+
+    if (m_params.sortSizes)
+        std::sort(drawInfos.begin(), drawInfos.end());
+
+    // Index buffers.
+    using BufferWithMemoryPtr = std::unique_ptr<vk::BufferWithMemory>;
+    std::vector<BufferWithMemoryPtr> indexBuffers;
+    indexBuffers.reserve(blockCount);
+
+    for (uint32_t blockNdx = 0u; blockNdx < blockCount; ++blockNdx)
+    {
+        std::vector<uint8_t> indices;
+        const auto &drawInfo = drawInfos.at(blockNdx);
+        indices.reserve(drawInfo.bufferIndexCount());
+        const auto idxBegin = drawInfo.firstIndex();
+        const auto idxEnd   = drawInfo.firstIndex() + drawInfo.indexCount();
+        for (uint32_t i = idxBegin; i < idxEnd; ++i)
+        {
+            for (uint32_t j = 0; j < drawInfo.repetitions(); ++j)
+                indices.push_back(static_cast<uint8_t>(i));
+        }
+
+        const auto bufferSize  = static_cast<vk::VkDeviceSize>(de::dataSize(indices));
+        const auto bufferUsage = vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        const auto createInfo  = vk::makeBufferCreateInfo(bufferSize, bufferUsage);
+
+        indexBuffers.emplace_back(
+            new vk::BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, createInfo, vk::HostIntent::W));
+        auto &alloc = indexBuffers.back()->getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(indices), de::dataSize(indices));
+        vk::flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Render pass that loads and stores the attachment.
+    const auto renderPass =
+        vk::makeRenderPass(ctx.vkd, ctx.device, format, vk::VK_FORMAT_UNDEFINED, vk::VK_ATTACHMENT_LOAD_OP_LOAD);
+    const auto framebuffer = vk::makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(),
+                                                 extentVk.width, extentVk.height);
+
+    const std::vector<vk::VkViewport> viewports(1u, vk::makeViewport(extent));
+    const std::vector<vk::VkRect2D> scissors(1u, vk::makeRect2D(extent));
+
+    // Graphics pipeline.
+    const auto &binaries      = m_context.getBinaryCollection();
+    const auto vertShader     = vk::createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+    const auto fragShader     = vk::createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+    const auto pipelineLayout = vk::makePipelineLayout(ctx.vkd, ctx.device);
+    const auto pipeline = vk::makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *vertShader, VK_NULL_HANDLE,
+                                                   VK_NULL_HANDLE, VK_NULL_HANDLE, *fragShader, *renderPass, viewports,
+                                                   scissors, vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
+
+    const auto cmdPool = vk::makeCommandPool(ctx.vkd, ctx.device, ctx.qfIndex);
+
+    using SemaphorePtr = std::unique_ptr<vk::Move<vk::VkSemaphore>>;
+    using CmdBufferPtr = std::unique_ptr<vk::Move<vk::VkCommandBuffer>>;
+
+    std::vector<SemaphorePtr> cmdSemaphores;
+    std::vector<CmdBufferPtr> cmdBuffers;
+    vk::VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
+
+    const auto colorSRR = vk::makeDefaultImageSubresourceRange();
+
+    // Lambda that creates a new command buffer, its semaphore, stores the handle in cmdBuffer and begins cmdBuffer.
+    const auto makeNewCmdbuffer = [&]()
+    {
+        cmdSemaphores.emplace_back(new vk::Move<vk::VkSemaphore>(vk::createSemaphore(ctx.vkd, ctx.device)));
+        cmdBuffers.emplace_back(new vk::Move<vk::VkCommandBuffer>(
+            vk::allocateCommandBuffer(ctx.vkd, ctx.device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY)));
+        cmdBuffer = cmdBuffers.back()->get();
+        vk::beginCommandBuffer(ctx.vkd, cmdBuffer);
+    };
+
+    // Lambda that starts a new render pass and binds the vertex buffer and the pipeline for it.
+    const auto startRenderPass = [&]()
+    {
+        vk::beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.front());
+        ctx.vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+        const vk::VkDeviceSize offset = 0ull;
+        ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &offset);
+    };
+
+    {
+        makeNewCmdbuffer();
+
+        // Clear color buffer to black.
+        const auto clearColor = vk::makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+        const auto preClearBarrier =
+            vk::makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
+                                       vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, colorBuffer.getImage(), colorSRR);
+        vk::cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, &preClearBarrier);
+
+        ctx.vkd.cmdClearColorImage(cmdBuffer, colorBuffer.getImage(), vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                   &clearColor.color, 1u, &colorSRR);
+
+        const auto postClearBarrier = vk::makeImageMemoryBarrier(
+            vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+            (vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+            vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            colorBuffer.getImage(), colorSRR);
+        vk::cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, &postClearBarrier);
+    }
+
+    startRenderPass();
+
+    for (size_t drawIdx = 0; drawIdx < drawInfos.size(); ++drawIdx)
+    {
+        const auto &drawInfo = drawInfos.at(drawIdx);
+
+        if (drawInfo.newCmdBuffer)
+        {
+            vk::endRenderPass(ctx.vkd, cmdBuffer);
+            vk::endCommandBuffer(ctx.vkd, cmdBuffer);
+
+            makeNewCmdbuffer();
+
+            const auto drawBarrier = vk::makeMemoryBarrier(
+                vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                (vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT));
+            vk::cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                         vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, &drawBarrier);
+            startRenderPass();
+        }
+
+        // Bind the new index buffer and draw.
+        ctx.vkd.cmdBindIndexBuffer(cmdBuffer, indexBuffers.at(drawIdx)->get(), 0ull, vk::VK_INDEX_TYPE_UINT8);
+        ctx.vkd.cmdDrawIndexed(cmdBuffer, drawInfo.bufferIndexCount(), 1u, 0u, 0,
+                               0u); // Note first index is zero because we use separate index buffers for each call.
+    }
+
+    vk::endRenderPass(ctx.vkd, cmdBuffer);
+
+    // Copy color buffer to verification buffer before finishing.
+    vk::copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1));
+
+    vk::endCommandBuffer(ctx.vkd, cmdBuffer);
+
+    std::vector<vk::VkSubmitInfo> submitInfos;
+    submitInfos.reserve(cmdBuffers.size());
+
+    const auto waitStage = static_cast<vk::VkPipelineStageFlags>(vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+    for (uint32_t cmdIdx = 0; cmdIdx < cmdBuffers.size(); ++cmdIdx)
+    {
+        const bool hasPrevious = (cmdIdx > 0u);
+
+        // Each command buffer waits for the previous one to finish at the color attachment output stage.
+        submitInfos.push_back(vk::VkSubmitInfo{
+            vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            nullptr,
+            (hasPrevious ? 1u : 0u),
+            (hasPrevious ? &cmdSemaphores.at(cmdIdx - 1u)->get() : nullptr),
+            (hasPrevious ? &waitStage : nullptr),
+            1u,
+            &cmdBuffers.at(cmdIdx)->get(),
+            1u,
+            &cmdSemaphores.at(cmdIdx)->get(),
+        });
+    }
+
+    const auto fence = vk::createFence(ctx.vkd, ctx.device);
+    ctx.vkd.queueSubmit(ctx.queue, de::sizeU32(submitInfos), de::dataOrNull(submitInfos), *fence);
+    vk::waitForFence(ctx.vkd, ctx.device, *fence);
+
+    vk::invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+
+    // Prepare reference image (all blue color, see frag shader).
+    const auto tcuFormat = vk::mapVkFormat(format);
+    tcu::TextureLevel refLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess reference = refLevel.getAccess();
+    tcu::clear(reference, tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
+
+    tcu::ConstPixelBufferAccess result(tcuFormat, extent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    auto &log = m_context.getTestContext().getLog();
+    const tcu::Vec4 threshold(0.0f);
+
+    if (!tcu::floatThresholdCompare(log, "ColorBuffer", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected contents in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+// Update before draw: test that updating the index buffer before drawing works.
+// * vkCmdBindIndexBuffer
+// * Transfer op (could be compute too) that updates the index buffer contents.
+// * Barrier.
+// * vkCmdDrawIndexed in a render pass
+//
+// The tests will use different index types, and a 16x16 FB covered with 256 points.
+struct UpdateBeforeDrawParams
+{
+    vk::VkIndexType indexType;
+};
+
+class UpdateBeforeDrawInstance : public vkt::TestInstance
+{
+public:
+    UpdateBeforeDrawInstance(Context &context, const UpdateBeforeDrawParams &params)
+        : vkt::TestInstance(context)
+        , m_params(params)
+    {
+    }
+    virtual ~UpdateBeforeDrawInstance(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    const UpdateBeforeDrawParams m_params;
+};
+
+class UpdateBeforeDrawCase : public vkt::TestCase
+{
+public:
+    UpdateBeforeDrawCase(tcu::TestContext &testCtx, const std::string &name, const UpdateBeforeDrawParams &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~UpdateBeforeDrawCase(void) = default;
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new UpdateBeforeDrawInstance(context, m_params);
+    }
+
+protected:
+    const UpdateBeforeDrawParams m_params;
+};
+
+void UpdateBeforeDrawCase::checkSupport(Context &context) const
+{
+    if (m_params.indexType == vk::VK_INDEX_TYPE_UINT8)
+    {
+        const auto &index8Features = context.getIndexTypeUint8Features();
+        if (!index8Features.indexTypeUint8)
+            TCU_THROW(NotSupportedError, "indexTypeUint8 not supported");
+    }
+}
+
+void UpdateBeforeDrawCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    bluePointsPrograms(programCollection);
+}
+
+tcu::TestStatus UpdateBeforeDrawInstance::iterate(void)
+{
+    const auto ctx = m_context.getContextCommonData();
+    const tcu::IVec3 extent(16, 16, 1);
+    const auto floatExtent = extent.asFloat();
+    const auto extentVk    = vk::makeExtent3D(extent);
+    const auto format      = vk::VK_FORMAT_R8G8B8A8_UNORM;
+    const auto usage       = (vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                        vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+    const auto imageType   = vk::VK_IMAGE_TYPE_2D;
+    const auto pointCount  = extentVk.width * extentVk.height * extentVk.depth;
+
+    DE_ASSERT(pointCount - 1u <= static_cast<uint32_t>(std::numeric_limits<uint8_t>::max()));
+
+    vk::ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, format, usage, imageType);
+
+    // Vertex buffer.
+    std::vector<tcu::Vec4> vertices;
+    vertices.reserve(pointCount);
+    for (int y = 0; y < extent.y(); ++y)
+        for (int x = 0; x < extent.x(); ++x)
+        {
+            const float xCoord = (static_cast<float>(x) + 0.5f) / floatExtent.x() * 2.0f - 1.0f;
+            const float yCoord = (static_cast<float>(y) + 0.5f) / floatExtent.y() * 2.0f - 1.0f;
+            vertices.emplace_back(xCoord, yCoord, 0.0f, 1.0f);
+        }
+
+    const auto vertexBufferOffset = static_cast<vk::VkDeviceSize>(0);
+    const auto vertexBufferSize   = static_cast<vk::VkDeviceSize>(de::dataSize(vertices));
+    const auto vertexBufferUsage  = vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    const auto vertexBufferInfo   = vk::makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage);
+    vk::BufferWithMemory vertexBuffer(ctx.vkd, ctx.device, ctx.allocator, vertexBufferInfo, vk::HostIntent::W);
+    {
+        auto &alloc = vertexBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
+        vk::flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Staging buffer: we will generate the actual indices here.
+    std::vector<uint8_t> stagingBufferBytes;
+    if (m_params.indexType == vk::VK_INDEX_TYPE_UINT8)
+    {
+        stagingBufferBytes.resize(pointCount);
+        std::iota(stagingBufferBytes.begin(), stagingBufferBytes.end(), uint8_t{0});
+    }
+    else if (m_params.indexType == vk::VK_INDEX_TYPE_UINT16)
+    {
+        std::vector<uint16_t> indices(pointCount);
+        std::iota(indices.begin(), indices.end(), uint16_t{0});
+        stagingBufferBytes.resize(de::dataSize(indices));
+        memcpy(stagingBufferBytes.data(), indices.data(), stagingBufferBytes.size());
+    }
+    else if (m_params.indexType == vk::VK_INDEX_TYPE_UINT32)
+    {
+        std::vector<uint32_t> indices(pointCount);
+        std::iota(indices.begin(), indices.end(), uint32_t{0});
+        stagingBufferBytes.resize(de::dataSize(indices));
+        memcpy(stagingBufferBytes.data(), indices.data(), stagingBufferBytes.size());
+    }
+    else
+        DE_ASSERT(false);
+
+    const auto stagingBufferSize  = static_cast<vk::VkDeviceSize>(de::dataSize(stagingBufferBytes));
+    const auto stagingBufferUsage = static_cast<vk::VkBufferUsageFlags>(vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    const auto stagingBufferInfo  = vk::makeBufferCreateInfo(stagingBufferSize, stagingBufferUsage);
+    vk::BufferWithMemory stagingBuffer(ctx.vkd, ctx.device, ctx.allocator, stagingBufferInfo, vk::HostIntent::W);
+    {
+        auto &alloc = stagingBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(stagingBufferBytes), de::dataSize(stagingBufferBytes));
+        vk::flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Index buffer: contents will be filled later with a copy from the staging buffer.
+    const auto indexBufferUsage = static_cast<vk::VkBufferUsageFlags>(vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+                                                                      vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto indexBufferInfo  = vk::makeBufferCreateInfo(stagingBufferSize, indexBufferUsage);
+    vk::BufferWithMemory indexBuffer(ctx.vkd, ctx.device, ctx.allocator, indexBufferInfo, vk::HostIntent::NONE);
+
+    // Render pass that loads and stores the attachment.
+    const auto renderPass  = vk::makeRenderPass(ctx.vkd, ctx.device, format);
+    const auto framebuffer = vk::makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(),
+                                                 extentVk.width, extentVk.height);
+
+    const std::vector<vk::VkViewport> viewports(1u, vk::makeViewport(extent));
+    const std::vector<vk::VkRect2D> scissors(1u, vk::makeRect2D(extent));
+
+    // Graphics pipeline.
+    const auto &binaries      = m_context.getBinaryCollection();
+    const auto vertShader     = vk::createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+    const auto fragShader     = vk::createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+    const auto pipelineLayout = vk::makePipelineLayout(ctx.vkd, ctx.device);
+    const auto pipeline = vk::makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *vertShader, VK_NULL_HANDLE,
+                                                   VK_NULL_HANDLE, VK_NULL_HANDLE, *fragShader, *renderPass, viewports,
+                                                   scissors, vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
+
+    // Command pool with buffer, run stuff.
+    vk::CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    vk::beginCommandBuffer(ctx.vkd, cmdBuffer);
+    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+    ctx.vkd.cmdBindIndexBuffer(cmdBuffer, indexBuffer.get(), 0ull, m_params.indexType);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+
+    // After the index buffer is bound, fill its contents from the staginb buffer.
+    {
+        const auto copyRegion = vk::makeBufferCopy(0ull, 0ull, stagingBufferSize);
+        ctx.vkd.cmdCopyBuffer(cmdBuffer, *stagingBuffer, *indexBuffer, 1u, &copyRegion);
+    }
+
+    // Insert a barrier so the transfer happens before reading indices.
+    {
+        const auto xferToDraw = vk::makeMemoryBarrier(vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_INDEX_READ_BIT);
+        vk::cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                     vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, &xferToDraw);
+    }
+
+    // Render pass and draw.
+    vk::beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.front(),
+                        tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    ctx.vkd.cmdDrawIndexed(cmdBuffer, pointCount, 1u, 0u, 0, 0u);
+    vk::endRenderPass(ctx.vkd, cmdBuffer);
+
+    vk::copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1));
+
+    vk::endCommandBuffer(ctx.vkd, cmdBuffer);
+    vk::submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    const auto tcuFormat = vk::mapVkFormat(format);
+    vk::invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+    tcu::ConstPixelBufferAccess result(tcuFormat, extent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    // Prepare reference image (all blue color, see frag shader).
+    tcu::TextureLevel refLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess reference = refLevel.getAccess();
+    tcu::clear(reference, tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
+
+    auto &log = m_context.getTestContext().getLog();
+    const tcu::Vec4 threshold(0.0f);
+
+    if (!tcu::floatThresholdCompare(log, "ColorBuffer", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected contents in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 DrawIndexedTests::DrawIndexedTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams)
@@ -1260,6 +1849,37 @@ void DrawIndexedTests::init(bool useMaintenance5Ext)
                         FunctionSupport1<DrawIndexedMaintenance6::TestSpec>::Args(checkSupport, testSpec)));
                 }
             }
+        }
+    }
+
+    if (!m_groupParams->useDynamicRendering && !m_groupParams->useSecondaryCmdBuffer && !useMaintenance5Ext)
+    {
+        for (const bool sortSizes : {false, true})
+        {
+            const auto caseCount = 20u;
+            for (uint32_t i = 0u; i < caseCount; ++i)
+            {
+                const Multibind8BitParams params{i, sortSizes};
+                const auto testName = "multibind_8bit_case_" + std::to_string(i) + (sortSizes ? "_sorted" : "");
+                addChild(new Multibind8BitCase(m_testCtx, testName, params));
+            }
+        }
+
+        const struct
+        {
+            vk::VkIndexType indexType;
+            const char *name;
+        } indexTypeCases[] = {
+            {vk::VK_INDEX_TYPE_UINT32, "32"},
+            {vk::VK_INDEX_TYPE_UINT16, "16"},
+            {vk::VK_INDEX_TYPE_UINT8, "8"},
+        };
+
+        for (const auto &indexTypeCase : indexTypeCases)
+        {
+            const auto testName = std::string("update_index_buffer_before_draw_") + indexTypeCase.name;
+            const UpdateBeforeDrawParams params{indexTypeCase.indexType};
+            addChild(new UpdateBeforeDrawCase(m_testCtx, testName, params));
         }
     }
 }

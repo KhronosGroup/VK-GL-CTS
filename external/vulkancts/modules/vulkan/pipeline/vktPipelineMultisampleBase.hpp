@@ -102,6 +102,17 @@ protected:
                                               m_imageMSParams.pipelineConstructionType);
     }
 
+    void validateImageSize(const vk::InstanceInterface &instance, const vk::VkPhysicalDevice physicalDevice,
+                           const ImageType imageType, const tcu::UVec3 &imageSize) const;
+
+    void validateImageFeatureFlags(const vk::InstanceInterface &instance, const vk::VkPhysicalDevice physicalDevice,
+                                   const vk::VkFormat format, const vk::VkFormatFeatureFlags featureFlags) const;
+
+    void validateImageInfo(const vk::InstanceInterface &instance, const vk::VkPhysicalDevice physicalDevice,
+                           vk::VkFormat format, vk::VkExtent3D extent, vk::VkImageType imageType,
+                           vk::VkSampleCountFlagBits samples, vk::VkImageTiling tiling, vk::VkImageUsageFlags usage,
+                           vk::VkImageCreateFlags flags, uint32_t arrayLayers) const;
+
 protected:
     const ImageMSParams m_imageMSParams;
 };
@@ -132,15 +143,6 @@ public:
     };
 
 protected:
-    void validateImageSize(const vk::InstanceInterface &instance, const vk::VkPhysicalDevice physicalDevice,
-                           const ImageType imageType, const tcu::UVec3 &imageSize) const;
-
-    void validateImageFeatureFlags(const vk::InstanceInterface &instance, const vk::VkPhysicalDevice physicalDevice,
-                                   const vk::VkFormat format, const vk::VkFormatFeatureFlags featureFlags) const;
-
-    void validateImageInfo(const vk::InstanceInterface &instance, const vk::VkPhysicalDevice physicalDevice,
-                           const vk::VkImageCreateInfo &imageInfo) const;
-
     virtual VertexDataDesc getVertexDataDescripton(void) const = 0;
 
     virtual void uploadVertexData(const vk::Allocation &vertexBufferAllocation,

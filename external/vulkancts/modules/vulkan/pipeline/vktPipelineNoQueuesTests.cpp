@@ -260,7 +260,8 @@ void NoQueuesTestCase::checkSupport(Context &context) const
     if (isTessStage(m_data.stage) && !features.tessellationShader)
         TCU_THROW(NotSupportedError, "Tessellation shaders not supported");
 
-    if ((isTessStage(m_data.stage) || m_data.stage == Stage::STAGE_VERTEX) && !features.vertexPipelineStoresAndAtomics)
+    if ((isTessStage(m_data.stage) || isGeomStage(m_data.stage) || m_data.stage == Stage::STAGE_VERTEX) &&
+        !features.vertexPipelineStoresAndAtomics)
         TCU_THROW(NotSupportedError, "SSBO writes not supported in vertex pipeline");
 
     if (m_data.stage == Stage::STAGE_FRAGMENT && !features.fragmentStoresAndAtomics)

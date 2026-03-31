@@ -23,7 +23,7 @@
  * \brief Vulkan Dynamic Rendering Local Read Tests
  *//*--------------------------------------------------------------------*/
 
-#include "tcuDefs.hpp"
+#include "vktRenderPassGroupParams.hpp"
 #include "tcuTestCase.hpp"
 
 namespace vkt
@@ -31,7 +31,7 @@ namespace vkt
 namespace renderpass
 {
 
-tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testCtx, const SharedGroupParams grpParams);
 
 } // namespace renderpass
 } // namespace vkt

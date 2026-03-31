@@ -361,7 +361,7 @@ public:
                                                       ImageAspectTestMode imageAspectTestMode,
                                                       PipelineStateMode pipelineStateMode, bool useMaintenance5_);
 
-    virtual ~AttachmentFeedbackLoopLayoutImageSamplingInstance(void);
+    virtual ~AttachmentFeedbackLoopLayoutImageSamplingInstance(void) = default;
 
     virtual tcu::TestStatus iterate(void) override;
 
@@ -388,7 +388,7 @@ public:
         bool useImageAsColorOrDSAttachment_, bool useDifferentAreasSampleWrite_, bool interleaveReadWriteComponents_,
         ImageAspectTestMode imageAspectTestMode, PipelineStateMode pipelineStateMode, bool useMaintenance5_);
 
-    virtual ~AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance(void);
+    virtual ~AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance(void) = default;
 
     virtual tcu::TestStatus iterate(void) override;
 
@@ -1031,11 +1031,6 @@ AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::
           context, params, useGeneralLayout, useImageAsColorOrDSAttachment_, useDifferentAreasSampleWrite_,
           interleaveReadWriteComponents_, imageAspectTestMode, pipelineStateMode, useMaintenance5_)
     , m_separateStencilUsage(params.separateStencilUsage)
-{
-}
-
-AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::
-    ~AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance(void)
 {
 }
 
@@ -1854,10 +1849,6 @@ tcu::TestStatus AttachmentFeedbackLoopLayoutImageSamplingInstance::verifyImage(c
     return tcu::TestStatus::pass("Pass");
 }
 
-AttachmentFeedbackLoopLayoutImageSamplingInstance::~AttachmentFeedbackLoopLayoutImageSamplingInstance(void)
-{
-}
-
 tcu::TestStatus AttachmentFeedbackLoopLayoutImageSamplingInstance::iterate(void)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
@@ -1880,9 +1871,7 @@ public:
                                             TestMode testMode, ImageAspectTestMode imageAspectTestMode,
                                             bool interleaveReadWriteComponents, PipelineStateMode pipelineStateMode,
                                             bool useMaintenance5);
-    virtual ~AttachmentFeedbackLoopLayoutSamplerTest(void)
-    {
-    }
+    virtual ~AttachmentFeedbackLoopLayoutSamplerTest(void) = default;
 
     virtual ImageSamplingInstanceParams getImageSamplingInstanceParams(SamplerViewType imageViewType,
                                                                        VkFormat imageFormat, int imageSize,

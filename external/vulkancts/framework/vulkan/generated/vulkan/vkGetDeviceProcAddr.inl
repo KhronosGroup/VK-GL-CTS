@@ -105,6 +105,15 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		// "VK_ARM_performance_counters_by_region
 		"vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM",
 
+		// "VK_ARM_shader_instrumentation
+		"vkClearShaderInstrumentationMetricsARM",
+		"vkCmdBeginShaderInstrumentationARM",
+		"vkCmdEndShaderInstrumentationARM",
+		"vkCreateShaderInstrumentationARM",
+		"vkDestroyShaderInstrumentationARM",
+		"vkEnumeratePhysicalDeviceShaderInstrumentationMetricsARM",
+		"vkGetShaderInstrumentationValuesARM",
+
 		// "VK_ARM_tensors
 		"vkBindTensorMemoryARM",
 		"vkCmdCopyTensorARM",
@@ -189,6 +198,18 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetImageOpaqueCaptureDescriptorDataEXT",
 		"vkGetImageViewOpaqueCaptureDescriptorDataEXT",
 		"vkGetSamplerOpaqueCaptureDescriptorDataEXT",
+
+		// "VK_EXT_descriptor_heap
+		"vkCmdBindResourceHeapEXT",
+		"vkCmdBindSamplerHeapEXT",
+		"vkCmdPushDataEXT",
+		"vkGetImageOpaqueCaptureDataEXT",
+		"vkGetPhysicalDeviceDescriptorSizeEXT",
+		"vkGetTensorOpaqueCaptureDataARM",
+		"vkRegisterCustomBorderColorEXT",
+		"vkUnregisterCustomBorderColorEXT",
+		"vkWriteResourceDescriptorsEXT",
+		"vkWriteSamplerDescriptorsEXT",
 
 		// "VK_EXT_device_fault
 		"vkGetDeviceFaultInfoEXT",
@@ -575,6 +596,34 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkDestroyDescriptorUpdateTemplateKHR",
 		"vkUpdateDescriptorSetWithTemplateKHR",
 
+		// "VK_KHR_device_address_commands
+		"vkCmdBeginConditionalRendering2EXT",
+		"vkCmdBeginTransformFeedback2EXT",
+		"vkCmdBindIndexBuffer3KHR",
+		"vkCmdBindTransformFeedbackBuffers2EXT",
+		"vkCmdBindVertexBuffers3KHR",
+		"vkCmdCopyImageToMemoryKHR",
+		"vkCmdCopyMemoryKHR",
+		"vkCmdCopyMemoryToImageKHR",
+		"vkCmdCopyQueryPoolResultsToMemoryKHR",
+		"vkCmdDispatchIndirect2KHR",
+		"vkCmdDrawIndexedIndirect2KHR",
+		"vkCmdDrawIndexedIndirectCount2KHR",
+		"vkCmdDrawIndirect2KHR",
+		"vkCmdDrawIndirectByteCount2EXT",
+		"vkCmdDrawIndirectCount2KHR",
+		"vkCmdDrawMeshTasksIndirect2EXT",
+		"vkCmdDrawMeshTasksIndirectCount2EXT",
+		"vkCmdEndTransformFeedback2EXT",
+		"vkCmdFillMemoryKHR",
+		"vkCmdUpdateMemoryKHR",
+		"vkCmdWriteMarkerToMemoryAMD",
+		"vkCreateAccelerationStructure2KHR",
+
+		// "VK_KHR_device_fault
+		"vkGetDeviceFaultDebugInfoKHR",
+		"vkGetDeviceFaultReportsKHR",
+
 		// "VK_KHR_device_group
 		"vkAcquireNextImage2KHR",
 		"vkCmdDispatchBaseKHR",
@@ -843,6 +892,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkDestroyCuModuleNVX",
 
 		// "VK_NVX_image_view_handle
+		"vkGetDeviceCombinedImageSamplerIndexNVX",
 		"vkGetImageViewAddressNVX",
 		"vkGetImageViewHandle64NVX",
 		"vkGetImageViewHandleNVX",
@@ -997,6 +1047,10 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		// "VK_QNX_screen_surface
 		"vkCreateScreenSurfaceQNX",
 		"vkGetPhysicalDeviceScreenPresentationSupportQNX",
+
+		// "VK_SEC_ubm_surface
+		"vkCreateUbmSurfaceSEC",
+		"vkGetPhysicalDeviceUbmPresentationSupportSEC",
 
 		// "VK_VALVE_descriptor_set_host_mapping
 		"vkGetDescriptorSetHostMappingVALVE",

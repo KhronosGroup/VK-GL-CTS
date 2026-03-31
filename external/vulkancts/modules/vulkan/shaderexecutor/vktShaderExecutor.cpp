@@ -1626,17 +1626,26 @@ static uint32_t getVecStd430ByteAlignment(glu::DataType type)
         return baseSize * 2u;
     case 3: // fallthrough.
     case 4:
-        return baseSize * 4u;
     default:
-        DE_ASSERT(false);
-        return 0u;
+        return baseSize * 4u;
     }
+}
+
+static VkQueue getQueue(Context &context, const UserQueue &userQueue)
+{
+    return userQueue.queue == VK_NULL_HANDLE ? context.getUniversalQueue() : userQueue.queue;
+}
+
+static uint32_t getQueueFamilyIndex(Context &context, const UserQueue &userQueue)
+{
+    return userQueue.queueFamilyIndex == VK_QUEUE_FAMILY_IGNORED ? context.getUniversalQueueFamilyIndex() :
+                                                                   userQueue.queueFamilyIndex;
 }
 
 class BufferIoExecutor : public ShaderExecutor
 {
 public:
-    BufferIoExecutor(Context &context, const ShaderSpec &shaderSpec);
+    BufferIoExecutor(Context &context, const ShaderSpec &shaderSpec, const UserQueue &userQueue);
     virtual ~BufferIoExecutor(void);
 
 protected:
@@ -1673,6 +1682,7 @@ protected:
 protected:
     Move<VkBuffer> m_inputBuffer;
     Move<VkBuffer> m_outputBuffer;
+    const UserQueue m_userQueue;
 
 private:
     struct VarLayout
@@ -1701,7 +1711,9 @@ private:
     vector<VarLayout> m_outputLayout;
 };
 
-BufferIoExecutor::BufferIoExecutor(Context &context, const ShaderSpec &shaderSpec) : ShaderExecutor(context, shaderSpec)
+BufferIoExecutor::BufferIoExecutor(Context &context, const ShaderSpec &shaderSpec, const UserQueue &userQueue)
+    : ShaderExecutor(context, shaderSpec)
+    , m_userQueue(userQueue)
 {
     computeVarLayout(m_shaderSpec.inputs, &m_inputLayout);
     computeVarLayout(m_shaderSpec.outputs, &m_outputLayout);
@@ -2004,7 +2016,7 @@ void BufferIoExecutor::initBuffers(int numValues)
     // Upload data to buffer
     const VkDevice vkDevice         = m_context.getDevice();
     const DeviceInterface &vk       = m_context.getDeviceInterface();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const uint32_t queueFamilyIndex = getQueueFamilyIndex(m_context, m_userQueue);
     Allocator &memAlloc             = m_context.getDefaultAllocator();
 
     const VkBufferCreateInfo inputBufferParams = {
@@ -2066,7 +2078,7 @@ private:
 
 ComputeShaderExecutor::ComputeShaderExecutor(Context &context, const ShaderSpec &shaderSpec,
                                              VkDescriptorSetLayout extraResourcesLayout, const UserQueue &userQueue)
-    : BufferIoExecutor(context, shaderSpec)
+    : BufferIoExecutor(context, shaderSpec, userQueue)
     , m_extraResourcesLayout(extraResourcesLayout)
     , m_userQueue(userQueue)
 {
@@ -2088,6 +2100,8 @@ std::string getTypeSpirv(const glu::DataType type, const bool packFloat16Bit = f
         return "%v3f16";
     case glu::TYPE_FLOAT16_VEC4:
         return "%v4f16";
+    case glu::TYPE_FLOAT16_VEC5:
+        return "%v5f16";
     case glu::TYPE_FLOAT:
         return packFloat16Bit ? "%u32" : "%f32"; // f16 values will be bitcast from ui32.
     case glu::TYPE_FLOAT_VEC2:
@@ -2096,6 +2110,8 @@ std::string getTypeSpirv(const glu::DataType type, const bool packFloat16Bit = f
         return packFloat16Bit ? "%v3u32" : "%v3f32"; // f16 values will be bitcast from ui32.
     case glu::TYPE_FLOAT_VEC4:
         return packFloat16Bit ? "%v4u32" : "%v4f32"; // f16 values will be bitcast from ui32.
+    case glu::TYPE_FLOAT_VEC5:
+        return packFloat16Bit ? "%v5u32" : "%v5f32"; // f16 values will be bitcast from ui32.
     case glu::TYPE_INT:
         return "%i32";
     case glu::TYPE_INT_VEC2:
@@ -2104,6 +2120,8 @@ std::string getTypeSpirv(const glu::DataType type, const bool packFloat16Bit = f
         return "%v3i32";
     case glu::TYPE_INT_VEC4:
         return "%v4i32";
+    case glu::TYPE_INT_VEC5:
+        return "%v5i32";
     case glu::TYPE_DOUBLE:
         return "%f64";
     case glu::TYPE_DOUBLE_VEC2:
@@ -2112,6 +2130,8 @@ std::string getTypeSpirv(const glu::DataType type, const bool packFloat16Bit = f
         return "%v3f64";
     case glu::TYPE_DOUBLE_VEC4:
         return "%v4f64";
+    case glu::TYPE_DOUBLE_VEC5:
+        return "%v5f64";
     default:
         DE_ASSERT(0);
         return "";
@@ -2168,6 +2188,11 @@ std::string scalarComparison(const std::string operation, const int operationNdx
     case glu::TYPE_DOUBLE_VEC4:
         boolType = "%v4bool";
         break;
+    case glu::TYPE_FLOAT16_VEC5:
+    case glu::TYPE_FLOAT_VEC5:
+    case glu::TYPE_DOUBLE_VEC5:
+        boolType = "%v5bool";
+        break;
     default:
         DE_ASSERT(0);
         return "";
@@ -2220,6 +2245,8 @@ std::string generateSpirv(const ShaderSpec &spec, const bool are16Bit, const boo
 
     const bool anyFloatResult = std::any_of(begin(floatResult), end(floatResult), [](bool b) { return b; });
 
+    bool usesVec5Types = false;
+
     vector<bool> packFloatRes;
     for (const auto &floatRes : floatResult)
         packFloatRes.push_back(floatRes && spec.packFloat16Bit);
@@ -2229,10 +2256,16 @@ std::string generateSpirv(const ShaderSpec &spec, const bool are16Bit, const boo
     const bool useF16Types = (spec.packFloat16Bit || are16Bit);
 
     for (const auto &symbol : spec.inputs)
+    {
         inputTypes.push_back(getTypeSpirv(symbol.varType.getBasicType(), spec.packFloat16Bit));
+        usesVec5Types = usesVec5Types || (getDataTypeScalarSize(symbol.varType.getBasicType()) == 5);
+    }
 
     for (const auto &symbol : spec.outputs)
+    {
         outputTypes.push_back(getTypeSpirv(symbol.varType.getBasicType(), spec.packFloat16Bit));
+        usesVec5Types = usesVec5Types || (getDataTypeScalarSize(symbol.varType.getBasicType()) == 5);
+    }
 
     DE_ASSERT(!inputTypes.empty());
     DE_ASSERT(!outputTypes.empty());
@@ -2273,6 +2306,12 @@ std::string generateSpirv(const ShaderSpec &spec, const bool are16Bit, const boo
     if (useF64Types)
         src << "OpCapability Float64\n";
 
+    if (usesVec5Types)
+    {
+        src << "OpCapability LongVectorEXT\n";
+        src << "OpExtension \"SPV_EXT_long_vector\"\n";
+    }
+
     if (are16Bit)
         src << "OpExtension \"SPV_KHR_16bit_storage\"\n";
 
@@ -2285,21 +2324,23 @@ std::string generateSpirv(const ShaderSpec &spec, const bool are16Bit, const boo
 
     // Input offsets and stride.
     {
-        int offset  = 0;
-        int ndx     = 0;
-        int largest = 0;
+        int offset            = 0;
+        int ndx               = 0;
+        int largest           = 0;
+        uint32_t maxAlignment = 0;
         for (const auto &symbol : spec.inputs)
         {
-            const int scalarSize = symbol.varType.getScalarSize();
-            const int memberSize =
-                (scalarSize + ((scalarSize == 3) ? 1 : 0)) *
-                (isDataTypeDoubleType(symbol.varType.getBasicType()) ?
-                     (int)sizeof(uint64_t) :
-                     (isDataTypeFloat16OrVec(symbol.varType.getBasicType()) ? (int)sizeof(uint16_t) :
-                                                                              (int)sizeof(uint32_t)));
-            const int extraMemberBytes = (offset % memberSize);
+            const uint32_t varAlignment = getVecStd430ByteAlignment(symbol.varType.getBasicType());
+            const int scalarSize        = symbol.varType.getScalarSize();
+            const int paddedScalarSize  = (scalarSize == 3) ? 4 : scalarSize;
+            const int memberSize        = paddedScalarSize * (isDataTypeDoubleType(symbol.varType.getBasicType()) ?
+                                                                  (int)sizeof(uint64_t) :
+                                                                  (isDataTypeFloat16OrVec(symbol.varType.getBasicType()) ?
+                                                                       (int)sizeof(uint16_t) :
+                                                                       (int)sizeof(uint32_t)));
+            maxAlignment                = de::max(maxAlignment, varAlignment);
 
-            offset += ((extraMemberBytes == 0) ? 0 : (memberSize - extraMemberBytes));
+            offset = deAlign32(offset, (int)varAlignment);
             src << "OpMemberDecorate %SSB0_IN " << ndx << " Offset " << offset << "\n";
             ++ndx;
 
@@ -2309,8 +2350,8 @@ std::string generateSpirv(const ShaderSpec &spec, const bool are16Bit, const boo
             offset += memberSize;
         }
         DE_ASSERT(largest > 0);
-        const int extraBytes = (offset % largest);
-        const int stride     = offset + (extraBytes == 0 ? 0 : (largest - extraBytes));
+        const int extraBytes = (offset % maxAlignment);
+        const int stride     = offset + (extraBytes == 0 ? 0 : (maxAlignment - extraBytes));
         src << "OpDecorate %up_SSB0_IN ArrayStride " << stride << "\n";
     }
 
@@ -2365,21 +2406,23 @@ std::string generateSpirv(const ShaderSpec &spec, const bool are16Bit, const boo
 
     // Output offsets and stride.
     {
-        int offset  = 0;
-        int ndx     = 0;
-        int largest = 0;
+        int offset            = 0;
+        int ndx               = 0;
+        int largest           = 0;
+        uint32_t maxAlignment = 0;
         for (const auto &symbol : spec.outputs)
         {
-            const int scalarSize = symbol.varType.getScalarSize();
-            const int memberSize =
-                (scalarSize + ((scalarSize == 3) ? 1 : 0)) *
-                (isDataTypeDoubleType(symbol.varType.getBasicType()) ?
-                     (int)sizeof(uint64_t) :
-                     (isDataTypeFloat16OrVec(symbol.varType.getBasicType()) ? (int)sizeof(uint16_t) :
-                                                                              (int)sizeof(uint32_t)));
-            const int extraMemberBytes = (offset % memberSize);
+            const uint32_t varAlignment = getVecStd430ByteAlignment(symbol.varType.getBasicType());
+            const int scalarSize        = symbol.varType.getScalarSize();
+            const int paddedScalarSize  = (scalarSize == 3) ? 4 : scalarSize;
+            const int memberSize        = paddedScalarSize * (isDataTypeDoubleType(symbol.varType.getBasicType()) ?
+                                                                  (int)sizeof(uint64_t) :
+                                                                  (isDataTypeFloat16OrVec(symbol.varType.getBasicType()) ?
+                                                                       (int)sizeof(uint16_t) :
+                                                                       (int)sizeof(uint32_t)));
+            maxAlignment                = de::max(maxAlignment, varAlignment);
 
-            offset += ((extraMemberBytes == 0) ? 0 : (memberSize - extraMemberBytes));
+            offset = deAlign32(offset, (int)varAlignment);
             src << "OpMemberDecorate %SSB0_OUT " << ndx << " Offset " << offset << "\n";
             ++ndx;
 
@@ -2389,8 +2432,8 @@ std::string generateSpirv(const ShaderSpec &spec, const bool are16Bit, const boo
             offset += memberSize;
         }
         DE_ASSERT(largest > 0);
-        const int extraBytes = (offset % largest);
-        const int stride     = offset + ((extraBytes == 0) ? 0 : (largest - extraBytes));
+        const int extraBytes = (offset % maxAlignment);
+        const int stride     = offset + ((extraBytes == 0) ? 0 : (maxAlignment - extraBytes));
         src << "OpDecorate %up_SSB0_OUT ArrayStride " << stride << "\n";
     }
 
@@ -2431,8 +2474,22 @@ std::string generateSpirv(const ShaderSpec &spec, const bool are16Bit, const boo
            "%v2u32 = OpTypeVector %u32 2\n"
            "%v3u32 = OpTypeVector %u32 3\n"
            "%v4u32 = OpTypeVector %u32 4\n"
-           "\n"
-           "%ip_u32   = OpTypePointer Input %u32\n"
+           "\n";
+
+    if (usesVec5Types)
+    {
+        src << "%v5bool = OpTypeVector %bool 5\n";
+        src << "%v5i32 = OpTypeVector %i32 5\n";
+        src << "%v5u32 = OpTypeVector %u32 5\n";
+        if (useF16Types)
+            src << "%v5f16 = OpTypeVector %f16 5\n";
+        if (useF32Types)
+            src << "%v5f32 = OpTypeVector %f32 5\n";
+        if (useF64Types)
+            src << "%v5f64 = OpTypeVector %f64 5\n";
+    }
+
+    src << "%ip_u32   = OpTypePointer Input %u32\n"
            "%ip_v3u32 = OpTypePointer Input %v3u32\n"
            "%up_float = OpTypePointer Uniform "
         << inputTypes[0]
@@ -2509,6 +2566,27 @@ std::string generateSpirv(const ShaderSpec &spec, const bool are16Bit, const boo
                "%c_v4f64_0 = OpConstantComposite %v4f64 %c_f64_0 %c_f64_0 %c_f64_0 %c_f64_0\n"
                "%c_v4f64_1 = OpConstantComposite %v4f64 %c_f64_1 %c_f64_1 %c_f64_1 %c_f64_1\n"
                "\n";
+
+    if (usesVec5Types)
+    {
+        src << "\n"
+               "%c_v5i32_0 = OpConstantComposite %v5i32 %c_i32_0 %c_i32_0 %c_i32_0 %c_i32_0 %c_i32_0\n"
+               "%c_v5i32_1 = OpConstantComposite %v5i32 %c_i32_1 %c_i32_1 %c_i32_1 %c_i32_1 %c_i32_1\n"
+               "\n";
+
+        if (useF32Types)
+            src << "%c_v5f32_0 = OpConstantComposite %v5f32 %c_f32_0 %c_f32_0 %c_f32_0 %c_f32_0 %c_f32_0\n"
+                   "%c_v5f32_1 = OpConstantComposite %v5f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_1\n";
+
+        if (useF16Types)
+            src << "%c_v5f16_0 = OpConstantComposite %v5f16 %c_f16_0 %c_f16_0 %c_f16_0 %c_f16_0 %c_f16_0\n"
+                   "%c_v5f16_1 = OpConstantComposite %v5f16 %c_f16_1 %c_f16_1 %c_f16_1 %c_f16_1 %c_f16_1\n";
+
+        if (useF64Types)
+            src << "%c_v5f64_0 = OpConstantComposite %v5f64 %c_f64_0 %c_f64_0 %c_f64_0 %c_f64_0 %c_f64_0\n"
+                   "%c_v5f64_1 = OpConstantComposite %v5f64 %c_f64_1 %c_f64_1 %c_f64_1 %c_f64_1 %c_f64_1\n"
+                   "\n";
+    }
 
     // Input struct.
     {
@@ -2765,6 +2843,8 @@ std::string ComputeShaderExecutor::generateComputeShader(const ShaderSpec &spec)
         std::ostringstream src;
         src << glu::getGLSLVersionDeclaration(spec.glslVersion) << "\n";
 
+        src << "#extension GL_EXT_long_vector : enable\n";
+
         if (!spec.globalDeclarations.empty())
             src << spec.globalDeclarations << "\n";
 
@@ -2800,12 +2880,10 @@ void ComputeShaderExecutor::generateSources(const ShaderSpec &shaderSpec, Source
 void ComputeShaderExecutor::execute(int numValues, const void *const *inputs, void *const *outputs,
                                     VkDescriptorSet extraResources)
 {
-    const VkDevice vkDevice   = m_context.getDevice();
-    const DeviceInterface &vk = m_context.getDeviceInterface();
-    const VkQueue queue       = m_userQueue.queue == VK_NULL_HANDLE ? m_context.getUniversalQueue() : m_userQueue.queue;
-    const uint32_t queueFamilyIndex = m_userQueue.queueFamilyIndex == VK_QUEUE_FAMILY_IGNORED ?
-                                          m_context.getUniversalQueueFamilyIndex() :
-                                          m_userQueue.queueFamilyIndex;
+    const VkDevice vkDevice         = m_context.getDevice();
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkQueue queue             = getQueue(m_context, m_userQueue);
+    const uint32_t queueFamilyIndex = getQueueFamilyIndex(m_context, m_userQueue);
 
     DescriptorPoolBuilder descriptorPoolBuilder;
     DescriptorSetLayoutBuilder descriptorSetLayoutBuilder;
@@ -3000,7 +3078,7 @@ private:
 
 MeshTaskShaderExecutor::MeshTaskShaderExecutor(Context &context, const ShaderSpec &shaderSpec,
                                                VkDescriptorSetLayout extraResourcesLayout)
-    : BufferIoExecutor(context, shaderSpec)
+    : BufferIoExecutor(context, shaderSpec, UserQueue())
     , m_extraResourcesLayout(extraResourcesLayout)
 {
 }
@@ -3262,7 +3340,7 @@ private:
 
 TessellationExecutor::TessellationExecutor(Context &context, const ShaderSpec &shaderSpec,
                                            VkDescriptorSetLayout extraResourcesLayout)
-    : BufferIoExecutor(context, shaderSpec)
+    : BufferIoExecutor(context, shaderSpec, UserQueue())
     , m_extraResourcesLayout(extraResourcesLayout)
 {
     const VkPhysicalDeviceFeatures &features = context.getDeviceFeatures();

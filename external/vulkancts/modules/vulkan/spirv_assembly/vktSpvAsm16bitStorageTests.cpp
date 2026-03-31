@@ -142,7 +142,7 @@ enum TestDefDataType
 
 struct TestDefinition
 {
-    InstanceContext instanceContext;
+    InstanceContextPtr instanceContext;
     TestDefDataType dataType;
 };
 
@@ -4021,7 +4021,7 @@ void addGraphics16BitStorageInputOutputFloat16To16Group(tcu::TestCaseGroup *test
 
 void addShaderCode16BitStorageInputOutput16To16x2(vk::SourceCollections &dst, TestDefinition def)
 {
-    SpirvVersion targetSpirvVersion = def.instanceContext.resources.spirvVersion;
+    SpirvVersion targetSpirvVersion = def.instanceContext->resources.spirvVersion;
     const uint32_t vulkanVersion    = dst.usedVulkanVersion;
     map<string, string> spec;
 
@@ -4282,7 +4282,7 @@ void addGraphics16BitStorageInputOutputFloat16To16x2Group(tcu::TestCaseGroup *te
                                   std::make_pair(IFDataType(cases[caseIdx].numElements, cases[caseIdx].numberType),
                                                  BufferSp(new Float16Buffer(float16Data))));
 
-        const InstanceContext &instanceContext = createInstanceContext(
+        InstanceContextPtr instanceContext = createInstanceContext(
             pipelineStages, defaultColors, outputColors, noFragments, specConstantMap, noPushConstants, noResources,
             interfaces, extensions, requiredFeatures, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             QP_TEST_RESULT_FAIL, string());
@@ -4297,7 +4297,7 @@ void addGraphics16BitStorageInputOutputFloat16To16x2Group(tcu::TestCaseGroup *te
 
 void addGraphics16BitStorageInputOutputInt16To16x2Group(tcu::TestCaseGroup *testGroup)
 {
-    map<string, string> fragments;
+    map<string, string> noFragments;
     RGBA defaultColors[4];
     SpecConstants noSpecConstants;
     PushConstants noPushConstants;
@@ -4344,8 +4344,8 @@ void addGraphics16BitStorageInputOutputInt16To16x2Group(tcu::TestCaseGroup *test
                                   std::make_pair(IFDataType(cases[caseIdx].numElements, cases[caseIdx].numberType),
                                                  BufferSp(new Int16Buffer(int16Data))));
 
-        const InstanceContext &instanceContext = createInstanceContext(
-            pipelineStages, defaultColors, outputColors, fragments, specConstantMap, noPushConstants, noResources,
+        InstanceContextPtr instanceContext = createInstanceContext(
+            pipelineStages, defaultColors, outputColors, noFragments, specConstantMap, noPushConstants, noResources,
             interfaces, extensions, requiredFeatures, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             QP_TEST_RESULT_FAIL, string());
 

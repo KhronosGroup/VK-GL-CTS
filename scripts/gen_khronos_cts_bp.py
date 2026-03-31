@@ -224,7 +224,7 @@ cc_defaults {
         "-DDE_OS=DE_OS_ANDROID",
         "-DDEQP_GLES2_DIRECT_LINK=1",
         "-DDEQP_HAVE_RENDERDOC_HEADER=0", // Needs to be 0.
-        "-DDEQP_EXCLUDE_VK_VIDEO_TESTS",
+        "-DDEQP_DISABLE_VK_VIDEO_TESTS",
         "-DDEQP_SUPPORT_DRM=0",
         "-DDEQP_SUPPORT_GLES1=1",
         "-DDEQP_TARGET_NAME=\\"Android\\"",

@@ -1,0 +1,1 @@
+dEQP-VK.ray_query.misc.reuse_scratch_buffer

@@ -35,10 +35,8 @@
 
 #include "vkBuilderUtil.hpp"
 #include "vkMemUtil.hpp"
-#include "vkPlatform.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
-#include "vkImageUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkObjUtil.hpp"
 
@@ -137,6 +135,7 @@ struct ComputeShaderDerivativeTestParams
     ShaderType shaderType;
     DataType dataType;
     uint32_t mipLvl;
+    bool useLocalInvocationIndex;
 
     ComputeShaderDerivativeTestParams()
         : numWorkgroup(1, 1, 1)
@@ -148,6 +147,7 @@ struct ComputeShaderDerivativeTestParams
         , shaderType(ShaderType::_ENUM_COUNT)
         , dataType(DataType::_ENUM_COUNT)
         , mipLvl(0)
+        , useLocalInvocationIndex(false)
     {
     }
 };
@@ -3034,121 +3034,154 @@ void ComputeShaderDerivativeCase::initPrograms(vk::SourceCollections &programCol
                                   "              OpReturn\n"
                                   "              OpFunctionEnd\n");
 
+    std::string localInvVar;
+    std::string localInvBuiltIn;
+    std::string localInvVarType;
+    std::string extraConstantsDecl;
+    std::string ndx_ndy_Calc;
+
+    if (m_params.useLocalInvocationIndex)
+    {
+        localInvVar        = "%gl_LocalInvocationIndex";
+        localInvBuiltIn    = "LocalInvocationIndex";
+        localInvVarType    = "%uint32_input_ptr";
+        extraConstantsDecl = "%wg_size_x = OpConstant %uint32 ${x}\n"
+                             "%wg_size_y = OpConstant %uint32 ${y}\n";
+        ndx_ndy_Calc       = "%inv_index = OpLoad %uint32 %gl_LocalInvocationIndex\n"
+                             "%ndx_uint32 = OpUMod %uint32 %inv_index %wg_size_x\n"
+                             "%row_index = OpUDiv %uint32 %inv_index %wg_size_x\n"
+                             "%ndy_uint32 = OpUMod %uint32 %row_index %wg_size_y\n";
+    }
+    else
+    {
+        localInvVar        = "%gl_LocalInvocationID";
+        localInvBuiltIn    = "LocalInvocationId";
+        localInvVarType    = "%vec3_uint32_input_ptr";
+        extraConstantsDecl = ""; // Empty.
+        ndx_ndy_Calc = "%gl_LocalInvocationID_x = OpAccessChain %uint32_input_ptr %gl_LocalInvocationID   %c_uint32_0\n"
+                       "%ndx_uint32             = OpLoad        %uint32           %gl_LocalInvocationID_x\n"
+                       "%gl_LocalInvocationID_y = OpAccessChain %uint32_input_ptr %gl_LocalInvocationID   %c_uint32_1\n"
+                       "%ndy_uint32             = OpLoad        %uint32           %gl_LocalInvocationID_y\n";
+    }
+
     switch (m_params.shaderType)
     {
     case ShaderType::COMPUTE:
     {
         // Universal compute shader
-        testShaderStr =
-            "OpCapability Shader\n"
-            "OpCapability ${capability}\n"
-            "${sampleCap:opt}\n"
-            "${queryCap:opt}\n"
-            "OpCapability DerivativeControl\n"
-            "OpCapability GroupNonUniformQuad\n"
-            "OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
-            "OpExtension \"SPV_KHR_compute_shader_derivatives\"\n"
-            "OpMemoryModel Logical GLSL450\n"
-            "OpEntryPoint GLCompute %main \"main\" %gl_LocalInvocationID %gl_SubgroupID %gl_SubgroupInvocationID\n"
-            "OpExecutionMode %main LocalSize ${x} ${y} ${z}\n"
-            "OpExecutionMode %main ${executionMode}\n"
+        testShaderStr = "OpCapability Shader\n"
+                        "OpCapability ${capability}\n"
+                        "${sampleCap:opt}\n"
+                        "${queryCap:opt}\n"
+                        "OpCapability DerivativeControl\n"
+                        "OpCapability GroupNonUniformQuad\n"
+                        "OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
+                        "OpExtension \"SPV_KHR_compute_shader_derivatives\"\n"
+                        "OpMemoryModel Logical GLSL450\n"
+                        "OpEntryPoint GLCompute %main \"main\" " +
+                        localInvVar +
+                        " %gl_SubgroupID %gl_SubgroupInvocationID\n"
+                        "OpExecutionMode %main LocalSize ${x} ${y} ${z}\n"
+                        "OpExecutionMode %main ${executionMode}\n"
 
-            // Decorations
-            "OpDecorate      %gl_LocalInvocationID    BuiltIn     LocalInvocationId\n"
-            "OpDecorate      %gl_SubgroupID           BuiltIn     SubgroupId\n"
-            "OpDecorate      %gl_SubgroupInvocationID BuiltIn     SubgroupLocalInvocationId\n"
-            "OpDecorate      %out_array               ArrayStride ${arrayStride}\n"
-            // Output X
-            "OpMemberDecorate %out_x 0 Offset 0\n"
-            "OpDecorate       %out_x Block\n"
-            "OpDecorate       %out_x_var DescriptorSet 0\n"
-            "OpDecorate       %out_x_var Binding       0\n"
-            // Output Y
-            "OpMemberDecorate %out_y 0 Offset 0\n"
-            "OpDecorate       %out_y Block\n"
-            "OpDecorate       %out_y_var DescriptorSet 0\n"
-            "OpDecorate       %out_y_var Binding       1\n"
-            // Output F
-            "OpMemberDecorate %out_f 0 Offset 0\n"
-            "OpDecorate       %out_f Block\n"
-            "OpDecorate       %out_f_var DescriptorSet 0\n"
-            "OpDecorate       %out_f_var Binding       2\n"
-            "${decorations:opt}\n"
+                        // Decorations
+                        "OpDecorate      " +
+                        localInvVar + "    BuiltIn     " + localInvBuiltIn +
+                        "\n"
+                        "OpDecorate      %gl_SubgroupID           BuiltIn     SubgroupId\n"
+                        "OpDecorate      %gl_SubgroupInvocationID BuiltIn     SubgroupLocalInvocationId\n"
+                        "OpDecorate      %out_array               ArrayStride ${arrayStride}\n"
+                        // Output X
+                        "OpMemberDecorate %out_x 0 Offset 0\n"
+                        "OpDecorate       %out_x Block\n"
+                        "OpDecorate       %out_x_var DescriptorSet 0\n"
+                        "OpDecorate       %out_x_var Binding       0\n"
+                        // Output Y
+                        "OpMemberDecorate %out_y 0 Offset 0\n"
+                        "OpDecorate       %out_y Block\n"
+                        "OpDecorate       %out_y_var DescriptorSet 0\n"
+                        "OpDecorate       %out_y_var Binding       1\n"
+                        // Output F
+                        "OpMemberDecorate %out_f 0 Offset 0\n"
+                        "OpDecorate       %out_f Block\n"
+                        "OpDecorate       %out_f_var DescriptorSet 0\n"
+                        "OpDecorate       %out_f_var Binding       2\n"
+                        "${decorations:opt}\n"
 
-            // Types
-            "%void         = OpTypeVoid\n"
-            "%void_func    = OpTypeFunction %void\n"
-            "%uint32       = OpTypeInt      32       0\n"
-            "%vec3_uint32  = OpTypeVector   %uint32  3\n"
-            "%float32      = OpTypeFloat    32\n"
-            "%vec2_float32 = OpTypeVector   %float32 2\n"
-            "%vec3_float32 = OpTypeVector   %float32 3\n"
-            "%vec4_float32 = OpTypeVector   %float32 4\n"
+                        // Types
+                        "%void         = OpTypeVoid\n"
+                        "%void_func    = OpTypeFunction %void\n"
+                        "%uint32       = OpTypeInt      32       0\n"
+                        "%vec3_uint32  = OpTypeVector   %uint32  3\n"
+                        "%float32      = OpTypeFloat    32\n"
+                        "%vec2_float32 = OpTypeVector   %float32 2\n"
+                        "%vec3_float32 = OpTypeVector   %float32 3\n"
+                        "%vec4_float32 = OpTypeVector   %float32 4\n"
 
-            // Constants
-            "%c_uint32_0     = OpConstant %uint32  0\n"
-            "%c_uint32_1     = OpConstant %uint32  1\n"
-            "%c_uint32_2     = OpConstant %uint32  2\n"
-            "%c_uint32_3     = OpConstant %uint32  3\n"
-            "%c_uint32_4     = OpConstant %uint32  4\n"
-            "%c_uint32_16    = OpConstant %uint32  16\n"
-            "%c_uint32_32    = OpConstant %uint32  32\n"
-            "%c_uint32_128   = OpConstant %uint32  128\n"
-            "%c_float32_2    = OpConstant %float32 2\n"
-            "%c_float32_3    = OpConstant %float32 3\n"
-            "%c_float32_4    = OpConstant %float32 4\n"
-            "%c_float32_10   = OpConstant %float32 10\n"
-            "%c_float32_20   = OpConstant %float32 20\n"
-            "%c_float32_0_08 = OpConstant %float32 0.08\n"
-            "%c_float32_0_10 = OpConstant %float32 0.10\n"
-            "%c_float32_0_12 = OpConstant %float32 0.12\n"
+                        // Constants
+                        "%c_uint32_0     = OpConstant %uint32  0\n"
+                        "%c_uint32_1     = OpConstant %uint32  1\n"
+                        "%c_uint32_2     = OpConstant %uint32  2\n"
+                        "%c_uint32_3     = OpConstant %uint32  3\n"
+                        "%c_uint32_4     = OpConstant %uint32  4\n"
+                        "%c_uint32_16    = OpConstant %uint32  16\n"
+                        "%c_uint32_32    = OpConstant %uint32  32\n"
+                        "%c_uint32_128   = OpConstant %uint32  128\n"
+                        "%c_float32_2    = OpConstant %float32 2\n"
+                        "%c_float32_3    = OpConstant %float32 3\n"
+                        "%c_float32_4    = OpConstant %float32 4\n"
+                        "%c_float32_10   = OpConstant %float32 10\n"
+                        "%c_float32_20   = OpConstant %float32 20\n"
+                        "%c_float32_0_08 = OpConstant %float32 0.08\n"
+                        "%c_float32_0_10 = OpConstant %float32 0.10\n"
+                        "%c_float32_0_12 = OpConstant %float32 0.12\n"
 
-            // Arrays
-            "%out_array = ${arrayDeclaration}\n"
+                        + extraConstantsDecl +
 
-            // Structs
-            "%out_x = OpTypeStruct %out_array\n"
-            "%out_y = OpTypeStruct %out_array\n"
-            "%out_f = OpTypeStruct %out_array\n"
+                        // Arrays
+                        "%out_array = ${arrayDeclaration}\n"
 
-            // Pointers
-            "%uint32_input_ptr              = OpTypePointer Input         %uint32\n"
-            "%vec3_uint32_input_ptr         = OpTypePointer Input         %vec3_uint32\n"
+                        // Structs
+                        "%out_x = OpTypeStruct %out_array\n"
+                        "%out_y = OpTypeStruct %out_array\n"
+                        "%out_f = OpTypeStruct %out_array\n"
 
-            "%out_x_storage_buffer_ptr      = OpTypePointer StorageBuffer %out_x\n"
-            "%out_y_storage_buffer_ptr      = OpTypePointer StorageBuffer %out_y\n"
-            "%out_f_storage_buffer_ptr      = OpTypePointer StorageBuffer %out_f\n"
-            "${dataType}_storage_buffer_ptr = OpTypePointer StorageBuffer ${dataType}\n"
+                        // Pointers
+                        "%uint32_input_ptr              = OpTypePointer Input         %uint32\n"
+                        "%vec3_uint32_input_ptr         = OpTypePointer Input         %vec3_uint32\n"
 
-            // Variables
-            "%gl_LocalInvocationID    = OpVariable %vec3_uint32_input_ptr    Input\n"
-            "%gl_SubgroupID           = OpVariable %uint32_input_ptr         Input\n"
-            "%gl_SubgroupInvocationID = OpVariable %uint32_input_ptr         Input\n"
-            "%out_x_var               = OpVariable %out_x_storage_buffer_ptr StorageBuffer\n"
-            "%out_y_var               = OpVariable %out_y_storage_buffer_ptr StorageBuffer\n"
-            "%out_f_var               = OpVariable %out_f_storage_buffer_ptr StorageBuffer\n"
+                        "%out_x_storage_buffer_ptr      = OpTypePointer StorageBuffer %out_x\n"
+                        "%out_y_storage_buffer_ptr      = OpTypePointer StorageBuffer %out_y\n"
+                        "%out_f_storage_buffer_ptr      = OpTypePointer StorageBuffer %out_f\n"
+                        "${dataType}_storage_buffer_ptr = OpTypePointer StorageBuffer ${dataType}\n"
 
-            "${images:opt}\n"
+                        // Variables
+                        + localInvVar + "    = OpVariable " + localInvVarType +
+                        "    Input\n"
+                        "%gl_SubgroupID           = OpVariable %uint32_input_ptr         Input\n"
+                        "%gl_SubgroupInvocationID = OpVariable %uint32_input_ptr         Input\n"
+                        "%out_x_var               = OpVariable %out_x_storage_buffer_ptr StorageBuffer\n"
+                        "%out_y_var               = OpVariable %out_y_storage_buffer_ptr StorageBuffer\n"
+                        "%out_f_var               = OpVariable %out_f_storage_buffer_ptr StorageBuffer\n"
 
-            // Main
-            "%main               = OpFunction %void None %void_func\n"
-            "%label_main         = OpLabel\n"
-            // Quering GroupThreadID
-            "%gl_LocalInvocationID_x = OpAccessChain %uint32_input_ptr %gl_LocalInvocationID   %c_uint32_0\n"
-            "%ndx_uint32             = OpLoad        %uint32           %gl_LocalInvocationID_x\n"
-            "%gl_LocalInvocationID_y = OpAccessChain %uint32_input_ptr %gl_LocalInvocationID   %c_uint32_1\n"
-            "%ndy_uint32             = OpLoad        %uint32           %gl_LocalInvocationID_y\n"
-            "${linearNdxMul}\n"
-            "%linear_ndx             = OpIAdd        %uint32           %ndx_uint32 %multi_ndy_uint32\n"
-            // Generating test values
-            "${testValueCode:opt}\n"
-            // Calculating derivatives
-            "${testLogicCode}\n"
-            // Storing values in output buffer
-            "${storeCode}\n"
+                        "${images:opt}\n"
 
-            "                      OpReturn\n"
-            "                      OpFunctionEnd\n";
+                        // Main
+                        "%main               = OpFunction %void None %void_func\n"
+                        "%label_main         = OpLabel\n"
+                        // Quering GroupThreadID
+                        + ndx_ndy_Calc +
+                        "${linearNdxMul}\n"
+                        "%linear_ndx             = OpIAdd        %uint32           %ndx_uint32 %multi_ndy_uint32\n"
+                        // Generating test values
+                        "${testValueCode:opt}\n"
+                        // Calculating derivatives
+                        "${testLogicCode}\n"
+                        // Storing values in output buffer
+                        "${storeCode}\n"
+
+                        "                      OpReturn\n"
+                        "                      OpFunctionEnd\n";
 
         break;
     }
@@ -3166,7 +3199,9 @@ void ComputeShaderDerivativeCase::initPrograms(vk::SourceCollections &programCol
             "OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
             "OpExtension \"SPV_KHR_compute_shader_derivatives\"\n"
             "OpMemoryModel Logical GLSL450\n"
-            "OpEntryPoint MeshEXT %main \"main\" %out_x_var %out_y_var %out_f_var %gl_LocalInvocationID %gl_SubgroupID "
+            "OpEntryPoint MeshEXT %main \"main\" %out_x_var %out_y_var %out_f_var " +
+            localInvVar +
+            " %gl_SubgroupID "
             "%gl_SubgroupInvocationID ${interface:opt} %gl_MeshVerticesEXT %gl_PrimitiveTriangleIndicesEXT\n"
             "OpExecutionMode %main LocalSize ${x} ${y} ${z}\n"
             "OpExecutionMode %main ${executionMode}\n"
@@ -3181,7 +3216,9 @@ void ComputeShaderDerivativeCase::initPrograms(vk::SourceCollections &programCol
             "OpMemberDecorate %gl_MeshPerVertexEXT 3 BuiltIn CullDistance\n"
             "OpDecorate       %gl_MeshPerVertexEXT Block\n"
             "OpDecorate       %gl_PrimitiveTriangleIndicesEXT BuiltIn     PrimitiveTriangleIndicesEXT\n"
-            "OpDecorate       %gl_LocalInvocationID           BuiltIn     LocalInvocationId\n"
+            "OpDecorate       " +
+            localInvVar + "           BuiltIn     " + localInvBuiltIn +
+            "\n"
             "OpDecorate       %gl_SubgroupID                  BuiltIn     SubgroupId\n"
             "OpDecorate       %gl_SubgroupInvocationID        BuiltIn     SubgroupLocalInvocationId\n"
             "OpDecorate       %out_array                      ArrayStride ${arrayStride}\n"
@@ -3240,6 +3277,8 @@ void ComputeShaderDerivativeCase::initPrograms(vk::SourceCollections &programCol
             "%c_float32_0\n"
             "%c_indices      = OpConstantComposite %vec3_uint32  %c_uint32_0     %c_uint32_1     %c_uint32_2\n"
 
+            + extraConstantsDecl +
+
             // Arrays
             "%out_array           = ${arrayDeclaration}\n"
             "%array_float32_1     = OpTypeArray %float32     %c_uint32_1\n"
@@ -3267,7 +3306,8 @@ void ComputeShaderDerivativeCase::initPrograms(vk::SourceCollections &programCol
             "%array_gl_MeshPerVertexEXT_3_output_ptr = OpTypePointer Output        %array_gl_MeshPerVertexEXT_3\n"
 
             // Variables
-            "%gl_LocalInvocationID           = OpVariable %vec3_uint32_input_ptr                  Input\n"
+            + localInvVar + "           = OpVariable " + localInvVarType +
+            "                  Input\n"
             "%gl_SubgroupID                  = OpVariable %uint32_input_ptr                       Input\n"
             "%gl_SubgroupInvocationID        = OpVariable %uint32_input_ptr                       Input\n"
             "%out_x_var                      = OpVariable %out_x_storage_buffer_ptr               StorageBuffer\n"
@@ -3282,10 +3322,7 @@ void ComputeShaderDerivativeCase::initPrograms(vk::SourceCollections &programCol
             "%main               = OpFunction %void None %void_func\n"
             "%label_main         = OpLabel\n"
             // Quering GroupThreadID
-            "%gl_LocalInvocationID_x = OpAccessChain %uint32_input_ptr %gl_LocalInvocationID   %c_uint32_0\n"
-            "%ndx_uint32             = OpLoad        %uint32           %gl_LocalInvocationID_x\n"
-            "%gl_LocalInvocationID_y = OpAccessChain %uint32_input_ptr %gl_LocalInvocationID   %c_uint32_1\n"
-            "%ndy_uint32             = OpLoad        %uint32           %gl_LocalInvocationID_y\n"
+            + ndx_ndy_Calc +
             "${linearNdxMul}\n"
             "%linear_ndx             = OpIAdd        %uint32           %ndx_uint32 %multi_ndy_uint32\n"
             // Generating test values
@@ -3317,118 +3354,121 @@ void ComputeShaderDerivativeCase::initPrograms(vk::SourceCollections &programCol
     case ShaderType::TASK:
     {
         // Universal task shader
-        testShaderStr =
-            "OpCapability MeshShadingEXT\n"
-            "OpCapability ${capability}\n"
-            "${sampleCap:opt}\n"
-            "${queryCap:opt}\n"
-            "OpCapability DerivativeControl\n"
-            "OpCapability GroupNonUniformQuad\n"
-            "OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
-            "OpExtension \"SPV_KHR_compute_shader_derivatives\"\n"
-            "OpExtension \"SPV_EXT_mesh_shader\"\n"
-            "OpMemoryModel Logical GLSL450\n"
-            "OpEntryPoint TaskEXT %main \"main\" %out_x_var %out_y_var %out_f_var %gl_LocalInvocationID %gl_SubgroupID "
-            "%gl_SubgroupInvocationID ${interface:opt}\n"
-            "OpExecutionMode %main LocalSize ${x} ${y} ${z}\n"
-            "OpExecutionMode %main ${executionMode}\n"
+        testShaderStr = "OpCapability MeshShadingEXT\n"
+                        "OpCapability ${capability}\n"
+                        "${sampleCap:opt}\n"
+                        "${queryCap:opt}\n"
+                        "OpCapability DerivativeControl\n"
+                        "OpCapability GroupNonUniformQuad\n"
+                        "OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
+                        "OpExtension \"SPV_KHR_compute_shader_derivatives\"\n"
+                        "OpExtension \"SPV_EXT_mesh_shader\"\n"
+                        "OpMemoryModel Logical GLSL450\n"
+                        "OpEntryPoint TaskEXT %main \"main\" %out_x_var %out_y_var %out_f_var " +
+                        localInvVar +
+                        " %gl_SubgroupID "
+                        "%gl_SubgroupInvocationID ${interface:opt}\n"
+                        "OpExecutionMode %main LocalSize ${x} ${y} ${z}\n"
+                        "OpExecutionMode %main ${executionMode}\n"
 
-            // Decorations
-            "OpDecorate      %gl_LocalInvocationID    BuiltIn     LocalInvocationId\n"
-            "OpDecorate      %gl_SubgroupID           BuiltIn     SubgroupId\n"
-            "OpDecorate      %gl_SubgroupInvocationID BuiltIn     SubgroupLocalInvocationId\n"
-            "OpDecorate      %out_array               ArrayStride ${arrayStride}\n"
-            // Output X
-            "OpMemberDecorate %out_x 0 Offset 0\n"
-            "OpDecorate       %out_x Block\n"
-            "OpDecorate       %out_x_var DescriptorSet 0\n"
-            "OpDecorate       %out_x_var Binding       0\n"
-            // Output Y
-            "OpMemberDecorate %out_y 0 Offset 0\n"
-            "OpDecorate       %out_y Block\n"
-            "OpDecorate       %out_y_var DescriptorSet 0\n"
-            "OpDecorate       %out_y_var Binding       1\n"
-            // Output F
-            "OpMemberDecorate %out_f 0 Offset 0\n"
-            "OpDecorate       %out_f Block\n"
-            "OpDecorate       %out_f_var DescriptorSet 0\n"
-            "OpDecorate       %out_f_var Binding       2\n"
-            "${decorations:opt}\n"
+                        // Decorations
+                        "OpDecorate      " +
+                        localInvVar + "    BuiltIn     " + localInvBuiltIn +
+                        "\n"
+                        "OpDecorate      %gl_SubgroupID           BuiltIn     SubgroupId\n"
+                        "OpDecorate      %gl_SubgroupInvocationID BuiltIn     SubgroupLocalInvocationId\n"
+                        "OpDecorate      %out_array               ArrayStride ${arrayStride}\n"
+                        // Output X
+                        "OpMemberDecorate %out_x 0 Offset 0\n"
+                        "OpDecorate       %out_x Block\n"
+                        "OpDecorate       %out_x_var DescriptorSet 0\n"
+                        "OpDecorate       %out_x_var Binding       0\n"
+                        // Output Y
+                        "OpMemberDecorate %out_y 0 Offset 0\n"
+                        "OpDecorate       %out_y Block\n"
+                        "OpDecorate       %out_y_var DescriptorSet 0\n"
+                        "OpDecorate       %out_y_var Binding       1\n"
+                        // Output F
+                        "OpMemberDecorate %out_f 0 Offset 0\n"
+                        "OpDecorate       %out_f Block\n"
+                        "OpDecorate       %out_f_var DescriptorSet 0\n"
+                        "OpDecorate       %out_f_var Binding       2\n"
+                        "${decorations:opt}\n"
 
-            // Types
-            "%void         = OpTypeVoid\n"
-            "%void_func    = OpTypeFunction %void\n"
-            "%uint32       = OpTypeInt      32      0\n"
-            "%float32      = OpTypeFloat    32\n"
-            "%vec3_uint32  = OpTypeVector   %uint32  3\n"
-            "%vec2_float32 = OpTypeVector   %float32 2\n"
-            "%vec3_float32 = OpTypeVector   %float32 3\n"
-            "%vec4_float32 = OpTypeVector   %float32 4\n"
+                        // Types
+                        "%void         = OpTypeVoid\n"
+                        "%void_func    = OpTypeFunction %void\n"
+                        "%uint32       = OpTypeInt      32      0\n"
+                        "%float32      = OpTypeFloat    32\n"
+                        "%vec3_uint32  = OpTypeVector   %uint32  3\n"
+                        "%vec2_float32 = OpTypeVector   %float32 2\n"
+                        "%vec3_float32 = OpTypeVector   %float32 3\n"
+                        "%vec4_float32 = OpTypeVector   %float32 4\n"
 
-            // Constants
-            "%c_uint32_0     = OpConstant %uint32  0\n"
-            "%c_uint32_1     = OpConstant %uint32  1\n"
-            "%c_uint32_2     = OpConstant %uint32  2\n"
-            "%c_uint32_3     = OpConstant %uint32  3\n"
-            "%c_uint32_4     = OpConstant %uint32  4\n"
-            "%c_uint32_16    = OpConstant %uint32  16\n"
-            "%c_uint32_32    = OpConstant %uint32  32\n"
-            "%c_uint32_128   = OpConstant %uint32  128\n"
-            "%c_float32_2    = OpConstant %float32 2\n"
-            "%c_float32_3    = OpConstant %float32 3\n"
-            "%c_float32_4    = OpConstant %float32 4\n"
-            "%c_float32_10   = OpConstant %float32 10\n"
-            "%c_float32_20   = OpConstant %float32 20\n"
-            "%c_float32_0_08 = OpConstant %float32 0.08\n"
-            "%c_float32_0_10 = OpConstant %float32 0.10\n"
-            "%c_float32_0_12 = OpConstant %float32 0.12\n"
+                        // Constants
+                        "%c_uint32_0     = OpConstant %uint32  0\n"
+                        "%c_uint32_1     = OpConstant %uint32  1\n"
+                        "%c_uint32_2     = OpConstant %uint32  2\n"
+                        "%c_uint32_3     = OpConstant %uint32  3\n"
+                        "%c_uint32_4     = OpConstant %uint32  4\n"
+                        "%c_uint32_16    = OpConstant %uint32  16\n"
+                        "%c_uint32_32    = OpConstant %uint32  32\n"
+                        "%c_uint32_128   = OpConstant %uint32  128\n"
+                        "%c_float32_2    = OpConstant %float32 2\n"
+                        "%c_float32_3    = OpConstant %float32 3\n"
+                        "%c_float32_4    = OpConstant %float32 4\n"
+                        "%c_float32_10   = OpConstant %float32 10\n"
+                        "%c_float32_20   = OpConstant %float32 20\n"
+                        "%c_float32_0_08 = OpConstant %float32 0.08\n"
+                        "%c_float32_0_10 = OpConstant %float32 0.10\n"
+                        "%c_float32_0_12 = OpConstant %float32 0.12\n"
 
-            // Arrays
-            "%out_array = ${arrayDeclaration}\n"
+                        + extraConstantsDecl +
 
-            // Structs
-            "%out_x = OpTypeStruct %out_array\n"
-            "%out_y = OpTypeStruct %out_array\n"
-            "%out_f = OpTypeStruct %out_array\n"
+                        // Arrays
+                        "%out_array = ${arrayDeclaration}\n"
 
-            // Pointers
-            "%uint32_input_ptr              = OpTypePointer Input         %uint32\n"
-            "%vec3_uint32_input_ptr         = OpTypePointer Input         %vec3_uint32\n"
-            "%out_x_storage_buffer_ptr      = OpTypePointer StorageBuffer %out_x\n"
-            "%out_y_storage_buffer_ptr      = OpTypePointer StorageBuffer %out_y\n"
-            "%out_f_storage_buffer_ptr      = OpTypePointer StorageBuffer %out_f\n"
-            "${dataType}_storage_buffer_ptr = OpTypePointer StorageBuffer ${dataType}\n"
+                        // Structs
+                        "%out_x = OpTypeStruct %out_array\n"
+                        "%out_y = OpTypeStruct %out_array\n"
+                        "%out_f = OpTypeStruct %out_array\n"
 
-            // Variables
-            "%gl_LocalInvocationID    = OpVariable %vec3_uint32_input_ptr    Input\n"
-            "%gl_SubgroupID           = OpVariable %uint32_input_ptr         Input\n"
-            "%gl_SubgroupInvocationID = OpVariable %uint32_input_ptr         Input\n"
-            "%out_x_var               = OpVariable %out_x_storage_buffer_ptr StorageBuffer\n"
-            "%out_y_var               = OpVariable %out_y_storage_buffer_ptr StorageBuffer\n"
-            "%out_f_var               = OpVariable %out_f_storage_buffer_ptr StorageBuffer\n"
+                        // Pointers
+                        "%uint32_input_ptr              = OpTypePointer Input         %uint32\n"
+                        "%vec3_uint32_input_ptr         = OpTypePointer Input         %vec3_uint32\n"
+                        "%out_x_storage_buffer_ptr      = OpTypePointer StorageBuffer %out_x\n"
+                        "%out_y_storage_buffer_ptr      = OpTypePointer StorageBuffer %out_y\n"
+                        "%out_f_storage_buffer_ptr      = OpTypePointer StorageBuffer %out_f\n"
+                        "${dataType}_storage_buffer_ptr = OpTypePointer StorageBuffer ${dataType}\n"
 
-            "${images:opt}\n"
+                        // Variables
+                        + localInvVar + "    = OpVariable " + localInvVarType +
+                        "    Input\n"
+                        "%gl_SubgroupID           = OpVariable %uint32_input_ptr         Input\n"
+                        "%gl_SubgroupInvocationID = OpVariable %uint32_input_ptr         Input\n"
+                        "%out_x_var               = OpVariable %out_x_storage_buffer_ptr StorageBuffer\n"
+                        "%out_y_var               = OpVariable %out_y_storage_buffer_ptr StorageBuffer\n"
+                        "%out_f_var               = OpVariable %out_f_storage_buffer_ptr StorageBuffer\n"
 
-            // Main
-            "%main               = OpFunction %void None %void_func\n"
-            "%label_main         = OpLabel\n"
-            // Quering GroupThreadID
-            "%gl_LocalInvocationID_x = OpAccessChain %uint32_input_ptr %gl_LocalInvocationID   %c_uint32_0\n"
-            "%ndx_uint32             = OpLoad        %uint32           %gl_LocalInvocationID_x\n"
-            "%gl_LocalInvocationID_y = OpAccessChain %uint32_input_ptr %gl_LocalInvocationID   %c_uint32_1\n"
-            "%ndy_uint32             = OpLoad        %uint32           %gl_LocalInvocationID_y\n"
-            "${linearNdxMul}\n"
-            "%linear_ndx             = OpIAdd        %uint32           %ndx_uint32 %multi_ndy_uint32\n"
-            // Generating test values
-            "${testValueCode:opt}\n"
-            // Calculating derivatives
-            "${testLogicCode}\n"
-            // Storing values in output buffer
-            "${storeCode}\n"
-            // Task output
-            "                      OpEmitMeshTasksEXT %c_uint32_1 %c_uint32_1 %c_uint32_1\n"
+                        "${images:opt}\n"
 
-            "                      OpFunctionEnd\n";
+                        // Main
+                        "%main               = OpFunction %void None %void_func\n"
+                        "%label_main         = OpLabel\n"
+                        // Quering GroupThreadID
+                        + ndx_ndy_Calc +
+                        "${linearNdxMul}\n"
+                        "%linear_ndx             = OpIAdd        %uint32           %ndx_uint32 %multi_ndy_uint32\n"
+                        // Generating test values
+                        "${testValueCode:opt}\n"
+                        // Calculating derivatives
+                        "${testLogicCode}\n"
+                        // Storing values in output buffer
+                        "${storeCode}\n"
+                        // Task output
+                        "                      OpEmitMeshTasksEXT %c_uint32_1 %c_uint32_1 %c_uint32_1\n"
+
+                        "                      OpFunctionEnd\n";
 
         break;
     }
@@ -3755,6 +3795,9 @@ tcu::TestCaseGroup *createComputeShaderDerivativesTests(tcu::TestContext &testCt
                         params.feature      = DerivativeFeature::QUADS;
 
                         quads->addChild(new ComputeShaderDerivativeCase(testCtx, "4_4_1", params));
+
+                        params.useLocalInvocationIndex = true;
+                        quads->addChild(new ComputeShaderDerivativeCase(testCtx, "4_4_1_local_inv_index", params));
 
                         dataTypeGroup->addChild(quads.release());
                     }

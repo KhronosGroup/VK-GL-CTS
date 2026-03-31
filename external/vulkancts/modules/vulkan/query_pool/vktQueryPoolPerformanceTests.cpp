@@ -139,13 +139,11 @@ protected:
 
 private:
     VkQueueFlagBits m_queueFlagBits;
-    bool m_requiredExtensionsPresent;
 };
 
 EnumerateAndValidateTest::EnumerateAndValidateTest(vkt::Context &context, VkQueueFlagBits queueFlagBits)
     : TestInstance(context)
     , m_queueFlagBits(queueFlagBits)
-    , m_requiredExtensionsPresent(context.requireDeviceFunctionality("VK_KHR_performance_query"))
 {
 }
 
@@ -259,7 +257,6 @@ protected:
 private:
     const bool m_copyResults;
     const uint32_t m_seed;
-    bool m_requiredExtensionsPresent;
     uint32_t m_requiredNumerOfPasses;
     std::map<uint64_t, uint32_t> m_enabledCountersCountMap; // number of counters that were enabled per query pool
     PerformanceCounterVec m_counters;                       // counters provided by the device
@@ -269,7 +266,6 @@ QueryTestBase::QueryTestBase(vkt::Context &context, bool copyResults, uint32_t s
     : TestInstance(context)
     , m_copyResults(copyResults)
     , m_seed(seed)
-    , m_requiredExtensionsPresent(context.requireDeviceFunctionality("VK_KHR_performance_query"))
     , m_requiredNumerOfPasses(0)
 {
 }
@@ -303,9 +299,6 @@ void QueryTestBase::setupCounters()
     filteredCounters.reserve(m_counters.size());
     std::copy_if(begin(m_counters), end(m_counters), std::back_inserter(filteredCounters), scopeIsNotCmdBuffer);
     m_counters.swap(filteredCounters);
-
-    if (m_counters.empty())
-        TCU_THROW(NotSupportedError, "No counters without command buffer scope found");
 }
 
 Move<VkQueryPool> QueryTestBase::createQueryPool(uint32_t enabledCounterOffset, uint32_t enabledCounterStride)
@@ -1304,8 +1297,9 @@ public:
 
     void checkSupport(Context &context) const override
     {
-        const auto &perfQueryFeatures = context.getPerformanceQueryFeatures();
+        context.requireDeviceFunctionality("VK_KHR_performance_query");
 
+        const auto &perfQueryFeatures = context.getPerformanceQueryFeatures();
         if (!perfQueryFeatures.performanceCounterQueryPools)
             TCU_THROW(NotSupportedError, "performanceCounterQueryPools not supported");
 
@@ -1316,7 +1310,7 @@ public:
         const auto physicalDevice = context.getPhysicalDevice();
         const auto qfIndex        = context.getUniversalQueueFamilyIndex();
 
-        // Get the number of supported counters;
+        // Get the number of supported counters
         uint32_t counterCount;
         VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, qfIndex,
                                                                                    &counterCount, NULL, NULL));
@@ -1327,6 +1321,22 @@ public:
         if (m_copyResults && !context.getPerformanceQueryProperties().allowCommandBufferQueryCopies)
             TCU_THROW(NotSupportedError,
                       "VkPhysicalDevicePerformanceQueryPropertiesKHR::allowCommandBufferQueryCopies not supported");
+
+        if (m_testType != TT_ENUMERATE_AND_VALIDATE)
+        {
+            // Get supported counters
+            const VkPerformanceCounterKHR defaultCounterVal = initVulkanStructure();
+            PerformanceCounterVec counters(counterCount, defaultCounterVal);
+            VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(
+                physicalDevice, qfIndex, &counterCount, counters.data(), nullptr));
+
+            uint32_t countersWithoutCBScope = 0;
+            for (const auto &c : counters)
+                countersWithoutCBScope += (c.scope != VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_BUFFER_KHR);
+
+            if (countersWithoutCBScope == 0)
+                TCU_THROW(NotSupportedError, "No counters without command buffer scope found");
+        }
     }
 
 private:

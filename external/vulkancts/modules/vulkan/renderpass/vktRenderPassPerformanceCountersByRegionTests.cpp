@@ -215,15 +215,6 @@ de::MovePtr<Allocation> createBufferMemory(const DeviceInterface &vkd, VkDevice 
     return allocation;
 }
 
-VkDeviceAddress getBufferDeviceAddress(const DeviceInterface &vkd, VkDevice device, VkBuffer buffer)
-{
-    VkBufferDeviceAddressInfo bufferDeviceAddressInfo = {};
-    bufferDeviceAddressInfo.sType                     = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR;
-    bufferDeviceAddressInfo.pNext                     = nullptr;
-    bufferDeviceAddressInfo.buffer                    = buffer;
-    return vkd.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-}
-
 template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep,
           typename RenderPassCreateInfo>
 Move<VkRenderPass> createRenderPass(const DeviceInterface &vkd, VkDevice device, VkFormat format,

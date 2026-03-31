@@ -150,15 +150,6 @@ inline VkDrawIndirectCommand makeDrawIndirectCommand (uint32_t vertexCount, uint
 	return res;
 }
 
-inline VkDrmFormatModifierProperties2EXT makeDrmFormatModifierProperties2EXT (uint64_t drmFormatModifier, uint32_t drmFormatModifierPlaneCount, VkFormatFeatureFlags2 drmFormatModifierTilingFeatures)
-{
-	VkDrmFormatModifierProperties2EXT res;
-	res.drmFormatModifier				= drmFormatModifier;
-	res.drmFormatModifierPlaneCount		= drmFormatModifierPlaneCount;
-	res.drmFormatModifierTilingFeatures	= drmFormatModifierTilingFeatures;
-	return res;
-}
-
 inline VkDrmFormatModifierPropertiesEXT makeDrmFormatModifierPropertiesEXT (uint64_t drmFormatModifier, uint32_t drmFormatModifierPlaneCount, VkFormatFeatureFlags drmFormatModifierTilingFeatures)
 {
 	VkDrmFormatModifierPropertiesEXT res;
@@ -470,6 +461,15 @@ inline VkXYColorEXT makeXYColorEXT (float x, float y)
 	VkXYColorEXT res;
 	res.x	= x;
 	res.y	= y;
+	return res;
+}
+
+inline VkDrmFormatModifierProperties2EXT makeDrmFormatModifierProperties2EXT (uint64_t drmFormatModifier, uint32_t drmFormatModifierPlaneCount, VkFormatFeatureFlags2 drmFormatModifierTilingFeatures)
+{
+	VkDrmFormatModifierProperties2EXT res;
+	res.drmFormatModifier				= drmFormatModifier;
+	res.drmFormatModifierPlaneCount		= drmFormatModifierPlaneCount;
+	res.drmFormatModifierTilingFeatures	= drmFormatModifierTilingFeatures;
 	return res;
 }
 

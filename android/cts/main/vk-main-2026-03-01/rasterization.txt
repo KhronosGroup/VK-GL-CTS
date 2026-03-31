@@ -1,0 +1,4 @@
+dEQP-VK.rasterization.primitive_size.default_size.points.all_no_large_points
+dEQP-VK.rasterization.primitive_size.default_size.points.geometry_no_large_points
+dEQP-VK.rasterization.primitive_size.default_size.points.tessellation_no_large_points
+dEQP-VK.rasterization.primitive_size.default_size.points.vertex_no_large_points

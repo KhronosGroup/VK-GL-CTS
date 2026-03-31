@@ -89,6 +89,7 @@ CreateMacOSSurfaceMVKFunc												createMacOSSurfaceMVK;
 CreateDebugUtilsMessengerEXTFunc										createDebugUtilsMessengerEXT;
 DestroyDebugUtilsMessengerEXTFunc										destroyDebugUtilsMessengerEXT;
 SubmitDebugUtilsMessageEXTFunc											submitDebugUtilsMessageEXT;
+GetPhysicalDeviceDescriptorSizeEXTFunc									getPhysicalDeviceDescriptorSizeEXT;
 GetPhysicalDeviceMultisamplePropertiesEXTFunc							getPhysicalDeviceMultisamplePropertiesEXT;
 GetPhysicalDeviceCalibrateableTimeDomainsEXTFunc						getPhysicalDeviceCalibrateableTimeDomainsEXT;
 CreateImagePipeSurfaceFUCHSIAFunc										createImagePipeSurfaceFUCHSIA;
@@ -111,3 +112,5 @@ GetPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARMFunc	getPhysic
 CreateSurfaceOHOSFunc													createSurfaceOHOS;
 GetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNVFunc	getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV;
 EnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARMFunc	enumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM;
+CreateUbmSurfaceSECFunc													createUbmSurfaceSEC;
+GetPhysicalDeviceUbmPresentationSupportSECFunc							getPhysicalDeviceUbmPresentationSupportSEC;

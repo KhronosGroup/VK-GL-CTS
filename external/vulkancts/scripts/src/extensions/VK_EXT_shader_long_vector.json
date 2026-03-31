@@ -1,0 +1,18 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceShaderLongVectorFeaturesEXT": [
+            {
+                "features": [
+                    "longVector"
+                ],
+                "requirements": [
+                    "VK_EXT_shader_long_vector"
+                ]
+            }
+        ]
+    }
+}

@@ -639,6 +639,7 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildTrianglesIndexed:
     const VkDevice device                                = m_context.getDevice();
     Allocator &allocator                                 = m_context.getDefaultAllocator();
     de::MovePtr<BottomLevelAccelerationStructure> result = makeBottomLevelAccelerationStructure();
+    const auto kVertexCount                              = (SQUARE_SIZE + 1) * (SQUARE_SIZE + 1) - 1;
 
     AccelerationStructBufferProperties bufferProps;
     bufferProps.props.residency = ResourceResidency::TRADITIONAL;
@@ -663,21 +664,21 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildTrianglesIndexed:
             rtGeo->addVertex({-9999.9f, -9999.0f, -9999.9f - static_cast<float>(i)});
         }
 
+        // add invalid vertices in the beginning of RaytracedGeometryBase to build invalid geometry,
+        // update will remove these vertices
+        if (m_data.doUpdate)
+        {
+            for (uint32_t i = 0; i < kVertexCount; ++i)
+            {
+                rtGeo->addVertex({-9999.0f, -9999.0f, -9999.9f - static_cast<float>(i)});
+                rtGeo->addVertex({-9999.0f, -9999.9f, -9999.9f - static_cast<float>(i)});
+                rtGeo->addVertex({-9999.9f, -9999.0f, -9999.9f - static_cast<float>(i)});
+            }
+        }
+
         for (const auto &vert : geoData.vertices)
         {
             rtGeo->addVertex(vert);
-        }
-
-        if (m_data.doUpdate)
-        {
-            // add indices covering only 1st triangle clockwise to build invalid geometry 1st time,
-            // update will offset index buffer to correct indices
-            for (uint32_t i = 0; i < geoData.indices.size() / 3; ++i)
-            {
-                rtGeo->addIndex(firstVertexReminder + 0);
-                rtGeo->addIndex(firstVertexReminder + 1);
-                rtGeo->addIndex(firstVertexReminder + SQUARE_SIZE + 1);
-            }
         }
 
         for (const auto &id : geoData.indices)
@@ -701,8 +702,42 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildTrianglesIndexed:
         result->setIndexBufferAddressOffset(-m_data.primitiveOffset);
         result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
-        const int32_t IndexByteSize = SQUARE_SIZE * SQUARE_SIZE * sizeof(uint32_t) * 3;
-        result->setIndexBufferAddressOffset(-m_data.primitiveOffset + IndexByteSize);
+        for (uint32_t geoId = 0; geoId < m_data.geometriesGroupCount; ++geoId)
+        {
+            const tcu::Vec3 offset = {static_cast<float>(SQUARE_OFFSET_X * geoId), 0.0f, 0.0f};
+            const auto geoData     = makeTriangleGeometry(offset);
+            auto rtGeo             = de::SharedPtr<RaytracedGeometryBase>(
+                new RaytracedGeometry<tcu::Vec3, uint32_t>(vk::VK_GEOMETRY_TYPE_TRIANGLES_KHR));
+            const uint32_t firstVertexReminder = 2 - ((m_data.firstVertex + 2) % 3);
+            const uint32_t fakeTriangles       = (m_data.firstVertex + 2) / 3;
+
+            for (uint32_t i = 0; i < fakeTriangles; ++i)
+            {
+                rtGeo->addVertex({-9999.0f, -9999.0f, -9999.9f - static_cast<float>(i)});
+                rtGeo->addVertex({-9999.0f, -9999.9f, -9999.9f - static_cast<float>(i)});
+                rtGeo->addVertex({-9999.9f, -9999.0f, -9999.9f - static_cast<float>(i)});
+            }
+
+            for (const auto &vert : geoData.vertices)
+            {
+                rtGeo->addVertex(vert);
+            }
+
+            for (const auto &id : geoData.indices)
+            {
+                rtGeo->addIndex(id + firstVertexReminder);
+            }
+
+            result->updateGeometry(geoId, rtGeo);
+
+            const VkTransformMatrixKHR transformMatrix = {{
+                {1.0f, 0.0f, 0.0f, offset.x()},
+                {0.0f, 1.0f, 0.0f, 0.0f},
+                {0.0f, 0.0f, 1.0f, 0.0f},
+            }};
+            result->setGeometryTransform(geoId, transformMatrix);
+        }
+
         result->build(vkd, device, cmdBuffer, result.get());
     }
     else

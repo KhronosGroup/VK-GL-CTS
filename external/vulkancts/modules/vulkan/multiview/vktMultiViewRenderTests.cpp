@@ -2383,19 +2383,6 @@ MultiViewSecondaryCommandBufferTestInstance::MultiViewSecondaryCommandBufferTest
     Context &context, const TestParameters &parameters)
     : MultiViewRenderTestInstance(context, parameters)
 {
-    if (TEST_TYPE_NESTED_CMD_BUFFER == parameters.viewIndex)
-    {
-        context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
-#ifndef CTS_USES_VULKANSC
-        const auto &features = context.getNestedCommandBufferFeaturesEXT();
-        if (!features.nestedCommandBuffer)
-#endif // CTS_USES_VULKANSC
-            TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
-#ifndef CTS_USES_VULKANSC
-        if (!features.nestedCommandBufferRendering)
-#endif // CTS_USES_VULKANSC
-            TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported");
-    }
 }
 
 void MultiViewSecondaryCommandBufferTestInstance::draw(const uint32_t subpassCount, VkRenderPass renderPass,
@@ -2897,14 +2884,9 @@ MultiViewQueriesTestInstance::MultiViewQueriesTestInstance(Context &context, con
     , m_occlusionObjectsOffset(0)
 {
     // Generate the timestamp mask
-    const auto &vki           = m_context.getInstanceInterface();
-    const auto physicalDevice = m_context.getPhysicalDevice();
-
-    const std::vector<VkQueueFamilyProperties> queueProperties =
-        vk::getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
-
-    if (queueProperties[0].timestampValidBits == 0)
-        TCU_THROW(NotSupportedError, "Device does not support timestamp.");
+    const auto &vki            = m_context.getInstanceInterface();
+    const auto physicalDevice  = m_context.getPhysicalDevice();
+    const auto queueProperties = getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
 
     m_timestampMask = 0xFFFFFFFFFFFFFFFFull >> (64 - queueProperties[0].timestampValidBits);
 
@@ -4537,20 +4519,13 @@ private:
             TCU_THROW(NotSupportedError, "multiviewTessellationShader not supported");
         }
 
+        const auto &vki           = context.getInstanceInterface();
+        const auto physicalDevice = context.getPhysicalDevice();
+
         {
-            VkPhysicalDeviceMultiviewProperties multiviewProperties = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES, //VkStructureType sType;
-                nullptr,                                                //void* pNext;
-                0u,                                                     //uint32_t maxMultiviewViewCount;
-                0u                                                      //uint32_t maxMultiviewInstanceIndex;
-            };
-
-            VkPhysicalDeviceProperties2 propertiesDeviceProperties2;
-            propertiesDeviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-            propertiesDeviceProperties2.pNext = &multiviewProperties;
-
-            context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(),
-                                                                        &propertiesDeviceProperties2);
+            VkPhysicalDeviceMultiviewProperties multiviewProperties = initVulkanStructure();
+            VkPhysicalDeviceProperties2 propertiesDeviceProperties2 = initVulkanStructure(&multiviewProperties);
+            vki.getPhysicalDeviceProperties2(physicalDevice, &propertiesDeviceProperties2);
 
 #ifdef CTS_USES_VULKANSC
             if (multiviewProperties.maxMultiviewViewCount < m_parameters.viewMasks.size())
@@ -4594,22 +4569,35 @@ private:
                 DE_ASSERT(pointSize + 1 <= m_parameters.extent.height / 2);
             }
         }
+        else if (isQueryTestType(m_parameters.viewIndex))
+        {
+            const auto queueProperties = getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
+            if (queueProperties[0].timestampValidBits == 0)
+                TCU_THROW(NotSupportedError, "Device does not support timestamp.");
+        }
+        else if (TEST_TYPE_SECONDARY_CMD_BUFFER == m_parameters.viewIndex ||
+                 TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY == m_parameters.viewIndex ||
+                 TEST_TYPE_NESTED_CMD_BUFFER == m_parameters.viewIndex)
+        {
+            if (TEST_TYPE_NESTED_CMD_BUFFER == m_parameters.viewIndex)
+            {
+#ifdef CTS_USES_VULKANSC
+                TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+#else
+                const auto &features = context.getNestedCommandBufferFeaturesEXT();
+                if (!features.nestedCommandBuffer)
+                    TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+                if (!features.nestedCommandBufferRendering)
+                    TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported");
+#endif // CTS_USES_VULKANSC
+            }
+        }
 
 #ifdef CTS_USES_VULKANSC
-        const InstanceInterface &instance                       = context.getInstanceInterface();
-        const VkPhysicalDevice physicalDevice                   = context.getPhysicalDevice();
-        VkPhysicalDeviceMultiviewProperties multiviewProperties = {
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES, //VkStructureType sType;
-            nullptr,                                                //void* pNext;
-            0u,                                                     //uint32_t maxMultiviewViewCount;
-            0u                                                      //uint32_t maxMultiviewInstanceIndex;
-        };
+        VkPhysicalDeviceMultiviewProperties multiviewProperties = initVulkanStructure();
+        VkPhysicalDeviceProperties2 propertiesDeviceProperties2 = initVulkanStructure(&multiviewProperties);
 
-        VkPhysicalDeviceProperties2 propertiesDeviceProperties2;
-        propertiesDeviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-        propertiesDeviceProperties2.pNext = &multiviewProperties;
-
-        instance.getPhysicalDeviceProperties2(physicalDevice, &propertiesDeviceProperties2);
+        vki.getPhysicalDeviceProperties2(physicalDevice, &propertiesDeviceProperties2);
 
         if (multiviewProperties.maxMultiviewViewCount < m_parameters.viewMasks.size())
             TCU_THROW(NotSupportedError, "maxMultiviewViewCount is less than required by test");

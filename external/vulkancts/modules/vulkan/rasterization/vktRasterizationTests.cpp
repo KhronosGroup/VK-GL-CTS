@@ -1914,6 +1914,9 @@ bool BaseLineTestInstance::compareAndVerify(std::vector<LineSceneSpec::SceneLine
     tcu::IVec4 colorBits = tcu::getTextureFormatBitDepth(getTextureFormat());
     bool strict          = m_primitiveStrictness == PRIMITIVESTRICTNESS_STRICT;
 
+    if (m_primitiveStrictness == PRIMITIVESTRICTNESS_IGNORE)
+        strict = m_context.getDeviceProperties().limits.strictLines;
+
     args.numSamples   = m_multisampling ? 1 : 0;
     args.subpixelBits = m_subpixelBits;
     args.redBits      = colorBits[0];

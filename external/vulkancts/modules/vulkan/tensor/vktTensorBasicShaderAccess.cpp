@@ -88,12 +88,14 @@ class LinearTensorAccessTestInstance : public TestInstance
 {
 public:
     LinearTensorAccessTestInstance(Context &testCtx, const TensorParameters &parameters, const AccessVariant &variant,
-                                   const vk::VkDeviceSize tensorOffset, const bool forceStagingBuffers)
+                                   const vk::VkDeviceSize tensorOffset, const bool forceStagingBuffers,
+                                   const bool useDmaHeapAllocator)
         : TestInstance(testCtx)
         , m_parameters(parameters)
         , m_variant(variant)
         , m_tensorOffset(tensorOffset)
         , m_forceStagingBuffers(forceStagingBuffers)
+        , m_useDmaHeapAllocator(useDmaHeapAllocator)
 
     {
     }
@@ -105,6 +107,7 @@ private:
     const AccessVariant m_variant;
     const vk::VkDeviceSize m_tensorOffset;
     const bool m_forceStagingBuffers;
+    const bool m_useDmaHeapAllocator;
 };
 
 template <typename T>
@@ -112,11 +115,12 @@ class OptimalTensorAccessTestInstance : public TestInstance
 {
 public:
     OptimalTensorAccessTestInstance(Context &testCtx, const TensorParameters &parameters,
-                                    const vk::VkDeviceSize tensorOffset)
+                                    const vk::VkDeviceSize tensorOffset, const bool useDmaHeapAllocator)
 
         : TestInstance(testCtx)
         , m_parameters(parameters)
         , m_tensorOffset(tensorOffset)
+        , m_useDmaHeapAllocator(useDmaHeapAllocator)
     {
     }
 
@@ -125,6 +129,7 @@ public:
 private:
     const TensorParameters m_parameters;
     const vk::VkDeviceSize m_tensorOffset;
+    const bool m_useDmaHeapAllocator;
 };
 
 template <typename T>
@@ -132,7 +137,8 @@ class LinearTensorAccessTestCase : public TestCase
 {
 private:
     static std::string buildTestName(const TensorParameters &parameters, const AccessVariant &variant,
-                                     const vk::VkDeviceSize tensorOffset, const bool forceStagingBuffers)
+                                     const vk::VkDeviceSize tensorOffset, const bool forceStagingBuffers,
+                                     const bool useDmaHeapAllocator)
     {
         std::ostringstream name;
         name << paramsToString(parameters, variant);
@@ -144,6 +150,10 @@ private:
         {
             name << "_forced_staging";
         }
+        if (useDmaHeapAllocator)
+        {
+            name << "_dma_heap_buffer";
+        }
 
         return name.str();
     }
@@ -151,12 +161,13 @@ private:
 public:
     LinearTensorAccessTestCase(tcu::TestContext &testCtx, const TensorParameters &parameters,
                                const AccessVariant &variant, const vk::VkDeviceSize tensorOffset = 0,
-                               const bool forceStagingBuffers = false)
-        : TestCase(testCtx, buildTestName(parameters, variant, tensorOffset, forceStagingBuffers))
+                               const bool forceStagingBuffers = false, const bool useDmaHeapAllocator = false)
+        : TestCase(testCtx, buildTestName(parameters, variant, tensorOffset, forceStagingBuffers, useDmaHeapAllocator))
         , m_parameters(parameters)
         , m_variant(variant)
         , m_tensorOffset(tensorOffset)
         , m_forceStagingBuffers(forceStagingBuffers)
+        , m_useDmaHeapAllocator(useDmaHeapAllocator)
     {
     }
 
@@ -175,8 +186,8 @@ public:
             parameters = &maxRankParameters;
         }
 
-        return new LinearTensorAccessTestInstance<T>(ctx, *parameters, m_variant, m_tensorOffset,
-                                                     m_forceStagingBuffers);
+        return new LinearTensorAccessTestInstance<T>(ctx, *parameters, m_variant, m_tensorOffset, m_forceStagingBuffers,
+                                                     m_useDmaHeapAllocator);
     }
 
     void checkSupport(Context &context) const override
@@ -202,6 +213,24 @@ public:
         if (!deviceSupportsShaderStagesTensorAccess(context, VK_SHADER_STAGE_COMPUTE_BIT))
         {
             TCU_THROW(NotSupportedError, "Device does not support shader tensor access in compute shader stage");
+        }
+
+        if (m_useDmaHeapAllocator)
+        {
+            context.requireDeviceFunctionality("VK_EXT_external_memory_dma_buf");
+            if (!vk::DmaHeapAllocator::isSupported())
+            {
+                TCU_THROW(NotSupportedError, "Target does not support DMA heap allocator");
+            }
+
+            const VkTensorDescriptionARM tensorDescription =
+                makeTensorDescription(m_parameters.tiling, m_parameters.format, m_parameters.dimensions,
+                                      m_parameters.strides, VK_TENSOR_USAGE_SHADER_BIT_ARM);
+
+            if (!tensorSupportsDmaBufImport(context, tensorDescription))
+            {
+                TCU_THROW(NotSupportedError, "Target tensor description does not support DMA BUF imported memory");
+            }
         }
 
         if (!m_parameters.packed() && !deviceSupportsNonPackedTensors(context))
@@ -240,13 +269,15 @@ private:
     const AccessVariant m_variant;
     const vk::VkDeviceSize m_tensorOffset;
     const bool m_forceStagingBuffers;
+    const bool m_useDmaHeapAllocator;
 };
 
 template <typename T>
 class OptimalTensorAccessTestCase : public TestCase
 {
 private:
-    static std::string buildTestName(const TensorParameters &parameters, const vk::VkDeviceSize tensorOffset)
+    static std::string buildTestName(const TensorParameters &parameters, const vk::VkDeviceSize tensorOffset,
+                                     const bool useDmaHeapAllocator)
     {
         std::ostringstream name;
         name << paramsToString(parameters);
@@ -254,16 +285,21 @@ private:
         {
             name << "_offset_" << tensorOffset;
         }
+        if (useDmaHeapAllocator)
+        {
+            name << "_dma_heap_buffer";
+        }
 
         return name.str();
     }
 
 public:
     OptimalTensorAccessTestCase(tcu::TestContext &testCtx, const TensorParameters &parameters,
-                                const vk::VkDeviceSize tensorOffset = 0)
-        : TestCase(testCtx, buildTestName(parameters, tensorOffset))
+                                const vk::VkDeviceSize tensorOffset = 0, const bool useDmaHeapAllocator = false)
+        : TestCase(testCtx, buildTestName(parameters, tensorOffset, useDmaHeapAllocator))
         , m_parameters(parameters)
         , m_tensorOffset(tensorOffset)
+        , m_useDmaHeapAllocator(useDmaHeapAllocator)
     {
     }
 
@@ -282,7 +318,7 @@ public:
             parameters = &maxRankParameters;
         }
 
-        return new OptimalTensorAccessTestInstance<T>(ctx, *parameters, m_tensorOffset);
+        return new OptimalTensorAccessTestInstance<T>(ctx, *parameters, m_tensorOffset, m_useDmaHeapAllocator);
     }
 
     void checkSupport(Context &context) const override
@@ -308,6 +344,24 @@ public:
         if (!deviceSupportsShaderStagesTensorAccess(context, VK_SHADER_STAGE_COMPUTE_BIT))
         {
             TCU_THROW(NotSupportedError, "Device does not support shader tensor access in compute shader stage");
+        }
+
+        if (m_useDmaHeapAllocator)
+        {
+            context.requireDeviceFunctionality("VK_EXT_external_memory_dma_buf");
+            if (!vk::DmaHeapAllocator::isSupported())
+            {
+                TCU_THROW(NotSupportedError, "Target does not support DMA heap allocator");
+            }
+
+            const VkTensorDescriptionARM tensorDescription =
+                makeTensorDescription(m_parameters.tiling, m_parameters.format, m_parameters.dimensions,
+                                      m_parameters.strides, VK_TENSOR_USAGE_SHADER_BIT_ARM);
+
+            if (!tensorSupportsDmaBufImport(context, tensorDescription))
+            {
+                TCU_THROW(NotSupportedError, "Target tensor description does not support DMA BUF imported memory");
+            }
         }
     }
 
@@ -341,6 +395,7 @@ public:
 private:
     TensorParameters m_parameters;
     const vk::VkDeviceSize m_tensorOffset;
+    const bool m_useDmaHeapAllocator;
 };
 
 template <typename T>
@@ -355,9 +410,9 @@ tcu::TestStatus LinearTensorAccessTestInstance<T>::iterate()
     const uint32_t queueFamilyIndex       = m_context.getUniversalQueueFamilyIndex();
     Allocator &allocator                  = m_context.getDefaultAllocator();
 
-    const bool needCustomTensorAllocator = m_tensorOffset != 0;
+    const bool needCustomTensorAllocator = m_tensorOffset != 0 || m_useDmaHeapAllocator;
 
-    // Allocate custom allocator tensor if we are allocating at an offset
+    // Allocate custom allocator tensor if we are allocating from DMA heap and/or at an offset
     std::unique_ptr<Allocator> customTensorAllocator;
     if (needCustomTensorAllocator)
     {
@@ -367,13 +422,26 @@ tcu::TestStatus LinearTensorAccessTestInstance<T>::iterate()
         VkPhysicalDeviceMemoryProperties memoryProperties{};
         vki.getPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
 
-        vk::SimpleAllocator::OptionalOffsetParams offsetParams;
-        if (m_tensorOffset != 0)
+        if (m_useDmaHeapAllocator)
         {
-            offsetParams = {physicalDeviceProperties.limits.nonCoherentAtomSize, m_tensorOffset};
-        }
+            vk::DmaHeapAllocator::OptionalOffsetParams offsetParams;
+            if (m_tensorOffset != 0)
+            {
+                offsetParams = {physicalDeviceProperties.limits.nonCoherentAtomSize, m_tensorOffset};
+            }
 
-        customTensorAllocator.reset(new SimpleAllocator(vk, device, memoryProperties, offsetParams));
+            customTensorAllocator.reset(new DmaHeapAllocator(vk, device, memoryProperties, offsetParams));
+        }
+        else
+        {
+            vk::SimpleAllocator::OptionalOffsetParams offsetParams;
+            if (m_tensorOffset != 0)
+            {
+                offsetParams = {physicalDeviceProperties.limits.nonCoherentAtomSize, m_tensorOffset};
+            }
+
+            customTensorAllocator.reset(new SimpleAllocator(vk, device, memoryProperties, offsetParams));
+        }
     }
 
     Allocator &tensorAllocator = needCustomTensorAllocator ? *customTensorAllocator : allocator;
@@ -387,6 +455,13 @@ tcu::TestStatus LinearTensorAccessTestInstance<T>::iterate()
         makeTensorDescription(m_parameters.tiling, m_parameters.format, m_parameters.dimensions, m_parameters.strides,
                               VK_TENSOR_USAGE_SHADER_BIT_ARM);
     VkTensorCreateInfoARM tensorCreateInfo = makeTensorCreateInfo(&tensorDesc);
+
+    VkExternalMemoryTensorCreateInfoARM externalCreateInfo = initVulkanStructure();
+    if (m_useDmaHeapAllocator)
+    {
+        externalCreateInfo.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+        tensorCreateInfo.pNext         = &externalCreateInfo;
+    }
 
     const TensorWithMemory tensor(vk, device, tensorAllocator, tensorCreateInfo, vk::MemoryRequirement::Any);
 
@@ -551,9 +626,9 @@ tcu::TestStatus OptimalTensorAccessTestInstance<T>::iterate()
     const uint32_t queueFamilyIndex       = m_context.getUniversalQueueFamilyIndex();
     Allocator &allocator                  = m_context.getDefaultAllocator();
 
-    const bool needCustomTensorAllocator = m_tensorOffset != 0;
+    const bool needCustomTensorAllocator = m_tensorOffset != 0 || m_useDmaHeapAllocator;
 
-    // Allocate custom allocator tensor if we are allocating at an offset
+    // Allocate custom allocator tensor if we are allocating from DMA heap and/or at an offset
     std::unique_ptr<Allocator> customTensorAllocator;
     if (needCustomTensorAllocator)
     {
@@ -563,13 +638,26 @@ tcu::TestStatus OptimalTensorAccessTestInstance<T>::iterate()
         VkPhysicalDeviceMemoryProperties memoryProperties{};
         vki.getPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
 
-        vk::SimpleAllocator::OptionalOffsetParams offsetParams;
-        if (m_tensorOffset != 0)
+        if (m_useDmaHeapAllocator)
         {
-            offsetParams = {physicalDeviceProperties.limits.nonCoherentAtomSize, m_tensorOffset};
-        }
+            vk::DmaHeapAllocator::OptionalOffsetParams offsetParams;
+            if (m_tensorOffset != 0)
+            {
+                offsetParams = {physicalDeviceProperties.limits.nonCoherentAtomSize, m_tensorOffset};
+            }
 
-        customTensorAllocator.reset(new SimpleAllocator(vk, device, memoryProperties, offsetParams));
+            customTensorAllocator.reset(new DmaHeapAllocator(vk, device, memoryProperties, offsetParams));
+        }
+        else
+        {
+            vk::SimpleAllocator::OptionalOffsetParams offsetParams;
+            if (m_tensorOffset != 0)
+            {
+                offsetParams = {physicalDeviceProperties.limits.nonCoherentAtomSize, m_tensorOffset};
+            }
+
+            customTensorAllocator.reset(new SimpleAllocator(vk, device, memoryProperties, offsetParams));
+        }
     }
 
     Allocator &tensorAllocator = needCustomTensorAllocator ? *customTensorAllocator : allocator;
@@ -583,6 +671,13 @@ tcu::TestStatus OptimalTensorAccessTestInstance<T>::iterate()
         makeTensorDescription(m_parameters.tiling, m_parameters.format, m_parameters.dimensions, m_parameters.strides,
                               VK_TENSOR_USAGE_SHADER_BIT_ARM);
     VkTensorCreateInfoARM tensorCreateInfo = makeTensorCreateInfo(&tensorDesc);
+
+    VkExternalMemoryTensorCreateInfoARM externalCreateInfo = initVulkanStructure();
+    if (m_useDmaHeapAllocator)
+    {
+        externalCreateInfo.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+        tensorCreateInfo.pNext         = &externalCreateInfo;
+    }
 
     const TensorWithMemory tensor(vk, device, tensorAllocator, tensorCreateInfo, vk::MemoryRequirement::Any);
 
@@ -858,6 +953,73 @@ void addShaderAccessTests(tcu::TestCaseGroup &testCaseGroup)
     }
 }
 
+template <typename T>
+void addDmaHeapBufferAccessTestInternal(tcu::TestCaseGroup &testCaseGroup)
+{
+    static constexpr bool useDmaHeapAllocator = true;
+
+    const TensorDimensions shape{13, 17, 19, 23};
+    const VkFormat format = getTestFormats<T>()[0];
+
+    {
+        static constexpr bool forceStagingBuffer = false;
+
+        // Implicit packed
+        {
+            const TensorParameters param = {format, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
+            testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), param,
+                                                                     AccessVariant::READ_FROM_BUFFER, 0,
+                                                                     forceStagingBuffer, useDmaHeapAllocator));
+            testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), param,
+                                                                     AccessVariant::WRITE_TO_BUFFER, 0,
+                                                                     forceStagingBuffer, useDmaHeapAllocator));
+        }
+
+        // Optimal
+        {
+            const TensorParameters param = {format, VK_TENSOR_TILING_OPTIMAL_ARM, shape, {}};
+            testCaseGroup.addChild(
+                new OptimalTensorAccessTestCase<T>(testCaseGroup.getTestContext(), param, 0, useDmaHeapAllocator));
+            testCaseGroup.addChild(
+                new OptimalTensorAccessTestCase<T>(testCaseGroup.getTestContext(), param, 2000, useDmaHeapAllocator));
+        }
+    }
+
+    // Tests to force use of staging buffer with dma heap memory
+    {
+        static constexpr vk::VkDeviceSize offset = 0;
+        static constexpr bool forceStagingBuffer = true;
+        const TensorParameters param             = {format, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
+        testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), param,
+                                                                 AccessVariant::READ_FROM_BUFFER, offset,
+                                                                 forceStagingBuffer, useDmaHeapAllocator));
+        testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), param,
+                                                                 AccessVariant::WRITE_TO_BUFFER, offset,
+                                                                 forceStagingBuffer, useDmaHeapAllocator));
+    }
+
+    // Tests binding tensor to offset within DMA heap allocation
+    {
+        static constexpr vk::VkDeviceSize offset = 2000;
+        static constexpr bool forceStagingBuffer = false;
+        const TensorParameters param             = {format, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
+        testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), param,
+                                                                 AccessVariant::READ_FROM_BUFFER, offset,
+                                                                 forceStagingBuffer, useDmaHeapAllocator));
+        testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), param,
+                                                                 AccessVariant::WRITE_TO_BUFFER, offset,
+                                                                 forceStagingBuffer, useDmaHeapAllocator));
+    }
+}
+
+void addDmaHeapBufferAccessTests(tcu::TestCaseGroup &testCaseGroup)
+{
+    addDmaHeapBufferAccessTestInternal<uint8_t>(testCaseGroup);
+    addDmaHeapBufferAccessTestInternal<uint16_t>(testCaseGroup);
+    addDmaHeapBufferAccessTestInternal<uint32_t>(testCaseGroup);
+    addDmaHeapBufferAccessTestInternal<uint64_t>(testCaseGroup);
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createBasicAccessTests(tcu::TestContext &testCtx)
@@ -869,6 +1031,7 @@ tcu::TestCaseGroup *createBasicAccessTests(tcu::TestContext &testCtx)
     addShaderAccessTests<uint32_t>(*group);
     addShaderAccessTests<uint16_t>(*group);
     addShaderAccessTests<uint8_t>(*group);
+    addDmaHeapBufferAccessTests(*group);
 
     return group.release();
 }

@@ -53,6 +53,16 @@ bool verifyOutOfBoundsVec4(const void *vecPtr, vk::VkFormat bufferFormat);
 void populateBufferWithTestValues(void *buffer, vk::VkDeviceSize size, vk::VkFormat format);
 void logValue(std::ostringstream &logMsg, const void *valuePtr, vk::VkFormat valueFormat, size_t valueSize);
 
+struct DescriptorHeapEnvironmentParams
+{
+#ifdef CTS_USES_VULKANSC
+    int unused{};
+#else
+    std::vector<vk::VkDescriptorSetAndBindingMappingEXT> mappings;
+    vk::VkBindHeapInfoEXT resourceHeap{};
+#endif
+};
+
 class TestEnvironment
 {
 public:
@@ -94,7 +104,8 @@ public:
     GraphicsEnvironment(Context &context, const vk::DeviceInterface &vk, vk::VkDevice device,
                         vk::VkDescriptorSetLayout descriptorSetLayout, vk::VkDescriptorSet descriptorSet,
                         const VertexBindings &vertexBindings, const VertexAttributes &vertexAttributes,
-                        const DrawConfig &drawConfig, bool testPipelineRobustness = false);
+                        const DrawConfig &drawConfig, bool testPipelineRobustness = false,
+                        const DescriptorHeapEnvironmentParams *descriptorHeapParams = nullptr);
 
     virtual ~GraphicsEnvironment(void)
     {
@@ -125,7 +136,7 @@ class ComputeEnvironment : public TestEnvironment
 public:
     ComputeEnvironment(Context &context, const vk::DeviceInterface &vk, vk::VkDevice device,
                        vk::VkDescriptorSetLayout descriptorSetLayout, vk::VkDescriptorSet descriptorSet,
-                       bool testPipelineRobustness = false);
+                       bool testPipelineRobustness, const DescriptorHeapEnvironmentParams *descriptorHeapParams);
 
     virtual ~ComputeEnvironment(void)
     {

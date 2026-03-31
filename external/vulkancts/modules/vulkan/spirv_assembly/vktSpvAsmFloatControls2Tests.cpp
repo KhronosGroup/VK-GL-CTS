@@ -1811,11 +1811,12 @@ void TestCasesBuilder::init()
         Op("distance", FLOAT_ARITHMETIC, "%result             = OpExtInst %type_float %std450 Distance %arg1 %arg2\n",
            B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
     mo[OID_CROSS]    = Op("cross", FLOAT_ARITHMETIC,
-                          "%vec1               = OpCompositeConstruct %type_float_vec3 %arg1 %arg1 %arg1\n"
-                             "%vec2               = OpCompositeConstruct %type_float_vec3 %arg2 %arg2 %arg2\n"
+                          "%vec1               = OpCompositeConstruct %type_float_vec3 %c_float_0 %arg1 %c_float_0\n"
+                             "%vec2               = OpCompositeConstruct %type_float_vec3 %c_float_0 %c_float_0 %arg2\n"
                              "%tmpVec             = OpExtInst %type_float_vec3 %std450 Cross %vec1 %vec2\n"
                              "%result             = OpCompositeExtract %type_float %tmpVec 0\n",
-                          B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT, {"vec1", "vec2", "tmpVec", "result"});
+                          B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT,
+                          {"vec1", "vec2", "tmpVec", "result"});
     mo[OID_FACE_FWD] = Op("face_fwd", FLOAT_ARITHMETIC,
                           "%result             = OpExtInst %type_float %std450 FaceForward %c_float_1 %arg1 %arg2\n",
                           B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
@@ -1960,10 +1961,12 @@ void TestCasesBuilder::init()
                            B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT,
                            {"vec1", "vecN", "tmpVec", "result"});
     mo[OID_MAT_DET]   = Op("mat_det", FLOAT_ARITHMETIC,
-                           "%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-                             "%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
+                           "%col1               = OpCompositeConstruct %type_float_vec2 %arg1 %c_float_0\n"
+                             "%col2               = OpCompositeConstruct %type_float_vec2 %c_float_0 %arg1\n"
+                             "%mat                = OpCompositeConstruct %type_float_mat2x2 %col1 %col2\n"
                              "%result             = OpExtInst %type_float %std450 Determinant %mat\n",
-                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT, {"col", "mat", "result"});
+                           B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT,
+                           {"col1", "col2", "mat", "result"});
     mo[OID_MAT_INV]   = Op("mat_inv", FLOAT_ARITHMETIC,
                            "%col1               = OpCompositeConstruct %type_float_vec2 %arg1 %c_float_1\n"
                              "%col2               = OpCompositeConstruct %type_float_vec2 %c_float_1 %c_float_1\n"
@@ -2665,13 +2668,13 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo &testCa
     FillFloatControlsProperties(csSpec.requestedVulkanFeatures.floatControlsProperties, testCase, inFloatType);
 }
 
-void getGraphicsShaderCode(vk::SourceCollections &dst, InstanceContext context)
+void getGraphicsShaderCode(vk::SourceCollections &dst, InstanceContextPtr context)
 {
     // this function is used only by GraphicsTestGroupBuilder but it couldn't
     // be implemented as a method because of how addFunctionCaseWithPrograms
     // was implemented
 
-    SpirvVersion targetSpirvVersion = context.resources.spirvVersion;
+    SpirvVersion targetSpirvVersion = context->resources.spirvVersion;
     const uint32_t vulkanVersion    = dst.usedVulkanVersion;
 
     static const string vertexTemplate =
@@ -2860,9 +2863,9 @@ void getGraphicsShaderCode(vk::SourceCollections &dst, InstanceContext context)
         "OpReturn\n"
         "OpFunctionEnd\n";
 
-    dst.spirvAsmSources.add("vert", nullptr) << StringTemplate(vertexTemplate).specialize(context.testCodeFragments)
+    dst.spirvAsmSources.add("vert", nullptr) << StringTemplate(vertexTemplate).specialize(context->testCodeFragments)
                                              << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-    dst.spirvAsmSources.add("frag", nullptr) << StringTemplate(fragmentTemplate).specialize(context.testCodeFragments)
+    dst.spirvAsmSources.add("frag", nullptr) << StringTemplate(fragmentTemplate).specialize(context->testCodeFragments)
                                              << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
 }
 
@@ -2884,7 +2887,7 @@ public:
                               bool argumentsFromInput) override;
 
 protected:
-    InstanceContext createInstanceContext(const OperationTestCaseInfo &testCaseInfo) const;
+    InstanceContextPtr createInstanceContext(const OperationTestCaseInfo &testCaseInfo) const;
 
 private:
     TestCasesBuilder m_testCaseBuilder;
@@ -2919,15 +2922,16 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup *parentGroup, 
             OperationTestCaseInfo testCaseInfo = {floatType, argumentsFromInput, stages[i],
                                                   m_testCaseBuilder.getOperation(testCase.operationId), testCase};
 
-            InstanceContext ctxVertex = createInstanceContext(testCaseInfo);
-            string testName           = replace(testCase.baseName, "op", testCaseInfo.operation.name);
-            addFunctionCaseWithPrograms<InstanceContext>(group, testName + stageNames[i], defaultCheckSupport,
-                                                         getGraphicsShaderCode, runAndVerifyDefaultPipeline, ctxVertex);
+            InstanceContextPtr ctxVertex = createInstanceContext(testCaseInfo);
+            string testName              = replace(testCase.baseName, "op", testCaseInfo.operation.name);
+            addFunctionCaseWithPrograms<InstanceContextPtr>(group, testName + stageNames[i], defaultCheckSupport,
+                                                            getGraphicsShaderCode, runAndVerifyDefaultPipeline,
+                                                            ctxVertex);
         }
     }
 }
 
-InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationTestCaseInfo &testCaseInfo) const
+InstanceContextPtr GraphicsTestGroupBuilder::createInstanceContext(const OperationTestCaseInfo &testCaseInfo) const
 {
     // LUT storing functions used to verify test results
     const VerifyIOFunc checkFloatsLUT[] = {checkFloats<Float16, deFloat16>, checkFloats<Float32, float>,
@@ -3307,9 +3311,11 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
     // Float controls 2 still requires that the original float controls properties are supported
     FillFloatControlsProperties(vulkanFeatures.floatControlsProperties, testCase, inFloatType);
 
-    InstanceContext ctx(defaultColors, defaultColors, specializations, noSpecConstants, noPushConstants, resources,
-                        noInterfaces, {}, vulkanFeatures, testedStage);
+    InstanceContextUniquePtr ctxPtr(new InstanceContext(defaultColors, defaultColors, specializations, noSpecConstants,
+                                                        noPushConstants, resources, noInterfaces, {}, vulkanFeatures,
+                                                        testedStage));
 
+    auto &ctx = *ctxPtr;
     ctx.moduleMap["vert"].push_back(std::make_pair("main", VK_SHADER_STAGE_VERTEX_BIT));
     ctx.moduleMap["frag"].push_back(std::make_pair("main", VK_SHADER_STAGE_FRAGMENT_BIT));
 
@@ -3319,7 +3325,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 
     ctx.resources.spirvVersion = SPIRV_VERSION_1_2;
 
-    return ctx;
+    return ctxPtr;
 }
 
 } // namespace

@@ -58,6 +58,7 @@ RandomUniformBlockCase::RandomUniformBlockCase(tcu::TestContext &testCtx, const 
     , m_features(features)
     , m_maxVertexBlocks((features & FEATURE_VERTEX_BLOCKS) ? 4 : 0)
     , m_maxFragmentBlocks((features & FEATURE_FRAGMENT_BLOCKS) ? 4 : 0)
+    , m_maxComputeBlocks((features & FEATURE_COMPUTE_BLOCKS) ? 4 : 0)
     , m_maxSharedBlocks((features & FEATURE_SHARED_BLOCKS) ? 4 : 0)
     , m_maxInstances((features & FEATURE_INSTANCE_ARRAYS) ? 3 : 0)
     , m_maxArrayLength((features & FEATURE_ARRAYS) ? 8 : 0)
@@ -75,12 +76,13 @@ RandomUniformBlockCase::RandomUniformBlockCase(tcu::TestContext &testCtx, const 
     int numShared     = m_maxSharedBlocks > 0 ? rnd.getInt(1, m_maxSharedBlocks) : 0;
     int numVtxBlocks  = m_maxVertexBlocks - numShared > 0 ? rnd.getInt(1, m_maxVertexBlocks - numShared) : 0;
     int numFragBlocks = m_maxFragmentBlocks - numShared > 0 ? rnd.getInt(1, m_maxFragmentBlocks - numShared) : 0;
+    int numCompBlocks = m_maxComputeBlocks > 0 ? rnd.getInt(1, m_maxComputeBlocks) : 0;
 
     // calculate how many additional descriptors we can use for arrays
     // this is needed for descriptor_indexing testing as we need to take in to account
     // maxPerStageDescriptorUniformBuffers limit and we can't query it as we need to
     // generate shaders before Context is created; minimal value of this limit is 12
-    m_availableDescriptorUniformBuffers -= numVtxBlocks + numFragBlocks;
+    m_availableDescriptorUniformBuffers -= numVtxBlocks + numFragBlocks + numCompBlocks;
 
     for (int ndx = 0; ndx < numShared; ndx++)
         generateBlock(rnd, DECLARE_VERTEX | DECLARE_FRAGMENT);
@@ -90,6 +92,9 @@ RandomUniformBlockCase::RandomUniformBlockCase(tcu::TestContext &testCtx, const 
 
     for (int ndx = 0; ndx < numFragBlocks; ndx++)
         generateBlock(rnd, DECLARE_FRAGMENT);
+
+    for (int ndx = 0; ndx < numCompBlocks; ndx++)
+        generateBlock(rnd, DECLARE_COMPUTE);
 
     init();
 }

@@ -569,6 +569,14 @@ void DrawIndirectInstancedCase::checkSupport(Context &context) const
 
     if (m_params.groupParams->useDynamicRendering)
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+    if (m_params.drawCount > 1)
+    {
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_DRAW_INDIRECT);
+
+        if (context.getDeviceProperties().limits.maxDrawIndirectCount < m_params.drawCount)
+            TCU_THROW(NotSupportedError, "maxDrawIndirectCount too low");
+    }
 }
 
 void DrawIndirectInstancedCase::initPrograms(vk::SourceCollections &programCollection) const
@@ -604,7 +612,7 @@ tcu::TestCaseGroup *createIndirectInstancedTests(tcu::TestContext &testCtx, cons
     {
         uint32_t drawCount;
         const char *name;
-    } drawCountTests[] = {{2, "2"}, {4, "4"}, {16, "16"}};
+    } drawCountTests[] = {{1, "1"}, {2, "2"}, {4, "4"}, {16, "16"}};
 
     for (const auto &drawCountTest : drawCountTests)
     {

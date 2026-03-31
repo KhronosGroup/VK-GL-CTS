@@ -45,6 +45,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTextureUtil.hpp"
 #include "deUniquePtr.hpp"
@@ -827,111 +828,6 @@ tcu::TestStatus BlendTestInstance::iterate(void)
     return verifyImage();
 }
 
-float getNormChannelThreshold(const tcu::TextureFormat &format, int numBits)
-{
-    switch (tcu::getTextureChannelClass(format.type))
-    {
-    case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
-        return static_cast<float>(BlendTest::QUAD_COUNT) / static_cast<float>((1 << numBits) - 1);
-    case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
-        return static_cast<float>(BlendTest::QUAD_COUNT) / static_cast<float>((1 << (numBits - 1)) - 1);
-    default:
-        break;
-    }
-
-    DE_ASSERT(false);
-    return 0.0f;
-}
-
-tcu::Vec4 getFormatThreshold(const tcu::TextureFormat &format)
-{
-    using tcu::TextureFormat;
-    using tcu::Vec4;
-
-    Vec4 threshold(0.01f);
-
-    switch (format.type)
-    {
-    case TextureFormat::UNORM_BYTE_44:
-        threshold = Vec4(getNormChannelThreshold(format, 4), getNormChannelThreshold(format, 4), 1.0f, 1.0f);
-        break;
-
-    case TextureFormat::UNORM_SHORT_565:
-        threshold = Vec4(getNormChannelThreshold(format, 5), getNormChannelThreshold(format, 6),
-                         getNormChannelThreshold(format, 5), 1.0f);
-        break;
-
-    case TextureFormat::UNORM_SHORT_555:
-        threshold = Vec4(getNormChannelThreshold(format, 5), getNormChannelThreshold(format, 5),
-                         getNormChannelThreshold(format, 5), 1.0f);
-        break;
-
-    case TextureFormat::UNORM_SHORT_4444:
-        threshold = Vec4(getNormChannelThreshold(format, 4));
-        break;
-
-    case TextureFormat::UNORM_SHORT_5551:
-        threshold = Vec4(getNormChannelThreshold(format, 5), getNormChannelThreshold(format, 5),
-                         getNormChannelThreshold(format, 5), 0.1f);
-        break;
-
-    case TextureFormat::UNORM_SHORT_10:
-        threshold = Vec4(getNormChannelThreshold(format, 10));
-        break;
-
-    case TextureFormat::UNORM_INT_1010102_REV:
-    case TextureFormat::SNORM_INT_1010102_REV:
-        threshold = Vec4(getNormChannelThreshold(format, 10), getNormChannelThreshold(format, 10),
-                         getNormChannelThreshold(format, 10), 0.34f);
-        break;
-
-    case TextureFormat::UNORM_INT8:
-    case TextureFormat::SNORM_INT8:
-        threshold = Vec4(getNormChannelThreshold(format, 8));
-        break;
-
-    case TextureFormat::UNORM_INT16:
-    case TextureFormat::SNORM_INT16:
-        threshold = Vec4(getNormChannelThreshold(format, 16));
-        break;
-
-    case TextureFormat::UNORM_INT32:
-    case TextureFormat::SNORM_INT32:
-        threshold = Vec4(getNormChannelThreshold(format, 32));
-        break;
-
-    case TextureFormat::HALF_FLOAT:
-        threshold = Vec4(0.005f);
-        break;
-
-    case TextureFormat::FLOAT:
-        threshold = Vec4(0.00001f);
-        break;
-
-    case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
-        threshold = Vec4(0.02f, 0.02f, 0.0625f, 1.0f);
-        break;
-
-    case TextureFormat::UNSIGNED_INT_999_E5_REV:
-        threshold = Vec4(0.05f, 0.05f, 0.05f, 1.0f);
-        break;
-
-    case TextureFormat::UNORM_SHORT_1555:
-        threshold = Vec4(0.1f, getNormChannelThreshold(format, 5), getNormChannelThreshold(format, 5),
-                         getNormChannelThreshold(format, 5));
-        break;
-
-    default:
-        DE_ASSERT(false);
-    }
-
-    // Return value matching the channel order specified by the format
-    if (format.order == tcu::TextureFormat::BGR || format.order == tcu::TextureFormat::BGRA)
-        return threshold.swizzle(2, 1, 0, 3);
-    else
-        return threshold;
-}
-
 bool isLegalExpandableFormat(tcu::TextureFormat::ChannelType channeltype)
 {
     using tcu::TextureFormat;
@@ -1095,7 +991,7 @@ tcu::TestStatus BlendTestInstance::verifyImage(void)
         de::UniquePtr<tcu::TextureLevel> result(readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator,
                                                                     *m_colorImage, m_colorFormat, m_renderSize)
                                                     .release());
-        const tcu::Vec4 threshold(getFormatThreshold(tcuColorFormat));
+        const tcu::Vec4 threshold(getFormatThreshold(tcuColorFormat, BlendTest::QUAD_COUNT));
         tcu::TextureLevel refLevel;
 
         refLevel.setStorage(tcuColorFormat, m_renderSize.x(), m_renderSize.y(), 1);
@@ -1532,7 +1428,7 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage(void)
         de::UniquePtr<tcu::TextureLevel> result(readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator,
                                                                     *m_colorImage, m_colorFormat, m_renderSize)
                                                     .release());
-        tcu::Vec4 threshold(getFormatThreshold(tcuColorFormat));
+        tcu::Vec4 threshold(getFormatThreshold(tcuColorFormat, BlendTest::QUAD_COUNT));
         tcu::TextureLevel refLevel;
 
         // For SRGB formats there is an extra precision loss due to doing
@@ -1928,7 +1824,7 @@ tcu::TestStatus ClampTestInstance::iterate(void)
     de::UniquePtr<tcu::TextureLevel> result(readColorAttachment(vkd, device, queue, queueFamilyIndex, allocator,
                                                                 colorImage.get(), m_params.colorFormat, renderSizeUV2)
                                                 .release());
-    const tcu::Vec4 threshold(getFormatThreshold(tcuColorFormat));
+    const tcu::Vec4 threshold(getFormatThreshold(tcuColorFormat, BlendTest::QUAD_COUNT));
     const tcu::ConstPixelBufferAccess pixelBufferAccess = result->getAccess();
 
     const bool compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "BlendClampCompare",
@@ -2359,7 +2255,445 @@ tcu::TestStatus DynamicDualBlendDisableInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
-} // namespace
+#ifndef CTS_USES_VULKANSC
+
+// Two attachments with blending.
+struct RemapParams
+{
+    uint32_t getAttachmentCount() const
+    {
+        return 2u;
+    }
+
+    std::vector<tcu::Vec4> getLocationColors() const
+    {
+        // Different colors, but note in both the blue component is 1.0. We will mask it out in one of the attachments.
+        const std::vector<tcu::Vec4> colors{
+            tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f),
+            tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f),
+        };
+        return colors;
+    }
+
+    tcu::Vec4 getClearColor() const
+    {
+        return tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    }
+
+    std::vector<VkColorBlendEquationEXT> getColorBlendEquations() const
+    {
+        const std::vector<VkColorBlendEquationEXT> equations{
+            // With the chosen colors and the right constants, we can zero-out some components.
+            VkColorBlendEquationEXT{
+                VK_BLEND_FACTOR_CONSTANT_COLOR,
+                VK_BLEND_FACTOR_ZERO,
+                VK_BLEND_OP_ADD,
+                VK_BLEND_FACTOR_CONSTANT_COLOR,
+                VK_BLEND_FACTOR_ZERO,
+                VK_BLEND_OP_ADD,
+            },
+            // The second one should result in the fragment color.
+            VkColorBlendEquationEXT{
+                VK_BLEND_FACTOR_SRC_ALPHA,
+                VK_BLEND_FACTOR_ZERO,
+                VK_BLEND_OP_ADD,
+                VK_BLEND_FACTOR_SRC_ALPHA,
+                VK_BLEND_FACTOR_ZERO,
+                VK_BLEND_OP_ADD,
+            },
+        };
+        return equations;
+    }
+
+    tcu::Vec4 getBlendConstants() const
+    {
+        return tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f); // Masks out blue component when using VK_BLEND_FACTOR_CONSTANT_*
+    }
+
+    std::vector<tcu::Vec4> getExpectedColors() const
+    {
+        const auto locationColors = getLocationColors();
+        std::vector<tcu::Vec4> expectedColors(locationColors.size());
+        for (size_t i = 0; i < locationColors.size(); ++i)
+            expectedColors.at(i) = locationColors.at(colorLocations.at(i));
+
+        // Mask out the blue component for the first attachment (see equation).
+        expectedColors.front().z() = 0.0f;
+
+        return expectedColors;
+    }
+
+    bool someWritesDisabled() const
+    {
+        bool disableSomeWrites = false;
+        for (const auto enabled : writeEnables)
+        {
+            if (!enabled)
+            {
+                disableSomeWrites = true;
+                break;
+            }
+        }
+        return disableSomeWrites;
+    }
+
+    PipelineConstructionType constructionType;
+    std::vector<uint32_t> colorLocations;
+    std::vector<bool> writeEnables;
+    bool dynamicBlend;
+    bool dynamicWriteEnables;
+};
+
+class RemapInstance : public vkt::TestInstance
+{
+public:
+    RemapInstance(Context &context, const RemapParams &params) : vkt::TestInstance(context), m_params(params)
+    {
+    }
+    virtual ~RemapInstance(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    const RemapParams m_params;
+};
+
+class RemapCase : public vkt::TestCase
+{
+public:
+    RemapCase(tcu::TestContext &testCtx, const std::string &name, const RemapParams &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~RemapCase(void) = default;
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    TestInstance *createInstance(Context &context) const override;
+
+protected:
+    const RemapParams m_params;
+};
+
+void RemapCase::checkSupport(Context &context) const
+{
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, m_params.constructionType);
+
+    const auto &drlrFeatures = context.getDynamicRenderingLocalReadFeatures();
+    if (!drlrFeatures.dynamicRenderingLocalRead)
+        TCU_THROW(NotSupportedError, "dynamicRenderingLocalRead not supported");
+
+    if (m_params.dynamicBlend)
+    {
+        const auto &eds3Features = context.getExtendedDynamicState3FeaturesEXT();
+        if (!eds3Features.extendedDynamicState3ColorBlendEquation)
+            TCU_THROW(NotSupportedError, "extendedDynamicState3ColorBlendEquation not supported");
+    }
+
+    const auto disableSomeWrites = m_params.someWritesDisabled();
+    if (m_params.dynamicWriteEnables || disableSomeWrites)
+    {
+        const auto &cweFeatures = context.getColorWriteEnableFeaturesEXT();
+        if (!cweFeatures.colorWriteEnable)
+            TCU_THROW(NotSupportedError, "colorWriteEnable not supported");
+    }
+}
+
+void RemapCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "void main(void) {\n"
+         << "    const float x = float((gl_VertexIndex >> 1) & 1) * 2.0 - 1.0;\n"
+         << "    const float y = float((gl_VertexIndex >> 0) & 1) * 2.0 - 1.0;\n"
+         << "    gl_Position = vec4(x, y, 0.0, 1.0);\n"
+         << "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    const auto locationColors = m_params.getLocationColors();
+    std::ostringstream frag;
+    frag << "#version 460\n";
+
+    for (size_t i = 0; i < locationColors.size(); ++i)
+        frag << "layout (location=" << i << ") out vec4 outColor" << i << ";\n";
+
+    frag << "void main(void) {\n";
+
+    for (size_t i = 0; i < locationColors.size(); ++i)
+        frag << "    outColor" << i << " = vec4" << locationColors.at(i) << ";\n";
+
+    frag << "}\n";
+
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+TestInstance *RemapCase::createInstance(Context &context) const
+{
+    return new RemapInstance(context, m_params);
+}
+
+tcu::TestStatus RemapInstance::iterate(void)
+{
+    const auto ctx                  = m_context.getContextCommonData();
+    const auto colorAttachmentCount = de::sizeU32(m_params.colorLocations);
+    const tcu::IVec3 extent(1, 1, 1);
+    const auto extentVk    = makeExtent3D(extent);
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto colorUsage =
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto imageType = VK_IMAGE_TYPE_2D;
+
+    using ImageWithBufferPtr = std::unique_ptr<ImageWithBuffer>;
+    std::vector<ImageWithBufferPtr> colorBuffers;
+    colorBuffers.reserve(colorAttachmentCount);
+
+    for (uint32_t i = 0u; i < colorAttachmentCount; ++i)
+        colorBuffers.emplace_back(
+            new ImageWithBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, colorFormat, colorUsage, imageType));
+
+    const auto &binaries = m_context.getBinaryCollection();
+    ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
+    ShaderWrapper fragShader(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+
+    PipelineLayoutWrapper pipelineLayout(m_params.constructionType, ctx.vkd, ctx.device);
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructure();
+
+    const auto equations = m_params.getColorBlendEquations();
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates;
+    colorBlendAttachmentStates.reserve(equations.size());
+
+    const VkColorComponentFlags colorWriteMask =
+        (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+    const VkColorBlendEquationEXT badEquation{VK_BLEND_FACTOR_ZERO, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD,
+                                              VK_BLEND_FACTOR_ZERO, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD};
+
+    for (const auto &equation : equations)
+    {
+        const auto &eq = (m_params.dynamicBlend ? badEquation : equation);
+
+        const VkPipelineColorBlendAttachmentState cbState{
+            VK_TRUE,         eq.srcColorBlendFactor, eq.dstColorBlendFactor,
+            eq.colorBlendOp, eq.srcAlphaBlendFactor, eq.dstAlphaBlendFactor,
+            eq.alphaBlendOp, colorWriteMask,
+        };
+
+        colorBlendAttachmentStates.push_back(cbState);
+    }
+
+    VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = initVulkanStructure();
+    colorBlendStateCreateInfo.attachmentCount                     = de::sizeU32(colorBlendAttachmentStates);
+    colorBlendStateCreateInfo.pAttachments                        = de::dataOrNull(colorBlendAttachmentStates);
+
+    const auto blendConstants = m_params.getBlendConstants();
+    memcpy(colorBlendStateCreateInfo.blendConstants, &blendConstants, sizeof(blendConstants));
+
+    std::vector<VkBool32> colorWriteEnables;
+    colorWriteEnables.reserve(colorAttachmentCount);
+    for (uint32_t i = 0u; i < colorAttachmentCount; ++i)
+        colorWriteEnables.push_back(makeVkBool(m_params.writeEnables.at(i)));
+
+    VkPipelineColorWriteCreateInfoEXT colorWriteCreateInfo = initVulkanStructure();
+    colorWriteCreateInfo.attachmentCount                   = de::sizeU32(colorWriteEnables);
+    colorWriteCreateInfo.pColorWriteEnables                = de::dataOrNull(colorWriteEnables);
+
+    if (!m_params.dynamicWriteEnables && m_params.someWritesDisabled())
+        colorBlendStateCreateInfo.pNext = &colorWriteCreateInfo;
+
+    std::vector<VkDynamicState> dynamicStates;
+    if (m_params.dynamicBlend)
+        dynamicStates.push_back(VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT);
+    if (m_params.dynamicWriteEnables)
+        dynamicStates.push_back(VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT);
+
+    const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
+    const std::vector<VkFormat> colorAttachmentFormats(colorAttachmentCount, colorFormat);
+
+    VkPipelineRenderingCreateInfo renderingCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(colorAttachmentFormats),
+        de::dataOrNull(colorAttachmentFormats),
+        VK_FORMAT_UNDEFINED,
+        VK_FORMAT_UNDEFINED,
+    };
+
+    VkRenderingAttachmentLocationInfo renderingAttachmentLocationInfo = {
+        VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO,
+        nullptr,
+        de::sizeU32(m_params.colorLocations),
+        de::dataOrNull(m_params.colorLocations),
+    };
+
+    GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, m_context.getDeviceExtensions(),
+                                     m_params.constructionType);
+    pipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDynamicState(&dynamicStateCreateInfo)
+        .setupVertexInputState(&vertexInputStateCreateInfo)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, VK_NULL_HANDLE, 0u, vertShader, nullptr,
+                                          ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), nullptr, nullptr,
+                                          &renderingCreateInfo)
+        .setupFragmentShaderState(pipelineLayout, VK_NULL_HANDLE, 0u, fragShader)
+        .setupFragmentOutputState(VK_NULL_HANDLE, 0u, &colorBlendStateCreateInfo, nullptr, VK_NULL_HANDLE, nullptr,
+                                  &renderingAttachmentLocationInfo)
+        .buildPipeline();
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const auto clearColor   = m_params.getClearColor();
+    const auto clearColorVk = makeClearValueColor(clearColor);
+    const auto colorSRR     = makeDefaultImageSubresourceRange();
+    const auto colorSRL     = makeDefaultImageSubresourceLayers();
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    {
+        // Transition images to the right layouts.
+        std::vector<VkImageMemoryBarrier> barriers;
+        barriers.reserve(colorAttachmentCount);
+
+        const auto dstAccess = (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+        for (const auto &colorBuffer : colorBuffers)
+            barriers.push_back(makeImageMemoryBarrier(0u, dstAccess, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, colorBuffer->getImage(),
+                                                      colorSRR));
+
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, barriers.data(), barriers.size());
+    }
+    {
+        // Begin rendering.
+        std::vector<VkRenderingAttachmentInfo> renderingAttachmentInfos;
+        renderingAttachmentInfos.reserve(colorAttachmentCount);
+
+        for (const auto &colorBuffer : colorBuffers)
+        {
+            renderingAttachmentInfos.push_back(VkRenderingAttachmentInfo{
+                VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                nullptr,
+                colorBuffer->getImageView(),
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_RESOLVE_MODE_NONE,
+                VK_NULL_HANDLE,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_ATTACHMENT_LOAD_OP_CLEAR,
+                VK_ATTACHMENT_STORE_OP_STORE,
+                clearColorVk,
+            });
+        }
+
+        const VkRenderingInfo renderingInfo = {
+            VK_STRUCTURE_TYPE_RENDERING_INFO,
+            nullptr,
+            0u,
+            scissors.front(),
+            1u,
+            0u,
+            de::sizeU32(renderingAttachmentInfos),
+            de::dataOrNull(renderingAttachmentInfos),
+            nullptr,
+            nullptr,
+        };
+
+        ctx.vkd.cmdBeginRendering(cmdBuffer, &renderingInfo);
+    }
+    pipeline.bind(cmdBuffer);
+    {
+        // Dynamic states.
+        if (m_params.dynamicBlend)
+            ctx.vkd.cmdSetColorBlendEquationEXT(cmdBuffer, 0u, de::sizeU32(equations), de::dataOrNull(equations));
+        if (m_params.dynamicWriteEnables)
+            ctx.vkd.cmdSetColorWriteEnableEXT(cmdBuffer, de::sizeU32(colorWriteEnables),
+                                              de::dataOrNull(colorWriteEnables));
+    }
+    {
+        // Attachment locations, identical to the ones in the pipeline.
+        // A pNext pointer may have been set when creating the pipeline.
+        renderingAttachmentLocationInfo.pNext = nullptr;
+        ctx.vkd.cmdSetRenderingAttachmentLocations(cmdBuffer, &renderingAttachmentLocationInfo);
+    }
+    ctx.vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u); // 4 vertices for the full-screen quad triangle strip.
+    ctx.vkd.cmdEndRendering(cmdBuffer);
+    {
+        // Copy each image to their corresponding buffer.
+        std::vector<VkImageMemoryBarrier> barriers;
+        barriers.reserve(colorAttachmentCount);
+
+        const auto srcAccess = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        const auto dstAccess = VK_ACCESS_TRANSFER_READ_BIT;
+
+        for (const auto &colorBuffer : colorBuffers)
+            barriers.push_back(makeImageMemoryBarrier(srcAccess, dstAccess, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorBuffer->getImage(),
+                                                      colorSRR));
+
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                      VK_PIPELINE_STAGE_TRANSFER_BIT, barriers.data(), barriers.size());
+
+        const auto copyRegion = makeBufferImageCopy(extentVk, colorSRL);
+        for (const auto &colorBuffer : colorBuffers)
+            ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer->getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                         colorBuffer->getBuffer(), 1u, &copyRegion);
+
+        const auto hostBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &hostBarrier);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Check attachment contents.
+    const auto tcuFormat      = mapVkFormat(colorFormat);
+    const auto expectedColors = m_params.getExpectedColors();
+
+    auto &log = m_context.getTestContext().getLog();
+    bool fail = false;
+    const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f); // Expect exact results (1 or 0 in each component).
+
+    for (uint32_t i = 0u; i < colorAttachmentCount; ++i)
+    {
+        auto &alloc = colorBuffers.at(i)->getBufferAllocation();
+        invalidateAlloc(ctx.vkd, ctx.device, alloc);
+
+        tcu::TextureLevel refLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+        tcu::PixelBufferAccess reference = refLevel.getAccess();
+        tcu::ConstPixelBufferAccess result(tcuFormat, extent, alloc.getHostPtr());
+
+        tcu::clear(reference, (colorWriteEnables.at(i) ? expectedColors.at(i) : clearColor));
+        if (reference.getPixel(0, 0) != result.getPixel(0, 0))
+        {
+            fail               = true;
+            const auto imgName = "Result" + std::to_string(i);
+            tcu::floatThresholdCompare(log, imgName.c_str(), "", reference, result, threshold,
+                                       tcu::COMPARE_LOG_ON_ERROR);
+        }
+    }
+
+    if (fail)
+        TCU_FAIL("Unexpected results in color buffers; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+#endif // CTS_USES_VULKANSC
+
+} // anonymous namespace
 
 std::string getBlendStateSetName(const VkPipelineColorBlendAttachmentState blendStates[BlendTest::QUAD_COUNT])
 {
@@ -2658,9 +2992,10 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
     }
 
 #ifndef CTS_USES_VULKANSC
+    using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
+
     if (genFormatTests)
     {
-        using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
         GroupPtr dynamicDualDisableGroup(new tcu::TestCaseGroup(testCtx, "dynamic_dual_disable"));
 
         for (const uint32_t attCount : {1u, 2u, 8u})
@@ -2676,6 +3011,64 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
             }
 
         blendTests->addChild(dynamicDualDisableGroup.release());
+    }
+
+    const auto genDRLRTests = genFormatTests;
+    if (genDRLRTests)
+    {
+        GroupPtr drlrTestGroup(new tcu::TestCaseGroup(testCtx, "drlr_remap"));
+
+        const std::vector<std::vector<bool>> weCases{
+            std::vector<bool>{true, true},
+            std::vector<bool>{true, false},
+            std::vector<bool>{false, true},
+        };
+
+        const auto locString = [](const std::vector<uint32_t> &locations)
+        {
+            std::string name = "locations";
+            for (const auto loc : locations)
+                name += "_" + std::to_string(loc);
+            return name;
+        };
+
+        const auto weString = [](const std::vector<bool> &enables)
+        {
+            std::string name = "we_";
+            for (const auto enable : enables)
+                name += (enable ? "Y" : "N");
+            return name;
+        };
+
+        for (const auto &weCase : weCases)
+            for (const bool dynBlend : {false, true})
+                for (const bool dynWE : {false, true})
+                {
+                    if (!(dynBlend && dynWE) && isESO)
+                        continue;
+
+                    const RemapParams params{
+                        pipelineConstructionType,
+                        std::vector<uint32_t>{1u, 0u}, // Swapped locations.
+                        weCase,
+                        dynBlend,
+                        dynWE,
+                    };
+
+                    std::string testName = locString(params.colorLocations);
+                    if (params.someWritesDisabled())
+                        testName += "_" + weString(params.writeEnables);
+
+                    if (dynBlend)
+                        testName += "_dyn_blend";
+
+                    if (dynWE)
+                        testName += "_dyn_we";
+
+                    drlrTestGroup->addChild(new RemapCase(testCtx, testName, params));
+                }
+
+        blendTests->addChild(drlrTestGroup.release());
     }
 #endif
 

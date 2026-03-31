@@ -2720,19 +2720,29 @@ ImageExtendOperandTest::ImageExtendOperandTest(tcu::TestContext &testCtx, const 
 {
 }
 
-void checkFormatProperties(const Context &context, VkFormat format)
+void checkFormatProperties(const Context &context, VkFormat format, const VkFormatFeatureFlagBits requiredFmtFeatXfer)
 {
 #ifndef CTS_USES_VULKANSC
     const VkFormatProperties3 formatProperties(context.getFormatProperties(format));
 
-    if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+    const auto &features = formatProperties.optimalTilingFeatures;
+
+    if (!(features & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
         TCU_THROW(NotSupportedError, "Format not supported for storage images");
+
+    if (!(features & requiredFmtFeatXfer))
+        TCU_THROW(NotSupportedError, "Format not supported for transfer");
 #else
     const VkFormatProperties formatProperties(
         getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format));
 
-    if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+    const auto &features = formatProperties.optimalTilingFeatures;
+
+    if (!(features & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
         TCU_THROW(NotSupportedError, "Format not supported for storage images");
+
+    if (!(features & requiredFmtFeatXfer))
+        TCU_THROW(NotSupportedError, "Format not supported for transfer");
 #endif // CTS_USES_VULKANSC
 }
 
@@ -2762,8 +2772,8 @@ void ImageExtendOperandTest::checkSupport(Context &context) const
 
     check64BitSupportIfNeeded(context, m_readFormat, m_writeFormat);
 
-    checkFormatProperties(context, m_readFormat);
-    checkFormatProperties(context, m_writeFormat);
+    checkFormatProperties(context, m_readFormat, VK_FORMAT_FEATURE_TRANSFER_DST_BIT);
+    checkFormatProperties(context, m_writeFormat, VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
 }
 
 void ImageExtendOperandTest::initPrograms(SourceCollections &programCollection) const

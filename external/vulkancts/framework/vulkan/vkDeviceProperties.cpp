@@ -180,7 +180,7 @@ bool DeviceProperties::verifyPropertyAddCriteria(const PropertyStructCreationDat
     const auto &propertyName = item.name;
 
     // check if this is core property
-    bool isPropertyAvailable = (propertyName == "core_property");
+    bool isPropertyAvailable = (propertyName == DECL_CORE_PROPERTIES_NAME);
 
     // check if this property is available on current device
     if (!isPropertyAvailable)
@@ -193,6 +193,15 @@ bool DeviceProperties::verifyPropertyAddCriteria(const PropertyStructCreationDat
         const auto previousPropertyExtName = getPreviousPropertyExtName(propertyName);
         isPropertyAvailable                = isExtensionStructSupported(allDeviceExtensions, previousPropertyExtName);
     }
+
+#ifndef CTS_USES_VULKANSC
+    // VkPhysicalDeviceDescriptorHeapTensorPropertiesARM requires both VK_EXT_descriptor_heap and VK_ARM_tensors
+    if (item.creatorFunction == &createPropertyStructWrapper<VkPhysicalDeviceDescriptorHeapTensorPropertiesARM>)
+    {
+        if (!isExtensionStructSupported(allDeviceExtensions, VK_ARM_TENSORS_EXTENSION_NAME))
+            isPropertyAvailable = false;
+    }
+#endif
 
     return isPropertyAvailable;
 }

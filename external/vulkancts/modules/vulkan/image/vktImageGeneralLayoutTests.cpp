@@ -312,7 +312,11 @@ tcu::TestStatus AstcSampleTestInstance::iterate(void)
         VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
-    vk::ImageWithMemory sampledImage(vk, device, alloc, imageCreateInfo, vk::MemoryRequirement::Any);
+    const bool host_copy = (m_parameters.testType == TEST_TYPE_HOST_COPY_INTO_IMAGE ||
+                            m_parameters.testType == TEST_TYPE_HOST_COPY_FROM_IMAGE);
+
+    vk::ImageWithMemory sampledImage(vk, device, alloc, imageCreateInfo,
+                                     host_copy ? vk::MemoryRequirement::HostVisible : vk::MemoryRequirement::Any);
 
     vk::VkImageViewCreateInfo imageViewCreateInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;

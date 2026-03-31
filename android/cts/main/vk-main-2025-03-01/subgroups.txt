@@ -1,0 +1,9 @@
+dEQP-VK.subgroups.uniform_descriptor_indexing.combined_image_sampler
+dEQP-VK.subgroups.uniform_descriptor_indexing.input_attachment
+dEQP-VK.subgroups.uniform_descriptor_indexing.sampled_image
+dEQP-VK.subgroups.uniform_descriptor_indexing.sampler
+dEQP-VK.subgroups.uniform_descriptor_indexing.storage_buffer
+dEQP-VK.subgroups.uniform_descriptor_indexing.storage_image
+dEQP-VK.subgroups.uniform_descriptor_indexing.storage_texel_buffer
+dEQP-VK.subgroups.uniform_descriptor_indexing.uniform_buffer
+dEQP-VK.subgroups.uniform_descriptor_indexing.uniform_texel_buffer

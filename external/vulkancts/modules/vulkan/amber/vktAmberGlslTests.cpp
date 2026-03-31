@@ -78,5 +78,29 @@ tcu::TestCaseGroup *createCrashTestGroup(tcu::TestContext &testCtx)
     return group.release();
 }
 
+tcu::TestCaseGroup *createLogicalCopyGroup(tcu::TestContext &testCtx)
+{
+    struct TestParameters
+    {
+        std::string name;
+        std::string description;
+        std::vector<std::string> requirements;
+    };
+
+    static const std::string kGroupName                     = "logical_copy";
+    static const std::vector<TestParameters> testParameters = {
+        {"initialized_struct", "OpLogicalCopy of a struct", {}},
+        {"undefined_memory", "OpLogicalCopy of a struct", {}},
+    };
+
+    de::MovePtr<tcu::TestCaseGroup> group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str()}};
+    for (const auto &params : testParameters)
+    {
+        group->addChild(createAmberTestCase(testCtx, params.name.c_str(), params.description.c_str(),
+                                            kGroupName.c_str(), params.name + ".amber", params.requirements));
+    }
+    return group.release();
+}
+
 } // namespace cts_amber
 } // namespace vkt

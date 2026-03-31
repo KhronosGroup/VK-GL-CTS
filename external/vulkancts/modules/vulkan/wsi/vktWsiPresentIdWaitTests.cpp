@@ -153,6 +153,11 @@ vector<const char *> getRequiredWsiInstanceExtensions(vk::wsi::Type wsiType)
     extensions.push_back(getExtensionName(wsiType));
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
+
+    // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
+    if (wsiType == vk::wsi::TYPE_DIRECT_DRM)
+        extensions.push_back("VK_EXT_direct_mode_display");
+
     return extensions;
 }
 

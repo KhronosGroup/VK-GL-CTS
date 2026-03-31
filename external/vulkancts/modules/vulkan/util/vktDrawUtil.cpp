@@ -160,8 +160,17 @@ void ReferenceDrawContext::draw(void)
     const rr::Renderer renderer;
     for (uint32_t objectNdx = 0; objectNdx < m_drawCallData.size(); objectNdx++)
     {
+        rr::CullMode cullMode = rr::CULLMODE_NONE;
+        if (m_pipelineStates[objectNdx].cullMode == vk::VK_CULL_MODE_BACK_BIT)
+            cullMode = rr::CULLMODE_BACK;
+        else if (m_pipelineStates[objectNdx].cullMode == vk::VK_CULL_MODE_FRONT_BIT)
+            cullMode = rr::CULLMODE_FRONT;
+        else if (m_pipelineStates[objectNdx].cullMode == vk::VK_CULL_MODE_FRONT_AND_BACK)
+            cullMode = rr::CULLMODE_FRONT_AND_BACK;
+
         const rr::RenderState renderState((rr::ViewportState(referenceColorBuffer)),
-                                          m_pipelineStates[objectNdx].subpixelBits, rr::VIEWPORTORIENTATION_UPPER_LEFT);
+                                          m_pipelineStates[objectNdx].subpixelBits, rr::VIEWPORTORIENTATION_UPPER_LEFT,
+                                          cullMode);
         const rr::Program program(m_vertexShaders[objectNdx].get(), m_fragmentShaders[objectNdx].get());
         const rr::VertexAttrib vertexAttrib[] = {rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), 0,
                                                                   m_drawCallData[objectNdx].vertices.data())};
@@ -431,7 +440,7 @@ void VulkanDrawContext::registerDrawObject(const PipelineState &pipelineState, c
             pipelineState.depthClampEnable,             // VkBool32 depthClampEnable;
             VK_FALSE,                                   // VkBool32 rasterizerDiscardEnable;
             VK_POLYGON_MODE_FILL,                       // VkPolygonMode polygonMode;
-            VK_CULL_MODE_NONE,                          // VkCullModeFlags cullMode;
+            pipelineState.cullMode,                     // VkCullModeFlags cullMode;
             VK_FRONT_FACE_COUNTER_CLOCKWISE,            // VkFrontFace frontFace;
             VK_FALSE,                                   // VkBool32 depthBiasEnable;
             0.0f,                                       // float depthBiasConstantFactor;

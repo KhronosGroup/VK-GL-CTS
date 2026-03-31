@@ -69,12 +69,14 @@ void generateRandomValidBlocks(uint8_t *dst, size_t numBlocks, CompressedTexForm
                                TexDecompressionParams::AstcMode mode, uint32_t seed);
 
 void generateDefaultVoidExtentBlocks(uint8_t *dst, size_t numBlocks);
-void generateDefaultNormalBlocks(uint8_t *dst, size_t numBlocks, int blockWidth, int blockHeight);
+void generateDefaultNormalBlocks(uint8_t *dst, size_t numBlocks, int blockWidth, int blockHeight, int blockDepth = 1);
 
 bool isValidBlock(const uint8_t *data, CompressedTexFormat format, TexDecompressionParams::AstcMode mode);
 
 void decompress(const PixelBufferAccess &dst, const uint8_t *data, CompressedTexFormat format,
                 TexDecompressionParams::AstcMode mode);
+void decompress3D(const PixelBufferAccess &dst, const uint8_t *data, CompressedTexFormat format,
+                  TexDecompressionParams::AstcMode mode);
 
 } // namespace astc
 } // namespace tcu

@@ -379,7 +379,7 @@ void DynamicStateMetaOpsInstance::initDraw()
             VK_ATTACHMENT_STORE_OP_STORE,                         // VkAttachmentStoreOp storeOp;
             VK_ATTACHMENT_LOAD_OP_DONT_CARE,                      // VkAttachmentLoadOp stencilLoadOp;
             VK_ATTACHMENT_STORE_OP_DONT_CARE,                     // VkAttachmentStoreOp stencilStoreOp;
-            VK_IMAGE_LAYOUT_GENERAL,                              // VkImageLayout initialLayout;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,             // VkImageLayout initialLayout;
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL              // VkImageLayout finalLayout;
         };
 
@@ -540,15 +540,23 @@ void DynamicStateMetaOpsInstance::doDraw(const VkCommandBuffer &cmdBuffer, uint3
         makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, **m_multisampledImage, colorSubresourceRange);
 
-    const auto msImageBarrierPostClear = makeImageMemoryBarrier(
-        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_IMAGE_LAYOUT_GENERAL, **m_multisampledImage, colorSubresourceRange);
+    const auto msImageBarrierPostClear =
+        makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT,
+                               (VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT |
+                                VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                               **m_multisampledImage, colorSubresourceRange);
 
     const auto msImageBarrierPostDraw =
         makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                                (drawCount == 0u) ? VK_ACCESS_SHADER_WRITE_BIT : VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, **m_multisampledImage,
                                colorSubresourceRange);
+
+    const auto msPreSecondDrawBarrier = makeImageMemoryBarrier(
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT), VK_IMAGE_LAYOUT_GENERAL,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, **m_multisampledImage, colorSubresourceRange);
 
     // const auto colorSubresourceLayers  = makeDefaultImageSubresourceLayers();
     // const VkBufferImageCopy copyRegion = {
@@ -570,8 +578,16 @@ void DynamicStateMetaOpsInstance::doDraw(const VkCommandBuffer &cmdBuffer, uint3
             vkd.cmdClearColorImage(cmdBuffer, **m_multisampledImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                    &clearColorValue.color, 1u, &colorSubresourceRange);
 
-            vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                   (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1u, &msImageBarrierPostClear);
+            vkd.cmdPipelineBarrier(
+                cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                (VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT),
+                (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1u, &msImageBarrierPostClear);
+        }
+        else
+        {
+            vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
+                                   &msPreSecondDrawBarrier);
         }
 
         m_renderPass->begin(vkd, cmdBuffer, renderArea);

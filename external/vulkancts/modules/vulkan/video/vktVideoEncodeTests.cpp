@@ -1407,6 +1407,7 @@ private:
     VkVideoCoreProfile m_profile;
 };
 
+#ifdef DE_BUILD_VIDEO
 struct bytestreamWriteWithStatus
 {
     uint32_t bitstreamOffset;
@@ -1701,11 +1702,6 @@ VkVideoReferenceSlotInfoKHR makeVideoReferenceSlot(int32_t slotIndex,
 
     return videoReferenceSlotKHR;
 }
-
-// Vulkan video is not supported on android platform
-// all external libraries, helper functions and test instances has been excluded
-#ifdef DE_BUILD_VIDEO
-
 #endif // DE_BUILD_VIDEO
 
 class VideoEncodeTestInstance : public VideoBaseTestInstance
@@ -1915,6 +1911,7 @@ VideoEncodeTestInstance::~VideoEncodeTestInstance(void)
 {
 }
 
+#ifdef DE_BUILD_VIDEO
 Move<VkQueryPool> VideoEncodeTestInstance::createEncodeVideoQueries(const DeviceInterface &videoDeviceDriver,
                                                                     VkDevice device, uint32_t numQueries,
                                                                     const VkVideoProfileInfoKHR *pVideoProfile)
@@ -3381,7 +3378,6 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
 
     // Vulkan video is not supported on android platform
     // all external libraries, helper functions and test instances has been excluded
-#ifdef DE_BUILD_VIDEO
     DeviceContext deviceContext(&m_context, &m_videoDevice, m_physicalDevice, m_videoEncodeDevice, m_decodeQueue,
                                 m_encodeQueue, m_transferQueue);
 
@@ -3512,11 +3508,6 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
 
     const string passMessage = std::to_string(actualFramesToCheck) + " correctly encoded frames";
     return tcu::TestStatus::pass(passMessage);
-#else
-    DE_UNREF(encodeBuffer);
-    DE_UNREF(encodeBufferSize);
-    TCU_THROW(NotSupportedError, "Vulkan video is not supported on android platform");
-#endif
 }
 
 void VideoEncodeTestInstance::prepareEncodeBuffer(void)
@@ -3829,9 +3820,11 @@ uint32_t VideoEncodeTestInstance::calculateTotalFramesFromClipData(const std::ve
 
     return static_cast<uint32_t>(maxFrames);
 }
+#endif // DE_BUILD_VIDEO
 
 tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 {
+#ifdef DE_BUILD_VIDEO
     initializeTestParameters();
     setupDeviceAndQueues();
     queryAndValidateCapabilities();
@@ -3849,6 +3842,9 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     if (m_swapOrder)
         handleSwapOrderSubmission(m_encodeQueryPool);
     return verifyEncodedBitstream(*m_encodeBuffer.get(), m_encodeBufferSize);
+#else
+    TCU_THROW(NotSupportedError, "Video tests are disabled via DEQP_DISABLE_VK_VIDEO_TESTS");
+#endif // DE_BUILD_VIDEO
 }
 
 class VideoEncodeTestCase : public TestCase
@@ -3877,9 +3873,9 @@ VideoEncodeTestCase::~VideoEncodeTestCase(void)
 
 void VideoEncodeTestCase::checkSupport(Context &context) const
 {
-    context.requireDeviceFunctionality("VK_KHR_video_queue");
+    VideoDevice::checkSupport(context, m_testDefinition->getCodecOperation());
+
     context.requireDeviceFunctionality("VK_KHR_synchronization2");
-    context.requireDeviceFunctionality("VK_KHR_video_encode_queue");
 
     switch (m_testDefinition->getTestType())
     {
@@ -3981,13 +3977,7 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
 
 TestInstance *VideoEncodeTestCase::createInstance(Context &context) const
 {
-#ifdef DE_BUILD_VIDEO
     return new VideoEncodeTestInstance(context, m_testDefinition.get());
-#else
-    // Vulkan video is not supported on android platform
-    DE_UNREF(context);
-    return nullptr;
-#endif
 }
 
 } // namespace

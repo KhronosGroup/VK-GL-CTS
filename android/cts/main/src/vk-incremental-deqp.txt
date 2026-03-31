@@ -423,3 +423,9 @@ dEQP-VK.spirv_assembly.type.vec4.u16.bitwise_and_comp
 dEQP-VK.glsl.derivate.dfdx.texture.basic.float_mediump
 dEQP-VK.glsl.derivate.dfdx.texture.basic.float_highp
 dEQP-VK.glsl.derivate.dfdx.texture.basic.vec2_mediump
+dEQP-VK.api.external.memory.android_hardware_buffer.suballocated.buffer.info
+dEQP-VK.api.external.memory.android_hardware_buffer.suballocated.buffer.bind_export_import_bind
+dEQP-VK.api.external.memory.android_hardware_buffer.dedicated.image.info
+dEQP-VK.api.external.memory.android_hardware_buffer.dedicated.image.bind_export_import_bind
+dEQP-VK.api.external.fence.sync_fd.signal_export_import_wait_temporary
+dEQP-VK.api.external.semaphore.sync_fd.signal_export_import_wait_temporary

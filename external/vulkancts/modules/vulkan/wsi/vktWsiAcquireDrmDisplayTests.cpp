@@ -181,8 +181,10 @@ CustomInstance AcquireDrmDisplayTestInstance::createInstanceWithAcquireDrmDispla
     vector<VkExtensionProperties> supportedExtensions =
         enumerateInstanceExtensionProperties(m_context.getPlatformInterface(), nullptr);
     vector<string> requiredExtensions = {
-        "VK_EXT_acquire_drm_display",
+        "VK_KHR_surface",
+        "VK_KHR_display",
         "VK_EXT_direct_mode_display",
+        "VK_EXT_acquire_drm_display",
     };
 
     for (const auto &extension : requiredExtensions)

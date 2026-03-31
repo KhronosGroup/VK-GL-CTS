@@ -32,6 +32,8 @@
 using namespace tcu;
 using namespace std;
 using namespace vk;
+using namespace glu;
+using vkt::subgroups::VecType;
 
 namespace vkt
 {
@@ -1016,8 +1018,8 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
             "  tempRes = uvec4(gl_SubgroupSize, gl_SubgroupInvocationID, gl_NumSubgroups, gl_SubgroupID);\n";
         const vector<string> headDeclarations = getPerStageHeadDeclarations(caseDef);
 
-        subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, VK_FORMAT_R32G32B32A32_UINT,
-                                   false, extHeader, testSrc, "", headDeclarations, false, tempRes);
+        subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, VecType(TYPE_UINT, 4), false,
+                                   extHeader, testSrc, "", headDeclarations, false, tempRes);
     }
 #endif // CTS_USES_VULKANSC
     else if (isAllGraphicsStages(caseDef.shaderStage))
@@ -1617,8 +1619,8 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
         const string testSrc   = "  tempRes = uvec4(gl_SubgroupSize, gl_SubgroupInvocationID + 1024, 0, 0);\n";
         const vector<string> headDeclarations = getPerStageHeadDeclarations(caseDef);
 
-        subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, VK_FORMAT_R32G32B32A32_UINT,
-                                   false, extHeader, testSrc, "", headDeclarations, false, tempRes);
+        subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, VecType(TYPE_UINT, 4), false,
+                                   extHeader, testSrc, "", headDeclarations, false, tempRes);
     }
 #endif // CTS_USES_VULKANSC
     else

@@ -433,6 +433,11 @@ void InstanceDriver::submitDebugUtilsMessageEXT (VkInstance instance, VkDebugUti
     m_vk.submitDebugUtilsMessageEXT(instance, messageSeverity, messageTypes, pCallbackData);
 }
 
+VkDeviceSize InstanceDriver::getPhysicalDeviceDescriptorSizeEXT (VkPhysicalDevice physicalDevice, VkDescriptorType descriptorType) const
+{
+    return m_vk.getPhysicalDeviceDescriptorSizeEXT(physicalDevice, descriptorType);
+}
+
 void InstanceDriver::getPhysicalDeviceMultisamplePropertiesEXT (VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkMultisamplePropertiesEXT* pMultisampleProperties) const
 {
     m_vk.getPhysicalDeviceMultisamplePropertiesEXT(physicalDevice, samples, pMultisampleProperties);
@@ -531,5 +536,15 @@ VkResult InstanceDriver::getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPro
 VkResult InstanceDriver::enumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, uint32_t* pCounterCount, VkPerformanceCounterARM* pCounters, VkPerformanceCounterDescriptionARM* pCounterDescriptions) const
 {
     return m_vk.enumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM(physicalDevice, queueFamilyIndex, pCounterCount, pCounters, pCounterDescriptions);
+}
+
+VkResult InstanceDriver::createUbmSurfaceSEC (VkInstance instance, const VkUbmSurfaceCreateInfoSEC* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const
+{
+    return m_vk.createUbmSurfaceSEC(instance, pCreateInfo, pAllocator, pSurface);
+}
+
+VkBool32 InstanceDriver::getPhysicalDeviceUbmPresentationSupportSEC (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, struct ubm_device* device) const
+{
+    return m_vk.getPhysicalDeviceUbmPresentationSupportSEC(physicalDevice, queueFamilyIndex, device);
 }
 

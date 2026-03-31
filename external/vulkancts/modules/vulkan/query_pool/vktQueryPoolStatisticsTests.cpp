@@ -27,7 +27,6 @@
 #include "vktDrawImageObjectUtil.hpp"
 #include "vktDrawBufferObjectUtil.hpp"
 #include "vktDrawCreateInfoUtil.hpp"
-#include "vktCustomInstancesDevices.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkPrograms.hpp"
@@ -57,9 +56,7 @@
 using std::pair;
 using std::vector;
 
-namespace vkt
-{
-namespace QueryPool
+namespace vkt::QueryPool
 {
 namespace
 {
@@ -264,6 +261,26 @@ vk::VkResult GetQueryPoolResultsVector(ResultsVectorWithAvailability &output, co
     return result;
 }
 
+void cmdCopyQueryPoolResults(const DeviceInterface &vk, VkCommandBuffer commandBuffer, VkQueryPool queryPool,
+                             uint32_t firstQuery, uint32_t queryCount, VkBuffer dstBuffer,
+                             VkDeviceAddress dstBufferDeviceAddress, VkDeviceSize dstOffset, VkDeviceSize stride,
+                             VkDeviceSize dstSize, VkQueryResultFlags flags)
+{
+    DE_UNREF(dstSize);
+
+    if (dstBufferDeviceAddress == 0ull)
+        vk.cmdCopyQueryPoolResults(commandBuffer, queryPool, firstQuery, queryCount, dstBuffer, dstOffset, stride,
+                                   flags);
+
+#ifndef CTS_USES_VULKANSC
+    if (dstBufferDeviceAddress != 0ull)
+    {
+        VkStridedDeviceAddressRangeKHR range{dstBufferDeviceAddress + dstOffset, dstSize, stride};
+        vk.cmdCopyQueryPoolResultsToMemoryKHR(commandBuffer, queryPool, firstQuery, queryCount, &range, 0, flags);
+    }
+#endif
+}
+
 // Get query pool results as a vector. Note results are always converted to
 // uint64_t, but the actual vkCmdCopyQueryPoolResults call will use the 64-bits flag
 // or not depending on your preferences.
@@ -361,14 +378,16 @@ struct GenericParameters
     bool query64Bits;
     bool dstOffset;
     StrideType strideType;
+    bool useDeviceAddressCommands;
 
     GenericParameters(ResetType resetType_, CopyType copyType_, bool query64Bits_, bool dstOffset_,
-                      StrideType strideType_)
+                      StrideType strideType_, bool useDeviceAddressCommands_)
         : resetType{resetType_}
         , copyType{copyType_}
         , query64Bits{query64Bits_}
         , dstOffset{dstOffset_}
         , strideType{strideType_}
+        , useDeviceAddressCommands(useDeviceAddressCommands_)
     {
     }
 
@@ -483,10 +502,27 @@ void clearBuffer(const DeviceInterface &vk, const VkDevice device, const BufferP
     flushAlloc(vk, device, allocation);
 }
 
+void commonCheckSupport(Context &context, bool hostQueryReset)
+{
+    const auto &deviceFeatures = context.getDeviceFeatures();
+    if (!deviceFeatures.pipelineStatisticsQuery)
+        TCU_THROW(NotSupportedError, "Pipeline statistics queries are not supported");
+
+    // These should have the same value throughout the whole vector.
+    if (hostQueryReset)
+    {
+        // Check VK_EXT_host_query_reset is supported
+        context.requireDeviceFunctionality("VK_EXT_host_query_reset");
+        if (!context.getHostQueryResetFeatures().hostQueryReset)
+            TCU_THROW(NotSupportedError, "Implementation doesn't support resetting queries from the host");
+    }
+}
+
 class StatisticQueryTestInstance : public TestInstance
 {
 public:
-    StatisticQueryTestInstance(Context &context, uint32_t queryCount, bool dstOffset, bool useComputeQueue);
+    StatisticQueryTestInstance(Context &context, uint32_t queryCount, bool dstOffset, bool useComputeQueue,
+                               bool useDeviceAddressCommands);
 
 protected:
     struct ValueAndAvailability
@@ -497,10 +533,11 @@ protected:
 
     VkDeviceSize m_resetBufferSize;
     BufferPtr m_resetBuffer;
+    VkDeviceAddress m_resetBufferDeviceAddress;
     bool dstOffset;
     const bool m_useComputeQueue;
+    const bool m_useDeviceAddressCommands;
 
-    virtual void checkExtensions(bool hostResetQueryEnabled);
     BufferPtr createResetBuffer(void) const;
     void fillResetBuffer(const BufferPtr &buffer) const;
     tcu::TestStatus verifyUnavailable();
@@ -508,9 +545,16 @@ protected:
 
 BufferPtr StatisticQueryTestInstance::createResetBuffer(void) const
 {
+    VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    if (m_useDeviceAddressCommands)
+        usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+    MemoryRequirement memReq = m_useDeviceAddressCommands ?
+                                   MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress :
+                                   MemoryRequirement::HostVisible;
+
     return Buffer::createAndAlloc(m_context.getDeviceInterface(), m_context.getDevice(),
-                                  BufferCreateInfo(m_resetBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
-                                  m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
+                                  BufferCreateInfo(m_resetBufferSize, usage), m_context.getDefaultAllocator(), memReq);
 }
 
 void StatisticQueryTestInstance::fillResetBuffer(const BufferPtr &buffer) const
@@ -522,29 +566,23 @@ void StatisticQueryTestInstance::fillResetBuffer(const BufferPtr &buffer) const
 }
 
 StatisticQueryTestInstance::StatisticQueryTestInstance(Context &context, uint32_t queryCount, bool dstOffset_,
-                                                       bool useComputeQueue)
+                                                       bool useComputeQueue, bool useDeviceAddressCommands)
     : TestInstance(context)
     , m_resetBufferSize((queryCount + (dstOffset_ ? 1u : 0u)) * sizeof(ValueAndAvailability))
     , m_resetBuffer()
+    , m_resetBufferDeviceAddress(0ull)
     , dstOffset(dstOffset_)
     , m_useComputeQueue(useComputeQueue)
+    , m_useDeviceAddressCommands(useDeviceAddressCommands)
 {
     m_resetBuffer = createResetBuffer();
     fillResetBuffer(m_resetBuffer);
-}
 
-void StatisticQueryTestInstance::checkExtensions(bool hostResetQueryEnabled)
-{
-    if (!m_context.getDeviceFeatures().pipelineStatisticsQuery)
-        throw tcu::NotSupportedError("Pipeline statistics queries are not supported");
-
-    if (hostResetQueryEnabled == true)
+    if (m_useDeviceAddressCommands)
     {
-        // Check VK_EXT_host_query_reset is supported
-        m_context.requireDeviceFunctionality("VK_EXT_host_query_reset");
-        if (m_context.getHostQueryResetFeatures().hostQueryReset == VK_FALSE)
-            throw tcu::NotSupportedError(
-                std::string("Implementation doesn't support resetting queries from the host").c_str());
+        const DeviceInterface &vk  = m_context.getDeviceInterface();
+        const VkDevice device      = m_context.getDevice();
+        m_resetBufferDeviceAddress = getBufferDeviceAddress(vk, device, m_resetBuffer->object());
     }
 }
 
@@ -583,8 +621,8 @@ public:
     {
         ParametersCompute(const tcu::UVec3 &localSize_, const tcu::UVec3 &groupSize_, const std::string &shaderName_,
                           ResetType resetType_, CopyType copyType_, bool query64Bits_, bool dstOffset_,
-                          StrideType strideType_, bool useComputeQueue_)
-            : GenericParameters{resetType_, copyType_, query64Bits_, dstOffset_, strideType_}
+                          StrideType strideType_, bool useComputeQueue_, bool useDeviceAddressCommands_)
+            : GenericParameters{resetType_, copyType_, query64Bits_, dstOffset_, strideType_, useDeviceAddressCommands_}
             , localSize(localSize_)
             , groupSize(groupSize_)
             , shaderName(shaderName_)
@@ -614,18 +652,14 @@ protected:
 
 ComputeInvocationsTestInstance::ComputeInvocationsTestInstance(Context &context,
                                                                const std::vector<ParametersCompute> &parameters)
-    : StatisticQueryTestInstance(context, 1u, parameters[0].dstOffset, parameters[0].useComputeQueue)
+    : StatisticQueryTestInstance(context, 1u, parameters[0].dstOffset, parameters[0].useComputeQueue,
+                                 parameters[0].useDeviceAddressCommands)
     , m_parameters(parameters)
 {
 }
 
 tcu::TestStatus ComputeInvocationsTestInstance::iterate(void)
 {
-    // These should have the same value throughout the whole vector.
-    const bool hostQueryReset = ((m_parameters[0].resetType == RESET_TYPE_HOST) ? true : false);
-
-    checkExtensions(hostQueryReset);
-
     const uint32_t queueFamilyIndex = m_context.getDeviceQueueInfo(0u).familyIndex;
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
@@ -1049,8 +1083,8 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest(const VkCom
         if (m_parameters[0].strideType == STRIDE_TYPE_ZERO)
             copyStride = 0u;
 
-        vk.cmdCopyQueryPoolResults(*secondaryCmdBuffer, *queryPool, 0, 1u, m_resetBuffer->object(), dstOffsetQuery,
-                                   copyStride, flags);
+        cmdCopyQueryPoolResults(vk, *secondaryCmdBuffer, *queryPool, 0, 1u, m_resetBuffer->object(),
+                                m_resetBufferDeviceAddress, dstOffsetQuery, copyStride, m_resetBufferSize, flags);
 
         if (m_parameters[0].resetType == RESET_TYPE_AFTER_COPY)
             vk.cmdResetQueryPool(*secondaryCmdBuffer, *queryPool, 0u, 1u);
@@ -1186,8 +1220,6 @@ public:
                                                      const std::vector<ParametersCompute> &parameters);
 
 protected:
-    virtual void checkExtensions(bool hostResetQueryEnabled);
-
     tcu::TestStatus executeTest(const VkCommandPool &cmdPool, const VkPipelineLayout pipelineLayout,
                                 const VkDescriptorSet &descriptorSet, const BufferPtr buffer,
                                 const VkDeviceSize bufferSizeBytes);
@@ -1197,13 +1229,6 @@ ComputeInvocationsSecondaryInheritedTestInstance::ComputeInvocationsSecondaryInh
     Context &context, const std::vector<ParametersCompute> &parameters)
     : ComputeInvocationsSecondaryTestInstance(context, parameters)
 {
-}
-
-void ComputeInvocationsSecondaryInheritedTestInstance::checkExtensions(bool hostResetQueryEnabled)
-{
-    StatisticQueryTestInstance::checkExtensions(hostResetQueryEnabled);
-    if (!m_context.getDeviceFeatures().inheritedQueries)
-        throw tcu::NotSupportedError("Inherited queries are not supported");
 }
 
 tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest(const VkCommandPool &cmdPool,
@@ -1394,8 +1419,8 @@ public:
                           const bool noColorAttachments_ = false, const StrideType strideType_ = STRIDE_TYPE_VALID,
                           const bool hasTess_ = false, const uint32_t tessPatchSize_ = 0u,
                           const uint32_t numTessPrimitives_ = 1u, TessPrimitiveMode primMode_ = TESS_PRIM_QUADS,
-                          const bool pointMode_ = false)
-            : GenericParameters{resetType_, copyType_, query64Bits_, dstOffset_, strideType_}
+                          const bool pointMode_ = false, bool useDeviceAddressCommands_ = false)
+            : GenericParameters{resetType_, copyType_, query64Bits_, dstOffset_, strideType_, useDeviceAddressCommands_}
             , queryStatisticFlags(queryStatisticFlags_)
             , primitiveTopology(primitiveTopology_)
             , vertexOnlyPipe(vertexOnlyPipe_)
@@ -1459,7 +1484,8 @@ protected:
 GraphicBasicTestInstance::GraphicBasicTestInstance(vkt::Context &context, const std::vector<VertexData> &data,
                                                    const ParametersGraphic &parametersGraphic,
                                                    const std::vector<uint64_t> &drawRepeats)
-    : StatisticQueryTestInstance(context, static_cast<uint32_t>(drawRepeats.size()), parametersGraphic.dstOffset, false)
+    : StatisticQueryTestInstance(context, static_cast<uint32_t>(drawRepeats.size()), parametersGraphic.dstOffset, false,
+                                 parametersGraphic.useDeviceAddressCommands)
     , m_colorAttachmentFormat(VK_FORMAT_R8G8B8A8_UNORM)
     , m_data(data)
     , m_parametersGraphic(parametersGraphic)
@@ -1475,7 +1501,6 @@ GraphicBasicTestInstance::GraphicBasicTestInstance(vkt::Context &context, const 
 
 tcu::TestStatus GraphicBasicTestInstance::iterate(void)
 {
-    checkExtensions((m_parametersGraphic.resetType == RESET_TYPE_HOST) ? true : false);
     createColorAttachmentAndRenderPass();
     createDepthsBuffer();
     createPipeline();
@@ -2020,8 +2045,8 @@ tcu::TestStatus VertexShaderTestInstance::executeTest(void)
             }
 
             VkDeviceSize dstOffsetQuery = (m_parametersGraphic.dstOffset) ? stride : 0;
-            vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(), dstOffsetQuery,
-                                       stride, flags);
+            cmdCopyQueryPoolResults(vk, *cmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(),
+                                    m_resetBufferDeviceAddress, dstOffsetQuery, stride, m_resetBufferSize, flags);
 
             if (m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
                 vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, queryCount);
@@ -2409,8 +2434,8 @@ tcu::TestStatus VertexShaderSecondaryTestInstance::executeTest(void)
             }
 
             VkDeviceSize dstOffsetQuery = (m_parametersGraphic.dstOffset) ? stride : 0;
-            vk.cmdCopyQueryPoolResults(*primaryCmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(),
-                                       dstOffsetQuery, stride, flags);
+            cmdCopyQueryPoolResults(vk, *primaryCmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(),
+                                    m_resetBufferDeviceAddress, dstOffsetQuery, stride, m_resetBufferSize, flags);
 
             if (m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
                 vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, queryCount);
@@ -2454,7 +2479,6 @@ public:
                                                const std::vector<uint64_t> &drawRepeats);
 
 protected:
-    virtual void checkExtensions(bool hostQueryResetEnabled);
     virtual tcu::TestStatus executeTest(void);
 };
 
@@ -2463,13 +2487,6 @@ VertexShaderSecondaryInheritedTestInstance::VertexShaderSecondaryInheritedTestIn
     const std::vector<uint64_t> &drawRepeats)
     : VertexShaderTestInstance(context, data, parametersGraphic, drawRepeats)
 {
-}
-
-void VertexShaderSecondaryInheritedTestInstance::checkExtensions(bool hostQueryResetEnabled)
-{
-    StatisticQueryTestInstance::checkExtensions(hostQueryResetEnabled);
-    if (!m_context.getDeviceFeatures().inheritedQueries)
-        throw tcu::NotSupportedError("Inherited queries are not supported");
 }
 
 tcu::TestStatus VertexShaderSecondaryInheritedTestInstance::executeTest(void)
@@ -2618,7 +2635,6 @@ public:
                                const ParametersGraphic &parametersGraphic, const std::vector<uint64_t> &drawRepeats);
 
 protected:
-    virtual void checkExtensions(bool hostQueryResetEnabled);
     virtual void createPipeline(void);
     virtual tcu::TestStatus executeTest(void);
     tcu::TestStatus checkResult(VkQueryPool queryPool);
@@ -2630,13 +2646,6 @@ GeometryShaderTestInstance::GeometryShaderTestInstance(vkt::Context &context, co
                                                        const std::vector<uint64_t> &drawRepeats)
     : GraphicBasicTestInstance(context, data, parametersGraphic, drawRepeats)
 {
-}
-
-void GeometryShaderTestInstance::checkExtensions(bool hostQueryResetEnabled)
-{
-    StatisticQueryTestInstance::checkExtensions(hostQueryResetEnabled);
-    if (!m_context.getDeviceFeatures().geometryShader)
-        throw tcu::NotSupportedError("Geometry shader are not supported");
 }
 
 void GeometryShaderTestInstance::createPipeline(void)
@@ -3146,7 +3155,6 @@ public:
                                                  const std::vector<uint64_t> &drawRepeats);
 
 protected:
-    virtual void checkExtensions(bool hostQueryResetEnabled);
     virtual tcu::TestStatus executeTest(void);
 };
 
@@ -3155,13 +3163,6 @@ GeometryShaderSecondaryInheritedTestInstance::GeometryShaderSecondaryInheritedTe
     const std::vector<uint64_t> &drawRepeats)
     : GeometryShaderTestInstance(context, data, parametersGraphic, drawRepeats)
 {
-}
-
-void GeometryShaderSecondaryInheritedTestInstance::checkExtensions(bool hostQueryResetEnabled)
-{
-    GeometryShaderTestInstance::checkExtensions(hostQueryResetEnabled);
-    if (!m_context.getDeviceFeatures().inheritedQueries)
-        throw tcu::NotSupportedError("Inherited queries are not supported");
 }
 
 tcu::TestStatus GeometryShaderSecondaryInheritedTestInstance::executeTest(void)
@@ -3293,7 +3294,6 @@ public:
                                    const std::vector<uint64_t> &drawRepeats);
 
 protected:
-    virtual void checkExtensions(bool hostQueryResetEnabled);
     virtual void createPipeline(void);
     virtual tcu::TestStatus executeTest(void);
     virtual tcu::TestStatus checkResult(VkQueryPool queryPool);
@@ -3306,13 +3306,6 @@ TessellationShaderTestInstance::TessellationShaderTestInstance(vkt::Context &con
                                                                const std::vector<uint64_t> &drawRepeats)
     : GraphicBasicTestInstance(context, data, parametersGraphic, drawRepeats)
 {
-}
-
-void TessellationShaderTestInstance::checkExtensions(bool hostQueryResetEnabled)
-{
-    StatisticQueryTestInstance::checkExtensions(hostQueryResetEnabled);
-    if (!m_context.getDeviceFeatures().tessellationShader)
-        throw tcu::NotSupportedError("Tessellation shader are not supported");
 }
 
 void TessellationShaderTestInstance::createPipeline(void)
@@ -3471,8 +3464,8 @@ tcu::TestStatus TessellationShaderTestInstance::executeTest(void)
             }
 
             VkDeviceSize dstOffsetQuery = (m_parametersGraphic.dstOffset) ? stride : 0;
-            vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(), dstOffsetQuery,
-                                       stride, flags);
+            cmdCopyQueryPoolResults(vk, *cmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(),
+                                    m_resetBufferDeviceAddress, dstOffsetQuery, stride, m_resetBufferSize, flags);
 
             if (m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
                 vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, queryCount);
@@ -3836,7 +3829,6 @@ public:
                                                      const std::vector<uint64_t> &drawRepeats);
 
 protected:
-    virtual void checkExtensions(bool hostQueryResetEnabled);
     virtual tcu::TestStatus executeTest(void);
 };
 
@@ -3845,13 +3837,6 @@ TessellationShaderSecondrayInheritedTestInstance::TessellationShaderSecondrayInh
     const std::vector<uint64_t> &drawRepeats)
     : TessellationShaderTestInstance(context, data, parametersGraphic, drawRepeats)
 {
-}
-
-void TessellationShaderSecondrayInheritedTestInstance::checkExtensions(bool hostQueryResetEnabled)
-{
-    TessellationShaderTestInstance::checkExtensions(hostQueryResetEnabled);
-    if (!m_context.getDeviceFeatures().inheritedQueries)
-        throw tcu::NotSupportedError("Inherited queries are not supported");
 }
 
 tcu::TestStatus TessellationShaderSecondrayInheritedTestInstance::executeTest(void)
@@ -3981,10 +3966,12 @@ class QueryPoolComputeStatsTest : public TestCase
 public:
     QueryPoolComputeStatsTest(tcu::TestContext &context, const std::string &name, const ResetType resetType,
                               const CopyType copyType, bool query64Bits, const bool useComputeQueue,
-                              bool dstOffset = false, const StrideType strideType = STRIDE_TYPE_VALID)
+                              bool dstOffset = false, const StrideType strideType = STRIDE_TYPE_VALID,
+                              bool useDeviceAddressCommands = false)
         : TestCase(context, name.c_str())
         , m_useComputeQueue(useComputeQueue)
         , m_cqInfo({VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT, 1u, 1.0f})
+        , m_useDeviceAddressCommands(useDeviceAddressCommands)
     {
         const tcu::UVec3 localSize[] = {
             tcu::UVec3(2u, 2u, 2u),
@@ -4006,7 +3993,7 @@ public:
             shaderName << "compute_" << shaderNdx;
             const ComputeInvocationsTestInstance::ParametersCompute parameters(
                 localSize[shaderNdx], groupSize[shaderNdx], shaderName.str(), resetType, copyType, query64Bits,
-                dstOffset, strideType, m_useComputeQueue);
+                dstOffset, strideType, m_useComputeQueue, m_useDeviceAddressCommands);
             m_parameters.push_back(parameters);
         }
     }
@@ -4023,6 +4010,15 @@ public:
 
     void checkSupport(Context &context) const override
     {
+        commonCheckSupport(context, (m_parameters[0].resetType == RESET_TYPE_HOST));
+
+        if constexpr (std::is_same_v<Instance, ComputeInvocationsSecondaryInheritedTestInstance>)
+        {
+            const auto &deviceFeatures = context.getDeviceFeatures();
+            if (!deviceFeatures.inheritedQueries)
+                TCU_THROW(NotSupportedError, "Inherited queries are not supported");
+        }
+
         if (m_useComputeQueue)
         {
             const auto &vki           = context.getInstanceInterface();
@@ -4030,6 +4026,8 @@ public:
 
             findQueueFamilyIndexWithCaps(vki, physicalDevice, m_cqInfo.required, m_cqInfo.excluded);
         }
+        if (m_useDeviceAddressCommands)
+            context.requireDeviceFunctionality("VK_KHR_device_address_commands");
     }
 
     void initPrograms(SourceCollections &sourceCollections) const override
@@ -4058,6 +4056,17 @@ public:
             sourceCollections.glslSources.add(m_parameters[shaderNdx].shaderName) << glu::ComputeSource(src.str());
         }
     }
+
+#ifdef CTS_USES_VULKANSC
+    std::string getInstanceCapabilitiesId() const override
+    {
+        return getRequiredCapabilitiesId();
+    }
+    void initInstanceCapabilities(InstCaps &caps) override
+    {
+        caps.shouldRemoveInstanceOnTestExit(true);
+    }
+#endif
 
     std::string getRequiredCapabilitiesId() const override
     {
@@ -4089,484 +4098,7 @@ private:
     std::vector<ComputeInvocationsTestInstance::ParametersCompute> m_parameters;
     const bool m_useComputeQueue;
     const DevCaps::QueueCreateInfo m_cqInfo;
-};
-
-template <class Instance>
-class QueryPoolGraphicStatisticsTest : public TestCase
-{
-public:
-    QueryPoolGraphicStatisticsTest(tcu::TestContext &context, const std::string &name,
-                                   const GraphicBasicTestInstance::ParametersGraphic parametersGraphic,
-                                   const std::vector<uint64_t> &drawRepeats)
-        : TestCase(context, name.c_str())
-        , m_parametersGraphic(parametersGraphic)
-        , m_drawRepeats(drawRepeats)
-        // For clear-skip, we'll use one framebuffer block for each draw instead of clearing.
-        , m_blockCount((parametersGraphic.clearOp == CLEAR_SKIP) ?
-                           static_cast<uint32_t>(std::accumulate(begin(drawRepeats), end(drawRepeats), uint64_t{0})) :
-                           1u)
-        , m_width(WIDTH)
-        , m_height(HEIGHT * m_blockCount)
-    {
-        using VertexData = GraphicBasicTestInstance::VertexData;
-
-        if ((m_parametersGraphic.hasTess) && (m_parametersGraphic.tessPatchSize != 0))
-        {
-            const auto blue = tcu::RGBA::blue().toVec();
-
-            for (uint32_t primitiveCnt = 1; primitiveCnt <= m_parametersGraphic.numTessPrimitives; primitiveCnt++)
-                for (uint32_t dataIdx = 0; dataIdx < m_parametersGraphic.tessPatchSize; dataIdx++)
-                    m_data.push_back(VertexData(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f), blue));
-        }
-        else
-        {
-            const bool isPoints = (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
-            const bool isLineStripAdj =
-                (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY);
-            const bool isLines =
-                (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST ||
-                 m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP || isLineStripAdj);
-            const bool isTriFan       = (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN);
-            const float quarterWidth  = (2.0f / static_cast<float>(m_width)) * 0.25f;
-            const float quarterHeight = (2.0f / static_cast<float>(m_height)) * 0.25f;
-            const float marginW       = ((isPoints || isLines) ? quarterWidth : 0.0f);
-            const float marginH       = (isPoints ? quarterHeight : 0.0f);
-
-            // These coordinates will be used with different topologies, so we try to avoid drawing points on the edges.
-            const float left   = -1.0f + marginW;
-            const float right  = 1.0f - marginW;
-            const float center = (left + right) / 2.0f;
-            const float top    = -1.0f + marginH;
-            const float bottom = -1.0f + 2.0f / static_cast<float>(m_blockCount) - marginH;
-            const float middle = (top + bottom) / 2.0f;
-
-            const auto red   = tcu::RGBA::red().toVec();
-            const auto green = tcu::RGBA::green().toVec();
-            const auto blue  = tcu::RGBA::blue().toVec();
-            const auto gray  = tcu::RGBA::gray().toVec();
-
-            const bool triListSkip = (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST &&
-                                      m_parametersGraphic.clearOp == CLEAR_SKIP);
-
-            // --- TOP LEFT VERTICES ---
-            // For line strips with adjacency, everything is drawn with a single draw call, but we add a first and a last
-            // adjacency point so the strip looks like the non-adjacency case.
-            if (isLineStripAdj)
-                m_data.push_back(VertexData(tcu::Vec4(-2.0f, -2.0f, 1.0f, 1.0f), red));
-            m_data.push_back(VertexData(tcu::Vec4(left, top, 1.0f, 1.0f), red));
-            m_data.push_back(VertexData(tcu::Vec4(left, middle, 1.0f, 1.0f), red));
-            // For triangle fans we'll revert the order of the first 2 vertices in each quadrant so they form a proper fan
-            // covering the whole quadrant.
-            if (isTriFan)
-                std::swap(m_data.at(m_data.size() - 1), m_data.at(m_data.size() - 2));
-            m_data.push_back(VertexData(tcu::Vec4(center, top, 1.0f, 1.0f), red));
-            if (triListSkip)
-            {
-                m_data.push_back(VertexData(tcu::Vec4(center, top, 1.0f, 1.0f), red));
-                m_data.push_back(VertexData(tcu::Vec4(left, middle, 1.0f, 1.0f), red));
-            }
-            m_data.push_back(VertexData(tcu::Vec4(center, middle, 1.0f, 1.0f), red));
-
-            // --- BOTTOM LEFT VERTICES ---
-            m_data.push_back(VertexData(tcu::Vec4(left, middle, 1.0f, 1.0f), green));
-            m_data.push_back(VertexData(tcu::Vec4(left, bottom, 1.0f, 1.0f), green));
-            if (isTriFan)
-                std::swap(m_data.at(m_data.size() - 1), m_data.at(m_data.size() - 2));
-            m_data.push_back(VertexData(tcu::Vec4(center, middle, 1.0f, 1.0f), green));
-            if (triListSkip)
-            {
-                m_data.push_back(VertexData(tcu::Vec4(center, middle, 1.0f, 1.0f), green));
-                m_data.push_back(VertexData(tcu::Vec4(left, bottom, 1.0f, 1.0f), green));
-            }
-            m_data.push_back(VertexData(tcu::Vec4(center, bottom, 1.0f, 1.0f), green));
-
-            // --- TOP RIGHT VERTICES ---
-            m_data.push_back(VertexData(tcu::Vec4(center, top, 1.0f, 1.0f), blue));
-            m_data.push_back(VertexData(tcu::Vec4(center, middle, 1.0f, 1.0f), blue));
-            if (isTriFan)
-                std::swap(m_data.at(m_data.size() - 1), m_data.at(m_data.size() - 2));
-            m_data.push_back(VertexData(tcu::Vec4(right, top, 1.0f, 1.0f), blue));
-            if (triListSkip)
-            {
-                m_data.push_back(VertexData(tcu::Vec4(right, top, 1.0f, 1.0f), blue));
-                m_data.push_back(VertexData(tcu::Vec4(center, middle, 1.0f, 1.0f), blue));
-            }
-            m_data.push_back(VertexData(tcu::Vec4(right, middle, 1.0f, 1.0f), blue));
-
-            // --- BOTTOM RIGHT VERTICES ---
-            m_data.push_back(VertexData(tcu::Vec4(center, middle, 1.0f, 1.0f), gray));
-            m_data.push_back(VertexData(tcu::Vec4(center, bottom, 1.0f, 1.0f), gray));
-            if (isTriFan)
-                std::swap(m_data.at(m_data.size() - 1), m_data.at(m_data.size() - 2));
-            m_data.push_back(VertexData(tcu::Vec4(right, middle, 1.0f, 1.0f), gray));
-            if (triListSkip)
-            {
-                m_data.push_back(VertexData(tcu::Vec4(right, middle, 1.0f, 1.0f), gray));
-                m_data.push_back(VertexData(tcu::Vec4(center, bottom, 1.0f, 1.0f), gray));
-            }
-            m_data.push_back(VertexData(tcu::Vec4(right, bottom, 1.0f, 1.0f), gray));
-            if (isLineStripAdj)
-                m_data.push_back(VertexData(tcu::Vec4(2.0f, 2.0f, 1.0f, 1.0f), red));
-        }
-    }
-
-    void checkSupport(vkt::Context &context) const
-    {
-#ifndef CTS_USES_VULKANSC
-        if (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
-            context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
-            !context.getPortabilitySubsetFeatures().triangleFans)
-        {
-            TCU_THROW(NotSupportedError,
-                      "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
-        }
-#else
-        DE_UNREF(context);
-#endif // CTS_USES_VULKANSC
-    }
-
-    vkt::TestInstance *createInstance(vkt::Context &context) const
-    {
-        return new Instance(context, m_data, m_parametersGraphic, m_drawRepeats);
-    }
-
-    void initPrograms(SourceCollections &sourceCollections) const
-    {
-        { // Vertex Shader
-            if (m_parametersGraphic.hasTess && m_parametersGraphic.tessPatchSize != 0)
-            {
-                // Test VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT with tessellation.
-                // Position and color data from vertex buffer will be ignored.
-                // Vertex shader provides position and color for the quad.
-                std::ostringstream source;
-
-                // Use modulo based on primitive mode to ensure control points repeat per patch consistently.
-                // For isolines we intentionally use % 4 (not % 2) to keep patches distinct for query stability;
-                // TCS still declares layout(vertices = 2) and consumes only gl_in[0..1], so image output is unchanged.
-                const uint32_t vsModulo = m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES ? 3u : 4u;
-
-                source << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-                       << "vec4 positions[4] = vec4[](\n"
-                       << "    vec4(-1.0f, -1.0f, 0.0f, 1.0f),\n"
-                       << "    vec4( 1.0f, -1.0f, 0.0f, 1.0f),\n"
-                       << "    vec4(-1.0f,  1.0f, 0.0f, 1.0f),\n"
-                       << "    vec4( 1.0f,  1.0f, 0.0f, 1.0f)\n"
-                       << ");\n"
-                       << "\n"
-                       << "layout(location = 0) out vec4 out_color;\n"
-                       << "\n"
-                       << "void main() {\n"
-                       << "    gl_Position = positions[gl_VertexIndex % " << vsModulo << "];\n"
-                       << "    gl_PointSize = 1.0f;\n"
-                       << "    out_color = vec4(0.0f, 0.0f, 1.0f, 1.0f); // blue\n"
-                       << "}\n";
-                sourceCollections.glslSources.add("vertex") << glu::VertexSource(source.str());
-            }
-            else
-            {
-                // For CLEAR_SKIP, we'll use different framebuffer regions with a vertical offset in each draw.
-                const bool verticalOffset = (m_parametersGraphic.clearOp == CLEAR_SKIP);
-
-                std::ostringstream source;
-                source
-                    << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-                    << "layout(location = 0) in highp vec4 in_position;\n"
-                    << "layout(location = 1) in vec4 in_color;\n"
-                    << "layout(location = 0) out vec4 out_color;\n"
-                    << (verticalOffset ?
-                            "layout(push_constant, std430) uniform PCBlock { float verticalOffset; } pc;\n" :
-                            "")
-                    << "void main (void)\n"
-                    << "{\n"
-                    << "    gl_PointSize = 1.0;\n"
-                    << "    const float yOffset = " << (verticalOffset ? "pc.verticalOffset" : "0.0") << ";\n"
-                    << "    gl_Position = vec4(in_position.x, in_position.y + yOffset, in_position.z, in_position.w);\n"
-                    << "    out_color = in_color;\n"
-                    << "}\n";
-                sourceCollections.glslSources.add("vertex") << glu::VertexSource(source.str());
-            }
-        }
-        if (m_parametersGraphic.hasTess)
-        { // Tessellation control & evaluation
-            std::ostringstream source_tc;
-            source_tc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-                      << "#extension GL_EXT_tessellation_shader : require\n";
-
-            // Adjust the output vertices based on primitive mode
-            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
-                source_tc << "layout(vertices = 3) out;\n";
-            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
-                source_tc << "layout(vertices = 2) out;\n";
-            else // TESS_PRIM_QUADS
-                source_tc << "layout(vertices = 4) out;\n";
-
-            // Define positions array based on primitive mode
-            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
-            {
-                source_tc << "vec4 positions[3] = vec4[](\n"
-                          << "    vec4(-0.5f, -0.5f, 0.0f, 1.0f),\n"
-                          << "    vec4( 0.5f, -0.5f, 0.0f, 1.0f),\n"
-                          << "    vec4( 0.0f,  0.5f, 0.0f, 1.0f)\n"
-                          << ");\n";
-            }
-            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
-            {
-                source_tc << "vec4 positions[2] = vec4[](\n"
-                          << "    vec4(-0.5f,  0.0f, 0.0f, 1.0f),\n"
-                          << "    vec4( 0.5f,  0.0f, 0.0f, 1.0f)\n"
-                          << ");\n";
-            }
-            else // TESS_PRIM_QUADS
-            {
-                source_tc << "vec4 positions[4] = vec4[](\n"
-                          << "    vec4(-1.0f, -1.0f, 0.0f, 1.0f),\n"
-                          << "    vec4( 1.0f, -1.0f, 0.0f, 1.0f),\n"
-                          << "    vec4(-1.0f,  1.0f, 0.0f, 1.0f),\n"
-                          << "    vec4( 1.0f,  1.0f, 0.0f, 1.0f)\n"
-                          << ");\n";
-            }
-
-            source_tc << "layout(location = 0) in vec4 in_color[];\n"
-                      << "layout(location = 0) out vec4 out_color[];\n"
-                      << "\n"
-                      << "void main (void)\n"
-                      << "{\n"
-                      << "    if( gl_InvocationID == 0 )\n"
-                      << "    {\n";
-
-            // Configure tessellation levels based on the primitive mode
-            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
-            {
-                source_tc << "        gl_TessLevelInner[0] = 4.0f;\n"
-                          << "        gl_TessLevelOuter[0] = 4.0f;\n"
-                          << "        gl_TessLevelOuter[1] = 4.0f;\n"
-                          << "        gl_TessLevelOuter[2] = 4.0f;\n";
-            }
-            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
-            {
-                source_tc << "        gl_TessLevelOuter[0] = 4.0f; // Number of lines\n"
-                          << "        gl_TessLevelOuter[1] = 4.0f; // Number of segments per line\n";
-            }
-            else // TESS_PRIM_QUADS
-            {
-                source_tc << "        gl_TessLevelInner[0] = 4.0f;\n"
-                          << "        gl_TessLevelInner[1] = 4.0f;\n"
-                          << "        gl_TessLevelOuter[0] = 4.0f;\n"
-                          << "        gl_TessLevelOuter[1] = 4.0f;\n"
-                          << "        gl_TessLevelOuter[2] = 4.0f;\n"
-                          << "        gl_TessLevelOuter[3] = 4.0f;\n";
-            }
-
-            source_tc << "    }\n";
-
-            // Handle patch size customization
-            uint32_t verticesNeeded = 4; // Default for quads
-            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
-                verticesNeeded = 3;
-            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
-                verticesNeeded = 2;
-
-            if ((m_parametersGraphic.tessPatchSize > 0) && (m_parametersGraphic.tessPatchSize < verticesNeeded))
-            {
-                source_tc << "\n"
-                          << "    if (gl_InvocationID < " << m_parametersGraphic.tessPatchSize << ")\n"
-                          << "    {\n";
-            }
-
-            source_tc << "        out_color[gl_InvocationID] = in_color[gl_InvocationID];\n"
-                      << "        gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n";
-
-            // Provide position and color for missing data
-            if ((m_parametersGraphic.tessPatchSize > 0) && (m_parametersGraphic.tessPatchSize < verticesNeeded))
-            {
-                source_tc << "    }\n"
-                          << "    else\n"
-                          << "    {\n"
-                          << "        out_color[gl_InvocationID] = vec4(0.0f, 0.0f, 1.0f, 1.0f); // blue\n"
-                          << "        gl_out[gl_InvocationID].gl_Position = positions[gl_InvocationID];\n"
-                          << "    }\n";
-            }
-
-            source_tc << "}\n";
-            sourceCollections.glslSources.add("tessellation_control")
-                << glu::TessellationControlSource(source_tc.str());
-
-            // Tessellation evaluation shader
-            std::ostringstream source_te;
-            source_te << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-                      << "#extension GL_EXT_tessellation_shader : require\n";
-
-            // Set primitive mode, spacing, and winding
-            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
-                source_te << "layout(triangles, equal_spacing, ccw) in;\n";
-            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
-                source_te << "layout(isolines, equal_spacing) in;\n";
-            else // TESS_PRIM_QUADS
-                source_te << "layout(quads, equal_spacing, ccw) in;\n";
-
-            // Add point_mode if enabled
-            if (m_parametersGraphic.pointMode)
-                source_te << "layout(point_mode) in;\n";
-
-            source_te << "layout(location = 0) in vec4 in_color[];\n"
-                      << "layout(location = 0) out vec4 out_color;\n"
-                      << "void main (void)\n"
-                      << "{\n";
-
-            // Position calculation depends on the primitive mode
-            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
-            {
-                source_te << "    const float u = gl_TessCoord.x;\n"
-                          << "    const float v = gl_TessCoord.y;\n"
-                          << "    const float w = gl_TessCoord.z;\n"
-                          << "    gl_Position = u * gl_in[0].gl_Position + v * gl_in[1].gl_Position + w * "
-                             "gl_in[2].gl_Position;\n";
-            }
-            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
-            {
-                source_te << "    const float u = gl_TessCoord.x; // Position along the line\n"
-                          << "    const float v = gl_TessCoord.y; // Which line\n"
-                          << "    gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, u);\n";
-            }
-            else // TESS_PRIM_QUADS
-            {
-                source_te
-                    << "    const float u = gl_TessCoord.x;\n"
-                    << "    const float v = gl_TessCoord.y;\n"
-                    << "    gl_Position = (1 - u) * (1 - v) * gl_in[0].gl_Position + (1 - u) * v * "
-                       "gl_in[1].gl_Position + u * (1 - v) * gl_in[2].gl_Position + u * v * gl_in[3].gl_Position;\n";
-            }
-
-            // VUID-VkGraphicsPipelineCreateInfo-TessellationEvaluation-07723
-            if (m_parametersGraphic.pointMode)
-                source_te << "    gl_PointSize = 1.0;\n";
-
-            source_te << "    out_color = in_color[0];\n"
-                      << "}\n";
-
-            sourceCollections.glslSources.add("tessellation_evaluation")
-                << glu::TessellationEvaluationSource(source_te.str());
-        }
-        if (m_parametersGraphic.queryStatisticFlags & (VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT |
-                                                       VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT |
-                                                       VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT |
-                                                       VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT))
-        { // Geometry Shader
-            const bool isTopologyPointSize = m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-            std::ostringstream source;
-            source << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-                   << "layout(" << inputTypeToGLString(m_parametersGraphic.primitiveTopology) << ") in;\n"
-                   << "layout(" << outputTypeToGLString(m_parametersGraphic.primitiveTopology)
-                   << ", max_vertices = 16) out;\n"
-                   << "layout(location = 0) in vec4 in_color[];\n"
-                   << "layout(location = 0) out vec4 out_color;\n"
-                   << "void main (void)\n"
-                   << "{\n"
-                   << "    out_color = in_color[0];\n"
-                   << (isTopologyPointSize ? "${pointSize}" : "") << "    gl_Position = gl_in[0].gl_Position;\n"
-                   << "    EmitVertex();\n"
-                   << "    EndPrimitive();\n"
-                   << "\n"
-                   << "    out_color = in_color[0];\n"
-                   << (isTopologyPointSize ? "${pointSize}" : "") << "    gl_Position = vec4(1.0, 1.0, 1.0, 1.0);\n"
-                   << "    EmitVertex();\n"
-                   << "    out_color = in_color[0];\n"
-                   << (isTopologyPointSize ? "${pointSize}" : "") << "    gl_Position = vec4(-1.0, -1.0, 1.0, 1.0);\n"
-                   << "    EmitVertex();\n"
-                   << "    EndPrimitive();\n"
-                   << "\n";
-            if (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP ||
-                m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-            {
-                source << "\n"
-                       << "    out_color = in_color[0];\n"
-                       << "    gl_Position = gl_in[0].gl_Position;\n"
-                       << "    EmitVertex();\n"
-                       << "    out_color = in_color[0];\n"
-                       << "    gl_Position = gl_in[1].gl_Position;\n"
-                       << "    EmitVertex();\n"
-                       << "    out_color = in_color[0];\n"
-                       << "    gl_Position = gl_in[2].gl_Position;\n"
-                       << "    EmitVertex();\n"
-                       << "    out_color = in_color[0];\n"
-                       << "    gl_Position = vec4(gl_in[2].gl_Position.x, gl_in[1].gl_Position.y, 1.0, 1.0);\n"
-                       << "    EmitVertex();\n"
-                       << "    EndPrimitive();\n";
-            }
-            else
-            {
-                source << "    out_color = in_color[0];\n"
-                       << (isTopologyPointSize ? "${pointSize}" : "") << "    gl_Position = vec4(1.0, 1.0, 1.0, 1.0);\n"
-                       << "    EmitVertex();\n"
-                       << "    out_color = in_color[0];\n"
-                       << (isTopologyPointSize ? "${pointSize}" : "")
-                       << "    gl_Position = vec4(1.0, -1.0, 1.0, 1.0);\n"
-                       << "    EmitVertex();\n"
-                       << "    out_color = in_color[0];\n"
-                       << (isTopologyPointSize ? "${pointSize}" : "")
-                       << "    gl_Position = vec4(-1.0, 1.0, 1.0, 1.0);\n"
-                       << "    EmitVertex();\n"
-                       << "    out_color = in_color[0];\n"
-                       << (isTopologyPointSize ? "${pointSize}" : "")
-                       << "    gl_Position = vec4(-1.0, -1.0, 1.0, 1.0);\n"
-                       << "    EmitVertex();\n"
-                       << "    EndPrimitive();\n";
-            }
-            source << "}\n";
-
-            if (isTopologyPointSize)
-            {
-                // Add geometry shader codes with and without gl_PointSize if the primitive topology is VK_PRIMITIVE_TOPOLOGY_POINT_LIST
-
-                tcu::StringTemplate sourceTemplate(source.str());
-
-                std::map<std::string, std::string> pointSize;
-                std::map<std::string, std::string> noPointSize;
-
-                pointSize["pointSize"]   = "    gl_PointSize = gl_in[0].gl_PointSize;\n";
-                noPointSize["pointSize"] = "";
-
-                sourceCollections.glslSources.add("geometry")
-                    << glu::GeometrySource(sourceTemplate.specialize(noPointSize));
-                sourceCollections.glslSources.add("geometry_point_size")
-                    << glu::GeometrySource(sourceTemplate.specialize(pointSize));
-            }
-            else
-            {
-                sourceCollections.glslSources.add("geometry") << glu::GeometrySource(source.str());
-            }
-        }
-
-        if (!m_parametersGraphic.vertexOnlyPipe)
-        { // Fragment Shader
-            std::ostringstream source;
-            source
-                << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-                << "layout(location = 0) in vec4 in_color;\n"
-                << "layout(location = 0) out vec4 out_color;\n"
-                << (m_parametersGraphic.noColorAttachments ?
-                        // For the size of this array, see createDepthsBuffer().
-                        "layout (set=0, binding=0, std430) readonly buffer DepthsBlock { float depths[5]; } "
-                        "depthsBuffer;\n" :
-                        "")
-                << "void main()\n"
-                << "{\n"
-                << "    out_color = in_color;\n"
-                << (m_parametersGraphic.noColorAttachments ?
-                        "    gl_FragDepth = depthsBuffer.depths[((int(gl_FragCoord.x) + int(gl_FragCoord.y)) % 5)];\n" :
-                        "")
-                << "}\n";
-            sourceCollections.glslSources.add("fragment") << glu::FragmentSource(source.str());
-        }
-    }
-
-private:
-    std::vector<GraphicBasicTestInstance::VertexData> m_data;
-    const GraphicBasicTestInstance::ParametersGraphic m_parametersGraphic;
-    const std::vector<uint64_t> m_drawRepeats;
-    const uint32_t m_blockCount;
-    const uint32_t m_width;
-    const uint32_t m_height;
+    const bool m_useDeviceAddressCommands;
 };
 
 #define NUM_QUERY_STATISTICS 4
@@ -4578,8 +4110,6 @@ public:
 
 protected:
     BufferPtr m_queryBuffer;
-
-    virtual void checkExtensions();
 };
 
 StatisticMultipleQueryTestInstance::StatisticMultipleQueryTestInstance(Context &context, const uint32_t queryCount)
@@ -4592,12 +4122,6 @@ StatisticMultipleQueryTestInstance::StatisticMultipleQueryTestInstance(Context &
     const vk::Allocation &allocation = m_queryBuffer->getBoundMemory();
     void *allocationData             = allocation.getHostPtr();
     deMemset(allocationData, 0xff, NUM_QUERY_STATISTICS * sizeof(uint64_t) * queryCount);
-}
-
-void StatisticMultipleQueryTestInstance::checkExtensions()
-{
-    if (!m_context.getDeviceFeatures().pipelineStatisticsQuery)
-        throw tcu::NotSupportedError("Pipeline statistics queries are not supported");
 }
 
 class GraphicBasicMultipleQueryTestInstance : public StatisticMultipleQueryTestInstance
@@ -4617,9 +4141,9 @@ public:
         ParametersGraphic(const VkQueryPipelineStatisticFlags queryStatisticFlags_,
                           const VkQueryResultFlags queryFlags_, const uint32_t queryCount_, const bool vertexOnlyPipe_,
                           const CopyType copyType_, const uint32_t dstOffset_, const StrideType strideType_,
-                          const ClearOperation clearOp_ = CLEAR_NOOP)
-            : GenericParameters{RESET_TYPE_NORMAL, copyType_, (queryFlags_ & VK_QUERY_RESULT_64_BIT) != 0u,
-                                dstOffset_ != 0u, strideType_}
+                          const ClearOperation clearOp_ = CLEAR_NOOP, bool useDeviceAddressCommands_ = false)
+            : GenericParameters{RESET_TYPE_NORMAL, copyType_,   (queryFlags_ & VK_QUERY_RESULT_64_BIT) != 0u,
+                                dstOffset_ != 0u,  strideType_, useDeviceAddressCommands_}
             , queryStatisticFlags(queryStatisticFlags_)
             , vertexOnlyPipe(vertexOnlyPipe_)
             , queryFlags(queryFlags_)
@@ -4675,7 +4199,6 @@ GraphicBasicMultipleQueryTestInstance::GraphicBasicMultipleQueryTestInstance(vkt
 
 tcu::TestStatus GraphicBasicMultipleQueryTestInstance::iterate(void)
 {
-    checkExtensions();
     createColorAttachmentAndRenderPass();
     createPipeline();
     return executeTest();
@@ -5156,6 +4679,12 @@ public:
         m_data.push_back(VertexData(tcu::Vec4(right, bottom, 1.0f, 1.0f), gray));
     }
 
+    void checkSupport(Context &context) const
+    {
+        if (!context.getDeviceFeatures().pipelineStatisticsQuery)
+            throw tcu::NotSupportedError("Pipeline statistics queries are not supported");
+    }
+
     vkt::TestInstance *createInstance(vkt::Context &context) const
     {
         return new Instance(context, m_data, m_parametersGraphic);
@@ -5212,9 +4741,7 @@ public:
         , m_params(params)
     {
     }
-    virtual ~MultipleGeomStatsTestInstance(void)
-    {
-    }
+    virtual ~MultipleGeomStatsTestInstance(void) = default;
 
     tcu::TestStatus iterate(void) override;
 
@@ -5230,9 +4757,7 @@ public:
         , m_params(params)
     {
     }
-    virtual ~MultipleGeomStatsTestCase(void)
-    {
-    }
+    virtual ~MultipleGeomStatsTestCase(void) = default;
 
     void initPrograms(vk::SourceCollections &programCollection) const override;
     TestInstance *createInstance(Context &context) const override;
@@ -5509,7 +5034,6 @@ public:
                                            const std::vector<uint64_t> &drawRepeats);
 
 protected:
-    virtual void checkExtensions(bool hostQueryResetEnabled);
     virtual void createPipeline(void);
     virtual tcu::TestStatus executeTest(void);
     virtual tcu::TestStatus checkResult(VkQueryPool queryPool);
@@ -5521,15 +5045,6 @@ TessellationGeometryShaderTestInstance::TessellationGeometryShaderTestInstance(
     const std::vector<uint64_t> &drawRepeats)
     : GraphicBasicTestInstance(context, data, parametersGraphic, drawRepeats)
 {
-}
-
-void TessellationGeometryShaderTestInstance::checkExtensions(bool hostQueryResetEnabled)
-{
-    StatisticQueryTestInstance::checkExtensions(hostQueryResetEnabled);
-    if (!m_context.getDeviceFeatures().tessellationShader)
-        throw tcu::NotSupportedError("Tessellation shader are not supported");
-    if (!m_context.getDeviceFeatures().geometryShader)
-        throw tcu::NotSupportedError("Geometry shader are not supported");
 }
 
 void TessellationGeometryShaderTestInstance::createPipeline(void)
@@ -5872,7 +5387,12 @@ tcu::TestStatus TessellationGeometryShaderTestInstance::checkResult(VkQueryPool 
     }
 
     // Verify image output if needed
+#ifdef CTS_USES_VULKANSC
+    const bool checkImageResult = checkImage();
+    if (!m_parametersGraphic.noColorAttachments && errorMsg.empty() && !checkImageResult)
+#else
     if (!m_parametersGraphic.noColorAttachments && errorMsg.empty() && !checkImage())
+#endif
         errorMsg = "Result image doesn't match expected image";
 
     if (!errorMsg.empty())
@@ -6035,7 +5555,6 @@ public:
                                                              const std::vector<uint64_t> &drawRepeats);
 
 protected:
-    virtual void checkExtensions(bool hostQueryResetEnabled);
     virtual tcu::TestStatus executeTest(void);
 };
 
@@ -6044,13 +5563,6 @@ TessellationGeometryShaderSecondaryInheritedTestInstance::TessellationGeometrySh
     const std::vector<uint64_t> &drawRepeats)
     : TessellationGeometryShaderTestInstance(context, data, parametersGraphic, drawRepeats)
 {
-}
-
-void TessellationGeometryShaderSecondaryInheritedTestInstance::checkExtensions(bool hostQueryResetEnabled)
-{
-    TessellationGeometryShaderTestInstance::checkExtensions(hostQueryResetEnabled);
-    if (!m_context.getDeviceFeatures().inheritedQueries)
-        throw tcu::NotSupportedError("Inherited queries are not supported");
 }
 
 tcu::TestStatus TessellationGeometryShaderSecondaryInheritedTestInstance::executeTest(void)
@@ -6177,6 +5689,509 @@ tcu::TestStatus TessellationGeometryShaderSecondaryInheritedTestInstance::execut
     submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
     return checkResult(*queryPool);
 }
+
+template <class Instance>
+class QueryPoolGraphicStatisticsTest : public TestCase
+{
+public:
+    QueryPoolGraphicStatisticsTest(tcu::TestContext &context, const std::string &name,
+                                   const GraphicBasicTestInstance::ParametersGraphic parametersGraphic,
+                                   const std::vector<uint64_t> &drawRepeats)
+        : TestCase(context, name.c_str())
+        , m_parametersGraphic(parametersGraphic)
+        , m_drawRepeats(drawRepeats)
+        // For clear-skip, we'll use one framebuffer block for each draw instead of clearing.
+        , m_blockCount((parametersGraphic.clearOp == CLEAR_SKIP) ?
+                           static_cast<uint32_t>(std::accumulate(begin(drawRepeats), end(drawRepeats), uint64_t{0})) :
+                           1u)
+        , m_width(WIDTH)
+        , m_height(HEIGHT * m_blockCount)
+    {
+        using VertexData = GraphicBasicTestInstance::VertexData;
+
+        if ((m_parametersGraphic.hasTess) && (m_parametersGraphic.tessPatchSize != 0))
+        {
+            const auto blue = tcu::RGBA::blue().toVec();
+
+            for (uint32_t primitiveCnt = 1; primitiveCnt <= m_parametersGraphic.numTessPrimitives; primitiveCnt++)
+                for (uint32_t dataIdx = 0; dataIdx < m_parametersGraphic.tessPatchSize; dataIdx++)
+                    m_data.push_back(VertexData(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f), blue));
+        }
+        else
+        {
+            const bool isPoints = (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
+            const bool isLineStripAdj =
+                (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY);
+            const bool isLines =
+                (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST ||
+                 m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP || isLineStripAdj);
+            const bool isTriFan       = (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN);
+            const float quarterWidth  = (2.0f / static_cast<float>(m_width)) * 0.25f;
+            const float quarterHeight = (2.0f / static_cast<float>(m_height)) * 0.25f;
+            const float marginW       = ((isPoints || isLines) ? quarterWidth : 0.0f);
+            const float marginH       = (isPoints ? quarterHeight : 0.0f);
+
+            // These coordinates will be used with different topologies, so we try to avoid drawing points on the edges.
+            const float left   = -1.0f + marginW;
+            const float right  = 1.0f - marginW;
+            const float center = (left + right) / 2.0f;
+            const float top    = -1.0f + marginH;
+            const float bottom = -1.0f + 2.0f / static_cast<float>(m_blockCount) - marginH;
+            const float middle = (top + bottom) / 2.0f;
+
+            const auto red   = tcu::RGBA::red().toVec();
+            const auto green = tcu::RGBA::green().toVec();
+            const auto blue  = tcu::RGBA::blue().toVec();
+            const auto gray  = tcu::RGBA::gray().toVec();
+
+            const bool triListSkip = (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST &&
+                                      m_parametersGraphic.clearOp == CLEAR_SKIP);
+
+            // --- TOP LEFT VERTICES ---
+            // For line strips with adjacency, everything is drawn with a single draw call, but we add a first and a last
+            // adjacency point so the strip looks like the non-adjacency case.
+            if (isLineStripAdj)
+                m_data.push_back(VertexData(tcu::Vec4(-2.0f, -2.0f, 1.0f, 1.0f), red));
+            m_data.push_back(VertexData(tcu::Vec4(left, top, 1.0f, 1.0f), red));
+            m_data.push_back(VertexData(tcu::Vec4(left, middle, 1.0f, 1.0f), red));
+            // For triangle fans we'll revert the order of the first 2 vertices in each quadrant so they form a proper fan
+            // covering the whole quadrant.
+            if (isTriFan)
+                std::swap(m_data.at(m_data.size() - 1), m_data.at(m_data.size() - 2));
+            m_data.push_back(VertexData(tcu::Vec4(center, top, 1.0f, 1.0f), red));
+            if (triListSkip)
+            {
+                m_data.push_back(VertexData(tcu::Vec4(center, top, 1.0f, 1.0f), red));
+                m_data.push_back(VertexData(tcu::Vec4(left, middle, 1.0f, 1.0f), red));
+            }
+            m_data.push_back(VertexData(tcu::Vec4(center, middle, 1.0f, 1.0f), red));
+
+            // --- BOTTOM LEFT VERTICES ---
+            m_data.push_back(VertexData(tcu::Vec4(left, middle, 1.0f, 1.0f), green));
+            m_data.push_back(VertexData(tcu::Vec4(left, bottom, 1.0f, 1.0f), green));
+            if (isTriFan)
+                std::swap(m_data.at(m_data.size() - 1), m_data.at(m_data.size() - 2));
+            m_data.push_back(VertexData(tcu::Vec4(center, middle, 1.0f, 1.0f), green));
+            if (triListSkip)
+            {
+                m_data.push_back(VertexData(tcu::Vec4(center, middle, 1.0f, 1.0f), green));
+                m_data.push_back(VertexData(tcu::Vec4(left, bottom, 1.0f, 1.0f), green));
+            }
+            m_data.push_back(VertexData(tcu::Vec4(center, bottom, 1.0f, 1.0f), green));
+
+            // --- TOP RIGHT VERTICES ---
+            m_data.push_back(VertexData(tcu::Vec4(center, top, 1.0f, 1.0f), blue));
+            m_data.push_back(VertexData(tcu::Vec4(center, middle, 1.0f, 1.0f), blue));
+            if (isTriFan)
+                std::swap(m_data.at(m_data.size() - 1), m_data.at(m_data.size() - 2));
+            m_data.push_back(VertexData(tcu::Vec4(right, top, 1.0f, 1.0f), blue));
+            if (triListSkip)
+            {
+                m_data.push_back(VertexData(tcu::Vec4(right, top, 1.0f, 1.0f), blue));
+                m_data.push_back(VertexData(tcu::Vec4(center, middle, 1.0f, 1.0f), blue));
+            }
+            m_data.push_back(VertexData(tcu::Vec4(right, middle, 1.0f, 1.0f), blue));
+
+            // --- BOTTOM RIGHT VERTICES ---
+            m_data.push_back(VertexData(tcu::Vec4(center, middle, 1.0f, 1.0f), gray));
+            m_data.push_back(VertexData(tcu::Vec4(center, bottom, 1.0f, 1.0f), gray));
+            if (isTriFan)
+                std::swap(m_data.at(m_data.size() - 1), m_data.at(m_data.size() - 2));
+            m_data.push_back(VertexData(tcu::Vec4(right, middle, 1.0f, 1.0f), gray));
+            if (triListSkip)
+            {
+                m_data.push_back(VertexData(tcu::Vec4(right, middle, 1.0f, 1.0f), gray));
+                m_data.push_back(VertexData(tcu::Vec4(center, bottom, 1.0f, 1.0f), gray));
+            }
+            m_data.push_back(VertexData(tcu::Vec4(right, bottom, 1.0f, 1.0f), gray));
+            if (isLineStripAdj)
+                m_data.push_back(VertexData(tcu::Vec4(2.0f, 2.0f, 1.0f, 1.0f), red));
+        }
+    }
+
+    void checkSupport(vkt::Context &context) const
+    {
+        commonCheckSupport(context, (m_parametersGraphic.resetType == RESET_TYPE_HOST));
+
+        const auto &deviceFeatures = context.getDeviceFeatures();
+
+        bool isVertSI     = std::is_same<Instance, VertexShaderSecondaryInheritedTestInstance>::value;
+        bool isGeom       = std::is_same<Instance, GeometryShaderTestInstance>::value;
+        bool isGeomS      = std::is_same<Instance, GeometryShaderSecondaryTestInstance>::value;
+        bool isGeomSI     = std::is_same<Instance, GeometryShaderSecondaryInheritedTestInstance>::value;
+        bool isTessSI     = std::is_same<Instance, TessellationShaderSecondrayInheritedTestInstance>::value;
+        bool isTessGeom   = std::is_same<Instance, TessellationGeometryShaderTestInstance>::value;
+        bool isTessGeomS  = std::is_same<Instance, TessellationGeometryShaderSecondaryTestInstance>::value;
+        bool isTessGeomSI = std::is_same<Instance, TessellationGeometryShaderSecondaryInheritedTestInstance>::value;
+        bool isCompSI     = std::is_same<Instance, ComputeInvocationsSecondaryInheritedTestInstance>::value;
+
+        if (isGeom || isGeomS || isGeomSI || isTessGeom || isTessGeomS || isTessGeomSI)
+        {
+            if (!deviceFeatures.geometryShader)
+                TCU_THROW(NotSupportedError, "Geometry shader are not supported");
+        }
+        if (m_parametersGraphic.hasTess && !deviceFeatures.tessellationShader)
+            TCU_THROW(NotSupportedError, "Tessellation shader are not supported");
+        if (isVertSI || isGeomSI || isTessSI || isCompSI || isTessGeomSI)
+        {
+            if (!deviceFeatures.inheritedQueries)
+                TCU_THROW(NotSupportedError, "Inherited queries are not supported");
+        }
+
+#ifndef CTS_USES_VULKANSC
+        if (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
+            context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+            !context.getPortabilitySubsetFeatures().triangleFans)
+        {
+            TCU_THROW(NotSupportedError,
+                      "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+        }
+#endif // CTS_USES_VULKANSC
+    }
+
+    vkt::TestInstance *createInstance(vkt::Context &context) const
+    {
+        return new Instance(context, m_data, m_parametersGraphic, m_drawRepeats);
+    }
+
+    void initPrograms(SourceCollections &sourceCollections) const
+    {
+        { // Vertex Shader
+            if (m_parametersGraphic.hasTess && m_parametersGraphic.tessPatchSize != 0)
+            {
+                // Test VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT with tessellation.
+                // Position and color data from vertex buffer will be ignored.
+                // Vertex shader provides position and color for the quad.
+                std::ostringstream source;
+
+                // Use modulo based on primitive mode to ensure control points repeat per patch consistently.
+                // For isolines we intentionally use % 4 (not % 2) to keep patches distinct for query stability;
+                // TCS still declares layout(vertices = 2) and consumes only gl_in[0..1], so image output is unchanged.
+                const uint32_t vsModulo = m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES ? 3u : 4u;
+
+                source << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+                       << "vec4 positions[4] = vec4[](\n"
+                       << "    vec4(-1.0f, -1.0f, 0.0f, 1.0f),\n"
+                       << "    vec4( 1.0f, -1.0f, 0.0f, 1.0f),\n"
+                       << "    vec4(-1.0f,  1.0f, 0.0f, 1.0f),\n"
+                       << "    vec4( 1.0f,  1.0f, 0.0f, 1.0f)\n"
+                       << ");\n"
+                       << "\n"
+                       << "layout(location = 0) out vec4 out_color;\n"
+                       << "\n"
+                       << "void main() {\n"
+                       << "    gl_Position = positions[gl_VertexIndex % " << vsModulo << "];\n"
+                       << "    gl_PointSize = 1.0f;\n"
+                       << "    out_color = vec4(0.0f, 0.0f, 1.0f, 1.0f); // blue\n"
+                       << "}\n";
+                sourceCollections.glslSources.add("vertex") << glu::VertexSource(source.str());
+            }
+            else
+            {
+                // For CLEAR_SKIP, we'll use different framebuffer regions with a vertical offset in each draw.
+                const bool verticalOffset = (m_parametersGraphic.clearOp == CLEAR_SKIP);
+
+                std::ostringstream source;
+                source
+                    << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+                    << "layout(location = 0) in highp vec4 in_position;\n"
+                    << "layout(location = 1) in vec4 in_color;\n"
+                    << "layout(location = 0) out vec4 out_color;\n"
+                    << (verticalOffset ?
+                            "layout(push_constant, std430) uniform PCBlock { float verticalOffset; } pc;\n" :
+                            "")
+                    << "void main (void)\n"
+                    << "{\n"
+                    << "    gl_PointSize = 1.0;\n"
+                    << "    const float yOffset = " << (verticalOffset ? "pc.verticalOffset" : "0.0") << ";\n"
+                    << "    gl_Position = vec4(in_position.x, in_position.y + yOffset, in_position.z, in_position.w);\n"
+                    << "    out_color = in_color;\n"
+                    << "}\n";
+                sourceCollections.glslSources.add("vertex") << glu::VertexSource(source.str());
+            }
+        }
+        if (m_parametersGraphic.hasTess)
+        { // Tessellation control & evaluation
+            std::ostringstream source_tc;
+            source_tc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+                      << "#extension GL_EXT_tessellation_shader : require\n";
+
+            // Adjust the output vertices based on primitive mode
+            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
+                source_tc << "layout(vertices = 3) out;\n";
+            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
+                source_tc << "layout(vertices = 2) out;\n";
+            else // TESS_PRIM_QUADS
+                source_tc << "layout(vertices = 4) out;\n";
+
+            // Define positions array based on primitive mode
+            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
+            {
+                source_tc << "vec4 positions[3] = vec4[](\n"
+                          << "    vec4(-0.5f, -0.5f, 0.0f, 1.0f),\n"
+                          << "    vec4( 0.5f, -0.5f, 0.0f, 1.0f),\n"
+                          << "    vec4( 0.0f,  0.5f, 0.0f, 1.0f)\n"
+                          << ");\n";
+            }
+            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
+            {
+                source_tc << "vec4 positions[2] = vec4[](\n"
+                          << "    vec4(-0.5f,  0.0f, 0.0f, 1.0f),\n"
+                          << "    vec4( 0.5f,  0.0f, 0.0f, 1.0f)\n"
+                          << ");\n";
+            }
+            else // TESS_PRIM_QUADS
+            {
+                source_tc << "vec4 positions[4] = vec4[](\n"
+                          << "    vec4(-1.0f, -1.0f, 0.0f, 1.0f),\n"
+                          << "    vec4( 1.0f, -1.0f, 0.0f, 1.0f),\n"
+                          << "    vec4(-1.0f,  1.0f, 0.0f, 1.0f),\n"
+                          << "    vec4( 1.0f,  1.0f, 0.0f, 1.0f)\n"
+                          << ");\n";
+            }
+
+            source_tc << "layout(location = 0) in vec4 in_color[];\n"
+                      << "layout(location = 0) out vec4 out_color[];\n"
+                      << "\n"
+                      << "void main (void)\n"
+                      << "{\n"
+                      << "    if( gl_InvocationID == 0 )\n"
+                      << "    {\n";
+
+            // Configure tessellation levels based on the primitive mode
+            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
+            {
+                source_tc << "        gl_TessLevelInner[0] = 4.0f;\n"
+                          << "        gl_TessLevelOuter[0] = 4.0f;\n"
+                          << "        gl_TessLevelOuter[1] = 4.0f;\n"
+                          << "        gl_TessLevelOuter[2] = 4.0f;\n";
+            }
+            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
+            {
+                source_tc << "        gl_TessLevelOuter[0] = 4.0f; // Number of lines\n"
+                          << "        gl_TessLevelOuter[1] = 4.0f; // Number of segments per line\n";
+            }
+            else // TESS_PRIM_QUADS
+            {
+                source_tc << "        gl_TessLevelInner[0] = 4.0f;\n"
+                          << "        gl_TessLevelInner[1] = 4.0f;\n"
+                          << "        gl_TessLevelOuter[0] = 4.0f;\n"
+                          << "        gl_TessLevelOuter[1] = 4.0f;\n"
+                          << "        gl_TessLevelOuter[2] = 4.0f;\n"
+                          << "        gl_TessLevelOuter[3] = 4.0f;\n";
+            }
+
+            source_tc << "    }\n";
+
+            // Handle patch size customization
+            uint32_t verticesNeeded = 4; // Default for quads
+            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
+                verticesNeeded = 3;
+            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
+                verticesNeeded = 2;
+
+            if ((m_parametersGraphic.tessPatchSize > 0) && (m_parametersGraphic.tessPatchSize < verticesNeeded))
+            {
+                source_tc << "\n"
+                          << "    if (gl_InvocationID < " << m_parametersGraphic.tessPatchSize << ")\n"
+                          << "    {\n";
+            }
+
+            source_tc << "        out_color[gl_InvocationID] = in_color[gl_InvocationID];\n"
+                      << "        gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n";
+
+            // Provide position and color for missing data
+            if ((m_parametersGraphic.tessPatchSize > 0) && (m_parametersGraphic.tessPatchSize < verticesNeeded))
+            {
+                source_tc << "    }\n"
+                          << "    else\n"
+                          << "    {\n"
+                          << "        out_color[gl_InvocationID] = vec4(0.0f, 0.0f, 1.0f, 1.0f); // blue\n"
+                          << "        gl_out[gl_InvocationID].gl_Position = positions[gl_InvocationID];\n"
+                          << "    }\n";
+            }
+
+            source_tc << "}\n";
+            sourceCollections.glslSources.add("tessellation_control")
+                << glu::TessellationControlSource(source_tc.str());
+
+            // Tessellation evaluation shader
+            std::ostringstream source_te;
+            source_te << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+                      << "#extension GL_EXT_tessellation_shader : require\n";
+
+            // Set primitive mode, spacing, and winding
+            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
+                source_te << "layout(triangles, equal_spacing, ccw) in;\n";
+            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
+                source_te << "layout(isolines, equal_spacing) in;\n";
+            else // TESS_PRIM_QUADS
+                source_te << "layout(quads, equal_spacing, ccw) in;\n";
+
+            // Add point_mode if enabled
+            if (m_parametersGraphic.pointMode)
+                source_te << "layout(point_mode) in;\n";
+
+            source_te << "layout(location = 0) in vec4 in_color[];\n"
+                      << "layout(location = 0) out vec4 out_color;\n"
+                      << "void main (void)\n"
+                      << "{\n";
+
+            // Position calculation depends on the primitive mode
+            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
+            {
+                source_te << "    const float u = gl_TessCoord.x;\n"
+                          << "    const float v = gl_TessCoord.y;\n"
+                          << "    const float w = gl_TessCoord.z;\n"
+                          << "    gl_Position = u * gl_in[0].gl_Position + v * gl_in[1].gl_Position + w * "
+                             "gl_in[2].gl_Position;\n";
+            }
+            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
+            {
+                source_te << "    const float u = gl_TessCoord.x; // Position along the line\n"
+                          << "    const float v = gl_TessCoord.y; // Which line\n"
+                          << "    gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, u);\n";
+            }
+            else // TESS_PRIM_QUADS
+            {
+                source_te
+                    << "    const float u = gl_TessCoord.x;\n"
+                    << "    const float v = gl_TessCoord.y;\n"
+                    << "    gl_Position = (1 - u) * (1 - v) * gl_in[0].gl_Position + (1 - u) * v * "
+                       "gl_in[1].gl_Position + u * (1 - v) * gl_in[2].gl_Position + u * v * gl_in[3].gl_Position;\n";
+            }
+
+            // VUID-VkGraphicsPipelineCreateInfo-TessellationEvaluation-07723
+            if (m_parametersGraphic.pointMode)
+                source_te << "    gl_PointSize = 1.0;\n";
+
+            source_te << "    out_color = in_color[0];\n"
+                      << "}\n";
+
+            sourceCollections.glslSources.add("tessellation_evaluation")
+                << glu::TessellationEvaluationSource(source_te.str());
+        }
+        if (m_parametersGraphic.queryStatisticFlags & (VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT |
+                                                       VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT |
+                                                       VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT |
+                                                       VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT))
+        { // Geometry Shader
+            const bool isTopologyPointSize = m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+            std::ostringstream source;
+            source << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+                   << "layout(" << inputTypeToGLString(m_parametersGraphic.primitiveTopology) << ") in;\n"
+                   << "layout(" << outputTypeToGLString(m_parametersGraphic.primitiveTopology)
+                   << ", max_vertices = 16) out;\n"
+                   << "layout(location = 0) in vec4 in_color[];\n"
+                   << "layout(location = 0) out vec4 out_color;\n"
+                   << "void main (void)\n"
+                   << "{\n"
+                   << "    out_color = in_color[0];\n"
+                   << (isTopologyPointSize ? "${pointSize}" : "") << "    gl_Position = gl_in[0].gl_Position;\n"
+                   << "    EmitVertex();\n"
+                   << "    EndPrimitive();\n"
+                   << "\n"
+                   << "    out_color = in_color[0];\n"
+                   << (isTopologyPointSize ? "${pointSize}" : "") << "    gl_Position = vec4(1.0, 1.0, 1.0, 1.0);\n"
+                   << "    EmitVertex();\n"
+                   << "    out_color = in_color[0];\n"
+                   << (isTopologyPointSize ? "${pointSize}" : "") << "    gl_Position = vec4(-1.0, -1.0, 1.0, 1.0);\n"
+                   << "    EmitVertex();\n"
+                   << "    EndPrimitive();\n"
+                   << "\n";
+            if (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP ||
+                m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            {
+                source << "\n"
+                       << "    out_color = in_color[0];\n"
+                       << "    gl_Position = gl_in[0].gl_Position;\n"
+                       << "    EmitVertex();\n"
+                       << "    out_color = in_color[0];\n"
+                       << "    gl_Position = gl_in[1].gl_Position;\n"
+                       << "    EmitVertex();\n"
+                       << "    out_color = in_color[0];\n"
+                       << "    gl_Position = gl_in[2].gl_Position;\n"
+                       << "    EmitVertex();\n"
+                       << "    out_color = in_color[0];\n"
+                       << "    gl_Position = vec4(gl_in[2].gl_Position.x, gl_in[1].gl_Position.y, 1.0, 1.0);\n"
+                       << "    EmitVertex();\n"
+                       << "    EndPrimitive();\n";
+            }
+            else
+            {
+                source << "    out_color = in_color[0];\n"
+                       << (isTopologyPointSize ? "${pointSize}" : "") << "    gl_Position = vec4(1.0, 1.0, 1.0, 1.0);\n"
+                       << "    EmitVertex();\n"
+                       << "    out_color = in_color[0];\n"
+                       << (isTopologyPointSize ? "${pointSize}" : "")
+                       << "    gl_Position = vec4(1.0, -1.0, 1.0, 1.0);\n"
+                       << "    EmitVertex();\n"
+                       << "    out_color = in_color[0];\n"
+                       << (isTopologyPointSize ? "${pointSize}" : "")
+                       << "    gl_Position = vec4(-1.0, 1.0, 1.0, 1.0);\n"
+                       << "    EmitVertex();\n"
+                       << "    out_color = in_color[0];\n"
+                       << (isTopologyPointSize ? "${pointSize}" : "")
+                       << "    gl_Position = vec4(-1.0, -1.0, 1.0, 1.0);\n"
+                       << "    EmitVertex();\n"
+                       << "    EndPrimitive();\n";
+            }
+            source << "}\n";
+
+            if (isTopologyPointSize)
+            {
+                // Add geometry shader codes with and without gl_PointSize if the primitive topology is VK_PRIMITIVE_TOPOLOGY_POINT_LIST
+
+                tcu::StringTemplate sourceTemplate(source.str());
+
+                std::map<std::string, std::string> pointSize;
+                std::map<std::string, std::string> noPointSize;
+
+                pointSize["pointSize"]   = "    gl_PointSize = gl_in[0].gl_PointSize;\n";
+                noPointSize["pointSize"] = "";
+
+                sourceCollections.glslSources.add("geometry")
+                    << glu::GeometrySource(sourceTemplate.specialize(noPointSize));
+                sourceCollections.glslSources.add("geometry_point_size")
+                    << glu::GeometrySource(sourceTemplate.specialize(pointSize));
+            }
+            else
+            {
+                sourceCollections.glslSources.add("geometry") << glu::GeometrySource(source.str());
+            }
+        }
+
+        if (!m_parametersGraphic.vertexOnlyPipe)
+        { // Fragment Shader
+            std::ostringstream source;
+            source
+                << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+                << "layout(location = 0) in vec4 in_color;\n"
+                << "layout(location = 0) out vec4 out_color;\n"
+                << (m_parametersGraphic.noColorAttachments ?
+                        // For the size of this array, see createDepthsBuffer().
+                        "layout (set=0, binding=0, std430) readonly buffer DepthsBlock { float depths[5]; } "
+                        "depthsBuffer;\n" :
+                        "")
+                << "void main()\n"
+                << "{\n"
+                << "    out_color = in_color;\n"
+                << (m_parametersGraphic.noColorAttachments ?
+                        "    gl_FragDepth = depthsBuffer.depths[((int(gl_FragCoord.x) + int(gl_FragCoord.y)) % 5)];\n" :
+                        "")
+                << "}\n";
+            sourceCollections.glslSources.add("fragment") << glu::FragmentSource(source.str());
+        }
+    }
+
+private:
+    std::vector<GraphicBasicTestInstance::VertexData> m_data;
+    const GraphicBasicTestInstance::ParametersGraphic m_parametersGraphic;
+    const std::vector<uint64_t> m_drawRepeats;
+    const uint32_t m_blockCount;
+    const uint32_t m_width;
+    const uint32_t m_height;
+};
 
 } // namespace
 
@@ -6447,6 +6462,20 @@ void QueryPoolStatisticsTests::init(void)
 
                 if (copyType[copyTypeIdx] == COPY_TYPE_CMD)
                 {
+
+#ifndef CTS_USES_VULKANSC
+                    // limit number of tests repeated for device_address_commands
+                    if ((i == 1) && (computeQueue == false))
+                    {
+                        computeShaderInvocationsGroupResetBeforeCopy->addChild(
+                            new QueryPoolComputeStatsTest<ComputeInvocationsSecondaryTestInstance>(
+                                m_testCtx,
+                                prefix + copyTypeStr[copyTypeIdx] + "secondary" + cqSuffix + "_device_address",
+                                RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx], query64Bits, computeQueue, dstOffset,
+                                STRIDE_TYPE_VALID, true));
+                    }
+#endif
+
                     computeShaderInvocationsGroupResetAfterCopy->addChild(
                         new QueryPoolComputeStatsTest<ComputeInvocationsTestInstance>(
                             m_testCtx, prefix + copyTypeStr[copyTypeIdx] + "primary" + cqSuffix, RESET_TYPE_AFTER_COPY,
@@ -6491,6 +6520,7 @@ void QueryPoolStatisticsTests::init(void)
                 sixRepeats));
 
             if (copyType[copyTypeIdx] == COPY_TYPE_CMD)
+            {
                 inputAssemblyVerticesResetAfterCopy->addChild(
                     new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
                         m_testCtx, prefix + copyTypeStr[copyTypeIdx] + "primary_with_no_color_attachments",
@@ -6499,6 +6529,24 @@ void QueryPoolStatisticsTests::init(void)
                             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
                             query64Bits, false, dstOffset, CLEAR_NOOP, true),
                         sixRepeats));
+
+#ifndef CTS_USES_VULKANSC
+                // limit number of tests repeated for device_address_commands
+                if (i == 0)
+                {
+                    inputAssemblyVerticesResetAfterCopy->addChild(
+                        new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
+                            m_testCtx,
+                            prefix + copyTypeStr[copyTypeIdx] + "primary_with_no_color_attachments_device_address",
+                            GraphicBasicTestInstance::ParametersGraphic(
+                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT,
+                                VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
+                                query64Bits, false, dstOffset, CLEAR_NOOP, true, STRIDE_TYPE_VALID, false, 0, 1,
+                                TESS_PRIM_QUADS, false, true),
+                            sixRepeats));
+                }
+#endif
+            }
 
             /* Tests for clear operation within a statistics query activated.
              * The query shouldn't count internal driver operations relevant to the clear operations.
@@ -6719,6 +6767,24 @@ void QueryPoolStatisticsTests::init(void)
                                 (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
                                 query64Bits, false, dstOffset, CLEAR_NOOP, true),
                             sixRepeats));
+
+#ifndef CTS_USES_VULKANSC
+                    // limit number of tests repeated for device_address_commands
+                    if ((copyType[copyTypeIdx] == COPY_TYPE_GET) && (i == 2) &&
+                        (topologyNdx == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP))
+                    {
+                        primaryResetAfterCopy->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
+                            m_testCtx,
+                            prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                "_with_no_color_attachments_device_address",
+                            GraphicBasicTestInstance::ParametersGraphic(
+                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT,
+                                (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
+                                query64Bits, false, dstOffset, CLEAR_NOOP, true, STRIDE_TYPE_VALID, false, 0, 1,
+                                TESS_PRIM_QUADS, false, true),
+                            sixRepeats));
+                    }
+#endif
 
                     /* Tests for clear operation within a statistics query activated.
                      * Nothing for secondary_inherited cases can be done since it violates the specification.
@@ -7208,6 +7274,7 @@ void QueryPoolStatisticsTests::init(void)
                         sixRepeats));
 
                     if (copyType[copyTypeIdx] == COPY_TYPE_CMD)
+                    {
                         primaryResetAfterCopy->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
                             m_testCtx,
                             prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
@@ -7217,6 +7284,25 @@ void QueryPoolStatisticsTests::init(void)
                                 (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
                                 query64Bits, false, dstOffset, CLEAR_NOOP, true),
                             sixRepeats));
+
+#ifndef CTS_USES_VULKANSC
+                        // limit number of tests repeated for device_address_commands
+                        if ((i == 1) && (topologyNdx == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP))
+                        {
+                            primaryResetAfterCopy->addChild(
+                                new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
+                                    m_testCtx,
+                                    prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                        "_with_no_color_attachments_device_address",
+                                    GraphicBasicTestInstance::ParametersGraphic(
+                                        VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT,
+                                        (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
+                                        query64Bits, false, dstOffset, CLEAR_NOOP, true, STRIDE_TYPE_VALID, false, 0, 1,
+                                        TESS_PRIM_QUADS, false, true),
+                                    sixRepeats));
+                        }
+#endif
+                    }
 
                     /* Tests for clear operation within a statistics query activated.
                      * Nothing for secondary_inherited cases can be done since it violates the specification.
@@ -7533,6 +7619,24 @@ void QueryPoolStatisticsTests::init(void)
                                         (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
                                         query64Bits, false, dstOffset, CLEAR_SKIP),
                                     sixRepeats));
+
+#ifndef CTS_USES_VULKANSC
+                            // limit number of tests repeated for device_address_commands
+                            if ((i == 0) && (topologyNdx == VK_PRIMITIVE_TOPOLOGY_POINT_LIST))
+                            {
+                                secondaryResetAfterCopy->addChild(
+                                    new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>(
+                                        m_testCtx,
+                                        prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                            "_device_address",
+                                        GraphicBasicTestInstance::ParametersGraphic(
+                                            VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT,
+                                            (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY,
+                                            copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_SKIP, false,
+                                            STRIDE_TYPE_VALID, false, 0, 1, TESS_PRIM_QUADS, false, true),
+                                        sixRepeats));
+                            }
+#endif
                         }
                     }
 
@@ -8556,6 +8660,7 @@ void QueryPoolStatisticsTests::init(void)
                     sixRepeats));
 
             if (copyType[copyTypeIdx] == COPY_TYPE_CMD)
+            {
                 tesEvaluationShaderInvocationsResetAfterCopy->addChild(
                     new QueryPoolGraphicStatisticsTest<TessellationShaderTestInstance>(
                         m_testCtx,
@@ -8566,6 +8671,25 @@ void QueryPoolStatisticsTests::init(void)
                             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
                             query64Bits, false, dstOffset, CLEAR_NOOP, true, STRIDE_TYPE_VALID, true),
                         sixRepeats));
+
+#ifndef CTS_USES_VULKANSC
+                // limit number of tests repeated for device_address_commands
+                if (i == 0)
+                {
+                    tesEvaluationShaderInvocationsResetAfterCopy->addChild(
+                        new QueryPoolGraphicStatisticsTest<TessellationShaderTestInstance>(
+                            m_testCtx,
+                            prefix + copyTypeStr[copyTypeIdx] +
+                                "tes_evaluation_shader_invocations_with_no_color_attachments_device_address",
+                            GraphicBasicTestInstance::ParametersGraphic(
+                                VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT,
+                                VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
+                                query64Bits, false, dstOffset, CLEAR_NOOP, true, STRIDE_TYPE_VALID, true, 0, 1,
+                                TESS_PRIM_QUADS, false, true),
+                            sixRepeats));
+                }
+#endif
+            }
 
             /* Tests for clear operation within a statistics query activated.
              * Nothing for secondary_inherited cases can be done since it violates the specification.
@@ -8969,5 +9093,4 @@ void QueryPoolStatisticsTests::init(void)
     addChild(multipleGeomStats.release());
 }
 
-} // namespace QueryPool
-} // namespace vkt
+} // namespace vkt::QueryPool

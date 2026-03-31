@@ -23,6 +23,7 @@
 
 #include "vktVideoTests.hpp"
 #include "vktVideoCapabilitiesTests.hpp"
+#include "vktVideoProfilesValidationTests.hpp"
 #include "vktVideoDecodeTests.hpp"
 #include "vktVideoEncodeTests.hpp"
 #include "synchronization/vktSynchronizationTests.hpp"
@@ -42,6 +43,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
 
     group->addChild(createVideoCapabilitiesTests(testCtx));
     group->addChild(createVideoFormatsTests(testCtx));
+    group->addChild(createVideoProfilesValidationTests(testCtx));
 
     group->addChild(createVideoDecodeTests(testCtx));
     group->addChild(createVideoEncodeTests(testCtx));

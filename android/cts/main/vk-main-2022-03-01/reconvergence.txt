@@ -833,7 +833,6 @@ dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.0.37
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.0.38
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.0.39
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.0.4
-dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.0.40
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.0.41
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.0.42
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.0.43
@@ -1150,7 +1149,6 @@ dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.6.8
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.6.9
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.7.0
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.7.1
-dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.7.10
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.7.11
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.7.12
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.7.13
@@ -1180,7 +1178,6 @@ dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.7.34
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.7.35
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.7.36
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.7.37
-dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.7.38
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.7.39
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.7.4
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.nesting4.7.40
@@ -2033,7 +2030,6 @@ dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.0.37
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.0.38
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.0.39
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.0.4
-dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.0.40
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.0.41
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.0.42
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.0.43
@@ -2350,7 +2346,6 @@ dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.6.8
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.6.9
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.7.0
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.7.1
-dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.7.10
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.7.11
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.7.12
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.7.13
@@ -2380,7 +2375,6 @@ dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.7.34
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.7.35
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.7.36
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.7.37
-dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.7.38
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.7.39
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.7.4
 dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.nesting4.7.40
@@ -3233,7 +3227,6 @@ dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.0.3
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.0.38
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.0.39
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.0.4
-dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.0.40
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.0.41
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.0.42
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.0.43
@@ -3550,7 +3543,6 @@ dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.6.8
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.6.9
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.7.0
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.7.1
-dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.7.10
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.7.11
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.7.12
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.7.13
@@ -3580,7 +3572,6 @@ dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.7.3
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.7.35
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.7.36
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.7.37
-dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.7.38
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.7.39
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.7.4
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_ballot.compute.nesting4.7.40
@@ -4433,7 +4424,6 @@ dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.0.37
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.0.38
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.0.39
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.0.4
-dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.0.40
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.0.41
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.0.42
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.0.43
@@ -4750,7 +4740,6 @@ dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.6.8
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.6.9
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.7.0
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.7.1
-dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.7.10
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.7.11
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.7.12
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.7.13
@@ -4780,7 +4769,6 @@ dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.7.34
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.7.35
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.7.36
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.7.37
-dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.7.38
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.7.39
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.7.4
 dEQP-VK.reconvergence.workgroup_uniform_control_flow_elect.compute.nesting4.7.40

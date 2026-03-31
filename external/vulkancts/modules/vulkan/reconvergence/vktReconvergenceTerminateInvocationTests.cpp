@@ -357,7 +357,9 @@ void TermInvCase::initPrograms(vk::SourceCollections &programCollection) const
     {
         frag << "    vec4 inColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
              << "    \n"
-             << "    bool should_terminate = (gl_SubgroupInvocationID % pc.divisor == 0u);\n"
+             << "    // pc.divisorCopy is 2, so this is an implicit gl_HelperInvocation\n"
+             << "    bool started_as_helper = ((uint(gl_HelperInvocation) + 1u) == pc.divisorCopy);\n"
+             << "    bool should_terminate = (gl_SubgroupInvocationID % pc.divisor == 0u || started_as_helper);\n"
              << "\n"
              << "    if (should_terminate)\n"
              << "        terminateInvocation;\n"

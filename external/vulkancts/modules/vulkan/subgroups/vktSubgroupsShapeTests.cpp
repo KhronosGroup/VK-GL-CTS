@@ -33,6 +33,8 @@ using namespace tcu;
 using namespace std;
 using namespace vk;
 using namespace vkt;
+using namespace glu;
+using vkt::subgroups::VecType;
 
 namespace
 {
@@ -171,7 +173,7 @@ void initFrameBufferPrograms(SourceCollections &programCollection, CaseDefinitio
     const vector<string> headDeclarations = getFramebufferPerStageHeadDeclarations(caseDef);
     const bool pointSizeSupported         = *caseDef.geometryPointSizeSupported;
 
-    subgroups::initStdFrameBufferPrograms(programCollection, buildOptions, caseDef.shaderStage, VK_FORMAT_R32_UINT,
+    subgroups::initStdFrameBufferPrograms(programCollection, buildOptions, caseDef.shaderStage, VecType(TYPE_UINT, 1),
                                           pointSizeSupported, extHeader, testSrc, "", headDeclarations);
 }
 
@@ -218,7 +220,7 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
     const vector<string> headDeclarations = getPerStageHeadDeclarations(caseDef);
     const bool pointSizeSupport           = *caseDef.geometryPointSizeSupported;
 
-    subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, VK_FORMAT_R32_UINT,
+    subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, VecType(TYPE_UINT, 1),
                                pointSizeSupport, extHeader, testSrc, "", headDeclarations);
 }
 

@@ -1165,15 +1165,20 @@ tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCasePar
 
         // Build descriptor set
         vk::VkDeviceSize bufferBindOffset = 0;
+        vk::VkDeviceSize bufferBindLength = params.bufferBindLength;
         if (params.useMinBufferOffset)
         {
             const VkPhysicalDeviceLimits deviceLimits =
                 getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
             bufferBindOffset = deviceLimits.minStorageBufferOffsetAlignment;
+            if (params.bufferBindLength != VK_WHOLE_SIZE && bufferBindLength < bufferBindOffset)
+                bufferBindLength = bufferBindOffset;
         }
 
+        const VkDeviceSize inputBufferRange =
+            bufferBindLength == VK_WHOLE_SIZE ? bufferBindLength : bufferBindLength - bufferBindOffset;
         const VkDescriptorBufferInfo inputBufferDesc =
-            makeDescriptorBufferInfo(*inputBuffer, bufferBindOffset, params.bufferBindLength);
+            makeDescriptorBufferInfo(*inputBuffer, bufferBindOffset, inputBufferRange);
         const VkDescriptorBufferInfo outputBufferDesc = makeDescriptorBufferInfo(*outputBuffer, 0u, VK_WHOLE_SIZE);
 
         const VkDescriptorSetAllocateInfo descAllocInfo = {
@@ -1236,7 +1241,7 @@ tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCasePar
 
         // Expected number of elements in array at end of storage buffer
         const VkDeviceSize boundLength =
-            params.bufferBindLength == VK_WHOLE_SIZE ? params.bufferSize - bufferBindOffset : params.bufferBindLength;
+            (params.bufferBindLength == VK_WHOLE_SIZE ? params.bufferSize : bufferBindLength) - bufferBindOffset;
         const int64_t expectedResult = (int64_t)(boundLength / params.elementSize);
         const int64_t actualResult   = *outputBufferPtr;
 

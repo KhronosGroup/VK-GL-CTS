@@ -171,10 +171,14 @@ void read_pixels(NegativeTestContext &ctx)
     std::vector<GLubyte> ubyteData(4);
     GLuint fbo = 0x1234;
 
-    ctx.beginSection("Unsupported combinations of format and type will generate an GL_INVALID_OPERATION error.");
-    ctx.glReadPixels(0, 0, 1, 1, GL_LUMINANCE_ALPHA, GL_UNSIGNED_SHORT_4_4_4_4, &ubyteData[0]);
-    ctx.expectError(GL_INVALID_OPERATION);
-    ctx.endSection();
+    /* GL_LUMINANCE_ALPHA not supported by GL Core / ARB_ES3_compatibility. */
+    if (!glu::isContextTypeGLCore(ctx.getRenderContext().getType()))
+    {
+        ctx.beginSection("Unsupported combinations of format and type will generate an GL_INVALID_OPERATION error.");
+        ctx.glReadPixels(0, 0, 1, 1, GL_LUMINANCE_ALPHA, GL_UNSIGNED_SHORT_4_4_4_4, &ubyteData[0]);
+        ctx.expectError(GL_INVALID_OPERATION);
+        ctx.endSection();
+    }
 
     ctx.beginSection("GL_INVALID_VALUE is generated if either width or height is negative.");
     ctx.glReadPixels(0, 0, -1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &ubyteData[0]);
@@ -210,10 +214,15 @@ void readn_pixels(NegativeTestContext &ctx)
         TCU_THROW(NotSupportedError, "GLES 3.2 or robustness extension not supported");
     }
 
-    ctx.beginSection("Unsupported combinations of format and type will generate an GL_INVALID_OPERATION error.");
-    ctx.glReadnPixels(0, 0, 1, 1, GL_LUMINANCE_ALPHA, GL_UNSIGNED_SHORT_4_4_4_4, (int)ubyteData.size(), &ubyteData[0]);
-    ctx.expectError(GL_INVALID_OPERATION);
-    ctx.endSection();
+    /* GL_LUMINANCE_ALPHA not supported by GL Core / ARB_ES3_compatibility. */
+    if (!glu::isContextTypeGLCore(ctx.getRenderContext().getType()))
+    {
+        ctx.beginSection("Unsupported combinations of format and type will generate an GL_INVALID_OPERATION error.");
+        ctx.glReadnPixels(0, 0, 1, 1, GL_LUMINANCE_ALPHA, GL_UNSIGNED_SHORT_4_4_4_4, (int)ubyteData.size(),
+                          &ubyteData[0]);
+        ctx.expectError(GL_INVALID_OPERATION);
+        ctx.endSection();
+    }
 
     ctx.beginSection("GL_INVALID_VALUE is generated if either width or height is negative.");
     ctx.glReadnPixels(0, 0, -1, 1, GL_RGBA, GL_UNSIGNED_BYTE, (int)ubyteData.size(), &ubyteData[0]);
@@ -251,14 +260,18 @@ void read_pixels_format_mismatch(NegativeTestContext &ctx)
     GLint readFormat = 0x1234;
     GLint readType   = 0x1234;
 
-    ctx.beginSection("Unsupported combinations of format and type will generate an GL_INVALID_OPERATION error.");
-    ctx.glReadPixels(0, 0, 1, 1, GL_ALPHA, GL_UNSIGNED_SHORT_5_6_5, &ushortData[0]);
-    ctx.expectError(GL_INVALID_OPERATION);
-    ctx.glReadPixels(0, 0, 1, 1, GL_ALPHA, GL_UNSIGNED_SHORT_4_4_4_4, &ushortData[0]);
-    ctx.expectError(GL_INVALID_OPERATION);
-    ctx.glReadPixels(0, 0, 1, 1, GL_ALPHA, GL_UNSIGNED_SHORT_5_5_5_1, &ushortData[0]);
-    ctx.expectError(GL_INVALID_OPERATION);
-    ctx.endSection();
+    /* GL_ALPHA not supported by GL Core / ARB_ES3_compatibility. */
+    if (!glu::isContextTypeGLCore(ctx.getRenderContext().getType()))
+    {
+        ctx.beginSection("Unsupported combinations of format and type will generate an GL_INVALID_OPERATION error.");
+        ctx.glReadPixels(0, 0, 1, 1, GL_ALPHA, GL_UNSIGNED_SHORT_5_6_5, &ushortData[0]);
+        ctx.expectError(GL_INVALID_OPERATION);
+        ctx.glReadPixels(0, 0, 1, 1, GL_ALPHA, GL_UNSIGNED_SHORT_4_4_4_4, &ushortData[0]);
+        ctx.expectError(GL_INVALID_OPERATION);
+        ctx.glReadPixels(0, 0, 1, 1, GL_ALPHA, GL_UNSIGNED_SHORT_5_5_5_1, &ushortData[0]);
+        ctx.expectError(GL_INVALID_OPERATION);
+        ctx.endSection();
+    }
 
     ctx.beginSection("Unsupported combinations of format and type will generate an GL_INVALID_OPERATION error.");
     ctx.glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_SHORT_5_6_5, &ushortData[0]);

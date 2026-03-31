@@ -22,11 +22,9 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktApiCopyBufferToBufferTests.hpp"
+#include <optional>
 
-namespace vkt
-{
-
-namespace api
+namespace vkt::api
 {
 
 namespace
@@ -38,7 +36,18 @@ public:
     CopyBufferToBuffer(Context &context, TestParams params);
     virtual tcu::TestStatus iterate(void);
 
-private:
+protected:
+    Move<VkBuffer> constructBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkBufferCreateFlags createFlag = 0,
+                                   std::optional<uint32_t> queueFamilyIndex = {}) const;
+    de::MovePtr<Allocation> bindBufferMemory(VkBuffer buffer, MemoryRequirement memoryRequirement) const;
+
+    de::MovePtr<tcu::TextureLevel> generateFilledBuffer(VkDeviceSize size, FillMode fillMode) const;
+
+    void recordAndSubmitCommandBuffer(VkQueue queue, VkCommandBuffer commandBuffer, VkDeviceSize srcBufferSize,
+                                      VkDeviceSize dstBufferSize, const std::vector<CopyRegion> &regions,
+                                      uint32_t srcCommandFlag = 0, uint32_t dstCommandFlag = 0);
+
+protected:
     virtual void copyRegionToTextureLevel(tcu::ConstPixelBufferAccess, tcu::PixelBufferAccess, CopyRegion,
                                           uint32_t mipLevel = 0u);
     Move<VkBuffer> m_source;
@@ -98,105 +107,165 @@ CopyBufferToBuffer::CopyBufferToBuffer(Context &context, TestParams params)
 
 tcu::TestStatus CopyBufferToBuffer::iterate(void)
 {
-    const int srcLevelWidth = (int)(m_params.src.buffer.size /
-                                    4); // Here the format is VK_FORMAT_R32_UINT, we need to divide the buffer size by 4
-    m_sourceTextureLevel =
-        de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), srcLevelWidth, 1));
-    generateBuffer(m_sourceTextureLevel->getAccess(), srcLevelWidth, 1, 1, FILL_MODE_RED);
+    const DeviceInterface &vk                = m_context.getDeviceInterface();
+    auto [queue, commandBuffer, commandPool] = activeExecutionCtx();
 
-    const int dstLevelWidth = (int)(m_params.dst.buffer.size / 4);
-    m_destinationTextureLevel =
-        de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), dstLevelWidth, 1));
-    generateBuffer(m_destinationTextureLevel->getAccess(), dstLevelWidth, 1, 1, FILL_MODE_BLACK);
+    m_source                 = constructBuffer(m_params.src.buffer.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    m_sourceBufferAlloc      = bindBufferMemory(*m_source, MemoryRequirement::HostVisible);
+    m_destination            = constructBuffer(m_params.dst.buffer.size, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    m_destinationBufferAlloc = bindBufferMemory(*m_destination, MemoryRequirement::HostVisible);
+
+    m_sourceTextureLevel      = generateFilledBuffer(m_params.src.buffer.size, FILL_MODE_RED);
+    m_destinationTextureLevel = generateFilledBuffer(m_params.dst.buffer.size, FILL_MODE_BLACK);
 
     generateExpectedResult();
 
     uploadBuffer(m_sourceTextureLevel->getAccess(), *m_sourceBufferAlloc);
     uploadBuffer(m_destinationTextureLevel->getAccess(), *m_destinationBufferAlloc);
 
-    const DeviceInterface &vk                   = m_context.getDeviceInterface();
-    VkQueue queue                               = VK_NULL_HANDLE;
-    VkCommandBuffer commandBuffer               = VK_NULL_HANDLE;
-    VkCommandPool commandPool                   = VK_NULL_HANDLE;
-    std::tie(queue, commandBuffer, commandPool) = activeExecutionCtx();
+    recordAndSubmitCommandBuffer(queue, commandBuffer, m_params.src.buffer.size, m_params.dst.buffer.size,
+                                 m_params.regions);
 
-    const VkBufferMemoryBarrier srcBufferBarrier = {
-        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        nullptr,                                 // const void* pNext;
-        VK_ACCESS_HOST_WRITE_BIT,                // VkAccessFlags srcAccessMask;
-        VK_ACCESS_TRANSFER_READ_BIT,             // VkAccessFlags dstAccessMask;
-        VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
-        VK_QUEUE_FAMILY_IGNORED,                 // uint32_t dstQueueFamilyIndex;
-        *m_source,                               // VkBuffer buffer;
-        0u,                                      // VkDeviceSize offset;
-        m_params.src.buffer.size                 // VkDeviceSize size;
-    };
+    m_context.resetCommandPoolForVKSC(m_device, commandPool);
 
-    const VkBufferMemoryBarrier dstBufferBarrier = {
-        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        nullptr,                                 // const void* pNext;
-        VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
-        VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
-        VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
-        VK_QUEUE_FAMILY_IGNORED,                 // uint32_t dstQueueFamilyIndex;
-        *m_destination,                          // VkBuffer buffer;
-        0u,                                      // VkDeviceSize offset;
-        m_params.dst.buffer.size                 // VkDeviceSize size;
-    };
+    // Read buffer data
+    using TexLevel          = tcu::TextureLevel;
+    const int dstLevelWidth = (int)(m_params.dst.buffer.size / 4);
+    de::MovePtr<TexLevel> resultLevel(new TexLevel(mapVkFormat(VK_FORMAT_R32_UINT), dstLevelWidth, 1));
+    invalidateAlloc(vk, m_device, *m_destinationBufferAlloc);
+    tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(),
+                                                        m_destinationBufferAlloc->getHostPtr()));
+
+    return checkTestResult(resultLevel->getAccess());
+}
+
+Move<VkBuffer> CopyBufferToBuffer::constructBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+                                                   VkBufferCreateFlags createFlag,
+                                                   std::optional<uint32_t> queueFamilyIndexOpt) const
+{
+    if (m_params.extensionFlags & DEVICE_ADDRESS_COMMANDS)
+        usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+    auto bufferParams  = makeBufferCreateInfo(size, usage);
+    bufferParams.flags = createFlag;
+
+    uint32_t queueFamilyIndex          = queueFamilyIndexOpt.value_or(0);
+    bufferParams.queueFamilyIndexCount = queueFamilyIndexOpt.has_value();
+    bufferParams.pQueueFamilyIndices   = &queueFamilyIndex;
+
+    return createBuffer(m_context.getDeviceInterface(), m_device, &bufferParams);
+}
+
+de::MovePtr<Allocation> CopyBufferToBuffer::bindBufferMemory(VkBuffer buffer, MemoryRequirement memoryRequirement) const
+{
+    const InstanceInterface &vki        = m_context.getInstanceInterface();
+    const DeviceInterface &vk           = m_context.getDeviceInterface();
+    const VkPhysicalDevice vkPhysDevice = m_context.getPhysicalDevice();
+
+    MemoryRequirement memReq = (m_params.extensionFlags & DEVICE_ADDRESS_COMMANDS) ?
+                                   memoryRequirement | MemoryRequirement::DeviceAddress :
+                                   memoryRequirement;
+
+    auto bufferAlloc =
+        allocateBuffer(vki, vk, vkPhysDevice, m_device, buffer, memReq, *m_allocator, m_params.allocationKind);
+    vk.bindBufferMemory(m_device, buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset());
+
+    return bufferAlloc;
+}
+
+de::MovePtr<tcu::TextureLevel> CopyBufferToBuffer::generateFilledBuffer(VkDeviceSize size, FillMode fillMode) const
+{
+    using TexLevel = tcu::TextureLevel;
+
+    // Here the format is VK_FORMAT_R32_UINT, we need to divide the buffer size by 4
+    const int levelWidth = static_cast<int>(size) / 4;
+    de::MovePtr<TexLevel> textureLevel(new TexLevel(mapVkFormat(VK_FORMAT_R32_UINT), levelWidth, 1));
+    generateBuffer(textureLevel->getAccess(), levelWidth, 1, 1, fillMode);
+
+    return textureLevel;
+}
+
+void CopyBufferToBuffer::recordAndSubmitCommandBuffer(VkQueue queue, VkCommandBuffer commandBuffer,
+                                                      VkDeviceSize srcBufferSize, VkDeviceSize dstBufferSize,
+                                                      const std::vector<CopyRegion> &regions,
+                                                      [[maybe_unused]] uint32_t srcCommandFlag,
+                                                      [[maybe_unused]] uint32_t dstCommandFlag)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+
+    const auto srcBufferBarrier =
+        makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, *m_source, 0, srcBufferSize);
+
+    const auto dstBufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
+                                                          *m_destination, 0, dstBufferSize);
 
     std::vector<VkBufferCopy> bufferCopies;
     std::vector<VkBufferCopy2KHR> bufferCopies2KHR;
-    for (uint32_t i = 0; i < m_params.regions.size(); i++)
-    {
-        if (!(m_params.extensionFlags & COPY_COMMANDS_2))
-        {
-            bufferCopies.push_back(m_params.regions[i].bufferCopy);
-        }
-        else
-        {
-            DE_ASSERT(m_params.extensionFlags & COPY_COMMANDS_2);
-            bufferCopies2KHR.push_back(convertvkBufferCopyTovkBufferCopy2KHR(m_params.regions[i].bufferCopy));
-        }
-    }
+#ifndef CTS_USES_VULKANSC
+    std::vector<VkDeviceMemoryCopyKHR> memoryCopies2KHR;
+#endif // CTS_USES_VULKANSC
 
     beginCommandBuffer(vk, commandBuffer);
     vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                           (VkDependencyFlags)0, 0, nullptr, 1, &srcBufferBarrier, 0, nullptr);
 
-    if (!(m_params.extensionFlags & COPY_COMMANDS_2))
+    if (m_params.extensionFlags & DEVICE_ADDRESS_COMMANDS)
     {
-        vk.cmdCopyBuffer(commandBuffer, m_source.get(), m_destination.get(), (uint32_t)m_params.regions.size(),
-                         &bufferCopies[0]);
+#ifndef CTS_USES_VULKANSC
+
+        VkDeviceAddress srcBufferDeviceAddress = getBufferDeviceAddress(vk, m_device, *m_source);
+        VkDeviceAddress dstBufferDeviceAddress = getBufferDeviceAddress(vk, m_device, *m_destination);
+
+        memoryCopies2KHR.reserve(regions.size());
+        for (const auto &r : regions)
+        {
+            const auto &bc = r.bufferCopy;
+            VkDeviceAddressRangeKHR srcAddressRange{srcBufferDeviceAddress + bc.srcOffset, bc.size};
+            VkDeviceAddressRangeKHR dstAddressRange{dstBufferDeviceAddress + bc.dstOffset, bc.size};
+
+            memoryCopies2KHR.push_back({VK_STRUCTURE_TYPE_DEVICE_MEMORY_COPY_KHR, nullptr, srcAddressRange,
+                                        srcCommandFlag, dstAddressRange, dstCommandFlag});
+        }
+
+        VkCopyDeviceMemoryInfoKHR memorInfo = initVulkanStructure();
+        memorInfo.regionCount               = (uint32_t)regions.size();
+        memorInfo.pRegions                  = memoryCopies2KHR.data();
+
+        vk.cmdCopyMemoryKHR(commandBuffer, &memorInfo);
+#endif // CTS_USES_VULKANSC
     }
-    else
+    else if (m_params.extensionFlags & COPY_COMMANDS_2)
     {
-        DE_ASSERT(m_params.extensionFlags & COPY_COMMANDS_2);
-        const VkCopyBufferInfo2KHR copyBufferInfo2KHR = {
+        bufferCopies2KHR.reserve(regions.size());
+        for (const auto &r : regions)
+            bufferCopies2KHR.push_back(convertvkBufferCopyTovkBufferCopy2KHR(r.bufferCopy));
+
+        const VkCopyBufferInfo2KHR copyBufferInfo2KHR{
             VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2_KHR, // VkStructureType sType;
             nullptr,                                  // const void* pNext;
-            m_source.get(),                           // VkBuffer srcBuffer;
-            m_destination.get(),                      // VkBuffer dstBuffer;
-            (uint32_t)m_params.regions.size(),        // uint32_t regionCount;
+            *m_source,                                // VkBuffer srcBuffer;
+            *m_destination,                           // VkBuffer dstBuffer;
+            (uint32_t)regions.size(),                 // uint32_t regionCount;
             &bufferCopies2KHR[0]                      // const VkBufferCopy2KHR* pRegions;
         };
 
         vk.cmdCopyBuffer2(commandBuffer, &copyBufferInfo2KHR);
+    }
+    else
+    {
+        DE_ASSERT(~m_params.extensionFlags & (COPY_COMMANDS_2 | DEVICE_ADDRESS_COMMANDS));
+
+        bufferCopies.reserve(regions.size());
+        for (const auto &r : regions)
+            bufferCopies.push_back(r.bufferCopy);
+
+        vk.cmdCopyBuffer(commandBuffer, *m_source, *m_destination, (uint32_t)regions.size(), &bufferCopies[0]);
     }
 
     vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
                           (VkDependencyFlags)0, 0, nullptr, 1, &dstBufferBarrier, 0, nullptr);
     endCommandBuffer(vk, commandBuffer);
     submitCommandsAndWaitWithSync(vk, m_device, queue, commandBuffer);
-    m_context.resetCommandPoolForVKSC(m_device, commandPool);
-
-    // Read buffer data
-    de::MovePtr<tcu::TextureLevel> resultLevel(
-        new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), dstLevelWidth, 1));
-    invalidateAlloc(vk, m_device, *m_destinationBufferAlloc);
-    tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(),
-                                                        m_destinationBufferAlloc->getHostPtr()));
-
-    return checkTestResult(resultLevel->getAccess());
 }
 
 void CopyBufferToBuffer::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst,
@@ -400,6 +469,9 @@ void addCopyBufferToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr te
         group->addChild(new BufferToBufferTestCase(testCtx, "partial", params));
     }
 
+    // regions and unaligned_regions tests cant be executed for DAC
+    // due to VUID-VkCopyDeviceMemoryInfoKHR-srcRange-13015
+    if (!(testGroupParams->extensionFlags & DEVICE_ADDRESS_COMMANDS))
     {
         const uint32_t size = 16;
         TestParams params;
@@ -414,7 +486,7 @@ void addCopyBufferToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr te
         // Copy region with size 1..size
         for (unsigned int i = 1; i <= size; i++)
         {
-            const VkBufferCopy bufferCopy = {
+            const VkBufferCopy bufferCopy{
                 0,        // VkDeviceSize srcOffset;
                 i * size, // VkDeviceSize dstOffset;
                 i,        // VkDeviceSize size;
@@ -426,17 +498,10 @@ void addCopyBufferToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr te
         }
 
         group->addChild(new BufferToBufferTestCase(testCtx, "regions", params));
-    }
 
-    {
-        TestParams params;
-        params.src.buffer.size  = 32;
-        params.dst.buffer.size  = 32;
-        params.allocationKind   = testGroupParams->allocationKind;
-        params.extensionFlags   = testGroupParams->extensionFlags;
-        params.queueSelection   = testGroupParams->queueSelection;
-        params.useSparseBinding = testGroupParams->useSparseBinding;
-        params.useGeneralLayout = testGroupParams->useGeneralLayout;
+        params.regions.clear();
+        params.src.buffer.size = 32;
+        params.dst.buffer.size = 32;
 
         // Copy four unaligned regions
         for (unsigned int i = 0; i < 4; i++)
@@ -524,7 +589,9 @@ void addCopyBufferToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr te
         group->addChild(new BufferToBufferTestCase(testCtx, "partial_large_unaligned_size", params));
     }
 
-    // Unaligned regions large
+    // unaligned_regions_large test cant be executed for DAC
+    // due to VUID-VkCopyDeviceMemoryInfoKHR-srcRange-13015
+    if (!(testGroupParams->extensionFlags & DEVICE_ADDRESS_COMMANDS))
     {
         TestParams params;
         params.src.buffer.size  = 2 * defaultLargeSize;
@@ -567,5 +634,4 @@ void addCopyBufferToBufferOffsetTests(tcu::TestCaseGroup *group)
     group->addChild(subGroup.release());
 }
 
-} // namespace api
-} // namespace vkt
+} // namespace vkt::api

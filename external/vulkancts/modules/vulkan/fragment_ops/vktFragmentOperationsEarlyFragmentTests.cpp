@@ -39,6 +39,7 @@
 #include "vkBarrierUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkFormatLists.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
@@ -1411,39 +1412,17 @@ tcu::TestStatus EarlyFragmentSampleMaskTestInstance::iterate(void)
     DE_ASSERT(m_useTestAttachment);
     DE_UNREF(m_useTestAttachment);
 
-    // Test attachment (depth or stencil)
-    static const VkFormat stencilFormats[] = {
-        // One of the following formats must be supported, as per spec requirement.
-        VK_FORMAT_S8_UINT,
-        VK_FORMAT_D16_UNORM_S8_UINT,
-        VK_FORMAT_D24_UNORM_S8_UINT,
-        VK_FORMAT_D32_SFLOAT_S8_UINT,
-    };
-
-    const VkFormat depthStencilFormat =
-        (m_testMode == MODE_STENCIL ?
-             pickSupportedDepthStencilFormat(vki, physDevice, DE_LENGTH_OF_ARRAY(stencilFormats), stencilFormats) :
-             VK_FORMAT_D16_UNORM); // spec requires this format to be supported
+    const auto &sFormats        = formats::stencilFormats;
+    VkFormat depthStencilFormat = VK_FORMAT_D16_UNORM; // spec requires this format to be supported
+    if (m_testMode == MODE_STENCIL)
+        depthStencilFormat =
+            pickSupportedDepthStencilFormat(vki, physDevice, (uint32_t)sFormats.size(), sFormats.data());
 
     if (depthStencilFormat == VK_FORMAT_UNDEFINED)
         return tcu::TestStatus::fail("Required depth/stencil format not supported");
 
     m_context.getTestContext().getLog() << tcu::TestLog::Message << "Using depth/stencil format "
                                         << getFormatName(depthStencilFormat) << tcu::TestLog::EndMessage;
-
-    // Check support for MSAA image formats used in the test.
-    VkImageFormatProperties formatProperties;
-    vki.getPhysicalDeviceImageFormatProperties(physDevice, colorFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
-                                               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-                                               0u, &formatProperties);
-    if ((formatProperties.sampleCounts & m_sampleCount) == 0)
-        TCU_THROW(NotSupportedError, "Format does not support this number of samples for color format");
-
-    vki.getPhysicalDeviceImageFormatProperties(
-        physDevice, depthStencilFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, &formatProperties);
-    if ((formatProperties.sampleCounts & m_sampleCount) == 0)
-        TCU_THROW(NotSupportedError, "Format does not support this number of samples for depth-stencil format");
 
     // Color attachment
     const tcu::IVec2 renderSize = tcu::IVec2(32, 32);
@@ -1934,6 +1913,29 @@ void EarlyFragmentSampleMaskTest::checkSupport(Context &context) const
     EarlyFragmentTest::checkSupport(context);
 
     context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
+
+    const InstanceInterface &vki      = context.getInstanceInterface();
+    const VkPhysicalDevice physDevice = context.getPhysicalDevice();
+
+    // Check support for MSAA image formats used in the test.
+    VkImageFormatProperties formatProperties;
+    vki.getPhysicalDeviceImageFormatProperties(
+        physDevice, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, &formatProperties);
+    if ((formatProperties.sampleCounts & m_sampleCount) == 0)
+        TCU_THROW(NotSupportedError, "Format does not support this number of samples for color format");
+
+    const auto &sFormats        = formats::stencilFormats;
+    VkFormat depthStencilFormat = VK_FORMAT_D16_UNORM; // spec requires this format to be supported
+    if (m_flags & FLAG_TEST_STENCIL)
+        depthStencilFormat =
+            pickSupportedDepthStencilFormat(vki, physDevice, (uint32_t)sFormats.size(), sFormats.data());
+
+    vki.getPhysicalDeviceImageFormatProperties(
+        physDevice, depthStencilFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, &formatProperties);
+    if ((formatProperties.sampleCounts & m_sampleCount) == 0)
+        TCU_THROW(NotSupportedError, "Format does not support this number of samples for depth-stencil format");
 }
 
 struct SampleCountTestParams

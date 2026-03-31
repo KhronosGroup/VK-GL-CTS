@@ -389,6 +389,7 @@ void checkSupport(Context &context, TestParameters params)
                                  VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT);
     checkImageFeatureSupport(context, params.planeCompatibleFormat,
                              VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT);
+    checkSupportShader(context, params.shaderType);
 }
 
 struct PixelSetter
@@ -491,6 +492,10 @@ tcu::TestStatus testPlaneView(Context &context, TestParameters params)
     const InstanceInterface &vk = context.getInstanceInterface();
     const DeviceInterface &vkd  = context.getDeviceInterface();
     const VkDevice device       = context.getDevice();
+    const VkQueue queue =
+        params.shaderType == glu::SHADERTYPE_FRAGMENT ? context.getUniversalQueue() : context.getComputeQueue();
+    const uint32_t queueNdx = params.shaderType == glu::SHADERTYPE_FRAGMENT ? context.getUniversalQueueFamilyIndex() :
+                                                                              context.getComputeQueueFamilyIndex();
 
     const VkFormat format                    = params.format;
     const VkImageCreateFlags createFlags     = params.createFlags;
@@ -654,13 +659,12 @@ tcu::TestStatus testPlaneView(Context &context, TestParameters params)
                                                        *imageAlias,
                                                        {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
 
-        executeImageBarrier(vkd, device, context.getUniversalQueueFamilyIndex(),
-                            (VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT,
-                            (VkPipelineStageFlags)VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, initAliasBarrier);
+        executeImageBarrier(vkd, device, queueNdx, (VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT,
+                            (VkPipelineStageFlags)VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, initAliasBarrier);
     }
 
     // Upload and prepare image
-    uploadImage(vkd, device, context.getUniversalQueueFamilyIndex(), context.getDefaultAllocator(), *image, imageData,
+    uploadImage(vkd, device, queueNdx, context.getDefaultAllocator(), *image, imageData,
                 (VkAccessFlags)VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     {
@@ -676,8 +680,9 @@ tcu::TestStatus testPlaneView(Context &context, TestParameters params)
         generateLookupCoordinates(size, numValues, &randomGen, &texCoord);
 
         {
+            UserQueue userQueue(queue, queueNdx);
             UniquePtr<ShaderExecutor> executor(
-                createExecutor(context, params.shaderType, getShaderSpec(params), *descLayout));
+                createExecutor(context, params.shaderType, getShaderSpec(params), *descLayout, userQueue));
             const void *inputs[] = {texCoord[0].getPtr()};
             void *outputs[]      = {resultWhole[0].getPtr(), resultPlane[0].getPtr()};
 
@@ -809,12 +814,17 @@ void addPlaneViewCase(tcu::TestCaseGroup *group, const TestParameters &params)
         name << "_compatible_format_" << de::toLower(de::toString(params.planeCompatibleFormat).substr(10));
     }
 
+    if (params.shaderType == glu::SHADERTYPE_COMPUTE)
+        name << "_compute";
+    else if (params.shaderType == glu::SHADERTYPE_FRAGMENT)
+        name << "_fragment";
+
     addFunctionCaseWithPrograms(group, name.str(), checkSupport, initPrograms, testPlaneView, params);
 }
 
 void populateViewTypeGroup(tcu::TestCaseGroup *group, TestParameters::ViewType viewType)
 {
-    const glu::ShaderType shaderType = glu::SHADERTYPE_FRAGMENT;
+    const glu::ShaderType shaderTypes[] = {glu::SHADERTYPE_FRAGMENT, glu::SHADERTYPE_COMPUTE};
     const UVec2 size(32, 58);
     const VkImageCreateFlags baseFlags =
         (VkImageCreateFlags)VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT |
@@ -838,23 +848,29 @@ void populateViewTypeGroup(tcu::TestCaseGroup *group, TestParameters::ViewType v
 
             for (uint32_t planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
             {
-                const VkFormat planeFormat = getPlaneCompatibleFormat(format, planeNdx);
-                // Add test case using image view with a format taken from the "Plane Format Compatibility Table"
-                addPlaneViewCase(
-                    group, TestParameters(viewType, format, size, flags, planeNdx, planeFormat, shaderType, false));
-
-                // Add test cases using image view with a format that is compatible with the plane's format.
-                // For example: VK_FORMAT_R4G4_UNORM_PACK8 is compatible with VK_FORMAT_R8_UNORM.
-                for (const auto &compatibleFormat : s_compatible_formats)
+                for (const auto &shaderType : shaderTypes)
                 {
-                    if (compatibleFormat == planeFormat)
+                    if (!executorSupported(shaderType))
                         continue;
 
-                    if (!formatsAreCompatible(planeFormat, compatibleFormat))
-                        continue;
+                    const VkFormat planeFormat = getPlaneCompatibleFormat(format, planeNdx);
+                    // Add test case using image view with a format taken from the "Plane Format Compatibility Table"
+                    addPlaneViewCase(
+                        group, TestParameters(viewType, format, size, flags, planeNdx, planeFormat, shaderType, false));
 
-                    addPlaneViewCase(group, TestParameters(viewType, format, size, flags, planeNdx, compatibleFormat,
-                                                           shaderType, true));
+                    // Add test cases using image view with a format that is compatible with the plane's format.
+                    // For example: VK_FORMAT_R4G4_UNORM_PACK8 is compatible with VK_FORMAT_R8_UNORM.
+                    for (const auto &compatibleFormat : s_compatible_formats)
+                    {
+                        if (compatibleFormat == planeFormat)
+                            continue;
+
+                        if (!formatsAreCompatible(planeFormat, compatibleFormat))
+                            continue;
+
+                        addPlaneViewCase(group, TestParameters(viewType, format, size, flags, planeNdx,
+                                                               compatibleFormat, shaderType, true));
+                    }
                 }
             }
         }

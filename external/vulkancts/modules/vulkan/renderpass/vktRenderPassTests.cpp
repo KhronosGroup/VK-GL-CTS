@@ -8531,7 +8531,7 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
             renderingTests->addChild(createDynamicRenderingRandomTests(testCtx));
             renderingTests->addChild(createDynamicRenderingBasicTests(testCtx));
             renderingTests->addChild(createDynamicRenderingUnusedAttachmentsTests(testCtx, false));
-            renderingTests->addChild(createDynamicRenderingLocalReadTests(testCtx));
+            renderingTests->addChild(createDynamicRenderingLocalReadTests(testCtx, groupParams));
             renderingTests->addChild(createDynamicRenderingLocalReadMaint10Tests(testCtx));
             renderingTests->addChild(createRenderPassCustomResolveTests(testCtx, groupParams));
             renderingTests->addChild(createRenderPassMultiviewPerViewTests(testCtx, groupParams));
@@ -8539,6 +8539,7 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
         else if (!groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
         {
             renderingTests->addChild(createDynamicRenderingUnusedAttachmentsTests(testCtx, true));
+            renderingTests->addChild(createDynamicRenderingLocalReadTests(testCtx, groupParams));
             renderingTests->addChild(createRenderPassCustomResolveTests(testCtx, groupParams));
         }
         break;

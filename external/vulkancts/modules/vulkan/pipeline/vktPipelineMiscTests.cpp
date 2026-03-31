@@ -2193,10 +2193,10 @@ tcu::TestStatus IdenticallyDefinedLayoutTestInstance::iterate(void)
     renderPass.end(vk, *cmdBuffer);
     {
         const auto preBarrier = makeImageMemoryBarrier(
-            VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorImage, subresourceRange);
-        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
-                              nullptr, 0u, nullptr, 1u, &preBarrier);
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                              0u, 0u, nullptr, 0u, nullptr, 1u, &preBarrier);
 
         VkBufferImageCopy region = makeBufferImageCopy(imageCreateInfo.extent, subresourceLayers);
         vk.cmdCopyImageToBuffer(*cmdBuffer, *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **dstBuffer, 1u,
@@ -2300,30 +2300,30 @@ tcu::TestStatus PipelineColorWriteMaskNoneTestInstance::iterate(void)
     BufferWithMemory ssboBuffer(vk, device, alloc, bufferCreateInfo2, MemoryRequirement::HostVisible);
 
     VkBufferDeviceAddressInfo bufferDeviceAddressInfo = {
-        VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType	sType;
-        nullptr,                                      // const void*		pNext;
-        *payloadBuffer,                               // VkBuffer		    buffer;
+        VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType sType;
+        nullptr,                                      // const void* pNext;
+        *payloadBuffer,                               // VkBuffer     buffer;
     };
     VkDeviceAddress payloadAddress  = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
     VkDeviceAddress *ssboBufferData = (VkDeviceAddress *)ssboBuffer.getAllocation().getHostPtr();
     *ssboBufferData                 = payloadAddress;
 
     VkImageCreateInfo imageCreateInfo = {
-        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType			sType;
-        nullptr,                             // const void*				pNext;
-        (VkImageCreateFlags)0u,              // VkImageCreateFlags		flags;
-        VK_IMAGE_TYPE_2D,                    // VkImageType				imageType;
-        VK_FORMAT_B8G8R8A8_UNORM,            // VkFormat				    format;
-        {renderSize, renderSize, 1u},        // VkExtent3D				extent;
-        1u,                                  // uint32_t				    mipLevels;
-        1u,                                  // uint32_t				    arrayLayers;
-        VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits	samples;
-        VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling			tiling;
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, // VkImageUsageFlags		usage;
-        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode			sharingMode;
-        0u,                                  // uint32_t				    queueFamilyIndexCount;
-        nullptr,                             // const uint32_t*			pQueueFamilyIndices;
-        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout			initialLayout;
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                             // const void* pNext;
+        (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
+        VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
+        VK_FORMAT_B8G8R8A8_UNORM,            // VkFormat     format;
+        {renderSize, renderSize, 1u},        // VkExtent3D extent;
+        1u,                                  // uint32_t     mipLevels;
+        1u,                                  // uint32_t     arrayLayers;
+        VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits samples;
+        VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling tiling;
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, // VkImageUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
+        0u,                                  // uint32_t     queueFamilyIndexCount;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
     ImageWithMemory colorImage(vk, device, alloc, imageCreateInfo, MemoryRequirement::Any);
     Move<VkImageView> colorImageView =
@@ -2514,11 +2514,11 @@ void PipelineColorWriteMaskNoneTestCase::initPrograms(SourceCollections &sources
          << "#extension GL_EXT_scalar_block_layout : require\n"
          << "\n"
          << "layout(buffer_reference, buffer_reference_align = 4, scalar) buffer Payload {\n"
-         << "	uvec3 payload[];\n"
+         << "    uvec3 payload[];\n"
          << "};\n"
          << "\n"
          << "layout(set = 2, binding = 0, std430) buffer SSBO {\n"
-         << "	Payload outData[4];\n"
+         << "    Payload outData[4];\n"
          << "};\n"
          << "\n"
          << "layout(set = 0, binding = 0) uniform sampler2D s;\n"
@@ -2526,8 +2526,8 @@ void PipelineColorWriteMaskNoneTestCase::initPrograms(SourceCollections &sources
          << "\n"
          << "void main()\n"
          << "{\n"
-         << "	outData[0].payload[0] = uvec3(2, 3, 4);\n"
-         << "	color = texture(s, vec2(0.0));\n"
+         << "    outData[0].payload[0] = uvec3(2, 3, 4);\n"
+         << "    color = texture(s, vec2(0.0));\n"
          << "}\n";
 
     const vk::SpirvVersion spirvVersion = vk::SPIRV_VERSION_1_0;

@@ -156,6 +156,18 @@ public:
     }
 };
 
+//! Capability warning.
+class CapabilityWarning : public TestException
+{
+public:
+    CapabilityWarning(const char *message, const char *expr, const char *file, int line);
+    CapabilityWarning(const std::string &message, const char *expr, const char *file, int line);
+    CapabilityWarning(const std::string &message);
+    virtual ~CapabilityWarning(void) throw()
+    {
+    }
+};
+
 //! EnforceDefaultContext
 class EnforceDefaultContext : public TestException
 {

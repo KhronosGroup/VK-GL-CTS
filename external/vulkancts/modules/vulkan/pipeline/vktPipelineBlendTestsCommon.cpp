@@ -26,8 +26,9 @@
 #include "vktPipelineBlendTestsCommon.hpp"
 #include "deStringUtil.hpp"
 #include "vkTypeUtil.hpp"
-#include <string>
 #include "vkObjUtil.hpp"
+#include "tcuTextureUtil.hpp"
+#include <string>
 
 namespace vkt
 {
@@ -269,6 +270,112 @@ bool isAlphaBlendFactor(vk::VkBlendFactor blendFactor)
 bool isAlphaBlendFactor(const VkPipelineColorBlendAttachmentState &state)
 {
     return isAlphaBlendFactor(state.srcColorBlendFactor) || isAlphaBlendFactor(state.dstColorBlendFactor);
+}
+
+float getNormChannelThreshold(const tcu::TextureFormat &format, int numBits, int scale)
+{
+    switch (tcu::getTextureChannelClass(format.type))
+    {
+    case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+        return static_cast<float>(scale) / static_cast<float>((1 << numBits) - 1);
+    case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+        return static_cast<float>(scale) / static_cast<float>((1 << (numBits - 1)) - 1);
+    default:
+        break;
+    }
+
+    DE_ASSERT(false);
+    return 0.0f;
+}
+
+tcu::Vec4 getFormatThreshold(const tcu::TextureFormat &format, int scale)
+{
+    using tcu::TextureFormat;
+    using tcu::Vec4;
+
+    Vec4 threshold(0.01f);
+
+    switch (format.type)
+    {
+    case TextureFormat::UNORM_BYTE_44:
+        threshold =
+            Vec4(getNormChannelThreshold(format, 4, scale), getNormChannelThreshold(format, 4, scale), 1.0f, 1.0f);
+        break;
+
+    case TextureFormat::UNORM_SHORT_565:
+        threshold = Vec4(getNormChannelThreshold(format, 5, scale), getNormChannelThreshold(format, 6, scale),
+                         getNormChannelThreshold(format, 5, scale), 1.0f);
+        break;
+
+    case TextureFormat::UNORM_SHORT_555:
+        threshold = Vec4(getNormChannelThreshold(format, 5, scale), getNormChannelThreshold(format, 5, scale),
+                         getNormChannelThreshold(format, 5, scale), 1.0f);
+        break;
+
+    case TextureFormat::UNORM_SHORT_4444:
+        threshold = Vec4(getNormChannelThreshold(format, 4, scale));
+        break;
+
+    case TextureFormat::UNORM_SHORT_5551:
+        threshold = Vec4(getNormChannelThreshold(format, 5, scale), getNormChannelThreshold(format, 5, scale),
+                         getNormChannelThreshold(format, 5, scale), 0.1f);
+        break;
+
+    case TextureFormat::UNORM_SHORT_10:
+        threshold = Vec4(getNormChannelThreshold(format, 10, scale));
+        break;
+
+    case TextureFormat::UNORM_INT_1010102_REV:
+    case TextureFormat::SNORM_INT_1010102_REV:
+        threshold = Vec4(getNormChannelThreshold(format, 10, scale), getNormChannelThreshold(format, 10, scale),
+                         getNormChannelThreshold(format, 10, scale), 0.34f);
+        break;
+
+    case TextureFormat::UNORM_INT8:
+    case TextureFormat::SNORM_INT8:
+        threshold = Vec4(getNormChannelThreshold(format, 8, scale));
+        break;
+
+    case TextureFormat::UNORM_INT16:
+    case TextureFormat::SNORM_INT16:
+        threshold = Vec4(getNormChannelThreshold(format, 16, scale));
+        break;
+
+    case TextureFormat::UNORM_INT32:
+    case TextureFormat::SNORM_INT32:
+        threshold = Vec4(getNormChannelThreshold(format, 32, scale));
+        break;
+
+    case TextureFormat::HALF_FLOAT:
+        threshold = Vec4(0.005f);
+        break;
+
+    case TextureFormat::FLOAT:
+        threshold = Vec4(0.00001f);
+        break;
+
+    case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
+        threshold = Vec4(0.02f, 0.02f, 0.0625f, 1.0f);
+        break;
+
+    case TextureFormat::UNSIGNED_INT_999_E5_REV:
+        threshold = Vec4(0.05f, 0.05f, 0.05f, 1.0f);
+        break;
+
+    case TextureFormat::UNORM_SHORT_1555:
+        threshold = Vec4(0.1f, getNormChannelThreshold(format, 5, scale), getNormChannelThreshold(format, 5, scale),
+                         getNormChannelThreshold(format, 5, scale));
+        break;
+
+    default:
+        DE_ASSERT(false);
+    }
+
+    // Return value matching the channel order specified by the format
+    if (format.order == tcu::TextureFormat::BGR || format.order == tcu::TextureFormat::BGRA)
+        return threshold.swizzle(2, 1, 0, 3);
+    else
+        return threshold;
 }
 
 } // namespace blending_common

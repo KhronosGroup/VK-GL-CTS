@@ -95,6 +95,26 @@ download the required sample clips by running the two helper scripts in the
 Each script will pull down the necessary video files into the CTS data tree.
 Both scripts support the `--help` flag to list all available options.
 
+### Video Test Control
+
+The `DEQP_DISABLE_VK_VIDEO_TESTS` CMake option controls Vulkan video tests. When enabled, video tests are built but reported as "NotSupported" when run.
+
+When `DEQP_DISABLE_VK_VIDEO_TESTS=ON`, the following occurs:
+- Video tests are built but throw `NotSupportedError` when executed
+- Vulkan-Video-Samples and Video Generator external dependencies are not built.
+
+This option is automatically enabled (set to ON) when building on operating systems other than UNIX and WIN32, as video functionality may not be available or supported on those platforms.
+
+To control video test behavior:
+
+```bash
+# Disable video tests (build but report as not-supported)
+cmake -DDEQP_DISABLE_VK_VIDEO_TESTS=ON <path to vulkancts>
+
+# Enable video tests with full functionality (default on UNIX and WIN32)
+cmake -DDEQP_DISABLE_VK_VIDEO_TESTS=OFF <path to vulkancts>
+```
+
 ### Windows x86-32
 
 	cmake <path to vulkancts> -G"Visual Studio 14"
@@ -311,6 +331,8 @@ from output into log by specifying:
 Vulkan compute-only implementations must be tested using option
 
 	--deqp-compute-only=enable
+
+When this option is enabled, all non-compute tests will report as unsupported.
 
 There are several additional options used only in conjunction with Vulkan SC tests
 ( for Vulkan SC CTS tests deqp-vksc application should be used ).
@@ -556,6 +578,52 @@ report (including a unified diff or a merge request of suggested file changes)
 will ensure the issue can be progressed as rapidly as possible. Issues must
 be labeled "Waiver" (TODO!) and identify the version of the CTS and affected
 tests.
+
+### Waiver File Format
+
+The `--deqp-waiver-file` command line option allows you to specify an XML file
+containing tests that should be waived.
+
+Each `<waiver>` entry must contain three attributes: `vendorName`, `vendorId` and `url`.
+- `url` should be a full path to gitlab issue(s)
+- Waiver tag should have one `<description>` child that describes issue
+- Waiver tag should have one `<device_list>` child
+- Device list should have one or more `<d>` elements containing device ids for which this waiver was created
+- Waiver tag should contain one or more `<t>` elements containing test paths that should be waived
+- String in `<t>` can use wildcard `*`
+
+**XML Schema:**
+
+```xml
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+<xs:element name="waiver_list">
+<xs:complexType>
+	<xs:sequence>
+		<xs:element name="waiver" maxOccurs="unbounded">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="description" type="xs:string"/>
+				<xs:element name="device_list">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="d" type="xs:integer" minOccurs="1" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+				</xs:element>
+				<xs:element name="t" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>
+			<xs:attribute name="vendorName" type="xs:string" use="required"/>
+			<xs:attribute name="vendorId" type="xs:string" use="required"/>
+			<xs:attribute name="url" type="xs:string" use="required"/>
+		</xs:complexType>
+		</xs:element>
+	</xs:sequence>
+</xs:complexType>
+</xs:element>
+</xs:schema>
+```
+
+See `external/vulkancts/mustpass/main/waivers.xml` for real-world examples.
 
 Conformance Criteria
 --------------------

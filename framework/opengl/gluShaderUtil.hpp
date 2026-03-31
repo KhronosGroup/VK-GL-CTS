@@ -117,6 +117,7 @@ enum DataType
     TYPE_FLOAT_VEC2,
     TYPE_FLOAT_VEC3,
     TYPE_FLOAT_VEC4,
+    TYPE_FLOAT_VEC5,
     TYPE_FLOAT_MAT2,
     TYPE_FLOAT_MAT2X3,
     TYPE_FLOAT_MAT2X4,
@@ -131,6 +132,7 @@ enum DataType
     TYPE_DOUBLE_VEC2,
     TYPE_DOUBLE_VEC3,
     TYPE_DOUBLE_VEC4,
+    TYPE_DOUBLE_VEC5,
     TYPE_DOUBLE_MAT2,
     TYPE_DOUBLE_MAT2X3,
     TYPE_DOUBLE_MAT2X4,
@@ -145,16 +147,19 @@ enum DataType
     TYPE_INT_VEC2,
     TYPE_INT_VEC3,
     TYPE_INT_VEC4,
+    TYPE_INT_VEC5,
 
     TYPE_UINT,
     TYPE_UINT_VEC2,
     TYPE_UINT_VEC3,
     TYPE_UINT_VEC4,
+    TYPE_UINT_VEC5,
 
     TYPE_BOOL,
     TYPE_BOOL_VEC2,
     TYPE_BOOL_VEC3,
     TYPE_BOOL_VEC4,
+    TYPE_BOOL_VEC5,
 
     TYPE_SAMPLER_1D,
     TYPE_SAMPLER_2D,
@@ -227,26 +232,43 @@ enum DataType
     TYPE_UINT8_VEC2,
     TYPE_UINT8_VEC3,
     TYPE_UINT8_VEC4,
+    TYPE_UINT8_VEC5,
 
     TYPE_INT8,
     TYPE_INT8_VEC2,
     TYPE_INT8_VEC3,
     TYPE_INT8_VEC4,
+    TYPE_INT8_VEC5,
 
     TYPE_UINT16,
     TYPE_UINT16_VEC2,
     TYPE_UINT16_VEC3,
     TYPE_UINT16_VEC4,
+    TYPE_UINT16_VEC5,
 
     TYPE_INT16,
     TYPE_INT16_VEC2,
     TYPE_INT16_VEC3,
     TYPE_INT16_VEC4,
+    TYPE_INT16_VEC5,
+
+    TYPE_UINT64,
+    TYPE_UINT64_VEC2,
+    TYPE_UINT64_VEC3,
+    TYPE_UINT64_VEC4,
+    TYPE_UINT64_VEC5,
+
+    TYPE_INT64,
+    TYPE_INT64_VEC2,
+    TYPE_INT64_VEC3,
+    TYPE_INT64_VEC4,
+    TYPE_INT64_VEC5,
 
     TYPE_FLOAT16,
     TYPE_FLOAT16_VEC2,
     TYPE_FLOAT16_VEC3,
     TYPE_FLOAT16_VEC4,
+    TYPE_FLOAT16_VEC5,
     TYPE_FLOAT16_MAT2,
     TYPE_FLOAT16_MAT2X3,
     TYPE_FLOAT16_MAT2X4,
@@ -280,7 +302,7 @@ inline bool isDataTypeFloat16OrVec(DataType dataType)
 }
 inline bool isDataTypeFloatOrVec(DataType dataType)
 {
-    return (dataType >= TYPE_FLOAT) && (dataType <= TYPE_FLOAT_VEC4);
+    return (dataType >= TYPE_FLOAT) && (dataType <= TYPE_FLOAT_VEC5);
 }
 inline bool isDataTypeFloatType(DataType dataType)
 {
@@ -292,7 +314,7 @@ inline bool isDataTypeDoubleType(DataType dataType)
 }
 inline bool isDataTypeDoubleOrDVec(DataType dataType)
 {
-    return (dataType >= TYPE_DOUBLE) && (dataType <= TYPE_DOUBLE_VEC4);
+    return (dataType >= TYPE_DOUBLE) && (dataType <= TYPE_DOUBLE_VEC5);
 }
 inline bool isDataTypeMatrix(DataType dataType)
 {
@@ -302,58 +324,62 @@ inline bool isDataTypeMatrix(DataType dataType)
 }
 inline bool isDataTypeIntOrIVec(DataType dataType)
 {
-    return (dataType >= TYPE_INT) && (dataType <= TYPE_INT_VEC4);
+    return (dataType >= TYPE_INT) && (dataType <= TYPE_INT_VEC5);
 }
 inline bool isDataTypeUintOrUVec(DataType dataType)
 {
-    return (dataType >= TYPE_UINT) && (dataType <= TYPE_UINT_VEC4);
+    return (dataType >= TYPE_UINT) && (dataType <= TYPE_UINT_VEC5);
 }
 inline bool isDataTypeIntOrIVec8Bit(DataType dataType)
 {
-    return (dataType >= TYPE_INT8) && (dataType <= TYPE_INT8_VEC4);
+    return (dataType >= TYPE_INT8) && (dataType <= TYPE_INT8_VEC5);
 }
 inline bool isDataTypeUintOrUVec8Bit(DataType dataType)
 {
-    return (dataType >= TYPE_UINT8) && (dataType <= TYPE_UINT8_VEC4);
+    return (dataType >= TYPE_UINT8) && (dataType <= TYPE_UINT8_VEC5);
 }
 inline bool isDataTypeIntOrIVec16Bit(DataType dataType)
 {
-    return (dataType >= TYPE_INT16) && (dataType <= TYPE_INT16_VEC4);
+    return (dataType >= TYPE_INT16) && (dataType <= TYPE_INT16_VEC5);
 }
 inline bool isDataTypeUintOrUVec16Bit(DataType dataType)
 {
-    return (dataType >= TYPE_UINT16) && (dataType <= TYPE_UINT16_VEC4);
+    return (dataType >= TYPE_UINT16) && (dataType <= TYPE_UINT16_VEC5);
 }
 inline bool isDataTypeBoolOrBVec(DataType dataType)
 {
-    return (dataType >= TYPE_BOOL) && (dataType <= TYPE_BOOL_VEC4);
+    return (dataType >= TYPE_BOOL) && (dataType <= TYPE_BOOL_VEC5);
 }
 inline bool isDataTypeScalar(DataType dataType)
 {
     return (dataType == TYPE_FLOAT) || (dataType == TYPE_DOUBLE) || (dataType == TYPE_INT) || (dataType == TYPE_UINT) ||
            (dataType == TYPE_BOOL) || (dataType == TYPE_UINT8) || (dataType == TYPE_INT8) ||
-           (dataType == TYPE_UINT16) || (dataType == TYPE_INT16) || (dataType == TYPE_FLOAT16);
+           (dataType == TYPE_UINT16) || (dataType == TYPE_INT16) || (dataType == TYPE_FLOAT16) ||
+           (dataType == TYPE_UINT64) || (dataType == TYPE_INT64);
 }
 inline bool isDataTypeVector(DataType dataType)
 {
-    return deInRange32(dataType, TYPE_FLOAT_VEC2, TYPE_FLOAT_VEC4) ||
-           deInRange32(dataType, TYPE_DOUBLE_VEC2, TYPE_DOUBLE_VEC4) ||
-           deInRange32(dataType, TYPE_INT_VEC2, TYPE_INT_VEC4) ||
-           deInRange32(dataType, TYPE_UINT_VEC2, TYPE_UINT_VEC4) ||
-           deInRange32(dataType, TYPE_BOOL_VEC2, TYPE_BOOL_VEC4) ||
-           deInRange32(dataType, TYPE_UINT8_VEC2, TYPE_UINT8_VEC4) ||
-           deInRange32(dataType, TYPE_INT8_VEC2, TYPE_INT8_VEC4) ||
-           deInRange32(dataType, TYPE_UINT16_VEC2, TYPE_UINT16_VEC4) ||
-           deInRange32(dataType, TYPE_INT16_VEC2, TYPE_INT16_VEC4) ||
-           deInRange32(dataType, TYPE_FLOAT16_VEC2, TYPE_FLOAT16_VEC4);
+    return deInRange32(dataType, TYPE_FLOAT_VEC2, TYPE_FLOAT_VEC5) ||
+           deInRange32(dataType, TYPE_DOUBLE_VEC2, TYPE_DOUBLE_VEC5) ||
+           deInRange32(dataType, TYPE_INT_VEC2, TYPE_INT_VEC5) ||
+           deInRange32(dataType, TYPE_UINT_VEC2, TYPE_UINT_VEC5) ||
+           deInRange32(dataType, TYPE_BOOL_VEC2, TYPE_BOOL_VEC5) ||
+           deInRange32(dataType, TYPE_UINT8_VEC2, TYPE_UINT8_VEC5) ||
+           deInRange32(dataType, TYPE_INT8_VEC2, TYPE_INT8_VEC5) ||
+           deInRange32(dataType, TYPE_UINT16_VEC2, TYPE_UINT16_VEC5) ||
+           deInRange32(dataType, TYPE_INT16_VEC2, TYPE_INT16_VEC5) ||
+           deInRange32(dataType, TYPE_UINT64_VEC2, TYPE_UINT64_VEC5) ||
+           deInRange32(dataType, TYPE_INT64_VEC2, TYPE_INT64_VEC5) ||
+           deInRange32(dataType, TYPE_FLOAT16_VEC2, TYPE_FLOAT16_VEC5);
 }
 inline bool isDataTypeScalarOrVector(DataType dataType)
 {
-    return deInRange32(dataType, TYPE_FLOAT, TYPE_FLOAT_VEC4) || deInRange32(dataType, TYPE_DOUBLE, TYPE_DOUBLE_VEC4) ||
-           deInRange32(dataType, TYPE_INT, TYPE_INT_VEC4) || deInRange32(dataType, TYPE_UINT, TYPE_UINT_VEC4) ||
-           deInRange32(dataType, TYPE_BOOL, TYPE_BOOL_VEC4) || deInRange32(dataType, TYPE_UINT8, TYPE_UINT8_VEC4) ||
-           deInRange32(dataType, TYPE_INT8, TYPE_INT8_VEC4) || deInRange32(dataType, TYPE_UINT16, TYPE_UINT16_VEC4) ||
-           deInRange32(dataType, TYPE_INT16, TYPE_INT16_VEC4) || deInRange32(dataType, TYPE_FLOAT16, TYPE_FLOAT16_VEC4);
+    return deInRange32(dataType, TYPE_FLOAT, TYPE_FLOAT_VEC5) || deInRange32(dataType, TYPE_DOUBLE, TYPE_DOUBLE_VEC5) ||
+           deInRange32(dataType, TYPE_INT, TYPE_INT_VEC5) || deInRange32(dataType, TYPE_UINT, TYPE_UINT_VEC5) ||
+           deInRange32(dataType, TYPE_BOOL, TYPE_BOOL_VEC5) || deInRange32(dataType, TYPE_UINT8, TYPE_UINT8_VEC5) ||
+           deInRange32(dataType, TYPE_INT8, TYPE_INT8_VEC5) || deInRange32(dataType, TYPE_UINT16, TYPE_UINT16_VEC5) ||
+           deInRange32(dataType, TYPE_INT16, TYPE_INT16_VEC5) || deInRange32(dataType, TYPE_UINT64, TYPE_UINT64_VEC5) ||
+           deInRange32(dataType, TYPE_INT64, TYPE_INT64_VEC5) || deInRange32(dataType, TYPE_FLOAT16, TYPE_FLOAT16_VEC5);
 }
 inline bool isDataTypeSampler(DataType dataType)
 {
@@ -385,8 +411,9 @@ inline bool isDataTypeImageBuffer(DataType dataType)
 }
 inline bool isDataTypeExplicitPrecision(DataType dataType)
 {
-    return deInRange32(dataType, TYPE_UINT8, TYPE_UINT8_VEC4) || deInRange32(dataType, TYPE_INT8, TYPE_INT8_VEC4) ||
-           deInRange32(dataType, TYPE_UINT16, TYPE_UINT16_VEC4) || deInRange32(dataType, TYPE_INT16, TYPE_INT16_VEC4) ||
+    return deInRange32(dataType, TYPE_UINT8, TYPE_UINT8_VEC5) || deInRange32(dataType, TYPE_INT8, TYPE_INT8_VEC5) ||
+           deInRange32(dataType, TYPE_UINT16, TYPE_UINT16_VEC5) || deInRange32(dataType, TYPE_INT16, TYPE_INT16_VEC5) ||
+           deInRange32(dataType, TYPE_UINT64, TYPE_UINT64_VEC5) || deInRange32(dataType, TYPE_INT64, TYPE_INT64_VEC5) ||
            deInRange32(dataType, TYPE_FLOAT16, TYPE_FLOAT16_MAT4) ||
            deInRange32(dataType, TYPE_DOUBLE, TYPE_DOUBLE_MAT4);
 }
@@ -673,11 +700,11 @@ struct DataTypeTraits<tcu::Mat4x3d>
 template <typename T, int Size>
 struct DataTypeTraits<tcu::Vector<T, Size>>
 {
-    DE_STATIC_ASSERT(TYPE_FLOAT_VEC4 == TYPE_FLOAT + 3);
-    DE_STATIC_ASSERT(TYPE_INT_VEC4 == TYPE_INT + 3);
-    DE_STATIC_ASSERT(TYPE_UINT_VEC4 == TYPE_UINT + 3);
-    DE_STATIC_ASSERT(TYPE_BOOL_VEC4 == TYPE_BOOL + 3);
-    DE_STATIC_ASSERT(TYPE_DOUBLE_VEC4 == TYPE_DOUBLE + 3);
+    DE_STATIC_ASSERT(TYPE_FLOAT_VEC5 == TYPE_FLOAT + 4);
+    DE_STATIC_ASSERT(TYPE_INT_VEC5 == TYPE_INT + 4);
+    DE_STATIC_ASSERT(TYPE_UINT_VEC5 == TYPE_UINT + 4);
+    DE_STATIC_ASSERT(TYPE_BOOL_VEC5 == TYPE_BOOL + 4);
+    DE_STATIC_ASSERT(TYPE_DOUBLE_VEC5 == TYPE_DOUBLE + 4);
     enum
     {
         DATATYPE = DataTypeTraits<T>::DATATYPE + Size - 1

@@ -31,7 +31,7 @@ namespace vkt
 {
 namespace cooperative_vector
 {
-tcu::TestCaseGroup *createCooperativeVectorBasicTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createCooperativeVectorBasicTests(tcu::TestContext &testCtx, bool useLongVector);
 tcu::TestCaseGroup *createCooperativeVectorMatrixMulTests(tcu::TestContext &testCtx);
 
 tcu::TestCaseGroup *createCooperativeVectorTrainingTests(tcu::TestContext &testCtx);

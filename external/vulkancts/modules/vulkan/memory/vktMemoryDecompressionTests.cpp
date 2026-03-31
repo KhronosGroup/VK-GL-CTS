@@ -28,6 +28,8 @@
 #include "vkBufferWithMemory.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "tcuResource.hpp"
+#include "deUniquePtr.hpp"
 
 using std::vector;
 using tcu::TestLog;
@@ -53,33 +55,6 @@ typedef struct
     const char *name;
 } DecompressionParams;
 
-template <class Instance>
-class DecompressionTestCase : public TestCase
-{
-public:
-    DecompressionTestCase(tcu::TestContext &context, const char *testName, const TestModeType testMode,
-                          uint32_t compressionLevel, DecompressionParams decompressionParams,
-                          const char *decompressedFilename)
-        : TestCase(context, testName)
-    {
-        m_mode                 = testMode;
-        m_compressionLevel     = compressionLevel;
-        m_decompressionParams  = decompressionParams;
-        m_decompressedFilename = decompressedFilename;
-    }
-
-private:
-    TestInstance *createInstance(Context &context) const
-    {
-        return new Instance(context, m_mode, m_compressionLevel, m_decompressionParams, m_decompressedFilename);
-    }
-
-    TestModeType m_mode;
-    uint32_t m_compressionLevel;
-    DecompressionParams m_decompressionParams;
-    const char *m_decompressedFilename;
-};
-
 class MemoryDecompressionTestInstance : public TestInstance
 {
 public:
@@ -89,7 +64,7 @@ public:
 
 private:
     void init(void);
-    uint8_t *loadDataFromFile(const char *filename, size_t *size);
+    uint8_t *loadDataFromFile(const char *filename, size_t *size, const tcu::Archive &archive);
     virtual tcu::TestStatus iterate(void);
     void replaceCRLFInPlace(uint8_t *data, size_t *size);
 
@@ -120,8 +95,8 @@ MemoryDecompressionTestInstance::MemoryDecompressionTestInstance(Context &contex
 
 MemoryDecompressionTestInstance::~MemoryDecompressionTestInstance()
 {
-    delete m_compressedData;
-    delete m_decompressedData;
+    delete[] m_compressedData;
+    delete[] m_decompressedData;
 }
 
 void MemoryDecompressionTestInstance::replaceCRLFInPlace(uint8_t *buffer, size_t *size)
@@ -145,77 +120,36 @@ void MemoryDecompressionTestInstance::replaceCRLFInPlace(uint8_t *buffer, size_t
     *size = write;
 }
 
-uint8_t *MemoryDecompressionTestInstance::loadDataFromFile(const char *filename, size_t *size)
+uint8_t *MemoryDecompressionTestInstance::loadDataFromFile(const char *filename, size_t *size,
+                                                           const tcu::Archive &archive)
 {
-    FILE *fp = fopen(filename, "rb");
-    if (fp == NULL)
-    {
-        TCU_THROW(TestError, "Error opening file");
-        return NULL;
-    }
-    // Seek to the end of the file to get the size
-    if (fseek(fp, 0, SEEK_END) != 0)
-    {
-        TCU_THROW(TestError, "Error opening file");
-        fclose(fp);
-        return NULL;
-    }
-    size_t file_size = ftell(fp);
-    if (file_size == 0)
-    {
-        TCU_THROW(TestError, "Error: Empty file or error getting file size");
-        fclose(fp);
-        return NULL;
-    }
-    *size = file_size;
-    // Rewind the file pointer to the beginning
-    if (fseek(fp, 0, SEEK_SET) != 0)
-    {
-        TCU_THROW(TestError, "Error rewinding file");
-        fclose(fp);
-        return NULL;
-    }
-    uint8_t *data = new uint8_t[file_size];
+    de::UniquePtr<tcu::Resource> resource(archive.getResource(filename));
+
+    size_t file_size = resource->getSize();
+    uint8_t *data    = new uint8_t[file_size];
     if (data == NULL)
     {
         TCU_THROW(TestError, "Memory allocation failed");
-        fclose(fp);
         return NULL;
     }
 
-    size_t bytes_read = fread(data, sizeof(uint8_t), file_size, fp);
-    if (bytes_read != file_size)
-    {
-        TCU_THROW(TestError, "Error reading file data");
-    }
-    fclose(fp);
+    *size = file_size;
+    resource->read(data, static_cast<int>(file_size));
+
     return data;
 }
 
 void MemoryDecompressionTestInstance::init(void)
 {
-    if (!m_context.isDeviceFunctionalitySupported("VK_EXT_memory_decompression"))
-        TCU_THROW(NotSupportedError,
-                  "Memory decompression tests are not supported, no memory decompression extension present.");
-
-    const auto &decompressionFeatures = m_context.getMemoryDecompressionFeaturesEXT();
-    if (!decompressionFeatures.memoryDecompression)
-        TCU_THROW(NotSupportedError, "memory decompression feature not supported");
-
-    const auto &decompressionProperties = m_context.getMemoryDecompressionPropertiesEXT();
-    if (!(decompressionProperties.decompressionMethods & VK_MEMORY_DECOMPRESSION_METHOD_GDEFLATE_1_0_BIT_EXT))
-        TCU_THROW(NotSupportedError, "Gdeflate 1.0 decompression format not supported");
-
-    if (decompressionProperties.maxDecompressionIndirectCount < m_decompressionParams.decompressionCount)
-        TCU_THROW(NotSupportedError, "Too many decompressions requested");
-
     char compressedFile[64];
     char decompressedFile[64];
-    snprintf(compressedFile, 64, "./vulkan/data/gdeflate/compressed_%s_level_%u.gdef", m_decompressedFilename,
+    snprintf(compressedFile, 64, "vulkan/data/gdeflate/compressed_%s_level_%u.gdef", m_decompressedFilename,
              m_compressionLevel);
-    snprintf(decompressedFile, 64, "./vulkan/data/gdeflate/decompressed_%s.gdef", m_decompressedFilename);
-    m_compressedData   = loadDataFromFile(compressedFile, &m_compressedSize);
-    m_decompressedData = loadDataFromFile(decompressedFile, &m_decompressedSize);
+    snprintf(decompressedFile, 64, "vulkan/data/gdeflate/decompressed_%s.gdef", m_decompressedFilename);
+
+    m_compressedData = loadDataFromFile(compressedFile, &m_compressedSize, m_context.getTestContext().getArchive());
+    m_decompressedData =
+        loadDataFromFile(decompressedFile, &m_decompressedSize, m_context.getTestContext().getArchive());
 
     replaceCRLFInPlace(m_decompressedData, &m_decompressedSize);
 
@@ -406,6 +340,54 @@ tcu::TestStatus MemoryDecompressionTestInstance::iterate(void)
         return tcu::TestStatus(QP_TEST_RESULT_PASS, "Test passed");
     }
     return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Test failed");
+}
+
+template <class Instance>
+class DecompressionTestCase : public TestCase
+{
+public:
+    DecompressionTestCase(tcu::TestContext &context, const char *testName, const TestModeType testMode,
+                          uint32_t compressionLevel, DecompressionParams decompressionParams,
+                          const char *decompressedFilename)
+        : TestCase(context, testName)
+    {
+        m_mode                 = testMode;
+        m_compressionLevel     = compressionLevel;
+        m_decompressionParams  = decompressionParams;
+        m_decompressedFilename = decompressedFilename;
+    }
+
+    void checkSupport(Context &context) const;
+
+private:
+    TestInstance *createInstance(Context &context) const
+    {
+        return new Instance(context, m_mode, m_compressionLevel, m_decompressionParams, m_decompressedFilename);
+    }
+
+    TestModeType m_mode;
+    uint32_t m_compressionLevel;
+    DecompressionParams m_decompressionParams;
+    const char *m_decompressedFilename;
+};
+
+template <typename Instance>
+void DecompressionTestCase<Instance>::checkSupport(Context &context) const
+{
+    static_assert(std::is_same_v<Instance, MemoryDecompressionTestInstance>);
+
+    context.requireDeviceFunctionality("VK_EXT_memory_decompression");
+
+    const auto &decompressionFeatures = context.getMemoryDecompressionFeaturesEXT();
+    if (!decompressionFeatures.memoryDecompression)
+        TCU_THROW(NotSupportedError, "memory decompression feature not supported");
+
+    const auto &decompressionProperties = context.getMemoryDecompressionPropertiesEXT();
+    if (!(decompressionProperties.decompressionMethods & VK_MEMORY_DECOMPRESSION_METHOD_GDEFLATE_1_0_BIT_EXT))
+        TCU_THROW(NotSupportedError, "Gdeflate 1.0 decompression format not supported");
+
+    if (decompressionProperties.maxDecompressionIndirectCount < m_decompressionParams.decompressionCount)
+        TCU_THROW(NotSupportedError, "Too many decompressions requested");
 }
 
 } // namespace

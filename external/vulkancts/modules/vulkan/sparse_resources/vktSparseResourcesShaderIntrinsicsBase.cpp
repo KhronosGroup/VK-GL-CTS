@@ -602,14 +602,24 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
         imageSparseInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     }
 
-    // Multi-planar formats require MUTABLE_FORMAT to create plane-compatible views
-    if (formatDescription.numPlanes > 1)
+    // Multi-planar formats require MUTABLE_FORMAT to create plane-compatible views, and other formats may require
+    // the same flag for storage images.
+    const auto numPlanes = static_cast<uint32_t>(formatDescription.numPlanes);
+    for (uint32_t planeIdx = 0u; planeIdx < numPlanes; ++planeIdx)
     {
-        imageSparseInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
-        // EXTENDED_USAGE is required for storage usage on plane-compatible views
+        const auto planeFormat = getPlaneCompatibleFormat(imageSparseInfo.format, planeIdx);
+        if (planeFormat != imageSparseInfo.format)
+            imageSparseInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+
+        const auto storageFormat = getStorageCompatibleFormat(planeFormat);
+        if (storageFormat != imageSparseInfo.format)
+            imageSparseInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+
         if (imageSparseInfo.usage & VK_IMAGE_USAGE_STORAGE_BIT)
         {
-            imageSparseInfo.flags |= VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
+            // EXTENDED_USAGE is required for storage usage on plane-compatible views
+            if (numPlanes > 1)
+                imageSparseInfo.flags |= VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
         }
     }
 
@@ -652,13 +662,21 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
     }
 
     // Multi-planar formats require MUTABLE_FORMAT to create plane-compatible views
-    if (formatDescription.numPlanes > 1)
+    for (uint32_t planeIdx = 0u; planeIdx < numPlanes; ++planeIdx)
     {
-        imageTexelsInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
-        // EXTENDED_USAGE is required for storage usage on plane-compatible views
+        const auto planeFormat = getPlaneCompatibleFormat(imageTexelsInfo.format, planeIdx);
+        if (planeFormat != imageTexelsInfo.format)
+            imageTexelsInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+
+        const auto storageFormat = getStorageCompatibleFormat(planeFormat);
+        if (storageFormat != imageTexelsInfo.format)
+            imageTexelsInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+
         if (imageTexelsInfo.usage & VK_IMAGE_USAGE_STORAGE_BIT)
         {
-            imageTexelsInfo.flags |= VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
+            // EXTENDED_USAGE is required for storage usage on plane-compatible views
+            if (numPlanes > 1)
+                imageTexelsInfo.flags |= VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
         }
     }
 

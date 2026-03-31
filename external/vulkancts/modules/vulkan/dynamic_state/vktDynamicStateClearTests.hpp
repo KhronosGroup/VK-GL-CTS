@@ -38,7 +38,7 @@ class DynamicStateClearTests : public tcu::TestCaseGroup
 {
 public:
     DynamicStateClearTests(tcu::TestContext &testCtx, vk::PipelineConstructionType pipelineConstructionType);
-    ~DynamicStateClearTests(void);
+    ~DynamicStateClearTests(void) = default;
     void init(void);
 
 private:

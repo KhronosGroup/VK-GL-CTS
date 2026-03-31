@@ -1,0 +1,7 @@
+dEQP-VK.descriptor_indexing.combined_image_sampler_no_runtime_array
+dEQP-VK.descriptor_indexing.non_uniform_atomics
+dEQP-VK.descriptor_indexing.storage_buffer_no_runtime_array
+dEQP-VK.descriptor_indexing.storage_image_no_runtime_array
+dEQP-VK.descriptor_indexing.storage_texel_buffer_no_runtime_array
+dEQP-VK.descriptor_indexing.uniform_buffer_no_runtime_array
+dEQP-VK.descriptor_indexing.uniform_texel_buffer_no_runtime_array

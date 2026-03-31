@@ -388,6 +388,8 @@ class GPQInstance;
 
 DECLARE_INSTANCE(VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT);
 DECLARE_INSTANCE(VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT);
+DECLARE_INSTANCE(VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT);
+DECLARE_INSTANCE(VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT);
 
 class GPQCase;
 typedef TestInstance *(GPQCase::*CreateInstanceProc)(Context &) const;
@@ -419,6 +421,8 @@ GPQCase::GPQCase(tcu::TestContext &ctx, const std::string &name, const TestConfi
 {
     MAPENTRY(VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT);
     MAPENTRY(VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT);
+    MAPENTRY(VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT);
+    MAPENTRY(VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT);
 }
 
 VkPipelineStageFlags queueFlagBitToPipelineStage(VkQueueFlagBits bit)
@@ -429,6 +433,8 @@ VkPipelineStageFlags queueFlagBitToPipelineStage(VkQueueFlagBits bit)
         return VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
     case VK_QUEUE_GRAPHICS_BIT:
         return VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    case VK_QUEUE_TRANSFER_BIT:
+        return VK_PIPELINE_STAGE_TRANSFER_BIT;
     default:
         DE_ASSERT(VK_FALSE);
     }
@@ -1026,6 +1032,320 @@ tcu::TestStatus GPQInstance<VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT>::iterat
 
     // For protected memory variant, we cannot actually get any information about the memory. If the shader runs to
     // completion it is a pass, if it loops indefinitely it's a fail.
+    if (m_config.enableProtected)
+    {
+        return (submitSuccess ? tcu::TestStatus::pass("Validation compute shader ran successfully") :
+                                tcu::TestStatus::fail("Validation compute shader failed to run to completion"));
+    }
+    else
+    {
+        const tcu::ConstPixelBufferAccess resultBufferAccess(mapVkFormat(m_config.format), m_config.width,
+                                                             m_config.height, 1, resultBuffer.getHostPtr());
+        const uint32_t resultValue   = resultBufferAccess.getPixelUint(0, 0).x();
+        const uint32_t expectedValue = 1;
+        const bool ok                = (resultValue == expectedValue);
+        if (!ok)
+        {
+            m_context.getTestContext().getLog() << tcu::TestLog::Message << "Expected value: " << expectedValue
+                                                << ", got " << resultValue << tcu::TestLog::EndMessage;
+        }
+
+        return ok ? tcu::TestStatus::pass("") : tcu::TestStatus::fail("");
+    }
+}
+
+tcu::TestStatus GPQInstance<VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT>::iterate(void)
+{
+    if (VK_SUCCESS != m_device.createResult)
+    {
+        if (VK_ERROR_NOT_PERMITTED_KHR == m_device.createResult)
+            return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
+                                   "Custom device creation returned " +
+                                       std::string(getResultName(m_device.createResult)));
+        throw NotSupportedError(m_device.createResult, getResultName(m_device.createResult), m_device.createExpression,
+                                m_device.createFileName, m_device.createFileLine);
+    }
+
+    const InstanceInterface &vki = m_context.getInstanceInterface();
+    const DeviceInterface &vkd   = m_context.getDeviceInterface();
+    const VkPhysicalDevice phys  = m_context.getPhysicalDevice();
+    const VkDevice device        = m_device.handle;
+    Allocator &allocator         = m_device.getAllocator();
+    const uint32_t producerIndex = m_device.queueFamilyIndexFrom;
+    const uint32_t consumerIndex = m_device.queueFamilyIndexTo;
+    const std::vector<uint32_t> producerIndices{producerIndex};
+    const std::vector<uint32_t> consumerIndices{consumerIndex};
+    const std::vector<uint32_t> helperIndices{producerIndex, consumerIndex};
+    const VkQueue producerQueue = m_device.queueFrom;
+
+    // stagging buffer for input
+    const std::vector<tcu::Vec2> positions{tcu::Vec2(+1.f, -1.f), tcu::Vec2(-1.f, -1.f), tcu::Vec2(0.f, +1.f)};
+    const VkBufferCreateInfo positionBuffInfo =
+        makeBufferCreateInfo(de::dataSize(positions), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, producerIndices);
+    BufferWithMemory positionsBuffer(vki, vkd, phys, device, allocator, positionBuffInfo,
+                                     MemoryRequirement::HostVisible);
+    std::copy_n(positions.data(), positions.size(), begin<tcu::Vec2>(positionsBuffer.getHostPtr()));
+    positionsBuffer.flushAlloc(vkd, device);
+    const VkDescriptorBufferInfo posDsBuffInfo =
+        makeDescriptorBufferInfo(positionsBuffer.get(), 0, positionsBuffer.getSize());
+
+    // compute output buffer
+    VkBufferCreateFlags compCreateFlags = 0;
+    if (m_config.enableProtected)
+        compCreateFlags |= VK_BUFFER_CREATE_PROTECTED_BIT;
+    if (m_config.enableSparseBinding)
+        compCreateFlags |= VK_BUFFER_CREATE_SPARSE_BINDING_BIT;
+    const VkBufferUsageFlags compBuffUsage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    const MemoryRequirement compMemReqs =
+        (m_config.enableProtected ? MemoryRequirement::Protected : MemoryRequirement::Any);
+    const VkBufferCreateInfo compBuffInfo =
+        makeBufferCreateInfo(positionsBuffer.getSize(), compBuffUsage, producerIndices, compCreateFlags);
+
+    const BufferWithMemory compOutputBuffer(vki, vkd, phys, device, allocator, compBuffInfo, compMemReqs,
+                                            producerQueue);
+    const VkDescriptorBufferInfo compDsBuffInfo =
+        makeDescriptorBufferInfo(compOutputBuffer.get(), 0ull, compOutputBuffer.getSize());
+    const VkBufferMemoryBarrier producerReadyBarrier =
+        makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, 0, compOutputBuffer.get(), 0, compOutputBuffer.getSize(),
+                                producerIndex, consumerIndex);
+
+    // helper buffer for the protected memory variant
+    const uint32_t helperBuffSize = (uint32_t)(2 * sizeof(uint32_t));
+    const VkBufferCreateInfo helperBuffInfo =
+        makeBufferCreateInfo(helperBuffSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, helperIndices,
+                             m_config.enableProtected ? VK_BUFFER_CREATE_PROTECTED_BIT : 0);
+    BufferWithMemory helperBuffer(vki, vkd, phys, device, allocator, helperBuffInfo,
+                                  m_config.enableProtected ? MemoryRequirement::Protected : MemoryRequirement::Any);
+    const VkDescriptorBufferInfo helperDsBuffInfo = makeDescriptorBufferInfo(helperBuffer.get(), 0ull, helperBuffSize);
+
+    // descriptor set for stagging and compute output buffers
+    Move<VkDescriptorPool> producerDsPool =
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+            .build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    Move<VkDescriptorSetLayout> producerDsLayout =
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL)
+            .build(vkd, device);
+    Move<VkDescriptorSet> producerDs = makeDescriptorSet(vkd, device, *producerDsPool, *producerDsLayout);
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*producerDs, DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                     &posDsBuffInfo)
+        .writeSingle(*producerDs, DescriptorSetUpdateBuilder::Location::binding(1), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                     &compDsBuffInfo)
+        .writeSingle(*producerDs, DescriptorSetUpdateBuilder::Location::binding(2), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                     &helperDsBuffInfo)
+        .update(vkd, device);
+
+    // stagging buffer for result
+    const VkDeviceSize resultBufferSize = positionsBuffer.getSize();
+    const VkBufferCreateInfo resultBufferInfo =
+        makeBufferCreateInfo(resultBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, consumerIndices);
+    BufferWithMemory resultBuffer(vki, vkd, phys, device, allocator, resultBufferInfo, MemoryRequirement::HostVisible);
+    const VkBufferMemoryBarrier resultReadyBarrier =
+        makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, resultBuffer.get(), 0,
+                                resultBufferSize, consumerIndex, consumerIndex);
+
+    Move<VkPipelineLayout> producerLayout = createPipelineLayout<>({*producerDsLayout});
+    Move<VkPipeline> producerPipeline     = createComputePipeline(*producerLayout, true);
+
+    Move<VkCommandPool> producerPool = makeCommandPool(producerIndex);
+    Move<VkCommandPool> consumerPool = makeCommandPool(consumerIndex);
+    Move<VkCommandBuffer> producerCmd =
+        allocateCommandBuffer(vkd, device, *producerPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    Move<VkCommandBuffer> consumerCmd =
+        allocateCommandBuffer(vkd, device, *consumerPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    beginCommandBuffer(vkd, *producerCmd);
+    vkd.cmdBindPipeline(*producerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *producerPipeline);
+    vkd.cmdBindDescriptorSets(*producerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *producerLayout, 0, 1, &producerDs.get(), 0,
+                              nullptr);
+    vkd.cmdDispatch(*producerCmd, de::sizeU32(positions), 1, 1);
+    vkd.cmdPipelineBarrier(*producerCmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0,
+                           0, nullptr, 1, &producerReadyBarrier, 0, nullptr);
+    endCommandBuffer(vkd, *producerCmd);
+
+    beginCommandBuffer(vkd, *consumerCmd);
+    const VkBufferMemoryBarrier consumerAcquireBarrier =
+        makeBufferMemoryBarrier(0, VK_ACCESS_TRANSFER_READ_BIT, compOutputBuffer.get(), 0, compOutputBuffer.getSize(),
+                                producerIndex, consumerIndex);
+    vkd.cmdPipelineBarrier(*consumerCmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
+                           nullptr, 1, &consumerAcquireBarrier, 0, nullptr);
+
+    const VkBufferCopy copyRegion = {0, 0, resultBufferSize};
+    vkd.cmdCopyBuffer(*consumerCmd, compOutputBuffer.get(), resultBuffer.get(), 1, &copyRegion);
+
+    vkd.cmdPipelineBarrier(*consumerCmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0, nullptr, 1,
+                           &resultReadyBarrier, 0, nullptr);
+    endCommandBuffer(vkd, *consumerCmd);
+
+    bool submitSuccess = submitCommands(*producerCmd, *consumerCmd);
+    resultBuffer.invalidateAlloc(vkd, device);
+
+    if (m_config.enableProtected)
+    {
+        return (submitSuccess ? tcu::TestStatus::pass("Validation compute shader ran successfully") :
+                                tcu::TestStatus::fail("Validation compute shader failed to run to completion"));
+    }
+    else
+    {
+        const tcu::Vec2 *resultData = static_cast<const tcu::Vec2 *>(resultBuffer.getHostPtr());
+        bool ok                     = true;
+        for (size_t i = 0; i < positions.size(); ++i)
+        {
+            if (resultData[i].x() != positions[i].x() || resultData[i].y() != positions[i].y())
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "Mismatch at index " << i << tcu::TestLog::EndMessage;
+                ok = false;
+                break;
+            }
+        }
+        return ok ? tcu::TestStatus::pass("") : tcu::TestStatus::fail("Data mismatch between src and dst");
+    }
+}
+
+tcu::TestStatus GPQInstance<VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT>::iterate(void)
+{
+    if (VK_SUCCESS != m_device.createResult)
+    {
+        if (VK_ERROR_NOT_PERMITTED_KHR == m_device.createResult)
+            return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
+                                   "Custom device creation returned " +
+                                       std::string(getResultName(m_device.createResult)));
+        throw NotSupportedError(m_device.createResult, getResultName(m_device.createResult), m_device.createExpression,
+                                m_device.createFileName, m_device.createFileLine);
+    }
+
+    const InstanceInterface &vki = m_context.getInstanceInterface();
+    const DeviceInterface &vkd   = m_context.getDeviceInterface();
+    const VkPhysicalDevice phys  = m_context.getPhysicalDevice();
+    const VkDevice device        = m_device.handle;
+    Allocator &allocator         = m_device.getAllocator();
+    const uint32_t producerIndex = m_device.queueFamilyIndexFrom;
+    const uint32_t consumerIndex = m_device.queueFamilyIndexTo;
+    const std::vector<uint32_t> producerIndices{producerIndex};
+    const std::vector<uint32_t> consumerIndices{consumerIndex};
+    const std::vector<uint32_t> helperIndices{producerIndex, consumerIndex};
+    const VkQueue producerQueue = m_device.queueFrom;
+
+    // stagging buffer for input
+    const auto pixelSize               = mapVkFormat(m_config.format).getPixelSize();
+    const VkDeviceSize inputBufferSize = m_config.width * m_config.height * pixelSize;
+    const VkBufferCreateInfo inputBuffInfo =
+        makeBufferCreateInfo(inputBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, producerIndices);
+    BufferWithMemory inputBuffer(vki, vkd, phys, device, allocator, inputBuffInfo, MemoryRequirement::HostVisible);
+
+    tcu::PixelBufferAccess inputAccess(mapVkFormat(m_config.format), m_config.width, m_config.height, 1,
+                                       inputBuffer.getHostPtr());
+    for (uint32_t y = 0; y < m_config.height; ++y)
+        for (uint32_t x = 0; x < m_config.width; ++x)
+            inputAccess.setPixel(tcu::IVec4(GPQCase::testValue, 0, 0, 1), x, y);
+    inputBuffer.flushAlloc(vkd, device);
+
+    // producer image
+    VkImageSubresourceRange imageResourceRange{};
+    const VkImageUsageFlags imageUsage = (VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT);
+    de::MovePtr<ImageWithMemory> image =
+        createImage(imageUsage, producerIndex, producerQueue); // createImage handles sparse binding inherently!
+    Move<VkImageView> view                  = createView(**image, imageResourceRange);
+    const VkDescriptorImageInfo imageDsInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, *view, VK_IMAGE_LAYOUT_GENERAL);
+
+    // stagging buffer for result
+    const VkDeviceSize resultBufferSize =
+        (m_config.width * m_config.height * mapVkFormat(m_config.format).getPixelSize());
+    const VkBufferCreateInfo resultBufferInfo =
+        makeBufferCreateInfo(resultBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, consumerIndices);
+    BufferWithMemory resultBuffer(vki, vkd, phys, device, allocator, resultBufferInfo, MemoryRequirement::HostVisible);
+    const VkDescriptorBufferInfo resultDsBuffInfo =
+        makeDescriptorBufferInfo(resultBuffer.get(), 0ull, resultBufferSize);
+    const VkBufferMemoryBarrier resultReadyBarrier =
+        makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, resultBuffer.get(), 0,
+                                resultBufferSize, consumerIndex, consumerIndex);
+
+    // helper buffer for the protected memory variant
+    const uint32_t helperBuffSize = (uint32_t)(2 * sizeof(uint32_t));
+    const VkBufferCreateInfo helperBuffInfo =
+        makeBufferCreateInfo(helperBuffSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, helperIndices,
+                             m_config.enableProtected ? VK_BUFFER_CREATE_PROTECTED_BIT : 0);
+    BufferWithMemory helperBuffer(vki, vkd, phys, device, allocator, helperBuffInfo,
+                                  m_config.enableProtected ? MemoryRequirement::Protected : MemoryRequirement::Any);
+    const VkDescriptorBufferInfo helperDsBuffInfo = makeDescriptorBufferInfo(helperBuffer.get(), 0ull, helperBuffSize);
+
+    // descriptor set for consumer image and result buffer
+    Move<VkDescriptorPool> consumerDsPool =
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+            .build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    Move<VkDescriptorSetLayout> consumerDsLayout =
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_ALL)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL)
+            .build(vkd, device);
+    Move<VkDescriptorSet> consumerDs = makeDescriptorSet(vkd, device, *consumerDsPool, *consumerDsLayout);
+
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*consumerDs, DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                     &imageDsInfo)
+        .writeSingle(*consumerDs, DescriptorSetUpdateBuilder::Location::binding(1), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                     m_config.enableProtected ? &helperDsBuffInfo : &resultDsBuffInfo)
+        .update(vkd, device);
+
+    Move<VkPipelineLayout> consumerLayout = createPipelineLayout<>({*consumerDsLayout});
+    Move<VkPipeline> consumerPipeline     = createComputePipeline(*consumerLayout, false);
+
+    Move<VkCommandPool> producerPool = makeCommandPool(producerIndex);
+    Move<VkCommandPool> consumerPool = makeCommandPool(consumerIndex);
+    Move<VkCommandBuffer> producerCmd =
+        allocateCommandBuffer(vkd, device, *producerPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    Move<VkCommandBuffer> consumerCmd =
+        allocateCommandBuffer(vkd, device, *consumerPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    beginCommandBuffer(vkd, *producerCmd);
+
+    const VkImageMemoryBarrier imagePreTransferBarrier = makeImageMemoryBarrier(
+        0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, **image,
+        imageResourceRange, producerIndex, producerIndex);
+    vkd.cmdPipelineBarrier(*producerCmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
+                           nullptr, 0u, nullptr, 1u, &imagePreTransferBarrier);
+
+    const VkBufferImageCopy copyRegion = {
+        0, 0, 0, {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {0, 0, 0}, {m_config.width, m_config.height, 1}};
+    vkd.cmdCopyBufferToImage(*producerCmd, inputBuffer.get(), **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+                             &copyRegion);
+
+    const VkImageMemoryBarrier imageOwnershipTransferBarrier =
+        makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, 0, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                               VK_IMAGE_LAYOUT_GENERAL, **image, imageResourceRange, producerIndex, consumerIndex);
+    vkd.cmdPipelineBarrier(*producerCmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0u,
+                           nullptr, 0u, nullptr, 1u, &imageOwnershipTransferBarrier);
+
+    endCommandBuffer(vkd, *producerCmd);
+
+    beginCommandBuffer(vkd, *consumerCmd);
+
+    const VkImageMemoryBarrier imageOwnershipAcquireBarrier =
+        makeImageMemoryBarrier(0, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                               VK_IMAGE_LAYOUT_GENERAL, **image, imageResourceRange, producerIndex, consumerIndex);
+    vkd.cmdPipelineBarrier(*consumerCmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0u,
+                           nullptr, 0u, nullptr, 1u, &imageOwnershipAcquireBarrier);
+
+    vkd.cmdBindPipeline(*consumerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *consumerPipeline);
+    vkd.cmdBindDescriptorSets(*consumerCmd, VK_PIPELINE_BIND_POINT_COMPUTE, *consumerLayout, 0, 1, &consumerDs.get(), 0,
+                              nullptr);
+    vkd.cmdDispatch(*consumerCmd, m_config.width, m_config.height, 1);
+    vkd.cmdPipelineBarrier(*consumerCmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0,
+                           nullptr, 1, &resultReadyBarrier, 0, nullptr);
+    endCommandBuffer(vkd, *consumerCmd);
+
+    bool submitSuccess = submitCommands(*producerCmd, *consumerCmd);
+    resultBuffer.invalidateAlloc(vkd, device);
+
     if (m_config.enableProtected)
     {
         return (submitSuccess ? tcu::TestStatus::pass("Validation compute shader ran successfully") :
@@ -1965,6 +2285,7 @@ tcu::TestCaseGroup *createGlobalPriorityQueueTests(tcu::TestContext &testCtx)
     TransitionItem const transitions[]{
         {VK_QUEUE_GRAPHICS_BIT, "graphics"},
         {VK_QUEUE_COMPUTE_BIT, "compute"},
+        {VK_QUEUE_TRANSFER_BIT, "transfer"},
     };
 
     auto mkGroupName = [](const TransitionItem &from, const TransitionItem &to) -> std::string
@@ -2007,25 +2328,39 @@ tcu::TestCaseGroup *createGlobalPriorityQueueTests(tcu::TestContext &testCtx)
                 {
                     for (const auto &transitionTo : transitions)
                     {
-                        if (transitionFrom != transitionTo)
-                        {
-                            TestConfig cfg{};
-                            cfg.transitionFrom      = transitionFrom.first;
-                            cfg.transitionTo        = transitionTo.first;
-                            cfg.priorityFrom        = prio.first;
-                            cfg.priorityTo          = prio.first;
-                            cfg.syncType            = sync.first;
-                            cfg.enableProtected     = (mod.first & VK_QUEUE_PROTECTED_BIT) != 0;
-                            cfg.enableSparseBinding = (mod.first & VK_QUEUE_SPARSE_BINDING_BIT) != 0;
-                            // Note that format is changing in GPQCase::checkSupport(...)
-                            cfg.format = VK_FORMAT_R32G32B32A32_SFLOAT;
-                            cfg.width  = swap ? dim0 : dim1;
-                            cfg.height = swap ? dim1 : dim0;
+                        // skip identical queue transitions
+                        if (transitionFrom.first == transitionTo.first)
+                            continue;
 
-                            swap ^= true;
+                        // ensure we only run the required combinations
+                        bool isGraphicsCompute = (transitionFrom.first == VK_QUEUE_GRAPHICS_BIT &&
+                                                  transitionTo.first == VK_QUEUE_COMPUTE_BIT) ||
+                                                 (transitionFrom.first == VK_QUEUE_COMPUTE_BIT &&
+                                                  transitionTo.first == VK_QUEUE_GRAPHICS_BIT);
+                        bool isComputeTransfer = (transitionFrom.first == VK_QUEUE_COMPUTE_BIT &&
+                                                  transitionTo.first == VK_QUEUE_TRANSFER_BIT) ||
+                                                 (transitionFrom.first == VK_QUEUE_TRANSFER_BIT &&
+                                                  transitionTo.first == VK_QUEUE_COMPUTE_BIT);
 
-                            modGroup->addChild(new GPQCase(testCtx, mkGroupName(transitionFrom, transitionTo), cfg));
-                        }
+                        if (!isGraphicsCompute && !isComputeTransfer)
+                            continue; // skips Graphics<->Transfer and unhandled combinations
+
+                        TestConfig cfg{};
+                        cfg.transitionFrom      = transitionFrom.first;
+                        cfg.transitionTo        = transitionTo.first;
+                        cfg.priorityFrom        = prio.first;
+                        cfg.priorityTo          = prio.first;
+                        cfg.syncType            = sync.first;
+                        cfg.enableProtected     = (mod.first & VK_QUEUE_PROTECTED_BIT) != 0;
+                        cfg.enableSparseBinding = (mod.first & VK_QUEUE_SPARSE_BINDING_BIT) != 0;
+                        // Note that format is changing in GPQCase::checkSupport(...)
+                        cfg.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+                        cfg.width  = swap ? dim0 : dim1;
+                        cfg.height = swap ? dim1 : dim0;
+
+                        swap ^= true;
+
+                        modGroup->addChild(new GPQCase(testCtx, mkGroupName(transitionFrom, transitionTo), cfg));
                     }
                 }
                 syncGroup->addChild(modGroup);

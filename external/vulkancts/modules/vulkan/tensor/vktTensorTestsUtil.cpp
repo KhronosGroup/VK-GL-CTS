@@ -411,5 +411,25 @@ bool deviceSupportsShaderStagesTensorAccess(Context &context, const VkShaderStag
     return (tensorProps.shaderTensorSupportedStages & stages) == stages;
 }
 
+bool tensorSupportsDmaBufImport(Context &context, const VkTensorDescriptionARM description)
+{
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
+    vk::VkPhysicalDeviceExternalTensorInfoARM tensorInfo = vk::initVulkanStructure();
+    tensorInfo.pDescription                              = &description;
+    tensorInfo.handleType                                = vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+
+    vk::VkExternalTensorPropertiesARM externalProperties = vk::initVulkanStructure();
+    vki.getPhysicalDeviceExternalTensorPropertiesARM(physicalDevice, &tensorInfo, &externalProperties);
+
+    const auto &externalMemoryProperties = externalProperties.externalMemoryProperties;
+    const auto &externalMemoryFeatures   = externalMemoryProperties.externalMemoryFeatures;
+
+    return (externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) &&
+           !(externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT) &&
+           (externalMemoryProperties.compatibleHandleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT);
+}
+
 } // namespace tensor
 } // namespace vkt

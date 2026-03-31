@@ -28,7 +28,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktSynchronizationNoneStageTests.hpp"
-#include "vktSynchronizationOperation.hpp"
 #include "vktSynchronizationUtil.hpp"
 #include "vktTestCase.hpp"
 
@@ -48,9 +47,7 @@
 
 #include <vector>
 
-namespace vkt
-{
-namespace synchronization
+namespace vkt::synchronization
 {
 
 using namespace vk;
@@ -1281,6 +1278,9 @@ void NoneStageTestCase::checkSupport(Context &context) const
     if (!usePipelineToWrite && !usePipelineToRead)
         return;
 
+    // when graphics pipeline is used for writing or reading we need to require renderpass2
+    context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+
     VkFormat transitionImageFormat = VK_FORMAT_R8G8B8A8_UNORM;
     if ((writeAspect == VK_IMAGE_ASPECT_DEPTH_BIT) || (readAspect == VK_IMAGE_ASPECT_DEPTH_BIT))
         transitionImageFormat = VK_FORMAT_D32_SFLOAT;
@@ -1445,5 +1445,4 @@ tcu::TestCaseGroup *createNoneStageTests(tcu::TestContext &testCtx)
     return noneStageTests.release();
 }
 
-} // namespace synchronization
-} // namespace vkt
+} // namespace vkt::synchronization

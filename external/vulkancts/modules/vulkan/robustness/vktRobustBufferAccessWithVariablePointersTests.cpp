@@ -1492,8 +1492,8 @@ AccessInstance::AccessInstance(Context &context, Move<VkDevice> device,
 
     if (m_shaderStage == VK_SHADER_STAGE_COMPUTE_BIT)
     {
-        m_testEnvironment = de::MovePtr<TestEnvironment>(
-            new ComputeEnvironment(m_context, *m_deviceDriver, *m_device, *m_descriptorSetLayout, *m_descriptorSet));
+        m_testEnvironment = de::MovePtr<TestEnvironment>(new ComputeEnvironment(
+            m_context, *m_deviceDriver, *m_device, *m_descriptorSetLayout, *m_descriptorSet, false, nullptr));
     }
     else
     {

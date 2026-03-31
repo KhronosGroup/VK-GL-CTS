@@ -1582,12 +1582,39 @@ struct CaseDescriptions
     CaseDescription<CommandBuffer> commandBuffer;
 };
 
+template <typename Parameters>
+void checkSupport(Context &context, Parameters)
+{
+    const auto &vk      = context.getInstanceInterface();
+    auto physicalDevice = context.getPhysicalDevice();
+
+    bool addressBindingReportFound = false;
+    const auto extensions          = enumerateDeviceExtensionProperties(vk, physicalDevice, nullptr);
+    for (auto &ext : extensions)
+    {
+        addressBindingReportFound |= (strcmp(ext.extensionName, "VK_EXT_device_address_binding_report") == 0);
+        if (addressBindingReportFound)
+            break;
+    }
+    if (!addressBindingReportFound)
+        TCU_THROW(NotSupportedError, "VK_EXT_device_address_binding_report not supported");
+
+    VkPhysicalDeviceAddressBindingReportFeaturesEXT deviceAddressBindingReportFeatures = initVulkanStructure();
+    VkPhysicalDeviceFeatures2 deviceFeatures2 = initVulkanStructure(&deviceAddressBindingReportFeatures);
+    vk.getPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
+
+    if (!deviceAddressBindingReportFeatures.reportAddressBinding)
+        TCU_THROW(NotSupportedError, "reportAddressBinding is not supported");
+}
+
 template <typename Object>
 void addCases(const MovePtr<tcu::TestCaseGroup> &group, const CaseDescription<Object> &cases)
 {
     for (const NamedParameters<Object> *cur = cases.paramsBegin; cur != cases.paramsEnd; cur++)
     {
-        addFunctionCase(group.get(), cur->name, cases.function, cur->parameters);
+        addFunctionCase(group.get(), cur->name,
+                        typename FunctionSupport1<typename Object::Parameters>::Function(checkSupport), cases.function,
+                        cur->parameters);
     }
 }
 
@@ -1596,7 +1623,9 @@ void addCasesWithProgs(const MovePtr<tcu::TestCaseGroup> &group, const CaseDescr
 {
     for (const NamedParameters<Object> *cur = cases.paramsBegin; cur != cases.paramsEnd; cur++)
     {
-        addFunctionCaseWithPrograms(group.get(), cur->name, Object::initPrograms, cases.function, cur->parameters);
+        addFunctionCaseWithPrograms(group.get(), cur->name,
+                                    typename FunctionSupport1<typename Object::Parameters>::Function(checkSupport),
+                                    Object::initPrograms, cases.function, cur->parameters);
     }
 }
 
@@ -1731,34 +1760,6 @@ static std::vector<std::string> getInstanceExtensions(const uint32_t instanceVer
     return instanceExtensions;
 }
 
-static bool checkSupport(CustomInstance &customInstance, vk::VkPhysicalDevice &physicalDevice)
-{
-    const std::vector<VkExtensionProperties> extensions =
-        enumerateDeviceExtensionProperties(customInstance.getDriver(), physicalDevice, nullptr);
-
-    for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
-    {
-        if (strcmp("VK_EXT_device_address_binding_report", extensions[extNdx].extensionName) == 0)
-        {
-            VkPhysicalDeviceAddressBindingReportFeaturesEXT deviceAddressBindingReportFeatures{
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT, nullptr, VK_FALSE};
-
-            VkPhysicalDeviceFeatures2 availFeatures;
-            availFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-            availFeatures.pNext = &deviceAddressBindingReportFeatures;
-
-            customInstance.getDriver().getPhysicalDeviceFeatures2(physicalDevice, &availFeatures);
-
-            if (deviceAddressBindingReportFeatures.reportAddressBinding == VK_TRUE)
-                return true;
-            else
-                return false;
-        }
-    }
-
-    return false;
-}
-
 template <typename Object>
 tcu::TestStatus createDestroyObjectTest(Context &context, typename Object::Parameters params)
 {
@@ -1770,11 +1771,6 @@ tcu::TestStatus createDestroyObjectTest(Context &context, typename Object::Param
     vk::VkPhysicalDevice physicalDevice =
         chooseDevice(customInstance.getDriver(), customInstance, context.getTestContext().getCommandLine());
     uint32_t queueFamilyIndex = 0;
-
-    if (!checkSupport(customInstance, physicalDevice))
-    {
-        TCU_THROW(NotSupportedError, "Device address binding report not supported");
-    }
 
     const std::vector<VkQueueFamilyProperties> queueProps =
         getPhysicalDeviceQueueFamilyProperties(customInstance.getDriver(), physicalDevice);

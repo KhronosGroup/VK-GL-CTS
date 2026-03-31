@@ -91,6 +91,8 @@ std::vector<vk::VkSparseImageMemoryRequirements> getDeviceImageSparseMemoryRequi
     VkImageAspectFlagBits planeAspect);
 #endif // CTS_USES_VULKANSC
 
+VkDeviceAddress getBufferDeviceAddress(const DeviceInterface &vk, VkDevice device, VkBuffer buffer);
+
 #ifndef CTS_USES_VULKANSC
 VkMemoryRequirements getTensorMemoryRequirements(const DeviceInterface &vk, VkDevice device, VkTensorARM tensor);
 std::vector<VkDataGraphPipelineSessionBindPointRequirementARM> getDataGraphPipelineSessionBindPointRequirements(

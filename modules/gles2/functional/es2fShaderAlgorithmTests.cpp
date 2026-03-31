@@ -82,7 +82,7 @@ static ShaderAlgorithmCase *createExpressionCase(Context &context, const char *c
     std::ostringstream &op = isVertexCase ? vtx : frag;
 
     vtx << "attribute highp vec4 a_position;\n";
-    vtx << "attribute highp vec4 a_unitCoords;\n";
+    vtx << "attribute ${PRECISION} vec4 a_unitCoords;\n";
 
     if (isVertexCase)
     {

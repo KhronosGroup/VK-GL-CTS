@@ -30,6 +30,7 @@
 #include "deStringUtil.hpp"
 #include "xeXMLParser.hpp"
 #include "tcuCommandLine.hpp"
+#include "tcuDefs.hpp"
 
 namespace tcu
 {
@@ -93,7 +94,7 @@ protected:
 
     // parse waiver.xml and read list of waived tests defined
     // specificly for current device id and current vendor id
-    void readWaivedTestsFromXML(void);
+    bool readWaivedTestsFromXML(void);
 
     // use list of paths to build a temporary tree which
     // consists of BuilComponents that help with tree construction
@@ -151,21 +152,40 @@ WaiverTreeBuilder::~WaiverTreeBuilder()
 
 void WaiverTreeBuilder::build(void)
 {
-    readWaivedTestsFromXML();
+    const bool fileProcessed = readWaivedTestsFromXML();
     buildTreeFromPathList();
     constructFinalTree();
+
+    if (m_testList.empty() && fileProcessed && !m_waiverFile.empty())
+    {
+        tcu::print("WARNING: No waivers in '%s' match current vendor and device ID. No tests will be waived.\n",
+                   m_waiverFile.c_str());
+    }
 }
 
-void WaiverTreeBuilder::readWaivedTestsFromXML()
+bool WaiverTreeBuilder::readWaivedTestsFromXML()
 {
+    if (m_waiverFile.empty())
+        return true;
+
     std::ifstream iStream(m_waiverFile);
     if (!iStream.is_open())
-        return;
+    {
+        tcu::printError("ERROR: Waiver file '%s' could not be opened. No tests will be waived.\n",
+                        m_waiverFile.c_str());
+        return false;
+    }
 
     // get whole waiver file content
     std::stringstream buffer;
     buffer << iStream.rdbuf();
     std::string wholeContent = buffer.str();
+
+    if (wholeContent.empty())
+    {
+        tcu::printError("ERROR: Waiver file '%s' is invalid. No tests will be waived.\n", m_waiverFile.c_str());
+        return false;
+    }
 
     // feed parser with xml content
     xe::xml::Parser xmlParser;
@@ -277,6 +297,8 @@ void WaiverTreeBuilder::readWaivedTestsFromXML()
 
         xmlParser.advance();
     }
+
+    return true;
 }
 
 uint32_t WaiverTreeBuilder::findComponentInBuildTree(const std::vector<std::string> &pathComponents,
