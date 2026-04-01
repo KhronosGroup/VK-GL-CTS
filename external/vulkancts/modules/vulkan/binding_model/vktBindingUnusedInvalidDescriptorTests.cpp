@@ -659,9 +659,43 @@ TestInstance *UnusedInvalidDescriptorWriteTestCase::createInstance(Context &cont
     return new UnusedInvalidDescriptorWriteTestInstance(context, m_params);
 }
 
+void commonCheckSupport(Context &context, const ResourceType type)
+{
+    const auto &features         = context.getDeviceFeatures();
+    const auto &indexingFeatures = context.getDescriptorIndexingFeatures();
+
+    context.requireDeviceFunctionality("VK_EXT_descriptor_indexing");
+
+    if (!indexingFeatures.descriptorBindingPartiallyBound)
+        TCU_THROW(NotSupportedError, "Partially bound bindings not supported");
+
+    switch (type)
+    {
+    case UNIFORM_BUFFER:
+        if (!features.shaderUniformBufferArrayDynamicIndexing)
+            TCU_THROW(NotSupportedError, "Dynamic indexing not supported for uniform buffers");
+        break;
+    case STORAGE_BUFFER:
+        if (!features.shaderStorageBufferArrayDynamicIndexing)
+            TCU_THROW(NotSupportedError, "Dynamic indexing not supported for storage buffers");
+        break;
+    case SAMPLED_IMAGE:
+    case COMBINED_IMAGE_SAMPLER:
+        if (!features.shaderSampledImageArrayDynamicIndexing)
+            TCU_THROW(NotSupportedError, "Dynamic indexing not supported for samplers and sampled images");
+        break;
+    case STORAGE_IMAGE:
+        if (!features.shaderStorageImageArrayDynamicIndexing)
+            TCU_THROW(NotSupportedError, "Dynamic indexing not supported for storage images");
+        break;
+    default:
+        TCU_THROW(InternalError, "Unknown resource type");
+    }
+}
+
 void UnusedInvalidDescriptorWriteTestCase::checkSupport(Context &context) const
 {
-    DE_UNREF(context);
+    commonCheckSupport(context, m_params.type);
 }
 
 tcu::TestStatus UnusedInvalidDescriptorWriteTestInstance::queuePass(const QueueData &queueData)
@@ -974,7 +1008,7 @@ TestInstance *InvalidDescriptorCopyTestCase::createInstance(Context &context) co
 
 void InvalidDescriptorCopyTestCase::checkSupport(Context &context) const
 {
-    DE_UNREF(context);
+    commonCheckSupport(context, m_params.type);
 }
 
 tcu::TestStatus InvalidDescriptorCopyTestInstance::queuePass(const QueueData &queueData)
