@@ -58,9 +58,7 @@
 #include <optional>
 #include <cstring>
 
-namespace vkt
-{
-namespace api
+namespace vkt::api
 {
 namespace
 {
@@ -2197,6 +2195,21 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate(Context &context)
     VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures                           = initVulkanStructure();
     VkPhysicalDeviceShaderIntegerDotProductFeatures shaderIntegerDotProductFeatures             = initVulkanStructure();
     VkPhysicalDeviceMaintenance4Features maintenance4Features                                   = initVulkanStructure();
+
+    VkPhysicalDeviceVulkan14Features vulkan14Features                                   = initVulkanStructure();
+    VkPhysicalDeviceDynamicRenderingLocalReadFeatures dynamicRenderingLocalReadFeatures = initVulkanStructure();
+    VkPhysicalDeviceGlobalPriorityQueryFeatures globalPriorityQueryFeatures             = initVulkanStructure();
+    VkPhysicalDeviceHostImageCopyFeatures hostImageCopyFeatures                         = initVulkanStructure();
+    VkPhysicalDeviceIndexTypeUint8Features indexTypeUint8Features                       = initVulkanStructure();
+    VkPhysicalDeviceLineRasterizationFeatures lineRasterizationFeatures                 = initVulkanStructure();
+    VkPhysicalDeviceMaintenance5Features maintenance5Features                           = initVulkanStructure();
+    VkPhysicalDeviceMaintenance6Features maintenance6Features                           = initVulkanStructure();
+    VkPhysicalDevicePipelineProtectedAccessFeatures pipelineProtectedAccessFeatures     = initVulkanStructure();
+    VkPhysicalDevicePipelineRobustnessFeatures pipelineRobustnessFeatures               = initVulkanStructure();
+    VkPhysicalDeviceShaderExpectAssumeFeatures shaderExpectAssumeFeatures               = initVulkanStructure();
+    VkPhysicalDeviceShaderFloatControls2Features shaderFloatControls2Features           = initVulkanStructure();
+    VkPhysicalDeviceShaderSubgroupRotateFeatures shaderSubgroupRotateFeatures           = initVulkanStructure();
+    VkPhysicalDeviceVertexAttributeDivisorFeatures vertexAttributeDivisorFeatures       = initVulkanStructure();
 #endif // CTS_USES_VULKANSC
 
     struct UnusedExtensionFeatures
@@ -2348,7 +2361,7 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate(Context &context)
         };
     }
 #ifndef CTS_USES_VULKANSC
-    else // if (VK_API_VERSION == VK_API_VERSION_1_3)
+    else if (VK_API_VERSION == VK_API_VERSION_1_3)
     {
         featureTable = {
             FEATURE_TABLE_ITEM(vulkan13Features, imageRobustnessFeatures, robustImageAccess, "VK_EXT_image_robustness"),
@@ -2379,7 +2392,49 @@ tcu::TestStatus featureBitInfluenceOnDeviceCreate(Context &context)
             FEATURE_TABLE_ITEM(vulkan13Features, maintenance4Features, maintenance4, "VK_KHR_maintenance4"),
         };
     }
-#endif // CTS_USES_VULKANSC
+    else if (VK_API_VERSION == VK_API_VERSION_1_4)
+    {
+        featureTable = {
+            FEATURE_TABLE_ITEM(vulkan14Features, dynamicRenderingLocalReadFeatures, dynamicRenderingLocalRead,
+                               "VK_KHR_dynamic_rendering_local_read"),
+            FEATURE_TABLE_ITEM(vulkan14Features, globalPriorityQueryFeatures, globalPriorityQuery,
+                               "VK_KHR_global_priority"),
+            FEATURE_TABLE_ITEM(vulkan14Features, hostImageCopyFeatures, hostImageCopy, "VK_EXT_host_image_copy"),
+            FEATURE_TABLE_ITEM(vulkan14Features, indexTypeUint8Features, indexTypeUint8, "VK_KHR_index_type_uint8"),
+            FEATURE_TABLE_ITEM(vulkan14Features, lineRasterizationFeatures, rectangularLines,
+                               "VK_KHR_line_rasterization"),
+            FEATURE_TABLE_ITEM(vulkan14Features, lineRasterizationFeatures, bresenhamLines,
+                               "VK_KHR_line_rasterization"),
+            FEATURE_TABLE_ITEM(vulkan14Features, lineRasterizationFeatures, smoothLines, "VK_KHR_line_rasterization"),
+            FEATURE_TABLE_ITEM(vulkan14Features, lineRasterizationFeatures, stippledRectangularLines,
+                               "VK_KHR_line_rasterization"),
+            FEATURE_TABLE_ITEM(vulkan14Features, lineRasterizationFeatures, stippledBresenhamLines,
+                               "VK_KHR_line_rasterization"),
+            FEATURE_TABLE_ITEM(vulkan14Features, lineRasterizationFeatures, stippledSmoothLines,
+                               "VK_KHR_line_rasterization"),
+            FEATURE_TABLE_ITEM(vulkan14Features, maintenance5Features, maintenance5, "VK_KHR_maintenance5"),
+            FEATURE_TABLE_ITEM(vulkan14Features, maintenance6Features, maintenance6, "VK_KHR_maintenance6"),
+            FEATURE_TABLE_ITEM(vulkan14Features, pipelineProtectedAccessFeatures, pipelineProtectedAccess,
+                               "VK_EXT_pipeline_protected_access"),
+            FEATURE_TABLE_ITEM(vulkan14Features, pipelineRobustnessFeatures, pipelineRobustness,
+                               "VK_EXT_pipeline_robustness"),
+            FEATURE_TABLE_ITEM(vulkan14Features, shaderExpectAssumeFeatures, shaderExpectAssume,
+                               "VK_KHR_shader_expect_assume"),
+            FEATURE_TABLE_ITEM(vulkan14Features, shaderFloatControls2Features, shaderFloatControls2,
+                               "VK_KHR_shader_float_controls2"),
+            FEATURE_TABLE_ITEM(vulkan14Features, shaderSubgroupRotateFeatures, shaderSubgroupRotate,
+                               "VK_KHR_shader_subgroup_rotate"),
+            FEATURE_TABLE_ITEM(vulkan14Features, shaderSubgroupRotateFeatures, shaderSubgroupRotateClustered,
+                               "VK_KHR_shader_subgroup_rotate"),
+            FEATURE_TABLE_ITEM(vulkan14Features, vertexAttributeDivisorFeatures, vertexAttributeInstanceRateDivisor,
+                               "VK_KHR_vertex_attribute_divisor"),
+            FEATURE_TABLE_ITEM(vulkan14Features, vertexAttributeDivisorFeatures, vertexAttributeInstanceRateZeroDivisor,
+                               "VK_KHR_vertex_attribute_divisor"),
+        };
+    }
+    else
+        DE_ASSERT(false); // api version not handled
+#endif                    // CTS_USES_VULKANSC
 
     deMemset(&unusedExtensionFeatures, 0, sizeof(unusedExtensionFeatures));
 
@@ -8738,5 +8793,4 @@ void createFeatureInfoDeviceGroupTests(tcu::TestCaseGroup *testGroup)
                                               deviceGroupPeerMemoryFeatures);
 }
 
-} // namespace api
-} // namespace vkt
+} // namespace vkt::api
