@@ -743,7 +743,7 @@ class ConformanceItemLists:
             # add sType to VkStructureType enum
             for e in self.enums:
                 if e.name == 'VkStructureType':
-                    e.fields.append(EnumField(sType, [], None, False, 1000158006, '1000158006', []))
+                    e.fields.append(EnumField(sType, [], 'VkStructureType', None, False, 1000158006, '1000158006', [], True))
     # </vulkan_sc_workaround>
 
     def filterToSupportedByCTS(self, items):
@@ -818,19 +818,23 @@ class BasicTypesGenerator(CTSGenerator):
                 # append VkStructureType field required by vulkan_json_data.hpp
                 st.fields.append(EnumField(name = "VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV",
                                          aliases=[],
+                                         parent='VkStructureType',
                                          protect=None,
                                          negative=False,
                                          value = 1000314008,
                                          valueStr = "1000314008",
-                                         extensions=[]))
+                                         extensions=[],
+                                         extending=True))
                 # append VkStructureType field required by cts for SC
                 st.fields.append(EnumField(name = "VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO",
                                          aliases=[],
+                                         parent='VkStructureType',
                                          protect=None,
                                          negative=False,
                                          value = 16,
                                          valueStr = "16",
-                                         extensions=[]))
+                                         extensions=[],
+                                         extending=True))
 
             # <vulkan_object_issue_workaround>
             # add missing VK_STD_VIDEO_AV1_COLOR_PRIMARIES_BT_UNSPECIFIED alias

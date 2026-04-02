@@ -1757,7 +1757,7 @@ void DeviceDriver::destroyAccelerationStructureNV (VkDevice device, VkAccelerati
     m_vk.destroyAccelerationStructureNV(device, accelerationStructure, pAllocator);
 }
 
-void DeviceDriver::getAccelerationStructureMemoryRequirementsNV (VkDevice device, const VkAccelerationStructureMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements) const
+void DeviceDriver::getAccelerationStructureMemoryRequirementsNV (VkDevice device, const VkAccelerationStructureMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
 {
     m_vk.getAccelerationStructureMemoryRequirementsNV(device, pInfo, pMemoryRequirements);
 }
@@ -2065,7 +2065,7 @@ void DeviceDriver::cmdBindInvocationMaskHUAWEI (VkCommandBuffer commandBuffer, V
     m_vk.cmdBindInvocationMaskHUAWEI(commandBuffer, imageView, imageLayout);
 }
 
-VkResult DeviceDriver::getPipelinePropertiesEXT (VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties) const
+VkResult DeviceDriver::getPipelinePropertiesEXT (VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, VkBaseOutStructure* pPipelineProperties) const
 {
     return m_vk.getPipelinePropertiesEXT(device, pPipelineInfo, pPipelineProperties);
 }

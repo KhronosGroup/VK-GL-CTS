@@ -359,7 +359,7 @@ virtual void				freeMemory												(VkDevice device, VkDeviceMemory memory, c
 virtual void				getAccelerationStructureBuildSizesKHR					(VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkAccelerationStructureBuildGeometryInfoKHR* pBuildInfo, const uint32_t* pMaxPrimitiveCounts, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) const;
 virtual VkDeviceAddress		getAccelerationStructureDeviceAddressKHR				(VkDevice device, const VkAccelerationStructureDeviceAddressInfoKHR* pInfo) const;
 virtual VkResult			getAccelerationStructureHandleNV						(VkDevice device, VkAccelerationStructureNV accelerationStructure, size_t dataSize, void* pData) const;
-virtual void				getAccelerationStructureMemoryRequirementsNV			(VkDevice device, const VkAccelerationStructureMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements) const;
+virtual void				getAccelerationStructureMemoryRequirementsNV			(VkDevice device, const VkAccelerationStructureMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2* pMemoryRequirements) const;
 virtual VkResult			getAccelerationStructureOpaqueCaptureDescriptorDataEXT	(VkDevice device, const VkAccelerationStructureCaptureDescriptorDataInfoEXT* pInfo, void* pData) const;
 virtual VkResult			getAndroidHardwareBufferPropertiesANDROID				(VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties) const;
 virtual VkDeviceAddress		getBufferDeviceAddress									(VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const;
@@ -435,7 +435,7 @@ virtual VkResult			getPipelineExecutableStatisticsKHR						(VkDevice device, con
 virtual VkDeviceAddress		getPipelineIndirectDeviceAddressNV						(VkDevice device, const VkPipelineIndirectDeviceAddressInfoNV* pInfo) const;
 virtual void				getPipelineIndirectMemoryRequirementsNV					(VkDevice device, const VkComputePipelineCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements) const;
 virtual VkResult			getPipelineKeyKHR										(VkDevice device, const VkPipelineCreateInfoKHR* pPipelineCreateInfo, VkPipelineBinaryKeyKHR* pPipelineKey) const;
-virtual VkResult			getPipelinePropertiesEXT								(VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties) const;
+virtual VkResult			getPipelinePropertiesEXT								(VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, VkBaseOutStructure* pPipelineProperties) const;
 virtual void				getPrivateData											(VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlot privateDataSlot, uint64_t* pData) const;
 virtual VkResult			getQueryPoolResults										(VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags) const;
 virtual VkResult			getRayTracingCaptureReplayShaderGroupHandlesKHR			(VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData) const;

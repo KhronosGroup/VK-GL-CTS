@@ -558,7 +558,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetViewportShadingRatePaletteNVFunc)
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetCoarseSampleOrderNVFunc)												(VkCommandBuffer commandBuffer, VkCoarseSampleOrderTypeNV sampleOrderType, uint32_t customSampleOrderCount, const VkCoarseSampleOrderCustomNV* pCustomSampleOrders);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateAccelerationStructureNVFunc)											(VkDevice device, const VkAccelerationStructureCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureNV* pAccelerationStructure);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyAccelerationStructureNVFunc)										(VkDevice device, VkAccelerationStructureNV accelerationStructure, const VkAllocationCallbacks* pAllocator);
-typedef VKAPI_ATTR void					(VKAPI_CALL* GetAccelerationStructureMemoryRequirementsNVFunc)							(VkDevice device, const VkAccelerationStructureMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetAccelerationStructureMemoryRequirementsNVFunc)							(VkDevice device, const VkAccelerationStructureMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2* pMemoryRequirements);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BindAccelerationStructureMemoryNVFunc)										(VkDevice device, uint32_t bindInfoCount, const VkBindAccelerationStructureMemoryInfoNV* pBindInfos);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBuildAccelerationStructureNVFunc)										(VkCommandBuffer commandBuffer, const VkAccelerationStructureInfoNV* pInfo, VkBuffer instanceData, VkDeviceSize instanceOffset, VkBool32 update, VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkBuffer scratch, VkDeviceSize scratchOffset);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyAccelerationStructureNVFunc)										(VkCommandBuffer commandBuffer, VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkCopyAccelerationStructureModeKHR mode);
@@ -686,7 +686,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryZirconHandlePropertiesFUCHS
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportSemaphoreZirconHandleFUCHSIAFunc)									(VkDevice device, const VkImportSemaphoreZirconHandleInfoFUCHSIA* pImportSemaphoreZirconHandleInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSemaphoreZirconHandleFUCHSIAFunc)										(VkDevice device, const VkSemaphoreGetZirconHandleInfoFUCHSIA* pGetZirconHandleInfo, pt::zx_handle_t* pZirconHandle);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindInvocationMaskHUAWEIFunc)											(VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelinePropertiesEXTFunc)												(VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelinePropertiesEXTFunc)												(VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, VkBaseOutStructure* pPipelineProperties);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetPatchControlPointsEXTFunc)											(VkCommandBuffer commandBuffer, uint32_t patchControlPoints);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRasterizerDiscardEnableEXTFunc)										(VkCommandBuffer commandBuffer, VkBool32 rasterizerDiscardEnable);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRasterizerDiscardEnableFunc)											(VkCommandBuffer commandBuffer, VkBool32 rasterizerDiscardEnable);

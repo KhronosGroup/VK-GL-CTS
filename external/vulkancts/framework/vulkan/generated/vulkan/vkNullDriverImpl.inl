@@ -3127,7 +3127,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getAccelerationStructureHandleNV (VkDevice device
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL getAccelerationStructureMemoryRequirementsNV (VkDevice device, const VkAccelerationStructureMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements)
+VKAPI_ATTR void VKAPI_CALL getAccelerationStructureMemoryRequirementsNV (VkDevice device, const VkAccelerationStructureMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2* pMemoryRequirements)
 {
 	DE_UNREF(device);
 	DE_UNREF(pInfo);
@@ -4301,7 +4301,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPipelineKeyKHR (VkDevice device, const VkPipel
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPipelinePropertiesEXT (VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties)
+VKAPI_ATTR VkResult VKAPI_CALL getPipelinePropertiesEXT (VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, VkBaseOutStructure* pPipelineProperties)
 {
 	DE_UNREF(device);
 	DE_UNREF(pPipelineInfo);

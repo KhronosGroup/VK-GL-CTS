@@ -102,8 +102,14 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM",
 		"vkGetPhysicalDeviceQueueFamilyDataGraphPropertiesARM",
 
+		// "VK_ARM_data_graph_instruction_set_tosa
+		"vkGetPhysicalDeviceQueueFamilyDataGraphEngineOperationPropertiesARM",
+
 		// "VK_ARM_performance_counters_by_region
 		"vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM",
+
+		// "VK_ARM_scheduling_controls
+		"vkCmdSetDispatchParametersARM",
 
 		// "VK_ARM_shader_instrumentation
 		"vkClearShaderInstrumentationMetricsARM",
@@ -387,6 +393,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetSwapchainTimeDomainPropertiesEXT",
 		"vkGetSwapchainTimingPropertiesEXT",
 		"vkSetSwapchainPresentTimingQueueSizeEXT",
+
+		// "VK_EXT_primitive_restart_index
+		"vkCmdSetPrimitiveRestartIndexEXT",
 
 		// "VK_EXT_private_data
 		"vkCreatePrivateDataSlotEXT",
@@ -1028,6 +1037,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 
 		// "VK_OHOS_surface
 		"vkCreateSurfaceOHOS",
+
+		// "VK_QCOM_queue_perf_hint
+		"vkQueueSetPerfHintQCOM",
 
 		// "VK_QCOM_tile_memory_heap
 		"vkCmdBindTileMemoryQCOM",

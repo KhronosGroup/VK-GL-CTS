@@ -592,6 +592,18 @@ bool check_VK_ARM_data_graph(const tcu::UVec2& v, const ExtPropVect& vIEP, const
 	return (isCompatible(1, 3, v) && (isCompatible(1, 4, v) || isSupported(vDEP, "VK_KHR_maintenance5")) && isSupported(vDEP, "VK_KHR_deferred_host_operations"));
 }
 
+bool check_VK_ARM_data_graph_instruction_set_tosa(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_ARM_data_graph_instruction_set_tosa"))
+		return true;
+
+	// depends attribute in xml: VK_ARM_data_graph
+	return isSupported(vDEP, "VK_ARM_data_graph");
+}
+
 bool check_VK_ARM_format_pack(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -1692,6 +1704,18 @@ bool check_VK_EXT_present_timing(const tcu::UVec2& v, const ExtPropVect& vIEP, c
 
 	// depends attribute in xml: VK_KHR_swapchain+VK_KHR_present_id2+VK_KHR_get_surface_capabilities2+VK_KHR_calibrated_timestamps
 	return (isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vDEP, "VK_KHR_present_id2") && isSupported(vIEP, "VK_KHR_get_surface_capabilities2") && isSupported(vDEP, "VK_KHR_calibrated_timestamps"));
+}
+
+bool check_VK_EXT_primitive_restart_index(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_primitive_restart_index"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_primitive_topology_list_restart(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -4462,6 +4486,18 @@ bool check_VK_QCOM_multiview_per_view_viewports(const tcu::UVec2& v, const ExtPr
 	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
+bool check_VK_QCOM_queue_perf_hint(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_QCOM_queue_perf_hint"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
 bool check_VK_QCOM_rotated_copy_commands(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4632,6 +4668,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_ANDROID_external_format_resolve",					&check_VK_ANDROID_external_format_resolve),
 	std::make_pair("VK_ANDROID_external_memory_android_hardware_buffer",	&check_VK_ANDROID_external_memory_android_hardware_buffer),
 	std::make_pair("VK_ARM_data_graph",										&check_VK_ARM_data_graph),
+	std::make_pair("VK_ARM_data_graph_instruction_set_tosa",				&check_VK_ARM_data_graph_instruction_set_tosa),
 	std::make_pair("VK_ARM_format_pack",									&check_VK_ARM_format_pack),
 	std::make_pair("VK_ARM_performance_counters_by_region",					&check_VK_ARM_performance_counters_by_region),
 	std::make_pair("VK_ARM_pipeline_opacity_micromap",						&check_VK_ARM_pipeline_opacity_micromap),
@@ -4722,6 +4759,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_pipeline_robustness",							&check_VK_EXT_pipeline_robustness),
 	std::make_pair("VK_EXT_present_mode_fifo_latest_ready",					&check_VK_EXT_present_mode_fifo_latest_ready),
 	std::make_pair("VK_EXT_present_timing",									&check_VK_EXT_present_timing),
+	std::make_pair("VK_EXT_primitive_restart_index",						&check_VK_EXT_primitive_restart_index),
 	std::make_pair("VK_EXT_primitive_topology_list_restart",				&check_VK_EXT_primitive_topology_list_restart),
 	std::make_pair("VK_EXT_primitives_generated_query",						&check_VK_EXT_primitives_generated_query),
 	std::make_pair("VK_EXT_private_data",									&check_VK_EXT_private_data),
@@ -4944,6 +4982,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_QCOM_image_processing2",								&check_VK_QCOM_image_processing2),
 	std::make_pair("VK_QCOM_multiview_per_view_render_areas",				&check_VK_QCOM_multiview_per_view_render_areas),
 	std::make_pair("VK_QCOM_multiview_per_view_viewports",					&check_VK_QCOM_multiview_per_view_viewports),
+	std::make_pair("VK_QCOM_queue_perf_hint",								&check_VK_QCOM_queue_perf_hint),
 	std::make_pair("VK_QCOM_rotated_copy_commands",							&check_VK_QCOM_rotated_copy_commands),
 	std::make_pair("VK_QCOM_tile_memory_heap",								&check_VK_QCOM_tile_memory_heap),
 	std::make_pair("VK_QCOM_tile_properties",								&check_VK_QCOM_tile_properties),
@@ -4997,6 +5036,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_ANDROID_external_format_resolve"),
 	std::make_tuple(1, 0, "VK_ANDROID_external_memory_android_hardware_buffer"),
 	std::make_tuple(1, 3, "VK_ARM_data_graph"),
+	std::make_tuple(1, 3, "VK_ARM_data_graph_instruction_set_tosa"),
 	std::make_tuple(1, 0, "VK_ARM_format_pack"),
 	std::make_tuple(1, 0, "VK_ARM_performance_counters_by_region"),
 	std::make_tuple(1, 0, "VK_ARM_pipeline_opacity_micromap"),
@@ -5104,6 +5144,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_post_depth_coverage"),
 	std::make_tuple(1, 0, "VK_EXT_present_mode_fifo_latest_ready"),
 	std::make_tuple(1, 0, "VK_EXT_present_timing"),
+	std::make_tuple(1, 0, "VK_EXT_primitive_restart_index"),
 	std::make_tuple(1, 0, "VK_EXT_primitive_topology_list_restart"),
 	std::make_tuple(1, 0, "VK_EXT_primitives_generated_query"),
 	std::make_tuple(1, 0, "VK_EXT_private_data"),
@@ -5402,6 +5443,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_QCOM_image_processing2"),
 	std::make_tuple(1, 0, "VK_QCOM_multiview_per_view_render_areas"),
 	std::make_tuple(1, 0, "VK_QCOM_multiview_per_view_viewports"),
+	std::make_tuple(1, 0, "VK_QCOM_queue_perf_hint"),
 	std::make_tuple(1, 0, "VK_QCOM_render_pass_shader_resolve"),
 	std::make_tuple(1, 0, "VK_QCOM_render_pass_store_ops"),
 	std::make_tuple(1, 0, "VK_QCOM_render_pass_transform"),
