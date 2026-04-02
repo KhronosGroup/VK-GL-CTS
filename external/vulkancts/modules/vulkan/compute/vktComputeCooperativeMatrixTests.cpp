@@ -3820,6 +3820,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
         }
         else if (isFloatType(dataTypes[0]))
         {
+            const bool isB16Dij = (dataTypes[3] == VK_COMPONENT_TYPE_BFLOAT16_KHR);
+
             if (isReduceOp(m_data.testType))
             {
                 uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
@@ -3828,8 +3830,6 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                 uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
                                           m_data.workgroupsY :
                                           (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
-
-                const bool isB16Dij = (dataTypes[3] == VK_COMPONENT_TYPE_BFLOAT16_KHR);
 
                 for (uint32_t mX = 0; mX < numMatrixX; ++mX)
                 {
@@ -4651,10 +4651,34 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                 {
                                     if (max(max(M, N), K) >= 48)
                                     {
-                                        if (fabs(ref - Dij) / (fabs(ref) + 0.001) > 3.0 / 1024)
+                                        bool specialB16Check   = false;
+                                        float specialThreshold = 0.0f;
+
+                                        if (isB16Dij)
                                         {
-                                            //printf("ref %f Dij %f\n", ref, Dij);
-                                            res = QP_TEST_RESULT_FAIL;
+                                            const auto maybeThres = calcB16Threshold(ref);
+                                            if (!!maybeThres)
+                                            {
+                                                specialB16Check  = true;
+                                                specialThreshold = *maybeThres;
+                                            }
+                                        }
+
+                                        if (specialB16Check)
+                                        {
+                                            if (fabs(ref - Dij) > specialThreshold)
+                                            {
+                                                //printf("ref %f Dij %f\n", ref, Dij);
+                                                res = QP_TEST_RESULT_FAIL;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if (fabs(ref - Dij) / (fabs(ref) + 0.001) > 3.0 / 1024)
+                                            {
+                                                //printf("ref %f Dij %f\n", ref, Dij);
+                                                res = QP_TEST_RESULT_FAIL;
+                                            }
                                         }
                                     }
                                     else
