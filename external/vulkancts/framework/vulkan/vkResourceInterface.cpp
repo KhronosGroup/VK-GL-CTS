@@ -393,10 +393,10 @@ const uint8_t *ResourceInterface::getCacheData() const
 
 VkPipelineCache ResourceInterface::getPipelineCache(VkDevice device) const
 {
-    auto pit = m_pipelineCache.find(device);
-    if (pit == end(m_pipelineCache))
-        TCU_THROW(InternalError, "m_pipelineCache not found for this device");
-    return pit->second.get()->get();
+    auto pit = m_devicePipelineCaches.find(device);
+    if (pit == end(m_devicePipelineCaches))
+        TCU_THROW(InternalError, "Pipeline cache not found for this device");
+    return pit->second.pipelineCache.get()->get();
 }
 
 #endif // CTS_USES_VULKANSC
@@ -432,8 +432,19 @@ void ResourceInterfaceStandard::initDevice(DeviceInterface &deviceInterface, VkD
                 m_cacheData.size(),                                       // uintptr_t initialDataSize;
                 m_cacheData.data()                                        // const void* pInitialData;
             };
-            m_pipelineCache[device] = de::SharedPtr<Move<VkPipelineCache>>(
-                new Move<VkPipelineCache>(createPipelineCache(deviceInterface, device, &pCreateInfo, nullptr)));
+            auto &pipelineCacheInfo = m_devicePipelineCaches[device];
+            if (pipelineCacheInfo.refCount == 0)
+            {
+                pipelineCacheInfo.pipelineCache = de::SharedPtr<Move<VkPipelineCache>>(
+                    new Move<VkPipelineCache>(createPipelineCache(deviceInterface, device, &pCreateInfo, nullptr)));
+                pipelineCacheInfo.refCount = 1;
+            }
+            else
+            {
+                DE_ASSERT(pipelineCacheInfo.pipelineCache);
+                // Increment reference count
+                pipelineCacheInfo.refCount++;
+            }
         }
     }
 #endif // CTS_USES_VULKANSC
@@ -444,7 +455,20 @@ void ResourceInterfaceStandard::deinitDevice(VkDevice device)
 #ifdef CTS_USES_VULKANSC
     if (m_testCtx.getCommandLine().isSubProcess())
     {
-        m_pipelineCache.erase(device);
+        auto it = m_devicePipelineCaches.find(device);
+        if (it != m_devicePipelineCaches.end())
+        {
+            if (it->second.refCount == 1)
+            {
+                // Last reference so ready to delete pipeline cache
+                m_devicePipelineCaches.erase(it);
+            }
+            else
+            {
+                // Only decrement reference count
+                it->second.refCount--;
+            }
+        }
     }
 #else
     DE_UNREF(device);
@@ -510,7 +534,7 @@ VkResult ResourceInterfaceStandard::createShaderModule(VkDevice device, const Vk
         }
     }
 
-    // main process: store VkShaderModuleCreateInfo in JSON format. Shaders will be sent later for m_pipelineCache creation ( and sent through file to another process )
+    // main process: store VkShaderModuleCreateInfo in JSON format. Shaders will be sent later for device pipeline cache creation ( and sent through file to another process )
     *pShaderModule = incResourceCounter<VkShaderModule>();
     registerObjectHash(pShaderModule->getInternal(), calculateShaderModuleHash(*pCreateInfo, getObjectHashes()));
     m_pipelineInput.shaderModules.insert({*pShaderModule, writeJSON_VkShaderModuleCreateInfo(*pCreateInfo)});
@@ -691,24 +715,24 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines(VkDevice device, VkP
         }
     }
 
-    // subprocess: load graphics pipelines from OUR m_pipelineCache cache
+    // subprocess: load graphics pipelines from OUR device pipeline cache
     if (normalMode)
     {
         const auto it = m_createGraphicsPipelinesFunc.find(device);
         if (it != end(m_createGraphicsPipelinesFunc))
         {
-            auto pit = m_pipelineCache.find(device);
-            if (pit != end(m_pipelineCache))
+            auto pit = m_devicePipelineCaches.find(device);
+            if (pit != end(m_devicePipelineCaches))
             {
-                VkPipelineCache pCache = pit->second->get();
+                VkPipelineCache pCache = pit->second.pipelineCache->get();
                 return it->second(device, pCache, createInfoCount, pCreateInfoCopies.data(), pAllocator, pPipelines);
             }
-            TCU_THROW(InternalError, "m_pipelineCache not initialized for this device");
+            TCU_THROW(InternalError, "Pipeline cache not initialized for this device");
         }
         TCU_THROW(InternalError, "vkCreateGraphicsPipelines not defined");
     }
 
-    // main process: store pipelines in JSON format. Pipelines will be sent later for m_pipelineCache creation ( and sent through file to another process )
+    // main process: store pipelines in JSON format. Pipelines will be sent later for device pipeline cache creation ( and sent through file to another process )
     for (uint32_t i = 0; i < createInfoCount; ++i)
     {
         m_pipelineIdentifiers.insert({pPipelines[i], pipelineIDs[i]});
@@ -786,18 +810,18 @@ VkResult ResourceInterfaceStandard::createComputePipelines(VkDevice device, VkPi
         const auto it = m_createComputePipelinesFunc.find(device);
         if (it != end(m_createComputePipelinesFunc))
         {
-            auto pit = m_pipelineCache.find(device);
-            if (pit != end(m_pipelineCache))
+            auto pit = m_devicePipelineCaches.find(device);
+            if (pit != end(m_devicePipelineCaches))
             {
-                VkPipelineCache pCache = pit->second->get();
+                VkPipelineCache pCache = pit->second.pipelineCache->get();
                 return it->second(device, pCache, createInfoCount, pCreateInfoCopies.data(), pAllocator, pPipelines);
             }
-            TCU_THROW(InternalError, "m_pipelineCache not initialized for this device");
+            TCU_THROW(InternalError, "Pipeline cache not initialized for this device");
         }
         TCU_THROW(InternalError, "vkCreateComputePipelines not defined");
     }
 
-    // main process: store pipelines in JSON format. Pipelines will be sent later for m_pipelineCache creation ( and sent through file to another process )
+    // main process: store pipelines in JSON format. Pipelines will be sent later for device pipeline cache creation ( and sent through file to another process )
     for (uint32_t i = 0; i < createInfoCount; ++i)
     {
         m_pipelineIdentifiers.insert({pPipelines[i], pipelineIDs[i]});
@@ -994,16 +1018,25 @@ void ResourceInterfaceStandard::resetPipelineCaches()
 {
     if (m_testCtx.getCommandLine().isSubProcess())
     {
-        m_pipelineCache.clear();
+        m_devicePipelineCaches.clear();
     }
 }
 
 bool ResourceInterfaceStandard::resetPipelineCache(VkDevice device, bool onlyIfInSubprocess)
 {
-    if (auto cache = m_pipelineCache.find(device);
-        cache != m_pipelineCache.end() && (!onlyIfInSubprocess || m_testCtx.getCommandLine().isSubProcess()))
+    if (auto it = m_devicePipelineCaches.find(device);
+        it != m_devicePipelineCaches.end() && (!onlyIfInSubprocess || m_testCtx.getCommandLine().isSubProcess()))
     {
-        m_pipelineCache.erase(cache);
+        if (it->second.refCount == 1)
+        {
+            // Last reference so ready to delete pipeline cache
+            m_devicePipelineCaches.erase(it);
+        }
+        else
+        {
+            // Only decrement reference count
+            it->second.refCount--;
+        }
     }
     return false;
 }

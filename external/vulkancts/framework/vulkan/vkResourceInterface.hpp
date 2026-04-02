@@ -157,7 +157,22 @@ protected:
     mutable std::map<VkDevice, std::string> m_deviceFeatures;
     mutable std::map<VkDevice, std::vector<std::string>> m_deviceExtensions;
 
-    std::map<VkDevice, de::SharedPtr<Move<VkPipelineCache>>> m_pipelineCache;
+    // There may be multiple DeviceDriverSC objects initialized with the same actual VkDevice
+    // handle in some test cases, therefore we need to track the number of times a pipeline cache
+    // has been registered with the VkDevice to avoid double-adding and then erasure to result
+    // in missing pipeline cache data for the device.
+    // Note that this would not be necessary if the pipeline cache would be maintained by the
+    // object owning it (e.g. the DeviceDriverSC object iself) or if the pipeline cache map
+    // would be indexed with the object owning it (i.e. the DeviceDriverSC object), or if the
+    // test cases wouldn't create multiple instances of DeviceDriver[SC] objects for the same
+    // VkDevice unnecessarily, which is a practice that is somewhat recent.
+    struct DevicePipelineCacheInfo
+    {
+        de::SharedPtr<Move<VkPipelineCache>> pipelineCache;
+        uint32_t refCount{0};
+    };
+
+    std::map<VkDevice, DevicePipelineCacheInfo> m_devicePipelineCaches;
 
     mutable std::mutex m_mutex;
     mutable uint64_t m_resourceCounter;
