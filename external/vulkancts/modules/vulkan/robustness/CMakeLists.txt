@@ -24,6 +24,8 @@ set(DEQP_VK_ROBUSTNESS_SRCS
 	vktRobustnessExtsTests.hpp
 	vktRobustness1VertexAccessTests.cpp
 	vktRobustness1VertexAccessTests.hpp
+	vktRobustnessOOBAccessTests.cpp
+	vktRobustnessOOBAccessTests.hpp
 	)
 
 PCH(DEQP_VK_ROBUSTNESS_SRCS ../pch.cpp)

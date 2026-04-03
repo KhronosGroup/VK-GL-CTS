@@ -566,6 +566,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/robustness/vktRobustnessBufferAccessTests.cpp",
         "external/vulkancts/modules/vulkan/robustness/vktRobustnessExtsTests.cpp",
         "external/vulkancts/modules/vulkan/robustness/vktRobustnessIndexAccessTests.cpp",
+        "external/vulkancts/modules/vulkan/robustness/vktRobustnessOOBAccessTests.cpp",
         "external/vulkancts/modules/vulkan/robustness/vktRobustnessTests.cpp",
         "external/vulkancts/modules/vulkan/robustness/vktRobustnessUtil.cpp",
         "external/vulkancts/modules/vulkan/robustness/vktRobustnessVertexAccessTests.cpp",
