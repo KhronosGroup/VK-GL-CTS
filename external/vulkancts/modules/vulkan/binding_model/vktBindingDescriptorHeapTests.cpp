@@ -11633,6 +11633,514 @@ tcu::TestStatus DescriptorHeapTestInstanceSamplerHeapAccess::iterate()
     return tcu::TestStatus::pass("Pass");
 }
 
+class DescriptorHeapTestInstanceSecondary final : public DescriptorHeapTestInstanceBase
+{
+public:
+    explicit DescriptorHeapTestInstanceSecondary(Context &context, const TestParams &params)
+        : DescriptorHeapTestInstanceBase(context, params)
+        , m_params{params}
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    TestParams m_params;
+};
+
+tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
+{
+    const auto &vkd = *m_deviceInterface;
+
+    const VkFormat imageFormat          = VK_FORMAT_R8G8B8A8_UNORM;
+    const VkDeviceSize bufferStride     = getBufferDescriptorStride(m_descriptorHeapProperties);
+    const VkDeviceSize resourceStride   = getImageDescriptorStride(m_descriptorHeapProperties);
+    const VkDeviceSize samplerStride    = getSamplerDescriptorStride(m_descriptorHeapProperties);
+    const uint32_t imageHeapIndex       = 16u;
+    const uint32_t samplerHeapIndex     = 29u;
+    const float expectedColor[4]        = {0.8f, 0.4f, 0.2f, 0.6f};
+    const uint8_t expectedColorUint8[4] = {
+        static_cast<uint8_t>(expectedColor[0] * 255), static_cast<uint8_t>(expectedColor[1] * 255),
+        static_cast<uint8_t>(expectedColor[2] * 255), static_cast<uint8_t>(expectedColor[3] * 255)};
+    const uint32_t imageSize                            = 32u;
+    const VkImageSubresourceRange imageSubresourceRange = makeDefaultImageSubresourceRange();
+
+    const VkDeviceSize resourceDescriptorCount = imageHeapIndex + 1u;
+    const VkDeviceSize resourceUserHeapSize =
+        alignUp(resourceDescriptorCount * resourceStride, m_descriptorHeapProperties.resourceHeapAlignment);
+    const VkDeviceSize resourceHeapSize =
+        resourceUserHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
+    auto resourceHeap = createBufferAndMemory(resourceHeapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
+                                                                    VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+    const VkDeviceSize samplerDescriptorCount = samplerHeapIndex + 1u;
+    const VkDeviceSize samplerUserHeapSize =
+        alignUp(samplerDescriptorCount * samplerStride, m_descriptorHeapProperties.samplerHeapAlignment);
+    const VkDeviceSize samplerHeapSize = samplerUserHeapSize + m_descriptorHeapProperties.minSamplerHeapReservedRange;
+    auto samplerHeap = createBufferAndMemory(samplerHeapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
+                                                                  VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+    VkBindHeapInfoEXT resourceHeapBindInfo   = initVulkanStructure();
+    resourceHeapBindInfo.heapRange.address   = resourceHeap->address;
+    resourceHeapBindInfo.heapRange.size      = resourceHeapSize;
+    resourceHeapBindInfo.reservedRangeOffset = resourceUserHeapSize;
+    resourceHeapBindInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    VkBindHeapInfoEXT samplerHeapBindInfo   = initVulkanStructure();
+    samplerHeapBindInfo.heapRange.address   = samplerHeap->address;
+    samplerHeapBindInfo.heapRange.size      = samplerHeapSize;
+    samplerHeapBindInfo.reservedRangeOffset = samplerUserHeapSize;
+    samplerHeapBindInfo.reservedRangeSize   = m_descriptorHeapProperties.minSamplerHeapReservedRange;
+
+    VkImageCreateInfo sampledImageCreateInfo = initVulkanStructure();
+    sampledImageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+    sampledImageCreateInfo.format            = imageFormat;
+    sampledImageCreateInfo.extent            = {imageSize, imageSize, 1u};
+    sampledImageCreateInfo.mipLevels         = 1u;
+    sampledImageCreateInfo.arrayLayers       = 1u;
+    sampledImageCreateInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+    sampledImageCreateInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
+    sampledImageCreateInfo.usage             = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    auto sampledImage                        = createImageAndMemory(sampledImageCreateInfo);
+
+    VkImageViewCreateInfo sampledImageViewCreateInfo = initVulkanStructure();
+    sampledImageViewCreateInfo.image                 = *sampledImage->image;
+    sampledImageViewCreateInfo.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+    sampledImageViewCreateInfo.format                = imageFormat;
+    sampledImageViewCreateInfo.components            = makeComponentMappingRGBA();
+    sampledImageViewCreateInfo.subresourceRange      = imageSubresourceRange;
+
+    VkImageDescriptorInfoEXT imageDescriptorInfo = initVulkanStructure();
+    imageDescriptorInfo.pView                    = &sampledImageViewCreateInfo;
+    imageDescriptorInfo.layout                   = VK_IMAGE_LAYOUT_GENERAL;
+
+    VkResourceDescriptorInfoEXT sampledImageResourceInfo = initVulkanStructure();
+    sampledImageResourceInfo.type                        = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    sampledImageResourceInfo.data.pImage                 = &imageDescriptorInfo;
+
+    uint8_t *resourceHeapHostPtr = static_cast<uint8_t *>(resourceHeap->memory->getHostPtr());
+
+    VkHostAddressRangeEXT sampledImageHostRange{};
+    sampledImageHostRange.address = resourceHeapHostPtr + imageHeapIndex * resourceStride;
+    sampledImageHostRange.size    = static_cast<size_t>(resourceStride);
+    VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1, &sampledImageResourceInfo, &sampledImageHostRange));
+
+    VkSamplerCreateInfo samplerCreateInfo     = initVulkanStructure();
+    samplerCreateInfo.magFilter               = VK_FILTER_NEAREST;
+    samplerCreateInfo.minFilter               = VK_FILTER_NEAREST;
+    samplerCreateInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+    samplerCreateInfo.addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerCreateInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerCreateInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerCreateInfo.mipLodBias              = 0.0f;
+    samplerCreateInfo.anisotropyEnable        = VK_FALSE;
+    samplerCreateInfo.maxAnisotropy           = 1.0f;
+    samplerCreateInfo.compareEnable           = VK_FALSE;
+    samplerCreateInfo.compareOp               = VK_COMPARE_OP_NEVER;
+    samplerCreateInfo.minLod                  = 0.0f;
+    samplerCreateInfo.maxLod                  = 0.0f;
+    samplerCreateInfo.borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+    samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+
+    uint8_t *samplerHeapHostPtr = static_cast<uint8_t *>(samplerHeap->memory->getHostPtr());
+
+    VkHostAddressRangeEXT samplerHostRange{};
+    samplerHostRange.address = samplerHeapHostPtr + samplerHeapIndex * samplerStride;
+    samplerHostRange.size    = static_cast<size_t>(samplerStride);
+    VK_CHECK(vkd.writeSamplerDescriptorsEXT(*m_device, 1u, &samplerCreateInfo, &samplerHostRange));
+
+    auto cmdPool      = makeCommandPool(vkd, *m_device, m_queueFamilyIndex);
+    auto cmdBufferPtr = allocateCommandBuffer(vkd, *m_device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    auto cmdBuffer    = cmdBufferPtr.get();
+    auto secondaryCmdBufferPtr =
+        allocateCommandBuffer(vkd, *m_device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+    auto secondaryCmdBuffer = secondaryCmdBufferPtr.get();
+
+    VkCommandBufferInheritanceDescriptorHeapInfoEXT inheritance_heap_info = initVulkanStructure();
+    inheritance_heap_info.pResourceHeapBindInfo                           = &resourceHeapBindInfo;
+    inheritance_heap_info.pSamplerHeapBindInfo                            = &samplerHeapBindInfo;
+    VkCommandBufferInheritanceInfo inheritance_info                       = initVulkanStructure(&inheritance_heap_info);
+    VkCommandBufferBeginInfo begin_info                                   = initVulkanStructure();
+    begin_info.flags                                                      = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    begin_info.pInheritanceInfo                                           = &inheritance_info;
+
+    beginCommandBuffer(vkd, cmdBuffer);
+
+    vkd.cmdBindResourceHeapEXT(cmdBuffer, &resourceHeapBindInfo);
+    vkd.cmdBindSamplerHeapEXT(cmdBuffer, &samplerHeapBindInfo);
+
+    {
+        VkImageMemoryBarrier2 barrier = initVulkanStructure();
+        barrier.srcStageMask          = VK_PIPELINE_STAGE_2_NONE;
+        barrier.srcAccessMask         = 0u;
+        barrier.dstStageMask          = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        barrier.dstAccessMask         = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+        barrier.oldLayout             = VK_IMAGE_LAYOUT_UNDEFINED;
+        barrier.newLayout             = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        barrier.srcQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image                 = *sampledImage->image;
+        barrier.subresourceRange      = imageSubresourceRange;
+
+        VkDependencyInfo dependencyInfo        = initVulkanStructure();
+        dependencyInfo.imageMemoryBarrierCount = 1u;
+        dependencyInfo.pImageMemoryBarriers    = &barrier;
+        vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+
+        VkClearColorValue clearColor{};
+        clearColor.float32[0] = expectedColor[0];
+        clearColor.float32[1] = expectedColor[1];
+        clearColor.float32[2] = expectedColor[2];
+        clearColor.float32[3] = expectedColor[3];
+
+        vkd.cmdClearColorImage(cmdBuffer, *sampledImage->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1u,
+                               &imageSubresourceRange);
+
+        VkPipelineStageFlags2 dstStageMask = (m_params.queue == VK_QUEUE_COMPUTE_BIT) ?
+                                                 VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT :
+                                                 VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+
+        barrier.srcStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+        barrier.dstStageMask  = dstStageMask;
+        barrier.dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
+        barrier.oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        barrier.newLayout     = VK_IMAGE_LAYOUT_GENERAL;
+        vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+    }
+
+    if (m_params.queue == VK_QUEUE_COMPUTE_BIT)
+    {
+        const uint32_t bufferSize = sizeof(float) * 4u;
+        auto outputBuffer         = createBufferAndMemory(bufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT |
+                                                                          VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+        deMemset(outputBuffer->memory->getHostPtr(), 0, bufferSize);
+
+        VkDeviceAddressRangeEXT outputBufferAddressRange{};
+        outputBufferAddressRange.address                     = outputBuffer->address;
+        outputBufferAddressRange.size                        = bufferSize;
+        VkResourceDescriptorInfoEXT outputBufferResourceInfo = initVulkanStructure();
+        outputBufferResourceInfo.type                        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        outputBufferResourceInfo.data.pAddressRange          = &outputBufferAddressRange;
+
+        VkHostAddressRangeEXT outputBufferHostRange{};
+        outputBufferHostRange.address = resourceHeapHostPtr;
+        outputBufferHostRange.size    = static_cast<size_t>(bufferStride);
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1u, &outputBufferResourceInfo, &outputBufferHostRange));
+
+        auto computeModule = createShaderModule(vkd, *m_device, getShaderBinary("compute"));
+
+        VkPipelineCreateFlags2CreateInfoKHR pipelineFlags = initVulkanStructure();
+        pipelineFlags.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+        VkComputePipelineCreateInfo pipelineCreateInfo = initVulkanStructure();
+        pipelineCreateInfo.pNext                       = &pipelineFlags;
+        pipelineCreateInfo.stage                       = initVulkanStructure();
+        pipelineCreateInfo.stage.stage                 = VK_SHADER_STAGE_COMPUTE_BIT;
+        pipelineCreateInfo.stage.module                = *computeModule;
+        pipelineCreateInfo.stage.pName                 = "main";
+
+        auto pipeline = createComputePipeline(vkd, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+        VK_CHECK(vkd.beginCommandBuffer(secondaryCmdBuffer, &begin_info));
+        vkd.cmdBindPipeline(secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+        vkd.cmdDispatch(secondaryCmdBuffer, 1u, 1u, 1u);
+        VK_CHECK(vkd.endCommandBuffer(secondaryCmdBuffer));
+
+        vkd.cmdExecuteCommands(cmdBuffer, 1u, &secondaryCmdBuffer);
+
+        VkMemoryBarrier2 barrier = initVulkanStructure();
+        barrier.srcStageMask     = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+        barrier.srcAccessMask    = VK_ACCESS_2_SHADER_WRITE_BIT;
+        barrier.dstStageMask     = VK_PIPELINE_STAGE_2_HOST_BIT;
+        barrier.dstAccessMask    = VK_ACCESS_2_HOST_READ_BIT;
+
+        VkDependencyInfo dependencyInfo   = initVulkanStructure();
+        dependencyInfo.memoryBarrierCount = 1u;
+        dependencyInfo.pMemoryBarriers    = &barrier;
+        vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+
+        endCommandBuffer(vkd, cmdBuffer);
+        submitCommandsAndWait(vkd, *m_device, m_queues[0], cmdBuffer);
+        invalidateAlloc(vkd, *m_device, *outputBuffer->memory);
+
+        float *result = static_cast<float *>(outputBuffer->memory->getHostPtr());
+        const float e = 0.01f;
+        if (std::abs(result[0] - expectedColor[0]) > e || std::abs(result[1] - expectedColor[1]) > e ||
+            std::abs(result[2] - expectedColor[2]) > e || std::abs(result[3] - expectedColor[3]) > e)
+        {
+            std::stringstream stream;
+            stream << "Expected " << tcu::Vec4(expectedColor[0], expectedColor[1], expectedColor[2], expectedColor[3])
+                   << ", but result is " << tcu::Vec4(result[0], result[1], result[2], result[3]);
+            return tcu::TestStatus::fail(stream.str());
+        }
+    }
+    else
+    {
+        VkImageCreateInfo colorImageCreateInfo = initVulkanStructure();
+        colorImageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+        colorImageCreateInfo.format            = imageFormat;
+        colorImageCreateInfo.extent            = {imageSize, imageSize, 1u};
+        colorImageCreateInfo.mipLevels         = 1u;
+        colorImageCreateInfo.arrayLayers       = 1u;
+        colorImageCreateInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+        colorImageCreateInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
+        colorImageCreateInfo.usage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        colorImageCreateInfo.sharingMode       = VK_SHARING_MODE_EXCLUSIVE;
+        colorImageCreateInfo.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
+
+        auto colorImage = createImageAndMemory(colorImageCreateInfo);
+
+        VkImageViewCreateInfo colorImageViewCreateInfo = initVulkanStructure();
+        colorImageViewCreateInfo.image                 = *colorImage->image;
+        colorImageViewCreateInfo.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+        colorImageViewCreateInfo.format                = imageFormat;
+        colorImageViewCreateInfo.components            = makeComponentMappingRGBA();
+        colorImageViewCreateInfo.subresourceRange      = imageSubresourceRange;
+
+        auto colorImageView = createImageView(vkd, *m_device, &colorImageViewCreateInfo);
+
+        VkAttachmentDescription colorAttachment{};
+        colorAttachment.format         = imageFormat;
+        colorAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
+        colorAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        colorAttachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+        colorAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        colorAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+        colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+        VkAttachmentReference colorAttachmentRef{};
+        colorAttachmentRef.attachment = 0u;
+        colorAttachmentRef.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        VkSubpassDescription subpass{};
+        subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass.colorAttachmentCount = 1u;
+        subpass.pColorAttachments    = &colorAttachmentRef;
+
+        VkRenderPassCreateInfo renderPassCreateInfo = initVulkanStructure();
+        renderPassCreateInfo.attachmentCount        = 1u;
+        renderPassCreateInfo.pAttachments           = &colorAttachment;
+        renderPassCreateInfo.subpassCount           = 1u;
+        renderPassCreateInfo.pSubpasses             = &subpass;
+
+        auto renderPass = createRenderPass(vkd, *m_device, &renderPassCreateInfo);
+
+        VkFramebufferCreateInfo framebufferCreateInfo = initVulkanStructure();
+        framebufferCreateInfo.renderPass              = *renderPass;
+        framebufferCreateInfo.attachmentCount         = 1u;
+        framebufferCreateInfo.pAttachments            = &colorImageView.get();
+        framebufferCreateInfo.width                   = imageSize;
+        framebufferCreateInfo.height                  = imageSize;
+        framebufferCreateInfo.layers                  = 1u;
+
+        auto framebuffer = createFramebuffer(vkd, *m_device, &framebufferCreateInfo);
+
+        auto vertexModule   = createShaderModule(vkd, *m_device, getShaderBinary("vertex"));
+        auto fragmentModule = createShaderModule(vkd, *m_device, getShaderBinary("fragment"));
+
+        std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {{
+            initVulkanStructure(),
+            initVulkanStructure(),
+        }};
+        shaderStages[0].stage                                       = VK_SHADER_STAGE_VERTEX_BIT;
+        shaderStages[0].module                                      = *vertexModule;
+        shaderStages[0].pName                                       = "main";
+        shaderStages[1].stage                                       = VK_SHADER_STAGE_FRAGMENT_BIT;
+        shaderStages[1].module                                      = *fragmentModule;
+        shaderStages[1].pName                                       = "main";
+
+        VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+        VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = initVulkanStructure();
+        inputAssemblyState.topology                               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+
+        VkViewport viewport = makeViewport(imageSize, imageSize);
+        VkRect2D scissor    = makeRect2D(0, 0, imageSize, imageSize);
+
+        VkPipelineViewportStateCreateInfo viewportState = initVulkanStructure();
+        viewportState.viewportCount                     = 1u;
+        viewportState.pViewports                        = &viewport;
+        viewportState.scissorCount                      = 1u;
+        viewportState.pScissors                         = &scissor;
+
+        VkPipelineRasterizationStateCreateInfo rasterizationState = initVulkanStructure();
+        rasterizationState.lineWidth                              = 1.0f;
+
+        VkPipelineMultisampleStateCreateInfo multisampleState = initVulkanStructure();
+        multisampleState.rasterizationSamples                 = VK_SAMPLE_COUNT_1_BIT;
+
+        VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+        colorBlendAttachment.colorWriteMask =
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+        VkPipelineColorBlendStateCreateInfo colorBlendState = initVulkanStructure();
+        colorBlendState.attachmentCount                     = 1u;
+        colorBlendState.pAttachments                        = &colorBlendAttachment;
+
+        VkPipelineCreateFlags2CreateInfoKHR pipelineFlags = initVulkanStructure();
+        pipelineFlags.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+        VkGraphicsPipelineCreateInfo pipelineCreateInfo = initVulkanStructure(&pipelineFlags);
+        pipelineCreateInfo.stageCount                   = de::sizeU32(shaderStages);
+        pipelineCreateInfo.pStages                      = shaderStages.data();
+        pipelineCreateInfo.pVertexInputState            = &vertexInputState;
+        pipelineCreateInfo.pInputAssemblyState          = &inputAssemblyState;
+        pipelineCreateInfo.pViewportState               = &viewportState;
+        pipelineCreateInfo.pRasterizationState          = &rasterizationState;
+        pipelineCreateInfo.pMultisampleState            = &multisampleState;
+        pipelineCreateInfo.pColorBlendState             = &colorBlendState;
+        pipelineCreateInfo.renderPass                   = *renderPass;
+
+        auto pipeline = createGraphicsPipeline(vkd, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+        inheritance_info.renderPass  = *renderPass;
+        inheritance_info.framebuffer = *framebuffer;
+        begin_info.flags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+        VK_CHECK(vkd.beginCommandBuffer(secondaryCmdBuffer, &begin_info));
+        vkd.cmdBindPipeline(secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+        vkd.cmdDraw(secondaryCmdBuffer, 4u, 1u, 0u, 0u);
+        vkd.endCommandBuffer(secondaryCmdBuffer);
+
+        uint32_t outputBufferSize = imageSize * imageSize * 4;
+        auto outputBuffer         = createBufferAndMemory(outputBufferSize, VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR);
+        deMemset(outputBuffer->memory->getHostPtr(), 0, outputBufferSize);
+
+        VkRenderPassBeginInfo renderPassBeginInfo = initVulkanStructure();
+        renderPassBeginInfo.renderPass            = *renderPass;
+        renderPassBeginInfo.framebuffer           = *framebuffer;
+        renderPassBeginInfo.renderArea            = makeRect2D(0, 0, imageSize, imageSize);
+
+        VkClearValue clearValue{};
+        renderPassBeginInfo.clearValueCount = 1u;
+        renderPassBeginInfo.pClearValues    = &clearValue;
+
+        vkd.cmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+        vkd.cmdExecuteCommands(cmdBuffer, 1u, &secondaryCmdBuffer);
+        vkd.cmdEndRenderPass(cmdBuffer);
+
+        VkMemoryBarrier2 barrier = initVulkanStructure();
+        barrier.srcStageMask     = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+        barrier.srcAccessMask    = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+        barrier.dstStageMask     = VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR;
+        barrier.dstAccessMask    = VK_ACCESS_2_TRANSFER_READ_BIT_KHR;
+
+        VkDependencyInfo dependencyInfo   = initVulkanStructure();
+        dependencyInfo.memoryBarrierCount = 1u;
+        dependencyInfo.pMemoryBarriers    = &barrier;
+        vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+
+        VkBufferImageCopy copyRegion{};
+        copyRegion.imageSubresource = makeDefaultImageSubresourceLayers();
+        copyRegion.imageExtent      = {imageSize, imageSize, 1u};
+
+        vkd.cmdCopyImageToBuffer(cmdBuffer, *colorImage->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                 *outputBuffer->buffer, 1u, &copyRegion);
+
+        endCommandBuffer(vkd, cmdBuffer);
+        submitCommandsAndWait(vkd, *m_device, m_queues[0], cmdBuffer);
+        invalidateAlloc(vkd, *m_device, *outputBuffer->memory);
+
+        uint8_t *result = static_cast<uint8_t *>(outputBuffer->memory->getHostPtr());
+        const uint8_t e = 1u;
+
+        for (uint32_t i = 0; i < imageSize * imageSize; ++i)
+        {
+            uint8_t r = result[i * 4 + 0];
+            uint8_t g = result[i * 4 + 1];
+            uint8_t b = result[i * 4 + 2];
+            uint8_t a = result[i * 4 + 3];
+            if (std::abs(r - expectedColorUint8[0]) > e || std::abs(g - expectedColorUint8[1]) > e ||
+                std::abs(b - expectedColorUint8[2]) > e || std::abs(a - expectedColorUint8[3]) > e)
+            {
+                std::stringstream stream;
+                stream << "Pixel " << i << ": expected (" << (uint32_t)expectedColorUint8[0] << ", "
+                       << (uint32_t)expectedColorUint8[1] << ", " << (uint32_t)expectedColorUint8[2] << ", "
+                       << (uint32_t)expectedColorUint8[3] << ") but got (" << (uint32_t)r << ", " << (uint32_t)g << ", "
+                       << (uint32_t)b << ", " << (uint32_t)a << ")";
+                return tcu::TestStatus::fail(stream.str());
+            }
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class DescriptorHeapTestCaseSecondary final : public DescriptorHeapTestCaseBase
+{
+public:
+    explicit DescriptorHeapTestCaseSecondary(tcu::TestContext &testCtx, const std::string &name,
+                                             const TestParams &params)
+        : DescriptorHeapTestCaseBase(testCtx, name, params)
+        , m_params{params}
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceSecondary(context, m_params);
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+private:
+    TestParams m_params;
+};
+
+void DescriptorHeapTestCaseSecondary::initPrograms(vk::SourceCollections &programCollection) const
+{
+    if (m_params.queue == VK_QUEUE_COMPUTE_BIT)
+    {
+        const char *const computeShader = R"(#version 450
+#extension GL_EXT_descriptor_heap : require
+layout(descriptor_heap) uniform texture2D heapTextures[];
+layout(descriptor_heap) uniform sampler heapSamplers[];
+layout(descriptor_heap) buffer ssbo {
+	vec4 data;
+} heapBuffer[];
+void main() {
+	heapBuffer[0].data = texture(sampler2D(heapTextures[16], heapSamplers[29]), vec2(0.5f));
+}
+)";
+
+        vk::ShaderBuildOptions options(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_6, 0);
+        programCollection.glslSources.add("compute") << glu::ComputeSource(computeShader) << options;
+    }
+    else
+    {
+        const char *const vertexShader = R"(#version 450
+
+layout(location = 0) out vec2 uv;
+
+void main() {
+    vec2 pos = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));
+    gl_Position = vec4(pos * 2.0f - 1.0f, 0.0f, 1.0f);
+    uv = pos;
+}
+)";
+
+        const char *const fragmentShader = R"(#version 450
+#extension GL_EXT_descriptor_heap : require
+layout(descriptor_heap) uniform texture2D heapTextures[];
+layout(descriptor_heap) uniform sampler heapSamplers[];
+
+layout(location = 0) in vec2 uv;
+layout(location = 0) out vec4 color;
+
+void main()
+{
+    color = texture(sampler2D(heapTextures[16], heapSamplers[29]), uv);
+}
+)";
+
+        vk::ShaderBuildOptions options(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_6, 0);
+        programCollection.glslSources.add("vertex") << glu::VertexSource(vertexShader) << options;
+        programCollection.glslSources.add("fragment") << glu::FragmentSource(fragmentShader) << options;
+    }
+}
+
 class DescriptorHeapTestInstanceShaderObjectInvariance final : public DescriptorHeapTestInstanceBase
 {
 public:
@@ -14238,6 +14746,24 @@ void populateSamplerHeapAccessTests(tcu::TestCaseGroup *topGroup)
     topGroup->addChild(samplerHeapAccessGroup.release());
 }
 
+void populateSecondaryCommandBufferTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
+{
+    tcu::TestContext &testCtx = topGroup->getTestContext();
+    MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "secondary"));
+
+    for (const VkQueueFlagBits queue : {VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT})
+    {
+        const char *const testName = (queue == VK_QUEUE_GRAPHICS_BIT) ? "graphics" : "compute";
+
+        TestParams params{};
+        params.queue = queue;
+        params.seed  = baseSeed ^ deStringHash(testName);
+        group->addChild(new DescriptorHeapTestCaseSecondary(testCtx, testName, params));
+    }
+
+    topGroup->addChild(group.release());
+}
+
 void populateShaderObjectInvariance(tcu::TestCaseGroup *topGroup)
 {
     tcu::TestContext &testCtx = topGroup->getTestContext();
@@ -14794,6 +15320,7 @@ void populateDescriptorHeapTests(tcu::TestCaseGroup *topGroup)
     populateSpecialHeapTests(topGroup, baseSeed);
     populateNonPackedTests(topGroup, baseSeed);
     populateUnalignedTests(topGroup, baseSeed);
+    populateSecondaryCommandBufferTests(topGroup, baseSeed);
 }
 
 } // namespace

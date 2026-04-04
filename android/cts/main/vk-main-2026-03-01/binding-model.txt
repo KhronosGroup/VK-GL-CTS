@@ -541,6 +541,8 @@ dEQP-VK.binding_model.descriptor_heap.resource_heap_access.graphics
 dEQP-VK.binding_model.descriptor_heap.resource_masking.resource_masking
 dEQP-VK.binding_model.descriptor_heap.sampler_heap_access.compute
 dEQP-VK.binding_model.descriptor_heap.sampler_heap_access.graphics
+dEQP-VK.binding_model.descriptor_heap.secondary.compute
+dEQP-VK.binding_model.descriptor_heap.secondary.graphics
 dEQP-VK.binding_model.descriptor_heap.shader_object_invariance.shader_object_invariance
 dEQP-VK.binding_model.descriptor_heap.special_heap.protected.acceleration_structure
 dEQP-VK.binding_model.descriptor_heap.special_heap.protected.sampled_image
