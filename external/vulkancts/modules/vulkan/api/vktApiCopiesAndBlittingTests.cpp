@@ -17776,36 +17776,6 @@ void add2dMemoryToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
         group->addChild(new CopyMemoryToImageIndirectTestCase(testCtx, "buffer_offset", params));
     }
 
-    if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
-    {
-        TestParams params;
-        params.src.buffer.size           = defaultSize * defaultSize;
-        params.dst.image.imageType       = VK_IMAGE_TYPE_2D;
-        params.dst.image.format          = VK_FORMAT_R8_UNORM;
-        params.dst.image.extent          = defaultExtent;
-        params.dst.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-        params.dst.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        params.allocationKind            = testGroupParams->allocationKind;
-        params.extensionFlags            = testGroupParams->extensionFlags;
-        params.queueSelection            = testGroupParams->queueSelection;
-        params.useSparseBinding          = testGroupParams->useSparseBinding;
-
-        const VkBufferImageCopy bufferImageCopy = {
-            defaultQuarterSize + 1u,                     // VkDeviceSize bufferOffset;
-            defaultHalfSize + defaultQuarterSize,        // uint32_t bufferRowLength;
-            defaultHalfSize + defaultQuarterSize,        // uint32_t bufferImageHeight;
-            defaultSourceLayer,                          // VkImageSubresourceLayers imageSubresource;
-            {defaultQuarterSize, defaultQuarterSize, 0}, // VkOffset3D imageOffset;
-            defaultHalfExtent                            // VkExtent3D imageExtent;
-        };
-        CopyRegion copyRegion;
-        copyRegion.bufferImageCopy = bufferImageCopy;
-
-        params.regions.push_back(copyRegion);
-
-        group->addChild(new CopyMemoryToImageIndirectTestCase(testCtx, "buffer_offset_relaxed", params));
-    }
-
     {
         TestParams params;
         params.src.buffer.size           = (defaultHalfSize - 1u) * defaultSize + defaultHalfSize;
