@@ -828,9 +828,13 @@ tcu::TestStatus ReinterpretTestInstance::iterate(void)
                                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT);
     }
 
-    if (copyTestStatus.isFail())
-        return tcu::TestStatus::fail("Copy test");
-    ;
+#ifdef CTS_USES_VULKANSC
+    if (m_context.getTestContext().getCommandLine().isSubProcess())
+#endif // CTS_USES_VULKANSC
+    {
+        if (copyTestStatus.isFail())
+            return tcu::TestStatus::fail("Copy test");
+    }
 
     tcu::TestStatus samplingTestStatus(QP_TEST_RESULT_PENDING, "Pending");
     if (!srcCompressed)
