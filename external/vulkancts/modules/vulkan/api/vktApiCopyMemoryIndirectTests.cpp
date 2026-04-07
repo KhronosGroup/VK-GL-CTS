@@ -24,6 +24,7 @@
 #include "vktApiCopyMemoryIndirectTests.hpp"
 #include "vktApiCopyImageToBufferTests.hpp"
 #include "vktApiUseAfterCopyTests.hpp"
+#include "tcuResource.hpp"
 
 namespace vkt
 {
@@ -1883,40 +1884,20 @@ public:
     }
 
 private:
-    void loadDataFromFile(const std::string &filename)
+    void loadDataFromFile(const char *filename, const tcu::Archive &archive)
     {
-        std::ifstream file(filename, std::ios::binary);
+        de::UniquePtr<tcu::Resource> resource(archive.getResource(filename));
 
-        // Check if the file was opened successfully
-        if (!file)
-        {
-            std::ostringstream msg;
-            msg << "Error opening file `" << filename << "'";
-            TCU_THROW(InternalError, msg.str());
-        }
-
-        // Seek to the end of the file to get the file size
-        file.seekg(0, std::ios::end);
-        std::streamsize fileSize = static_cast<std::streamsize>(file.tellg());
-        file.seekg(0, std::ios::beg);
-
-        m_copyData.resize(fileSize);
-
-        // Read the file contents into the vector
-        if (!file.read(m_copyData.data(), fileSize))
-        {
-            std::ostringstream msg;
-            msg << "Error reading " << fileSize << " bytes from file `" << filename << "'";
-            TCU_THROW(InternalError, msg.str());
-        }
-
-        file.close();
+        size_t file_size = resource->getSize();
+        m_copyData.resize(file_size);
+        uint8_t *data = reinterpret_cast<unsigned char *>(m_copyData.data());
+        resource->read(data, static_cast<int>(file_size));
     }
 
     void init(void)
     {
-        const std::string fileName = "./vulkan/data/copy_memory_indirect/sample_text.txt";
-        loadDataFromFile(fileName);
+        const char fileName[] = "vulkan/data/copy_memory_indirect/sample_text.txt";
+        loadDataFromFile(fileName, m_context.getTestContext().getArchive());
 
         // 64-aligned
         while (m_copyData.size() & 0x63)
