@@ -4599,9 +4599,9 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
             vk.cmdEndRenderPass(cmdBuf);
 
             VkImageMemoryBarrier imageMemoryBarrier            = initVulkanStructure();
-            imageMemoryBarrier.srcAccessMask                   = VK_ACCESS_MEMORY_WRITE_BIT;
+            imageMemoryBarrier.srcAccessMask                   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
             imageMemoryBarrier.dstAccessMask                   = VK_ACCESS_TRANSFER_READ_BIT;
-            imageMemoryBarrier.oldLayout                       = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            imageMemoryBarrier.oldLayout                       = VK_IMAGE_LAYOUT_GENERAL;
             imageMemoryBarrier.newLayout                       = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
             imageMemoryBarrier.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
             imageMemoryBarrier.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
@@ -4611,8 +4611,8 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
             imageMemoryBarrier.subresourceRange.levelCount     = VK_REMAINING_MIP_LEVELS;
             imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
             imageMemoryBarrier.subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS;
-            vk.cmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
-                                  nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+            vk.cmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                  0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
             VkBufferImageCopy region{};
             region.bufferOffset                    = 0;
@@ -5151,7 +5151,7 @@ void DescriptorHeapTestInstanceBasic::setupDescriptors(VkCommandBuffer cmdBuf, c
             auto &imageDescriptorInfo  = m_stagingImageDescriptorInfos.emplace_back();
             imageDescriptorInfo        = initVulkanStructure();
             imageDescriptorInfo.pView  = &imageViewCreateInfo;
-            imageDescriptorInfo.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageDescriptorInfo.layout = VK_IMAGE_LAYOUT_GENERAL;
 
             auto &resourceInfo       = m_deferredResourceDescriptors.emplace_back();
             resourceInfo             = initVulkanStructure();
@@ -5530,7 +5530,7 @@ VkRenderPass DescriptorHeapTestInstanceBasic::initRenderPass()
     colorAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     colorAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_GENERAL;
 
     VkAttachmentReference colorReference0{};
     colorReference0.attachment = 0;
@@ -5560,10 +5560,10 @@ VkRenderPass DescriptorHeapTestInstanceBasic::initRenderPass()
         std::array<VkSubpassDependency, 1> dependencies{};
         dependencies[0].srcSubpass      = 0;
         dependencies[0].dstSubpass      = 1;
-        dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-        dependencies[0].srcAccessMask   = VK_ACCESS_MEMORY_WRITE_BIT;
-        dependencies[0].dstAccessMask   = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+        dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        dependencies[0].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependencies[0].dstAccessMask   = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
         dependencies[0].dependencyFlags = 0;
 
         VkRenderPassCreateInfo renderPassCreateInfo = initVulkanStructure();
