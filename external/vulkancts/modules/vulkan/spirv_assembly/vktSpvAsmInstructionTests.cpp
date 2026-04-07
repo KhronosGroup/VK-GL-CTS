@@ -24,6 +24,7 @@
 
 #include "vktSpvAsmInstructionTests.hpp"
 #include "vktAmberTestCase.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "tcuCommandLine.hpp"
 #include "tcuFormatUtil.hpp"
@@ -21309,15 +21310,11 @@ tcu::TestCaseGroup *createQueryGroup(tcu::TestContext &testCtx)
     return testGroup.release();
 }
 
-tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
+static void createComputeChildren(tcu::TestCaseGroup *computeTests)
 {
-    const bool testComputePipeline = true;
+    tcu::TestContext &testCtx = computeTests->getTestContext();
 
-    de::MovePtr<tcu::TestCaseGroup> instructionTests(new tcu::TestCaseGroup(testCtx, "instruction"));
-    de::MovePtr<tcu::TestCaseGroup> computeTests(new tcu::TestCaseGroup(testCtx, "compute"));
-    de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "graphics"));
-
-    computeTests->addChild(createSpivVersionCheckTests(testCtx, testComputePipeline));
+    computeTests->addChild(createSpivVersionCheckTests(testCtx, true));
     computeTests->addChild(createLocalSizeGroup(testCtx, false));
     computeTests->addChild(createLocalSizeGroup(testCtx, true));
     computeTests->addChild(createNonSemanticInfoGroup(testCtx));
@@ -21448,9 +21445,14 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
     }
     computeTests->addChild(createLdexpGroup(testCtx));
 #endif // CTS_USES_VULKANSC
+}
+
+static void createGraphicsChildren(tcu::TestCaseGroup *graphicsTests)
+{
+    tcu::TestContext &testCtx = graphicsTests->getTestContext();
 
     graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
-    graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));
+    graphicsTests->addChild(createSpivVersionCheckTests(testCtx, false));
     graphicsTests->addChild(createOpNopTests(testCtx));
     graphicsTests->addChild(createOpSourceTests(testCtx));
     graphicsTests->addChild(createOpSourceContinuedTests(testCtx));
@@ -21532,9 +21534,14 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
         graphicsTests->addChild(maintenance8GraphicsTests.release());
     }
 #endif // CTS_USES_VULKANSC
+}
 
-    instructionTests->addChild(computeTests.release());
-    instructionTests->addChild(graphicsTests.release());
+tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
+{
+    de::MovePtr<tcu::TestCaseGroup> instructionTests(new tcu::TestCaseGroup(testCtx, "instruction"));
+
+    addTestGroup(instructionTests.get(), "compute", createComputeChildren);
+    addTestGroup(instructionTests.get(), "graphics", createGraphicsChildren);
 #ifndef CTS_USES_VULKANSC
     instructionTests->addChild(createSpirvVersion1p4Group(testCtx));
     instructionTests->addChild(createFunctionParamsGroup(testCtx));

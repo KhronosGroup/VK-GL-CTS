@@ -7255,7 +7255,6 @@ public:
     void deinit(void) override
     {
         cleanupDevices();
-        tcu::TestCaseGroup::deinit();
     }
 };
 

@@ -1902,7 +1902,6 @@ public:
     void deinit(void)
     {
         cleanupGroup();
-        tcu::TestCaseGroup::deinit();
     }
 
 private:
@@ -2446,7 +2445,6 @@ public:
     void deinit(void)
     {
         cleanupGroup();
-        tcu::TestCaseGroup::deinit();
     }
 
 private:
