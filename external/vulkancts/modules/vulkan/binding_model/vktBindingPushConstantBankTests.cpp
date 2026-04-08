@@ -103,6 +103,8 @@ struct ResultBufferResources
     VkDeviceSize size;
 };
 
+using ResultBufferResourcesPtr = std::unique_ptr<ResultBufferResources>;
+
 // Helper struct for descriptor set resources (non-heap tests)
 struct DescriptorResources
 {
@@ -111,10 +113,14 @@ struct DescriptorResources
     Move<VkDescriptorSet> set;
 };
 
+using DescriptorResourcesPtr = std::unique_ptr<DescriptorResources>;
+
 // Helper: Create and initialize result buffer
-ResultBufferResources createResultBuffer(const DeviceInterface &vkd, VkDevice device, Allocator &allocator)
+ResultBufferResourcesPtr createResultBuffer(const DeviceInterface &vkd, VkDevice device, Allocator &allocator)
 {
-    ResultBufferResources res;
+    ResultBufferResourcesPtr resPtr(new ResultBufferResources);
+    auto &res = *resPtr;
+
     res.size = sizeof(uint32_t) * kMaxTestBanks;
 
     const VkBufferCreateInfo bufferInfo = makeBufferCreateInfo(res.size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
@@ -128,14 +134,15 @@ ResultBufferResources createResultBuffer(const DeviceInterface &vkd, VkDevice de
         res.ptr[i] = ~0u;
     flushAlloc(vkd, device, *res.memory);
 
-    return res;
+    return resPtr;
 }
 
 // Helper: Create descriptor set layout, pool, and set for SSBO
-DescriptorResources createDescriptorResources(const DeviceInterface &vkd, VkDevice device,
-                                              VkShaderStageFlags stageFlags, VkBuffer resultBuffer)
+DescriptorResourcesPtr createDescriptorResources(const DeviceInterface &vkd, VkDevice device,
+                                                 VkShaderStageFlags stageFlags, VkBuffer resultBuffer)
 {
-    DescriptorResources res;
+    DescriptorResourcesPtr resPtr(new DescriptorResources);
+    auto &res = *resPtr;
 
     const VkDescriptorSetLayoutBinding binding       = {0u, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u, stageFlags, nullptr};
     const VkDescriptorSetLayoutCreateInfo layoutInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr,
@@ -161,7 +168,7 @@ DescriptorResources createDescriptorResources(const DeviceInterface &vkd, VkDevi
         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,      nullptr, &bufferDescInfo, nullptr};
     vkd.updateDescriptorSets(device, 1u, &writeDescSet, 0u, nullptr);
 
-    return res;
+    return resPtr;
 }
 
 // Helper: Create push constant ranges for banks
@@ -470,8 +477,10 @@ tcu::TestStatus PushConstantBankTestInstance::runComputeTest()
     if (numBanks < 1)
         TCU_THROW(NotSupportedError, "No compute push constant banks available");
 
-    auto resultRes = createResultBuffer(vkd, *m_device, *m_allocatorPtr);
-    auto descRes   = createDescriptorResources(vkd, *m_device, VK_SHADER_STAGE_COMPUTE_BIT, *resultRes.buffer);
+    auto resultResPtr = createResultBuffer(vkd, *m_device, *m_allocatorPtr);
+    auto &resultRes   = *resultResPtr;
+    auto descResPtr   = createDescriptorResources(vkd, *m_device, VK_SHADER_STAGE_COMPUTE_BIT, *resultRes.buffer);
+    auto &descRes     = *descResPtr;
 
     auto pushConstantRanges = createPushConstantRanges(numBanks, VK_SHADER_STAGE_COMPUTE_BIT, sizeof(uint32_t));
     const VkPipelineLayoutCreateInfo pipelineLayoutInfo = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -536,8 +545,10 @@ tcu::TestStatus PushConstantBankTestInstance::runGraphicsTest()
     if (numBanks < 1)
         TCU_THROW(NotSupportedError, "No graphics push constant banks available");
 
-    auto resultRes = createResultBuffer(vkd, *m_device, *m_allocatorPtr);
-    auto descRes   = createDescriptorResources(vkd, *m_device, VK_SHADER_STAGE_VERTEX_BIT, *resultRes.buffer);
+    auto resultResPtr = createResultBuffer(vkd, *m_device, *m_allocatorPtr);
+    auto &resultRes   = *resultResPtr;
+    auto descResPtr   = createDescriptorResources(vkd, *m_device, VK_SHADER_STAGE_VERTEX_BIT, *resultRes.buffer);
+    auto &descRes     = *descResPtr;
 
     auto pushConstantRanges = createPushConstantRanges(numBanks, VK_SHADER_STAGE_VERTEX_BIT, sizeof(uint32_t));
     const VkPipelineLayoutCreateInfo pipelineLayoutInfo = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -1001,8 +1012,10 @@ tcu::TestStatus PushConstantBankTestInstance::runComputeMemberOffsetTest()
     if (numBanks < 1)
         TCU_THROW(NotSupportedError, "No compute push constant banks available");
 
-    auto resultRes = createResultBuffer(vkd, *m_device, *m_allocatorPtr);
-    auto descRes   = createDescriptorResources(vkd, *m_device, VK_SHADER_STAGE_COMPUTE_BIT, *resultRes.buffer);
+    auto resultResPtr = createResultBuffer(vkd, *m_device, *m_allocatorPtr);
+    auto &resultRes   = *resultResPtr;
+    auto descResPtr   = createDescriptorResources(vkd, *m_device, VK_SHADER_STAGE_COMPUTE_BIT, *resultRes.buffer);
+    auto &descRes     = *descResPtr;
 
     const uint32_t pushConstantSize = memberOffset + sizeof(uint32_t);
     auto pushConstantRanges         = createPushConstantRanges(numBanks, VK_SHADER_STAGE_COMPUTE_BIT, pushConstantSize);
@@ -1070,8 +1083,10 @@ tcu::TestStatus PushConstantBankTestInstance::runGraphicsMemberOffsetTest()
     if (numBanks < 1)
         TCU_THROW(NotSupportedError, "No graphics push constant banks available");
 
-    auto resultRes = createResultBuffer(vkd, *m_device, *m_allocatorPtr);
-    auto descRes   = createDescriptorResources(vkd, *m_device, VK_SHADER_STAGE_VERTEX_BIT, *resultRes.buffer);
+    auto resultResPtr = createResultBuffer(vkd, *m_device, *m_allocatorPtr);
+    auto &resultRes   = *resultResPtr;
+    auto descResPtr   = createDescriptorResources(vkd, *m_device, VK_SHADER_STAGE_VERTEX_BIT, *resultRes.buffer);
+    auto &descRes     = *descResPtr;
 
     const uint32_t pushConstantSize = memberOffset + sizeof(uint32_t);
     auto pushConstantRanges         = createPushConstantRanges(numBanks, VK_SHADER_STAGE_VERTEX_BIT, pushConstantSize);
