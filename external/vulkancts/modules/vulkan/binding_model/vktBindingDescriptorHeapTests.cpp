@@ -6257,6 +6257,8 @@ VkResult DescriptorHeapTestInstanceInvariance::createInvarianceResources(bool ca
         DE_ASSERT(compatMask != 0);
         static_cast<void>(compatMask);
 
+        allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+
         m_buffer->memory = allocateExtended(m_context.getInstanceInterface(), vkd, physicalDevice, *m_device,
                                             bufferMemReqs, memReqs, &allocFlagsInfo);
         vkd.bindBufferMemory(*m_device, *m_buffer->buffer, m_buffer->memory->getMemory(),
