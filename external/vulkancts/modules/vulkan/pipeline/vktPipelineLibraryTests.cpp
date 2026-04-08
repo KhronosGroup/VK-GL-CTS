@@ -5971,6 +5971,277 @@ tcu::TestStatus PrimaryRebindRun(Context &context, PipelineConstructionType cons
     return tcu::TestStatus::pass("Pass");
 }
 
+void viewMaskSupportCheck(Context &context, bool)
+{
+    context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
+    context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+    context.requireDeviceFunctionality("VK_KHR_multiview");
+}
+
+void viewMaskInitPrograms(vk::SourceCollections &dst, bool)
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "#extension GL_EXT_multiview : require\n"
+         << "layout (location=0) out float red;\n"
+         << "void main() {\n"
+         << "    const float x = float((gl_VertexIndex >> 1) & 1) * 2.0 - 1.0;\n"
+         << "    const float y = float((gl_VertexIndex >> 0) & 1) * 2.0 - 1.0;\n"
+         << "    gl_Position = vec4(x, y, 0.0, 1.0);\n"
+         << "    gl_PointSize = 1.0;\n"
+         << "    red = float(gl_ViewIndex);\n"
+         << "}\n";
+    dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "#extension GL_EXT_multiview : require\n"
+         << "layout (location=0) in float red;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main(void) {\n"
+         << "    const float green = float(gl_ViewIndex);\n"
+         << "    outColor = vec4(red, green, 1.0, 1.0);\n"
+         << "}\n";
+    dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus viewMaskRun(Context &context, bool optimized)
+{
+    const auto ctx = context.getContextCommonData();
+    const tcu::IVec3 extent(1, 1, 2);
+    const auto extentVk    = makeExtent3D(extent);
+    const auto extent2D    = makeExtent3D(extentVk.width, extentVk.height, 1u);
+    const auto layerCount  = extentVk.depth;
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto colorUsage  = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto colorSRR    = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, layerCount);
+    const auto imageType   = VK_IMAGE_TYPE_2D;
+
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extent2D, colorFormat, colorUsage, imageType,
+                                colorSRR, layerCount);
+
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device);
+
+    const auto &binaries  = context.getBinaryCollection();
+    const auto vertShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+    const auto fragShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const auto vertShaderStage = makePipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, *vertShader);
+    const auto fragShaderStage = makePipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, *fragShader);
+
+    Move<VkPipeline> vertexInputLib;
+    Move<VkPipeline> preRasterLib;
+    Move<VkPipeline> fragShaderLib;
+    Move<VkPipeline> fragOutLib;
+    Move<VkPipeline> finalPipeline;
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+    const VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = {
+        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+        VK_FALSE,
+    };
+
+    const auto viewport = makeViewport(extent);
+    const auto scissor  = makeRect2D(extent);
+
+    const VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, nullptr, 0u, 1u, &viewport, 1u, &scissor,
+    };
+
+    const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_FALSE,
+        VK_FALSE,
+        VK_POLYGON_MODE_FILL,
+        VK_CULL_MODE_NONE,
+        VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        VK_FALSE,
+        0.0f,
+        0.0f,
+        0.0f,
+        1.0f,
+    };
+
+    const VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = initVulkanStructure();
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
+    memset(&colorBlendAttachmentState, 0, sizeof(colorBlendAttachmentState));
+    colorBlendAttachmentState.colorWriteMask = ALL_COLOR_COMPONENTS;
+
+    const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_FALSE,
+        VK_LOGIC_OP_CLEAR,
+        1u,
+        &colorBlendAttachmentState,
+        {0.0f, 0.0f, 0.0f, 0.0f},
+    };
+
+    VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = initVulkanStructure();
+    multisampleStateCreateInfo.rasterizationSamples                 = VK_SAMPLE_COUNT_1_BIT;
+
+    const auto makePipelineRenderingCreateInfo = [&](uint32_t viewMask, bool formatInfo)
+    {
+        const VkPipelineRenderingCreateInfo info = {
+            VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+            nullptr,
+            viewMask,
+            (formatInfo ? 1u : 0u),
+            (formatInfo ? &colorFormat : nullptr),
+            VK_FORMAT_UNDEFINED,
+            VK_FORMAT_UNDEFINED,
+        };
+        return info;
+    };
+
+    const auto goodViewMask = 0x3u;
+    const auto badViewMask  = 0x1u;
+
+    const auto preRasterRenderingCreateInfo  = makePipelineRenderingCreateInfo(goodViewMask, false);
+    const auto fragShaderRenderingCreateInfo = makePipelineRenderingCreateInfo(goodViewMask, false);
+    const auto fragOutRenderingCreateInfo    = makePipelineRenderingCreateInfo(badViewMask, true);
+
+    auto gplVertexInputInfo =
+        makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT);
+    auto gplPreRasterInfo =
+        makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
+    auto gplFragShaderInfo =
+        makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT);
+    auto gplFragOutInfo =
+        makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT);
+
+    VkPipelineCreateFlags libCreationFlags = 0u;
+    libCreationFlags |= VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+    if (optimized)
+        libCreationFlags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
+
+    VkGraphicsPipelineCreateInfo vertexInputLibInfo = initVulkanStructure();
+    vertexInputLibInfo.flags                        = libCreationFlags;
+    vertexInputLibInfo.pVertexInputState            = &vertexInputState;
+    vertexInputLibInfo.pInputAssemblyState          = &inputAssemblyState;
+    vertexInputLibInfo.pNext                        = &gplVertexInputInfo;
+
+    VkGraphicsPipelineCreateInfo preRasterLibInfo = initVulkanStructure();
+    preRasterLibInfo.flags                        = libCreationFlags;
+    preRasterLibInfo.stageCount                   = 1u;
+    preRasterLibInfo.pStages                      = &vertShaderStage;
+    preRasterLibInfo.layout                       = *pipelineLayout;
+    preRasterLibInfo.pViewportState               = &viewportStateCreateInfo;
+    preRasterLibInfo.pRasterizationState          = &rasterizationStateCreateInfo;
+    gplPreRasterInfo.pNext                        = &preRasterRenderingCreateInfo;
+    preRasterLibInfo.pNext                        = &gplPreRasterInfo;
+
+    VkGraphicsPipelineCreateInfo fragShaderLibInfo = initVulkanStructure();
+    fragShaderLibInfo.flags                        = libCreationFlags;
+    fragShaderLibInfo.stageCount                   = 1u;
+    fragShaderLibInfo.pStages                      = &fragShaderStage;
+    fragShaderLibInfo.layout                       = *pipelineLayout;
+    fragShaderLibInfo.pDepthStencilState           = &depthStencilCreateInfo;
+    gplFragShaderInfo.pNext                        = &fragShaderRenderingCreateInfo;
+    fragShaderLibInfo.pNext                        = &gplFragShaderInfo;
+
+    VkGraphicsPipelineCreateInfo fragOutLibInfo = initVulkanStructure();
+    fragOutLibInfo.flags                        = libCreationFlags;
+    fragOutLibInfo.pColorBlendState             = &colorBlendStateCreateInfo;
+    fragOutLibInfo.pMultisampleState            = &multisampleStateCreateInfo;
+    gplFragOutInfo.pNext                        = &fragOutRenderingCreateInfo;
+    fragOutLibInfo.pNext                        = &gplFragOutInfo;
+
+    vertexInputLib = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &vertexInputLibInfo);
+    preRasterLib   = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &preRasterLibInfo);
+    fragShaderLib  = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &fragShaderLibInfo);
+    fragOutLib     = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &fragOutLibInfo);
+
+    const std::vector<VkPipeline> libraries{
+        *vertexInputLib,
+        *preRasterLib,
+        *fragShaderLib,
+        *fragOutLib,
+    };
+    const VkPipelineLibraryCreateInfoKHR libraryCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,
+        nullptr,
+        de::sizeU32(libraries),
+        de::dataOrNull(libraries),
+    };
+    VkGraphicsPipelineCreateInfo finalPipelineInfo = initVulkanStructure();
+    finalPipelineInfo.pNext                        = &libraryCreateInfo;
+    finalPipelineInfo.layout                       = *pipelineLayout;
+    if (optimized)
+        finalPipelineInfo.flags |= VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT;
+
+    finalPipeline = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &finalPipelineInfo);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    // Does not match any set by the fragment shader.
+    const auto clearValue = makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    {
+        const auto dstAccess = (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+        const auto barrier =
+            makeImageMemoryBarrier(0u, dstAccess, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                   colorBuffer.getImage(), colorSRR);
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, 0u, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, &barrier);
+    }
+    beginRendering(ctx.vkd, cmdBuffer, colorBuffer.getImageView(), scissor, clearValue,
+                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR, 0u, layerCount, goodViewMask);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *finalPipeline);
+    ctx.vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+    endRendering(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1),
+                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, layerCount);
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    auto bufferAlloc = colorBuffer.getBufferAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, bufferAlloc);
+
+    const auto tcuFormat = mapVkFormat(colorFormat);
+    tcu::ConstPixelBufferAccess result(tcuFormat, extent, bufferAlloc.getHostPtr());
+
+    tcu::TextureLevel referenceLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess reference = referenceLevel.getAccess();
+
+    const std::vector<tcu::Vec4> refColors{
+        tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f),
+        tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f),
+    };
+    DE_ASSERT(refColors.size() == static_cast<size_t>(extent.z()));
+
+    const tcu::Vec4 threshold(0.0f);
+    auto &log = context.getTestContext().getLog();
+    bool fail = false;
+
+    for (int z = 0; z < extent.z(); ++z)
+    {
+        const auto resLayer = tcu::getSubregion(result, 0, 0, z, extent.x(), extent.y(), 1);
+        const auto refLayer = tcu::getSubregion(reference, 0, 0, z, extent.x(), extent.y(), 1);
+        const auto imgName  = "Layer" + std::to_string(z);
+
+        tcu::clear(refLayer, refColors.at(z));
+
+        if (!tcu::floatThresholdCompare(log, imgName.c_str(), "", refLayer, resLayer, threshold,
+                                        tcu::COMPARE_LOG_ON_ERROR))
+            fail = true;
+    }
+
+    if (fail)
+        TCU_FAIL("Unexpected output in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createPipelineLibraryTests(tcu::TestContext &testCtx)
@@ -6171,6 +6442,18 @@ tcu::TestCaseGroup *createPipelineLibraryTests(tcu::TestContext &testCtx)
         }
 
         miscTests->addChild(primRebindGroup.release());
+    }
+
+    // Test case to check if viewMask is needed the fragment output library.
+    {
+        de::MovePtr<tcu::TestCaseGroup> viewMaskGroup(new tcu::TestCaseGroup(testCtx, "view_mask"));
+        for (const bool optimized : {false, true})
+        {
+            const auto testName = (optimized ? "optimized" : "fast");
+            addFunctionCaseWithPrograms(viewMaskGroup.get(), testName, viewMaskSupportCheck, viewMaskInitPrograms,
+                                        viewMaskRun, optimized);
+        }
+        miscTests->addChild(viewMaskGroup.release());
     }
 
     group->addChild(miscTests.release());
