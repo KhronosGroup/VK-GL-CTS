@@ -484,6 +484,8 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     const tcu::CommandLine &commandLine = m_defaultContextManager->getCommandLine();
     const bool doShaderLog              = commandLine.isLogDecompiledSpirvEnabled() && log.isShaderLoggingEnabled();
 
+    bool needsRebuildPrograms = false;
+
     // Some functions, such as checkSupport() or initDeviceCapabilities(), and especially
     // the function that creates a new device, may throw an exception. All messages, including
     // logging, are disabled while the test is being processed by the SC in the main process,
@@ -525,8 +527,12 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
         {
             vktCase->checkSupport(*outTestContext);
         }
-        m_progCollection.clear();
-        vktCase->initPrograms(sourceProgs);
+        if (vktCase->needsRebuildPrograms(vktCase, *outTestContext))
+        {
+            m_progCollection.clear();
+            vktCase->initPrograms(sourceProgs);
+            needsRebuildPrograms = true;
+        }
     };
 
     m_context = {/* release reference counter value before serching for new context */};
@@ -534,7 +540,7 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
                                               m_progCollection, onBeforeRunTestCase);
 
     for (vk::GlslSourceCollection::Iterator progIter = sourceProgs.glslSources.begin();
-         progIter != sourceProgs.glslSources.end(); ++progIter)
+         progIter != sourceProgs.glslSources.end() && needsRebuildPrograms; ++progIter)
     {
         if (!spirvVersionSupported(progIter.getProgram().buildOptions.targetVersion))
             TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
@@ -561,7 +567,7 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     }
 
     for (vk::HlslSourceCollection::Iterator progIter = sourceProgs.hlslSources.begin();
-         progIter != sourceProgs.hlslSources.end(); ++progIter)
+         progIter != sourceProgs.hlslSources.end() && needsRebuildPrograms; ++progIter)
     {
         if (!spirvVersionSupported(progIter.getProgram().buildOptions.targetVersion))
             TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
@@ -588,7 +594,7 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     }
 
     for (vk::SpirVAsmCollection::Iterator asmIterator = sourceProgs.spirvAsmSources.begin();
-         asmIterator != sourceProgs.spirvAsmSources.end(); ++asmIterator)
+         asmIterator != sourceProgs.spirvAsmSources.end() && needsRebuildPrograms; ++asmIterator)
     {
         if (!spirvVersionSupported(asmIterator.getProgram().buildOptions.targetVersion))
             TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");

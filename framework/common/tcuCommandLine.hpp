@@ -385,6 +385,9 @@ public:
     //! Perform tests for devices implementing compute-only functionality
     bool isComputeOnly(void) const;
 
+    //! Allows you to use vendor-specific configuration
+    bool isVendorSpecific() const;
+
     /*--------------------------------------------------------------------*//*!
      * \brief Creates case list filter
      * \param archive Resources

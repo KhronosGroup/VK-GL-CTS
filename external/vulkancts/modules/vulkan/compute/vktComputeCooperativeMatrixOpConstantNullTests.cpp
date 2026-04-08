@@ -67,13 +67,36 @@ enum class Matrices : uint32_t
     R
 };
 
-static const std::set<VkComponentTypeKHR> PossibleTypes{
-    VK_COMPONENT_TYPE_FLOAT16_KHR,     VK_COMPONENT_TYPE_FLOAT32_KHR,     VK_COMPONENT_TYPE_FLOAT64_KHR,
-    VK_COMPONENT_TYPE_SINT8_KHR,       VK_COMPONENT_TYPE_SINT16_KHR,      VK_COMPONENT_TYPE_SINT32_KHR,
-    VK_COMPONENT_TYPE_SINT64_KHR,      VK_COMPONENT_TYPE_UINT8_KHR,       VK_COMPONENT_TYPE_UINT16_KHR,
-    VK_COMPONENT_TYPE_UINT32_KHR,      VK_COMPONENT_TYPE_UINT64_KHR,      VK_COMPONENT_TYPE_BFLOAT16_KHR,
-    VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT, VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT,
-};
+static const std::map<VkComponentTypeKHR, uint32_t> PossibleTypes = []
+{
+    std::map<VkComponentTypeKHR, uint32_t> m;
+    for (VkComponentTypeKHR c : {
+             VK_COMPONENT_TYPE_FLOAT16_KHR,
+             VK_COMPONENT_TYPE_FLOAT32_KHR,
+             VK_COMPONENT_TYPE_FLOAT64_KHR,
+             VK_COMPONENT_TYPE_SINT8_KHR,
+             VK_COMPONENT_TYPE_SINT16_KHR,
+             VK_COMPONENT_TYPE_SINT32_KHR,
+             VK_COMPONENT_TYPE_SINT64_KHR,
+             VK_COMPONENT_TYPE_UINT8_KHR,
+             VK_COMPONENT_TYPE_UINT16_KHR,
+             VK_COMPONENT_TYPE_UINT32_KHR,
+             VK_COMPONENT_TYPE_UINT64_KHR,
+             VK_COMPONENT_TYPE_BFLOAT16_KHR,
+             VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT,
+             VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT,
+         })
+        m[c] = uint32_t(m.size());
+    return m;
+}();
+
+static const std::map<uint32_t, VkComponentTypeKHR> InvPossibleTypes = []
+{
+    std::map<uint32_t, VkComponentTypeKHR> m;
+    for (const std::pair<const VkComponentTypeKHR, uint32_t> &p : PossibleTypes)
+        m[p.second] = p.first;
+    return m;
+}();
 
 static bool isFloatType(VkComponentTypeKHR t)
 {
@@ -82,27 +105,74 @@ static bool isFloatType(VkComponentTypeKHR t)
            t == VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT || t == VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT;
 }
 
-bool isIntType(VkComponentTypeKHR t)
+static bool isIntType(VkComponentTypeKHR t)
 {
     return !isFloatType(t);
 }
 
-bool inPossibleTypes(VkComponentTypeKHR type)
+static bool inPossibleTypes(VkComponentTypeKHR type)
 {
     return PossibleTypes.find(type) != PossibleTypes.end();
 }
 
-bool isPossibleConfiguration(const VkCooperativeMatrixPropertiesKHR &p)
+static bool isPossibleConfiguration(const VkCooperativeMatrixPropertiesKHR &p)
 {
     return inPossibleTypes(p.AType) && inPossibleTypes(p.BType) && inPossibleTypes(p.CType) &&
            inPossibleTypes(p.ResultType) && p.scope == VK_SCOPE_SUBGROUP_KHR;
 }
 
-bool areSameConfigurations(const VkCooperativeMatrixPropertiesKHR &a, const VkCooperativeMatrixPropertiesKHR &b)
+static uint32_t encodeConfiguration(const VkCooperativeMatrixPropertiesKHR &c, bool allowZeroSizes)
 {
-    return a.MSize == b.MSize && a.NSize == b.NSize && a.KSize == b.KSize && a.AType == b.AType && a.BType == b.BType &&
-           a.CType == b.CType && a.ResultType == b.ResultType && a.saturatingAccumulation == b.saturatingAccumulation &&
-           a.scope == b.scope;
+    uint32_t key = uint32_t(c.saturatingAccumulation);
+    key |= PossibleTypes.at(c.AType) << 1;
+    key |= PossibleTypes.at(c.BType) << 6;
+    key |= PossibleTypes.at(c.CType) << 11;
+    key |= PossibleTypes.at(c.ResultType) << 16;
+    if (false == allowZeroSizes)
+    {
+        key |= (de::findMSB(c.MSize) - 2) << 21;
+        key |= (de::findMSB(c.NSize) - 2) << 24;
+        key |= (de::findMSB(c.KSize) - 2) << 27;
+    }
+    // Ignore c.scope, it is always VK_SCOPE_SUBGROUP_KHR,
+    // please have a look on isPossibleConfiguration
+    DE_ASSERT(c.scope == VK_SCOPE_SUBGROUP_KHR);
+    return key;
+}
+
+static VkCooperativeMatrixPropertiesKHR decodeConfiguration(uint32_t key)
+{
+    VkCooperativeMatrixPropertiesKHR c{};
+    c.sType = VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR;
+
+    c.saturatingAccumulation = VkBool32(key & 0x1);
+
+    uint32_t ATypeBits = (key >> 1) & 0x1F;
+    uint32_t BTypeBits = (key >> 6) & 0x1F;
+    uint32_t CTypeBits = (key >> 11) & 0x1F;
+    uint32_t RTypeBits = (key >> 16) & 0x1F;
+
+    uint32_t MSizeBits = (key >> 21) & 0x7;
+    uint32_t NSizeBits = (key >> 24) & 0x7;
+    uint32_t KSizeBits = (key >> 27) & 0x7;
+
+    c.AType      = InvPossibleTypes.at(ATypeBits);
+    c.BType      = InvPossibleTypes.at(BTypeBits);
+    c.CType      = InvPossibleTypes.at(CTypeBits);
+    c.ResultType = InvPossibleTypes.at(RTypeBits);
+
+    c.MSize = 1u << (MSizeBits + 2u);
+    c.NSize = 1u << (NSizeBits + 2u);
+    c.KSize = 1u << (KSizeBits + 2u);
+
+    c.scope = VK_SCOPE_SUBGROUP_KHR;
+
+    return c;
+}
+
+inline static uint32_t zeroSizesInConf(const uint32_t encoded)
+{
+    return (encoded & ~0x3FE00000u);
 }
 
 bool anyComponentOf(const VkCooperativeMatrixPropertiesKHR &p, std::initializer_list<VkComponentTypeKHR> components)
@@ -151,12 +221,15 @@ struct Params
 {
     ComputePipelineConstructionType pipelineConstructionType;
     Matrices matrix;
+    bool allowDynamicConfigurations;
 };
 
 class CoopMtxOpConstantNullInstance : public TestInstance
 {
     const Params m_params;
     const bool m_allowDynamicConfigurations;
+    const std::vector<VkCooperativeMatrixPropertiesKHR> m_iterations;
+    const std::vector<VkCooperativeMatrixPropertiesKHR> m_skippedIterations;
     uint32_t m_iteration;
     uint32_t m_failCount;
 
@@ -212,12 +285,17 @@ public:
         : TestInstance(context)
         , m_params(params)
         , m_allowDynamicConfigurations(allowDynamicConfigurations)
+        , m_iterations(genIterations())
+        , m_skippedIterations(genSkippedIterations())
         , m_iteration(0u)
         , m_failCount(0u)
     {
     }
     virtual tcu::TestStatus iterate() override;
-    void logConfiguration(const VkCooperativeMatrixPropertiesKHR &conf, uint32_t number, tcu::TestLog &log) const;
+    std::vector<VkCooperativeMatrixPropertiesKHR> genIterations() const;
+    std::vector<VkCooperativeMatrixPropertiesKHR> genSkippedIterations() const;
+    void logConfiguration(const VkCooperativeMatrixPropertiesKHR &conf, uint32_t number, bool skipped,
+                          tcu::TestLog &log) const;
     bool verifyResult(const Executor &executor, Matrices targetMatrix, std::string &errorMessage) const;
 };
 
@@ -239,7 +317,7 @@ public:
     CoopMtxOpConstantNullCase(tcu::TestContext &testCtx, const std::string &name, const Params &params)
         : TestCase(testCtx, name)
         , m_params(params)
-        , m_allowDynamicConfigurations(false)
+        , m_allowDynamicConfigurations(params.allowDynamicConfigurations)
     {
     }
     virtual TestInstance *createInstance(Context &context) const override
@@ -250,32 +328,16 @@ public:
     virtual void delayedInit() override;
     virtual void checkSupport(Context &context) const override;
     virtual void initPrograms(SourceCollections &programCollection) const override;
+    virtual bool needsRebuildPrograms(TestCase const *testCase, Context &context) const override;
 
-    using Confs     = std::vector<VkCooperativeMatrixPropertiesKHR>;
+    using Confs     = std::vector<uint32_t>;
     using ConfsCRef = std::add_lvalue_reference_t<std::add_const_t<Confs>>;
     static auto getPossibleConfigurationsStatic() -> ConfsCRef;
     static auto getPossibleConfigurationsDynamic(const InstanceInterface *pIntf, VkPhysicalDevice device) -> ConfsCRef;
     static auto getConfigurations(bool allowDynamicConfigurations, const InstanceInterface *pIntf,
                                   VkPhysicalDevice device) -> ConfsCRef;
-    static uint32_t containsConfiguration(const VkCooperativeMatrixPropertiesKHR &conf, ConfsCRef confs);
     static uint32_t getViableConfigurationCount(bool allowDynamicConfigurations, const InstanceInterface &vki,
                                                 VkPhysicalDevice device);
-
-    class ViableConfIter
-    {
-        ConfsCRef m_available;
-        ConfsCRef m_viable;
-        uint32_t &m_index;
-
-    public:
-        ViableConfIter(uint32_t &index, ConfsCRef available, ConfsCRef viable)
-            : m_available(available)
-            , m_viable(viable)
-            , m_index(index)
-        {
-        }
-        uint32_t next(VkCooperativeMatrixPropertiesKHR &conf);
-    };
 };
 
 template <VkComponentTypeKHR>
@@ -699,16 +761,12 @@ bool isNullMatrix(const std::vector<float> &mat)
 
 std::string genShaderName(const VkCooperativeMatrixPropertiesKHR &p)
 {
-    int i = 0;
     std::ostringstream os;
-    std::map<VkComponentTypeKHR, int> m;
-    for (VkComponentTypeKHR c : PossibleTypes)
-        m.insert(std::make_pair(c, i++));
-    os << m[p.AType];
-    os << '-' << m[p.BType];
-    os << '-' << m[p.CType];
-    os << '-' << m[p.ResultType];
-    os << '-' << int(p.scope);
+    os << PossibleTypes.at(p.AType);
+    os << '-' << PossibleTypes.at(p.BType);
+    os << '-' << PossibleTypes.at(p.CType);
+    os << '-' << PossibleTypes.at(p.ResultType);
+    os << '-' << p.saturatingAccumulation;
     return os.str();
 }
 
@@ -1112,6 +1170,12 @@ ${matR_*}
             operands << op;
         }
     }
+    if (conf.saturatingAccumulation)
+    {
+        if (operands.tellp())
+            operands << '|';
+        operands << "SaturatingAccumulationKHR";
+    }
 
     const std::string matR_defs = "%matR_type = OpTypeCooperativeMatrixKHR " + RType +
                                   " %uint_3 %M %N %uint_2\n"
@@ -1173,7 +1237,11 @@ void CoopMtxOpConstantNullCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
     }
 
-    ConfsCRef viableConfs = getConfigurations(true, &context.getInstanceInterface(), context.getPhysicalDevice());
+    ConfsCRef encodedViableConfs =
+        getConfigurations(true, &context.getInstanceInterface(), context.getPhysicalDevice());
+    std::vector<VkCooperativeMatrixPropertiesKHR> viableConfs(encodedViableConfs.size());
+    std::transform(encodedViableConfs.begin(), encodedViableConfs.end(), viableConfs.begin(),
+                   [](const uint32_t encoded) { return decodeConfiguration(encoded); });
 
     if (has16BitTypes(viableConfs))
     {
@@ -1221,15 +1289,17 @@ auto computePossibleConfigurationsDynamic(const InstanceInterface *pIntf, VkPhys
     DE_ASSERT(pIntf);
     uint32_t propertyCount                      = 0u;
     const VkCooperativeMatrixPropertiesKHR temp = initVulkanStructure();
-    std::vector<VkCooperativeMatrixPropertiesKHR> available, possible;
+    std::vector<VkCooperativeMatrixPropertiesKHR> available;
     VK_CHECK(pIntf->getPhysicalDeviceCooperativeMatrixPropertiesKHR(device, &propertyCount, nullptr));
     available.resize(propertyCount, temp);
     VK_CHECK(pIntf->getPhysicalDeviceCooperativeMatrixPropertiesKHR(device, &propertyCount, available.data()));
+    CoopMtxOpConstantNullCase::Confs possible;
     for (const VkCooperativeMatrixPropertiesKHR &p : available)
     {
         if (isPossibleConfiguration(p))
-            possible.push_back(p);
+            possible.push_back(encodeConfiguration(p, false));
     }
+    std::sort(possible.begin(), possible.end());
     return possible;
 }
 
@@ -1240,73 +1310,75 @@ auto CoopMtxOpConstantNullCase::getPossibleConfigurationsDynamic(const InstanceI
     return confs;
 }
 
-auto computePossibleConfigurationsStatic() -> CoopMtxOpConstantNullCase::Confs
+auto computePossibleConfigurationsStatic(const size_t confCount = 0) -> CoopMtxOpConstantNullCase::Confs
 {
-    std::vector<VkCooperativeMatrixPropertiesKHR> confs;
+    CoopMtxOpConstantNullCase::Confs confs(confCount);
 
-    uint32_t const PossibleSizes[]{8, 16, 32};
-
-    auto isValidOperand = [&](VkComponentTypeKHR t)
-    {
-        // FP32/FP64 cannot be A/B
-        if (t == VK_COMPONENT_TYPE_FLOAT32_KHR || t == VK_COMPONENT_TYPE_FLOAT64_KHR)
-            return false;
-        return true;
-    };
+    size_t iconf = 0;
 
     for (auto AType : PossibleTypes)
+    {
         for (auto BType : PossibleTypes)
+        {
+            // RULE 1: A/B must be both float or both int
+            if (isFloatType(AType.first) != isFloatType(BType.first))
+                continue;
+
             for (auto CType : PossibleTypes)
+            {
                 for (auto RType : PossibleTypes)
-                    for (auto MSize : PossibleSizes)
-                        for (auto NSize : PossibleSizes)
-                            for (auto KSize : PossibleSizes)
-                            {
-                                // RULE 1: A/B must be valid operand types
-                                if (!isValidOperand(AType) || !isValidOperand(BType))
-                                    continue;
+                {
+                    // RULE 2: C/R must be both float or both int
+                    if (isFloatType(CType.first) != isFloatType(RType.first))
+                        continue;
 
-                                // RULE 2: A/B must be both float or both int
-                                if (isFloatType(AType) != isFloatType(BType))
-                                    continue;
+                    // RULE 3: C & R almost always are identical
+                    if (CType.first != RType.first)
+                        continue;
 
-                                // RULE 3: CType must be compatible with A/B
-                                if (isFloatType(AType))
-                                {
-                                    // float accumulation must be float
-                                    if (!isFloatType(CType))
-                                        continue;
-                                }
-                                else
-                                {
-                                    // int accumulation must be int
-                                    if (!isIntType(CType))
-                                        continue;
-                                }
+                    if (isFloatType(AType.first) != isFloatType(CType.first))
+                    {
+                        // RULE 4: If mix then int->float allowed
+                        if (!(isIntType(AType.first) && isFloatType(CType.first)))
+                            continue;
+                    }
 
-                                // RULE 4: sizes must be multiples of 4
-                                if ((MSize % 4) || (NSize % 4) || (KSize % 4))
-                                    continue;
+                    for (auto SatAcc : {VK_TRUE, VK_FALSE})
+                    {
+                        // RULE 5: No saturation for floats (usually)
+                        if (SatAcc && isFloatType(RType.first))
+                            continue;
 
-                                VkCooperativeMatrixPropertiesKHR p{};
-                                p.sType      = VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR;
-                                p.AType      = AType;
-                                p.BType      = BType;
-                                p.CType      = CType;
-                                p.ResultType = RType;
-                                p.MSize      = MSize;
-                                p.NSize      = NSize;
-                                p.KSize      = KSize;
-                                p.scope      = VK_SCOPE_SUBGROUP_KHR; // default
+                        if (confCount)
+                        {
+                            // Only matrix types and saturation are valid because
+                            // these are passed to the shader. Scope is always equal
+                            // to VK_SCOPE_SUBGROUP_KHR and sizes are passed via constants.
+                            VkCooperativeMatrixPropertiesKHR p{/*zero initialization*/};
+                            p.AType                  = AType.first;
+                            p.BType                  = BType.first;
+                            p.CType                  = CType.first;
+                            p.ResultType             = RType.first;
+                            p.scope                  = VK_SCOPE_SUBGROUP_KHR; // for all shaders
+                            p.saturatingAccumulation = SatAcc;
 
-                                confs.push_back(p);
-                            }
-    return confs;
+                            confs[iconf] = encodeConfiguration(p, true);
+                        }
+
+                        ++iconf;
+                    }
+                }
+            }
+        }
+    }
+
+    std::sort(confs.begin(), confs.end());
+    return (confCount == 0) ? computePossibleConfigurationsStatic(iconf) : confs;
 }
 
 auto CoopMtxOpConstantNullCase::getPossibleConfigurationsStatic() -> ConfsCRef
 {
-    static auto confs = computePossibleConfigurationsStatic();
+    const static auto confs = computePossibleConfigurationsStatic();
     return confs;
 }
 
@@ -1317,41 +1389,53 @@ auto CoopMtxOpConstantNullCase::getConfigurations(bool allowDynamicConfiguration
                                         getPossibleConfigurationsStatic();
 }
 
-uint32_t CoopMtxOpConstantNullCase::containsConfiguration(const VkCooperativeMatrixPropertiesKHR &conf, ConfsCRef confs)
-{
-    auto found =
-        std::find_if(confs.begin(), confs.end(),
-                     [&](const VkCooperativeMatrixPropertiesKHR &x) { return areSameConfigurations(conf, x); });
-    return uint32_t(std::distance(confs.begin(), found));
-}
-
 uint32_t CoopMtxOpConstantNullCase::getViableConfigurationCount(bool allowDynamicConfigurations,
                                                                 const InstanceInterface &vki, VkPhysicalDevice device)
 {
-    ConfsCRef dynamicConfs   = getPossibleConfigurationsDynamic(&vki, device);
-    ConfsCRef availableConfs = getConfigurations(allowDynamicConfigurations, &vki, device);
-    const auto count         = std::count_if(dynamicConfs.begin(), dynamicConfs.end(),
-                                             [&](const VkCooperativeMatrixPropertiesKHR &c)
-                                             { return containsConfiguration(c, availableConfs) < availableConfs.size(); });
+    auto test = [](ConfsCRef confs) -> void
+    {
+        if (confs.size() >= 2u)
+            DE_ASSERT(confs[0] < confs[1]);
+    };
+
+    ConfsCRef dynamics  = getPossibleConfigurationsDynamic(&vki, device);
+    ConfsCRef available = getConfigurations(allowDynamicConfigurations, &vki, device);
+
+    test(available); // this must be sorted
+    test(dynamics);  // this would be sorted as well
+
+    const auto count =
+        allowDynamicConfigurations ?
+            dynamics.size() :
+            std::count_if(dynamics.begin(), dynamics.end(),
+                          [&](const uint32_t &dynamic)
+                          { return std::binary_search(available.begin(), available.end(), zeroSizesInConf(dynamic)); });
     return static_cast<uint32_t>(count);
 }
 
-uint32_t CoopMtxOpConstantNullCase::ViableConfIter::next(VkCooperativeMatrixPropertiesKHR &conf)
+bool CoopMtxOpConstantNullCase::needsRebuildPrograms(TestCase const *testCase, Context &context) const
 {
-    for (uint32_t i = m_index; i < m_viable.size(); ++i)
+    if (this == testCase)
     {
-        if (const uint32_t k = containsConfiguration(m_viable[i], m_available); k < m_available.size())
+        tcu::TestLog &log            = getTestContext().getLog();
+        const InstanceInterface &vki = context.getInstanceInterface();
+        const VkPhysicalDevice phys  = context.getPhysicalDevice();
+        ConfsCRef confs              = getConfigurations(m_allowDynamicConfigurations, &vki, phys);
+        for (const uint32_t &conf : confs)
         {
-            conf = m_viable[i];
-            return 1u + m_index;
+            const std::string shaderName = genShaderName(decodeConfiguration(conf));
+            if (false == context.getBinaryCollection().contains(shaderName))
+                return true;
         }
+        log << tcu::TestLog::Message << "Skipped creating " << confs.size() << " shaders" << tcu::TestLog::EndMessage;
+        return false;
     }
-    return uint32_t(m_viable.size());
+    return true;
 }
 
 void CoopMtxOpConstantNullCase::initPrograms(SourceCollections &programCollection) const
 {
-    std::vector<std::string> shaderNames;
+    std::set<uint32_t> confSet;
     SpirVAsmBuildOptions tmpOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3);
     SpirvValidatorOptions validatorOptions = tmpOptions.getSpirvValidatorOptions();
     validatorOptions.blockLayout           = SpirvValidatorOptions::BlockLayoutRules::kScalarBlockLayout;
@@ -1359,36 +1443,32 @@ void CoopMtxOpConstantNullCase::initPrograms(SourceCollections &programCollectio
 
     ConfsCRef confs = getConfigurations(m_allowDynamicConfigurations, nullptr, VK_NULL_HANDLE);
 
-    for (const VkCooperativeMatrixPropertiesKHR &conf : confs)
+    for (const uint32_t &conf : confs)
     {
-        const std::string shaderName = genShaderName(conf);
-        if (auto exists = std::find(shaderNames.begin(), shaderNames.end(), shaderName); exists != shaderNames.end())
+        const uint32_t valid = zeroSizesInConf(conf);
+        if (std::binary_search(confSet.begin(), confSet.end(), valid))
         {
             continue;
         }
-        shaderNames.push_back(shaderName);
-        programCollection.spirvAsmSources.add(shaderName) << genShaderCode(conf) << buildOptions;
+        confSet.insert(valid);
+        const VkCooperativeMatrixPropertiesKHR c = decodeConfiguration(valid);
+        programCollection.spirvAsmSources.add(genShaderName(c)) << genShaderCode(c) << buildOptions;
     }
 
-    if (m_allowDynamicConfigurations)
-    {
-        const std::string code(R"glsl(
-    #version 450
-    layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
-    void main() {
-    })glsl");
-        programCollection.glslSources.add("test") << glu::ComputeSource(code);
-    }
+    tcu::TestLog &log = getTestContext().getLog();
+    log << tcu::TestLog::Message << "Generated " << confSet.size() << " szaders" << tcu::TestLog::EndMessage;
 }
 
 void CoopMtxOpConstantNullInstance::logConfiguration(const VkCooperativeMatrixPropertiesKHR &conf, uint32_t number,
-                                                     tcu::TestLog &log) const
+                                                     bool skipped, tcu::TestLog &log) const
 {
     const char *comma = ", ";
-    log << tcu::TestLog::Message << "Configuration: " << number << " A=" << getComponentTypeKHRName(conf.AType) << comma
-        << "B=" << getComponentTypeKHRName(conf.BType) << comma << "C=" << getComponentTypeKHRName(conf.CType) << comma
+    log << tcu::TestLog::Message << (skipped ? "Skipped c" : "C") << "onfiguration " << number
+        << ": A=" << getComponentTypeKHRName(conf.AType) << comma << "B=" << getComponentTypeKHRName(conf.BType)
+        << comma << "C=" << getComponentTypeKHRName(conf.CType) << comma
         << "R=" << getComponentTypeKHRName(conf.ResultType) << comma << "Scope=" << getScopeKHRName(conf.scope) << comma
-        << "M=" << conf.MSize << comma << "K=" << conf.KSize << comma << "N=" << conf.NSize << tcu::TestLog::EndMessage;
+        << "SaturatingAccumulation=" << conf.saturatingAccumulation << comma << "M=" << conf.MSize << comma
+        << "K=" << conf.KSize << comma << "N=" << conf.NSize << tcu::TestLog::EndMessage;
 }
 
 std::vector<float> CoopMtxOpConstantNullInstance::Executor::getMatrix(Matrices m) const
@@ -1762,26 +1842,61 @@ bool CoopMtxOpConstantNullInstance::verifyResult(const Executor &executor, Matri
     return 0u == mismatch;
 }
 
+std::vector<VkCooperativeMatrixPropertiesKHR> CoopMtxOpConstantNullInstance::genSkippedIterations() const
+{
+    if (m_allowDynamicConfigurations)
+    {
+        return {};
+    }
+
+    const InstanceInterface &vki = m_context.getInstanceInterface();
+
+    CoopMtxOpConstantNullCase::ConfsCRef viable =
+        CoopMtxOpConstantNullCase::getPossibleConfigurationsDynamic(&vki, m_context.getPhysicalDevice());
+    CoopMtxOpConstantNullCase::ConfsCRef possible = CoopMtxOpConstantNullCase::getPossibleConfigurationsStatic();
+
+    std::vector<VkCooperativeMatrixPropertiesKHR> iterations;
+
+    for (const uint32_t &viableConf : viable)
+    {
+        if (false == std::binary_search(possible.begin(), possible.end(), zeroSizesInConf(viableConf)))
+            iterations.push_back(decodeConfiguration(viableConf));
+    }
+
+    return iterations;
+}
+
+std::vector<VkCooperativeMatrixPropertiesKHR> CoopMtxOpConstantNullInstance::genIterations() const
+{
+    const InstanceInterface &vki = m_context.getInstanceInterface();
+
+    CoopMtxOpConstantNullCase::ConfsCRef viable =
+        CoopMtxOpConstantNullCase::getPossibleConfigurationsDynamic(&vki, m_context.getPhysicalDevice());
+    CoopMtxOpConstantNullCase::ConfsCRef possible = CoopMtxOpConstantNullCase::getPossibleConfigurationsStatic();
+
+    std::vector<VkCooperativeMatrixPropertiesKHR> iterations;
+
+    for (const uint32_t &viableConf : viable)
+    {
+        if (std::binary_search(possible.begin(), possible.end(), zeroSizesInConf(viableConf)))
+            iterations.push_back(decodeConfiguration(viableConf));
+    }
+
+    return iterations;
+}
+
 tcu::TestStatus CoopMtxOpConstantNullInstance::iterate()
 {
-    tcu::TestLog &log            = m_context.getTestContext().getLog();
-    const InstanceInterface &vki = m_context.getInstanceInterface();
-    const VkPhysicalDevice dev   = m_context.getPhysicalDevice();
+    tcu::TestLog &log = m_context.getTestContext().getLog();
 
-    CoopMtxOpConstantNullCase::ConfsCRef viableConfs = CoopMtxOpConstantNullCase::getConfigurations(true, &vki, dev);
-    CoopMtxOpConstantNullCase::ConfsCRef availableConfs =
-        CoopMtxOpConstantNullCase::getConfigurations(m_allowDynamicConfigurations, &vki, dev);
-    CoopMtxOpConstantNullCase::ViableConfIter viableConfIter(m_iteration, availableConfs, viableConfs);
-
-    VkCooperativeMatrixPropertiesKHR configuration{};
-    const uint32_t nextIteration = viableConfIter.next(configuration);
-
-    logConfiguration(configuration, m_iteration, log);
+    const VkCooperativeMatrixPropertiesKHR configuration = m_iterations[m_iteration];
+    logConfiguration(configuration, m_iteration, false, log);
 
     std::string errorMessage;
     Executor executor(m_context, configuration, m_params);
 
     executor.execute(m_params.matrix);
+
     bool all_ok = verifyResult(executor, m_params.matrix, errorMessage);
     if (all_ok)
     {
@@ -1817,24 +1932,28 @@ tcu::TestStatus CoopMtxOpConstantNullInstance::iterate()
         }
     }
 
-    const auto viableCount = viableConfs.size();
-    if (m_iteration = nextIteration; nextIteration >= viableCount)
+    if (const auto viableCount = m_iterations.size(); ++m_iteration >= viableCount)
     {
-        const auto availableCount = availableConfs.size();
-        if (availableCount > viableCount)
+        const auto skippedCount = m_skippedIterations.size();
+        if (skippedCount)
         {
-            log << tcu::TestLog::Message << "Skipped: " << (availableCount - viableCount) << tcu::TestLog::EndMessage;
+            for (uint32_t skipped = 0u; skipped << skippedCount; ++skipped)
+                logConfiguration(m_skippedIterations[skipped], skipped, true, log);
         }
 
         std::ostringstream finalMessage;
         if (m_failCount)
         {
             finalMessage << m_failCount << " from " << viableCount;
+            if (skippedCount)
+                finalMessage << ", skipped " << skippedCount;
             finalMessage.flush();
             return tcu::TestStatus::fail(finalMessage.str());
         }
 
         finalMessage << m_iteration << " from " << viableCount;
+        if (skippedCount)
+            finalMessage << ", skipped " << skippedCount;
         finalMessage.flush();
         return tcu::TestStatus::pass(finalMessage.str());
     }
@@ -1847,6 +1966,8 @@ tcu::TestStatus CoopMtxOpConstantNullInstance::iterate()
 void createCooperativeMatrixOpConstantNullTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *groupCooperativeMatrix,
                                                 ComputePipelineConstructionType computePipelineConstructionType)
 {
+    const bool allowDynamicConfigurations = testCtx.getCommandLine().isVendorSpecific();
+
     static const std::pair<Matrices, const char *> matrices[]{
         {Matrices::A, "null_a"},
         {Matrices::B, "null_b"},
@@ -1858,8 +1979,9 @@ void createCooperativeMatrixOpConstantNullTests(tcu::TestContext &testCtx, tcu::
     for (const std::pair<Matrices, const char *> &m : matrices)
     {
         Params p{};
-        p.pipelineConstructionType = computePipelineConstructionType;
-        p.matrix                   = m.first;
+        p.allowDynamicConfigurations = allowDynamicConfigurations;
+        p.pipelineConstructionType   = computePipelineConstructionType;
+        p.matrix                     = m.first;
         groupNullConstant->addChild(new CoopMtxOpConstantNullCase(testCtx, m.second, p));
     }
 

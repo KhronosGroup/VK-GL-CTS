@@ -1804,6 +1804,11 @@ void TestCase::initPrograms(SourceCollections &) const
 {
 }
 
+bool TestCase::needsRebuildPrograms(TestCase const *, Context &) const
+{
+    return true;
+}
+
 void TestCase::checkSupport(Context &) const
 {
 }

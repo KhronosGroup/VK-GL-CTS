@@ -398,6 +398,21 @@ For platforms where it is needed to override the default loader library path, th
 
 	--deqp-vk-library-path=<path>
 
+Some tests are written to cover the full set of configurations the Vulkan API
+allows, regardless of whether the device under test supports each one. For
+example, a test exercising every possible image format builds the work (such as
+shaders) for all of them, even though a given implementation supports only a
+subset. This option informs such tests that they may run in "vendor-specific
+mode":
+
+	--deqp-vk-vendor-specific=[enable|disable]
+
+When enabled, a test adapts to the implementation under test and exercises
+exactly the configurations that device supports, neither more nor fewer,
+instead of the full generic set common to all implementations. In the image
+format example above, the test would build shaders for precisely the formats
+the device exposes. This option is disabled by default.
+
 No other command line options are allowed.
 
 ### Win32
@@ -1126,6 +1141,10 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
 
   --deqp-vk-video-encode-dump=[disable|yuv|bitstream|all]
     Dump mode for output of vulkan video encoding tests
+    default: 'disable'
+
+  --deqp-vk-vendor-specific=[enable|disable]
+    Allows you to use vendor-specific configuration
     default: 'disable'
 
 Full list of parameters for the `vksc-server` application:

@@ -150,6 +150,7 @@ DE_DECLARE_COMMAND_LINE_OPT(ComputeOnly, bool);
 DE_DECLARE_COMMAND_LINE_OPT(VideoLogPrint, bool);
 DE_DECLARE_COMMAND_LINE_OPT(VideoDecodeOutputDump, VideoDecodeOutput);
 DE_DECLARE_COMMAND_LINE_OPT(VideoEncodeOutputDump, VideoEncodeOutput);
+DE_DECLARE_COMMAND_LINE_OPT(VendorSpecific, bool);
 
 static void parseIntList(const char *src, std::vector<int> *dst)
 {
@@ -362,8 +363,9 @@ void registerOptions(de::cmdline::Parser &parser)
         << Option<VideoDecodeOutputDump>(nullptr, "deqp-vk-video-decode-dump",
                                          "Dump the output of vulkan video decoding tests", s_videoDecodeDump, "disable")
         << Option<VideoEncodeOutputDump>(nullptr, "deqp-vk-video-encode-dump",
-                                         "Dump the output of vulkan video encoding tests", s_videoEncodeDump,
-                                         "disable");
+                                         "Dump the output of vulkan video encoding tests", s_videoEncodeDump, "disable")
+        << Option<VendorSpecific>(nullptr, "deqp-vk-vendor-specific", "Allows you to use vendor-specific configuration",
+                                  s_enableNames, "disable");
 }
 
 void registerLegacyOptions(de::cmdline::Parser &parser)
@@ -1419,6 +1421,10 @@ int CommandLine::getPipelineDefaultSize(void) const
 bool CommandLine::isComputeOnly(void) const
 {
     return m_cmdLine.getOption<opt::ComputeOnly>();
+}
+bool CommandLine::isVendorSpecific() const
+{
+    return m_cmdLine.getOption<opt::VendorSpecific>();
 }
 
 const char *CommandLine::getGLContextType(void) const
