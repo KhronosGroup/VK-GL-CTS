@@ -2243,7 +2243,7 @@ tcu::TestStatus InternallySynchronizedInstance::iterate(void)
     std::vector<uint8_t> cacheData(cacheDataSize);
     vk.getPipelineCacheData(device, *globalPipelineCache, &cacheDataSize, (void *)cacheData.data());
 
-    globalPipelineCache = {};
+    globalPipelineCache.reset();
 
     pipelineCacheCreateInfo.initialDataSize = cacheDataSize;
     pipelineCacheCreateInfo.pInitialData    = (void *)cacheData.data();

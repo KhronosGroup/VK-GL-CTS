@@ -7014,11 +7014,11 @@ tcu::TestStatus DescriptorHeapTestInstanceInvariance::iterate()
     {
         // Reset allocations before replay.
         m_buffer = {};
-        m_image  = {};
+        m_image.reset();
         m_imageMemory.clear();
         m_rtBlas.clear();
         m_rtTlas.clear();
-        m_samplerYcbcrConversion = {};
+        m_samplerYcbcrConversion.reset();
 
         if (m_params.enableCustomBorderColor)
         {

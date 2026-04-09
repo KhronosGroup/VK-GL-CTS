@@ -1685,7 +1685,7 @@ tcu::TestStatus retiredSwapchainTest(Context &context, vk::wsi::Type wsiType)
         }
 
         // Explicitly trigger the destruction of the swapchain
-        swapchains[swapchainIdx].m_swapchain = {};
+        swapchains[swapchainIdx].m_swapchain.reset();
     }
 
     vkd.queueWaitIdle(devHelper.queue);
