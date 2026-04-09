@@ -356,11 +356,19 @@ tcu::TestStatus BufferSparseResidencyInstance::iterate(void)
                 .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
                 .build(deviceInterface, getDevice()));
 
+        // Push constant range
+        const VkPushConstantRange pcRange = {
+            VK_SHADER_STAGE_COMPUTE_BIT,             // VkShaderStageFlags stageFlags;
+            0u,                                      // uint32_t offset;
+            static_cast<uint32_t>(sizeof(uint32_t)), // uint32_t size;
+        };
+        const VkPushConstantRange *pushConstRange = &pcRange;
+
         // Create compute pipeline
         const Unique<VkShaderModule> shaderModule(
             createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get("comp"), 0));
         const Unique<VkPipelineLayout> pipelineLayout(
-            makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout));
+            makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout, pushConstRange));
         const Unique<VkPipeline> computePipeline(
             makeComputePipeline(deviceInterface, getDevice(), *pipelineLayout, *shaderModule));
 
