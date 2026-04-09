@@ -127,6 +127,7 @@ dEQP-VK.mesh_shader.ext.misc.memory_barrier_shared_in_task_vector
 dEQP-VK.mesh_shader.ext.misc.multiple_outputs_vertices
 dEQP-VK.mesh_shader.ext.misc.payload_not_accessed
 dEQP-VK.mesh_shader.ext.misc.work_group_ordering
+dEQP-VK.mesh_shader.ext.properties.limits
 dEQP-VK.mesh_shader.ext.smoke.fast_lib.depth_only_points
 dEQP-VK.mesh_shader.ext.smoke.fast_lib.depth_only_points_position_components
 dEQP-VK.mesh_shader.ext.smoke.fast_lib.depth_only_triangles
