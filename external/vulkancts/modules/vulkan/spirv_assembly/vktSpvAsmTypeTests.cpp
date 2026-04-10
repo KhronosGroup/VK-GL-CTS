@@ -43,6 +43,7 @@
 #include "spirv/unified1/GLSL.std.450.h"
 
 #include <cmath>
+#include <limits>
 
 #define TEST_DATASET_SIZE 10
 #define TEST_DATASET_SIZE_VEC(vecSize) ((vecSize) <= 4 ? TEST_DATASET_SIZE * vecSize : 60)
@@ -1113,6 +1114,7 @@ public:
     static bool filterNone(T a, T b, T c, T d);
     static bool filterZero(T a, T b);
     static bool filterNegativesAndZero(T a, T b);
+    static bool filterSignedDiv(T a, T b);
     static bool filterMinGtMax(T, T a, T b);
 
     static T zero(T);
@@ -2836,6 +2838,18 @@ bool SpvAsmTypeTests<T>::filterNegativesAndZero(T a, T b)
 }
 
 template <class T>
+bool SpvAsmTypeTests<T>::filterSignedDiv(T a, T b)
+{
+    // We cannot divide by zero, and we cannot divide the min by -1.
+    if (b == static_cast<T>(0))
+        return false;
+    else if (b == static_cast<T>(-1) && a == std::numeric_limits<T>::min())
+        return false;
+    else
+        return true;
+}
+
+template <class T>
 bool SpvAsmTypeTests<T>::filterMinGtMax(T, T a, T b)
 {
     if (a > b)
@@ -3982,6 +3996,11 @@ public:
 #define U32_FILTER_NEGATIVES_AND_ZERO SpvAsmTypeUint32Tests::filterNegativesAndZero
 #define U64_FILTER_NEGATIVES_AND_ZERO SpvAsmTypeUint64Tests::filterNegativesAndZero
 
+#define I8_FILTER_SIGNED_DIV SpvAsmTypeInt8Tests::filterSignedDiv
+#define I16_FILTER_SIGNED_DIV SpvAsmTypeInt16Tests::filterSignedDiv
+#define I32_FILTER_SIGNED_DIV SpvAsmTypeInt32Tests::filterSignedDiv
+#define I64_FILTER_SIGNED_DIV SpvAsmTypeInt64Tests::filterSignedDiv
+
 #define I8_FILTER_MIN_GT_MAX SpvAsmTypeInt8Tests::filterMinGtMax
 #define I16_FILTER_MIN_GT_MAX SpvAsmTypeInt16Tests::filterMinGtMax
 #define I32_FILTER_MIN_GT_MAX SpvAsmTypeInt32Tests::filterMinGtMax
@@ -4295,7 +4314,7 @@ tcu::TestCaseGroup *createTypeTests(tcu::TestContext &testCtx)
     MAKE_TEST_SV_I_8136("add", SpvOpIAdd, add, FILTER_NONE, RANGE_FULL, nullptr)
     MAKE_TEST_SV_I_8136("sub", SpvOpISub, sub, FILTER_NONE, RANGE_FULL, nullptr)
     MAKE_TEST_SV_I_8136("mul", SpvOpIMul, mul, FILTER_NONE, RANGE_FULL, nullptr)
-    MAKE_TEST_SV_I_8136("div", SpvOpSDiv, div, FILTER_ZERO, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136("div", SpvOpSDiv, div, FILTER_SIGNED_DIV, RANGE_FULL, nullptr)
     MAKE_TEST_SV_U_8136("div", SpvOpUDiv, div, FILTER_ZERO, RANGE_FULL, nullptr)
     MAKE_TEST_SV_I_8136("rem", SpvOpSRem, rem, FILTER_NEGATIVES_AND_ZERO, RANGE_FULL, nullptr)
     MAKE_TEST_SV_I_8136("mod", SpvOpSMod, mod, FILTER_NEGATIVES_AND_ZERO, RANGE_FULL, nullptr)
