@@ -900,6 +900,11 @@ tcu::TestStatus querySurfacePresentModes2Test(Context &context, Type wsiType)
 
     for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)
     {
+        const std::vector<VkExtensionProperties> deviceNdxExtensions(
+            enumerateDeviceExtensionProperties(instHelper.vki, physicalDevices[deviceNdx], nullptr));
+        if (!isExtensionStructSupported(deviceNdxExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))
+            continue;
+
         if (isSupportedByAnyQueue(instHelper.vki, physicalDevices[deviceNdx], *surface))
         {
             const VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
