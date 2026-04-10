@@ -1215,8 +1215,7 @@ Move<VkDevice> getRobustDevice(Context &context, bool enable64BitIndexing, bool 
     };
     const auto instance = context.getInstance();
 
-    return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                              context.getPlatformInterface(), instance, vki, context.getPhysicalDevice(),
+    return createCustomDevice(context.getPlatformInterface(), instance, vki, context.getPhysicalDevice(),
                               &deviceParams);
 }
 
@@ -3258,8 +3257,7 @@ void ComputeTestInstance::createDeviceGroup(void)
                                            nullptr, // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_logicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                         m_context.getPlatformInterface(), m_deviceGroupInstance, instance,
+    m_logicalDevice = createCustomDevice(m_context.getPlatformInterface(), m_deviceGroupInstance, instance,
                                          deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
 #ifndef CTS_USES_VULKANSC
     m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_deviceGroupInstance,
@@ -4304,8 +4302,7 @@ tcu::TestStatus ConcurrentComputeInstance::iterate(void)
     deviceInfo.pQueueCreateInfos       = queueInfos;
 
     logicalDevice =
-        createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                           m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
+        createCustomDevice(m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
 
 #ifndef CTS_USES_VULKANSC
     de::MovePtr<vk::DeviceDriver> deviceDriver = de::MovePtr<DeviceDriver>(
@@ -5134,8 +5131,7 @@ Move<VkDevice> createComputeOnlyDevice(vk::VkInstance instance, const InstanceIn
         nullptr,                              // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                                   context.getPlatformInterface(), instance, instanceDriver, physicalDevice,
+    return vkt::createCustomDevice(context.getPlatformInterface(), instance, instanceDriver, physicalDevice,
                                    &deviceCreateInfo);
 }
 

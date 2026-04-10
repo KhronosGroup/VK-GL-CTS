@@ -227,8 +227,7 @@ tcu::TestStatus testCreateDeviceWithFaultCallbackInfo(Context &context, FaultCal
     };
 
     Move<VkDevice> resultingDevice =
-        createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                           context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceCreateInfo);
+        createCustomDevice(context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceCreateInfo);
 
     return tcu::TestStatus::pass("Pass");
 }

@@ -484,8 +484,7 @@ public:
                 nullptr // const VkPhysicalDeviceFeatures* pEnabledFeatures;
             };
 
-            m_logicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                                 m_context.getPlatformInterface(), instance, instanceDriver,
+            m_logicalDevice = createCustomDevice(m_context.getPlatformInterface(), instance, instanceDriver,
                                                  m_context.getPhysicalDevice(), &deviceInfo);
         }
 #endif // CTS_USES_VULKANSC

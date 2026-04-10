@@ -1750,8 +1750,7 @@ Move<VkDevice> DualSourceBlendMAInstance::createDualBlendDevice(Context &ctx)
         nullptr                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    return createCustomDevice(ctx.getTestContext().getCommandLine().isValidationEnabled(), ctx.getPlatformInterface(),
-                              instance, vki, physicalDevice, &deviceParams);
+    return createCustomDevice(ctx.getPlatformInterface(), instance, vki, physicalDevice, &deviceParams);
 }
 
 } // unnamed namespace

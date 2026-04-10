@@ -3867,8 +3867,7 @@ DescriptorHeapTestInstanceBase::DescriptorHeapTestInstanceBase(Context &context,
     createInfo.queueCreateInfoCount    = 1;
     createInfo.pQueueCreateInfos       = &queueInfo;
 
-    m_device =
-        createCustomDevice(false, context.getPlatformInterface(), context.getInstance(), inst, physDevice, &createInfo);
+    m_device = createCustomDevice(context.getPlatformInterface(), context.getInstance(), inst, physDevice, &createInfo);
 
     m_memoryProperties = vk::getPhysicalDeviceMemoryProperties(inst, physDevice);
     m_descriptorHeapProperties =
@@ -6557,8 +6556,7 @@ DescriptorHeapTestInstanceReservedHeap::DescriptorHeapTestInstanceReservedHeap(C
     createInfo.queueCreateInfoCount    = static_cast<uint32_t>(queueInfos.size());
     createInfo.pQueueCreateInfos       = queueInfos.data();
 
-    m_device =
-        createCustomDevice(false, context.getPlatformInterface(), context.getInstance(), inst, physDevice, &createInfo);
+    m_device = createCustomDevice(context.getPlatformInterface(), context.getInstance(), inst, physDevice, &createInfo);
 
     m_memoryProperties = vk::getPhysicalDeviceMemoryProperties(inst, physDevice);
     m_descriptorHeapProperties =

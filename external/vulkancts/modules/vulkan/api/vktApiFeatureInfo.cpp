@@ -2040,7 +2040,6 @@ void createTestDevice(Context &context, void *pNext, const char *const *ppEnable
                       uint32_t enabledExtensionCount)
 {
     const PlatformInterface &platformInterface = context.getPlatformInterface();
-    const auto validationEnabled               = context.getTestContext().getCommandLine().isValidationEnabled();
     const Unique<VkInstance> instance(createDefaultInstance(platformInterface, context.getUsedApiVersion(),
                                                             context.getTestContext().getCommandLine()));
     const InstanceDriver instanceDriver(platformInterface, instance.get());
@@ -2110,8 +2109,8 @@ void createTestDevice(Context &context, void *pNext, const char *const *ppEnable
         ppEnabledExtensionNames,              //  const char* const* ppEnabledExtensionNames;
         nullptr,                              //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
-    const Unique<VkDevice> device(createCustomDevice(validationEnabled, platformInterface, *instance, instanceDriver,
-                                                     physicalDevice, &deviceCreateInfo));
+    const Unique<VkDevice> device(
+        createCustomDevice(platformInterface, *instance, instanceDriver, physicalDevice, &deviceCreateInfo));
     const DeviceDriver deviceDriver(platformInterface, instance.get(), device.get(), context.getUsedApiVersion(),
                                     context.getTestContext().getCommandLine());
     const VkQueue queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
@@ -3613,9 +3612,8 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures(Context &context)
         nullptr,                              //pEnabledFeatures;
     };
 
-    Move<VkDevice> deviceGroup =
-        createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki,
-                           deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
+    Move<VkDevice> deviceGroup = createCustomDevice(
+        vkp, instance, vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
     const DeviceDriver vk(vkp, instance, *deviceGroup, context.getUsedApiVersion(),
                           context.getTestContext().getCommandLine());
     context.getInstanceInterface().getPhysicalDeviceMemoryProperties(

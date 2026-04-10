@@ -665,9 +665,8 @@ tcu::TestStatus NoQueuesTestInstance::iterate(void)
                                                          extensionPtrs.empty() ? nullptr : &extensionPtrs[0],
                                                             0u};
 
-        Move<VkDevice> deviceNoQueues = createCustomDevice(
-            m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(),
-            m_context.getInstance(), vki, physicalDevice, &deviceCreateInfo, nullptr);
+        Move<VkDevice> deviceNoQueues = createCustomDevice(m_context.getPlatformInterface(), m_context.getInstance(),
+                                                           vki, physicalDevice, &deviceCreateInfo, nullptr);
 
         const VkDevice device = *deviceNoQueues;
 

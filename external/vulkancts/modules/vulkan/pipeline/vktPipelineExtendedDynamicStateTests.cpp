@@ -4926,8 +4926,7 @@ public:
             nullptr,                    //pEnabledFeatures;
         };
 
-        m_device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance,
-                                      vki, physicalDevice, &deviceCreateInfo);
+        m_device = createCustomDevice(vkp, instance, vki, physicalDevice, &deviceCreateInfo);
         m_vkd.reset(new vk::DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion(),
                                          context.getTestContext().getCommandLine()));
         m_queue = getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);

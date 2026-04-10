@@ -675,14 +675,14 @@ Validation Layers
 -----------------
 
 Vulkan CTS framework includes first-party support for validation layers, that
-can be turned on with `--deqp-validation=enable` command line option.
+can be turned on with `--deqp-vk-validation=enable` command line option.
 
 When validation is turned on, default instance and device will be created with
 validation layers enabled and debug callback is registered to record any
 messages. Debug messages collected during test execution will be included at
 the end of the test case log.
 
-In addition, when the `--deqp-print-validation-errors` command line option is
+In addition, when the `--deqp-vk-print-validation-errors` command line option is
 used, validation errors are additionally printed to standard error in the
 moment they are generated.
 
@@ -981,7 +981,7 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     Enable or disable the compact version of the log
     default: 'disable'
 
-  --deqp-validation=[enable|disable]
+  --deqp-vk-validation=[enable|disable]
     Enable or disable test case validation
     default: 'disable'
 
@@ -989,7 +989,7 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     Enable or disable spir-v shader validation
     default: 'disable' in release builds, 'enable' in debug builds
 
-  --deqp-print-validation-errors
+  --deqp-vk-print-validation-errors
     Print validation errors to standard error
 
   --deqp-duplicate-case-name-check=[enable|disable]

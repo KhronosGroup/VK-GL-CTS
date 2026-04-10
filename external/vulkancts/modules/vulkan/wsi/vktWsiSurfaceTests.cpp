@@ -1372,8 +1372,7 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest(Context &context, Ty
     };
 
     Move<VkDevice> deviceGroup =
-        createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                           context.getPlatformInterface(), instHelper.instance, instHelper.vki,
+        createCustomDevice(context.getPlatformInterface(), instHelper.instance, instHelper.vki,
                            deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
     const DeviceDriver vk(context.getPlatformInterface(), instHelper.instance, *deviceGroup,
                           context.getUsedApiVersion(), context.getTestContext().getCommandLine());
@@ -1487,8 +1486,7 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest(Context &context, Type wsiT
     };
 
     Move<VkDevice> deviceGroup =
-        createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                           context.getPlatformInterface(), instHelper.instance, instHelper.vki,
+        createCustomDevice(context.getPlatformInterface(), instHelper.instance, instHelper.vki,
                            deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
     const DeviceDriver vk(context.getPlatformInterface(), instHelper.instance, *deviceGroup,
                           context.getUsedApiVersion(), context.getTestContext().getCommandLine());

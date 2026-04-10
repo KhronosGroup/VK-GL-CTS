@@ -1759,15 +1759,14 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
         }
         fsrFeatures.pNext = pNext;
 
-        std::vector<const char *> enabledLayers = getValidationLayers(vki, pd);
         VkDeviceCreateInfo deviceInfo{
             VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,            // VkStructureType sType;
             &createPhysicalFeature,                          // const void* pNext;
             (VkDeviceCreateFlags)0u,                         // VkDeviceCreateFlags flags;
             2u,                                              // uint32_t queueCreateInfoCount;
             queueInfo.data(),                                // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
-            static_cast<uint32_t>(enabledLayers.size()),     // uint32_t enabledLayerCount;
-            de::dataOrNull(enabledLayers),                   // const char* const* ppEnabledLayerNames;
+            0u,                                              // uint32_t enabledLayerCount;
+            nullptr,                                         // const char* const* ppEnabledLayerNames;
             static_cast<uint32_t>(enabledExtensions.size()), // uint32_t enabledExtensionCount;
             enabledExtensions.data(),                        // const char* const* ppEnabledExtensionNames;
             nullptr                                          // const VkPhysicalDeviceFeatures* pEnabledFeatures;

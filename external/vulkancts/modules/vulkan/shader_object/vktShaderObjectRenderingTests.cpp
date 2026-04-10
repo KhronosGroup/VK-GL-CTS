@@ -735,8 +735,7 @@ void ShaderObjectRenderingInstance::chooseDevice()
         };
 
         m_customDevice =
-            vkt::createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                    m_context.getPlatformInterface(), m_context.getInstance(),
+            vkt::createCustomDevice(m_context.getPlatformInterface(), m_context.getInstance(),
                                     m_context.getInstanceInterface(), m_context.getPhysicalDevice(), &deviceCreateInfo);
         m_customDeviceDriver = de::MovePtr<vk::DeviceDriver>(
             new vk::DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_customDevice,

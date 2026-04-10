@@ -205,8 +205,7 @@ Move<VkDevice> createDeviceWithPushDescriptor(const Context &context, const Plat
     for (const auto &enabledExt : requiredExtensions)
         enabledExtensions.push_back(enabledExt);
 
-    return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki,
-                              physicalDevice, &deviceParams, nullptr);
+    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, nullptr);
 }
 
 vector<Vertex4RGBA> createQuads(uint32_t numQuads, float size)

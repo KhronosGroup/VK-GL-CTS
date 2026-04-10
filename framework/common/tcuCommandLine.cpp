@@ -277,11 +277,11 @@ void registerOptions(de::cmdline::Parser &parser)
         << Option<LogFlush>(nullptr, "deqp-log-flush", "Enable or disable log file fflush", s_enableNames, "enable")
         << Option<LogCompact>(nullptr, "deqp-log-compact", "Enable or disable the compact version of the log",
                               s_enableNames, "disable")
-        << Option<Validation>(nullptr, "deqp-validation", "Enable or disable test case validation", s_enableNames,
+        << Option<Validation>(nullptr, "deqp-vk-validation", "Enable or disable test case validation", s_enableNames,
                               "disable")
         << Option<SpirvValidation>(nullptr, "deqp-spirv-validation", "Enable or disable spir-v shader validation",
                                    s_enableNames, SPIRV_VALIDATION_DEFAULT)
-        << Option<PrintValidationErrors>(nullptr, "deqp-print-validation-errors",
+        << Option<PrintValidationErrors>(nullptr, "deqp-vk-print-validation-errors",
                                          "Print validation errors to standard error")
         << Option<DuplicateCheck>(nullptr, "deqp-duplicate-case-name-check",
                                   "Check for duplicate case names when creating test hierarchy", s_enableNames,

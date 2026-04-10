@@ -191,9 +191,9 @@ struct Dependency
     }
 };
 
-static Move<VkDevice> createDeviceWithAdressBindingReport(bool isValidationEnabled, const PlatformInterface &vkp,
-                                                          VkInstance instance, const InstanceInterface &vki,
-                                                          VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex)
+static Move<VkDevice> createDeviceWithAdressBindingReport(const PlatformInterface &vkp, VkInstance instance,
+                                                          const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
+                                                          uint32_t queueFamilyIndex)
 {
     const uint32_t queueCount             = 1;
     const float queuePriority             = 1.0f;
@@ -229,7 +229,7 @@ static Move<VkDevice> createDeviceWithAdressBindingReport(bool isValidationEnabl
         nullptr,                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    return createCustomDevice(isValidationEnabled, vkp, instance, vki, physicalDevice, &deviceCreateInfo);
+    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceCreateInfo);
 }
 
 struct Device
@@ -252,8 +252,8 @@ struct Device
 
     static Move<VkDevice> create(const Environment &env, const Resources &, const Parameters &)
     {
-        return createDeviceWithAdressBindingReport(env.commandLine.isValidationEnabled(), env.vkp, env.instance,
-                                                   env.vki, env.physicalDevice, env.queueFamilyIndex);
+        return createDeviceWithAdressBindingReport(env.vkp, env.instance, env.vki, env.physicalDevice,
+                                                   env.queueFamilyIndex);
     }
 };
 
@@ -1797,9 +1797,9 @@ tcu::TestStatus createDestroyObjectTest(Context &context, typename Object::Param
                                                             &messenger);
 
     {
-        Move<VkDevice> device = createDeviceWithAdressBindingReport(
-            context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
-            customInstance, customInstance.getDriver(), physicalDevice, queueFamilyIndex);
+        Move<VkDevice> device =
+            createDeviceWithAdressBindingReport(context.getPlatformInterface(), customInstance,
+                                                customInstance.getDriver(), physicalDevice, queueFamilyIndex);
 
         de::MovePtr<DeviceDriver> deviceInterface = de::MovePtr<DeviceDriver>(
             new DeviceDriver(context.getPlatformInterface(), customInstance, device.get(), context.getUsedApiVersion(),

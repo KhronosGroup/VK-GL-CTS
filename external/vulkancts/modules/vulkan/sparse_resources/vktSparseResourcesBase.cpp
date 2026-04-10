@@ -325,8 +325,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
     };
 
     m_logicalDevice =
-        createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                           m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
+        createCustomDevice(m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
     m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance,
                                                                 *m_logicalDevice, m_context.getUsedApiVersion(),
                                                                 m_context.getTestContext().getCommandLine()));

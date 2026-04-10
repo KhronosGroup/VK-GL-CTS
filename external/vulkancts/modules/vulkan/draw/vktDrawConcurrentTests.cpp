@@ -122,8 +122,7 @@ tcu::TestStatus ConcurrentDraw::iterate(void)
     //
     // const InstanceInterface& instance = m_context.getInstanceInterface();
     // const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
-    const auto validation = m_context.getTestContext().getCommandLine().isValidationEnabled();
-    tcu::TestLog &log     = m_context.getTestContext().getLog();
+    tcu::TestLog &log = m_context.getTestContext().getLog();
     Move<VkDevice> computeDevice;
     std::vector<VkQueueFamilyProperties> queueFamilyProperties;
     VkDeviceCreateInfo deviceInfo;
@@ -212,8 +211,8 @@ tcu::TestStatus ConcurrentDraw::iterate(void)
     deviceInfo.queueCreateInfoCount    = 1;
     deviceInfo.pQueueCreateInfos       = &queueInfos;
 
-    computeDevice = createCustomDevice(validation, m_context.getPlatformInterface(), instance, instanceDriver,
-                                       physicalDevice, &deviceInfo);
+    computeDevice =
+        createCustomDevice(m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
 
 #ifndef CTS_USES_VULKANSC
     de::MovePtr<vk::DeviceDriver> deviceDriver = de::MovePtr<vk::DeviceDriver>(

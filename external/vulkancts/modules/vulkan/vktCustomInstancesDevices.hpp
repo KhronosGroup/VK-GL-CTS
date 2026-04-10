@@ -143,16 +143,15 @@ vk::VkResult createUncheckedInstance(Context &context, const vk::VkInstanceCreat
 
 // Custom devices.
 
-vk::Move<vk::VkDevice> createCustomDevice(bool validationEnabled, const vk::PlatformInterface &vkp,
-                                          vk::VkInstance instance, const vk::InstanceInterface &vki,
-                                          vk::VkPhysicalDevice physicalDevice,
+vk::Move<vk::VkDevice> createCustomDevice(const vk::PlatformInterface &vkp, vk::VkInstance instance,
+                                          const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
                                           const vk::VkDeviceCreateInfo *pCreateInfo,
                                           const vk::VkAllocationCallbacks *pAllocator = nullptr);
 
 // Unchecked device: creation allowed to fail.
 
-vk::VkResult createUncheckedDevice(bool validationEnabled, const vk::InstanceInterface &vki,
-                                   vk::VkPhysicalDevice physicalDevice, const vk::VkDeviceCreateInfo *pCreateInfo,
+vk::VkResult createUncheckedDevice(const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
+                                   const vk::VkDeviceCreateInfo *pCreateInfo,
                                    const vk::VkAllocationCallbacks *pAllocator, vk::VkDevice *pDevice);
 
 class CustomInstanceWrapper

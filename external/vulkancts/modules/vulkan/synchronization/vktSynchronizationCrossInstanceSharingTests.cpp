@@ -123,8 +123,7 @@ vk::Move<vk::VkDevice> createTestDevice(const Context &context, const vk::Platfo
                                         vk::VkInstance instance, const vk::InstanceInterface &vki,
                                         const vk::VkPhysicalDevice physicalDevice)
 {
-    const bool validationEnabled = context.getTestContext().getCommandLine().isValidationEnabled();
-    const float priority         = 0.0f;
+    const float priority = 0.0f;
     const std::vector<vk::VkQueueFamilyProperties> queueFamilyProperties =
         vk::getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
     std::vector<uint32_t> queueFamilyIndices(queueFamilyProperties.size(), 0xFFFFFFFFu);
@@ -209,7 +208,7 @@ vk::Move<vk::VkDevice> createTestDevice(const Context &context, const vk::Platfo
                                                    extensions.empty() ? nullptr : &extensions[0],
                                                    0u};
 
-        return vkt::createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &createInfo);
+        return vkt::createCustomDevice(vkp, instance, vki, physicalDevice, &createInfo);
     }
     catch (const vk::Error &error)
     {

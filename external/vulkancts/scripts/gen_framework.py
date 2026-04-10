@@ -2392,7 +2392,7 @@ class DeviceFeatures2Generator(CTSGenerator):
             '        nullptr, //ppEnabledExtensionNames;\n'
             '        nullptr, //pEnabledFeatures;\n'
             '    };\n\n'
-            '    const Unique<VkDevice>            device            (createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));\n'
+            '    const Unique<VkDevice>            device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));\n'
             '    const DeviceDriver                deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());\n'
             '    const VkQueue                    queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);\n\n'
             '    VK_CHECK(deviceDriver.queueWaitIdle(queue));\n\n'
@@ -3247,7 +3247,6 @@ class GetDeviceProcAddrGenerator(CTSGenerator):
 {
     tcu::TestLog&                                log                        (context.getTestContext().getLog());
     const PlatformInterface&                    platformInterface = context.getPlatformInterface();
-    const auto                                    validationEnabled = context.getTestContext().getCommandLine().isValidationEnabled();
     const CustomInstance                        instance                (createCustomInstanceFromContext(context));
     const InstanceDriver&                        instanceDriver = instance.getDriver();
     const VkPhysicalDevice                        physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
@@ -3279,7 +3278,7 @@ class GetDeviceProcAddrGenerator(CTSGenerator):
         nullptr, //  const char* const* ppEnabledExtensionNames;
         nullptr, //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
-    const Unique<VkDevice>                    device            (createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+    const Unique<VkDevice>                    device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
     const DeviceDriver                        deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 
     const std::vector<std::string> functions{'''

@@ -507,8 +507,7 @@ struct InstanceHelper
 Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVersion, VkInstance instance,
                                    const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
                                    const Extensions &supportedExtensions, const vector<string> &additionalExtensions,
-                                   uint32_t queueFamilyIndex, bool validationEnabled,
-                                   const VkAllocationCallbacks *pAllocator = nullptr)
+                                   uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[]           = {1.0f};
     const VkDeviceQueueCreateInfo queueInfo = {
@@ -555,7 +554,7 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
                                              extensionsChar.data(),                        // ppEnabledExtensionNames
                                              &features};
 
-    return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 struct DeviceHelper
@@ -573,8 +572,7 @@ struct DeviceHelper
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
         , device(createDeviceWithWsi(context.getPlatformInterface(), context.getUsedApiVersion(), instance, vki,
                                      physicalDevice, enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr),
-                                     additionalExtensions, queueFamilyIndex,
-                                     context.getTestContext().getCommandLine().isValidationEnabled(), pAllocator))
+                                     additionalExtensions, queueFamilyIndex, pAllocator))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))

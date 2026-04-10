@@ -259,8 +259,7 @@ Move<VkDevice> createDeviceWithWsi(Context &context, VkInstance instance, const 
         nullptr,
     };
 
-    return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                              context.getPlatformInterface(), instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return createCustomDevice(context.getPlatformInterface(), instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 struct InstanceHelper

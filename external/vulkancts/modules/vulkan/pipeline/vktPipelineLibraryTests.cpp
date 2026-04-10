@@ -3863,8 +3863,7 @@ bool CreateViewIndexFromDeviceIndexInstance::createDeviceGroup(void)
         nullptr,                              // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_deviceGroupLogicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                                    m_context.getPlatformInterface(), m_deviceGroupInstance, instance,
+    m_deviceGroupLogicalDevice = createCustomDevice(m_context.getPlatformInterface(), m_deviceGroupInstance, instance,
                                                     deviceGroupInfo.pPhysicalDevices[physicalDeviceIndex], &deviceInfo);
 
     m_deviceGroupVk = de::MovePtr<DeviceDriver>(

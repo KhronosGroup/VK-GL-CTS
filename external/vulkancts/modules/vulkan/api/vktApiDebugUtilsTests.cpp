@@ -89,7 +89,7 @@ tcu::TestStatus testLongDebugLabelsTest(Context &context, TestParams params)
     deviceCreateInfo.queueCreateInfoCount = 1;
     deviceCreateInfo.pQueueCreateInfos    = &deviceQueueCreateInfo;
 
-    const Unique<VkDevice> device(createCustomDevice(false, vkp, *instance, vki, physicalDevice, &deviceCreateInfo));
+    const Unique<VkDevice> device(createCustomDevice(vkp, *instance, vki, physicalDevice, &deviceCreateInfo));
     const DeviceDriver vk(vkp, *instance, *device, apiVersion, cmdLine);
     const VkQueue queue = getDeviceQueue(vk, *device, queueFamilyIndex, 0);
     SimpleAllocator allocator(vk, *device, getPhysicalDeviceMemoryProperties(vki, physicalDevice));

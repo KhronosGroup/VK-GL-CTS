@@ -180,9 +180,8 @@ Move<VkDevice> createTestDevice(const Context &context)
                                                extensions.empty() ? nullptr : &extensions[0],
                                                0u};
 
-        const auto validation = context.getTestContext().getCommandLine().isValidationEnabled();
-        return createCustomDevice(validation, context.getPlatformInterface(), context.getInstance(),
-                                  context.getInstanceInterface(), context.getPhysicalDevice(), &createInfo);
+        return createCustomDevice(context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
+                                  context.getPhysicalDevice(), &createInfo);
     }
     catch (const vk::Error &error)
     {

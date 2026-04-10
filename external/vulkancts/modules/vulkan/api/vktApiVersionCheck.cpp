@@ -155,7 +155,7 @@ public:
         // Tests with default instance and device without extensions
         {
             CustomInstance instance = createCustomInstanceFromContext(m_context, nullptr, false);
-            Move<VkDevice> device   = createTestDevice(m_context, instance, vector<string>(), false);
+            Move<VkDevice> device   = createTestDevice(m_context, instance, vector<string>());
             GetInstanceProcAddrFunc getInstanceProcAddr =
                 reinterpret_cast<GetInstanceProcAddrFunc>(funcLibrary.getFunction("vkGetInstanceProcAddr"));
             GetDeviceProcAddrFunc getDeviceProcAddr =
@@ -252,7 +252,7 @@ public:
             CustomInstance instance =
                 createCustomInstanceWithExtensions(m_context, supportedInstanceExtensions, nullptr, false);
             const vector<string> supportedDeviceExtensions = getSupportedDeviceExtensions(deviceApiVersion);
-            Move<VkDevice> device = createTestDevice(m_context, instance, supportedDeviceExtensions, false);
+            Move<VkDevice> device = createTestDevice(m_context, instance, supportedDeviceExtensions);
             GetInstanceProcAddrFunc getInstanceProcAddr =
                 reinterpret_cast<GetInstanceProcAddrFunc>(funcLibrary.getFunction("vkGetInstanceProcAddr"));
             GetDeviceProcAddrFunc getDeviceProcAddr =
@@ -385,7 +385,7 @@ private:
     }
 
     Move<VkDevice> createTestDevice(const Context &context, VkInstance instance,
-                                    vector<string> extensions = vector<string>(), bool allowLayers = true)
+                                    vector<string> extensions = vector<string>())
     {
         auto &cmdLine                   = context.getTestContext().getCommandLine();
         const PlatformInterface &vkp    = context.getPlatformInterface();
@@ -459,8 +459,7 @@ private:
             nullptr,
         };
 
-        const bool validationEnabled = (cmdLine.isValidationEnabled() && allowLayers);
-        return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceInfo);
+        return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceInfo);
     }
 
     void reportFail(tcu::TestLog &log, const char *const functionName, const char *const firstParamName,
@@ -700,7 +699,7 @@ public:
 
             // create custom device
             const Unique<VkDevice> device(
-                createCustomDevice(false, vkp, *customInstance, *instanceDriver, physicalDevice, &deviceCreateInfo));
+                createCustomDevice(vkp, *customInstance, *instanceDriver, physicalDevice, &deviceCreateInfo));
             const DeviceDriver deviceDriver(vkp, *customInstance, *device, supportedApiVersion,
                                             m_context.getTestContext().getCommandLine());
 

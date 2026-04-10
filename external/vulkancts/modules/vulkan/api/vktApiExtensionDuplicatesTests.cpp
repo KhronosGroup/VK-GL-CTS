@@ -281,9 +281,8 @@ tcu::TestStatus DeviceExtensionDuplicatesInstance::iterate(void)
     const VkPhysicalDevice phd       = m_context.getPhysicalDevice();
     const DeviceInterface &vkd       = m_context.getDeviceInterface();
 #endif // CTS_USES_VULKANSC
-    const uint32_t idx          = m_context.getUniversalQueueFamilyIndex();
-    const tcu::CommandLine &cmd = m_context.getTestContext().getCommandLine();
-    const float qpr             = 1.0f;
+    const uint32_t idx = m_context.getUniversalQueueFamilyIndex();
+    const float qpr    = 1.0f;
     ut::StringDuplicator sd(m_context.getDeviceCreationExtensions());
 
     const std::vector<const char *> dup = m_byPointersOrNames ? sd.duplicatePointers() : sd.duplicateStrings();
@@ -330,9 +329,8 @@ tcu::TestStatus DeviceExtensionDuplicatesInstance::iterate(void)
 
     };
 
-    VkDevice device = VK_NULL_HANDLE;
-    const VkResult res =
-        createUncheckedDevice(cmd.isValidationEnabled(), vki, phd, &deviceCreateInfo, nullptr, &device);
+    VkDevice device    = VK_NULL_HANDLE;
+    const VkResult res = createUncheckedDevice(vki, phd, &deviceCreateInfo, nullptr, &device);
     if (VK_SUCCESS == res && VK_NULL_HANDLE != device)
     {
 // Creating an unchecked device on VKSC CTS requires a call to DeviceDriver::destroyDevice

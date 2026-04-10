@@ -921,8 +921,7 @@ void TimestampTestInstance::createCustomDeviceWithTransferOnlyQueue(void)
     };
 
     m_customDevice =
-        vkt::createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                m_context.getPlatformInterface(), instance, vki, physicalDevice, &deviceCreateInfo);
+        vkt::createCustomDevice(m_context.getPlatformInterface(), instance, vki, physicalDevice, &deviceCreateInfo);
     m_customAllocator = de::MovePtr<Allocator>(
         new SimpleAllocator(vk, *m_customDevice, getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 

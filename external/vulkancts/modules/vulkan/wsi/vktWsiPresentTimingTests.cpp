@@ -196,8 +196,7 @@ vk::VkPhysicalDeviceFeatures getDeviceNullFeatures(void)
 Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkInstance instance,
                                        const InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
                                        const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
-                                       PresentAtMode presentAtMethod, bool validationEnabled,
-                                       bool requireFifoLatestReady,
+                                       PresentAtMode presentAtMethod, bool requireFifoLatestReady,
                                        const vk::VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[]                  = {1.0f};
@@ -262,7 +261,7 @@ Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkI
         nullptr,
     };
 
-    return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 vk::VkPresentTimingSurfaceCapabilitiesEXT getSurfacePresentTimingCapabilities(
@@ -460,8 +459,7 @@ struct DeviceHelper
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
         , device(createDeviceWithWsi(context.getPlatformInterface(), instance, vki, physicalDevice,
                                      enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr), queueFamilyIndex,
-                                     presentAtMethod, context.getTestContext().getCommandLine().isValidationEnabled(),
-                                     requireFifoLatestReady, pAllocator))
+                                     presentAtMethod, requireFifoLatestReady, pAllocator))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))

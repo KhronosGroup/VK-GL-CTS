@@ -711,8 +711,8 @@ struct Device
             nullptr, // pEnabledFeatures
         };
 
-        return createCustomDevice(env.commandLine.isValidationEnabled(), env.vkp, env.instance, res.vki,
-                                  res.physicalDevice, &deviceInfo, env.allocationCallbacks);
+        return createCustomDevice(env.vkp, env.instance, res.vki, res.physicalDevice, &deviceInfo,
+                                  env.allocationCallbacks);
     }
 };
 
@@ -876,9 +876,8 @@ struct DeviceGroup
             &enabledFeatures, // pEnabledFeatures
         };
 
-        return createCustomDevice(env.commandLine.isValidationEnabled(), env.vkp, env.instance, res.vki,
-                                  res.physicalDevices[params.deviceIndex], &deviceGroupCreateInfo,
-                                  env.allocationCallbacks);
+        return createCustomDevice(env.vkp, env.instance, res.vki, res.physicalDevices[params.deviceIndex],
+                                  &deviceGroupCreateInfo, env.allocationCallbacks);
     }
 };
 
@@ -2668,9 +2667,9 @@ class SingletonDevice
             &enabledFeatures, // pEnabledFeatures
         };
 
-        Move<VkDevice> device = createCustomDevice(
-            context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
-            context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceInfo, nullptr);
+        Move<VkDevice> device =
+            createCustomDevice(context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
+                               context.getPhysicalDevice(), &deviceInfo, nullptr);
         return device;
     }
 

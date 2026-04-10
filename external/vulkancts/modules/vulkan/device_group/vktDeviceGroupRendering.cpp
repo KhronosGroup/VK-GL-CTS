@@ -341,8 +341,7 @@ void DeviceGroupTestInstance::init(void)
             (extensionPtrs.empty() ? nullptr : &extensionPtrs[0]), //ppEnabledExtensionNames;
             &enabledDeviceFeatures,                                //pEnabledFeatures;
         };
-        m_deviceGroup = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                           m_context.getPlatformInterface(), m_instanceWrapper->instance,
+        m_deviceGroup = createCustomDevice(m_context.getPlatformInterface(), m_instanceWrapper->instance,
                                            instanceDriver, physicalDevice, &deviceCreateInfo);
 #ifndef CTS_USES_VULKANSC
         m_deviceDriver = de::MovePtr<DeviceDriver>(
@@ -2092,8 +2091,7 @@ void DeviceGroupComputeTestInstance::init(void)
             &enabledDeviceFeatures,                      // const VkPhysicalDeviceFeatures*    pEnabledFeatures;
         };
 
-        m_deviceGroup = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                           m_context.getPlatformInterface(), m_instanceWrapper->instance,
+        m_deviceGroup = createCustomDevice(m_context.getPlatformInterface(), m_instanceWrapper->instance,
                                            instanceDriver, physicalDevice, &deviceCreateInfo);
 #ifndef CTS_USES_VULKANSC
         m_deviceDriver = de::MovePtr<DeviceDriver>(

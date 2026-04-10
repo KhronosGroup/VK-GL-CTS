@@ -99,7 +99,6 @@ Move<VkDevice> createTestDevice(const Context &context, const PlatformInterface 
 {
     const float queuePriorities[] = {1.0f};
     bool displayAvailable         = true;
-    bool validationEnabled        = context.getTestContext().getCommandLine().isValidationEnabled();
     const vk::Platform &platform  = context.getTestContext().getPlatform().getVulkanPlatform();
 
     const VkDeviceQueueCreateInfo queueInfos[] = {{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
@@ -141,7 +140,7 @@ Move<VkDevice> createTestDevice(const Context &context, const PlatformInterface 
     if (!displayAvailable)
         TCU_THROW(NotSupportedError, "Display is unavailable as windowing system has access");
 
-    return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 VkDisplayKHR getDisplayAndDisplayPlane(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,

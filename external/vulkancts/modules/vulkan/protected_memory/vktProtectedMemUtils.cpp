@@ -258,6 +258,8 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice(const vk::PlatformInterface &vkp, 
             memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
         }
     }
+#else
+    DE_UNREF(cmdLine);
 #endif // CTS_USES_VULKANSC
 
     const vk::VkDeviceCreateInfo deviceParams = {
@@ -273,8 +275,7 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice(const vk::PlatformInterface &vkp, 
         nullptr                                                 // pEnabledFeatures
     };
 
-    return createCustomDevice(cmdLine.isValidationEnabled(), vkp, instance, vkd, physicalDevice, &deviceParams,
-                              nullptr);
+    return createCustomDevice(vkp, instance, vkd, physicalDevice, &deviceParams, nullptr);
 }
 
 vk::VkQueue getProtectedQueue(const vk::DeviceInterface &vk, vk::VkDevice device, const uint32_t queueFamilyIndex,

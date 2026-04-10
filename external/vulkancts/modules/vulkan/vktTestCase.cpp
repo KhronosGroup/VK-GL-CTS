@@ -339,10 +339,9 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
                                    de::SharedPtr<vk::ResourceInterface> resourceInterface)
 {
     VkDeviceQueueCreateInfo queueInfo[4];
-    VkDeviceCreateInfo deviceInfo;
-    vector<const char *> enabledLayers;
-    const float queuePriority = 1.0f;
-    uint32_t numQueues        = 1;
+    VkDeviceCreateInfo deviceInfo = initVulkanStructure();
+    const float queuePriority     = 1.0f;
+    uint32_t numQueues            = 1;
 
     deMemset(&queueInfo, 0, sizeof(queueInfo));
 
@@ -386,23 +385,12 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
         numQueues++;
     }
 
-    if (cmdLine.isValidationEnabled())
-    {
-        enabledLayers = vkt::getValidationLayers(vki, physicalDevice);
-        if (enabledLayers.empty())
-            TCU_THROW(NotSupportedError, "No validation layers found");
-    }
-
-    deMemset(&deviceInfo, 0, sizeof(deviceInfo));
     // VK_KHR_get_physical_device_properties2 is used if enabledFeatures.pNext != 0
-    deviceInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     deviceInfo.pNext                   = enabledFeatures.pNext ? &enabledFeatures : nullptr;
     deviceInfo.queueCreateInfoCount    = numQueues;
     deviceInfo.pQueueCreateInfos       = queueInfo;
     deviceInfo.enabledExtensionCount   = de::sizeU32(usedExtensions);
     deviceInfo.ppEnabledExtensionNames = de::dataOrNull(usedExtensions);
-    deviceInfo.enabledLayerCount       = de::sizeU32(enabledLayers);
-    deviceInfo.ppEnabledLayerNames     = de::dataOrNull(enabledLayers);
     deviceInfo.pEnabledFeatures        = enabledFeatures.pNext ? nullptr : &enabledFeatures.features;
 
 #ifdef CTS_USES_VULKANSC
@@ -473,6 +461,7 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
     }
 
 #else
+    DE_UNREF(cmdLine);
     DE_UNREF(resourceInterface);
 #endif // CTS_USES_VULKANSC
 

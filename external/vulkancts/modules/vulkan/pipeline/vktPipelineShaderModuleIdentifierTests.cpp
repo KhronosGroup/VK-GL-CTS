@@ -1707,8 +1707,7 @@ struct DeviceHelper
         };
 
         // Create custom device and related objects
-        device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), ctx.vkp,
-                                    ctx.instance, ctx.vki, ctx.physicalDevice, &createInfo);
+        device = createCustomDevice(ctx.vkp, ctx.instance, ctx.vki, ctx.physicalDevice, &createInfo);
         vkd.reset(new DeviceDriver(ctx.vkp, ctx.instance, device.get(), context.getUsedApiVersion(),
                                    context.getTestContext().getCommandLine()));
         queue = getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);

@@ -1049,8 +1049,8 @@ Move<VkDevice> ContextManager::createDevice(const DevCaps &caps, DevCaps::Runtim
 
     print(caps.m_testContext.getLog(), deviceParams);
 
-    return createCustomDevice(getCommandLine().isValidationEnabled(), getPlatformInterface(), getInstanceHandle(),
-                              getInstanceInterface(), getPhysicalDevice(), &deviceParams, nullptr);
+    return createCustomDevice(getPlatformInterface(), getInstanceHandle(), getInstanceInterface(), getPhysicalDevice(),
+                              &deviceParams, nullptr);
 }
 #endif // CTS_USES_VULKANSC
 

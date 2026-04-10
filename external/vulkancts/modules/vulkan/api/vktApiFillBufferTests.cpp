@@ -175,8 +175,7 @@ Move<VkDevice> createCustomDevice(Context &context,
         nullptr,                                      // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                                   context.getPlatformInterface(), customInstance, instanceDriver, physicalDevice,
+    return vkt::createCustomDevice(context.getPlatformInterface(), customInstance, instanceDriver, physicalDevice,
                                    &deviceCreateInfo);
 }
 

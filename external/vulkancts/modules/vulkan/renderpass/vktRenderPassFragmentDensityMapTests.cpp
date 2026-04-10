@@ -215,8 +215,7 @@ public:
 
         const auto &vkp = context.getPlatformInterface();
 
-        m_device = createCustomDevice(cmdLine.isValidationEnabled(), vkp, m_instance, vki, m_physicalDevice,
-                                      &deviceCreateInfo);
+        m_device = createCustomDevice(vkp, m_instance, vki, m_physicalDevice, &deviceCreateInfo);
 
         m_vkd.reset(new DeviceDriver(vkp, m_instance, *m_device, context.getUsedApiVersion(), cmdLine));
         m_vkd->getDeviceQueue(*m_device, m_queueFamilyIndex, 0u, &m_queue);

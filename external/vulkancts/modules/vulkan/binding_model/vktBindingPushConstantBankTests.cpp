@@ -430,8 +430,7 @@ PushConstantBankTestInstance::PushConstantBankTestInstance(Context &context, con
     deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
     m_device =
-        createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                           context.getPlatformInterface(), context.getInstance(), vki, m_physDevice, &deviceInfo);
+        createCustomDevice(context.getPlatformInterface(), context.getInstance(), vki, m_physDevice, &deviceInfo);
 
     m_deviceInterface =
         MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device,

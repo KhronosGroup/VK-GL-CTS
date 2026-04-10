@@ -678,9 +678,8 @@ tcu::TestStatus createDeviceTest(Context &context)
         nullptr,                //pEnabledFeatures;
     };
 
-    const Unique<VkDevice> device(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                                                     platformInterface, instance, instanceDriver, physicalDevice,
-                                                     &deviceCreateInfo));
+    const Unique<VkDevice> device(
+        createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
     const DeviceDriver deviceDriver(platformInterface, instance, device.get(), context.getUsedApiVersion(),
                                     context.getTestContext().getCommandLine());
     const VkQueue queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
@@ -756,9 +755,8 @@ tcu::TestStatus createMultipleDevicesTest(Context &context)
                 nullptr,                //pEnabledFeatures;
             };
 
-            const VkResult result =
-                createUncheckedDevice(context.getTestContext().getCommandLine().isValidationEnabled(), instanceDriver,
-                                      physicalDevice, &deviceCreateInfo, nullptr /*pAllocator*/, &devices[deviceNdx]);
+            const VkResult result = createUncheckedDevice(instanceDriver, physicalDevice, &deviceCreateInfo,
+                                                          nullptr /*pAllocator*/, &devices[deviceNdx]);
 
             if (result != VK_SUCCESS)
             {
@@ -861,8 +859,7 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest(Context &context)
     {
         VkDevice device = VK_NULL_HANDLE;
         const VkResult result =
-            createUncheckedDevice(context.getTestContext().getCommandLine().isValidationEnabled(), instanceDriver,
-                                  physicalDevice, &deviceCreateInfo, nullptr /*pAllocator*/, &device);
+            createUncheckedDevice(instanceDriver, physicalDevice, &deviceCreateInfo, nullptr /*pAllocator*/, &device);
         const bool gotDevice = !!device;
 
         if (device)
@@ -955,8 +952,7 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest(Context &context)
         };
 
         const Unique<VkDevice> device(
-            createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface,
-                               instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+            createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
         const DeviceDriver deviceDriver(platformInterface, instance, device.get(), context.getUsedApiVersion(),
                                         context.getTestContext().getCommandLine());
         const uint32_t queueFamilyIndex = deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex;
@@ -1100,8 +1096,7 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
         try
         {
             const Unique<VkDevice> device(
-                createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface,
-                                   instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+                createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
             const DeviceDriver deviceDriver(platformInterface, instance, device.get(), context.getUsedApiVersion(),
                                             context.getTestContext().getCommandLine());
             const uint32_t queueFamilyIndex = deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex;
@@ -1284,8 +1279,7 @@ tcu::TestStatus createDeviceWithQueriedGlobalPriorityTest(Context &context, bool
             try
             {
                 const Unique<VkDevice> device(
-                    createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                                       platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+                    createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
                 const DeviceDriver deviceDriver(platformInterface, instance, device.get(), context.getUsedApiVersion(),
                                                 context.getTestContext().getCommandLine());
                 const VkQueue queue = getDeviceQueue(deviceDriver, *device, ndx, 0);
@@ -1377,9 +1371,7 @@ tcu::TestStatus createDeviceFeatures2Test(Context &context)
     vki.getPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
 
     {
-        const Unique<VkDevice> device(
-            createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki,
-                               physicalDevice, &deviceCreateInfo));
+        const Unique<VkDevice> device(createCustomDevice(vkp, instance, vki, physicalDevice, &deviceCreateInfo));
         const DeviceDriver vkd(vkp, instance, device.get(), context.getUsedApiVersion(),
                                context.getTestContext().getCommandLine());
         const VkQueue queue = getDeviceQueue(vkd, *device, queueFamilyIndex, queueIndex);
@@ -1620,9 +1612,8 @@ void checkFeatures(const PlatformInterface &vkp, const VkInstance &instance, con
             nullptr                                                                        // pEnabledFeatures
         };
 
-        VkDevice device = VK_NULL_HANDLE;
-        const VkResult res =
-            createUncheckedDevice(false, instanceDriver, physicalDevice, &deviceCreateInfo, nullptr, &device);
+        VkDevice device    = VK_NULL_HANDLE;
+        const VkResult res = createUncheckedDevice(instanceDriver, physicalDevice, &deviceCreateInfo, nullptr, &device);
 
         if (res != VK_ERROR_FEATURE_NOT_PRESENT)
         {
@@ -1760,7 +1751,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest(Context &context)
 
             VkDevice device = VK_NULL_HANDLE;
             const VkResult res =
-                createUncheckedDevice(false, instanceDriver, physicalDevice, &deviceCreateInfo, nullptr, &device);
+                createUncheckedDevice(instanceDriver, physicalDevice, &deviceCreateInfo, nullptr, &device);
 
             if (res != VK_ERROR_FEATURE_NOT_PRESENT)
             {
@@ -1857,8 +1848,7 @@ tcu::TestStatus createDeviceQueue2Test(Context &context)
 
     {
         const Unique<VkDevice> device(
-            createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface,
-                               instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+            createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
         const DeviceDriver deviceDriver(platformInterface, instance, device.get(), context.getUsedApiVersion(),
                                         context.getTestContext().getCommandLine());
         const VkQueue queue2 = getDeviceQueue2(deviceDriver, *device, &deviceQueueInfo2);
@@ -1985,8 +1975,7 @@ Move<VkDevice> createProtectedDeviceWithQueueConfig(Context &context,
         nullptr,                           // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface,
-                              instance, instanceDriver, physicalDevice, &deviceCreateInfo);
+    return createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo);
 }
 
 VkQueue getDeviceQueue2WithOptions(const DeviceDriver &deviceDriver, const VkDevice device,
@@ -2813,8 +2802,8 @@ tcu::TestStatus createInstanceDeviceIntentionalAllocFail(Context &context)
             nullptr                               // pEnabledFeatures
         };
 
-        result = createUncheckedDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vki,
-                                       physicalDevices[chosenDevice], &deviceCreateInfo, &allocationCallbacks, &device);
+        result =
+            createUncheckedDevice(vki, physicalDevices[chosenDevice], &deviceCreateInfo, &allocationCallbacks, &device);
 
         if (result == VK_ERROR_OUT_OF_HOST_MEMORY)
         {

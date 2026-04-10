@@ -196,8 +196,7 @@ vk::Move<vk::VkDevice> createCustomDevice(Context &context,
         nullptr,                                      // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                                   context.getPlatformInterface(),
+    return vkt::createCustomDevice(context.getPlatformInterface(),
 #ifdef CTS_USES_VULKANSC
                                    customInstance,
 #else

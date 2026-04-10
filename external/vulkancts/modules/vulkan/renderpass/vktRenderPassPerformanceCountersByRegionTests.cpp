@@ -500,17 +500,6 @@ Move<VkDevice> createCustomDevice(Context &context, const SharedGroupParams grou
         &features2.features,                            // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    const bool validationEnabled = context.getTestContext().getCommandLine().isValidationEnabled();
-
-    vector<const char *> enabledLayers;
-
-    if (createInfo.enabledLayerCount == 0u && validationEnabled)
-    {
-        enabledLayers                  = getValidationLayers(vki, physicalDevice);
-        createInfo.enabledLayerCount   = static_cast<uint32_t>(enabledLayers.size());
-        createInfo.ppEnabledLayerNames = (enabledLayers.empty() ? nullptr : enabledLayers.data());
-    }
-
     Move<VkDevice> device = createDevice(vkp, instance, vki, physicalDevice, &createInfo, nullptr);
 
     return device;

@@ -889,8 +889,7 @@ Move<VkDevice> getRobustDevice(Context &context, bool robustness2)
     };
     const auto instance = context.getInstance();
 
-    return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                              context.getPlatformInterface(), instance, vki, context.getPhysicalDevice(),
+    return createCustomDevice(context.getPlatformInterface(), instance, vki, context.getPhysicalDevice(),
                               &deviceParams);
 }
 

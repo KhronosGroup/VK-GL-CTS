@@ -2093,6 +2093,8 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, VkInstance inst
             memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
         }
     }
+#else
+    DE_UNREF(cmdLine);
 #endif // CTS_USES_VULKANSC
 
     const VkDeviceCreateInfo deviceParams = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -2112,8 +2114,7 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, VkInstance inst
             TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
     }
 
-    return createCustomDevice(cmdLine.isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceParams,
-                              pAllocator);
+    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 struct InstanceHelper

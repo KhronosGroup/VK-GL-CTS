@@ -532,21 +532,13 @@ vk::VkResult createUncheckedInstance(Context &context, const vk::VkInstanceCreat
     return result;
 }
 
-vk::Move<vk::VkDevice> createCustomDevice(bool validationEnabled, const vk::PlatformInterface &vkp,
-                                          vk::VkInstance instance, const vk::InstanceInterface &vki,
-                                          vk::VkPhysicalDevice physicalDevice,
+vk::Move<vk::VkDevice> createCustomDevice(const vk::PlatformInterface &vkp, vk::VkInstance instance,
+                                          const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
                                           const vk::VkDeviceCreateInfo *pCreateInfo,
                                           const vk::VkAllocationCallbacks *pAllocator)
 {
     vector<const char *> enabledLayers;
     vk::VkDeviceCreateInfo createInfo = *pCreateInfo;
-
-    if (createInfo.enabledLayerCount == 0u && validationEnabled)
-    {
-        enabledLayers                  = getValidationLayers(vki, physicalDevice);
-        createInfo.enabledLayerCount   = static_cast<uint32_t>(enabledLayers.size());
-        createInfo.ppEnabledLayerNames = (enabledLayers.empty() ? nullptr : enabledLayers.data());
-    }
 
 #ifdef CTS_USES_VULKANSC
     // Add fault callback if there isn't one already.
@@ -569,19 +561,12 @@ vk::Move<vk::VkDevice> createCustomDevice(bool validationEnabled, const vk::Plat
     return createDevice(vkp, instance, vki, physicalDevice, &createInfo, pAllocator);
 }
 
-vk::VkResult createUncheckedDevice(bool validationEnabled, const vk::InstanceInterface &vki,
-                                   vk::VkPhysicalDevice physicalDevice, const vk::VkDeviceCreateInfo *pCreateInfo,
+vk::VkResult createUncheckedDevice(const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
+                                   const vk::VkDeviceCreateInfo *pCreateInfo,
                                    const vk::VkAllocationCallbacks *pAllocator, vk::VkDevice *pDevice)
 {
     vector<const char *> enabledLayers;
     vk::VkDeviceCreateInfo createInfo = *pCreateInfo;
-
-    if (createInfo.enabledLayerCount == 0u && validationEnabled)
-    {
-        enabledLayers                  = getValidationLayers(vki, physicalDevice);
-        createInfo.enabledLayerCount   = static_cast<uint32_t>(enabledLayers.size());
-        createInfo.ppEnabledLayerNames = (enabledLayers.empty() ? nullptr : enabledLayers.data());
-    }
 
 #ifdef CTS_USES_VULKANSC
     // Add fault callback if there isn't one already.
@@ -842,7 +827,6 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
     const vk::VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
     const vk::VkInstance instance             = m_context.getInstance();
     const uint32_t apiVersion                 = m_context.getUsedApiVersion();
-    const bool validationEnabled              = m_context.getTestContext().getCommandLine().isValidationEnabled();
     const bool queryWithStatusForDecodeSupport =
         (videoDeviceFlags & VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_DECODE_SUPPORT) != 0;
     const bool queryWithStatusForEncodeSupport =
@@ -1140,7 +1124,7 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
         nullptr,                                  //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_logicalDevice = createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceCreateInfo);
+    m_logicalDevice = createCustomDevice(vkp, instance, vki, physicalDevice, &deviceCreateInfo);
     m_deviceDriver  = de::MovePtr<vk::DeviceDriver>(
         new vk::DeviceDriver(vkp, instance, *m_logicalDevice, apiVersion, m_context.getTestContext().getCommandLine()));
     m_allocator           = de::MovePtr<vk::Allocator>(new vk::SimpleAllocator(

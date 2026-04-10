@@ -354,8 +354,7 @@ vk::Move<vk::VkDevice> createTestDevice(const Context &context, const vk::Platfo
 
     try
     {
-        return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki,
-                                  physicalDevice, &deviceCreateInfo);
+        return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceCreateInfo);
     }
     catch (const vk::Error &error)
     {
