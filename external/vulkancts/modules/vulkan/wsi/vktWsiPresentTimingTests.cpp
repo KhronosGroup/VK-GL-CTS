@@ -1522,7 +1522,6 @@ tcu::TestStatus timingTestWithBackgroundQueryThreads(Context &context, Type wsiT
             de::ScopedLock lock(sharedState.m_swapchainMutex);
             VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, **renderSemaphores[frame.imageIndex], *swapchain,
                                                frame.imageIndex, timingInfo, currentPresentId));
-            sharedState.m_swapchainMutex.unlock();
 
             currentPresentId += presentIdStep;
         }
@@ -2138,6 +2137,7 @@ tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfi
         (config.timeDomain == VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT) ?
             kAllPresentStages :
             static_cast<VkPresentStageFlagsEXT>(VK_PRESENT_STAGE_QUEUE_OPERATIONS_END_BIT_EXT);
+    const VkPresentStageFlagsEXT verifyPresentStages = calibrationStageQueryMask;
     std::vector<VkSwapchainCalibratedTimestampInfoEXT> swapchainCalibratedTimesInfos{};
     do
     {
@@ -2196,7 +2196,7 @@ tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfi
     for (uint32_t i = 0; i < frameCount; i++)
     {
         // Check that each presented timestamp falls between the before/after calibrated timestamp
-        VkPresentStageFlagsEXT presentStages = kAllPresentStages;
+        VkPresentStageFlagsEXT presentStages = verifyPresentStages;
         do
         {
             const VkPresentStageFlagsEXT presentStage = presentStages & -static_cast<int32_t>(presentStages);
