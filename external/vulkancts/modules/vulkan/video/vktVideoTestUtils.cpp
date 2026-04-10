@@ -409,11 +409,11 @@ tcu::TestStatus VideoBaseTestInstance::validateEncodedContent(
             InternalError, processor.getNextFrame(&frame) > 0,
             "Expected more frames from the bitstream. Most likely an internal CTS bug, or maybe an invalid bitstream");
 
-        auto resultImage =
-            getDecodedImageFromContext(deviceContext,
-                                       basicDecoder->dpbAndOutputCoincide() ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR :
-                                                                              VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR,
-                                       &frame);
+        const VkImageLayout srcLayout = basicDecoder->usesGeneralLayout() ? VK_IMAGE_LAYOUT_GENERAL :
+                                                                            (basicDecoder->dpbAndOutputCoincide() ?
+                                                                                 VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR :
+                                                                                 VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR);
+        auto resultImage              = getDecodedImageFromContext(deviceContext, srcLayout, &frame);
         processor.releaseFrame(&frame);
         if (frame.displayWidth != expectedOutputExtent.width || frame.displayHeight != expectedOutputExtent.height)
         {

@@ -431,6 +431,7 @@ VideoBaseDecoder::VideoBaseDecoder(Parameters &&params)
     , m_outOfOrderDecoding(params.outOfOrderDecoding)
     , m_alwaysRecreateDPB(params.alwaysRecreateDPB)
     , m_intraOnlyDecodingNoSetupRef(params.intraOnlyDecodingNoSetupRef)
+    , m_useGeneralLayout(params.useGeneralLayout)
     , m_videoLogPrintEnable(params.context->context->getTestContext().getCommandLine().getVideoLogPrint())
 {
     std::fill(m_pictureToDpbSlotMap.begin(), m_pictureToDpbSlotMap.end(), -1);
@@ -1797,11 +1798,15 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
 
     pOutputPictureResourceInfo = &cachedParameters->currentOutputPictureResourceInfo;
 
+    const VkImageLayout dpbLayout =
+        usesGeneralLayout() ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR;
+    const VkImageLayout dstLayout =
+        usesGeneralLayout() ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR;
+
     if (pPicParams->currPicIdx != m_videoFrameBuffer->GetCurrentImageResourceByIndex(
                                       pPicParams->currPicIdx, &pPicParams->dpbSetupPictureResource,
-                                      &cachedParameters->currentDpbPictureResourceInfo,
-                                      VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR, pOutputPictureResource,
-                                      pOutputPictureResourceInfo, VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR))
+                                      &cachedParameters->currentDpbPictureResourceInfo, dpbLayout,
+                                      pOutputPictureResource, pOutputPictureResourceInfo, dstLayout))
     {
         TCU_THROW(InternalError, "GetImageResourcesByIndex has failed");
     }
@@ -1830,16 +1835,40 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
         // Also, when we are copying the output we need to know which layer is used for the current frame.
         // This is if a multi-layered image is used for the DPB and the output (since they coincide).
         cachedParameters->decodedPictureInfo.imageLayerIndex = pPicParams->dpbSetupPictureResource.baseArrayLayer;
+
+        // Intra-only, no setup ref: pSetupReferenceSlot is NULL so the image must be in dstLayout,
+        // not dpbLayout. In the coincide case the DPB and dst images are the same resource, so we
+        // transition the current picture's subresource here. The regular DPB barrier below is
+        // skipped because m_intraOnlyDecodingNoSetupRef is set. The framebuffer tracks a single
+        // layout for all layers of a layered DPB, so we cannot rely on currentImageLayout ==
+        // UNDEFINED as a guard; intra-only with no reference lets us discard prior contents via
+        // an UNDEFINED source layout for this layer.
+        if (m_intraOnlyDecodingNoSetupRef)
+        {
+            VkImageMemoryBarrier2KHR dstBarrier =
+                makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR, VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR,
+                                        VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
+                                        VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR, VK_IMAGE_LAYOUT_UNDEFINED, dstLayout,
+                                        cachedParameters->currentDpbPictureResourceInfo.image, currPicSubresourceRange);
+            cachedParameters->imageBarriers.push_back(dstBarrier);
+        }
     }
     else if (pOutputPictureResourceInfo || m_intraOnlyDecodingNoSetupRef)
     {
-        // For Output Distinct transition the image to DECODE_DST
-        if (pOutputPictureResourceInfo->currentImageLayout == VK_IMAGE_LAYOUT_UNDEFINED)
+        // For Output Distinct transition the image to DECODE_DST. When intra-only with no
+        // setup reference, the framebuffer tracks a single output layout across all layers,
+        // so a guard on currentImageLayout == UNDEFINED only covers the first layer; always
+        // emit an UNDEFINED -> dstLayout barrier in that case since prior contents are not
+        // referenced.
+        if (m_intraOnlyDecodingNoSetupRef ||
+            pOutputPictureResourceInfo->currentImageLayout == VK_IMAGE_LAYOUT_UNDEFINED)
         {
+            const VkImageLayout srcLayout       = m_intraOnlyDecodingNoSetupRef ?
+                                                      VK_IMAGE_LAYOUT_UNDEFINED :
+                                                      pOutputPictureResourceInfo->currentImageLayout;
             VkImageMemoryBarrier2KHR dstBarrier = makeImageMemoryBarrier2(
                 VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR, VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR,
-                VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR, VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR,
-                pOutputPictureResourceInfo->currentImageLayout, VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR,
+                VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR, VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR, srcLayout, dstLayout,
                 pOutputPictureResourceInfo->image, dstSubresourceRange);
             cachedParameters->imageBarriers.push_back(dstBarrier);
         }
@@ -1848,11 +1877,11 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
     if (!m_intraOnlyDecodingNoSetupRef &&
         cachedParameters->currentDpbPictureResourceInfo.currentImageLayout == VK_IMAGE_LAYOUT_UNDEFINED)
     {
-        VkImageMemoryBarrier2KHR dpbBarrier = makeImageMemoryBarrier2(
-            VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR, VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR,
-            VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR, VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR,
-            pOutputPictureResourceInfo->currentImageLayout, VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
-            cachedParameters->currentDpbPictureResourceInfo.image, currPicSubresourceRange);
+        VkImageMemoryBarrier2KHR dpbBarrier =
+            makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR, VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR,
+                                    VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR, VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR,
+                                    cachedParameters->currentDpbPictureResourceInfo.currentImageLayout, dpbLayout,
+                                    cachedParameters->currentDpbPictureResourceInfo.image, currPicSubresourceRange);
         cachedParameters->imageBarriers.push_back(dpbBarrier);
     }
 
@@ -1863,9 +1892,9 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
     if (pPicParams->numGopReferenceSlots)
     {
         if (pPicParams->numGopReferenceSlots !=
-            m_videoFrameBuffer->GetDpbImageResourcesByIndex(
-                pPicParams->numGopReferenceSlots, pGopReferenceImagesIndexes, pPicParams->pictureResources,
-                cachedParameters->pictureResourcesInfo, VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR))
+            m_videoFrameBuffer->GetDpbImageResourcesByIndex(pPicParams->numGopReferenceSlots,
+                                                            pGopReferenceImagesIndexes, pPicParams->pictureResources,
+                                                            cachedParameters->pictureResourcesInfo, dpbLayout))
         {
             TCU_THROW(InternalError, "GetImageResourcesByIndex has failed for DPB resources");
         }
@@ -1877,7 +1906,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
             VkImageMemoryBarrier2KHR dpbBarrier = makeImageMemoryBarrier2(
                 VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR, VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR,
                 VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR, VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR,
-                cachedParameters->pictureResourcesInfo[resId].currentImageLayout, VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
+                cachedParameters->pictureResourcesInfo[resId].currentImageLayout, dpbLayout,
                 cachedParameters->pictureResourcesInfo[resId].image, dpbSubresourceRange);
             cachedParameters->imageBarriers.push_back(dpbBarrier);
         }

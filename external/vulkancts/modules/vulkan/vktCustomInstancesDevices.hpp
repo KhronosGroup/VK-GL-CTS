@@ -185,6 +185,7 @@ public:
         VIDEO_DEVICE_FLAG_REQUIRE_MAINTENANCE_2                = 0x00000080,
         VIDEO_DEVICE_FLAG_REQUIRE_DECODE_VP9                   = 0x00000100,
         VIDEO_DEVICE_FLAG_REQUIRE_INTRA_REFRESH                = 0x00000200,
+        VIDEO_DEVICE_FLAG_REQUIRE_UNIFIED_IMAGE_LAYOUTS        = 0x00000400,
     };
 
     typedef uint32_t VideoDeviceFlags;
