@@ -40,6 +40,7 @@
 
 #include "tcuPlatform.hpp"
 
+#include "deMutex.hpp"
 #include "deStringUtil.hpp"
 #include "deThread.hpp"
 
@@ -505,6 +506,7 @@ public:
         const vk::VkFence &acquireFence;
         const vk::VkSemaphore &renderSemaphore;
         const vk::VkCommandBuffer &commandBuffer;
+        uint32_t imageIndex{};
     };
 
     FrameStreamObjects(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkCommandPool cmdPool,
@@ -1231,6 +1233,8 @@ struct GetPastPresentTimingThreadSharedState
     std::atomic<bool> m_presentingDone;
     std::atomic<uint32_t> m_pendingResults;
 
+    de::Mutex m_swapchainMutex;
+
     std::array<PresentTimingHelper, kNumParallelThreads> m_pths;
     std::vector<std::exception_ptr> m_threadsException;
 };
@@ -1296,7 +1300,8 @@ tcu::TestStatus timingTestWithBackgroundQueryThreads(Context &context, Type wsiT
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface,
                                     tcu::UVec2(kDefaultWindowWidth, kDefaultWindowHeight), VK_PRESENT_MODE_FIFO_KHR, 3);
     SwapchainAndImage swapchain(vkd, device, swapchainInfo);
-    const std::vector<vk::VkImage> images = getSwapchainImages(vkd, device, *swapchain);
+    const std::vector<vk::VkImage> images     = getSwapchainImages(vkd, device, *swapchain);
+    std::vector<SemaphoreSp> renderSemaphores = allocateSemaphores(vkd, device, images.size());
 
     const uint32_t frameCount       = 10;
     const uint32_t presentQueueSize = frameCount;
@@ -1351,8 +1356,9 @@ tcu::TestStatus timingTestWithBackgroundQueryThreads(Context &context, Type wsiT
 
             recordAndSubmitFrame(vkd, devHelper.queue, frame.commandBuffer, images[imageIndex], frame.renderSemaphore);
 
-            VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, frame.renderSemaphore, *swapchain, imageIndex,
-                                               timingInfo, currentPresentId));
+            de::ScopedLock lock(sharedState.m_swapchainMutex);
+            VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, **renderSemaphores[frame.imageIndex], *swapchain,
+                                               frame.imageIndex, timingInfo, currentPresentId));
 
             currentPresentId += presentIdStep;
         }
@@ -1985,6 +1991,12 @@ tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfi
     PresentTimingHelper pth(presentQueueSize, numSupportedPresentStages, timeDomainsHelper.timeDomainsCounter);
     updateSwapchainTimingProperties(vkd, device, *swapchain, pth);
 
+    // With the swapchain domain, we'll still need a slot even though a specific present stage won't be queried when requesting the calibration timestamp
+    VkPresentStageFlagsEXT calibrationStageQueryMask =
+        (config.timeDomain == VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT) ?
+            kAllPresentStages :
+            static_cast<VkPresentStageFlagsEXT>(VK_PRESENT_STAGE_QUEUE_OPERATIONS_END_BIT_EXT);
+    const VkPresentStageFlagsEXT verifyPresentStages = calibrationStageQueryMask;
     std::vector<VkSwapchainCalibratedTimestampInfoEXT> swapchainCalibratedTimesInfos{};
     VkPresentStageFlagsEXT presentStageQueryMask = supportedPresentStageQueries;
     do
@@ -2045,7 +2057,7 @@ tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfi
     for (uint32_t i = 0; i < frameCount; i++)
     {
         // Check that each presented timestamp falls between the before/after calibrated timestamp
-        VkPresentStageFlagsEXT presentStages = supportedPresentStageQueries;
+        VkPresentStageFlagsEXT presentStages = verifyPresentStages;
         do
         {
             const VkPresentStageFlagsEXT presentStage = presentStages & -static_cast<int32_t>(presentStages);
