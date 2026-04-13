@@ -1427,7 +1427,7 @@ public:
                           const bool hasTess_ = false, const uint32_t tessPatchSize_ = 0u,
                           const uint32_t numTessPrimitives_ = 1u, TessPrimitiveMode primMode_ = TESS_PRIM_QUADS,
                           const bool pointMode_ = false, bool useDeviceAddressCommands_ = false,
-                          const bool primitiveRestart_ = false)
+                          const bool primitiveRestart_ = false, bool cullModeFrontAndBack_ = false)
             : GenericParameters{resetType_, copyType_, query64Bits_, dstOffset_, strideType_, useDeviceAddressCommands_}
             , queryStatisticFlags(queryStatisticFlags_)
             , primitiveTopology(primitiveTopology_)
@@ -1440,6 +1440,7 @@ public:
             , primMode(primMode_)
             , pointMode(pointMode_)
             , primitiveRestart(primitiveRestart_)
+            , cullModeFrontAndBack(cullModeFrontAndBack_)
         {
         }
 
@@ -1454,6 +1455,7 @@ public:
         TessPrimitiveMode primMode;
         bool pointMode;
         const bool primitiveRestart;
+        bool cullModeFrontAndBack;
     };
     GraphicBasicTestInstance(vkt::Context &context, const std::vector<VertexData> &data,
                              const std::vector<uint32_t> &indexData, const ParametersGraphic &parametersGraphic,
@@ -1985,7 +1987,9 @@ void VertexShaderTestInstance::createPipeline(void)
     const VkRect2D scissor    = makeRect2D(m_width, m_height);
     pipelineCreateInfo.addState(
         PipelineCreateInfo::ViewportState(1u, std::vector<VkViewport>(1, viewport), std::vector<VkRect2D>(1, scissor)));
-    pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
+    const VkCullModeFlags cullMode =
+        m_parametersGraphic.cullModeFrontAndBack ? VK_CULL_MODE_FRONT_AND_BACK : VK_CULL_MODE_NONE;
+    pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState(false, false, VK_POLYGON_MODE_FILL, cullMode));
     pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
     pipelineCreateInfo.addState(vf_info);
     m_pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
@@ -2232,7 +2236,7 @@ tcu::TestStatus VertexShaderTestInstance::checkResult(VkQueryPool queryPool)
                                                (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags())));
         }
 
-        if (results[0] < expectedMin)
+        if (results[0] < expectedMin && (!m_parametersGraphic.cullModeFrontAndBack || results[0] != 0))
         {
             std::ostringstream msg;
             msg << "QueryPoolResults incorrect: expected at least " << expectedMin << " but got " << results[0];
@@ -2320,7 +2324,7 @@ tcu::TestStatus VertexShaderTestInstance::checkResult(VkQueryPool queryPool)
     const bool checkImageResult = checkImage();
     if (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP &&
         m_parametersGraphic.clearOp == CLEAR_NOOP && !m_parametersGraphic.noColorAttachments && errorMsg.empty() &&
-        !checkImageResult)
+        !m_parametersGraphic.cullModeFrontAndBack && !checkImageResult)
     {
         errorMsg = "Result image doesn't match expected image";
     }
@@ -2759,7 +2763,9 @@ void GeometryShaderTestInstance::createPipeline(void)
     else
         pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState());
 
-    pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState(false));
+    const VkCullModeFlags cullMode =
+        m_parametersGraphic.cullModeFrontAndBack ? VK_CULL_MODE_FRONT_AND_BACK : VK_CULL_MODE_NONE;
+    pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState(false, false, VK_POLYGON_MODE_FILL, cullMode));
     pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
     pipelineCreateInfo.addState(vf_info);
     m_pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
@@ -2951,7 +2957,7 @@ tcu::TestStatus GeometryShaderTestInstance::checkResult(VkQueryPool queryPool)
                                                    (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags())));
             }
 
-            if (results[0] < expectedMin)
+            if (results[0] < expectedMin && (!m_parametersGraphic.cullModeFrontAndBack || results[0] != 0))
                 throw tcu::TestStatus::fail("QueryPoolResults incorrect");
             if (queryCount > 1)
             {
@@ -3026,7 +3032,7 @@ tcu::TestStatus GeometryShaderTestInstance::checkResult(VkQueryPool queryPool)
 
     if ((m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST ||
          m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP) &&
-        !checkImageResult)
+        !m_parametersGraphic.cullModeFrontAndBack && !checkImageResult)
         return tcu::TestStatus::fail("Result image doesn't match expected image.");
 
     return status;
@@ -8606,6 +8612,7 @@ void QueryPoolStatisticsTests::init(void)
         de::MovePtr<TestCaseGroup> primary(new TestCaseGroup(m_testCtx, "primary"));
         de::MovePtr<TestCaseGroup> secondary(new TestCaseGroup(m_testCtx, "secondary"));
         de::MovePtr<TestCaseGroup> secondaryInherited(new TestCaseGroup(m_testCtx, "secondary_inherited"));
+        de::MovePtr<TestCaseGroup> cullFrontAndBack(new TestCaseGroup(m_testCtx, "cull_front_and_back"));
 
         de::MovePtr<TestCaseGroup> primaryHostQueryReset(new TestCaseGroup(m_testCtx, "primary"));
         de::MovePtr<TestCaseGroup> secondaryHostQueryReset(new TestCaseGroup(m_testCtx, "secondary"));
@@ -8701,6 +8708,16 @@ void QueryPoolStatisticsTests::init(void)
                                       query64Bits, false, dstOffset, clearOp[clearOpIdx]),
                                   SECONDARY);
 
+                        addChilds(cullFrontAndBack,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                      clearOpStr[clearOpIdx],
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_NORMAL, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset, clearOp[clearOpIdx], false, STRIDE_TYPE_VALID,
+                                      false, 0u, 1u, TESS_PRIM_QUADS, false, false, false, true),
+                                  PRIMARY);
+
                         addChilds(primaryHostQueryReset,
                                   prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
                                       clearOpStr[clearOpIdx],
@@ -8794,6 +8811,7 @@ void QueryPoolStatisticsTests::init(void)
         clippingPrimitives->addChild(primary.release());
         clippingPrimitives->addChild(secondary.release());
         clippingPrimitives->addChild(secondaryInherited.release());
+        clippingPrimitives->addChild(cullFrontAndBack.release());
 
         clippingPrimitivesHostQueryReset->addChild(primaryHostQueryReset.release());
         clippingPrimitivesHostQueryReset->addChild(secondaryHostQueryReset.release());
