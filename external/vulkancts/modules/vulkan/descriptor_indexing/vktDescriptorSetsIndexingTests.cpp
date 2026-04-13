@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "vktDescriptorSetsIndexingTests.hpp"
+#include "vktDescriptorIndexingMiscTests.hpp"
 #include "vktTestCaseUtil.hpp"
 
 #include "vkBuilderUtil.hpp"
@@ -4910,6 +4911,8 @@ void descriptorIndexingDescriptorSetsCreateTests(tcu::TestCaseGroup *group)
 
     addFunctionCaseWithPrograms(group, "non_uniform_atomics", nonUniformAtomicsCheckSupport, nonUniformAtomicsPrograms,
                                 nonUniformAtomicsRun);
+
+    createDescriptorIndexingMiscTests(group);
 }
 
 } // namespace DescriptorIndexing

@@ -182,6 +182,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/data_graph/vktDataGraphTestProvider.cpp",
         "external/vulkancts/modules/vulkan/data_graph/vktDataGraphTestUtil.cpp",
         "external/vulkancts/modules/vulkan/data_graph/vktDataGraphTests.cpp",
+        "external/vulkancts/modules/vulkan/descriptor_indexing/vktDescriptorIndexingMiscTests.cpp",
         "external/vulkancts/modules/vulkan/descriptor_indexing/vktDescriptorIndexingTests.cpp",
         "external/vulkancts/modules/vulkan/descriptor_indexing/vktDescriptorSetsIndexingTests.cpp",
         "external/vulkancts/modules/vulkan/descriptor_indexing/vktDescriptorSetsIndexingTestsUtils.cpp",
