@@ -23,22 +23,6 @@
         },
         {
             "groups": [
-                "dEQP-VK.inding_model.unused_invalid_descriptor.write.unused.*",
-                "dEQP-VK.binding_model.unused_invalid_descriptor.copy.*",
-                "dEQP-VK.binding_model.unused_invalid_descriptor.write.invail.storage_image",
-                "dEQP-VK.binding_model.unused_invalid_descriptor.write.invalid.sampled_image",
-                "dEQP-VK.binding_model.unused_invalid_descriptor.write.invalid.combined_image_sampler"
-            ],
-            "messages": [
-                "VUID-vkCmdDispatch-None-08114",
-                "VUID-vkCmdDispatch-format-07753",
-                "VUID-RuntimeSpirv-samples-08725",
-                "VUID-VkImageCreateInfo-samples-02258"
-            ],
-            "description": "Tests verify implementations handle unused bindings with invalid or mismatched descriptors (not written, destroyed, wrong format, or type mismatch). Producing these errors is intentional"
-        },
-        {
-            "groups": [
                 "dEQP-VK.image.mismatched_formats.image_read.*"
             ],
             "messages": [
