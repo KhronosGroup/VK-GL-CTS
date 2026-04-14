@@ -3403,7 +3403,246 @@ tcu::TestStatus ImageDeviceScopeAccessTestInstance::iterate(void)
 
     return verifyResult();
 }
+//! Test that imageStore on sRGB storage images does NOT apply linear-to-sRGB conversion.
+//! Per Vulkan spec Section 16.3 "Texel Output Operations":
+//!   "If the image format is sRGB, the linear to sRGB transformation is not applied."
+class SRGBStorageImageStoreTest : public TestCase
+{
+public:
+    SRGBStorageImageStoreTest(tcu::TestContext &testCtx, const std::string &name, const VkFormat format,
+                              const VkImageTiling tiling)
+        : TestCase(testCtx, name)
+        , m_format(format)
+        , m_tiling(tiling)
+    {
+    }
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    TestInstance *createInstance(Context &context) const override;
+
+private:
+    const VkFormat m_format;
+    const VkImageTiling m_tiling;
+};
+
+class SRGBStorageImageStoreTestInstance : public TestInstance
+{
+public:
+    SRGBStorageImageStoreTestInstance(Context &context, const VkFormat format, const VkImageTiling tiling);
+    tcu::TestStatus iterate(void) override;
+
+private:
+    const VkFormat m_format;
+    const VkImageTiling m_tiling;
+};
+
+void SRGBStorageImageStoreTest::checkSupport(Context &context) const
+{
+    const VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(
+        context.getInstanceInterface(), context.getPhysicalDevice(), m_format);
+
+    const VkFormatFeatureFlags tilingFeatures = (m_tiling == VK_IMAGE_TILING_OPTIMAL)
+                                                    ? formatProperties.optimalTilingFeatures
+                                                    : formatProperties.linearTilingFeatures;
+
+    if (!(tilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+        TCU_THROW(NotSupportedError, "Format not supported for storage images");
+}
+
+void SRGBStorageImageStoreTest::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::ostringstream src;
+    src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
+        << "\n"
+        << "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+        << "layout (binding = 0, rgba8) writeonly uniform image2D u_image;\n"
+        << "\n"
+        << "void main (void)\n"
+        << "{\n"
+        << "    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);\n"
+        // Write linear values that would change significantly under sRGB conversion.
+        // Linear 0.5 -> sRGB ~0.735. If sRGB is wrongly applied, raw bytes would be ~188 instead of ~128.
+        << "    imageStore(u_image, pos, vec4(0.5, 0.25, 0.75, 1.0));\n"
+        << "}\n";
+
+    programCollection.glslSources.add("comp") << glu::ComputeSource(src.str());
+}
+
+TestInstance *SRGBStorageImageStoreTest::createInstance(Context &context) const
+{
+    return new SRGBStorageImageStoreTestInstance(context, m_format, m_tiling);
+}
+
+SRGBStorageImageStoreTestInstance::SRGBStorageImageStoreTestInstance(Context &context, const VkFormat format,
+                                                                     const VkImageTiling tiling)
+    : TestInstance(context)
+    , m_format(format)
+    , m_tiling(tiling)
+{
+}
+
+tcu::TestStatus SRGBStorageImageStoreTestInstance::iterate(void)
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    Allocator &allocator            = m_context.getDefaultAllocator();
+
+    const tcu::IVec3 imageSize(8, 8, 1);
+    const VkDeviceSize bufferSizeBytes =
+        imageSize.x() * imageSize.y() * tcu::getPixelSize(mapVkFormat(m_format));
+
+    const VkImageCreateInfo imageCreateInfo = makeImageCreateInfo(
+        Texture(IMAGE_TYPE_2D, tcu::IVec3(imageSize.x(), imageSize.y(), 1), 1), m_format,
+        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, m_tiling);
+
+    de::MovePtr<Image> image(new Image(vk, device, allocator, imageCreateInfo, MemoryRequirement::Any));
+
+    const VkImageSubresourceRange subresourceRange =
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+    const Move<VkImageView> imageView =
+        makeImageView(vk, device, image->get(), VK_IMAGE_VIEW_TYPE_2D, m_format, subresourceRange);
+
+    de::MovePtr<BufferWithMemory> resultBuffer(new BufferWithMemory(
+        vk, device, allocator,
+        makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+        MemoryRequirement::HostVisible));
+
+    const Move<VkDescriptorSetLayout> descriptorSetLayout =
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vk, device);
+
+    const Move<VkDescriptorPool> descriptorPool =
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    const Move<VkDescriptorSet> descriptorSet =
+        makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+
+    const VkDescriptorImageInfo descriptorImageInfo =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                     VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfo)
+        .update(vk, device);
+
+    const Move<VkShaderModule> shaderModule =
+        createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0);
+    const Move<VkPipelineLayout> pipelineLayout =
+        makePipelineLayout(vk, device, *descriptorSetLayout);
+    const Move<VkPipeline> pipeline =
+        makeComputePipeline(vk, device, *pipelineLayout, *shaderModule);
+
+    const Move<VkCommandPool> cmdPool =
+        createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+    const Move<VkCommandBuffer> cmdBuffer =
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    const VkImageMemoryBarrier imageBarrierPre = makeImageMemoryBarrier(
+        0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+        image->get(), subresourceRange);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u,
+                          0, nullptr, 0, nullptr, 1, &imageBarrierPre);
+
+    vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u,
+                             1u, &descriptorSet.get(), 0u, nullptr);
+    vk.cmdDispatch(*cmdBuffer, imageSize.x(), imageSize.y(), 1u);
+
+    const Texture texture(IMAGE_TYPE_2D, tcu::IVec3(imageSize.x(), imageSize.y(), 1), 1);
+    commandCopyImageToBuffer(m_context, *cmdBuffer, image->get(), resultBuffer->get(),
+                             bufferSizeBytes, texture);
+
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+    // Verify: raw bytes should match linear input quantized to 8-bit UNORM.
+    // Per Vulkan spec, imageStore does NOT apply sRGB conversion.
+    const Allocation &alloc = resultBuffer->getAllocation();
+    invalidateAlloc(vk, device, alloc);
+
+    const uint8_t *resultData = static_cast<const uint8_t *>(alloc.getHostPtr());
+    const int numPixels       = imageSize.x() * imageSize.y();
+    const int bytesPerPixel   = tcu::getPixelSize(mapVkFormat(m_format));
+
+    // Expected: round(linear_value * 255)
+    // 0.50 -> 128, 0.25 -> 64, 0.75 -> 191, 1.0 -> 255
+    const uint8_t expectedR = 128;
+    const uint8_t expectedG = 64;
+    const uint8_t expectedB = 191;
+    const uint8_t expectedA = 255;
+    const int tolerance     = 1;
+
+    const tcu::TextureFormat texFmt = mapVkFormat(m_format);
+
+    for (int i = 0; i < numPixels; ++i)
+    {
+        const uint8_t *pixel = resultData + i * bytesPerPixel;
+        uint8_t r, g, b, a;
+
+        if (texFmt.order == tcu::TextureFormat::BGRA ||
+            texFmt.order == tcu::TextureFormat::sBGRA)
+        {
+            b = pixel[0]; g = pixel[1]; r = pixel[2]; a = pixel[3];
+        }
+        else
+        {
+            r = pixel[0]; g = pixel[1]; b = pixel[2]; a = pixel[3];
+        }
+
+        if (de::abs((int)r - (int)expectedR) > tolerance ||
+            de::abs((int)g - (int)expectedG) > tolerance ||
+            de::abs((int)b - (int)expectedB) > tolerance ||
+            de::abs((int)a - (int)expectedA) > tolerance)
+        {
+            std::ostringstream msg;
+            msg << "Pixel " << i << ": got RGBA=("
+                << (int)r << ", " << (int)g << ", " << (int)b << ", " << (int)a
+                << "), expected (" << (int)expectedR << ", " << (int)expectedG
+                << ", " << (int)expectedB << ", " << (int)expectedA
+                << ") +/- " << tolerance
+                << ". If values are higher (e.g. R~188), sRGB conversion was incorrectly applied by imageStore.";
+            return tcu::TestStatus::fail(msg.str());
+        }
+    }
+
+    return tcu::TestStatus::pass("Passed");
+}
+
+static const VkFormat s_srgbFormats[] = {
+    VK_FORMAT_R8G8B8A8_SRGB,
+    VK_FORMAT_B8G8R8A8_SRGB,
+    VK_FORMAT_A8B8G8R8_SRGB_PACK32,
+};
+
 } // namespace
+
+tcu::TestCaseGroup *createImageStoreSRGBNoConversionTests(tcu::TestContext &testCtx)
+{
+    de::MovePtr<tcu::TestCaseGroup> testGroup(
+        new tcu::TestCaseGroup(testCtx, "store_srgb_no_conversion"));
+
+    for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_srgbFormats); ++formatNdx)
+    {
+        for (int tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(s_tilings); ++tilingNdx)
+        {
+            const char *suffix = tilingSuffix(s_tilings[tilingNdx]);
+            testGroup->addChild(new SRGBStorageImageStoreTest(
+                testCtx, getFormatShortString(s_srgbFormats[formatNdx]) + suffix,
+                s_srgbFormats[formatNdx], s_tilings[tilingNdx]));
+        }
+    }
+
+    return testGroup.release();
+}
 
 tcu::TestCaseGroup *createImageStoreTests(tcu::TestContext &testCtx)
 {

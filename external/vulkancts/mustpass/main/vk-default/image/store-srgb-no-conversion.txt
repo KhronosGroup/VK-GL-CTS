@@ -1,0 +1,6 @@
+dEQP-VK.image.store_srgb_no_conversion.r8g8b8a8_srgb
+dEQP-VK.image.store_srgb_no_conversion.r8g8b8a8_srgb_linear
+dEQP-VK.image.store_srgb_no_conversion.b8g8r8a8_srgb
+dEQP-VK.image.store_srgb_no_conversion.b8g8r8a8_srgb_linear
+dEQP-VK.image.store_srgb_no_conversion.a8b8g8r8_srgb_pack32
+dEQP-VK.image.store_srgb_no_conversion.a8b8g8r8_srgb_pack32_linear
