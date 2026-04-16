@@ -635,12 +635,12 @@ void RobustnessExtsTestCase::checkSupport(Context &context) const
     case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
     case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
     case VERTEX_ATTRIBUTE_FETCH:
-        if (m_data.testRobustness2)
+        if (m_data.testRobustness2 && !m_data.nullDescriptor)
         {
             if (!robustness2Features.robustBufferAccess2)
                 TCU_THROW(NotSupportedError, "robustBufferAccess2 not supported");
         }
-        else
+        else if (!m_data.nullDescriptor)
         {
             // This case is not tested here.
             DE_ASSERT(false);
@@ -648,12 +648,12 @@ void RobustnessExtsTestCase::checkSupport(Context &context) const
         break;
     case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
     case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-        if (m_data.testRobustness2)
+        if (m_data.testRobustness2 && !m_data.nullDescriptor)
         {
             if (!robustness2Features.robustImageAccess2)
                 TCU_THROW(NotSupportedError, "robustImageAccess2 not supported");
         }
-        else
+        else if (!m_data.nullDescriptor)
         {
             if (!imageRobustnessFeatures.robustImageAccess)
                 TCU_THROW(NotSupportedError, "robustImageAccess not supported");
