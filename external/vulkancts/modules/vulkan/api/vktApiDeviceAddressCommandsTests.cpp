@@ -718,7 +718,7 @@ void BufferAddressCommandTestCase::checkSupport(Context &context) const
     using TM = CommandFlagTestMode;
 
     context.requireDeviceFunctionality("VK_KHR_device_address_commands");
-    if (m_params.mode == TM::COPY_TO_MEMORY_WITH_UNBOUND_RANGES)
+    if (m_params.mode == TM::COPY_TO_MEMORY_WITH_UNBOUND_RANGES || m_params.mode == TM::COMPLEX_SET_STRIDE)
         context.requireDeviceFunctionality("VK_EXT_vertex_input_dynamic_state");
 
     if ((m_params.mode == TM::COPY_TO_MEMORY_WITH_UNBOUND_RANGES) ||
