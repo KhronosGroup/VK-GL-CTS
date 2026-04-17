@@ -149,6 +149,11 @@ struct TestParamsBasic : TestParams
     int32_t overrideSamplerStride  = -1;
 };
 
+struct TestParamsGPL : TestParams
+{
+    bool unbindFragShader = false;
+};
+
 struct TestParamsWithDescriptorType : TestParams
 {
     VkDescriptorType descriptorType{};
@@ -1528,7 +1533,7 @@ tcu::TestStatus DescriptorHeapTestInstanceDifferentMappingsPerShader::iterate()
 class DescriptorHeapTestInstanceGPL final : public DescriptorHeapTestInstanceBase
 {
 public:
-    explicit DescriptorHeapTestInstanceGPL(Context &context, const TestParams &params)
+    explicit DescriptorHeapTestInstanceGPL(Context &context, const TestParamsGPL &params)
         : DescriptorHeapTestInstanceBase(context, params)
         , m_params{params}
     {
@@ -1537,13 +1542,13 @@ public:
     tcu::TestStatus iterate() override;
 
 private:
-    TestParams m_params;
+    TestParamsGPL m_params;
 };
 
 class DescriptorHeapTestCaseGPL final : public DescriptorHeapTestCaseBase
 {
 public:
-    explicit DescriptorHeapTestCaseGPL(tcu::TestContext &testCtx, const std::string &name, const TestParams &params)
+    explicit DescriptorHeapTestCaseGPL(tcu::TestContext &testCtx, const std::string &name, const TestParamsGPL &params)
         : DescriptorHeapTestCaseBase(testCtx, name, params)
         , m_params{params}
     {
@@ -1557,7 +1562,7 @@ public:
     void initPrograms(vk::SourceCollections &programCollection) const override;
 
 private:
-    TestParams m_params;
+    TestParamsGPL m_params;
 };
 
 void DescriptorHeapTestCaseGPL::initPrograms(vk::SourceCollections &programCollection) const
@@ -1581,8 +1586,28 @@ void DescriptorHeapTestCaseGPL::initPrograms(vk::SourceCollections &programColle
                            "  imageStore(outputImgBuf, inIndex, inColor);\n"
                            "}\n";
 
-    programCollection.glslSources.add("vertex") << glu::VertexSource(vertex);
-    programCollection.glslSources.add("fragment") << glu::FragmentSource(fragment);
+    std::string vertexOutput     = "#version 450\n"
+                                   "layout (set = 0, binding = 6) uniform textureBuffer positionTexBuf;\n"
+                                   "layout (set = 0, binding = 7) uniform textureBuffer colorTexBuf;\n"
+                                   "layout (set = 0, binding = 8, rgba32f) uniform imageBuffer outputImgBuf;\n"
+                                   "void main() {\n"
+                                   "  gl_Position = texelFetch(positionTexBuf, gl_VertexIndex);\n"
+                                   "  imageStore(outputImgBuf, gl_VertexIndex, texelFetch(colorTexBuf, gl_VertexIndex));\n"
+                                   "}\n";
+    std::string fragmentNoOutput = "#version 450\n"
+                                   "void main() {\n"
+                                   "}\n";
+
+    if (m_params.unbindFragShader)
+    {
+        programCollection.glslSources.add("vertex") << glu::VertexSource(vertexOutput);
+        programCollection.glslSources.add("fragment") << glu::FragmentSource(fragmentNoOutput);
+    }
+    else
+    {
+        programCollection.glslSources.add("vertex") << glu::VertexSource(vertex);
+        programCollection.glslSources.add("fragment") << glu::FragmentSource(fragment);
+    }
 }
 
 tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
@@ -1674,7 +1699,7 @@ tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
     const auto vertexModule   = createShaderModule(*m_deviceInterface, *m_device, getShaderBinary("vertex"));
     const auto fragmentModule = createShaderModule(*m_deviceInterface, *m_device, getShaderBinary("fragment"));
 
-    std::array<VkDescriptorSetAndBindingMappingEXT, 2> vertexMappings{};
+    std::array<VkDescriptorSetAndBindingMappingEXT, 3> vertexMappings{};
     vertexMappings[0]                                      = initVulkanStructure();
     vertexMappings[0].descriptorSet                        = 0;
     vertexMappings[0].firstBinding                         = 6;
@@ -1689,6 +1714,13 @@ tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
     vertexMappings[1].resourceMask                         = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
     vertexMappings[1].source                               = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
     vertexMappings[1].sourceData.constantOffset.heapOffset = static_cast<int32_t>(1 * imageDescriptorStride);
+    vertexMappings[2]                                      = initVulkanStructure();
+    vertexMappings[2].descriptorSet                        = 0;
+    vertexMappings[2].firstBinding                         = 8;
+    vertexMappings[2].bindingCount                         = 1;
+    vertexMappings[2].resourceMask                         = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    vertexMappings[2].source                               = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    vertexMappings[2].sourceData.constantOffset.heapOffset = static_cast<int32_t>(2 * imageDescriptorStride);
 
     std::array<VkDescriptorSetAndBindingMappingEXT, 1> fragmentMappings{};
     fragmentMappings[0]               = initVulkanStructure();
@@ -1700,7 +1732,7 @@ tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
     fragmentMappings[0].sourceData.constantOffset.heapOffset = static_cast<int32_t>(2 * imageDescriptorStride);
 
     VkShaderDescriptorSetAndBindingMappingInfoEXT vertexMappingInfo = initVulkanStructure();
-    vertexMappingInfo.mappingCount                                  = de::sizeU32(vertexMappings);
+    vertexMappingInfo.mappingCount                                  = m_params.unbindFragShader ? 3u : 2u;
     vertexMappingInfo.pMappings                                     = vertexMappings.data();
 
     VkShaderDescriptorSetAndBindingMappingInfoEXT fragmentMappingInfo = initVulkanStructure();
@@ -1740,9 +1772,12 @@ tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
         vertexShaderCreateInfo.pPushConstantRanges    = nullptr;
         vertexShaderCreateInfo.pSpecializationInfo    = nullptr;
 
-        VkShaderCreateInfoEXT fragmentShaderCreateInfo  = initVulkanStructure();
-        fragmentShaderCreateInfo.pNext                  = &fragmentMappingInfo;
-        fragmentShaderCreateInfo.flags                  = VK_SHADER_CREATE_DESCRIPTOR_HEAP_BIT_EXT;
+        VkShaderCreateInfoEXT fragmentShaderCreateInfo = initVulkanStructure();
+        if (!m_params.unbindFragShader)
+        {
+            fragmentShaderCreateInfo.pNext = &fragmentMappingInfo;
+            fragmentShaderCreateInfo.flags = VK_SHADER_CREATE_DESCRIPTOR_HEAP_BIT_EXT;
+        }
         fragmentShaderCreateInfo.stage                  = VK_SHADER_STAGE_FRAGMENT_BIT;
         fragmentShaderCreateInfo.nextStage              = 0;
         fragmentShaderCreateInfo.codeType               = VK_SHADER_CODE_TYPE_SPIRV_EXT;
@@ -1927,6 +1962,15 @@ tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
     {
         vkd.cmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+    }
+
+    if (m_params.unbindFragShader)
+    {
+        const std::array<VkShaderEXT, 2> vertOnlyShaders = {
+            *vertexShader,
+            VK_NULL_HANDLE,
+        };
+        vkd.cmdBindShadersEXT(cmdBuffer, 2, stages.data(), vertOnlyShaders.data());
     }
 
     vkd.cmdDraw(cmdBuffer, vertexCount, 1, 0, 0);
@@ -14416,7 +14460,7 @@ void populateGraphicsPipelineLibraryTests(tcu::TestCaseGroup *topGroup, uint32_t
     MovePtr<tcu::TestCaseGroup> gplGroup(new tcu::TestCaseGroup(testCtx, "graphics_pipeline_library"));
 
     // GPL case
-    TestParams gplParams{};
+    TestParamsGPL gplParams{};
     gplParams.queue                          = VK_QUEUE_GRAPHICS_BIT;
     gplParams.enableGraphicsPipelineLibrary  = true;
     gplParams.enableFragmentStoresAndAtomics = true;
@@ -14424,7 +14468,7 @@ void populateGraphicsPipelineLibraryTests(tcu::TestCaseGroup *topGroup, uint32_t
     gplGroup->addChild(new DescriptorHeapTestCaseGPL(testCtx, "graphics_pipeline_library", gplParams));
 
     // Shader object case
-    TestParams shaderObjectParams{};
+    TestParamsGPL shaderObjectParams{};
     shaderObjectParams.queue                          = VK_QUEUE_GRAPHICS_BIT;
     shaderObjectParams.enableShaderObject             = true;
     shaderObjectParams.enableDynamicRendering         = true;
@@ -14432,6 +14476,11 @@ void populateGraphicsPipelineLibraryTests(tcu::TestCaseGroup *topGroup, uint32_t
     shaderObjectParams.seed                           = baseSeed ^ deStringHash("shader_object");
     gplGroup->addChild(new DescriptorHeapTestCaseGPL(testCtx, "shader_object", shaderObjectParams));
 
+    shaderObjectParams.seed                                 = baseSeed ^ deStringHash("shader_object_unbind_frag");
+    shaderObjectParams.unbindFragShader                     = true;
+    shaderObjectParams.enableVertexPipelineStoresAndAtomics = true;
+    shaderObjectParams.enableFragmentStoresAndAtomics       = false;
+    gplGroup->addChild(new DescriptorHeapTestCaseGPL(testCtx, "shader_object_unbind_frag", shaderObjectParams));
     topGroup->addChild(gplGroup.release());
 }
 
