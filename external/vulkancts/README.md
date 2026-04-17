@@ -929,6 +929,14 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     Enable test watchdog
     default: 'disable'
 
+  --deqp-watchdog-total-time-limit=<value>
+    Total test case time limit in seconds
+    default: '300'
+
+  --deqp-watchdog-interval-time-limit=<value>
+    Per iteration time limit in seconds
+    default: '30'
+
   --deqp-crashhandler=[enable|disable]
     Enable crash handling
     default: 'disable'
