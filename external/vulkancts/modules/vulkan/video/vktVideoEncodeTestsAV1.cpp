@@ -549,8 +549,8 @@ TestInstance *VideoTestCase::createInstance(Context &ctx) const
         expectedOutputExtent.height = de::roundUp(h, codedPictureAlignment.height);
     }
 #ifdef DE_BUILD_VIDEO
-    VkResult result = CreateVulkanVideoEncoder(m_requirements.codecOperation, static_cast<int>(args.size()),
-                                               const_cast<char **>(args.data()), encoder);
+    VkResult result =
+        CreateVulkanVideoEncoder(m_requirements.codecOperation, static_cast<int>(args.size()), args.data(), encoder);
     if (result != VK_SUCCESS)
     {
         throw tcu::TestError("Failed to create VulkanVideoEncoder");
