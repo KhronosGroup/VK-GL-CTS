@@ -124,9 +124,8 @@ Move<VkImage> createTestImage(const DeviceInterface &vkd, VkDevice device, VkFor
     return createImage(vkd, device, &createInfo);
 }
 
-Move<VkImageView> createImageView(const DeviceInterface &vkd, VkDevice device, VkImage image, VkFormat format,
-                                  VkImageAspectFlagBits imageAspect,
-                                  const VkSamplerYcbcrConversionInfo *samplerConversionInfo)
+VkImageViewCreateInfo makeImageViewCreateInfo(VkImage image, VkFormat format, VkImageAspectFlagBits imageAspect,
+                                              const VkSamplerYcbcrConversionInfo *samplerConversionInfo)
 {
     const VkImageViewCreateInfo viewInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -144,7 +143,7 @@ Move<VkImageView> createImageView(const DeviceInterface &vkd, VkDevice device, V
         {(VkImageAspectFlags)imageAspect, 0u, 1u, 0u, 1u},
     };
 
-    return createImageView(vkd, device, &viewInfo);
+    return viewInfo;
 }
 
 // Descriptor layout for set 1:
@@ -152,8 +151,9 @@ Move<VkImageView> createImageView(const DeviceInterface &vkd, VkDevice device, V
 // 1: "Whole" image bound as COMBINED_IMAGE_SAMPLER
 //    + immutable sampler (required for color conversion)
 
-Move<VkDescriptorSetLayout> createDescriptorSetLayout(const DeviceInterface &vkd, VkDevice device,
-                                                      VkSampler conversionSampler)
+Move<VkDescriptorSetLayout> createDescriptorSetLayout(
+    const DeviceInterface &vkd, VkDevice device, VkSampler conversionSampler,
+    VkDescriptorSetLayoutCreateFlags flags = (VkDescriptorSetLayoutCreateFlags)0u)
 {
     const VkDescriptorSetLayoutBinding bindings[]    = {{0u, // binding
                                                          VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -164,11 +164,7 @@ Move<VkDescriptorSetLayout> createDescriptorSetLayout(const DeviceInterface &vkd
                                                          1u, // descriptorCount
                                                          VK_SHADER_STAGE_ALL, &conversionSampler}};
     const VkDescriptorSetLayoutCreateInfo layoutInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        nullptr,
-        (VkDescriptorSetLayoutCreateFlags)0u,
-        DE_LENGTH_OF_ARRAY(bindings),
-        bindings,
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr, flags, DE_LENGTH_OF_ARRAY(bindings), bindings,
     };
 
     return createDescriptorSetLayout(vkd, device, &layoutInfo);
@@ -242,6 +238,110 @@ Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkd, VkDevice d
     return descSet;
 }
 
+#ifndef CTS_USES_VULKANSC
+struct DescriptorBufferResources
+{
+    std::vector<DescriptorData::BufferDescriptor> bufferDescriptors{};
+};
+
+void createDescriptorBufferResources(const DeviceInterface &vkd, VkDevice device,
+                                     DescriptorBufferResources &descriptorBufferResources,
+                                     VkDescriptorSetLayout descriptorSetLayout, VkImageView planeView,
+                                     VkSampler planeViewSampler, VkImageView wholeView, VkSampler wholeViewSampler,
+                                     uint32_t combinedSamplerDescriptorCount)
+{
+    DescriptorData::BufferDescriptor planeDescriptor;
+    planeDescriptor.imageInfo = {planeViewSampler, planeView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+    planeDescriptor.combinedSamplerDescriptorCount = 1;
+    vkd.getDescriptorSetLayoutBindingOffsetEXT(device, descriptorSetLayout, 0u, &planeDescriptor.bufferOffset);
+    descriptorBufferResources.bufferDescriptors.push_back(planeDescriptor);
+
+    DescriptorData::BufferDescriptor wholeDescriptor;
+    wholeDescriptor.imageInfo = {wholeViewSampler, wholeView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+    wholeDescriptor.combinedSamplerDescriptorCount = combinedSamplerDescriptorCount;
+    vkd.getDescriptorSetLayoutBindingOffsetEXT(device, descriptorSetLayout, 1u, &wholeDescriptor.bufferOffset);
+    descriptorBufferResources.bufferDescriptors.push_back(wholeDescriptor);
+}
+
+struct DescriptorHeapResources
+{
+    VkImageDescriptorInfoEXT planeDescriptor = initVulkanStructure();
+    VkImageDescriptorInfoEXT wholeDescriptor = initVulkanStructure();
+    std::vector<VkDescriptorSetAndBindingMappingEXT> mappings{};
+    std::vector<DescriptorData::ResourceDescriptor> resourceDescriptors{};
+    std::vector<DescriptorData::SamplerDescriptor> samplerDescriptors{};
+};
+
+VkDeviceSize alignUp(VkDeviceSize value, VkDeviceSize alignment)
+{
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+
+VkDeviceSize getImageDescriptorStride(const VkPhysicalDeviceDescriptorHeapPropertiesEXT &properties)
+{
+    return alignUp(properties.imageDescriptorSize, properties.imageDescriptorAlignment);
+}
+
+void addImageDescriptor(DescriptorHeapResources &descriptorHeapResources,
+                        const VkImageDescriptorInfoEXT *imageDescriptor, VkDeviceSize heapOffset, VkDeviceSize size)
+{
+    DescriptorData::ResourceDescriptor resourceDescriptor{};
+    resourceDescriptor.descriptorInfo             = initVulkanStructure();
+    resourceDescriptor.descriptorInfo.type        = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    resourceDescriptor.descriptorInfo.data.pImage = imageDescriptor;
+    resourceDescriptor.heapOffset                 = heapOffset;
+    resourceDescriptor.size                       = size;
+    descriptorHeapResources.resourceDescriptors.push_back(resourceDescriptor);
+};
+
+void addMapping(DescriptorHeapResources &descriptorHeapResources, uint32_t descriptorSet, uint32_t binding,
+                VkSpirvResourceTypeFlagsEXT resourceMask, VkDeviceSize resourceHeapOffset,
+                const VkSamplerCreateInfo *embeddedSampler)
+{
+    VkDescriptorSetAndBindingMappingEXT mapping        = initVulkanStructure();
+    mapping.descriptorSet                              = descriptorSet;
+    mapping.firstBinding                               = binding;
+    mapping.bindingCount                               = 1u;
+    mapping.resourceMask                               = resourceMask;
+    mapping.source                                     = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mapping.sourceData.constantOffset.heapOffset       = static_cast<uint32_t>(resourceHeapOffset);
+    mapping.sourceData.constantOffset.pEmbeddedSampler = embeddedSampler;
+    descriptorHeapResources.mappings.push_back(mapping);
+};
+
+void createDescriptorHeapResources(Context &context, DescriptorHeapResources &descriptorHeapResources,
+                                   const VkImageViewCreateInfo *planeViewCreateInfo,
+                                   const VkSamplerCreateInfo &planeSamplerInfo,
+                                   const VkImageViewCreateInfo *wholeViewCreateInfo,
+                                   const VkSamplerCreateInfo &wholeSamplerInfo, uint32_t combinedSamplerDescriptorCount)
+{
+    const auto heapProps = context.getDescriptorHeapPropertiesEXT();
+
+    const VkDeviceSize imageDescriptorStride = getImageDescriptorStride(heapProps);
+    const VkDeviceSize wholeImageDescriptorSize =
+        static_cast<VkDeviceSize>(combinedSamplerDescriptorCount) * imageDescriptorStride;
+
+    descriptorHeapResources.planeDescriptor.pView  = planeViewCreateInfo;
+    descriptorHeapResources.planeDescriptor.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    descriptorHeapResources.wholeDescriptor.pView  = wholeViewCreateInfo;
+    descriptorHeapResources.wholeDescriptor.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    descriptorHeapResources.resourceDescriptors.reserve(2);
+    descriptorHeapResources.mappings.reserve(4u);
+
+    const VkDeviceSize planeImageOffset = 0u;
+    const VkDeviceSize wholeImageOffset = imageDescriptorStride;
+
+    addImageDescriptor(descriptorHeapResources, &descriptorHeapResources.planeDescriptor, planeImageOffset,
+                       imageDescriptorStride);
+    addImageDescriptor(descriptorHeapResources, &descriptorHeapResources.wholeDescriptor, wholeImageOffset,
+                       wholeImageDescriptorSize);
+
+    addMapping(descriptorHeapResources, 1u, 0u, VK_SPIRV_RESOURCE_TYPE_ALL_EXT, planeImageOffset, &planeSamplerInfo);
+    addMapping(descriptorHeapResources, 1u, 1u, VK_SPIRV_RESOURCE_TYPE_ALL_EXT, wholeImageOffset, &wholeSamplerInfo);
+}
+#endif
+
 void executeImageBarrier(const DeviceInterface &vkd, VkDevice device, uint32_t queueFamilyNdx,
                          VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
                          const VkImageMemoryBarrier &barrier)
@@ -279,10 +379,11 @@ struct TestParameters
     VkFormat planeCompatibleFormat;
     glu::ShaderType shaderType;
     bool isCompatibilityFormat;
+    ExecutorDescriptorMode descriptorType;
 
     TestParameters(ViewType viewType_, VkFormat format_, const UVec2 &size_, VkImageCreateFlags createFlags_,
                    uint32_t planeNdx_, VkFormat planeCompatibleFormat_, glu::ShaderType shaderType_,
-                   bool isCompatibilityFormat_)
+                   bool isCompatibilityFormat_, ExecutorDescriptorMode descriptorType_)
         : viewType(viewType_)
         , format(format_)
         , size(size_)
@@ -291,6 +392,7 @@ struct TestParameters
         , planeCompatibleFormat(planeCompatibleFormat_)
         , shaderType(shaderType_)
         , isCompatibilityFormat(isCompatibilityFormat_)
+        , descriptorType(descriptorType_)
     {
     }
 
@@ -390,6 +492,12 @@ void checkSupport(Context &context, TestParameters params)
     checkImageFeatureSupport(context, params.planeCompatibleFormat,
                              VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT);
     checkSupportShader(context, params.shaderType);
+
+    if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_BUFFER)
+        context.requireDeviceFunctionality("VK_EXT_descriptor_buffer");
+
+    if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_HEAP)
+        context.requireDeviceFunctionality("VK_EXT_descriptor_heap");
 }
 
 struct PixelSetter
@@ -557,11 +665,14 @@ tcu::TestStatus testPlaneView(Context &context, TestParameters params)
         nullptr,
         *conversion,
     };
-    const Unique<VkImageView> wholeView(
-        createImageView(vkd, device, *image, format, VK_IMAGE_ASPECT_COLOR_BIT, &samplerConversionInfo));
-    const Unique<VkImageView> planeView(
-        createImageView(vkd, device, !imageAlias ? *image : *imageAlias, params.planeCompatibleFormat,
-                        !imageAlias ? getPlaneAspect(params.planeNdx) : VK_IMAGE_ASPECT_COLOR_BIT, nullptr));
+    const VkImageViewCreateInfo wholeViewCreateInfo =
+        makeImageViewCreateInfo(*image, format, VK_IMAGE_ASPECT_COLOR_BIT, &samplerConversionInfo);
+    const VkImageViewCreateInfo planeViewCreateInfo =
+        makeImageViewCreateInfo(!imageAlias ? *image : *imageAlias, params.planeCompatibleFormat,
+                                !imageAlias ? getPlaneAspect(params.planeNdx) : VK_IMAGE_ASPECT_COLOR_BIT, nullptr);
+
+    const Unique<VkImageView> wholeView(vk::createImageView(vkd, device, &wholeViewCreateInfo));
+    const Unique<VkImageView> planeView(vk::createImageView(vkd, device, &planeViewCreateInfo));
 
     const VkSamplerCreateInfo wholeSamplerInfo = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -635,10 +746,35 @@ tcu::TestStatus testPlaneView(Context &context, TestParameters params)
     const Unique<VkSampler> wholeSampler(createSampler(vkd, device, &wholeSamplerInfo));
     const Unique<VkSampler> planeSampler(createSampler(vkd, device, &planeSamplerInfo));
 
-    const Unique<VkDescriptorSetLayout> descLayout(createDescriptorSetLayout(vkd, device, *wholeSampler));
-    const Unique<VkDescriptorPool> descPool(createDescriptorPool(vkd, device, combinedSamplerDescriptorCount));
-    const Unique<VkDescriptorSet> descSet(
-        createDescriptorSet(vkd, device, *descPool, *descLayout, *planeView, *planeSampler, *wholeView, *wholeSampler));
+    Move<VkDescriptorSetLayout> descLayout;
+    Move<VkDescriptorPool> descPool;
+    Move<VkDescriptorSet> descSet;
+#ifndef CTS_USES_VULKANSC
+    DescriptorBufferResources descriptorBufferResources;
+    DescriptorHeapResources descriptorHeapResources;
+#endif
+
+    if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_SET)
+    {
+        descLayout = createDescriptorSetLayout(vkd, device, *wholeSampler);
+        descPool   = createDescriptorPool(vkd, device, combinedSamplerDescriptorCount);
+        descSet    = createDescriptorSet(vkd, device, *descPool, *descLayout, *planeView, *planeSampler, *wholeView,
+                                         *wholeSampler);
+    }
+#ifndef CTS_USES_VULKANSC
+    else if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_BUFFER)
+    {
+        descLayout = createDescriptorSetLayout(vkd, device, *wholeSampler,
+                                               VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT);
+        createDescriptorBufferResources(vkd, device, descriptorBufferResources, *descLayout, *planeView, *planeSampler,
+                                        *wholeView, *wholeSampler, combinedSamplerDescriptorCount);
+    }
+    else if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_HEAP)
+    {
+        createDescriptorHeapResources(context, descriptorHeapResources, &planeViewCreateInfo, planeSamplerInfo,
+                                      &wholeViewCreateInfo, wholeSamplerInfo, combinedSamplerDescriptorCount);
+    }
+#endif
 
     MultiPlaneImageData imageData(format, size);
 
@@ -681,12 +817,29 @@ tcu::TestStatus testPlaneView(Context &context, TestParameters params)
 
         {
             UserQueue userQueue(queue, queueNdx);
+            const VkDescriptorSetLayout extraResourcesLayout =
+                ((params.descriptorType != ExecutorDescriptorMode::DESCRIPTOR_HEAP) ? *descLayout : VK_NULL_HANDLE);
             UniquePtr<ShaderExecutor> executor(
-                createExecutor(context, params.shaderType, getShaderSpec(params), *descLayout, userQueue));
+                createExecutor(context, params.shaderType, getShaderSpec(params), extraResourcesLayout, userQueue));
             const void *inputs[] = {texCoord[0].getPtr()};
             void *outputs[]      = {resultWhole[0].getPtr(), resultPlane[0].getPtr()};
 
-            executor->execute((int)numValues, inputs, outputs, *descSet);
+#ifndef CTS_USES_VULKANSC
+            if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_BUFFER)
+            {
+                executor->executeBuffer((int)numValues, inputs, outputs, descriptorBufferResources.bufferDescriptors);
+            }
+            else if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_HEAP)
+            {
+                executor->executeHeap((int)numValues, inputs, outputs, descriptorHeapResources.mappings,
+                                      descriptorHeapResources.resourceDescriptors,
+                                      descriptorHeapResources.samplerDescriptors);
+            }
+            else
+#endif
+            {
+                executor->execute((int)numValues, inputs, outputs, *descSet);
+            }
         }
 
         // Whole image sampling reference
@@ -819,6 +972,11 @@ void addPlaneViewCase(tcu::TestCaseGroup *group, const TestParameters &params)
     else if (params.shaderType == glu::SHADERTYPE_FRAGMENT)
         name << "_fragment";
 
+    if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_BUFFER)
+        name << "_descriptor_buffer";
+    else if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_HEAP)
+        name << "_descriptor_heap";
+
     addFunctionCaseWithPrograms(group, name.str(), checkSupport, initPrograms, testPlaneView, params);
 }
 
@@ -829,6 +987,18 @@ void populateViewTypeGroup(tcu::TestCaseGroup *group, TestParameters::ViewType v
     const VkImageCreateFlags baseFlags =
         (VkImageCreateFlags)VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT |
         (viewType == TestParameters::VIEWTYPE_MEMORY_ALIAS ? (VkImageCreateFlags)VK_IMAGE_CREATE_ALIAS_BIT : 0u);
+
+    struct
+    {
+        ExecutorDescriptorMode descriptorType;
+        const char *name;
+    } descriptorTypes[] = {
+        {ExecutorDescriptorMode::DESCRIPTOR_SET, "descriptor"},
+#ifndef CTS_USES_VULKANSC
+        {ExecutorDescriptorMode::DESCRIPTOR_BUFFER, "descriptor_buffer"},
+        {ExecutorDescriptorMode::DESCRIPTOR_HEAP, "descriptor_heap"},
+#endif
+    };
 
     auto addTests = [&](int formatNdx)
     {
@@ -850,26 +1020,30 @@ void populateViewTypeGroup(tcu::TestCaseGroup *group, TestParameters::ViewType v
             {
                 for (const auto &shaderType : shaderTypes)
                 {
-                    if (!executorSupported(shaderType))
-                        continue;
-
-                    const VkFormat planeFormat = getPlaneCompatibleFormat(format, planeNdx);
-                    // Add test case using image view with a format taken from the "Plane Format Compatibility Table"
-                    addPlaneViewCase(
-                        group, TestParameters(viewType, format, size, flags, planeNdx, planeFormat, shaderType, false));
-
-                    // Add test cases using image view with a format that is compatible with the plane's format.
-                    // For example: VK_FORMAT_R4G4_UNORM_PACK8 is compatible with VK_FORMAT_R8_UNORM.
-                    for (const auto &compatibleFormat : s_compatible_formats)
+                    for (const auto &descriptorType : descriptorTypes)
                     {
-                        if (compatibleFormat == planeFormat)
+                        if (!executorSupported(shaderType, descriptorType.descriptorType))
                             continue;
 
-                        if (!formatsAreCompatible(planeFormat, compatibleFormat))
-                            continue;
+                        const VkFormat planeFormat = getPlaneCompatibleFormat(format, planeNdx);
+                        // Add test case using image view with a format taken from the "Plane Format Compatibility Table"
+                        addPlaneViewCase(group, TestParameters(viewType, format, size, flags, planeNdx, planeFormat,
+                                                               shaderType, false, descriptorType.descriptorType));
 
-                        addPlaneViewCase(group, TestParameters(viewType, format, size, flags, planeNdx,
-                                                               compatibleFormat, shaderType, true));
+                        // Add test cases using image view with a format that is compatible with the plane's format.
+                        // For example: VK_FORMAT_R4G4_UNORM_PACK8 is compatible with VK_FORMAT_R8_UNORM.
+                        for (const auto &compatibleFormat : s_compatible_formats)
+                        {
+                            if (compatibleFormat == planeFormat)
+                                continue;
+
+                            if (!formatsAreCompatible(planeFormat, compatibleFormat))
+                                continue;
+
+                            addPlaneViewCase(group,
+                                             TestParameters(viewType, format, size, flags, planeNdx, compatibleFormat,
+                                                            shaderType, true, descriptorType.descriptorType));
+                        }
                     }
                 }
             }
