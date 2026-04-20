@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2025 ARM Ltd.
+ * Copyright (c) 2023-2026 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     tensorTests->addChild(createTensorRequired(testCtx));
     tensorTests->addChild(createTensorRequiredFormatsTests(testCtx));
     tensorTests->addChild(createRobustnessTests(testCtx));
+    tensorTests->addChild(createUpdateAfterBindTests(testCtx));
 
     return tensorTests.release();
 }

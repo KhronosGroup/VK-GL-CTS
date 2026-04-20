@@ -4,7 +4,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2025 ARM Ltd.
+ * Copyright (c) 2025-2026 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,6 +125,7 @@ void requireTensorShapeSupported(Context &context, const TensorParameters &param
 bool deviceSupportsNonPackedTensors(Context &context);
 bool deviceSupportsShaderTensorAccess(Context &context);
 bool deviceSupportsShaderStagesTensorAccess(Context &context, const VkShaderStageFlags stages);
+bool deviceSupportsStorageTensorUpdateAfterBind(Context &context);
 
 uint32_t selectMemoryTypeFromTypeBits(Context &context, uint32_t memoryTypeBits);
 

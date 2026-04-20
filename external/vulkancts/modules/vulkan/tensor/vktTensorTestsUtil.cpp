@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2025 ARM Ltd.
+ * Copyright (c) 2025-2026 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -427,6 +427,11 @@ bool deviceSupportsNonPackedTensors(Context &context)
 bool deviceSupportsShaderTensorAccess(Context &context)
 {
     return getTensorPhysicalDeviceFeatures(context).shaderTensorAccess;
+}
+
+bool deviceSupportsStorageTensorUpdateAfterBind(Context &context)
+{
+    return getTensorPhysicalDeviceFeatures(context).descriptorBindingStorageTensorUpdateAfterBind;
 }
 
 bool deviceSupportsShaderStagesTensorAccess(Context &context, const VkShaderStageFlags stages)
