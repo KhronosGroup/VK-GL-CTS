@@ -2080,11 +2080,11 @@ class NullAddressInstance : public vkt::TestInstance
 public:
     struct Params
     {
-
-        bool useLocalInvocationIndex; // This may affect the implementation/compiler.
-        bool useDescriptor;           // Instead of a buffer address for the read buffer.
-        bool mapFirst;                // Do an initial map, and unmap later.
-        bool write;                   // Check writes. If false, check reads.
+        VkDescriptorType descriptorType; // Storage buffer, uniform buffer, or storage/uniform texel buffer.
+        bool useLocalInvocationIndex;    // This may affect the implementation/compiler.
+        bool useDescriptor;              // Instead of a buffer address for the read buffer.
+        bool mapFirst;                   // Do an initial map, and unmap later.
+        bool write;                      // Check writes. If false, check reads.
 
         uint32_t getValueCount() const
         {
@@ -2101,6 +2101,16 @@ public:
         uint32_t getWorkGroupCount() const
         {
             return (useLocalInvocationIndex ? 1u : getValueCount());
+        }
+
+        VkDescriptorType getSrcBufferDescType() const
+        {
+            return (write ? VK_DESCRIPTOR_TYPE_STORAGE_BUFFER : descriptorType);
+        }
+
+        VkDescriptorType getDstBufferDescType() const
+        {
+            return (write ? descriptorType : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
         }
     };
 
@@ -2151,36 +2161,83 @@ void NullAddressCase::checkSupport(Context &context) const
 
     if (m_params.mapFirst)
         context.getSparseQueue(); // Throws if not supported.
+
+    if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+        context.requireDeviceFunctionality("VK_KHR_uniform_buffer_standard_layout");
 }
 
 void NullAddressCase::initPrograms(vk::SourceCollections &dst) const
 {
-    const auto wgSize     = m_params.getWorkGroupSize();
-    const auto arrayIndex = (m_params.useLocalInvocationIndex ? "gl_LocalInvocationIndex" : "gl_WorkGroupID.x");
+    const auto wgSize          = m_params.getWorkGroupSize();
+    const auto srcDescType     = m_params.getSrcBufferDescType();
+    const auto dstDescType     = m_params.getDstBufferDescType();
+    const auto valueCount      = m_params.getValueCount();
+    const auto arrayIndex      = (m_params.useLocalInvocationIndex ? "gl_LocalInvocationIndex" : "gl_WorkGroupID.x");
+    const bool isUniformBuffer = (m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    const auto srcValueCount   = (isUniformBuffer ? std::to_string(valueCount) : "");
+
+    uint32_t buildOptionFlags = 0u;
+    if (isUniformBuffer)
+        buildOptionFlags |= ShaderBuildOptions::FLAG_ALLOW_STD430_UBOS;
+
+    ShaderBuildOptions buildOptions(dst.usedVulkanVersion, SPIRV_VERSION_1_0, buildOptionFlags);
 
     std::ostringstream bufferDecls;
-    std::string srcBufferExpr;
-    std::string dstBufferExpr;
+    std::string srcValueExpr;
+    std::string dstStoreExpr;
 
     if (m_params.useDescriptor)
     {
-        bufferDecls << "layout (set=0, binding=0, std430) readonly buffer SrcBufferBlock {\n"
-                    << "    uint values[];\n"
-                    << "} srcBuffer;\n"
-                    << "\n"
-                    << "layout (set=0, binding=1, std430) writeonly buffer DstBufferBlock {\n"
-                    << "    uint values[];\n"
-                    << "} dstBuffer;\n"
-                    << "\n";
-        srcBufferExpr = "srcBuffer";
-        dstBufferExpr = "dstBuffer";
+        // Source buffer.
+        if (srcDescType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || srcDescType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+        {
+            const auto srcBufferGLSLType =
+                ((srcDescType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) ? "uniform" : "readonly buffer");
+
+            bufferDecls << "layout (set=0, binding=0, std430) " << srcBufferGLSLType << " SrcBufferBlock {\n"
+                        << "    uint values[" << srcValueCount << "];\n"
+                        << "} srcBuffer;\n"
+                        << "\n";
+            srcValueExpr = "srcBuffer.values[idx]";
+        }
+        else if (srcDescType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER)
+        {
+            bufferDecls << "layout (set=0, binding=0) uniform utextureBuffer srcBuffer;\n";
+            srcValueExpr = "texelFetch(srcBuffer, int(idx)).x";
+        }
+        else if (srcDescType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)
+        {
+            bufferDecls << "layout (set=0, binding=0, r32ui) uniform uimageBuffer srcBuffer;\n";
+            srcValueExpr = "imageLoad(srcBuffer, int(idx)).x";
+        }
+        else
+            DE_ASSERT(false);
+
+        // Destination buffer.
+        if (dstDescType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+        {
+            bufferDecls << "layout (set=0, binding=1, std430) writeonly buffer DstBufferBlock {\n"
+                        << "    uint values[];\n"
+                        << "} dstBuffer;\n"
+                        << "\n";
+            dstStoreExpr = "dstBuffer.values[idx] = " + srcValueExpr;
+        }
+        else if (dstDescType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)
+        {
+            bufferDecls << "layout (set=0, binding=1, r32ui) uniform uimageBuffer dstBuffer;\n";
+            dstStoreExpr = "imageStore(dstBuffer, int(idx), ivec4(" + srcValueExpr + ", 0u, 0u, 0u))";
+        }
+        else
+            DE_ASSERT(false);
     }
     else
     {
+        DE_ASSERT(m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
         bufferDecls << "layout (buffer_reference) buffer srcBuffer;\n"
                     << "layout (buffer_reference, buffer_reference_align=4, std430) readonly buffer srcBuffer\n"
                     << "{\n"
-                    << "    uint values[];\n"
+                    << "    uint values[" << srcValueCount << "];\n"
                     << "};\n"
                     << "\n"
                     << "layout (buffer_reference) buffer dstBuffer;\n"
@@ -2195,22 +2252,23 @@ void NullAddressCase::initPrograms(vk::SourceCollections &dst) const
                     << "    uvec2 dstBufferAddress;\n"
                     << "} pc;\n"
                     << "\n";
-        srcBufferExpr = "srcBuffer(pc.srcBufferAddress)";
-        dstBufferExpr = "dstBuffer(pc.dstBufferAddress)";
+        srcValueExpr = "srcBuffer(pc.srcBufferAddress).values[idx]";
+        dstStoreExpr = "dstBuffer(pc.dstBufferAddress).values[idx] = " + srcValueExpr;
     }
 
     std::ostringstream comp;
     comp << "#version 450\n"
          << "#extension GL_EXT_buffer_reference2 : require\n"
          << "#extension GL_EXT_buffer_reference_uvec2 : require\n"
+         << "#extension GL_EXT_scalar_block_layout : require\n"
          << "layout (local_size_x=" << wgSize << ", local_size_y=1, local_size_z=1) in;\n"
          << "\n"
          << bufferDecls.str() << "void main()\n"
          << "{\n"
          << "    const uint idx = " << arrayIndex << ";\n"
-         << "    " << dstBufferExpr << ".values[idx] = " << srcBufferExpr << ".values[idx];\n"
+         << "    " << dstStoreExpr << ";\n"
          << "}\n";
-    dst.glslSources.add("comp") << glu::ComputeSource(comp.str());
+    dst.glslSources.add("comp") << glu::ComputeSource(comp.str()) << buildOptions;
 }
 
 VkDeviceAddress getBDA(const DeviceInterface &vkd, VkDevice device, VkBuffer buffer)
@@ -2261,8 +2319,9 @@ void copyMemoryToVector(const DeviceInterface &vkd, VkDevice device, std::vector
 
 tcu::TestStatus NullAddressInstance::iterate()
 {
-    const auto ctx        = m_context.getContextCommonData();
-    const auto valueCount = m_params.getValueCount();
+    const auto ctx             = m_context.getContextCommonData();
+    const auto valueCount      = m_params.getValueCount();
+    const bool isUniformBuffer = (m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 
     // Staging contents.
     std::vector<uint32_t> zeroValues(valueCount, 0u);
@@ -2287,7 +2346,19 @@ tcu::TestStatus NullAddressInstance::iterate()
     BufferWithMemory stagingBuffer(ctx.vkd, ctx.device, ctx.allocator, stagingBufferInfo, HostIntent::RW);
 
     // Sparse buffer.
-    const auto sparseBufferUsage = (extraFlag | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    VkBufferUsageFlags sparseBufferMainUsage = 0u;
+    if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+        sparseBufferMainUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    else if (isUniformBuffer)
+        sparseBufferMainUsage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    else if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)
+        sparseBufferMainUsage |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+    else if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER)
+        sparseBufferMainUsage |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+    else
+        DE_ASSERT(false);
+
+    const auto sparseBufferUsage = (extraFlag | sparseBufferMainUsage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     const auto sparseBufferFlags = (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT);
     const VkBufferCreateInfo sparseBufferInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -2306,7 +2377,22 @@ tcu::TestStatus NullAddressInstance::iterate()
     const auto dstBuffer = (m_params.write ? *sparseBuffer : *regularBuffer);
 
     const auto shaderStages = VK_SHADER_STAGE_COMPUTE_BIT;
-    const auto descType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER; // If not using push constants.
+    const auto srcDescType  = m_params.getSrcBufferDescType();
+    const auto dstDescType  = m_params.getDstBufferDescType();
+
+    const auto isTexelBuffer = [](VkDescriptorType descType)
+    {
+        return (descType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER ||
+                descType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER);
+    };
+
+    Move<VkBufferView> srcBufferView;
+    Move<VkBufferView> dstBufferView;
+
+    if (isTexelBuffer(srcDescType))
+        srcBufferView = makeBufferView(ctx.vkd, ctx.device, srcBuffer, VK_FORMAT_R32_UINT, 0ull, bufferSize);
+    if (isTexelBuffer(dstDescType))
+        dstBufferView = makeBufferView(ctx.vkd, ctx.device, dstBuffer, VK_FORMAT_R32_UINT, 0ull, bufferSize);
 
     // Pipeline, passing buffer addresses as push constants, or using descriptors.
     VkDeviceAddress srcBufferAddress = 0ull;
@@ -2339,8 +2425,8 @@ tcu::TestStatus NullAddressInstance::iterate()
     if (m_params.useDescriptor)
     {
         DescriptorSetLayoutBuilder setLayoutBuilder;
-        setLayoutBuilder.addSingleBinding(descType, shaderStages);
-        setLayoutBuilder.addSingleBinding(descType, shaderStages);
+        setLayoutBuilder.addSingleBinding(srcDescType, shaderStages);
+        setLayoutBuilder.addSingleBinding(dstDescType, shaderStages);
         setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
     }
 
@@ -2354,7 +2440,8 @@ tcu::TestStatus NullAddressInstance::iterate()
     if (m_params.useDescriptor)
     {
         DescriptorPoolBuilder poolBuilder;
-        poolBuilder.addType(descType, 2u);
+        poolBuilder.addType(srcDescType);
+        poolBuilder.addType(dstDescType);
         descriptorPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
         descriptorSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
 
@@ -2363,8 +2450,14 @@ tcu::TestStatus NullAddressInstance::iterate()
 
         DescriptorSetUpdateBuilder updateBuilder;
         const auto binding = DescriptorSetUpdateBuilder::Location::binding;
-        updateBuilder.writeSingle(*descriptorSet, binding(0u), descType, &srcBufferDescInfo);
-        updateBuilder.writeSingle(*descriptorSet, binding(1u), descType, &dstBufferDescInfo);
+        if (isTexelBuffer(srcDescType))
+            updateBuilder.writeSingle(*descriptorSet, binding(0u), srcDescType, &srcBufferView.get());
+        else
+            updateBuilder.writeSingle(*descriptorSet, binding(0u), srcDescType, &srcBufferDescInfo);
+        if (isTexelBuffer(dstDescType))
+            updateBuilder.writeSingle(*descriptorSet, binding(1u), dstDescType, &dstBufferView.get());
+        else
+            updateBuilder.writeSingle(*descriptorSet, binding(1u), dstDescType, &dstBufferDescInfo);
         updateBuilder.update(ctx.vkd, ctx.device);
     }
 
@@ -2768,23 +2861,49 @@ void populateTestGroup(tcu::TestCaseGroup *parentGroup)
         auto &testCtx = parentGroup->getTestContext();
         de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 
-        for (const auto useLocalInvocationIndex : {false, true})
-            for (const auto useDescriptors : {false, true})
-                for (const auto mapFirst : {false, true})
-                    for (const auto write : {false, true})
-                    {
-                        const NullAddressInstance::Params params{
-                            useLocalInvocationIndex,
-                            useDescriptors,
-                            mapFirst,
-                            write,
-                        };
-                        const auto testName = std::string("null_address_") + (write ? "write" : "read") +
-                                              (useLocalInvocationIndex ? "_local_inv_idx" : "") +
-                                              (useDescriptors ? "_descriptors" : "") + (mapFirst ? "_map_first" : "");
+        for (const auto descriptorType :
+             {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+              VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER})
+        {
+            const bool isStorageBuffer      = (descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            const bool isUniformBuffer      = (descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            const bool isUniformTexelBuffer = (descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER);
+            const bool isStorageTexelBuffer = (descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER);
+            const bool readOnlyDescriptor   = (isUniformBuffer || isUniformTexelBuffer);
 
-                        miscGroup->addChild(new NullAddressCase(testCtx, testName, params));
-                    }
+            for (const auto useLocalInvocationIndex : {false, true})
+                for (const auto useDescriptors : {false, true})
+                {
+                    if (!(isStorageBuffer || useDescriptors))
+                        continue;
+
+                    for (const auto mapFirst : {false, true})
+                        for (const auto write : {false, true})
+                        {
+                            if (write && readOnlyDescriptor)
+                                continue;
+
+                            const NullAddressInstance::Params params{
+                                descriptorType, useLocalInvocationIndex, useDescriptors, mapFirst, write,
+                            };
+
+                            std::string descTypeSuffix;
+                            if (isUniformBuffer)
+                                descTypeSuffix = "_uniform_buffer";
+                            else if (isUniformTexelBuffer)
+                                descTypeSuffix = "_uniform_texel_buffer";
+                            else if (isStorageTexelBuffer)
+                                descTypeSuffix = "_storage_texel_buffer";
+
+                            const auto testName = std::string("null_address_") + (write ? "write" : "read") +
+                                                  (useLocalInvocationIndex ? "_local_inv_idx" : "") +
+                                                  (useDescriptors ? "_descriptors" : "") +
+                                                  (mapFirst ? "_map_first" : "") + descTypeSuffix;
+
+                            miscGroup->addChild(new NullAddressCase(testCtx, testName, params));
+                        }
+                }
+        }
 
         parentGroup->addChild(miscGroup.release());
     }
