@@ -121,6 +121,20 @@ CompressedTextureForBlit::CompressedTextureForBlit(const tcu::CompressedTexForma
             compressedDataUint32 += 4;
         }
     }
+    else if (srcFormat == tcu::COMPRESSEDTEXFORMAT_BC7_UNORM_BLOCK ||
+             srcFormat == tcu::COMPRESSEDTEXFORMAT_BC7_SRGB_BLOCK)
+    {
+        // BC7 encodes the block mode in the first byte; 0x00 (no bits set) is an invalid mode.
+        // Fill with random bytes, then ensure every block's mode byte has at least one bit set.
+        const int blockSize = 16;
+        for (int byteNdx = 0; byteNdx < compressedDataSize; byteNdx++)
+            compressedData[byteNdx] = 0xFF & random.getUint32();
+        for (int blockNdx = 0; blockNdx < compressedDataSize / blockSize; blockNdx++)
+        {
+            if (compressedData[blockNdx * blockSize] == 0x00)
+                compressedData[blockNdx * blockSize] = 0x01;
+        }
+    }
     else if (srcFormat != tcu::COMPRESSEDTEXFORMAT_ETC1_RGB8)
     {
         // random initial values cause assertion during the decompression in case of COMPRESSEDTEXFORMAT_ETC1_RGB8 format

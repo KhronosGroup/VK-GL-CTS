@@ -2310,41 +2310,44 @@ void decompressBc6H(const PixelBufferAccess &dst, const uint8_t *src, bool hasSi
         break;
     }
 
-    if (hasSign)
+    if (mode != -1)
     {
-        r[0] = signExtend(r[0], epBits[mode], 32);
-        g[0] = signExtend(g[0], epBits[mode], 32);
-        b[0] = signExtend(b[0], epBits[mode], 32);
-    }
-
-    if (transformed)
-    {
-        for (uint32_t i = 1; i < numEndpoints; i++)
+        if (hasSign)
         {
-            r[i] = signExtend(r[i], deltaBitsR, 32);
-            r[i] = (r[0] + r[i]) & (((uint32_t)1 << epBits[mode]) - 1);
-            g[i] = signExtend(g[i], deltaBitsG, 32);
-            g[i] = (g[0] + g[i]) & (((uint32_t)1 << epBits[mode]) - 1);
-            b[i] = signExtend(b[i], deltaBitsB, 32);
-            b[i] = (b[0] + b[i]) & (((uint32_t)1 << epBits[mode]) - 1);
+            r[0] = signExtend(r[0], epBits[mode], 32);
+            g[0] = signExtend(g[0], epBits[mode], 32);
+            b[0] = signExtend(b[0], epBits[mode], 32);
         }
-    }
 
-    if (hasSign)
-    {
-        for (uint32_t i = 1; i < 4; i++)
+        if (transformed)
         {
-            r[i] = signExtend(r[i], epBits[mode], 32);
-            g[i] = signExtend(g[i], epBits[mode], 32);
-            b[i] = signExtend(b[i], epBits[mode], 32);
+            for (uint32_t i = 1; i < numEndpoints; i++)
+            {
+                r[i] = signExtend(r[i], deltaBitsR, 32);
+                r[i] = (r[0] + r[i]) & (((uint32_t)1 << epBits[mode]) - 1);
+                g[i] = signExtend(g[i], deltaBitsG, 32);
+                g[i] = (g[0] + g[i]) & (((uint32_t)1 << epBits[mode]) - 1);
+                b[i] = signExtend(b[i], deltaBitsB, 32);
+                b[i] = (b[0] + b[i]) & (((uint32_t)1 << epBits[mode]) - 1);
+            }
         }
-    }
 
-    for (uint32_t i = 0; i < numEndpoints; i++)
-    {
-        r[i] = unquantize(r[i], mode, hasSign);
-        g[i] = unquantize(g[i], mode, hasSign);
-        b[i] = unquantize(b[i], mode, hasSign);
+        if (hasSign)
+        {
+            for (uint32_t i = 1; i < 4; i++)
+            {
+                r[i] = signExtend(r[i], epBits[mode], 32);
+                g[i] = signExtend(g[i], epBits[mode], 32);
+                b[i] = signExtend(b[i], epBits[mode], 32);
+            }
+        }
+
+        for (uint32_t i = 0; i < numEndpoints; i++)
+        {
+            r[i] = unquantize(r[i], mode, hasSign);
+            g[i] = unquantize(g[i], mode, hasSign);
+            b[i] = unquantize(b[i], mode, hasSign);
+        }
     }
 
     for (uint32_t i = 0; i < 16; i++)
@@ -2487,22 +2490,25 @@ void decompressBc7(const PixelBufferAccess &dst, const uint8_t *src)
             }
         }
 
-        for (uint32_t ep = 0; ep < numEndpoints; ep++)
-        {
-            // Left shift endpoint components so that their MSB lies in bit 7
-            for (uint32_t cpnt = 0; cpnt < 4; cpnt++)
-                endpoints[ep][cpnt] <<= 8 - (endpointBits[mode][cpnt] + endpointBits[mode][4]);
-
-            // Replicate each component's MSB into the LSBs revealed by the left-shift operation above
-            for (uint32_t cpnt = 0; cpnt < 4; cpnt++)
-                endpoints[ep][cpnt] |= endpoints[ep][cpnt] >> (endpointBits[mode][cpnt] + endpointBits[mode][4]);
-        }
-
-        // If this mode does not explicitly define the alpha component set alpha equal to 1.0
-        if (mode < 4)
+        if (mode != -1)
         {
             for (uint32_t ep = 0; ep < numEndpoints; ep++)
-                endpoints[ep][3] = 255;
+            {
+                // Left shift endpoint components so that their MSB lies in bit 7
+                for (uint32_t cpnt = 0; cpnt < 4; cpnt++)
+                    endpoints[ep][cpnt] <<= 8 - (endpointBits[mode][cpnt] + endpointBits[mode][4]);
+
+                // Replicate each component's MSB into the LSBs revealed by the left-shift operation above
+                for (uint32_t cpnt = 0; cpnt < 4; cpnt++)
+                    endpoints[ep][cpnt] |= endpoints[ep][cpnt] >> (endpointBits[mode][cpnt] + endpointBits[mode][4]);
+            }
+
+            // If this mode does not explicitly define the alpha component set alpha equal to 1.0
+            if (mode < 4)
+            {
+                for (uint32_t ep = 0; ep < numEndpoints; ep++)
+                    endpoints[ep][3] = 255;
+            }
         }
     }
 
