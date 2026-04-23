@@ -54,6 +54,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <memory>
 
 using namespace vk;
 using de::MovePtr;
@@ -2075,14 +2076,20 @@ void checkSupport(Context &context, const TestParams testParams)
 //     verify mapped memory also still contains those non-zero values.
 //     verify copied values were zeros in the non-mapped write.
 //
+enum class ResourceAccessType
+{
+    DEVICE_ADDRESS  = 0,
+    DESCRIPTOR_SET  = 1,
+    DESCRIPTOR_HEAP = 2,
+};
 class NullAddressInstance : public vkt::TestInstance
 {
 public:
     struct Params
     {
         VkDescriptorType descriptorType; // Storage buffer, uniform buffer, or storage/uniform texel buffer.
+        ResourceAccessType accessType;   // Device addresses with push constants, classic sets or heaps.
         bool useLocalInvocationIndex;    // This may affect the implementation/compiler.
-        bool useDescriptor;              // Instead of a buffer address for the read buffer.
         bool mapFirst;                   // Do an initial map, and unmap later.
         bool write;                      // Check writes. If false, check reads.
 
@@ -2152,8 +2159,10 @@ void NullAddressCase::checkSupport(Context &context) const
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_BUFFER);
 
-    if (!m_params.useDescriptor)
+    if (m_params.accessType == ResourceAccessType::DEVICE_ADDRESS)
         context.requireDeviceFunctionality("VK_KHR_buffer_device_address");
+    else if (m_params.accessType == ResourceAccessType::DESCRIPTOR_HEAP)
+        context.requireDeviceFunctionality("VK_EXT_descriptor_heap");
 
     const auto &sparseProperties = context.getDeviceProperties().sparseProperties;
     if (!sparseProperties.residencyNonResidentStrict)
@@ -2186,8 +2195,10 @@ void NullAddressCase::initPrograms(vk::SourceCollections &dst) const
     std::string srcValueExpr;
     std::string dstStoreExpr;
 
-    if (m_params.useDescriptor)
+    if (m_params.accessType != ResourceAccessType::DEVICE_ADDRESS)
     {
+        // For descriptor sets and heaps, we will use the classic set+binding interface.
+
         // Source buffer.
         if (srcDescType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || srcDescType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
         {
@@ -2331,7 +2342,7 @@ tcu::TestStatus NullAddressInstance::iterate()
 
     // Regular buffer data will be copied to or from.
     VkShaderStageFlags extraFlag = 0u;
-    if (!m_params.useDescriptor)
+    if (m_params.accessType != ResourceAccessType::DESCRIPTOR_SET)
         extraFlag |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
 
     const auto regularBufferUsage = (extraFlag | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
@@ -2398,7 +2409,7 @@ tcu::TestStatus NullAddressInstance::iterate()
     VkDeviceAddress srcBufferAddress = 0ull;
     VkDeviceAddress dstBufferAddress = 0ull;
 
-    if (!m_params.useDescriptor)
+    if (m_params.accessType != ResourceAccessType::DESCRIPTOR_SET)
     {
         srcBufferAddress = getBDA(ctx.vkd, ctx.device, srcBuffer);
         dstBufferAddress = getBDA(ctx.vkd, ctx.device, dstBuffer);
@@ -2418,11 +2429,18 @@ tcu::TestStatus NullAddressInstance::iterate()
     };
     const auto pcSize     = DE_SIZEOF32(pcValue);
     const auto pcRange    = makePushConstantRange(shaderStages, 0u, pcSize);
-    const auto pcRangePtr = (m_params.useDescriptor ? nullptr : &pcRange);
+    const auto pcRangePtr = (m_params.accessType == ResourceAccessType::DEVICE_ADDRESS ? &pcRange : nullptr);
 
     Move<VkDescriptorSetLayout> setLayout;
+    Move<VkPipelineLayout> pipelineLayout;
+    std::unique_ptr<BufferWithMemory> heapBuffer;
+    VkDeviceAddress heapBufferAddress = 0ull;
+    VkDeviceSize heapBufferSize       = 0ull;
+    std::unique_ptr<BufferWithMemory> heapStagingBuffer;
+    VkDeviceSize heapStride = 0ull;
+    std::vector<VkDescriptorSetAndBindingMappingEXT> heapMappings;
 
-    if (m_params.useDescriptor)
+    if (m_params.accessType == ResourceAccessType::DESCRIPTOR_SET)
     {
         DescriptorSetLayoutBuilder setLayoutBuilder;
         setLayoutBuilder.addSingleBinding(srcDescType, shaderStages);
@@ -2430,14 +2448,166 @@ tcu::TestStatus NullAddressInstance::iterate()
         setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
     }
 
-    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout, pcRangePtr);
-    const auto compModule     = createShaderModule(ctx.vkd, ctx.device, m_context.getBinaryCollection().get("comp"));
-    const auto pipeline       = makeComputePipeline(ctx.vkd, ctx.device, *pipelineLayout, *compModule);
+    if (m_params.accessType != ResourceAccessType::DESCRIPTOR_HEAP)
+        pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout, pcRangePtr);
+    else
+    {
+        const auto &heapProps       = m_context.getDescriptorHeapPropertiesEXT();
+        const auto descriptorStride = de::lcm(heapProps.bufferDescriptorSize, heapProps.bufferDescriptorAlignment);
+        heapStride                  = (heapProps.minResourceHeapReservedRange != 0 ?
+                                           de::lcm(descriptorStride, heapProps.minResourceHeapReservedRange) :
+                                           descriptorStride);
+        heapBufferSize              = heapStride * 3u; // 2 for the buffers and 1 for the reserved range at the start.
+
+        const auto heapBufferUsage =
+            static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                                            VK_BUFFER_USAGE_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+        const auto heapBufferInfo = makeBufferCreateInfo(heapBufferSize, heapBufferUsage);
+        heapBuffer.reset(
+            new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, heapBufferInfo, MemoryRequirement::DeviceAddress));
+        heapBufferAddress = getBDA(ctx.vkd, ctx.device, heapBuffer->get());
+
+        const auto heapStagingUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+        const auto heapStagingInfo  = makeBufferCreateInfo(heapBufferSize, heapStagingUsage);
+        heapStagingBuffer.reset(
+            new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, heapStagingInfo, HostIntent::W));
+        {
+            VkTexelBufferDescriptorInfoEXT texelBufferInfo = initVulkanStructure();
+            texelBufferInfo.format                         = VK_FORMAT_R32_UINT;
+
+            VkDeviceAddressRangeEXT deviceAddressRange;
+            VkHostAddressRangeEXT hostAddressRange;
+
+            VkResourceDescriptorInfoEXT srcBufferInfo = initVulkanStructure();
+            VkResourceDescriptorInfoEXT dstBufferInfo = initVulkanStructure();
+            srcBufferInfo.type                        = srcDescType;
+            dstBufferInfo.type                        = dstDescType;
+
+            std::vector<uint8_t> srcBufferDescData(static_cast<size_t>(heapStride), 0);
+            std::vector<uint8_t> dstBufferDescData(static_cast<size_t>(heapStride), 0);
+
+            if (srcDescType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER ||
+                srcDescType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER)
+            {
+                texelBufferInfo.addressRange.address = srcBufferAddress;
+                texelBufferInfo.addressRange.size    = bufferSize;
+                srcBufferInfo.data.pTexelBuffer      = &texelBufferInfo;
+            }
+            else if (srcDescType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+                     srcDescType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+            {
+                deviceAddressRange.address       = srcBufferAddress;
+                deviceAddressRange.size          = bufferSize;
+                srcBufferInfo.data.pAddressRange = &deviceAddressRange;
+            }
+            else
+                DE_ASSERT(false);
+
+            hostAddressRange.address = de::dataOrNull(srcBufferDescData);
+            hostAddressRange.size    = de::dataSize(srcBufferDescData);
+
+            ctx.vkd.writeResourceDescriptorsEXT(ctx.device, 1u, &srcBufferInfo, &hostAddressRange);
+
+            if (dstDescType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER ||
+                dstDescType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER)
+            {
+                texelBufferInfo.addressRange.address = dstBufferAddress;
+                texelBufferInfo.addressRange.size    = bufferSize;
+                dstBufferInfo.data.pTexelBuffer      = &texelBufferInfo;
+            }
+            else if (dstDescType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+                     dstDescType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+            {
+                deviceAddressRange.address       = dstBufferAddress;
+                deviceAddressRange.size          = bufferSize;
+                dstBufferInfo.data.pAddressRange = &deviceAddressRange;
+            }
+            else
+                DE_ASSERT(false);
+
+            hostAddressRange.address = de::dataOrNull(dstBufferDescData);
+            hostAddressRange.size    = de::dataSize(dstBufferDescData);
+
+            ctx.vkd.writeResourceDescriptorsEXT(ctx.device, 1u, &dstBufferInfo, &hostAddressRange);
+
+            auto &heapStagingBufferAlloc = heapStagingBuffer->getAllocation();
+            char *heapStagingBufferData  = reinterpret_cast<char *>(heapStagingBufferAlloc.getHostPtr());
+            memcpy(heapStagingBufferData + heapStride * 1u, de::dataOrNull(srcBufferDescData),
+                   de::dataSize(srcBufferDescData));
+            memcpy(heapStagingBufferData + heapStride * 2u, de::dataOrNull(dstBufferDescData),
+                   de::dataSize(dstBufferDescData));
+            flushAlloc(ctx.vkd, ctx.device, heapStagingBufferAlloc);
+        }
+    }
+
+    if (m_params.accessType == ResourceAccessType::DESCRIPTOR_HEAP)
+    {
+        VkDescriptorMappingSourceDataEXT data;
+        memset(&data, 0, sizeof(data));
+
+        const auto stride32 = static_cast<uint32_t>(heapStride);
+
+        data.constantOffset.heapOffset      = stride32;
+        data.constantOffset.heapArrayStride = stride32;
+
+        heapMappings.push_back(VkDescriptorSetAndBindingMappingEXT{
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_AND_BINDING_MAPPING_EXT,
+            nullptr,
+            0u,
+            0u,
+            1u,
+            VK_SPIRV_RESOURCE_TYPE_ALL_EXT,
+            VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT,
+            data,
+        });
+
+        heapMappings.push_back(heapMappings.back());
+        heapMappings.back().firstBinding = 1u;
+        heapMappings.back().sourceData.constantOffset.heapOffset += stride32;
+    }
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT heapMappingInfo  = initVulkanStructure();
+    const VkShaderDescriptorSetAndBindingMappingInfoEXT *pMappings = nullptr;
+
+    if (!heapMappings.empty())
+    {
+        heapMappingInfo.mappingCount = de::sizeU32(heapMappings);
+        heapMappingInfo.pMappings    = de::dataOrNull(heapMappings);
+        pMappings                    = &heapMappingInfo;
+    }
+
+    VkPipelineCreateFlags2CreateInfo pipelineFlags2{
+        VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO,
+        nullptr,
+        0u,
+    };
+    const VkPipelineCreateFlags2CreateInfo *pipelinePNext = nullptr;
+
+    if (m_params.accessType == ResourceAccessType::DESCRIPTOR_HEAP)
+    {
+        pipelineFlags2.flags |= VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+        pipelinePNext = &pipelineFlags2;
+    }
+
+    const auto compModule = createShaderModule(ctx.vkd, ctx.device, m_context.getBinaryCollection().get("comp"));
+
+    VkPipelineShaderStageCreateInfo shaderStageInfo = initVulkanStructure();
+    shaderStageInfo.stage                           = VK_SHADER_STAGE_COMPUTE_BIT;
+    shaderStageInfo.module                          = *compModule;
+    shaderStageInfo.pName                           = "main";
+    shaderStageInfo.pNext                           = pMappings;
+
+    VkComputePipelineCreateInfo pipelineCreateInfo = initVulkanStructure();
+    pipelineCreateInfo.stage                       = shaderStageInfo;
+    pipelineCreateInfo.layout                      = *pipelineLayout;
+    pipelineCreateInfo.pNext                       = pipelinePNext;
+
+    const auto pipeline = createComputePipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &pipelineCreateInfo);
 
     Move<VkDescriptorPool> descriptorPool;
     Move<VkDescriptorSet> descriptorSet;
 
-    if (m_params.useDescriptor)
+    if (m_params.accessType == ResourceAccessType::DESCRIPTOR_SET)
     {
         DescriptorPoolBuilder poolBuilder;
         poolBuilder.addType(srcDescType);
@@ -2472,6 +2642,28 @@ tcu::TestStatus NullAddressInstance::iterate()
         const auto cmdBuffer    = *cmdBufferPtr;
 
         beginCommandBuffer(ctx.vkd, cmdBuffer);
+        if (m_params.accessType == ResourceAccessType::DESCRIPTOR_HEAP)
+        {
+            // Copy data to the heap buffer.
+            const auto copyRegion = makeBufferCopy(0ull, 0ull, heapBufferSize);
+            ctx.vkd.cmdCopyBuffer(cmdBuffer, heapStagingBuffer->get(), heapBuffer->get(), 1u, &copyRegion);
+
+            // Sync with further uses.
+            const auto srcStage  = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+            const auto srcAccess = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+            const auto dstStage  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+            const auto dstAccess = VK_ACCESS_2_RESOURCE_HEAP_READ_BIT_EXT;
+
+            const VkMemoryBarrier2 barrier{
+                VK_STRUCTURE_TYPE_MEMORY_BARRIER_2, nullptr, srcStage, srcAccess, dstStage, dstAccess,
+            };
+
+            const VkDependencyInfo dependency{
+                VK_STRUCTURE_TYPE_DEPENDENCY_INFO, nullptr, 0u, 1u, &barrier, 0u, nullptr, 0u, nullptr,
+            };
+
+            ctx.vkd.cmdPipelineBarrier2(cmdBuffer, &dependency);
+        }
         {
             // Prepare source or destination buffer with non-zero contents.
             setupBuffer(ctx.vkd, ctx.device, stagingBuffer, regularBufferInit);
@@ -2485,11 +2677,26 @@ tcu::TestStatus NullAddressInstance::iterate()
         {
             const auto wgCount = m_params.getWorkGroupCount();
             ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
-            if (m_params.useDescriptor)
+            if (m_params.accessType == ResourceAccessType::DESCRIPTOR_SET)
+            {
                 ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u,
                                               nullptr);
-            else
+            }
+            else if (m_params.accessType == ResourceAccessType::DEVICE_ADDRESS)
                 ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, shaderStages, 0u, pcSize, &pcValue);
+            else if (m_params.accessType == ResourceAccessType::DESCRIPTOR_HEAP)
+            {
+                const VkBindHeapInfoEXT bindInfo{
+                    VK_STRUCTURE_TYPE_BIND_HEAP_INFO_EXT,
+                    nullptr,
+                    {heapBufferAddress, heapBufferSize},
+                    0ull,
+                    heapStride,
+                };
+                ctx.vkd.cmdBindResourceHeapEXT(cmdBuffer, &bindInfo);
+            }
+            else
+                DE_ASSERT(false);
             ctx.vkd.cmdDispatch(cmdBuffer, wgCount, 1u, 1u);
         }
         {
@@ -2872,9 +3079,10 @@ void populateTestGroup(tcu::TestCaseGroup *parentGroup)
             const bool readOnlyDescriptor   = (isUniformBuffer || isUniformTexelBuffer);
 
             for (const auto useLocalInvocationIndex : {false, true})
-                for (const auto useDescriptors : {false, true})
+                for (const auto accessType : {ResourceAccessType::DEVICE_ADDRESS, ResourceAccessType::DESCRIPTOR_SET,
+                                              ResourceAccessType::DESCRIPTOR_HEAP})
                 {
-                    if (!(isStorageBuffer || useDescriptors))
+                    if (!(isStorageBuffer || accessType != ResourceAccessType::DEVICE_ADDRESS))
                         continue;
 
                     for (const auto mapFirst : {false, true})
@@ -2884,8 +3092,14 @@ void populateTestGroup(tcu::TestCaseGroup *parentGroup)
                                 continue;
 
                             const NullAddressInstance::Params params{
-                                descriptorType, useLocalInvocationIndex, useDescriptors, mapFirst, write,
+                                descriptorType, accessType, useLocalInvocationIndex, mapFirst, write,
                             };
+
+                            std::string accessSuffix;
+                            if (accessType == ResourceAccessType::DESCRIPTOR_SET)
+                                accessSuffix = "_descriptors";
+                            else if (accessType == ResourceAccessType::DESCRIPTOR_HEAP)
+                                accessSuffix = "_descriptor_heap";
 
                             std::string descTypeSuffix;
                             if (isUniformBuffer)
@@ -2896,8 +3110,7 @@ void populateTestGroup(tcu::TestCaseGroup *parentGroup)
                                 descTypeSuffix = "_storage_texel_buffer";
 
                             const auto testName = std::string("null_address_") + (write ? "write" : "read") +
-                                                  (useLocalInvocationIndex ? "_local_inv_idx" : "") +
-                                                  (useDescriptors ? "_descriptors" : "") +
+                                                  (useLocalInvocationIndex ? "_local_inv_idx" : "") + accessSuffix +
                                                   (mapFirst ? "_map_first" : "") + descTypeSuffix;
 
                             miscGroup->addChild(new NullAddressCase(testCtx, testName, params));
