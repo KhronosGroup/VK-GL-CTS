@@ -4620,6 +4620,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                 float Cij = getDataFloat(ptrs[2], dataTypes[2], ij);
 
                                 ref += Cij;
+                                if (dataTypes[3] == VK_COMPONENT_TYPE_FLOAT16_KHR)
+                                    ref = tcu::Float16(ref).asFloat();
 
 #ifndef CTS_USES_VULKANSC
                                 switch (dataTypes[3])
