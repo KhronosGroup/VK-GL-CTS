@@ -35,6 +35,15 @@
 
 // Assume no call translation is needed
 #include <android/native_window.h>
+#if DE_ANDROID_API >= 24
+#include <media/NdkImageReader.h>
+#include <media/NdkImage.h>
+#include <mutex>
+#include <atomic>
+#endif
+#if DE_ANDROID_API >= 26
+#include <android/hardware_buffer.h>
+#endif
 struct egl_native_pixmap_t;
 DE_STATIC_ASSERT(sizeof(eglw::EGLNativeDisplayType) == sizeof(void *));
 DE_STATIC_ASSERT(sizeof(eglw::EGLNativePixmapType) == sizeof(struct egl_native_pixmap_t *));
@@ -136,6 +145,141 @@ private:
     WindowRegistry &m_windowRegistry;
 };
 
+#if DE_ANDROID_API >= 24
+struct ImageQueue
+{
+    std::mutex lock;
+    std::atomic<bool> closing{false};
+    AImageReader_ImageListener listener;
+
+    ImageQueue()
+    {
+        listener.context          = this;
+        listener.onImageAvailable = onImageAvailable;
+    }
+
+    ~ImageQueue()
+    {
+    }
+
+    static void onImageAvailable(void *context, AImageReader *reader)
+    {
+        ImageQueue *queue = reinterpret_cast<ImageQueue *>(context);
+
+        std::unique_lock<std::mutex> guard(queue->lock, std::try_to_lock);
+        if (!guard.owns_lock() || queue->closing.load(std::memory_order_acquire))
+            return;
+
+        AImage *image = nullptr;
+
+#if DE_ANDROID_API >= 26
+        int fenceFd = -1;
+        while (AImageReader_acquireNextImageAsync(reader, &image, &fenceFd) == AMEDIA_OK && image != nullptr)
+        {
+            AImage_deleteAsync(image, fenceFd);
+        }
+#else
+        while (AImageReader_acquireNextImage(reader, &image) == AMEDIA_OK && image != nullptr)
+        {
+            AImage_delete(image);
+        }
+#endif
+    }
+};
+
+static ANativeWindow *acquireImageReaderWindow(int width, int height, int32_t format, AImageReader **outReader,
+                                               ImageQueue **outQueue)
+{
+    AImageReader *reader = nullptr;
+#if DE_ANDROID_API >= 26
+    uint64_t usage        = AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE | AHARDWAREBUFFER_USAGE_COMPOSER_OVERLAY;
+    media_status_t status = AImageReader_newWithUsage(width, height, format, usage, 4, &reader);
+#else
+    media_status_t status = AImageReader_new(width, height, format, 4, &reader);
+#endif
+    if (status != AMEDIA_OK || !reader)
+        throw ResourceError("Failed to create AImageReader", nullptr, __FILE__, __LINE__);
+
+    *outQueue = new ImageQueue();
+    AImageReader_setImageListener(reader, &(*outQueue)->listener);
+
+    ANativeWindow *nativeWindow = nullptr;
+    status                      = AImageReader_getWindow(reader, &nativeWindow);
+    if (status != AMEDIA_OK || !nativeWindow)
+    {
+        AImageReader_setImageListener(reader, nullptr);
+        delete *outQueue;
+        *outQueue = nullptr;
+        AImageReader_delete(reader);
+        throw ResourceError("Failed to get window from AImageReader", nullptr, __FILE__, __LINE__);
+    }
+
+    *outReader = reader;
+    return nativeWindow;
+}
+
+class ImageReaderNativeWindow : public eglu::NativeWindow
+{
+public:
+    ImageReaderNativeWindow(AImageReader *reader, ImageQueue *queue, ANativeWindow *window, int width, int height)
+        : eglu::NativeWindow(WINDOW_CAPABILITIES)
+        , m_reader(reader)
+        , m_queue(queue)
+        , m_window(window)
+        , m_size(width, height)
+    {
+    }
+
+    virtual ~ImageReaderNativeWindow(void)
+    {
+        if (m_reader)
+        {
+            if (m_queue)
+            {
+                m_queue->closing.store(true, std::memory_order_release);
+                std::lock_guard<std::mutex> guard(m_queue->lock);
+                AImageReader_setImageListener(m_reader, nullptr);
+            }
+            AImageReader_delete(m_reader);
+        }
+        if (m_queue)
+            delete m_queue;
+    }
+
+    virtual eglw::EGLNativeWindowType getLegacyNative(void)
+    {
+        return m_window;
+    }
+    virtual void *getPlatformExtension(void)
+    {
+        return m_window;
+    }
+    virtual void *getPlatformNative(void)
+    {
+        return m_window;
+    }
+    tcu::IVec2 getScreenSize(void) const
+    {
+        return m_size;
+    }
+    void setSurfaceSize(tcu::IVec2 size)
+    {
+        int32_t format = 0; // 0 means keep the existing format
+        ANativeWindow_setBuffersGeometry(m_window, size.x(), size.y(), format);
+        m_size = size;
+    }
+    virtual void processEvents(void)
+    {
+    }
+
+private:
+    AImageReader *m_reader;
+    ImageQueue *m_queue;
+    ANativeWindow *m_window;
+    tcu::IVec2 m_size;
+};
+#endif
+
 // NativeWindow
 
 NativeWindow::NativeWindow(Window *window, int width, int height, int32_t format)
@@ -197,10 +341,30 @@ eglu::NativeWindow *NativeWindowFactory::createWindow(const eglu::WindowParams &
 {
     Window *window = m_windowRegistry.tryAcquireWindow();
 
-    if (!window)
-        throw NotSupportedError("Native window is not available", nullptr, __FILE__, __LINE__);
+    if (window)
+    {
+        return new NativeWindow(window, params.width, params.height, format);
+    }
+    else
+    {
+#if DE_ANDROID_API >= 24
+        int width  = params.width != eglu::WindowParams::SIZE_DONT_CARE ? params.width : 256;
+        int height = params.height != eglu::WindowParams::SIZE_DONT_CARE ? params.height : 256;
+        width      = width > 0 ? width : 256;
+        height     = height > 0 ? height : 256;
 
-    return new NativeWindow(window, params.width, params.height, format);
+        AImageReader *reader = nullptr;
+        ImageQueue *queue    = nullptr;
+        // Always use AIMAGE_FORMAT_RGBA_8888: the AImageReader is only used as a
+        // surface handle provider, and AIMAGE_FORMAT_* constants are not
+        // interchangeable with ANativeWindow_LegacyFormat values.
+        ANativeWindow *nativeWindow = acquireImageReaderWindow(width, height, AIMAGE_FORMAT_RGBA_8888, &reader, &queue);
+
+        return new ImageReaderNativeWindow(reader, queue, nativeWindow, width, height);
+#else
+        throw ResourceError("Native window is not available", nullptr, __FILE__, __LINE__);
+#endif
+    }
 }
 
 // NativeDisplayFactory
@@ -279,6 +443,55 @@ private:
     tcu::Android::Window &m_window;
 };
 
+#if DE_ANDROID_API >= 24
+class ImageReaderVulkanWindow : public vk::wsi::AndroidWindowInterface
+{
+public:
+    ImageReaderVulkanWindow(AImageReader *reader, ImageQueue *queue, ANativeWindow *window)
+        : vk::wsi::AndroidWindowInterface(vk::pt::AndroidNativeWindowPtr(window))
+        , m_reader(reader)
+        , m_queue(queue)
+    {
+    }
+
+    void setVisible(bool visible)
+    {
+        DE_UNREF(visible);
+    }
+
+    void resize(const UVec2 &newSize)
+    {
+        DE_UNREF(newSize);
+    }
+
+    void setMinimized(bool minimized)
+    {
+        DE_UNREF(minimized);
+        TCU_THROW(NotSupportedError, "Minimized on Android is not implemented");
+    }
+
+    ~ImageReaderVulkanWindow(void)
+    {
+        if (m_reader)
+        {
+            if (m_queue)
+            {
+                m_queue->closing.store(true, std::memory_order_release);
+                std::lock_guard<std::mutex> guard(m_queue->lock);
+                AImageReader_setImageListener(m_reader, nullptr);
+            }
+            AImageReader_delete(m_reader);
+        }
+        if (m_queue)
+            delete m_queue;
+    }
+
+private:
+    AImageReader *m_reader;
+    ImageQueue *m_queue;
+};
+#endif
+
 class VulkanDisplay : public vk::wsi::Display
 {
 public:
@@ -306,7 +519,23 @@ public:
             }
         }
         else
+        {
+#if DE_ANDROID_API >= 24
+            uint32_t width  = initialSize ? initialSize->x() : 256;
+            uint32_t height = initialSize ? initialSize->y() : 256;
+            width           = width > 0 ? width : 256;
+            height          = height > 0 ? height : 256;
+
+            AImageReader *reader = nullptr;
+            ImageQueue *queue    = nullptr;
+            ANativeWindow *nativeWindow =
+                acquireImageReaderWindow(width, height, AIMAGE_FORMAT_RGBA_8888, &reader, &queue);
+
+            return new ImageReaderVulkanWindow(reader, queue, nativeWindow);
+#else
             TCU_THROW(ResourceError, "Native window is not available");
+#endif
+        }
     }
 
 private:

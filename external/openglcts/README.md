@@ -324,9 +324,10 @@ This is identical to the builds on other platforms and is better for iterative
 runs of headless tests as CTS can be invoked and the output can be checked from
 a single interactive terminal.
 
-This build doesn't support WSI tests and shouldn't be used for conformance
-submissions, it also isn't recommended for longer running tests since Android
-will terminate this process as soon as the `adb shell` session ends which may
+This build supports WSI tests via a headless AImageReader fallback for both EGL
+and Vulkan (Android API 24+). However, it shouldn't be used for conformance
+submissions. It also isn't recommended for longer running tests since Android
+will terminate this process as soon as the `adb shell` session ends, which may
 happen due to an unintentional device disconnection.
 
 	cmake <path to openglcts> -GNinja -DCMAKE_BUILD_TYPE=Debug \

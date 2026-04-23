@@ -64,6 +64,11 @@ if (DE_ANDROID_API GREATER 8)
 	set(DEQP_PLATFORM_LIBRARIES ${DEQP_PLATFORM_LIBRARIES} ${ANDROID_LIBRARY})
 endif ()
 
+if (DE_ANDROID_API GREATER 23)
+	find_library(MEDIANDK_LIBRARY NAMES mediandk PATHS /usr/lib)
+	set(DEQP_PLATFORM_LIBRARIES ${DEQP_PLATFORM_LIBRARIES} ${MEDIANDK_LIBRARY})
+endif ()
+
 # Android uses customized execserver
 include_directories(execserver)
 set(DEQP_PLATFORM_LIBRARIES xscore ${DEQP_PLATFORM_LIBRARIES})
