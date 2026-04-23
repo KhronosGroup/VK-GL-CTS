@@ -31,6 +31,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkBufferWithMemory.hpp"
+#include "tcuTextureUtil.hpp"
 #include "vkWsiUtil.hpp"
 #include "vkWsiPlatform.hpp"
 #include "tcuPlatform.hpp"

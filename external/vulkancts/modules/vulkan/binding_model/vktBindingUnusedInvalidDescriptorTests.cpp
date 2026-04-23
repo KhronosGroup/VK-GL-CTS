@@ -187,9 +187,9 @@ static VkImageCreateInfo makeImageCI(ResourceType type, bool invalid)
         {
             format = kInvalidFormat;
         }
-        else // For sampled we use 2x MSAA
+        else // For sampled we use 4x MSAA
         {
-            sampleCount = VK_SAMPLE_COUNT_2_BIT;
+            sampleCount = VK_SAMPLE_COUNT_4_BIT;
         }
     }
 
