@@ -60,7 +60,12 @@ VULKAN_MAIN_PKG = Package(module = VULKAN_MODULE, configurations = [
                                                    exclude("test-issues.txt"),
                                                    exclude("excluded-tests.txt"),
                                                    exclude("android-tests.txt")],
-                        listOfGroupsToSplit = ["dEQP-VK", "dEQP-VK.pipeline", "dEQP-VK.image", "dEQP-VK.shader_object"]),
+                        listOfGroupsToSplit = ["dEQP-VK",
+                                               "dEQP-VK.pipeline",
+                                               "dEQP-VK.image",
+                                               "dEQP-VK.shader_object",
+                                               "dEQP-VK.pipeline.monolithic",
+                                               "dEQP-VK.pipeline.shader_object_unlinked_spirv"]),
           Configuration(name = "fraction-mandatory-tests",
                         filters = [include("fraction-mandatory-tests.txt")]),
      ])

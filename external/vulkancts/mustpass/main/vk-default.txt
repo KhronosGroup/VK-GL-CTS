@@ -58,13 +58,13 @@ vk-default/memory-model.txt
 vk-default/mesh-shader.txt
 vk-default/multiview.txt
 vk-default/pipeline/fast-linked-library.txt
-vk-default/pipeline/monolithic.txt
+vk-default/pipeline/monolithic/monolithic.txt
 vk-default/pipeline/no-queues.txt
 vk-default/pipeline/pipeline-library.txt
 vk-default/pipeline/shader-object-linked-binary.txt
 vk-default/pipeline/shader-object-linked-spirv.txt
 vk-default/pipeline/shader-object-unlinked-binary.txt
-vk-default/pipeline/shader-object-unlinked-spirv.txt
+vk-default/pipeline/shader-object-unlinked-spirv/shader-object-unlinked-spirv.txt
 vk-default/protected-memory.txt
 vk-default/query-pool.txt
 vk-default/rasterization.txt
