@@ -1701,6 +1701,22 @@ void ShaderRenderCaseInstance::createSamplerUniform(uint32_t bindingLocation, Te
         VK_IMAGE_LAYOUT_UNDEFINED // VkImageLayout initialLayout;
     };
 
+    // VUID-VkImageCreateInfo-imageCreateMaxMipLevels-02251
+    {
+        VkImageFormatProperties properties;
+        if (getInstanceInterface().getPhysicalDeviceImageFormatProperties(
+                getPhysicalDevice(), format, imageType, VK_IMAGE_TILING_OPTIMAL, imageUsageFlags, imageCreateFlags,
+                &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+        {
+            TCU_THROW(NotSupportedError, "Format not supported");
+        }
+
+        if ((properties.sampleCounts & textureParams.samples) != textureParams.samples)
+        {
+            TCU_THROW(NotSupportedError, "Sample count not supported");
+        }
+    }
+
     if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
     {
         checkSparseSupport(imageParams);

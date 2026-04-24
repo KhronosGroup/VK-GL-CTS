@@ -201,6 +201,7 @@ public:
     {
     }
 
+    void checkImagesSupport(Context &context) const;
     virtual void checkSupport(Context &context) const;
     void init(void);
     void initPrograms(vk::SourceCollections &programCollection) const;
@@ -208,11 +209,42 @@ public:
     static MultisampleCaseBase *createCase(tcu::TestContext &testCtx, const std::string &name,
                                            const ImageMSParams &imageMSParams);
 };
+
+template <typename CaseClassName>
+void MSCase<CaseClassName>::checkImagesSupport(Context &context) const
+{
+    const InstanceInterface &instance     = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
+    // check if image size does not exceed device limits
+    auto imageType = IMAGE_TYPE_2D;
+    validateImageSize(instance, physicalDevice, imageType, m_imageMSParams.imageSize);
+
+    // check if device supports image format as color attachment
+    validateImageFeatureFlags(instance, physicalDevice, VK_FORMAT_R8G8B8A8_UNORM,
+                              VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT);
+
+    VkImageCreateFlags flags = 0u;
+    auto extent              = makeExtent3D(getLayerSize(imageType, m_imageMSParams.imageSize));
+    auto arrayLayers         = getNumLayers(imageType, m_imageMSParams.imageSize);
+
+    // validate multisampled image
+    VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+    validateImageInfo(instance, physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, extent, mapImageType(imageType),
+                      m_imageMSParams.numSamples, VK_IMAGE_TILING_OPTIMAL, usage, flags, arrayLayers);
+
+    // validate resolve image
+    usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    validateImageInfo(instance, physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, extent, mapImageType(imageType),
+                      VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage, flags, arrayLayers);
+}
+
 #ifndef CTS_USES_VULKANSC
 template <typename CaseClassName>
 void MSCase<CaseClassName>::checkSupport(Context &context) const
 {
     checkGraphicsPipelineLibrarySupport(context);
+    checkImagesSupport(context);
 }
 #endif // CTS_USES_VULKANSC
 
@@ -292,6 +324,7 @@ template <>
 void MSCase<MSCaseSampleID>::checkSupport(Context &context) const
 {
     checkGraphicsPipelineLibrarySupport(context);
+    checkImagesSupport(context);
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
@@ -453,6 +486,7 @@ template <>
 void MSCase<MSCaseSamplePosDistribution>::checkSupport(Context &context) const
 {
     checkGraphicsPipelineLibrarySupport(context);
+    checkImagesSupport(context);
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
@@ -552,6 +586,7 @@ template <>
 void MSCase<MSCaseSamplePosCorrectness>::checkSupport(Context &context) const
 {
     checkGraphicsPipelineLibrarySupport(context);
+    checkImagesSupport(context);
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
@@ -860,6 +895,7 @@ template <>
 void MSCase<MSCaseSampleMaskBitCount>::checkSupport(Context &context) const
 {
     checkGraphicsPipelineLibrarySupport(context);
+    checkImagesSupport(context);
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
@@ -962,6 +998,7 @@ template <>
 void MSCase<MSCaseSampleMaskCorrectBit>::checkSupport(Context &context) const
 {
     checkGraphicsPipelineLibrarySupport(context);
+    checkImagesSupport(context);
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 

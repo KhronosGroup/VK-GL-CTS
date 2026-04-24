@@ -66,11 +66,13 @@ enum DrawFunction
     DRAW_INDEXED_INDIRECT,
     DRAW_MULTI_EXT,
     DRAW_MULTI_INDEXED_EXT,
+#ifndef CTS_USES_VULKANSC
     DRAW_INDIRECT_BYTE_COUNT_EXT,
+#endif // CTS_USES_VULKANSC
     DRAW_INDIRECT_COUNT,
     DRAW_INDEXED_INDIRECT_COUNT,
 
-    FUNTION_LAST
+    FUNCTION_LAST
 };
 
 bool isIndirectDraw(DrawFunction drawFunction)
@@ -79,7 +81,9 @@ bool isIndirectDraw(DrawFunction drawFunction)
     {
     case DRAW_INDIRECT:
     case DRAW_INDEXED_INDIRECT:
+#ifndef CTS_USES_VULKANSC
     case DRAW_INDIRECT_BYTE_COUNT_EXT:
+#endif // CTS_USES_VULKANSC
     case DRAW_INDIRECT_COUNT:
     case DRAW_INDEXED_INDIRECT_COUNT:
         return true;
@@ -478,7 +482,7 @@ tcu::TestStatus VertexAttributeDivisorInstance::iterate()
     tcu::TestLog &log                      = m_context.getTestContext().getLog();
     static const uint32_t instanceCounts[] = {0u, 1u, 2u, 4u, 20u};
     const vk::VkRect2D renderArea          = vk::makeRect2D(m_width, m_height);
-    qpTestResult res                       = QP_TEST_RESULT_PASS;
+    bool fail                              = false;
 
     std::vector<uint32_t> firstInstanceIndices;
     if (m_params.firstInstanceZero)
@@ -543,11 +547,13 @@ tcu::TestStatus VertexAttributeDivisorInstance::iterate()
                 std::vector<uint32_t> count = {1};
                 countBuffer = createAndUploadBuffer(count, m_vk, m_context, vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
             }
+#ifndef CTS_USES_VULKANSC
             else if (m_params.function == DRAW_INDIRECT_BYTE_COUNT_EXT)
             {
-                std::vector<uint32_t> count = {(uint32_t)m_data.size()};
+                std::vector<uint32_t> count = {static_cast<uint32_t>(de::dataSize(m_data))};
                 countBuffer = createAndUploadBuffer(count, m_vk, m_context, vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
             }
+#endif // CTS_USES_VULKANSC
 
 #ifndef CTS_USES_VULKANSC
             if (m_params.groupParams->useSecondaryCmdBuffer)
@@ -680,11 +686,15 @@ tcu::TestStatus VertexAttributeDivisorInstance::iterate()
             resultDesc << "Instance count: " << instanceCount << " first instance index: " << firstInstance;
 
             if (!tcu::fuzzyCompare(log, "Result", resultDesc.str().c_str(), refImage.getAccess(), renderedFrame, 0.05f,
-                                   tcu::COMPARE_LOG_RESULT))
-                res = QP_TEST_RESULT_FAIL;
+                                   tcu::COMPARE_LOG_ON_ERROR))
+                fail = true;
         }
     }
-    return tcu::TestStatus(res, qpGetTestResultName(res));
+
+    if (fail)
+        TCU_FAIL("Unexpected results in output buffers; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
 }
 
 void VertexAttributeDivisorInstance::prepareVertexData(int instanceCount, int firstInstance, int instanceDivisor)
@@ -883,7 +893,8 @@ void VertexAttributeDivisorInstance::draw(vk::VkCommandBuffer cmdBuffer, vk::VkB
         break;
 #ifndef CTS_USES_VULKANSC
     case DrawFunction::DRAW_INDIRECT_BYTE_COUNT_EXT:
-        m_vk.cmdDrawIndirectByteCountEXT(cmdBuffer, instanceCount, firstInstance, countBuffer->object(), 0u, 0u, 1u);
+        m_vk.cmdDrawIndirectByteCountEXT(cmdBuffer, instanceCount, firstInstance, countBuffer->object(), 0u, 0u,
+                                         DE_SIZEOF32(decltype(m_data)::value_type));
         break;
     case DrawFunction::DRAW_MULTI_EXT:
         m_vk.cmdDrawMultiEXT(cmdBuffer, 1u, &multiDrawInfo, instanceCount, firstInstance,
@@ -1001,8 +1012,19 @@ void VertexAttributeDivisorCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_EXT_multi_draw");
     if (isIndirectDraw(m_params.function))
         context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
+
+#ifndef CTS_USES_VULKANSC
     if (m_params.function == DrawFunction::DRAW_INDIRECT_BYTE_COUNT_EXT)
-        context.requireDeviceFunctionality("VK_EXT_transform_feedback");
+    {
+        const auto &xfbFeatures = context.getTransformFeedbackFeaturesEXT();
+        if (!xfbFeatures.transformFeedback)
+            TCU_THROW(NotSupportedError, "transformFeedback not supported");
+
+        const auto &xfbProperties = context.getTransformFeedbackPropertiesEXT();
+        if (!xfbProperties.transformFeedbackDraw)
+            TCU_THROW(NotSupportedError, "transformFeedbackDraw not supported");
+    }
+#endif // CTS_USES_VULKANSC
 
     if (m_params.groupParams->useDynamicRendering)
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
@@ -1083,6 +1105,9 @@ tcu::TestCaseGroup *createVertexAttributeDivisorTests(tcu::TestContext &testCtx,
         {DRAW_INDEXED_INDIRECT, "draw_indexed_indirect", "Test vkCmdDrawIndexedIndirect"},
         {DRAW_MULTI_EXT, "draw_multi_ext", "Test vkCmdDrawMultiEXT"},
         {DRAW_MULTI_INDEXED_EXT, "draw_multi_indexed_ext", "Test vkCmdDrawMultiIndexedEXT"},
+#ifndef CTS_USES_VULKANSC
+        {DRAW_INDIRECT_BYTE_COUNT_EXT, "draw_indirect_byte_count", "Test vkCmdDrawIndirectByteCountEXT"},
+#endif // CTS_USES_VULKANSC
         {DRAW_INDIRECT_COUNT, "draw_indirect_count", "Test vkCmdDrawIndirectCount"},
         {DRAW_INDEXED_INDIRECT_COUNT, "draw_indexed_indirect_count", "Test vkCmdDrawIndexedIndirectCount"},
     };

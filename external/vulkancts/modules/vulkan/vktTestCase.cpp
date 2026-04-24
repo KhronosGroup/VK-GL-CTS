@@ -92,7 +92,9 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         "VK_NV_clip_space_w_scaling",
         "VK_NV_scissor_exclusive",
         "VK_NV_shading_rate_image",
+        "VK_ARM_data_graph",
         "VK_ARM_rasterization_order_attachment_access",
+        "VK_ARM_tensors",
         "VK_GOOGLE_surfaceless_query",
         "VK_FUCHSIA_",
         "VK_NV_fragment_coverage_to_color",
@@ -107,8 +109,15 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         "VK_NV_linear_color_attachment",
         "VK_NV_cooperative_matrix2",
         "VK_NV_cooperative_vector",
+        "VK_NV_low_latency2",
         "VK_QCOM_fragment_density_map_offset",
+        "VK_NV_command_buffer_inheritance",
+        "VK_NV_push_constant_bank",
         "VK_QCOM_image_processing",
+        "VK_ARM_performance_counters_by_region",
+        "VK_IMG_format_pvrtc",
+        "VK_QCOM_multiview_per_view_viewports",
+        "VK_QCOM_multiview_per_view_render_areas",
     };
 
     const char *exclusions[] = {"VK_EXT_device_address_binding_report", "VK_EXT_device_memory_report"};
@@ -791,29 +800,39 @@ vector<const char *> removeCoreExtensions(const uint32_t apiVersion, const vecto
 
 } // namespace
 
-InstCaps::InstCaps(const PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine, const std::string &id_)
+InstCaps::InstCaps(const PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine, const std::string &id_,
+                   vkt::TestCase *testCase, const InstCaps *hint, bool dontCreateDefaultDeviceFlag)
 #ifndef CTS_USES_VULKANSC
     : maximumFrameworkVulkanVersion(VK_API_MAX_FRAMEWORK_VERSION)
 #else
     : maximumFrameworkVulkanVersion(VKSC_API_MAX_FRAMEWORK_VERSION)
 #endif // CTS_USES_VULKANSC
-    , availableInstanceVersion(getTargetInstanceVersion(vkPlatform))
+    , availableInstanceVersion(hint ? hint->availableInstanceVersion : getTargetInstanceVersion(vkPlatform))
     , usedInstanceVersion(
-          sanitizeApiVersion(minVulkanAPIVersion(availableInstanceVersion, maximumFrameworkVulkanVersion)))
-    , deviceVersions(determineDeviceVersions(vkPlatform, usedInstanceVersion, commandLine))
-    , usedApiVersion(sanitizeApiVersion(minVulkanAPIVersion(usedInstanceVersion, deviceVersions.first)))
-    , coreExtensions(addCoreInstanceExtensions(
-          filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, nullptr)), usedApiVersion))
+          hint ? hint->usedInstanceVersion :
+                 sanitizeApiVersion(minVulkanAPIVersion(availableInstanceVersion, maximumFrameworkVulkanVersion)))
+    , deviceVersions(hint ? hint->deviceVersions :
+                            determineDeviceVersions(vkPlatform, usedInstanceVersion, commandLine))
+    , usedApiVersion(hint ? hint->usedApiVersion :
+                            sanitizeApiVersion(minVulkanAPIVersion(usedInstanceVersion, deviceVersions.first)))
+    , coreExtensions(
+          hint ? hint->coreExtensions :
+                 addCoreInstanceExtensions(filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, nullptr)),
+                                           usedApiVersion))
     , id(id_)
     , m_extensions()
+    , m_destroyAllDevices({false, false})
+    , m_dontCreateDefaultDevice(dontCreateDefaultDeviceFlag)
+    , m_shouldRemoveInstanceOnTestExit(false)
+    , m_testCase(testCase)
 {
 }
 
 // "Define the ContextManager constructor, placed here as a workaround for an older Fedora version
 // where the compiler fails to locate function implementations unless they reside in the same file.
 ContextManager::ContextManager(const PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine,
-                               [[maybe_unused]] de::SharedPtr<vk::ResourceInterface> resourceInterface,
-                               int maxCustomDevices, const InstCaps &icaps, ContextManager::Det_)
+                               de::SharedPtr<vk::ResourceInterface> resourceInterface, int maxCustomDevices,
+                               const InstCaps &icaps, ContextManager::Det_)
     : m_maximumFrameworkVulkanVersion(icaps.maximumFrameworkVulkanVersion)
     , m_platformInterface(vkPlatform)
     , m_commandLine(commandLine)
@@ -844,7 +863,8 @@ ContextManager::ContextManager(const PlatformInterface &vkPlatform, const tcu::C
                                                                 *m_instance) :
                                 DebugReportCallbackPtr())
 #endif
-    , m_physicalDevice(chooseDevice(*m_instanceInterface, *m_instance, m_commandLine))
+    , m_physicalDevice(icaps.selectDevice(*m_instanceInterface, *m_instance, commandLine,
+                                          chooseDevice(*m_instanceInterface, *m_instance, m_commandLine)))
     , m_deviceVersion(getPhysicalDeviceProperties(*m_instanceInterface, m_physicalDevice).apiVersion)
     , m_maxCustomDevices(maxCustomDevices)
     , m_deviceExtensions(addCoreDeviceExtensions(
@@ -857,6 +877,10 @@ ContextManager::ContextManager(const PlatformInterface &vkPlatform, const tcu::C
                                                  m_instanceExtensions, m_deviceExtensions))
     , m_deviceFeaturesAndProperties(new DevFeaturesAndProperties(*m_deviceFeaturesPtr, *m_devicePropertiesPtr))
     , m_contexts()
+    , m_customManagers()
+    , m_destroyAllDevices(icaps.getDestroyAllDevices())
+    , m_dontCreateDefaultDevice(icaps.dontCreateDefaultDevice())
+    , m_shouldBeRemovedOnTestExit(icaps.shouldRemoveInstanceOnTestExit())
     , id(icaps.id)
 {
     m_contexts.reserve(m_maxCustomDevices + 1);
@@ -1888,6 +1912,11 @@ void TestCase::initInstanceCapabilities(InstCaps &caps)
     TCU_THROW(EnforceDefaultInstance,
               "Default implementation of TestCase::initInstanceCapabilities()."
               "If the test provides getInstanceCapabilities() then it must provide initInstanceCapabilities() as well");
+}
+
+VkPhysicalDevice TestCase::selectPhysicalDevice(const InstanceInterface &, VkInstance, const tcu::CommandLine &)
+{
+    return VK_NULL_HANDLE;
 }
 
 void TestCase::setContextManager(de::SharedPtr<const ContextManager> cm)

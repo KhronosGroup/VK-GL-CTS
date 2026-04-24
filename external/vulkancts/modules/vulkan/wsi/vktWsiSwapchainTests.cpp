@@ -110,6 +110,10 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
+    // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
+    if (wsiType == TYPE_DIRECT_DRM)
+        extensions.push_back("VK_EXT_direct_mode_display");
+
     // VK_EXT_swapchain_colorspace adds new surface formats. Driver can enumerate
     // the formats regardless of whether VK_EXT_swapchain_colorspace was enabled,
     // but using them without enabling the extension is not allowed. Thus we have
@@ -683,7 +687,7 @@ tcu::TestStatus createSwapchainTest(Context &context, TestParameters params)
                 try
                 {
                     const Unique<VkSwapchainKHR> swapchain(
-                        createSwapchainKHR(devHelper.vkd, *devHelper.device, &curParams));
+                        createWsiSwapchain(params.wsiType, devHelper.vkd, *devHelper.device, &curParams));
 
                     log << TestLog::Message << subcase.str() << "Creating swapchain succeeded" << TestLog::EndMessage;
                 }
@@ -693,10 +697,27 @@ tcu::TestStatus createSwapchainTest(Context &context, TestParameters params)
                         << e.getError() << TestLog::EndMessage;
                 }
             }
+            else if (params.dimension == TEST_DIMENSION_MIN_IMAGE_COUNT &&
+                     curParams.minImageCount > capabilities.minImageCount)
+            {
+                try
+                {
+                    const Unique<VkSwapchainKHR> swapchain(
+                        createWsiSwapchain(params.wsiType, devHelper.vkd, *devHelper.device, &curParams));
+
+                    log << TestLog::Message << subcase.str() << "Creating swapchain succeeded" << TestLog::EndMessage;
+                }
+                catch (const OutOfMemoryError &e)
+                {
+                    log << TestLog::Message << subcase.str()
+                        << "vkCreateSwapchainKHR with minImageCount=" << capabilities.minImageCount << " encountered "
+                        << e.getError() << TestLog::EndMessage;
+                }
+            }
             else
             {
                 const Unique<VkSwapchainKHR> swapchain(
-                    createSwapchainKHR(devHelper.vkd, *devHelper.device, &curParams));
+                    createWsiSwapchain(params.wsiType, devHelper.vkd, *devHelper.device, &curParams));
 
                 log << TestLog::Message << subcase.str() << "Creating swapchain succeeded" << TestLog::EndMessage;
             }
@@ -789,7 +810,8 @@ tcu::TestStatus createSwapchainPrivateDataTest(Context &context, TestParameters 
         {
         case VK_SUCCESS:
         {
-            const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(devHelper.vkd, *devHelper.device, &curParams));
+            const Unique<VkSwapchainKHR> swapchain(
+                createWsiSwapchain(params.wsiType, devHelper.vkd, *devHelper.device, &curParams));
 
             const int numSlots = 100;
             typedef Unique<VkPrivateDataSlotEXT> PrivateDataSlotUp;
@@ -942,8 +964,8 @@ tcu::TestStatus createSwapchainSimulateOOMTest(Context &context, TestParameters 
                     }
 #endif
 
-                    const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(
-                        devHelper.vkd, *devHelper.device, &curParams, failingAllocator.getCallbacks()));
+                    const Unique<VkSwapchainKHR> swapchain(createWsiSwapchain(
+                        params.wsiType, devHelper.vkd, *devHelper.device, &curParams, failingAllocator.getCallbacks()));
                 }
                 catch (const OutOfMemoryError &e)
                 {
@@ -1170,7 +1192,7 @@ tcu::TestStatus basicRenderTest(Context &context, Type wsiType)
     SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
     const VkSwapchainCreateInfoKHR swapchainInfo =
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
-    const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
+    const Unique<VkSwapchainKHR> swapchain(createWsiSwapchain(wsiType, vkd, device, &swapchainInfo));
     const vector<VkImage> swapchainImages = getSwapchainImages(vkd, device, *swapchain);
 
     AcquireWrapperType acquireImageWrapper(vkd, device, 1u, *swapchain, std::numeric_limits<uint64_t>::max());
@@ -1353,9 +1375,9 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, ImageSwapchainCre
         formats[0].format,      // format
         {
             // extent
-            desiredSize.x(), //   width
-            desiredSize.y(), //   height
-            1u               //   depth
+            swapchainInfo.imageExtent.width,  // width
+            swapchainInfo.imageExtent.height, // height
+            1u                                // depth
         },
         1u,                                  // mipLevels
         1u,                                  // arrayLayers
@@ -1662,7 +1684,7 @@ tcu::TestStatus multiSwapchainRenderTest(Context &context, MultiSwapchainParams 
     {
         swapchainInfo.emplace_back(getBasicSwapchainParameters(params.wsiType, instHelper.vki, devHelper.physicalDevice,
                                                                *surface[i], desiredSize, 2));
-        swapchain.emplace_back(createSwapchainKHR(vkd, device, &swapchainInfo.back()));
+        swapchain.emplace_back(createWsiSwapchain(params.wsiType, vkd, device, &swapchainInfo.back()));
         swapchainImages.emplace_back(getSwapchainImages(vkd, device, swapchain.back().get()));
         acquireImageWrapper.emplace_back(vkd, device, 1u, swapchain.back().get(), std::numeric_limits<uint64_t>::max());
     }
@@ -1807,9 +1829,10 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
     const uint32_t deviceIdx   = context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
     const vector<VkPhysicalDeviceGroupProperties> deviceGroupProps =
         enumeratePhysicalDeviceGroups(instHelper.vki, instHelper.instance);
-    uint32_t physicalDevicesInGroupCount           = deviceGroupProps[devGroupIdx].physicalDeviceCount;
-    const VkPhysicalDevice *physicalDevicesInGroup = deviceGroupProps[devGroupIdx].physicalDevices;
-    uint32_t queueFamilyIndex = chooseQueueFamilyIndex(instHelper.vki, physicalDevicesInGroup[deviceIdx], *surface);
+    const std::vector<VkPhysicalDevice> physicalDevicesInGroup(deviceGroupProps[devGroupIdx].physicalDevices,
+                                                               deviceGroupProps[devGroupIdx].physicalDevices +
+                                                                   deviceGroupProps[devGroupIdx].physicalDeviceCount);
+    const uint32_t queueFamilyIndex = chooseQueueFamilyIndex(instHelper.vki, physicalDevicesInGroup, *surface);
     const std::vector<VkQueueFamilyProperties> queueProps =
         getPhysicalDeviceQueueFamilyProperties(instHelper.vki, physicalDevicesInGroup[deviceIdx]);
     const float queuePriority     = 1.0f;
@@ -1820,8 +1843,8 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
     const VkDeviceGroupDeviceCreateInfo groupDeviceInfo = {
         VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR, // stype
         nullptr,                                               // pNext
-        physicalDevicesInGroupCount,                           // physicalDeviceCount
-        physicalDevicesInGroup                                 // physicalDevices
+        uint32_t(physicalDevicesInGroup.size()),               // physicalDeviceCount
+        &physicalDevicesInGroup[0]                             // physicalDevices
     };
     const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // type
@@ -1862,7 +1885,7 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
         wsiType, instHelper.vki, physicalDevicesInGroup[deviceIdx], *surface, desiredSize, 2);
     swapchainInfo.pNext = &deviceGroupSwapchainInfo;
 
-    const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, *groupDevice, &swapchainInfo));
+    const Unique<VkSwapchainKHR> swapchain(createWsiSwapchain(wsiType, vkd, *groupDevice, &swapchainInfo));
     const vector<VkImage> swapchainImages = getSwapchainImages(vkd, *groupDevice, *swapchain);
 
     const WsiTriangleRenderer renderer(vkd, *groupDevice, allocator, context.getBinaryCollection(), false,
@@ -1930,12 +1953,12 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
 
                 // render triangle using one or two subdevices when available
                 renderer.recordDeviceGroupFrame(commandBuffer, firstDeviceID, secondDeviceID,
-                                                physicalDevicesInGroupCount, imageNdx, frameNdx);
+                                                uint32_t(physicalDevicesInGroup.size()), imageNdx, frameNdx);
 
                 // submit queue
                 uint32_t deviceMask = (1 << firstDeviceID);
                 std::vector<uint32_t> deviceIndices(1, firstDeviceID);
-                if (physicalDevicesInGroupCount > 1)
+                if (physicalDevicesInGroup.size() > 1)
                 {
                     deviceMask |= (1 << secondDeviceID);
                     deviceIndices.push_back(secondDeviceID);
@@ -2022,9 +2045,10 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
     const uint32_t deviceIdx   = context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
     const vector<VkPhysicalDeviceGroupProperties> deviceGroupProps =
         enumeratePhysicalDeviceGroups(instHelper.vki, instHelper.instance);
-    uint32_t physicalDevicesInGroupCount           = deviceGroupProps[devGroupIdx].physicalDeviceCount;
-    const VkPhysicalDevice *physicalDevicesInGroup = deviceGroupProps[devGroupIdx].physicalDevices;
-    uint32_t queueFamilyIndex = chooseQueueFamilyIndex(instHelper.vki, physicalDevicesInGroup[deviceIdx], *surface);
+    const std::vector<VkPhysicalDevice> physicalDevicesInGroup(deviceGroupProps[devGroupIdx].physicalDevices,
+                                                               deviceGroupProps[devGroupIdx].physicalDevices +
+                                                                   deviceGroupProps[devGroupIdx].physicalDeviceCount);
+    const uint32_t queueFamilyIndex = chooseQueueFamilyIndex(instHelper.vki, physicalDevicesInGroup, *surface);
     const std::vector<VkQueueFamilyProperties> queueProps =
         getPhysicalDeviceQueueFamilyProperties(instHelper.vki, physicalDevicesInGroup[deviceIdx]);
     const float queuePriority      = 1.0f;
@@ -2032,15 +2056,15 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
     const uint32_t secondDeviceID  = 1;
     const uint32_t deviceIndices[] = {firstDeviceID, secondDeviceID};
 
-    if (physicalDevicesInGroupCount < 2)
+    if (physicalDevicesInGroup.size() < 2)
         TCU_THROW(NotSupportedError, "Test requires more than 1 device in device group");
 
     // create a device group
     const VkDeviceGroupDeviceCreateInfo groupDeviceInfo = {
         VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR, // stype
         nullptr,                                               // pNext
-        physicalDevicesInGroupCount,                           // physicalDeviceCount
-        physicalDevicesInGroup                                 // physicalDevices
+        uint32_t(physicalDevicesInGroup.size()),               // physicalDeviceCount
+        &physicalDevicesInGroup[0]                             // physicalDevices
     };
     const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // type
@@ -2111,7 +2135,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
         VK_FALSE,
         VK_NULL_HANDLE};
 
-    const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, *groupDevice, &swapchainInfo));
+    const Unique<VkSwapchainKHR> swapchain(createWsiSwapchain(wsiType, vkd, *groupDevice, &swapchainInfo));
     uint32_t numImages = 0;
     VK_CHECK(vkd.getSwapchainImagesKHR(*groupDevice, *swapchain, &numImages, nullptr));
     if (numImages == 0)
@@ -2287,7 +2311,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
 
                 // render triangle using one or two subdevices when available
                 renderer.recordDeviceGroupFrame(commandBuffer, firstDeviceID, secondDeviceID,
-                                                physicalDevicesInGroupCount, imageNdx, frameNdx);
+                                                uint32_t(physicalDevicesInGroup.size()), imageNdx, frameNdx);
 
                 // submit queue
                 uint32_t deviceMask                                 = (1 << firstDeviceID) | (1 << secondDeviceID);
@@ -2393,7 +2417,7 @@ tcu::TestStatus resizeSwapchainTest(Context &context, Type wsiType)
             getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, sizes[sizeNdx], 2);
         swapchainInfo.oldSwapchain = *prevSwapchain;
 
-        Move<VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
+        Move<VkSwapchainKHR> swapchain(createWsiSwapchain(wsiType, vkd, device, &swapchainInfo));
         const vector<VkImage> swapchainImages = getSwapchainImages(vkd, device, *swapchain);
         const WsiTriangleRenderer renderer(
             vkd, device, allocator, context.getBinaryCollection(), false, swapchainImages, swapchainImages,
@@ -2499,7 +2523,8 @@ tcu::TestStatus getImagesIncompleteResultTest(Context &context, Type wsiType)
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
     const VkSwapchainCreateInfoKHR swapchainInfo =
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
-    const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(devHelper.vkd, *devHelper.device, &swapchainInfo));
+    const Unique<VkSwapchainKHR> swapchain(
+        createWsiSwapchain(wsiType, devHelper.vkd, *devHelper.device, &swapchainInfo));
 
     vector<VkImage> swapchainImages = getSwapchainImages(devHelper.vkd, *devHelper.device, *swapchain);
 
@@ -2527,7 +2552,8 @@ tcu::TestStatus getImagesResultsCountTest(Context &context, Type wsiType)
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
     const VkSwapchainCreateInfoKHR swapchainInfo =
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
-    const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(devHelper.vkd, *devHelper.device, &swapchainInfo));
+    const Unique<VkSwapchainKHR> swapchain(
+        createWsiSwapchain(wsiType, devHelper.vkd, *devHelper.device, &swapchainInfo));
 
     uint32_t numImages = 0;
 
@@ -2587,12 +2613,13 @@ tcu::TestStatus destroyOldSwapchainTest(Context &context, Type wsiType)
     VkSwapchainCreateInfoKHR swapchainInfo =
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
     VkSwapchainKHR swapchain = VK_NULL_HANDLE;
-    VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, nullptr, &swapchain));
+    VK_CHECK(createWsiSwapchain(wsiType, devHelper.vkd, *devHelper.device, &swapchainInfo, nullptr, &swapchain));
 
     // Create a new swapchain replacing the old one.
     swapchainInfo.oldSwapchain        = swapchain;
     VkSwapchainKHR recreatedSwapchain = VK_NULL_HANDLE;
-    VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, nullptr, &recreatedSwapchain));
+    VK_CHECK(
+        createWsiSwapchain(wsiType, devHelper.vkd, *devHelper.device, &swapchainInfo, nullptr, &recreatedSwapchain));
 
     // Destroying the old swapchain should have no effect.
     devHelper.vkd.destroySwapchainKHR(*devHelper.device, swapchain, nullptr);
@@ -2616,7 +2643,7 @@ tcu::TestStatus destroyOldSwapchainWithAcquiredImageTest(Context &context, Type 
     VkSwapchainCreateInfoKHR swapchainInfo =
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
     VkSwapchainKHR swapchain = VK_NULL_HANDLE;
-    VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, nullptr, &swapchain));
+    VK_CHECK(createWsiSwapchain(wsiType, devHelper.vkd, *devHelper.device, &swapchainInfo, nullptr, &swapchain));
 
     uint32_t imageCount;
     devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, swapchain, &imageCount, nullptr);
@@ -2633,7 +2660,8 @@ tcu::TestStatus destroyOldSwapchainWithAcquiredImageTest(Context &context, Type 
     // Create a new swapchain replacing the old one.
     swapchainInfo.oldSwapchain        = swapchain;
     VkSwapchainKHR recreatedSwapchain = VK_NULL_HANDLE;
-    VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, nullptr, &recreatedSwapchain));
+    VK_CHECK(
+        createWsiSwapchain(wsiType, devHelper.vkd, *devHelper.device, &swapchainInfo, nullptr, &recreatedSwapchain));
 
     // Destroying the old swapchain should have no effect.
     devHelper.vkd.destroySwapchainKHR(*devHelper.device, swapchain, nullptr);
@@ -2670,7 +2698,7 @@ tcu::TestStatus presentImageFromRetiredSwapchain(Context &context, Type wsiType)
     VkSwapchainCreateInfoKHR swapchainInfo =
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
     VkSwapchainKHR swapchain = VK_NULL_HANDLE;
-    VK_CHECK(vk.createSwapchainKHR(device, &swapchainInfo, nullptr, &swapchain));
+    VK_CHECK(createWsiSwapchain(wsiType, vk, device, &swapchainInfo, nullptr, &swapchain));
 
     uint32_t imageCount;
     vk.getSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
@@ -2683,11 +2711,6 @@ tcu::TestStatus presentImageFromRetiredSwapchain(Context &context, Type wsiType)
     uint32_t imageIndex;
     vk.acquireNextImageKHR(device, swapchain, std::numeric_limits<uint64_t>::max(), *acquireSemaphore, VK_NULL_HANDLE,
                            &imageIndex);
-
-    // Create a new swapchain replacing the old one.
-    swapchainInfo.oldSwapchain        = swapchain;
-    VkSwapchainKHR recreatedSwapchain = VK_NULL_HANDLE;
-    VK_CHECK(vk.createSwapchainKHR(device, &swapchainInfo, nullptr, &recreatedSwapchain));
 
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, devHelper.queueFamilyIndex));
@@ -2721,11 +2744,22 @@ tcu::TestStatus presentImageFromRetiredSwapchain(Context &context, Type wsiType)
                                                    1u,
                                                    &*submitSemaphore};
     vk.queueSubmit(devHelper.queue, 1u, &submitInfo, VK_NULL_HANDLE);
+
+    // Create a new swapchain replacing the old one.
+    swapchainInfo.oldSwapchain        = swapchain;
+    VkSwapchainKHR recreatedSwapchain = VK_NULL_HANDLE;
+    VK_CHECK(vk.createSwapchainKHR(device, &swapchainInfo, nullptr, &recreatedSwapchain));
+
     const VkPresentInfoKHR presentInfo = {
         VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, nullptr, 1u, &*submitSemaphore, 1u, &swapchain, &imageIndex, nullptr};
     VkResult res = vk.queuePresentKHR(devHelper.queue, &presentInfo);
     if (res != VK_SUBOPTIMAL_KHR && res != VK_ERROR_OUT_OF_DATE_KHR && res != VK_SUCCESS)
         return tcu::TestStatus::fail("vkQueuePresentKHR with image from retired swapchain failed");
+
+    Move<VkSemaphore> acquireSemaphore2 = createSemaphore(vk, device);
+
+    vk.acquireNextImageKHR(device, recreatedSwapchain, std::numeric_limits<uint64_t>::max(), *acquireSemaphore2,
+                           VK_NULL_HANDLE, &imageIndex);
 
     vk.queueWaitIdle(devHelper.queue);
     vk.destroySwapchainKHR(device, recreatedSwapchain, nullptr);
@@ -2744,7 +2778,8 @@ tcu::TestStatus acquireTooManyTest(Context &context, Type wsiType)
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
     const VkSwapchainCreateInfoKHR swapchainInfo =
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
-    const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(devHelper.vkd, *devHelper.device, &swapchainInfo));
+    const Unique<VkSwapchainKHR> swapchain(
+        createWsiSwapchain(wsiType, devHelper.vkd, *devHelper.device, &swapchainInfo));
 
     uint32_t numImages;
     VK_CHECK(devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, *swapchain, &numImages, nullptr));
@@ -2793,7 +2828,8 @@ tcu::TestStatus acquireTooManyTimeoutTest(Context &context, Type wsiType)
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
     const VkSwapchainCreateInfoKHR swapchainInfo =
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
-    const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(devHelper.vkd, *devHelper.device, &swapchainInfo));
+    const Unique<VkSwapchainKHR> swapchain(
+        createWsiSwapchain(wsiType, devHelper.vkd, *devHelper.device, &swapchainInfo));
 
     uint32_t numImages;
     VK_CHECK(devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, *swapchain, &numImages, nullptr));

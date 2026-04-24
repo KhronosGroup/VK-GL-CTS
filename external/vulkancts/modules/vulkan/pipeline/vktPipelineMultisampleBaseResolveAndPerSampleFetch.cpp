@@ -37,11 +37,7 @@
 #include "tcuTestLog.hpp"
 #include <vector>
 
-namespace vkt
-{
-namespace pipeline
-{
-namespace multisample
+namespace vkt::pipeline::multisample
 {
 
 using namespace vk;
@@ -139,13 +135,6 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
     VkImageCreateInfo imageRSInfo;
     const uint32_t firstSubpassAttachmentsCount = 2u;
 
-    // Check if image size does not exceed device limits
-    validateImageSize(instance, physicalDevice, m_imageType, m_imageMSParams.imageSize);
-
-    // Check if device supports image format as color attachment
-    validateImageFeatureFlags(instance, physicalDevice, mapTextureFormat(m_imageFormat),
-                              VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT);
-
     imageMSInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageMSInfo.pNext                 = nullptr;
     imageMSInfo.flags                 = 0u;
@@ -167,16 +156,12 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
         imageMSInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     }
 
-    validateImageInfo(instance, physicalDevice, imageMSInfo);
-
     const de::UniquePtr<ImageWithMemory> imageMS(
         new ImageWithMemory(deviceInterface, device, allocator, imageMSInfo, MemoryRequirement::Any));
 
     imageRSInfo         = imageMSInfo;
     imageRSInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageRSInfo.usage   = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-
-    validateImageInfo(instance, physicalDevice, imageRSInfo);
 
     const de::UniquePtr<ImageWithMemory> imageRS(
         new ImageWithMemory(deviceInterface, device, allocator, imageRSInfo, MemoryRequirement::Any));
@@ -817,6 +802,4 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
     return verifyImageData(imageMSInfo, imageRSInfo, buffersPerSampleData, bufferRSData);
 }
 
-} // namespace multisample
-} // namespace pipeline
-} // namespace vkt
+} // namespace vkt::pipeline::multisample

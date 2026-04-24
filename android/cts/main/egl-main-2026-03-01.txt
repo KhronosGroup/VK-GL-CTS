@@ -1,0 +1,6 @@
+dEQP-EGL.functional.get_proc_address.extension.gl_arm_shader_core_properties
+dEQP-EGL.functional.get_proc_address.extension.gl_ext_framebuffer_blit_layers
+dEQP-EGL.functional.get_proc_address.extension.gl_ext_mesh_shader
+dEQP-EGL.functional.get_proc_address.extension.gl_mesa_sampler_objects
+dEQP-EGL.functional.get_proc_address.extension.gl_nv_texture_barrier
+dEQP-EGL.functional.get_proc_address.extension.gl_oes_egl_image_external

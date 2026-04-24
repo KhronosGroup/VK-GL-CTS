@@ -27,7 +27,6 @@
 #include "vkPlatform.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkCmdUtil.hpp"
-#include "vktTestCaseUtil.hpp"
 #include "deSharedPtr.hpp"
 
 #include "vktSynchronizationUtil.hpp"
@@ -47,9 +46,7 @@
 using tcu::TestLog;
 using namespace vkt::ExternalMemoryUtil;
 
-namespace vkt
-{
-namespace synchronization
+namespace vkt::synchronization
 {
 namespace
 {
@@ -80,179 +77,6 @@ struct TestConfig
     const vk::VkExternalMemoryHandleTypeFlagBits memoryHandleType;
     const vk::VkExternalSemaphoreHandleTypeFlagBits semaphoreHandleType;
     const bool dedicated;
-};
-
-// A helper class to test for extensions upfront and throw not supported to speed up test runtimes compared to failing only
-// after creating unnecessary vkInstances.  A common example of this is win32 platforms taking a long time to run _fd tests.
-class NotSupportedChecker
-{
-public:
-    NotSupportedChecker(const Context &context, TestConfig config, const OperationSupport &writeOp,
-                        const OperationSupport &readOp)
-        : m_context(context)
-    {
-        // Check instance support
-        m_context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
-
-        m_context.requireInstanceFunctionality("VK_KHR_external_semaphore_capabilities");
-        m_context.requireInstanceFunctionality("VK_KHR_external_memory_capabilities");
-
-        // Check device support
-        if (config.dedicated)
-            m_context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
-
-        m_context.requireDeviceFunctionality("VK_KHR_external_semaphore");
-        m_context.requireDeviceFunctionality("VK_KHR_external_memory");
-
-        if (config.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE)
-            m_context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
-
-        if (config.type == SynchronizationType::SYNCHRONIZATION2)
-            m_context.requireDeviceFunctionality("VK_KHR_synchronization2");
-
-        if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR ||
-            config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR ||
-            config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)
-        {
-            m_context.requireDeviceFunctionality("VK_KHR_external_semaphore_fd");
-            m_context.requireDeviceFunctionality("VK_KHR_external_memory_fd");
-        }
-
-        if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
-        {
-            m_context.requireDeviceFunctionality("VK_EXT_external_memory_dma_buf");
-        }
-
-        if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT ||
-            config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT ||
-            config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT ||
-            config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
-        {
-            m_context.requireDeviceFunctionality("VK_KHR_external_semaphore_win32");
-            m_context.requireDeviceFunctionality("VK_KHR_external_memory_win32");
-        }
-
-        if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA ||
-            config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA)
-        {
-            m_context.requireDeviceFunctionality("VK_FUCHSIA_external_semaphore");
-            m_context.requireDeviceFunctionality("VK_FUCHSIA_external_memory");
-        }
-
-        TestLog &log                              = context.getTestContext().getLog();
-        const vk::InstanceInterface &vki          = context.getInstanceInterface();
-        const vk::VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
-
-        // Check resource support
-        if (config.resource.type == RESOURCE_TYPE_IMAGE)
-        {
-            const vk::VkPhysicalDeviceExternalImageFormatInfo externalInfo = {
-                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, nullptr, config.memoryHandleType};
-            const vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
-                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
-                &externalInfo,
-                config.resource.imageFormat,
-                config.resource.imageType,
-                vk::VK_IMAGE_TILING_OPTIMAL,
-                readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(),
-                0u};
-            vk::VkExternalImageFormatProperties externalProperties = {
-                vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES, nullptr, {0u, 0u, 0u}};
-            vk::VkImageFormatProperties2 formatProperties = {vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
-                                                             &externalProperties,
-                                                             {
-                                                                 {0u, 0u, 0u},
-                                                                 0u,
-                                                                 0u,
-                                                                 0u,
-                                                                 0u,
-                                                             }};
-
-            {
-                const vk::VkResult res =
-                    vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &formatProperties);
-
-                if (res == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-                    TCU_THROW(NotSupportedError, "Image format not supported");
-
-                VK_CHECK(res); // Check other errors
-            }
-
-            log << TestLog::Message << "External image format properties: " << imageFormatInfo << "\n"
-                << externalProperties << TestLog::EndMessage;
-
-            if ((externalProperties.externalMemoryProperties.externalMemoryFeatures &
-                 vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT) == 0)
-                TCU_THROW(NotSupportedError, "Exporting image resource not supported");
-
-            if ((externalProperties.externalMemoryProperties.externalMemoryFeatures &
-                 vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0)
-                TCU_THROW(NotSupportedError, "Importing image resource not supported");
-
-            if (!config.dedicated && (externalProperties.externalMemoryProperties.externalMemoryFeatures &
-                                      vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT) != 0)
-            {
-                TCU_THROW(NotSupportedError, "Handle requires dedicated allocation, but test uses suballocated memory");
-            }
-
-            if (!(formatProperties.imageFormatProperties.sampleCounts & config.resource.imageSamples))
-            {
-                TCU_THROW(NotSupportedError, "Specified sample count for format not supported");
-            }
-        }
-        else
-        {
-            const vk::VkPhysicalDeviceExternalBufferInfo info = {
-                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, nullptr,
-
-                0u, readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(), config.memoryHandleType};
-            vk::VkExternalBufferProperties properties = {
-                vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES, nullptr, {0u, 0u, 0u}};
-            vki.getPhysicalDeviceExternalBufferProperties(physicalDevice, &info, &properties);
-
-            log << TestLog::Message << "External buffer properties: " << info << "\n"
-                << properties << TestLog::EndMessage;
-
-            if ((properties.externalMemoryProperties.externalMemoryFeatures &
-                 vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT) == 0 ||
-                (properties.externalMemoryProperties.externalMemoryFeatures &
-                 vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0)
-                TCU_THROW(NotSupportedError, "Exporting and importing memory type not supported");
-
-            if (!config.dedicated && (properties.externalMemoryProperties.externalMemoryFeatures &
-                                      vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT) != 0)
-            {
-                TCU_THROW(NotSupportedError, "Handle requires dedicated allocation, but test uses suballocated memory");
-            }
-        }
-
-        // Check semaphore support
-        {
-            const vk::VkSemaphoreTypeCreateInfo semaphoreTypeInfo = {
-                vk::VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
-                nullptr,
-                config.semaphoreType,
-                0,
-            };
-            const vk::VkPhysicalDeviceExternalSemaphoreInfo info = {
-                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO, &semaphoreTypeInfo,
-                config.semaphoreHandleType};
-
-            vk::VkExternalSemaphoreProperties properties = {vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES,
-                                                            nullptr, 0u, 0u, 0u};
-
-            vki.getPhysicalDeviceExternalSemaphoreProperties(physicalDevice, &info, &properties);
-
-            log << TestLog::Message << info << "\n" << properties << TestLog::EndMessage;
-
-            if ((properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT) == 0 ||
-                (properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT) == 0)
-                TCU_THROW(NotSupportedError, "Exporting and importing semaphore type not supported");
-        }
-    }
-
-private:
-    const Context &m_context;
 };
 
 bool checkQueueFlags(vk::VkQueueFlags availableFlags, const vk::VkQueueFlags neededFlags)
@@ -288,10 +112,9 @@ SimpleAllocation::~SimpleAllocation(void)
 
 CustomInstance createTestInstance(Context &context)
 {
-    std::vector<std::string> extensions;
-    extensions.push_back("VK_KHR_get_physical_device_properties2");
-    extensions.push_back("VK_KHR_external_semaphore_capabilities");
-    extensions.push_back("VK_KHR_external_memory_capabilities");
+    std::vector<std::string> extensions{"VK_KHR_get_physical_device_properties2",
+                                        "VK_KHR_external_semaphore_capabilities",
+                                        "VK_KHR_external_memory_capabilities"};
 
     return createCustomInstanceWithExtensions(context, extensions);
 }
@@ -525,15 +348,8 @@ vk::VkMemoryRequirements getMemoryRequirements(const vk::DeviceInterface &vkd, v
     {
         const vk::VkImageMemoryRequirementsInfo2 requirementInfo = {
             vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2, nullptr, image};
-        vk::VkMemoryDedicatedRequirements dedicatedRequirements = {vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
-                                                                   nullptr, VK_FALSE, VK_FALSE};
-        vk::VkMemoryRequirements2 requirements                  = {vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
-                                                                   &dedicatedRequirements,
-                                                                   {
-                                                      0u,
-                                                      0u,
-                                                      0u,
-                                                  }};
+        vk::VkMemoryDedicatedRequirements dedicatedRequirements = initVulkanStructure();
+        vk::VkMemoryRequirements2 requirements                  = initVulkanStructure(&dedicatedRequirements);
         vkd.getImageMemoryRequirements2(device, &requirementInfo, &requirements);
 
         if (!dedicated && dedicatedRequirements.requiresDedicatedAllocation)
@@ -562,15 +378,8 @@ vk::VkMemoryRequirements getMemoryRequirements(const vk::DeviceInterface &vkd, v
     {
         const vk::VkBufferMemoryRequirementsInfo2 requirementInfo = {
             vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2, nullptr, buffer};
-        vk::VkMemoryDedicatedRequirements dedicatedRequirements = {vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
-                                                                   nullptr, VK_FALSE, VK_FALSE};
-        vk::VkMemoryRequirements2 requirements                  = {vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
-                                                                   &dedicatedRequirements,
-                                                                   {
-                                                      0u,
-                                                      0u,
-                                                      0u,
-                                                  }};
+        vk::VkMemoryDedicatedRequirements dedicatedRequirements = initVulkanStructure();
+        vk::VkMemoryRequirements2 requirements                  = initVulkanStructure(&dedicatedRequirements);
         vkd.getBufferMemoryRequirements2(device, &requirementInfo, &requirements);
 
         if (!dedicated && dedicatedRequirements.requiresDedicatedAllocation)
@@ -846,7 +655,6 @@ private:
 
     const de::UniquePtr<OperationSupport> m_supportWriteOp;
     const de::UniquePtr<OperationSupport> m_supportReadOp;
-    const NotSupportedChecker m_notSupportedChecker; // Must declare before VkInstance to effectively reduce runtimes!
 
     const bool m_getMemReq2Supported;
 
@@ -881,7 +689,6 @@ SharingTestInstance::SharingTestInstance(Context &context, TestConfig config)
     , m_config(config)
     , m_supportWriteOp(makeOperationSupport(config.writeOp, config.resource))
     , m_supportReadOp(makeOperationSupport(config.readOp, config.resource))
-    , m_notSupportedChecker(context, m_config, *m_supportWriteOp, *m_supportReadOp)
     , m_getMemReq2Supported(context.isDeviceFunctionalitySupported("VK_KHR_get_memory_requirements2"))
 
     , m_instanceA(InstanceAndDevice::getInstanceA(context))
@@ -940,12 +747,6 @@ tcu::TestStatus SharingTestInstance::iterate(void)
             const vk::VkImageSubresourceRange subresourceRange   = {resourceDesc.imageAspect, 0u, 1u, 0u, 1u};
             const vk::VkImageSubresourceLayers subresourceLayers = {resourceDesc.imageAspect, 0u, 0u, 1u};
 
-            if ((resourceDesc.imageSamples != VK_SAMPLE_COUNT_1_BIT) &&
-                ((m_supportReadOp->getInResourceUsageFlags() | m_supportWriteOp->getOutResourceUsageFlags()) &
-                 VK_IMAGE_USAGE_STORAGE_BIT) &&
-                !m_context.getDeviceFeatures().shaderStorageImageMultisample)
-                TCU_THROW(NotSupportedError, "shaderStorageImageMultisample not supported");
-
             vk::Move<vk::VkImage> image = createImage(m_vkdA, *m_deviceA, resourceDesc, extent, m_queueFamilyIndicesA,
                                                       *m_supportReadOp, *m_supportWriteOp, m_memoryHandleType);
             const vk::VkImageTiling tiling = vk::VK_IMAGE_TILING_OPTIMAL;
@@ -1000,6 +801,8 @@ tcu::TestStatus SharingTestInstance::iterate(void)
         OperationContext operationContextA(m_context, m_config.type, m_vkiA, m_vkdA, m_physicalDeviceA, *m_deviceA,
                                            allocatorA, m_context.getBinaryCollection(), m_pipelineCacheData);
 
+        // note: 'Operation not supported' exceptions are catched and handled in this
+        // iterate method and are the way to skip unsupported queue family combinations
         if (!checkQueueFlags(m_queueFamiliesA[m_queueANdx].queueFlags,
                              m_supportWriteOp->getQueueFlags(operationContextA)))
             TCU_THROW(NotSupportedError, "Operation not supported by the source queue");
@@ -1203,16 +1006,193 @@ tcu::TestStatus SharingTestInstance::iterate(void)
     }
 }
 
-struct Progs
+class SharingTestCase : public TestCase
 {
-    void init(vk::SourceCollections &dst, TestConfig config) const
+public:
+    SharingTestCase(tcu::TestContext &testCtx, const std::string &name, TestConfig config)
+        : TestCase(testCtx, name)
+        , m_config(config)
+        , m_writeOpSupport(makeOperationSupport(config.writeOp, config.resource).release())
+        , m_readOpSupport(makeOperationSupport(config.readOp, config.resource).release())
     {
-        const de::UniquePtr<OperationSupport> readOp(makeOperationSupport(config.readOp, config.resource));
-        const de::UniquePtr<OperationSupport> writeOp(makeOperationSupport(config.writeOp, config.resource));
-
-        readOp->initPrograms(dst);
-        writeOp->initPrograms(dst);
     }
+
+    void checkSupport(Context &context) const
+    {
+        // Check instance support
+        context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+
+        context.requireInstanceFunctionality("VK_KHR_external_semaphore_capabilities");
+        context.requireInstanceFunctionality("VK_KHR_external_memory_capabilities");
+
+        // Check device support
+        if (m_config.dedicated)
+            context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
+
+        context.requireDeviceFunctionality("VK_KHR_external_semaphore");
+        context.requireDeviceFunctionality("VK_KHR_external_memory");
+
+        if (m_config.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE)
+            context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+
+        if (m_config.type == SynchronizationType::SYNCHRONIZATION2)
+            context.requireDeviceFunctionality("VK_KHR_synchronization2");
+
+        if (m_config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR ||
+            m_config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR ||
+            m_config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)
+        {
+            context.requireDeviceFunctionality("VK_KHR_external_semaphore_fd");
+            context.requireDeviceFunctionality("VK_KHR_external_memory_fd");
+        }
+
+        if (m_config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
+            context.requireDeviceFunctionality("VK_EXT_external_memory_dma_buf");
+
+        if (m_config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT ||
+            m_config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT ||
+            m_config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT ||
+            m_config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
+        {
+            context.requireDeviceFunctionality("VK_KHR_external_semaphore_win32");
+            context.requireDeviceFunctionality("VK_KHR_external_memory_win32");
+        }
+
+        if (m_config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA ||
+            m_config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA)
+        {
+            context.requireDeviceFunctionality("VK_FUCHSIA_external_semaphore");
+            context.requireDeviceFunctionality("VK_FUCHSIA_external_memory");
+        }
+
+        TestLog &log                              = context.getTestContext().getLog();
+        const vk::InstanceInterface &vki          = context.getInstanceInterface();
+        const vk::VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
+        m_writeOpSupport->checkSupport(context);
+        m_readOpSupport->checkSupport(context);
+
+        // Check resource support
+        if (m_config.resource.type == RESOURCE_TYPE_IMAGE)
+        {
+            const vk::VkPhysicalDeviceExternalImageFormatInfo externalInfo = {
+                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, nullptr, m_config.memoryHandleType};
+            const vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
+                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+                &externalInfo,
+                m_config.resource.imageFormat,
+                m_config.resource.imageType,
+                vk::VK_IMAGE_TILING_OPTIMAL,
+                m_readOpSupport->getInResourceUsageFlags() | m_writeOpSupport->getOutResourceUsageFlags(),
+                0u};
+            vk::VkExternalImageFormatProperties externalProperties = initVulkanStructure();
+            vk::VkImageFormatProperties2 formatProperties          = initVulkanStructure(&externalProperties);
+
+            {
+                const vk::VkResult res =
+                    vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &formatProperties);
+
+                if (res == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+                    TCU_THROW(NotSupportedError, "Image format not supported");
+
+                VK_CHECK(res); // Check other errors
+            }
+
+            log << TestLog::Message << "External image format properties: " << imageFormatInfo << "\n"
+                << externalProperties << TestLog::EndMessage;
+
+            if ((externalProperties.externalMemoryProperties.externalMemoryFeatures &
+                 vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT) == 0)
+                TCU_THROW(NotSupportedError, "Exporting image resource not supported");
+
+            if ((externalProperties.externalMemoryProperties.externalMemoryFeatures &
+                 vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0)
+                TCU_THROW(NotSupportedError, "Importing image resource not supported");
+
+            if (!m_config.dedicated && (externalProperties.externalMemoryProperties.externalMemoryFeatures &
+                                        vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT) != 0)
+            {
+                TCU_THROW(NotSupportedError, "Handle requires dedicated allocation, but test uses suballocated memory");
+            }
+
+            if (!(formatProperties.imageFormatProperties.sampleCounts & m_config.resource.imageSamples))
+            {
+                TCU_THROW(NotSupportedError, "Specified sample count for format not supported");
+            }
+
+            if ((m_config.resource.imageSamples != VK_SAMPLE_COUNT_1_BIT) &&
+                ((m_readOpSupport->getInResourceUsageFlags() | m_writeOpSupport->getOutResourceUsageFlags()) &
+                 VK_IMAGE_USAGE_STORAGE_BIT) &&
+                !context.getDeviceFeatures().shaderStorageImageMultisample)
+            {
+                TCU_THROW(NotSupportedError, "shaderStorageImageMultisample not supported");
+            }
+        }
+        else
+        {
+            const vk::VkPhysicalDeviceExternalBufferInfo info = {
+                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, nullptr,
+
+                0u, m_readOpSupport->getInResourceUsageFlags() | m_writeOpSupport->getOutResourceUsageFlags(),
+                m_config.memoryHandleType};
+            vk::VkExternalBufferProperties properties = {
+                vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES, nullptr, {0u, 0u, 0u}};
+            vki.getPhysicalDeviceExternalBufferProperties(physicalDevice, &info, &properties);
+
+            log << TestLog::Message << "External buffer properties: " << info << "\n"
+                << properties << TestLog::EndMessage;
+
+            if ((properties.externalMemoryProperties.externalMemoryFeatures &
+                 vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT) == 0 ||
+                (properties.externalMemoryProperties.externalMemoryFeatures &
+                 vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0)
+                TCU_THROW(NotSupportedError, "Exporting and importing memory type not supported");
+
+            if (!m_config.dedicated && (properties.externalMemoryProperties.externalMemoryFeatures &
+                                        vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT) != 0)
+            {
+                TCU_THROW(NotSupportedError, "Handle requires dedicated allocation, but test uses suballocated memory");
+            }
+        }
+
+        // Check semaphore support
+        const vk::VkSemaphoreTypeCreateInfo semaphoreTypeInfo = {
+            vk::VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+            nullptr,
+            m_config.semaphoreType,
+            0,
+        };
+        const vk::VkPhysicalDeviceExternalSemaphoreInfo info = {
+            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO, &semaphoreTypeInfo,
+            m_config.semaphoreHandleType};
+
+        vk::VkExternalSemaphoreProperties properties = {vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES, nullptr,
+                                                        0u, 0u, 0u};
+
+        vki.getPhysicalDeviceExternalSemaphoreProperties(physicalDevice, &info, &properties);
+
+        log << TestLog::Message << info << "\n" << properties << TestLog::EndMessage;
+
+        if ((properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT) == 0 ||
+            (properties.externalSemaphoreFeatures & vk::VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT) == 0)
+            TCU_THROW(NotSupportedError, "Exporting and importing semaphore type not supported");
+    }
+
+    void initPrograms(SourceCollections &programCollection) const
+    {
+        m_readOpSupport->initPrograms(programCollection);
+        m_writeOpSupport->initPrograms(programCollection);
+    }
+
+    TestInstance *createInstance(Context &context) const
+    {
+        return new SharingTestInstance(context, m_config);
+    }
+
+private:
+    TestConfig m_config;
+    de::SharedPtr<OperationSupport> m_writeOpSupport;
+    de::SharedPtr<OperationSupport> m_readOpSupport;
 };
 
 } // namespace
@@ -1282,8 +1262,7 @@ static void createTests(tcu::TestCaseGroup *group, SynchronizationType type)
                                 std::string name = getResourceName(resource) + semaphoreNames[semaphoreType] +
                                                    cases[caseNdx].nameSuffix;
 
-                                opGroup->addChild(new InstanceFactory1<SharingTestInstance, TestConfig, Progs>(
-                                    testCtx, name, Progs(), config));
+                                opGroup->addChild(new SharingTestCase(testCtx, name, config));
                                 empty = false;
                             }
                         }
@@ -1311,5 +1290,4 @@ tcu::TestCaseGroup *createCrossInstanceSharingTest(tcu::TestContext &testCtx, Sy
     return createTestGroup(testCtx, "cross_instance", createTests, type, cleanupGroup);
 }
 
-} // namespace synchronization
-} // namespace vkt
+} // namespace vkt::synchronization

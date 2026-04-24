@@ -3729,6 +3729,7 @@ public:
     void deinit(void) override
     {
         deviceHelperManage(nullptr, DeviceHelperOp::DELETE);
+        tcu::TestCaseGroup::deinit();
     }
 };
 

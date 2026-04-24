@@ -266,6 +266,14 @@ public:
     // have access to Context, such as checkSupport() or delayedInit().
     de::SharedPtr<const ContextManager> getContextManager() const;
 
+    // Allows to select a physical device other than '--deqp-vk-device-id'.
+    // Override this method if the test needs a different physical device.
+    // This is called after the instance is created but before the logical
+    // device is created. Note that the ContextManager class is not fully
+    // instantiated in the body of this method.
+    virtual vk::VkPhysicalDevice selectPhysicalDevice(const vk::InstanceInterface &, vk::VkInstance,
+                                                      const tcu::CommandLine &);
+
     virtual void delayedInit(void); // non-const init called after checkSupport but before initPrograms
     virtual void initPrograms(vk::SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;

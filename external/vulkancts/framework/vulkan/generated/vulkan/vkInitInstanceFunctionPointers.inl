@@ -4,7 +4,6 @@
  */
 
 m_vk.acquireDrmDisplayEXT = (AcquireDrmDisplayEXTFunc) GET_PROC_ADDR("vkAcquireDrmDisplayEXT");
-m_vk.acquireWinrtDisplayNV = (AcquireWinrtDisplayNVFunc) GET_PROC_ADDR("vkAcquireWinrtDisplayNV");
 m_vk.acquireXlibDisplayEXT = (AcquireXlibDisplayEXTFunc) GET_PROC_ADDR("vkAcquireXlibDisplayEXT");
 m_vk.createAndroidSurfaceKHR = (CreateAndroidSurfaceKHRFunc) GET_PROC_ADDR("vkCreateAndroidSurfaceKHR");
 m_vk.createDebugReportCallbackEXT = (CreateDebugReportCallbackEXTFunc) GET_PROC_ADDR("vkCreateDebugReportCallbackEXT");
@@ -21,6 +20,7 @@ m_vk.createMetalSurfaceEXT = (CreateMetalSurfaceEXTFunc) GET_PROC_ADDR("vkCreate
 m_vk.createScreenSurfaceQNX = (CreateScreenSurfaceQNXFunc) GET_PROC_ADDR("vkCreateScreenSurfaceQNX");
 m_vk.createStreamDescriptorSurfaceGGP = (CreateStreamDescriptorSurfaceGGPFunc) GET_PROC_ADDR("vkCreateStreamDescriptorSurfaceGGP");
 m_vk.createSurfaceOHOS = (CreateSurfaceOHOSFunc) GET_PROC_ADDR("vkCreateSurfaceOHOS");
+m_vk.createUbmSurfaceSEC = (CreateUbmSurfaceSECFunc) GET_PROC_ADDR("vkCreateUbmSurfaceSEC");
 m_vk.createViSurfaceNN = (CreateViSurfaceNNFunc) GET_PROC_ADDR("vkCreateViSurfaceNN");
 m_vk.createWaylandSurfaceKHR = (CreateWaylandSurfaceKHRFunc) GET_PROC_ADDR("vkCreateWaylandSurfaceKHR");
 m_vk.createWin32SurfaceKHR = (CreateWin32SurfaceKHRFunc) GET_PROC_ADDR("vkCreateWin32SurfaceKHR");
@@ -53,6 +53,7 @@ m_vk.getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV = (GetPhys
 m_vk.getPhysicalDeviceCooperativeMatrixPropertiesKHR = (GetPhysicalDeviceCooperativeMatrixPropertiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR");
 m_vk.getPhysicalDeviceCooperativeMatrixPropertiesNV = (GetPhysicalDeviceCooperativeMatrixPropertiesNVFunc) GET_PROC_ADDR("vkGetPhysicalDeviceCooperativeMatrixPropertiesNV");
 m_vk.getPhysicalDeviceCooperativeVectorPropertiesNV = (GetPhysicalDeviceCooperativeVectorPropertiesNVFunc) GET_PROC_ADDR("vkGetPhysicalDeviceCooperativeVectorPropertiesNV");
+m_vk.getPhysicalDeviceDescriptorSizeEXT = (GetPhysicalDeviceDescriptorSizeEXTFunc) GET_PROC_ADDR("vkGetPhysicalDeviceDescriptorSizeEXT");
 m_vk.getPhysicalDeviceDirectFBPresentationSupportEXT = (GetPhysicalDeviceDirectFBPresentationSupportEXTFunc) GET_PROC_ADDR("vkGetPhysicalDeviceDirectFBPresentationSupportEXT");
 m_vk.getPhysicalDeviceDisplayPlaneProperties2KHR = (GetPhysicalDeviceDisplayPlaneProperties2KHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceDisplayPlaneProperties2KHR");
 m_vk.getPhysicalDeviceDisplayPlanePropertiesKHR = (GetPhysicalDeviceDisplayPlanePropertiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceDisplayPlanePropertiesKHR");
@@ -94,7 +95,6 @@ if (!m_vk.getPhysicalDeviceMemoryProperties2)
     m_vk.getPhysicalDeviceMemoryProperties2 = (GetPhysicalDeviceMemoryProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceMemoryProperties2KHR");
 m_vk.getPhysicalDeviceMemoryProperties2KHR = (GetPhysicalDeviceMemoryProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceMemoryProperties2KHR");
 m_vk.getPhysicalDeviceMultisamplePropertiesEXT = (GetPhysicalDeviceMultisamplePropertiesEXTFunc) GET_PROC_ADDR("vkGetPhysicalDeviceMultisamplePropertiesEXT");
-m_vk.getPhysicalDeviceOpticalFlowImageFormatsNV = (GetPhysicalDeviceOpticalFlowImageFormatsNVFunc) GET_PROC_ADDR("vkGetPhysicalDeviceOpticalFlowImageFormatsNV");
 m_vk.getPhysicalDevicePresentRectanglesKHR = (GetPhysicalDevicePresentRectanglesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDevicePresentRectanglesKHR");
 m_vk.getPhysicalDeviceProperties = (GetPhysicalDevicePropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceProperties");
 m_vk.getPhysicalDeviceProperties2 = (GetPhysicalDeviceProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceProperties2");
@@ -128,6 +128,7 @@ m_vk.getPhysicalDeviceToolProperties = (GetPhysicalDeviceToolPropertiesFunc) GET
 if (!m_vk.getPhysicalDeviceToolProperties)
     m_vk.getPhysicalDeviceToolProperties = (GetPhysicalDeviceToolPropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceToolPropertiesEXT");
 m_vk.getPhysicalDeviceToolPropertiesEXT = (GetPhysicalDeviceToolPropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceToolPropertiesEXT");
+m_vk.getPhysicalDeviceUbmPresentationSupportSEC = (GetPhysicalDeviceUbmPresentationSupportSECFunc) GET_PROC_ADDR("vkGetPhysicalDeviceUbmPresentationSupportSEC");
 m_vk.getPhysicalDeviceVideoCapabilitiesKHR = (GetPhysicalDeviceVideoCapabilitiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceVideoCapabilitiesKHR");
 m_vk.getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR = (GetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR");
 m_vk.getPhysicalDeviceVideoFormatPropertiesKHR = (GetPhysicalDeviceVideoFormatPropertiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceVideoFormatPropertiesKHR");
@@ -136,6 +137,5 @@ m_vk.getPhysicalDeviceWin32PresentationSupportKHR = (GetPhysicalDeviceWin32Prese
 m_vk.getPhysicalDeviceXcbPresentationSupportKHR = (GetPhysicalDeviceXcbPresentationSupportKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceXcbPresentationSupportKHR");
 m_vk.getPhysicalDeviceXlibPresentationSupportKHR = (GetPhysicalDeviceXlibPresentationSupportKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceXlibPresentationSupportKHR");
 m_vk.getRandROutputDisplayEXT = (GetRandROutputDisplayEXTFunc) GET_PROC_ADDR("vkGetRandROutputDisplayEXT");
-m_vk.getWinrtDisplayNV = (GetWinrtDisplayNVFunc) GET_PROC_ADDR("vkGetWinrtDisplayNV");
 m_vk.releaseDisplayEXT = (ReleaseDisplayEXTFunc) GET_PROC_ADDR("vkReleaseDisplayEXT");
 m_vk.submitDebugUtilsMessageEXT = (SubmitDebugUtilsMessageEXTFunc) GET_PROC_ADDR("vkSubmitDebugUtilsMessageEXT");

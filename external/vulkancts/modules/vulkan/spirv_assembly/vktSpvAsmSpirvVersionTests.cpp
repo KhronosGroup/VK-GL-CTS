@@ -66,7 +66,7 @@ struct TestParameters
     SpirvVersion spirvVersion;
 };
 
-static InstanceContext initGraphicsInstanceContext(const TestParameters &testParameters)
+static InstanceContextPtr initGraphicsInstanceContext(const TestParameters &testParameters)
 {
     static const ShaderElement vertFragPipelineStages[] = {
         ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT),
@@ -216,7 +216,7 @@ SpvAsmGraphicsSpirvVersionsInstance::SpvAsmGraphicsSpirvVersionsInstance(Context
 
 tcu::TestStatus SpvAsmGraphicsSpirvVersionsInstance::iterate(void)
 {
-    InstanceContext instanceContext = initGraphicsInstanceContext(m_testParameters);
+    InstanceContextPtr instanceContext = initGraphicsInstanceContext(m_testParameters);
 
     if (!isSpirVersionsAsRequested(m_context.getBinaryCollection(), m_testParameters.spirvVersion))
         return tcu::TestStatus::fail("Binary SPIR-V version is different from requested");
@@ -256,6 +256,7 @@ class SpvAsmSpirvVersionsCase : public TestCase
 {
 public:
     SpvAsmSpirvVersionsCase(tcu::TestContext &testCtx, const char *name, const TestParameters &testParameters);
+    void checkSupport(Context &context) const;
     void initPrograms(vk::SourceCollections &programCollection) const;
     TestInstance *createInstance(Context &context) const;
 
@@ -270,19 +271,25 @@ SpvAsmSpirvVersionsCase::SpvAsmSpirvVersionsCase(tcu::TestContext &testCtx, cons
 {
 }
 
-void validateVulkanVersion(const uint32_t usedVulkanVersion, const SpirvVersion testedSpirvVersion)
+void SpvAsmSpirvVersionsCase::checkSupport(Context &context) const
 {
-    const SpirvVersion usedSpirvVersionForAsm = getMaxSpirvVersionForAsm(usedVulkanVersion);
-
-    if (testedSpirvVersion > usedSpirvVersionForAsm)
+    const SpirvVersion usedSpirvVersionForAsm = getMaxSpirvVersionForAsm(context.getUsedApiVersion());
+    if (m_testParameters.spirvVersion > usedSpirvVersionForAsm)
         TCU_THROW(NotSupportedError, "Specified SPIR-V version is not supported by the device/instance");
+
+    if ((m_testParameters.operation == OPERATION_GRAPHICS_TESSELATION_EVALUATION) ||
+        (m_testParameters.operation == OPERATION_GRAPHICS_TESSELATION_CONTROL))
+    {
+        if (!context.getDeviceFeatures().tessellationShader)
+            TCU_THROW(NotSupportedError, "Tessellation shaders not supported");
+    }
+    if ((m_testParameters.operation == OPERATION_GRAPHICS_GEOMETRY) && !context.getDeviceFeatures().geometryShader)
+        TCU_THROW(NotSupportedError, "Geometry shaders not supported");
 }
 
 void SpvAsmSpirvVersionsCase::initPrograms(SourceCollections &programCollection) const
 {
     const SpirVAsmBuildOptions spirVAsmBuildOptions(programCollection.usedVulkanVersion, m_testParameters.spirvVersion);
-
-    validateVulkanVersion(programCollection.usedVulkanVersion, m_testParameters.spirvVersion);
 
     switch (m_testParameters.operation)
     {
@@ -299,7 +306,7 @@ void SpvAsmSpirvVersionsCase::initPrograms(SourceCollections &programCollection)
 
     case OPERATION_GRAPHICS_VERTEX:
     {
-        InstanceContext instanceContext = initGraphicsInstanceContext(m_testParameters);
+        InstanceContextPtr instanceContext = initGraphicsInstanceContext(m_testParameters);
 
         addShaderCodeCustomVertex(programCollection, instanceContext, &spirVAsmBuildOptions);
 
@@ -308,7 +315,7 @@ void SpvAsmSpirvVersionsCase::initPrograms(SourceCollections &programCollection)
 
     case OPERATION_GRAPHICS_TESSELATION_EVALUATION:
     {
-        InstanceContext instanceContext = initGraphicsInstanceContext(m_testParameters);
+        InstanceContextPtr instanceContext = initGraphicsInstanceContext(m_testParameters);
 
         addShaderCodeCustomTessEval(programCollection, instanceContext, &spirVAsmBuildOptions);
 
@@ -317,7 +324,7 @@ void SpvAsmSpirvVersionsCase::initPrograms(SourceCollections &programCollection)
 
     case OPERATION_GRAPHICS_TESSELATION_CONTROL:
     {
-        InstanceContext instanceContext = initGraphicsInstanceContext(m_testParameters);
+        InstanceContextPtr instanceContext = initGraphicsInstanceContext(m_testParameters);
 
         addShaderCodeCustomTessControl(programCollection, instanceContext, &spirVAsmBuildOptions);
 
@@ -326,7 +333,7 @@ void SpvAsmSpirvVersionsCase::initPrograms(SourceCollections &programCollection)
 
     case OPERATION_GRAPHICS_GEOMETRY:
     {
-        InstanceContext instanceContext = initGraphicsInstanceContext(m_testParameters);
+        InstanceContextPtr instanceContext = initGraphicsInstanceContext(m_testParameters);
 
         addShaderCodeCustomGeometry(programCollection, instanceContext, &spirVAsmBuildOptions);
 
@@ -335,7 +342,7 @@ void SpvAsmSpirvVersionsCase::initPrograms(SourceCollections &programCollection)
 
     case OPERATION_GRAPHICS_FRAGMENT:
     {
-        InstanceContext instanceContext = initGraphicsInstanceContext(m_testParameters);
+        InstanceContextPtr instanceContext = initGraphicsInstanceContext(m_testParameters);
 
         addShaderCodeCustomFragment(programCollection, instanceContext, &spirVAsmBuildOptions);
 
@@ -349,8 +356,6 @@ void SpvAsmSpirvVersionsCase::initPrograms(SourceCollections &programCollection)
 
 TestInstance *SpvAsmSpirvVersionsCase::createInstance(Context &context) const
 {
-    validateVulkanVersion(context.getUsedApiVersion(), m_testParameters.spirvVersion);
-
     switch (m_testParameters.operation)
     {
     case OPERATION_COMPUTE:

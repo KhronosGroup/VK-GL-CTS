@@ -188,4 +188,19 @@ EnforceDefaultInstance::EnforceDefaultInstance(const std::string &message)
 {
 }
 
+CapabilityWarning::CapabilityWarning(const char *message, const char *expr, const char *file, int line)
+    : TestException(message, expr, file, line, QP_TEST_RESULT_CAPABILITY_WARNING)
+{
+}
+
+CapabilityWarning::CapabilityWarning(const std::string &message, const char *expr, const char *file, int line)
+    : TestException(message.c_str(), expr, file, line, QP_TEST_RESULT_CAPABILITY_WARNING)
+{
+}
+
+CapabilityWarning::CapabilityWarning(const std::string &message)
+    : TestException(message, QP_TEST_RESULT_CAPABILITY_WARNING)
+{
+}
+
 } // namespace tcu

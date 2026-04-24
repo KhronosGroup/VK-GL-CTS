@@ -23,8 +23,8 @@
  * See the <vulkan_data_dir>/vulkan/video/frame_checksums.py file for
  * instructions on generating the checksums for new tests.
  *
- * Another option would be to run:
- * ffmpeg -i file -f framemd5 frame_hashes.txt
+ * Another option would be to run directly:
+ * <vulkan_data_dir>/vulkan/video/frame_checksums_ffmpeg.py
  *--------------------------------------------------------------------*/
 
 #include "vktVideoClipInfo.hpp"
@@ -148,6 +148,18 @@ static const char *basic8AV1[30] = {
     "7926240a6ff3c690f419987f929cc558", "ced2e44e064ddded6f8403a5d29c3c4c", "3f7668e8a48d074eeb733cc158603873",
     "495538554c8063a4332dd00531e70f15", "e23c1dbe349d1f116fbe040efeac8931", "efa8967dbcf46dd114ac714f4216d2f3",
 };
+
+static const char *ltrOnHEVC[30] = {
+    "4e64af1aa83230cc36062dbf3f2de357", "4966c8c308eece5e96cf76aaa7196e55", "e27ccfd30525887d5631f6a3b8ed98ee",
+    "08abdbbe2be70f63aca7d75f3fd97f7d", "f29395f55ffefcebe864921f069fa466", "cf7342e356a7907bba71f8364abf98f3",
+    "370f4752c4b40bbf88d2ba6dd093d43c", "d4614647d5e9ad6e7228341a7a810734", "c46cbf642d83e61d466bbcb945c014de",
+    "b48e81754c0a167897f24c050d427278", "c91763f73cbe05d4ff55b7cd71b1e3ef", "dfe85b92978b4eea7e9ee93ad4eb7acd",
+    "42510e910e1c50ad164d2f47e6b35d7d", "218b130b0efecd9ca8c40ae6b034b71a", "42d0d4de67f616d022f443959af67406",
+    "e7b605cfb55da001e6fe26b403d3f175", "e193cefeba65d1a13107c43149639ce5", "cc08616b493231d5aef6a8596d2a3d1a",
+    "8dbc802ccb5d2b4c7158269569c89003", "46459b2898ae156cf7116489a36bd1d5", "9bb6a959016c22a2bf329565e09dea67",
+    "b9257e1b0cad62ca85d22fe9743ffb90", "783c38955510f70039ad003c2aadb000", "a1cde6b66e0101f502907b0a1be9fdae",
+    "0cfc1a5e8553fce8038d1ebcf700b520", "c173b8e66bdda68fcb218db8493e44ae", "2e866e5842137c118259dfb87d385402",
+    "a5f12a64acbc1f7ae7ca691353d2840c", "abb86c2037f270b79bb9d5e4c345f685", "d832a894fb1e75004139c800aa47e8e4"};
 
 static const char *basic10AV1[30] = {
     "3da842f80be1583785df87a14d28f861", "3e629c6552343e3213569b160288908c", "e2e69fa47ba4346e7b425516cd3ad399",
@@ -305,6 +317,26 @@ static const char *argonTest787[10] = {
     "6a824e6e46aa9e7bbf93586beea35848", "0824f69abb11df1fd592b5f032f82a7f", "046b06462065ccc6b5015a560e2e28a1",
     "2f19e0f05601140cf9f03b001fec7494", "bcc5a7844a8dce5c38f553eca91a630b", "01f42dd70cb27bb804b792335ec4e6fa",
     "58cf033ef8015fc3a34d8e2f1213d160",
+};
+
+static const char *framesRefsShortSignalingGoldenAV1[50] = {
+    "46a894ab2f032aafdc9be1381d05e9a6", "542162d6ce7a1aa824a5f9add38b3709", "f878e83734305b2399e21e5478d8cef3",
+    "663bc3f73e129c3f2bb79de303265d38", "dc6f4321e3db636f3e2befead000e212", "632be885a79c525478d0dbe12681f62a",
+    "794a6b61f939befb1aca1071f344b927", "b9aec565ffc850a7cfa3b17e8d84dc36", "813f8ee91696e412e79ea2f84a3bab18",
+    "bb8943c7e11b6e1ee934bacf4301761b", "909473d5aa319d023fa830773d42c4ad", "696a2955744365af30b60a6525ef56ac",
+    "143fc1076aa4a2e3c4bf99d804973e71", "d9849595f9cef7b41e811f0faa16dcde", "fbc8168c0c3ebe7318886088f8a5dbdd",
+    "a386e1a18eeef1f5a65f113d1875f687", "592e2cfb7f8d7ad5ef1a851010d84090", "dc0f457032ccc8da93bc0d4eb08fef35",
+    "d3f122cc9a5327373901d782037222c0", "d32222e940ab4127cfdd409a1564cabf", "884bea381248b6c9c0804f647ddee529",
+    "ed617d1d89881f1f2ae902d30bd572ee", "e369f0aec55407f9de56656b874ab2c8", "8ddfa674d19abcea587cbb7f01a52ed6",
+    "12d7edd3e42ded29fcb6ae4490f3d234", "d54ce33678597cdae77a28ae9e0b7307", "b2afe865c504702a901ccf6de3b4da26",
+    "1788c91878d60ac328960c674ce2e95e", "65dcae05b3d7500c1f96c34eb963c603", "88bf3750f4dbb525fdd9c70045cba430",
+    "bf872db3b00f5211a04f6618d40f5975", "26f10b51a3ba6209ad9cc43c6afba667", "c629ca9c0660e171d0673fd634f7b117",
+    "c5268f6c62bae612cd45608e242e4f90", "c2b2bf90776e2fa3eebde291ab7fe430", "b65e01017dcded33de2a2f281b1d5c9d",
+    "c2d818cf68b8f2c0d3ccd3e208ced157", "81247ac5d6c727e44c9a7ceac614e6f1", "1f899ed5263f26c1dc3be159902a1094",
+    "83b775d8e7f9adcce0ad1c70a7654fde", "75cc465bdb91e454ebb271ff4cc73862", "f1d6b8a25fffbb3e731605b40adf736d",
+    "034e591a744844c56d6a791642603769", "e3cba2e6a170e185f4fc006f6dfce15b", "8e5dfd74ed44d5f7cdc7715320a1db32",
+    "ea737ffb328383adf208fc1bc6c4a25c", "040320c0824e3c2fbf4c21d6fd56b02d", "e339131d9e7a49e3371f87b939faf6a2",
+    "6482aa78a277eeaf54129f1eac7b69b9", "f90462195c0777d9a1c51eac974bcda2",
 };
 
 static const char *vp9Key[10] = {
@@ -601,6 +633,19 @@ static ClipInfo Clips[] = {
         65,
         slistBHEVC,
     },
+    // LTRPSPS_A_Qualcomm_1.bit from JCT-VC-HEVC_V1 test suite.
+    {
+        CLIP_H265_DEC_ITU_LTRPSPS_A_QUALCOMM_1,
+        "hevc/LTRPSPS_A_Qualcomm_1.bit",
+        {H265_420_8BIT_MAIN_DECODE_PROFILE},
+        ElementaryStreamFraming::H26X_BYTE_STREAM,
+        416,
+        240,
+        50,
+        30,
+        30,
+        ltrOnHEVC,
+    },
     {
         CLIP_AV1_DEC_BASIC_8,
         "av1/av1-176x144-main-basic-8.ivf",
@@ -805,6 +850,18 @@ static ClipInfo Clips[] = {
         10,
         0,
         argonTest787,
+    },
+    {
+        CLIP_AV1_DEC_FRAMES_REFS_SHORT_SIGNALING_GOLDEN,
+        "av1/av1-frames_refs_short_signaling_golden.ivf",
+        {AV1_420_8BIT_MAIN_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        640,
+        360,
+        0,
+        50,
+        0,
+        framesRefsShortSignalingGoldenAV1,
     },
     {
         CLIP_VP9_DEC_KEYFRAME_10,

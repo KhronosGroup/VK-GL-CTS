@@ -181,6 +181,10 @@ CustomInstance createInstanceWithWsi(Context &context, Type wsiType, const vecto
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
+    // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
+    if (wsiType == TYPE_DIRECT_DRM)
+        extensions.push_back("VK_EXT_direct_mode_display");
+
     vector<string> instanceExtensions;
     for (const auto &ext : extensions)
     {
@@ -396,6 +400,11 @@ tcu::TestStatus queryPresentationSupportTest(Context &context, Type wsiType)
     if (wsiType == TYPE_DIRECT_DRM)
     {
         TCU_THROW(NotSupportedError, "No presentation support query for Drm.");
+    }
+
+    if (wsiType == TYPE_DIRECT)
+    {
+        TCU_THROW(NotSupportedError, "No presentation support query for direct display.");
     }
 
     tcu::TestLog &log = context.getTestContext().getLog();
@@ -895,6 +904,11 @@ tcu::TestStatus querySurfacePresentModes2Test(Context &context, Type wsiType)
 
     for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)
     {
+        const std::vector<VkExtensionProperties> deviceNdxExtensions(
+            enumerateDeviceExtensionProperties(instHelper.vki, physicalDevices[deviceNdx], nullptr));
+        if (!isExtensionStructSupported(deviceNdxExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))
+            continue;
+
         if (isSupportedByAnyQueue(instHelper.vki, physicalDevices[deviceNdx], *surface))
         {
             const VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,

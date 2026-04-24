@@ -265,6 +265,29 @@ const TestParams depthClearValuesToTest[] = {
         },
     },
     {
+        "_clamp_control_half_viewport_range", // testNameSuffix
+        {{
+            // viewportData
+            0.0f, //   minDepth
+            0.5f, //   maxDepth
+            0.4f, //   depthValue
+            0.2f, //   expectedValue
+        }},
+        {
+            // depthClampControl
+            true, //   enabled
+            0.1f, //   minDepthClamp
+            0.9f, //   maxDepthClamp
+        },
+        false, // enableDepthBias
+        0.0f,  // depthBiasConstantFactor
+        false, // skipUNorm
+        false, // skipSNorm
+        {
+            "VK_EXT_depth_clamp_control", // requiredExtensions[0]
+        },
+    },
+    {
         "_clamp_control_input_negative", // testNameSuffix
         {{
             // viewportData

@@ -271,17 +271,10 @@ void RayTracingTraceRaysIndirectTestCase::checkSupport(Context &context) const
 
         const VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR &maintenance1FeaturesKHR =
             context.getRayTracingMaintenance1Features();
-        const VkPhysicalDeviceFeatures deviceFeatures =
-            getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
 
         if (maintenance1FeaturesKHR.rayTracingMaintenance1 == VK_FALSE)
             TCU_THROW(NotSupportedError,
                       "Requires VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR::rayTracingMaintenance1");
-
-        if (!deviceFeatures.shaderInt64)
-        {
-            TCU_THROW(NotSupportedError, "Device feature shaderInt64 is not supported");
-        }
 
         if (((m_data.traceType == TraceType::INDIRECT2_CPU) || (m_data.traceType == TraceType::INDIRECT2_GPU)) &&
             (maintenance1FeaturesKHR.rayTracingPipelineTraceRaysIndirect2 == VK_FALSE))
@@ -305,22 +298,21 @@ void RayTracingTraceRaysIndirectTestCase::initPrograms(SourceCollections &progra
     {
         std::stringstream css;
         css << "#version 460 core\n"
-            << (m_data.useKhrMaintenance1Semantics ? "#extension GL_ARB_gpu_shader_int64: enable\n" : "\n")
             << "struct TraceRaysIndirectCommand\n"
                "{\n";
         if (m_data.useKhrMaintenance1Semantics)
         {
-            css << "    uint64_t raygenShaderRecordAddress;\n"
-                   "    uint64_t raygenShaderRecordSize;\n"
-                   "    uint64_t missShaderBindingTableAddress;\n"
-                   "    uint64_t missShaderBindingTableSize;\n"
-                   "    uint64_t missShaderBindingTableStride;\n"
-                   "    uint64_t hitShaderBindingTableAddress;\n"
-                   "    uint64_t hitShaderBindingTableSize;\n"
-                   "    uint64_t hitShaderBindingTableStride;\n"
-                   "    uint64_t callableShaderBindingTableAddress;\n"
-                   "    uint64_t callableShaderBindingTableSize;\n"
-                   "    uint64_t callableShaderBindingTableStride;\n";
+            css << "    uvec2 raygenShaderRecordAddress;\n"
+                   "    uvec2 raygenShaderRecordSize;\n"
+                   "    uvec2 missShaderBindingTableAddress;\n"
+                   "    uvec2 missShaderBindingTableSize;\n"
+                   "    uvec2 missShaderBindingTableStride;\n"
+                   "    uvec2 hitShaderBindingTableAddress;\n"
+                   "    uvec2 hitShaderBindingTableSize;\n"
+                   "    uvec2 hitShaderBindingTableStride;\n"
+                   "    uvec2 callableShaderBindingTableAddress;\n"
+                   "    uvec2 callableShaderBindingTableSize;\n"
+                   "    uvec2 callableShaderBindingTableStride;\n";
         }
         css << "    uint width;\n"
                "    uint height;\n"
@@ -909,10 +901,6 @@ void TraceRaysIndirect2Case::checkSupport(Context &context) const
     context.requireDeviceFunctionality(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
     context.requireDeviceFunctionality(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME);
 
-    const VkPhysicalDeviceFeatures &features = context.getDeviceFeatures();
-    if (features.shaderInt64 == VK_FALSE)
-        TCU_THROW(NotSupportedError, "64-bit integers not supported by device");
-
     const VkPhysicalDeviceAccelerationStructureFeaturesKHR &accelerationStructureFeaturesKHR =
         context.getAccelerationStructureFeatures();
     if (accelerationStructureFeaturesKHR.accelerationStructure == VK_FALSE)
@@ -950,20 +938,20 @@ void TraceRaysIndirect2Case::initPrograms(SourceCollections &programCollection) 
         #extension GL_ARB_gpu_shader_int64: enable
         struct TraceRaysIndirectCommand
         {
-            uint64_t raygenShaderRecordAddress;
-            uint64_t raygenShaderRecordSize;
-            uint64_t missShaderBindingTableAddress;
-            uint64_t missShaderBindingTableSize;
-            uint64_t missShaderBindingTableStride;
-            uint64_t hitShaderBindingTableAddress;
-            uint64_t hitShaderBindingTableSize;
-            uint64_t hitShaderBindingTableStride;
-            uint64_t callableShaderBindingTableAddress;
-            uint64_t callableShaderBindingTableSize;
-            uint64_t callableShaderBindingTableStride;
-            uint     width;
-            uint     height;
-            uint     depth;
+            uvec2 raygenShaderRecordAddress;
+            uvec2 raygenShaderRecordSize;
+            uvec2 missShaderBindingTableAddress;
+            uvec2 missShaderBindingTableSize;
+            uvec2 missShaderBindingTableStride;
+            uvec2 hitShaderBindingTableAddress;
+            uvec2 hitShaderBindingTableSize;
+            uvec2 hitShaderBindingTableStride;
+            uvec2 callableShaderBindingTableAddress;
+            uvec2 callableShaderBindingTableSize;
+            uvec2 callableShaderBindingTableStride;
+            uint  width;
+            uint  height;
+            uint  depth;
         };
         layout(push_constant) uniform CopyStyle {
             uint full;

@@ -1,0 +1,2 @@
+dEQP-VK.info.device_extension_dependencies
+dEQP-VK.info.instance_extension_dependencies

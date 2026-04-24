@@ -31,6 +31,7 @@
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkFormatLists.hpp"
 
 #include "tcuSeedBuilder.hpp"
 #include "tcuTestLog.hpp"
@@ -78,16 +79,19 @@ struct ImageConfig
 
 struct TestConfig
 {
-    TestConfig(const ImageConfig &src_, const ImageConfig &dst_, const bool intermediateBuffer_)
+    TestConfig(const ImageConfig &src_, const ImageConfig &dst_, const bool intermediateBuffer_,
+               const vk::VkExtent2D extent_ = {})
         : src(src_)
         , dst(dst_)
         , intermediateBuffer(intermediateBuffer_)
+        , extent(extent_)
     {
     }
 
     ImageConfig src;
     ImageConfig dst;
     bool intermediateBuffer;
+    vk::VkExtent2D extent;
 };
 
 void checkFormatSupport(Context &context, const ImageConfig &config)
@@ -219,156 +223,53 @@ bool isCompatible(vk::VkFormat srcFormat, vk::VkFormat dstFormat)
 {
     if (srcFormat == dstFormat)
         return true;
-    else
-    {
-        const vk::VkFormat class8Bit[] = {
-            vk::VK_FORMAT_R4G4_UNORM_PACK8, vk::VK_FORMAT_R8_UNORM, vk::VK_FORMAT_R8_SNORM, vk::VK_FORMAT_R8_USCALED,
-            vk::VK_FORMAT_R8_SSCALED,       vk::VK_FORMAT_R8_UINT,  vk::VK_FORMAT_R8_SINT,  vk::VK_FORMAT_R8_SRGB};
-        const vk::VkFormat class16Bit[] = {vk::VK_FORMAT_R4G4B4A4_UNORM_PACK16,
-                                           vk::VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-                                           vk::VK_FORMAT_R5G6B5_UNORM_PACK16,
-                                           vk::VK_FORMAT_B5G6R5_UNORM_PACK16,
-                                           vk::VK_FORMAT_R5G5B5A1_UNORM_PACK16,
-                                           vk::VK_FORMAT_B5G5R5A1_UNORM_PACK16,
-                                           vk::VK_FORMAT_A1R5G5B5_UNORM_PACK16,
-                                           vk::VK_FORMAT_R8G8_UNORM,
-                                           vk::VK_FORMAT_R8G8_SNORM,
-                                           vk::VK_FORMAT_R8G8_USCALED,
-                                           vk::VK_FORMAT_R8G8_SSCALED,
-                                           vk::VK_FORMAT_R8G8_UINT,
-                                           vk::VK_FORMAT_R8G8_SINT,
-                                           vk::VK_FORMAT_R8G8_SRGB,
-                                           vk::VK_FORMAT_R16_UNORM,
-                                           vk::VK_FORMAT_R16_SNORM,
-                                           vk::VK_FORMAT_R16_USCALED,
-                                           vk::VK_FORMAT_R16_SSCALED,
-                                           vk::VK_FORMAT_R16_UINT,
-                                           vk::VK_FORMAT_R16_SINT,
-                                           vk::VK_FORMAT_R16_SFLOAT,
-                                           vk::VK_FORMAT_R10X6_UNORM_PACK16,
-                                           vk::VK_FORMAT_R12X4_UNORM_PACK16};
-        const vk::VkFormat class24Bit[] = {
-            vk::VK_FORMAT_R8G8B8_UNORM,   vk::VK_FORMAT_R8G8B8_SNORM,   vk::VK_FORMAT_R8G8B8_USCALED,
-            vk::VK_FORMAT_R8G8B8_SSCALED, vk::VK_FORMAT_R8G8B8_UINT,    vk::VK_FORMAT_R8G8B8_SINT,
-            vk::VK_FORMAT_R8G8B8_SRGB,    vk::VK_FORMAT_B8G8R8_UNORM,   vk::VK_FORMAT_B8G8R8_SNORM,
-            vk::VK_FORMAT_B8G8R8_USCALED, vk::VK_FORMAT_B8G8R8_SSCALED, vk::VK_FORMAT_B8G8R8_UINT,
-            vk::VK_FORMAT_B8G8R8_SINT,    vk::VK_FORMAT_B8G8R8_SRGB};
-        const vk::VkFormat class32Bit[]  = {vk::VK_FORMAT_R8G8B8A8_UNORM,
-                                            vk::VK_FORMAT_R8G8B8A8_SNORM,
-                                            vk::VK_FORMAT_R8G8B8A8_USCALED,
-                                            vk::VK_FORMAT_R8G8B8A8_SSCALED,
-                                            vk::VK_FORMAT_R8G8B8A8_UINT,
-                                            vk::VK_FORMAT_R8G8B8A8_SINT,
-                                            vk::VK_FORMAT_R8G8B8A8_SRGB,
-                                            vk::VK_FORMAT_B8G8R8A8_UNORM,
-                                            vk::VK_FORMAT_B8G8R8A8_SNORM,
-                                            vk::VK_FORMAT_B8G8R8A8_USCALED,
-                                            vk::VK_FORMAT_B8G8R8A8_SSCALED,
-                                            vk::VK_FORMAT_B8G8R8A8_UINT,
-                                            vk::VK_FORMAT_B8G8R8A8_SINT,
-                                            vk::VK_FORMAT_B8G8R8A8_SRGB,
-                                            vk::VK_FORMAT_A8B8G8R8_UNORM_PACK32,
-                                            vk::VK_FORMAT_A8B8G8R8_SNORM_PACK32,
-                                            vk::VK_FORMAT_A8B8G8R8_USCALED_PACK32,
-                                            vk::VK_FORMAT_A8B8G8R8_SSCALED_PACK32,
-                                            vk::VK_FORMAT_A8B8G8R8_UINT_PACK32,
-                                            vk::VK_FORMAT_A8B8G8R8_SINT_PACK32,
-                                            vk::VK_FORMAT_A8B8G8R8_SRGB_PACK32,
-                                            vk::VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-                                            vk::VK_FORMAT_A2R10G10B10_SNORM_PACK32,
-                                            vk::VK_FORMAT_A2R10G10B10_USCALED_PACK32,
-                                            vk::VK_FORMAT_A2R10G10B10_SSCALED_PACK32,
-                                            vk::VK_FORMAT_A2R10G10B10_UINT_PACK32,
-                                            vk::VK_FORMAT_A2R10G10B10_SINT_PACK32,
-                                            vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-                                            vk::VK_FORMAT_A2B10G10R10_SNORM_PACK32,
-                                            vk::VK_FORMAT_A2B10G10R10_USCALED_PACK32,
-                                            vk::VK_FORMAT_A2B10G10R10_SSCALED_PACK32,
-                                            vk::VK_FORMAT_A2B10G10R10_UINT_PACK32,
-                                            vk::VK_FORMAT_A2B10G10R10_SINT_PACK32,
-                                            vk::VK_FORMAT_R16G16_UNORM,
-                                            vk::VK_FORMAT_R16G16_SNORM,
-                                            vk::VK_FORMAT_R16G16_USCALED,
-                                            vk::VK_FORMAT_R16G16_SSCALED,
-                                            vk::VK_FORMAT_R16G16_UINT,
-                                            vk::VK_FORMAT_R16G16_SINT,
-                                            vk::VK_FORMAT_R16G16_SFLOAT,
-                                            vk::VK_FORMAT_R32_UINT,
-                                            vk::VK_FORMAT_R32_SINT,
-                                            vk::VK_FORMAT_R32_SFLOAT,
-                                            vk::VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-                                            vk::VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
-                                            vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16,
-                                            vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16};
-        const vk::VkFormat class48Bit[]  = {vk::VK_FORMAT_R16G16B16_UNORM,   vk::VK_FORMAT_R16G16B16_SNORM,
-                                            vk::VK_FORMAT_R16G16B16_USCALED, vk::VK_FORMAT_R16G16B16_SSCALED,
-                                            vk::VK_FORMAT_R16G16B16_UINT,    vk::VK_FORMAT_R16G16B16_SINT,
-                                            vk::VK_FORMAT_R16G16B16_SFLOAT};
-        const vk::VkFormat class64Bit[]  = {vk::VK_FORMAT_R16G16B16A16_UNORM,
-                                            vk::VK_FORMAT_R16G16B16A16_SNORM,
-                                            vk::VK_FORMAT_R16G16B16A16_USCALED,
-                                            vk::VK_FORMAT_R16G16B16A16_SSCALED,
-                                            vk::VK_FORMAT_R16G16B16A16_UINT,
-                                            vk::VK_FORMAT_R16G16B16A16_SINT,
-                                            vk::VK_FORMAT_R16G16B16A16_SFLOAT,
-                                            vk::VK_FORMAT_R32G32_UINT,
-                                            vk::VK_FORMAT_R32G32_SINT,
-                                            vk::VK_FORMAT_R32G32_SFLOAT,
-                                            vk::VK_FORMAT_R64_UINT,
-                                            vk::VK_FORMAT_R64_SINT,
-                                            vk::VK_FORMAT_R64_SFLOAT};
-        const vk::VkFormat class96Bit[]  = {vk::VK_FORMAT_R32G32B32_UINT, vk::VK_FORMAT_R32G32B32_SINT,
-                                            vk::VK_FORMAT_R32G32B32_SFLOAT};
-        const vk::VkFormat class128Bit[] = {vk::VK_FORMAT_R32G32B32A32_UINT,   vk::VK_FORMAT_R32G32B32A32_SINT,
-                                            vk::VK_FORMAT_R32G32B32A32_SFLOAT, vk::VK_FORMAT_R64G64_UINT,
-                                            vk::VK_FORMAT_R64G64_SINT,         vk::VK_FORMAT_R64G64_SFLOAT};
-        const vk::VkFormat class192Bit[] = {vk::VK_FORMAT_R64G64B64_UINT, vk::VK_FORMAT_R64G64B64_SINT,
-                                            vk::VK_FORMAT_R64G64B64_SFLOAT};
-        const vk::VkFormat class256Bit[] = {vk::VK_FORMAT_R64G64B64A64_UINT, vk::VK_FORMAT_R64G64B64A64_SINT,
-                                            vk::VK_FORMAT_R64G64B64A64_SFLOAT};
 
-        if (de::contains(DE_ARRAY_BEGIN(class8Bit), DE_ARRAY_END(class8Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(class8Bit), DE_ARRAY_END(class8Bit), dstFormat))
-            return true;
+    if (de::contains(formats::compatibleFormats8Bit, srcFormat) &&
+        de::contains(formats::compatibleFormats8Bit, dstFormat))
+        return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(class16Bit), DE_ARRAY_END(class16Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(class16Bit), DE_ARRAY_END(class16Bit), dstFormat))
-            return true;
+    if (de::contains(formats::compatibleFormats16Bit, srcFormat) &&
+        de::contains(formats::compatibleFormats16Bit, dstFormat))
+        return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(class24Bit), DE_ARRAY_END(class24Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(class24Bit), DE_ARRAY_END(class24Bit), dstFormat))
-            return true;
+    if (de::contains(formats::compatibleFormats24Bit, srcFormat) &&
+        de::contains(formats::compatibleFormats24Bit, dstFormat))
+        return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(class32Bit), DE_ARRAY_END(class32Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(class32Bit), DE_ARRAY_END(class32Bit), dstFormat))
-            return true;
+    if (de::contains(formats::compatibleFormats32Bit, srcFormat) &&
+        de::contains(formats::compatibleFormats32Bit, dstFormat))
+        return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(class48Bit), DE_ARRAY_END(class48Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(class48Bit), DE_ARRAY_END(class48Bit), dstFormat))
-            return true;
+    if (de::contains(formats::compatibleFormats48Bit, srcFormat) &&
+        de::contains(formats::compatibleFormats48Bit, dstFormat))
+        return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(class64Bit), DE_ARRAY_END(class64Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(class64Bit), DE_ARRAY_END(class64Bit), dstFormat))
-            return true;
+    if (de::contains(formats::compatibleFormats64Bit, srcFormat) &&
+        de::contains(formats::compatibleFormats64Bit, dstFormat))
+        return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(class96Bit), DE_ARRAY_END(class96Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(class96Bit), DE_ARRAY_END(class96Bit), dstFormat))
-            return true;
+    if (de::contains(formats::compatibleFormats96Bit, srcFormat) &&
+        de::contains(formats::compatibleFormats96Bit, dstFormat))
+        return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(class128Bit), DE_ARRAY_END(class128Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(class128Bit), DE_ARRAY_END(class128Bit), dstFormat))
-            return true;
+    // for 128 bit formats, exclude compressed formats
+    if (de::contains(formats::compatibleFormats128Bit, srcFormat) &&
+        !de::contains(formats::compressedFormatsFloats, srcFormat) &&
+        !de::contains(formats::compressedFormatsSrgb, srcFormat) &&
+        de::contains(formats::compatibleFormats128Bit, dstFormat) &&
+        !de::contains(formats::compressedFormatsFloats, dstFormat) &&
+        !de::contains(formats::compressedFormatsSrgb, dstFormat))
+        return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(class192Bit), DE_ARRAY_END(class192Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(class192Bit), DE_ARRAY_END(class192Bit), dstFormat))
-            return true;
+    if (de::contains(formats::compatibleFormats192Bit, srcFormat) &&
+        de::contains(formats::compatibleFormats192Bit, dstFormat))
+        return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(class256Bit), DE_ARRAY_END(class256Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(class256Bit), DE_ARRAY_END(class256Bit), dstFormat))
-            return true;
+    if (de::contains(formats::compatibleFormats256Bit, srcFormat) &&
+        de::contains(formats::compatibleFormats256Bit, dstFormat))
+        return true;
 
-        return false;
-    }
+    return false;
 }
 
 uint32_t getBlockByteSize(vk::VkFormat format)
@@ -575,279 +476,282 @@ vk::VkFormat chooseFloatFormat(vk::VkFormat srcFormat, vk::VkFormat dstFormat)
 
 tcu::TestStatus imageCopyTest(Context &context, const TestConfig config)
 {
+    TestLog &log(context.getTestContext().getLog());
+
+    MultiPlaneImageData srcData(config.src.format, config.src.size);
+    MultiPlaneImageData dstData(config.dst.format, config.dst.size);
+    MultiPlaneImageData result(config.dst.format, config.dst.size);
+    vector<vk::VkImageCopy> copies;
+
+    de::Random rng(buildSeed(config));
+    const bool noNan = true;
+
+    if (config.extent.width != 0 && config.extent.height != 0)
+    {
+        vk::VkImageCopy imageCopy = {{vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u},
+                                     {0, 0, 0},
+                                     {vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u},
+                                     {0, 0, 0},
+                                     {config.extent.width, config.extent.height, 1u}};
+        copies.push_back(imageCopy);
+    }
+    else
     {
         const size_t copyCount = 10;
-        TestLog &log(context.getTestContext().getLog());
-
-        MultiPlaneImageData srcData(config.src.format, config.src.size);
-        MultiPlaneImageData dstData(config.dst.format, config.dst.size);
-        MultiPlaneImageData result(config.dst.format, config.dst.size);
-        vector<vk::VkImageCopy> copies;
-
-        de::Random rng(buildSeed(config));
-        const bool noNan = true;
-
         genCopies(rng, copyCount, config.src.format, config.src.size, config.dst.format, config.dst.size, &copies);
+    }
 
-        logTestCaseInfo(log, config, copies);
+    logTestCaseInfo(log, config, copies);
 
-        // To avoid putting NaNs in dst in the image copy
-        fillRandom(&rng, &srcData, chooseFloatFormat(config.src.format, config.dst.format), noNan);
-        fillRandom(&rng, &dstData, config.dst.format, noNan);
+    // To avoid putting NaNs in dst in the image copy
+    fillRandom(&rng, &srcData, chooseFloatFormat(config.src.format, config.dst.format), noNan);
+    fillRandom(&rng, &dstData, config.dst.format, noNan);
+
+    {
+        const vk::DeviceInterface &vkd(context.getDeviceInterface());
+        const vk::VkDevice device(context.getDevice());
+
+        const vk::Unique<vk::VkImage> srcImage(
+            createImage(vkd, device, config.src.format, config.src.size, config.src.disjoint, config.src.tiling));
+        const vk::MemoryRequirement srcMemoryRequirement(config.src.tiling == vk::VK_IMAGE_TILING_OPTIMAL ?
+                                                             vk::MemoryRequirement::Any :
+                                                             vk::MemoryRequirement::HostVisible);
+        const vk::VkImageCreateFlags srcCreateFlags(config.src.disjoint ? vk::VK_IMAGE_CREATE_DISJOINT_BIT :
+                                                                          (vk::VkImageCreateFlagBits)0u);
+        const vector<AllocationSp> srcImageMemory(allocateAndBindImageMemory(vkd, device, context.getDefaultAllocator(),
+                                                                             *srcImage, config.src.format,
+                                                                             srcCreateFlags, srcMemoryRequirement));
+
+        const vk::Unique<vk::VkImage> dstImage(
+            createImage(vkd, device, config.dst.format, config.dst.size, config.dst.disjoint, config.dst.tiling));
+        const vk::MemoryRequirement dstMemoryRequirement(config.dst.tiling == vk::VK_IMAGE_TILING_OPTIMAL ?
+                                                             vk::MemoryRequirement::Any :
+                                                             vk::MemoryRequirement::HostVisible);
+        const vk::VkImageCreateFlags dstCreateFlags(config.dst.disjoint ? vk::VK_IMAGE_CREATE_DISJOINT_BIT :
+                                                                          (vk::VkImageCreateFlagBits)0u);
+        const vector<AllocationSp> dstImageMemory(allocateAndBindImageMemory(vkd, device, context.getDefaultAllocator(),
+                                                                             *dstImage, config.dst.format,
+                                                                             dstCreateFlags, dstMemoryRequirement));
+
+        if (config.src.tiling == vk::VK_IMAGE_TILING_OPTIMAL)
+            uploadImage(vkd, device, context.getUniversalQueueFamilyIndex(), context.getDefaultAllocator(), *srcImage,
+                        srcData, vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        else
+            fillImageMemory(vkd, device, context.getUniversalQueueFamilyIndex(), *srcImage, srcImageMemory, srcData,
+                            vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+        if (config.dst.tiling == vk::VK_IMAGE_TILING_OPTIMAL)
+            uploadImage(vkd, device, context.getUniversalQueueFamilyIndex(), context.getDefaultAllocator(), *dstImage,
+                        dstData, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        else
+            fillImageMemory(vkd, device, context.getUniversalQueueFamilyIndex(), *dstImage, dstImageMemory, dstData,
+                            vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         {
-            const vk::DeviceInterface &vkd(context.getDeviceInterface());
-            const vk::VkDevice device(context.getDevice());
+            const uint32_t queueFamilyNdx(context.getUniversalQueueFamilyIndex());
+            const vk::VkQueue queue(context.getUniversalQueue());
+            const vk::Unique<vk::VkCommandPool> cmdPool(
+                createCommandPool(vkd, device, (vk::VkCommandPoolCreateFlags)0, queueFamilyNdx));
+            const vk::Unique<vk::VkCommandBuffer> cmdBuffer(
+                allocateCommandBuffer(vkd, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-            const vk::Unique<vk::VkImage> srcImage(
-                createImage(vkd, device, config.src.format, config.src.size, config.src.disjoint, config.src.tiling));
-            const vk::MemoryRequirement srcMemoryRequirement(config.src.tiling == vk::VK_IMAGE_TILING_OPTIMAL ?
-                                                                 vk::MemoryRequirement::Any :
-                                                                 vk::MemoryRequirement::HostVisible);
-            const vk::VkImageCreateFlags srcCreateFlags(config.src.disjoint ? vk::VK_IMAGE_CREATE_DISJOINT_BIT :
-                                                                              (vk::VkImageCreateFlagBits)0u);
-            const vector<AllocationSp> srcImageMemory(
-                allocateAndBindImageMemory(vkd, device, context.getDefaultAllocator(), *srcImage, config.src.format,
-                                           srcCreateFlags, srcMemoryRequirement));
+            beginCommandBuffer(vkd, *cmdBuffer);
 
-            const vk::Unique<vk::VkImage> dstImage(
-                createImage(vkd, device, config.dst.format, config.dst.size, config.dst.disjoint, config.dst.tiling));
-            const vk::MemoryRequirement dstMemoryRequirement(config.dst.tiling == vk::VK_IMAGE_TILING_OPTIMAL ?
-                                                                 vk::MemoryRequirement::Any :
-                                                                 vk::MemoryRequirement::HostVisible);
-            const vk::VkImageCreateFlags dstCreateFlags(config.dst.disjoint ? vk::VK_IMAGE_CREATE_DISJOINT_BIT :
-                                                                              (vk::VkImageCreateFlagBits)0u);
-            const vector<AllocationSp> dstImageMemory(
-                allocateAndBindImageMemory(vkd, device, context.getDefaultAllocator(), *dstImage, config.dst.format,
-                                           dstCreateFlags, dstMemoryRequirement));
+            std::vector<de::MovePtr<vk::BufferWithMemory>> buffers(copies.size());
 
-            if (config.src.tiling == vk::VK_IMAGE_TILING_OPTIMAL)
-                uploadImage(vkd, device, context.getUniversalQueueFamilyIndex(), context.getDefaultAllocator(),
-                            *srcImage, srcData, vk::VK_ACCESS_TRANSFER_READ_BIT,
-                            vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-            else
-                fillImageMemory(vkd, device, context.getUniversalQueueFamilyIndex(), *srcImage, srcImageMemory, srcData,
-                                vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-
-            if (config.dst.tiling == vk::VK_IMAGE_TILING_OPTIMAL)
-                uploadImage(vkd, device, context.getUniversalQueueFamilyIndex(), context.getDefaultAllocator(),
-                            *dstImage, dstData, vk::VK_ACCESS_TRANSFER_WRITE_BIT,
-                            vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-            else
-                fillImageMemory(vkd, device, context.getUniversalQueueFamilyIndex(), *dstImage, dstImageMemory, dstData,
-                                vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
+            for (size_t i = 0; i < copies.size(); i++)
             {
-                const uint32_t queueFamilyNdx(context.getUniversalQueueFamilyIndex());
-                const vk::VkQueue queue(context.getUniversalQueue());
-                const vk::Unique<vk::VkCommandPool> cmdPool(
-                    createCommandPool(vkd, device, (vk::VkCommandPoolCreateFlags)0, queueFamilyNdx));
-                const vk::Unique<vk::VkCommandBuffer> cmdBuffer(
-                    allocateCommandBuffer(vkd, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+                const uint32_t srcPlaneNdx(
+                    copies[i].srcSubresource.aspectMask != vk::VK_IMAGE_ASPECT_COLOR_BIT ?
+                        vk::getAspectPlaneNdx((vk::VkImageAspectFlagBits)copies[i].srcSubresource.aspectMask) :
+                        0u);
 
-                beginCommandBuffer(vkd, *cmdBuffer);
+                const vk::VkFormat srcPlaneFormat(getPlaneCompatibleFormat(config.src.format, srcPlaneNdx));
 
-                std::vector<de::MovePtr<vk::BufferWithMemory>> buffers(copies.size());
+                const uint32_t blockSizeBytes(getBlockByteSize(srcPlaneFormat));
+                const vk::VkDeviceSize bufferSize = config.src.size.x() * config.src.size.y() * blockSizeBytes;
+                const vk::VkBufferCreateInfo bufferCreateInfo = {
+                    vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
+                    nullptr,                                  // const void* pNext;
+                    0u,                                       // VkBufferCreateFlags flags;
+                    bufferSize,                               // VkDeviceSize size;
+                    vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                        vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT, // VkBufferUsageFlags usage;
+                    vk::VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
+                    0u,                                       // uint32_t queueFamilyIndexCount;
+                    nullptr,                                  // const uint32_t* pQueueFamilyIndices;
+                };
+                buffers[i] = de::MovePtr<vk::BufferWithMemory>(new vk::BufferWithMemory(
+                    vkd, device, context.getDefaultAllocator(), bufferCreateInfo, vk::MemoryRequirement::Any));
 
-                for (size_t i = 0; i < copies.size(); i++)
+                if (config.intermediateBuffer)
                 {
-                    const uint32_t srcPlaneNdx(
-                        copies[i].srcSubresource.aspectMask != vk::VK_IMAGE_ASPECT_COLOR_BIT ?
-                            vk::getAspectPlaneNdx((vk::VkImageAspectFlagBits)copies[i].srcSubresource.aspectMask) :
-                            0u);
-
-                    const vk::VkFormat srcPlaneFormat(getPlaneCompatibleFormat(config.src.format, srcPlaneNdx));
-
-                    const uint32_t blockSizeBytes(getBlockByteSize(srcPlaneFormat));
-                    const vk::VkDeviceSize bufferSize = config.src.size.x() * config.src.size.y() * blockSizeBytes;
-                    const vk::VkBufferCreateInfo bufferCreateInfo = {
-                        vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-                        nullptr,                                  // const void* pNext;
-                        0u,                                       // VkBufferCreateFlags flags;
-                        bufferSize,                               // VkDeviceSize size;
-                        vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                            vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT, // VkBufferUsageFlags usage;
-                        vk::VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
-                        0u,                                       // uint32_t queueFamilyIndexCount;
-                        nullptr,                                  // const uint32_t* pQueueFamilyIndices;
+                    const vk::VkBufferImageCopy imageToBufferCopy = {
+                        0u,                       // VkDeviceSize bufferOffset;
+                        0u,                       // uint32_t bufferRowLength;
+                        0u,                       // uint32_t bufferImageHeight;
+                        copies[i].srcSubresource, // VkImageSubresourceLayers imageSubresource;
+                        copies[i].srcOffset,      // VkOffset3D imageOffset;
+                        copies[i].extent,         // VkExtent3D imageExtent;
                     };
-                    buffers[i] = de::MovePtr<vk::BufferWithMemory>(new vk::BufferWithMemory(
-                        vkd, device, context.getDefaultAllocator(), bufferCreateInfo, vk::MemoryRequirement::Any));
+                    vkd.cmdCopyImageToBuffer(*cmdBuffer, *srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                             **buffers[i], 1, &imageToBufferCopy);
 
-                    if (config.intermediateBuffer)
-                    {
-                        const vk::VkBufferImageCopy imageToBufferCopy = {
-                            0u,                       // VkDeviceSize bufferOffset;
-                            0u,                       // uint32_t bufferRowLength;
-                            0u,                       // uint32_t bufferImageHeight;
-                            copies[i].srcSubresource, // VkImageSubresourceLayers imageSubresource;
-                            copies[i].srcOffset,      // VkOffset3D imageOffset;
-                            copies[i].extent,         // VkExtent3D imageExtent;
-                        };
-                        vkd.cmdCopyImageToBuffer(*cmdBuffer, *srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                                 **buffers[i], 1, &imageToBufferCopy);
-
-                        const vk::VkBufferMemoryBarrier bufferBarrier = {
-                            vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-                            nullptr,                                     // const void* pNext;
-                            vk::VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
-                            vk::VK_ACCESS_TRANSFER_READ_BIT,             // VkAccessFlags dstAccessMask;
-                            VK_QUEUE_FAMILY_IGNORED,                     // uint32_t srcQueueFamilyIndex;
-                            VK_QUEUE_FAMILY_IGNORED,                     // uint32_t dstQueueFamilyIndex;
-                            **buffers[i],                                // VkBuffer buffer;
-                            0u,                                          // VkDeviceSize offset;
-                            VK_WHOLE_SIZE,                               // VkDeviceSize size;
-                        };
-
-                        vkd.cmdPipelineBarrier(*cmdBuffer, (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                               (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                               (vk::VkDependencyFlags)0u, 0u, nullptr, 1u, &bufferBarrier, 0u, nullptr);
-
-                        const vk::VkBufferImageCopy bufferToImageCopy = {
-                            0u,                       // VkDeviceSize bufferOffset;
-                            0u,                       // uint32_t bufferRowLength;
-                            0u,                       // uint32_t bufferImageHeight;
-                            copies[i].dstSubresource, // VkImageSubresourceLayers imageSubresource;
-                            copies[i].dstOffset,      // VkOffset3D imageOffset;
-                            copies[i].extent,         // VkExtent3D imageExtent;
-                        };
-                        vkd.cmdCopyBufferToImage(*cmdBuffer, **buffers[i], *dstImage,
-                                                 vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferToImageCopy);
-                    }
-                    else
-                    {
-                        vkd.cmdCopyImage(*cmdBuffer, *srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstImage,
-                                         vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copies[i]);
-                    }
-
-                    const vk::VkImageMemoryBarrier preCopyBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                                     nullptr,
-                                                                     vk::VK_ACCESS_TRANSFER_WRITE_BIT,
-                                                                     vk::VK_ACCESS_TRANSFER_READ_BIT |
-                                                                         vk::VK_ACCESS_TRANSFER_WRITE_BIT,
-                                                                     vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                                                     vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                                                     VK_QUEUE_FAMILY_IGNORED,
-                                                                     VK_QUEUE_FAMILY_IGNORED,
-                                                                     *dstImage,
-                                                                     {vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
+                    const vk::VkBufferMemoryBarrier bufferBarrier = {
+                        vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
+                        nullptr,                                     // const void* pNext;
+                        vk::VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
+                        vk::VK_ACCESS_TRANSFER_READ_BIT,             // VkAccessFlags dstAccessMask;
+                        VK_QUEUE_FAMILY_IGNORED,                     // uint32_t srcQueueFamilyIndex;
+                        VK_QUEUE_FAMILY_IGNORED,                     // uint32_t dstQueueFamilyIndex;
+                        **buffers[i],                                // VkBuffer buffer;
+                        0u,                                          // VkDeviceSize offset;
+                        VK_WHOLE_SIZE,                               // VkDeviceSize size;
+                    };
 
                     vkd.cmdPipelineBarrier(*cmdBuffer, (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
                                            (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                           (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u, &preCopyBarrier);
+                                           (vk::VkDependencyFlags)0u, 0u, nullptr, 1u, &bufferBarrier, 0u, nullptr);
+
+                    const vk::VkBufferImageCopy bufferToImageCopy = {
+                        0u,                       // VkDeviceSize bufferOffset;
+                        0u,                       // uint32_t bufferRowLength;
+                        0u,                       // uint32_t bufferImageHeight;
+                        copies[i].dstSubresource, // VkImageSubresourceLayers imageSubresource;
+                        copies[i].dstOffset,      // VkOffset3D imageOffset;
+                        copies[i].extent,         // VkExtent3D imageExtent;
+                    };
+                    vkd.cmdCopyBufferToImage(*cmdBuffer, **buffers[i], *dstImage,
+                                             vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferToImageCopy);
+                }
+                else
+                {
+                    vkd.cmdCopyImage(*cmdBuffer, *srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstImage,
+                                     vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copies[i]);
                 }
 
-                endCommandBuffer(vkd, *cmdBuffer);
+                const vk::VkImageMemoryBarrier preCopyBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                                                 nullptr,
+                                                                 vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+                                                                 vk::VK_ACCESS_TRANSFER_READ_BIT |
+                                                                     vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+                                                                 vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                                 vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                                 VK_QUEUE_FAMILY_IGNORED,
+                                                                 VK_QUEUE_FAMILY_IGNORED,
+                                                                 *dstImage,
+                                                                 {vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
 
-                submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
+                vkd.cmdPipelineBarrier(*cmdBuffer, (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                       (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                       (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u, &preCopyBarrier);
             }
 
-            if (config.dst.tiling == vk::VK_IMAGE_TILING_OPTIMAL)
-                downloadImage(vkd, device, context.getUniversalQueueFamilyIndex(), context.getDefaultAllocator(),
-                              *dstImage, &result, vk::VK_ACCESS_TRANSFER_WRITE_BIT,
-                              vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-            else
-                readImageMemory(vkd, device, context.getUniversalQueueFamilyIndex(), *dstImage, dstImageMemory, &result,
-                                vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            endCommandBuffer(vkd, *cmdBuffer);
+
+            submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
         }
 
+        if (config.dst.tiling == vk::VK_IMAGE_TILING_OPTIMAL)
+            downloadImage(vkd, device, context.getUniversalQueueFamilyIndex(), context.getDefaultAllocator(), *dstImage,
+                          &result, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        else
+            readImageMemory(vkd, device, context.getUniversalQueueFamilyIndex(), *dstImage, dstImageMemory, &result,
+                            vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    }
+
+    {
+        MultiPlaneImageData reference(dstData);
+        const size_t maxErrorCount = 30;
+        size_t errorCount          = 0;
+
+        for (size_t copyNdx = 0; copyNdx < copies.size(); copyNdx++)
         {
-            MultiPlaneImageData reference(dstData);
-            const size_t maxErrorCount = 30;
-            size_t errorCount          = 0;
+            const vk::VkImageCopy &copy(copies[copyNdx]);
 
-            for (size_t copyNdx = 0; copyNdx < copies.size(); copyNdx++)
+            const uint32_t srcPlaneNdx(
+                copy.srcSubresource.aspectMask != vk::VK_IMAGE_ASPECT_COLOR_BIT ?
+                    vk::getAspectPlaneNdx((vk::VkImageAspectFlagBits)copy.srcSubresource.aspectMask) :
+                    0u);
+            const UVec2 srcPlaneExtent(getPlaneExtent(srcData.getDescription(), config.src.size, srcPlaneNdx, 0));
+
+            const vk::VkFormat srcPlaneFormat(getPlaneCompatibleFormat(config.src.format, srcPlaneNdx));
+            const UVec2 srcBlockExtent(getBlockExtent(srcPlaneFormat));
+
+            const uint32_t blockSizeBytes(getBlockByteSize(srcPlaneFormat));
+
+            const UVec2 srcPlaneBlockExtent(srcPlaneExtent / srcBlockExtent);
+            const UVec2 srcBlockOffset(copy.srcOffset.x / srcBlockExtent.x(), copy.srcOffset.y / srcBlockExtent.y());
+            const UVec2 srcBlockPitch(blockSizeBytes, blockSizeBytes * srcPlaneBlockExtent.x());
+
+            const uint32_t dstPlaneNdx(
+                copy.dstSubresource.aspectMask != vk::VK_IMAGE_ASPECT_COLOR_BIT ?
+                    vk::getAspectPlaneNdx((vk::VkImageAspectFlagBits)copy.dstSubresource.aspectMask) :
+                    0u);
+            const UVec2 dstPlaneExtent(getPlaneExtent(dstData.getDescription(), config.dst.size, dstPlaneNdx, 0));
+
+            const vk::VkFormat dstPlaneFormat(getPlaneCompatibleFormat(config.dst.format, dstPlaneNdx));
+            const UVec2 dstBlockExtent(getBlockExtent(dstPlaneFormat));
+
+            const UVec2 dstPlaneBlockExtent(dstPlaneExtent / dstBlockExtent);
+            const UVec2 dstBlockOffset(copy.dstOffset.x / dstBlockExtent.x(), copy.dstOffset.y / dstBlockExtent.y());
+            const UVec2 dstBlockPitch(blockSizeBytes, blockSizeBytes * dstPlaneBlockExtent.x());
+
+            const UVec2 blockExtent(copy.extent.width / srcBlockExtent.x(), copy.extent.height / srcBlockExtent.y());
+
+            DE_ASSERT(blockSizeBytes == getBlockByteSize(dstPlaneFormat));
+
+            for (uint32_t y = 0; y < blockExtent.y(); y++)
             {
-                const vk::VkImageCopy &copy(copies[copyNdx]);
+                const uint32_t size   = blockExtent.x() * blockSizeBytes;
+                const uint32_t srcPos = tcu::dot(srcBlockPitch, UVec2(srcBlockOffset.x(), srcBlockOffset.y() + y));
+                const uint32_t dstPos = tcu::dot(dstBlockPitch, UVec2(dstBlockOffset.x(), dstBlockOffset.y() + y));
 
-                const uint32_t srcPlaneNdx(
-                    copy.srcSubresource.aspectMask != vk::VK_IMAGE_ASPECT_COLOR_BIT ?
-                        vk::getAspectPlaneNdx((vk::VkImageAspectFlagBits)copy.srcSubresource.aspectMask) :
-                        0u);
-                const UVec2 srcPlaneExtent(getPlaneExtent(srcData.getDescription(), config.src.size, srcPlaneNdx, 0));
-
-                const vk::VkFormat srcPlaneFormat(getPlaneCompatibleFormat(config.src.format, srcPlaneNdx));
-                const UVec2 srcBlockExtent(getBlockExtent(srcPlaneFormat));
-
-                const uint32_t blockSizeBytes(getBlockByteSize(srcPlaneFormat));
-
-                const UVec2 srcPlaneBlockExtent(srcPlaneExtent / srcBlockExtent);
-                const UVec2 srcBlockOffset(copy.srcOffset.x / srcBlockExtent.x(),
-                                           copy.srcOffset.y / srcBlockExtent.y());
-                const UVec2 srcBlockPitch(blockSizeBytes, blockSizeBytes * srcPlaneBlockExtent.x());
-
-                const uint32_t dstPlaneNdx(
-                    copy.dstSubresource.aspectMask != vk::VK_IMAGE_ASPECT_COLOR_BIT ?
-                        vk::getAspectPlaneNdx((vk::VkImageAspectFlagBits)copy.dstSubresource.aspectMask) :
-                        0u);
-                const UVec2 dstPlaneExtent(getPlaneExtent(dstData.getDescription(), config.dst.size, dstPlaneNdx, 0));
-
-                const vk::VkFormat dstPlaneFormat(getPlaneCompatibleFormat(config.dst.format, dstPlaneNdx));
-                const UVec2 dstBlockExtent(getBlockExtent(dstPlaneFormat));
-
-                const UVec2 dstPlaneBlockExtent(dstPlaneExtent / dstBlockExtent);
-                const UVec2 dstBlockOffset(copy.dstOffset.x / dstBlockExtent.x(),
-                                           copy.dstOffset.y / dstBlockExtent.y());
-                const UVec2 dstBlockPitch(blockSizeBytes, blockSizeBytes * dstPlaneBlockExtent.x());
-
-                const UVec2 blockExtent(copy.extent.width / srcBlockExtent.x(),
-                                        copy.extent.height / srcBlockExtent.y());
-
-                DE_ASSERT(blockSizeBytes == getBlockByteSize(dstPlaneFormat));
-
-                for (uint32_t y = 0; y < blockExtent.y(); y++)
-                {
-                    const uint32_t size   = blockExtent.x() * blockSizeBytes;
-                    const uint32_t srcPos = tcu::dot(srcBlockPitch, UVec2(srcBlockOffset.x(), srcBlockOffset.y() + y));
-                    const uint32_t dstPos = tcu::dot(dstBlockPitch, UVec2(dstBlockOffset.x(), dstBlockOffset.y() + y));
-
-                    deMemcpy(((uint8_t *)reference.getPlanePtr(dstPlaneNdx)) + dstPos,
-                             ((const uint8_t *)srcData.getPlanePtr(srcPlaneNdx)) + srcPos, size);
-                }
+                deMemcpy(((uint8_t *)reference.getPlanePtr(dstPlaneNdx)) + dstPos,
+                         ((const uint8_t *)srcData.getPlanePtr(srcPlaneNdx)) + srcPos, size);
             }
-
-            bool ignoreLsb6Bits = areLsb6BitsDontCare(srcData.getFormat(), dstData.getFormat());
-            bool ignoreLsb4Bits = areLsb4BitsDontCare(srcData.getFormat(), dstData.getFormat());
-
-            for (uint32_t planeNdx = 0; planeNdx < result.getDescription().numPlanes; ++planeNdx)
-            {
-                uint32_t planeSize =
-                    vk::getPlaneSizeInBytes(result.getDescription(), result.getSize(), planeNdx, 0u, 1u);
-                for (size_t byteNdx = 0; byteNdx < planeSize; byteNdx++)
-                {
-                    const uint8_t res = ((const uint8_t *)result.getPlanePtr(planeNdx))[byteNdx];
-                    const uint8_t ref = ((const uint8_t *)reference.getPlanePtr(planeNdx))[byteNdx];
-
-                    uint8_t mask = 0xFF;
-                    if (!(byteNdx & 0x01) && (ignoreLsb6Bits))
-                        mask = 0xC0;
-                    else if (!(byteNdx & 0x01) && (ignoreLsb4Bits))
-                        mask = 0xF0;
-
-                    if ((res & mask) != (ref & mask))
-                    {
-                        log << TestLog::Message << "Plane: " << planeNdx << ", Offset: " << byteNdx
-                            << ", Expected: " << (uint32_t)(ref & mask) << ", Got: " << (uint32_t)(res & mask)
-                            << TestLog::EndMessage;
-                        errorCount++;
-
-                        if (errorCount > maxErrorCount)
-                            break;
-                    }
-                }
-
-                if (errorCount > maxErrorCount)
-                    break;
-            }
-
-            if (errorCount > 0)
-                return tcu::TestStatus::fail(
-                    "Failed, found " +
-                    (errorCount > maxErrorCount ? de::toString(maxErrorCount) + "+" : de::toString(errorCount)) +
-                    " incorrect bytes");
-            else
-                return tcu::TestStatus::pass("Pass");
         }
+
+        bool ignoreLsb6Bits = areLsb6BitsDontCare(srcData.getFormat(), dstData.getFormat());
+        bool ignoreLsb4Bits = areLsb4BitsDontCare(srcData.getFormat(), dstData.getFormat());
+
+        for (uint32_t planeNdx = 0; planeNdx < result.getDescription().numPlanes; ++planeNdx)
+        {
+            uint32_t planeSize = vk::getPlaneSizeInBytes(result.getDescription(), result.getSize(), planeNdx, 0u, 1u);
+            for (size_t byteNdx = 0; byteNdx < planeSize; byteNdx++)
+            {
+                const uint8_t res = ((const uint8_t *)result.getPlanePtr(planeNdx))[byteNdx];
+                const uint8_t ref = ((const uint8_t *)reference.getPlanePtr(planeNdx))[byteNdx];
+
+                uint8_t mask = 0xFF;
+                if (!(byteNdx & 0x01) && (ignoreLsb6Bits))
+                    mask = 0xC0;
+                else if (!(byteNdx & 0x01) && (ignoreLsb4Bits))
+                    mask = 0xF0;
+
+                if ((res & mask) != (ref & mask))
+                {
+                    log << TestLog::Message << "Plane: " << planeNdx << ", Offset: " << byteNdx
+                        << ", Expected: " << (uint32_t)(ref & mask) << ", Got: " << (uint32_t)(res & mask)
+                        << TestLog::EndMessage;
+                    errorCount++;
+
+                    if (errorCount > maxErrorCount)
+                        break;
+                }
+            }
+
+            if (errorCount > maxErrorCount)
+                break;
+        }
+
+        if (errorCount > 0)
+            return tcu::TestStatus::fail(
+                "Failed, found " +
+                (errorCount > maxErrorCount ? de::toString(maxErrorCount) + "+" : de::toString(errorCount)) +
+                " incorrect bytes");
+        else
+            return tcu::TestStatus::pass("Pass");
     }
 }
 
@@ -902,67 +806,6 @@ bool isCopyCompatible(vk::VkFormat srcFormat, vk::VkFormat dstFormat)
 
 void initYcbcrDefaultCopyTests(tcu::TestCaseGroup *testGroup)
 {
-    const vk::VkFormat ycbcrFormats[] = {
-        vk::VK_FORMAT_R4G4_UNORM_PACK8,
-        vk::VK_FORMAT_R4G4B4A4_UNORM_PACK16,
-        vk::VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-        vk::VK_FORMAT_R5G6B5_UNORM_PACK16,
-        vk::VK_FORMAT_B5G6R5_UNORM_PACK16,
-        vk::VK_FORMAT_R5G5B5A1_UNORM_PACK16,
-        vk::VK_FORMAT_B5G5R5A1_UNORM_PACK16,
-        vk::VK_FORMAT_A1R5G5B5_UNORM_PACK16,
-        vk::VK_FORMAT_R8_UNORM,
-        vk::VK_FORMAT_R8G8_UNORM,
-        vk::VK_FORMAT_R8G8B8_UNORM,
-        vk::VK_FORMAT_B8G8R8_UNORM,
-        vk::VK_FORMAT_R8G8B8A8_UNORM,
-        vk::VK_FORMAT_B8G8R8A8_UNORM,
-        vk::VK_FORMAT_A8B8G8R8_UNORM_PACK32,
-        vk::VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-        vk::VK_FORMAT_R16_UNORM,
-        vk::VK_FORMAT_R16G16_UNORM,
-        vk::VK_FORMAT_R16G16B16_UNORM,
-        vk::VK_FORMAT_R16G16B16A16_UNORM,
-        vk::VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-        vk::VK_FORMAT_G8B8G8R8_422_UNORM,
-        vk::VK_FORMAT_B8G8R8G8_422_UNORM,
-        vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM,
-        vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
-        vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM,
-        vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM,
-        vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM,
-        vk::VK_FORMAT_R10X6_UNORM_PACK16,
-        vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16,
-        vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
-        vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16,
-        vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16,
-        vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16,
-        vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16,
-        vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16,
-        vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16,
-        vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16,
-        vk::VK_FORMAT_R12X4_UNORM_PACK16,
-        vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16,
-        vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16,
-        vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16,
-        vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16,
-        vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16,
-        vk::VK_FORMAT_G16B16G16R16_422_UNORM,
-        vk::VK_FORMAT_B16G16R16G16_422_UNORM,
-        vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM,
-        vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM,
-        vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM,
-        vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM,
-        vk::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM,
-        vk::VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT,
-        vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT,
-        vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT,
-        vk::VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT,
-    };
     const struct
     {
         const char *name;
@@ -970,16 +813,14 @@ void initYcbcrDefaultCopyTests(tcu::TestCaseGroup *testGroup)
     } imageTilings[]          = {{"linear", vk::VK_IMAGE_TILING_LINEAR}, {"optimal", vk::VK_IMAGE_TILING_OPTIMAL}};
     tcu::TestContext &testCtx = testGroup->getTestContext();
 
-    for (size_t srcFormatNdx = 0; srcFormatNdx < DE_LENGTH_OF_ARRAY(ycbcrFormats); srcFormatNdx++)
+    for (auto srcFormat : formats::basicUnsignedFloatFormats)
     {
-        const vk::VkFormat srcFormat(ycbcrFormats[srcFormatNdx]);
         const UVec2 srcSize(isYCbCrFormat(srcFormat) ? UVec2(24u, 16u) : UVec2(23u, 17u));
         const string srcFormatName(de::toLower(std::string(getFormatName(srcFormat)).substr(10)));
         de::MovePtr<tcu::TestCaseGroup> srcFormatGroup(new tcu::TestCaseGroup(testCtx, srcFormatName.c_str()));
 
-        for (size_t dstFormatNdx = 0; dstFormatNdx < DE_LENGTH_OF_ARRAY(ycbcrFormats); dstFormatNdx++)
+        for (auto dstFormat : formats::basicUnsignedFloatFormats)
         {
-            const vk::VkFormat dstFormat(ycbcrFormats[dstFormatNdx]);
             const UVec2 dstSize(isYCbCrFormat(dstFormat) ? UVec2(24u, 16u) : UVec2(23u, 17u));
             const string dstFormatName(de::toLower(std::string(getFormatName(dstFormat)).substr(10)));
 
@@ -1023,6 +864,59 @@ void initYcbcrDefaultCopyTests(tcu::TestCaseGroup *testGroup)
         }
 
         testGroup->addChild(srcFormatGroup.release());
+    }
+}
+
+void initYcbcrSinglePlanarCopyTests(tcu::TestCaseGroup *testGroup)
+{
+    tcu::TestContext &testCtx = testGroup->getTestContext();
+
+    const struct
+    {
+        const char *name;
+        vk::VkImageTiling value;
+    } imageTilings[] = {{"linear", vk::VK_IMAGE_TILING_LINEAR}, {"optimal", vk::VK_IMAGE_TILING_OPTIMAL}};
+
+    const struct
+    {
+        const char *name;
+        vk::VkFormat srcFormat;
+        vk::VkFormat dstFormat;
+        tcu::UVec2 srcSize;
+        tcu::UVec2 dstSize;
+        vk::VkExtent2D copyExtent;
+    } testConfigs[] = {
+        {"r8g8b8a8_to_g8b8g8r8_422",
+         vk::VK_FORMAT_R8G8B8A8_UNORM,
+         vk::VK_FORMAT_G8B8G8R8_422_UNORM,
+         {64u, 64u},
+         {64u, 64u},
+         {32u, 64u}},
+        {"g8b8g8r8_422_to_r8g8b8a8",
+         vk::VK_FORMAT_G8B8G8R8_422_UNORM,
+         vk::VK_FORMAT_R8G8B8A8_UNORM,
+         {64u, 64u},
+         {64u, 64u},
+         {64u, 64u}},
+    };
+
+    for (auto srcTiling : imageTilings)
+    {
+        de::MovePtr<tcu::TestCaseGroup> srcTilingGroup(new tcu::TestCaseGroup(testCtx, srcTiling.name));
+        for (auto dstTiling : imageTilings)
+        {
+            de::MovePtr<tcu::TestCaseGroup> dstTilingGroup(new tcu::TestCaseGroup(testCtx, dstTiling.name));
+            for (auto &testConfig : testConfigs)
+            {
+                const TestConfig config(ImageConfig(testConfig.srcFormat, srcTiling.value, false, testConfig.srcSize),
+                                        ImageConfig(testConfig.dstFormat, dstTiling.value, false, testConfig.dstSize),
+                                        false, testConfig.copyExtent);
+                addFunctionCase(dstTilingGroup.get(), std::string(testConfig.name), checkSupport, imageCopyTest,
+                                config);
+            }
+            srcTilingGroup->addChild(dstTilingGroup.release());
+        }
+        testGroup->addChild(srcTilingGroup.release());
     }
 }
 
@@ -1129,6 +1023,11 @@ void initYcbcrDimensionsCopyTests(tcu::TestCaseGroup *testGroup)
 tcu::TestCaseGroup *createCopyTests(tcu::TestContext &testCtx)
 {
     return createTestGroup(testCtx, "copy", initYcbcrDefaultCopyTests);
+}
+
+tcu::TestCaseGroup *createSinglePlanarCopyTests(tcu::TestContext &testCtx)
+{
+    return createTestGroup(testCtx, "single_plane_copy", initYcbcrSinglePlanarCopyTests);
 }
 
 tcu::TestCaseGroup *createDimensionsCopyTests(tcu::TestContext &testCtx)

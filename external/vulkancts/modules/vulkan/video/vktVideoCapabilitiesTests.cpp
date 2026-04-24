@@ -660,9 +660,11 @@ tcu::TestStatus VideoCapabilitiesQueryH264DecodeTestInstance::iterate(void)
         STD_VIDEO_H264_PROFILE_IDC_BASELINE,                  //  StdVideoH264ProfileIdc stdProfileIdc;
         VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_KHR,  //  VkVideoDecodeH264PictureLayoutFlagsKHR pictureLayout;
     };
+    const de::MovePtr<VkVideoDecodeUsageInfoKHR> videoDecodeUsageInfo =
+        getDecodeUsageInfo((void *)&videoProfileOperation, VK_VIDEO_DECODE_USAGE_DEFAULT_KHR);
     const VkVideoProfileInfoKHR videoProfile = {
         VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR, //  VkStructureType sType;
-        (void *)&videoProfileOperation,           //  void* pNext;
+        (void *)videoDecodeUsageInfo.get(),       //  void* pNext;
         videoCodecOperation,                      //  VkVideoCodecOperationFlagBitsKHR videoCodecOperation;
         VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,  //  VkVideoChromaSubsamplingFlagsKHR chromaSubsampling;
         VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR lumaBitDepth;
@@ -887,9 +889,11 @@ tcu::TestStatus VideoCapabilitiesQueryH265DecodeTestInstance::iterate(void)
         nullptr,                                              //  const void* pNext;
         STD_VIDEO_H265_PROFILE_IDC_MAIN,                      //  StdVideoH265ProfileIdc stdProfileIdc;
     };
+    const de::MovePtr<VkVideoDecodeUsageInfoKHR> videoDecodeUsageInfo =
+        getDecodeUsageInfo((void *)&videoProfileOperation, VK_VIDEO_DECODE_USAGE_DEFAULT_KHR);
     const VkVideoProfileInfoKHR videoProfile = {
         VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR, //  VkStructureType sType;
-        (void *)&videoProfileOperation,           //  void* pNext;
+        (void *)videoDecodeUsageInfo.get(),       //  void* pNext;
         videoCodecOperation,                      //  VkVideoCodecOperationFlagBitsKHR videoCodecOperation;
         VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,  //  VkVideoChromaSubsamplingFlagsKHR chromaSubsampling;
         VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR lumaBitDepth;
@@ -972,15 +976,17 @@ tcu::TestStatus VideoCapabilitiesQueryAV1DecodeTestInstance::iterate(void)
     const InstanceInterface &vk                                = m_context.getInstanceInterface();
     const VkPhysicalDevice physicalDevice                      = m_context.getPhysicalDevice();
     const VkVideoCodecOperationFlagBitsKHR videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR;
-    VkVideoDecodeAV1ProfileInfoKHR videoProfileOperation       = {
+    const VkVideoDecodeAV1ProfileInfoKHR videoProfileOperation = {
         VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PROFILE_INFO_KHR, //  VkStructureType sType;
         nullptr,                                             //  const void* pNext;
         STD_VIDEO_AV1_PROFILE_MAIN,                          //  StdVideoAV1ProfileIdc stdProfileIdc;
         false,                                               // VkBool filmGrainSupport
     };
-    VkVideoProfileInfoKHR videoProfile = {
+    const de::MovePtr<VkVideoDecodeUsageInfoKHR> videoDecodeUsageInfo =
+        getDecodeUsageInfo((void *)&videoProfileOperation, VK_VIDEO_DECODE_USAGE_DEFAULT_KHR);
+    const VkVideoProfileInfoKHR videoProfile = {
         VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR, //  VkStructureType sType;
-        (void *)&videoProfileOperation,           //  void* pNext;
+        (void *)videoDecodeUsageInfo.get(),       //  void* pNext;
         videoCodecOperation,                      //  VkVideoCodecOperationFlagBitsKHR videoCodecOperation;
         VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,  //  VkVideoChromaSubsamplingFlagsKHR chromaSubsampling;
         VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR lumaBitDepth;
@@ -1063,14 +1069,16 @@ tcu::TestStatus VideoCapabilitiesQueryVP9DecodeTestInstance::iterate(void)
     const InstanceInterface &vk                                = m_context.getInstanceInterface();
     const VkPhysicalDevice physicalDevice                      = m_context.getPhysicalDevice();
     const VkVideoCodecOperationFlagBitsKHR videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR;
-    VkVideoDecodeVP9ProfileInfoKHR videoProfileOperation       = {
+    const VkVideoDecodeVP9ProfileInfoKHR videoProfileOperation = {
         VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PROFILE_INFO_KHR, //  VkStructureType sType;
         nullptr,                                             //  const void* pNext;
-        STD_VIDEO_VP9_PROFILE_0,                             //  StdVideoAV1ProfileIdc stdProfileIdc;
+        STD_VIDEO_VP9_PROFILE_0,                             //  StdVideoVP9ProfileIdc stdProfileIdc;
     };
-    VkVideoProfileInfoKHR videoProfile = {
+    const de::MovePtr<VkVideoDecodeUsageInfoKHR> videoDecodeUsageInfo =
+        getDecodeUsageInfo((void *)&videoProfileOperation, VK_VIDEO_DECODE_USAGE_DEFAULT_KHR);
+    const VkVideoProfileInfoKHR videoProfile = {
         VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR, //  VkStructureType sType;
-        (void *)&videoProfileOperation,           //  void* pNext;
+        (void *)videoDecodeUsageInfo.get(),       //  void* pNext;
         videoCodecOperation,                      //  VkVideoCodecOperationFlagBitsKHR videoCodecOperation;
         VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,  //  VkVideoChromaSubsamplingFlagsKHR chromaSubsampling;
         VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR lumaBitDepth;
@@ -1741,6 +1749,11 @@ VideoCapabilitiesQueryTestCase::~VideoCapabilitiesQueryTestCase(void)
 
 void VideoCapabilitiesQueryTestCase::checkSupport(Context &context) const
 {
+#ifndef DE_BUILD_VIDEO
+    DE_UNREF(context);
+    TCU_THROW(NotSupportedError, "Video tests are disabled via DEQP_DISABLE_VK_VIDEO_TESTS");
+#endif
+
     context.requireDeviceFunctionality("VK_KHR_video_queue");
 
     if (context.isDeviceFunctionalitySupported("VK_KHR_video_maintenance2"))
@@ -1963,48 +1976,15 @@ struct VideoProfile
 struct TestParams
 {
     VkFormat format;
-    union
-    {
-        VkVideoDecodeH264ProfileInfoKHR h264Dec;
-        VkVideoDecodeH265ProfileInfoKHR h265Dec;
-        VkVideoDecodeAV1ProfileInfoKHR av1Dec;
-        VkVideoDecodeVP9ProfileInfoKHR vp9Dec;
-
-        VkVideoEncodeH264ProfileInfoKHR h264Enc;
-        VkVideoEncodeH265ProfileInfoKHR h265Enc;
-        VkVideoEncodeAV1ProfileInfoKHR av1Enc;
-    } codecProfile;
-    VkVideoProfileInfoKHR profile;
-    VkVideoProfileListInfoKHR profileList;
-
-    CodecCaps codecCaps;
-    VkBaseInStructure *selectedCodecCaps;
-
-    VkVideoDecodeCapabilitiesKHR decodeCaps;
-    VkVideoEncodeCapabilitiesKHR encodeCaps;
+    VkVideoCoreProfile coreProfile;
 
     VkImageUsageFlagBits usage;
-
-    bool isEncode() const
-    {
-        return (profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR ||
-                profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR ||
-                profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR);
-    }
-
-    bool isDecode() const
-    {
-        return (profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR ||
-                profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR ||
-                profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR ||
-                profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR);
-    }
 };
 
 std::string getTestName(const TestParams &params)
 {
     std::stringstream ss;
-    switch (params.profile.videoCodecOperation)
+    switch (params.coreProfile.GetCodecType())
     {
     case VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:
         ss << "decode_h264";
@@ -2056,7 +2036,7 @@ std::string getTestName(const TestParams &params)
         TCU_THROW(InternalError, "unsupported image usage");
     }
 
-    switch (params.profile.chromaSubsampling)
+    switch (params.coreProfile.GetProfile()->chromaSubsampling)
     {
     case VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR:
         ss << "_monochrome";
@@ -2075,8 +2055,8 @@ std::string getTestName(const TestParams &params)
     }
 
     // Not strictly required, but used to reduce the amount of combinations tested.
-    DE_ASSERT(params.profile.lumaBitDepth == params.profile.chromaBitDepth);
-    switch (params.profile.lumaBitDepth)
+    DE_ASSERT(params.coreProfile.GetProfile()->lumaBitDepth == params.coreProfile.GetProfile()->chromaBitDepth);
+    switch (params.coreProfile.GetProfile()->lumaBitDepth)
     {
     case VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR:
         ss << "_8bit";
@@ -2151,9 +2131,15 @@ MaybeFormatProperties getVideoFormatProperties(const InstanceInterface &vki, VkP
 
 void checkSupport(Context &context, de::SharedPtr<TestParams> params)
 {
+#ifndef DE_BUILD_VIDEO
+    DE_UNREF(context);
+    DE_UNREF(params);
+    TCU_THROW(NotSupportedError, "Video tests are disabled via DEQP_DISABLE_VK_VIDEO_TESTS");
+#endif
+
     context.requireDeviceFunctionality("VK_KHR_video_queue");
 
-    switch (params->profile.videoCodecOperation)
+    switch (params->coreProfile.GetCodecType())
     {
     case VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:
         context.requireDeviceFunctionality("VK_KHR_video_decode_h264");
@@ -2192,24 +2178,21 @@ std::vector<uint64_t> getDrmFormatModifier(Context &context, de::SharedPtr<TestP
 {
     const InstanceInterface &vki = context.getInstanceInterface();
     const VkPhysicalDevice phys  = context.getPhysicalDevice();
-    //uint64_t drmModifier = -1;
-    std::vector<uint64_t> drmModifiers;
+    std::vector<uint64_t> drmModifiers(0);
 
     VkDrmFormatModifierPropertiesList2EXT drmFormatProperties = initVulkanStructure();
     VkFormatProperties2 formatProperties2                     = initVulkanStructure(&drmFormatProperties);
     vki.getPhysicalDeviceFormatProperties2(phys, params->format, &formatProperties2);
 
-    for (uint32_t i = 0; i < drmFormatProperties.drmFormatModifierCount; i++)
-    {
-        std::vector<VkDrmFormatModifierProperties2EXT> drmFormatModifiers;
-        drmFormatModifiers.resize(drmFormatProperties.drmFormatModifierCount);
-        drmFormatProperties.pDrmFormatModifierProperties = drmFormatModifiers.data();
-        vki.getPhysicalDeviceFormatProperties2(phys, params->format, &formatProperties2);
+    if (drmFormatProperties.drmFormatModifierCount == 0)
+        return drmModifiers;
 
-        const VkDrmFormatModifierProperties2EXT drmFormatModifierProperties =
-            drmFormatProperties.pDrmFormatModifierProperties[i];
-        drmModifiers.push_back(drmFormatModifierProperties.drmFormatModifier);
-    }
+    std::vector<VkDrmFormatModifierProperties2EXT> drmFormatModifiers(drmFormatProperties.drmFormatModifierCount);
+    drmFormatProperties.pDrmFormatModifierProperties = drmFormatModifiers.data();
+    vki.getPhysicalDeviceFormatProperties2(phys, params->format, &formatProperties2);
+
+    for (const auto modifier : drmFormatModifiers)
+        drmModifiers.push_back(modifier.drmFormatModifier);
 
     return drmModifiers;
 }
@@ -2225,8 +2208,8 @@ tcu::TestStatus test(Context &context, de::SharedPtr<TestParams> params)
     DE_ASSERT(kUsageToFeatureMap.count(usage) == 1);
     VkFormatFeatureFlagBits features = kUsageToFeatureMap[usage];
 
-    MaybeFormatProperties videoFormatProperties =
-        getVideoFormatProperties(vki, phys, &params->profileList, params->usage);
+    MaybeFormatProperties videoFormatProperties = getVideoFormatProperties(
+        vki, phys, (VkVideoProfileListInfoKHR *)params->coreProfile.GetProfileListInfo(), params->usage);
     if (videoFormatProperties.status.isFail())
     {
         return videoFormatProperties.status;
@@ -2259,20 +2242,24 @@ tcu::TestStatus test(Context &context, de::SharedPtr<TestParams> params)
                 imageFormatListInfo.viewFormatCount                                   = 1;
                 imageFormatListInfo.pViewFormats                                      = &formatProperty.format;
 
+                VkVideoProfileListInfoKHR *profileList =
+                    (VkVideoProfileListInfoKHR *)params->coreProfile.GetProfileListInfo();
+
                 if (drmModifiers.size() > 0)
                 {
                     imageFormatModifierInfo.drmFormatModifier = drmModifiers[i];
                     imageFormatListInfo.pNext                 = &imageFormatModifierInfo;
-                    params->profileList.pNext                 = &imageFormatListInfo;
+                    profileList->pNext                        = &imageFormatListInfo;
                 }
 
-                VkPhysicalDeviceImageFormatInfo2 imageFormatInfo2 = initVulkanStructure(&params->profileList);
-                imageFormatInfo2.format                           = formatProperty.format;
-                imageFormatInfo2.type                             = formatProperty.imageType;
-                imageFormatInfo2.tiling                           = formatProperty.imageTiling;
-                imageFormatInfo2.usage                            = formatProperty.imageUsageFlags;
-                imageFormatInfo2.flags                            = formatProperty.imageCreateFlags;
-                VkImageFormatProperties2 imageFormatProperties2   = initVulkanStructure();
+                VkPhysicalDeviceImageFormatInfo2 imageFormatInfo2 =
+                    initVulkanStructure((void *)params->coreProfile.GetProfileListInfo());
+                imageFormatInfo2.format                         = formatProperty.format;
+                imageFormatInfo2.type                           = formatProperty.imageType;
+                imageFormatInfo2.tiling                         = formatProperty.imageTiling;
+                imageFormatInfo2.usage                          = formatProperty.imageUsageFlags;
+                imageFormatInfo2.flags                          = formatProperty.imageCreateFlags;
+                VkImageFormatProperties2 imageFormatProperties2 = initVulkanStructure();
                 VkResult r =
                     vki.getPhysicalDeviceImageFormatProperties2(phys, &imageFormatInfo2, &imageFormatProperties2);
                 // Modifier is not compatible
@@ -2453,80 +2440,23 @@ tcu::TestCaseGroup *createVideoFormatsTests(tcu::TestContext &testCtx)
                                 continue;
                         }
 
+                        uint32_t profileIdc = 0;
                         switch (codec)
                         {
                         case VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:
-                            params->codecProfile.h264Dec = initVulkanStructure();
-                            params->codecProfile.h264Dec.pictureLayout =
-                                VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_KHR;
-                            params->codecProfile.h264Dec.stdProfileIdc = STD_VIDEO_H264_PROFILE_IDC_MAIN;
-                            params->profile = initVulkanStructure(&params->codecProfile.h264Dec);
-
-                            params->codecCaps.h264Dec = initVulkanStructure();
-                            params->decodeCaps        = initVulkanStructure(&params->codecCaps.h264Dec);
-                            params->selectedCodecCaps = (VkBaseInStructure *)&params->decodeCaps;
+                        case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
+                            profileIdc = STD_VIDEO_H264_PROFILE_IDC_MAIN;
                             break;
                         case VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:
-                            params->codecProfile.h265Dec               = initVulkanStructure();
-                            params->codecProfile.h265Dec.stdProfileIdc = STD_VIDEO_H265_PROFILE_IDC_MAIN;
-                            params->profile = initVulkanStructure(&params->codecProfile.h265Dec);
-
-                            params->codecCaps.h265Dec = initVulkanStructure();
-                            params->decodeCaps        = initVulkanStructure(&params->codecCaps.h265Dec);
-                            params->selectedCodecCaps = (VkBaseInStructure *)&params->decodeCaps;
-
+                        case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
+                            profileIdc = STD_VIDEO_H265_PROFILE_IDC_MAIN;
                             break;
                         case VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
-                            params->codecProfile.av1Dec                  = initVulkanStructure();
-                            params->codecProfile.av1Dec.stdProfile       = STD_VIDEO_AV1_PROFILE_MAIN;
-                            params->codecProfile.av1Dec.filmGrainSupport = true;
-                            params->profile = initVulkanStructure(&params->codecProfile.av1Dec);
-
-                            params->codecCaps.av1Dec  = initVulkanStructure();
-                            params->decodeCaps        = initVulkanStructure(&params->codecCaps.av1Dec);
-                            params->selectedCodecCaps = (VkBaseInStructure *)&params->decodeCaps;
-
+                        case VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR:
+                            profileIdc = STD_VIDEO_AV1_PROFILE_MAIN;
                             break;
                         case VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR:
-                            params->codecProfile.vp9Dec            = initVulkanStructure();
-                            params->codecProfile.vp9Dec.stdProfile = STD_VIDEO_VP9_PROFILE_0;
-
-                            params->profile = initVulkanStructure(&params->codecProfile.vp9Dec);
-
-                            params->codecCaps.vp9Dec  = initVulkanStructure();
-                            params->decodeCaps        = initVulkanStructure(&params->codecCaps.vp9Dec);
-                            params->selectedCodecCaps = (VkBaseInStructure *)&params->decodeCaps;
-
-                            break;
-                        case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
-                            params->codecProfile.h264Enc               = initVulkanStructure();
-                            params->codecProfile.h264Enc.stdProfileIdc = STD_VIDEO_H264_PROFILE_IDC_MAIN;
-                            params->profile = initVulkanStructure(&params->codecProfile.h264Enc);
-
-                            params->codecCaps.h264Enc = initVulkanStructure();
-                            params->encodeCaps        = initVulkanStructure(&params->codecCaps.h264Enc);
-                            params->selectedCodecCaps = (VkBaseInStructure *)&params->encodeCaps;
-
-                            break;
-                        case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
-                            params->codecProfile.h265Enc               = initVulkanStructure();
-                            params->codecProfile.h265Enc.stdProfileIdc = STD_VIDEO_H265_PROFILE_IDC_MAIN;
-                            params->profile = initVulkanStructure(&params->codecProfile.h265Enc);
-
-                            params->codecCaps.h265Enc = initVulkanStructure();
-                            params->encodeCaps        = initVulkanStructure(&params->codecCaps.h265Enc);
-                            params->selectedCodecCaps = (VkBaseInStructure *)&params->encodeCaps;
-
-                            break;
-                        case VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR:
-                            params->codecProfile.av1Enc            = initVulkanStructure();
-                            params->codecProfile.av1Enc.stdProfile = STD_VIDEO_AV1_PROFILE_MAIN;
-                            params->profile                        = initVulkanStructure(&params->codecProfile.av1Enc);
-
-                            params->codecCaps.av1Enc  = initVulkanStructure();
-                            params->encodeCaps        = initVulkanStructure(&params->codecCaps.av1Enc);
-                            params->selectedCodecCaps = (VkBaseInStructure *)&params->encodeCaps;
-
+                            profileIdc = STD_VIDEO_VP9_PROFILE_0;
                             break;
                         default:
                             TCU_THROW(InternalError, "unsupported codec");
@@ -2545,14 +2475,9 @@ tcu::TestCaseGroup *createVideoFormatsTests(tcu::TestContext &testCtx)
                              (ycbcr::isXChromaSubsampled(format) || ycbcr::isYChromaSubsampled(format))))
                             continue;
 
-                        params->profile.videoCodecOperation = codec;
-                        params->profile.chromaSubsampling   = subsampling;
-                        params->profile.lumaBitDepth        = bitdepth;
-                        params->profile.chromaBitDepth      = bitdepth;
-
-                        params->profileList              = initVulkanStructure();
-                        params->profileList.profileCount = 1;
-                        params->profileList.pProfiles    = &params->profile;
+                        // Create VkVideoCoreProfile with all parameters
+                        params->coreProfile =
+                            VkVideoCoreProfile(codec, subsampling, bitdepth, bitdepth, profileIdc, false);
 
                         std::string testName = getTestName(*params);
                         addFunctionCase(group.get(), testName.c_str(), formats::checkSupport, formats::test, params);

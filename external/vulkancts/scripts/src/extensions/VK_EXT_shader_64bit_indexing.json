@@ -1,0 +1,18 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceShader64BitIndexingFeaturesEXT": [
+            {
+                "features": [
+                    "shader64BitIndexing"
+                ],
+                "requirements": [
+                    "VK_EXT_shader_64bit_indexing"
+                ]
+            }
+        ]
+    }
+}

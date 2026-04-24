@@ -91,7 +91,10 @@ public:
 class FrontFacingFragmentShader : public rr::FragmentShader
 {
 public:
-    FrontFacingFragmentShader(void) : rr::FragmentShader(0, 1)
+    FrontFacingFragmentShader(bool uboLoad, VkCullModeFlags cullMode)
+        : rr::FragmentShader(0, 1)
+        , m_uboLoad(uboLoad)
+        , m_cullMode(cullMode)
     {
         m_outputs[0].type = rr::GENERICVECTYPE_FLOAT;
     }
@@ -107,40 +110,64 @@ public:
         {
             for (int fragNdx = 0; fragNdx < rr::NUM_FRAGMENTS_PER_PACKET; ++fragNdx)
             {
-                if (context.visibleFace == rr::FACETYPE_FRONT)
-                    color = tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
+                if (m_uboLoad)
+                {
+                    if (context.visibleFace == rr::FACETYPE_FRONT)
+                        color = tcu::Vec4(2.0f, 2.0f, 2.0f, 2.0f);
+                    else
+                        color = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+                }
                 else
-                    color = tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f);
+                {
+                    if (context.visibleFace == rr::FACETYPE_FRONT)
+                        color = tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
+                    else
+                        color = tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f);
+                }
                 rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, color);
             }
         }
     }
+
+    const bool m_uboLoad;
+    const VkCullModeFlags m_cullMode;
 };
 
 class BuiltinGlFrontFacingCaseInstance : public ShaderRenderCaseInstance
 {
 public:
-    BuiltinGlFrontFacingCaseInstance(Context &context, VkPrimitiveTopology topology);
+    BuiltinGlFrontFacingCaseInstance(Context &context, VkPrimitiveTopology topology, bool addUboLoad,
+                                     VkCullModeFlags cullMode);
 
     TestStatus iterate(void);
 
 private:
     const VkPrimitiveTopology m_topology;
+    const bool m_addUboLoad;
+    const VkCullModeFlags m_cullMode;
 };
 
-BuiltinGlFrontFacingCaseInstance::BuiltinGlFrontFacingCaseInstance(Context &context, VkPrimitiveTopology topology)
+BuiltinGlFrontFacingCaseInstance::BuiltinGlFrontFacingCaseInstance(Context &context, VkPrimitiveTopology topology,
+                                                                   bool addUboLoad, VkCullModeFlags cullMode)
     : ShaderRenderCaseInstance(context)
     , m_topology(topology)
+    , m_addUboLoad(addUboLoad)
+    , m_cullMode(cullMode)
 {
 }
 
 TestStatus BuiltinGlFrontFacingCaseInstance::iterate(void)
 {
-    TestLog &log = m_context.getTestContext().getLog();
+    TestLog &log              = m_context.getTestContext().getLog();
+    const VkDevice device     = m_context.getDevice();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    Allocator &allocator      = m_context.getDefaultAllocator();
+
     std::vector<Vec4> vertices;
     std::vector<VulkanShader> shaders;
-    std::shared_ptr<rr::VertexShader> vertexShader     = std::make_shared<FrontFacingVertexShader>();
-    std::shared_ptr<rr::FragmentShader> fragmentShader = std::make_shared<FrontFacingFragmentShader>();
+    std::shared_ptr<rr::VertexShader> vertexShader = std::make_shared<FrontFacingVertexShader>();
+    std::shared_ptr<rr::FragmentShader> fragmentShader =
+        std::make_shared<FrontFacingFragmentShader>(m_addUboLoad, m_cullMode);
     std::string testDesc;
 
     vertices.push_back(Vec4(-0.75f, -0.75f, 0.0f, 1.0f));
@@ -155,10 +182,72 @@ TestStatus BuiltinGlFrontFacingCaseInstance::iterate(void)
 
     testDesc = "gl_FrontFacing " + getPrimitiveTopologyShortName(m_topology) + " ";
 
+    Move<VkDescriptorSetLayout> descriptorSetLayout;
+    Move<VkDescriptorPool> descriptorPool;
+    Move<VkDescriptorSet> descriptorSet;
+
+    const VkBufferCreateInfo uniformBufferCreateInfo = {
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
+        nullptr,                              // const void*            pNext
+        (VkBufferCreateFlags)0,               // VkBufferCreateFlags    flags
+        sizeof(float),                        // VkDeviceSize            size
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,   // VkBufferUsageFlags    usage
+        VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode
+        0u,                                   // uint32_t                queueFamilyIndexCount
+        nullptr                               // pQueueFamilyIndices
+    };
+
+    auto uniformBuffer = createBuffer(vk, device, &uniformBufferCreateInfo, nullptr);
+    auto uniformBufferAllocation =
+        allocator.allocate(getBufferMemoryRequirements(vk, device, *uniformBuffer), MemoryRequirement::HostVisible);
+    VK_CHECK(vk.bindBufferMemory(device, *uniformBuffer, uniformBufferAllocation->getMemory(),
+                                 uniformBufferAllocation->getOffset()));
+
+    {
+        float *bufferData = (float *)(uniformBufferAllocation->getHostPtr());
+        *bufferData       = 1.0f;
+
+        const VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, nullptr,
+                                           uniformBufferAllocation->getMemory(), 0u, VK_WHOLE_SIZE};
+
+        VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
+    }
+
+    // Descriptors
+    if (m_addUboLoad)
+    {
+        DescriptorSetLayoutBuilder layoutBuilder;
+        layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+        layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT);
+        descriptorSetLayout = layoutBuilder.build(vk, device);
+        descriptorPool      = DescriptorPoolBuilder()
+                             .addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+                             .addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+                             .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+        const VkDescriptorSetAllocateInfo descriptorSetAllocInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, *descriptorPool, 1u, &descriptorSetLayout.get()};
+
+        descriptorSet = allocateDescriptorSet(vk, device, &descriptorSetAllocInfo);
+
+        const VkDescriptorBufferInfo bufferInfo = {*uniformBuffer, 0u, VK_WHOLE_SIZE};
+
+        DescriptorSetUpdateBuilder()
+            .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferInfo)
+            .update(vk, device);
+    }
+
     FrameBufferState frameBufferState(FRONTFACE_RENDERWIDTH, FRONTFACE_RENDERHEIGHT);
     PipelineState pipelineState(m_context.getDeviceProperties().limits.subPixelPrecisionBits);
     DrawCallData drawCallData(m_topology, vertices);
     VulkanProgram vulkanProgram(shaders);
+    if (m_addUboLoad)
+    {
+        pipelineState.cullMode            = m_cullMode;
+        vulkanProgram.descriptorSetLayout = *descriptorSetLayout;
+        vulkanProgram.descriptorSet       = *descriptorSet;
+    }
     VulkanDrawContext dc(m_context, frameBufferState);
     dc.registerDrawObject(pipelineState, vulkanProgram, drawCallData);
     dc.draw();
@@ -196,7 +285,8 @@ TestStatus BuiltinGlFrontFacingCaseInstance::iterate(void)
 class BuiltinGlFrontFacingCase : public TestCase
 {
 public:
-    BuiltinGlFrontFacingCase(TestContext &testCtx, VkPrimitiveTopology topology, const char *name);
+    BuiltinGlFrontFacingCase(TestContext &testCtx, VkPrimitiveTopology topology, const char *name,
+                             const bool addUboLoad, const VkCullModeFlags cullMode);
     virtual ~BuiltinGlFrontFacingCase(void);
 
     void initPrograms(SourceCollections &dst) const;
@@ -208,11 +298,16 @@ private:
     BuiltinGlFrontFacingCase &operator=(const BuiltinGlFrontFacingCase &); // not allowed!
 
     const VkPrimitiveTopology m_topology;
+    const bool m_addUboLoad;
+    const VkCullModeFlags m_cullMode;
 };
 
-BuiltinGlFrontFacingCase::BuiltinGlFrontFacingCase(TestContext &testCtx, VkPrimitiveTopology topology, const char *name)
+BuiltinGlFrontFacingCase::BuiltinGlFrontFacingCase(TestContext &testCtx, VkPrimitiveTopology topology, const char *name,
+                                                   const bool addUboLoad, const VkCullModeFlags cullMode)
     : TestCase(testCtx, name)
     , m_topology(topology)
+    , m_addUboLoad(addUboLoad)
+    , m_cullMode(cullMode)
 {
 }
 
@@ -235,6 +330,7 @@ void BuiltinGlFrontFacingCase::initPrograms(SourceCollections &programCollection
         programCollection.glslSources.add("vert") << glu::VertexSource(vertexSource.str());
     }
 
+    if (!m_addUboLoad)
     {
         std::ostringstream fragmentSource;
         fragmentSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
@@ -246,6 +342,22 @@ void BuiltinGlFrontFacingCase::initPrograms(SourceCollections &programCollection
                        << "    color = vec4(1.0, 0.0, 0.0, 1.0);\n"
                        << "else\n"
                        << "    color = vec4(0.0, 1.0, 0.0, 1.0);\n"
+                       << "}\n";
+        programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentSource.str());
+    }
+    else
+    {
+        std::ostringstream fragmentSource;
+        fragmentSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+                       << "\n"
+                       << "layout(location = 0) out highp vec4 color;\n"
+                       << "layout(set = 0, binding = 0) uniform UboData {\n"
+                       << "    highp float data;\n"
+                       << "} ubo;\n"
+                       << "void main()\n"
+                       << "{\n"
+                       << "    highp float c = (gl_FrontFacing ? 1.0 : -1.0) + ubo.data;\n"
+                       << "    color = vec4(c);\n"
                        << "}\n";
         programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentSource.str());
     }
@@ -268,7 +380,7 @@ void BuiltinGlFrontFacingCase::checkSupport(Context &context) const
 
 TestInstance *BuiltinGlFrontFacingCase::createInstance(Context &context) const
 {
-    return new BuiltinGlFrontFacingCaseInstance(context, m_topology);
+    return new BuiltinGlFrontFacingCaseInstance(context, m_topology, m_addUboLoad, m_cullMode);
 }
 
 class BuiltinFragDepthCaseInstance : public TestInstance
@@ -2472,9 +2584,42 @@ TestCaseGroup *createBuiltinVarTests(TestContext &testCtx)
             {"triangle_fan", VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN},
         };
 
-        for (uint32_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(frontfacingCases); ndx++)
-            frontFacingGroup->addChild(
-                new BuiltinGlFrontFacingCase(testCtx, frontfacingCases[ndx].primitive, frontfacingCases[ndx].name));
+        static const struct CullModeTable
+        {
+            const char *name;
+            VkCullModeFlags cullMode;
+        } cullModeCases[] = {
+            {"none", VK_CULL_MODE_NONE},
+            {"front", VK_CULL_MODE_FRONT_BIT},
+            {"back", VK_CULL_MODE_BACK_BIT},
+            {"front_and_back", VK_CULL_MODE_FRONT_AND_BACK},
+        };
+
+        for (const auto addUboLoad : {false, true})
+        {
+            const char *name = addUboLoad ? "add_ubo_load" : "none";
+            de::MovePtr<TestCaseGroup> typeGroup(new TestCaseGroup(testCtx, name));
+            for (uint32_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(frontfacingCases); ndx++)
+            {
+                de::MovePtr<TestCaseGroup> primitiveGroup(new TestCaseGroup(testCtx, frontfacingCases[ndx].name));
+                if (!addUboLoad)
+                {
+                    primitiveGroup->addChild(new BuiltinGlFrontFacingCase(testCtx, frontfacingCases[ndx].primitive,
+                                                                          "simple", false, VK_CULL_MODE_NONE));
+                }
+                else
+                {
+                    for (const auto &cullModeCase : cullModeCases)
+                    {
+                        primitiveGroup->addChild(new BuiltinGlFrontFacingCase(testCtx, frontfacingCases[ndx].primitive,
+                                                                              cullModeCase.name, addUboLoad,
+                                                                              cullModeCase.cullMode));
+                    }
+                }
+                typeGroup->addChild(primitiveGroup.release());
+            }
+            frontFacingGroup->addChild(typeGroup.release());
+        }
     }
 
     // gl_FragDepth

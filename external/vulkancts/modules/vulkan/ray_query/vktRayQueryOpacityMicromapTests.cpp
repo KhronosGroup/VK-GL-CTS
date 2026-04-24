@@ -813,7 +813,8 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
             tcu::Vec3(-1.0f, 0.0f, 0.0f),
             tcu::Vec3(0.0f, -1.0f, 0.0f),
         };
-        bottomLevelAS->addGeometry(triangleKHR, true /*is triangles*/, 0, nullptr, &opacityGeometryMicromapKHR);
+        bottomLevelAS->addGeometry(triangleKHR, true /*is triangles*/, 0, nullptr, nullptr,
+                                   &opacityGeometryMicromapKHR);
     }
 
     if (m_params.testFlagMask & TEST_FLAG_BIT_DISABLE_OPACITY_MICROMAP_INSTANCE)

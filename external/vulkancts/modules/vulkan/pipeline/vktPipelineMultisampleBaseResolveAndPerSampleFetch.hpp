@@ -28,11 +28,7 @@
 #include "vktTestCase.hpp"
 #include "tcuVector.hpp"
 
-namespace vkt
-{
-namespace pipeline
-{
-namespace multisample
+namespace vkt::pipeline::multisample
 {
 
 class MSCaseBaseResolveAndPerSampleFetch : public MultisampleCaseBase
@@ -68,8 +64,6 @@ protected:
                                             const tcu::ConstPixelBufferAccess &dataRS) const = 0;
 };
 
-} // namespace multisample
-} // namespace pipeline
-} // namespace vkt
+} // namespace vkt::pipeline::multisample
 
 #endif // _VKTPIPELINEMULTISAMPLEBASERESOLVEANDPERSAMPLEFETCH_HPP

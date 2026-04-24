@@ -197,23 +197,30 @@ void checkValidBits(uint32_t validBits, uint32_t queueFamilyIndex)
     }
 }
 
+void checkTimestampValidBitsSupport(const InstanceInterface &vki, const VkPhysicalDevice physDevice,
+                                    const uint32_t queueFamilyIndex)
+{
+    const auto queueProperties = vk::getPhysicalDeviceQueueFamilyProperties(vki, physDevice);
+    DE_ASSERT(queueFamilyIndex < queueProperties.size());
+
+    if (queueProperties[queueFamilyIndex].timestampValidBits == 0)
+        throw tcu::NotSupportedError("Queue does not support timestamps");
+}
+
 // Returns the timestamp mask given the number of valid timestamp bits.
 uint64_t timestampMaskFromValidBits(uint32_t validBits)
 {
     return ((validBits == MAX_TIMESTAMP_VALID_BITS) ? std::numeric_limits<uint64_t>::max() : ((1ULL << validBits) - 1));
 }
 
-// Checks support for timestamps and returns the timestamp mask.
-uint64_t checkTimestampsSupported(const InstanceInterface &vki, const VkPhysicalDevice physDevice,
-                                  const uint32_t queueFamilyIndex)
+// Returns the timestamp mask.
+uint64_t getTimestampMask(const InstanceInterface &vki, const VkPhysicalDevice physDevice,
+                          const uint32_t queueFamilyIndex)
 {
-    const std::vector<VkQueueFamilyProperties> queueProperties =
-        vk::getPhysicalDeviceQueueFamilyProperties(vki, physDevice);
+    const auto queueProperties = vk::getPhysicalDeviceQueueFamilyProperties(vki, physDevice);
     DE_ASSERT(queueFamilyIndex < queueProperties.size());
     const uint32_t &validBits = queueProperties[queueFamilyIndex].timestampValidBits;
-
-    if (validBits == 0)
-        throw tcu::NotSupportedError("Queue does not support timestamps");
+    DE_ASSERT(validBits);
 
     checkValidBits(validBits, queueFamilyIndex);
     return timestampMaskFromValidBits(validBits);
@@ -242,7 +249,7 @@ public:
     TimestampTestParam(const PipelineConstructionType pipelineConstructionType, const VkPipelineStageFlagBits *stages,
                        const uint32_t stageCount, const bool inRenderPass, const bool hostQueryReset,
                        const bool transferOnlyQueue, const VkQueryResultFlags queryResultFlags);
-    virtual ~TimestampTestParam(void);
+    virtual ~TimestampTestParam(void) = default;
     virtual const std::string generateTestName(void) const;
     PipelineConstructionType getPipelineConstructionType(void) const
     {
@@ -305,10 +312,6 @@ TimestampTestParam::TimestampTestParam(const PipelineConstructionType pipelineCo
     {
         m_stageVec.push_back(stages[ndx]);
     }
-}
-
-TimestampTestParam::~TimestampTestParam(void)
-{
 }
 
 const std::string TimestampTestParam::generateTestName(void) const
@@ -534,12 +537,7 @@ void TimestampTest::checkSupport(Context &context) const
         queueFamilyIndex = findQueueFamilyIndexWithCaps(vki, physicalDevice, VK_QUEUE_TRANSFER_BIT,
                                                         VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 
-    // Check support for timestamp queries
-    const std::vector<VkQueueFamilyProperties> queueProperties =
-        vk::getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
-    DE_ASSERT(queueFamilyIndex < (uint32_t)queueProperties.size());
-    if (!queueProperties[queueFamilyIndex].timestampValidBits)
-        throw tcu::NotSupportedError("Universal queue does not support timestamps");
+    checkTimestampValidBitsSupport(vki, physicalDevice, queueFamilyIndex);
 
     if (m_hostQueryReset)
     {
@@ -549,8 +547,7 @@ void TimestampTest::checkSupport(Context &context) const
         if (context.getHostQueryResetFeatures().hostQueryReset == VK_FALSE)
             throw tcu::NotSupportedError("Implementation doesn't support resetting queries from the host");
     }
-    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
-                                          m_pipelineConstructionType);
+    checkPipelineConstructionRequirements(vki, physicalDevice, m_pipelineConstructionType);
 }
 
 TestInstance *TimestampTest::createInstance(Context &context) const
@@ -586,8 +583,7 @@ TimestampTestInstance::TimestampTestInstance(Context &context, const StageFlagVe
     if (m_transferOnlyQueue)
         createCustomDeviceWithTransferOnlyQueue();
 
-    m_timestampMask =
-        checkTimestampsSupported(context.getInstanceInterface(), context.getPhysicalDevice(), m_queueFamilyIndex);
+    m_timestampMask = getTimestampMask(context.getInstanceInterface(), context.getPhysicalDevice(), m_queueFamilyIndex);
 
     // Create Query Pool
     {
@@ -973,8 +969,6 @@ protected:
         uint64_t deviation;
     };
 
-    std::vector<VkTimeDomainKHR> getDomainSubset(const std::vector<VkTimeDomainKHR> &available,
-                                                 const std::vector<VkTimeDomainKHR> &interesting) const;
     std::string domainName(VkTimeDomainKHR domain) const;
     uint64_t getHostNativeTimestamp(VkTimeDomainKHR hostDomain) const;
     uint64_t getHostNanoseconds(uint64_t hostTimestamp) const;
@@ -1021,9 +1015,7 @@ public:
     {
     }
 
-    virtual ~CalibratedTimestampDevDomainTestInstance(void)
-    {
-    }
+    virtual ~CalibratedTimestampDevDomainTestInstance(void) = default;
     virtual tcu::TestStatus runTest(void) override;
 };
 
@@ -1034,9 +1026,7 @@ public:
     {
     }
 
-    virtual ~CalibratedTimestampHostDomainTestInstance(void)
-    {
-    }
+    virtual ~CalibratedTimestampHostDomainTestInstance(void) = default;
     virtual tcu::TestStatus runTest(void) override;
 };
 
@@ -1047,9 +1037,7 @@ public:
     {
     }
 
-    virtual ~CalibratedTimestampCalibrationTestInstance(void)
-    {
-    }
+    virtual ~CalibratedTimestampCalibrationTestInstance(void) = default;
     virtual tcu::TestStatus runTest(void) override;
 };
 
@@ -1065,6 +1053,47 @@ vkt::TestInstance *CalibratedTimestampTest<T>::createInstance(Context &context) 
     return new T{context};
 }
 
+std::vector<VkTimeDomainKHR> getDomainSubset(const std::vector<VkTimeDomainKHR> &available,
+                                             const std::vector<VkTimeDomainKHR> &interesting)
+{
+    const std::set<VkTimeDomainKHR> availableSet(begin(available), end(available));
+    const std::set<VkTimeDomainKHR> interestingSet(begin(interesting), end(interesting));
+
+    std::vector<VkTimeDomainKHR> subset;
+    std::set_intersection(begin(availableSet), end(availableSet), begin(interestingSet), end(interestingSet),
+                          std::back_inserter(subset));
+    return subset;
+}
+
+void getDeviceHostDomains(Context &context, std::vector<VkTimeDomainKHR> &devDomains,
+                          std::vector<VkTimeDomainKHR> &hostDomains)
+{
+    const InstanceInterface &vki      = context.getInstanceInterface();
+    const VkPhysicalDevice physDevice = context.getPhysicalDevice();
+
+    uint32_t domainCount;
+    VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsKHR(physDevice, &domainCount, nullptr));
+    DE_ASSERT(domainCount);
+
+    std::vector<VkTimeDomainKHR> domains(domainCount);
+    VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsKHR(physDevice, &domainCount, domains.data()));
+
+    // Find the dev domain.
+    std::vector<VkTimeDomainKHR> preferredDevDomains{VK_TIME_DOMAIN_DEVICE_KHR};
+    devDomains = getDomainSubset(domains, preferredDevDomains);
+
+    // Find the host domain.
+    std::vector<VkTimeDomainKHR> preferredHostDomains
+    {
+#if (DE_OS == DE_OS_WIN32)
+        VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR
+#else
+        VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR, VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR
+#endif
+    };
+    hostDomains = getDomainSubset(domains, preferredHostDomains);
+}
+
 template <class T>
 void CalibratedTimestampTest<T>::checkSupport(Context &context) const
 {
@@ -1075,6 +1104,36 @@ void CalibratedTimestampTest<T>::checkSupport(Context &context) const
         !context.isDeviceFunctionalitySupported("VK_EXT_calibrated_timestamps"))
         TCU_THROW(NotSupportedError, "VK_KHR_calibrated_timestamps and VK_EXT_calibrated_timestamps are not supported");
 #endif
+
+    const InstanceInterface &vki      = context.getInstanceInterface();
+    const VkPhysicalDevice physDevice = context.getPhysicalDevice();
+    const uint32_t queueFamilyIndex   = context.getUniversalQueueFamilyIndex();
+
+    uint32_t domainCount;
+    VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsKHR(physDevice, &domainCount, nullptr));
+    if (domainCount == 0)
+        TCU_THROW(NotSupportedError, "No calibrateable time domains found");
+
+    checkTimestampValidBitsSupport(vki, physDevice, queueFamilyIndex);
+
+    std::vector<VkTimeDomainKHR> devDomains;
+    std::vector<VkTimeDomainKHR> hostDomains;
+    getDeviceHostDomains(context, devDomains, hostDomains);
+
+    const bool testDevDomain     = std::is_same_v<T, CalibratedTimestampDevDomainTestInstance>;
+    const bool testHostDomain    = std::is_same_v<T, CalibratedTimestampHostDomainTestInstance>;
+    const bool testDevHostDomain = std::is_same_v<T, CalibratedTimestampCalibrationTestInstance>;
+
+    if constexpr (testDevDomain || testDevHostDomain)
+    {
+        if (devDomains.empty())
+            TCU_THROW(NotSupportedError, "No suitable device time domains found");
+    }
+    if constexpr (testHostDomain || testDevHostDomain)
+    {
+        if (hostDomains.empty())
+            TCU_THROW(NotSupportedError, "No suitable host time domains found");
+    }
 }
 
 CalibratedTimestampTestInstance::CalibratedTimestampTestInstance(Context &context) : TestInstance{context}
@@ -1097,36 +1156,12 @@ CalibratedTimestampTestInstance::CalibratedTimestampTestInstance(Context &contex
     const uint32_t queueFamilyIndex   = context.getUniversalQueueFamilyIndex();
 
     // Get timestamp mask.
-    m_devTimestampMask = checkTimestampsSupported(vki, physDevice, queueFamilyIndex);
+    m_devTimestampMask = getTimestampMask(vki, physDevice, queueFamilyIndex);
 
     // Get calibreatable time domains.
     m_timestampPeriod = getPhysicalDeviceProperties(vki, physDevice).limits.timestampPeriod;
 
-    uint32_t domainCount;
-    VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsKHR(physDevice, &domainCount, nullptr));
-    if (domainCount == 0)
-    {
-        throw tcu::NotSupportedError("No calibrateable time domains found");
-    }
-
-    std::vector<VkTimeDomainKHR> domains;
-    domains.resize(domainCount);
-    VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsKHR(physDevice, &domainCount, domains.data()));
-
-    // Find the dev domain.
-    std::vector<VkTimeDomainKHR> preferredDevDomains;
-    preferredDevDomains.push_back(VK_TIME_DOMAIN_DEVICE_KHR);
-    m_devDomains = getDomainSubset(domains, preferredDevDomains);
-
-    // Find the host domain.
-    std::vector<VkTimeDomainKHR> preferredHostDomains;
-#if (DE_OS == DE_OS_WIN32)
-    preferredHostDomains.push_back(VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR);
-#else
-    preferredHostDomains.push_back(VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR);
-    preferredHostDomains.push_back(VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR);
-#endif
-    m_hostDomains = getDomainSubset(domains, preferredHostDomains);
+    getDeviceHostDomains(context, m_devDomains, m_hostDomains);
 
     // Initialize command buffers and queries.
     const DeviceInterface &vk = context.getDeviceInterface();
@@ -1149,18 +1184,6 @@ CalibratedTimestampTestInstance::CalibratedTimestampTestInstance(Context &contex
     vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
     vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, *m_queryPool, 0u);
     endCommandBuffer(vk, *m_cmdBuffer);
-}
-
-std::vector<VkTimeDomainKHR> CalibratedTimestampTestInstance::getDomainSubset(
-    const std::vector<VkTimeDomainKHR> &available, const std::vector<VkTimeDomainKHR> &interesting) const
-{
-    const std::set<VkTimeDomainKHR> availableSet(begin(available), end(available));
-    const std::set<VkTimeDomainKHR> interestingSet(begin(interesting), end(interesting));
-
-    std::vector<VkTimeDomainKHR> subset;
-    std::set_intersection(begin(availableSet), end(availableSet), begin(interestingSet), end(interestingSet),
-                          std::back_inserter(subset));
-    return subset;
 }
 
 std::string CalibratedTimestampTestInstance::domainName(VkTimeDomainKHR domain) const
@@ -1373,9 +1396,6 @@ void CalibratedTimestampTestInstance::appendQualityMessage(const std::string &me
 // Test device domain makes sense and is consistent with vkCmdWriteTimestamp().
 tcu::TestStatus CalibratedTimestampDevDomainTestInstance::runTest(void)
 {
-    if (m_devDomains.empty())
-        throw tcu::NotSupportedError("No suitable device time domains found");
-
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice vkDevice   = m_context.getDevice();
     const VkQueue queue       = m_context.getUniversalQueue();
@@ -1410,9 +1430,6 @@ tcu::TestStatus CalibratedTimestampDevDomainTestInstance::runTest(void)
 // Test host domain makes sense and is consistent with native host values.
 tcu::TestStatus CalibratedTimestampHostDomainTestInstance::runTest(void)
 {
-    if (m_hostDomains.empty())
-        throw tcu::NotSupportedError("No suitable host time domains found");
-
     for (const auto hostDomain : m_hostDomains)
     {
         const uint64_t before          = getHostNativeTimestamp(hostDomain);
@@ -1438,11 +1455,6 @@ tcu::TestStatus CalibratedTimestampHostDomainTestInstance::runTest(void)
 // Verify predictable timestamps and calibration possible.
 tcu::TestStatus CalibratedTimestampCalibrationTestInstance::runTest(void)
 {
-    if (m_devDomains.empty())
-        throw tcu::NotSupportedError("No suitable device time domains found");
-    if (m_hostDomains.empty())
-        throw tcu::NotSupportedError("No suitable host time domains found");
-
     // Sleep time.
     constexpr uint32_t kSleepMilliseconds = 200;
     constexpr uint32_t kSleepNanoseconds  = kSleepMilliseconds * kNanosecondsPerMillisecond;
@@ -1504,9 +1516,7 @@ public:
         : TimestampTest(testContext, name, param)
     {
     }
-    virtual ~BasicGraphicsTest(void)
-    {
-    }
+    virtual ~BasicGraphicsTest(void) = default;
     virtual void initPrograms(SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
 };
@@ -1522,7 +1532,7 @@ public:
                               const StageFlagVector stages, const bool inRenderPass, const bool hostQueryReset,
                               const VkQueryResultFlags queryResultFlags);
 
-    virtual ~BasicGraphicsTestInstance(void);
+    virtual ~BasicGraphicsTestInstance(void) = default;
 
 protected:
     virtual void buildPipeline(void);
@@ -1743,10 +1753,6 @@ BasicGraphicsTestInstance::BasicGraphicsTestInstance(Context &context,
     m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, m_device, &pipelineLayoutParams);
 }
 
-BasicGraphicsTestInstance::~BasicGraphicsTestInstance(void)
-{
-}
-
 static const VkVertexInputBindingDescription defaultVertexInputBindingDescription{
     0u,                          // uint32_t binding;
     sizeof(Vertex4RGBA),         // uint32_t strideInBytes;
@@ -1893,9 +1899,8 @@ public:
     {
     }
 
-    virtual ~AdvGraphicsTest(void)
-    {
-    }
+    virtual ~AdvGraphicsTest(void) = default;
+    virtual void checkSupport(Context &context) const;
     virtual void initPrograms(SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
 };
@@ -1907,12 +1912,9 @@ public:
                             const StageFlagVector stages, const bool inRenderPass, const bool hostQueryReset,
                             const VkQueryResultFlags queryResultFlags);
 
-    virtual ~AdvGraphicsTestInstance(void);
+    virtual ~AdvGraphicsTestInstance(void) = default;
     virtual void buildPipeline(void);
     virtual void configCommandBuffer(void);
-
-protected:
-    virtual void featureSupportCheck(void);
 
 protected:
     VkPhysicalDeviceFeatures m_features;
@@ -1920,6 +1922,32 @@ protected:
     de::MovePtr<Allocation> m_indirectBufferAlloc;
     Move<VkBuffer> m_indirectBuffer;
 };
+
+void AdvGraphicsTest::checkSupport(Context &context) const
+{
+    TimestampTest::checkSupport(context);
+
+    const auto &features(context.getDeviceFeatures());
+
+    for (StageFlagVector::const_iterator it = m_stages.begin(); it != m_stages.end(); it++)
+    {
+        switch (*it)
+        {
+        case VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT:
+            if (!features.geometryShader)
+                TCU_THROW(NotSupportedError, "Geometry Shader Not Supported");
+            break;
+        case VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT:
+        case VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT:
+            if (!features.tessellationShader)
+                TCU_THROW(NotSupportedError, "Tessellation Not Supported");
+            break;
+        case VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT:
+        default:
+            break;
+        }
+    }
+}
 
 void AdvGraphicsTest::initPrograms(SourceCollections &programCollection) const
 {
@@ -1991,32 +2019,6 @@ TestInstance *AdvGraphicsTest::createInstance(Context &context) const
                                        m_queryResultFlags);
 }
 
-void AdvGraphicsTestInstance::featureSupportCheck(void)
-{
-    for (StageFlagVector::const_iterator it = m_stages.begin(); it != m_stages.end(); it++)
-    {
-        switch (*it)
-        {
-        case VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT:
-            if (m_features.geometryShader == VK_FALSE)
-            {
-                TCU_THROW(NotSupportedError, "Geometry Shader Not Supported");
-            }
-            break;
-        case VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT:
-        case VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT:
-            if (m_features.tessellationShader == VK_FALSE)
-            {
-                TCU_THROW(NotSupportedError, "Tessellation Not Supported");
-            }
-            break;
-        case VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT:
-        default:
-            break;
-        }
-    }
-}
-
 AdvGraphicsTestInstance::AdvGraphicsTestInstance(Context &context,
                                                  const PipelineConstructionType pipelineConstructionType,
                                                  const StageFlagVector stages, const bool inRenderPass,
@@ -2027,9 +2029,6 @@ AdvGraphicsTestInstance::AdvGraphicsTestInstance(Context &context,
 {
 
     const DeviceInterface &vk = m_context.getDeviceInterface();
-
-    // If necessary feature is not supported, throw error and fail current test
-    featureSupportCheck();
 
     // Prepare the indirect draw buffer
     if (m_features.multiDrawIndirect == VK_TRUE)
@@ -2061,10 +2060,6 @@ AdvGraphicsTestInstance::AdvGraphicsTestInstance(Context &context,
     // Load data into indirect draw buffer
     deMemcpy(m_indirectBufferAlloc->getHostPtr(), indirectCmds, m_draw_count * sizeof(VkDrawIndirectCommand));
     flushAlloc(vk, m_device, *m_indirectBufferAlloc);
-}
-
-AdvGraphicsTestInstance::~AdvGraphicsTestInstance(void)
-{
 }
 
 void AdvGraphicsTestInstance::buildPipeline(void)
@@ -2179,7 +2174,7 @@ public:
     BasicComputeTestInstance(Context &context, const StageFlagVector stages, const bool inRenderPass,
                              const bool hostQueryReset, VkQueryResultFlags VkQueryResultFlags);
 
-    virtual ~BasicComputeTestInstance(void);
+    virtual ~BasicComputeTestInstance(void) = default;
     virtual void configCommandBuffer(void);
 
 protected:
@@ -2342,10 +2337,6 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context &context, const Stage
     m_computePipelines = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
-BasicComputeTestInstance::~BasicComputeTestInstance(void)
-{
-}
-
 void BasicComputeTestInstance::configCommandBuffer(void)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
@@ -2391,7 +2382,7 @@ public:
                          const bool hostQueryReset, const bool transferOnlyQueue, const TransferMethod method,
                          const VkQueryResultFlags queryResultFlags);
 
-    virtual ~TransferTestInstance(void);
+    virtual ~TransferTestInstance(void) = default;
     virtual void configCommandBuffer(void);
     virtual void initialImageTransition(VkCommandBuffer cmdBuffer, VkImage image, VkImageSubresourceRange subRange,
                                         VkImageLayout layout);
@@ -2477,10 +2468,6 @@ TransferTestInstance::TransferTestInstance(Context &context, const StageFlagVect
                                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
                                                VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                                            VK_SAMPLE_COUNT_4_BIT, &m_msImageAlloc);
-}
-
-TransferTestInstance::~TransferTestInstance(void)
-{
 }
 
 void TransferTestInstance::configCommandBuffer(void)
@@ -2733,9 +2720,8 @@ public:
     FillBufferBeforeCopyTest(tcu::TestContext &testContext, const std::string &name) : vkt::TestCase(testContext, name)
     {
     }
-    virtual ~FillBufferBeforeCopyTest(void)
-    {
-    }
+    virtual ~FillBufferBeforeCopyTest(void) = default;
+    virtual void checkSupport(Context &context) const;
     virtual void initPrograms(SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
 };
@@ -2744,9 +2730,7 @@ class FillBufferBeforeCopyTestInstance : public vkt::TestInstance
 {
 public:
     FillBufferBeforeCopyTestInstance(Context &context);
-    virtual ~FillBufferBeforeCopyTestInstance(void)
-    {
-    }
+    virtual ~FillBufferBeforeCopyTestInstance(void) = default;
     virtual tcu::TestStatus iterate(void);
 
 protected:
@@ -2764,6 +2748,12 @@ protected:
     de::MovePtr<Allocation> m_resultBufferMemory;
 };
 
+void FillBufferBeforeCopyTest::checkSupport(Context &context) const
+{
+    checkTimestampValidBitsSupport(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                   context.getUniversalQueueFamilyIndex());
+}
+
 void FillBufferBeforeCopyTest::initPrograms(SourceCollections &programCollection) const
 {
     vkt::TestCase::initPrograms(programCollection);
@@ -2779,12 +2769,9 @@ FillBufferBeforeCopyTestInstance::FillBufferBeforeCopyTestInstance(Context &cont
     const DeviceInterface &vk       = context.getDeviceInterface();
     const VkDevice vkDevice         = context.getDevice();
     const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
-    Allocator &allocator            = m_context.getDefaultAllocator();
+    Allocator &allocator            = context.getDefaultAllocator();
 
-    // Check support for timestamp queries
-    checkTimestampsSupported(context.getInstanceInterface(), context.getPhysicalDevice(), queueFamilyIndex);
-
-    const VkQueryPoolCreateInfo queryPoolParams = {
+    const VkQueryPoolCreateInfo queryPoolParams{
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType               sType;
         nullptr,                                  // const void*                   pNext;
         0u,                                       // VkQueryPoolCreateFlags        flags;
@@ -2881,9 +2868,8 @@ public:
         : vkt::TestCase(testContext, name)
     {
     }
-    virtual ~ResetTimestampQueryBeforeCopyTest(void)
-    {
-    }
+    virtual ~ResetTimestampQueryBeforeCopyTest(void) = default;
+    virtual void checkSupport(Context &context) const;
     virtual void initPrograms(SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
 };
@@ -2892,9 +2878,7 @@ class ResetTimestampQueryBeforeCopyTestInstance : public vkt::TestInstance
 {
 public:
     ResetTimestampQueryBeforeCopyTestInstance(Context &context);
-    virtual ~ResetTimestampQueryBeforeCopyTestInstance(void)
-    {
-    }
+    virtual ~ResetTimestampQueryBeforeCopyTestInstance(void) = default;
     virtual tcu::TestStatus iterate(void);
 
 protected:
@@ -2912,6 +2896,12 @@ protected:
     de::MovePtr<Allocation> m_resultBufferMemory;
 };
 
+void ResetTimestampQueryBeforeCopyTest::checkSupport(Context &context) const
+{
+    checkTimestampValidBitsSupport(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                   context.getUniversalQueueFamilyIndex());
+}
+
 void ResetTimestampQueryBeforeCopyTest::initPrograms(SourceCollections &programCollection) const
 {
     vkt::TestCase::initPrograms(programCollection);
@@ -2928,12 +2918,9 @@ ResetTimestampQueryBeforeCopyTestInstance::ResetTimestampQueryBeforeCopyTestInst
     const DeviceInterface &vk       = context.getDeviceInterface();
     const VkDevice vkDevice         = context.getDevice();
     const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
-    Allocator &allocator            = m_context.getDefaultAllocator();
+    Allocator &allocator            = context.getDefaultAllocator();
 
-    // Check support for timestamp queries
-    checkTimestampsSupported(context.getInstanceInterface(), context.getPhysicalDevice(), queueFamilyIndex);
-
-    const VkQueryPoolCreateInfo queryPoolParams = {
+    const VkQueryPoolCreateInfo queryPoolParams{
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType               sType;
         nullptr,                                  // const void*                   pNext;
         0u,                                       // VkQueryPoolCreateFlags        flags;
@@ -3027,7 +3014,7 @@ public:
     TwoCmdBuffersTestInstance(Context &context, const StageFlagVector stages, const bool inRenderPass,
                               const bool hostQueryReset, const bool transferOnlyQueue,
                               VkCommandBufferLevel cmdBufferLevel, VkQueryResultFlags queryResultFlags);
-    virtual ~TwoCmdBuffersTestInstance(void);
+    virtual ~TwoCmdBuffersTestInstance(void) = default;
     virtual tcu::TestStatus iterate(void);
 
 protected:
@@ -3068,10 +3055,6 @@ TwoCmdBuffersTestInstance::TwoCmdBuffersTestInstance(Context &context, const Sta
     m_secondCmdBuffer = allocateCommandBuffer(vk, m_device, *m_cmdPool, cmdBufferLevel);
     m_dstBuffer = createBufferAndBindMemory(1024, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                             &m_dstBufferAlloc);
-}
-
-TwoCmdBuffersTestInstance::~TwoCmdBuffersTestInstance(void)
-{
 }
 
 void TwoCmdBuffersTestInstance::configCommandBuffer(void)
@@ -3189,9 +3172,8 @@ public:
         : vkt::TestCase(testContext, name)
     {
     }
-    virtual ~ConsistentQueryResultsTest(void)
-    {
-    }
+    virtual ~ConsistentQueryResultsTest(void) = default;
+    virtual void checkSupport(Context &context) const;
     virtual void initPrograms(SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
 };
@@ -3200,9 +3182,7 @@ class ConsistentQueryResultsTestInstance : public vkt::TestInstance
 {
 public:
     ConsistentQueryResultsTestInstance(Context &context);
-    virtual ~ConsistentQueryResultsTestInstance(void)
-    {
-    }
+    virtual ~ConsistentQueryResultsTestInstance(void) = default;
     virtual tcu::TestStatus iterate(void);
 
 protected:
@@ -3216,6 +3196,12 @@ protected:
     de::MovePtr<Allocation> m_resultBufferMemory32Bits;
     de::MovePtr<Allocation> m_resultBufferMemory64Bits;
 };
+
+void ConsistentQueryResultsTest::checkSupport(Context &context) const
+{
+    checkTimestampValidBitsSupport(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                   context.getUniversalQueueFamilyIndex());
+}
 
 void ConsistentQueryResultsTest::initPrograms(SourceCollections &programCollection) const
 {
@@ -3235,10 +3221,9 @@ ConsistentQueryResultsTestInstance::ConsistentQueryResultsTestInstance(Context &
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     // Check support for timestamp queries
-    m_timestampMask =
-        checkTimestampsSupported(context.getInstanceInterface(), context.getPhysicalDevice(), queueFamilyIndex);
+    m_timestampMask = getTimestampMask(context.getInstanceInterface(), context.getPhysicalDevice(), queueFamilyIndex);
 
-    const VkQueryPoolCreateInfo queryPoolParams = {
+    const VkQueryPoolCreateInfo queryPoolParams{
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType               sType;
         nullptr,                                  // const void*                   pNext;
         0u,                                       // VkQueryPoolCreateFlags        flags;
@@ -3436,9 +3421,8 @@ public:
     SequentialTimestampTest(tcu::TestContext &testContext, const std::string &name) : vkt::TestCase(testContext, name)
     {
     }
-    virtual ~SequentialTimestampTest(void)
-    {
-    }
+    virtual ~SequentialTimestampTest(void) = default;
+    virtual void checkSupport(Context &context) const;
     virtual void initPrograms(SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
 };
@@ -3447,7 +3431,7 @@ class SequentialTimestampTestInstance : public vkt::TestInstance
 {
 public:
     SequentialTimestampTestInstance(Context &context);
-    virtual ~SequentialTimestampTestInstance(void);
+    virtual ~SequentialTimestampTestInstance(void) = default;
     virtual tcu::TestStatus iterate(void);
 
 protected:
@@ -3503,6 +3487,12 @@ protected:
     OperationType m_operations[OPERATION_COUNT];
 };
 
+void SequentialTimestampTest::checkSupport(Context &context) const
+{
+    checkTimestampValidBitsSupport(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                   context.getUniversalQueueFamilyIndex());
+}
+
 void SequentialTimestampTest::initPrograms(SourceCollections &programCollection) const
 {
     programCollection.glslSources.add("vert") << glu::VertexSource("#version 310 es\n"
@@ -3556,11 +3546,10 @@ SequentialTimestampTestInstance::SequentialTimestampTestInstance(Context &contex
     const VkDevice device           = context.getDevice();
     const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
-    m_timestampMask =
-        checkTimestampsSupported(context.getInstanceInterface(), context.getPhysicalDevice(), queueFamilyIndex);
-    m_cmdPool = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+    m_timestampMask = getTimestampMask(context.getInstanceInterface(), context.getPhysicalDevice(), queueFamilyIndex);
+    m_cmdPool       = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 
-    const VkQueryPoolCreateInfo queryPoolParams = {
+    const VkQueryPoolCreateInfo queryPoolParams{
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType               sType
         nullptr,                                  // const void*                   pNext
         0u,                                       // VkQueryPoolCreateFlags        flags
@@ -3591,10 +3580,6 @@ SequentialTimestampTestInstance::SequentialTimestampTestInstance(Context &contex
     // Setup render pass and pipelines
     setupRenderPass();
     setupComputePipeline();
-}
-
-SequentialTimestampTestInstance::~SequentialTimestampTestInstance(void)
-{
 }
 
 void SequentialTimestampTestInstance::createResources(void)

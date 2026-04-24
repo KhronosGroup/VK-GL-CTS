@@ -326,6 +326,9 @@ void TestSessionExecutor::leaveTestCase(TestCase *testCase)
             case QP_TEST_RESULT_COMPATIBILITY_WARNING:
                 m_status.numWarnings += 1;
                 break;
+            case QP_TEST_RESULT_CAPABILITY_WARNING:
+                m_status.numWarnings += 1;
+                break;
             case QP_TEST_RESULT_WAIVER:
                 m_status.numWaived += 1;
                 break;

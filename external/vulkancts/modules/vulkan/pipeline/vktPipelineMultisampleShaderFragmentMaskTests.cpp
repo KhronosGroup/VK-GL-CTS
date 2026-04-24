@@ -216,7 +216,6 @@ class SingletonDevice
         VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures               = initVulkanStructure();
         VkPhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeatures = initVulkanStructure(&dynamicRenderingFeatures);
 
-        m_context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
         const auto addFeatures = makeStructChainAdder(&features2);
 
         if (m_context.isDeviceFunctionalitySupported("VK_EXT_descriptor_buffer"))
@@ -310,6 +309,8 @@ void checkRequirements(Context &context, TestParams params)
 {
     const auto &vki           = context.getInstanceInterface();
     const auto physicalDevice = context.getPhysicalDevice();
+
+    context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 
     const auto &supportedExtensions = enumerateCachedDeviceExtensionProperties(vki, physicalDevice);
     if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_AMD_shader_fragment_mask")))

@@ -77,6 +77,7 @@ private:
     glu::ShaderProgram *m_program;
     glw::GLuint m_to_id;
     glw::GLuint m_fbo_id;
+    glw::GLuint m_vao_id;
     glw::GLuint m_vbo_id;
     std::vector<glw::GLenum> m_availableShadingRates;
 };

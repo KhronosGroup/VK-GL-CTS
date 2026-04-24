@@ -262,7 +262,7 @@ class PrimaryCommandBufferConcurrentTestInstance : public vkt::TestInstance
 {
 public:
     PrimaryCommandBufferConcurrentTestInstance(vkt::Context &context);
-    ~PrimaryCommandBufferConcurrentTestInstance(void);
+    ~PrimaryCommandBufferConcurrentTestInstance(void) = default;
 
 private:
     tcu::TestStatus iterate(void);
@@ -288,32 +288,17 @@ PrimaryCommandBufferConcurrentTestInstance::PrimaryCommandBufferConcurrentTestIn
         for (uint32_t poolNdx = 0; poolNdx < NUM_QUERY_POOLS; poolNdx++)
             m_supportedQueryType[poolNdx] = false;
 
-        uint32_t numSupportedQueryTypes            = 0;
         m_supportedQueryType[QUERY_TYPE_OCCLUSION] = true;
-        numSupportedQueryTypes++;
 
         if (context.getDeviceFeatures().pipelineStatisticsQuery)
-        {
             m_supportedQueryType[QUERY_TYPE_PIPELINE_STATISTICS] = true;
-            numSupportedQueryTypes++;
-        }
 
-        // Check support for timestamp queries
-        {
-            const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
-            const std::vector<vk::VkQueueFamilyProperties> queueProperties =
-                vk::getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+        const auto &vki                 = context.getInstanceInterface();
+        const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+        const auto queueProperties      = vk::getPhysicalDeviceQueueFamilyProperties(vki, context.getPhysicalDevice());
 
-            DE_ASSERT(queueFamilyIndex < (uint32_t)queueProperties.size());
-
-            if (queueProperties[queueFamilyIndex].timestampValidBits)
-            {
-                m_supportedQueryType[QUERY_TYPE_TIMESTAMP] = true;
-                numSupportedQueryTypes++;
-            }
-        }
-        if (numSupportedQueryTypes < 2)
-            throw tcu::NotSupportedError("Device does not support multiple query types");
+        if (queueProperties[queueFamilyIndex].timestampValidBits)
+            m_supportedQueryType[QUERY_TYPE_TIMESTAMP] = true;
     }
 
     m_stateObjects = std::unique_ptr<StateObjects>(new StateObjects(
@@ -341,15 +326,8 @@ PrimaryCommandBufferConcurrentTestInstance::PrimaryCommandBufferConcurrentTestIn
         m_queryPools[poolNdx] = createQueryPool(vk, device, &queryPoolCreateInfo, /*pAllocator*/ nullptr);
     }
 
-    std::vector<tcu::Vec4> vertices(NUM_VERTICES_IN_DRAWCALL);
-    vertices[0] = tcu::Vec4(0.5, 0.5, 0.0, 1.0);
-    vertices[1] = tcu::Vec4(0.5, 0.0, 0.0, 1.0);
-    vertices[2] = tcu::Vec4(0.0, 0.5, 0.0, 1.0);
+    std::vector<tcu::Vec4> vertices{{0.5, 0.5, 0.0, 1.0}, {0.5, 0.0, 0.0, 1.0}, {0.0, 0.5, 0.0, 1.0}};
     m_stateObjects->setVertices(vk, vertices);
-}
-
-PrimaryCommandBufferConcurrentTestInstance::~PrimaryCommandBufferConcurrentTestInstance(void)
-{
 }
 
 tcu::TestStatus PrimaryCommandBufferConcurrentTestInstance::iterate(void)
@@ -550,7 +528,7 @@ class SecondaryCommandBufferConcurrentTestInstance : public vkt::TestInstance
 {
 public:
     SecondaryCommandBufferConcurrentTestInstance(vkt::Context &context);
-    ~SecondaryCommandBufferConcurrentTestInstance(void);
+    ~SecondaryCommandBufferConcurrentTestInstance(void) = default;
 
 private:
     tcu::TestStatus iterate(void);
@@ -576,32 +554,16 @@ SecondaryCommandBufferConcurrentTestInstance::SecondaryCommandBufferConcurrentTe
         for (uint32_t poolNdx = 0; poolNdx < NUM_QUERY_POOLS; poolNdx++)
             m_supportedQueryType[poolNdx] = false;
 
-        uint32_t numSupportedQueryTypes            = 0;
         m_supportedQueryType[QUERY_TYPE_OCCLUSION] = true;
-        numSupportedQueryTypes++;
-
         if (context.getDeviceFeatures().pipelineStatisticsQuery)
-        {
             m_supportedQueryType[QUERY_TYPE_PIPELINE_STATISTICS] = true;
-            numSupportedQueryTypes++;
-        }
 
-        // Check support for timestamp queries
-        {
-            const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
-            const std::vector<vk::VkQueueFamilyProperties> queueProperties =
-                vk::getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+        const auto &vki                 = context.getInstanceInterface();
+        const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+        const auto queueProperties      = vk::getPhysicalDeviceQueueFamilyProperties(vki, context.getPhysicalDevice());
 
-            DE_ASSERT(queueFamilyIndex < (uint32_t)queueProperties.size());
-
-            if (queueProperties[queueFamilyIndex].timestampValidBits)
-            {
-                m_supportedQueryType[QUERY_TYPE_TIMESTAMP] = true;
-                numSupportedQueryTypes++;
-            }
-        }
-        if (numSupportedQueryTypes < 2)
-            throw tcu::NotSupportedError("Device does not support multiple query types");
+        if (queueProperties[queueFamilyIndex].timestampValidBits)
+            m_supportedQueryType[QUERY_TYPE_TIMESTAMP] = true;
     }
 
     m_stateObjects = std::unique_ptr<StateObjects>(new StateObjects(
@@ -629,15 +591,8 @@ SecondaryCommandBufferConcurrentTestInstance::SecondaryCommandBufferConcurrentTe
         m_queryPools[poolNdx] = createQueryPool(vk, device, &queryPoolCreateInfo, /*pAllocator*/ nullptr);
     }
 
-    std::vector<tcu::Vec4> vertices(NUM_VERTICES_IN_DRAWCALL);
-    vertices[0] = tcu::Vec4(0.5, 0.5, 0.0, 1.0);
-    vertices[1] = tcu::Vec4(0.5, 0.0, 0.0, 1.0);
-    vertices[2] = tcu::Vec4(0.0, 0.5, 0.0, 1.0);
+    std::vector<tcu::Vec4> vertices{{0.5, 0.5, 0.0, 1.0}, {0.5, 0.0, 0.0, 1.0}, {0.0, 0.5, 0.0, 1.0}};
     m_stateObjects->setVertices(vk, vertices);
-}
-
-SecondaryCommandBufferConcurrentTestInstance::~SecondaryCommandBufferConcurrentTestInstance(void)
-{
 }
 
 void beginSecondaryCommandBuffer(const vk::DeviceInterface &vk, const vk::VkCommandBuffer secondaryCmdBuffer,
@@ -900,6 +855,23 @@ public:
     }
 
 private:
+    void checkSupport(Context &context) const
+    {
+        // Check support for multiple query types
+        uint32_t numSupportedQueryTypes = 1; // QUERY_TYPE_OCCLUSION
+        numSupportedQueryTypes += context.getDeviceFeatures().pipelineStatisticsQuery;
+
+        const auto &vki                 = context.getInstanceInterface();
+        const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+        const auto queueProperties      = getPhysicalDeviceQueueFamilyProperties(vki, context.getPhysicalDevice());
+
+        DE_ASSERT(queueFamilyIndex < (uint32_t)queueProperties.size());
+        numSupportedQueryTypes += (queueProperties[queueFamilyIndex].timestampValidBits > 0);
+
+        if (numSupportedQueryTypes < 2)
+            throw tcu::NotSupportedError("Device does not support multiple query types");
+    }
+
     vkt::TestInstance *createInstance(vkt::Context &context) const
     {
         return new Instance(context);
@@ -933,11 +905,6 @@ private:
 
 QueryPoolConcurrentTests::QueryPoolConcurrentTests(tcu::TestContext &testCtx)
     : TestCaseGroup(testCtx, "concurrent_queries")
-{
-    /* Left blank on purpose */
-}
-
-QueryPoolConcurrentTests::~QueryPoolConcurrentTests(void)
 {
     /* Left blank on purpose */
 }

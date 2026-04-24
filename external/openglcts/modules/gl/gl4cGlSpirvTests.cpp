@@ -3029,6 +3029,7 @@ SpirvValidationCapabilitiesTest::SpirvValidationCapabilitiesTest(deqp::Context &
 /** Stub init method */
 void SpirvValidationCapabilitiesTest::init()
 {
+    spirvUtils::checkGlSpirvSupported(m_context);
     ShaderStage computeStage;
     computeStage.source = ComputeSource("#version 450\n"
                                         "\n"

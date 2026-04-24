@@ -1,0 +1,3 @@
+# deqp-binary doesn't have a window, so exclude all the WSI tests in this mode.
+*wsi*
+

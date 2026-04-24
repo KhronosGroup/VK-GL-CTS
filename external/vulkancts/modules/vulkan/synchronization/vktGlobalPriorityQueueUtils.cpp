@@ -24,11 +24,9 @@
 #include "vktGlobalPriorityQueueUtils.hpp"
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
-#include "vkTypeUtil.hpp"
 #include "vkDeviceUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
 #include "vktTestCase.hpp"
-#include "deStringUtil.hpp"
 #include "tcuCommandLine.hpp"
 #include <vector>
 

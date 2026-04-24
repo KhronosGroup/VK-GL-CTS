@@ -33,7 +33,6 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuFloat.hpp"
 
-#include <string.h>
 #include <cmath>
 
 namespace tcu
@@ -847,7 +846,10 @@ bool floatThresholdCompare(TestLog &log, const char *imageSetName, const char *i
 
                 maxDiff = max(maxDiff, diff);
 
-                errorMask.setPixel(isOk ? Vec4(0.0f, 1.0f, 0.0f, 1.0f) : Vec4(1.0f, 0.0f, 0.0f, 1.0f), x, y, z);
+                if (isOk)
+                    errorMask.setPixel(Vec4(0.0f, 1.0f, 0.0f, 1.0f), x, y, z);
+                else
+                    errorMask.setPixel(Vec4(1.0f, 0.0f, 0.0f, 1.0f), x, y, z);
             }
         }
     }
@@ -1265,10 +1267,11 @@ bool dsThresholdCompare(TestLog &log, const char *imageSetName, const char *imag
         }
     }
 
-    const bool allDepthOk = (!hasDepth || (maxDiff <= threshold));
-    bool compareOk        = allDepthOk && allStencilOk;
+    const bool allDepthOk    = (!hasDepth || (maxDiff <= threshold));
+    const bool compareOk     = allDepthOk && allStencilOk;
+    const bool logEverything = (logMode == COMPARE_LOG_EVERYTHING || log.logAllImages());
 
-    if (!compareOk || (logMode == COMPARE_LOG_EVERYTHING || log.logAllImages()))
+    if (!compareOk || logEverything)
     {
         if (!compareOk)
         {
@@ -1281,7 +1284,7 @@ bool dsThresholdCompare(TestLog &log, const char *imageSetName, const char *imag
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc);
 
-        if (!allDepthOk || (hasDepth && (logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())))
+        if (!allDepthOk || (logEverything && hasDepth))
         {
             TextureLevel refDepthLevel(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height,
                                        depth);
@@ -1305,7 +1308,7 @@ bool dsThresholdCompare(TestLog &log, const char *imageSetName, const char *imag
                 << TestLog::Image("ErrorMaskDepth", imageSetName, errorMaskDepth);
         }
 
-        if (!allStencilOk || (hasStencil && (logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())))
+        if (!allStencilOk || (logEverything && hasStencil))
         {
             TextureLevel refStencilLevel(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height,
                                          depth);

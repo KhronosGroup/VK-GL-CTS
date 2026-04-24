@@ -1165,7 +1165,7 @@ public:
     LinearDerivateCase(tcu::TestContext &testCtx, const std::string &name, DerivateFunc func, glu::DataType type,
                        glu::Precision precision, bool inNonUniformControlFlow, SurfaceType surfaceType, int numSamples,
                        const std::string &fragmentSrcTmpl, BaseUniformType usedDefaultUniform,
-                       bool demoteToHelperInvocaiton);
+                       bool demoteToHelperInvocaiton, bool longVec = false);
     virtual ~LinearDerivateCase(void);
 
     virtual void initPrograms(vk::SourceCollections &programCollection) const;
@@ -1177,19 +1177,32 @@ public:
         {
             context.requireDeviceFunctionality("VK_EXT_shader_demote_to_helper_invocation");
         }
+#ifndef CTS_USES_VULKANSC
+        if (m_longVec && !context.getShaderLongVectorFeaturesEXT().longVector)
+        {
+            TCU_THROW(NotSupportedError, "longVector not supported");
+        }
+#endif
     }
 
 private:
     const std::string m_fragmentTmpl;
+#ifndef CTS_USES_VULKANSC
+    const bool m_longVec;
+#endif
 };
 
 LinearDerivateCase::LinearDerivateCase(tcu::TestContext &testCtx, const std::string &name, DerivateFunc func,
                                        glu::DataType type, glu::Precision precision, bool inNonUniformControlFlow,
                                        SurfaceType surfaceType, int numSamples, const std::string &fragmentSrcTmpl,
-                                       BaseUniformType usedDefaultUniform, bool demoteToHelperInvocaiton)
+                                       BaseUniformType usedDefaultUniform, bool demoteToHelperInvocaiton, bool longVec)
     : TriangleDerivateCase(testCtx, name, new LinearDerivateUniformSetup(false, usedDefaultUniform))
     , m_fragmentTmpl(fragmentSrcTmpl)
+#ifndef CTS_USES_VULKANSC
+    , m_longVec(longVec)
+#endif
 {
+    DE_UNREF(longVec);
     m_definitions.func                     = func;
     m_definitions.dataType                 = type;
     m_definitions.precision                = precision;
@@ -1926,6 +1939,25 @@ void ShaderDerivateTests::init(void)
          "}\n",
 
          U_LAST, false, true},
+#ifndef CTS_USES_VULKANSC
+        {"linear_vec8", "Basic derivative of long vector",
+
+         "#version 450\n"
+         "#extension GL_EXT_long_vector : enable\n"
+         "layout(location = 0) in ${PRECISION} ${DATATYPE} v_coord;\n"
+         "layout(location = 0) out ${OUTPUT_PREC} ${OUTPUT_TYPE} o_color;\n"
+         "layout(binding = 0, std140) uniform Scale { ${PRECISION} ${DATATYPE} u_scale; };\n"
+         "layout(binding = 1, std140) uniform Bias { ${PRECISION} ${DATATYPE} u_bias; };\n"
+         "void main (void)\n"
+         "{\n"
+         "    vector<float, 8> temp = ${FUNC}(vector<float, 8>(1.0 / 3.0 * v_coord, 2.0 / 3.0 * v_coord));\n"
+         "    ${PRECISION} ${DATATYPE} res = ${DATATYPE}(temp[0] + temp[4], temp[1] + temp[5], temp[2] + temp[6], "
+         "temp[3] + temp[7]) * u_scale + u_bias;\n"
+         "    o_color = ${CAST_TO_OUTPUT};\n"
+         "}\n",
+
+         U_LAST, false, false},
+#endif
     };
 
     const char *dFdxSubgroupSource =
@@ -2054,13 +2086,17 @@ void ShaderDerivateTests::init(void)
                         if (caseNdx != 0 && precision == glu::PRECISION_LOWP)
                             continue; // Skip as lowp doesn't actually produce any bits when rendered to default FB.
 
+                        bool useLongVec = strcmp(s_linearDerivateCases[caseNdx].name, "linear_vec8") == 0;
+                        if (useLongVec && vecSize != 4)
+                            continue;
+
                         caseName << glu::getDataTypeName(dataType) << "_" << glu::getPrecisionName(precision);
 
                         linearCaseGroup->addChild(new LinearDerivateCase(
                             m_testCtx, caseName.str(), function, dataType, precision,
                             s_linearDerivateCases[caseNdx].inNonUniformControlFlow, surfaceType, numSamples, source,
                             s_linearDerivateCases[caseNdx].usedDefaultUniform,
-                            s_linearDerivateCases[caseNdx].demoteToHelperInvocation));
+                            s_linearDerivateCases[caseNdx].demoteToHelperInvocation, useLongVec));
                     }
                 }
 

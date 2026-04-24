@@ -235,6 +235,7 @@ struct TestParams
     tcu::Maybe<ROAccessVec> depthROAccesses; // Types of read-only accesses for depth (used when depthAccess is RO).
     tcu::Maybe<ROAccessVec>
         stencilROAccesses; // Types of read-only accesses for stencil (used when stencilAccess is RO).
+    bool useCompute;       // Run with compute pipeline on compute queue
 
     VkImageUsageFlags getUsageFlags() const;
 
@@ -261,6 +262,9 @@ struct TestParams
 
     // Does this case need the stencil test enabled?
     bool needsStencilTest() const;
+
+    // Can this case run on compute queue
+    bool isComputeCompatible() const;
 };
 
 VkImageUsageFlags TestParams::getUsageFlags() const
@@ -367,6 +371,29 @@ bool TestParams::needsStencilTest() const
              de::contains(begin(*stencilROAccesses), end(*stencilROAccesses), ReadOnlyAccess::DS_ATTACHMENT)));
 }
 
+bool TestParams::isComputeCompatible() const
+{
+    // Compute shaders cannot have input attachments.
+    if (inputAttachmentNeeded())
+        return false;
+
+    // Compute shaders cannot use the pipeline depth/stencil tests (no render pass).
+    // So we cannot have RW access (which implies attachment write) or DS_ATTACHMENT usage (attachment read).
+    // We only support SAMPLED access in compute for these tests.
+    if (depthAccess == AspectAccess::RW || stencilAccess == AspectAccess::RW)
+        return false;
+
+    if (depthAccess == AspectAccess::RO &&
+        de::contains(begin(*depthROAccesses), end(*depthROAccesses), ReadOnlyAccess::DS_ATTACHMENT))
+        return false;
+
+    if (stencilAccess == AspectAccess::RO &&
+        de::contains(begin(*stencilROAccesses), end(*stencilROAccesses), ReadOnlyAccess::DS_ATTACHMENT))
+        return false;
+
+    return true;
+}
+
 class DepthStencilDescriptorCase : public vkt::TestCase
 {
 public:
@@ -429,7 +456,15 @@ DepthStencilDescriptorCase::DepthStencilDescriptorCase(tcu::TestContext &testCtx
 
 void DepthStencilDescriptorCase::checkSupport(Context &context) const
 {
-    context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+    if (!m_params.useCompute)
+        context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+    else
+    {
+        // Compute tests use vkCmdCopyBufferToImage on the compute queue to clear the DS image.
+        // This requires VK_KHR_maintenance10 and specific format features to be legal on a compute queue.
+        context.requireDeviceFunctionality("VK_KHR_maintenance10");
+        context.requireDeviceFunctionality("VK_KHR_format_feature_flags2");
+    }
 
     const auto requiredExtension = layoutExtension(m_params.layout);
     if (requiredExtension)
@@ -449,6 +484,34 @@ void DepthStencilDescriptorCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "Format does not support required properties");
     else if (res != VK_SUCCESS)
         TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned " + de::toString(res));
+
+    if (m_params.useCompute)
+    {
+#ifndef CTS_USES_VULKANSC
+        VkFormatProperties3 formatProperties3 = initVulkanStructure();
+        VkFormatProperties2 formatProperties2 = initVulkanStructure(&formatProperties3);
+
+        vki.getPhysicalDeviceFormatProperties2(physDev, m_params.format, &formatProperties2);
+
+        const auto tcuFormat = mapVkFormat(m_params.format);
+
+        if (tcu::hasDepthComponent(tcuFormat.order))
+        {
+            if ((formatProperties3.optimalTilingFeatures & VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_COMPUTE_QUEUE_BIT_KHR) ==
+                0)
+                TCU_THROW(NotSupportedError,
+                          "Format does not support VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_COMPUTE_QUEUE_BIT_KHR");
+        }
+
+        if (tcu::hasStencilComponent(tcuFormat.order))
+        {
+            if ((formatProperties3.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_COMPUTE_QUEUE_BIT_KHR) ==
+                0)
+                TCU_THROW(NotSupportedError,
+                          "Format does not support VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_COMPUTE_QUEUE_BIT_KHR");
+        }
+#endif
+    }
 }
 
 TestInstance *DepthStencilDescriptorCase::createInstance(Context &context) const
@@ -458,27 +521,6 @@ TestInstance *DepthStencilDescriptorCase::createInstance(Context &context) const
 
 void DepthStencilDescriptorCase::initPrograms(vk::SourceCollections &programCollection) const
 {
-    std::ostringstream vert;
-    vert << "#version 450\n"
-         << "\n"
-         << "layout(push_constant, std430) uniform PushConstantBlock {\n"
-         << "    float colorR;\n"
-         << "    float colorG;\n"
-         << "    float colorB;\n"
-         << "    float colorA;\n"
-         << "    float depth;\n"
-         << "} pc;\n"
-         << "\n"
-         << "vec2 vertexPositions[3] = vec2[](\n"
-         << "    vec2(-1.0, -1.0),\n"
-         << "    vec2(-1.0,  3.0),\n"
-         << "    vec2( 3.0, -1.0));\n"
-         << "\n"
-         << "void main () {\n"
-         << "    gl_Position = vec4(vertexPositions[gl_VertexIndex], pc.depth, 1.0);\n"
-         << "}\n";
-    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
-
     // When any of the image aspects is going to be used as an input attachment or sampled image, we need an input descriptor and an
     // output descriptor to verify reading from it.
     std::ostringstream descriptorsDecl;
@@ -509,9 +551,18 @@ void DepthStencilDescriptorCase::initPrograms(vk::SourceCollections &programColl
         {
             descriptorsDecl << "layout (set=0, binding=" << descriptor.binding << ") uniform " << prefix
                             << "texture2D sampledImage" << descriptor.binding << ";\n";
-            loadOp
-                << "texture(" << prefix << "sampler2D(sampledImage" << descriptor.binding << ", " << prefix
-                << "globalSampler), gl_FragCoord.xy)"; // This needs a sampler with unnormalizedCoordinates == VK_TRUE.
+
+            if (m_params.useCompute)
+            {
+                loadOp << "texture(" << prefix << "sampler2D(sampledImage" << descriptor.binding << ", " << prefix
+                       << "globalSampler), vec2(gl_GlobalInvocationID.xy) + vec2(0.5))";
+            }
+            else // graphics
+            {
+                loadOp
+                    << "texture(" << prefix << "sampler2D(sampledImage" << descriptor.binding << ", " << prefix
+                    << "globalSampler), gl_FragCoord.xy)"; // This needs a sampler with unnormalizedCoordinates == VK_TRUE.
+            }
         }
 
         // Output descriptor declaration (output descriptors in set 1).
@@ -519,28 +570,81 @@ void DepthStencilDescriptorCase::initPrograms(vk::SourceCollections &programColl
                         << prefix << "image2D storage" << descriptor.binding << ";\n";
 
         // The corresponding side effect.
-        descriptorsSideEffects << "    imageStore(storage" << descriptor.binding << ", ivec2(gl_FragCoord.xy), "
-                               << loadOp.str() << ");\n";
+        if (m_params.useCompute)
+        {
+            descriptorsSideEffects << "    imageStore(storage" << descriptor.binding
+                                   << ", ivec2(gl_GlobalInvocationID.xy), " << loadOp.str() << ");\n";
+        }
+        else // graphics
+        {
+            descriptorsSideEffects << "    imageStore(storage" << descriptor.binding << ", ivec2(gl_FragCoord.xy), "
+                                   << loadOp.str() << ");\n";
+        }
     }
 
-    std::ostringstream frag;
-    frag << "#version 450\n"
-         << "\n"
-         << "layout(location=0) out vec4 outColor;\n"
-         << "layout(push_constant, std430) uniform PushConstantBlock {\n"
-         << "    float colorR;\n"
-         << "    float colorG;\n"
-         << "    float colorB;\n"
-         << "    float colorA;\n"
-         << "    float depth;\n"
-         << "} pc;\n"
-         << "\n"
-         << descriptorsDecl.str() << "\n"
-         << "void main () {\n"
-         << descriptorsSideEffects.str() << "    outColor = vec4(pc.colorR, pc.colorG, pc.colorB, pc.colorA);\n"
-         << "}\n";
+    if (m_params.useCompute)
+    {
+        std::ostringstream comp;
+        comp << "#version 450\n"
+             << "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+             << "\n"
+             // Push constants kept for struct compatibility
+             << "layout(push_constant, std430) uniform PushConstantBlock {\n"
+             << "    float colorR;\n"
+             << "    float colorG;\n"
+             << "    float colorB;\n"
+             << "    float colorA;\n"
+             << "    float depth;\n"
+             << "} pc;\n"
+             << "\n"
+             << descriptorsDecl.str() << "\n"
+             << "void main () {\n"
+             << descriptorsSideEffects.str() << "}\n";
 
-    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+        programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+    }
+    else // graphics
+    {
+        std::ostringstream vert;
+        vert << "#version 450\n"
+             << "\n"
+             << "layout(push_constant, std430) uniform PushConstantBlock {\n"
+             << "    float colorR;\n"
+             << "    float colorG;\n"
+             << "    float colorB;\n"
+             << "    float colorA;\n"
+             << "    float depth;\n"
+             << "} pc;\n"
+             << "\n"
+             << "vec2 vertexPositions[3] = vec2[](\n"
+             << "    vec2(-1.0, -1.0),\n"
+             << "    vec2(-1.0,  3.0),\n"
+             << "    vec2( 3.0, -1.0));\n"
+             << "\n"
+             << "void main () {\n"
+             << "    gl_Position = vec4(vertexPositions[gl_VertexIndex], pc.depth, 1.0);\n"
+             << "}\n";
+        programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+        std::ostringstream frag;
+        frag << "#version 450\n"
+             << "\n"
+             << "layout(location=0) out vec4 outColor;\n"
+             << "layout(push_constant, std430) uniform PushConstantBlock {\n"
+             << "    float colorR;\n"
+             << "    float colorG;\n"
+             << "    float colorB;\n"
+             << "    float colorA;\n"
+             << "    float depth;\n"
+             << "} pc;\n"
+             << "\n"
+             << descriptorsDecl.str() << "\n"
+             << "void main () {\n"
+             << descriptorsSideEffects.str() << "    outColor = vec4(pc.colorR, pc.colorG, pc.colorB, pc.colorA);\n"
+             << "}\n";
+
+        programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+    }
 }
 
 DepthStencilDescriptorInstance::DepthStencilDescriptorInstance(Context &context, const TestParams &params)
@@ -565,8 +669,9 @@ tcu::TestStatus DepthStencilDescriptorInstance::iterate()
     const auto &vkd   = m_context.getDeviceInterface();
     const auto device = m_context.getDevice();
     auto &alloc       = m_context.getDefaultAllocator();
-    const auto qIndex = m_context.getUniversalQueueFamilyIndex();
-    const auto queue  = m_context.getUniversalQueue();
+    const auto qIndex =
+        m_params.useCompute ? m_context.getComputeQueueFamilyIndex() : m_context.getUniversalQueueFamilyIndex();
+    const auto queue  = m_params.useCompute ? m_context.getComputeQueue() : m_context.getUniversalQueue();
     const auto extent = getExtent();
     const auto usage  = m_params.getUsageFlags();
     const auto colorUsage =
@@ -575,7 +680,7 @@ tcu::TestStatus DepthStencilDescriptorInstance::iterate()
     const auto tcuColorFormat = mapVkFormat(colorFormat);
     const auto storageUsage =
         (VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-    const auto stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT;
+    const auto stageFlags      = m_params.useCompute ? VK_SHADER_STAGE_COMPUTE_BIT : VK_SHADER_STAGE_FRAGMENT_BIT;
     const auto tcuFormat       = mapVkFormat(m_params.format);
     const auto hasDepth        = tcu::hasDepthComponent(tcuFormat.order);
     const auto hasStencil      = tcu::hasStencilComponent(tcuFormat.order);
@@ -606,26 +711,33 @@ tcu::TestStatus DepthStencilDescriptorInstance::iterate()
     const auto stencilWrites = (m_params.stencilAccess == AspectAccess::RW);
     const auto depthWrites   = (m_params.depthAccess == AspectAccess::RW);
 
-    // Create color attachment.
-    const VkImageCreateInfo colorBufferInfo = {
-        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                             // const void* pNext;
-        0u,                                  // VkImageCreateFlags flags;
-        VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
-        colorFormat,                         // VkFormat format;
-        extent,                              // VkExtent3D extent;
-        1u,                                  // uint32_t mipLevels;
-        1u,                                  // uint32_t arrayLayers;
-        VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits samples;
-        VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling tiling;
-        colorUsage,                          // VkImageUsageFlags usage;
-        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
-        0u,                                  // uint32_t queueFamilyIndexCount;
-        nullptr,                             // const uint32_t* pQueueFamilyIndices;
-        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
-    };
-    ImageWithMemory colorBuffer(vkd, device, alloc, colorBufferInfo, MemoryRequirement::Any);
-    const auto colorView = makeImageView(vkd, device, colorBuffer.get(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSRR);
+    // Create color attachment (only needed for graphics)
+    de::MovePtr<ImageWithMemory> colorBuffer;
+    Move<VkImageView> colorView;
+    if (!m_params.useCompute)
+    {
+        const VkImageCreateInfo colorBufferInfo = {
+            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
+            nullptr,                             // const void* pNext;
+            0u,                                  // VkImageCreateFlags flags;
+            VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
+            colorFormat,                         // VkFormat format;
+            extent,                              // VkExtent3D extent;
+            1u,                                  // uint32_t mipLevels;
+            1u,                                  // uint32_t arrayLayers;
+            VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits samples;
+            VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling tiling;
+            colorUsage,                          // VkImageUsageFlags usage;
+            VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
+            0u,                                  // uint32_t queueFamilyIndexCount;
+            nullptr,                             // const uint32_t* pQueueFamilyIndices;
+            VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
+        };
+
+        colorBuffer = de::MovePtr<ImageWithMemory>(
+            new ImageWithMemory(vkd, device, alloc, colorBufferInfo, MemoryRequirement::Any));
+        colorView = makeImageView(vkd, device, colorBuffer->get(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSRR);
+    }
 
     // Create depth/stencil image.
     const VkImageCreateInfo dsImageInfo = {
@@ -847,7 +959,7 @@ tcu::TestStatus DepthStencilDescriptorInstance::iterate()
     }
 
     PushConstantData pcData;
-    const auto pcStages = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto pcStages = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT);
     const auto pcSize   = static_cast<uint32_t>(sizeof(pcData));
     const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
 
@@ -855,10 +967,41 @@ tcu::TestStatus DepthStencilDescriptorInstance::iterate()
     const auto pipelineLayout = makePipelineLayout(vkd, device, static_cast<uint32_t>(setLayouts.size()),
                                                    de::dataOrNull(setLayouts), 1u, &pcRange);
 
-    // Render pass.
+    // Render pass, frame buffer, graphics pipeline only for graphics
     Move<VkRenderPass> renderPass;
+    std::vector<VkImageView> framebufferViews;
+    Move<VkFramebuffer> framebuffer;
+    std::vector<Move<VkPipeline>> graphicsPipelines;
+    // Compute pipeline only for compute
+    Move<VkPipeline> computePipeline;
 
+    if (m_params.useCompute)
     {
+        // Pipeline
+        const auto compModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("comp"), 0u);
+        const VkComputePipelineCreateInfo pipelineInfo = {
+            VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType                    sType;
+            nullptr,                                        // const void*                        pNext;
+            0u,                                             // VkPipelineCreateFlags              flags;
+            {
+                // VkPipelineShaderStageCreateInfo    stage;
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType;
+                nullptr,                                             // const void*                         pNext;
+                0u,                                                  // VkPipelineShaderStageCreateFlags    flags;
+                VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits               stage;
+                compModule.get(),                                    // VkShaderModule                      module;
+                "main",                                              // const char*                         pName;
+                nullptr, // const VkSpecializationInfo*         pSpecializationInfo;
+            },
+            pipelineLayout.get(), // VkPipelineLayout                   layout;
+            VK_NULL_HANDLE,       // VkPipeline                         basePipelineHandle;
+            -1,                   // int32_t                            basePipelineIndex;
+        };
+        computePipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineInfo);
+    }
+    else
+    {
+        // Render pass
         std::vector<VkAttachmentDescription2> attachmentDescriptions;
         std::vector<VkAttachmentReference2> attachmentReferences;
 
@@ -952,22 +1095,16 @@ tcu::TestStatus DepthStencilDescriptorInstance::iterate()
             nullptr,                                              // const uint32_t* pCorrelatedViewMasks;
         };
         renderPass = createRenderPass2(vkd, device, &renderPassCreateInfo);
-    }
 
-    // Framebuffer.
-    std::vector<VkImageView> framebufferViews;
+        // Frame buffer
+        framebufferViews.push_back(colorView.get());
+        if (m_params.dsAttachmentNeeded())
+            framebufferViews.push_back(dsImageView.get());
 
-    framebufferViews.push_back(colorView.get());
-    if (m_params.dsAttachmentNeeded())
-        framebufferViews.push_back(dsImageView.get());
+        framebuffer = makeFramebuffer(vkd, device, renderPass.get(), static_cast<uint32_t>(framebufferViews.size()),
+                                      de::dataOrNull(framebufferViews), extent.width, extent.height);
 
-    const auto framebuffer =
-        makeFramebuffer(vkd, device, renderPass.get(), static_cast<uint32_t>(framebufferViews.size()),
-                        de::dataOrNull(framebufferViews), extent.width, extent.height);
-
-    // Pipeline.
-    std::vector<Move<VkPipeline>> graphicsPipelines;
-    {
+        // Pipeline
         const auto vertModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
         const auto fragModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 
@@ -1092,26 +1229,66 @@ tcu::TestStatus DepthStencilDescriptorInstance::iterate()
             new BufferWithMemory(vkd, device, alloc, descVerifBufferInfo, MemoryRequirement::HostVisible));
     }
 
+    // Buffers storing clear value for depth stencil buffer for compute only
+    BufferPtr depthClearBuf;
+    BufferPtr stencilClearBuf;
+    if (m_params.useCompute)
+    {
+        if (hasDepth)
+        {
+            const size_t size     = static_cast<size_t>(getCopyBufferSize(tcuDepthFormat, extent));
+            const auto bufferInfo = makeBufferCreateInfo(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+            depthClearBuf =
+                BufferPtr(new BufferWithMemory(vkd, device, alloc, bufferInfo, MemoryRequirement::HostVisible));
+
+            tcu::TextureLevel clearLevel(tcuDepthFormat, extent.width, extent.height, extent.depth);
+            tcu::clearDepth(clearLevel.getAccess(), depthClearValue);
+
+            deMemcpy(depthClearBuf->getAllocation().getHostPtr(), clearLevel.getAccess().getDataPtr(), size);
+            flushAlloc(vkd, device, depthClearBuf->getAllocation());
+        }
+        if (hasStencil)
+        {
+            const size_t size     = static_cast<size_t>(getCopyBufferSize(tcuStencilFormat, extent));
+            const auto bufferInfo = makeBufferCreateInfo(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+            stencilClearBuf =
+                BufferPtr(new BufferWithMemory(vkd, device, alloc, bufferInfo, MemoryRequirement::HostVisible));
+
+            tcu::TextureLevel clearLevel(tcuStencilFormat, extent.width, extent.height, extent.depth);
+            tcu::clearStencil(clearLevel.getAccess(), stencilClearVal);
+
+            deMemcpy(stencilClearBuf->getAllocation().getHostPtr(), clearLevel.getAccess().getDataPtr(), size);
+            flushAlloc(vkd, device, stencilClearBuf->getAllocation());
+        }
+    }
+
     beginCommandBuffer(vkd, cmdBuffer);
 
     // Transition layout for output images.
+    const VkPipelineStageFlags shaderStage =
+        m_params.useCompute ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     std::vector<VkImageMemoryBarrier> outputImgBarriers;
     for (const auto &outputImg : outputImages)
         outputImgBarriers.push_back(makeImageMemoryBarrier(0u, (VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT),
                                                            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
                                                            outputImg->get(), colorSRR));
-    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u,
-                           nullptr, 0u, nullptr, static_cast<uint32_t>(outputImgBarriers.size()),
-                           de::dataOrNull(outputImgBarriers));
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, shaderStage, 0u, 0u, nullptr, 0u, nullptr,
+                           static_cast<uint32_t>(outputImgBarriers.size()), de::dataOrNull(outputImgBarriers));
 
     // Clear color and depth/stencil buffer.
-    const auto colorPreTransferBarrier =
-        makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, colorBuffer.get(), colorSRR);
+    std::vector<VkImageMemoryBarrier> preTransferBarriers;
+    VkImageMemoryBarrier colorPreTransferBarrier;
+    if (colorBuffer)
+    {
+        colorPreTransferBarrier =
+            makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, colorBuffer->get(), colorSRR);
+        preTransferBarriers.push_back(colorPreTransferBarrier);
+    }
     const auto dsPreTransferBarrier =
         makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dsImage.get(), depthStencilSRR);
-    const std::vector<VkImageMemoryBarrier> preTransferBarriers = {colorPreTransferBarrier, dsPreTransferBarrier};
+    preTransferBarriers.push_back(dsPreTransferBarrier);
 
     vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
                            nullptr, 0u, nullptr, static_cast<uint32_t>(preTransferBarriers.size()),
@@ -1120,90 +1297,145 @@ tcu::TestStatus DepthStencilDescriptorInstance::iterate()
     const auto colorClearValue = makeClearValueColorVec4(colorClearVal);
     const auto dsClearValue    = makeClearValueDepthStencil(depthClearValue, stencilClearVal);
 
-    vkd.cmdClearColorImage(cmdBuffer, colorBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &colorClearValue.color,
-                           1u, &colorSRR);
-    vkd.cmdClearDepthStencilImage(cmdBuffer, dsImage.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                  &dsClearValue.depthStencil, 1u, &depthStencilSRR);
+    if (colorBuffer)
+    {
+        vkd.cmdClearColorImage(cmdBuffer, colorBuffer->get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                               &colorClearValue.color, 1u, &colorSRR);
+    }
 
+    if (m_params.useCompute)
+    {
+        // Note vkCmdClearDepthStencilImage is not supported on Compute queues need to use CopyBufferToImage instead.
+        if (hasDepth)
+        {
+            const VkBufferImageCopy region = {0, 0, 0, {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 0, 1}, {0, 0, 0}, extent};
+            vkd.cmdCopyBufferToImage(cmdBuffer, depthClearBuf->get(), dsImage.get(),
+                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+        }
+        if (hasStencil)
+        {
+            const VkBufferImageCopy region = {0, 0, 0, {VK_IMAGE_ASPECT_STENCIL_BIT, 0, 0, 1}, {0, 0, 0}, extent};
+            vkd.cmdCopyBufferToImage(cmdBuffer, stencilClearBuf->get(), dsImage.get(),
+                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+        }
+    }
+    else
+    {
+        vkd.cmdClearDepthStencilImage(cmdBuffer, dsImage.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                      &dsClearValue.depthStencil, 1u, &depthStencilSRR);
+    }
+
+    // Transitions after clear
+    std::vector<VkImageMemoryBarrier> postTransferBarriers;
     const auto graphicsAccesses = (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
                                    VK_ACCESS_INPUT_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
                                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
-    const auto colorPostTransferBarrier =
-        makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, graphicsAccesses, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                               colorLayout, colorBuffer.get(), colorSRR);
-    const auto dsPostTransferBarrier =
-        makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, graphicsAccesses, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                               m_params.layout, dsImage.get(), depthStencilSRR);
-    const std::vector<VkImageMemoryBarrier> postTransferBarriers = {colorPostTransferBarrier, dsPostTransferBarrier};
+    const auto computeAccesses  = VK_ACCESS_SHADER_READ_BIT;
 
-    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0u, 0u,
-                           nullptr, 0u, nullptr, static_cast<uint32_t>(postTransferBarriers.size()),
-                           de::dataOrNull(postTransferBarriers));
+    const auto dstAccesses = m_params.useCompute ? computeAccesses : graphicsAccesses;
+    const auto dstStage =
+        m_params.useCompute ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
 
-    // Render pass.
-    beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), renderArea);
-
-    vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u,
-                              static_cast<uint32_t>(descriptorSets.size()), de::dataOrNull(descriptorSets), 0u,
-                              nullptr);
-
-    const auto useSecondDraw = m_params.depthBufferNeeded();
-
-    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines.at(0).get());
+    if (colorBuffer)
     {
+        const auto colorPostTransferBarrier =
+            makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, graphicsAccesses, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                   colorLayout, colorBuffer->get(), colorSRR);
+        postTransferBarriers.push_back(colorPostTransferBarrier);
+    }
+    const auto dsPostTransferBarrier =
+        makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, dstAccesses, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                               m_params.layout, dsImage.get(), depthStencilSRR);
+    postTransferBarriers.push_back(dsPostTransferBarrier);
+
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStage, 0u, 0u, nullptr, 0u, nullptr,
+                           static_cast<uint32_t>(postTransferBarriers.size()), de::dataOrNull(postTransferBarriers));
+
+    vkd.cmdBindDescriptorSets(cmdBuffer,
+                              (m_params.useCompute ? VK_PIPELINE_BIND_POINT_COMPUTE : VK_PIPELINE_BIND_POINT_GRAPHICS),
+                              pipelineLayout.get(), 0u, static_cast<uint32_t>(descriptorSets.size()),
+                              de::dataOrNull(descriptorSets), 0u, nullptr);
+
+    if (m_params.useCompute)
+    {
+        vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline.get());
+        vkd.cmdDispatch(cmdBuffer, extent.width, extent.height, 1u);
+    }
+    else // graphics
+    {
+        // Render pass.
+        vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), renderArea);
+
+        const auto useSecondDraw = m_params.depthBufferNeeded();
+
+        vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines.at(0).get());
+        {
+            if (useSecondDraw)
+            {
+                // Two draws: the first draw will use the red color.
+                pcData = PushConstantData(colorFailVal, (m_params.needsDepthTest() ? depthFailValue : depthPassValue));
+            }
+            else
+            {
+                // If there will be no more draws, the first one needs to pass and use the right color.
+                pcData = PushConstantData(colorPassVal, depthPassValue);
+            }
+
+            vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pcStages, 0u, pcSize, &pcData);
+            vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+        }
         if (useSecondDraw)
         {
-            // Two draws: the first draw will use the red color.
-            pcData = PushConstantData(colorFailVal, (m_params.needsDepthTest() ? depthFailValue : depthPassValue));
-        }
-        else
-        {
-            // If there will be no more draws, the first one needs to pass and use the right color.
+            // The second draw, if used, always needs to pass and use the right color.
+            if (m_params.needsStencilTest())
+            {
+                // Pipeline with a good stencil reference value.
+                DE_ASSERT(graphicsPipelines.size() > 1);
+                vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines.at(1).get());
+            }
             pcData = PushConstantData(colorPassVal, depthPassValue);
+
+            vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pcStages, 0u, pcSize, &pcData);
+            vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
         }
 
-        vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pcStages, 0u, pcSize, &pcData);
-        vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+        endRenderPass(vkd, cmdBuffer);
     }
-    if (useSecondDraw)
-    {
-        // The second draw, if used, always needs to pass and use the right color.
-        if (m_params.needsStencilTest())
-        {
-            // Pipeline with a good stencil reference value.
-            DE_ASSERT(graphicsPipelines.size() > 1);
-            vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines.at(1).get());
-        }
-        pcData = PushConstantData(colorPassVal, depthPassValue);
-
-        vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pcStages, 0u, pcSize, &pcData);
-        vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
-    }
-
-    endRenderPass(vkd, cmdBuffer);
 
     // Copy color attachment.
+    if (colorBuffer)
     {
         const auto colorLayers = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
         const auto copyRegion  = makeBufferImageCopy(extent, colorLayers);
         const auto colorPostWriteBarrier =
             makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, colorLayout,
-                                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorBuffer.get(), colorSRR);
+                                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorBuffer->get(), colorSRR);
         vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                0u, 0u, nullptr, 0u, nullptr, 1u, &colorPostWriteBarrier);
-        vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer->get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                  colorVerifBuffer->get(), 1u, &copyRegion);
     }
 
     // Copy aspects of DS attachment.
     {
-        const auto dsPostWriteBarrier = makeImageMemoryBarrier(
-            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, m_params.layout,
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dsImage.get(), depthStencilSRR);
-        const auto fragmentTestStages =
-            (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
-        vkd.cmdPipelineBarrier(cmdBuffer, fragmentTestStages, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u,
-                               nullptr, 1u, &dsPostWriteBarrier);
+        VkAccessFlags srcAccessMask       = 0;
+        VkPipelineStageFlags srcStageMask = 0;
+        if (m_params.useCompute)
+        {
+            srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            srcStageMask  = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        }
+        else
+        {
+            srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            srcStageMask  = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+        }
+
+        const auto dsPostWriteBarrier =
+            makeImageMemoryBarrier(srcAccessMask, VK_ACCESS_TRANSFER_READ_BIT, m_params.layout,
+                                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dsImage.get(), depthStencilSRR);
+        vkd.cmdPipelineBarrier(cmdBuffer, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr,
+                               1u, &dsPostWriteBarrier);
 
         if (hasDepth)
         {
@@ -1232,9 +1464,8 @@ tcu::TestStatus DepthStencilDescriptorInstance::iterate()
                 makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
                                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, outImg->get(), colorSRR));
 
-        vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
-                               nullptr, 0u, nullptr, static_cast<uint32_t>(storagePostBarriers.size()),
-                               de::dataOrNull(storagePostBarriers));
+        vkd.cmdPipelineBarrier(cmdBuffer, shaderStage, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr,
+                               static_cast<uint32_t>(storagePostBarriers.size()), de::dataOrNull(storagePostBarriers));
 
         const auto colorLayers = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
         const auto copyRegion  = makeBufferImageCopy(extent, colorLayers);
@@ -1250,8 +1481,8 @@ tcu::TestStatus DepthStencilDescriptorInstance::iterate()
     vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u,
                            &transferToHostBarrier, 0u, nullptr, 0u, nullptr);
 
-    endCommandBuffer(vkd, cmdBuffer);
-    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+    vk::endCommandBuffer(vkd, cmdBuffer);
+    vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
 
     // Verify the different buffers.
     const tcu::IVec3 iExtent(static_cast<int>(extent.width), static_cast<int>(extent.height),
@@ -1259,6 +1490,7 @@ tcu::TestStatus DepthStencilDescriptorInstance::iterate()
     auto &log = m_context.getTestContext().getLog();
 
     // Verify color buffer contents.
+    if (!m_params.useCompute)
     {
         auto &verifAlloc = colorVerifBuffer->getAllocation();
         invalidateAlloc(vkd, device, verifAlloc);
@@ -1419,6 +1651,17 @@ tcu::TestCaseGroup *createImageDepthStencilDescriptorTests(tcu::TestContext &tes
             if (hasStencilAccess != hasStencil)
                 continue;
 
+            auto addTest = [&](std::string name, const TestParams &params)
+            {
+                formatGroup->addChild(new DepthStencilDescriptorCase(testCtx, name, params));
+                if (params.isComputeCompatible())
+                {
+                    TestParams computeParams = params;
+                    computeParams.useCompute = true;
+                    formatGroup->addChild(new DepthStencilDescriptorCase(testCtx, name + "_compute", computeParams));
+                }
+            };
+
             if (depthAccess == AspectAccess::RO)
             {
                 for (const auto &depthROCase : kROAccessCases)
@@ -1440,9 +1683,9 @@ tcu::TestCaseGroup *createImageDepthStencilDescriptorTests(tcu::TestContext &tes
                                 stencilAccess,             // AspectAccess stencilAccess;
                                 tcu::just(*depthROCase),   // tcu::Maybe<ROAccessVec> depthROAccesses;
                                 tcu::just(*stencilROCase), // tcu::Maybe<ROAccessVec> stencilROAccesses;
+                                false,                     // bool useCompute;
                             };
-                            formatGroup->addChild(
-                                new DepthStencilDescriptorCase(testCtx, depthPart + stencilPart, params));
+                            addTest(depthPart + stencilPart, params);
                         }
                     }
                     else
@@ -1458,8 +1701,9 @@ tcu::TestCaseGroup *createImageDepthStencilDescriptorTests(tcu::TestContext &tes
                             stencilAccess,           // AspectAccess stencilAccess;
                             tcu::just(*depthROCase), // tcu::Maybe<ROAccessVec> depthROAccesses;
                             tcu::Nothing,            // tcu::Maybe<ROAccessVec> stencilROAccesses;
+                            false,                   // bool useCompute;
                         };
-                        formatGroup->addChild(new DepthStencilDescriptorCase(testCtx, depthPart + stencilPart, params));
+                        addTest(depthPart + stencilPart, params);
                     }
                 }
             }
@@ -1482,8 +1726,9 @@ tcu::TestCaseGroup *createImageDepthStencilDescriptorTests(tcu::TestContext &tes
                             stencilAccess,             // AspectAccess stencilAccess;
                             tcu::Nothing,              // tcu::Maybe<ROAccessVec> depthROAccesses;
                             tcu::just(*stencilROCase), // tcu::Maybe<ROAccessVec> stencilROAccesses;
+                            false,                     // bool useCompute;
                         };
-                        formatGroup->addChild(new DepthStencilDescriptorCase(testCtx, depthPart + stencilPart, params));
+                        addTest(depthPart + stencilPart, params);
                     }
                 }
                 else
@@ -1499,8 +1744,9 @@ tcu::TestCaseGroup *createImageDepthStencilDescriptorTests(tcu::TestContext &tes
                         stencilAccess, // AspectAccess stencilAccess;
                         tcu::Nothing,  // tcu::Maybe<ROAccessVec> depthROAccesses;
                         tcu::Nothing,  // tcu::Maybe<ROAccessVec> stencilROAccesses;
+                        false,         // bool useCompute;
                     };
-                    formatGroup->addChild(new DepthStencilDescriptorCase(testCtx, depthPart + stencilPart, params));
+                    addTest(depthPart + stencilPart, params);
                 }
             }
 

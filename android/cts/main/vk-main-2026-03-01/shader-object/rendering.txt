@@ -1,0 +1,14 @@
+dEQP-VK.shader_object.rendering.output_array.r32_sfloat.color_write_disable
+dEQP-VK.shader_object.rendering.output_array.r32_sfloat.color_write_enable
+dEQP-VK.shader_object.rendering.output_array.r32_sint.color_write_disable
+dEQP-VK.shader_object.rendering.output_array.r32_sint.color_write_enable
+dEQP-VK.shader_object.rendering.output_array.r32_uint.color_write_disable
+dEQP-VK.shader_object.rendering.output_array.r32_uint.color_write_enable
+dEQP-VK.shader_object.rendering.output_array.r32g32b32a32_sfloat.color_write_disable
+dEQP-VK.shader_object.rendering.output_array.r32g32b32a32_sfloat.color_write_enable
+dEQP-VK.shader_object.rendering.output_array.r8_unorm.color_write_disable
+dEQP-VK.shader_object.rendering.output_array.r8_unorm.color_write_enable
+dEQP-VK.shader_object.rendering.output_array.r8g8b8a8_snorm.color_write_disable
+dEQP-VK.shader_object.rendering.output_array.r8g8b8a8_snorm.color_write_enable
+dEQP-VK.shader_object.rendering.output_array.r8g8b8a8_unorm.color_write_disable
+dEQP-VK.shader_object.rendering.output_array.r8g8b8a8_unorm.color_write_enable

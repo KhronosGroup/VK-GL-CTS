@@ -94,23 +94,16 @@ tcu::TestStatus renderPointSizeClampTest(Context &context)
 {
     const VkDevice vkDevice          = context.getDevice();
     const DeviceInterface &vk        = context.getDeviceInterface();
+    const auto &vki                  = context.getInstanceInterface();
     const VkQueue queue              = context.getUniversalQueue();
     const uint32_t queueFamilyIndex  = context.getUniversalQueueFamilyIndex();
     const VkPhysicalDevice phyDevice = context.getPhysicalDevice();
-    SimpleAllocator memAlloc(vk, vkDevice,
-                             getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), phyDevice));
+    SimpleAllocator memAlloc(vk, vkDevice, getPhysicalDeviceMemoryProperties(vki, phyDevice));
     const VkFormat colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
     const tcu::Vec4 clearColor(0.0f, 1.0f, 0.0f, 1.0f);
     const tcu::Vec4 pointColor(0.0f, 0.0f, 0.0f, 0.0f);
+    const auto &phyDevProps = context.getDeviceProperties();
 
-    const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(context.getInstanceInterface(), phyDevice);
-    if (!features.largePoints)
-        throw tcu::NotSupportedError("Large points not supported");
-
-    VkPhysicalDeviceProperties phyDevProps;
-    context.getInstanceInterface().getPhysicalDeviceProperties(phyDevice, &phyDevProps);
-
-    //float minPointSizeRange = phyDevProps.limits.pointSizeRange[0];
     float maxPointSizeRange = phyDevProps.limits.pointSizeRange[1];
 
     uint32_t fbWidthSize = deCeilFloatToInt32(maxPointSizeRange * 0.5f) + 1;
@@ -391,11 +384,17 @@ tcu::TestStatus renderPointSizeClampTest(Context &context)
     return tcu::TestStatus::pass("Rendering succeeded");
 }
 
+static void checkSupport(Context &context)
+{
+    if (!context.getDeviceFeatures().largePoints)
+        throw tcu::NotSupportedError("Large points not supported");
+}
+
 tcu::TestCaseGroup *createDrawPointClampTests(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> pointClampTests(new tcu::TestCaseGroup(testCtx, "point_size_clamp"));
 
-    addFunctionCaseWithPrograms(pointClampTests.get(), "point_size_clamp_max", createPointSizeClampProgs,
+    addFunctionCaseWithPrograms(pointClampTests.get(), "point_size_clamp_max", checkSupport, createPointSizeClampProgs,
                                 renderPointSizeClampTest);
 
     return pointClampTests.release();

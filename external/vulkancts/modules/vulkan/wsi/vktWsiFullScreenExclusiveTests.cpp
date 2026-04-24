@@ -86,6 +86,10 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
+    // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
+    if (wsiType == TYPE_DIRECT_DRM)
+        extensions.push_back("VK_EXT_direct_mode_display");
+
     if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_get_surface_capabilities2")))
         extensions.push_back("VK_KHR_get_surface_capabilities2");
 
@@ -401,7 +405,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
     Move<VkSwapchainKHR> swapchain;
     {
         VkSwapchainKHR object = VK_NULL_HANDLE;
-        VkResult result       = vkd.createSwapchainKHR(device, &swapchainInfo, nullptr, &object);
+        VkResult result       = createWsiSwapchain(testParams.wsiType, vkd, device, &swapchainInfo, nullptr, &object);
         if (result == VK_ERROR_INITIALIZATION_FAILED &&
             testParams.fseType == VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT)
         {

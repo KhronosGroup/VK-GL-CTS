@@ -144,6 +144,8 @@ static bool isFeatureSupported(const vkt::Context &ctx, const std::string &featu
         return ctx.getBufferDeviceAddressFeatures().bufferDeviceAddress;
     if (feature == "DepthClampZeroOneFeatures.depthClampZeroOne")
         return ctx.getDepthClampZeroOneFeatures().depthClampZeroOne;
+    if (feature == "ShaderLongVectorFeaturesEXT.longVector")
+        return ctx.getShaderLongVectorFeaturesEXT().longVector;
 
     std::string message = std::string("Unexpected feature name: ") + feature;
     TCU_THROW(InternalError, message.c_str());
@@ -620,7 +622,9 @@ void AmberTestCase::setSpirVAsmBuildOptions(const vk::SpirVAsmBuildOptions &asm_
 
 void AmberTestCase::addRequirement(const std::string &requirement)
 {
-    if (requirement.find(".") != std::string::npos)
+    if (requirement.find("Properties.") != std::string::npos)
+        m_required_properties.insert(requirement);
+    else if (requirement.find(".") != std::string::npos)
         m_required_features.insert(requirement);
     else
         m_required_extensions.insert(requirement);

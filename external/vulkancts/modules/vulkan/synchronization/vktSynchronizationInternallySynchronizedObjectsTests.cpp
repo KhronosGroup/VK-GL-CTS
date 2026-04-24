@@ -49,9 +49,7 @@
 #include <limits>
 #include <iterator>
 
-namespace vkt
-{
-namespace synchronization
+namespace vkt::synchronization
 {
 namespace
 {
@@ -257,15 +255,9 @@ MovePtr<MultiQueues> createQueues(Context &context, const VkQueueFlags &queueFla
     for (uint32_t queuePropertiesNdx = 0; queuePropertiesNdx < queueFamilyProperties.size(); ++queuePropertiesNdx)
     {
         if (checkQueueFlags(queueFamilyProperties[queuePropertiesNdx].queueFlags, queueFlag))
-        {
             queues.addQueueFamilyIndex(queuePropertiesNdx, queueFamilyProperties[queuePropertiesNdx].queueCount);
-        }
     }
-
-    if (queues.countQueueFamilyIndex() == 0)
-    {
-        TCU_THROW(NotSupportedError, "Queue not found");
-    }
+    DE_ASSERT(queues.countQueueFamilyIndex());
 
     {
         vector<float>::iterator it = queuePriorities.begin();
@@ -923,9 +915,6 @@ public:
 #endif // CTS_USES_VULKANSC
         const CustomInstance instance(createCustomInstanceFromContext(m_context));
         const InstanceDriver &instanceDriver(instance.getDriver());
-        const VkPhysicalDevice physicalDevice =
-            chooseDevice(instanceDriver, instance, m_context.getTestContext().getCommandLine());
-        requireFeatures(instanceDriver, physicalDevice, FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
 
         MovePtr<MultiQueues> queues   = createQueues(m_context, VK_QUEUE_GRAPHICS_BIT, instance, instanceDriver);
         const VkDevice device         = queues->getDevice();
@@ -1177,11 +1166,32 @@ private:
     VkPipelineDepthStencilStateCreateInfo m_depthStencilStateParams;
 };
 
+void requireQueueFamilies(const InstanceInterface &vki, VkPhysicalDevice physicalDevice, const VkQueueFlags &queueFlag)
+{
+    auto queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
+
+    // make sure there is a queue family that supports the requested queue flags
+    for (auto &queue : queueFamilyProperties)
+    {
+        if (checkQueueFlags(queue.queueFlags, queueFlag))
+            return;
+    }
+
+    TCU_THROW(NotSupportedError, "Queue not found");
+}
+
 class PipelineCacheComputeTest : public TestCase
 {
 public:
     PipelineCacheComputeTest(TestContext &testCtx, const string &name) : TestCase(testCtx, name)
     {
+    }
+
+    void checkSupport(Context &context) const
+    {
+        auto &vki           = context.getInstanceInterface();
+        auto physicalDevice = context.getPhysicalDevice();
+        requireQueueFamilies(vki, physicalDevice, VK_QUEUE_COMPUTE_BIT);
     }
 
     void initPrograms(SourceCollections &programCollection) const
@@ -1249,6 +1259,14 @@ class PipelineCacheGraphicTest : public TestCase
 public:
     PipelineCacheGraphicTest(TestContext &testCtx, const string &name) : TestCase(testCtx, name)
     {
+    }
+
+    void checkSupport(Context &context) const
+    {
+        auto &vki           = context.getInstanceInterface();
+        auto physicalDevice = context.getPhysicalDevice();
+        requireFeatures(vki, physicalDevice, FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
+        requireQueueFamilies(vki, physicalDevice, VK_QUEUE_GRAPHICS_BIT);
     }
 
     void initPrograms(SourceCollections &programCollection) const
@@ -1342,5 +1360,4 @@ tcu::TestCaseGroup *createInternallySynchronizedObjects(tcu::TestContext &testCt
     return tests.release();
 }
 
-} // namespace synchronization
-} // namespace vkt
+} // namespace vkt::synchronization

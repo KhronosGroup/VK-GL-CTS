@@ -50,6 +50,7 @@ void createChildren(tcu::TestCaseGroup *computeTests, ComputePipelineConstructio
     tcu::TestContext &testCtx = computeTests->getTestContext();
 
     computeTests->addChild(createBasicComputeShaderTests(testCtx, computePipelineConstructionType));
+    computeTests->addChild(create64bIndexingComputeShaderTests(testCtx, computePipelineConstructionType));
     computeTests->addChild(createBasicDeviceGroupComputeShaderTests(testCtx, computePipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
     computeTests->addChild(createCooperativeMatrixTests(testCtx, computePipelineConstructionType));

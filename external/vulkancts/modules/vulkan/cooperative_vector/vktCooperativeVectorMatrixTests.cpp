@@ -633,7 +633,7 @@ tcu::TestStatus CooperativeVectorTypeConversionTestInstance::iterate(void)
     VkComponentTypeKHR dstComponentType =
         (dstElementSize == 4) ? VK_COMPONENT_TYPE_FLOAT32_NV : VK_COMPONENT_TYPE_FLOAT16_NV;
 
-    uint32_t numElements = (srcElementSize == 4) ? (1 << 16) : (1 << (8 * srcElementSize));
+    uint32_t numElements = (srcElementSize == 4) ? (2 << 16) : (1 << (8 * srcElementSize));
 
     size_t optimalSize                          = 0;
     VkConvertCooperativeVectorMatrixInfoNV info = {
@@ -697,9 +697,13 @@ tcu::TestStatus CooperativeVectorTypeConversionTestInstance::iterate(void)
     switch (srcElementSize)
     {
     case 4:
-        for (uint32_t i = 0; i < numElements; ++i)
+        for (uint32_t i = 0; i < numElements / 2; ++i)
         {
             ((uint32_t *)ptr)[i] = i << 16;
+        }
+        for (uint32_t i = numElements / 2; i < numElements; ++i)
+        {
+            ((uint32_t *)ptr)[i] = deRandom_getUint32(&rnd);
         }
         break;
     case 2:

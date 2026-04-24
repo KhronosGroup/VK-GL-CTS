@@ -516,18 +516,15 @@ tcu::TestNode::IterateResult PayloadShMemSizeCase::iterate()
     gl.genBuffers(1, &resultBlock);
     gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, resultBlock);
     gl.bufferData(GL_SHADER_STORAGE_BUFFER, 2 * sizeof(uint32_t), result, GL_STATIC_READ);
-    gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
     gl.useProgram(m_params.program);
     gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, resultBlock);
 
     ext.DrawMeshTasksEXT(1u, 1u, 1u);
 
-    gl.memoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    uint32_t *result1 =
+        (uint32_t *)gl.mapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(uint32_t) * 2, GL_MAP_READ_BIT);
 
-    gl.bindBuffer(GL_COPY_READ_BUFFER, resultBlock);
-    uint32_t *result1 = (uint32_t *)gl.mapBufferRange(GL_COPY_READ_BUFFER, 0, sizeof(uint32_t) * 2, GL_MAP_READ_BIT);
-    gl.unmapBuffer(GL_COPY_READ_BUFFER);
     struct
     {
         uint32_t sharedOK;
@@ -535,6 +532,8 @@ tcu::TestNode::IterateResult PayloadShMemSizeCase::iterate()
     } resultData;
 
     deMemcpy(&resultData, result1, sizeof(resultData));
+
+    gl.unmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
     if (resultData.sharedOK != 1u)
         TCU_FAIL("Unexpected shared memory result: " + std::to_string(resultData.sharedOK));

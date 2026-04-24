@@ -229,6 +229,13 @@ void checkTextureSupport(Context &context, const Texture2DShadowTestCaseParamete
     const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
     if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
         TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+
+    // VUID-VkImageCreateInfo-imageType-00971
+    if (testParameters.backingMode == TextureBinding::IMAGE_BACKING_MODE_SPARSE)
+    {
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_IMAGE2D);
+    }
 #else
     DE_UNREF(context);
     if (!isDepthFormat(testParameters.format))
@@ -473,6 +480,13 @@ void checkTextureSupport(Context &context, const TextureCubeShadowTestCaseParame
         TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
     if (!testParameters.seamless)
         context.requireDeviceFunctionality("VK_EXT_non_seamless_cube_map");
+
+    // VUID-VkImageCreateInfo-imageType-00971
+    if (testParameters.backingMode == TextureBinding::IMAGE_BACKING_MODE_SPARSE)
+    {
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_IMAGE2D);
+    }
 #else
     DE_UNREF(context);
     if (!isDepthFormat(testParameters.format))
@@ -733,6 +747,13 @@ void checkTextureSupport(Context &context, const Texture2DArrayShadowTestCasePar
     const VkFormatProperties3 formatProperties = context.getFormatProperties(testParameters.format);
     if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR))
         TCU_THROW(NotSupportedError, "Format does not support shadow sampling");
+
+    // VUID-VkImageCreateInfo-imageType-00971
+    if (testParameters.backingMode == TextureBinding::IMAGE_BACKING_MODE_SPARSE)
+    {
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_IMAGE2D);
+    }
 #else
     DE_UNREF(context);
     if (!isDepthFormat(testParameters.format))
@@ -1916,6 +1937,12 @@ void populateTextureShadowTests(tcu::TestCaseGroup *textureShadowTests)
                 {
                     for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
                     {
+                        // VUID-VkImageCreateInfo-imageType-00970
+                        if (backingModes[backingNdx].backingMode == TextureBinding::IMAGE_BACKING_MODE_SPARSE)
+                        {
+                            continue;
+                        }
+
                         const string name = string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" +
                                             formats[formatNdx].name;
                         Texture1DShadowTestCaseParameters testParameters;
@@ -1956,6 +1983,12 @@ void populateTextureShadowTests(tcu::TestCaseGroup *textureShadowTests)
                 {
                     for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
                     {
+                        // VUID-VkImageCreateInfo-imageType-00970
+                        if (backingModes[backingNdx].backingMode == TextureBinding::IMAGE_BACKING_MODE_SPARSE)
+                        {
+                            continue;
+                        }
+
                         const string name = string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" +
                                             formats[formatNdx].name;
                         Texture1DArrayShadowTestCaseParameters testParameters;

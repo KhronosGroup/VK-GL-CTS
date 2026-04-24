@@ -348,7 +348,7 @@ struct NativeObjects
     }
 };
 
-Move<VkSwapchainKHR> createSwapchain(Context &context, VkSurfaceKHR surface)
+Move<VkSwapchainKHR> createSwapchain(vk::wsi::Type wsiType, Context &context, VkSurfaceKHR surface)
 {
     const InstanceInterface &vki            = context.getInstanceInterface();
     const DeviceInterface &vk               = context.getDeviceInterface();
@@ -391,7 +391,7 @@ Move<VkSwapchainKHR> createSwapchain(Context &context, VkSurfaceKHR surface)
         VK_NULL_HANDLE                               // VkSwapchainKHR                    oldSwapchain
     };
 
-    return createSwapchainKHR(vk, vkDevice, &swapchainParams);
+    return createWsiSwapchain(wsiType, vk, vkDevice, &swapchainParams);
 }
 
 tcu::TestStatus testCaseWsi(Context &context, vk::wsi::Type wsiType)
@@ -405,7 +405,7 @@ tcu::TestStatus testCaseWsi(Context &context, vk::wsi::Type wsiType)
                                wsiType);
     const Unique<VkSurfaceKHR> surface(wsi::createSurface(vki, vkInstance, wsiType, *native.display, *native.window,
                                                           context.getTestContext().getCommandLine()));
-    const Unique<VkSwapchainKHR> swapchain(createSwapchain(context, *surface));
+    const Unique<VkSwapchainKHR> swapchain(createSwapchain(wsiType, context, *surface));
     const std::vector<VkImage> swapchainImages = wsi::getSwapchainImages(vk, vkDevice, *swapchain);
 
     const Move<VkCommandPool> cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
@@ -425,7 +425,8 @@ tcu::TestStatus testCaseWsi(Context &context, vk::wsi::Type wsiType)
     VkPipelineStageFlags waitStageMask[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
     uint32_t currentBuffer = 0;
-    VK_CHECK(vk.acquireNextImageKHR(vkDevice, *swapchain, ~0ull, *acquireSemaphore, VK_NULL_HANDLE, &currentBuffer));
+    VK_CHECK_WSI(
+        vk.acquireNextImageKHR(vkDevice, *swapchain, ~0ull, *acquireSemaphore, VK_NULL_HANDLE, &currentBuffer));
 
     recordCommands(context, *cmdBuffer, swapchainImages[currentBuffer]);
 

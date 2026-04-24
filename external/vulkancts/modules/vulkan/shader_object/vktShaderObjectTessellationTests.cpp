@@ -42,7 +42,7 @@ namespace ShaderObject
 namespace
 {
 
-enum SourceType
+enum class SourceType : int
 {
     GLSL,
     HLSL,
@@ -64,9 +64,12 @@ enum class TestType : int
 class ShaderObjectTessellationInstance : public vkt::TestInstance
 {
 public:
-    ShaderObjectTessellationInstance(Context &context, const TestType testType)
+    ShaderObjectTessellationInstance(Context &context, const SourceType sourceType, const TestType testType,
+                                     const bool rebind)
         : vkt::TestInstance(context)
+        , m_sourceType(sourceType)
         , m_testType(testType)
+        , m_rebind(rebind)
     {
     }
     virtual ~ShaderObjectTessellationInstance(void)
@@ -76,7 +79,9 @@ public:
     tcu::TestStatus iterate(void) override;
 
 private:
+    const SourceType m_sourceType;
     const TestType m_testType;
+    const bool m_rebind;
 };
 
 tcu::TestStatus ShaderObjectTessellationInstance::iterate(void)
@@ -143,10 +148,25 @@ tcu::TestStatus ShaderObjectTessellationInstance::iterate(void)
     const auto fragCreateInfo = vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_FRAGMENT_BIT, binaries.get("frag"),
                                                          tessellationSupported, geometrySupported);
 
-    const auto vertShader = vk::createShader(vk, device, vertCreateInfo);
-    const auto tescShader = vk::createShader(vk, device, tescCreateInfo);
-    const auto teseShader = vk::createShader(vk, device, teseCreateInfo);
-    const auto fragShader = vk::createShader(vk, device, fragCreateInfo);
+    const vk::Move<vk::VkShaderEXT> vertShader = vk::createShader(vk, device, vertCreateInfo);
+    const vk::Move<vk::VkShaderEXT> tescShader = vk::createShader(vk, device, tescCreateInfo);
+    const vk::Move<vk::VkShaderEXT> teseShader = vk::createShader(vk, device, teseCreateInfo);
+    const vk::Move<vk::VkShaderEXT> fragShader = vk::createShader(vk, device, fragCreateInfo);
+
+    vk::Move<vk::VkShaderEXT> tescRebindShader;
+    vk::Move<vk::VkShaderEXT> teseRebindShader;
+    if (m_rebind)
+    {
+        const auto tescRebindCreateInfo =
+            vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, binaries.get("tesc_rebind"),
+                                     tessellationSupported, geometrySupported);
+        const auto teseRebindCreateInfo =
+            vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, binaries.get("tese_rebind"),
+                                     tessellationSupported, geometrySupported);
+
+        tescRebindShader = vk::createShader(vk, device, tescRebindCreateInfo);
+        teseRebindShader = vk::createShader(vk, device, teseRebindCreateInfo);
+    }
 
     const vk::VkCommandPoolCreateInfo cmdPoolInfo = {
         vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType
@@ -169,6 +189,21 @@ tcu::TestStatus ShaderObjectTessellationInstance::iterate(void)
 
     vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, VK_NULL_HANDLE, *fragShader,
                             taskSupported, meshSupported);
+    if (m_rebind)
+    {
+        if (m_sourceType == SourceType::GLSL)
+        {
+            vk::VkShaderStageFlagBits stage = vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+            vk.cmdBindShadersEXT(*cmdBuffer, 1u, &stage, &*tescRebindShader);
+            vk.cmdBindShadersEXT(*cmdBuffer, 1u, &stage, &*tescShader);
+        }
+        else
+        {
+            vk::VkShaderStageFlagBits stage = vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+            vk.cmdBindShadersEXT(*cmdBuffer, 1u, &stage, &*teseRebindShader);
+            vk.cmdBindShadersEXT(*cmdBuffer, 1u, &stage, &*teseShader);
+        }
+    }
     vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
                                             false);
 
@@ -353,10 +388,11 @@ class ShaderObjectTessellationCase : public vkt::TestCase
 {
 public:
     ShaderObjectTessellationCase(tcu::TestContext &testCtx, const std::string &name, const SourceType sourceType,
-                                 const TestType testType)
+                                 const TestType testType, bool rebind)
         : vkt::TestCase(testCtx, name)
         , m_sourceType(sourceType)
         , m_testType(testType)
+        , m_rebind(rebind)
     {
     }
     virtual ~ShaderObjectTessellationCase(void)
@@ -367,12 +403,13 @@ public:
     virtual void initPrograms(vk::SourceCollections &programCollection) const override;
     TestInstance *createInstance(Context &context) const override
     {
-        return new ShaderObjectTessellationInstance(context, m_testType);
+        return new ShaderObjectTessellationInstance(context, m_sourceType, m_testType, m_rebind);
     }
 
 private:
     const SourceType m_sourceType;
     const TestType m_testType;
+    const bool m_rebind;
 };
 
 void ShaderObjectTessellationCase::checkSupport(Context &context) const
@@ -390,26 +427,62 @@ void ShaderObjectTessellationCase::initPrograms(vk::SourceCollections &programCo
     std::string orientation;
     std::string pointMode;
 
+    std::string rebindOutputVertices;
+    std::string rebindPrimitive;
+    std::string rebindSpacing;
+    std::string rebindOrientation;
+    std::string rebindPointMode;
+
     if (m_testType == TestType::PATCH_VERTICES_5)
-        outputVertices = "               OpExecutionMode %main OutputVertices 5\n";
+    {
+        outputVertices       = "               OpExecutionMode %main OutputVertices 5\n";
+        rebindOutputVertices = "               OpExecutionMode %main OutputVertices 4\n";
+    }
     else
-        outputVertices = "               OpExecutionMode %main OutputVertices 4\n";
+    {
+        outputVertices       = "               OpExecutionMode %main OutputVertices 4\n";
+        rebindOutputVertices = "               OpExecutionMode %main OutputVertices 4\n";
+    }
     if (m_testType == TestType::PRIMITIVE_TRIANGLES)
-        primitive = "               OpExecutionMode %main Triangles\n";
+    {
+        primitive       = "               OpExecutionMode %main Triangles\n";
+        rebindPrimitive = "               OpExecutionMode %main Quads\n";
+    }
     else
-        primitive = "               OpExecutionMode %main Quads\n";
+    {
+        primitive       = "               OpExecutionMode %main Quads\n";
+        rebindPrimitive = "               OpExecutionMode %main Triangles\n";
+    }
     if (m_testType == TestType::SPACING_FRACTIONAL_ODD)
-        spacing = "               OpExecutionMode %main SpacingFractionalOdd\n";
+    {
+        spacing       = "               OpExecutionMode %main SpacingFractionalOdd\n";
+        rebindSpacing = "               OpExecutionMode %main SpacingEqual\n";
+    }
     else
-        spacing = "               OpExecutionMode %main SpacingEqual\n";
+    {
+        spacing       = "               OpExecutionMode %main SpacingEqual\n";
+        rebindSpacing = "               OpExecutionMode %main SpacingFractionalOdd\n";
+    }
     if (m_testType == TestType::ORIENTATION_CW)
-        orientation = "               OpExecutionMode %main VertexOrderCw\n";
+    {
+        orientation       = "               OpExecutionMode %main VertexOrderCw\n";
+        rebindOrientation = "               OpExecutionMode %main VertexOrderCcw\n";
+    }
     else
-        orientation = "               OpExecutionMode %main VertexOrderCcw\n";
+    {
+        orientation       = "               OpExecutionMode %main VertexOrderCcw\n";
+        rebindOrientation = "               OpExecutionMode %main VertexOrderCw\n";
+    }
     if (m_testType == TestType::POINT_MODE)
-        pointMode = "               OpExecutionMode %main PointMode\n";
+    {
+        pointMode       = "               OpExecutionMode %main PointMode\n";
+        rebindPointMode = "";
+    }
     else
-        pointMode = "";
+    {
+        pointMode       = "";
+        rebindPointMode = "               OpExecutionMode %main PointMode\n";
+    }
 
     // #version 450
     // void main()
@@ -498,128 +571,136 @@ void ShaderObjectTessellationCase::initPrograms(vk::SourceCollections &programCo
     //     gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
     // }
 
-    std::string tesc = "               OpCapability Tessellation\n"
-                       "          %1 = OpExtInstImport \"GLSL.std.450\"\n"
-                       "               OpMemoryModel Logical GLSL450\n"
-                       "               OpEntryPoint TessellationControl %main \"main\" %gl_InvocationID "
-                       "%gl_TessLevelInner %gl_TessLevelOuter %gl_out %gl_in\n";
-    if (m_sourceType == GLSL)
+    std::string tesc1           = "               OpCapability Tessellation\n"
+                                  "          %1 = OpExtInstImport \"GLSL.std.450\"\n"
+                                  "               OpMemoryModel Logical GLSL450\n"
+                                  "               OpEntryPoint TessellationControl %main \"main\" %gl_InvocationID "
+                                  "%gl_TessLevelInner %gl_TessLevelOuter %gl_out %gl_in\n";
+    std::string tescModes       = "";
+    std::string tescRebindModes = "";
+    if (m_sourceType == SourceType::GLSL)
     {
-        tesc += outputVertices;
+        tescModes += outputVertices;
+        tescRebindModes += rebindOutputVertices;
+        tescRebindModes += rebindPrimitive;
+        tescRebindModes += rebindSpacing;
+        tescRebindModes += rebindOrientation;
+        tescRebindModes += rebindPointMode;
     }
     else
     {
-        tesc += outputVertices;
-        tesc += primitive;
-        tesc += spacing;
-        tesc += orientation;
-        tesc += pointMode;
+        tescModes += outputVertices;
+        tescModes += primitive;
+        tescModes += spacing;
+        tescModes += orientation;
+        tescModes += pointMode;
+        tescRebindModes += rebindOutputVertices;
     }
-    tesc += "\n"
-            "               ; Debug Information\n"
-            "               OpSource GLSL 450\n"
-            "               OpName %main \"main\"  ; id %4\n"
-            "               OpName %gl_InvocationID \"gl_InvocationID\"  ; id %8\n"
-            "               OpName %gl_TessLevelInner \"gl_TessLevelInner\"  ; id %20\n"
-            "               OpName %gl_TessLevelOuter \"gl_TessLevelOuter\"  ; id %29\n"
-            "               OpName %gl_PerVertex \"gl_PerVertex\"  ; id %39\n"
-            "               OpMemberName %gl_PerVertex 0 \"gl_Position\"\n"
-            "               OpMemberName %gl_PerVertex 1 \"gl_PointSize\"\n"
-            "               OpMemberName %gl_PerVertex 2 \"gl_ClipDistance\"\n"
-            "               OpMemberName %gl_PerVertex 3 \"gl_CullDistance\"\n"
-            "               OpName %gl_out \"gl_out\"  ; id %42\n"
-            "               OpName %gl_PerVertex_0 \"gl_PerVertex\"  ; id %44\n"
-            "               OpMemberName %gl_PerVertex_0 0 \"gl_Position\"\n"
-            "               OpMemberName %gl_PerVertex_0 1 \"gl_PointSize\"\n"
-            "               OpMemberName %gl_PerVertex_0 2 \"gl_ClipDistance\"\n"
-            "               OpMemberName %gl_PerVertex_0 3 \"gl_CullDistance\"\n"
-            "               OpName %gl_in \"gl_in\"  ; id %48\n"
-            "\n"
-            "               ; Annotations\n"
-            "               OpDecorate %gl_InvocationID BuiltIn InvocationId\n"
-            "               OpDecorate %gl_TessLevelInner Patch\n"
-            "               OpDecorate %gl_TessLevelInner BuiltIn TessLevelInner\n"
-            "               OpDecorate %gl_TessLevelOuter Patch\n"
-            "               OpDecorate %gl_TessLevelOuter BuiltIn TessLevelOuter\n"
-            "               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position\n"
-            "               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize\n"
-            "               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance\n"
-            "               OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance\n"
-            "               OpDecorate %gl_PerVertex Block\n"
-            "               OpMemberDecorate %gl_PerVertex_0 0 BuiltIn Position\n"
-            "               OpMemberDecorate %gl_PerVertex_0 1 BuiltIn PointSize\n"
-            "               OpMemberDecorate %gl_PerVertex_0 2 BuiltIn ClipDistance\n"
-            "               OpMemberDecorate %gl_PerVertex_0 3 BuiltIn CullDistance\n"
-            "               OpDecorate %gl_PerVertex_0 Block\n"
-            "\n"
-            "               ; Types, variables and constants\n"
-            "       %void = OpTypeVoid\n"
-            "          %3 = OpTypeFunction %void\n"
-            "        %int = OpTypeInt 32 1\n"
-            "%_ptr_Input_int = OpTypePointer Input %int\n"
-            "%gl_InvocationID = OpVariable %_ptr_Input_int Input\n"
-            "      %int_0 = OpConstant %int 0\n"
-            "       %bool = OpTypeBool\n"
-            "      %float = OpTypeFloat 32\n"
-            "       %uint = OpTypeInt 32 0\n"
-            "     %uint_2 = OpConstant %uint 2\n"
-            "%_arr_float_uint_2 = OpTypeArray %float %uint_2\n"
-            "%_ptr_Output__arr_float_uint_2 = OpTypePointer Output %_arr_float_uint_2\n"
-            "%gl_TessLevelInner = OpVariable %_ptr_Output__arr_float_uint_2 Output\n"
-            "    %float_2 = OpConstant %float 2\n"
-            "%_ptr_Output_float = OpTypePointer Output %float\n"
-            "      %int_1 = OpConstant %int 1\n"
-            "     %uint_4 = OpConstant %uint 4\n"
-            "%_arr_float_uint_4 = OpTypeArray %float %uint_4\n"
-            "%_ptr_Output__arr_float_uint_4 = OpTypePointer Output %_arr_float_uint_4\n"
-            "%gl_TessLevelOuter = OpVariable %_ptr_Output__arr_float_uint_4 Output\n"
-            "      %int_2 = OpConstant %int 2\n"
-            "      %int_3 = OpConstant %int 3\n"
-            "    %v4float = OpTypeVector %float 4\n"
-            "     %uint_1 = OpConstant %uint 1\n"
-            "%_arr_float_uint_1 = OpTypeArray %float %uint_1\n"
-            "%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1\n"
-            "%_arr_gl_PerVertex_uint_4 = OpTypeArray %gl_PerVertex %uint_4\n"
-            "%_ptr_Output__arr_gl_PerVertex_uint_4 = OpTypePointer Output %_arr_gl_PerVertex_uint_4\n"
-            "     %gl_out = OpVariable %_ptr_Output__arr_gl_PerVertex_uint_4 Output\n"
-            "%gl_PerVertex_0 = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1\n"
-            "    %uint_32 = OpConstant %uint 32\n"
-            "%_arr_gl_PerVertex_0_uint_32 = OpTypeArray %gl_PerVertex_0 %uint_32\n"
-            "%_ptr_Input__arr_gl_PerVertex_0_uint_32 = OpTypePointer Input %_arr_gl_PerVertex_0_uint_32\n"
-            "      %gl_in = OpVariable %_ptr_Input__arr_gl_PerVertex_0_uint_32 Input\n"
-            "%_ptr_Input_v4float = OpTypePointer Input %v4float\n"
-            "%_ptr_Output_v4float = OpTypePointer Output %v4float\n"
-            "\n"
-            "               ; Function main\n"
-            "       %main = OpFunction %void None %3\n"
-            "          %5 = OpLabel\n"
-            "          %9 = OpLoad %int %gl_InvocationID\n"
-            "         %12 = OpIEqual %bool %9 %int_0\n"
-            "               OpSelectionMerge %14 None\n"
-            "               OpBranchConditional %12 %13 %14\n"
-            "         %13 = OpLabel\n"
-            "         %23 = OpAccessChain %_ptr_Output_float %gl_TessLevelInner %int_0\n"
-            "               OpStore %23 %float_2\n"
-            "         %25 = OpAccessChain %_ptr_Output_float %gl_TessLevelInner %int_1\n"
-            "               OpStore %25 %float_2\n"
-            "         %30 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_0\n"
-            "               OpStore %30 %float_2\n"
-            "         %31 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_1\n"
-            "               OpStore %31 %float_2\n"
-            "         %33 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_2\n"
-            "               OpStore %33 %float_2\n"
-            "         %35 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_3\n"
-            "               OpStore %35 %float_2\n"
-            "               OpBranch %14\n"
-            "         %14 = OpLabel\n"
-            "         %43 = OpLoad %int %gl_InvocationID\n"
-            "         %49 = OpLoad %int %gl_InvocationID\n"
-            "         %51 = OpAccessChain %_ptr_Input_v4float %gl_in %49 %int_0\n"
-            "         %52 = OpLoad %v4float %51\n"
-            "         %54 = OpAccessChain %_ptr_Output_v4float %gl_out %43 %int_0\n"
-            "               OpStore %54 %52\n"
-            "               OpReturn\n"
-            "               OpFunctionEnd\n";
+    std::string tesc2 = "\n"
+                        "               ; Debug Information\n"
+                        "               OpSource GLSL 450\n"
+                        "               OpName %main \"main\"  ; id %4\n"
+                        "               OpName %gl_InvocationID \"gl_InvocationID\"  ; id %8\n"
+                        "               OpName %gl_TessLevelInner \"gl_TessLevelInner\"  ; id %20\n"
+                        "               OpName %gl_TessLevelOuter \"gl_TessLevelOuter\"  ; id %29\n"
+                        "               OpName %gl_PerVertex \"gl_PerVertex\"  ; id %39\n"
+                        "               OpMemberName %gl_PerVertex 0 \"gl_Position\"\n"
+                        "               OpMemberName %gl_PerVertex 1 \"gl_PointSize\"\n"
+                        "               OpMemberName %gl_PerVertex 2 \"gl_ClipDistance\"\n"
+                        "               OpMemberName %gl_PerVertex 3 \"gl_CullDistance\"\n"
+                        "               OpName %gl_out \"gl_out\"  ; id %42\n"
+                        "               OpName %gl_PerVertex_0 \"gl_PerVertex\"  ; id %44\n"
+                        "               OpMemberName %gl_PerVertex_0 0 \"gl_Position\"\n"
+                        "               OpMemberName %gl_PerVertex_0 1 \"gl_PointSize\"\n"
+                        "               OpMemberName %gl_PerVertex_0 2 \"gl_ClipDistance\"\n"
+                        "               OpMemberName %gl_PerVertex_0 3 \"gl_CullDistance\"\n"
+                        "               OpName %gl_in \"gl_in\"  ; id %48\n"
+                        "\n"
+                        "               ; Annotations\n"
+                        "               OpDecorate %gl_InvocationID BuiltIn InvocationId\n"
+                        "               OpDecorate %gl_TessLevelInner Patch\n"
+                        "               OpDecorate %gl_TessLevelInner BuiltIn TessLevelInner\n"
+                        "               OpDecorate %gl_TessLevelOuter Patch\n"
+                        "               OpDecorate %gl_TessLevelOuter BuiltIn TessLevelOuter\n"
+                        "               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position\n"
+                        "               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize\n"
+                        "               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance\n"
+                        "               OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance\n"
+                        "               OpDecorate %gl_PerVertex Block\n"
+                        "               OpMemberDecorate %gl_PerVertex_0 0 BuiltIn Position\n"
+                        "               OpMemberDecorate %gl_PerVertex_0 1 BuiltIn PointSize\n"
+                        "               OpMemberDecorate %gl_PerVertex_0 2 BuiltIn ClipDistance\n"
+                        "               OpMemberDecorate %gl_PerVertex_0 3 BuiltIn CullDistance\n"
+                        "               OpDecorate %gl_PerVertex_0 Block\n"
+                        "\n"
+                        "               ; Types, variables and constants\n"
+                        "       %void = OpTypeVoid\n"
+                        "          %3 = OpTypeFunction %void\n"
+                        "        %int = OpTypeInt 32 1\n"
+                        "%_ptr_Input_int = OpTypePointer Input %int\n"
+                        "%gl_InvocationID = OpVariable %_ptr_Input_int Input\n"
+                        "      %int_0 = OpConstant %int 0\n"
+                        "       %bool = OpTypeBool\n"
+                        "      %float = OpTypeFloat 32\n"
+                        "       %uint = OpTypeInt 32 0\n"
+                        "     %uint_2 = OpConstant %uint 2\n"
+                        "%_arr_float_uint_2 = OpTypeArray %float %uint_2\n"
+                        "%_ptr_Output__arr_float_uint_2 = OpTypePointer Output %_arr_float_uint_2\n"
+                        "%gl_TessLevelInner = OpVariable %_ptr_Output__arr_float_uint_2 Output\n"
+                        "    %float_2 = OpConstant %float 2\n"
+                        "%_ptr_Output_float = OpTypePointer Output %float\n"
+                        "      %int_1 = OpConstant %int 1\n"
+                        "     %uint_4 = OpConstant %uint 4\n"
+                        "%_arr_float_uint_4 = OpTypeArray %float %uint_4\n"
+                        "%_ptr_Output__arr_float_uint_4 = OpTypePointer Output %_arr_float_uint_4\n"
+                        "%gl_TessLevelOuter = OpVariable %_ptr_Output__arr_float_uint_4 Output\n"
+                        "      %int_2 = OpConstant %int 2\n"
+                        "      %int_3 = OpConstant %int 3\n"
+                        "    %v4float = OpTypeVector %float 4\n"
+                        "     %uint_1 = OpConstant %uint 1\n"
+                        "%_arr_float_uint_1 = OpTypeArray %float %uint_1\n"
+                        "%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1\n"
+                        "%_arr_gl_PerVertex_uint_4 = OpTypeArray %gl_PerVertex %uint_4\n"
+                        "%_ptr_Output__arr_gl_PerVertex_uint_4 = OpTypePointer Output %_arr_gl_PerVertex_uint_4\n"
+                        "     %gl_out = OpVariable %_ptr_Output__arr_gl_PerVertex_uint_4 Output\n"
+                        "%gl_PerVertex_0 = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1\n"
+                        "    %uint_32 = OpConstant %uint 32\n"
+                        "%_arr_gl_PerVertex_0_uint_32 = OpTypeArray %gl_PerVertex_0 %uint_32\n"
+                        "%_ptr_Input__arr_gl_PerVertex_0_uint_32 = OpTypePointer Input %_arr_gl_PerVertex_0_uint_32\n"
+                        "      %gl_in = OpVariable %_ptr_Input__arr_gl_PerVertex_0_uint_32 Input\n"
+                        "%_ptr_Input_v4float = OpTypePointer Input %v4float\n"
+                        "%_ptr_Output_v4float = OpTypePointer Output %v4float\n"
+                        "\n"
+                        "               ; Function main\n"
+                        "       %main = OpFunction %void None %3\n"
+                        "          %5 = OpLabel\n"
+                        "          %9 = OpLoad %int %gl_InvocationID\n"
+                        "         %12 = OpIEqual %bool %9 %int_0\n"
+                        "               OpSelectionMerge %14 None\n"
+                        "               OpBranchConditional %12 %13 %14\n"
+                        "         %13 = OpLabel\n"
+                        "         %23 = OpAccessChain %_ptr_Output_float %gl_TessLevelInner %int_0\n"
+                        "               OpStore %23 %float_2\n"
+                        "         %25 = OpAccessChain %_ptr_Output_float %gl_TessLevelInner %int_1\n"
+                        "               OpStore %25 %float_2\n"
+                        "         %30 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_0\n"
+                        "               OpStore %30 %float_2\n"
+                        "         %31 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_1\n"
+                        "               OpStore %31 %float_2\n"
+                        "         %33 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_2\n"
+                        "               OpStore %33 %float_2\n"
+                        "         %35 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_3\n"
+                        "               OpStore %35 %float_2\n"
+                        "               OpBranch %14\n"
+                        "         %14 = OpLabel\n"
+                        "         %43 = OpLoad %int %gl_InvocationID\n"
+                        "         %49 = OpLoad %int %gl_InvocationID\n"
+                        "         %51 = OpAccessChain %_ptr_Input_v4float %gl_in %49 %int_0\n"
+                        "         %52 = OpLoad %v4float %51\n"
+                        "         %54 = OpAccessChain %_ptr_Output_v4float %gl_out %43 %int_0\n"
+                        "               OpStore %54 %52\n"
+                        "               OpReturn\n"
+                        "               OpFunctionEnd\n";
 
     // #version 450
     //
@@ -636,158 +717,165 @@ void ShaderObjectTessellationCase::initPrograms(vk::SourceCollections &programCo
     //     }
     // }
 
-    std::string tese = "               OpCapability Tessellation\n"
-                       "          %1 = OpExtInstImport \"GLSL.std.450\"\n"
-                       "               OpMemoryModel Logical GLSL450\n"
-                       "               OpEntryPoint TessellationEvaluation %main \"main\" %gl_TessCoord %_ %gl_in "
-                       "%gl_PatchVerticesIn\n";
-    if (m_sourceType == GLSL)
+    std::string tese1           = "               OpCapability Tessellation\n"
+                                  "          %1 = OpExtInstImport \"GLSL.std.450\"\n"
+                                  "               OpMemoryModel Logical GLSL450\n"
+                                  "               OpEntryPoint TessellationEvaluation %main \"main\" %gl_TessCoord %_ %gl_in "
+                                  "%gl_PatchVerticesIn\n";
+    std::string teseModes       = "";
+    std::string teseRebindModes = "";
+    if (m_sourceType == SourceType::GLSL)
     {
-        tese += primitive;
-        tese += spacing;
-        tese += orientation;
-        tese += pointMode;
+        teseModes += primitive;
+        teseModes += spacing;
+        teseModes += orientation;
+        teseModes += pointMode;
+        teseRebindModes += rebindPrimitive;
     }
     else
     {
-        tese += primitive;
+        teseModes += primitive;
+        teseRebindModes += rebindPrimitive;
+        teseRebindModes += rebindSpacing;
+        teseRebindModes += rebindOrientation;
+        teseRebindModes += rebindPointMode;
     }
-    tese += "\n"
-            "               ; Debug Information\n"
-            "               OpSource GLSL 450\n"
-            "               OpName %main \"main\"  ; id %4\n"
-            "               OpName %u \"u\"  ; id %8\n"
-            "               OpName %gl_TessCoord \"gl_TessCoord\"  ; id %11\n"
-            "               OpName %v \"v\"  ; id %17\n"
-            "               OpName %omu \"omu\"  ; id %21\n"
-            "               OpName %omv \"omv\"  ; id %25\n"
-            "               OpName %gl_PerVertex \"gl_PerVertex\"  ; id %30\n"
-            "               OpMemberName %gl_PerVertex 0 \"gl_Position\"\n"
-            "               OpMemberName %gl_PerVertex 1 \"gl_PointSize\"\n"
-            "               OpMemberName %gl_PerVertex 2 \"gl_ClipDistance\"\n"
-            "               OpMemberName %gl_PerVertex 3 \"gl_CullDistance\"\n"
-            "               OpName %_ \"\"  ; id %32\n"
-            "               OpName %gl_PerVertex_0 \"gl_PerVertex\"  ; id %38\n"
-            "               OpMemberName %gl_PerVertex_0 0 \"gl_Position\"\n"
-            "               OpMemberName %gl_PerVertex_0 1 \"gl_PointSize\"\n"
-            "               OpMemberName %gl_PerVertex_0 2 \"gl_ClipDistance\"\n"
-            "               OpMemberName %gl_PerVertex_0 3 \"gl_CullDistance\"\n"
-            "               OpName %gl_in \"gl_in\"  ; id %42\n"
-            "               OpName %gl_PatchVerticesIn \"gl_PatchVerticesIn\"  ; id %74\n"
-            "\n"
-            "               ; Annotations\n"
-            "               OpDecorate %gl_TessCoord BuiltIn TessCoord\n"
-            "               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position\n"
-            "               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize\n"
-            "               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance\n"
-            "               OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance\n"
-            "               OpDecorate %gl_PerVertex Block\n"
-            "               OpMemberDecorate %gl_PerVertex_0 0 BuiltIn Position\n"
-            "               OpMemberDecorate %gl_PerVertex_0 1 BuiltIn PointSize\n"
-            "               OpMemberDecorate %gl_PerVertex_0 2 BuiltIn ClipDistance\n"
-            "               OpMemberDecorate %gl_PerVertex_0 3 BuiltIn CullDistance\n"
-            "               OpDecorate %gl_PerVertex_0 Block\n"
-            "               OpDecorate %gl_PatchVerticesIn BuiltIn PatchVertices\n"
-            "\n"
-            "               ; Types, variables and constants\n"
-            "       %void = OpTypeVoid\n"
-            "          %3 = OpTypeFunction %void\n"
-            "      %float = OpTypeFloat 32\n"
-            "%_ptr_Function_float = OpTypePointer Function %float\n"
-            "    %v3float = OpTypeVector %float 3\n"
-            "%_ptr_Input_v3float = OpTypePointer Input %v3float\n"
-            "%gl_TessCoord = OpVariable %_ptr_Input_v3float Input\n"
-            "       %uint = OpTypeInt 32 0\n"
-            "     %uint_0 = OpConstant %uint 0\n"
-            "%_ptr_Input_float = OpTypePointer Input %float\n"
-            "     %uint_1 = OpConstant %uint 1\n"
-            "    %float_1 = OpConstant %float 1\n"
-            "    %v4float = OpTypeVector %float 4\n"
-            "%_arr_float_uint_1 = OpTypeArray %float %uint_1\n"
-            "%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1\n"
-            "%_ptr_Output_gl_PerVertex = OpTypePointer Output %gl_PerVertex\n"
-            "          %_ = OpVariable %_ptr_Output_gl_PerVertex Output\n"
-            "        %int = OpTypeInt 32 1\n"
-            "      %int_0 = OpConstant %int 0\n"
-            "%gl_PerVertex_0 = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1\n"
-            "    %uint_32 = OpConstant %uint 32\n"
-            "%_arr_gl_PerVertex_0_uint_32 = OpTypeArray %gl_PerVertex_0 %uint_32\n"
-            "%_ptr_Input__arr_gl_PerVertex_0_uint_32 = OpTypePointer Input %_arr_gl_PerVertex_0_uint_32\n"
-            "      %gl_in = OpVariable %_ptr_Input__arr_gl_PerVertex_0_uint_32 Input\n"
-            "%_ptr_Input_v4float = OpTypePointer Input %v4float\n"
-            "      %int_2 = OpConstant %int 2\n"
-            "      %int_3 = OpConstant %int 3\n"
-            "      %int_1 = OpConstant %int 1\n"
-            "%_ptr_Output_v4float = OpTypePointer Output %v4float\n"
-            "%_ptr_Input_int = OpTypePointer Input %int\n"
-            "%gl_PatchVerticesIn = OpVariable %_ptr_Input_int Input\n"
-            "      %int_4 = OpConstant %int 4\n"
-            "       %bool = OpTypeBool\n"
-            "%float_0_300000012 = OpConstant %float 0.300000012\n"
-            "%_ptr_Output_float = OpTypePointer Output %float\n"
-            "\n"
-            "               ; Function main\n"
-            "       %main = OpFunction %void None %3\n"
-            "          %5 = OpLabel\n"
-            "          %u = OpVariable %_ptr_Function_float Function\n"
-            "          %v = OpVariable %_ptr_Function_float Function\n"
-            "        %omu = OpVariable %_ptr_Function_float Function\n"
-            "        %omv = OpVariable %_ptr_Function_float Function\n"
-            "         %15 = OpAccessChain %_ptr_Input_float %gl_TessCoord %uint_0\n"
-            "         %16 = OpLoad %float %15\n"
-            "               OpStore %u %16\n"
-            "         %19 = OpAccessChain %_ptr_Input_float %gl_TessCoord %uint_1\n"
-            "         %20 = OpLoad %float %19\n"
-            "               OpStore %v %20\n"
-            "         %23 = OpLoad %float %u\n"
-            "         %24 = OpFSub %float %float_1 %23\n"
-            "               OpStore %omu %24\n"
-            "         %26 = OpLoad %float %v\n"
-            "         %27 = OpFSub %float %float_1 %26\n"
-            "               OpStore %omv %27\n"
-            "         %35 = OpLoad %float %omu\n"
-            "         %36 = OpLoad %float %omv\n"
-            "         %37 = OpFMul %float %35 %36\n"
-            "         %44 = OpAccessChain %_ptr_Input_v4float %gl_in %int_0 %int_0\n"
-            "         %45 = OpLoad %v4float %44\n"
-            "         %46 = OpVectorTimesScalar %v4float %45 %37\n"
-            "         %47 = OpLoad %float %u\n"
-            "         %48 = OpLoad %float %omv\n"
-            "         %49 = OpFMul %float %47 %48\n"
-            "         %51 = OpAccessChain %_ptr_Input_v4float %gl_in %int_2 %int_0\n"
-            "         %52 = OpLoad %v4float %51\n"
-            "         %53 = OpVectorTimesScalar %v4float %52 %49\n"
-            "         %54 = OpFAdd %v4float %46 %53\n"
-            "         %55 = OpLoad %float %u\n"
-            "         %56 = OpLoad %float %v\n"
-            "         %57 = OpFMul %float %55 %56\n"
-            "         %59 = OpAccessChain %_ptr_Input_v4float %gl_in %int_3 %int_0\n"
-            "         %60 = OpLoad %v4float %59\n"
-            "         %61 = OpVectorTimesScalar %v4float %60 %57\n"
-            "         %62 = OpFAdd %v4float %54 %61\n"
-            "         %63 = OpLoad %float %omu\n"
-            "         %64 = OpLoad %float %v\n"
-            "         %65 = OpFMul %float %63 %64\n"
-            "         %67 = OpAccessChain %_ptr_Input_v4float %gl_in %int_1 %int_0\n"
-            "         %68 = OpLoad %v4float %67\n"
-            "         %69 = OpVectorTimesScalar %v4float %68 %65\n"
-            "         %70 = OpFAdd %v4float %62 %69\n"
-            "         %72 = OpAccessChain %_ptr_Output_v4float %_ %int_0\n"
-            "               OpStore %72 %70\n"
-            "         %75 = OpLoad %int %gl_PatchVerticesIn\n"
-            "         %78 = OpSGreaterThan %bool %75 %int_4\n"
-            "               OpSelectionMerge %80 None\n"
-            "               OpBranchConditional %78 %79 %80\n"
-            "         %79 = OpLabel\n"
-            "         %83 = OpAccessChain %_ptr_Output_float %_ %int_0 %uint_1\n"
-            "         %84 = OpLoad %float %83\n"
-            "         %85 = OpFAdd %float %84 %float_0_300000012\n"
-            "         %86 = OpAccessChain %_ptr_Output_float %_ %int_0 %uint_1\n"
-            "               OpStore %86 %85\n"
-            "               OpBranch %80\n"
-            "         %80 = OpLabel\n"
-            "               OpReturn\n"
-            "               OpFunctionEnd\n";
+    std::string tese2 = "\n"
+                        "               ; Debug Information\n"
+                        "               OpSource GLSL 450\n"
+                        "               OpName %main \"main\"  ; id %4\n"
+                        "               OpName %u \"u\"  ; id %8\n"
+                        "               OpName %gl_TessCoord \"gl_TessCoord\"  ; id %11\n"
+                        "               OpName %v \"v\"  ; id %17\n"
+                        "               OpName %omu \"omu\"  ; id %21\n"
+                        "               OpName %omv \"omv\"  ; id %25\n"
+                        "               OpName %gl_PerVertex \"gl_PerVertex\"  ; id %30\n"
+                        "               OpMemberName %gl_PerVertex 0 \"gl_Position\"\n"
+                        "               OpMemberName %gl_PerVertex 1 \"gl_PointSize\"\n"
+                        "               OpMemberName %gl_PerVertex 2 \"gl_ClipDistance\"\n"
+                        "               OpMemberName %gl_PerVertex 3 \"gl_CullDistance\"\n"
+                        "               OpName %_ \"\"  ; id %32\n"
+                        "               OpName %gl_PerVertex_0 \"gl_PerVertex\"  ; id %38\n"
+                        "               OpMemberName %gl_PerVertex_0 0 \"gl_Position\"\n"
+                        "               OpMemberName %gl_PerVertex_0 1 \"gl_PointSize\"\n"
+                        "               OpMemberName %gl_PerVertex_0 2 \"gl_ClipDistance\"\n"
+                        "               OpMemberName %gl_PerVertex_0 3 \"gl_CullDistance\"\n"
+                        "               OpName %gl_in \"gl_in\"  ; id %42\n"
+                        "               OpName %gl_PatchVerticesIn \"gl_PatchVerticesIn\"  ; id %74\n"
+                        "\n"
+                        "               ; Annotations\n"
+                        "               OpDecorate %gl_TessCoord BuiltIn TessCoord\n"
+                        "               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position\n"
+                        "               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize\n"
+                        "               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance\n"
+                        "               OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance\n"
+                        "               OpDecorate %gl_PerVertex Block\n"
+                        "               OpMemberDecorate %gl_PerVertex_0 0 BuiltIn Position\n"
+                        "               OpMemberDecorate %gl_PerVertex_0 1 BuiltIn PointSize\n"
+                        "               OpMemberDecorate %gl_PerVertex_0 2 BuiltIn ClipDistance\n"
+                        "               OpMemberDecorate %gl_PerVertex_0 3 BuiltIn CullDistance\n"
+                        "               OpDecorate %gl_PerVertex_0 Block\n"
+                        "               OpDecorate %gl_PatchVerticesIn BuiltIn PatchVertices\n"
+                        "\n"
+                        "               ; Types, variables and constants\n"
+                        "       %void = OpTypeVoid\n"
+                        "          %3 = OpTypeFunction %void\n"
+                        "      %float = OpTypeFloat 32\n"
+                        "%_ptr_Function_float = OpTypePointer Function %float\n"
+                        "    %v3float = OpTypeVector %float 3\n"
+                        "%_ptr_Input_v3float = OpTypePointer Input %v3float\n"
+                        "%gl_TessCoord = OpVariable %_ptr_Input_v3float Input\n"
+                        "       %uint = OpTypeInt 32 0\n"
+                        "     %uint_0 = OpConstant %uint 0\n"
+                        "%_ptr_Input_float = OpTypePointer Input %float\n"
+                        "     %uint_1 = OpConstant %uint 1\n"
+                        "    %float_1 = OpConstant %float 1\n"
+                        "    %v4float = OpTypeVector %float 4\n"
+                        "%_arr_float_uint_1 = OpTypeArray %float %uint_1\n"
+                        "%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1\n"
+                        "%_ptr_Output_gl_PerVertex = OpTypePointer Output %gl_PerVertex\n"
+                        "          %_ = OpVariable %_ptr_Output_gl_PerVertex Output\n"
+                        "        %int = OpTypeInt 32 1\n"
+                        "      %int_0 = OpConstant %int 0\n"
+                        "%gl_PerVertex_0 = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1\n"
+                        "    %uint_32 = OpConstant %uint 32\n"
+                        "%_arr_gl_PerVertex_0_uint_32 = OpTypeArray %gl_PerVertex_0 %uint_32\n"
+                        "%_ptr_Input__arr_gl_PerVertex_0_uint_32 = OpTypePointer Input %_arr_gl_PerVertex_0_uint_32\n"
+                        "      %gl_in = OpVariable %_ptr_Input__arr_gl_PerVertex_0_uint_32 Input\n"
+                        "%_ptr_Input_v4float = OpTypePointer Input %v4float\n"
+                        "      %int_2 = OpConstant %int 2\n"
+                        "      %int_3 = OpConstant %int 3\n"
+                        "      %int_1 = OpConstant %int 1\n"
+                        "%_ptr_Output_v4float = OpTypePointer Output %v4float\n"
+                        "%_ptr_Input_int = OpTypePointer Input %int\n"
+                        "%gl_PatchVerticesIn = OpVariable %_ptr_Input_int Input\n"
+                        "      %int_4 = OpConstant %int 4\n"
+                        "       %bool = OpTypeBool\n"
+                        "%float_0_300000012 = OpConstant %float 0.300000012\n"
+                        "%_ptr_Output_float = OpTypePointer Output %float\n"
+                        "\n"
+                        "               ; Function main\n"
+                        "       %main = OpFunction %void None %3\n"
+                        "          %5 = OpLabel\n"
+                        "          %u = OpVariable %_ptr_Function_float Function\n"
+                        "          %v = OpVariable %_ptr_Function_float Function\n"
+                        "        %omu = OpVariable %_ptr_Function_float Function\n"
+                        "        %omv = OpVariable %_ptr_Function_float Function\n"
+                        "         %15 = OpAccessChain %_ptr_Input_float %gl_TessCoord %uint_0\n"
+                        "         %16 = OpLoad %float %15\n"
+                        "               OpStore %u %16\n"
+                        "         %19 = OpAccessChain %_ptr_Input_float %gl_TessCoord %uint_1\n"
+                        "         %20 = OpLoad %float %19\n"
+                        "               OpStore %v %20\n"
+                        "         %23 = OpLoad %float %u\n"
+                        "         %24 = OpFSub %float %float_1 %23\n"
+                        "               OpStore %omu %24\n"
+                        "         %26 = OpLoad %float %v\n"
+                        "         %27 = OpFSub %float %float_1 %26\n"
+                        "               OpStore %omv %27\n"
+                        "         %35 = OpLoad %float %omu\n"
+                        "         %36 = OpLoad %float %omv\n"
+                        "         %37 = OpFMul %float %35 %36\n"
+                        "         %44 = OpAccessChain %_ptr_Input_v4float %gl_in %int_0 %int_0\n"
+                        "         %45 = OpLoad %v4float %44\n"
+                        "         %46 = OpVectorTimesScalar %v4float %45 %37\n"
+                        "         %47 = OpLoad %float %u\n"
+                        "         %48 = OpLoad %float %omv\n"
+                        "         %49 = OpFMul %float %47 %48\n"
+                        "         %51 = OpAccessChain %_ptr_Input_v4float %gl_in %int_2 %int_0\n"
+                        "         %52 = OpLoad %v4float %51\n"
+                        "         %53 = OpVectorTimesScalar %v4float %52 %49\n"
+                        "         %54 = OpFAdd %v4float %46 %53\n"
+                        "         %55 = OpLoad %float %u\n"
+                        "         %56 = OpLoad %float %v\n"
+                        "         %57 = OpFMul %float %55 %56\n"
+                        "         %59 = OpAccessChain %_ptr_Input_v4float %gl_in %int_3 %int_0\n"
+                        "         %60 = OpLoad %v4float %59\n"
+                        "         %61 = OpVectorTimesScalar %v4float %60 %57\n"
+                        "         %62 = OpFAdd %v4float %54 %61\n"
+                        "         %63 = OpLoad %float %omu\n"
+                        "         %64 = OpLoad %float %v\n"
+                        "         %65 = OpFMul %float %63 %64\n"
+                        "         %67 = OpAccessChain %_ptr_Input_v4float %gl_in %int_1 %int_0\n"
+                        "         %68 = OpLoad %v4float %67\n"
+                        "         %69 = OpVectorTimesScalar %v4float %68 %65\n"
+                        "         %70 = OpFAdd %v4float %62 %69\n"
+                        "         %72 = OpAccessChain %_ptr_Output_v4float %_ %int_0\n"
+                        "               OpStore %72 %70\n"
+                        "         %75 = OpLoad %int %gl_PatchVerticesIn\n"
+                        "         %78 = OpSGreaterThan %bool %75 %int_4\n"
+                        "               OpSelectionMerge %80 None\n"
+                        "               OpBranchConditional %78 %79 %80\n"
+                        "         %79 = OpLabel\n"
+                        "         %83 = OpAccessChain %_ptr_Output_float %_ %int_0 %uint_1\n"
+                        "         %84 = OpLoad %float %83\n"
+                        "         %85 = OpFAdd %float %84 %float_0_300000012\n"
+                        "         %86 = OpAccessChain %_ptr_Output_float %_ %int_0 %uint_1\n"
+                        "               OpStore %86 %85\n"
+                        "               OpBranch %80\n"
+                        "         %80 = OpLabel\n"
+                        "               OpReturn\n"
+                        "               OpFunctionEnd\n";
 
     // #version 450
     // layout (location=0) out vec4 outColor;
@@ -818,10 +906,22 @@ void ShaderObjectTessellationCase::initPrograms(vk::SourceCollections &programCo
                        "               OpReturn\n"
                        "               OpFunctionEnd\n";
 
+    std::string tesc = tesc1 + tescModes + tesc2;
+    std::string tese = tese1 + teseModes + tese2;
+
     programCollection.spirvAsmSources.add("vert") << vert;
     programCollection.spirvAsmSources.add("tesc") << tesc;
     programCollection.spirvAsmSources.add("tese") << tese;
     programCollection.spirvAsmSources.add("frag") << frag;
+
+    if (m_rebind)
+    {
+        std::string tescRebind = tesc1 + tescRebindModes + tesc2;
+        std::string teseRebind = tese1 + teseRebindModes + tese2;
+
+        programCollection.spirvAsmSources.add("tesc_rebind") << tescRebind;
+        programCollection.spirvAsmSources.add("tese_rebind") << teseRebind;
+    }
 }
 
 } // namespace
@@ -835,8 +935,8 @@ tcu::TestCaseGroup *createShaderObjectTessellationTests(tcu::TestContext &testCt
         SourceType sourceType;
         const char *name;
     } sourceTypeTests[] = {
-        {GLSL, "glsl"},
-        {HLSL, "hlsl"},
+        {SourceType::GLSL, "glsl"},
+        {SourceType::HLSL, "hlsl"},
     };
 
     const struct Test
@@ -861,8 +961,12 @@ tcu::TestCaseGroup *createShaderObjectTessellationTests(tcu::TestContext &testCt
 
         for (const auto &testType : testTypes)
         {
-            stageGroup->addChild(
-                new ShaderObjectTessellationCase(testCtx, testType.name, sourceType.sourceType, testType.testType));
+            for (const bool rebind : {false, true})
+            {
+                std::string name = std::string(testType.name) + (rebind ? "_rebind" : "");
+                stageGroup->addChild(
+                    new ShaderObjectTessellationCase(testCtx, name, sourceType.sourceType, testType.testType, rebind));
+            }
         }
 
         tessellationGroup->addChild(stageGroup.release());

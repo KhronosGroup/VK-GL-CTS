@@ -47,6 +47,8 @@
 #include <limits>
 #include <vector>
 #include <map>
+#include <memory>
+#include <array>
 
 namespace vkt
 {
@@ -64,10 +66,25 @@ void checkRayQuerySupport(Context &context)
     context.requireDeviceFunctionality("VK_KHR_ray_query");
 }
 
+struct DynamicIndexingParams
+{
+    bool useFirst = false; // Make the code using the queries come before the code that initializes them.
+
+    uint32_t getLocalSizeX() const
+    {
+        return (useFirst ? 2u : 48u);
+    }
+
+    uint32_t getNumQueries() const
+    {
+        return (useFirst ? 2u : 48u);
+    }
+};
+
 class DynamicIndexingCase : public vkt::TestCase
 {
 public:
-    DynamicIndexingCase(tcu::TestContext &testCtx, const std::string &name);
+    DynamicIndexingCase(tcu::TestContext &testCtx, const std::string &name, const DynamicIndexingParams &params);
     virtual ~DynamicIndexingCase(void)
     {
     }
@@ -76,31 +93,35 @@ public:
     virtual void checkSupport(Context &context) const override;
     virtual TestInstance *createInstance(Context &context) const override;
 
-    // Constants and data types.
-    static constexpr uint32_t kLocalSizeX = 48u;
-    static constexpr uint32_t kNumQueries = 48u;
-
     // This must match the shader.
     struct InputData
     {
         uint32_t goodQueryIndex;
         uint32_t proceedQueryIndex;
     };
+
+protected:
+    const DynamicIndexingParams m_params;
 };
 
 class DynamicIndexingInstance : public vkt::TestInstance
 {
 public:
-    DynamicIndexingInstance(Context &context);
+    DynamicIndexingInstance(Context &context, const DynamicIndexingParams &params);
     virtual ~DynamicIndexingInstance(void)
     {
     }
 
     virtual tcu::TestStatus iterate(void);
+
+protected:
+    const DynamicIndexingParams m_params;
 };
 
-DynamicIndexingCase::DynamicIndexingCase(tcu::TestContext &testCtx, const std::string &name)
+DynamicIndexingCase::DynamicIndexingCase(tcu::TestContext &testCtx, const std::string &name,
+                                         const DynamicIndexingParams &params)
     : vkt::TestCase(testCtx, name)
+    , m_params(params)
 {
 }
 
@@ -110,11 +131,22 @@ void DynamicIndexingCase::initPrograms(vk::SourceCollections &programCollection)
 
     std::ostringstream src;
 
+    const std::string initializationLoop =
+        "    // Initialize all queries. Only goodQueryIndex will have the right origin for a hit.\n"
+        "    for (int i = 0; i < numQueries; i++) {\n"
+        "        origin = ((i == inputValues.goodQueryIndex) ? vec3(0, 0, 0) : vec3(5, 5, 0));\n"
+        "        rayQueryInitializeEXT(rayQueries[i], topLevelAS, rayFlags, cullMask, origin, tmin, direct, tmax);\n"
+        "    }\n";
+
+    const std::string usageLoop = "    // Attempt to proceed with the good query to confirm a hit.\n"
+                                  "    while (rayQueryProceedEXT(rayQueries[inputValues.proceedQueryIndex]))\n"
+                                  "        outputBlock.outputData[gl_LocalInvocationID.x] = 1u; \n";
+
     src << "#version 460\n"
         << "#extension GL_EXT_ray_query : require\n"
         << "#extension GL_EXT_ray_tracing : require\n"
         << "\n"
-        << "layout (local_size_x=" << kLocalSizeX << ", local_size_y=1, local_size_z=1) in; \n"
+        << "layout (local_size_x=" << m_params.getLocalSizeX() << ", local_size_y=1, local_size_z=1) in; \n"
         << "\n"
         << "struct InputData {\n"
         << "    uint goodQueryIndex;\n"
@@ -131,7 +163,7 @@ void DynamicIndexingCase::initPrograms(vk::SourceCollections &programCollection)
         << "\n"
         << "void main()\n"
         << "{\n"
-        << "    const uint numQueries = " << kNumQueries << ";\n"
+        << "    const uint numQueries = " << m_params.getNumQueries() << ";\n"
         << "\n"
         << "    const uint rayFlags = 0u; \n"
         << "    const uint cullMask = 0xFFu;\n"
@@ -143,17 +175,22 @@ void DynamicIndexingCase::initPrograms(vk::SourceCollections &programCollection)
         << "    vec3 origin;\n"
         << "\n"
         << "    InputData inputValues = inputBlock.inputData[gl_LocalInvocationID.x];\n"
-        << "\n"
-        << "    // Initialize all queries. Only goodQueryIndex will have the right origin for a hit.\n"
-        << "    for (int i = 0; i < numQueries; i++) {\n"
-        << "        origin = ((i == inputValues.goodQueryIndex) ? vec3(0, 0, 0) : vec3(5, 5, 0));\n"
-        << "        rayQueryInitializeEXT(rayQueries[i], topLevelAS, rayFlags, cullMask, origin, tmin, direct, tmax);\n"
-        << "    }\n"
-        << "\n"
-        << "    // Attempt to proceed with the good query to confirm a hit.\n"
-        << "    while (rayQueryProceedEXT(rayQueries[inputValues.proceedQueryIndex]))\n"
-        << "        outputBlock.outputData[gl_LocalInvocationID.x] = 1u; \n"
-        << "}\n";
+        << "\n";
+
+    if (m_params.useFirst)
+    {
+        src << "    for (int i = 0; i < 2; ++i) {\n"
+            << "        if (i > 0) {\n"
+            << usageLoop << "            continue;\n"
+            << "        }\n"
+            << initializationLoop << "    }\n";
+    }
+    else
+    {
+        src << initializationLoop << "\n" << usageLoop;
+    }
+
+    src << "}\n";
 
     programCollection.glslSources.add("comp") << glu::ComputeSource(updateRayTracingGLSL(src.str())) << buildOptions;
 }
@@ -173,10 +210,12 @@ void DynamicIndexingCase::checkSupport(Context &context) const
 
 vkt::TestInstance *DynamicIndexingCase::createInstance(Context &context) const
 {
-    return new DynamicIndexingInstance(context);
+    return new DynamicIndexingInstance(context, m_params);
 }
 
-DynamicIndexingInstance::DynamicIndexingInstance(Context &context) : vkt::TestInstance(context)
+DynamicIndexingInstance::DynamicIndexingInstance(Context &context, const DynamicIndexingParams &params)
+    : vkt::TestInstance(context)
+    , m_params(params)
 {
 }
 
@@ -193,9 +232,9 @@ uint32_t getRndIndex(de::Random &rng, uint32_t size)
 
 tcu::TestStatus DynamicIndexingInstance::iterate(void)
 {
-    using InputData            = DynamicIndexingCase::InputData;
-    constexpr auto kLocalSizeX = DynamicIndexingCase::kLocalSizeX;
-    constexpr auto kNumQueries = DynamicIndexingCase::kNumQueries;
+    using InputData        = DynamicIndexingCase::InputData;
+    const auto kLocalSizeX = m_params.getLocalSizeX();
+    const auto kNumQueries = m_params.getNumQueries();
 
     const auto &vkd   = m_context.getDeviceInterface();
     const auto device = m_context.getDevice();
@@ -204,34 +243,34 @@ tcu::TestStatus DynamicIndexingInstance::iterate(void)
     const auto qIndex = m_context.getUniversalQueueFamilyIndex();
 
     de::Random rng(1604936737u);
-    InputData inputDataArray[kLocalSizeX];
-    uint32_t outputDataArray[kLocalSizeX];
+    std::vector<InputData> inputDataArray(kLocalSizeX);
+    std::vector<uint32_t> outputDataArray(kLocalSizeX);
 
     // Prepare input buffer.
-    for (int i = 0; i < DE_LENGTH_OF_ARRAY(inputDataArray); ++i)
+    for (size_t i = 0; i < inputDataArray.size(); ++i)
     {
         // The two values will contain the same query index.
         inputDataArray[i].goodQueryIndex    = getRndIndex(rng, kNumQueries);
         inputDataArray[i].proceedQueryIndex = inputDataArray[i].goodQueryIndex;
     }
 
-    const auto inputBufferSize = static_cast<VkDeviceSize>(sizeof(inputDataArray));
+    const auto inputBufferSize = static_cast<VkDeviceSize>(de::dataSize(inputDataArray));
     const auto inputBufferInfo = makeBufferCreateInfo(inputBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     BufferWithMemory inputBuffer(vkd, device, alloc, inputBufferInfo, MemoryRequirement::HostVisible);
     auto &inputBufferAlloc = inputBuffer.getAllocation();
     void *inputBufferPtr   = inputBufferAlloc.getHostPtr();
 
-    deMemcpy(inputBufferPtr, inputDataArray, static_cast<size_t>(inputBufferSize));
+    memcpy(inputBufferPtr, de::dataOrNull(inputDataArray), de::dataSize(inputDataArray));
     flushAlloc(vkd, device, inputBufferAlloc);
 
     // Prepare output buffer.
-    const auto outputBufferSize = static_cast<VkDeviceSize>(sizeof(outputDataArray));
+    const auto outputBufferSize = static_cast<VkDeviceSize>(de::dataSize(outputDataArray));
     const auto outputBufferInfo = makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     BufferWithMemory outputBuffer(vkd, device, alloc, outputBufferInfo, MemoryRequirement::HostVisible);
     auto &outputBufferAlloc = outputBuffer.getAllocation();
     void *outputBufferPtr   = outputBufferAlloc.getHostPtr();
 
-    deMemset(outputBufferPtr, 0, static_cast<size_t>(outputBufferSize));
+    memset(outputBufferPtr, 0, static_cast<size_t>(outputBufferSize));
     flushAlloc(vkd, device, outputBufferAlloc);
 
     // Prepare acceleration structures.
@@ -340,9 +379,9 @@ tcu::TestStatus DynamicIndexingInstance::iterate(void)
 
     // Check output buffer.
     invalidateAlloc(vkd, device, outputBufferAlloc);
-    deMemcpy(outputDataArray, outputBufferPtr, static_cast<size_t>(outputBufferSize));
+    memcpy(de::dataOrNull(outputDataArray), outputBufferPtr, de::dataSize(outputDataArray));
 
-    for (int i = 0; i < DE_LENGTH_OF_ARRAY(outputDataArray); ++i)
+    for (size_t i = 0; i < outputDataArray.size(); ++i)
     {
         constexpr auto expected = 1u;
         const auto &value       = outputDataArray[i];
@@ -1862,6 +1901,242 @@ tcu::TestStatus updateEmptyTopASInstance(Context &context)
     return tcu::TestStatus::pass("Pass");
 }
 
+// One ray query per invocation, with varying work group sizes.
+struct RayPerInvParams
+{
+    // If not present, run query from all invocations. If present, only from that one. UINT32_MAX means the last one.
+    tcu::Maybe<uint32_t> single;
+
+    // If 0, use the maximum allowed size. In that case, single can be missing, zero or UINT32_MAX.
+    uint32_t wgSize;
+
+    uint32_t getRngSeed() const
+    {
+        return ((wgSize << 16) | ((!!single ? *single : 0u) & 0xFFFFu));
+    }
+};
+
+using RayPerInvParamsPtr = std::shared_ptr<RayPerInvParams>;
+
+void RayPerInvSupport(Context &context, RayPerInvParamsPtr params)
+{
+    checkRayQuerySupport(context);
+
+    const auto &maxInvs   = context.getDeviceProperties().limits.maxComputeWorkGroupSize[0];
+    const auto usedWgSize = ((params->wgSize == 0u) ? maxInvs : params->wgSize);
+
+    if (maxInvs < usedWgSize)
+        TCU_THROW(NotSupportedError, "Target work group size not supported");
+
+    if (!!params->single && *params->single != std::numeric_limits<uint32_t>::max())
+        DE_ASSERT(*params->single < usedWgSize);
+}
+
+void RayPerInvPrograms(vk::SourceCollections &dst, RayPerInvParamsPtr params)
+{
+    // Global idea: one output value per invocation, one ray per invocation at most. If there is no ray for a given
+    // invocation, the buffer preserves its value (0). If there is a ray and there's an intersection of the expected
+    // type, the output value is 2. If there is a ray and there is no intersection, store a 1.
+
+    std::string condition = "true"; // By default, run the query for all invocations.
+    if (!!params->single)
+    {
+        condition = "gl_LocalInvocationIndex == ";
+        condition += ((*params->single == std::numeric_limits<uint32_t>::max()) ? "(totalInvs - 1u)" :
+                                                                                  std::to_string(*params->single));
+    }
+
+    // Note each invocation will trace a ray from (X.5, 0, 0) towards (0, 0, 1), where X in the invocation index.
+    std::ostringstream comp;
+    comp << "#version 460\n"
+         << "#extension GL_EXT_ray_query : require\n"
+         << "#extension GL_EXT_ray_tracing : require\n"
+         << "layout (local_size_x_id=0, local_size_y_id=1, local_size_z_id=2) in;\n"
+         << "layout (set=0, binding=0) uniform accelerationStructureEXT topLevelAS;\n"
+         << "layout (set=0, binding=1) writeonly buffer SSBO_Block { uint value[]; } ssbo;\n"
+         << "void main(void) {\n"
+         << "    const uint totalInvs = (gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z);\n"
+         << "    const uint rayFlags = 0u;\n"
+         << "    const uint cullMask = 0xFFu;\n"
+         << "    const float tmin = 0.5;\n"
+         << "    const float tmax = 10.0;\n"
+         << "    const vec3 direction = vec3(0, 0, 1);\n"
+         << "    if (" << condition << ") {\n"
+         << "        rayQueryEXT rayQuery;\n"
+         << "        vec3 origin = vec3(float(gl_LocalInvocationIndex) + 0.5, 0.0, 0.0);\n"
+         << "        rayQueryInitializeEXT(rayQuery, topLevelAS, rayFlags, cullMask, origin, tmin, direction, tmax);\n"
+         << "        uint outputValue = 1u;\n"
+         << "        while (rayQueryProceedEXT(rayQuery)) {\n"
+         << "            if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == "
+            "gl_RayQueryCandidateIntersectionTriangleEXT)\n"
+         << "                outputValue = 2u;\n"
+         << "        }\n"
+         << "        ssbo.value[gl_LocalInvocationIndex] = outputValue;\n"
+         << "    }\n"
+         << "}\n";
+    const vk::ShaderBuildOptions buildOptions(dst.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+    dst.glslSources.add("comp") << glu::ComputeSource(comp.str()) << buildOptions;
+}
+
+tcu::TestStatus RayPerInvRun(Context &context, RayPerInvParamsPtr params)
+{
+    // Decide a WG size.
+    const auto &limits    = context.getDeviceProperties().limits;
+    const auto &maxInvs   = limits.maxComputeWorkGroupSize[0];
+    const auto targetInvs = ((params->wgSize > 0u) ? params->wgSize : maxInvs);
+    const tcu::UVec3 wgSize(targetInvs, 1u, 1u);
+
+    const auto ctx        = context.getContextCommonData();
+    const auto &binaries  = context.getBinaryCollection();
+    const auto compShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("comp"));
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    const auto descriptorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_COMPUTE_BIT);
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+    const auto setLayout      = setLayoutBuilder.build(ctx.vkd, ctx.device);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+    const auto descriptorSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+    // Pipeline.
+    const std::vector<VkSpecializationMapEntry> mapEntries{
+        makeSpecializationMapEntry(0u, sizeof(uint32_t) * 0u, sizeof(uint32_t)),
+        makeSpecializationMapEntry(1u, sizeof(uint32_t) * 1u, sizeof(uint32_t)),
+        makeSpecializationMapEntry(2u, sizeof(uint32_t) * 2u, sizeof(uint32_t)),
+    };
+    const VkSpecializationInfo specializationInfo = {
+        de::sizeU32(mapEntries),
+        de::dataOrNull(mapEntries),
+        sizeof(wgSize),
+        &wgSize,
+    };
+    const auto pipeline =
+        makeComputePipeline(ctx.vkd, ctx.device, *pipelineLayout, 0u, nullptr, *compShader, 0u, &specializationInfo);
+
+    // Resources.
+    const auto rngSeed = params->getRngSeed();
+    de::Random rng(rngSeed);
+
+    // Note each invocation will trace a ray from (X.5, 0, 0) towards (0, 0, 1), where X in the invocation index.
+    // We will create a quad in each [X, X+1] range along the X axis, at Z = 1, with Y from -1 to 1.
+    const auto zCoord = 1.0f;
+    const auto yMin   = -1.0f;
+    const auto yMax   = 1.0f;
+
+    std::vector<tcu::Vec3> triangles;
+    triangles.reserve(6u * targetInvs); // 6 vertices per quad.
+
+    std::vector<bool> hasQuad;
+    hasQuad.reserve(targetInvs);
+
+    for (uint32_t i = 0; i < targetInvs; ++i)
+    {
+        // Pseudorandomly decide if we will get a quad for this invocation.
+        hasQuad.push_back(rng.getBool());
+        if (hasQuad.back())
+        {
+            const auto xMin = static_cast<float>(i);
+            const auto xMax = xMin + 1.0f;
+
+            const tcu::Vec3 topLeft(xMin, yMin, zCoord);
+            const tcu::Vec3 topRight(xMax, yMin, zCoord);
+            const tcu::Vec3 bottomLeft(xMin, yMax, zCoord);
+            const tcu::Vec3 bottomRight(xMax, yMax, zCoord);
+
+            triangles.push_back(topLeft);
+            triangles.push_back(bottomLeft);
+            triangles.push_back(topRight);
+
+            triangles.push_back(bottomLeft);
+            triangles.push_back(bottomRight);
+            triangles.push_back(topRight);
+        }
+    }
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
+    auto blas = makeBottomLevelAccelerationStructure();
+    blas->addGeometry(triangles, true);
+    blas->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
+
+    auto tlas = makeTopLevelAccelerationStructure();
+    tlas->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(blas.release()));
+    tlas->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
+
+    std::vector<uint32_t> ssboValues(targetInvs, 0u);
+    const auto ssboSize  = static_cast<VkDeviceSize>(de::dataSize(ssboValues));
+    const auto ssboUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    const auto ssboInfo  = makeBufferCreateInfo(ssboSize, ssboUsage);
+    BufferWithMemory ssbo(ctx.vkd, ctx.device, ctx.allocator, ssboInfo, HostIntent::RW);
+    auto &ssboAlloc = ssbo.getAllocation();
+    memcpy(ssboAlloc.getHostPtr(), de::dataOrNull(ssboValues), de::dataSize(ssboValues));
+    flushAlloc(ctx.vkd, ctx.device, ssboAlloc);
+
+    DescriptorSetUpdateBuilder updateBuilder;
+    const auto binding                                          = DescriptorSetUpdateBuilder::Location::binding;
+    const VkWriteDescriptorSetAccelerationStructureKHR tlasDesc = {
+        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+        nullptr,
+        1u,
+        tlas->getPtr(),
+    };
+    updateBuilder.writeSingle(*descriptorSet, binding(0u), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &tlasDesc);
+    const auto ssboDesc = makeDescriptorBufferInfo(ssbo.get(), 0ull, VK_WHOLE_SIZE);
+    updateBuilder.writeSingle(*descriptorSet, binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &ssboDesc);
+    updateBuilder.update(ctx.vkd, ctx.device);
+
+    const auto bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+    ctx.vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+    const auto barrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+    cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                             &barrier);
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    invalidateAlloc(ctx.vkd, ctx.device, ssboAlloc);
+    memcpy(de::dataOrNull(ssboValues), ssboAlloc.getHostPtr(), de::dataSize(ssboValues));
+
+    auto &log = context.getTestContext().getLog();
+    bool fail = false;
+
+    for (uint32_t i = 0u; i < targetInvs; ++i)
+    {
+        uint32_t reference = 0u;
+        if (!params->single ||
+            (!!params->single && (*params->single == i ||
+                                  (*params->single == std::numeric_limits<uint32_t>::max() && i == targetInvs - 1u))))
+        {
+            // A query has been run for this invocation.
+            reference = (hasQuad.at(i) ? 2u : 1u);
+        }
+        const auto &result = ssboValues.at(i);
+        if (result != reference)
+        {
+            fail = true;
+            std::ostringstream msg;
+            msg << "Unexpected result at SSBO value " << i << ": expected " << reference << " but found " << result;
+            log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+        }
+    }
+
+    if (fail)
+        TCU_FAIL("Unexpected results found in output buffer; check log for details");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 TestCaseGroup *addHelperInvocationsTests(TestContext &testCtx)
@@ -1934,8 +2209,14 @@ tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx)
     // Miscellaneous ray query tests
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "misc"));
 
-    // Dynamic indexing of ray queries
-    group->addChild(new DynamicIndexingCase(testCtx, "dynamic_indexing"));
+    // Dynamic indexing of ray queries, with and without using the queries first in code.
+    {
+        DynamicIndexingParams params;
+        group->addChild(new DynamicIndexingCase(testCtx, "dynamic_indexing", params));
+
+        params.useFirst = true;
+        group->addChild(new DynamicIndexingCase(testCtx, "dynamic_indexing_use_first", params));
+    }
 
     addFunctionCaseWithPrograms(group.get(), "reuse_scratch_buffer", checkRayQuerySupport,
                                 initReuseScratchBufferPrograms, reuseScratchBufferInstance);
@@ -1946,6 +2227,44 @@ tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx)
 
         addFunctionCaseWithPrograms(group.get(), "update_empty_top", checkRayQuerySupport, initEmptyASPrograms,
                                     updateEmptyTopASInstance);
+    }
+
+    {
+        const std::array<const char *, 3> singleCaseSuffixes{
+            "_first",
+            "_last",
+            "_middle",
+        };
+        for (const auto wgSize : {61u, 64u, 127u, 128u, 251u, 256u, 509u, 512u, 1021u, 1024u, 0u})
+            for (const bool single : {false, true})
+                for (const int singleCase :
+                     {0, 1, 2}) // First invocation, last invocation, middle invocation, see above.
+                {
+                    if (!single && singleCase != 0) // We only need one "all invocations" case.
+                        break;
+
+                    tcu::Maybe<uint32_t> singleParam = tcu::Nothing;
+                    if (single)
+                    {
+                        if (singleCase == 0)
+                            singleParam = tcu::just(0u);
+                        else if (singleCase == 1)
+                            singleParam = tcu::just(std::numeric_limits<uint32_t>::max());
+                        else if (singleCase == 2)
+                            singleParam = tcu::just(wgSize / 2u);
+                        else
+                            DE_ASSERT(false);
+                    }
+                    RayPerInvParamsPtr params(new RayPerInvParams{
+                        singleParam,
+                        wgSize,
+                    });
+                    const auto &singleCaseSuffix = singleCaseSuffixes.at(singleCase);
+                    const auto testName = "ray_per_inv_" + std::to_string(wgSize) + (single ? "_single" : "_all") +
+                                          (single ? singleCaseSuffix : "");
+                    addFunctionCaseWithPrograms(group.get(), testName, RayPerInvSupport, RayPerInvPrograms,
+                                                RayPerInvRun, params);
+                }
     }
 
     return group.release();

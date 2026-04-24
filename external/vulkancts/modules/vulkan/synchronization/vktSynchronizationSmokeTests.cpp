@@ -44,7 +44,6 @@
 #include "tcuImageCompare.hpp"
 
 #include "deUniquePtr.hpp"
-#include "deThread.hpp"
 #include "vkMemUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkPrograms.hpp"
@@ -55,9 +54,7 @@
 #include <vector>
 #include <sstream>
 
-namespace vkt
-{
-namespace synchronization
+namespace vkt::synchronization
 {
 
 using namespace vk;
@@ -1157,9 +1154,6 @@ tcu::TestStatus testFences(Context &context)
 
 tcu::TestStatus testSemaphores(Context &context, SemaphoreTestConfig config)
 {
-    if (config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE && !context.getTimelineSemaphoreFeatures().timelineSemaphore)
-        TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
-
     TestLog &log                               = context.getTestContext().getLog();
     const PlatformInterface &platformInterface = context.getPlatformInterface();
     const auto instance                        = context.getInstance();
@@ -1294,6 +1288,8 @@ void checkSupport(Context &context, SemaphoreTestConfig config)
 {
     if (config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE)
         context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+    if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
+        TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
     if (config.synchronizationType == SynchronizationType::SYNCHRONIZATION2)
         context.requireDeviceFunctionality("VK_KHR_synchronization2");
 }
@@ -1786,5 +1782,4 @@ tcu::TestCaseGroup *createSynchronization2SmokeTests(tcu::TestContext &textCtx)
     return smokeTests.release();
 }
 
-} // namespace synchronization
-} // namespace vkt
+} // namespace vkt::synchronization

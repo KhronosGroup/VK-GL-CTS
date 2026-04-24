@@ -127,38 +127,6 @@ inline VkClearDepthStencilValue makeClearDepthStencilValue (float depth, uint32_
 	return res;
 }
 
-inline VkClusterAccelerationStructureBuildClustersBottomLevelInfoNV makeClusterAccelerationStructureBuildClustersBottomLevelInfoNV (uint32_t clusterReferencesCount, uint32_t clusterReferencesStride, VkDeviceAddress clusterReferences)
-{
-	VkClusterAccelerationStructureBuildClustersBottomLevelInfoNV res;
-	res.clusterReferencesCount	= clusterReferencesCount;
-	res.clusterReferencesStride	= clusterReferencesStride;
-	res.clusterReferences		= clusterReferences;
-	return res;
-}
-
-inline VkClusterAccelerationStructureGetTemplateIndicesInfoNV makeClusterAccelerationStructureGetTemplateIndicesInfoNV (VkDeviceAddress clusterTemplateAddress)
-{
-	VkClusterAccelerationStructureGetTemplateIndicesInfoNV res;
-	res.clusterTemplateAddress	= clusterTemplateAddress;
-	return res;
-}
-
-inline VkClusterAccelerationStructureMoveObjectsInfoNV makeClusterAccelerationStructureMoveObjectsInfoNV (VkDeviceAddress srcAccelerationStructure)
-{
-	VkClusterAccelerationStructureMoveObjectsInfoNV res;
-	res.srcAccelerationStructure	= srcAccelerationStructure;
-	return res;
-}
-
-inline VkClusterAccelerationStructureOpInputNV makeClusterAccelerationStructureOpInputNV (VkClusterAccelerationStructureClustersBottomLevelInputNV* pClustersBottomLevel, VkClusterAccelerationStructureTriangleClusterInputNV* pTriangleClusters, VkClusterAccelerationStructureMoveObjectsInputNV* pMoveObjects)
-{
-	VkClusterAccelerationStructureOpInputNV res;
-	res.pClustersBottomLevel	= pClustersBottomLevel;
-	res.pTriangleClusters		= pTriangleClusters;
-	res.pMoveObjects			= pMoveObjects;
-	return res;
-}
-
 inline VkCoarseSampleLocationNV makeCoarseSampleLocationNV (uint32_t pixelX, uint32_t pixelY, uint32_t sample)
 {
 	VkCoarseSampleLocationNV res;
@@ -240,17 +208,6 @@ inline VkDecompressMemoryRegionEXT makeDecompressMemoryRegionEXT (VkDeviceAddres
 	return res;
 }
 
-inline VkDecompressMemoryRegionNV makeDecompressMemoryRegionNV (VkDeviceAddress srcAddress, VkDeviceAddress dstAddress, VkDeviceSize compressedSize, VkDeviceSize decompressedSize, VkMemoryDecompressionMethodFlagsNV decompressionMethod)
-{
-	VkDecompressMemoryRegionNV res;
-	res.srcAddress			= srcAddress;
-	res.dstAddress			= dstAddress;
-	res.compressedSize		= compressedSize;
-	res.decompressedSize	= decompressedSize;
-	res.decompressionMethod	= decompressionMethod;
-	return res;
-}
-
 inline VkDepthClampRangeEXT makeDepthClampRangeEXT (float minDepthClamp, float maxDepthClamp)
 {
 	VkDepthClampRangeEXT res;
@@ -293,6 +250,99 @@ inline VkDescriptorImageInfo makeDescriptorImageInfo (VkSampler sampler, VkImage
 	return res;
 }
 
+inline VkDescriptorMappingSourceConstantOffsetEXT makeDescriptorMappingSourceConstantOffsetEXT (uint32_t heapOffset, uint32_t heapArrayStride, const VkSamplerCreateInfo* pEmbeddedSampler, uint32_t samplerHeapOffset, uint32_t samplerHeapArrayStride)
+{
+	VkDescriptorMappingSourceConstantOffsetEXT res;
+	res.heapOffset				= heapOffset;
+	res.heapArrayStride			= heapArrayStride;
+	res.pEmbeddedSampler		= pEmbeddedSampler;
+	res.samplerHeapOffset		= samplerHeapOffset;
+	res.samplerHeapArrayStride	= samplerHeapArrayStride;
+	return res;
+}
+
+inline VkDescriptorMappingSourceHeapDataEXT makeDescriptorMappingSourceHeapDataEXT (uint32_t heapOffset, uint32_t pushOffset)
+{
+	VkDescriptorMappingSourceHeapDataEXT res;
+	res.heapOffset	= heapOffset;
+	res.pushOffset	= pushOffset;
+	return res;
+}
+
+inline VkDescriptorMappingSourceIndirectAddressEXT makeDescriptorMappingSourceIndirectAddressEXT (uint32_t pushOffset, uint32_t addressOffset)
+{
+	VkDescriptorMappingSourceIndirectAddressEXT res;
+	res.pushOffset		= pushOffset;
+	res.addressOffset	= addressOffset;
+	return res;
+}
+
+inline VkDescriptorMappingSourceIndirectIndexArrayEXT makeDescriptorMappingSourceIndirectIndexArrayEXT (uint32_t heapOffset, uint32_t pushOffset, uint32_t addressOffset, uint32_t heapIndexStride, const VkSamplerCreateInfo* pEmbeddedSampler, VkBool32 useCombinedImageSamplerIndex, uint32_t samplerHeapOffset, uint32_t samplerPushOffset, uint32_t samplerAddressOffset, uint32_t samplerHeapIndexStride)
+{
+	VkDescriptorMappingSourceIndirectIndexArrayEXT res;
+	res.heapOffset						= heapOffset;
+	res.pushOffset						= pushOffset;
+	res.addressOffset					= addressOffset;
+	res.heapIndexStride					= heapIndexStride;
+	res.pEmbeddedSampler				= pEmbeddedSampler;
+	res.useCombinedImageSamplerIndex	= useCombinedImageSamplerIndex;
+	res.samplerHeapOffset				= samplerHeapOffset;
+	res.samplerPushOffset				= samplerPushOffset;
+	res.samplerAddressOffset			= samplerAddressOffset;
+	res.samplerHeapIndexStride			= samplerHeapIndexStride;
+	return res;
+}
+
+inline VkDescriptorMappingSourceIndirectIndexEXT makeDescriptorMappingSourceIndirectIndexEXT (uint32_t heapOffset, uint32_t pushOffset, uint32_t addressOffset, uint32_t heapIndexStride, uint32_t heapArrayStride, const VkSamplerCreateInfo* pEmbeddedSampler, VkBool32 useCombinedImageSamplerIndex, uint32_t samplerHeapOffset, uint32_t samplerPushOffset, uint32_t samplerAddressOffset, uint32_t samplerHeapIndexStride, uint32_t samplerHeapArrayStride)
+{
+	VkDescriptorMappingSourceIndirectIndexEXT res;
+	res.heapOffset						= heapOffset;
+	res.pushOffset						= pushOffset;
+	res.addressOffset					= addressOffset;
+	res.heapIndexStride					= heapIndexStride;
+	res.heapArrayStride					= heapArrayStride;
+	res.pEmbeddedSampler				= pEmbeddedSampler;
+	res.useCombinedImageSamplerIndex	= useCombinedImageSamplerIndex;
+	res.samplerHeapOffset				= samplerHeapOffset;
+	res.samplerPushOffset				= samplerPushOffset;
+	res.samplerAddressOffset			= samplerAddressOffset;
+	res.samplerHeapIndexStride			= samplerHeapIndexStride;
+	res.samplerHeapArrayStride			= samplerHeapArrayStride;
+	return res;
+}
+
+inline VkDescriptorMappingSourcePushIndexEXT makeDescriptorMappingSourcePushIndexEXT (uint32_t heapOffset, uint32_t pushOffset, uint32_t heapIndexStride, uint32_t heapArrayStride, const VkSamplerCreateInfo* pEmbeddedSampler, VkBool32 useCombinedImageSamplerIndex, uint32_t samplerHeapOffset, uint32_t samplerPushOffset, uint32_t samplerHeapIndexStride, uint32_t samplerHeapArrayStride)
+{
+	VkDescriptorMappingSourcePushIndexEXT res;
+	res.heapOffset						= heapOffset;
+	res.pushOffset						= pushOffset;
+	res.heapIndexStride					= heapIndexStride;
+	res.heapArrayStride					= heapArrayStride;
+	res.pEmbeddedSampler				= pEmbeddedSampler;
+	res.useCombinedImageSamplerIndex	= useCombinedImageSamplerIndex;
+	res.samplerHeapOffset				= samplerHeapOffset;
+	res.samplerPushOffset				= samplerPushOffset;
+	res.samplerHeapIndexStride			= samplerHeapIndexStride;
+	res.samplerHeapArrayStride			= samplerHeapArrayStride;
+	return res;
+}
+
+inline VkDescriptorMappingSourceShaderRecordIndexEXT makeDescriptorMappingSourceShaderRecordIndexEXT (uint32_t heapOffset, uint32_t shaderRecordOffset, uint32_t heapIndexStride, uint32_t heapArrayStride, const VkSamplerCreateInfo* pEmbeddedSampler, VkBool32 useCombinedImageSamplerIndex, uint32_t samplerHeapOffset, uint32_t samplerShaderRecordOffset, uint32_t samplerHeapIndexStride, uint32_t samplerHeapArrayStride)
+{
+	VkDescriptorMappingSourceShaderRecordIndexEXT res;
+	res.heapOffset						= heapOffset;
+	res.shaderRecordOffset				= shaderRecordOffset;
+	res.heapIndexStride					= heapIndexStride;
+	res.heapArrayStride					= heapArrayStride;
+	res.pEmbeddedSampler				= pEmbeddedSampler;
+	res.useCombinedImageSamplerIndex	= useCombinedImageSamplerIndex;
+	res.samplerHeapOffset				= samplerHeapOffset;
+	res.samplerShaderRecordOffset		= samplerShaderRecordOffset;
+	res.samplerHeapIndexStride			= samplerHeapIndexStride;
+	res.samplerHeapArrayStride			= samplerHeapArrayStride;
+	return res;
+}
+
 inline VkDescriptorPoolSize makeDescriptorPoolSize (VkDescriptorType type, uint32_t descriptorCount)
 {
 	VkDescriptorPoolSize res;
@@ -332,20 +382,12 @@ inline VkDeviceAddressRangeKHR makeDeviceAddressRangeKHR (VkDeviceAddress addres
 	return res;
 }
 
-inline VkDeviceFaultAddressInfoEXT makeDeviceFaultAddressInfoEXT (VkDeviceFaultAddressTypeEXT addressType, VkDeviceAddress reportedAddress, VkDeviceSize addressPrecision)
+inline VkDeviceFaultAddressInfoKHR makeDeviceFaultAddressInfoKHR (VkDeviceFaultAddressTypeKHR addressType, VkDeviceAddress reportedAddress, VkDeviceSize addressPrecision)
 {
-	VkDeviceFaultAddressInfoEXT res;
+	VkDeviceFaultAddressInfoKHR res;
 	res.addressType			= addressType;
 	res.reportedAddress		= reportedAddress;
 	res.addressPrecision	= addressPrecision;
-	return res;
-}
-
-inline VkDeviceOrHostAddressConstAMDX makeDeviceOrHostAddressConstAMDX (VkDeviceAddress deviceAddress, const void* hostAddress)
-{
-	VkDeviceOrHostAddressConstAMDX res;
-	res.deviceAddress	= deviceAddress;
-	res.hostAddress		= hostAddress;
 	return res;
 }
 
@@ -470,6 +512,22 @@ inline VkExternalMemoryProperties makeExternalMemoryProperties (VkExternalMemory
 	res.externalMemoryFeatures			= externalMemoryFeatures;
 	res.exportFromImportedHandleTypes	= exportFromImportedHandleTypes;
 	res.compatibleHandleTypes			= compatibleHandleTypes;
+	return res;
+}
+
+inline VkHostAddressRangeConstEXT makeHostAddressRangeConstEXT (const void* address, size_t size)
+{
+	VkHostAddressRangeConstEXT res;
+	res.address	= address;
+	res.size	= size;
+	return res;
+}
+
+inline VkHostAddressRangeEXT makeHostAddressRangeEXT (void* address, size_t size)
+{
+	VkHostAddressRangeEXT res;
+	res.address	= address;
+	res.size	= size;
 	return res;
 }
 
@@ -649,15 +707,6 @@ inline VkOffset3D makeOffset3D (int32_t x, int32_t y, int32_t z)
 	return res;
 }
 
-inline VkPartitionedAccelerationStructureUpdateInstanceDataNV makePartitionedAccelerationStructureUpdateInstanceDataNV (uint32_t instanceIndex, uint32_t instanceContributionToHitGroupIndex, VkDeviceAddress accelerationStructure)
-{
-	VkPartitionedAccelerationStructureUpdateInstanceDataNV res;
-	res.instanceIndex						= instanceIndex;
-	res.instanceContributionToHitGroupIndex	= instanceContributionToHitGroupIndex;
-	res.accelerationStructure				= accelerationStructure;
-	return res;
-}
-
 inline VkPastPresentationTimingGOOGLE makePastPresentationTimingGOOGLE (uint32_t presentID, uint64_t desiredPresentTime, uint64_t actualPresentTime, uint64_t earliestPresentTime, uint64_t presentMargin)
 {
 	VkPastPresentationTimingGOOGLE res;
@@ -796,6 +845,16 @@ inline VkRenderPassCreationFeedbackInfoEXT makeRenderPassCreationFeedbackInfoEXT
 	return res;
 }
 
+inline VkResourceDescriptorDataEXT makeResourceDescriptorDataEXT (const VkImageDescriptorInfoEXT* pImage, const VkTexelBufferDescriptorInfoEXT* pTexelBuffer, const VkDeviceAddressRangeEXT* pAddressRange, const VkTensorViewCreateInfoARM* pTensorARM)
+{
+	VkResourceDescriptorDataEXT res;
+	res.pImage			= pImage;
+	res.pTexelBuffer	= pTexelBuffer;
+	res.pAddressRange	= pAddressRange;
+	res.pTensorARM		= pTensorARM;
+	return res;
+}
+
 inline VkSRTDataNV makeSRTDataNV (float sx, float a, float b, float pvx, float sy, float c, float pvy, float sz, float pvz, float qx, float qy, float qz, float qw, float tx, float ty, float tz)
 {
 	VkSRTDataNV res;
@@ -830,17 +889,6 @@ inline VkSetStateFlagsIndirectCommandNV makeSetStateFlagsIndirectCommandNV (uint
 {
 	VkSetStateFlagsIndirectCommandNV res;
 	res.data	= data;
-	return res;
-}
-
-inline VkShaderResourceUsageAMD makeShaderResourceUsageAMD (uint32_t numUsedVgprs, uint32_t numUsedSgprs, uint32_t ldsSizePerLocalWorkGroup, size_t ldsUsageSizeInBytes, size_t scratchMemUsageInBytes)
-{
-	VkShaderResourceUsageAMD res;
-	res.numUsedVgprs				= numUsedVgprs;
-	res.numUsedSgprs				= numUsedSgprs;
-	res.ldsSizePerLocalWorkGroup	= ldsSizePerLocalWorkGroup;
-	res.ldsUsageSizeInBytes			= ldsUsageSizeInBytes;
-	res.scratchMemUsageInBytes		= scratchMemUsageInBytes;
 	return res;
 }
 
@@ -919,14 +967,6 @@ inline VkStencilOpState makeStencilOpState (VkStencilOp failOp, VkStencilOp pass
 	res.compareMask	= compareMask;
 	res.writeMask	= writeMask;
 	res.reference	= reference;
-	return res;
-}
-
-inline VkStridedDeviceAddressNV makeStridedDeviceAddressNV (VkDeviceAddress startAddress, VkDeviceSize strideInBytes)
-{
-	VkStridedDeviceAddressNV res;
-	res.startAddress	= startAddress;
-	res.strideInBytes	= strideInBytes;
 	return res;
 }
 

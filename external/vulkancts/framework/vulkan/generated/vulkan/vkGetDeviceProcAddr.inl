@@ -102,8 +102,27 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM",
 		"vkGetPhysicalDeviceQueueFamilyDataGraphPropertiesARM",
 
+		// "VK_ARM_data_graph_instruction_set_tosa
+		"vkGetPhysicalDeviceQueueFamilyDataGraphEngineOperationPropertiesARM",
+
+		// "VK_ARM_data_graph_optical_flow
+		"vkGetPhysicalDeviceQueueFamilyDataGraphEngineOperationPropertiesARM",
+		"vkGetPhysicalDeviceQueueFamilyDataGraphOpticalFlowImageFormatsARM",
+
 		// "VK_ARM_performance_counters_by_region
 		"vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM",
+
+		// "VK_ARM_scheduling_controls
+		"vkCmdSetDispatchParametersARM",
+
+		// "VK_ARM_shader_instrumentation
+		"vkClearShaderInstrumentationMetricsARM",
+		"vkCmdBeginShaderInstrumentationARM",
+		"vkCmdEndShaderInstrumentationARM",
+		"vkCreateShaderInstrumentationARM",
+		"vkDestroyShaderInstrumentationARM",
+		"vkEnumeratePhysicalDeviceShaderInstrumentationMetricsARM",
+		"vkGetShaderInstrumentationValuesARM",
 
 		// "VK_ARM_tensors
 		"vkBindTensorMemoryARM",
@@ -189,6 +208,18 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetImageOpaqueCaptureDescriptorDataEXT",
 		"vkGetImageViewOpaqueCaptureDescriptorDataEXT",
 		"vkGetSamplerOpaqueCaptureDescriptorDataEXT",
+
+		// "VK_EXT_descriptor_heap
+		"vkCmdBindResourceHeapEXT",
+		"vkCmdBindSamplerHeapEXT",
+		"vkCmdPushDataEXT",
+		"vkGetImageOpaqueCaptureDataEXT",
+		"vkGetPhysicalDeviceDescriptorSizeEXT",
+		"vkGetTensorOpaqueCaptureDataARM",
+		"vkRegisterCustomBorderColorEXT",
+		"vkUnregisterCustomBorderColorEXT",
+		"vkWriteResourceDescriptorsEXT",
+		"vkWriteSamplerDescriptorsEXT",
 
 		// "VK_EXT_device_fault
 		"vkGetDeviceFaultInfoEXT",
@@ -366,6 +397,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetSwapchainTimeDomainPropertiesEXT",
 		"vkGetSwapchainTimingPropertiesEXT",
 		"vkSetSwapchainPresentTimingQueueSizeEXT",
+
+		// "VK_EXT_primitive_restart_index
+		"vkCmdSetPrimitiveRestartIndexEXT",
 
 		// "VK_EXT_private_data
 		"vkCreatePrivateDataSlotEXT",
@@ -598,6 +632,10 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdUpdateMemoryKHR",
 		"vkCmdWriteMarkerToMemoryAMD",
 		"vkCreateAccelerationStructure2KHR",
+
+		// "VK_KHR_device_fault
+		"vkGetDeviceFaultDebugInfoKHR",
+		"vkGetDeviceFaultReportsKHR",
 
 		// "VK_KHR_device_group
 		"vkAcquireNextImage2KHR",
@@ -867,6 +905,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkDestroyCuModuleNVX",
 
 		// "VK_NVX_image_view_handle
+		"vkGetDeviceCombinedImageSamplerIndexNVX",
 		"vkGetImageViewAddressNVX",
 		"vkGetImageViewHandle64NVX",
 		"vkGetImageViewHandleNVX",
@@ -881,6 +920,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		// "VK_NV_cluster_acceleration_structure
 		"vkCmdBuildClusterAccelerationStructureIndirectNV",
 		"vkGetClusterAccelerationStructureBuildSizesNV",
+
+		// "VK_NV_compute_occupancy_priority
+		"vkCmdSetComputeOccupancyPriorityNV",
 
 		// "VK_NV_cooperative_matrix
 		"vkGetPhysicalDeviceCooperativeMatrixPropertiesNV",
@@ -997,13 +1039,11 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetMemoryNativeBufferOHOS",
 		"vkGetNativeBufferPropertiesOHOS",
 
-		// "VK_OHOS_native_buffer
-		"vkAcquireImageOHOS",
-		"vkGetSwapchainGrallocUsageOHOS",
-		"vkQueueSignalReleaseImageOHOS",
-
 		// "VK_OHOS_surface
 		"vkCreateSurfaceOHOS",
+
+		// "VK_QCOM_queue_perf_hint
+		"vkQueueSetPerfHintQCOM",
 
 		// "VK_QCOM_tile_memory_heap
 		"vkCmdBindTileMemoryQCOM",
@@ -1023,6 +1063,10 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		// "VK_QNX_screen_surface
 		"vkCreateScreenSurfaceQNX",
 		"vkGetPhysicalDeviceScreenPresentationSupportQNX",
+
+		// "VK_SEC_ubm_surface
+		"vkCreateUbmSurfaceSEC",
+		"vkGetPhysicalDeviceUbmPresentationSupportSEC",
 
 		// "VK_VALVE_descriptor_set_host_mapping
 		"vkGetDescriptorSetHostMappingVALVE",

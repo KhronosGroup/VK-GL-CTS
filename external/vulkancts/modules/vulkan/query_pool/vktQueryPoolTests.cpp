@@ -31,10 +31,9 @@
 #include "vktQueryPoolConcurrentTests.hpp"
 #include "vktQueryPoolFragInvocationTests.hpp"
 #include "vktQueryMaintenance7Tests.hpp"
+#include "vktQueryPoolDiscardTests.hpp"
 
-namespace vkt
-{
-namespace QueryPool
+namespace vkt::QueryPool
 {
 
 namespace
@@ -52,6 +51,7 @@ void createChildren(tcu::TestCaseGroup *queryPoolTests)
 #endif
     queryPoolTests->addChild(new QueryPoolConcurrentTests(testCtx));
     queryPoolTests->addChild(createFragInvocationTests(testCtx));
+    queryPoolTests->addChild(createDiscardTests(testCtx));
 }
 
 } // namespace
@@ -61,5 +61,4 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     return createTestGroup(testCtx, name, createChildren);
 }
 
-} // namespace QueryPool
-} // namespace vkt
+} // namespace vkt::QueryPool

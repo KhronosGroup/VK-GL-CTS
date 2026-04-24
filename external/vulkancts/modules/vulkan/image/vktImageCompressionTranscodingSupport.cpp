@@ -2577,8 +2577,12 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression(const VkCommandPool &c
         allocateCommandBuffer(vk, device, cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
     // VUID-vkCmdCopyBufferToImage-dstImage-00207
-    const VkBufferImageCopy copyBufferToImageRegion = makeBufferImageCopy(
-        mipmapDimsBlocked.x(), mipmapDimsBlocked.y(), 0u, 0u, mipmapDimsBlocked.x(), mipmapDimsBlocked.y());
+    // VUID-vkCmdCopyBufferToImage-bufferImageHeight-09107
+    const VkBufferImageCopy copyBufferToImageRegion =
+        (m_parameters.imageType == IMAGE_TYPE_1D) ?
+            makeBufferImageCopy(mipmapDims.x(), mipmapDims.y(), 0u, 0u, 0u, 0u) :
+            makeBufferImageCopy(mipmapDimsBlocked.x(), mipmapDimsBlocked.y(), 0u, 0u, mipmapDimsBlocked.x(),
+                                mipmapDimsBlocked.y());
     const VkBufferImageCopy copyRegion = makeBufferImageCopy(mipmapDims.x(), mipmapDims.y(), 0u, 0u);
     const VkBufferMemoryBarrier refSrcCopyBufferBarrierPre =
         makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, refSrcImageBuffer->get(), 0ull,

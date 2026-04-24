@@ -30,6 +30,7 @@
 #include "vkStrUtil.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
+#include "vkFormatLists.hpp"
 
 #include "tcuTestLog.hpp"
 #include "vktTestCase.hpp"
@@ -126,6 +127,15 @@ void TransferQueueCase::checkSupport(Context &context) const
                       "format " + de::toString(m_params.imageFormat) + " does not support the required features");
         else
             TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
+    }
+
+    {
+        const VkFormatProperties props =
+            vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, m_params.imageFormat);
+        const VkFormatFeatureFlags features = props.optimalTilingFeatures;
+
+        if ((features & (vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_DST_BIT)) == 0)
+            TCU_THROW(NotSupportedError, "Format not supported for transfer");
     }
 }
 
@@ -325,136 +335,6 @@ tcu::TestCaseGroup *createTransferQueueImageTests(tcu::TestContext &testCtx)
         {{16u, 15u, 16u}, "16x15x16", "16x15x16 extent"},
     };
 
-    VkFormat testFormats[] = {
-        VK_FORMAT_R4G4_UNORM_PACK8,
-        VK_FORMAT_R4G4B4A4_UNORM_PACK16,
-        VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-        VK_FORMAT_R5G6B5_UNORM_PACK16,
-        VK_FORMAT_B5G6R5_UNORM_PACK16,
-        VK_FORMAT_R5G5B5A1_UNORM_PACK16,
-        VK_FORMAT_B5G5R5A1_UNORM_PACK16,
-        VK_FORMAT_A1R5G5B5_UNORM_PACK16,
-#ifndef CTS_USES_VULKANSC
-        VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
-#endif // CTS_USES_VULKANSC
-        VK_FORMAT_R8_UNORM,
-        VK_FORMAT_R8_SNORM,
-        VK_FORMAT_R8_USCALED,
-        VK_FORMAT_R8_SSCALED,
-        VK_FORMAT_R8_UINT,
-        VK_FORMAT_R8_SINT,
-        VK_FORMAT_R8_SRGB,
-#ifndef CTS_USES_VULKANSC
-        VK_FORMAT_A8_UNORM_KHR,
-#endif // CTS_USES_VULKANSC
-        VK_FORMAT_R8G8_UNORM,
-        VK_FORMAT_R8G8_SNORM,
-        VK_FORMAT_R8G8_USCALED,
-        VK_FORMAT_R8G8_SSCALED,
-        VK_FORMAT_R8G8_UINT,
-        VK_FORMAT_R8G8_SINT,
-        VK_FORMAT_R8G8_SRGB,
-        VK_FORMAT_R8G8B8_UNORM,
-        VK_FORMAT_R8G8B8_SNORM,
-        VK_FORMAT_R8G8B8_USCALED,
-        VK_FORMAT_R8G8B8_SSCALED,
-        VK_FORMAT_R8G8B8_UINT,
-        VK_FORMAT_R8G8B8_SINT,
-        VK_FORMAT_R8G8B8_SRGB,
-        VK_FORMAT_B8G8R8_UNORM,
-        VK_FORMAT_B8G8R8_SNORM,
-        VK_FORMAT_B8G8R8_USCALED,
-        VK_FORMAT_B8G8R8_SSCALED,
-        VK_FORMAT_B8G8R8_UINT,
-        VK_FORMAT_B8G8R8_SINT,
-        VK_FORMAT_B8G8R8_SRGB,
-        VK_FORMAT_R8G8B8A8_UNORM,
-        VK_FORMAT_R8G8B8A8_SNORM,
-        VK_FORMAT_R8G8B8A8_USCALED,
-        VK_FORMAT_R8G8B8A8_SSCALED,
-        VK_FORMAT_R8G8B8A8_UINT,
-        VK_FORMAT_R8G8B8A8_SINT,
-        VK_FORMAT_R8G8B8A8_SRGB,
-        VK_FORMAT_B8G8R8A8_UNORM,
-        VK_FORMAT_B8G8R8A8_SNORM,
-        VK_FORMAT_B8G8R8A8_USCALED,
-        VK_FORMAT_B8G8R8A8_SSCALED,
-        VK_FORMAT_B8G8R8A8_UINT,
-        VK_FORMAT_B8G8R8A8_SINT,
-        VK_FORMAT_B8G8R8A8_SRGB,
-        VK_FORMAT_A8B8G8R8_UNORM_PACK32,
-        VK_FORMAT_A8B8G8R8_SNORM_PACK32,
-        VK_FORMAT_A8B8G8R8_USCALED_PACK32,
-        VK_FORMAT_A8B8G8R8_SSCALED_PACK32,
-        VK_FORMAT_A8B8G8R8_UINT_PACK32,
-        VK_FORMAT_A8B8G8R8_SINT_PACK32,
-        VK_FORMAT_A8B8G8R8_SRGB_PACK32,
-        VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-        VK_FORMAT_A2R10G10B10_SNORM_PACK32,
-        VK_FORMAT_A2R10G10B10_USCALED_PACK32,
-        VK_FORMAT_A2R10G10B10_SSCALED_PACK32,
-        VK_FORMAT_A2R10G10B10_UINT_PACK32,
-        VK_FORMAT_A2R10G10B10_SINT_PACK32,
-        VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-        VK_FORMAT_A2B10G10R10_SNORM_PACK32,
-        VK_FORMAT_A2B10G10R10_USCALED_PACK32,
-        VK_FORMAT_A2B10G10R10_SSCALED_PACK32,
-        VK_FORMAT_A2B10G10R10_UINT_PACK32,
-        VK_FORMAT_A2B10G10R10_SINT_PACK32,
-        VK_FORMAT_R16_UNORM,
-        VK_FORMAT_R16_SNORM,
-        VK_FORMAT_R16_USCALED,
-        VK_FORMAT_R16_SSCALED,
-        VK_FORMAT_R16_UINT,
-        VK_FORMAT_R16_SINT,
-        VK_FORMAT_R16_SFLOAT,
-        VK_FORMAT_R16G16_UNORM,
-        VK_FORMAT_R16G16_SNORM,
-        VK_FORMAT_R16G16_USCALED,
-        VK_FORMAT_R16G16_SSCALED,
-        VK_FORMAT_R16G16_UINT,
-        VK_FORMAT_R16G16_SINT,
-        VK_FORMAT_R16G16_SFLOAT,
-        VK_FORMAT_R16G16B16_UNORM,
-        VK_FORMAT_R16G16B16_SNORM,
-        VK_FORMAT_R16G16B16_USCALED,
-        VK_FORMAT_R16G16B16_SSCALED,
-        VK_FORMAT_R16G16B16_UINT,
-        VK_FORMAT_R16G16B16_SINT,
-        VK_FORMAT_R16G16B16_SFLOAT,
-        VK_FORMAT_R16G16B16A16_UNORM,
-        VK_FORMAT_R16G16B16A16_SNORM,
-        VK_FORMAT_R16G16B16A16_USCALED,
-        VK_FORMAT_R16G16B16A16_SSCALED,
-        VK_FORMAT_R16G16B16A16_UINT,
-        VK_FORMAT_R16G16B16A16_SINT,
-        VK_FORMAT_R16G16B16A16_SFLOAT,
-        VK_FORMAT_R32_UINT,
-        VK_FORMAT_R32_SINT,
-        VK_FORMAT_R32_SFLOAT,
-        VK_FORMAT_R32G32_UINT,
-        VK_FORMAT_R32G32_SINT,
-        VK_FORMAT_R32G32_SFLOAT,
-        VK_FORMAT_R32G32B32_UINT,
-        VK_FORMAT_R32G32B32_SINT,
-        VK_FORMAT_R32G32B32_SFLOAT,
-        VK_FORMAT_R32G32B32A32_UINT,
-        VK_FORMAT_R32G32B32A32_SINT,
-        VK_FORMAT_R32G32B32A32_SFLOAT,
-        VK_FORMAT_R64_UINT,
-        VK_FORMAT_R64_SINT,
-        VK_FORMAT_R64_SFLOAT,
-        VK_FORMAT_R64G64_UINT,
-        VK_FORMAT_R64G64_SINT,
-        VK_FORMAT_R64G64_SFLOAT,
-        VK_FORMAT_R64G64B64_UINT,
-        VK_FORMAT_R64G64B64_SINT,
-        VK_FORMAT_R64G64B64_SFLOAT,
-        VK_FORMAT_R64G64B64A64_UINT,
-        VK_FORMAT_R64G64B64A64_SINT,
-        VK_FORMAT_R64G64B64A64_SFLOAT,
-    };
-
     for (int classIdx = 0; classIdx < DE_LENGTH_OF_ARRAY(imageClass); ++classIdx)
     {
         const auto &imgClass = imageClass[classIdx];
@@ -465,10 +345,9 @@ tcu::TestCaseGroup *createTransferQueueImageTests(tcu::TestContext &testCtx)
             const auto &extent = extents[extentIdx];
             de::MovePtr<tcu::TestCaseGroup> mipGroup(new tcu::TestCaseGroup(testCtx, extent.name));
 
-            for (int formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(testFormats); ++formatIdx)
+            for (auto format : formats::basicColorFormats)
             {
                 static const auto prefixLen = std::string("VK_FORMAT_").size();
-                const auto format           = testFormats[formatIdx];
                 const auto fmtName          = std::string(getFormatName(format));
                 const auto name             = de::toLower(fmtName.substr(prefixLen)); // Remove VK_FORMAT_ prefix.
 

@@ -193,8 +193,7 @@ struct TestParams
     // not match any color attachment.
     uint32_t getDepthStencilInputAttachmentOffset() const
     {
-        DE_ASSERT(feedback.size() < 100);
-        return 100u;
+        return 0u;
     }
 
     // Returns the output attachment index for original attachment attIndex. If the attachment contains a feedback loop,
@@ -261,11 +260,24 @@ void DRLRFeedbackLoopCase::checkSupport(Context &context) const
 
     const auto testAspects = m_params.getTestAspects();
     const auto testStencil = static_cast<bool>(testAspects & VK_IMAGE_ASPECT_STENCIL_BIT);
+    const auto testDepth   = static_cast<bool>(testAspects & VK_IMAGE_ASPECT_DEPTH_BIT);
     if (testStencil)
         context.requireDeviceFunctionality("VK_EXT_shader_stencil_export");
 
+    bool drlrDepthStencil = (context.getUsedApiVersion() < VK_MAKE_API_VERSION(0, 1, 4, 0)) ||
+                            context.getDeviceVulkan14Properties().dynamicRenderingLocalReadDepthStencilAttachments;
+
+    if ((testDepth || testStencil) && !drlrDepthStencil)
+        TCU_THROW(NotSupportedError, "Reading depth/stencil input attachments in dynamic rendering not supported");
+
+    bool drlrMultisampled = (context.getUsedApiVersion() < VK_MAKE_API_VERSION(0, 1, 4, 0)) ||
+                            context.getDeviceVulkan14Properties().dynamicRenderingLocalReadMultisampledAttachments;
+
     if (m_params.isMultiSample())
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
+
+    if (m_params.isMultiSample() && !drlrMultisampled)
+        TCU_THROW(NotSupportedError, "Reading multisampled input attachments in dynamic rendering not supported");
 
     const auto ctx             = context.getContextCommonData();
     const auto imageCreateInfo = m_params.getImageCreateInfo();
@@ -282,14 +294,6 @@ void DRLRFeedbackLoopCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "Format does not support the required sample count");
 }
 
-// As used by the shaders.
-struct PushConstants
-{
-    tcu::Vec4 scale;
-    tcu::Vec4 offset;
-    tcu::IVec4 imageSize; // .xyz is the actual size, and .w is the sample count
-};
-
 // As used by the shaders to avoid optimizations, but its usage should result in a no-op.
 struct Modifiers
 {
@@ -305,22 +309,21 @@ void DRLRFeedbackLoopCase::initPrograms(vk::SourceCollections &programCollection
 {
     // Matches the definition above.
     const std::string pcDecl = "layout (push_constant, std430) uniform PushConstantBlock {\n"
-                               "    vec4 scale;\n"
-                               "    vec4 offset;\n"
                                "    ivec4 imageSize; // .xyz is the actual size, and .w is the sample count\n"
                                "} pc;\n";
 
     {
-        // Quad using a triangle strip. The calculated x and y values are in the 0..1 range, so the scale and offset
-        // allow us to place the quad wherever we want.
+        // Draws a full-screen large triangle.
         std::ostringstream vert;
         vert << "#version 460\n"
-             << pcDecl << "void main(void) {\n"
-             << "    const float x = (((gl_VertexIndex & 2)>>1));\n"
-             << "    const float y = ( (gl_VertexIndex & 1));\n"
-             << "    vec4 position = vec4(x, y, 0.0, 1.0) * pc.scale + pc.offset;\n"
-             << "    gl_Position = position;\n"
-             << "}\n";
+             << "vec2 positions[3] = vec2[](\n"
+             << "        vec2(-1.0, -1.0),"
+             << "        vec2(3.0, -1.0),"
+             << "        vec2(-1.0, 3.0)"
+             << ");\n"
+             << "void main() {\n"
+             << "        gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);\n"
+             << "}";
         programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
     }
 
@@ -634,8 +637,8 @@ tcu::TestStatus DRLRFeedbackLoopInstance::iterate(void)
     const auto stencilCopyFormat = (testStencil ? getStencilCopyFormat(m_params.attFormat) : tcu::TextureFormat());
     const auto binding           = DescriptorSetUpdateBuilder::Location::binding;
 
-    const auto pcSize   = DE_SIZEOF32(PushConstants);
-    const auto pcStages = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto pcSize   = DE_SIZEOF32(tcu::IVec4);
+    const auto pcStages = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_FRAGMENT_BIT);
     const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
 
     DE_ASSERT(imgCreateInfo.imageType == VK_IMAGE_TYPE_2D && imgCreateInfo.arrayLayers == 1u &&
@@ -840,10 +843,10 @@ tcu::TestStatus DRLRFeedbackLoopInstance::iterate(void)
     Move<VkDescriptorSet> copyDescriptorSet;
 
     const std::vector<VkViewport> viewports(1u, makeViewport(extent));
-    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent)); // Default scissor, will be modified in each draw.
 
     const std::vector<VkViewport> expandedViewports(1u, makeViewport(expandedExtent));
-    const std::vector<VkRect2D> expandedScissors(1u, makeRect2D(expandedExtent));
+    const std::vector<VkRect2D> expandedScissors(1u, makeRect2D(expandedExtent)); // May be modified in each draw.
 
     const VkPipelineVertexInputStateCreateInfo emptyVertexInput     = initVulkanStructureConst();
     const VkPipelineMultisampleStateCreateInfo loadMultisampleState = {
@@ -943,6 +946,18 @@ tcu::TestStatus DRLRFeedbackLoopInstance::iterate(void)
         renderingStencilFormat,
     };
 
+    const std::vector<VkDynamicState> dynamicStates{
+        VK_DYNAMIC_STATE_SCISSOR,
+    };
+
+    const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
     // Load pipeline and related resources.
     {
         const auto descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -956,9 +971,9 @@ tcu::TestStatus DRLRFeedbackLoopInstance::iterate(void)
 
         loadPipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *loadPipelineLayout, *vertShader, VK_NULL_HANDLE,
                                             VK_NULL_HANDLE, VK_NULL_HANDLE, *fragLoadShader, VK_NULL_HANDLE, viewports,
-                                            scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &emptyVertexInput,
+                                            scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &emptyVertexInput,
                                             nullptr, &loadMultisampleState, &depthStencilState, &colorBlendState,
-                                            nullptr, &renderingCreateInfo);
+                                            &dynamicStateCreateInfo, &renderingCreateInfo);
 
         DescriptorPoolBuilder poolBuilder;
         poolBuilder.addType(descriptorType, attCount);
@@ -997,9 +1012,9 @@ tcu::TestStatus DRLRFeedbackLoopInstance::iterate(void)
 
         modPipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *modPipelineLayout, *vertShader, VK_NULL_HANDLE,
                                            VK_NULL_HANDLE, VK_NULL_HANDLE, *fragModifyShader, VK_NULL_HANDLE, viewports,
-                                           scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &emptyVertexInput,
-                                           nullptr, &modMultisampleState, &depthStencilState, &colorBlendState, nullptr,
-                                           &renderingCreateInfo);
+                                           scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &emptyVertexInput,
+                                           nullptr, &modMultisampleState, &depthStencilState, &colorBlendState,
+                                           &dynamicStateCreateInfo, &renderingCreateInfo);
 
         DescriptorPoolBuilder poolBuilder;
         poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u);
@@ -1051,9 +1066,9 @@ tcu::TestStatus DRLRFeedbackLoopInstance::iterate(void)
 
         gradPipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *gradPipelineLayout, *vertShader, VK_NULL_HANDLE,
                                             VK_NULL_HANDLE, VK_NULL_HANDLE, *fragGradShader, VK_NULL_HANDLE, viewports,
-                                            scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &emptyVertexInput,
+                                            scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &emptyVertexInput,
                                             nullptr, &gradMultisampleState, &depthStencilState, &colorBlendState,
-                                            nullptr, &renderingCreateInfo);
+                                            &dynamicStateCreateInfo, &renderingCreateInfo);
     }
 
     // Copy pipeline and related resources, used in the multisample case to transform images to single-sample.
@@ -1109,8 +1124,8 @@ tcu::TestStatus DRLRFeedbackLoopInstance::iterate(void)
             copyPipeline = makeGraphicsPipeline(
                 ctx.vkd, ctx.device, *copyPipelineLayout, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
                 *fragCopyShader, VK_NULL_HANDLE, expandedViewports, expandedScissors,
-                VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &emptyVertexInput, nullptr, nullptr /*default MS state*/,
-                &depthStencilState, &colorBlendState, nullptr, &copyRenderingCreateInfo);
+                VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &emptyVertexInput, nullptr, nullptr /*default MS state*/,
+                &depthStencilState, &colorBlendState, &dynamicStateCreateInfo, &copyRenderingCreateInfo);
         }
 
         DescriptorPoolBuilder poolBuilder;
@@ -1262,20 +1277,14 @@ tcu::TestStatus DRLRFeedbackLoopInstance::iterate(void)
             (testStencil ? de::dataOrNull(dsAttInfos) : nullptr),
         };
 
-        const PushConstants pcValues{
-            // Scale and offset so that we cover the whole framebuffer (scale 2.0 and offset -1.0 in X/Y).
-            tcu::Vec4(2.0f, 2.0f, 1.0f, 1.0f),
-            tcu::Vec4(-1.0f, -1.0f, 0.0f, 0.0f),
-            tcuExtent4,
-        };
-
         ctx.vkd.cmdBeginRendering(cmdBuffer, &renderingInfo);
         if (pRenderingInputAttachmentIndexInfo)
             ctx.vkd.cmdSetRenderingInputAttachmentIndices(cmdBuffer, pRenderingInputAttachmentIndexInfo.get());
         ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *loadPipeline);
         ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *loadPipelineLayout, 0u, 1u, &loadDescriptorSet.get(), 0u,
                                       nullptr);
-        ctx.vkd.cmdPushConstants(cmdBuffer, *loadPipelineLayout, pcStages, 0u, pcSize, &pcValues);
+        ctx.vkd.cmdPushConstants(cmdBuffer, *loadPipelineLayout, pcStages, 0u, pcSize, &tcuExtent4);
+        ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 1u, &scissors.front());
         ctx.vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
     }
 
@@ -1284,17 +1293,11 @@ tcu::TestStatus DRLRFeedbackLoopInstance::iterate(void)
 
     // Read and modify the attachments using the modification pipeline.
     {
-        const PushConstants pcValues{
-            // Scale and offset so that we cover the whole framebuffer (scale 2.0 and offset -1.0 in X/Y).
-            tcu::Vec4(2.0f, 2.0f, 1.0f, 1.0f),
-            tcu::Vec4(-1.0f, -1.0f, 0.0f, 0.0f),
-            tcuExtent4,
-        };
-
         ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *modPipeline);
         ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *modPipelineLayout, 0u, 1u, &modDescriptorSet.get(), 0u,
                                       nullptr);
-        ctx.vkd.cmdPushConstants(cmdBuffer, *modPipelineLayout, pcStages, 0u, pcSize, &pcValues);
+        ctx.vkd.cmdPushConstants(cmdBuffer, *modPipelineLayout, pcStages, 0u, pcSize, &tcuExtent4);
+        ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 1u, &scissors.front());
         ctx.vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
     }
 
@@ -1303,15 +1306,13 @@ tcu::TestStatus DRLRFeedbackLoopInstance::iterate(void)
 
     // Overwrite part of the framebuffer with a gradient.
     {
-        const PushConstants pcValues{
-            // Scale and offset so that we cover only the right side of the framebuffer.
-            tcu::Vec4(1.0f, 2.0f, 1.0f, 1.0f),
-            tcu::Vec4(0.0f, -1.0f, 0.0f, 0.0f),
-            tcuExtent4,
-        };
+        // Scissor so that we cover only the right side of the framebuffer.
+        const auto halfWidth        = tcuExtent.x() / 2;
+        const auto rightSideScissor = makeRect2D(halfWidth, 0, halfWidth, tcuExtent.y());
 
         ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *gradPipeline);
-        ctx.vkd.cmdPushConstants(cmdBuffer, *gradPipelineLayout, pcStages, 0u, pcSize, &pcValues);
+        ctx.vkd.cmdPushConstants(cmdBuffer, *gradPipelineLayout, pcStages, 0u, pcSize, &tcuExtent4);
+        ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 1u, &rightSideScissor);
         ctx.vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
         ctx.vkd.cmdEndRendering(cmdBuffer);
     }
@@ -1414,18 +1415,12 @@ tcu::TestStatus DRLRFeedbackLoopInstance::iterate(void)
                 (testStencil ? de::dataOrNull(dsAttInfos) : nullptr),
             };
 
-            const PushConstants pcValues{
-                // Scale and offset so that we cover the whole framebuffer (scale 2.0 and offset -1.0 in X/Y).
-                tcu::Vec4(2.0f, 2.0f, 1.0f, 1.0f),
-                tcu::Vec4(-1.0f, -1.0f, 0.0f, 0.0f),
-                tcuExtent4,
-            };
-
             ctx.vkd.cmdBeginRendering(cmdBuffer, &renderingInfo);
             ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *copyPipeline);
             ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *copyPipelineLayout, 0u, 1u, &copyDescriptorSet.get(),
                                           0u, nullptr);
-            ctx.vkd.cmdPushConstants(cmdBuffer, *copyPipelineLayout, pcStages, 0u, pcSize, &pcValues);
+            ctx.vkd.cmdPushConstants(cmdBuffer, *copyPipelineLayout, pcStages, 0u, pcSize, &tcuExtent4);
+            ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 1u, &expandedScissors.front());
             ctx.vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
             ctx.vkd.cmdEndRendering(cmdBuffer);
         }
@@ -1642,7 +1637,7 @@ tcu::TestStatus DRLRFeedbackLoopInstance::iterate(void)
     if (testColor)
     {
         DE_ASSERT(m_params.attFormat == VK_FORMAT_R8G8B8A8_UNORM);
-        const float threshold = 0.005f;                                      // 1/255 < 0.005 < 2/255
+        const float threshold = 2.0f / 0xff; // Max error for 8-bit unorm subtraction is 2/0xff
         const tcu::Vec4 thresholdVec(threshold, threshold, threshold, 0.0f); // Alpha is always 1.0
 
         for (uint32_t i = 0u; i < attCount; ++i)
@@ -1670,9 +1665,9 @@ tcu::TestStatus DRLRFeedbackLoopInstance::iterate(void)
         const auto &attFormat = m_params.attFormat;
         float threshold       = 0.0f;
         if (attFormat == VK_FORMAT_D16_UNORM)
-            threshold = 0.000025f; // 1/65535 < 0.000025 < 2/65535
+            threshold = 2.0f / 0xffff; // Max error for 16-bit unorm subtraction is 2/0xffff
         else if (attFormat == VK_FORMAT_D24_UNORM_S8_UINT || attFormat == VK_FORMAT_D32_SFLOAT_S8_UINT)
-            threshold = 0.0000000625f; // 1/16777215 < 0.0000000625 < 2/16777215
+            threshold = 2.0f / 0xffffff; // Max error for 24-bit unorm subtraction is 2/0xffffff
         else
             DE_ASSERT(false);
 

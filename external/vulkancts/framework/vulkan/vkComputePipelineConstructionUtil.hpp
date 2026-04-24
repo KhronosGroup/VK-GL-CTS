@@ -78,15 +78,17 @@ public:
     ComputePipelineWrapper &operator=(const ComputePipelineWrapper &rhs) noexcept;
     ComputePipelineWrapper &operator=(ComputePipelineWrapper &&rhs) noexcept;
 
+    void setProgramBinary(const ProgramBinary &programBinary);
     void setDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout);
     void setDescriptorSetLayouts(uint32_t setLayoutCount, const VkDescriptorSetLayout *descriptorSetLayouts);
     void setSpecializationInfo(VkSpecializationInfo specializationInfo);
     void setPipelineCreateFlags(VkPipelineCreateFlags pipelineCreateFlags);
+    void setPipelineCreateFlags2(VkPipelineCreateFlags2 pipelineCreateFlags2);
     void setPipelineCreatePNext(void *pipelineCreatePNext);
     void setSubgroupSize(uint32_t subgroupSize);
     void addPushConstantRange(const VkPushConstantRange &range);
-    void buildPipeline(void);
-    void bind(VkCommandBuffer commandBuffer);
+    void buildPipeline(const VkPipelineCache pipelineCache = VK_NULL_HANDLE);
+    void bind(VkCommandBuffer commandBuffer) const;
 
     void setPipelineLayout(Move<VkPipelineLayout> pipelineLayout);
     VkPipelineLayout getPipelineLayout(void);
@@ -102,6 +104,7 @@ private:
     std::vector<VkDescriptorSetLayout> m_descriptorSetLayouts;
     VkSpecializationInfo m_specializationInfo;
     VkPipelineCreateFlags m_pipelineCreateFlags;
+    VkPipelineCreateFlags2 m_pipelineCreateFlags2;
     void *m_pipelineCreatePNext;
     uint32_t m_subgroupSize;
 

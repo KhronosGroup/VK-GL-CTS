@@ -1,0 +1,2 @@
+dEQP-VK.ssbo.layout.random.scalar.75
+dEQP-VK.ssbo.phys.layout.random.16bit.scalar.13

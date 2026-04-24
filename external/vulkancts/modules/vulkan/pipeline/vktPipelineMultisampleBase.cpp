@@ -35,9 +35,8 @@ namespace multisample
 
 using namespace vk;
 
-void MultisampleInstanceBase::validateImageSize(const InstanceInterface &instance,
-                                                const VkPhysicalDevice physicalDevice, const ImageType imageType,
-                                                const tcu::UVec3 &imageSize) const
+void MultisampleCaseBase::validateImageSize(const InstanceInterface &instance, const VkPhysicalDevice physicalDevice,
+                                            const ImageType imageType, const tcu::UVec3 &imageSize) const
 {
     const VkPhysicalDeviceProperties deviceProperties = getPhysicalDeviceProperties(instance, physicalDevice);
 
@@ -92,9 +91,9 @@ void MultisampleInstanceBase::validateImageSize(const InstanceInterface &instanc
     }
 }
 
-void MultisampleInstanceBase::validateImageFeatureFlags(const InstanceInterface &instance,
-                                                        const VkPhysicalDevice physicalDevice, const VkFormat format,
-                                                        const VkFormatFeatureFlags featureFlags) const
+void MultisampleCaseBase::validateImageFeatureFlags(const InstanceInterface &instance,
+                                                    const VkPhysicalDevice physicalDevice, const VkFormat format,
+                                                    const VkFormatFeatureFlags featureFlags) const
 {
     const VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(instance, physicalDevice, format);
 
@@ -111,36 +110,35 @@ void MultisampleInstanceBase::validateImageFeatureFlags(const InstanceInterface 
     }
 }
 
-void MultisampleInstanceBase::validateImageInfo(const InstanceInterface &instance,
-                                                const VkPhysicalDevice physicalDevice,
-                                                const VkImageCreateInfo &imageInfo) const
+void MultisampleCaseBase::validateImageInfo(const InstanceInterface &instance, const VkPhysicalDevice physicalDevice,
+                                            VkFormat format, VkExtent3D extent, VkImageType imageType,
+                                            VkSampleCountFlagBits samples, VkImageTiling tiling,
+                                            VkImageUsageFlags usage, VkImageCreateFlags flags,
+                                            uint32_t arrayLayers) const
 {
     VkImageFormatProperties imageFormatProps;
-    instance.getPhysicalDeviceImageFormatProperties(physicalDevice, imageInfo.format, imageInfo.imageType,
-                                                    imageInfo.tiling, imageInfo.usage, imageInfo.flags,
+    instance.getPhysicalDeviceImageFormatProperties(physicalDevice, format, imageType, tiling, usage, flags,
                                                     &imageFormatProps);
 
-    if (imageFormatProps.maxExtent.width < imageInfo.extent.width ||
-        imageFormatProps.maxExtent.height < imageInfo.extent.height ||
-        imageFormatProps.maxExtent.depth < imageInfo.extent.depth)
+    if (imageFormatProps.maxExtent.width < extent.width || imageFormatProps.maxExtent.height < extent.height ||
+        imageFormatProps.maxExtent.depth < extent.depth)
     {
         std::ostringstream notSupportedStream;
 
-        notSupportedStream << "Image extent (" << imageInfo.extent.width << ", " << imageInfo.extent.height << ", "
-                           << imageInfo.extent.depth << ") exceeds allowed maximum ("
-                           << imageFormatProps.maxExtent.width << ", " << imageFormatProps.maxExtent.height << ", "
-                           << imageFormatProps.maxExtent.depth << ")";
+        notSupportedStream << "Image extent (" << extent.width << ", " << extent.height << ", " << extent.depth
+                           << ") exceeds allowed maximum (" << imageFormatProps.maxExtent.width << ", "
+                           << imageFormatProps.maxExtent.height << ", " << imageFormatProps.maxExtent.depth << ")";
 
         const std::string notSupportedString = notSupportedStream.str();
 
         TCU_THROW(NotSupportedError, notSupportedString.c_str());
     }
 
-    if (imageFormatProps.maxArrayLayers < imageInfo.arrayLayers)
+    if (imageFormatProps.maxArrayLayers < arrayLayers)
     {
         std::ostringstream notSupportedStream;
 
-        notSupportedStream << "Image layers count of " << imageInfo.arrayLayers << " exceeds allowed maximum which is "
+        notSupportedStream << "Image layers count of " << arrayLayers << " exceeds allowed maximum which is "
                            << imageFormatProps.maxArrayLayers;
 
         const std::string notSupportedString = notSupportedStream.str();
@@ -148,11 +146,11 @@ void MultisampleInstanceBase::validateImageInfo(const InstanceInterface &instanc
         TCU_THROW(NotSupportedError, notSupportedString.c_str());
     }
 
-    if (!(imageFormatProps.sampleCounts & imageInfo.samples))
+    if (!(imageFormatProps.sampleCounts & samples))
     {
         std::ostringstream notSupportedStream;
 
-        notSupportedStream << "Samples count of " << imageInfo.samples << " not supported for image";
+        notSupportedStream << "Samples count of " << samples << " not supported for image";
 
         const std::string notSupportedString = notSupportedStream.str();
 

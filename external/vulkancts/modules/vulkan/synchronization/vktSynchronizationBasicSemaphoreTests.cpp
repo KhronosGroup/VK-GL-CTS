@@ -38,9 +38,7 @@
 
 #include "tcuCommandLine.hpp"
 
-namespace vkt
-{
-namespace synchronization
+namespace vkt::synchronization
 {
 namespace
 {
@@ -62,12 +60,8 @@ static const int basicChainLength = 1024;
 static const int basicChainLength = 32768;
 #endif
 
-Move<VkSemaphore> createTestSemaphore(Context &context, const DeviceInterface &vk, const VkDevice device,
-                                      const TestConfig &config)
+Move<VkSemaphore> createTestSemaphore(const DeviceInterface &vk, const VkDevice device, const TestConfig &config)
 {
-    if (config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE && !context.getTimelineSemaphoreFeatures().timelineSemaphore)
-        TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
-
     return Move<VkSemaphore>(config.useTypeCreate ? createSemaphoreType(vk, device, config.semaphoreType) :
                                                     createSemaphore(vk, device));
 }
@@ -101,7 +95,7 @@ tcu::TestStatus basicOneQueueCase(Context &context, const TestConfig config)
     const VkDevice device           = getSyncDevice(videoDevice, context);
     const VkQueue queue             = getSyncQueue(videoDevice, context, false);
     const uint32_t queueFamilyIndex = getSyncQueueFamilyIndex(videoDevice, context, false);
-    const Unique<VkSemaphore> semaphore(createTestSemaphore(context, vk, device, config));
+    const Unique<VkSemaphore> semaphore(createTestSemaphore(vk, device, config));
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
     const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
@@ -155,7 +149,7 @@ tcu::TestStatus noneWaitSubmitTest(Context &context, const TestConfig config)
     const VkQueue queue             = context.getUniversalQueue();
     const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
-    const Unique<VkSemaphore> semaphore(createTestSemaphore(context, vk, device, config));
+    const Unique<VkSemaphore> semaphore(createTestSemaphore(vk, device, config));
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 
@@ -535,83 +529,53 @@ tcu::TestStatus basicWaitForAllLesserTimelineValueCase(Context &context, TestCon
     return tcu::TestStatus::fail("Fail");
 }
 
-tcu::TestStatus basicMultiQueueCase(Context &context, TestConfig config)
+enum
 {
-    enum
-    {
-        NO_MATCH_FOUND = ~((uint32_t)0)
-    };
-    enum QueuesIndexes
-    {
-        FIRST = 0,
-        SECOND,
-        COUNT
-    };
+    NO_MATCH_FOUND = ~((uint32_t)0)
+};
+enum QueuesIndexes
+{
+    FIRST = 0,
+    SECOND,
+    COUNT
+};
 
-    struct Queues
-    {
-        VkQueue queue;
-        uint32_t queueFamilyIndex;
-    };
+struct Queues
+{
+    VkQueue queue;
+    uint32_t queueFamilyIndex;
+};
 
-#ifndef CTS_USES_VULKANSC
-    const VkInstance instance                  = context.getInstance();
-    const InstanceInterface &instanceInterface = context.getInstanceInterface();
-    const VkPhysicalDevice physicalDevice      = context.getPhysicalDevice();
-    bool usingTimelineSemaphores               = config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE;
-    bool usingSync2                            = config.type == SynchronizationType::SYNCHRONIZATION2;
-
-    std::vector<VkQueueFamilyVideoPropertiesKHR> videoQueueFamilyProperties2;
-#else
-    const CustomInstance instance(createCustomInstanceFromContext(context));
-    const InstanceDriver &instanceDriver(instance.getDriver());
-    const VkPhysicalDevice physicalDevice =
-        chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-    const InstanceInterface &instanceInterface = instanceDriver;
-// const DeviceInterface& vk = context.getDeviceInterface();
-// const InstanceInterface& instance = context.getInstanceInterface();
-// const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
-#endif // CTS_USES_VULKANSC
+void getQueues(const InstanceInterface &vki, VkPhysicalDevice physicalDevice, TestConfig &config,
+               std::vector<Queues> &queues)
+{
     vk::Move<vk::VkDevice> logicalDevice;
     std::vector<VkQueueFamilyProperties> queueFamilyProperties;
     std::vector<VkQueueFamilyProperties2> queueFamilyProperties2;
-    VkDeviceCreateInfo deviceInfo;
-    VkPhysicalDeviceFeatures deviceFeatures;
-    const float queuePriorities[COUNT] = {1.0f, 1.0f};
-    VkDeviceQueueCreateInfo queueInfos[COUNT];
-    Queues queues[COUNT]                = {{nullptr, (uint32_t)NO_MATCH_FOUND}, {nullptr, (uint32_t)NO_MATCH_FOUND}};
-    const VkCommandBufferBeginInfo info = {
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,  // VkStructureType                          sType;
-        nullptr,                                      // const void*                              pNext;
-        VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT, // VkCommandBufferUsageFlags                flags;
-        nullptr,                                      // const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
-    };
 
-    const bool isTimelineSemaphore = config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE;
+#ifndef CTS_USES_VULKANSC
+    std::vector<VkQueueFamilyVideoPropertiesKHR> videoQueueFamilyProperties2;
+    VkQueueFamilyVideoPropertiesKHR defaultVideoQueueFamilyProperties = initVulkanStructure();
+#endif // CTS_USES_VULKANSC
+
+    queues = {{nullptr, (uint32_t)NO_MATCH_FOUND}, {nullptr, (uint32_t)NO_MATCH_FOUND}};
 
     if (config.videoCodecOperationFlags != 0)
     {
 #ifndef CTS_USES_VULKANSC
         uint32_t queueFamilyPropertiesCount = 0;
-
-        instanceInterface.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertiesCount, nullptr);
+        vki.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertiesCount, nullptr);
 
         if (queueFamilyPropertiesCount > 0)
         {
+            videoQueueFamilyProperties2.resize(queueFamilyPropertiesCount, defaultVideoQueueFamilyProperties);
             queueFamilyProperties2.resize(queueFamilyPropertiesCount);
-            videoQueueFamilyProperties2.resize(queueFamilyPropertiesCount);
 
             for (size_t ndx = 0; ndx < queueFamilyPropertiesCount; ++ndx)
-            {
-                queueFamilyProperties2[ndx].sType      = vk::VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
-                queueFamilyProperties2[ndx].pNext      = &videoQueueFamilyProperties2[ndx];
-                videoQueueFamilyProperties2[ndx].sType = vk::VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR;
-                videoQueueFamilyProperties2[ndx].pNext = nullptr;
-                videoQueueFamilyProperties2[ndx].videoCodecOperations = 0;
-            }
+                queueFamilyProperties2[ndx] = initVulkanStructure(&videoQueueFamilyProperties2[ndx]);
 
-            instanceInterface.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertiesCount,
-                                                                      queueFamilyProperties2.data());
+            vki.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertiesCount,
+                                                        queueFamilyProperties2.data());
 
             if (queueFamilyPropertiesCount != queueFamilyProperties2.size())
                 TCU_FAIL("Device returns less queue families than initially reported");
@@ -625,7 +589,7 @@ tcu::TestStatus basicMultiQueueCase(Context &context, TestConfig config)
     }
     else
     {
-        queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceInterface, physicalDevice);
+        queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
     }
 
     for (uint32_t queueNdx = 0; queueNdx < queueFamilyProperties.size(); ++queueNdx)
@@ -648,9 +612,44 @@ tcu::TestStatus basicMultiQueueCase(Context &context, TestConfig config)
             break;
         }
     }
+}
 
-    if (queues[FIRST].queueFamilyIndex == NO_MATCH_FOUND || queues[SECOND].queueFamilyIndex == NO_MATCH_FOUND)
-        TCU_THROW(NotSupportedError, "Queues couldn't be created");
+tcu::TestStatus basicMultiQueueCase(Context &context, TestConfig config)
+{
+#ifndef CTS_USES_VULKANSC
+    const VkInstance instance                  = context.getInstance();
+    const InstanceInterface &instanceInterface = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice      = context.getPhysicalDevice();
+    bool usingTimelineSemaphores               = config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE;
+    bool usingSync2                            = config.type == SynchronizationType::SYNCHRONIZATION2;
+
+    std::vector<VkQueueFamilyVideoPropertiesKHR> videoQueueFamilyProperties2;
+#else
+    const CustomInstance instance(createCustomInstanceFromContext(context));
+    const InstanceDriver &instanceDriver(instance.getDriver());
+    const VkPhysicalDevice physicalDevice =
+        chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const InstanceInterface &instanceInterface = instanceDriver;
+#endif // CTS_USES_VULKANSC
+
+    vk::Move<vk::VkDevice> logicalDevice;
+    std::vector<VkQueueFamilyProperties> queueFamilyProperties;
+    std::vector<VkQueueFamilyProperties2> queueFamilyProperties2;
+    VkDeviceCreateInfo deviceInfo;
+    VkPhysicalDeviceFeatures deviceFeatures;
+    const float queuePriorities[COUNT] = {1.0f, 1.0f};
+    VkDeviceQueueCreateInfo queueInfos[COUNT];
+    const VkCommandBufferBeginInfo info = {
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,  // VkStructureType                          sType;
+        nullptr,                                      // const void*                              pNext;
+        VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT, // VkCommandBufferUsageFlags                flags;
+        nullptr,                                      // const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
+    };
+
+    const bool isTimelineSemaphore = config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE;
+
+    std::vector<Queues> queues(COUNT);
+    getQueues(instanceInterface, physicalDevice, config, queues);
 
     for (int queueNdx = 0; queueNdx < COUNT; ++queueNdx)
     {
@@ -791,7 +790,7 @@ tcu::TestStatus basicMultiQueueCase(Context &context, TestConfig config)
     uint64_t timelineValues[COUNT] = {1ull, 2ull};
     Move<VkFence> fence[COUNT];
 
-    semaphore         = (createTestSemaphore(context, vk, *logicalDevice, config));
+    semaphore         = (createTestSemaphore(vk, *logicalDevice, config));
     cmdPool[FIRST]    = (createCommandPool(vk, *logicalDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
                                            queues[FIRST].queueFamilyIndex));
     cmdPool[SECOND]   = (createCommandPool(vk, *logicalDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
@@ -916,6 +915,20 @@ void checkCommandBufferSimultaneousUseSupport(Context &context, TestConfig confi
 #endif
 }
 
+void checkMultiQueueSupport(Context &context, TestConfig config)
+{
+    checkCommandBufferSimultaneousUseSupport(context, config);
+
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
+    std::vector<Queues> queues(COUNT);
+    getQueues(vki, physicalDevice, config, queues);
+
+    if (queues[FIRST].queueFamilyIndex == NO_MATCH_FOUND || queues[SECOND].queueFamilyIndex == NO_MATCH_FOUND)
+        TCU_THROW(NotSupportedError, "Queues couldn't be created");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createBasicBinarySemaphoreTests(tcu::TestContext &testCtx, SynchronizationType type,
@@ -938,8 +951,8 @@ tcu::TestCaseGroup *createBasicBinarySemaphoreTests(tcu::TestContext &testCtx, S
         addFunctionCase(basicTests.get(), "one_queue" + createName, checkCommandBufferSimultaneousUseSupport,
                         basicOneQueueCase, config);
         // Basic binary semaphore tests with multi queue
-        addFunctionCase(basicTests.get(), "multi_queue" + createName, checkCommandBufferSimultaneousUseSupport,
-                        basicMultiQueueCase, config);
+        addFunctionCase(basicTests.get(), "multi_queue" + createName, checkMultiQueueSupport, basicMultiQueueCase,
+                        config);
     }
 
     if (type == SynchronizationType::SYNCHRONIZATION2)
@@ -968,8 +981,7 @@ tcu::TestCaseGroup *createBasicTimelineSemaphoreTests(tcu::TestContext &testCtx,
     // Basic timeline semaphore tests with one queue
     addFunctionCase(basicTests.get(), "one_queue", checkCommandBufferSimultaneousUseSupport, basicOneQueueCase, config);
     // Basic timeline semaphore tests with multi queue
-    addFunctionCase(basicTests.get(), "multi_queue", checkCommandBufferSimultaneousUseSupport, basicMultiQueueCase,
-                    config);
+    addFunctionCase(basicTests.get(), "multi_queue", checkMultiQueueSupport, basicMultiQueueCase, config);
     // Timeline semaphore chain test
     addFunctionCase(basicTests.get(), "chain", checkSupport, basicChainTimelineCase, config);
 
@@ -995,5 +1007,4 @@ tcu::TestCaseGroup *createBasicTimelineSemaphoreTests(tcu::TestContext &testCtx,
     return basicTests.release();
 }
 
-} // namespace synchronization
-} // namespace vkt
+} // namespace vkt::synchronization

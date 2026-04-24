@@ -25,9 +25,7 @@
 #include "synchronization/vktSynchronizationUtil.hpp"
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
-#include "vktTestCaseUtil.hpp"
 #include "vkRef.hpp"
-#include "vkRefUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkQueryUtil.hpp"
@@ -42,9 +40,7 @@
 #include <vector>
 #include <sstream>
 
-namespace vkt
-{
-namespace synchronization
+namespace vkt::synchronization
 {
 namespace
 {
@@ -106,6 +102,23 @@ std::string getShaderStageName(VkShaderStageFlagBits stage)
     case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
         return "tess_eval";
     }
+}
+
+void checkSupportForFormatBlit(Context &context, VkFormat format)
+{
+    // Blit image command not allowed when using --deqp-compute-only=enable
+    if (context.getTestContext().getCommandLine().isComputeOnly())
+        THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+
+    const InstanceInterface &vki      = context.getInstanceInterface();
+    const VkPhysicalDevice physDevice = context.getPhysicalDevice();
+
+    const VkFormatProperties formatProps     = getPhysicalDeviceFormatProperties(vki, physDevice, format);
+    const VkFormatFeatureFlags requiredFlags = VK_FORMAT_FEATURE_BLIT_SRC_BIT | VK_FORMAT_FEATURE_BLIT_DST_BIT;
+
+    // SRC and DST blit is required because both images are using the same format.
+    if ((formatProps.optimalTilingFeatures & requiredFlags) != requiredFlags)
+        TCU_THROW(NotSupportedError, "Format doesn't support blits");
 }
 
 //! A pipeline that can be embedded inside an operation.
@@ -239,11 +252,10 @@ VkShaderStageFlags getRequiredStages(const VkShaderStageFlagBits stage)
 }
 
 //! Check that SSBO read/write is available and that all shader stages are supported.
-void requireFeaturesForSSBOAccess(OperationContext &context, const VkShaderStageFlags usedStages)
+void requireFeaturesForSSBOAccess(const InstanceInterface &vki, VkPhysicalDevice physDevice,
+                                  const VkShaderStageFlags usedStages)
 {
-    const InstanceInterface &vki      = context.getInstanceInterface();
-    const VkPhysicalDevice physDevice = context.getPhysicalDevice();
-    FeatureFlags flags                = (FeatureFlags)0;
+    FeatureFlags flags = (FeatureFlags)0;
 
     if (usedStages & VK_SHADER_STAGE_FRAGMENT_BIT)
         flags |= FEATURE_FRAGMENT_STORES_AND_ATOMICS;
@@ -1181,21 +1193,6 @@ public:
         : ImplementationBase(context, resource, mode)
         , m_blitRegion(makeBlitRegion(m_resource))
     {
-        const InstanceInterface &vki         = m_context.getInstanceInterface();
-        const VkPhysicalDevice physDevice    = m_context.getPhysicalDevice();
-        const auto &imgResource              = m_resource.getImage();
-        const VkFormatProperties formatProps = getPhysicalDeviceFormatProperties(vki, physDevice, imgResource.format);
-        const auto &features = ((imgResource.tiling == VK_IMAGE_TILING_LINEAR) ? formatProps.linearTilingFeatures :
-                                                                                 formatProps.optimalTilingFeatures);
-        const VkFormatFeatureFlags requiredFlags = (VK_FORMAT_FEATURE_BLIT_SRC_BIT | VK_FORMAT_FEATURE_BLIT_DST_BIT);
-
-        // Blit image command not allowed when using --deqp-compute-only=enable
-        if (m_context.isComputeOnly())
-            THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-
-        // SRC and DST blit is required because both images are using the same format.
-        if ((features & requiredFlags) != requiredFlags)
-            TCU_THROW(NotSupportedError, "Format doesn't support blits");
     }
 
     void recordCopyCommand(const VkCommandBuffer cmdBuffer)
@@ -1323,11 +1320,18 @@ public:
     {
         DE_ASSERT(resourceDesc.type == RESOURCE_TYPE_IMAGE);
 
+        m_imageFormat             = resourceDesc.imageFormat;
         const bool isDepthStencil = isDepthStencilFormat(resourceDesc.imageFormat);
         m_requiredQueueFlags = (isDepthStencil || m_type != TYPE_COPY ? VK_QUEUE_GRAPHICS_BIT : VK_QUEUE_TRANSFER_BIT);
 
         // Don't blit depth/stencil images.
         DE_ASSERT(m_type != TYPE_BLIT || !isDepthStencil);
+    }
+
+    void checkSupport(Context &context) const
+    {
+        if (m_type == TYPE_BLIT)
+            checkSupportForFormatBlit(context, m_imageFormat);
     }
 
     uint32_t getInResourceUsageFlags(void) const
@@ -1365,6 +1369,7 @@ public:
 private:
     const Type m_type;
     const AccessMode m_mode;
+    VkFormat m_imageFormat;
     VkQueueFlags m_requiredQueueFlags;
 };
 
@@ -1379,18 +1384,6 @@ public:
     {
         DE_ASSERT(m_inResource.getType() == RESOURCE_TYPE_IMAGE);
         DE_ASSERT(m_outResource.getType() == RESOURCE_TYPE_IMAGE);
-
-        const InstanceInterface &vki         = m_context.getInstanceInterface();
-        const VkPhysicalDevice physDevice    = m_context.getPhysicalDevice();
-        const auto &imgResource              = m_inResource.getImage();
-        const VkFormatProperties formatProps = getPhysicalDeviceFormatProperties(vki, physDevice, imgResource.format);
-        const auto &features = ((imgResource.tiling == VK_IMAGE_TILING_LINEAR) ? formatProps.linearTilingFeatures :
-                                                                                 formatProps.optimalTilingFeatures);
-        const VkFormatFeatureFlags requiredFlags = (VK_FORMAT_FEATURE_BLIT_SRC_BIT | VK_FORMAT_FEATURE_BLIT_DST_BIT);
-
-        // SRC and DST blit is required because both images are using the same format.
-        if ((features & requiredFlags) != requiredFlags)
-            TCU_THROW(NotSupportedError, "Format doesn't support blits");
     }
 
     void recordCommands(const VkCommandBuffer cmdBuffer)
@@ -1540,11 +1533,18 @@ public:
     {
         DE_ASSERT(resourceDesc.type == RESOURCE_TYPE_IMAGE);
 
+        m_imageFormat             = resourceDesc.imageFormat;
         const bool isDepthStencil = isDepthStencilFormat(resourceDesc.imageFormat);
         m_requiredQueueFlags = (isDepthStencil || m_type == TYPE_BLIT ? VK_QUEUE_GRAPHICS_BIT : VK_QUEUE_TRANSFER_BIT);
 
         // Don't blit depth/stencil images.
         DE_ASSERT(m_type != TYPE_BLIT || !isDepthStencil);
+    }
+
+    void checkSupport(Context &context) const
+    {
+        if (m_type != TYPE_COPY)
+            checkSupportForFormatBlit(context, m_imageFormat);
     }
 
     uint32_t getInResourceUsageFlags(void) const
@@ -1579,6 +1579,7 @@ public:
 
 private:
     const Type m_type;
+    VkFormat m_imageFormat;
     VkQueueFlags m_requiredQueueFlags;
 };
 
@@ -1777,8 +1778,6 @@ public:
         , m_mode(mode)
         , m_dispatchCall(dispatchCall)
     {
-        requireFeaturesForSSBOAccess(m_context, m_stage);
-
         const DeviceInterface &vk = m_context.getDeviceInterface();
         const VkDevice device     = m_context.getDevice();
         Allocator &allocator      = m_context.getAllocator();
@@ -2005,18 +2004,9 @@ public:
         , m_dispatchCall(dispatchCall)
         , m_hostBufferSizeBytes(getPixelBufferSize(m_resource.getImage().format, m_resource.getImage().extent))
     {
-        const DeviceInterface &vk         = m_context.getDeviceInterface();
-        const InstanceInterface &vki      = m_context.getInstanceInterface();
-        const VkDevice device             = m_context.getDevice();
-        const VkPhysicalDevice physDevice = m_context.getPhysicalDevice();
-        Allocator &allocator              = m_context.getAllocator();
-
-        // Image stores are always required, in either access mode.
-        requireFeaturesForSSBOAccess(m_context, m_stage);
-
-        // Some storage image formats may not be supported
-        const auto &imgResource = m_resource.getImage();
-        requireStorageImageSupport(vki, physDevice, imgResource.format, imgResource.tiling);
+        const DeviceInterface &vk = m_context.getDeviceInterface();
+        const VkDevice device     = m_context.getDevice();
+        Allocator &allocator      = m_context.getAllocator();
 
         m_hostBuffer = de::MovePtr<Buffer>(
             new Buffer(vk, device, allocator,
@@ -2448,6 +2438,11 @@ public:
         assertValidShaderStage(m_stage);
     }
 
+    void checkSupport(Context &context) const
+    {
+        requireFeaturesForSSBOAccess(context.getInstanceInterface(), context.getPhysicalDevice(), m_stage);
+    }
+
     void initPrograms(SourceCollections &programCollection) const
     {
         DE_ASSERT((m_resourceDesc.size.x() % sizeof(tcu::UVec4)) == 0);
@@ -2576,6 +2571,18 @@ public:
         assertValidShaderStage(m_stage);
     }
 
+    void checkSupport(Context &context) const
+    {
+        const auto &vki           = context.getInstanceInterface();
+        const auto physicalDevice = context.getPhysicalDevice();
+
+        // Image stores are always required, in either access mode.
+        requireFeaturesForSSBOAccess(vki, physicalDevice, m_stage);
+
+        // Some storage image formats may not be supported
+        requireStorageImageSupport(vki, physicalDevice, m_resourceDesc.imageFormat, VK_IMAGE_TILING_OPTIMAL);
+    }
+
     void initPrograms(SourceCollections &programCollection) const
     {
         const std::string imageFormat = getShaderImageFormatQualifier(m_resourceDesc.imageFormat);
@@ -2669,8 +2676,6 @@ public:
         , m_bufferType(bufferType)
         , m_dispatchCall(dispatchCall)
     {
-        requireFeaturesForSSBOAccess(m_context, m_stage);
-
         const DeviceInterface &vk = m_context.getDeviceInterface();
         const VkDevice device     = m_context.getDevice();
 
@@ -2795,6 +2800,11 @@ public:
         assertValidShaderStage(m_stage);
     }
 
+    void checkSupport(Context &context) const
+    {
+        requireFeaturesForSSBOAccess(context.getInstanceInterface(), context.getPhysicalDevice(), m_stage);
+    }
+
     void initPrograms(SourceCollections &programCollection) const
     {
         DE_ASSERT((m_resourceDesc.size.x() % sizeof(tcu::UVec4)) == 0);
@@ -2883,17 +2893,8 @@ public:
         , m_pipelineStage(pipelineStageFlagsFromShaderStageFlagBits(m_stage))
         , m_dispatchCall(dispatchCall)
     {
-        const DeviceInterface &vk         = m_context.getDeviceInterface();
-        const InstanceInterface &vki      = m_context.getInstanceInterface();
-        const VkDevice device             = m_context.getDevice();
-        const VkPhysicalDevice physDevice = m_context.getPhysicalDevice();
-
-        // Image stores are always required, in either access mode.
-        requireFeaturesForSSBOAccess(m_context, m_stage);
-
-        // Some storage image formats may not be supported
-        const auto &imgResource = m_inResource.getImage();
-        requireStorageImageSupport(vki, physDevice, imgResource.format, imgResource.tiling);
+        const DeviceInterface &vk = m_context.getDeviceInterface();
+        const VkDevice device     = m_context.getDevice();
 
         // Image resources
         {
@@ -3048,6 +3049,18 @@ public:
         assertValidShaderStage(m_stage);
     }
 
+    void checkSupport(Context &context) const
+    {
+        const auto &vki       = context.getInstanceInterface();
+        const auto physDevice = context.getPhysicalDevice();
+
+        // Image stores are always required, in either access mode.
+        requireFeaturesForSSBOAccess(vki, physDevice, m_stage);
+
+        // Some storage image formats may not be supported
+        requireStorageImageSupport(vki, physDevice, m_resourceDesc.imageFormat, VK_IMAGE_TILING_OPTIMAL);
+    }
+
     void initPrograms(SourceCollections &programCollection) const
     {
         const std::string imageFormat = getShaderImageFormatQualifier(m_resourceDesc.imageFormat);
@@ -3131,17 +3144,9 @@ public:
         , m_resource(resource)
         , m_hostBufferSizeBytes(getPixelBufferSize(m_resource.getImage().format, m_resource.getImage().extent))
     {
-        const DeviceInterface &vk               = m_context.getDeviceInterface();
-        const InstanceInterface &vki            = m_context.getInstanceInterface();
-        const VkDevice device                   = m_context.getDevice();
-        const VkPhysicalDevice physDevice       = m_context.getPhysicalDevice();
-        const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physDevice);
-        Allocator &allocator                    = m_context.getAllocator();
-
-        const auto &imgResource = m_resource.getImage();
-        requireStorageImageSupport(vki, physDevice, imgResource.format, imgResource.tiling);
-        if (!features.shaderStorageImageMultisample)
-            TCU_THROW(NotSupportedError, "Using multisample images as storage is not supported");
+        const DeviceInterface &vk = m_context.getDeviceInterface();
+        const VkDevice device     = m_context.getDevice();
+        Allocator &allocator      = m_context.getAllocator();
 
         VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(
             m_hostBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
@@ -3266,6 +3271,16 @@ public:
     MSImageSupport(const ResourceDescription &resourceDesc) : m_resourceDesc(resourceDesc)
     {
         DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_IMAGE);
+    }
+
+    void checkSupport(Context &context) const
+    {
+        if (!context.getDeviceFeatures().shaderStorageImageMultisample)
+            TCU_THROW(NotSupportedError, "Using multisample images as storage is not supported");
+
+        const InstanceInterface &vki      = context.getInstanceInterface();
+        const VkPhysicalDevice physDevice = context.getPhysicalDevice();
+        requireStorageImageSupport(vki, physDevice, m_resourceDesc.imageFormat, VK_IMAGE_TILING_OPTIMAL);
     }
 
     void initPrograms(SourceCollections &programCollection) const
@@ -4898,8 +4913,6 @@ public:
         , m_pipelineStage(pipelineStageFlagsFromShaderStageFlagBits(m_stage))
         , m_hostBufferSizeBytes(sizeof(uint32_t))
     {
-        requireFeaturesForSSBOAccess(m_context, m_stage);
-
         const DeviceInterface &vk = m_context.getDeviceInterface();
         const VkDevice device     = m_context.getDevice();
         Allocator &allocator      = m_context.getAllocator();
@@ -5115,6 +5128,14 @@ public:
         DE_ASSERT(isIndirectBuffer(m_resourceDesc.type));
     }
 
+    void checkSupport(Context &context) const
+    {
+        auto stage(m_resourceDesc.type == RESOURCE_TYPE_INDIRECT_BUFFER_DISPATCH ? VK_SHADER_STAGE_COMPUTE_BIT :
+                                                                                   VK_SHADER_STAGE_VERTEX_BIT);
+
+        requireFeaturesForSSBOAccess(context.getInstanceInterface(), context.getPhysicalDevice(), stage);
+    }
+
     void initPrograms(SourceCollections &programCollection) const
     {
         std::ostringstream decl;
@@ -5265,8 +5286,6 @@ public:
         , m_resource(resource)
         , m_drawMode(drawMode)
     {
-        requireFeaturesForSSBOAccess(m_context, VK_SHADER_STAGE_VERTEX_BIT);
-
         const DeviceInterface &vk        = context.getDeviceInterface();
         const VkDevice device            = context.getDevice();
         Allocator &allocator             = context.getAllocator();
@@ -5478,6 +5497,12 @@ public:
         , m_drawMode(drawMode)
     {
         DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_BUFFER || m_resourceDesc.type == RESOURCE_TYPE_INDEX_BUFFER);
+    }
+
+    void checkSupport(Context &context) const
+    {
+        const auto &vki = context.getInstanceInterface();
+        requireFeaturesForSSBOAccess(vki, context.getPhysicalDevice(), VK_SHADER_STAGE_VERTEX_BIT);
     }
 
     void initPrograms(SourceCollections &programCollection) const
@@ -6441,5 +6466,4 @@ bool opCanRunOnCompute(OperationName opName)
     return false;
 }
 
-} // namespace synchronization
-} // namespace vkt
+} // namespace vkt::synchronization

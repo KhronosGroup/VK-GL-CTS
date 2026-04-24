@@ -312,7 +312,11 @@ tcu::TestStatus AstcSampleTestInstance::iterate(void)
         VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
-    vk::ImageWithMemory sampledImage(vk, device, alloc, imageCreateInfo, vk::MemoryRequirement::Any);
+    const bool host_copy = (m_parameters.testType == TEST_TYPE_HOST_COPY_INTO_IMAGE ||
+                            m_parameters.testType == TEST_TYPE_HOST_COPY_FROM_IMAGE);
+
+    vk::ImageWithMemory sampledImage(vk, device, alloc, imageCreateInfo,
+                                     host_copy ? vk::MemoryRequirement::HostVisible : vk::MemoryRequirement::Any);
 
     vk::VkImageViewCreateInfo imageViewCreateInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
@@ -1567,6 +1571,8 @@ tcu::TestStatus InputAttachmentTestInstance::iterate(void)
             nullptr,                          // const VkRenderingAttachmentInfo* pStencilAttachment;
         };
         vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
+
+        vk.cmdSetRenderingInputAttachmentIndices(*cmdBuffer, &inputAttachmentIndexInfo);
 #endif
     }
     else
@@ -1646,6 +1652,8 @@ tcu::TestStatus InputAttachmentTestInstance::iterate(void)
                               (m_parameters.barrierTest == BARRIER_TEST_IMAGE) ? 1u : 0u, &imageMemoryBarrier);
 
         vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
+
+        vk.cmdSetRenderingInputAttachmentIndices(*cmdBuffer, &inputAttachmentIndexInfo);
 #endif
     }
     else

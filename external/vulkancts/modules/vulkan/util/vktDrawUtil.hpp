@@ -64,6 +64,7 @@ struct PipelineState
     rr::TestFunc compareOp         = rr::TESTFUNC_LESS;
     bool depthBoundsTestEnable     = false;
     bool blendEnable               = false;
+    vk::VkCullModeFlags cullMode   = vk::VK_CULL_MODE_NONE;
     float lineWidth                = 1.0;
     uint32_t numPatchControlPoints = 0;
     bool sampleShadingEnable       = false;

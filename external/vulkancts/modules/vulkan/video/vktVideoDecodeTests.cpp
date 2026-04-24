@@ -48,7 +48,7 @@
 #include <VulkanH264Decoder.h>
 #include <VulkanH265Decoder.h>
 #include <VulkanAV1Decoder.h>
-#endif
+#endif // DE_BUILD_VIDEO
 
 namespace vkt
 {
@@ -140,7 +140,7 @@ void FrameProcessor::bufferFrames(int framesToDecode)
     auto &cachedParams = m_decoder->m_cachedDecodeParams;
     TCU_CHECK_MSG(cachedParams.size() >= framesToDecode, "Unknown decoder failure");
 }
-#endif
+#endif // DE_BUILD_VIDEO
 
 namespace
 {
@@ -179,6 +179,7 @@ enum TestType
     TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES,
     TEST_TYPE_H265_DECODE_SLIST_A,
     TEST_TYPE_H265_DECODE_SLIST_B,
+    TEST_TYPE_H265_DECODE_LONG_TERM_REFERENCE,
 
     // VK_KHR_video_maintenance2
     TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS,
@@ -207,6 +208,7 @@ enum TestType
     TEST_TYPE_AV1_DECODE_CDEF_10,
     TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10,
     TEST_TYPE_AV1_DECODE_ARGON_TEST_787,
+    TEST_TYPE_AV1_DECODE_GOLDEN_FRAME,
 
     TEST_TYPE_AV1_DECODE_ARGON_SEQCHANGE_AFFINE_8,
 
@@ -312,6 +314,9 @@ static const char *testTypeToStr(TestType type)
     case TEST_TYPE_H265_DECODE_SLIST_B:
         testName = "slist_b";
         break;
+    case TEST_TYPE_H265_DECODE_LONG_TERM_REFERENCE:
+        testName = "long_term_reference";
+        break;
     case TEST_TYPE_AV1_DECODE_BASIC_8:
         testName = "basic_8";
         break;
@@ -365,6 +370,9 @@ static const char *testTypeToStr(TestType type)
         break;
     case TEST_TYPE_AV1_DECODE_CDEF_10:
         testName = "cdef_10";
+        break;
+    case TEST_TYPE_AV1_DECODE_GOLDEN_FRAME:
+        testName = "golden_frame";
         break;
     case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10:
         testName = "argon_filmgrain_10_test1019";
@@ -480,6 +488,7 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES:
     case TEST_TYPE_H265_DECODE_SLIST_A:
     case TEST_TYPE_H265_DECODE_SLIST_B:
+    case TEST_TYPE_H265_DECODE_LONG_TERM_REFERENCE:
     case TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS:
     case TEST_TYPE_H265_DECODE_RELAXED_SESSION_PARAMS:
         return TEST_CODEC_H265;
@@ -505,6 +514,7 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_AV1_DECODE_LOSSLESS_10:
     case TEST_TYPE_AV1_DECODE_LOOPFILTER_10:
     case TEST_TYPE_AV1_DECODE_CDEF_10:
+    case TEST_TYPE_AV1_DECODE_GOLDEN_FRAME:
     case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10:
     case TEST_TYPE_AV1_DECODE_ARGON_TEST_787:
     case TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS:
@@ -611,6 +621,8 @@ struct DecodeTestParam
      {CLIP_H265_DEC_D, ALL_FRAMES, DecoderOption::ResourcesWithoutProfiles}},
     {TEST_TYPE_H265_DECODE_SLIST_A, {CLIP_H265_DEC_ITU_SLIST_A, 28, DecoderOption::Default}},
     {TEST_TYPE_H265_DECODE_SLIST_B, {CLIP_H265_DEC_ITU_SLIST_B, 28, DecoderOption::Default}},
+    {TEST_TYPE_H265_DECODE_LONG_TERM_REFERENCE,
+     {CLIP_H265_DEC_ITU_LTRPSPS_A_QUALCOMM_1, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS, {CLIP_H265_DEC_D, 1, DecoderOption::UseInlineSessionParams}},
     {TEST_TYPE_H265_DECODE_RELAXED_SESSION_PARAMS, {CLIP_H265_DEC_D, 1, DecoderOption::ResetCodecNoSessionParams}},
 
@@ -635,6 +647,8 @@ struct DecodeTestParam
     {TEST_TYPE_AV1_DECODE_LOSSLESS_10, {CLIP_AV1_DEC_LOSSLESS_10, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_LOOPFILTER_10, {CLIP_AV1_DEC_LOOPFILTER_10, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_CDEF_10, {CLIP_AV1_DEC_CDEF_10, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_GOLDEN_FRAME,
+     {CLIP_AV1_DEC_FRAMES_REFS_SHORT_SIGNALING_GOLDEN, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS, {CLIP_AV1_DEC_BASIC_8, 1, DecoderOption::UseInlineSessionParams}},
     {TEST_TYPE_AV1_DECODE_RELAXED_SESSION_PARAMS, {CLIP_AV1_DEC_BASIC_8, 1, DecoderOption::ResetCodecNoSessionParams}},
 
@@ -1277,6 +1291,7 @@ DownloadedFrame getDecodedImage(DeviceContext &devctx, VkImageLayout originalLay
 
     return downloadedFrame;
 }
+#endif // DE_BUILD_VIDEO
 
 class VideoDecodeTestInstance : public VideoBaseTestInstance
 {
@@ -1340,6 +1355,7 @@ VideoDecodeTestInstance::VideoDecodeTestInstance(Context &context, const TestDef
         getDeviceQueue(m_context.getDeviceInterface(), device, m_videoDevice.getQueueFamilyIndexTransfer(), 0));
 }
 
+#ifdef DE_BUILD_VIDEO
 static std::unique_ptr<FrameProcessor> createProcessor(const TestDefinition *td, DeviceContext *dctx,
                                                        bool forceDisableFilmGrain = false)
 {
@@ -1354,9 +1370,11 @@ static std::unique_ptr<FrameProcessor> createProcessor(const TestDefinition *td,
 
     return std::make_unique<FrameProcessor>(std::move(demuxer), decoder);
 }
+#endif // DE_BUILD_VIDEO
 
 tcu::TestStatus VideoDecodeTestInstance::iterate()
 {
+#ifdef DE_BUILD_VIDEO
     bool filmGrainPresent      = m_testDefinition->hasOption(DecoderOption::FilmGrainPresent);
     bool forceDisableFilmGrain = m_testDefinition->hasOption(DecoderOption::ForceDisableFilmGrain);
     std::unique_ptr<FrameProcessor> processor =
@@ -1426,7 +1444,7 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
                                         VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR;
 
         DownloadedFrame downloadedFrame = getDecodedImage(m_deviceContext, downloadedFrameLayout, frame);
-
+        processor->releaseFrame(&frame);
         DownloadedFrame downloadedFrameWithoutFilmGrain;
         if (processorWithoutFilmGrain)
         {
@@ -1531,10 +1549,14 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
 
         return tcu::TestStatus::fail(ss.str());
     }
+#else
+    TCU_THROW(NotSupportedError, "Video tests are disabled via DEQP_DISABLE_VK_VIDEO_TESTS");
+#endif // DE_BUILD_VIDEO
 }
 
 tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
 {
+#ifdef DE_BUILD_VIDEO
     std::vector<std::unique_ptr<FrameProcessor>> processors;
     for (int i = 0; i < m_testDefinitions.size(); i++)
     {
@@ -1672,9 +1694,10 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
         }
         return tcu::TestStatus::fail(ss.str());
     }
+#else
+    TCU_THROW(NotSupportedError, "Video tests are disabled via DEQP_DISABLE_VK_VIDEO_TESTS");
+#endif // DE_BUILD_VIDEO
 }
-
-#endif // #ifdef DE_BUILD_VIDEO
 
 class VideoDecodeTestCase : public vkt::TestCase
 {
@@ -1704,11 +1727,7 @@ public:
 
     TestInstance *createInstance(Context &context) const override
     {
-#ifdef DE_BUILD_VIDEO
         return new InterleavingDecodeTestInstance(context, m_testDefinitions);
-#endif
-        DE_UNREF(context);
-        return nullptr;
     }
     void checkSupport(Context &context) const override;
 
@@ -1718,20 +1737,13 @@ private:
 
 TestInstance *VideoDecodeTestCase::createInstance(Context &context) const
 {
-#ifdef DE_BUILD_VIDEO
     return new VideoDecodeTestInstance(context, m_testDefinition.get());
-#endif
-
-#ifndef DE_BUILD_VIDEO
-    DE_UNREF(context);
-    return nullptr;
-#endif
 }
 
 void VideoDecodeTestCase::checkSupport(Context &context) const
 {
-    context.requireDeviceFunctionality("VK_KHR_video_queue");
-    context.requireDeviceFunctionality("VK_KHR_video_decode_queue");
+    VideoDevice::checkSupport(context, m_testDefinition->getCodecOperation(0));
+
     context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
     switch (m_testDefinition->getTestType())
@@ -1773,6 +1785,7 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
     case TEST_TYPE_H265_DECODE_QUERY_RESULT_WITH_STATUS:
     case TEST_TYPE_H265_DECODE_SLIST_A:
     case TEST_TYPE_H265_DECODE_SLIST_B:
+    case TEST_TYPE_H265_DECODE_LONG_TERM_REFERENCE:
     {
         context.requireDeviceFunctionality("VK_KHR_video_decode_h265");
         break;
@@ -1813,6 +1826,7 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
     case TEST_TYPE_AV1_DECODE_LOSSLESS_10:
     case TEST_TYPE_AV1_DECODE_LOOPFILTER_10:
     case TEST_TYPE_AV1_DECODE_CDEF_10:
+    case TEST_TYPE_AV1_DECODE_GOLDEN_FRAME:
     case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10:
     case TEST_TYPE_AV1_DECODE_ARGON_TEST_787:
     {
@@ -1914,8 +1928,8 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
 
 void InterleavingDecodeTestCase::checkSupport(Context &context) const
 {
-    context.requireDeviceFunctionality("VK_KHR_video_queue");
-    context.requireDeviceFunctionality("VK_KHR_video_decode_queue");
+    VideoDevice::checkSupport(context, m_testDefinitions[0]->getCodecOperation(0));
+
     context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
 #ifdef DE_DEBUG

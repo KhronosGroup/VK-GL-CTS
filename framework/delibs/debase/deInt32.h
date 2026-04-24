@@ -251,7 +251,7 @@ static inline bool deIsPowerOfTwoSize(size_t a)
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Roud a value up to a power-of-two.
+ * \brief Round a value up to a power-of-two.
  * \param a Input value.
  * \return Smallest power-of-two value that is greater or equal to an input value.
  *//*--------------------------------------------------------------------*/
@@ -267,7 +267,7 @@ static inline uint32_t deSmallestGreaterOrEquallPowerOfTwoU32(uint32_t a)
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Roud a value up to a power-of-two.
+ * \brief Round a value up to a power-of-two.
  * \param a Input value.
  * \return Smallest power-of-two value that is greater or equal to an input value.
  *//*--------------------------------------------------------------------*/
@@ -284,7 +284,7 @@ static inline uint64_t deSmallestGreaterOrEquallPowerOfTwoU64(uint64_t a)
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Roud a value up to a power-of-two.
+ * \brief Round a value up to a power-of-two.
  * \param a Input value.
  * \return Smallest power-of-two value that is greater or equal to an input value.
  *//*--------------------------------------------------------------------*/
@@ -549,6 +549,12 @@ static inline int32_t deRoundUp32(int32_t a, int32_t b)
 {
     int32_t d = a / b;
     return d * b == a ? a : (d + 1) * b;
+}
+
+static inline uint32_t deRoundUp32u(uint32_t a, uint32_t b)
+{
+    uint32_t d = a / b;
+    return (d * b == a) ? a : (d + 1) * b;
 }
 
 /* \todo [petri] Move to int64_t.h? */

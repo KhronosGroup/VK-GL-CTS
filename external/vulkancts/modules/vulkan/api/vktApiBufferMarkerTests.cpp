@@ -1063,6 +1063,12 @@ void checkBufferMarkerSupport(Context &context, MemoryDepParams params)
         context.requireDeviceFunctionality("VK_EXT_external_memory_host");
 
     context.requireDeviceFunctionality("VK_AMD_buffer_marker");
+
+    // VUID-RuntimeSpirv-NonWritable-06340
+    if (params.method == MEMORY_DEP_DRAW)
+    {
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
+    }
 }
 
 std::string getTestCaseName(const std::string base, size_t offset)

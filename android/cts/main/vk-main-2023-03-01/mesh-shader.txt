@@ -1756,8 +1756,6 @@ dEQP-VK.mesh_shader.ext.misc.custom_attributes
 dEQP-VK.mesh_shader.ext.misc.custom_attributes_and_task_shader
 dEQP-VK.mesh_shader.ext.misc.first_invocation_mesh
 dEQP-VK.mesh_shader.ext.misc.first_invocation_task
-dEQP-VK.mesh_shader.ext.misc.group_memory_barrier_in_mesh
-dEQP-VK.mesh_shader.ext.misc.group_memory_barrier_in_task
 dEQP-VK.mesh_shader.ext.misc.local_size_id_mesh
 dEQP-VK.mesh_shader.ext.misc.local_size_id_task
 dEQP-VK.mesh_shader.ext.misc.many_mesh_work_groups_x
@@ -1780,8 +1778,6 @@ dEQP-VK.mesh_shader.ext.misc.maximize_invocations_32
 dEQP-VK.mesh_shader.ext.misc.maximize_invocations_64
 dEQP-VK.mesh_shader.ext.misc.maximize_primitives
 dEQP-VK.mesh_shader.ext.misc.maximize_vertices
-dEQP-VK.mesh_shader.ext.misc.memory_barrier_shared_in_mesh
-dEQP-VK.mesh_shader.ext.misc.memory_barrier_shared_in_task
 dEQP-VK.mesh_shader.ext.misc.mixed_pipelines
 dEQP-VK.mesh_shader.ext.misc.mixed_pipelines_dynamic_topology
 dEQP-VK.mesh_shader.ext.misc.no_lines

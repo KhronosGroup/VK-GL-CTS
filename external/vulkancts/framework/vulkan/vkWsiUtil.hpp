@@ -100,6 +100,9 @@ std::vector<VkImage> getSwapchainImages(const DeviceInterface &vkd, VkDevice dev
 uint32_t chooseQueueFamilyIndex(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
                                 const std::vector<VkSurfaceKHR> &surfaces);
 
+uint32_t chooseQueueFamilyIndex(const InstanceInterface &vki, const std::vector<VkPhysicalDevice> &physicalDevices,
+                                VkSurfaceKHR surface);
+
 uint32_t chooseQueueFamilyIndex(const InstanceInterface &vki, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 
 std::vector<uint32_t> getCompatibleQueueFamilyIndices(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
@@ -109,6 +112,14 @@ tcu::UVec2 getFullScreenSize(const vk::wsi::Type wsiType, const vk::wsi::Display
                              const tcu::UVec2 &fallbackSize);
 
 VkBool32 isDisplaySurface(Type wsiType);
+
+Move<VkSwapchainKHR> createWsiSwapchain(Type wsiType, const DeviceInterface &vk, VkDevice device,
+                                        const VkSwapchainCreateInfoKHR *pCreateInfo,
+                                        const VkAllocationCallbacks *pAllocator = nullptr);
+
+VkResult createWsiSwapchain(Type wsiType, const DeviceInterface &vk, VkDevice device,
+                            const VkSwapchainCreateInfoKHR *pCreateInfo, const VkAllocationCallbacks *pAllocator,
+                            VkSwapchainKHR *object);
 
 class WsiTriangleRenderer
 {

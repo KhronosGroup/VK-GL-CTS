@@ -434,7 +434,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
     AccelerationStructBufferProperties bufferProps;
     bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
-    bottomLevelAS->addGeometry(triangle, true /*is triangles*/, 0, nullptr, &opacityGeometryMicromap);
+    bottomLevelAS->addGeometry(triangle, true /*is triangles*/, 0, nullptr, nullptr, &opacityGeometryMicromap);
     if (m_params.testFlagMask & TEST_FLAG_BIT_DISABLE_OPACITY_MICROMAP_INSTANCE)
         bottomLevelAS->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DISABLE_OPACITY_MICROMAPS_EXT);
     bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);

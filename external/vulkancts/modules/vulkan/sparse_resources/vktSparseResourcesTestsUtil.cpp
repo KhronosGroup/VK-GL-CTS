@@ -949,6 +949,60 @@ std::string getImageFormatID(VkFormat format)
 #ifndef CTS_USES_VULKANSC
     case VK_FORMAT_A8_UNORM_KHR:
 #endif // CTS_USES_VULKANSC
+    case VK_FORMAT_BC1_RGB_UNORM_BLOCK:
+    case VK_FORMAT_BC1_RGB_SRGB_BLOCK:
+    case VK_FORMAT_BC1_RGBA_UNORM_BLOCK:
+    case VK_FORMAT_BC1_RGBA_SRGB_BLOCK:
+    case VK_FORMAT_BC2_UNORM_BLOCK:
+    case VK_FORMAT_BC2_SRGB_BLOCK:
+    case VK_FORMAT_BC3_UNORM_BLOCK:
+    case VK_FORMAT_BC3_SRGB_BLOCK:
+    case VK_FORMAT_BC4_UNORM_BLOCK:
+    case VK_FORMAT_BC4_SNORM_BLOCK:
+    case VK_FORMAT_BC5_UNORM_BLOCK:
+    case VK_FORMAT_BC5_SNORM_BLOCK:
+    case VK_FORMAT_BC6H_UFLOAT_BLOCK:
+    case VK_FORMAT_BC6H_SFLOAT_BLOCK:
+    case VK_FORMAT_BC7_UNORM_BLOCK:
+    case VK_FORMAT_BC7_SRGB_BLOCK:
+    case VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK:
+    case VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK:
+    case VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK:
+    case VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK:
+    case VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK:
+    case VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK:
+    case VK_FORMAT_EAC_R11_UNORM_BLOCK:
+    case VK_FORMAT_EAC_R11_SNORM_BLOCK:
+    case VK_FORMAT_EAC_R11G11_UNORM_BLOCK:
+    case VK_FORMAT_EAC_R11G11_SNORM_BLOCK:
+    case VK_FORMAT_ASTC_4x4_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_4x4_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_5x4_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_5x4_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_5x5_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_5x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_6x5_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_6x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_6x6_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_6x6_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_8x5_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_8x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_8x6_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_8x6_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_8x8_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_8x8_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x5_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_10x5_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x6_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_10x6_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x8_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_10x8_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_10x10_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_10x10_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_12x10_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_12x10_SRGB_BLOCK:
+    case VK_FORMAT_ASTC_12x12_UNORM_BLOCK:
+    case VK_FORMAT_ASTC_12x12_SRGB_BLOCK:
         return de::toLower(std::string(getFormatName(format)).substr(10));
 
     default:
@@ -1199,6 +1253,40 @@ vk::VkFormat getPlaneCompatibleFormatForWriting(const vk::PlanarFormatDescriptio
     if (it != std::end(ycbcrFormats))
         result = it->second;
     return result;
+}
+
+vk::VkFormat getStorageCompatibleFormat(vk::VkFormat planeFormat)
+{
+    // Map packed formats without storage support to block-compatible formats that do
+    // These mappings match what the shader expects (see getOpTypeImageSparse)
+    switch (planeFormat)
+    {
+    // 10-bit/12-bit 1-component packed formats -> R16
+    case vk::VK_FORMAT_R10X6_UNORM_PACK16:
+    case vk::VK_FORMAT_R12X4_UNORM_PACK16:
+        return vk::VK_FORMAT_R16_UNORM;
+
+    // 10-bit/12-bit 2-component packed formats -> RG16
+    case vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16:
+    case vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16:
+        return vk::VK_FORMAT_R16G16_UNORM;
+
+    // 10-bit/12-bit 4-component packed formats -> RGBA16
+    case vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16:
+    case vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16:
+        return vk::VK_FORMAT_R16G16B16A16_UNORM;
+
+    // 422 packed formats that are treated as RGBA16 in shaders
+    case vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16:
+    case vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16:
+    case vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16:
+    case vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16:
+        return vk::VK_FORMAT_R16G16B16A16_UNORM;
+
+    // All other formats use themselves (R8, R16, etc. already support storage)
+    default:
+        return planeFormat;
+    }
 }
 
 bool areLsb6BitsDontCare(vk::VkFormat format)

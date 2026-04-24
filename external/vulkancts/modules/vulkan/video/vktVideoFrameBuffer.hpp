@@ -181,6 +181,29 @@ struct DecodedFrame
     int32_t decodeOrder;
     int32_t displayOrder;
 
+    DecodedFrame()
+        : pictureIndex{-1}
+        , imageLayerIndex{0}
+        , displayWidth{0}
+        , displayHeight{0}
+        , decodedImageView{nullptr}
+        , outputImageView{nullptr}
+        , frameCompleteFence{VK_NULL_HANDLE}
+        , frameConsumerDoneFence{VK_NULL_HANDLE}
+        , frameCompleteSemaphore{VK_NULL_HANDLE}
+        , frameConsumerDoneSemaphore{VK_NULL_HANDLE}
+        , queryPool{VK_NULL_HANDLE}
+        , startQueryId{0}
+        , numQueries{0}
+        , submittedVideoQueueIndex{0}
+        , timestamp{0}
+        , hasConsummerSignalFence{0}
+        , hasConsummerSignalSemaphore{0}
+        , decodeOrder{0}
+        , displayOrder{0}
+    {
+    }
+
     void Reset()
     {
         pictureIndex                = -1;

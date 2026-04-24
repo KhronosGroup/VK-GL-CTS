@@ -1717,7 +1717,6 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_RENDERING_AREA_INFO:											return "VK_STRUCTURE_TYPE_RENDERING_AREA_INFO";
 		case VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO:									return "VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO";
 		case VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO:							return "VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO";
-		case VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR:			return "VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_RENDERING_INFO:												return "VK_STRUCTURE_TYPE_RENDERING_INFO";
 		case VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO:						return "VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO:							return "VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO";
@@ -1915,17 +1914,11 @@ tcu::Format::Bitfield<64> getAccessFlags2Str (VkAccessFlags2 value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,			"VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR"),
-		tcu::Format::BitDesc(VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,			"VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,						"VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT,		"VK_ACCESS_2_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,					"VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT"),
-		tcu::Format::BitDesc(VK_ACCESS_2_COMMAND_PREPROCESS_READ_BIT_EXT,				"VK_ACCESS_2_COMMAND_PREPROCESS_READ_BIT_EXT"),
-		tcu::Format::BitDesc(VK_ACCESS_2_COMMAND_PREPROCESS_WRITE_BIT_EXT,				"VK_ACCESS_2_COMMAND_PREPROCESS_WRITE_BIT_EXT"),
-		tcu::Format::BitDesc(VK_ACCESS_2_CONDITIONAL_RENDERING_READ_BIT_EXT,			"VK_ACCESS_2_CONDITIONAL_RENDERING_READ_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT,				"VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,			"VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT"),
-		tcu::Format::BitDesc(VK_ACCESS_2_FRAGMENT_DENSITY_MAP_READ_BIT_EXT,				"VK_ACCESS_2_FRAGMENT_DENSITY_MAP_READ_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR,	"VK_ACCESS_2_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR"),
 		tcu::Format::BitDesc(VK_ACCESS_2_HOST_READ_BIT,									"VK_ACCESS_2_HOST_READ_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_HOST_WRITE_BIT,								"VK_ACCESS_2_HOST_WRITE_BIT"),
@@ -1942,9 +1935,6 @@ tcu::Format::Bitfield<64> getAccessFlags2Str (VkAccessFlags2 value)
 		tcu::Format::BitDesc(VK_ACCESS_2_SHADER_WRITE_BIT,								"VK_ACCESS_2_SHADER_WRITE_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_TRANSFER_READ_BIT,								"VK_ACCESS_2_TRANSFER_READ_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_TRANSFER_WRITE_BIT,							"VK_ACCESS_2_TRANSFER_WRITE_BIT"),
-		tcu::Format::BitDesc(VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT,		"VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT"),
-		tcu::Format::BitDesc(VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT,		"VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT"),
-		tcu::Format::BitDesc(VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT,				"VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_UNIFORM_READ_BIT,								"VK_ACCESS_2_UNIFORM_READ_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT,						"VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT"),
 	};
@@ -2375,7 +2365,6 @@ tcu::Format::Bitfield<64> getFormatFeatureFlags2Str (VkFormatFeatureFlags2 value
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_COSITED_CHROMA_SAMPLES_BIT,													"VK_FORMAT_FEATURE_2_COSITED_CHROMA_SAMPLES_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,													"VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_DISJOINT_BIT,																	"VK_FORMAT_FEATURE_2_DISJOINT_BIT"),
-		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,										"VK_FORMAT_FEATURE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT,														"VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_MIDPOINT_CHROMA_SAMPLES_BIT,													"VK_FORMAT_FEATURE_2_MIDPOINT_CHROMA_SAMPLES_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT,																"VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT"),
@@ -2599,6 +2588,16 @@ tcu::Format::Bitfield<32> getPipelineCacheCreateFlagsStr (VkPipelineCacheCreateF
 }
 
 
+tcu::Format::Bitfield<32> getPipelineColorBlendStateCreateFlagsStr (VkPipelineColorBlendStateCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
 tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -2640,6 +2639,16 @@ tcu::Format::Bitfield<32> getPipelineCreationFeedbackFlagsStr (VkPipelineCreatio
 		tcu::Format::BitDesc(VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT,	"VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT,		"VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT,							"VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
+tcu::Format::Bitfield<32> getPipelineDepthStencilStateCreateFlagsStr (VkPipelineDepthStencilStateCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2698,7 +2707,6 @@ tcu::Format::Bitfield<64> getPipelineStageFlags2Str (VkPipelineStageFlags2 value
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,		"VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,							"VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,							"VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT,							"VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT"),
@@ -2706,29 +2714,22 @@ tcu::Format::Bitfield<64> getPipelineStageFlags2Str (VkPipelineStageFlags2 value
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT,						"VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_CLEAR_BIT,									"VK_PIPELINE_STAGE_2_CLEAR_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,				"VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_EXT,				"VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,						"VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT,				"VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_COPY_BIT,									"VK_PIPELINE_STAGE_2_COPY_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,							"VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,					"VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_FRAGMENT_DENSITY_PROCESS_BIT_EXT,			"VK_PIPELINE_STAGE_2_FRAGMENT_DENSITY_PROCESS_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,						"VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,	"VK_PIPELINE_STAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT,						"VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_HOST_BIT,									"VK_PIPELINE_STAGE_2_HOST_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,							"VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,					"VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT,						"VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_NONE,										"VK_PIPELINE_STAGE_2_NONE"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT,				"VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,				"VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_RESOLVE_BIT,								"VK_PIPELINE_STAGE_2_RESOLVE_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT,						"VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT,			"VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT,		"VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,							"VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT,				"VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT,				"VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT,							"VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,							"VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT"),
@@ -4430,33 +4431,12 @@ std::ostream& operator<< (std::ostream& s, const VkDrawIndirectCommand& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDrmFormatModifierProperties2EXT& value)
-{
-	s << "VkDrmFormatModifierProperties2EXT = {\n";
-	s << "\tdrmFormatModifier = " << value.drmFormatModifier << '\n';
-	s << "\tdrmFormatModifierPlaneCount = " << value.drmFormatModifierPlaneCount << '\n';
-	s << "\tdrmFormatModifierTilingFeatures = " << getFormatFeatureFlags2Str(value.drmFormatModifierTilingFeatures) << '\n';
-	s << '}';
-	return s;
-}
-
 std::ostream& operator<< (std::ostream& s, const VkDrmFormatModifierPropertiesEXT& value)
 {
 	s << "VkDrmFormatModifierPropertiesEXT = {\n";
 	s << "\tdrmFormatModifier = " << value.drmFormatModifier << '\n';
 	s << "\tdrmFormatModifierPlaneCount = " << value.drmFormatModifierPlaneCount << '\n';
 	s << "\tdrmFormatModifierTilingFeatures = " << getFormatFeatureFlagsStr(value.drmFormatModifierTilingFeatures) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkDrmFormatModifierPropertiesList2EXT& value)
-{
-	s << "VkDrmFormatModifierPropertiesList2EXT = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tdrmFormatModifierCount = " << value.drmFormatModifierCount << '\n';
-	s << "\tpDrmFormatModifierProperties = " << value.pDrmFormatModifierProperties << '\n';
 	s << '}';
 	return s;
 }
@@ -7728,7 +7708,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineColorBlendStateCreate
 	s << "VkPipelineColorBlendStateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << value.flags << '\n';
+	s << "\tflags = " << getPipelineColorBlendStateCreateFlagsStr(value.flags) << '\n';
 	s << "\tlogicOpEnable = " << value.logicOpEnable << '\n';
 	s << "\tlogicOp = " << value.logicOp << '\n';
 	s << "\tattachmentCount = " << value.attachmentCount << '\n';
@@ -7785,7 +7765,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineDepthStencilStateCrea
 	s << "VkPipelineDepthStencilStateCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << value.flags << '\n';
+	s << "\tflags = " << getPipelineDepthStencilStateCreateFlagsStr(value.flags) << '\n';
 	s << "\tdepthTestEnable = " << value.depthTestEnable << '\n';
 	s << "\tdepthWriteEnable = " << value.depthWriteEnable << '\n';
 	s << "\tdepthCompareOp = " << value.depthCompareOp << '\n';
@@ -9145,6 +9125,27 @@ std::ostream& operator<< (std::ostream& s, const VkXYColorEXT& value)
 	s << "VkXYColorEXT = {\n";
 	s << "\tx = " << value.x << '\n';
 	s << "\ty = " << value.y << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDrmFormatModifierProperties2EXT& value)
+{
+	s << "VkDrmFormatModifierProperties2EXT = {\n";
+	s << "\tdrmFormatModifier = " << value.drmFormatModifier << '\n';
+	s << "\tdrmFormatModifierPlaneCount = " << value.drmFormatModifierPlaneCount << '\n';
+	s << "\tdrmFormatModifierTilingFeatures = " << getFormatFeatureFlags2Str(value.drmFormatModifierTilingFeatures) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDrmFormatModifierPropertiesList2EXT& value)
+{
+	s << "VkDrmFormatModifierPropertiesList2EXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdrmFormatModifierCount = " << value.drmFormatModifierCount << '\n';
+	s << "\tpDrmFormatModifierProperties = " << value.pDrmFormatModifierProperties << '\n';
 	s << '}';
 	return s;
 }

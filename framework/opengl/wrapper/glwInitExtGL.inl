@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
+ * Generated from Khronos GL API description (gl.xml) revision 7d0cb181dace7461bc4f26650fec71efeacc18a5.
  */
 
 if (de::contains(extSet, "GL_KHR_blend_equation_advanced"))
@@ -577,6 +577,14 @@ if (de::contains(extSet, "GL_EXT_polygon_offset_clamp"))
 	gl->polygonOffsetClamp	= (glPolygonOffsetClampFunc)	loader->get("glPolygonOffsetClampEXT");
 }
 
+if (de::contains(extSet, "GL_EXT_fragment_shading_rate"))
+{
+	gl->framebufferShadingRateEXT	= (glFramebufferShadingRateEXTFunc)		loader->get("glFramebufferShadingRateEXT");
+	gl->getFragmentShadingRatesEXT	= (glGetFragmentShadingRatesEXTFunc)	loader->get("glGetFragmentShadingRatesEXT");
+	gl->shadingRateEXT				= (glShadingRateEXTFunc)				loader->get("glShadingRateEXT");
+	gl->shadingRateCombinerOpsEXT	= (glShadingRateCombinerOpsEXTFunc)		loader->get("glShadingRateCombinerOpsEXT");
+}
+
 if (de::contains(extSet, "GL_ARB_clip_control"))
 {
 	gl->clipControl	= (glClipControlFunc)	loader->get("glClipControl");
@@ -939,5 +947,6 @@ if (de::contains(extSet, "GL_NV_internalformat_sample_query"))
 
 if (de::contains(extSet, "GL_OVR_multiview"))
 {
-	gl->framebufferTextureMultiviewOVR	= (glFramebufferTextureMultiviewOVRFunc)	loader->get("glFramebufferTextureMultiviewOVR");
+	gl->framebufferTextureMultiviewOVR		= (glFramebufferTextureMultiviewOVRFunc)		loader->get("glFramebufferTextureMultiviewOVR");
+	gl->namedFramebufferTextureMultiviewOVR	= (glNamedFramebufferTextureMultiviewOVRFunc)	loader->get("glNamedFramebufferTextureMultiviewOVR");
 }

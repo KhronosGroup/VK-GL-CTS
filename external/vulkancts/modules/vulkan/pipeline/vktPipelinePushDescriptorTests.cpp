@@ -76,6 +76,7 @@ struct TestParams
     uint32_t binding;
     uint32_t numCalls; // Number of draw or dispatch calls
     bool useMaintenance5;
+    bool useMaintenance6;
 };
 
 VkDeviceSize calcItemSize(const InstanceInterface &vki, VkPhysicalDevice physicalDevice, uint32_t numElements = 1u)
@@ -85,20 +86,37 @@ VkDeviceSize calcItemSize(const InstanceInterface &vki, VkPhysicalDevice physica
     return de::roundUp(kSizeofVec4 * numElements, lcm);
 }
 
-void checkAllSupported(const Extensions &supportedExtensions, const vector<string> &requiredExtensions)
+void commonCheckSupported(Context &context, const TestParams &params)
 {
-    for (auto &requiredExtName : requiredExtensions)
+    context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+    context.requireDeviceFunctionality("VK_KHR_push_descriptor");
+    if (params.useMaintenance5)
+        context.requireDeviceFunctionality("VK_KHR_maintenance5");
+    if (params.useMaintenance6)
+        context.requireDeviceFunctionality("VK_KHR_maintenance6");
+
+    if (isConstructionTypeLibrary(params.pipelineConstructionType))
     {
-        if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(requiredExtName)))
-            TCU_THROW(NotSupportedError, (requiredExtName + " is not supported").c_str());
+        context.requireDeviceFunctionality("VK_KHR_pipeline_library");
+        context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
+        if (!context.getGraphicsPipelineLibraryFeaturesEXT().graphicsPipelineLibrary)
+            TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFeaturesEXT.graphicsPipelineLibrary required");
+    }
+    else if (isConstructionTypeShaderObject(params.pipelineConstructionType))
+    {
+        if (context.getEquivalentApiVersion() < VK_API_VERSION_1_3)
+            context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+        context.requireDeviceFunctionality("VK_EXT_shader_object");
+        if (!context.getShaderObjectFeaturesEXT().shaderObject)
+            TCU_THROW(NotSupportedError, "shaderObjectFeaturesEXT.shaderObject required");
+        if (!context.getDynamicRenderingFeatures().dynamicRendering)
+            TCU_THROW(NotSupportedError, "dynamicRendering required");
     }
 }
 
-CustomInstance createInstanceWithGetPhysicalDeviceProperties2(Context &context, const Extensions &supportedExtensions)
+CustomInstance createInstanceWithGetPhysicalDeviceProperties2(Context &context)
 {
-    vector<string> requiredExtensions = {"VK_KHR_get_physical_device_properties2"};
-    checkAllSupported(supportedExtensions, requiredExtensions);
-
+    vector<string> requiredExtensions{"VK_KHR_get_physical_device_properties2"};
     return createCustomInstanceWithExtensions(context, requiredExtensions);
 }
 
@@ -109,8 +127,8 @@ const char *innerCString(const string &str)
 
 Move<VkDevice> createDeviceWithPushDescriptor(const Context &context, const PlatformInterface &vkp, VkInstance instance,
                                               const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                              const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
-                                              const TestParams &params, std::vector<std::string> &enabledExtensions)
+                                              const uint32_t queueFamilyIndex, const TestParams &params,
+                                              std::vector<std::string> &enabledExtensions)
 {
 
     const float queuePriority               = 1.0f;
@@ -137,14 +155,18 @@ Move<VkDevice> createDeviceWithPushDescriptor(const Context &context, const Plat
         useFeatures2                             = true;
         vulkan14Features.pushDescriptor          = true;
         vulkan14Features.maintenance5            = params.useMaintenance5;
+        vulkan14Features.maintenance6            = params.useMaintenance6;
         dynamicRenderingFeaturesKHR.pNext        = &vulkan14Features;
         graphicsPipelineLibraryFeaturesEXT.pNext = &vulkan14Features;
+        features2.pNext                          = &vulkan14Features;
     }
     else
     {
         requiredExtensionsStr.push_back("VK_KHR_push_descriptor");
         if (params.useMaintenance5)
             requiredExtensionsStr.push_back("VK_KHR_maintenance5");
+        if (params.useMaintenance6)
+            requiredExtensionsStr.push_back("VK_KHR_maintenance6");
     }
 
     if (isConstructionTypeLibrary(params.pipelineConstructionType))
@@ -153,8 +175,6 @@ Move<VkDevice> createDeviceWithPushDescriptor(const Context &context, const Plat
         requiredExtensionsStr.push_back("VK_KHR_pipeline_library");
         requiredExtensionsStr.push_back("VK_EXT_graphics_pipeline_library");
         vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
-        if (!graphicsPipelineLibraryFeaturesEXT.graphicsPipelineLibrary)
-            TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFeaturesEXT.graphicsPipelineLibrary required");
     }
     else if (isConstructionTypeShaderObject(params.pipelineConstructionType))
     {
@@ -163,15 +183,10 @@ Move<VkDevice> createDeviceWithPushDescriptor(const Context &context, const Plat
             requiredExtensionsStr.push_back("VK_KHR_dynamic_rendering");
         requiredExtensionsStr.push_back("VK_EXT_shader_object");
         vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
-        if (!shaderObjectFeaturesEXT.shaderObject)
-            TCU_THROW(NotSupportedError, "shaderObjectFeaturesEXT.shaderObject required");
-        if (!dynamicRenderingFeaturesKHR.dynamicRendering)
-            TCU_THROW(NotSupportedError, "dynamicRendering required");
     }
 
-    vector<const char *> requiredExtensions;
-    checkAllSupported(supportedExtensions, requiredExtensionsStr);
     // We need the contents of requiredExtensionsStr as a vector<const char*> in VkDeviceCreateInfo.
+    vector<const char *> requiredExtensions;
     transform(begin(requiredExtensionsStr), end(requiredExtensionsStr), back_inserter(requiredExtensions),
               innerCString);
 
@@ -253,7 +268,7 @@ class PushDescriptorBufferGraphicsTestInstance : public vkt::TestInstance
 {
 public:
     PushDescriptorBufferGraphicsTestInstance(Context &context, const TestParams &params);
-    virtual ~PushDescriptorBufferGraphicsTestInstance(void);
+    virtual ~PushDescriptorBufferGraphicsTestInstance(void) = default;
     void init(void);
     virtual tcu::TestStatus iterate(void);
     tcu::TestStatus verifyImage(void);
@@ -261,12 +276,10 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const Extensions m_instanceExtensions;
     const CustomInstance m_instance;
     const InstanceDriver &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
-    const Extensions m_deviceExtensions;
     std::vector<std::string> m_deviceEnabledExtensions;
     const Unique<VkDevice> m_device;
     const DeviceDriver m_vkd;
@@ -299,14 +312,12 @@ PushDescriptorBufferGraphicsTestInstance::PushDescriptorBufferGraphicsTestInstan
     : vkt::TestInstance(context)
     , m_params(params)
     , m_vkp(context.getPlatformInterface())
-    , m_instanceExtensions(enumerateInstanceExtensionProperties(m_vkp, nullptr))
-    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
-    , m_deviceExtensions(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions,
-                                              m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
+                                              params, m_deviceEnabledExtensions))
     , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
@@ -606,10 +617,6 @@ void PushDescriptorBufferGraphicsTestInstance::init(void)
     }
 }
 
-PushDescriptorBufferGraphicsTestInstance::~PushDescriptorBufferGraphicsTestInstance(void)
-{
-}
-
 tcu::TestStatus PushDescriptorBufferGraphicsTestInstance::iterate(void)
 {
     init();
@@ -660,7 +667,7 @@ class PushDescriptorBufferGraphicsTest : public vkt::TestCase
 {
 public:
     PushDescriptorBufferGraphicsTest(tcu::TestContext &testContext, const string &name, const TestParams &params);
-    ~PushDescriptorBufferGraphicsTest(void);
+    ~PushDescriptorBufferGraphicsTest(void) = default;
     void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
     TestInstance *createInstance(Context &context) const;
@@ -676,10 +683,6 @@ PushDescriptorBufferGraphicsTest::PushDescriptorBufferGraphicsTest(tcu::TestCont
 {
 }
 
-PushDescriptorBufferGraphicsTest::~PushDescriptorBufferGraphicsTest(void)
-{
-}
-
 TestInstance *PushDescriptorBufferGraphicsTest::createInstance(Context &context) const
 {
     return new PushDescriptorBufferGraphicsTestInstance(context, m_params);
@@ -687,9 +690,7 @@ TestInstance *PushDescriptorBufferGraphicsTest::createInstance(Context &context)
 
 void PushDescriptorBufferGraphicsTest::checkSupport(Context &context) const
 {
-    if (m_params.useMaintenance5)
-        context.requireDeviceFunctionality("VK_KHR_maintenance5");
-
+    commonCheckSupported(context, m_params);
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_params.pipelineConstructionType);
 }
@@ -730,11 +731,526 @@ void PushDescriptorBufferGraphicsTest::initPrograms(SourceCollections &sourceCol
     sourceCollections.glslSources.add("frag") << glu::FragmentSource(fragmentSrc);
 }
 
+class PushDescriptorIncrementalUpdatesComputeTestInstance : public vkt::TestInstance
+{
+public:
+    PushDescriptorIncrementalUpdatesComputeTestInstance(Context &context, const TestParams &params,
+                                                        const bool withTemplate, const bool commands2);
+    virtual ~PushDescriptorIncrementalUpdatesComputeTestInstance(void) = default;
+    virtual tcu::TestStatus iterate(void);
+
+private:
+    const bool m_withTemplate;
+    const bool m_commands2;
+
+    const PlatformInterface &m_vkp;
+    const CustomInstance m_instance;
+    const InstanceDriver &m_vki;
+    const VkPhysicalDevice m_physicalDevice;
+    const uint32_t m_queueFamilyIndex;
+    std::vector<std::string> m_deviceEnabledExtensions;
+    const Unique<VkDevice> m_device;
+    const DeviceDriver m_vkd;
+    const VkQueue m_queue;
+    SimpleAllocator m_allocator;
+};
+
+PushDescriptorIncrementalUpdatesComputeTestInstance::PushDescriptorIncrementalUpdatesComputeTestInstance(
+    Context &context, const TestParams &params, const bool withTemplate, const bool commands2)
+    : vkt::TestInstance(context)
+    , m_withTemplate(withTemplate)
+    , m_commands2(commands2)
+    , m_vkp(context.getPlatformInterface())
+    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
+    , m_vki(m_instance.getDriver())
+    , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+    , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT))
+    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
+                                              params, m_deviceEnabledExtensions))
+    , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
+    , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
+    , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
+{
+}
+
+tcu::TestStatus PushDescriptorIncrementalUpdatesComputeTestInstance::iterate(void)
+{
+    const uint32_t bufferSize = 16u;
+
+    const VkDescriptorSetLayoutBinding bindings[] = {
+        {
+            0u,                                // uint32_t binding;
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // VkDescriptorType descriptorType;
+            1u,                                // uint32_t descriptorCount;
+            VK_SHADER_STAGE_COMPUTE_BIT,       // VkShaderStageFlags stageFlags;
+            nullptr                            // const VkSampler* pImmutableSamplers;
+        },
+        {
+            1u,                                // uint32_t binding;
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // VkDescriptorType descriptorType;
+            1u,                                // uint32_t descriptorCount;
+            VK_SHADER_STAGE_COMPUTE_BIT,       // VkShaderStageFlags stageFlags;
+            nullptr                            // const VkSampler* pImmutableSamplers;
+        }};
+
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,     // VkStructureType sType;
+        nullptr,                                                 // const void* pNext;
+        VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR, // VkDescriptorSetLayoutCreateFlags flags;
+        2u,                                                      // uint32_t bindingCount;
+        bindings                                                 // const VkDescriptorSetLayoutBinding* pBindings;
+    };
+
+    const auto descriptorSetLayout =
+        createDescriptorSetLayout(m_vkd, *m_device, &descriptorSetLayoutCreateInfo, nullptr);
+
+    const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                       // const void* pNext;
+        0u,                                            // VkPipelineLayoutCreateFlags flags;
+        1u,                                            // uint32_t descriptorSetCount;
+        &*descriptorSetLayout,                         // const VkDescriptorSetLayout* pSetLayouts;
+        0u,                                            // uint32_t pushConstantRangeCount;
+        nullptr                                        // const VkPushDescriptorRange* pPushDescriptorRanges;
+    };
+
+    const auto pipelineLayout = createPipelineLayout(m_vkd, *m_device, &pipelineLayoutParams);
+
+    const auto computeShaderModule = createShaderModule(m_vkd, *m_device, m_context.getBinaryCollection().get("comp"));
+
+    const VkPipelineShaderStageCreateInfo stageCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                             // const void* pNext;
+        0u,                                                  // VkPipelineShaderStageCreateFlags flags;
+        VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
+        *computeShaderModule,                                // VkShaderModule module;
+        "main",                                              // const char* pName;
+        nullptr                                              // const VkSpecializationInfo* pSpecializationInfo;
+    };
+
+    const VkComputePipelineCreateInfo createInfo = {
+        VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                        // const void* pNext;
+        0u,                                             // VkPipelineCreateFlags flags;
+        stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
+        *pipelineLayout,                                // VkPipelineLayout layout;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
+        0u,                                             // int32_t basePipelineIndex;
+    };
+
+    const auto computePipeline = createComputePipeline(m_vkd, *m_device, VK_NULL_HANDLE, &createInfo);
+
+    const auto cmdPool = createCommandPool(m_vkd, *m_device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, m_queueFamilyIndex);
+    const auto cmdBuffer = allocateCommandBuffer(m_vkd, *m_device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    VkBufferCreateInfo bufferParams = {
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
+        nullptr,                              // const void* pNext;
+        0u,                                   // VkBufferCreateFlags flags;
+        sizeof(uint32_t) * 4 * bufferSize,    // VkDeviceSize size;
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,   // VkBufferUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
+        1u,                                   // uint32_t queueFamilyCount;
+        &m_queueFamilyIndex                   // const uint32_t* pQueueFamilyIndices;
+    };
+
+    const auto uboBuffer1 = createBuffer(m_vkd, *m_device, &bufferParams);
+    const auto uboAlloc1  = AllocationSp(
+        m_allocator.allocate(getBufferMemoryRequirements(m_vkd, *m_device, *uboBuffer1), MemoryRequirement::HostVisible)
+            .release());
+    VK_CHECK(m_vkd.bindBufferMemory(*m_device, *uboBuffer1, uboAlloc1->getMemory(), uboAlloc1->getOffset()));
+
+    const auto uboBuffer2 = createBuffer(m_vkd, *m_device, &bufferParams);
+    const auto uboAlloc2  = AllocationSp(
+        m_allocator.allocate(getBufferMemoryRequirements(m_vkd, *m_device, *uboBuffer2), MemoryRequirement::HostVisible)
+            .release());
+    VK_CHECK(m_vkd.bindBufferMemory(*m_device, *uboBuffer2, uboAlloc2->getMemory(), uboAlloc2->getOffset()));
+
+    bufferParams.usage     = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    const auto ssboBuffer1 = createBuffer(m_vkd, *m_device, &bufferParams);
+    const auto ssboAlloc1  = AllocationSp(
+        m_allocator
+            .allocate(getBufferMemoryRequirements(m_vkd, *m_device, *ssboBuffer1), MemoryRequirement::HostVisible)
+            .release());
+    VK_CHECK(m_vkd.bindBufferMemory(*m_device, *ssboBuffer1, ssboAlloc1->getMemory(), ssboAlloc1->getOffset()));
+
+    const auto ssboBuffer2 = createBuffer(m_vkd, *m_device, &bufferParams);
+    const auto ssboAlloc2  = AllocationSp(
+        m_allocator
+            .allocate(getBufferMemoryRequirements(m_vkd, *m_device, *ssboBuffer2), MemoryRequirement::HostVisible)
+            .release());
+    VK_CHECK(m_vkd.bindBufferMemory(*m_device, *ssboBuffer2, ssboAlloc2->getMemory(), ssboAlloc2->getOffset()));
+
+    uint32_t *uboData1 = static_cast<uint32_t *>(uboAlloc1->getHostPtr());
+    uint32_t *uboData2 = static_cast<uint32_t *>(uboAlloc2->getHostPtr());
+    for (uint32_t i = 0; i < bufferSize; i++)
+    {
+        uboData1[i * 4] = i + 1;
+        uboData2[i * 4] = 100 + i;
+    }
+    flushAlloc(m_vkd, *m_device, *uboAlloc1);
+    flushAlloc(m_vkd, *m_device, *uboAlloc2);
+
+    uint32_t *ssboData1 = static_cast<uint32_t *>(ssboAlloc1->getHostPtr());
+    uint32_t *ssboData2 = static_cast<uint32_t *>(ssboAlloc2->getHostPtr());
+    deMemset(ssboData1, 0, static_cast<size_t>(bufferParams.size));
+    deMemset(ssboData2, 0, static_cast<size_t>(bufferParams.size));
+    flushAlloc(m_vkd, *m_device, *ssboAlloc1);
+    flushAlloc(m_vkd, *m_device, *ssboAlloc2);
+
+    const VkDescriptorBufferInfo uboInfo1 = {
+        *uboBuffer1,       // VkBuffer buffer;
+        0u,                // VkDeviceSize offset;
+        bufferParams.size, // VkDeviceSize range;
+    };
+
+    const VkDescriptorBufferInfo uboInfo2 = {
+        *uboBuffer2,       // VkBuffer buffer;
+        0u,                // VkDeviceSize offset;
+        bufferParams.size, // VkDeviceSize range;
+    };
+
+    const VkDescriptorBufferInfo ssboInfo1 = {
+        *ssboBuffer1,      // VkBuffer buffer;
+        0u,                // VkDeviceSize offset;
+        bufferParams.size, // VkDeviceSize range;
+    };
+
+    const VkDescriptorBufferInfo ssboInfo2 = {
+        *ssboBuffer2,      // VkBuffer buffer;
+        0u,                // VkDeviceSize offset;
+        bufferParams.size, // VkDeviceSize range;
+    };
+
+    const VkWriteDescriptorSet descriptorWrites[] = {
+        {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
+            nullptr,                                // const void* pNext;
+            VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
+            0u,                                     // uint32_t dstBinding;
+            0u,                                     // uint32_t dstArrayElement;
+            1u,                                     // uint32_t descriptorCount;
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,      // VkDescriptorType descriptorType;
+            nullptr,                                // const VkDescriptorImageInfo* pImageInfo;
+            &uboInfo1,                              // const VkDescriptorBufferInfo* pBufferInfo;
+            nullptr                                 // const VkBufferView* pTexelBufferView;
+        },
+        {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
+            nullptr,                                // const void* pNext;
+            VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
+            1u,                                     // uint32_t dstBinding;
+            0u,                                     // uint32_t dstArrayElement;
+            1u,                                     // uint32_t descriptorCount;
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,      // VkDescriptorType descriptorType;
+            nullptr,                                // const VkDescriptorImageInfo* pImageInfo;
+            &ssboInfo1,                             // const VkDescriptorBufferInfo* pBufferInfo;
+            nullptr                                 // const VkBufferView* pTexelBufferView;
+        }};
+
+    const VkWriteDescriptorSet descriptorWrite2 = {
+        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
+        nullptr,                                // const void* pNext;
+        VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
+        1u,                                     // uint32_t dstBinding;
+        0u,                                     // uint32_t dstArrayElement;
+        1u,                                     // uint32_t descriptorCount;
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,      // VkDescriptorType descriptorType;
+        nullptr,                                // const VkDescriptorImageInfo* pImageInfo;
+        &ssboInfo2,                             // const VkDescriptorBufferInfo* pBufferInfo;
+        nullptr                                 // const VkBufferView* pTexelBufferView;
+    };
+
+    const VkWriteDescriptorSet descriptorWrite3 = {
+        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
+        nullptr,                                // const void* pNext;
+        VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
+        0u,                                     // uint32_t dstBinding;
+        0u,                                     // uint32_t dstArrayElement;
+        1u,                                     // uint32_t descriptorCount;
+        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,      // VkDescriptorType descriptorType;
+        nullptr,                                // const VkDescriptorImageInfo* pImageInfo;
+        &uboInfo2,                              // const VkDescriptorBufferInfo* pBufferInfo;
+        nullptr                                 // const VkBufferView* pTexelBufferView;
+    };
+
+    VkDescriptorUpdateTemplateEntry updateEntries[2] = {
+        {
+            0u,                                // uint32_t dstBinding;
+            0u,                                // uint32_t dstArrayElement;
+            1u,                                // uint32_t descriptorCount;
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // VkDescriptorType descriptorType;
+            0u,                                // size_t offset;
+            sizeof(VkDescriptorBufferInfo)     // size_t stride;
+        },
+        {
+            1u,                                // uint32_t dstBinding;
+            0u,                                // uint32_t dstArrayElement;
+            1u,                                // uint32_t descriptorCount;
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // VkDescriptorType descriptorType;
+            sizeof(VkDescriptorBufferInfo),    // size_t offset;
+            sizeof(VkDescriptorBufferInfo)     // size_t stride;
+        },
+    };
+    VkDescriptorUpdateTemplateCreateInfo templateCreateInfo = {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                                  // const void* pNext;
+        (VkDescriptorUpdateTemplateCreateFlags)0u,                // VkDescriptorUpdateTemplateCreateFlags flags;
+        2u,                                                       // uint32_t     descriptorUpdateEntryCount;
+        updateEntries, // const VkDescriptorUpdateTemplateEntry* pDescriptorUpdateEntries;
+        VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS, // VkDescriptorUpdateTemplateType templateType;
+        *descriptorSetLayout,                                // VkDescriptorSetLayout descriptorSetLayout;
+        VK_PIPELINE_BIND_POINT_COMPUTE,                      // VkPipelineBindPoint pipelineBindPoint;
+        *pipelineLayout,                                     // VkPipelineLayout     pipelineLayout;
+        0u                                                   // uint32_t     set;
+    };
+    const auto descriptorUpdateTemplate1 = createDescriptorUpdateTemplate(m_vkd, *m_device, &templateCreateInfo);
+    templateCreateInfo.descriptorUpdateEntryCount = 1u;
+    templateCreateInfo.pDescriptorUpdateEntries   = &updateEntries[1];
+    const auto descriptorUpdateTemplate2        = createDescriptorUpdateTemplate(m_vkd, *m_device, &templateCreateInfo);
+    templateCreateInfo.pDescriptorUpdateEntries = &updateEntries[0];
+    const auto descriptorUpdateTemplate3        = createDescriptorUpdateTemplate(m_vkd, *m_device, &templateCreateInfo);
+
+    beginCommandBuffer(m_vkd, *cmdBuffer);
+    m_vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
+
+    if (m_commands2)
+    {
+        if (m_withTemplate)
+        {
+            VkDescriptorBufferInfo data[2] = {
+                uboInfo1,
+                ssboInfo1,
+            };
+            VkPushDescriptorSetWithTemplateInfo pushDescriptorSetWithTemplateInfo = {
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO, // VkStructureType sType;
+                nullptr,                                                  // const void* pNext;
+                *descriptorUpdateTemplate1, // VkDescriptorUpdateTemplate descriptorUpdateTemplate;
+                *pipelineLayout,            // VkPipelineLayout     layout;
+                0u,                         // uint32_t     set;
+                data                        // const void* pData;
+            };
+            const VkPushDescriptorSetWithTemplateInfo *templateInfoPtr = &pushDescriptorSetWithTemplateInfo;
+            m_vkd.cmdPushDescriptorSetWithTemplate2(*cmdBuffer, templateInfoPtr);
+        }
+        else
+        {
+            VkPushDescriptorSetInfo pushDescriptorSetInfo = {
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO, // VkStructureType sType;
+                nullptr,                                    // const void* pNext;
+                VK_SHADER_STAGE_COMPUTE_BIT,                // VkShaderStageFlags stageFlags;
+                *pipelineLayout,                            // VkPipelineLayout     layout;
+                0u,                                         // uint32_t     set;
+                2u,                                         // uint32_t     descriptorWriteCount;
+                descriptorWrites                            // const VkWriteDescriptorSet* pDescriptorWrites;
+            };
+            m_vkd.cmdPushDescriptorSet2(*cmdBuffer, &pushDescriptorSetInfo);
+        }
+    }
+    else
+    {
+        if (m_withTemplate)
+        {
+            VkDescriptorBufferInfo data[2] = {
+                uboInfo1,
+                ssboInfo1,
+            };
+            m_vkd.cmdPushDescriptorSetWithTemplate(*cmdBuffer, *descriptorUpdateTemplate1, *pipelineLayout, 0u, data);
+        }
+        else
+        {
+            m_vkd.cmdPushDescriptorSet(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 2u,
+                                       descriptorWrites);
+        }
+    }
+    m_vkd.cmdDispatch(*cmdBuffer, bufferSize, 1, 1);
+
+    if (m_commands2)
+    {
+        if (m_withTemplate)
+        {
+            VkDescriptorBufferInfo data[2] = {
+                ssboInfo2,
+                ssboInfo2,
+            };
+            VkPushDescriptorSetWithTemplateInfo pushDescriptorSetWithTemplateInfo = {
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO, // VkStructureType sType;
+                nullptr,                                                  // const void* pNext;
+                *descriptorUpdateTemplate2, // VkDescriptorUpdateTemplate descriptorUpdateTemplate;
+                *pipelineLayout,            // VkPipelineLayout     layout;
+                0u,                         // uint32_t     set;
+                data                        // const void* pData;
+            };
+            const VkPushDescriptorSetWithTemplateInfo *templateInfoPtr = &pushDescriptorSetWithTemplateInfo;
+            m_vkd.cmdPushDescriptorSetWithTemplate2(*cmdBuffer, templateInfoPtr);
+        }
+        else
+        {
+            VkPushDescriptorSetInfo pushDescriptorSetInfo = {
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO, // VkStructureType sType;
+                nullptr,                                    // const void* pNext;
+                VK_SHADER_STAGE_COMPUTE_BIT,                // VkShaderStageFlags stageFlags;
+                *pipelineLayout,                            // VkPipelineLayout     layout;
+                0u,                                         // uint32_t     set;
+                1u,                                         // uint32_t     descriptorWriteCount;
+                &descriptorWrite2                           // const VkWriteDescriptorSet* pDescriptorWrites;
+            };
+            m_vkd.cmdPushDescriptorSet2(*cmdBuffer, &pushDescriptorSetInfo);
+        }
+    }
+    else
+    {
+        if (m_withTemplate)
+        {
+            VkDescriptorBufferInfo data[2] = {
+                ssboInfo2,
+                ssboInfo2,
+            };
+            m_vkd.cmdPushDescriptorSetWithTemplate(*cmdBuffer, *descriptorUpdateTemplate2, *pipelineLayout, 0u, data);
+        }
+        else
+        {
+            m_vkd.cmdPushDescriptorSet(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
+                                       &descriptorWrite2);
+        }
+    }
+    m_vkd.cmdDispatch(*cmdBuffer, bufferSize, 1, 1);
+
+    VkMemoryBarrier memoryBarrier = initVulkanStructure();
+    memoryBarrier.srcAccessMask   = VK_ACCESS_SHADER_WRITE_BIT;
+    memoryBarrier.dstAccessMask   = VK_ACCESS_SHADER_WRITE_BIT;
+
+    m_vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u,
+                             1u, &memoryBarrier, 0u, nullptr, 0u, nullptr);
+
+    if (m_commands2)
+    {
+        if (m_withTemplate)
+        {
+            VkPushDescriptorSetWithTemplateInfo pushDescriptorSetWithTemplateInfo = {
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO, // VkStructureType sType;
+                nullptr,                                                  // const void* pNext;
+                *descriptorUpdateTemplate3, // VkDescriptorUpdateTemplate descriptorUpdateTemplate;
+                *pipelineLayout,            // VkPipelineLayout     layout;
+                0u,                         // uint32_t     set;
+                &uboInfo2                   // const void* pData;
+            };
+            m_vkd.cmdPushDescriptorSetWithTemplate2(*cmdBuffer, &pushDescriptorSetWithTemplateInfo);
+        }
+        else
+        {
+            VkPushDescriptorSetInfo pushDescriptorSetInfo = {
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO, // VkStructureType sType;
+                nullptr,                                    // const void* pNext;
+                VK_SHADER_STAGE_COMPUTE_BIT,                // VkShaderStageFlags stageFlags;
+                *pipelineLayout,                            // VkPipelineLayout     layout;
+                0u,                                         // uint32_t     set;
+                1u,                                         // uint32_t     descriptorWriteCount;
+                &descriptorWrite3                           // const VkWriteDescriptorSet* pDescriptorWrites;
+            };
+            m_vkd.cmdPushDescriptorSet2(*cmdBuffer, &pushDescriptorSetInfo);
+        }
+    }
+    else
+    {
+        if (m_withTemplate)
+        {
+            m_vkd.cmdPushDescriptorSetWithTemplate(*cmdBuffer, *descriptorUpdateTemplate3, *pipelineLayout, 0u,
+                                                   &uboInfo2);
+        }
+        else
+        {
+            m_vkd.cmdPushDescriptorSet(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
+                                       &descriptorWrite3);
+        }
+    }
+    m_vkd.cmdDispatch(*cmdBuffer, bufferSize, 1, 1);
+
+    endCommandBuffer(m_vkd, *cmdBuffer);
+    submitCommandsAndWait(m_vkd, *m_device, m_queue, *cmdBuffer);
+
+    invalidateAlloc(m_vkd, *m_device, *ssboAlloc1);
+    invalidateAlloc(m_vkd, *m_device, *ssboAlloc2);
+
+    for (uint32_t i = 0; i < bufferSize; i++)
+    {
+        if (ssboData1[i] != uboData1[i * 4])
+        {
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "Result mismatch at index " << i << ": expected " << uboData1[i * 4]
+                << ", got " << ssboData1[i] << tcu::TestLog::EndMessage;
+            return tcu::TestStatus::fail("Fail");
+        }
+        else if (ssboData2[i] != uboData2[i * 4] + uboData1[i * 4])
+        {
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "Result mismatch at index " << i << ": expected "
+                << uboData2[i * 4] + uboData1[i * 4] << ", got " << ssboData2[i] << tcu::TestLog::EndMessage;
+            return tcu::TestStatus::fail("Fail");
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class PushDescriptorIncrementalUpdatesComputeTest : public vkt::TestCase
+{
+public:
+    PushDescriptorIncrementalUpdatesComputeTest(tcu::TestContext &testContext, const string &name,
+                                                const TestParams &params, const bool withTemplate, const bool commands2)
+        : vkt::TestCase(testContext, name)
+        , m_params(params)
+        , m_withTemplate(withTemplate)
+        , m_commands2(commands2)
+    {
+    }
+    ~PushDescriptorIncrementalUpdatesComputeTest(void) = default;
+    void checkSupport(Context &context) const;
+    void initPrograms(SourceCollections &sourceCollections) const;
+    TestInstance *createInstance(Context &context) const
+    {
+        return new PushDescriptorIncrementalUpdatesComputeTestInstance(context, m_params, m_withTemplate, m_commands2);
+    }
+
+protected:
+    const TestParams m_params;
+    const bool m_withTemplate;
+    const bool m_commands2;
+};
+
+void PushDescriptorIncrementalUpdatesComputeTest::checkSupport(Context &context) const
+{
+    commonCheckSupported(context, m_params);
+    if (m_withTemplate)
+        context.requireDeviceFunctionality("VK_KHR_descriptor_update_template");
+}
+
+void PushDescriptorIncrementalUpdatesComputeTest::initPrograms(SourceCollections &sourceCollections) const
+{
+    std::string comp = "#version 450\n"
+                       "\n"
+                       "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+                       "\n"
+                       "layout(set = 0, binding = 0, std140) uniform Input {\n"
+                       "    uint data[16];\n"
+                       "} ubo;\n"
+                       "\n"
+                       "layout(set = 0, binding = 1, std430) buffer Output {\n"
+                       "    uint data[16];\n"
+                       "} ssbo;\n"
+                       "\n"
+                       "void main() {\n"
+                       "    ssbo.data[gl_GlobalInvocationID.x] += ubo.data[gl_GlobalInvocationID.x];\n"
+                       "}\n";
+
+    sourceCollections.glslSources.add("comp") << glu::ComputeSource(comp);
+}
+
 class PushDescriptorBufferComputeTestInstance : public vkt::TestInstance
 {
 public:
     PushDescriptorBufferComputeTestInstance(Context &context, const TestParams &params);
-    virtual ~PushDescriptorBufferComputeTestInstance(void);
+    virtual ~PushDescriptorBufferComputeTestInstance(void) = default;
     void init(void);
     virtual tcu::TestStatus iterate(void);
     tcu::TestStatus verifyOutput(void);
@@ -742,12 +1258,10 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const Extensions m_instanceExtensions;
     const CustomInstance m_instance;
     const InstanceDriver &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
-    const Extensions m_deviceExtensions;
     std::vector<std::string> m_deviceEnabledExtensions;
     const Unique<VkDevice> m_device;
     const DeviceDriver m_vkd;
@@ -772,14 +1286,12 @@ PushDescriptorBufferComputeTestInstance::PushDescriptorBufferComputeTestInstance
     : vkt::TestInstance(context)
     , m_params(params)
     , m_vkp(context.getPlatformInterface())
-    , m_instanceExtensions(enumerateInstanceExtensionProperties(m_vkp, nullptr))
-    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT))
-    , m_deviceExtensions(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions,
-                                              m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
+                                              params, m_deviceEnabledExtensions))
     , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_itemSize(calcItemSize(m_vki, m_physicalDevice))
@@ -1002,10 +1514,6 @@ void PushDescriptorBufferComputeTestInstance::init(void)
     }
 }
 
-PushDescriptorBufferComputeTestInstance::~PushDescriptorBufferComputeTestInstance(void)
-{
-}
-
 tcu::TestStatus PushDescriptorBufferComputeTestInstance::iterate(void)
 {
     init();
@@ -1034,7 +1542,8 @@ class PushDescriptorBufferComputeTest : public vkt::TestCase
 {
 public:
     PushDescriptorBufferComputeTest(tcu::TestContext &testContext, const string &name, const TestParams &params);
-    ~PushDescriptorBufferComputeTest(void);
+    ~PushDescriptorBufferComputeTest(void) = default;
+    void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
     TestInstance *createInstance(Context &context) const;
 
@@ -1049,8 +1558,9 @@ PushDescriptorBufferComputeTest::PushDescriptorBufferComputeTest(tcu::TestContex
 {
 }
 
-PushDescriptorBufferComputeTest::~PushDescriptorBufferComputeTest(void)
+void PushDescriptorBufferComputeTest::checkSupport(Context &context) const
 {
+    commonCheckSupported(context, m_params);
 }
 
 TestInstance *PushDescriptorBufferComputeTest::createInstance(Context &context) const
@@ -1088,7 +1598,7 @@ class PushDescriptorImageGraphicsTestInstance : public vkt::TestInstance
 {
 public:
     PushDescriptorImageGraphicsTestInstance(Context &context, const TestParams &params);
-    virtual ~PushDescriptorImageGraphicsTestInstance(void);
+    virtual ~PushDescriptorImageGraphicsTestInstance(void) = default;
     void init(void);
     virtual tcu::TestStatus iterate(void);
     tcu::TestStatus verifyImage(void);
@@ -1096,12 +1606,10 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const Extensions m_instanceExtensions;
     const CustomInstance m_instance;
     const InstanceDriver &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
-    const Extensions m_deviceExtensions;
     std::vector<std::string> m_deviceEnabledExtensions;
     const Unique<VkDevice> m_device;
     const DeviceDriver m_vkd;
@@ -1138,14 +1646,12 @@ PushDescriptorImageGraphicsTestInstance::PushDescriptorImageGraphicsTestInstance
     : vkt::TestInstance(context)
     , m_params(params)
     , m_vkp(context.getPlatformInterface())
-    , m_instanceExtensions(enumerateInstanceExtensionProperties(m_vkp, nullptr))
-    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
-    , m_deviceExtensions(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions,
-                                              m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
+                                              params, m_deviceEnabledExtensions))
     , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
@@ -1729,10 +2235,6 @@ void PushDescriptorImageGraphicsTestInstance::init(void)
     }
 }
 
-PushDescriptorImageGraphicsTestInstance::~PushDescriptorImageGraphicsTestInstance(void)
-{
-}
-
 tcu::TestStatus PushDescriptorImageGraphicsTestInstance::iterate(void)
 {
     init();
@@ -1815,7 +2317,7 @@ class PushDescriptorImageGraphicsTest : public vkt::TestCase
 {
 public:
     PushDescriptorImageGraphicsTest(tcu::TestContext &testContext, const string &name, const TestParams &params);
-    ~PushDescriptorImageGraphicsTest(void);
+    ~PushDescriptorImageGraphicsTest(void) = default;
 
     void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
@@ -1832,10 +2334,6 @@ PushDescriptorImageGraphicsTest::PushDescriptorImageGraphicsTest(tcu::TestContex
 {
 }
 
-PushDescriptorImageGraphicsTest::~PushDescriptorImageGraphicsTest(void)
-{
-}
-
 TestInstance *PushDescriptorImageGraphicsTest::createInstance(Context &context) const
 {
     return new PushDescriptorImageGraphicsTestInstance(context, m_params);
@@ -1843,6 +2341,7 @@ TestInstance *PushDescriptorImageGraphicsTest::createInstance(Context &context) 
 
 void PushDescriptorImageGraphicsTest::checkSupport(Context &context) const
 {
+    commonCheckSupported(context, m_params);
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_params.pipelineConstructionType);
 }
@@ -1944,7 +2443,7 @@ class PushDescriptorImageComputeTestInstance : public vkt::TestInstance
 {
 public:
     PushDescriptorImageComputeTestInstance(Context &context, const TestParams &params);
-    virtual ~PushDescriptorImageComputeTestInstance(void);
+    virtual ~PushDescriptorImageComputeTestInstance(void) = default;
     void init(void);
     virtual tcu::TestStatus iterate(void);
     tcu::TestStatus verifyOutput(void);
@@ -1952,12 +2451,10 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const Extensions m_instanceExtensions;
     const CustomInstance m_instance;
     const InstanceDriver &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
-    const Extensions m_deviceExtensions;
     std::vector<std::string> m_deviceEnabledExtensions;
     const Unique<VkDevice> m_device;
     const DeviceDriver m_vkd;
@@ -1988,15 +2485,13 @@ PushDescriptorImageComputeTestInstance::PushDescriptorImageComputeTestInstance(C
     : vkt::TestInstance(context)
     , m_params(params)
     , m_vkp(context.getPlatformInterface())
-    , m_instanceExtensions(enumerateInstanceExtensionProperties(m_vkp, nullptr))
-    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
     , m_queueFamilyIndex(
           findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT))
-    , m_deviceExtensions(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions,
-                                              m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
+                                              params, m_deviceEnabledExtensions))
     , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_itemSize(calcItemSize(m_vki, m_physicalDevice, 2u))
@@ -2471,10 +2966,6 @@ void PushDescriptorImageComputeTestInstance::init(void)
     }
 }
 
-PushDescriptorImageComputeTestInstance::~PushDescriptorImageComputeTestInstance(void)
-{
-}
-
 tcu::TestStatus PushDescriptorImageComputeTestInstance::iterate(void)
 {
     init();
@@ -2623,7 +3114,8 @@ class PushDescriptorImageComputeTest : public vkt::TestCase
 {
 public:
     PushDescriptorImageComputeTest(tcu::TestContext &testContext, const string &name, const TestParams &params);
-    ~PushDescriptorImageComputeTest(void);
+    ~PushDescriptorImageComputeTest(void) = default;
+    void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
     TestInstance *createInstance(Context &context) const;
 
@@ -2638,8 +3130,9 @@ PushDescriptorImageComputeTest::PushDescriptorImageComputeTest(tcu::TestContext 
 {
 }
 
-PushDescriptorImageComputeTest::~PushDescriptorImageComputeTest(void)
+void PushDescriptorImageComputeTest::checkSupport(Context &context) const
 {
+    commonCheckSupported(context, m_params);
 }
 
 TestInstance *PushDescriptorImageComputeTest::createInstance(Context &context) const
@@ -2753,7 +3246,7 @@ class PushDescriptorTexelBufferGraphicsTestInstance : public vkt::TestInstance
 {
 public:
     PushDescriptorTexelBufferGraphicsTestInstance(Context &context, const TestParams &params);
-    virtual ~PushDescriptorTexelBufferGraphicsTestInstance(void);
+    virtual ~PushDescriptorTexelBufferGraphicsTestInstance(void) = default;
     void init(void);
     virtual tcu::TestStatus iterate(void);
     tcu::TestStatus verifyImage(void);
@@ -2761,12 +3254,10 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const Extensions m_instanceExtensions;
     const CustomInstance m_instance;
     const InstanceDriver &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
-    const Extensions m_deviceExtensions;
     std::vector<std::string> m_deviceEnabledExtensions;
     const Unique<VkDevice> m_device;
     const DeviceDriver m_vkd;
@@ -2801,14 +3292,12 @@ PushDescriptorTexelBufferGraphicsTestInstance::PushDescriptorTexelBufferGraphics
     : vkt::TestInstance(context)
     , m_params(params)
     , m_vkp(context.getPlatformInterface())
-    , m_instanceExtensions(enumerateInstanceExtensionProperties(m_vkp, nullptr))
-    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
-    , m_deviceExtensions(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions,
-                                              m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
+                                              params, m_deviceEnabledExtensions))
     , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
@@ -3112,10 +3601,6 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init(void)
     }
 }
 
-PushDescriptorTexelBufferGraphicsTestInstance::~PushDescriptorTexelBufferGraphicsTestInstance(void)
-{
-}
-
 tcu::TestStatus PushDescriptorTexelBufferGraphicsTestInstance::iterate(void)
 {
     init();
@@ -3166,7 +3651,7 @@ class PushDescriptorTexelBufferGraphicsTest : public vkt::TestCase
 {
 public:
     PushDescriptorTexelBufferGraphicsTest(tcu::TestContext &testContext, const string &name, const TestParams &params);
-    ~PushDescriptorTexelBufferGraphicsTest(void);
+    ~PushDescriptorTexelBufferGraphicsTest(void) = default;
 
     void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
@@ -3184,10 +3669,6 @@ PushDescriptorTexelBufferGraphicsTest::PushDescriptorTexelBufferGraphicsTest(tcu
 {
 }
 
-PushDescriptorTexelBufferGraphicsTest::~PushDescriptorTexelBufferGraphicsTest(void)
-{
-}
-
 TestInstance *PushDescriptorTexelBufferGraphicsTest::createInstance(Context &context) const
 {
     return new PushDescriptorTexelBufferGraphicsTestInstance(context, m_params);
@@ -3195,9 +3676,7 @@ TestInstance *PushDescriptorTexelBufferGraphicsTest::createInstance(Context &con
 
 void PushDescriptorTexelBufferGraphicsTest::checkSupport(Context &context) const
 {
-    if (m_params.useMaintenance5)
-        context.requireDeviceFunctionality("VK_KHR_maintenance5");
-
+    commonCheckSupported(context, m_params);
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_params.pipelineConstructionType);
 }
@@ -3258,7 +3737,7 @@ class PushDescriptorTexelBufferComputeTestInstance : public vkt::TestInstance
 {
 public:
     PushDescriptorTexelBufferComputeTestInstance(Context &context, const TestParams &params);
-    virtual ~PushDescriptorTexelBufferComputeTestInstance(void);
+    virtual ~PushDescriptorTexelBufferComputeTestInstance(void) = default;
     void init(void);
     virtual tcu::TestStatus iterate(void);
     tcu::TestStatus verifyOutput(void);
@@ -3266,12 +3745,10 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const Extensions m_instanceExtensions;
     const CustomInstance m_instance;
     const InstanceDriver &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
-    const Extensions m_deviceExtensions;
     std::vector<std::string> m_deviceEnabledExtensions;
     const Unique<VkDevice> m_device;
     const DeviceDriver m_vkd;
@@ -3297,14 +3774,12 @@ PushDescriptorTexelBufferComputeTestInstance::PushDescriptorTexelBufferComputeTe
     : vkt::TestInstance(context)
     , m_params(params)
     , m_vkp(context.getPlatformInterface())
-    , m_instanceExtensions(enumerateInstanceExtensionProperties(m_vkp, nullptr))
-    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT))
-    , m_deviceExtensions(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions,
-                                              m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
+                                              params, m_deviceEnabledExtensions))
     , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_itemSize(calcItemSize(m_vki, m_physicalDevice))
@@ -3528,10 +4003,6 @@ void PushDescriptorTexelBufferComputeTestInstance::init(void)
     }
 }
 
-PushDescriptorTexelBufferComputeTestInstance::~PushDescriptorTexelBufferComputeTestInstance(void)
-{
-}
-
 tcu::TestStatus PushDescriptorTexelBufferComputeTestInstance::iterate(void)
 {
     init();
@@ -3570,7 +4041,8 @@ class PushDescriptorTexelBufferComputeTest : public vkt::TestCase
 {
 public:
     PushDescriptorTexelBufferComputeTest(tcu::TestContext &testContext, const string &name, const TestParams &params);
-    ~PushDescriptorTexelBufferComputeTest(void);
+    ~PushDescriptorTexelBufferComputeTest(void) = default;
+    void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
     TestInstance *createInstance(Context &context) const;
 
@@ -3585,8 +4057,9 @@ PushDescriptorTexelBufferComputeTest::PushDescriptorTexelBufferComputeTest(tcu::
 {
 }
 
-PushDescriptorTexelBufferComputeTest::~PushDescriptorTexelBufferComputeTest(void)
+void PushDescriptorTexelBufferComputeTest::checkSupport(Context &context) const
 {
+    commonCheckSupported(context, m_params);
 }
 
 TestInstance *PushDescriptorTexelBufferComputeTest::createInstance(Context &context) const
@@ -3644,7 +4117,7 @@ class PushDescriptorInputAttachmentGraphicsTestInstance : public vkt::TestInstan
 {
 public:
     PushDescriptorInputAttachmentGraphicsTestInstance(Context &context, const TestParams &params);
-    virtual ~PushDescriptorInputAttachmentGraphicsTestInstance(void);
+    virtual ~PushDescriptorInputAttachmentGraphicsTestInstance(void) = default;
     void init(void);
     virtual tcu::TestStatus iterate(void);
     tcu::TestStatus verifyImage(void);
@@ -3652,12 +4125,10 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const Extensions m_instanceExtensions;
     const CustomInstance m_instance;
     const InstanceDriver &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
-    const Extensions m_deviceExtensions;
     std::vector<std::string> m_deviceEnabledExtensions;
     const Unique<VkDevice> m_device;
     const DeviceDriver m_vkd;
@@ -3691,14 +4162,12 @@ PushDescriptorInputAttachmentGraphicsTestInstance::PushDescriptorInputAttachment
     : vkt::TestInstance(context)
     , m_params(params)
     , m_vkp(context.getPlatformInterface())
-    , m_instanceExtensions(enumerateInstanceExtensionProperties(m_vkp, nullptr))
-    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
-    , m_deviceExtensions(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions,
-                                              m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
+                                              params, m_deviceEnabledExtensions))
     , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
@@ -4174,10 +4643,6 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init(void)
     }
 }
 
-PushDescriptorInputAttachmentGraphicsTestInstance::~PushDescriptorInputAttachmentGraphicsTestInstance(void)
-{
-}
-
 tcu::TestStatus PushDescriptorInputAttachmentGraphicsTestInstance::iterate(void)
 {
     init();
@@ -4238,7 +4703,7 @@ class PushDescriptorInputAttachmentGraphicsTest : public vkt::TestCase
 public:
     PushDescriptorInputAttachmentGraphicsTest(tcu::TestContext &testContext, const string &name,
                                               const TestParams &params);
-    ~PushDescriptorInputAttachmentGraphicsTest(void);
+    ~PushDescriptorInputAttachmentGraphicsTest(void) = default;
 
     void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
@@ -4256,10 +4721,6 @@ PushDescriptorInputAttachmentGraphicsTest::PushDescriptorInputAttachmentGraphics
 {
 }
 
-PushDescriptorInputAttachmentGraphicsTest::~PushDescriptorInputAttachmentGraphicsTest(void)
-{
-}
-
 TestInstance *PushDescriptorInputAttachmentGraphicsTest::createInstance(Context &context) const
 {
     return new PushDescriptorInputAttachmentGraphicsTestInstance(context, m_params);
@@ -4267,6 +4728,7 @@ TestInstance *PushDescriptorInputAttachmentGraphicsTest::createInstance(Context 
 
 void PushDescriptorInputAttachmentGraphicsTest::checkSupport(Context &context) const
 {
+    commonCheckSupported(context, m_params);
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_params.pipelineConstructionType);
 }
@@ -4307,43 +4769,43 @@ void PushDescriptorInputAttachmentGraphicsTest::initPrograms(SourceCollections &
 
 tcu::TestCaseGroup *createPushDescriptorTests(tcu::TestContext &testCtx, PipelineConstructionType pipelineType)
 {
-    const TestParams params[]{{pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0u, 1u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 0u, 1u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 0u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u, 128u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0u, 1u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_SAMPLER, 0u, 1u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_SAMPLER, 0u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_SAMPLER, 1u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_SAMPLER, 3u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0u, 1u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0u, 1u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 0u, 1u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 0u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 3u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 0u, 1u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 0u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 3u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 0u, 1u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 0u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1u, 2u, false},
-                              {pipelineType, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 3u, 2u, false}};
+    const TestParams params[]{{pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0u, 1u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 0u, 1u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 0u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u, 128u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0u, 1u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_SAMPLER, 0u, 1u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_SAMPLER, 0u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_SAMPLER, 1u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_SAMPLER, 3u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0u, 1u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0u, 1u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 0u, 1u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 0u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 3u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 0u, 1u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 0u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 3u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 0u, 1u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 0u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1u, 2u, false, false},
+                              {pipelineType, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 3u, 2u, false, false}};
 
     de::MovePtr<tcu::TestCaseGroup> pushDescriptorTests(new tcu::TestCaseGroup(testCtx, "push_descriptor"));
 
@@ -4439,7 +4901,7 @@ tcu::TestCaseGroup *createPushDescriptorTests(tcu::TestContext &testCtx, Pipelin
 
     if (pipelineType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
     {
-        TestParams testParams = {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 0u, 1u, true};
+        TestParams testParams = {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 0u, 1u, true, false};
         graphicsTests->addChild(
             new PushDescriptorTexelBufferGraphicsTest(testCtx, "maintenance5_uniform_texel_buffer", testParams));
         testParams.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
@@ -4448,6 +4910,21 @@ tcu::TestCaseGroup *createPushDescriptorTests(tcu::TestContext &testCtx, Pipelin
         testParams.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         graphicsTests->addChild(
             new PushDescriptorBufferGraphicsTest(testCtx, "maintenance5_uniform_buffer", testParams));
+
+        for (uint32_t i = 0; i < 4; ++i)
+        {
+            const bool useTemplate = (i % 2 == 1);
+            const bool commands2   = (i / 2 == 1);
+            std::string name       = "incremental_updates";
+            if (useTemplate)
+                name += "_template";
+            if (commands2)
+                name += "_2";
+            TestParams incrementalUpdateParams = {pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 0u, 3u, false,
+                                                  commands2};
+            computeTests->addChild(new PushDescriptorIncrementalUpdatesComputeTest(
+                testCtx, name, incrementalUpdateParams, useTemplate, commands2));
+        }
     }
 
     pushDescriptorTests->addChild(graphicsTests.release());

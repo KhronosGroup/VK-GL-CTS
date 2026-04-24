@@ -172,11 +172,15 @@ void NegativeBufferApiTests::init(void)
     ES3F_ADD_API_CASE(read_pixels, "Invalid glReadPixels() usage", {
         std::vector<GLubyte> ubyteData(4);
 
-        m_log << TestLog::Section(
-            "", "GL_INVALID_OPERATION is generated if the combination of format and type is unsupported.");
-        glReadPixels(0, 0, 1, 1, GL_LUMINANCE_ALPHA, GL_UNSIGNED_SHORT_4_4_4_4, &ubyteData[0]);
-        expectError(GL_INVALID_OPERATION);
-        m_log << TestLog::EndSection;
+        /* GL_LUMINANCE_ALPHA not supported by GL Core / ARB_ES3_compatibility. */
+        if (!glu::isContextTypeGLCore(m_context.getRenderContext().getType()))
+        {
+            m_log << TestLog::Section(
+                "", "GL_INVALID_OPERATION is generated if the combination of format and type is unsupported.");
+            glReadPixels(0, 0, 1, 1, GL_LUMINANCE_ALPHA, GL_UNSIGNED_SHORT_4_4_4_4, &ubyteData[0]);
+            expectError(GL_INVALID_OPERATION);
+            m_log << TestLog::EndSection;
+        }
 
         m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if either width or height is negative.");
         glReadPixels(0, 0, -1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &ubyteData[0]);
@@ -207,16 +211,22 @@ void NegativeBufferApiTests::init(void)
             "", "Unsupported combinations of format and type will generate an INVALID_OPERATION error.");
         glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_SHORT_5_6_5, &ushortData[0]);
         expectError(GL_INVALID_OPERATION);
-        glReadPixels(0, 0, 1, 1, GL_ALPHA, GL_UNSIGNED_SHORT_5_6_5, &ushortData[0]);
-        expectError(GL_INVALID_OPERATION);
         glReadPixels(0, 0, 1, 1, GL_RGB, GL_UNSIGNED_SHORT_4_4_4_4, &ushortData[0]);
-        expectError(GL_INVALID_OPERATION);
-        glReadPixels(0, 0, 1, 1, GL_ALPHA, GL_UNSIGNED_SHORT_4_4_4_4, &ushortData[0]);
         expectError(GL_INVALID_OPERATION);
         glReadPixels(0, 0, 1, 1, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, &ushortData[0]);
         expectError(GL_INVALID_OPERATION);
-        glReadPixels(0, 0, 1, 1, GL_ALPHA, GL_UNSIGNED_SHORT_5_5_5_1, &ushortData[0]);
-        expectError(GL_INVALID_OPERATION);
+
+        /* GL_ALPHA not supported by GL Core / ARB_ES3_compatibility. */
+        if (!glu::isContextTypeGLCore(m_context.getRenderContext().getType()))
+        {
+            glReadPixels(0, 0, 1, 1, GL_ALPHA, GL_UNSIGNED_SHORT_5_6_5, &ushortData[0]);
+            expectError(GL_INVALID_OPERATION);
+            glReadPixels(0, 0, 1, 1, GL_ALPHA, GL_UNSIGNED_SHORT_4_4_4_4, &ushortData[0]);
+            expectError(GL_INVALID_OPERATION);
+            glReadPixels(0, 0, 1, 1, GL_ALPHA, GL_UNSIGNED_SHORT_5_5_5_1, &ushortData[0]);
+            expectError(GL_INVALID_OPERATION);
+        }
+
         m_log << TestLog::EndSection;
 
         m_log << TestLog::Section(

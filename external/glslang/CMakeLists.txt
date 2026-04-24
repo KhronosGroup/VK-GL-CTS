@@ -39,6 +39,7 @@ if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 
 	set(GLSLANG_INCLUDE_PATH	${GLSLANG_ABS_PATH}			PARENT_SCOPE)
 	set(GLSLANG_LIBRARIES		glslang SPIRV				PARENT_SCOPE)
+	set(ENABLE_PCH OFF CACHE BOOL "" FORCE)
 else ()
 	message(FATAL_ERROR "glslang not found")
 endif ()

@@ -194,6 +194,8 @@ struct CaseDef
     bool nonuniformOffset;
     bool cfDivergent;
     ResultAddress resultAddr;
+    bool uses64BitIndexing;
+    bool useLongVector; // use EXT_long_vector - only supported with "basic" tests so far
 };
 
 bool isRayTracingStageKHR(const Stage stage)
@@ -289,6 +291,8 @@ public:
     virtual TestInstance *createInstance(Context &context) const;
     virtual void checkSupport(Context &context) const;
 
+    std::string makeVecType(VkComponentTypeKHR t, uint32_t N, bool packed = false) const;
+
 private:
     CaseDef m_data;
 };
@@ -310,10 +314,34 @@ void CooperativeVectorTestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "Vulkan 1.1 not supported");
     }
 
-    if (!context.getCooperativeVectorFeaturesNV().cooperativeVector)
+    if (!m_data.useLongVector)
     {
-        TCU_THROW(NotSupportedError, "cooperativeVector not supported");
+        if (!context.getCooperativeVectorFeaturesNV().cooperativeVector)
+        {
+            TCU_THROW(NotSupportedError, "cooperativeVector not supported");
+        }
+        if (m_data.inputVectorSize > context.getCooperativeVectorPropertiesNV().maxCooperativeVectorComponents)
+        {
+            TCU_THROW(NotSupportedError, "number of components not supported");
+        }
     }
+
+    if (m_data.useLongVector)
+    {
+        if (!context.getShaderLongVectorFeaturesEXT().longVector)
+        {
+            TCU_THROW(NotSupportedError, "longVector not supported");
+        }
+        if (m_data.inputVectorSize > context.getShaderLongVectorPropertiesEXT().maxVectorComponents)
+        {
+            TCU_THROW(NotSupportedError, "number of components not supported");
+        }
+    }
+
+#ifndef CTS_USES_VULKANSC
+    if (m_data.uses64BitIndexing && !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
+        TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
+#endif
 
     if (isRayTracingStageKHR(m_data.stage))
     {
@@ -375,79 +403,84 @@ void CooperativeVectorTestCase::checkSupport(Context &context) const
             TCU_THROW(NotSupportedError, "cooperativeVectorTrainingFloat32Accumulation not supported");
     }
 
-    uint32_t propertyCount = 0;
-    std::vector<VkCooperativeVectorPropertiesNV> properties;
-    context.getInstanceInterface().getPhysicalDeviceCooperativeVectorPropertiesNV(context.getPhysicalDevice(),
-                                                                                  &propertyCount, nullptr);
-    if (propertyCount == 0)
-        TCU_THROW(NotSupportedError, "cooperative vectors not supported");
-
-    bool supported[2] = {false, false};
-    properties.resize(propertyCount);
-
-    for (uint32_t i = 0; i < propertyCount; ++i)
+    if (!m_data.useLongVector)
     {
-        VkCooperativeVectorPropertiesNV *p = &properties[i];
-        p->sType                           = VK_STRUCTURE_TYPE_COOPERATIVE_VECTOR_PROPERTIES_NV;
-        p->pNext                           = nullptr;
-    }
+        uint32_t propertyCount = 0;
+        std::vector<VkCooperativeVectorPropertiesNV> properties;
+        context.getInstanceInterface().getPhysicalDeviceCooperativeVectorPropertiesNV(context.getPhysicalDevice(),
+                                                                                      &propertyCount, nullptr);
+        if (propertyCount == 0)
+            TCU_THROW(NotSupportedError, "cooperative vectors not supported");
 
-    context.getInstanceInterface().getPhysicalDeviceCooperativeVectorPropertiesNV(context.getPhysicalDevice(),
-                                                                                  &propertyCount, properties.data());
+        bool supported[2] = {false, false};
+        properties.resize(propertyCount);
 
-    for (uint32_t i = 0; i < propertyCount; ++i)
-    {
-        VkCooperativeVectorPropertiesNV *p = &properties[i];
-        if (isMatrixMul(m_data.testType))
+        for (uint32_t i = 0; i < propertyCount; ++i)
         {
-            if (m_data.inputPacked)
+            VkCooperativeVectorPropertiesNV *p = &properties[i];
+            p->sType                           = VK_STRUCTURE_TYPE_COOPERATIVE_VECTOR_PROPERTIES_NV;
+            p->pNext                           = nullptr;
+        }
+
+        context.getInstanceInterface().getPhysicalDeviceCooperativeVectorPropertiesNV(
+            context.getPhysicalDevice(), &propertyCount, properties.data());
+
+        for (uint32_t i = 0; i < propertyCount; ++i)
+        {
+            VkCooperativeVectorPropertiesNV *p = &properties[i];
+            if (isMatrixMul(m_data.testType))
             {
-                auto const getInterp = [](VkComponentTypeKHR inputInterpretation) -> VkComponentTypeKHR
+                if (m_data.inputPacked)
                 {
-                    switch (inputInterpretation)
+                    auto const getInterp = [](VkComponentTypeKHR inputInterpretation) -> VkComponentTypeKHR
                     {
-                    case VK_COMPONENT_TYPE_SINT8_KHR:
-                        return VK_COMPONENT_TYPE_SINT8_PACKED_NV;
-                    case VK_COMPONENT_TYPE_UINT8_KHR:
-                        return VK_COMPONENT_TYPE_UINT8_PACKED_NV;
-                    default:
-                        return inputInterpretation;
+                        switch (inputInterpretation)
+                        {
+                        case VK_COMPONENT_TYPE_SINT8_KHR:
+                            return VK_COMPONENT_TYPE_SINT8_PACKED_NV;
+                        case VK_COMPONENT_TYPE_UINT8_KHR:
+                            return VK_COMPONENT_TYPE_UINT8_PACKED_NV;
+                        default:
+                            return inputInterpretation;
+                        }
+                    };
+                    if (p->inputType == VK_COMPONENT_TYPE_UINT32_KHR &&
+                        p->inputInterpretation == getInterp(m_data.inputInterpretation) &&
+                        p->matrixInterpretation == m_data.matrixType && p->biasInterpretation == m_data.outputType &&
+                        p->resultType == m_data.outputType &&
+                        (m_data.testType != TT_MATRIXMADTRANSPOSE || p->transpose))
+                    {
+                        supported[0] = supported[1] = true;
                     }
-                };
-                if (p->inputType == VK_COMPONENT_TYPE_UINT32_KHR &&
-                    p->inputInterpretation == getInterp(m_data.inputInterpretation) &&
-                    p->matrixInterpretation == m_data.matrixType && p->biasInterpretation == m_data.outputType &&
-                    p->resultType == m_data.outputType && (m_data.testType != TT_MATRIXMADTRANSPOSE || p->transpose))
+                }
+                else
                 {
-                    supported[0] = supported[1] = true;
+                    if (p->inputType == m_data.inputType && p->inputInterpretation == m_data.inputInterpretation &&
+                        p->matrixInterpretation == m_data.matrixType && p->biasInterpretation == m_data.outputType &&
+                        p->resultType == m_data.outputType &&
+                        (m_data.testType != TT_MATRIXMADTRANSPOSE || p->transpose))
+                    {
+                        supported[0] = supported[1] = true;
+                    }
                 }
             }
             else
             {
-                if (p->inputType == m_data.inputType && p->inputInterpretation == m_data.inputInterpretation &&
-                    p->matrixInterpretation == m_data.matrixType && p->biasInterpretation == m_data.outputType &&
-                    p->resultType == m_data.outputType && (m_data.testType != TT_MATRIXMADTRANSPOSE || p->transpose))
-                {
-                    supported[0] = supported[1] = true;
-                }
-            }
-        }
-        else
-        {
-            VkComponentTypeKHR types[2] = {m_data.inputType, m_data.outputType};
+                VkComponentTypeKHR types[2] = {m_data.inputType, m_data.outputType};
 
-            for (uint32_t j = 0; j < 2; ++j)
-            {
-                if (p->inputType == types[j] || p->resultType == types[j])
+                for (uint32_t j = 0; j < 2; ++j)
                 {
-                    supported[j] = true;
+                    if (p->inputType == types[j] || p->resultType == types[j])
+                    {
+                        supported[j] = true;
+                    }
                 }
             }
         }
+
+        if (!supported[0] || !supported[1])
+            TCU_THROW(NotSupportedError, "cooperative vector combination not supported");
     }
-
-    if (!supported[0] || !supported[1])
-        TCU_THROW(NotSupportedError, "cooperative vector combination not supported");
 }
 
 VkCooperativeVectorMatrixLayoutNV swapRowColMajor(VkCooperativeVectorMatrixLayoutNV layout)
@@ -476,17 +509,18 @@ float getFloatScaleFactor(uint32_t K)
     return 1.0f / (float)(1 << shift);
 }
 
-static std::string makeVecType(VkComponentTypeKHR t, uint32_t N, bool packed = false)
+std::string CooperativeVectorTestCase::makeVecType(VkComponentTypeKHR t, uint32_t N, bool packed) const
 {
     std::stringstream ss;
+    std::string vecName = m_data.useLongVector ? "vector<" : "coopvecNV<";
     if (packed)
     {
-        ss << "coopvecNV<" << getComponentTypeInfo(VK_COMPONENT_TYPE_UINT32_KHR).typeName << ", "
+        ss << vecName << getComponentTypeInfo(VK_COMPONENT_TYPE_UINT32_KHR).typeName << ", "
            << deDivRoundUp32(N, 32 / getComponentTypeInfo(t).bits) << ">";
     }
     else
     {
-        ss << "coopvecNV<" << getComponentTypeInfo(t).typeName << ", " << N << ">";
+        ss << vecName << getComponentTypeInfo(t).typeName << ", " << N << ">";
     }
     return ss.str();
 }
@@ -537,10 +571,19 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
            "#extension GL_EXT_nonuniform_qualifier : enable\n"
 
            "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n"
-           "#extension GL_NV_cooperative_vector : enable\n"
            "#extension GL_EXT_buffer_reference : enable\n"
            "#extension GL_EXT_ray_tracing : enable\n"
-           "#extension GL_EXT_control_flow_attributes : enable\n";
+           "#extension GL_EXT_control_flow_attributes : enable\n"
+           "#extension GL_EXT_shader_64bit_indexing : enable\n";
+
+    if (m_data.useLongVector)
+    {
+        css << "#extension GL_EXT_long_vector : enable\n";
+    }
+    else
+    {
+        css << "#extension GL_NV_cooperative_vector : enable\n";
+    }
 
     switch (m_data.stage)
     {
@@ -584,21 +627,34 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
     if (m_data.storageClass == SC_BUFFER_VARIABLE_POINTERS || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
         css << "#pragma use_variable_pointers\n";
 
-    const char *typeStrA = getComponentTypeInfo(m_data.inputType).typeName;
-    const char *typeStrB = isMatrixMul(m_data.testType) ? "uint32_t" : getComponentTypeInfo(m_data.inputType).typeName;
-    const char *typeStrC = isTraining(m_data.testType)  ? "uint32_t" :
-                           isMatrixMul(m_data.testType) ? "uint32_t" :
-                                                          getComponentTypeInfo(m_data.outputType).typeName;
-    const char *typeStrO = getComponentTypeInfo(m_data.outputType).typeName;
+    std::string typeStrA, typeStrB, typeStrC, typeStrO;
+    std::string layoutStr;
 
+    if (m_data.useLongVector)
+    {
+        typeStrA  = makeVecType(m_data.inputType, m_data.inputVectorSize);
+        typeStrB  = typeStrA;
+        typeStrC  = makeVecType(m_data.outputType, m_data.outputVectorSize);
+        typeStrO  = typeStrC;
+        layoutStr = ", std140";
+    }
+    else
+    {
+        typeStrA = getComponentTypeInfo(m_data.inputType).typeName;
+        typeStrB = isMatrixMul(m_data.testType) ? "uint32_t" : getComponentTypeInfo(m_data.inputType).typeName;
+        typeStrC = isTraining(m_data.testType)  ? "uint32_t" :
+                   isMatrixMul(m_data.testType) ? "uint32_t" :
+                                                  getComponentTypeInfo(m_data.outputType).typeName;
+        typeStrO = getComponentTypeInfo(m_data.outputType).typeName;
+    }
     css << "const int workgroupsX = " << m_data.workgroupsX << ";\n";
 
     if (m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER)
     {
-        css << "layout(buffer_reference) buffer InputA { " << typeStrA << " x[]; };\n";
-        css << "layout(buffer_reference) buffer InputB { " << typeStrB << " x[]; };\n";
-        css << "layout(buffer_reference) buffer InputC { " << typeStrC << " x[]; };\n";
-        css << "layout(buffer_reference) buffer Output { " << typeStrO << " x[]; };\n";
+        css << "layout(buffer_reference" << layoutStr << ") buffer InputA { " << typeStrA << " x[]; };\n";
+        css << "layout(buffer_reference" << layoutStr << ") buffer InputB { " << typeStrB << " x[]; };\n";
+        css << "layout(buffer_reference" << layoutStr << ") buffer InputC { " << typeStrC << " x[]; };\n";
+        css << "layout(buffer_reference" << layoutStr << ") buffer Output { " << typeStrO << " x[]; };\n";
         css << "layout(set=0, binding=4) buffer Params { InputA inputA; InputB inputB; InputC inputC; Output outputO; "
                "} params;\n";
         css << "InputA inputA;\n";
@@ -608,10 +664,13 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
     }
     else
     {
-        css << "layout(set=0, binding=0) readonly buffer InputA { " << typeStrA << " x[]; } inputA;\n";
-        css << "layout(set=0, binding=1) readonly buffer InputB { " << typeStrB << " x[]; } inputB;\n";
-        css << "layout(set=0, binding=2) buffer InputC { " << typeStrC << " x[]; } inputC;\n";
-        css << "layout(set=0, binding=3) coherent buffer Output { " << typeStrO << " x[]; } outputO;\n";
+        css << "layout(set=0, binding=0" << layoutStr << ") readonly buffer InputA { " << typeStrA
+            << " x[]; } inputA;\n";
+        css << "layout(set=0, binding=1" << layoutStr << ") readonly buffer InputB { " << typeStrB
+            << " x[]; } inputB;\n";
+        css << "layout(set=0, binding=2" << layoutStr << ") buffer InputC { " << typeStrC << " x[]; } inputC;\n";
+        css << "layout(set=0, binding=3" << layoutStr << ") coherent buffer Output { " << typeStrO
+            << " x[]; } outputO;\n";
     }
 
     css << "const uint K = " << m_data.inputVectorSize << ";\n";
@@ -635,10 +694,20 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
 
     if (m_data.storageClass == SC_WORKGROUP || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
     {
-        css << "shared " << typeStrA << " sharedA[" << m_data.threadsPerWorkgroupX * m_data.threadsPerWorkgroupY
-            << " * inputVectorPaddedElements];\n";
-        css << "shared " << typeStrO << " sharedO[" << m_data.threadsPerWorkgroupX * m_data.threadsPerWorkgroupY
-            << " * outputVectorPaddedElements];\n";
+        if (m_data.useLongVector)
+        {
+            css << "shared " << typeStrA << " sharedA[" << m_data.threadsPerWorkgroupX * m_data.threadsPerWorkgroupY
+                << "];\n";
+            css << "shared " << typeStrO << " sharedO[" << m_data.threadsPerWorkgroupX * m_data.threadsPerWorkgroupY
+                << "];\n";
+        }
+        else
+        {
+            css << "shared " << typeStrA << " sharedA[" << m_data.threadsPerWorkgroupX * m_data.threadsPerWorkgroupY
+                << " * inputVectorPaddedElements];\n";
+            css << "shared " << typeStrO << " sharedO[" << m_data.threadsPerWorkgroupX * m_data.threadsPerWorkgroupY
+                << " * outputVectorPaddedElements];\n";
+        }
     }
 
     std::stringstream vecAType, vecBType, outputVecType, outputVecTypeK;
@@ -735,11 +804,9 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
     {
         vecBType << makeVecType(m_data.inputType, m_data.inputVectorSize, m_data.inputPacked);
     }
-    outputVecType << "coopvecNV<" << getComponentTypeInfo(m_data.outputType).typeName << ", " << m_data.outputVectorSize
-                  << ">";
+    outputVecType << makeVecType(m_data.outputType, m_data.outputVectorSize);
 
-    outputVecTypeK << "coopvecNV<" << getComponentTypeInfo(m_data.outputType).typeName << ", " << m_data.inputVectorSize
-                   << ">";
+    outputVecTypeK << makeVecType(m_data.outputType, m_data.inputVectorSize);
 
     css << vecAType.str() << " vecA;\n";
     // Initialize vecB to avoid division by undef/zero.
@@ -818,19 +885,38 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
         css << "   if (atomicAdd(inputC.x[globalInvocationIndex], 1) != 0) return;\n";
     }
 
+    std::string offsetType = m_data.uses64BitIndexing ? "uint64_t" : "uint32_t";
+
     if (m_data.storageClass == SC_WORKGROUP || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
     {
         css << "   " << vecAType.str() << " loadTemp;\n";
-        css << "   coopVecLoadNV(loadTemp, inputA.x, inputBase * inputElementSize);\n";
-        css << "   coopVecStoreNV(loadTemp, sharedA, inputVectorPaddedElements * gl_LocalInvocationIndex * "
-               "inputElementSize);\n";
-        css << "   barrier();\n";
-        css << "   coopVecLoadNV(vecA, sharedA, inputVectorPaddedElements * gl_LocalInvocationIndex * "
-               "inputElementSize);\n";
+        if (m_data.useLongVector)
+        {
+            css << "   loadTemp = inputA.x[globalInvocationIndex];\n";
+            css << "   sharedA[gl_LocalInvocationIndex] = loadTemp;\n";
+            css << "   barrier();\n";
+            css << "   vecA = sharedA[gl_LocalInvocationIndex];\n";
+        }
+        else
+        {
+            css << "   coopVecLoadNV(loadTemp, inputA.x, inputBase * inputElementSize);\n";
+            css << "   coopVecStoreNV(loadTemp, sharedA, inputVectorPaddedElements * gl_LocalInvocationIndex * "
+                   "inputElementSize);\n";
+            css << "   barrier();\n";
+            css << "   coopVecLoadNV(vecA, sharedA, inputVectorPaddedElements * gl_LocalInvocationIndex * "
+                   "inputElementSize);\n";
+        }
     }
     else
     {
-        css << "   coopVecLoadNV(vecA, inputA.x, inputBase * inputElementSize);\n";
+        if (m_data.useLongVector)
+        {
+            css << "   vecA = inputA.x[globalInvocationIndex];\n";
+        }
+        else
+        {
+            css << "   coopVecLoadNV(vecA, inputA.x, " << offsetType << "(inputBase * inputElementSize));\n";
+        }
     }
 
     if (m_data.act0 == ACT_LOAD_SHARED)
@@ -897,6 +983,10 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
     else if (isTraining(m_data.testType))
     {
         // nothing
+    }
+    else if (m_data.useLongVector)
+    {
+        css << "   vecB = inputB.x[globalInvocationIndex];\n";
     }
     else if (!isMatrixMul(m_data.testType))
     {
@@ -1061,6 +1151,7 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
         css << "   uint32_t biasOffset = 0;\n";
         biasOffsetString = "biasOffset";
     }
+    matrixOffsetString = offsetType + "(" + matrixOffsetString + ")";
 
     if (m_data.cfDivergent)
     {
@@ -1175,6 +1266,8 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
         css << "   vecO = max(max(vecA, vecB), " << vecAType.str() << "(0.0));\n";
         break;
     case TT_CLAMP:
+        // minVal must be >= maxVal
+        css << "   vecB = min(vecB, " << vecAType.str() << "(5.0));\n";
         css << "   vecO = clamp(vecA, vecB, " << vecAType.str() << "(5.0));\n";
         break;
     case TT_STEP:
@@ -1403,11 +1496,11 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
         {
         case TT_REDUCESUM:
             css << "   uint offset = outputVectorPaddedElements * outputElementSize * index;\n";
-            css << "   coopVecReduceSumAccumulateNV(vecA, outputO.x, offset);;\n";
+            css << "   coopVecReduceSumAccumulateNV(vecA, outputO.x, " << offsetType << "(offset));\n";
             break;
         case TT_OUTERPRODUCT:
             css << "   uint offset = outerProductSize * index;\n";
-            css << "   coopVecOuterProductAccumulateNV(vecA, vecB, outputO.x, offset, 0, "
+            css << "   coopVecOuterProductAccumulateNV(vecA, vecB, outputO.x, " << offsetType << "(offset), 0, "
                 << matrixLayoutStr[m_data.matrixLayout[0]] << ", "
                 << getComponentTypeInfo(m_data.outputType).interpString << ");\n";
             break;
@@ -1444,16 +1537,33 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
         if (m_data.storageClass == SC_WORKGROUP || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
         {
             css << "   barrier();\n";
-            css << "   coopVecStoreNV(vecO, sharedO, outputVectorPaddedElements * gl_LocalInvocationIndex * "
-                   "outputElementSize);\n";
-            css << "   " << outputVecType.str() << " storeTemp;\n";
-            css << "   coopVecLoadNV(storeTemp, sharedO, outputVectorPaddedElements * gl_LocalInvocationIndex * "
-                   "outputElementSize);\n";
-            css << "   coopVecStoreNV(storeTemp, outputO.x, outputBase * outputElementSize);\n";
+            if (m_data.useLongVector)
+            {
+                css << "   sharedO[gl_LocalInvocationIndex] = vecO;\n";
+                css << "   " << outputVecType.str() << " storeTemp;\n";
+                css << "   storeTemp = sharedO[gl_LocalInvocationIndex];\n";
+                css << "   outputO.x[globalInvocationIndex] = storeTemp;\n";
+            }
+            else
+            {
+                css << "   coopVecStoreNV(vecO, sharedO, outputVectorPaddedElements * gl_LocalInvocationIndex * "
+                       "outputElementSize);\n";
+                css << "   " << outputVecType.str() << " storeTemp;\n";
+                css << "   coopVecLoadNV(storeTemp, sharedO, outputVectorPaddedElements * gl_LocalInvocationIndex * "
+                       "outputElementSize);\n";
+                css << "   coopVecStoreNV(storeTemp, outputO.x, outputBase * outputElementSize);\n";
+            }
         }
         else
         {
-            css << "   coopVecStoreNV(vecO, outputO.x, outputBase * outputElementSize);\n";
+            if (m_data.useLongVector)
+            {
+                css << "   outputO.x[globalInvocationIndex] = vecO;\n";
+            }
+            else
+            {
+                css << "   coopVecStoreNV(vecO, outputO.x, " << offsetType << "(outputBase * outputElementSize));\n";
+            }
         }
     }
 
@@ -1480,7 +1590,7 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
 
     css << "}\n";
 
-    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u);
+    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0);
 
     switch (m_data.stage)
     {
@@ -2099,8 +2209,13 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                 {
                     if (!isMatrixMul(m_data.testType) && !isTraining(m_data.testType) && m_data.testType != TT_MUL &&
                         m_data.testType != TT_FMA)
-                        setDataFloat(ptrs[i], dataTypes[i], j,
-                                     ((float)(deRandom_getUint32(&rnd) & 0xff) - 64.0f) / 2.0f);
+                    {
+                        float f = ((float)(deRandom_getUint32(&rnd) & 0xff) - 64.0f) / 2.0f;
+                        // conversion from float to unsigned must not use negative values
+                        if (m_data.testType == TT_CONVERT && i < 2 && isUIntType(dataTypes[3]))
+                            f = fabs(f);
+                        setDataFloat(ptrs[i], dataTypes[i], j, f);
+                    }
                     else if (m_data.testType == TT_MATRIXMUL3 || m_data.testType == TT_MATRIXMUL2ADDMUL2 ||
                              isTraining(m_data.testType))
                         setDataFloat(ptrs[i], dataTypes[i], j, ((float)(deRandom_getUint32(&rnd) & 0x3) - 1.0f) / 2.0f);
@@ -2239,6 +2354,16 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
         Move<VkRenderPass> renderPass;
         Move<VkFramebuffer> framebuffer;
 
+        const void *pNext = nullptr;
+#ifndef CTS_USES_VULKANSC
+        VkPipelineCreateFlags2CreateInfo pipelineFlags2CreateInfo = initVulkanStructure();
+        if (m_data.uses64BitIndexing)
+        {
+            pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT;
+            pNext                          = &pipelineFlags2CreateInfo;
+        }
+#endif
+
         if (m_data.stage == STAGE_COMPUTE)
         {
             const Unique<VkShaderModule> shader(
@@ -2255,10 +2380,10 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
             };
 
             // Enable robustness for ACT_LOAD_READONLY pipelines, if supported
-            const void *pNext                                      = nullptr;
             VkPipelineRobustnessCreateInfoEXT robustnessCreateInfo = initVulkanStructure();
             if (m_data.act0 == ACT_LOAD_READONLY && m_context.getPipelineRobustnessFeatures().pipelineRobustness)
             {
+                robustnessCreateInfo.pNext          = pNext;
                 robustnessCreateInfo.storageBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2;
                 pNext                               = &robustnessCreateInfo;
             }
@@ -2282,7 +2407,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                 VK_SHADER_STAGE_RAYGEN_BIT_KHR,
                 createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 0, &specInfo);
 
-            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout, {}, VK_NULL_HANDLE, pNext);
 
             raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
                 vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
@@ -2301,7 +2426,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                 VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
                 createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 1, &specInfo);
 
-            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout, {}, VK_NULL_HANDLE, pNext);
 
             raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
                 vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
@@ -2326,7 +2451,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                 VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
                 createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 1, &specInfo);
 
-            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout, {}, VK_NULL_HANDLE, pNext);
 
             raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
                 vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
@@ -2351,7 +2476,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                 VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
                 createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 1, &specInfo);
 
-            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout, {}, VK_NULL_HANDLE, pNext);
 
             raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
                 vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
@@ -2376,7 +2501,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                 VK_SHADER_STAGE_MISS_BIT_KHR,
                 createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 1, &specInfo);
 
-            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout, {}, VK_NULL_HANDLE, pNext);
 
             raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
                 vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
@@ -2401,7 +2526,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                 VK_SHADER_STAGE_CALLABLE_BIT_KHR,
                 createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0), 1, &specInfo);
 
-            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
+            pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout, {}, VK_NULL_HANDLE, pNext);
 
             raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
                 vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
@@ -2589,7 +2714,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
             const VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {
                 VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
-                nullptr,                                         // const void* pNext;
+                pNext,                                           // const void* pNext;
                 (VkPipelineCreateFlags)0,                        // VkPipelineCreateFlags flags;
                 static_cast<uint32_t>(stageCreateInfos.size()),  // uint32_t stageCount;
                 de::dataOrNull(stageCreateInfos),                // const VkPipelineShaderStageCreateInfo* pStages;
@@ -3348,11 +3473,6 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                                 res = QP_TEST_RESULT_FAIL;
                             break;
                         case TT_CONVERT:
-                            if (!isSIntType(dataTypes[3]))
-                            {
-                                if (inputA < 0)
-                                    inputA = 0;
-                            }
                             if (output != truncInt(inputA, dataTypes[3]))
                                 res = QP_TEST_RESULT_FAIL;
                             break;
@@ -3786,9 +3906,9 @@ struct TestGroupCaseN
     const char *description;
 };
 
-tcu::TestCaseGroup *createCooperativeVectorBasicTests(tcu::TestContext &testCtx)
+tcu::TestCaseGroup *createCooperativeVectorBasicTests(tcu::TestContext &testCtx, bool longVector)
 {
-    de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "basic", "cooperative_vector tests"));
+    de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, longVector ? "longvec" : "basic"));
 
     typedef struct
     {
@@ -3856,7 +3976,7 @@ tcu::TestCaseGroup *createCooperativeVectorBasicTests(tcu::TestContext &testCtx)
         {{5, 5}, "components5", "5 components"},     {{6, 6}, "components6", "6 components"},
         {{7, 7}, "components7", "7 components"},     {{8, 8}, "components8", "8 components"},
         {{9, 9}, "components9", "9 components"},     {{31, 31}, "components31", "31 components"},
-        {{65, 65}, "components65", "65 components"},
+        {{65, 65}, "components65", "65 components"}, {{1024, 1024}, "components1024", "1024 components"},
     };
 
     TestGroupCase scCases[] = {
@@ -3921,6 +4041,16 @@ tcu::TestCaseGroup *createCooperativeVectorBasicTests(tcu::TestContext &testCtx)
                         {
                             continue;
                         }
+
+                        // these would use too much shared memory
+                        if (sizeCases[sizeNdx].value[0] == 1024 &&
+                            (scCases[scNdx].value == SC_WORKGROUP ||
+                             scCases[scNdx].value == SC_WORKGROUP_VARIABLE_POINTERS))
+                            continue;
+
+                        // overflows some types
+                        if (sizeCases[sizeNdx].value[0] == 1024 && testType == TT_LENGTH)
+                            continue;
 
                         if (!isMatrixMul(testType) && testType != TT_CONVERT && inputType != outputType)
                             continue;
@@ -4036,6 +4166,8 @@ tcu::TestCaseGroup *createCooperativeVectorBasicTests(tcu::TestContext &testCtx)
                             false,                                              // bool nonuniformOffset;
                             false,                                              // bool cfDivergent;
                             RESULT_ADDR_UNIFORM,                                // ResultAddress resultAddr;
+                            false,                                              // bool uses64BitIndexing;
+                            longVector,                                         // bool useLongVector;
                         };
                         sizeGroup->addChild(new CooperativeVectorTestCase(testCtx, stageCases[stageNdx].name, c));
                     }
@@ -4466,6 +4598,8 @@ tcu::TestCaseGroup *createCooperativeVectorMatrixMulTests(tcu::TestContext &test
                                             !!nonunifCases[nuNdx].value,           // bool nonuniformOffset;
                                             !!cfCases[cfNdx].value,                // bool cfDivergent;
                                             RESULT_ADDR_UNIFORM,                   // ResultAddress resultAddr;
+                                            false,                                 // bool uses64BitIndexing;
+                                            false,                                 // bool useLongVector;
                                         };
                                         colGroup->addChild(
                                             new CooperativeVectorTestCase(testCtx, stageCases[stageNdx].name, c));
@@ -4486,6 +4620,51 @@ tcu::TestCaseGroup *createCooperativeVectorMatrixMulTests(tcu::TestContext &test
         }
         group->addChild(ttGroup.release());
     }
+
+    de::MovePtr<tcu::TestCaseGroup> group64(new tcu::TestCaseGroup(testCtx, "64b_indexing"));
+
+    // 64bit indexing test cases
+    for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
+    {
+        uint32_t threadsPerWorkgroupX = stageCases[stageNdx].value[1];
+        uint32_t threadsPerWorkgroupY = stageCases[stageNdx].value[2];
+        uint32_t workgroupsX          = 2u;
+        uint32_t workgroupsY          = 2u;
+
+        CaseDef c = {
+            (Stage)stageCases[stageNdx].value[0], // Stage stage;
+            TT_MATRIXMAD,                         // TestType testtype;
+            threadsPerWorkgroupX,                 // uint32_t threadsPerWorkgroupX;
+            threadsPerWorkgroupY,                 // uint32_t threadsPerWorkgroupY;
+            workgroupsX,                          // uint32_t workgroupsX;
+            workgroupsY,                          // uint32_t workgroupsY;
+            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR inputType;
+            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR inputInterpretation;
+            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR matrixType;
+            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR outputType;
+            false,                                // bool inputPacked;
+            {
+                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
+                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
+                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
+            },                   // VkCooperativeVectorMatrixLayoutNV matrixLayout;
+            false,               // bool transpose;
+            SC_BUFFER,           // StorageClass storageClass;
+            5,                   // uint32_t inputVectorSize;
+            5,                   // uint32_t outputVectorSize;
+            ACT_NONE,            // Activation act0;
+            ACT_NONE,            // Activation act1;
+            ACT_NONE,            // Activation act2;
+            false,               // bool nonuniformOffset;
+            false,               // bool cfDivergent;
+            RESULT_ADDR_UNIFORM, // ResultAddress resultAddr;
+            true,                // bool uses64BitIndexing;
+        };
+        std::string name = std::string("muladd_") + stageCases[stageNdx].name;
+        group64->addChild(new CooperativeVectorTestCase(testCtx, name.c_str(), c));
+    }
+    group->addChild(group64.release());
+
     return group.release();
 }
 
@@ -4652,6 +4831,8 @@ tcu::TestCaseGroup *createCooperativeVectorTrainingTests(tcu::TestContext &testC
                                         !!nonunifCases[nuNdx].value,              // bool nonuniformOffset;
                                         !!cfCases[cfNdx].value,                   // bool cfDivergent;
                                         (ResultAddress)nonunifCases[nuNdx].value, // ResultAddress resultAddr;
+                                        false,                                    // bool uses64BitIndexing;
+                                        false,                                    // bool useLongVector;
                                     };
                                     colGroup->addChild(
                                         new CooperativeVectorTestCase(testCtx, stageCases[stageNdx].name, c));
@@ -4670,6 +4851,55 @@ tcu::TestCaseGroup *createCooperativeVectorTrainingTests(tcu::TestContext &testC
         }
         group->addChild(ttGroup.release());
     }
+
+    de::MovePtr<tcu::TestCaseGroup> group64(new tcu::TestCaseGroup(testCtx, "64b_indexing"));
+
+    // 64bit indexing test cases
+    for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
+    {
+        uint32_t threadsPerWorkgroupX = stageCases[stageNdx].value[1];
+        uint32_t threadsPerWorkgroupY = stageCases[stageNdx].value[2];
+        uint32_t workgroupsX          = 2u;
+        uint32_t workgroupsY          = 2u;
+
+        CaseDef c = {
+            (Stage)stageCases[stageNdx].value[0], // Stage stage;
+            TT_REDUCESUM,                         // TestType testtype;
+            threadsPerWorkgroupX,                 // uint32_t threadsPerWorkgroupX;
+            threadsPerWorkgroupY,                 // uint32_t threadsPerWorkgroupY;
+            workgroupsX,                          // uint32_t workgroupsX;
+            workgroupsY,                          // uint32_t workgroupsY;
+            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR inputType;
+            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR inputInterpretation;
+            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR matrixType;
+            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR outputType;
+            false,                                // bool inputPacked;
+            {
+                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
+                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
+                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
+            },                   // VkCooperativeVectorMatrixLayoutNV matrixLayout;
+            false,               // bool transpose;
+            SC_BUFFER,           // StorageClass storageClass;
+            5,                   // uint32_t inputVectorSize;
+            5,                   // uint32_t outputVectorSize;
+            ACT_NONE,            // Activation act0;
+            ACT_NONE,            // Activation act1;
+            ACT_NONE,            // Activation act2;
+            false,               // bool nonuniformOffset;
+            false,               // bool cfDivergent;
+            RESULT_ADDR_UNIFORM, // ResultAddress resultAddr;
+            true,                // bool uses64BitIndexing;
+        };
+        std::string name = std::string("reducesum_") + stageCases[stageNdx].name;
+        group64->addChild(new CooperativeVectorTestCase(testCtx, name.c_str(), c));
+
+        c.testType = TT_OUTERPRODUCT;
+        name       = std::string("outerproduct_") + stageCases[stageNdx].name;
+        group64->addChild(new CooperativeVectorTestCase(testCtx, name.c_str(), c));
+    }
+    group->addChild(group64.release());
+
     return group.release();
 }
 

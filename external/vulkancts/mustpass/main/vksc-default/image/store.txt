@@ -2082,6 +2082,7 @@ dEQP-VKSC.image.store.without_format.2d.r8g8b8a8_uint
 dEQP-VKSC.image.store.without_format.2d.r8g8b8a8_uint_linear
 dEQP-VKSC.image.store.without_format.2d.r8g8b8a8_unorm
 dEQP-VKSC.image.store.without_format.2d.r8g8b8a8_unorm_linear
+dEQP-VKSC.image.store.without_format.2d.x8_d24_unorm_pack32
 dEQP-VKSC.image.store.without_format.2d_array.a1r5g5b5_unorm_pack16
 dEQP-VKSC.image.store.without_format.2d_array.a1r5g5b5_unorm_pack16_linear
 dEQP-VKSC.image.store.without_format.2d_array.a2b10g10r10_sint_pack32
@@ -2232,6 +2233,7 @@ dEQP-VKSC.image.store.without_format.2d_array.r8g8b8a8_uint
 dEQP-VKSC.image.store.without_format.2d_array.r8g8b8a8_uint_linear
 dEQP-VKSC.image.store.without_format.2d_array.r8g8b8a8_unorm
 dEQP-VKSC.image.store.without_format.2d_array.r8g8b8a8_unorm_linear
+dEQP-VKSC.image.store.without_format.2d_array.x8_d24_unorm_pack32
 dEQP-VKSC.image.store.without_format.3d.a1r5g5b5_unorm_pack16
 dEQP-VKSC.image.store.without_format.3d.a1r5g5b5_unorm_pack16_linear
 dEQP-VKSC.image.store.without_format.3d.a2b10g10r10_sint_pack32

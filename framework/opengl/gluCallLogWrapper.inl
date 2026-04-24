@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
+ * Generated from Khronos GL API description (gl.xml) revision 7d0cb181dace7461bc4f26650fec71efeacc18a5.
  */
 
 void CallLogWrapper::glActiveShaderProgram (glw::GLuint pipeline, glw::GLuint program)
@@ -3940,6 +3940,13 @@ void CallLogWrapper::glNamedFramebufferTextureLayerEXT (glw::GLuint framebuffer,
 	if (m_enableLog)
 		m_log << TestLog::Message << "glNamedFramebufferTextureLayerEXT(" << framebuffer << ", " << toHex(attachment) << ", " << texture << ", " << level << ", " << layer << ");" << TestLog::EndMessage;
 	m_gl.namedFramebufferTextureLayerEXT(framebuffer, attachment, texture, level, layer);
+}
+
+void CallLogWrapper::glNamedFramebufferTextureMultiviewOVR (glw::GLuint framebuffer, glw::GLenum attachment, glw::GLuint texture, glw::GLint level, glw::GLint baseViewIndex, glw::GLsizei numViews)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glNamedFramebufferTextureMultiviewOVR(" << framebuffer << ", " << toHex(attachment) << ", " << texture << ", " << level << ", " << baseViewIndex << ", " << numViews << ");" << TestLog::EndMessage;
+	m_gl.namedFramebufferTextureMultiviewOVR(framebuffer, attachment, texture, level, baseViewIndex, numViews);
 }
 
 void CallLogWrapper::glNamedProgramLocalParameter4dEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLdouble x, glw::GLdouble y, glw::GLdouble z, glw::GLdouble w)

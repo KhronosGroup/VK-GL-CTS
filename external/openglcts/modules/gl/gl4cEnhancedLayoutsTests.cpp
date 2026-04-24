@@ -11106,37 +11106,35 @@ bool SSBLayoutQualifierConflictTest::isFailureExpected(GLuint test_case_index)
 bool SSBLayoutQualifierConflictTest::isStageSupported(Utils::Shader::STAGES stage)
 {
     const Functions &gl         = m_context.getRenderContext().getFunctions();
-    GLint max_supported_buffers = 0;
-    GLenum pname                = 0;
+    GLint cs_supported_buffers  = 0;
+    GLint fs_supported_buffers  = 0;
+    GLint gs_supported_buffers  = 0;
+    GLint tcs_supported_buffers = 0;
+    GLint tes_supported_buffers = 0;
+    GLint vs_supported_buffers  = 0;
 
     switch (stage)
     {
     case Utils::Shader::COMPUTE:
-        pname = GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS;
-        break;
+        gl.getIntegerv(GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS, &cs_supported_buffers);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+        return 1 <= cs_supported_buffers;
     case Utils::Shader::FRAGMENT:
-        pname = GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS;
-        break;
     case Utils::Shader::GEOMETRY:
-        pname = GL_MAX_GEOMETRY_SHADER_STORAGE_BLOCKS;
-        break;
     case Utils::Shader::TESS_CTRL:
-        pname = GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS;
-        break;
     case Utils::Shader::TESS_EVAL:
-        pname = GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS;
-        break;
     case Utils::Shader::VERTEX:
-        pname = GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS;
-        break;
+        gl.getIntegerv(GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS, &fs_supported_buffers);
+        gl.getIntegerv(GL_MAX_GEOMETRY_SHADER_STORAGE_BLOCKS, &gs_supported_buffers);
+        gl.getIntegerv(GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS, &tcs_supported_buffers);
+        gl.getIntegerv(GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS, &tes_supported_buffers);
+        gl.getIntegerv(GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS, &vs_supported_buffers);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+        return ((1 <= fs_supported_buffers) && (1 <= gs_supported_buffers) && (1 <= tcs_supported_buffers) &&
+                (1 <= tes_supported_buffers) && (1 <= vs_supported_buffers));
     default:
         TCU_FAIL("Invalid enum");
     }
-
-    gl.getIntegerv(pname, &max_supported_buffers);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
-
-    return 1 <= max_supported_buffers;
 }
 
 /** Prepare all test cases

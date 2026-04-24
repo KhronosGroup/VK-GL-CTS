@@ -26,10 +26,12 @@
 #include "deUniquePtr.hpp"
 #include "tcuTestCase.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestGroupUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vktShaderObjectCreateUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkFormatLists.hpp"
 #include "deRandom.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkBarrierUtil.hpp"
@@ -39,6 +41,7 @@
 #include "vktCustomInstancesDevices.hpp"
 #include "vkMemUtil.hpp"
 #include <cmath>
+#include <memory>
 
 namespace vkt
 {
@@ -77,16 +80,18 @@ struct TestParams
     ExtraAttachments extraAttachments;
     uint32_t extraFragmentOutputCount;
     ExtraAttachments extraOutputs;
-    bool useDepthAttachment;
     vk::VkFormat colorFormat;
     vk::VkFormat depthFormat;
-    bool bindShadersBeforeBeginRendering;
     DummyRenderPass dummyRenderPass;
+    ColorWriteEnable colorWriteEnable;
+    bool useDepthAttachment;
+    bool bindShadersBeforeBeginRendering;
     bool writeGlFragDepth;
     bool randomColorFormats;
     bool outputArray;
-    ColorWriteEnable colorWriteEnable;
 };
+
+using TestParamsPtr = std::shared_ptr<TestParams>;
 
 const vk::VkFormat colorFormats[] = {
     vk::VK_FORMAT_R4G4_UNORM_PACK8,
@@ -322,7 +327,7 @@ public:
 private:
     void chooseDevice();
     void beginRendering(vk::VkCommandBuffer cmdBuffer);
-    void createDummyImage(void);
+    void createDummyImage(vk::VkCommandBuffer cmdBuffer);
     void createDummyRenderPass(void);
     void setColorFormats(const vk::InstanceDriver &vki);
     void generateExpectedImage(const tcu::PixelBufferAccess &outputImage, const uint32_t width, const uint32_t height,
@@ -348,7 +353,7 @@ private:
     vk::Move<vk::VkFramebuffer> m_dummyFramebuffer;
 };
 
-void ShaderObjectRenderingInstance::createDummyImage(void)
+void ShaderObjectRenderingInstance::createDummyImage(vk::VkCommandBuffer cmdBuffer)
 {
     const vk::DeviceInterface &vk    = *m_deviceInterface;
     const vk::VkDevice device        = m_device;
@@ -380,6 +385,13 @@ void ShaderObjectRenderingInstance::createDummyImage(void)
         new vk::ImageWithMemory(vk, device, alloc, createInfo, vk::MemoryRequirement::Any));
     m_dummyImageView =
         vk::makeImageView(vk, device, **m_dummyImage, vk::VK_IMAGE_VIEW_TYPE_2D, format, colorSubresourceRange);
+
+    vk::VkImageMemoryBarrier imageMemoryBarrier = vk::makeImageMemoryBarrier(
+        vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
+        vk::VK_IMAGE_LAYOUT_GENERAL, **m_dummyImage, colorSubresourceRange);
+    vk.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u,
+                          nullptr, 1u, &imageMemoryBarrier);
 }
 
 void ShaderObjectRenderingInstance::createDummyRenderPass(void)
@@ -857,13 +869,13 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
 
     if (m_params.dummyRenderPass == DUMMY_DYNAMIC)
     {
-        createDummyImage();
+        createDummyImage(*cmdBuffer);
         const vk::VkClearValue clearValue = vk::makeClearValueColor({0.0f, 0.0f, 0.0f, 1.0f});
         vk::beginRendering(vk, *cmdBuffer, *m_dummyImageView, m_renderArea, clearValue);
     }
     else if (m_params.dummyRenderPass == DUMMY_STATIC)
     {
-        createDummyImage();
+        createDummyImage(*cmdBuffer);
         createDummyRenderPass();
         const vk::VkClearValue clearValue = vk::makeClearValueColor({0.0f, 0.0f, 0.0f, 1.0f});
         vk::beginRenderPass(vk, *cmdBuffer, *m_dummyRenderPass, *m_dummyFramebuffer, m_renderArea, clearValue);
@@ -971,9 +983,12 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
 
     std::vector<tcu::ConstPixelBufferAccess> colorResultBuffers;
     for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+    {
+        invalidateAlloc(vk, device, colorOutputBuffers[i]->getAllocation());
         colorResultBuffers.push_back(tcu::ConstPixelBufferAccess(
             vk::mapVkFormat(m_colorFormats[i]), m_renderArea.extent.width, m_renderArea.extent.height, 1,
             (const void *)colorOutputBuffers[i]->getAllocation().getHostPtr()));
+    }
 
     const uint32_t width   = m_renderArea.extent.width;
     const uint32_t height  = m_renderArea.extent.height;
@@ -1224,11 +1239,6 @@ tcu::TestCaseGroup *createShaderObjectRenderingTests(tcu::TestContext &testCtx)
                             {2u, BETWEEN, "extra_output_between_2"},
                             {2u, AFTER, "extra_output_after_2"}};
 
-    const vk::VkFormat depthStencilFormats[] = {
-        vk::VK_FORMAT_D16_UNORM,         vk::VK_FORMAT_X8_D24_UNORM_PACK32, vk::VK_FORMAT_D32_SFLOAT,
-        vk::VK_FORMAT_D16_UNORM_S8_UINT, vk::VK_FORMAT_D24_UNORM_S8_UINT,   vk::VK_FORMAT_D32_SFLOAT_S8_UINT,
-    };
-
     const struct
     {
         DummyRenderPass dummyRenderPass;
@@ -1272,54 +1282,63 @@ tcu::TestCaseGroup *createShaderObjectRenderingTests(tcu::TestContext &testCtx)
                             {
                                 bool writeGlFragDepth       = l == 0;
                                 std::string writeGlFragName = writeGlFragDepth ? "gl_frag_write" : "none";
-                                de::MovePtr<tcu::TestCaseGroup> fragWriteGroup(
-                                    new tcu::TestCaseGroup(testCtx, writeGlFragName.c_str()));
-                                for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(colorFormats); ++i)
+
+                                TestParamsPtr paramsPtr(new TestParams);
+                                auto &params = *paramsPtr;
+
+                                params.colorAttachmentCount            = colorAttachmentCountTest.colorAttachmentCount;
+                                params.extraAttachmentCount            = extraAttachment.extraAttachmentCount;
+                                params.extraAttachments                = extraAttachment.extraAttachment;
+                                params.extraFragmentOutputCount        = extraOutput.extraFragmentOutputCount;
+                                params.extraOutputs                    = extraOutput.extraAttachment;
+                                params.useDepthAttachment              = false;
+                                params.colorFormat                     = vk::VK_FORMAT_UNDEFINED;
+                                params.depthFormat                     = vk::VK_FORMAT_UNDEFINED;
+                                params.bindShadersBeforeBeginRendering = bindShadersBeforeBeginRendering;
+                                params.dummyRenderPass                 = dummyRenderPass.dummyRenderPass;
+                                params.writeGlFragDepth                = writeGlFragDepth;
+                                params.randomColorFormats              = useRandomColorFormats;
+                                params.outputArray                     = false;
+                                params.colorWriteEnable                = COLOR_WRITE_DONT_CARE;
+
+                                auto createTestCases = [](tcu::TestCaseGroup *group_, TestParamsPtr paramsPtr_)
                                 {
-                                    if (extraAttachment.extraAttachmentCount >
-                                        colorAttachmentCountTest.colorAttachmentCount)
-                                        continue;
+                                    auto &testCtx_ = group_->getTestContext();
+                                    auto &params_  = *paramsPtr_;
 
-                                    if (!bindShadersBeforeBeginRendering &&
-                                        dummyRenderPass.dummyRenderPass != DUMMY_NONE)
-                                        continue;
-
-                                    const auto colorFormat = colorFormats[i];
-
-                                    TestParams params;
-                                    params.colorAttachmentCount     = colorAttachmentCountTest.colorAttachmentCount;
-                                    params.extraAttachmentCount     = extraAttachment.extraAttachmentCount;
-                                    params.extraAttachments         = extraAttachment.extraAttachment;
-                                    params.extraFragmentOutputCount = extraOutput.extraFragmentOutputCount;
-                                    params.extraOutputs             = extraOutput.extraAttachment;
-                                    params.useDepthAttachment       = false;
-                                    params.colorFormat              = colorFormat;
-                                    params.depthFormat              = vk::VK_FORMAT_UNDEFINED;
-                                    params.bindShadersBeforeBeginRendering = bindShadersBeforeBeginRendering;
-                                    params.dummyRenderPass                 = dummyRenderPass.dummyRenderPass;
-                                    params.writeGlFragDepth                = writeGlFragDepth;
-                                    params.randomColorFormats              = useRandomColorFormats;
-                                    params.outputArray                     = false;
-                                    params.colorWriteEnable                = COLOR_WRITE_DONT_CARE;
-
-                                    std::string name = getFormatCaseName(colorFormat);
-                                    fragWriteGroup->addChild(new ShaderObjectRenderingCase(testCtx, name, params));
-
-                                    if (writeGlFragDepth)
-                                        continue;
-
-                                    for (uint32_t j = 0; j < DE_LENGTH_OF_ARRAY(depthStencilFormats); ++j)
+                                    for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(colorFormats); ++i)
                                     {
-                                        const auto depthFormat    = depthStencilFormats[j];
-                                        params.useDepthAttachment = true;
-                                        params.depthFormat        = depthFormat;
+                                        if (params_.extraAttachmentCount > params_.colorAttachmentCount)
+                                            continue;
 
-                                        std::string depthTestName = name + "_" + getFormatCaseName(depthFormat);
-                                        fragWriteGroup->addChild(
-                                            new ShaderObjectRenderingCase(testCtx, depthTestName, params));
+                                        if (!params_.bindShadersBeforeBeginRendering &&
+                                            params_.dummyRenderPass != DUMMY_NONE)
+                                            continue;
+
+                                        const auto colorFormat     = colorFormats[i];
+                                        params_.colorFormat        = colorFormat;
+                                        params_.useDepthAttachment = false;
+                                        params_.depthFormat        = vk::VK_FORMAT_UNDEFINED;
+
+                                        std::string name = getFormatCaseName(colorFormat);
+                                        group_->addChild(new ShaderObjectRenderingCase(testCtx_, name, params_));
+
+                                        if (params_.writeGlFragDepth)
+                                            continue;
+
+                                        for (const auto depthFormat : formats::depthFormats)
+                                        {
+                                            params_.useDepthAttachment = true;
+                                            params_.depthFormat        = depthFormat;
+
+                                            std::string depthTestName = name + "_" + getFormatCaseName(depthFormat);
+                                            group_->addChild(
+                                                new ShaderObjectRenderingCase(testCtx_, depthTestName, params_));
+                                        }
                                     }
-                                }
-                                bindGroup->addChild(fragWriteGroup.release());
+                                };
+
+                                addTestGroup(bindGroup.get(), writeGlFragName.c_str(), createTestCases, paramsPtr);
                             }
                             randomColorFormatsGroup->addChild(bindGroup.release());
                         }

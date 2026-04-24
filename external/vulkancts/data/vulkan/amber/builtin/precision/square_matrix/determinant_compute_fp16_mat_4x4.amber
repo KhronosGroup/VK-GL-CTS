@@ -20,6 +20,7 @@ DEVICE_EXTENSION VK_KHR_storage_buffer_storage_class
 DEVICE_EXTENSION VK_KHR_16bit_storage
 DEVICE_FEATURE   Float16Int8Features.shaderFloat16
 DEVICE_FEATURE   Storage16BitFeatures.storageBuffer16BitAccess
+DEVICE_FEATURE   Storage16BitFeatures.uniformAndStorageBuffer16BitAccess
 
 SHADER compute compute_shader GLSL
 #version 450

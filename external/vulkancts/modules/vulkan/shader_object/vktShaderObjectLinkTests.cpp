@@ -93,6 +93,7 @@ struct TestParams
     NextStages nextStages;
     bool separateLinked;
     BindType separateBind;
+    bool sameLayout;
 };
 
 struct MeshParams
@@ -120,7 +121,7 @@ private:
     TestParams m_params;
 
     de::MovePtr<vk::BufferWithMemory> m_buffer;
-    vk::Move<vk::VkDescriptorSetLayout> m_descriptorSetLayout;
+    std::vector<vk::Move<vk::VkDescriptorSetLayout>> m_descriptorSetLayouts;
     vk::Move<vk::VkDescriptorPool> m_descriptorPool;
     vk::Move<vk::VkDescriptorSet> m_descriptorSet;
     vk::Move<vk::VkPipelineLayout> m_pipelineLayout;
@@ -253,6 +254,10 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate(void)
         vk, device, alloc, makeBufferCreateInfo(colorOutputBufferSize, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT),
         vk::MemoryRequirement::HostVisible));
 
+    const uint32_t vertLayoutIndex = m_params.sameLayout ? 0u : 0u;
+    const uint32_t tescLayoutIndex = m_params.sameLayout ? 0u : 1u;
+    const uint32_t teseLayoutIndex = m_params.sameLayout ? 0u : 2u;
+    const uint32_t geomLayoutIndex = m_params.sameLayout ? 0u : 3u;
     if (useStorageBuffer)
     {
         const vk::VkDeviceSize bufferSizeBytes = sizeof(uint32_t) * drawCount;
@@ -260,18 +265,22 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate(void)
             vk, device, alloc, vk::makeBufferCreateInfo(bufferSizeBytes, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
             vk::MemoryRequirement::HostVisible));
 
-        m_descriptorSetLayout =
-            vk::DescriptorSetLayoutBuilder()
-                .addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                  vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT |
-                                      vk::VK_SHADER_STAGE_GEOMETRY_BIT)
-                .build(vk, device);
+        const uint32_t layoutCount = m_params.sameLayout ? 1u : 4u;
+        for (uint32_t i = 0u; i < layoutCount; ++i)
+        {
+            m_descriptorSetLayouts.push_back(vk::DescriptorSetLayoutBuilder()
+                                                 .addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                                                   vk::VK_SHADER_STAGE_VERTEX_BIT |
+                                                                       vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT |
+                                                                       vk::VK_SHADER_STAGE_GEOMETRY_BIT)
+                                                 .build(vk, device));
+        }
 
         m_descriptorPool = vk::DescriptorPoolBuilder()
                                .addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
                                .build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
-        m_descriptorSet = makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout);
+        m_descriptorSet = makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayouts[0]);
 
         const vk::VkDescriptorBufferInfo descriptorInfo =
             vk::makeDescriptorBufferInfo(**m_buffer, 0ull, bufferSizeBytes);
@@ -280,7 +289,7 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate(void)
                          vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo)
             .update(vk, device);
 
-        m_pipelineLayout = makePipelineLayout(vk, device, *m_descriptorSetLayout);
+        m_pipelineLayout = makePipelineLayout(vk, device, *m_descriptorSetLayouts[0]);
     }
 
     const auto &binaries = m_context.getBinaryCollection();
@@ -290,12 +299,14 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate(void)
         binaries.get(storageBufferStage == vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT ? "tese2" : "tese");
     const auto &geom = binaries.get(storageBufferStage == vk::VK_SHADER_STAGE_GEOMETRY_BIT ? "geom2" : "geom");
     const auto &frag = binaries.get("frag");
+    const auto &comp = binaries.get("comp2");
 
-    vk::VkShaderEXT vertShader;
-    vk::VkShaderEXT tescShader;
-    vk::VkShaderEXT teseShader;
-    vk::VkShaderEXT geomShader;
-    vk::VkShaderEXT fragShader;
+    vk::VkShaderEXT vertShader = VK_NULL_HANDLE;
+    vk::VkShaderEXT tescShader = VK_NULL_HANDLE;
+    vk::VkShaderEXT teseShader = VK_NULL_HANDLE;
+    vk::VkShaderEXT geomShader = VK_NULL_HANDLE;
+    vk::VkShaderEXT fragShader = VK_NULL_HANDLE;
+    vk::VkShaderEXT compShader = VK_NULL_HANDLE;
 
     std::vector<vk::VkShaderCreateInfoEXT> shaderCreateInfos;
 
@@ -305,7 +316,7 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate(void)
     if (useStorageBuffer)
     {
         vertShaderCreateInfo.setLayoutCount = 1u;
-        vertShaderCreateInfo.pSetLayouts    = &*m_descriptorSetLayout;
+        vertShaderCreateInfo.pSetLayouts    = &*m_descriptorSetLayouts[vertLayoutIndex];
     }
 
     if (m_params.shaders.vertex == LINKED)
@@ -324,7 +335,7 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate(void)
     if (useStorageBuffer)
     {
         tescShaderCreateInfo.setLayoutCount = 1u;
-        tescShaderCreateInfo.pSetLayouts    = &*m_descriptorSetLayout;
+        tescShaderCreateInfo.pSetLayouts    = &*m_descriptorSetLayouts[tescLayoutIndex];
     }
 
     if (m_params.shaders.tesellation_control == LINKED)
@@ -343,7 +354,7 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate(void)
     if (useStorageBuffer)
     {
         teseShaderCreateInfo.setLayoutCount = 1u;
-        teseShaderCreateInfo.pSetLayouts    = &*m_descriptorSetLayout;
+        teseShaderCreateInfo.pSetLayouts    = &*m_descriptorSetLayouts[teseLayoutIndex];
     }
 
     if (m_params.shaders.tesellation_evaluation == LINKED)
@@ -362,7 +373,7 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate(void)
     if (useStorageBuffer)
     {
         geomShaderCreateInfo.setLayoutCount = 1u;
-        geomShaderCreateInfo.pSetLayouts    = &*m_descriptorSetLayout;
+        geomShaderCreateInfo.pSetLayouts    = &*m_descriptorSetLayouts[geomLayoutIndex];
     }
 
     if (m_params.shaders.geometry == LINKED)
@@ -387,6 +398,13 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate(void)
     else if (m_params.shaders.fragment == UNLINKED)
     {
         vk.createShadersEXT(device, 1, &fragShaderCreateInfo, nullptr, &fragShader);
+    }
+
+    vk::VkShaderCreateInfoEXT compShaderCreateInfo =
+        vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_COMPUTE_BIT, comp, tessellationSupported, geometrySupported);
+    if (!shaderCreateInfos.empty())
+    {
+        shaderCreateInfos.push_back(compShaderCreateInfo);
     }
 
     vk::VkPrimitiveTopology primitiveTopology = m_params.shaders.tesellation_control != UNUSED ?
@@ -442,6 +460,7 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate(void)
         {
             fragShader = shaders[n++];
         }
+        compShader = shaders[n++];
     }
 
     const vk::VkCommandPoolCreateInfo cmdPoolInfo = {
@@ -636,6 +655,9 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate(void)
     if (m_params.shaders.fragment != UNUSED)
         vk.destroyShaderEXT(device, fragShader, nullptr);
 
+    if (compShader != VK_NULL_HANDLE)
+        vk.destroyShaderEXT(device, compShader, nullptr);
+
     tcu::ConstPixelBufferAccess resultBuffer = tcu::ConstPixelBufferAccess(
         vk::mapVkFormat(colorAttachmentFormat), renderArea.extent.width, renderArea.extent.height, 1,
         (const void *)colorOutputBuffer->getAllocation().getHostPtr());
@@ -738,6 +760,7 @@ void ShaderObjectLinkCase::initPrograms(vk::SourceCollections &programCollection
     std::stringstream vert;
     std::stringstream tese;
     std::stringstream geom;
+    std::stringstream comp;
 
     vert << "#version 450\n"
          << "layout (binding = 0) buffer Result { uint result[4]; };\n"
@@ -797,9 +820,15 @@ void ShaderObjectLinkCase::initPrograms(vk::SourceCollections &programCollection
          << "    }\n"
          << "}\n";
 
+    comp << "#version 450\n"
+         << "layout(local_size_x=16, local_size_x=16, local_size_x=1) in;\n"
+         << "void main() {\n"
+         << "}\n";
+
     programCollection.glslSources.add("vert2") << glu::VertexSource(vert.str());
     programCollection.glslSources.add("tese2") << glu::TessellationEvaluationSource(tese.str());
     programCollection.glslSources.add("geom2") << glu::GeometrySource(geom.str());
+    programCollection.glslSources.add("comp2") << glu::ComputeSource(comp.str());
 }
 
 class MeshShaderObjectLinkInstance : public vkt::TestInstance
@@ -917,10 +946,12 @@ tcu::TestStatus MeshShaderObjectLinkInstance::iterate(void)
     const auto &task     = binaries.get("task");
     const auto &mesh     = binaries.get("mesh");
     const auto &frag     = binaries.get("frag");
+    const auto &comp     = binaries.get("comp2");
 
-    vk::VkShaderEXT taskShader;
-    vk::VkShaderEXT meshShader;
-    vk::VkShaderEXT fragShader;
+    vk::VkShaderEXT taskShader = VK_NULL_HANDLE;
+    vk::VkShaderEXT meshShader = VK_NULL_HANDLE;
+    vk::VkShaderEXT fragShader = VK_NULL_HANDLE;
+    vk::VkShaderEXT compShader = VK_NULL_HANDLE;
 
     std::vector<vk::VkShaderCreateInfoEXT> shaderCreateInfos;
 
@@ -1007,6 +1038,13 @@ tcu::TestStatus MeshShaderObjectLinkInstance::iterate(void)
         vk.createShadersEXT(device, 1, &fragShaderCreateInfo, nullptr, &fragShader);
     }
 
+    vk::VkShaderCreateInfoEXT compShaderCreateInfo =
+        vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_COMPUTE_BIT, comp, false, false);
+    if (!shaderCreateInfos.empty())
+    {
+        shaderCreateInfos.push_back(compShaderCreateInfo);
+    }
+
     if (!shaderCreateInfos.empty())
     {
         std::vector<vk::VkShaderEXT> shaders(shaderCreateInfos.size());
@@ -1040,6 +1078,7 @@ tcu::TestStatus MeshShaderObjectLinkInstance::iterate(void)
         {
             fragShader = shaders[n++];
         }
+        compShader = shaders[n++];
     }
 
     const vk::VkCommandPoolCreateInfo cmdPoolInfo = {
@@ -1154,6 +1193,9 @@ tcu::TestStatus MeshShaderObjectLinkInstance::iterate(void)
     if (m_params.shaders.fragment != UNUSED)
         vk.destroyShaderEXT(device, fragShader, nullptr);
 
+    if (compShader != VK_NULL_HANDLE)
+        vk.destroyShaderEXT(device, compShader, nullptr);
+
     if (m_params.shaders.fragment != UNUSED)
     {
         tcu::ConstPixelBufferAccess resultBuffer = tcu::ConstPixelBufferAccess(
@@ -1226,6 +1268,7 @@ void MeshShaderObjectLinkCase::initPrograms(vk::SourceCollections &programCollec
     std::stringstream task;
     std::stringstream mesh;
     std::stringstream frag;
+    std::stringstream comp;
 
     task << "#version 450\n"
          << "#extension GL_EXT_mesh_shader : enable\n"
@@ -1262,6 +1305,11 @@ void MeshShaderObjectLinkCase::initPrograms(vk::SourceCollections &programCollec
          << "    outColor = vec4(1.0f);\n"
          << "}\n";
 
+    comp << "#version 450\n"
+         << "layout(local_size_x=16, local_size_x=16, local_size_x=1) in;\n"
+         << "void main() {\n"
+         << "}\n";
+
     programCollection.glslSources.add("task")
         << glu::TaskSource(task.str())
         << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
@@ -1269,6 +1317,7 @@ void MeshShaderObjectLinkCase::initPrograms(vk::SourceCollections &programCollec
         << glu::MeshSource(mesh.str())
         << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
     programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+    programCollection.glslSources.add("comp2") << glu::ComputeSource(comp.str());
 }
 
 void MeshShaderObjectLinkCase::checkSupport(Context &context) const
@@ -1368,6 +1417,7 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
                     nextStages,        // NextStages nextStages;
                     false,             // bool separateLinked;
                     bindType.bindType, // bool separateBind;
+                    true,              // bool sameLayoutSet;
                 };
 
                 std::string randomOrderName = randomOrder ? "random_order" : "default";
@@ -1387,9 +1437,10 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
                         vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
                         vk::VK_SHADER_STAGE_GEOMETRY_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
                         vk::VK_SHADER_STAGE_FRAGMENT_BIT,
-                    },    // NextStages nextStages;
+                    },    // NextStages   nextStages;
                     true, // bool         separateLinked;
-                    ALL,  // BindType        separateBind
+                    ALL,  // BindType     separateBind
+                    true, // bool         sameLayoutSet;
                 };
 
                 bindGroup->addChild(new ShaderObjectLinkCase(testCtx, "separate_link", params));
@@ -1403,6 +1454,7 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
     {
         Shaders shaders;
         NextStages nextStages;
+        bool sameLayoutSet;
         const char *name;
     } nextStageTests[] = {
         {{UNLINKED, UNUSED, UNUSED, UNUSED, UNLINKED},
@@ -1412,6 +1464,7 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
              vk::VK_SHADER_STAGE_FRAGMENT_BIT,
              0u,
          },
+         true,
          "vert_t"},
         {{UNLINKED, UNUSED, UNUSED, UNLINKED, UNLINKED},
          {
@@ -1420,6 +1473,7 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
              0u,
              vk::VK_SHADER_STAGE_FRAGMENT_BIT,
          },
+         true,
          "vert_g"},
         {{UNLINKED, UNLINKED, UNLINKED, UNLINKED, UNLINKED},
          {
@@ -1428,6 +1482,7 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
              vk::VK_SHADER_STAGE_GEOMETRY_BIT,
              vk::VK_SHADER_STAGE_FRAGMENT_BIT,
          },
+         true,
          "vert_tg"},
         {{UNLINKED, UNUSED, UNUSED, UNUSED, UNLINKED},
          {
@@ -1436,6 +1491,7 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
              0u,
              0u,
          },
+         true,
          "vert_f"},
         {{UNLINKED, UNLINKED, UNLINKED, UNUSED, UNLINKED},
          {
@@ -1444,6 +1500,7 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
              vk::VK_SHADER_STAGE_FRAGMENT_BIT,
              0u,
          },
+         true,
          "vert_tf"},
         {{UNLINKED, UNUSED, UNUSED, UNLINKED, UNLINKED},
          {
@@ -1452,6 +1509,7 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
              0u,
              vk::VK_SHADER_STAGE_FRAGMENT_BIT,
          },
+         true,
          "vert_gf"},
         {{UNLINKED, UNLINKED, UNLINKED, UNLINKED, UNLINKED},
          {
@@ -1461,6 +1519,7 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
              vk::VK_SHADER_STAGE_GEOMETRY_BIT,
              vk::VK_SHADER_STAGE_FRAGMENT_BIT,
          },
+         true,
          "vert_tgf"},
         {{UNLINKED, UNLINKED, UNLINKED, UNUSED, UNLINKED},
          {
@@ -1469,6 +1528,7 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
              vk::VK_SHADER_STAGE_FRAGMENT_BIT,
              0u,
          },
+         true,
          "tesc_t"},
         {{UNLINKED, UNLINKED, UNLINKED, UNLINKED, UNLINKED},
          {
@@ -1477,6 +1537,7 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
              vk::VK_SHADER_STAGE_GEOMETRY_BIT,
              vk::VK_SHADER_STAGE_FRAGMENT_BIT,
          },
+         true,
          "tese_g"},
         {{UNLINKED, UNLINKED, UNLINKED, UNUSED, UNLINKED},
          {
@@ -1485,6 +1546,7 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
              vk::VK_SHADER_STAGE_FRAGMENT_BIT,
              0u,
          },
+         true,
          "tese_f"},
         {{UNLINKED, UNLINKED, UNLINKED, UNLINKED, UNLINKED},
          {
@@ -1493,6 +1555,7 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
              vk::VK_SHADER_STAGE_GEOMETRY_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
              vk::VK_SHADER_STAGE_FRAGMENT_BIT,
          },
+         true,
          "tese_gf"},
         {{UNLINKED, UNUSED, UNUSED, UNLINKED, UNLINKED},
          {
@@ -1501,6 +1564,7 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
              0u,
              vk::VK_SHADER_STAGE_FRAGMENT_BIT,
          },
+         true,
          "geom_f"},
         {{UNLINKED, UNUSED, UNUSED, UNUSED, UNUSED},
          {
@@ -1509,6 +1573,7 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
              0u,
              0u,
          },
+         true,
          "vert_no_frag"},
         {{UNLINKED, UNLINKED, UNLINKED, UNUSED, UNUSED},
          {
@@ -1517,6 +1582,7 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
              0u,
              0u,
          },
+         true,
          "tess_no_frag"},
         {{UNLINKED, UNLINKED, UNLINKED, UNLINKED, UNUSED},
          {
@@ -1525,14 +1591,24 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
              vk::VK_SHADER_STAGE_GEOMETRY_BIT,
              0u,
          },
+         true,
          "geom_no_frag"},
+        {{UNLINKED, UNLINKED, UNLINKED, UNLINKED, UNUSED},
+         {
+             vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+             vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+             vk::VK_SHADER_STAGE_GEOMETRY_BIT,
+             0u,
+         },
+         false,
+         "identically_defined_layouts"},
     };
 
     de::MovePtr<tcu::TestCaseGroup> nextStageGroup(new tcu::TestCaseGroup(testCtx, "next_stage"));
     for (const auto &nextStage : nextStageTests)
     {
         TestParams params = {
-            nextStage.shaders, false, nextStage.nextStages, false, ALL,
+            nextStage.shaders, false, nextStage.nextStages, false, ALL, nextStage.sameLayoutSet,
         };
         nextStageGroup->addChild(new ShaderObjectLinkCase(testCtx, nextStage.name, params));
     }

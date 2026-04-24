@@ -702,12 +702,12 @@ struct Evaluator<OP_DIVIDE_INTO, In0Type, In0DataType, In1Type, In1DataType>
 
 ShaderEvalFunc getEvalFunc(const ShaderInput &in0, const ShaderInput &in1, MatrixOp op)
 {
-    DE_STATIC_ASSERT(TYPE_LAST <= (1 << 7));
+    DE_STATIC_ASSERT(TYPE_LAST <= (1 << 8));
     DE_STATIC_ASSERT(OP_LAST <= (1 << 4));
     DE_STATIC_ASSERT(INPUTTYPE_LAST <= (1 << 2));
 
 #define PACK_EVAL_CASE(OP, IN0TYPE, IN0DATATYPE, IN1TYPE, IN1DATATYPE) \
-    (((OP) << 18) | ((IN0TYPE) << 16) | ((IN0DATATYPE) << 9) | ((IN1TYPE) << 7) | (IN1DATATYPE))
+    (((OP) << 20) | ((IN0TYPE) << 18) | ((IN0DATATYPE) << 10) | ((IN1TYPE) << 8) | (IN1DATATYPE))
 
 #define MAKE_EVAL_CASE(OP, IN0TYPE, IN0DATATYPE, IN1TYPE, IN1DATATYPE)   \
     case PACK_EVAL_CASE(OP, IN0TYPE, IN0DATATYPE, IN1TYPE, IN1DATATYPE): \

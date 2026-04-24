@@ -46,9 +46,10 @@ enum FeatureBits
     FEATURE_INSTANCE_ARRAYS      = (1 << 5),
     FEATURE_VERTEX_BLOCKS        = (1 << 6),
     FEATURE_FRAGMENT_BLOCKS      = (1 << 7),
-    FEATURE_SHARED_BLOCKS        = (1 << 8),
-    FEATURE_UNUSED_UNIFORMS      = (1 << 9),
-    FEATURE_UNUSED_MEMBERS       = (1 << 10),
+    FEATURE_COMPUTE_BLOCKS       = (1 << 8),
+    FEATURE_SHARED_BLOCKS        = (1 << 9),
+    FEATURE_UNUSED_UNIFORMS      = (1 << 10),
+    FEATURE_UNUSED_MEMBERS       = (1 << 11),
     FEATURE_PACKED_LAYOUT        = (1 << 12),
     FEATURE_SHARED_LAYOUT        = (1 << 13),
     FEATURE_STD140_LAYOUT        = (1 << 14),
@@ -76,6 +77,7 @@ private:
     const uint32_t m_features;
     const int m_maxVertexBlocks;
     const int m_maxFragmentBlocks;
+    const int m_maxComputeBlocks;
     const int m_maxSharedBlocks;
     const int m_maxInstances;
     const int m_maxArrayLength;

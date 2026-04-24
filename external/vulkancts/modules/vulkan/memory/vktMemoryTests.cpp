@@ -29,6 +29,7 @@
 #include "vktMemoryRequirementsTests.hpp"
 #include "vktMemoryBindingTests.hpp"
 #include "vktMemoryExternalMemoryHostTests.hpp"
+#include "vktMemoryExternalDmaHeapTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktMemoryMappingTests.hpp"
@@ -37,6 +38,7 @@
 #include "vktMemoryDeviceMemoryReportTests.hpp"
 #include "vktMemoryDecompressionTests.hpp"
 #include "vktMemoryZeroInitializeDeviceMemoryTests.hpp"
+#include "vktMemoryMapPlacedTests.hpp"
 #endif // CTS_USES_VULKANSC
 
 namespace vkt
@@ -70,6 +72,8 @@ void createChildren(tcu::TestCaseGroup *memoryTests)
     memoryTests->addChild(createAddressBindingReportTests(testCtx));
     memoryTests->addChild(createMemoryDecompressionTests(testCtx));
     memoryTests->addChild(createClearedAllocationControlTests(testCtx));
+    memoryTests->addChild(createDmaHeapTests(testCtx));
+    memoryTests->addChild(createMapPlacedTests(testCtx));
 #endif
 }
 

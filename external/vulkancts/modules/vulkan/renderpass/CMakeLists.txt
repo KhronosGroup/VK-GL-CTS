@@ -16,8 +16,12 @@ set(DEQP_VK_VKSC_RENDER_PASS_SRCS
 	vktRenderPassMultisampleTests.hpp
 	vktRenderPassMultisampleResolveTests.cpp
 	vktRenderPassMultisampleResolveTests.hpp
+	vktRenderPassClearSomeAttachmentsTests.cpp
+	vktRenderPassClearSomeAttachmentsTests.hpp
 	vktRenderPassDepthStencilResolveTests.cpp
 	vktRenderPassDepthStencilResolveTests.hpp
+	vktRenderPassPerformanceCountersByRegionTests.cpp
+	vktRenderPassPerformanceCountersByRegionTests.hpp
 	vktRenderPassSampleReadTests.cpp
 	vktRenderPassSampleReadTests.hpp
 	vktRenderPassSubpassDependencyTests.cpp
@@ -32,6 +36,8 @@ set(DEQP_VK_VKSC_RENDER_PASS_SRCS
 	vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.hpp
 	vktRenderPassRemainingArrayLayersTests.cpp
 	vktRenderPassRemainingArrayLayersTests.hpp
+	vktRenderPassMultiviewPerViewTests.cpp
+	vktRenderPassMultiviewPerViewTests.hpp
 	)
 
 set(DEQP_VK_RENDER_PASS_SRCS
@@ -61,6 +67,10 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktDynamicRenderingDepthStencilResolveTests.hpp
 	vktRenderPassNestedCommandBuffersTests.cpp
 	vktRenderPassNestedCommandBuffersTests.hpp
+	vktRenderPassCustomResolveTests.cpp
+	vktRenderPassCustomResolveTests.hpp
+	vktDynamicRenderingMultiviewClearTests.cpp
+	vktDynamicRenderingMultiviewClearTests.hpp
 	)
 
 PCH(DEQP_VK_RENDER_PASS_SRCS ../pch.cpp)

@@ -31,6 +31,7 @@
 #include "vktTestCase.hpp"
 #include "vkImageUtil.hpp"
 #include "vkPrograms.hpp"
+#include "vkFormatLists.hpp"
 #include "tcuTextureUtil.hpp"
 #include "deStringUtil.hpp"
 
@@ -54,7 +55,7 @@ public:
     ImageTest(tcu::TestContext &testContext, const char *name, AllocationKind allocationKind,
               PipelineConstructionType pipelineConstructionType, VkDescriptorType samplingType,
               VkImageViewType imageViewType, VkFormat imageFormat, const tcu::IVec3 &imageSize, int imageCount,
-              int arraySize, bool pipelineProtectedFlag);
+              int arraySize, bool pipelineProtectedFlag, bool useCompute = false);
 
     ImageSamplingInstanceParams getImageSamplingInstanceParams(AllocationKind allocationKind,
                                                                VkDescriptorType samplingType,
@@ -83,12 +84,13 @@ private:
     int m_imageCount;
     int m_arraySize;
     bool m_pipelineProtectedFlag;
+    bool m_useCompute;
 };
 
 ImageTest::ImageTest(tcu::TestContext &testContext, const char *name, AllocationKind allocationKind,
                      PipelineConstructionType pipelineConstructionType, VkDescriptorType samplingType,
                      VkImageViewType imageViewType, VkFormat imageFormat, const tcu::IVec3 &imageSize, int imageCount,
-                     int arraySize, bool pipelineProtectedFlag)
+                     int arraySize, bool pipelineProtectedFlag, bool useCompute)
 
     : vkt::TestCase(testContext, name)
     , m_allocationKind(allocationKind)
@@ -100,6 +102,7 @@ ImageTest::ImageTest(tcu::TestContext &testContext, const char *name, Allocation
     , m_imageCount(imageCount)
     , m_arraySize(arraySize)
     , m_pipelineProtectedFlag(pipelineProtectedFlag)
+    , m_useCompute(useCompute)
 {
 }
 
@@ -110,12 +113,23 @@ void ImageTest::checkSupport(Context &context) const
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_SAMPLED_IMAGE_ARRAY_DYNAMIC_INDEXING);
 
 #ifndef CTS_USES_VULKANSC
+    if (isAstc3DFormat(m_imageFormat))
+        checkSupportAstcFormat(context, mapVkCompressedFormat(m_imageFormat));
+
     if (m_imageFormat == VK_FORMAT_A8_UNORM_KHR || m_imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
         context.requireDeviceFunctionality("VK_KHR_maintenance5");
 #endif // CTS_USES_VULKANSC
 
-    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
-                                          m_pipelineConstructionType);
+    if (m_useCompute)
+    {
+        checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                      graphicsToComputeConstructionType(m_pipelineConstructionType));
+    }
+    else // graphics pipeline
+    {
+        checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                              m_pipelineConstructionType);
+    }
     checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_allocationKind, m_samplingType,
                                                                               m_imageViewType, m_imageFormat,
                                                                               m_imageSize, m_imageCount, m_arraySize));
@@ -197,13 +211,11 @@ ImageSamplingInstanceParams ImageTest::getImageSamplingInstanceParams(Allocation
     return ImageSamplingInstanceParams(m_pipelineConstructionType, renderSize, imageViewType, imageFormat, imageSize,
                                        arraySize, componentMapping, subresourceRange, samplerParams, 0.0f, vertices,
                                        separateStencilUsage, samplingType, imageCount, allocationKind,
-                                       vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, pipelineFlags);
+                                       vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, pipelineFlags, m_useCompute);
 }
 
 void ImageTest::initPrograms(SourceCollections &sourceCollections) const
 {
-    std::ostringstream vertexSrc;
-    std::ostringstream fragmentSrc;
     const char *texCoordSwizzle     = nullptr;
     const tcu::TextureFormat format = (isCompressedFormat(m_imageFormat)) ?
                                           tcu::getUncompressedFormat(mapVkCompressedFormat(m_imageFormat)) :
@@ -236,51 +248,139 @@ void ImageTest::initPrograms(SourceCollections &sourceCollections) const
         break;
     }
 
-    vertexSrc << "#version 440\n"
-              << "layout(location = 0) in vec4 position;\n"
-              << "layout(location = 1) in vec4 texCoords;\n"
-              << "layout(location = 0) out highp vec4 vtxTexCoords;\n"
-              << "out gl_PerVertex {\n"
-              << "    vec4 gl_Position;\n"
-              << "};\n"
-              << "void main (void)\n"
-              << "{\n"
-              << "    gl_Position = position;\n"
-              << "    vtxTexCoords = texCoords;\n"
-              << "}\n";
-
-    fragmentSrc << "#version 440\n";
-    switch (m_samplingType)
+    if (m_useCompute)
     {
-    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-        fragmentSrc << "layout(set = 0, binding = 0) uniform highp sampler texSampler;\n"
+        std::ostringstream compSrc;
+        uint32_t storageBindingIndex = (m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ? 2u : 1u;
+
+        compSrc << "#version 440\n"
+                << "layout(local_size_x = 1, local_size_y = 1) in;\n";
+
+        switch (m_samplingType)
+        {
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            compSrc << "layout(set = 0, binding = 0) uniform highp sampler texSampler;\n"
                     << "layout(set = 0, binding = 1) uniform highp " << getGlslTextureType(format, m_imageViewType)
                     << " " << getGlslTextureDecl(m_imageCount) << ";\n";
-        break;
-    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-    default:
-        fragmentSrc << "layout(set = 0, binding = 0) uniform highp " << getGlslSamplerType(format, m_imageViewType)
+            break;
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+        default:
+            compSrc << "layout(set = 0, binding = 0) uniform highp " << getGlslSamplerType(format, m_imageViewType)
                     << " " << getGlslSamplerDecl(m_imageCount) << ";\n";
-    }
-    fragmentSrc << "layout(location = 0) in highp vec4 vtxTexCoords;\n"
-                << "layout(location = 0) out highp vec4 " << getGlslFragColorDecl(m_imageCount) << ";\n"
-                << "void main (void)\n"
-                << "{\n";
-    if (m_imageCount > 1)
-        fragmentSrc << "    for (uint i = 0; i < " << m_imageCount << "; ++i)\n"
-                    << "        fragColors[i] = (texture("
-                    << getGlslSampler(format, m_imageViewType, m_samplingType, m_imageCount) << ", vtxTexCoords."
-                    << texCoordSwizzle << std::scientific << ") * vec4" << lookupScale << ") + vec4" << lookupBias
-                    << "; \n";
-    else
-        fragmentSrc << "    fragColor = (texture("
-                    << getGlslSampler(format, m_imageViewType, m_samplingType, m_imageCount) << ", vtxTexCoords."
-                    << texCoordSwizzle << std::scientific << ") * vec4" << lookupScale << ") + vec4" << lookupBias
-                    << "; \n";
-    fragmentSrc << "}\n";
+            break;
+        }
 
-    sourceCollections.glslSources.add("tex_vert") << glu::VertexSource(vertexSrc.str());
-    sourceCollections.glslSources.add("tex_frag") << glu::FragmentSource(fragmentSrc.str());
+        // Output storage images
+        compSrc << "layout(set = 0, binding = " << storageBindingIndex
+                << ", rgba8) uniform writeonly highp image2D outImages[" << m_imageCount << "];\n";
+
+        // Vertex data buffer
+        compSrc << "struct Vertex {\n"
+                << "    vec4 position;\n"
+                << "    vec4 texCoord;\n"
+                << "};\n"
+                << "layout(std430, set = 0, binding = " << (storageBindingIndex + 1) << ") readonly buffer Vertices {\n"
+                << "    Vertex v[];\n"
+                << "};\n";
+
+        // Barycentric interpolation matching the graphics rasterizer (slow O(N) interpolation but should be enough)
+        compSrc << "vec4 interpolateTexCoord(vec2 ndc) {\n"
+                << "    for (int i = 0; i < v.length(); i += 3) {\n"
+                << "        vec2 p0 = v[i].position.xy;\n"
+                << "        vec2 p1 = v[i+1].position.xy;\n"
+                << "        vec2 p2 = v[i+2].position.xy;\n"
+                << "        float area = (p1.x - p0.x) * (p2.y - p0.y) - (p1.y - p0.y) * (p2.x - p0.x);\n"
+                << "        if (abs(area) < 1e-5) continue;\n" // Ignore degenerate triangles
+                << "        float l0 = ((p2.x - p1.x) * (ndc.y - p1.y) - (p2.y - p1.y) * (ndc.x - p1.x)) / area;\n"
+                << "        float l1 = ((p0.x - p2.x) * (ndc.y - p2.y) - (p0.y - p2.y) * (ndc.x - p2.x)) / area;\n"
+                << "        float l2 = 1.0 - l0 - l1;\n"
+                << "        if (l0 >= -1e-5 && l1 >= -1e-5 && l2 >= -1e-5) {\n"
+                << "            return v[i].texCoord * l0 + v[i+1].texCoord * l1 + v[i+2].texCoord * l2;\n"
+                << "        }\n"
+                << "    }\n"
+                << "    return v[0].texCoord;\n" // Fallback (shouldn't hit under normal rasterization)
+                << "}\n";
+
+        compSrc << "void main (void)\n"
+                << "{\n"
+                // Simulate Rasterization Pixel Centers mapped to NDC space (-1.0 to 1.0)
+                << "    vec2 pixelCenter = vec2(gl_GlobalInvocationID.xy) + vec2(0.5);\n"
+                << "    vec2 ndc = (pixelCenter / vec2(gl_NumWorkGroups.xy)) * 2.0 - 1.0;\n"
+                << "    vec4 vtxTexCoords = interpolateTexCoord(ndc);\n";
+
+        if (m_imageCount > 1)
+        {
+            compSrc << "    for (uint i = 0; i < " << m_imageCount << "; ++i) {\n"
+                    << "        vec4 color = (texture("
+                    << getGlslSampler(format, m_imageViewType, m_samplingType, m_imageCount) << ", vtxTexCoords."
+                    << texCoordSwizzle << std::scientific << ") * vec4" << lookupScale << ") + vec4" << lookupBias
+                    << ";\n"
+                    << "        imageStore(outImages[i], ivec2(gl_GlobalInvocationID.xy), color);\n"
+                    << "    }\n";
+        }
+        else
+        {
+            compSrc << "    vec4 color = (texture("
+                    << getGlslSampler(format, m_imageViewType, m_samplingType, m_imageCount) << ", vtxTexCoords."
+                    << texCoordSwizzle << std::scientific << ") * vec4" << lookupScale << ") + vec4" << lookupBias
+                    << ";\n"
+                    << "    imageStore(outImages[0], ivec2(gl_GlobalInvocationID.xy), color);\n";
+        }
+        compSrc << "}\n";
+
+        sourceCollections.glslSources.add("tex_comp") << glu::ComputeSource(compSrc.str());
+    }
+    else // graphics shader
+    {
+        std::ostringstream vertexSrc;
+        std::ostringstream fragmentSrc;
+
+        vertexSrc << "#version 440\n"
+                  << "layout(location = 0) in vec4 position;\n"
+                  << "layout(location = 1) in vec4 texCoords;\n"
+                  << "layout(location = 0) out highp vec4 vtxTexCoords;\n"
+                  << "out gl_PerVertex {\n"
+                  << "    vec4 gl_Position;\n"
+                  << "};\n"
+                  << "void main (void)\n"
+                  << "{\n"
+                  << "    gl_Position = position;\n"
+                  << "    vtxTexCoords = texCoords;\n"
+                  << "}\n";
+
+        fragmentSrc << "#version 440\n";
+        switch (m_samplingType)
+        {
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            fragmentSrc << "layout(set = 0, binding = 0) uniform highp sampler texSampler;\n"
+                        << "layout(set = 0, binding = 1) uniform highp " << getGlslTextureType(format, m_imageViewType)
+                        << " " << getGlslTextureDecl(m_imageCount) << ";\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+        default:
+            fragmentSrc << "layout(set = 0, binding = 0) uniform highp " << getGlslSamplerType(format, m_imageViewType)
+                        << " " << getGlslSamplerDecl(m_imageCount) << ";\n";
+        }
+        fragmentSrc << "layout(location = 0) in highp vec4 vtxTexCoords;\n"
+                    << "layout(location = 0) out highp vec4 " << getGlslFragColorDecl(m_imageCount) << ";\n"
+                    << "void main (void)\n"
+                    << "{\n";
+        if (m_imageCount > 1)
+            fragmentSrc << "    for (uint i = 0; i < " << m_imageCount << "; ++i)\n"
+                        << "        fragColors[i] = (texture("
+                        << getGlslSampler(format, m_imageViewType, m_samplingType, m_imageCount) << ", vtxTexCoords."
+                        << texCoordSwizzle << std::scientific << ") * vec4" << lookupScale << ") + vec4" << lookupBias
+                        << "; \n";
+        else
+            fragmentSrc << "    fragColor = (texture("
+                        << getGlslSampler(format, m_imageViewType, m_samplingType, m_imageCount) << ", vtxTexCoords."
+                        << texCoordSwizzle << std::scientific << ") * vec4" << lookupScale << ") + vec4" << lookupBias
+                        << "; \n";
+        fragmentSrc << "}\n";
+
+        sourceCollections.glslSources.add("tex_vert") << glu::VertexSource(vertexSrc.str());
+        sourceCollections.glslSources.add("tex_frag") << glu::FragmentSource(fragmentSrc.str());
+    }
 }
 
 TestInstance *ImageTest::createInstance(Context &context) const
@@ -619,13 +719,21 @@ de::MovePtr<tcu::TestCaseGroup> createImageSizeTests(tcu::TestContext &testCtx, 
         {
             for (size_t arraySizeNdx = 0; arraySizeNdx < arraySizes.size(); arraySizeNdx++)
             {
-                imageSizeTests->addChild(new ImageTest(
-                    testCtx,
-                    getSizeName(imageViewType, imageSizes[sizeNdx], arraySizes[arraySizeNdx],
-                                pipelineProtectedFlag[flagNdx])
-                        .c_str(),
-                    allocationKind, pipelineConstructionType, samplingType, imageViewType, imageFormat,
-                    imageSizes[sizeNdx], imageCount, arraySizes[arraySizeNdx], pipelineProtectedFlag[flagNdx]));
+                std::string baseName = getSizeName(imageViewType, imageSizes[sizeNdx], arraySizes[arraySizeNdx],
+                                                   pipelineProtectedFlag[flagNdx]);
+
+                // Graphics pipeline test case
+                imageSizeTests->addChild(new ImageTest(testCtx, baseName.c_str(), allocationKind,
+                                                       pipelineConstructionType, samplingType, imageViewType,
+                                                       imageFormat, imageSizes[sizeNdx], imageCount,
+                                                       arraySizes[arraySizeNdx], pipelineProtectedFlag[flagNdx]));
+
+                // Compute pipeline test case
+                std::string computeName = baseName + "_compute";
+                imageSizeTests->addChild(new ImageTest(testCtx, computeName.c_str(), allocationKind,
+                                                       pipelineConstructionType, samplingType, imageViewType,
+                                                       imageFormat, imageSizes[sizeNdx], imageCount,
+                                                       arraySizes[arraySizeNdx], pipelineProtectedFlag[flagNdx], true));
             }
         }
     }
@@ -663,160 +771,23 @@ de::MovePtr<tcu::TestCaseGroup> createImageFormatTests(tcu::TestContext &testCtx
                                                        PipelineConstructionType pipelineConstructionType,
                                                        VkDescriptorType samplingType, VkImageViewType imageViewType)
 {
-    // All supported dEQP formats that are not intended for depth or stencil.
-    const VkFormat coreFormats[] = {
-        VK_FORMAT_R4G4_UNORM_PACK8,
-        VK_FORMAT_R4G4B4A4_UNORM_PACK16,
-        VK_FORMAT_R5G6B5_UNORM_PACK16,
-        VK_FORMAT_R5G5B5A1_UNORM_PACK16,
-        VK_FORMAT_R8_UNORM,
-        VK_FORMAT_R8_SNORM,
-        VK_FORMAT_R8_USCALED,
-        VK_FORMAT_R8_SSCALED,
-        VK_FORMAT_R8_UINT,
-        VK_FORMAT_R8_SINT,
-        VK_FORMAT_R8_SRGB,
-        VK_FORMAT_R8G8_UNORM,
-        VK_FORMAT_R8G8_SNORM,
-        VK_FORMAT_R8G8_USCALED,
-        VK_FORMAT_R8G8_SSCALED,
-        VK_FORMAT_R8G8_UINT,
-        VK_FORMAT_R8G8_SINT,
-        VK_FORMAT_R8G8_SRGB,
-        VK_FORMAT_R8G8B8_UNORM,
-        VK_FORMAT_R8G8B8_SNORM,
-        VK_FORMAT_R8G8B8_USCALED,
-        VK_FORMAT_R8G8B8_SSCALED,
-        VK_FORMAT_R8G8B8_UINT,
-        VK_FORMAT_R8G8B8_SINT,
-        VK_FORMAT_R8G8B8_SRGB,
-        VK_FORMAT_R8G8B8A8_UNORM,
-        VK_FORMAT_R8G8B8A8_SNORM,
-        VK_FORMAT_R8G8B8A8_USCALED,
-        VK_FORMAT_R8G8B8A8_SSCALED,
-        VK_FORMAT_R8G8B8A8_UINT,
-        VK_FORMAT_R8G8B8A8_SINT,
-        VK_FORMAT_R8G8B8A8_SRGB,
-        VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-        VK_FORMAT_A2R10G10B10_UINT_PACK32,
-        VK_FORMAT_A2R10G10B10_USCALED_PACK32,
-        VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-        VK_FORMAT_A2B10G10R10_UINT_PACK32,
-        VK_FORMAT_A1R5G5B5_UNORM_PACK16,
-#ifndef CTS_USES_VULKANSC
-        VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
-#endif // CTS_USES_VULKANSC
-        VK_FORMAT_R16_UNORM,
-        VK_FORMAT_R16_SNORM,
-        VK_FORMAT_R16_USCALED,
-        VK_FORMAT_R16_SSCALED,
-        VK_FORMAT_R16_UINT,
-        VK_FORMAT_R16_SINT,
-        VK_FORMAT_R16_SFLOAT,
-        VK_FORMAT_R16G16_UNORM,
-        VK_FORMAT_R16G16_SNORM,
-        VK_FORMAT_R16G16_USCALED,
-        VK_FORMAT_R16G16_SSCALED,
-        VK_FORMAT_R16G16_UINT,
-        VK_FORMAT_R16G16_SINT,
-        VK_FORMAT_R16G16_SFLOAT,
-        VK_FORMAT_R16G16B16_UNORM,
-        VK_FORMAT_R16G16B16_SNORM,
-        VK_FORMAT_R16G16B16_USCALED,
-        VK_FORMAT_R16G16B16_SSCALED,
-        VK_FORMAT_R16G16B16_UINT,
-        VK_FORMAT_R16G16B16_SINT,
-        VK_FORMAT_R16G16B16_SFLOAT,
-        VK_FORMAT_R16G16B16A16_UNORM,
-        VK_FORMAT_R16G16B16A16_SNORM,
-        VK_FORMAT_R16G16B16A16_USCALED,
-        VK_FORMAT_R16G16B16A16_SSCALED,
-        VK_FORMAT_R16G16B16A16_UINT,
-        VK_FORMAT_R16G16B16A16_SINT,
-        VK_FORMAT_R16G16B16A16_SFLOAT,
-        VK_FORMAT_R32_UINT,
-        VK_FORMAT_R32_SINT,
-        VK_FORMAT_R32_SFLOAT,
-        VK_FORMAT_R32G32_UINT,
-        VK_FORMAT_R32G32_SINT,
-        VK_FORMAT_R32G32_SFLOAT,
-        VK_FORMAT_R32G32B32_UINT,
-        VK_FORMAT_R32G32B32_SINT,
-        VK_FORMAT_R32G32B32_SFLOAT,
-        VK_FORMAT_R32G32B32A32_UINT,
-        VK_FORMAT_R32G32B32A32_SINT,
-        VK_FORMAT_R32G32B32A32_SFLOAT,
-        VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-        VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
-        VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-        VK_FORMAT_B5G5R5A1_UNORM_PACK16,
-        VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
-        VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
-#ifndef CTS_USES_VULKANSC
-        VK_FORMAT_A8_UNORM_KHR,
-#endif // CTS_USES_VULKANSC
-
-        // Compressed formats
-        VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
-        VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,
-        VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,
-        VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,
-        VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,
-        VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,
-        VK_FORMAT_EAC_R11_UNORM_BLOCK,
-        VK_FORMAT_EAC_R11_SNORM_BLOCK,
-        VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
-        VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
-        VK_FORMAT_ASTC_4x4_UNORM_BLOCK,
-        VK_FORMAT_ASTC_4x4_SRGB_BLOCK,
-        VK_FORMAT_ASTC_5x4_UNORM_BLOCK,
-        VK_FORMAT_ASTC_5x4_SRGB_BLOCK,
-        VK_FORMAT_ASTC_5x5_UNORM_BLOCK,
-        VK_FORMAT_ASTC_5x5_SRGB_BLOCK,
-        VK_FORMAT_ASTC_6x5_UNORM_BLOCK,
-        VK_FORMAT_ASTC_6x5_SRGB_BLOCK,
-        VK_FORMAT_ASTC_6x6_UNORM_BLOCK,
-        VK_FORMAT_ASTC_6x6_SRGB_BLOCK,
-        VK_FORMAT_ASTC_8x5_UNORM_BLOCK,
-        VK_FORMAT_ASTC_8x5_SRGB_BLOCK,
-        VK_FORMAT_ASTC_8x6_UNORM_BLOCK,
-        VK_FORMAT_ASTC_8x6_SRGB_BLOCK,
-        VK_FORMAT_ASTC_8x8_UNORM_BLOCK,
-        VK_FORMAT_ASTC_8x8_SRGB_BLOCK,
-        VK_FORMAT_ASTC_10x5_UNORM_BLOCK,
-        VK_FORMAT_ASTC_10x5_SRGB_BLOCK,
-        VK_FORMAT_ASTC_10x6_UNORM_BLOCK,
-        VK_FORMAT_ASTC_10x6_SRGB_BLOCK,
-        VK_FORMAT_ASTC_10x8_UNORM_BLOCK,
-        VK_FORMAT_ASTC_10x8_SRGB_BLOCK,
-        VK_FORMAT_ASTC_10x10_UNORM_BLOCK,
-        VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
-        VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
-        VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
-        VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
-        VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
-    };
     // Formats to test with dedicated allocation
-    const VkFormat dedicatedAllocationFormats[] = {
+    const std::vector<VkFormat> dedicatedAllocationFormats{
         VK_FORMAT_R8G8B8A8_UNORM,
         VK_FORMAT_R16_SFLOAT,
     };
-    const VkFormat *formats = (allocationKind == ALLOCATION_KIND_DEDICATED) ? dedicatedAllocationFormats : coreFormats;
-    const size_t formatsLength = (allocationKind == ALLOCATION_KIND_DEDICATED) ?
-                                     DE_LENGTH_OF_ARRAY(dedicatedAllocationFormats) :
-                                     DE_LENGTH_OF_ARRAY(coreFormats);
+    const auto &formats =
+        (allocationKind == ALLOCATION_KIND_DEDICATED) ? dedicatedAllocationFormats : formats::pipelineImageFormats;
 
     de::MovePtr<tcu::TestCaseGroup> imageFormatTests(new tcu::TestCaseGroup(testCtx, "format"));
 
-    for (size_t formatNdx = 0; formatNdx < formatsLength; formatNdx++)
+    for (VkFormat format : formats)
     {
-        const VkFormat format = formats[formatNdx];
-
         if (isCompressedFormat(format))
         {
             // Do not use compressed formats with 1D and 1D array textures.
             if (imageViewType == VK_IMAGE_VIEW_TYPE_1D || imageViewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY)
-                break;
+                continue;
         }
 
         de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, getFormatCaseName(format).c_str()));
@@ -825,6 +796,39 @@ de::MovePtr<tcu::TestCaseGroup> createImageFormatTests(tcu::TestContext &testCtx
 
         imageFormatTests->addChild(formatGroup.release());
     }
+
+#ifndef CTS_USES_VULKANSC
+    const std::vector<VkFormat> astc3DFormats{
+        VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT,  VK_FORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT, VK_FORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT,   VK_FORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT,  VK_FORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT, VK_FORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT,   VK_FORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT,  VK_FORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT, VK_FORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT,   VK_FORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT,  VK_FORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT, VK_FORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT,   VK_FORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT,  VK_FORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT, VK_FORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT,   VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT,
+    };
+
+    if (imageViewType == VK_IMAGE_VIEW_TYPE_3D && allocationKind != ALLOCATION_KIND_DEDICATED)
+    {
+        for (VkFormat format : astc3DFormats)
+        {
+            de::MovePtr<tcu::TestCaseGroup> formatGroup(
+                new tcu::TestCaseGroup(testCtx, getFormatCaseName(format).c_str()));
+            createImageCountTests(formatGroup.get(), testCtx, allocationKind, pipelineConstructionType, samplingType,
+                                  imageViewType, format);
+
+            imageFormatTests->addChild(formatGroup.release());
+        }
+    }
+#endif // CTS_USES_VULKANSC
 
     return imageFormatTests;
 }

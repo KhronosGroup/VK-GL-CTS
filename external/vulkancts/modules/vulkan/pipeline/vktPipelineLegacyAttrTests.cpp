@@ -495,9 +495,9 @@ tcu::TestStatus LegacyVertexAttributesInstance::iterate(void)
         void *vbData       = vbAlloc.getHostPtr();
 
         deMemcpy(vbData, de::dataOrNull(inputData), de::dataSize(inputData));
-        // Note we're not flushing data here because it's not needed and flushing with the binding memory offset would mean hitting
-        // VUID-VkMappedMemoryRange-offset-00687.
-        //flushMappedMemoryRange(ctx.vkd, ctx.device, vbAlloc.getMemory(), binding.memoryOffset, VK_WHOLE_SIZE);
+        // We can't use flushAlloc() here because the offset may not be a multiple of the non-coherent atom size.
+        // Just flush the whole allocation.
+        flushMappedMemoryRange(ctx.vkd, ctx.device, vbAlloc.getMemory(), 0, VK_WHOLE_SIZE);
     }
 
     // Data buffer for verification.

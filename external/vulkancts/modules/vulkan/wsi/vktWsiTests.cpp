@@ -37,6 +37,7 @@
 #include "vktWsiFullScreenExclusiveTests.hpp"
 #include "vktWsiPresentIdWaitTests.hpp"
 #include "vktWsiMaintenance1Tests.hpp"
+#include "vktWsiPresentTimingTests.hpp"
 
 namespace vkt
 {
@@ -68,6 +69,8 @@ void createTypeSpecificTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiTyp
     addTestGroup(testGroup, "present_id_wait", createPresentIdWaitTests, wsiType);
     // VK_KHR_(surface|swapchain)_maintenance1 tests
     addTestGroup(testGroup, "maintenance1", createMaintenance1Tests, wsiType);
+    // VK_EXT_present_timing tests
+    addTestGroup(testGroup, "present_timing", createPresentTimingTests, wsiType);
 }
 
 void createWsiTests(tcu::TestCaseGroup *apiTests)

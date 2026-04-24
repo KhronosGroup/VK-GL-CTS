@@ -32,6 +32,7 @@ namespace ycbcr
 {
 
 tcu::TestCaseGroup *createCopyTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createSinglePlanarCopyTests(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createDimensionsCopyTests(tcu::TestContext &testCtx);
 
 } // namespace ycbcr

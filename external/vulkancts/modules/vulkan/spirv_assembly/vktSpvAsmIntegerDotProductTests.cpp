@@ -213,6 +213,8 @@ void addDotProductExtensionAndFeatures(ComputeShaderSpec &spec, const struct Dot
     {
         spec.requestedVulkanFeatures.coreFeatures.shaderInt16                 = true;
         spec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
+        // VUID-RuntimeSpirv-uniformAndStorageBuffer16BitAccess-06332
+        spec.requestedVulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess = true;
         spec.extensions.push_back("VK_KHR_16bit_storage");
     }
 }
@@ -364,9 +366,10 @@ string generateIntegerDotProductCode(const struct DotProductPackingInfo &packing
                                        "OpCapability Int" + de::toString(vectorInfo.vecElementSize) + "\n" :
                                        "");
 
-    const string dotProductInputCapabilityName(packingInfo.packed              ? "DotProductInput4x8BitPackedKHR" :
-                                               (vectorInfo.vecElementSize > 8) ? "DotProductInputAllKHR" :
-                                                                                 "DotProductInput4x8BitKHR");
+    const bool using4Wide8ByteVector = (vectorInfo.vecLen == 4) && (vectorInfo.vecElementSize == 8);
+    const string dotProductInputCapabilityName(!using4Wide8ByteVector ? "DotProductInputAllKHR" :
+                                               packingInfo.packed     ? "DotProductInput4x8BitPackedKHR" :
+                                                                        "DotProductInput4x8BitKHR");
 
     const string capabilities(outputCapability + elementCapability + "OpCapability " + dotProductInputCapabilityName +
                               "\n"

@@ -56,6 +56,7 @@ public:
         VkFormat format;
         int width;
         int height;
+        bool useCompute;
     };
     SnormLinearClampInstance(vkt::Context &context, de::SharedPtr<Params> params);
 
@@ -95,7 +96,7 @@ SnormLinearClampInstance::SnormLinearClampInstance(vkt::Context &context, de::Sh
     , m_hwTexture(TestTexture2DSp(new pipeline::TestTexture2D(m_inFormat, textureWidth, textureHeight)))
     , m_swTexture(m_inFormat, textureWidth, textureHeight, 1)
     , m_renderer(context, VK_SAMPLE_COUNT_1_BIT, m_params->width, m_params->height, 1u, makeComponentMappingRGBA(),
-                 VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, m_outFormat)
+                 VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, m_outFormat, false, false, m_params->useCompute)
     , m_cd(computeColorDistance())
     , m_a(lim(m_inFormat, 0), lim(m_inFormat, 1) + m_cd[1] * 2, lim(m_inFormat, 2), lim(m_inFormat, 3) + m_cd[3] * 2)
     , m_b(lim(m_inFormat, 0) + m_cd[0] * 2, lim(m_inFormat, 1), lim(m_inFormat, 2) + m_cd[2] * 2, lim(m_inFormat, 3))
@@ -280,7 +281,7 @@ public:
     virtual void initPrograms(SourceCollections &programCollection) const override
     {
         initializePrograms(programCollection, glu::Precision::PRECISION_HIGHP, std::vector<Program>({PROGRAM_2D_FLOAT}),
-                           nullptr, glu::Precision::PRECISION_HIGHP);
+                           nullptr, glu::Precision::PRECISION_HIGHP, false, VK_FORMAT_R32G32B32A32_SFLOAT);
     }
 
 private:
@@ -409,8 +410,12 @@ void populateSnormLinearClampTests(tcu::TestCaseGroup *group)
         const int th = SnormLinearClampInstance::textureHeight * sizeMultipler;
 
         de::SharedPtr<SnormLinearClampInstance::Params> params(
-            new SnormLinearClampInstance::Params{testParam.format, tw, th});
+            new SnormLinearClampInstance::Params{testParam.format, tw, th, false});
         group->addChild(new SnormLinearClampTestCase(testCtx, testParam.testName, params));
+
+        // Compute case.
+        params->useCompute = true;
+        group->addChild(new SnormLinearClampTestCase(testCtx, testParam.testName + "_compute", params));
 
         sizeMultipler += 2;
     }

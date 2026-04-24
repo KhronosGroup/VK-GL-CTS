@@ -86,6 +86,20 @@ bool isSIntType(VkComponentTypeKHR t)
     }
 }
 
+bool isUIntType(VkComponentTypeKHR t)
+{
+    switch (t)
+    {
+    default:
+        return false;
+    case VK_COMPONENT_TYPE_UINT8_NV:
+    case VK_COMPONENT_TYPE_UINT16_NV:
+    case VK_COMPONENT_TYPE_UINT32_NV:
+    case VK_COMPONENT_TYPE_UINT64_NV:
+        return true;
+    }
+}
+
 void GetFloatExpManBits(VkComponentTypeKHR dt, uint32_t &expBits, uint32_t &manBits, uint32_t &byteSize)
 {
     switch (dt)

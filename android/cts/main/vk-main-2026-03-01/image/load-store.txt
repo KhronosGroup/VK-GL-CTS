@@ -1,0 +1,2 @@
+dEQP-VK.image.load_store.without_any_format.2d.x8_d24_unorm_pack32
+dEQP-VK.image.load_store.without_any_format.2d_array.x8_d24_unorm_pack32

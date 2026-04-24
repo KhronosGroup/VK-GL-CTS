@@ -50,32 +50,25 @@ tcu::UVec3 computeWorkGroupSize(const tcu::UVec3 &gridSize)
 void SparseShaderIntrinsicsCaseStorage::initPrograms(vk::SourceCollections &programCollection) const
 {
     const PlanarFormatDescription formatDescription = getPlanarFormatDescription(m_format);
-    const std::string imageTypeStr                  = getShaderImageType(formatDescription, m_imageType);
-    const std::string formatDataStr                 = getShaderImageDataType(formatDescription);
-    const std::string formatQualStr                 = getShaderImageFormatQualifier(m_format);
-    const std::string coordString =
-        getShaderImageCoordinates(m_imageType, "%local_int_GlobalInvocationID_x", "%local_ivec2_GlobalInvocationID_xy",
-                                  "%local_ivec3_GlobalInvocationID_xyz");
-    // Create compute program
+    const uint32_t numPlanes = (formatDescription.numPlanes > 0) ? formatDescription.numPlanes : 1u;
+
+    // Create compute program with multiple bindings for all planes and mip levels
     std::ostringstream src;
 
-    const std::string typeImgComp                 = getImageComponentTypeName(formatDescription);
-    const std::string typeImgCompVec4             = getImageComponentVec4TypeName(formatDescription);
-    const std::string typeImageSparse             = getSparseImageTypeName();
-    const std::string typeUniformConstImageSparse = getUniformConstSparseImageTypeName();
-    const std::string opTypeImageSparse           = getOpTypeImageSparse(m_imageType, m_format, typeImgComp, false);
-    const std::string opTypeImageResidency        = getOpTypeImageResidency(m_imageType);
-    // it's not possible to declare two OpTypeImage aliases for the same data type - we have to eliminate %type_image_residency when %type_image_sparse is the same
-    const std::string typeImageResidencyName =
-        (opTypeImageSparse == opTypeImageResidency) ? "%type_image_sparse" : "%type_image_residency";
+    // Use base format for shader generation
+    const std::string imageTypeStr    = getShaderImageType(formatDescription, m_imageType);
+    const std::string formatDataStr   = getShaderImageDataType(formatDescription);
+    const std::string formatQualStr   = getShaderImageFormatQualifier(m_format);
+    const std::string typeImgComp     = getImageComponentTypeName(formatDescription);
+    const std::string typeImgCompVec4 = getImageComponentVec4TypeName(formatDescription);
 
     SpirvVersion spirvVersion = SPIRV_VERSION_1_0;
     std::string interfaceList = "";
 
     if (m_operand.find("Nontemporal") != std::string::npos)
     {
-        spirvVersion  = SPIRV_VERSION_1_6;
-        interfaceList = "%uniform_image_sparse %uniform_image_texels %uniform_image_residency";
+        spirvVersion = SPIRV_VERSION_1_6;
+        // Interface list will be generated dynamically below
     }
 
     src << "OpCapability Shader\n"
@@ -90,6 +83,18 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms(vk::SourceCollections &prog
             << "OpExtension \"SPV_EXT_shader_image_int64\"\n";
     }
 
+    // Build interface list for SPIRV 1.4+ (includes UniformConstant variables)
+    if (spirvVersion >= SPIRV_VERSION_1_4)
+    {
+        interfaceList = "";
+        for (uint32_t planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
+        {
+            interfaceList += "%uniform_image_sparse_plane" + de::toString(planeNdx) + " ";
+            interfaceList += "%uniform_image_texels_plane" + de::toString(planeNdx) + " ";
+            interfaceList += "%uniform_image_residency_plane" + de::toString(planeNdx) + " ";
+        }
+    }
+
     src << "%ext_import = OpExtInstImport \"GLSL.std.450\"\n"
         << "OpMemoryModel Logical GLSL450\n"
         << "OpEntryPoint GLCompute %func_main \"main\" %input_GlobalInvocationID " << interfaceList << "\n"
@@ -99,13 +104,17 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms(vk::SourceCollections &prog
         << "OpName %func_main \"main\"\n"
 
         << "OpName %input_GlobalInvocationID \"gl_GlobalInvocationID\"\n"
-        << "OpName %input_WorkGroupSize \"gl_WorkGroupSize\"\n"
+        << "OpName %input_WorkGroupSize \"gl_WorkGroupSize\"\n";
 
-        << "OpName %uniform_image_sparse \"u_imageSparse\"\n"
-        << "OpName %uniform_image_texels \"u_imageTexels\"\n"
-        << "OpName %uniform_image_residency \"u_imageResidency\"\n"
+    // Name all plane-specific images
+    for (uint32_t planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
+    {
+        src << "OpName %uniform_image_sparse_plane" << planeNdx << " \"u_imageSparse_plane" << planeNdx << "\"\n"
+            << "OpName %uniform_image_texels_plane" << planeNdx << " \"u_imageTexels_plane" << planeNdx << "\"\n"
+            << "OpName %uniform_image_residency_plane" << planeNdx << " \"u_imageResidency_plane" << planeNdx << "\"\n";
+    }
 
-        << "OpDecorate %input_GlobalInvocationID BuiltIn GlobalInvocationId\n"
+    src << "OpDecorate %input_GlobalInvocationID BuiltIn GlobalInvocationId\n"
 
         << "OpDecorate %input_WorkGroupSize BuiltIn WorkgroupSize\n"
 
@@ -115,21 +124,26 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms(vk::SourceCollections &prog
 
         << "OpDecorate %constant_uint_work_group_size_x SpecId 4\n"
         << "OpDecorate %constant_uint_work_group_size_y SpecId 5\n"
-        << "OpDecorate %constant_uint_work_group_size_z SpecId 6\n"
+        << "OpDecorate %constant_uint_work_group_size_z SpecId 6\n";
 
-        << "OpDecorate %uniform_image_sparse DescriptorSet 0\n"
-        << "OpDecorate %uniform_image_sparse Binding " << BINDING_IMAGE_SPARSE << "\n"
+    // Decorate bindings for all planes
+    for (uint32_t planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
+    {
+        const uint32_t baseBinding = planeNdx * 3; // 3 images per plane
+        src << "OpDecorate %uniform_image_sparse_plane" << planeNdx << " DescriptorSet 0\n"
+            << "OpDecorate %uniform_image_sparse_plane" << planeNdx << " Binding " << (baseBinding + 0) << "\n"
 
-        << "OpDecorate %uniform_image_texels DescriptorSet 0\n"
-        << "OpDecorate %uniform_image_texels Binding " << BINDING_IMAGE_TEXELS << "\n"
-        << "OpDecorate %uniform_image_texels NonReadable\n"
+            << "OpDecorate %uniform_image_texels_plane" << planeNdx << " DescriptorSet 0\n"
+            << "OpDecorate %uniform_image_texels_plane" << planeNdx << " Binding " << (baseBinding + 1) << "\n"
+            << "OpDecorate %uniform_image_texels_plane" << planeNdx << " NonReadable\n"
 
-        << "OpDecorate %uniform_image_residency DescriptorSet 0\n"
-        << "OpDecorate %uniform_image_residency Binding " << BINDING_IMAGE_RESIDENCY << "\n"
-        << "OpDecorate %uniform_image_residency NonReadable\n"
+            << "OpDecorate %uniform_image_residency_plane" << planeNdx << " DescriptorSet 0\n"
+            << "OpDecorate %uniform_image_residency_plane" << planeNdx << " Binding " << (baseBinding + 2) << "\n"
+            << "OpDecorate %uniform_image_residency_plane" << planeNdx << " NonReadable\n";
+    }
 
-        // Declare data types
-        << "%type_bool = OpTypeBool\n";
+    // Declare data types
+    src << "%type_bool = OpTypeBool\n";
 
     if (formatIsR64(m_format))
     {
@@ -153,7 +167,6 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms(vk::SourceCollections &prog
         << "%type_vec2 = OpTypeVector %type_float 2\n"
         << "%type_vec3 = OpTypeVector %type_float 3\n"
         << "%type_vec4 = OpTypeVector %type_float 4\n"
-        << "%type_struct_int_img_comp_vec4 = OpTypeStruct %type_int " << typeImgCompVec4 << "\n"
 
         << "%type_input_uint = OpTypePointer Input %type_uint\n"
         << "%type_input_uvec3 = OpTypePointer Input %type_uvec3\n"
@@ -162,37 +175,90 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms(vk::SourceCollections &prog
         << "%type_function_img_comp_vec4 = OpTypePointer Function " << typeImgCompVec4 << "\n"
 
         << "%type_void = OpTypeVoid\n"
-        << "%type_void_func = OpTypeFunction %type_void\n"
+        << "%type_void_func = OpTypeFunction %type_void\n";
 
-        // Sparse image without sampler type declaration
-        << "%type_image_sparse = " << getOpTypeImageSparse(m_imageType, m_format, typeImgComp, false) << "\n"
-        << "%type_uniformconst_image_sparse = OpTypePointer UniformConstant %type_image_sparse\n"
+    // Declare image types and variables for each plane
+    // Track which OpTypeImage definitions we've already declared to avoid duplicates
+    std::set<std::string> declaredImageTypes;
+    std::vector<std::string> planeImageSparseTypeNames(numPlanes);
+    std::vector<std::string> planeImageSparseWithSamplerTypeNames(numPlanes);
+    std::vector<std::string> planeImageResidencyTypeNames(numPlanes);
 
-        // Sparse image with sampler type declaration
-        << "%type_image_sparse_with_sampler = " << getOpTypeImageSparse(m_imageType, m_format, typeImgComp, true)
-        << "\n"
-        << "%type_uniformconst_image_sparse_with_sampler = OpTypePointer UniformConstant "
-           "%type_image_sparse_with_sampler\n";
+    for (uint32_t planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
+    {
+        VkFormat planeFormat =
+            (formatDescription.numPlanes > 1) ? getPlaneCompatibleFormat(formatDescription, planeNdx) : m_format;
+        PlanarFormatDescription planeFormatDesc = getPlanarFormatDescription(planeFormat);
+        std::string planeTypeImgComp            = getImageComponentTypeName(planeFormatDesc);
+        std::string planeTypeImgCompVec4        = getImageComponentVec4TypeName(planeFormatDesc);
 
-    // Residency image type declaration
-    if (opTypeImageSparse != opTypeImageResidency)
-        src << "%type_image_residency = " << getOpTypeImageResidency(m_imageType) << "\n";
+        const std::string typeImageSparse             = getSparseImageTypeName();
+        const std::string typeUniformConstImageSparse = getUniformConstSparseImageTypeName();
+        const std::string opTypeImageSparse = getOpTypeImageSparse(m_imageType, planeFormat, planeTypeImgComp, false);
+        const std::string opTypeImageSparseWithSampler =
+            getOpTypeImageSparse(m_imageType, planeFormat, planeTypeImgComp, true);
+        const std::string opTypeImageResidency = getOpTypeImageResidency(m_imageType);
 
-    src << "%type_uniformconst_image_residency = OpTypePointer UniformConstant " << typeImageResidencyName
-        << "\n"
+        // Generate type names based on format to naturally deduplicate identical types
+        const std::string formatId = de::toString(static_cast<uint32_t>(planeFormat));
 
-        // Declare sparse image variable
-        << "%uniform_image_sparse = OpVariable " << typeUniformConstImageSparse
-        << " UniformConstant\n"
+        src << "%type_struct_int_img_comp_vec4_plane" << planeNdx << " = OpTypeStruct %type_int "
+            << planeTypeImgCompVec4 << "\n";
 
-        // Declare output image variable for storing texels
-        << "%uniform_image_texels = OpVariable %type_uniformconst_image_sparse UniformConstant\n"
+        // Declare storage image type (once per unique type)
+        planeImageSparseTypeNames[planeNdx] = "%type_image_sparse_fmt" + formatId;
+        if (declaredImageTypes.find(opTypeImageSparse) == declaredImageTypes.end())
+        {
+            src << planeImageSparseTypeNames[planeNdx] << " = " << opTypeImageSparse << "\n";
+            declaredImageTypes.insert(opTypeImageSparse);
+        }
+        src << "%type_uniformconst_image_sparse_plane" << planeNdx << " = OpTypePointer UniformConstant "
+            << planeImageSparseTypeNames[planeNdx] << "\n";
 
-        // Declare output image variable for storing residency information
-        << "%uniform_image_residency = OpVariable %type_uniformconst_image_residency UniformConstant\n"
+        // Sparse image with sampler type declaration (once per unique type)
+        planeImageSparseWithSamplerTypeNames[planeNdx] = "%type_image_sparse_with_sampler_fmt" + formatId;
+        if (declaredImageTypes.find(opTypeImageSparseWithSampler) == declaredImageTypes.end())
+        {
+            src << planeImageSparseWithSamplerTypeNames[planeNdx] << " = " << opTypeImageSparseWithSampler << "\n";
+            declaredImageTypes.insert(opTypeImageSparseWithSampler);
+        }
+        src << "%type_uniformconst_image_sparse_with_sampler_plane" << planeNdx << " = OpTypePointer UniformConstant "
+            << planeImageSparseWithSamplerTypeNames[planeNdx] << "\n";
 
-        // Declare input variables
-        << "%input_GlobalInvocationID = OpVariable %type_input_uvec3 Input\n"
+        // Residency image type declaration: it's not possible to declare two OpTypeImage aliases for the same data type
+        planeImageResidencyTypeNames[planeNdx] =
+            (opTypeImageSparse == opTypeImageResidency) ? planeImageSparseTypeNames[planeNdx] : "%type_image_residency";
+        if (opTypeImageSparse != opTypeImageResidency &&
+            declaredImageTypes.find(opTypeImageResidency) == declaredImageTypes.end())
+        {
+            src << planeImageResidencyTypeNames[planeNdx] << " = " << opTypeImageResidency << "\n";
+            declaredImageTypes.insert(opTypeImageResidency);
+        }
+
+        // Declare per-plane residency pointer type
+        src << "%type_uniformconst_image_residency_plane" << planeNdx << " = OpTypePointer UniformConstant "
+            << planeImageResidencyTypeNames[planeNdx]
+            << "\n"
+
+            // Declare plane-specific sparse image variables
+            << "%uniform_image_sparse_plane" << planeNdx << " = OpVariable "
+            << (typeUniformConstImageSparse == "%type_uniformconst_image_sparse_with_sampler" ?
+                    ("%type_uniformconst_image_sparse_with_sampler_plane" + de::toString(planeNdx)) :
+                    ("%type_uniformconst_image_sparse_plane" + de::toString(planeNdx)))
+            << " UniformConstant\n"
+
+            // Declare plane-specific output image variables for storing texels
+            << "%uniform_image_texels_plane" << planeNdx << " = OpVariable %type_uniformconst_image_sparse_plane"
+            << planeNdx
+            << " UniformConstant\n"
+
+            // Declare plane-specific output image variables for storing residency information
+            << "%uniform_image_residency_plane" << planeNdx << " = OpVariable %type_uniformconst_image_residency_plane"
+            << planeNdx << " UniformConstant\n";
+    }
+
+    // Declare input variables
+    src << "%input_GlobalInvocationID = OpVariable %type_input_uvec3 Input\n"
 
         << "%constant_uint_grid_x = OpSpecConstant %type_uint 1\n"
         << "%constant_uint_grid_y = OpSpecConstant %type_uint 1\n"
@@ -255,55 +321,84 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms(vk::SourceCollections &prog
         << "%comparison_range_z = OpULessThan %type_bool %local_uint_GlobalInvocationID_z %constant_uint_grid_z\n"
         << "OpSelectionMerge %label_out_range_z None\n"
         << "OpBranchConditional %comparison_range_z %label_in_range_z %label_out_range_z\n"
-        << "%label_in_range_z = OpLabel\n"
+        << "%label_in_range_z = OpLabel\n";
 
-        // Load sparse image
-        << "%local_image_sparse = OpLoad " << typeImageSparse
-        << " %uniform_image_sparse\n"
+    // Process each plane
+    for (uint32_t planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
+    {
+        VkFormat planeFormat =
+            (formatDescription.numPlanes > 1) ? getPlaneCompatibleFormat(formatDescription, planeNdx) : m_format;
+        PlanarFormatDescription planeFormatDesc = getPlanarFormatDescription(planeFormat);
+        std::string planeTypeImgComp            = getImageComponentTypeName(planeFormatDesc);
+        std::string planeTypeImgCompVec4        = getImageComponentVec4TypeName(planeFormatDesc);
 
-        // Call OpImageSparse*
-        << sparseImageOpString("%local_sparse_op_result", "%type_struct_int_img_comp_vec4", "%local_image_sparse",
-                               coordString, "%constant_int_0")
-        << "\n"
+        const std::string coordString =
+            getShaderImageCoordinates(m_imageType, "%local_int_GlobalInvocationID_x",
+                                      "%local_ivec2_GlobalInvocationID_xy", "%local_ivec3_GlobalInvocationID_xyz");
 
-        // Load the texel from the sparse image to local variable for OpImageSparse*
-        << "%local_img_comp_vec4 = OpCompositeExtract " << typeImgCompVec4
-        << " %local_sparse_op_result 1\n"
+        const std::string typeImageSparse = getSparseImageTypeName();
 
-        // Load residency code for OpImageSparse*
-        << "%local_residency_code = OpCompositeExtract %type_int %local_sparse_op_result 0\n"
-        // End Call OpImageSparse*
+        // Process plane " << planeNdx << "\n"
+        src << "%local_image_sparse_plane" << planeNdx << " = OpLoad "
+            << (typeImageSparse == "%type_image_sparse_with_sampler" ? planeImageSparseWithSamplerTypeNames[planeNdx] :
+                                                                       planeImageSparseTypeNames[planeNdx])
+            << " %uniform_image_sparse_plane" << planeNdx << "\n"
+            << sparseImageOpString("%local_sparse_op_result_plane" + de::toString(planeNdx),
+                                   "%type_struct_int_img_comp_vec4_plane" + de::toString(planeNdx),
+                                   "%local_image_sparse_plane" + de::toString(planeNdx), coordString, "%constant_int_0")
+            << "\n"
 
-        // Load texels image
-        << "%local_image_texels = OpLoad %type_image_sparse %uniform_image_texels\n"
+            // Load the texel from the sparse image to local variable for OpImageSparse*
+            << "%local_img_comp_vec4_plane" << planeNdx << " = OpCompositeExtract " << planeTypeImgCompVec4
+            << " %local_sparse_op_result_plane" << planeNdx
+            << " 1\n"
 
-        // Write the texel to output image via OpImageWrite
-        << "OpImageWrite %local_image_texels " << coordString
-        << " %local_img_comp_vec4\n"
+            // Load residency code for OpImageSparse*
+            << "%local_residency_code_plane" << planeNdx
+            << " = OpCompositeExtract %type_int %local_sparse_op_result_plane" << planeNdx
+            << " 0\n"
+            // End Call OpImageSparse*
 
-        // Load residency info image
-        << "%local_image_residency = OpLoad " << typeImageResidencyName
-        << " %uniform_image_residency\n"
+            // Load texels image
+            << "%local_image_texels_plane" << planeNdx << " = OpLoad " << planeImageSparseTypeNames[planeNdx]
+            << " %uniform_image_texels_plane" << planeNdx
+            << "\n"
 
-        // Check if loaded texel is placed in resident memory
-        << "%local_texel_resident = OpImageSparseTexelsResident %type_bool %local_residency_code\n"
-        << "OpSelectionMerge %branch_texel_resident None\n"
-        << "OpBranchConditional %local_texel_resident %label_texel_resident %label_texel_not_resident\n"
-        << "%label_texel_resident = OpLabel\n"
+            // Write the texel to output image via OpImageWrite
+            << "OpImageWrite %local_image_texels_plane" << planeNdx << " " << coordString
+            << " %local_img_comp_vec4_plane" << planeNdx
+            << "\n"
 
-        // Loaded texel is in resident memory
-        << "OpImageWrite %local_image_residency " << coordString << " %constant_uvec4_resident\n"
+            // Load residency info image
+            << "%local_image_residency_plane" << planeNdx << " = OpLoad " << planeImageResidencyTypeNames[planeNdx]
+            << " %uniform_image_residency_plane" << planeNdx
+            << "\n"
 
-        << "OpBranch %branch_texel_resident\n"
-        << "%label_texel_not_resident = OpLabel\n"
+            // Check if loaded texel is placed in resident memory
+            << "%local_texel_resident_plane" << planeNdx
+            << " = OpImageSparseTexelsResident %type_bool %local_residency_code_plane" << planeNdx << "\n"
+            << "OpSelectionMerge %branch_texel_resident_plane" << planeNdx << " None\n"
+            << "OpBranchConditional %local_texel_resident_plane" << planeNdx << " %label_texel_resident_plane"
+            << planeNdx << " %label_texel_not_resident_plane" << planeNdx << "\n"
+            << "%label_texel_resident_plane" << planeNdx
+            << " = OpLabel\n"
 
-        // Loaded texel is not in resident memory
-        << "OpImageWrite %local_image_residency " << coordString << " %constant_uvec4_not_resident\n"
+            // Loaded texel is in resident memory
+            << "OpImageWrite %local_image_residency_plane" << planeNdx << " " << coordString
+            << " %constant_uvec4_resident\n"
 
-        << "OpBranch %branch_texel_resident\n"
-        << "%branch_texel_resident = OpLabel\n"
+            << "OpBranch %branch_texel_resident_plane" << planeNdx << "\n"
+            << "%label_texel_not_resident_plane" << planeNdx
+            << " = OpLabel\n"
 
-        << "OpBranch %label_out_range_z\n"
+            // Loaded texel is not in resident memory
+            << "OpImageWrite %local_image_residency_plane" << planeNdx << " " << coordString
+            << " %constant_uvec4_not_resident\n"
+            << "OpBranch %branch_texel_resident_plane" << planeNdx << "\n"
+            << "%branch_texel_resident_plane" << planeNdx << " = OpLabel\n";
+    }
+
+    src << "OpBranch %label_out_range_z\n"
         << "%label_out_range_z = OpLabel\n"
 
         << "OpBranch %label_out_range_y\n"
@@ -395,10 +490,27 @@ void SparseShaderIntrinsicsInstanceStorage::checkSupport(VkImageCreateInfo image
 
     SparseShaderIntrinsicsInstanceBase::checkSupport(imageSparseInfo);
 
-    // Check if device supports image format for storage image
-    if (!checkImageFormatFeatureSupport(instance, physicalDevice, imageSparseInfo.format,
-                                        VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
-        TCU_THROW(NotSupportedError, "Device does not support image format for storage image");
+    const PlanarFormatDescription formatDescription = getPlanarFormatDescription(imageSparseInfo.format);
+    if (formatDescription.numPlanes > 1)
+    {
+        // For multi-planar formats, check storage-compatible formats support storage
+        // We use block-compatible formats (e.g. R16 for R10X6) for actual storage operations
+        for (uint32_t planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
+        {
+            const VkFormat planeFormat   = getPlaneCompatibleFormat(formatDescription, planeNdx);
+            const VkFormat storageFormat = getStorageCompatibleFormat(planeFormat);
+            if (!checkImageFormatFeatureSupport(instance, physicalDevice, storageFormat,
+                                                VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+                TCU_THROW(NotSupportedError, "Device does not support storage-compatible format for plane");
+        }
+    }
+    else
+    {
+        // Check if device supports image format for storage image
+        if (!checkImageFormatFeatureSupport(instance, physicalDevice, imageSparseInfo.format,
+                                            VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+            TCU_THROW(NotSupportedError, "Device does not support image format for storage image");
+    }
 
     // Make sure device supports VK_FORMAT_R32_UINT format for storage image
     if (!checkImageFormatFeatureSupport(instance, physicalDevice, mapTextureFormat(m_residencyFormat),
@@ -421,58 +533,79 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands(const VkCommandBuffer
                                                            const VkImage imageSparse, const VkImage imageTexels,
                                                            const VkImage imageResidency)
 {
-    const DeviceInterface &deviceInterface = getDeviceInterface();
+    const DeviceInterface &deviceInterface          = getDeviceInterface();
+    const PlanarFormatDescription formatDescription = getPlanarFormatDescription(imageSparseInfo.format);
+    const PlanarFormatDescription residencyFormatDescription =
+        getPlanarFormatDescription(mapTextureFormat(m_residencyFormat));
+    const bool useArrayLayersForPlanes = (formatDescription.numPlanes > 1 && residencyFormatDescription.numPlanes == 1);
 
-    pipelines.resize(imageSparseInfo.mipLevels);
-    descriptorSets.resize(imageSparseInfo.mipLevels);
-    imageSparseViews.resize(imageSparseInfo.mipLevels);
-    imageTexelsViews.resize(imageSparseInfo.mipLevels);
-    imageResidencyViews.resize(imageSparseInfo.mipLevels);
+    const uint32_t numPlanes          = (formatDescription.numPlanes > 0) ? formatDescription.numPlanes : 1u;
+    const uint32_t numPlanesTimesMips = numPlanes * imageSparseInfo.mipLevels;
+    imageSparseViews.resize(numPlanesTimesMips);
+    imageTexelsViews.resize(numPlanesTimesMips);
+    imageResidencyViews.resize(numPlanesTimesMips);
 
-    // Create descriptor set layout
+    // Create descriptor set layout with bindings for all planes
+    // Each plane gets 3 bindings: sparse, texels, residency
     DescriptorSetLayoutBuilder descriptorLayerBuilder;
 
-    descriptorLayerBuilder.addSingleBinding(imageSparseDescType(), VK_SHADER_STAGE_COMPUTE_BIT);
-    descriptorLayerBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT);
-    descriptorLayerBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT);
+    for (uint32_t planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
+    {
+        descriptorLayerBuilder.addSingleBinding(imageSparseDescType(), VK_SHADER_STAGE_COMPUTE_BIT);
+        descriptorLayerBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT);
+        descriptorLayerBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT);
+    }
 
     const Unique<VkDescriptorSetLayout> descriptorSetLayout(descriptorLayerBuilder.build(deviceInterface, getDevice()));
 
     // Create pipeline layout
     pipelineLayout = makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout);
 
-    // Create descriptor pool
+    // Create descriptor pool (one set per mip level, each with all plane bindings)
     DescriptorPoolBuilder descriptorPoolBuilder;
 
-    descriptorPoolBuilder.addType(imageSparseDescType(), imageSparseInfo.mipLevels);
-    descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, imageSparseInfo.mipLevels);
-    descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, imageSparseInfo.mipLevels);
+    descriptorPoolBuilder.addType(imageSparseDescType(), numPlanesTimesMips);
+    descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, numPlanesTimesMips);
+    descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, numPlanesTimesMips);
 
     descriptorPool = descriptorPoolBuilder.build(
         deviceInterface, getDevice(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, imageSparseInfo.mipLevels);
 
-    const VkImageSubresourceRange fullImageSubresourceRange = makeImageSubresourceRange(
-        VK_IMAGE_ASPECT_COLOR_BIT, 0u, imageSparseInfo.mipLevels, 0u, imageSparseInfo.arrayLayers);
+    std::vector<VkImageMemoryBarrier> imageShaderAccessBarriers;
 
+    for (uint32_t planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
     {
-        VkImageMemoryBarrier imageShaderAccessBarriers[3];
+        const VkImageAspectFlags aspect =
+            (formatDescription.numPlanes > 1) ? getPlaneAspect(planeNdx) : VK_IMAGE_ASPECT_COLOR_BIT;
+        const VkImageSubresourceRange planeSubresourceRange =
+            makeImageSubresourceRange(aspect, 0u, imageSparseInfo.mipLevels, 0u, imageSparseInfo.arrayLayers);
 
-        imageShaderAccessBarriers[0] = makeImageMemoryBarrier(
+        imageShaderAccessBarriers.push_back(makeImageMemoryBarrier(
             VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            VK_IMAGE_LAYOUT_GENERAL, imageSparse, fullImageSubresourceRange);
+            VK_IMAGE_LAYOUT_GENERAL, imageSparse, planeSubresourceRange));
 
-        imageShaderAccessBarriers[1] =
-            makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
-                                   imageTexels, fullImageSubresourceRange);
-
-        imageShaderAccessBarriers[2] =
-            makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
-                                   imageResidency, fullImageSubresourceRange);
-
-        deviceInterface.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 3u,
-                                           imageShaderAccessBarriers);
+        imageShaderAccessBarriers.push_back(makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT,
+                                                                   VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+                                                                   imageTexels, planeSubresourceRange));
     }
+
+    // Residency image uses COLOR aspect for single-plane formats
+    // For multi-planar sparse with single-plane residency, use extended array layer count
+    const uint32_t residencyArrayLayers = useArrayLayersForPlanes ?
+                                              (imageSparseInfo.arrayLayers * formatDescription.numPlanes) :
+                                              imageSparseInfo.arrayLayers;
+    const VkImageSubresourceRange residencySubresourceRange =
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, imageSparseInfo.mipLevels, 0u, residencyArrayLayers);
+    imageShaderAccessBarriers.push_back(makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT,
+                                                               VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+                                                               imageResidency, residencySubresourceRange));
+
+    deviceInterface.cmdPipelineBarrier(
+        commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u,
+        nullptr, static_cast<uint32_t>(imageShaderAccessBarriers.size()), imageShaderAccessBarriers.data());
+
+    Unique<VkShaderModule> shaderModule(
+        createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get("compute"), 0u));
 
     const VkSpecializationMapEntry specializationMapEntries[6] = {
         {1u, 0u * (uint32_t)sizeof(uint32_t), sizeof(uint32_t)}, // GridSize.x
@@ -483,8 +616,8 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands(const VkCommandBuffer
         {6u, 5u * (uint32_t)sizeof(uint32_t), sizeof(uint32_t)}, // WorkGroupSize.z
     };
 
-    Unique<VkShaderModule> shaderModule(
-        createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get("compute"), 0u));
+    pipelines.resize(imageSparseInfo.mipLevels);
+    descriptorSets.resize(imageSparseInfo.mipLevels);
 
     for (uint32_t mipLevelNdx = 0u; mipLevelNdx < imageSparseInfo.mipLevels; ++mipLevelNdx)
     {
@@ -503,52 +636,74 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands(const VkCommandBuffer
         pipelines[mipLevelNdx] = makeVkSharedPtr(
             makeComputePipeline(deviceInterface, getDevice(), *pipelineLayout, (VkPipelineCreateFlags)0u, nullptr,
                                 *shaderModule, (VkPipelineShaderStageCreateFlags)0u, &specializationInfo));
-        const VkPipeline computePipeline = **pipelines[mipLevelNdx];
 
-        deviceInterface.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline);
+        deviceInterface.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, **pipelines[mipLevelNdx]);
 
         // Create descriptor set
         descriptorSets[mipLevelNdx] =
             makeVkSharedPtr(makeDescriptorSet(deviceInterface, getDevice(), *descriptorPool, *descriptorSetLayout));
-        const VkDescriptorSet descriptorSet = **descriptorSets[mipLevelNdx];
+        std::vector<VkDescriptorImageInfo> mipDescriptorImageInfos;
 
-        // Bind resources
-        const VkImageSubresourceRange mipLevelRange =
-            makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipLevelNdx, 1u, 0u, imageSparseInfo.arrayLayers);
+        for (uint32_t planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
+        {
+            const uint32_t viewIndex = mipLevelNdx * numPlanes + planeNdx;
+            const VkImageAspectFlags aspect =
+                (formatDescription.numPlanes > 1) ? getPlaneAspect(planeNdx) : VK_IMAGE_ASPECT_COLOR_BIT;
+            const VkFormat planeCompatibleFormat = (formatDescription.numPlanes > 1) ?
+                                                       getPlaneCompatibleFormat(formatDescription, planeNdx) :
+                                                       imageSparseInfo.format;
+            // For storage images, use block-compatible format (e.g. R16 for R10X6)
+            const VkFormat storageViewFormat = getStorageCompatibleFormat(planeCompatibleFormat);
 
-        imageSparseViews[mipLevelNdx] =
-            makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageSparse, mapImageViewType(m_imageType),
-                                          imageSparseInfo.format, mipLevelRange));
-        const VkDescriptorImageInfo imageSparseDescInfo =
-            makeDescriptorImageInfo(VK_NULL_HANDLE, **imageSparseViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
+            // Create views for THIS specific mip level only
+            const VkImageSubresourceRange mipLevelRange =
+                makeImageSubresourceRange(aspect, mipLevelNdx, 1u, 0u, imageSparseInfo.arrayLayers);
 
-        imageTexelsViews[mipLevelNdx] =
-            makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageTexels, mapImageViewType(m_imageType),
-                                          imageSparseInfo.format, mipLevelRange));
-        const VkDescriptorImageInfo imageTexelsDescInfo =
-            makeDescriptorImageInfo(VK_NULL_HANDLE, **imageTexelsViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
+            imageSparseViews[viewIndex] =
+                makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageSparse, mapImageViewType(m_imageType),
+                                              storageViewFormat, mipLevelRange));
 
-        imageResidencyViews[mipLevelNdx] =
-            makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageResidency, mapImageViewType(m_imageType),
-                                          mapTextureFormat(m_residencyFormat), mipLevelRange));
-        const VkDescriptorImageInfo imageResidencyDescInfo =
-            makeDescriptorImageInfo(VK_NULL_HANDLE, **imageResidencyViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
+            imageTexelsViews[viewIndex] =
+                makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageTexels, mapImageViewType(m_imageType),
+                                              storageViewFormat, mipLevelRange));
 
+            // Residency image uses COLOR aspect, with array layers for planes
+            const uint32_t residencyBaseLayer = useArrayLayersForPlanes ? (planeNdx * imageSparseInfo.arrayLayers) : 0u;
+            const VkImageSubresourceRange residencyMipLevelRange = makeImageSubresourceRange(
+                VK_IMAGE_ASPECT_COLOR_BIT, mipLevelNdx, 1u, residencyBaseLayer, imageSparseInfo.arrayLayers);
+
+            imageResidencyViews[viewIndex] = makeVkSharedPtr(
+                makeImageView(deviceInterface, getDevice(), imageResidency, mapImageViewType(m_imageType),
+                              mapTextureFormat(m_residencyFormat), residencyMipLevelRange));
+
+            // Store descriptor infos for binding
+            mipDescriptorImageInfos.push_back(
+                makeDescriptorImageInfo(VK_NULL_HANDLE, **imageSparseViews[viewIndex], VK_IMAGE_LAYOUT_GENERAL));
+            mipDescriptorImageInfos.push_back(
+                makeDescriptorImageInfo(VK_NULL_HANDLE, **imageTexelsViews[viewIndex], VK_IMAGE_LAYOUT_GENERAL));
+            mipDescriptorImageInfos.push_back(
+                makeDescriptorImageInfo(VK_NULL_HANDLE, **imageResidencyViews[viewIndex], VK_IMAGE_LAYOUT_GENERAL));
+        }
+
+        // Bind all plane resources for this mip level to the descriptor set
         DescriptorSetUpdateBuilder descriptorUpdateBuilder;
-        descriptorUpdateBuilder.writeSingle(descriptorSet,
-                                            DescriptorSetUpdateBuilder::Location::binding(BINDING_IMAGE_SPARSE),
-                                            imageSparseDescType(), &imageSparseDescInfo);
-        descriptorUpdateBuilder.writeSingle(descriptorSet,
-                                            DescriptorSetUpdateBuilder::Location::binding(BINDING_IMAGE_TEXELS),
-                                            VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageTexelsDescInfo);
-        descriptorUpdateBuilder.writeSingle(descriptorSet,
-                                            DescriptorSetUpdateBuilder::Location::binding(BINDING_IMAGE_RESIDENCY),
-                                            VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageResidencyDescInfo);
-
+        for (uint32_t planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
+        {
+            const uint32_t baseBinding = planeNdx * 3;
+            descriptorUpdateBuilder.writeSingle(**descriptorSets[mipLevelNdx],
+                                                DescriptorSetUpdateBuilder::Location::binding(baseBinding + 0),
+                                                imageSparseDescType(), &mipDescriptorImageInfos[planeNdx * 3 + 0]);
+            descriptorUpdateBuilder.writeSingle(
+                **descriptorSets[mipLevelNdx], DescriptorSetUpdateBuilder::Location::binding(baseBinding + 1),
+                VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &mipDescriptorImageInfos[planeNdx * 3 + 1]);
+            descriptorUpdateBuilder.writeSingle(
+                **descriptorSets[mipLevelNdx], DescriptorSetUpdateBuilder::Location::binding(baseBinding + 2),
+                VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &mipDescriptorImageInfos[planeNdx * 3 + 2]);
+        }
         descriptorUpdateBuilder.update(deviceInterface, getDevice());
 
         deviceInterface.cmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                              &descriptorSet, 0u, nullptr);
+                                              &descriptorSets[mipLevelNdx]->get(), 0u, nullptr);
 
         const uint32_t xWorkGroupCount =
             gridSize.x() / workGroupSize.x() + (gridSize.x() % workGroupSize.x() ? 1u : 0u);
@@ -567,21 +722,32 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands(const VkCommandBuffer
         deviceInterface.cmdDispatch(commandBuffer, xWorkGroupCount, yWorkGroupCount, zWorkGroupCount);
     }
 
+    // Create final barriers for all planes
+    std::vector<VkImageMemoryBarrier> imageOutputTransferSrcBarriers;
+
+    for (uint32_t planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
     {
-        VkImageMemoryBarrier imageOutputTransferSrcBarriers[2];
+        const VkImageAspectFlags aspect =
+            (formatDescription.numPlanes > 1) ? getPlaneAspect(planeNdx) : VK_IMAGE_ASPECT_COLOR_BIT;
+        const VkImageSubresourceRange planeSubresourceRange =
+            makeImageSubresourceRange(aspect, 0u, imageSparseInfo.mipLevels, 0u, imageSparseInfo.arrayLayers);
 
-        imageOutputTransferSrcBarriers[0] =
+        imageOutputTransferSrcBarriers.push_back(
             makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
-                                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageTexels, fullImageSubresourceRange);
-
-        imageOutputTransferSrcBarriers[1] =
-            makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
-                                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageResidency, fullImageSubresourceRange);
-
-        deviceInterface.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 2u,
-                                           imageOutputTransferSrcBarriers);
+                                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageTexels, planeSubresourceRange));
     }
+
+    // Residency image uses COLOR aspect for single-plane formats
+    // For multi-planar sparse with single-plane residency, use extended array layer count
+    const VkImageSubresourceRange residencyFinalSubresourceRange =
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, imageSparseInfo.mipLevels, 0u, residencyArrayLayers);
+    imageOutputTransferSrcBarriers.push_back(
+        makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
+                               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageResidency, residencyFinalSubresourceRange));
+
+    deviceInterface.cmdPipelineBarrier(
+        commandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u,
+        nullptr, static_cast<uint32_t>(imageOutputTransferSrcBarriers.size()), imageOutputTransferSrcBarriers.data());
 }
 
 class SparseShaderIntrinsicsInstanceFetch : public SparseShaderIntrinsicsInstanceStorage

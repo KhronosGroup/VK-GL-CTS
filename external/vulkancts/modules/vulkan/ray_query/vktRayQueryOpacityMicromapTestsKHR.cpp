@@ -522,7 +522,7 @@ tcu::TestStatus RayTracingHeaderMicromapAddressInstance::iterate(void)
     };
     de::SharedPtr<MicromapAccelerationStructure> omm1(micromapAS1.release());
     bottomLevelAS->setBuildType(VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR);
-    bottomLevelAS->addGeometry(triangle, true /*is triangles*/, 0, nullptr, &opacityGeometryMicromap, omm1);
+    bottomLevelAS->addGeometry(triangle, true /*is triangles*/, 0, nullptr, nullptr, &opacityGeometryMicromap, omm1);
     bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
     endCommandBuffer(vkd, cmdBuffer);
     submitCommandsAndWait(vkd, device, queue, cmdBuffer);
@@ -1231,7 +1231,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
         blasBuildFlag |= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_OPACITY_MICROMAP_UPDATE_BIT_KHR;
     }
 
-    bottomLevelAS->addGeometry(triangle, true /*is triangles*/, 0, nullptr, &opacityGeometryMicromap);
+    bottomLevelAS->addGeometry(triangle, true /*is triangles*/, 0, nullptr, nullptr, &opacityGeometryMicromap);
     bottomLevelAS->setBuildFlags(blasBuildFlag);
     bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 

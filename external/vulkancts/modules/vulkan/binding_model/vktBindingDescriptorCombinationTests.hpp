@@ -20,8 +20,7 @@
  *
  *//*!
  * \file vktBindingDescriptorCombinationTests.hpp
- * \brief Test using both descriptor buffers & legacy descriptors in
- *        the same command buffer.
+ * \brief Test using descriptor buffers in combination with other extensions.
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"

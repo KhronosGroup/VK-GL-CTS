@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkTypeUtil.hpp"
+#include "tcuTextureUtil.hpp"
 #include <string>
 #include <vector>
 
@@ -50,6 +51,7 @@ bool isSrc1BlendFactor(vk::VkBlendFactor blendFactor);
 bool isSrc1BlendFactor(const VkPipelineColorBlendAttachmentState &state);
 bool isAlphaBlendFactor(vk::VkBlendFactor blendFactor);
 bool isAlphaBlendFactor(const VkPipelineColorBlendAttachmentState &state);
+tcu::Vec4 getFormatThreshold(const tcu::TextureFormat &format, int scale);
 
 } // namespace blending_common
 } // namespace pipeline

@@ -48,9 +48,7 @@
 #include <string>
 #include <sstream>
 
-namespace vkt
-{
-namespace MemoryModel
+namespace vkt::MemoryModel
 {
 namespace
 {
@@ -141,7 +139,7 @@ class MemoryModelTestInstance : public TestInstance
 {
 public:
     MemoryModelTestInstance(Context &context, const CaseDef &data);
-    ~MemoryModelTestInstance(void);
+    ~MemoryModelTestInstance(void) = default;
     tcu::TestStatus iterate(void);
 
 private:
@@ -160,15 +158,11 @@ MemoryModelTestInstance::MemoryModelTestInstance(Context &context, const CaseDef
 {
 }
 
-MemoryModelTestInstance::~MemoryModelTestInstance(void)
-{
-}
-
 class MemoryModelTestCase : public TestCase
 {
 public:
     MemoryModelTestCase(tcu::TestContext &context, const char *name, const CaseDef data);
-    ~MemoryModelTestCase(void);
+    ~MemoryModelTestCase(void) = default;
     virtual void initPrograms(SourceCollections &programCollection) const;
     virtual void initProgramsTransitive(SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
@@ -181,10 +175,6 @@ private:
 MemoryModelTestCase::MemoryModelTestCase(tcu::TestContext &context, const char *name, const CaseDef data)
     : vkt::TestCase(context, name)
     , m_data(data)
-{
-}
-
-MemoryModelTestCase::~MemoryModelTestCase(void)
 {
 }
 
@@ -335,6 +325,43 @@ void MemoryModelTestCase::checkSupport(Context &context) const
         {
             TCU_THROW(NotSupportedError, "fragmentStoresAndAtomics not supported");
         }
+    }
+
+    // note alorgorithm here coresponds to the one in MemoryModelTestInstance::iterate
+    const auto &vki               = context.getInstanceInterface();
+    auto physDevice               = context.getPhysicalDevice();
+    bool isDeviceAddressSupported = context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
+    const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(vki, physDevice);
+    for (uint32_t i = 0; i < 3; ++i)
+    {
+        bool local               = false;
+        bool memoryDeviceAddress = false;
+        switch (i)
+        {
+        default:
+        case 0:
+            if (m_data.payloadSC != SC_BUFFER && m_data.payloadSC != SC_PHYSBUFFER)
+                continue;
+            local = m_data.payloadMemLocal;
+            if (m_data.payloadSC == SC_PHYSBUFFER)
+                memoryDeviceAddress = isDeviceAddressSupported;
+            break;
+        case 1:
+            if (m_data.guardSC != SC_BUFFER && m_data.guardSC != SC_PHYSBUFFER)
+                continue;
+            local = m_data.guardMemLocal;
+            if (m_data.guardSC == SC_PHYSBUFFER)
+                memoryDeviceAddress = isDeviceAddressSupported;
+            break;
+        case 2:
+            local = true;
+            break;
+        }
+
+        MemoryRequirement memReq = (memoryDeviceAddress ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any) |
+                                   (local ? MemoryRequirement::Local : MemoryRequirement::NonLocal);
+        if (getCompatibleMemoryTypes(memoryProperties, memReq) == 0)
+            TCU_THROW(NotSupportedError, "Test variant uses memory type which is not supported");
     }
 }
 
@@ -1368,9 +1395,11 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
         vk::VkFlags usageFlags = vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                                  VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
-        bool memoryDeviceAddress = false;
+        bool local                    = false;
+        bool memoryDeviceAddress      = false;
+        bool isDeviceAddressSupported = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 
-        bool local;
+        // note alorgorithm here coresponds to the one in MemoryModelTestCase::checkSupport
         switch (i)
         {
         default:
@@ -1382,8 +1411,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
             if (m_data.payloadSC == SC_PHYSBUFFER)
             {
                 usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-                if (m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
-                    memoryDeviceAddress = true;
+                memoryDeviceAddress = isDeviceAddressSupported;
             }
             break;
         case 1:
@@ -1393,8 +1421,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
             if (m_data.guardSC == SC_PHYSBUFFER)
             {
                 usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-                if (m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
-                    memoryDeviceAddress = true;
+                memoryDeviceAddress = isDeviceAddressSupported;
             }
             break;
         case 2:
@@ -1402,21 +1429,10 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
             break;
         }
 
-        try
-        {
-            buffers[i] = de::MovePtr<BufferWithMemory>(
-                new BufferWithMemory(vk, device, allocator, makeBufferCreateInfo(bufferSizes[i], usageFlags),
-                                     (memoryDeviceAddress ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any) |
-                                         (local ? MemoryRequirement::Local : MemoryRequirement::NonLocal)));
-        }
-        catch (const tcu::NotSupportedError &)
-        {
-            if (!local)
-            {
-                TCU_THROW(NotSupportedError, "Test variant uses non-device-local memory, which is not supported");
-            }
-            throw;
-        }
+        buffers[i] = de::MovePtr<BufferWithMemory>(
+            new BufferWithMemory(vk, device, allocator, makeBufferCreateInfo(bufferSizes[i], usageFlags),
+                                 (memoryDeviceAddress ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any) |
+                                     (local ? MemoryRequirement::Local : MemoryRequirement::NonLocal)));
         bufferDescriptors[i] = makeDescriptorBufferInfo(**buffers[i], 0, bufferSizes[i]);
     }
 
@@ -2399,5 +2415,4 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     return group.release();
 }
 
-} // namespace MemoryModel
-} // namespace vkt
+} // namespace vkt::MemoryModel

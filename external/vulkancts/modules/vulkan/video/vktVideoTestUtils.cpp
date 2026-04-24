@@ -414,7 +414,7 @@ tcu::TestStatus VideoBaseTestInstance::validateEncodedContent(
                                        basicDecoder->dpbAndOutputCoincide() ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR :
                                                                               VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR,
                                        &frame);
-
+        processor.releaseFrame(&frame);
         if (frame.displayWidth != expectedOutputExtent.width || frame.displayHeight != expectedOutputExtent.height)
         {
             return tcu::TestStatus::fail(
@@ -736,6 +736,19 @@ de::MovePtr<VkVideoEncodeUsageInfoKHR> getEncodeUsageInfo(void *pNext, VkVideoEn
     };
 
     de::MovePtr<VkVideoEncodeUsageInfoKHR> result = de::MovePtr<VkVideoEncodeUsageInfoKHR>(encodeUsageInfo);
+
+    return result;
+}
+
+de::MovePtr<VkVideoDecodeUsageInfoKHR> getDecodeUsageInfo(void *pNext, VkVideoDecodeUsageFlagsKHR videoUsageHints)
+{
+    VkVideoDecodeUsageInfoKHR *decodeUsageInfo = new VkVideoDecodeUsageInfoKHR{
+        VK_STRUCTURE_TYPE_VIDEO_DECODE_USAGE_INFO_KHR, //  VkStructureType sType
+        pNext,                                         //  const void* pNext
+        videoUsageHints,                               //  VkVideoDecodeUsageFlagsKHR videoUsageHints
+    };
+
+    de::MovePtr<VkVideoDecodeUsageInfoKHR> result = de::MovePtr<VkVideoDecodeUsageInfoKHR>(decodeUsageInfo);
 
     return result;
 }

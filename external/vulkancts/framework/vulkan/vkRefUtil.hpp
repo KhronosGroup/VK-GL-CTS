@@ -5,6 +5,7 @@
  * --------------------
  *
  * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +46,16 @@ Move<VkPipeline> createRayTracingPipelineKHR(const DeviceInterface &vk, VkDevice
                                              VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache,
                                              const VkRayTracingPipelineCreateInfoKHR *pCreateInfo,
                                              const VkAllocationCallbacks *pAllocator = nullptr);
+#endif // CTS_USES_VULKANSC
+
+#ifndef CTS_USES_VULKANSC
+Move<VkPipeline> createDataGraphPipelineARM(const DeviceInterface &vk, VkDevice device,
+                                            VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache,
+                                            const VkDataGraphPipelineCreateInfoARM *pCreateInfo,
+                                            const VkAllocationCallbacks *pAllocator = nullptr);
+Move<VkDataGraphPipelineSessionARM> createDataGraphPipelineSession_ARM(
+    const DeviceInterface &vk, VkDevice device, const VkDataGraphPipelineSessionCreateInfoARM *pCreateInfo,
+    const VkAllocationCallbacks *pAllocator = nullptr);
 #endif // CTS_USES_VULKANSC
 
 Move<VkCommandBuffer> allocateCommandBuffer(const DeviceInterface &vk, VkDevice device,

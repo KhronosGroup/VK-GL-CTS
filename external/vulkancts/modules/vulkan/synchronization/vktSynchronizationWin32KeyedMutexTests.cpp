@@ -57,10 +57,7 @@ typedef HRESULT(WINAPI *LPD3DX11COMPILEFROMMEMORY)(LPCSTR, SIZE_T, LPCSTR, CONST
 using tcu::TestLog;
 using namespace vkt::ExternalMemoryUtil;
 
-namespace vkt
-{
-using namespace vk;
-namespace synchronization
+namespace vkt::synchronization
 {
 namespace
 {
@@ -136,39 +133,10 @@ SimpleAllocation::~SimpleAllocation(void)
     m_vkd.freeMemory(m_device, getMemory(), nullptr);
 }
 
-// A helper class to test for extensions upfront and throw not supported to speed up test runtimes compared to failing only
-// after creating unnecessary vkInstances.
-class NotSupportedChecker
-{
-public:
-    NotSupportedChecker(const Context &context) : m_context(context)
-    {
-        const uint32_t apiVersion = context.getUsedApiVersion();
-
-        // Check instance support
-        m_context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
-        m_context.requireInstanceFunctionality("VK_KHR_external_memory_capabilities");
-
-        if (!isCoreDeviceExtension(apiVersion, "VK_KHR_external_memory"))
-            m_context.requireDeviceFunctionality("VK_KHR_external_memory");
-        if (!isCoreDeviceExtension(apiVersion, "VK_KHR_dedicated_allocation"))
-            m_context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
-        if (!isCoreDeviceExtension(apiVersion, "VK_KHR_get_memory_requirements2"))
-            m_context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
-
-        m_context.requireDeviceFunctionality("VK_KHR_external_memory_win32");
-        m_context.requireDeviceFunctionality("VK_KHR_win32_keyed_mutex");
-    }
-
-private:
-    const Context &m_context;
-};
-
 CustomInstance createTestInstance(Context &context)
 {
-    std::vector<std::string> extensions;
-    extensions.push_back("VK_KHR_get_physical_device_properties2");
-    extensions.push_back("VK_KHR_external_memory_capabilities");
+    std::vector<std::string> extensions{"VK_KHR_get_physical_device_properties2",
+                                        "VK_KHR_external_memory_capabilities"};
 
     return createCustomInstanceWithExtensions(context, extensions);
 }
@@ -183,7 +151,7 @@ vk::Move<vk::VkDevice> createTestDevice(Context &context, vk::VkInstance instanc
     const std::vector<vk::VkQueueFamilyProperties> queueFamilyProperties =
         vk::getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
     std::vector<uint32_t> queueFamilyIndices(queueFamilyProperties.size(), 0xFFFFFFFFu);
-    std::vector<const char *> extensions;
+    std::vector<const char *> extensions{"VK_KHR_external_memory_win32", "VK_KHR_win32_keyed_mutex"};
 
     if (!isCoreDeviceExtension(apiVersion, "VK_KHR_external_memory"))
         extensions.push_back("VK_KHR_external_memory");
@@ -191,9 +159,6 @@ vk::Move<vk::VkDevice> createTestDevice(Context &context, vk::VkInstance instanc
         extensions.push_back("VK_KHR_dedicated_allocation");
     if (!isCoreDeviceExtension(apiVersion, "VK_KHR_get_memory_requirements2"))
         extensions.push_back("VK_KHR_get_memory_requirements2");
-
-    extensions.push_back("VK_KHR_external_memory_win32");
-    extensions.push_back("VK_KHR_win32_keyed_mutex");
 
     const auto &features = context.getDeviceFeatures();
 
@@ -544,6 +509,47 @@ void recordReadBarrier(const vk::DeviceInterface &vkd, vk::VkCommandBuffer comma
                                (const vk::VkBufferMemoryBarrier *)&barrier, 0u, nullptr);
     }
 }
+
+#if (DE_OS == DE_OS_WIN32)
+vk::VkResult getExternalImageFormatProperties(Context &context, TestConfig config,
+                                              const de::SharedPtr<OperationSupport> supportWriteOp,
+                                              const de::SharedPtr<OperationSupport> supportReadOp,
+                                              vk::VkExternalImageFormatProperties &externalProperties)
+{
+    const auto &vki           = context.getInstanceInterface();
+    const auto physicalDevice = context.getPhysicalDevice();
+
+    const vk::VkPhysicalDeviceExternalImageFormatInfo externalInfo{
+        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, nullptr, config.memoryHandleTypeImage};
+    const vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo{
+        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+        &externalInfo,
+        config.resource.imageFormat,
+        config.resource.imageType,
+        vk::VK_IMAGE_TILING_OPTIMAL,
+        supportReadOp->getInResourceUsageFlags() | supportWriteOp->getOutResourceUsageFlags(),
+        0u};
+
+    vk::VkImageFormatProperties2 formatProperties = initVulkanStructure(&externalProperties);
+    return vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &formatProperties);
+}
+
+void getExternalBufferProperties(Context &context, TestConfig config,
+                                 const de::SharedPtr<OperationSupport> supportWriteOp,
+                                 const de::SharedPtr<OperationSupport> supportReadOp,
+                                 vk::VkExternalBufferProperties &externalProperties)
+{
+    const auto &vki           = context.getInstanceInterface();
+    const auto physicalDevice = context.getPhysicalDevice();
+
+    const vk::VkPhysicalDeviceExternalBufferInfo info{
+        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, nullptr, 0u,
+        supportReadOp->getInResourceUsageFlags() | supportWriteOp->getOutResourceUsageFlags(),
+        config.memoryHandleTypeBuffer};
+
+    vki.getPhysicalDeviceExternalBufferProperties(physicalDevice, &info, &externalProperties);
+}
+#endif
 
 std::vector<uint32_t> getFamilyIndices(const std::vector<vk::VkQueueFamilyProperties> &properties)
 {
@@ -1422,9 +1428,8 @@ public:
 
 private:
     const TestConfig m_config;
-    const de::UniquePtr<OperationSupport> m_supportWriteOp;
-    const de::UniquePtr<OperationSupport> m_supportReadOp;
-    const NotSupportedChecker m_notSupportedChecker; // Must declare before VkInstance to effectively reduce runtimes!
+    const de::SharedPtr<OperationSupport> m_supportWriteOp;
+    const de::SharedPtr<OperationSupport> m_supportReadOp;
 
     const vk::VkInstance m_instance;
 
@@ -1448,12 +1453,9 @@ private:
 Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance(Context &context, TestConfig config)
     : TestInstance(context)
     , m_config(config)
-    , m_supportWriteOp(makeOperationSupport(config.writeOp, config.resource))
-    , m_supportReadOp(makeOperationSupport(config.readOp, config.resource))
-    , m_notSupportedChecker(context)
-
+    , m_supportWriteOp(makeOperationSupport(config.writeOp, config.resource).release())
+    , m_supportReadOp(makeOperationSupport(config.readOp, config.resource).release())
     , m_instance(InstanceAndDevice::getInstance(context))
-
     , m_vki(InstanceAndDevice::getDriver())
     , m_physicalDevice(InstanceAndDevice::getPhysicalDevice())
     , m_queueFamilies(vk::getPhysicalDeviceQueueFamilyProperties(m_vki, m_physicalDevice))
@@ -1477,75 +1479,25 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance(Context &context, TestC
 
 #if (DE_OS == DE_OS_WIN32)
     TestLog &log = m_context.getTestContext().getLog();
-
-    // Check resource support
     if (m_config.resource.type == RESOURCE_TYPE_IMAGE)
     {
-        if (m_memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT && !IsWindows8OrGreater())
-            TCU_THROW(NotSupportedError, "Memory handle type not supported by this OS");
+        vk::VkExternalImageFormatProperties externalProperties = initVulkanStructure();
+        getExternalImageFormatProperties(m_context, m_config, m_supportWriteOp, m_supportReadOp, externalProperties);
 
-        const vk::VkPhysicalDeviceExternalImageFormatInfo externalInfo = {
-            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, nullptr, m_memoryHandleType};
-        const vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
-            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
-            &externalInfo,
-            m_config.resource.imageFormat,
-            m_config.resource.imageType,
-            vk::VK_IMAGE_TILING_OPTIMAL,
-            m_supportReadOp->getInResourceUsageFlags() | m_supportWriteOp->getOutResourceUsageFlags(),
-            0u};
-        vk::VkExternalImageFormatProperties externalProperties = {
-            vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES, nullptr, {0u, 0u, 0u}};
-        vk::VkImageFormatProperties2 formatProperties = {vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
-                                                         &externalProperties,
-                                                         {
-                                                             {0u, 0u, 0u},
-                                                             0u,
-                                                             0u,
-                                                             0u,
-                                                             0u,
-                                                         }};
-        const vk::VkResult res =
-            m_vki.getPhysicalDeviceImageFormatProperties2(m_physicalDevice, &imageFormatInfo, &formatProperties);
-        if (res == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-            TCU_THROW(NotSupportedError, "Handle type is not compatible");
-        VK_CHECK(res);
+        log << TestLog::Message << "External image format properties: " << externalProperties << TestLog::EndMessage;
 
-        // \todo How to log this nicely?
-        log << TestLog::Message << "External image format properties: " << imageFormatInfo << "\n"
-            << externalProperties << TestLog::EndMessage;
-
-        if ((externalProperties.externalMemoryProperties.externalMemoryFeatures &
-             vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0)
-            TCU_THROW(NotSupportedError, "Importing image resource not supported");
-
-        if (externalProperties.externalMemoryProperties.externalMemoryFeatures &
-            vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT)
-            m_useDedicatedAllocation = true;
+        m_useDedicatedAllocation = (externalProperties.externalMemoryProperties.externalMemoryFeatures &
+                                    vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT);
     }
     else
     {
-        if (m_memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT && !IsWindows8OrGreater())
-            TCU_THROW(NotSupportedError, "Memory handle type not supported by this OS");
+        vk::VkExternalBufferProperties externalProperties = initVulkanStructure();
+        getExternalBufferProperties(m_context, m_config, m_supportWriteOp, m_supportReadOp, externalProperties);
 
-        const vk::VkPhysicalDeviceExternalBufferInfo info = {
-            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, nullptr,
+        log << TestLog::Message << "External buffer properties: " << externalProperties << TestLog::EndMessage;
 
-            0u, m_supportReadOp->getInResourceUsageFlags() | m_supportWriteOp->getOutResourceUsageFlags(),
-            m_memoryHandleType};
-        vk::VkExternalBufferProperties properties = {
-            vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES, nullptr, {0u, 0u, 0u}};
-        m_vki.getPhysicalDeviceExternalBufferProperties(m_physicalDevice, &info, &properties);
-
-        log << TestLog::Message << "External buffer properties: " << info << "\n" << properties << TestLog::EndMessage;
-
-        if ((properties.externalMemoryProperties.externalMemoryFeatures &
-             vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0)
-            TCU_THROW(NotSupportedError, "Importing memory type not supported");
-
-        if (properties.externalMemoryProperties.externalMemoryFeatures &
-            vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT)
-            m_useDedicatedAllocation = true;
+        m_useDedicatedAllocation = (externalProperties.externalMemoryProperties.externalMemoryFeatures &
+                                    vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT);
     }
 #else
     DE_UNREF(m_useDedicatedAllocation);
@@ -1758,16 +1710,90 @@ tcu::TestStatus Win32KeyedMutexTestInstance::iterate(void)
     }
 }
 
-struct Progs
+class Win32KeyedMutexTestCase : public TestCase
 {
-    void init(vk::SourceCollections &dst, TestConfig config) const
+public:
+    Win32KeyedMutexTestCase(tcu::TestContext &testCtx, const std::string &name, TestConfig config)
+        : TestCase(testCtx, name)
+        , m_config(config)
+        , m_writeOpSupport(makeOperationSupport(config.writeOp, config.resource).release())
+        , m_readOpSupport(makeOperationSupport(config.readOp, config.resource).release())
     {
-        const de::UniquePtr<OperationSupport> readOp(makeOperationSupport(config.readOp, config.resource));
-        const de::UniquePtr<OperationSupport> writeOp(makeOperationSupport(config.writeOp, config.resource));
-
-        readOp->initPrograms(dst);
-        writeOp->initPrograms(dst);
     }
+
+    void checkSupport(Context &context) const
+    {
+        context.requireDeviceFunctionality("VK_KHR_external_memory_win32");
+        context.requireDeviceFunctionality("VK_KHR_win32_keyed_mutex");
+
+        // Check instance support
+        context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+        context.requireInstanceFunctionality("VK_KHR_external_memory_capabilities");
+
+        const uint32_t apiVersion = context.getUsedApiVersion();
+        if (!isCoreDeviceExtension(apiVersion, "VK_KHR_external_memory"))
+            context.requireDeviceFunctionality("VK_KHR_external_memory");
+        if (!isCoreDeviceExtension(apiVersion, "VK_KHR_dedicated_allocation"))
+            context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
+        if (!isCoreDeviceExtension(apiVersion, "VK_KHR_get_memory_requirements2"))
+            context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
+
+#if (DE_OS == DE_OS_WIN32)
+        const auto &vki    = context.getInstanceInterface();
+        const auto physDev = context.getPhysicalDevice();
+
+        if (m_config.resource.type == RESOURCE_TYPE_IMAGE)
+        {
+            const auto memoryHandleType(m_config.memoryHandleTypeImage);
+            if (memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT && !IsWindows8OrGreater())
+                TCU_THROW(NotSupportedError, "Memory handle type not supported by this OS");
+
+            vk::VkExternalImageFormatProperties externalProperties = initVulkanStructure();
+            const auto res = getExternalImageFormatProperties(context, m_config, m_writeOpSupport, m_readOpSupport,
+                                                              externalProperties);
+
+            if (res == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+                TCU_THROW(NotSupportedError, "Handle type is not compatible");
+            VK_CHECK(res);
+
+            if ((externalProperties.externalMemoryProperties.externalMemoryFeatures &
+                 vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0)
+                TCU_THROW(NotSupportedError, "Importing image resource not supported");
+        }
+        else
+        {
+            const auto memoryHandleType(m_config.memoryHandleTypeBuffer);
+            if (memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT && !IsWindows8OrGreater())
+                TCU_THROW(NotSupportedError, "Memory handle type not supported by this OS");
+
+            vk::VkExternalBufferProperties properties = initVulkanStructure();
+            getExternalBufferProperties(context, m_config, m_writeOpSupport, m_readOpSupport, properties);
+
+            if ((properties.externalMemoryProperties.externalMemoryFeatures &
+                 vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0)
+                TCU_THROW(NotSupportedError, "Importing memory type not supported");
+        }
+#endif
+
+        m_writeOpSupport->checkSupport(context);
+        m_readOpSupport->checkSupport(context);
+    }
+
+    void initPrograms(SourceCollections &programCollection) const
+    {
+        m_writeOpSupport->initPrograms(programCollection);
+        m_readOpSupport->initPrograms(programCollection);
+    }
+
+    TestInstance *createInstance(Context &context) const
+    {
+        return new Win32KeyedMutexTestInstance(context, m_config);
+    }
+
+private:
+    TestConfig m_config;
+    de::SharedPtr<OperationSupport> m_writeOpSupport;
+    de::SharedPtr<OperationSupport> m_readOpSupport;
 };
 
 } // namespace
@@ -1816,8 +1842,7 @@ static void createTests(tcu::TestCaseGroup *group)
                         const TestConfig config(resource, writeOp, readOp, cases[caseNdx].memoryHandleTypeBuffer,
                                                 cases[caseNdx].memoryHandleTypeImage);
 
-                        opGroup->addChild(new InstanceFactory1<Win32KeyedMutexTestInstance, TestConfig, Progs>(
-                            testCtx, name, Progs(), config));
+                        opGroup->addChild(new Win32KeyedMutexTestCase(testCtx, name, config));
                         empty = false;
                     }
                 }
@@ -1840,5 +1865,4 @@ tcu::TestCaseGroup *createWin32KeyedMutexTest(tcu::TestContext &testCtx)
     return createTestGroup(testCtx, "win32_keyed_mutex", createTests, cleanupGroup);
 }
 
-} // namespace synchronization
-} // namespace vkt
+} // namespace vkt::synchronization

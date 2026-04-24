@@ -55,6 +55,8 @@ SHADER vertex variant_vertex_shader PASSTHROUGH
 #     else
 #         _GLF_color = vec4(0);
 # }
+DEVICE_EXTENSION VK_KHR_shader_float_controls
+DEVICE_PROPERTY FloatControlsProperties.shaderSignedZeroInfNanPreserveFloat32
 SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; SPIR-V
 ; Version: 1.0
@@ -62,10 +64,13 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; Bound: 58
 ; Schema: 0
                OpCapability Shader
+               OpCapability SignedZeroInfNanPreserve
+               OpExtension "SPV_KHR_float_controls"
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main" %11 %54
                OpExecutionMode %4 OriginUpperLeft
+               OpExecutionMode %4 SignedZeroInfNanPreserve 32
                OpSource ESSL 310
                OpName %4 "main"
                OpName %8 "f"

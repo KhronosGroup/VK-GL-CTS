@@ -165,6 +165,12 @@ public:
         return true;
     }
 
+    void InvalidateImageLayouts()
+    {
+        m_currentDpbImageLayerLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        m_currentOutputImageLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
+    }
+
     VkParserDecodePictureInfo m_picDispInfo;
     VkFence m_frameCompleteFence;
     VkSemaphore m_frameCompleteSemaphore;
@@ -996,6 +1002,13 @@ int32_t NvPerFrameDecodeImageSet::init(DeviceContext &vkDevCtx, const VkVideoPro
          (m_dpbImageCreateInfo.extent.width < maxImageExtent.width) ||
          (m_dpbImageCreateInfo.extent.height < maxImageExtent.height));
 
+    // Detect any geometry change (including downscale). On downscale,
+    // reconfigureImages is false because existing images are large enough.
+    // We still need to invalidate layouts so proper transitions happen.
+    const bool extentChanged = (m_numImages && (m_dpbImageCreateInfo.sType == VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO)) &&
+                               ((m_dpbImageCreateInfo.extent.width != maxImageExtent.width) ||
+                                (m_dpbImageCreateInfo.extent.height != maxImageExtent.height));
+
     for (uint32_t imageIndex = m_numImages; imageIndex < numImages; imageIndex++)
     {
         VkResult result = m_perFrameDecodeResources[imageIndex].init(vkDevCtx);
@@ -1063,11 +1076,16 @@ int32_t NvPerFrameDecodeImageSet::init(DeviceContext &vkDevCtx, const VkVideoPro
 
     if (useImageArray)
     {
-        // Create an image that has the same number of layers as the DPB images required.
-        VkResult result = VkImageResource::Create(vkDevCtx, &m_dpbImageCreateInfo, m_imageArray);
-        if (result != VK_SUCCESS)
+        // Only recreate the image array when images need to grow (reconfigureImages)
+        // or when no image array exists yet. On downscale, the existing larger image
+        // is reused - codedExtent on each frame specifies the active region.
+        if (reconfigureImages || !m_imageArray)
         {
-            return -1;
+            VkResult result = VkImageResource::Create(vkDevCtx, &m_dpbImageCreateInfo, m_imageArray);
+            if (result != VK_SUCCESS)
+            {
+                return -1;
+            }
         }
     }
     else
@@ -1078,15 +1096,18 @@ int32_t NvPerFrameDecodeImageSet::init(DeviceContext &vkDevCtx, const VkVideoPro
     if (useImageViewArray)
     {
         DE_ASSERT(m_imageArray);
-        // Create an image view that has the same number of layers as the image.
-        // In that scenario, while specifying the resource, the API must specifically choose the image layer.
-        VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, numImages};
-        VkResult result = VkImageResourceView::Create(vkDevCtx, m_imageArray, &m_dpbImageCreateInfo, subresourceRange,
-                                                      m_imageViewArray);
-
-        if (result != VK_SUCCESS)
+        // Only recreate the image view array when the image array was recreated
+        // or when no image view array exists yet.
+        if (reconfigureImages || !m_imageViewArray)
         {
-            return -1;
+            VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, numImages};
+            VkResult result = VkImageResourceView::Create(vkDevCtx, m_imageArray, &m_dpbImageCreateInfo,
+                                                          subresourceRange, m_imageViewArray);
+
+            if (result != VK_SUCCESS)
+            {
+                return -1;
+            }
         }
     }
 
@@ -1112,6 +1133,17 @@ int32_t NvPerFrameDecodeImageSet::init(DeviceContext &vkDevCtx, const VkVideoPro
             {
                 return -1;
             }
+        }
+    }
+
+    // When the geometry changed (e.g. resolution downscale) but images were reused
+    // (reconfigureImages=false), invalidate layouts so proper transitions happen
+    // on next use. This matches the working decoder's InvalidateImageLayout behavior.
+    if (extentChanged && !reconfigureImages)
+    {
+        for (uint32_t imageIndex = 0; imageIndex < m_numImages; imageIndex++)
+        {
+            m_perFrameDecodeResources[imageIndex].InvalidateImageLayouts();
         }
     }
 

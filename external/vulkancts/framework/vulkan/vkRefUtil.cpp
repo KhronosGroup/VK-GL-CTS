@@ -3,6 +3,7 @@
  * --------------------
  *
  * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +67,31 @@ Move<VkPipeline> createRayTracingPipelineKHR(const DeviceInterface &vk, VkDevice
     VK_CHECK(vk.createRayTracingPipelinesKHR(device, deferredOperation, pipelineCache, 1u, pCreateInfo, pAllocator,
                                              &object));
     return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
+}
+
+#endif
+
+#ifndef CTS_USES_VULKANSC
+
+Move<VkPipeline> createDataGraphPipelineARM(const DeviceInterface &vk, VkDevice device,
+                                            VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache,
+                                            const VkDataGraphPipelineCreateInfoARM *pCreateInfo,
+                                            const VkAllocationCallbacks *pAllocator)
+{
+    VkPipeline object = VK_NULL_HANDLE;
+    VK_CHECK(
+        vk.createDataGraphPipelinesARM(device, deferredOperation, pipelineCache, 1u, pCreateInfo, pAllocator, &object));
+    return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
+}
+
+Move<VkDataGraphPipelineSessionARM> createDataGraphPipelineSession_ARM(
+    const DeviceInterface &vk, VkDevice device, const VkDataGraphPipelineSessionCreateInfoARM *pCreateInfo,
+    const VkAllocationCallbacks *pAllocator)
+{
+    VkDataGraphPipelineSessionARM object = VK_NULL_HANDLE;
+    VK_CHECK(vk.createDataGraphPipelineSessionARM(device, pCreateInfo, pAllocator, &object));
+    return Move<VkDataGraphPipelineSessionARM>(check<VkDataGraphPipelineSessionARM>(object),
+                                               Deleter<VkDataGraphPipelineSessionARM>(vk, device, pAllocator));
 }
 
 #endif // CTS_USES_VULKANSC

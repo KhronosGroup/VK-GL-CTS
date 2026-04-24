@@ -26,7 +26,6 @@
 #include "tcuCommandLine.hpp"
 #include "vktVideoTestUtils.hpp"
 #include "vktVideoEncodeTests.hpp"
-#include "vktVideoTestUtils.hpp"
 #include "vktTestCase.hpp"
 
 #ifdef DE_BUILD_VIDEO
@@ -43,7 +42,6 @@
 #include "tcuTexture.hpp"
 #include "tcuVector.hpp"
 #include "tcuPixelFormat.hpp"
-#include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
 
 #include "vkDefs.hpp"
@@ -63,10 +61,6 @@
 #include <string>
 #include <algorithm>
 #include <cmath>
-
-#ifndef VK_MAX_NUM_IMAGE_PLANES_KHR
-#define VK_MAX_NUM_IMAGE_PLANES_KHR 4
-#endif
 
 namespace vkt
 {
@@ -697,7 +691,7 @@ struct EncodeTestParam
       {1, 2, 3, 4},
       {1, 2, 3, 4},
       {1, 2, 3, 4}},
-     /* curSlot */ {0, 1, -1, -1, 2, -1, -1, 3, -1, -1, 4, -1, -1, 5},
+     /* curSlot */ {0, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5},
      /* frameReferences */
      {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {}),
       refs<std::vector<uint8_t>>({0, 1}, {1, 0}), refs<std::vector<uint8_t>>({0, 1}, {1, 0}),
@@ -1015,7 +1009,7 @@ struct EncodeTestParam
       {1, 2, 3, 4},
       {1, 2, 3, 4},
       {1, 2, 3, 4}},
-     /* curSlot */ {0, 1, -1, -1, 2, -1, -1, 3, -1, -1, 4, -1, -1, 5},
+     /* curSlot */ {0, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5},
      /* frameReferences */
      {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {}),
       refs<std::vector<uint8_t>>({0, 1}, {1, 0}), refs<std::vector<uint8_t>>({0, 1}, {1, 0}),
@@ -1407,6 +1401,7 @@ private:
     VkVideoCoreProfile m_profile;
 };
 
+#ifdef DE_BUILD_VIDEO
 struct bytestreamWriteWithStatus
 {
     uint32_t bitstreamOffset;
@@ -1542,8 +1537,8 @@ void fillBuffer(const DeviceInterface &vk, const VkDevice device, Allocation &bu
         flushSize                              //  VkDeviceSize size;
     };
 
-    T *hostPtr = static_cast<T *>(bufferAlloc.getHostPtr());
-    memcpy(hostPtr + dataOffset, data.data(), data.size() * sizeof(T));
+    uint8_t *bytePtr = static_cast<uint8_t *>(bufferAlloc.getHostPtr());
+    memcpy(bytePtr + dataOffset, data.data(), data.size() * sizeof(T));
 
     VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &memRange));
 }
@@ -1701,11 +1696,6 @@ VkVideoReferenceSlotInfoKHR makeVideoReferenceSlot(int32_t slotIndex,
 
     return videoReferenceSlotKHR;
 }
-
-// Vulkan video is not supported on android platform
-// all external libraries, helper functions and test instances has been excluded
-#ifdef DE_BUILD_VIDEO
-
 #endif // DE_BUILD_VIDEO
 
 class VideoEncodeTestInstance : public VideoBaseTestInstance
@@ -1915,6 +1905,7 @@ VideoEncodeTestInstance::~VideoEncodeTestInstance(void)
 {
 }
 
+#ifdef DE_BUILD_VIDEO
 Move<VkQueryPool> VideoEncodeTestInstance::createEncodeVideoQueries(const DeviceInterface &videoDeviceDriver,
                                                                     VkDevice device, uint32_t numQueries,
                                                                     const VkVideoProfileInfoKHR *pVideoProfile)
@@ -2127,7 +2118,7 @@ void VideoEncodeTestInstance::queryAndValidateCapabilities()
     m_H265QuantizationMapCapabilities = getVideoEncodeH265QuantizationMapCapabilities();
 
     // Get codec capabilities
-    const bool quantizationMapEnabled = m_useDeltaMap | m_useEmphasisMap;
+    const bool quantizationMapEnabled = m_useDeltaMap || m_useEmphasisMap;
     m_videoH264CapabilitiesExtension =
         getVideoCapabilitiesExtensionH264E(quantizationMapEnabled ? m_H264QuantizationMapCapabilities.get() : nullptr);
     m_videoH265CapabilitiesExtension =
@@ -2293,7 +2284,7 @@ void VideoEncodeTestInstance::setupQuantizationMapResources(void)
     if (!m_useDeltaMap && !m_useEmphasisMap)
         return;
 
-    VkFormat quantizationImageFormat      = VK_FORMAT_R8_SNORM;
+    VkFormat quantizationImageFormat      = VK_FORMAT_UNDEFINED;
     VkImageTiling quantizationImageTiling = VK_IMAGE_TILING_OPTIMAL;
 
     // Query quantization map capabilities
@@ -2364,14 +2355,14 @@ void VideoEncodeTestInstance::setupQuantizationMapResources(void)
         quantizationImageFormat, m_quantizationMapExtent, 0, &m_encodeQueueFamilyIndex, quantizationMapImageUsage,
         m_videoEncodeProfileList.get(), 1U, VK_IMAGE_LAYOUT_UNDEFINED, quantizationImageTiling);
 
-    const vector<uint32_t> transaferQueueFamilyIndices(1u, m_transferQueueFamilyIndex);
+    const vector<uint32_t> transferQueueFamilyIndices(1u, m_transferQueueFamilyIndex);
 
     const VkBufferUsageFlags quantizationMapBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     const VkDeviceSize quantizationMapBufferSize =
         getBufferSize(quantizationImageFormat, m_quantizationMapExtent.width, m_quantizationMapExtent.height);
 
     const VkBufferCreateInfo quantizationMapBufferCreateInfo = makeBufferCreateInfo(
-        quantizationMapBufferSize, quantizationMapBufferUsageFlags, transaferQueueFamilyIndices, 0, nullptr);
+        quantizationMapBufferSize, quantizationMapBufferUsageFlags, transferQueueFamilyIndices, 0, nullptr);
 
     BufferWithMemory quantizationMapBuffer(*m_videoDeviceDriver, m_videoEncodeDevice, getAllocator(),
                                            quantizationMapBufferCreateInfo,
@@ -2380,7 +2371,7 @@ void VideoEncodeTestInstance::setupQuantizationMapResources(void)
     Allocation &quantizationMapBufferAlloc = quantizationMapBuffer.getAllocation();
     void *quantizationMapBufferHostPtr     = quantizationMapBufferAlloc.getHostPtr();
 
-    // Calculate QP values for each image sides, the type of values is based on the quantization map format and adnotated by the index
+    // Calculate QP values for each image sides, the type of values is based on the quantization map format and annotated by the index
     auto calculateMapValues = [this](auto idx, QuantizationMap mapType) -> auto
     {
         using T          = decltype(idx);
@@ -3264,12 +3255,9 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
 
     VkVideoReferenceSlotInfoKHR *setupReferenceSlotPtr = nullptr;
 
-    int8_t curSlotIdx = m_testDefinition->curSlot(nalIdx);
-    if (!bType)
-    {
-        setupReferenceSlotPtr            = &m_dpbImageVideoReferenceSlots[curSlotIdx];
-        setupReferenceSlotPtr->slotIndex = curSlotIdx;
-    }
+    int8_t curSlotIdx                = m_testDefinition->curSlot(nalIdx);
+    setupReferenceSlotPtr            = &m_dpbImageVideoReferenceSlots[curSlotIdx];
+    setupReferenceSlotPtr->slotIndex = curSlotIdx;
 
     uint32_t srcPictureResourceIdx = (gopIdx * m_gopFrameCount) + m_testDefinition->frameIdx(nalIdx);
 
@@ -3384,7 +3372,6 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
 
     // Vulkan video is not supported on android platform
     // all external libraries, helper functions and test instances has been excluded
-#ifdef DE_BUILD_VIDEO
     DeviceContext deviceContext(&m_context, &m_videoDevice, m_physicalDevice, m_videoEncodeDevice, m_decodeQueue,
                                 m_encodeQueue, m_transferQueue);
 
@@ -3448,6 +3435,7 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
                                                             VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR;
 
         auto resultImage = getDecodedImageFromContext(deviceContext, layout, &frame);
+        processor.releaseFrame(&frame);
         de::MovePtr<std::vector<uint8_t>> out =
             vkt::ycbcr::YCbCrConvUtil<uint8_t>::MultiPlanarNV12toI420(resultImage.get());
 
@@ -3494,7 +3482,7 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
 
             if ((m_useDeltaMap || m_useEmphasisMap) && NALIdx == 1)
             {
-                // When testing quantization map, the PSNR of the secont image is expected to be low
+                // When testing quantization map, the PSNR of the second image is expected to be low
                 break;
             }
             if (psnr > criticalPsnrThreshold)
@@ -3514,11 +3502,6 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
 
     const string passMessage = std::to_string(actualFramesToCheck) + " correctly encoded frames";
     return tcu::TestStatus::pass(passMessage);
-#else
-    DE_UNREF(encodeBuffer);
-    DE_UNREF(encodeBufferSize);
-    TCU_THROW(NotSupportedError, "Vulkan video is not supported on android platform");
-#endif
 }
 
 void VideoEncodeTestInstance::prepareEncodeBuffer(void)
@@ -3826,14 +3809,16 @@ uint32_t VideoEncodeTestInstance::calculateTotalFramesFromClipData(const std::ve
     size_t frameSize = width * height * 3 / 2; // Y: width*height, U/V: width*height/4 each
     DE_ASSERT(frameSize > 0);
     // Calculate the maximum number of complete frames in the clip
-    size_t maxFrames = static_cast<uint32_t>(clip.size() / frameSize);
+    size_t maxFrames = clip.size() / frameSize;
     DE_ASSERT(maxFrames <= UINT32_MAX);
 
     return static_cast<uint32_t>(maxFrames);
 }
+#endif // DE_BUILD_VIDEO
 
 tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 {
+#ifdef DE_BUILD_VIDEO
     initializeTestParameters();
     setupDeviceAndQueues();
     queryAndValidateCapabilities();
@@ -3851,6 +3836,9 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     if (m_swapOrder)
         handleSwapOrderSubmission(m_encodeQueryPool);
     return verifyEncodedBitstream(*m_encodeBuffer.get(), m_encodeBufferSize);
+#else
+    TCU_THROW(NotSupportedError, "Video tests are disabled via DEQP_DISABLE_VK_VIDEO_TESTS");
+#endif // DE_BUILD_VIDEO
 }
 
 class VideoEncodeTestCase : public TestCase
@@ -3879,9 +3867,9 @@ VideoEncodeTestCase::~VideoEncodeTestCase(void)
 
 void VideoEncodeTestCase::checkSupport(Context &context) const
 {
-    context.requireDeviceFunctionality("VK_KHR_video_queue");
+    VideoDevice::checkSupport(context, m_testDefinition->getCodecOperation());
+
     context.requireDeviceFunctionality("VK_KHR_synchronization2");
-    context.requireDeviceFunctionality("VK_KHR_video_encode_queue");
 
     switch (m_testDefinition->getTestType())
     {
@@ -3971,7 +3959,7 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
         TCU_THROW(InternalError, "Unknown TestType");
     }
 
-    if (m_testDefinition->usesGeneralLayout() == VK_IMAGE_LAYOUT_GENERAL)
+    if (m_testDefinition->usesGeneralLayout())
     {
         context.requireDeviceFunctionality("VK_KHR_unified_image_layouts");
         if (!context.getUnifiedImageLayoutsFeatures().unifiedImageLayoutsVideo)
@@ -3983,13 +3971,7 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
 
 TestInstance *VideoEncodeTestCase::createInstance(Context &context) const
 {
-#ifdef DE_BUILD_VIDEO
     return new VideoEncodeTestInstance(context, m_testDefinition.get());
-#else
-    // Vulkan video is not supported on android platform
-    DE_UNREF(context);
-    return nullptr;
-#endif
 }
 
 } // namespace
