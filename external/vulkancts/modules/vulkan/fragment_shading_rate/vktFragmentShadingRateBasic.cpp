@@ -346,6 +346,12 @@ void FSRTestCase::checkSupport(Context &context) const
     if (!(imageProperties.sampleCounts & m_data.samples))
         TCU_THROW(NotSupportedError, "color buffer sample count not supported");
 
+    const auto &fsrProps = context.getFragmentShadingRateProperties();
+    if (m_data.samples > fsrProps.maxFragmentShadingRateRasterizationSamples)
+        TCU_THROW(NotSupportedError, "fragment shading rate rasterization sample count not supported");
+    if (m_data.samples > fsrProps.maxFragmentShadingRateCoverageSamples)
+        TCU_THROW(NotSupportedError, "fragment shading rate coverage sample count not supported");
+
     if (m_data.numColorLayers > imageProperties.maxArrayLayers)
         TCU_THROW(NotSupportedError, "color buffer layers not supported");
 

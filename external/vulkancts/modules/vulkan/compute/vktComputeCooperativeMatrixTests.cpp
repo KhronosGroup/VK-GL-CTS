@@ -4169,6 +4169,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                 float Cij = getDataFloat(ptrs[2], dataTypes[2], ij);
 
                                 ref += Cij;
+                                if (dataTypes[3] == VK_COMPONENT_TYPE_FLOAT16_KHR)
+                                    ref = tcu::Float16(ref).asFloat();
 
                                 // When loading with stride 0, ij for matrix D is different from matrix C
                                 if (m_data.colMajor)
