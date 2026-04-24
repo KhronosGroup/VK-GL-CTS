@@ -168,6 +168,7 @@ const vk::VkPhysicalDeviceShaderQuadControlFeaturesKHR&						Context::getShaderQ
 const vk::VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR&		Context::getShaderRelaxedExtendedInstructionFeatures		(void) const { return m_device->getShaderRelaxedExtendedInstructionFeatures();		}
 const vk::VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT&			Context::getShaderReplicatedCompositesFeaturesEXT			(void) const { return m_device->getShaderReplicatedCompositesFeaturesEXT();			}
 const vk::VkPhysicalDeviceShaderSMBuiltinsFeaturesNV&						Context::getShaderSMBuiltinsFeatures						(void) const { return m_device->getShaderSMBuiltinsFeatures();						}
+const vk::VkPhysicalDeviceShaderSplitBarrierFeaturesEXT&					Context::getShaderSplitBarrierFeaturesEXT					(void) const { return m_device->getShaderSplitBarrierFeaturesEXT();					}
 const vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures&				Context::getShaderSubgroupExtendedTypesFeatures				(void) const { return m_device->getShaderSubgroupExtendedTypesFeatures();			}
 const vk::VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT&				Context::getShaderSubgroupPartitionedFeaturesEXT			(void) const { return m_device->getShaderSubgroupPartitionedFeaturesEXT();			}
 const vk::VkPhysicalDeviceShaderSubgroupRotateFeatures&						Context::getShaderSubgroupRotateFeatures					(void) const { return m_device->getShaderSubgroupRotateFeatures();					}

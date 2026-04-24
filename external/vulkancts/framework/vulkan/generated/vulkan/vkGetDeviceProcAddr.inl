@@ -82,6 +82,20 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdDrawIndexedIndirectCountAMD",
 		"vkCmdDrawIndirectCountAMD",
 
+		// "VK_AMD_gpa_interface
+		"vkCmdBeginGpaSampleAMD",
+		"vkCmdBeginGpaSessionAMD",
+		"vkCmdCopyGpaSessionResultsAMD",
+		"vkCmdEndGpaSampleAMD",
+		"vkCmdEndGpaSessionAMD",
+		"vkCreateGpaSessionAMD",
+		"vkDestroyGpaSessionAMD",
+		"vkGetGpaDeviceClockInfoAMD",
+		"vkGetGpaSessionResultsAMD",
+		"vkGetGpaSessionStatusAMD",
+		"vkResetGpaSessionAMD",
+		"vkSetGpaDeviceClockModeAMD",
+
 		// "VK_AMD_shader_info
 		"vkGetShaderInfoAMD",
 
@@ -104,6 +118,10 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 
 		// "VK_ARM_data_graph_instruction_set_tosa
 		"vkGetPhysicalDeviceQueueFamilyDataGraphEngineOperationPropertiesARM",
+
+		// "VK_ARM_data_graph_optical_flow
+		"vkGetPhysicalDeviceQueueFamilyDataGraphEngineOperationPropertiesARM",
+		"vkGetPhysicalDeviceQueueFamilyDataGraphOpticalFlowImageFormatsARM",
 
 		// "VK_ARM_performance_counters_by_region
 		"vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM",

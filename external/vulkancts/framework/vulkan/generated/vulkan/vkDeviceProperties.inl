@@ -282,6 +282,7 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceShaderLongVectorPropertiesE
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT>(VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderObjectPropertiesEXT>(VkPhysicalDeviceShaderObjectPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderSMBuiltinsPropertiesNV>(VkPhysicalDeviceShaderSMBuiltinsPropertiesNV&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceShaderSplitBarrierPropertiesEXT>(VkPhysicalDeviceShaderSplitBarrierPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderTileImagePropertiesEXT>(VkPhysicalDeviceShaderTileImagePropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShadingRateImagePropertiesNV>(VkPhysicalDeviceShadingRateImagePropertiesNV&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceTensorPropertiesARM>(VkPhysicalDeviceTensorPropertiesARM&, const AllPropertiesBlobs&) {}
@@ -366,6 +367,7 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderLongVectorPropert
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT, VK_EXT_SHADER_MODULE_IDENTIFIER_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderObjectPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT, VK_EXT_SHADER_OBJECT_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderSMBuiltinsPropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_PROPERTIES_NV, VK_NV_SHADER_SM_BUILTINS_EXTENSION_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderSplitBarrierPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SPLIT_BARRIER_PROPERTIES_EXT, VK_EXT_SHADER_SPLIT_BARRIER_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderTileImagePropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_PROPERTIES_EXT, VK_EXT_SHADER_TILE_IMAGE_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShadingRateImagePropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_PROPERTIES_NV, VK_NV_SHADING_RATE_IMAGE_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSubgroupProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
@@ -458,6 +460,7 @@ static const PropertyStructCreationData propertyStructCreationArray[]
 	{ createPropertyStructWrapper<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT>, VK_EXT_SHADER_MODULE_IDENTIFIER_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceShaderObjectPropertiesEXT>, VK_EXT_SHADER_OBJECT_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceShaderSMBuiltinsPropertiesNV>, VK_NV_SHADER_SM_BUILTINS_EXTENSION_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceShaderSplitBarrierPropertiesEXT>, VK_EXT_SHADER_SPLIT_BARRIER_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceShaderTileImagePropertiesEXT>, VK_EXT_SHADER_TILE_IMAGE_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceShadingRateImagePropertiesNV>, VK_NV_SHADING_RATE_IMAGE_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceSubgroupProperties>, DECL_CORE_PROPERTIES_NAME },

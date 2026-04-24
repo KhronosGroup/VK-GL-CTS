@@ -147,6 +147,9 @@ typedef enum
     TT_MATRIXMULADD_WRAPPING,
     TT_MATRIXMULADD_STRIDE0,
     TT_MATRIXMULADD_DEQUANT,
+    TT_MATRIXMULADD_SPLITBARRIER,
+    TT_MATRIXMULADD_SPLITBARRIER_LOOP,
+    TT_MATRIXMULADD_SPLITBARRIER_SKEW,
     TT_MULTICOMPONENT_LOAD,
     TT_MULTICOMPONENT_SAVE,
     TT_MATRIXMULADD_CROSS,
@@ -221,7 +224,8 @@ bool isMatrixMulAddOp(TestType testType)
     return testType == TT_MATRIXMULADD || testType == TT_MATRIXMULADD_ARRAY || testType == TT_MATRIXMULADD_SATURATED ||
            testType == TT_MATRIXMULADD_WRAPPING || testType == TT_MATRIXMULADD_STRIDE0 ||
            testType == TT_MATRIXMULADD_CROSS || testType == TT_MATRIXMULADD_DEQUANT ||
-           testType == TT_MATRIXMULADD_PUSH_CONSTANTS;
+           testType == TT_MATRIXMULADD_PUSH_CONSTANTS || testType == TT_MATRIXMULADD_SPLITBARRIER ||
+           testType == TT_MATRIXMULADD_SPLITBARRIER_LOOP || testType == TT_MATRIXMULADD_SPLITBARRIER_SKEW;
 }
 
 bool isReduceRow(TestType testType)
@@ -324,6 +328,12 @@ bool isArithmeticTest(TestType testType)
     return testType == TT_COMPOSITE || testType == TT_FUNC || testType == TT_FUNC_CONST_IN || testType == TT_ADD ||
            testType == TT_SUB || testType == TT_MUL || testType == TT_DIV || testType == TT_NEGATE ||
            testType == TT_MATRIXTIMESSCALAR || isPerElemOp(testType);
+}
+
+bool isSplitBarrierTest(TestType testType)
+{
+    return testType == TT_MATRIXMULADD_SPLITBARRIER || testType == TT_MATRIXMULADD_SPLITBARRIER_LOOP ||
+           testType == TT_MATRIXMULADD_SPLITBARRIER_SKEW;
 }
 
 int32_t tensorLayout1dMatrixSize[][5] = {
@@ -667,6 +677,14 @@ std::vector<VkCooperativeMatrixPropertiesKHR> getCooperativeMatrixPropertiesConv
     return properties;
 }
 
+uint32_t getSplitBarrierReservedSharedMemory(Context &context)
+{
+    const VkPhysicalDeviceShaderSplitBarrierPropertiesEXT &shaderSplitBarrierProperties =
+        context.getShaderSplitBarrierPropertiesEXT();
+
+    return shaderSplitBarrierProperties.splitBarrierReservedSharedMemory;
+}
+
 uint32_t getSubgroupSizeFromMode(Context &context, const SubgroupSizeMode subgroupSizeMode)
 {
 #ifndef CTS_USES_VULKANSC
@@ -770,6 +788,11 @@ void CooperativeMatrixTestCase::checkSupport(Context &context) const
     {
         TCU_THROW(NotSupportedError, "variable pointers not supported");
     }
+
+#ifndef CTS_USES_VULKANSC
+    if (isSplitBarrierTest(m_data.testType) && !context.getShaderSplitBarrierFeaturesEXT().shaderSplitBarrier)
+#endif // CTS_USES_VULKANSC
+        TCU_THROW(NotSupportedError, "shaderSplitBarrier not supported");
 
     if (m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER && !context.isBufferDeviceAddressSupported())
     {
@@ -1112,6 +1135,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     css << "#extension GL_KHR_shader_subgroup_basic : enable\n"
            "#extension GL_KHR_memory_scope_semantics : enable\n"
         << ext;
+    css << "#extension GL_EXT_split_barrier : enable\n";
     css << "#extension GL_EXT_bfloat16 : enable\n"
            "#extension GL_EXT_float_e5m2 : enable\n"
            "#extension GL_EXT_float_e4m3 : enable\n";
@@ -1140,7 +1164,9 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     }
 
     if (m_data.storageClass == SC_BUFFER_VARIABLE_POINTERS || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
+    {
         css << "#pragma use_variable_pointers\n";
+    }
 
     struct
     {
@@ -1279,8 +1305,11 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
             << "];\n";
         css << "shared " << typeStrO << " sharedO[" << dims[3].rows << " * " << dims[3].cols << " * " << scale
             << "];\n";
-    }
 
+        // split barrier skewed test uses a shared variable to force subgroup 0 to perform a long ALU op
+        if (m_data.testType == TT_MATRIXMULADD_SPLITBARRIER_SKEW)
+            css << "shared uint splitSkewedSink;\n";
+    }
     std::stringstream matAType, matBType, matCType, outputMatType;
 
     // GLSL only considers types the same if any spec constants are the same and have
@@ -1584,6 +1613,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
             "inputB",
             "inputC",
         };
+
         for (uint32_t m = 0; m < 4; ++m)
         {
             string sharedStride = strides[m] + " / workgroupsX";
@@ -1598,6 +1628,27 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
                     << (m_data.colMajor ? dims[m].rows : dims[m].cols) << " * subgroupXY.x)" << *divisors[m] << ";\n";
             }
         }
+
+        if (m_data.testType == TT_MATRIXMULADD_SPLITBARRIER_SKEW)
+        {
+            css << "   if (gl_SubgroupID == 0u && subgroupElect())\n"
+                   "       splitSkewedSink = 0u;\n";
+            css << "   controlBarrier(" << scopeStr << ", " << scopeStr
+                << ", gl_StorageSemanticsShared, gl_SemanticsAcquireRelease);\n";
+        }
+
+        // For split barrier tests, accumulate matO for each step
+        // step 0 performs A*B + C. step 1 performs (A+1)*B + O
+        if (m_data.testType == TT_MATRIXMULADD_SPLITBARRIER_LOOP ||
+            m_data.testType == TT_MATRIXMULADD_SPLITBARRIER_SKEW)
+        {
+            css << "   for (uint step = 0u; step < 2u; ++step) {\n";
+            if (isFloatType(m_data.inputType))
+                css << "       const float stepBiasA = (step == 0u) ? 0.0f : 1.0f;\n";
+            else
+                css << "       const uint stepBiasA = (step == 0u) ? 0u : 1u;\n";
+        }
+
         css << "   if (subgroupElect()) {\n";
         // copy all three input buffers.
         for (uint32_t m = 0; m < 3; ++m)
@@ -1658,9 +1709,26 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
                 << sharedStride << " * " << (m_data.colMajor ? "j" : "i") << " + " << (m_data.colMajor ? "i" : "j")
                 << ")" << *divisors[m]
                 << ";\n"
-                   "           "
-                << name[m] << "[elementS" << m << " + localElementShared] = " << inputName[m] << ".x[element" << m
-                << " + localElementInput];\n"
+                   "           ";
+
+            if ((m_data.testType == TT_MATRIXMULADD_SPLITBARRIER_LOOP ||
+                 m_data.testType == TT_MATRIXMULADD_SPLITBARRIER_SKEW) &&
+                m == 0)
+            {
+                // only apply stepBias to sharedA
+                string stepBiasType = (isFloatType(m_data.inputType)) ? "float" : "uint";
+
+                css << name[m] << "[elementS" << m
+                    << " + localElementShared] = " << componentTypeInfo.at(m_data.inputType).typeName << "("
+                    << stepBiasType << "(" << inputName[m] << ".x[element" << m
+                    << " + localElementInput]) + stepBiasA)";
+            }
+            else
+            {
+                css << name[m] << "[elementS" << m << " + localElementShared] = " << inputName[m] << ".x[element" << m
+                    << " + localElementInput]";
+            }
+            css << ";\n"
                    "       }\n"
                    "       }\n";
             strides[m] = sharedStride;
@@ -1872,6 +1940,11 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
                     << ");\n"
                        "   coopMatLoad"
                     << suffix << "(matC, sharedC, elementS2, " << loadStrides[2] << ", " << colMajor << ");\n";
+
+                if (isSplitBarrierTest(m_data.testType))
+                {
+                    css << "   controlBarrierArrive();\n";
+                }
             }
             else
             {
@@ -1978,6 +2051,49 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     case TT_MATRIXMULADD_PUSH_CONSTANTS:
     case TT_MATRIXMULADD:
         css << "   matO = coopMatMulAdd" << suffix << "(matA, matB, matC" << sat << ");\n";
+        break;
+    case TT_MATRIXMULADD_SPLITBARRIER:
+        css << "   matO = coopMatMulAdd" << suffix << "(matA, matB, matC" << sat << ");\n"
+            << "   controlBarrierWait();\n";
+        break;
+    case TT_MATRIXMULADD_SPLITBARRIER_LOOP:
+        css << "   if (step == 0u) {\n"
+               "     matO = coopMatMulAdd"
+            << suffix << "(matA, matB, matC" << sat
+            << ");\n"
+               "   }\n"
+               "   else {\n"
+               "     matO = coopMatMulAdd"
+            << suffix << "(matA, matB, matO" << sat
+            << ");\n"
+               "   }\n"
+               "   controlBarrierWait();\n"
+               "}\n";
+        break;
+    case TT_MATRIXMULADD_SPLITBARRIER_SKEW:
+        // Have subgroup 0 perform an atomic add with shared var splitSkewedSink
+        // to prevent the compiler from optimizing out the long ALU ops
+        css << "   if (step == 0u) {\n"
+               "     matO = coopMatMulAdd"
+            << suffix << "(matA, matB, matC" << sat
+            << ");\n"
+               "   }\n"
+               "   else {\n"
+               "     matO = coopMatMulAdd"
+            << suffix << "(matA, matB, matO" << sat
+            << ");\n"
+               "   }\n"
+               "   if (gl_SubgroupID == 0u) {\n"
+               "      uint splitSkewed = 1u;\n"
+               "      // deliberately long private ALU path for subgroup 0 only\n"
+               "      for (uint spin = 0u; spin < 8192u; ++spin) {\n"
+               "         splitSkewed += splitSkewed * 56u + gl_SubgroupInvocationID;\n"
+               "      }\n"
+               "      if (subgroupElect())\n"
+               "         atomicAdd(splitSkewedSink, splitSkewed);\n"
+               "   }\n"
+               "   controlBarrierWait();\n"
+               "}\n";
         break;
     case TT_MATRIXMULADD_ARRAY:
         css << "   matOArr[1] = coopMatMulAdd" << suffix << "(matAArr[1], matBArr[1], matCArr[1]);\n";
@@ -2165,6 +2281,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
                 css << "   coopMatStore" << suffix << "(matO, sharedO, elementS3, " << sharedStride << divisorO << ", "
                     << colMajor << ");\n";
             }
+
             css << "   controlBarrier(" << scopeStr << ", " << scopeStr
                 << ", gl_StorageSemanticsShared, gl_SemanticsAcquireRelease);\n";
             css << "   if (subgroupElect()) {\n";
@@ -3279,7 +3396,16 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
         uint32_t loadStrides[4];
         uint32_t totalElements[4];
         size_t sharedMemoryUsage[4];
-        size_t totalSharedMemoryUsage = 0;
+        size_t totalSharedMemoryUsage             = 0;
+        uint32_t splitBarrierReservedSharedMemory = 0;
+
+        if (isSplitBarrierTest(m_data.testType))
+        {
+            splitBarrierReservedSharedMemory = getSplitBarrierReservedSharedMemory(m_context);
+            // split barrier skewed test uses additional 4 bytes of shared memory
+            splitBarrierReservedSharedMemory +=
+                (m_data.testType == TT_MATRIXMULADD_SPLITBARRIER_SKEW) ? uint32_t{sizeof(uint32_t)} : 0u;
+        }
 
         for (uint32_t i = 0; i < 5; ++i)
         {
@@ -3305,7 +3431,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     ((m_data.storageClass == SC_WORKGROUP) || (m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)))
                 {
                     totalSharedMemoryUsage += sharedMemoryUsage[i];
-                    if (totalSharedMemoryUsage > vkproperties.limits.maxComputeSharedMemorySize)
+                    if (totalSharedMemoryUsage >
+                        vkproperties.limits.maxComputeSharedMemorySize - splitBarrierReservedSharedMemory)
                         throw tcu::NotSupportedError("Not enough shared memory supported.");
                 }
 
@@ -4561,12 +4688,14 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
             else
             {
                 uint32_t ik, kj, ij;
-                uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
-                                          m_data.workgroupsX :
-                                          (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
-                uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
-                                          m_data.workgroupsY :
-                                          (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+                uint32_t numMatrixX       = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                                m_data.workgroupsX :
+                                                (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+                uint32_t numMatrixY       = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                                m_data.workgroupsY :
+                                                (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+                bool isSplitBarrierLooped = (m_data.testType == TT_MATRIXMULADD_SPLITBARRIER_LOOP ||
+                                             m_data.testType == TT_MATRIXMULADD_SPLITBARRIER_SKEW);
                 for (uint32_t mX = 0; mX < numMatrixX; ++mX)
                 {
                     for (uint32_t mY = 0; mY < numMatrixY; ++mY)
@@ -4632,6 +4761,14 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                     }
 
                                     ref += Aik * Bkj;
+                                    if (isSplitBarrierLooped)
+                                    {
+                                        uint32_t temp;
+                                        // Add one, in A's type
+                                        setDataFloat(&temp, dataTypes[0], 0, Aik + 1);
+                                        Aik = getDataFloat(&temp, dataTypes[0], 0);
+                                        ref += Aik * Bkj;
+                                    }
                                 }
 
                                 if (m_data.colMajor)
@@ -4651,6 +4788,9 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                     break;
                                 case VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT:
                                     ref = toF8Exact<tcu::FloatE4M3>(ref);
+                                    break;
+                                case VK_COMPONENT_TYPE_FLOAT16_KHR:
+                                    ref = tcu::Float16{ref, tcu::ROUND_TO_EVEN}.asFloat();
                                     break;
                                 default:
                                     break;
@@ -5371,12 +5511,14 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
             else
             {
                 uint32_t ik, kj, ij;
-                uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
-                                          m_data.workgroupsX :
-                                          (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
-                uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
-                                          m_data.workgroupsY :
-                                          (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+                uint32_t numMatrixX       = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                                m_data.workgroupsX :
+                                                (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+                uint32_t numMatrixY       = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                                m_data.workgroupsY :
+                                                (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+                bool isSplitBarrierLooped = (m_data.testType == TT_MATRIXMULADD_SPLITBARRIER_LOOP ||
+                                             m_data.testType == TT_MATRIXMULADD_SPLITBARRIER_SKEW);
                 for (uint32_t mX = 0; mX < numMatrixX; ++mX)
                 {
                     for (uint32_t mY = 0; mY < numMatrixY; ++mY)
@@ -5386,7 +5528,6 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                             for (uint32_t j = 0; j < N; ++j)
                             {
                                 uint32_t ref = 0;
-
                                 for (uint32_t k = 0; k < K; ++k)
                                 {
                                     if (m_data.colMajor)
@@ -5404,6 +5545,14 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                     uint32_t Bkj = getDataInt(ptrs[1], dataTypes[1], kj);
 
                                     ref += Aik * Bkj;
+                                    if (isSplitBarrierLooped)
+                                    {
+                                        uint32_t temp;
+                                        // Add one, in A's type
+                                        setDataInt(&temp, dataTypes[0], 0, Aik + 1);
+                                        Aik = getDataInt(&temp, dataTypes[0], 0);
+                                        ref += Aik * Bkj;
+                                    }
                                 }
 
                                 if (m_data.colMajor)
@@ -5577,6 +5726,12 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
         {TT_MATRIXMULADD_DEQUANT, "matrixmuladd_dequant"},
         // OpCooperativeMatrixMulAdd
         {TT_MATRIXMULADD_PUSH_CONSTANTS, "matrixmuladd_push"},
+        //OpCooperativeMatrixMulAdd /w split barrier
+        {TT_MATRIXMULADD_SPLITBARRIER, "matrixmuladd_split_barrier"},
+        //OpCooperativeMatrixMulAdd /w split barrier and looped subgroup work
+        {TT_MATRIXMULADD_SPLITBARRIER_LOOP, "matrixmuladd_split_barrier_loop"},
+        //OpCooperativeMatrixMulAdd /w split barrier and skewed looped subgroup work
+        {TT_MATRIXMULADD_SPLITBARRIER_SKEW, "matrixmuladd_split_barrier_skew"},
         // OpConvertCooperativeMatrixNV
         {TT_CONVERT_ACC_TO_A, "convert_acc_to_a"},
         {TT_CONVERT_ACC_TO_B, "convert_acc_to_b"},
@@ -5761,6 +5916,11 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                     de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, dtCases[dtNdx].name));
                     for (int scNdx = 0; scNdx < DE_LENGTH_OF_ARRAY(scCases); scNdx++)
                     {
+                        StorageClass storageClass = (StorageClass)scCases[scNdx].value;
+                        if (isSplitBarrierTest(testType) && (storageClass != SC_WORKGROUP || useType != UT_KHR_Result))
+                        {
+                            continue;
+                        }
                         de::MovePtr<tcu::TestCaseGroup> scGroup(new tcu::TestCaseGroup(testCtx, scCases[scNdx].name));
                         for (int colNdx = 0; colNdx < DE_LENGTH_OF_ARRAY(colCases); colNdx++)
                         {
@@ -5965,6 +6125,14 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                                     workgroupsY            = 1u;
                                 }
 
+                                if (isSplitBarrierTest(testType))
+                                {
+                                    if (addrCases[addrNdx].value != ADDR_LINEAR)
+                                        continue;
+                                    subgroupsPerWorkgroupX = 1;
+                                    subgroupsPerWorkgroupY = 2;
+                                }
+
                                 CaseDef c = {
                                     testType, //  TestType testtype;
                                     (VkScopeKHR)scopeCases[scopeNdx]
@@ -5980,9 +6148,9 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                                     (StorageClass)scCases[scNdx].value,   //  StorageClass storageClass;
                                     useType,                              //  UseType useType;
                                     sgsCases[sgsNdx].value,               //  SubgroupSizeMode subgroupSizeMode;
-                                    computePipelineConstructionType, //  vk::ComputePipelineConstructionType computePipelineConstructionType;
+                                    computePipelineConstructionType, // vk::ComputePipelineConstructionType computePipelineConstructionType;
                                     inComponentCount,  //  uint32_t inputComponentCount;
-                                    outComponentCount, //  uint32_t outputComponentCount;
+                                    outComponentCount, // uint32_t outputComponentCount;
                                 };
                                 colGroup->addChild(new CooperativeMatrixTestCase(testCtx, addrCases[addrNdx].name, c));
                             }

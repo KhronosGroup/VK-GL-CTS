@@ -4570,12 +4570,13 @@ struct VkMicromapCreateInfoEXT
 	VkDeviceAddress				deviceAddress;
 };
 
-struct VkMicromapTriangleEXT
+struct VkMicromapTriangleKHR
 {
 	uint32_t	dataOffset;
 	uint16_t	subdivisionLevel;
 	uint16_t	format;
 };
+typedef VkMicromapTriangleKHR VkMicromapTriangleEXT;
 
 struct VkMicromapUsageEXT
 {
@@ -7731,6 +7732,20 @@ struct VkPhysicalDeviceShaderSMBuiltinsPropertiesNV
 	void*			pNext;
 	uint32_t		shaderSMCount;
 	uint32_t		shaderWarpsPerSM;
+};
+
+struct VkPhysicalDeviceShaderSplitBarrierFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderSplitBarrier;
+};
+
+struct VkPhysicalDeviceShaderSplitBarrierPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		splitBarrierReservedSharedMemory;
 };
 
 struct VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures
@@ -12665,6 +12680,9 @@ typedef VkMemoryToImageCopy VkMemoryToImageCopyEXT;
 
 
 typedef VkMemoryUnmapInfo VkMemoryUnmapInfoKHR;
+
+
+typedef VkMicromapTriangleKHR VkMicromapTriangleEXT;
 
 
 typedef VkMutableDescriptorTypeCreateInfoEXT VkMutableDescriptorTypeCreateInfoVALVE;

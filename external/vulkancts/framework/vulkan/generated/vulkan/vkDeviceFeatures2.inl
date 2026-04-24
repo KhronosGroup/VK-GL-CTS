@@ -5356,6 +5356,45 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderReplicatedCompositesFeaturesEXT (
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureShaderSplitBarrierFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceShaderSplitBarrierFeaturesEXT deviceShaderSplitBarrierFeaturesEXT[count];
+    const bool                                    isShaderSplitBarrierFeaturesEXT = checkExtension(properties, "VK_EXT_shader_split_barrier");
+
+    if (!isShaderSplitBarrierFeaturesEXT)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceShaderSplitBarrierFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderSplitBarrierFeaturesEXT));
+        deviceShaderSplitBarrierFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SPLIT_BARRIER_FEATURES_EXT;
+        deviceShaderSplitBarrierFeaturesEXT[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceShaderSplitBarrierFeaturesEXT[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceShaderSplitBarrierFeaturesEXT[0] << TestLog::EndMessage;
+
+    if (
+        deviceShaderSplitBarrierFeaturesEXT[0].shaderSplitBarrier != deviceShaderSplitBarrierFeaturesEXT[1].shaderSplitBarrier)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceShaderSplitBarrierFeaturesEXT");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureShaderSubgroupExtendedTypesFeatures (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -7373,6 +7412,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "shader_quad_control_features_khr", testPhysicalDeviceFeatureShaderQuadControlFeaturesKHR);
 	addFunctionCase(testGroup, "shader_relaxed_extended_instruction_features_khr", testPhysicalDeviceFeatureShaderRelaxedExtendedInstructionFeaturesKHR);
 	addFunctionCase(testGroup, "shader_replicated_composites_features_ext", testPhysicalDeviceFeatureShaderReplicatedCompositesFeaturesEXT);
+	addFunctionCase(testGroup, "shader_split_barrier_features_ext", testPhysicalDeviceFeatureShaderSplitBarrierFeaturesEXT);
 	addFunctionCase(testGroup, "shader_subgroup_extended_types_features", testPhysicalDeviceFeatureShaderSubgroupExtendedTypesFeatures);
 	addFunctionCase(testGroup, "shader_subgroup_partitioned_features_ext", testPhysicalDeviceFeatureShaderSubgroupPartitionedFeaturesEXT);
 	addFunctionCase(testGroup, "shader_subgroup_rotate_features", testPhysicalDeviceFeatureShaderSubgroupRotateFeatures);

@@ -69,6 +69,9 @@ typedef enum
     ST_ATOMIC_ATOMIC,
     ST_CONTROL_BARRIER,
     ST_CONTROL_AND_MEMORY_BARRIER,
+    ST_SPLIT_CONTROL_BARRIER,
+    ST_SPLIT_CONTROL_AND_MEMORY_BARRIER,
+    ST_SPLIT_CONTROL_BARRIER_AND_BARRIER
 } SyncType;
 
 typedef enum
@@ -135,6 +138,12 @@ VkFlags getAllPipelineStages(tcu::TestContext &testCtx)
                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 }
 
+bool isSplitBarrier(SyncType syncType)
+{
+    return syncType == ST_SPLIT_CONTROL_BARRIER || syncType == ST_SPLIT_CONTROL_AND_MEMORY_BARRIER ||
+           syncType == ST_SPLIT_CONTROL_BARRIER_AND_BARRIER;
+}
+
 class MemoryModelTestInstance : public TestInstance
 {
 public:
@@ -196,6 +205,17 @@ void MemoryModelTestCase::checkSupport(Context &context) const
         {
             TCU_THROW(NotSupportedError, "vulkanMemoryModelDeviceScope not supported");
         }
+    }
+
+    if (isSplitBarrier(m_data.syncType))
+    {
+        if (m_data.stage != STAGE_COMPUTE)
+            TCU_THROW(NotSupportedError, "VK_EXT_shader_split_barrier is only supported in compute shaders");
+
+#ifndef CTS_USES_VULKANSC
+        if (!context.getShaderSplitBarrierFeaturesEXT().shaderSplitBarrier)
+#endif
+            TCU_THROW(NotSupportedError, "shaderSplitBarrier feature not supported");
     }
 
     if (m_data.scope == SCOPE_SUBGROUP)
@@ -488,6 +508,10 @@ void MemoryModelTestCase::initPrograms(SourceCollections &programCollection) con
     {
         css << "#extension GL_EXT_shader_atomic_float : enable\n"
                "#extension GL_KHR_memory_scope_semantics : enable\n";
+    }
+    if (isSplitBarrier(m_data.syncType))
+    {
+        css << "#extension GL_EXT_split_barrier : enable\n";
     }
     css << "#extension GL_KHR_shader_subgroup_basic : enable\n"
            "#extension GL_KHR_shader_subgroup_shuffle : enable\n"
@@ -829,6 +853,40 @@ void MemoryModelTestCase::initPrograms(SourceCollections &programCollection) con
         // Control barrier performs both acquire and release
         css << "   controlBarrier(" << scopeStr << ", " << scopeStr << ", " << storageSemanticsRelease.str() << " | "
             << storageSemanticsAcquire.str() << ", " << semanticsAcquireRelease.str() << ");\n";
+    }
+    else if (m_data.syncType == ST_SPLIT_CONTROL_BARRIER)
+    {
+        // Split control barrier: arrive carries the release, wait carries the acquire.
+        css << "   controlBarrierArrive(" << scopeStr << ", " << scopeStr << ", " << storageSemanticsRelease.str()
+            << ", " << semanticsRelease.str()
+            << ");\n"
+               "   controlBarrierWait("
+            << scopeStr << ", " << scopeStr << ", " << storageSemanticsAcquire.str() << ", " << semanticsAcquire.str()
+            << ");\n";
+    }
+    else if (m_data.syncType == ST_SPLIT_CONTROL_AND_MEMORY_BARRIER)
+    {
+        // Split control barrier with separate memory barriers carrying release/acquire.
+        css << "   memoryBarrier(" << scopeStr << ", " << storageSemanticsRelease.str() << ", "
+            << semanticsRelease.str()
+            << ");\n"
+               "   controlBarrierArrive("
+            << scopeStr << ", " << scopeStr
+            << ", 0, gl_SemanticsRelaxed);\n "
+               "   controlBarrierWait("
+            << scopeStr << ", " << scopeStr
+            << ", 0, gl_SemanticsRelaxed);\n "
+               "   memoryBarrier("
+            << scopeStr << ", " << storageSemanticsAcquire.str() << ", " << semanticsAcquire.str() << ");\n";
+    }
+    else if (m_data.syncType == ST_SPLIT_CONTROL_BARRIER_AND_BARRIER)
+    {
+        // Split control barrier with barrier
+        css << "   controlBarrierArrive(gl_ScopeWorkgroup, gl_ScopeWorkgroup, " << storageSemanticsRelease.str() << ", "
+            << semanticsRelease.str() << ");\n"
+            << "   barrier();\n"
+            << "   controlBarrierWait(gl_ScopeWorkgroup, gl_ScopeWorkgroup, " << storageSemanticsAcquire.str() << ", "
+            << semanticsAcquire.str() << ");\n";
     }
     else
     {
@@ -2108,8 +2166,14 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
         {ST_ATOMIC_ATOMIC, "atomic_atomic"},
         // control barrier
         {ST_CONTROL_BARRIER, "control_barrier"},
-        // control barrier with release/acquire
+        // control barrier with separate memory barriers
         {ST_CONTROL_AND_MEMORY_BARRIER, "control_and_memory_barrier"},
+        // split control barrier with release/acquire
+        {ST_SPLIT_CONTROL_BARRIER, "split_control_barrier"},
+        // split control barrier with separate memory barriers
+        {ST_SPLIT_CONTROL_AND_MEMORY_BARRIER, "split_control_and_memory_barrier"},
+        // split control barrier with barrier
+        {ST_SPLIT_CONTROL_BARRIER_AND_BARRIER, "split_control_barrier_and_barrier"},
     };
 
     TestGroupCase rmwCases[] = {
@@ -2262,16 +2326,25 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
                                                     {
                                                         continue;
                                                     }
+
                                                     if (c.guardSC == SC_WORKGROUP &&
                                                         (c.guardMemLocal != 0 || c.stage != STAGE_COMPUTE))
                                                     {
                                                         continue;
                                                     }
-                                                    // Can't do control barrier with larger than workgroup scope, or non-compute stages
+
+                                                    // No support for control/split barrier with larger than workgroup scope, or non-compute stages
                                                     if ((c.syncType == ST_CONTROL_BARRIER ||
-                                                         c.syncType == ST_CONTROL_AND_MEMORY_BARRIER) &&
+                                                         c.syncType == ST_CONTROL_AND_MEMORY_BARRIER ||
+                                                         isSplitBarrier(c.syncType)) &&
                                                         (c.scope == SCOPE_DEVICE || c.scope == SCOPE_QUEUEFAMILY ||
                                                          c.stage != STAGE_COMPUTE))
+                                                    {
+                                                        continue;
+                                                    }
+
+                                                    if (c.syncType == ST_SPLIT_CONTROL_BARRIER_AND_BARRIER &&
+                                                        c.scope != SCOPE_WORKGROUP)
                                                     {
                                                         continue;
                                                     }
@@ -2387,7 +2460,8 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
                                 {
                                     continue;
                                 }
-                                if (c.syncType == ST_CONTROL_BARRIER || c.syncType == ST_CONTROL_AND_MEMORY_BARRIER)
+                                if (c.syncType == ST_CONTROL_BARRIER || c.syncType == ST_CONTROL_AND_MEMORY_BARRIER ||
+                                    isSplitBarrier(c.syncType))
                                 {
                                     continue;
                                 }

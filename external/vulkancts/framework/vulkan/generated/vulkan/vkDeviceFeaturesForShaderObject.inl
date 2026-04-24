@@ -168,6 +168,7 @@ auto fShaderQuadControlFeatures                         = m_context.getShaderQua
 auto fShaderRelaxedExtendedInstructionFeatures          = m_context.getShaderRelaxedExtendedInstructionFeatures();
 auto fShaderReplicatedCompositesFeaturesEXT             = m_context.getShaderReplicatedCompositesFeaturesEXT();
 auto fShaderSMBuiltinsFeatures                          = m_context.getShaderSMBuiltinsFeatures();
+auto fShaderSplitBarrierFeaturesEXT                     = m_context.getShaderSplitBarrierFeaturesEXT();
 auto fShaderSubgroupExtendedTypesFeatures               = m_context.getShaderSubgroupExtendedTypesFeatures();
 auto fShaderSubgroupPartitionedFeaturesEXT              = m_context.getShaderSubgroupPartitionedFeaturesEXT();
 auto fShaderSubgroupRotateFeatures                      = m_context.getShaderSubgroupRotateFeatures();
@@ -370,6 +371,7 @@ std::vector<void *> pNextFeatures = {
 	&fShaderRelaxedExtendedInstructionFeatures,
 	&fShaderReplicatedCompositesFeaturesEXT,
 	&fShaderSMBuiltinsFeatures,
+	&fShaderSplitBarrierFeaturesEXT,
 	&fShaderSubgroupExtendedTypesFeatures,
 	&fShaderSubgroupPartitionedFeaturesEXT,
 	&fShaderSubgroupRotateFeatures,

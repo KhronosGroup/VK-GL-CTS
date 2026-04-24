@@ -81,6 +81,7 @@ const vk::VkPhysicalDeviceShaderLongVectorPropertiesEXT&			Context::getShaderLon
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		Context::getShaderModuleIdentifierPropertiesEXT			(void) const { return m_device->getShaderModuleIdentifierPropertiesEXT();		}
 const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&				Context::getShaderObjectPropertiesEXT					(void) const { return m_device->getShaderObjectPropertiesEXT();					}
 const vk::VkPhysicalDeviceShaderSMBuiltinsPropertiesNV&				Context::getShaderSMBuiltinsProperties					(void) const { return m_device->getShaderSMBuiltinsProperties();				}
+const vk::VkPhysicalDeviceShaderSplitBarrierPropertiesEXT&			Context::getShaderSplitBarrierPropertiesEXT				(void) const { return m_device->getShaderSplitBarrierPropertiesEXT();			}
 const vk::VkPhysicalDeviceShaderTileImagePropertiesEXT&				Context::getShaderTileImagePropertiesEXT				(void) const { return m_device->getShaderTileImagePropertiesEXT();				}
 const vk::VkPhysicalDeviceShadingRateImagePropertiesNV&				Context::getShadingRateImageProperties					(void) const { return m_device->getShadingRateImageProperties();				}
 const vk::VkPhysicalDeviceSubgroupProperties&						Context::getSubgroupProperties							(void) const { return m_device->getSubgroupProperties();						}
