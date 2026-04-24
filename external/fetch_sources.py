@@ -49,6 +49,24 @@ def onReadonlyRemoveError (func, path, exc_info):
     os.chmod(path, stat.S_IWRITE)
     os.unlink(path)
 
+def forceRemoveTree (path):
+    # Robust shutil.rmtree: tolerates missing paths, read-only files, and
+    # directories lacking read/execute bits (sometimes produced by CMake
+    # builds inside postCheckout trees). Chmod each subdir during its
+    # parent's visit so os.walk can descend into it on the next iteration.
+    if not os.path.exists(path):
+        return
+    def _chmod(p):
+        try:
+            os.chmod(p, stat.S_IRWXU)
+        except OSError:
+            pass
+    _chmod(path)
+    for root, dirs, files in os.walk(path):
+        for name in dirs + files:
+            _chmod(os.path.join(root, name))
+    shutil.rmtree(path, onerror=onReadonlyRemoveError)
+
 class Source:
     def __init__(self, baseDir, extractDir):
         self.baseDir = baseDir
@@ -292,10 +310,16 @@ class GitRepo (Source):
 
         if not os.path.exists(os.path.join(fullDstPath, '.git')):
             logging.debug("git repository does not exist; performing full clone")
+            # A non-empty destination without .git (e.g. postCheckout build
+            # artifacts or a previous partial clone) makes git clone fail.
+            # Wipe it before cloning. CMake builds sometimes leave
+            # unreadable/unsearchable directories, so restore permissions first.
+            forceRemoveTree(fullDstPath)
             try:
                 run(["git", "clone", "--no-checkout", url, fullDstPath])
             except:
                 if backupUrl != None:
+                    forceRemoveTree(fullDstPath)
                     execute(["git", "clone", "--no-checkout", backupUrl, fullDstPath])
 
         pushWorkingDir(fullDstPath)
