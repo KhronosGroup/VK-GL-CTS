@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelinePrimitiveRestartIndexTests.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
@@ -141,6 +142,8 @@ struct Params
     RestartIndex restartIndex;
     DrawCall drawCall;
     bool dynamicPrimitiveRestartEnable;
+    bool conditionalRendering;
+    bool secondaryCmd;
 
     tcu::IVec3 getExtent() const
     {
@@ -477,6 +480,9 @@ void RestartIndexCase::checkSupport(Context &context) const
 
     if (m_params->drawCall == DrawCall::INDIRECT_2 || m_params->drawCall == DrawCall::INDIRECT_COUNT_2)
         context.requireDeviceFunctionality("VK_KHR_device_address_commands");
+
+    if (m_params->conditionalRendering)
+        context.requireDeviceFunctionality("VK_EXT_conditional_rendering");
 }
 
 void RestartIndexCase::initPrograms(vk::SourceCollections &programCollection) const
@@ -657,6 +663,20 @@ tcu::TestStatus RestartIndexInstance::iterate(void)
     DE_ASSERT(vertexOffset + manualOffset == padVertexCount);
 
     ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, colorFormat, colorUsage, imgType);
+
+    BufferWithMemoryPtr crBuffer;
+    if (m_params->conditionalRendering)
+    {
+        const auto crBufferSize  = sizeof(uint32_t);
+        const auto crBufferUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT);
+        const auto crBufferInfo  = makeBufferCreateInfo(crBufferSize, crBufferUsage);
+        crBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, crBufferInfo, HostIntent::W));
+        {
+            auto &alloc = crBuffer->getAllocation();
+            memset(alloc.getHostPtr(), 0, crBufferSize); // Disable rendering.
+            flushAlloc(ctx.vkd, ctx.device, alloc);
+        }
+    }
 
     uint32_t verticesPerRow = 0u;
     std::vector<tcu::Vec4> allVertices;
@@ -891,46 +911,106 @@ tcu::TestStatus RestartIndexInstance::iterate(void)
         flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
-    beginCommandBuffer(ctx.vkd, cmdBuffer);
-    pipeline.bind(cmdBuffer);
-    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-    ctx.vkd.cmdBindIndexBuffer(cmdBuffer, indexBuffer->get(), 0ull, m_params->indexType);
-    if (m_params->dynamicPrimitiveRestartEnable)
-        ctx.vkd.cmdSetPrimitiveRestartEnable(cmdBuffer, VK_TRUE);
-    renderPass.begin(ctx.vkd, cmdBuffer, scissors.front(), clearColor);
-    for (uint32_t i = 0u; i < blockCount; ++i)
+    // We may use a primary or secondary command buffer to record the render pass contents.
+    const auto recordRPContents = [&](VkCommandBuffer commandBuffer)
     {
-        ctx.vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pcStages, 0u, pcSize, &blockColors.at(i));
+        pipeline.bind(commandBuffer);
+        ctx.vkd.cmdBindVertexBuffers(commandBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+        ctx.vkd.cmdBindIndexBuffer(commandBuffer, indexBuffer->get(), 0ull, m_params->indexType);
+        if (m_params->dynamicPrimitiveRestartEnable)
+            ctx.vkd.cmdSetPrimitiveRestartEnable(commandBuffer, VK_TRUE);
+        for (uint32_t i = 0u; i < blockCount; ++i)
+        {
+            ctx.vkd.cmdPushConstants(commandBuffer, pipelineLayout.get(), pcStages, 0u, pcSize, &blockColors.at(i));
+
+            if (m_params->conditionalRendering)
+            {
+                // Disable rendering using conditional rendering, which should not affect setting the index.
+                VkConditionalRenderingBeginInfoEXT crBeginInfo = initVulkanStructure();
+                crBeginInfo.buffer                             = crBuffer->get();
+                ctx.vkd.cmdBeginConditionalRenderingEXT(commandBuffer, &crBeginInfo);
+            }
+
 #ifndef AVOID_CUSTOM_RESTART_INDEX
-        const auto restartIndex = m_params->getRestartIndexForBlock(i);
-        if (restartIndex == defaultRestartIndex && !resetByRebind)
-        {
-            ctx.vkd.cmdBindIndexBuffer(cmdBuffer, indexBuffer->get(), 0ull, m_params->indexType);
-            resetByRebind = true;
-        }
-        else
-            ctx.vkd.cmdSetPrimitiveRestartIndexEXT(cmdBuffer, restartIndex);
+            const auto restartIndex = m_params->getRestartIndexForBlock(i);
+            if (restartIndex == defaultRestartIndex && !resetByRebind)
+            {
+                ctx.vkd.cmdBindIndexBuffer(commandBuffer, indexBuffer->get(), 0ull, m_params->indexType);
+                resetByRebind = true;
+            }
+            else
+                ctx.vkd.cmdSetPrimitiveRestartIndexEXT(commandBuffer, restartIndex);
 #endif // AVOID_CUSTOM_RESTART_INDEX
-        const auto &drawCmd = drawCmds.at(i);
-        if (m_params->drawCall == DrawCall::DIRECT)
-            ctx.vkd.cmdDrawIndexed(cmdBuffer, drawCmd.indexCount, drawCmd.instanceCount, drawCmd.firstIndex,
-                                   drawCmd.vertexOffset, drawCmd.firstInstance);
-        else if (m_params->drawCall == DrawCall::INDIRECT)
-            ctx.vkd.cmdDrawIndexedIndirect(cmdBuffer, indirectBuffers.at(i)->get(), 0ull, blockCount, indirectStride);
-        else if (m_params->drawCall == DrawCall::INDIRECT_COUNT)
-            ctx.vkd.cmdDrawIndexedIndirectCount(cmdBuffer, indirectBuffers.at(i)->get(), 0ull, countBuffer->get(), 0ull,
-                                                maxCount, indirectStride);
-        else if (m_params->drawCall == DrawCall::INDIRECT_2)
-        {
-            DE_ASSERT(false); // TO-DO: use the address of each buffer here.
+
+            // When using conditional rendering, the first block will not be drawn: the conditional rendering section
+            // will finish after the draw. In subsequent blocks, the draw will left outside the section.
+            if (m_params->conditionalRendering && i > 0u)
+                ctx.vkd.cmdEndConditionalRenderingEXT(commandBuffer);
+
+            const auto &drawCmd = drawCmds.at(i);
+            if (m_params->drawCall == DrawCall::DIRECT)
+                ctx.vkd.cmdDrawIndexed(commandBuffer, drawCmd.indexCount, drawCmd.instanceCount, drawCmd.firstIndex,
+                                       drawCmd.vertexOffset, drawCmd.firstInstance);
+            else if (m_params->drawCall == DrawCall::INDIRECT)
+                ctx.vkd.cmdDrawIndexedIndirect(commandBuffer, indirectBuffers.at(i)->get(), 0ull, blockCount,
+                                               indirectStride);
+            else if (m_params->drawCall == DrawCall::INDIRECT_COUNT)
+                ctx.vkd.cmdDrawIndexedIndirectCount(commandBuffer, indirectBuffers.at(i)->get(), 0ull,
+                                                    countBuffer->get(), 0ull, maxCount, indirectStride);
+            else if (m_params->drawCall == DrawCall::INDIRECT_2)
+            {
+                DE_ASSERT(false); // TO-DO: use the address of each buffer here.
+            }
+            else if (m_params->drawCall == DrawCall::INDIRECT_COUNT_2)
+            {
+                DE_ASSERT(false); // TO-DO: similar situation here, plus the count buffer.
+            }
+            else
+                DE_ASSERT(false);
+
+            // Finish conditional rendering section for the first block, so that it includes the draw command.
+            if (m_params->conditionalRendering && i == 0u)
+                ctx.vkd.cmdEndConditionalRenderingEXT(commandBuffer);
         }
-        else if (m_params->drawCall == DrawCall::INDIRECT_COUNT_2)
-        {
-            DE_ASSERT(false); // TO-DO: similar situation here, plus the count buffer.
-        }
-        else
-            DE_ASSERT(false);
+    };
+
+    Move<VkCommandBuffer> secondaryCmdBufferPtr;
+    if (m_params->secondaryCmd)
+    {
+        secondaryCmdBufferPtr =
+            allocateCommandBuffer(ctx.vkd, ctx.device, *cmd.cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+        const auto secCmd = *secondaryCmdBufferPtr;
+
+        const VkCommandBufferInheritanceRenderingInfo inhRenderInfo{
+            VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO,
+            nullptr,
+            0u,
+            0u,
+            1u,
+            &colorFormat,
+            VK_FORMAT_UNDEFINED,
+            VK_FORMAT_UNDEFINED,
+            VK_SAMPLE_COUNT_1_BIT,
+        };
+        const VkCommandBufferInheritanceRenderingInfo *inhPNext =
+            (isConstructionTypeShaderObject(m_params->constructionType) ? &inhRenderInfo : nullptr);
+        auto cmdUsageFlags = static_cast<VkCommandBufferUsageFlags>(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        if (isConstructionTypeShaderObject(m_params->constructionType))
+            cmdUsageFlags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+        beginSecondaryCommandBuffer(ctx.vkd, secCmd, renderPass.get(), renderPass.getFramebuffer(), cmdUsageFlags,
+                                    inhPNext);
+        recordRPContents(secCmd);
+        endCommandBuffer(ctx.vkd, secCmd);
     }
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    const auto subpassContents =
+        (m_params->secondaryCmd ? VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS : VK_SUBPASS_CONTENTS_INLINE);
+    renderPass.begin(ctx.vkd, cmdBuffer, scissors.front(), clearColor, subpassContents);
+    if (m_params->secondaryCmd)
+        ctx.vkd.cmdExecuteCommands(cmdBuffer, 1u, &secondaryCmdBufferPtr.get());
+    else
+        recordRPContents(cmdBuffer);
     renderPass.end(ctx.vkd, cmdBuffer);
     copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1));
     endCommandBuffer(ctx.vkd, cmdBuffer);
@@ -943,15 +1023,16 @@ tcu::TestStatus RestartIndexInstance::iterate(void)
     tcu::TextureLevel refLevel(tcuFormat, extent.x(), extent.y(), extent.z());
     tcu::PixelBufferAccess reference = refLevel.getAccess();
 
-    for (uint32_t b = 0; b < blockCount; ++b)
+    for (uint32_t b = 0u; b < blockCount; ++b)
     {
         const auto color = blockColors.at(b);
-        for (uint32_t r = 0; r < blockRows; ++r)
+        for (uint32_t r = 0u; r < blockRows; ++r)
         {
             const int y = static_cast<int>(b * blockRows + r);
             for (int x = 0; x < extent.x(); ++x)
             {
-                if (x < extent.x() - 1)
+                // Note when using conditional rendering, draws for the first block are disabled.
+                if (x < extent.x() - 1 && (!m_params->conditionalRendering || b > 0u))
                     reference.setPixel(color, x, y);
                 else
                     reference.setPixel(clearColor, x, y);
@@ -982,13 +1063,40 @@ std::string getIndexTypeSimpleName(VkIndexType indexType)
     return de::toLower(fullName + strlen("VK_INDEX_TYPE_")) + "_index";
 }
 
-} // anonymous namespace
-
-tcu::TestCaseGroup *createPrimitiveRestartIndexTests(tcu::TestContext &testCtx,
-                                                     PipelineConstructionType pipelineConstructionType)
+std::string getRestartIndexName(RestartIndex restartIndex)
 {
-    GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "primitive_restart_index"));
+    if (restartIndex == RestartIndex::ZERO)
+        return "zero";
+    if (restartIndex == RestartIndex::ONE)
+        return "one";
+    if (restartIndex == RestartIndex::PENULTIMATE)
+        return "max_minus_one";
+    if (restartIndex == RestartIndex::MAX)
+        return "max";
 
+    DE_ASSERT(false);
+    return "";
+}
+
+std::string getDrawCallName(DrawCall drawCall)
+{
+    if (drawCall == DrawCall::DIRECT)
+        return "draw_indexed";
+    if (drawCall == DrawCall::INDIRECT)
+        return "draw_indexed_indirect";
+    if (drawCall == DrawCall::INDIRECT_COUNT)
+        return "draw_indexed_indirect_count";
+    //if (drawCall == DrawCall::INDIRECT_2)
+    //    return "draw_indexed_indirect_2";
+    //if (drawCall == DrawCall::INDIRECT_COUNT_2)
+    //    return "draw_indexed_indirect_count_2";
+
+    DE_ASSERT(false);
+    return "";
+}
+
+std::vector<VkPrimitiveTopology> getTopologies()
+{
     const std::vector<VkPrimitiveTopology> topologies{
         VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
         VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
@@ -1003,65 +1111,156 @@ tcu::TestCaseGroup *createPrimitiveRestartIndexTests(tcu::TestContext &testCtx,
         VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
     };
 
+    return topologies;
+}
+
+std::vector<VkIndexType> getIndexTypes()
+{
     const std::vector<VkIndexType> indexTypes{
         VK_INDEX_TYPE_UINT32,
         VK_INDEX_TYPE_UINT16,
         VK_INDEX_TYPE_UINT8,
     };
 
-    const std::map<RestartIndex, std::string> restartIndices{
-        std::make_pair(RestartIndex::ZERO, "zero"),
-        std::make_pair(RestartIndex::ONE, "one"),
-        std::make_pair(RestartIndex::PENULTIMATE, "max_minus_one"),
-        std::make_pair(RestartIndex::MAX, "max"),
+    return indexTypes;
+}
+
+std::vector<RestartIndex> getRestartIndices()
+{
+    const std::vector<RestartIndex> restartIndices{
+        RestartIndex::ZERO,
+        RestartIndex::ONE,
+        RestartIndex::PENULTIMATE,
+        RestartIndex::MAX,
     };
 
-    const std::map<DrawCall, std::string> drawCalls{
-        std::make_pair(DrawCall::DIRECT, "draw_indexed"), std::make_pair(DrawCall::INDIRECT, "draw_indexed_indirect"),
-        std::make_pair(DrawCall::INDIRECT_COUNT, "draw_indexed_indirect_count"),
-        //std::make_pair(DrawCall::INDIRECT_2, "draw_indexed_indirect_2"),
-        //std::make_pair(DrawCall::INDIRECT_COUNT_2, "draw_indexed_indirect_count_2"),
+    return restartIndices;
+}
+
+std::vector<DrawCall> getDrawCalls()
+{
+    const std::vector<DrawCall> drawCalls{
+        DrawCall::DIRECT, DrawCall::INDIRECT, DrawCall::INDIRECT_COUNT,
+        //DrawCall::INDIRECT_2,
+        //DrawCall::INDIRECT_COUNT_2,
     };
 
-    for (const auto topology : topologies)
-    {
-        const auto topologyName = getTopologySimpleName(topology);
-        GroupPtr topologyGroup(new tcu::TestCaseGroup(testCtx, topologyName.c_str()));
+    return drawCalls;
+}
 
-        for (const auto indexType : indexTypes)
+} // anonymous namespace
+
+tcu::TestCaseGroup *createPrimitiveRestartIndexTests(tcu::TestContext &testCtx,
+                                                     PipelineConstructionType pipelineConstructionType)
+{
+    return createTestGroup(
+        testCtx, "primitive_restart_index",
+        [=](tcu::TestCaseGroup *mainGroup)
         {
-            const auto indexTypeName = getIndexTypeSimpleName(indexType);
-            GroupPtr indexTypeGroup(new tcu::TestCaseGroup(testCtx, indexTypeName.c_str()));
-
-            for (const auto &restartIndex : restartIndices)
+            for (const auto topology : getTopologies())
             {
-                for (const auto &drawCall : drawCalls)
-                {
-                    for (const bool dynamicPrimRestart : {false, true})
+                mainGroup->addChild(createTestGroup(
+                    mainGroup->getTestContext(), getTopologySimpleName(topology),
+                    [=](tcu::TestCaseGroup *topologyGroup)
                     {
-                        ParamsPtr params(new Params{
-                            pipelineConstructionType,
-                            topology,
-                            indexType,
-                            restartIndex.first,
-                            drawCall.first,
-                            dynamicPrimRestart,
-                        });
+                        for (const auto indexType : getIndexTypes())
+                        {
+                            topologyGroup->addChild(createTestGroup(
+                                topologyGroup->getTestContext(), getIndexTypeSimpleName(indexType),
+                                [=](tcu::TestCaseGroup *indexTypeGroup)
+                                {
+                                    for (const auto restartIndex : getRestartIndices())
+                                    {
+                                        for (const auto drawCall : getDrawCalls())
+                                        {
+                                            for (const bool dynamicPrimRestart : {false, true})
+                                            {
+                                                ParamsPtr params(new Params{
+                                                    pipelineConstructionType,
+                                                    topology,
+                                                    indexType,
+                                                    restartIndex,
+                                                    drawCall,
+                                                    dynamicPrimRestart,
+                                                    false,
+                                                    false,
+                                                });
 
-                        const auto testName = "custom_index_" + restartIndex.second + "_" + drawCall.second +
-                                              (dynamicPrimRestart ? "_dyn_prim_restart" : "");
-                        indexTypeGroup->addChild(new RestartIndexCase(testCtx, testName, params));
-                    }
-                }
+                                                const auto testName = "custom_index_" +
+                                                                      getRestartIndexName(restartIndex) + "_" +
+                                                                      getDrawCallName(drawCall) +
+                                                                      (dynamicPrimRestart ? "_dyn_prim_restart" : "");
+
+                                                indexTypeGroup->addChild(new RestartIndexCase(
+                                                    indexTypeGroup->getTestContext(), testName, params));
+                                            }
+                                        }
+                                    }
+                                }));
+                        }
+                    }));
             }
 
-            topologyGroup->addChild(indexTypeGroup.release());
-        }
+            mainGroup->addChild(createTestGroup(mainGroup->getTestContext(), "secondary_cmd",
+                                                [=](tcu::TestCaseGroup *secondariesGroup)
+                                                {
+                                                    for (const auto drawCall : getDrawCalls())
+                                                    {
+                                                        for (const bool dynamicPrimRestart : {false, true})
+                                                        {
+                                                            ParamsPtr params(new Params{
+                                                                pipelineConstructionType,
+                                                                VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+                                                                VK_INDEX_TYPE_UINT16,
+                                                                RestartIndex::ONE,
+                                                                drawCall,
+                                                                dynamicPrimRestart,
+                                                                false,
+                                                                true,
+                                                            });
 
-        mainGroup->addChild(topologyGroup.release());
-    }
+                                                            const auto testName =
+                                                                getDrawCallName(drawCall) +
+                                                                (dynamicPrimRestart ? "_dyn_prim_restart" : "");
 
-    return mainGroup.release();
+                                                            secondariesGroup->addChild(new RestartIndexCase(
+                                                                secondariesGroup->getTestContext(), testName, params));
+                                                        }
+                                                    }
+                                                }));
+
+            mainGroup->addChild(createTestGroup(
+                mainGroup->getTestContext(), "conditional_rendering",
+                [=](tcu::TestCaseGroup *crGroup)
+                {
+                    for (const auto drawCall : getDrawCalls())
+                    {
+                        for (const bool dynamicPrimRestart : {false, true})
+                        {
+                            // We are also testing some secondaries with this.
+                            for (const bool useSecondaries : {false, true})
+                            {
+                                ParamsPtr params(new Params{
+                                    pipelineConstructionType,
+                                    VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+                                    VK_INDEX_TYPE_UINT32,
+                                    RestartIndex::ZERO,
+                                    drawCall,
+                                    dynamicPrimRestart,
+                                    true,
+                                    useSecondaries,
+                                });
+
+                                const auto testName = getDrawCallName(drawCall) +
+                                                      (dynamicPrimRestart ? "_dyn_prim_restart" : "") +
+                                                      (useSecondaries ? "_secondary_cmd" : "");
+
+                                crGroup->addChild(new RestartIndexCase(crGroup->getTestContext(), testName, params));
+                            }
+                        }
+                    }
+                }));
+        });
 }
 
 } // namespace pipeline

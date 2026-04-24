@@ -26,6 +26,8 @@
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
 
+#include <functional>
+
 namespace vkt
 {
 
@@ -56,6 +58,41 @@ public:
     {
         if (m_cleanupGroup)
             m_cleanupGroup(this);
+    }
+
+private:
+    const CreateChildrenFunc m_createChildren;
+    const CleanupGroupFunc m_cleanupGroup;
+};
+
+class TestGroupHelper0StdFunction : public tcu::TestCaseGroup
+{
+public:
+    using CreateChildrenFunc = std::function<void(tcu::TestCaseGroup *)>;
+    using CleanupGroupFunc   = std::function<void(tcu::TestCaseGroup *)>;
+
+    TestGroupHelper0StdFunction(tcu::TestContext &testCtx, const std::string &name, CreateChildrenFunc createChildren,
+                                CleanupGroupFunc cleanupGroup)
+        : tcu::TestCaseGroup(testCtx, name.c_str())
+        , m_createChildren(createChildren)
+        , m_cleanupGroup(cleanupGroup)
+    {
+    }
+
+    ~TestGroupHelper0StdFunction(void)
+    {
+    }
+
+    void init(void)
+    {
+        m_createChildren(this);
+    }
+
+    void deinit(void)
+    {
+        if (m_cleanupGroup)
+            m_cleanupGroup(this);
+        tcu::TestCaseGroup::deinit();
     }
 
 private:
@@ -134,6 +171,13 @@ inline tcu::TestCaseGroup *createTestGroup(tcu::TestContext &testCtx, const std:
                                            TestGroupHelper0::CleanupGroupFunc cleanupGroup = nullptr)
 {
     return new TestGroupHelper0(testCtx, name, createChildren, cleanupGroup);
+}
+
+inline tcu::TestCaseGroup *createTestGroup(
+    tcu::TestContext &testCtx, const std::string &name, TestGroupHelper0StdFunction::CreateChildrenFunc createChildren,
+    TestGroupHelper0StdFunction::CleanupGroupFunc cleanupGroup = TestGroupHelper0StdFunction::CleanupGroupFunc())
+{
+    return new TestGroupHelper0StdFunction(testCtx, name, createChildren, cleanupGroup);
 }
 
 template <typename Arg0>
