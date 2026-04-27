@@ -409,6 +409,9 @@ public:
             context.requireDeviceFunctionality("VK_KHR_device_address_commands");
             context.requireDeviceFunctionality("VK_KHR_synchronization2");
         }
+
+        if ((m_params.queueType == QueueType::COMPUTE_ONLY) && (context.getComputeQueueFamilyIndex() == -1))
+            TCU_THROW(NotSupportedError, "Exclusive compute queue not supported.");
     }
 
     virtual TestInstance *createInstance(Context &context) const override
@@ -645,6 +648,9 @@ public:
     {
         if (m_params.useDeviceAddressCommands)
             context.requireDeviceFunctionality("VK_KHR_device_address_commands");
+
+        if ((m_params.queueType == QueueType::COMPUTE_ONLY) && (context.getComputeQueueFamilyIndex() == -1))
+            TCU_THROW(NotSupportedError, "Exclusive compute queue not supported.");
     }
 
     virtual TestInstance *createInstance(Context &context) const
@@ -759,6 +765,9 @@ public:
     {
         if (m_params.useDeviceAddressCommands)
             context.requireDeviceFunctionality("VK_KHR_device_address_commands");
+
+        if ((m_params.queueType == QueueType::COMPUTE_ONLY) && (context.getComputeQueueFamilyIndex() == -1))
+            TCU_THROW(NotSupportedError, "Exclusive compute queue not supported.");
     }
 
     virtual TestInstance *createInstance(Context &context) const
