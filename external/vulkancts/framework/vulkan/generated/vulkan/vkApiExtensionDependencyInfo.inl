@@ -604,6 +604,18 @@ bool check_VK_ARM_data_graph_instruction_set_tosa(const tcu::UVec2& v, const Ext
 	return isSupported(vDEP, "VK_ARM_data_graph");
 }
 
+bool check_VK_ARM_data_graph_optical_flow(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_ARM_data_graph_optical_flow"))
+		return true;
+
+	// depends attribute in xml: VK_ARM_data_graph
+	return isSupported(vDEP, "VK_ARM_data_graph");
+}
+
 bool check_VK_ARM_format_pack(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4669,6 +4681,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_ANDROID_external_memory_android_hardware_buffer",	&check_VK_ANDROID_external_memory_android_hardware_buffer),
 	std::make_pair("VK_ARM_data_graph",										&check_VK_ARM_data_graph),
 	std::make_pair("VK_ARM_data_graph_instruction_set_tosa",				&check_VK_ARM_data_graph_instruction_set_tosa),
+	std::make_pair("VK_ARM_data_graph_optical_flow",						&check_VK_ARM_data_graph_optical_flow),
 	std::make_pair("VK_ARM_format_pack",									&check_VK_ARM_format_pack),
 	std::make_pair("VK_ARM_performance_counters_by_region",					&check_VK_ARM_performance_counters_by_region),
 	std::make_pair("VK_ARM_pipeline_opacity_micromap",						&check_VK_ARM_pipeline_opacity_micromap),
@@ -5037,6 +5050,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_ANDROID_external_memory_android_hardware_buffer"),
 	std::make_tuple(1, 3, "VK_ARM_data_graph"),
 	std::make_tuple(1, 3, "VK_ARM_data_graph_instruction_set_tosa"),
+	std::make_tuple(1, 3, "VK_ARM_data_graph_optical_flow"),
 	std::make_tuple(1, 0, "VK_ARM_format_pack"),
 	std::make_tuple(1, 0, "VK_ARM_performance_counters_by_region"),
 	std::make_tuple(1, 0, "VK_ARM_pipeline_opacity_micromap"),

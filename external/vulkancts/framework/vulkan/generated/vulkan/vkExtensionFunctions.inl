@@ -146,6 +146,12 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		functions.push_back("vkGetPhysicalDeviceQueueFamilyDataGraphEngineOperationPropertiesARM");
 		return;
 	}
+	if (extName == "VK_ARM_data_graph_optical_flow")
+	{
+		functions.push_back("vkGetPhysicalDeviceQueueFamilyDataGraphOpticalFlowImageFormatsARM");
+		functions.push_back("vkGetPhysicalDeviceQueueFamilyDataGraphEngineOperationPropertiesARM");
+		return;
+	}
 	if (extName == "VK_ARM_format_pack")
 	{
 		return;
@@ -2090,6 +2096,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_ARM_data_graph_instruction_set_tosa")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_data_graph_optical_flow")
 	{
 		return;
 	}
@@ -4946,6 +4956,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_shader_64bit_indexing",
 	"VK_EXT_custom_resolve",
 	"VK_QCOM_data_graph_model",
+	"VK_ARM_data_graph_optical_flow",
 	"VK_EXT_shader_long_vector",
 	"VK_SEC_pipeline_cache_incremental_mode",
 	"VK_EXT_shader_uniform_buffer_unsized_array",
