@@ -762,7 +762,7 @@ tcu::TestCaseGroup *createOpacityMicromapTestsKHR(tcu::TestContext &testCtx)
             }
         }
         if (maskName == "")
-            maskName = "NoFlags";
+            maskName = "no_flags";
 
         de::MovePtr<tcu::TestCaseGroup> testFlagGroup(
             new tcu::TestCaseGroup(group->getTestContext(), maskName.c_str()));
@@ -809,26 +809,60 @@ tcu::TestCaseGroup *createOpacityMicromapTestsKHR(tcu::TestContext &testCtx)
                     uint32_t mode;
                     std::string name;
                 } modes[] = {{2, "2"}, {4, "4"}};
-                struct
-                {
-                    bool lossy;
-                    std::string name;
-                } lossyModes[] = {{true, "lossy"}, {false, "no_lossy"}};
+
                 for (uint32_t modeNdx = 0; modeNdx < DE_LENGTH_OF_ARRAY(modes); ++modeNdx)
                 {
                     de::MovePtr<tcu::TestCaseGroup> modeGroup(
                         new tcu::TestCaseGroup(testFlagGroup->getTestContext(), modes[modeNdx].name.c_str()));
-                    for (size_t lossyModeNdx = 0; lossyModeNdx < DE_LENGTH_OF_ARRAY(lossyModes); lossyModeNdx++)
+                    if (modes[modeNdx].mode == 4)
                     {
-                        de::MovePtr<tcu::TestCaseGroup> lossyModeGroup(
-                            new tcu::TestCaseGroup(modeGroup->getTestContext(), lossyModes[lossyModeNdx].name.c_str()));
+                        struct
+                        {
+                            bool lossy;
+                            std::string name;
+                        } lossyModes[] = {{true, "lossy"}, {false, "no_lossy"}};
+                        for (size_t lossyModeNdx = 0; lossyModeNdx < DE_LENGTH_OF_ARRAY(lossyModes); lossyModeNdx++)
+                        {
+                            de::MovePtr<tcu::TestCaseGroup> lossyModeGroup(new tcu::TestCaseGroup(
+                                modeGroup->getTestContext(), lossyModes[lossyModeNdx].name.c_str()));
+                            for (uint32_t level = 0; level <= kMaxSubdivisionLevel; level++)
+                            {
+                                TestParams testParams{
+                                    specialIndexUse[specialIndexNdx].useSpecialIndex,
+                                    false,
+                                    false,
+                                    lossyModes[lossyModeNdx].lossy,
+                                    testFlagMask,
+                                    level,
+                                    modes[modeNdx].mode,
+                                    seed++,
+                                };
+
+                                std::stringstream css;
+                                css << "level_" << level;
+                                const auto testName = css.str();
+
+                                lossyModeGroup->addChild(new OpacityMicromapCase(testCtx, testName, testParams));
+
+                                if (testFlagMask == 0u)
+                                {
+                                    testParams.nonZeroBase = true;
+                                    const auto variantName = testName + "_non_zero_base";
+                                    lossyModeGroup->addChild(new OpacityMicromapCase(testCtx, variantName, testParams));
+                                }
+                            }
+                            modeGroup->addChild(lossyModeGroup.release());
+                        }
+                    }
+                    else
+                    {
                         for (uint32_t level = 0; level <= kMaxSubdivisionLevel; level++)
                         {
                             TestParams testParams{
                                 specialIndexUse[specialIndexNdx].useSpecialIndex,
                                 false,
                                 false,
-                                lossyModes[lossyModeNdx].lossy,
+                                false,
                                 testFlagMask,
                                 level,
                                 modes[modeNdx].mode,
@@ -839,16 +873,15 @@ tcu::TestCaseGroup *createOpacityMicromapTestsKHR(tcu::TestContext &testCtx)
                             css << "level_" << level;
                             const auto testName = css.str();
 
-                            lossyModeGroup->addChild(new OpacityMicromapCase(testCtx, testName, testParams));
+                            modeGroup->addChild(new OpacityMicromapCase(testCtx, testName, testParams));
 
                             if (testFlagMask == 0u)
                             {
                                 testParams.nonZeroBase = true;
                                 const auto variantName = testName + "_non_zero_base";
-                                lossyModeGroup->addChild(new OpacityMicromapCase(testCtx, variantName, testParams));
+                                modeGroup->addChild(new OpacityMicromapCase(testCtx, variantName, testParams));
                             }
                         }
-                        modeGroup->addChild(lossyModeGroup.release());
                     }
                     specialGroup->addChild(modeGroup.release());
                 }

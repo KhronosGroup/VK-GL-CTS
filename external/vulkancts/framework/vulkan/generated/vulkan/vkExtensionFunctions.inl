@@ -146,6 +146,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		functions.push_back("vkGetPhysicalDeviceQueueFamilyDataGraphEngineOperationPropertiesARM");
 		return;
 	}
+	if (extName == "VK_ARM_data_graph_neural_accelerator_statistics")
+	{
+		return;
+	}
 	if (extName == "VK_ARM_data_graph_optical_flow")
 	{
 		functions.push_back("vkGetPhysicalDeviceQueueFamilyDataGraphOpticalFlowImageFormatsARM");
@@ -1143,6 +1147,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_maintenance11")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_maintenance2")
 	{
 		return;
@@ -1927,6 +1935,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_SEC_throttle_hint")
+	{
+		return;
+	}
 	if (extName == "VK_SEC_ubm_surface")
 	{
 		functions.push_back("vkCreateUbmSurfaceSEC");
@@ -2100,6 +2112,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_ARM_data_graph_instruction_set_tosa")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_data_graph_neural_accelerator_statistics")
 	{
 		return;
 	}
@@ -3562,6 +3578,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdEndRendering2KHR");
 		return;
 	}
+	if (extName == "VK_KHR_maintenance11")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_maintenance2")
 	{
 		return;
@@ -4487,6 +4507,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_SEC_throttle_hint")
+	{
+		return;
+	}
 	if (extName == "VK_SEC_ubm_surface")
 	{
 		return;
@@ -4690,6 +4714,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_present_mode_fifo_latest_ready",
 	"VK_KHR_opacity_micromap",
 	"VK_KHR_maintenance10",
+	"VK_KHR_maintenance11",
 	"VK_NV_glsl_shader",
 	"VK_EXT_depth_range_unrestricted",
 	"VK_IMG_filter_cubic",
@@ -4972,6 +4997,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_compute_occupancy_priority",
 	"VK_EXT_shader_subgroup_partitioned",
 	"VK_VALVE_shader_mixed_float_dot_product",
+	"VK_SEC_throttle_hint",
+	"VK_ARM_data_graph_neural_accelerator_statistics",
 	"VK_EXT_primitive_restart_index",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",

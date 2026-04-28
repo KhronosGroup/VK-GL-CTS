@@ -856,7 +856,7 @@ tcu::TestCaseGroup *createOpacityMicromapTests(tcu::TestContext &testCtx)
             }
         }
         if (maskName == "")
-            maskName = "NoFlags";
+            maskName = "no_flags";
 
         de::MovePtr<tcu::TestCaseGroup> testFlagGroup(
             new tcu::TestCaseGroup(group->getTestContext(), maskName.c_str()));

@@ -90,9 +90,9 @@ enum CopyType
 };
 
 std::vector<std::string> copyTypeNames{
-    "None",
-    "Clone",
-    "Compact",
+    "none",
+    "clone",
+    "compact",
 };
 
 struct TestParams
@@ -1214,7 +1214,7 @@ void addBasicTests(tcu::TestCaseGroup *group)
                 }
             }
             if (maskName == "")
-                maskName = "NoFlags";
+                maskName = "no_flags";
 
             de::MovePtr<tcu::TestCaseGroup> testFlagGroup(
                 new tcu::TestCaseGroup(sourceTypeGroup->getTestContext(), maskName.c_str()));

@@ -94,10 +94,10 @@ enum CopyType
 };
 
 std::vector<std::string> copyTypeNames{
-    "None",
-    "Clone",
-    "Compact",
-    "Serialize",
+    "none",
+    "clone",
+    "compact",
+    "serialize",
 };
 
 struct TestParams
@@ -1658,7 +1658,7 @@ void addBasicTestsKHR(tcu::TestCaseGroup *group)
                 }
             }
             if (maskName == "")
-                maskName = "NoFlags";
+                maskName = "no_flags";
 
             de::MovePtr<tcu::TestCaseGroup> testFlagGroup(
                 new tcu::TestCaseGroup(sourceTypeGroup->getTestContext(), maskName.c_str()));
@@ -1711,20 +1711,59 @@ void addBasicTestsKHR(tcu::TestCaseGroup *group)
                         uint32_t mode;
                         std::string name;
                     } modes[] = {{2, "2"}, {4, "4"}};
-                    struct
-                    {
-                        bool lossy;
-                        std::string name;
-                    } lossyModes[] = {{true, "lossy"}, {false, "no_lossy"}};
+
                     for (uint32_t modeNdx = 0; modeNdx < DE_LENGTH_OF_ARRAY(modes); ++modeNdx)
                     {
                         de::MovePtr<tcu::TestCaseGroup> modeGroup(
                             new tcu::TestCaseGroup(testFlagGroup->getTestContext(), modes[modeNdx].name.c_str()));
-
-                        for (size_t lossyModeNdx = 0; lossyModeNdx < DE_LENGTH_OF_ARRAY(lossyModes); lossyModeNdx++)
+                        if (modes[modeNdx].mode == 4)
                         {
-                            de::MovePtr<tcu::TestCaseGroup> lossyModeGroup(new tcu::TestCaseGroup(
-                                modeGroup->getTestContext(), lossyModes[lossyModeNdx].name.c_str()));
+                            struct
+                            {
+                                bool lossy;
+                                std::string name;
+                            } lossyModes[] = {{true, "lossy"}, {false, "no_lossy"}};
+                            for (size_t lossyModeNdx = 0; lossyModeNdx < DE_LENGTH_OF_ARRAY(lossyModes); lossyModeNdx++)
+                            {
+                                de::MovePtr<tcu::TestCaseGroup> lossyModeGroup(new tcu::TestCaseGroup(
+                                    modeGroup->getTestContext(), lossyModes[lossyModeNdx].name.c_str()));
+                                for (uint32_t level = 0; level <= kMaxSubdivisionLevel; level++)
+                                {
+                                    TestParams testParams{
+                                        shaderSourceTypes[shaderSourceNdx].shaderSourceType,
+                                        shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
+                                        specialIndexUse[specialIndexNdx].useSpecialIndex,
+                                        false,
+                                        false,
+                                        lossyModes[lossyModeNdx].lossy,
+                                        false,
+                                        testFlagMask,
+                                        level,
+                                        modes[modeNdx].mode,
+                                        seed++,
+                                        CT_NONE,
+                                        false,
+                                    };
+
+                                    std::stringstream css;
+                                    css << "level_" << level;
+                                    const auto testName = css.str();
+
+                                    lossyModeGroup->addChild(new OpacityMicromapCase(testCtx, testName, testParams));
+
+                                    if (testFlagMask == 0u)
+                                    {
+                                        testParams.nonZeroBase = true;
+                                        const auto variantName = testName + "_non_zero_base";
+                                        lossyModeGroup->addChild(
+                                            new OpacityMicromapCase(testCtx, variantName, testParams));
+                                    }
+                                }
+                                modeGroup->addChild(lossyModeGroup.release());
+                            }
+                        }
+                        else
+                        {
                             for (uint32_t level = 0; level <= kMaxSubdivisionLevel; level++)
                             {
                                 TestParams testParams{
@@ -1733,7 +1772,7 @@ void addBasicTestsKHR(tcu::TestCaseGroup *group)
                                     specialIndexUse[specialIndexNdx].useSpecialIndex,
                                     false,
                                     false,
-                                    lossyModes[lossyModeNdx].lossy,
+                                    false,
                                     false,
                                     testFlagMask,
                                     level,
@@ -1747,16 +1786,15 @@ void addBasicTestsKHR(tcu::TestCaseGroup *group)
                                 css << "level_" << level;
                                 const auto testName = css.str();
 
-                                lossyModeGroup->addChild(new OpacityMicromapCase(testCtx, testName, testParams));
+                                modeGroup->addChild(new OpacityMicromapCase(testCtx, testName, testParams));
 
                                 if (testFlagMask == 0u)
                                 {
                                     testParams.nonZeroBase = true;
                                     const auto variantName = testName + "_non_zero_base";
-                                    lossyModeGroup->addChild(new OpacityMicromapCase(testCtx, variantName, testParams));
+                                    modeGroup->addChild(new OpacityMicromapCase(testCtx, variantName, testParams));
                                 }
                             }
-                            modeGroup->addChild(lossyModeGroup.release());
                         }
                         specialGroup->addChild(modeGroup.release());
                     }
