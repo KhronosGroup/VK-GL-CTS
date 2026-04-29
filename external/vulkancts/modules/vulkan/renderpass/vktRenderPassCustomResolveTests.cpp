@@ -2060,7 +2060,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                         resolveImageView,
                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                         VK_ATTACHMENT_LOAD_OP_LOAD,
-                        VK_ATTACHMENT_STORE_OP_STORE,
+                        VK_ATTACHMENT_STORE_OP_DONT_CARE,
                         makeClearValueColor(tcu::Vec4(0.0f)),
                     });
                     colorRenderingAttachmentFormats.push_back(attInfo.attachmentFormat);
@@ -2088,7 +2088,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                         ((isUsed && usedInResolve) ? resolveViews.at(attIndex)->get() : VK_NULL_HANDLE),
                         (isUsed ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED),
                         VK_ATTACHMENT_LOAD_OP_LOAD,
-                        VK_ATTACHMENT_STORE_OP_STORE,
+                        VK_ATTACHMENT_STORE_OP_DONT_CARE,
                         makeClearValueColor(tcu::Vec4(0.0f)),
                     });
                     colorRenderingAttachmentFormats.push_back((isUsed && usedInResolve) ? attInfoPtr->attachmentFormat :
@@ -2107,7 +2107,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                     resolveViews.at(depthStencilAttIndexAspects->index)->get(),
                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                     VK_ATTACHMENT_LOAD_OP_LOAD,
-                    VK_ATTACHMENT_STORE_OP_STORE,
+                    VK_ATTACHMENT_STORE_OP_DONT_CARE,
                     makeClearValueDepthStencil(0.0f, 0u), // Not used.
                 };
 
