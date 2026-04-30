@@ -4810,9 +4810,11 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections &programCollect
                              "  const float x = -1.0 + 4.0 * ((idx & 2)>>1);\n"
                              "  const float y = -1.0 + 4.0 * (idx % 2);\n"
                              "  gl_MeshVerticesEXT[idx].gl_Position = vec4(x, y, 0.0, 1.0);\n"
-                             "  gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
-                             "  mViewIndex[idx] = uvec4(0);\n"
-                             "  mViewIndex[idx].x = gl_ViewIndex;\n"
+                             "  if (idx == 0) {\n"
+                             "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
+                             "    mViewIndex[0] = uvec4(0);\n"
+                             "    mViewIndex[0].x = gl_ViewIndex;\n"
+                             "  }\n"
                              "}\n");
             programCollection.glslSources.add("mesh") << glu::MeshSource(mesh) << buildOptions;
 
