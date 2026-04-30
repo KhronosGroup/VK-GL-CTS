@@ -80,6 +80,7 @@ DE_DECLARE_COMMAND_LINE_OPT(StdinCaseList, bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogFilename, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(RunMode, tcu::RunMode);
 DE_DECLARE_COMMAND_LINE_OPT(ExportFilenamePattern, std::string);
+DE_DECLARE_COMMAND_LINE_OPT(MustpassSpec, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(WatchDog, bool);
 DE_DECLARE_COMMAND_LINE_OPT(CrashHandler, bool);
 DE_DECLARE_COMMAND_LINE_OPT(BaseSeed, int);
@@ -175,7 +176,8 @@ void registerOptions(de::cmdline::Parser &parser)
                                                                         {"stdout-caselist", RUNMODE_DUMP_STDOUT_CASELIST},
                                                                         {"amber-verify", RUNMODE_VERIFY_AMBER_COHERENCY},
                                                                         {"txt-trie", RUNMODE_DUMP_TEXT_TRIE},
-                                                                        {"stdout-trie", RUNMODE_DUMP_STDOUT_TRIE}};
+                                                                        {"stdout-trie", RUNMODE_DUMP_STDOUT_TRIE},
+                                                                        {"gen-mustpass", RUNMODE_GEN_MUSTPASS}};
     static const NamedValue<WindowVisibility> s_visibilites[]        = {{"windowed", WINDOWVISIBILITY_WINDOWED},
                                                                         {"fullscreen", WINDOWVISIBILITY_FULLSCREEN},
                                                                         {"hidden", WINDOWVISIBILITY_HIDDEN}};
@@ -228,6 +230,10 @@ void registerOptions(de::cmdline::Parser &parser)
         << Option<ExportFilenamePattern>(nullptr, "deqp-caselist-export-file",
                                          "Set the target file name pattern for caselist export",
                                          "${packageName}-cases.${typeExtension}")
+        << Option<MustpassSpec>(nullptr, "deqp-mustpass-spec",
+                                "Path to a mustpass spec file describing per-configuration filters and outputs "
+                                "(used with --deqp-runmode=gen-mustpass)",
+                                "")
         << Option<WatchDog>(nullptr, "deqp-watchdog", "Enable test watchdog", s_enableNames, "disable")
         << Option<CrashHandler>(nullptr, "deqp-crashhandler", "Enable crash handling", s_enableNames, "disable")
         << Option<BaseSeed>(nullptr, "deqp-base-seed", "Base seed for test cases that use randomization", "0")
@@ -1232,6 +1238,10 @@ RunMode CommandLine::getRunMode(void) const
 const char *CommandLine::getCaseListExportFile(void) const
 {
     return m_cmdLine.getOption<opt::ExportFilenamePattern>().c_str();
+}
+const char *CommandLine::getMustpassSpec(void) const
+{
+    return m_cmdLine.getOption<opt::MustpassSpec>().c_str();
 }
 WindowVisibility CommandLine::getVisibility(void) const
 {

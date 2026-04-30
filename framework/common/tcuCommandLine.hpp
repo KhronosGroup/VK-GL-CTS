@@ -48,6 +48,7 @@ enum RunMode
     RUNMODE_DUMP_TEXT_TRIE,       //! Test program dumps the list of contained test cases in trie format to a text file.
     RUNMODE_DUMP_STDOUT_TRIE,     //! Test program dumps the list of contained test cases in trie format to stdout.
     RUNMODE_VERIFY_AMBER_COHERENCY, //! Test program verifies that amber tests have coherent capability requirements
+    RUNMODE_GEN_MUSTPASS,           //! Test program generates per-config mustpass files from a spec.
 
     RUNMODE_LAST
 };
@@ -190,6 +191,9 @@ public:
 
     //! Get caselist dump target file pattern (--deqp-caselist-export-file)
     const char *getCaseListExportFile(void) const;
+
+    //! Get path to the mustpass generation spec file (--deqp-mustpass-spec)
+    const char *getMustpassSpec(void) const;
 
     //! Get default window visibility (--deqp-visibility)
     WindowVisibility getVisibility(void) const;

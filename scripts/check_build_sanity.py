@@ -224,11 +224,13 @@ EARLY_SPECIAL_RECIPES = [
 LATE_SPECIAL_RECIPES = [
     ('android-mustpass', [
             RunScript(os.path.join("scripts", "build_android_mustpass.py"),
-                      lambda env: ["--build-dir", os.path.join(env.tmpDir, "android-mustpass")] + (["--verbose"] if env.verbose else [])),
+                      lambda env: ["--build-type", "Release",
+                                    "--build-dir", os.path.join(env.tmpDir, "android-mustpass")] + (["--verbose"] if env.verbose else [])),
         ]),
     ('vulkan-mustpass', [
             RunScript(os.path.join("external", "vulkancts", "scripts", "build_mustpass.py"),
-                      lambda env: ["--build-dir", os.path.join(env.tmpDir, "vulkan-mustpass")] + (["--verbose"] if env.verbose else [])),
+                      lambda env: ["--build-type", "Release",
+                                    "--build-dir", os.path.join(env.tmpDir, "vulkan-mustpass")] + (["--verbose"] if env.verbose else [])),
         ]),
     ('spirv-binaries', [
             RunScript(os.path.join("external", "vulkancts", "scripts", "build_spirv_binaries.py"),

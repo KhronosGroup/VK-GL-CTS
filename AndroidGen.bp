@@ -845,6 +845,7 @@ cc_defaults {
         "framework/common/tcuLibDrm.cpp",
         "framework/common/tcuMatrix.cpp",
         "framework/common/tcuMaybe.cpp",
+        "framework/common/tcuMustpassGen.cpp",
         "framework/common/tcuPlatform.cpp",
         "framework/common/tcuRGBA.cpp",
         "framework/common/tcuRandomValueIterator.cpp",

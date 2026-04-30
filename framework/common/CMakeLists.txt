@@ -91,6 +91,8 @@ set(TCUTIL_SRCS
 	tcuTestHierarchyIterator.hpp
 	tcuTestHierarchyUtil.cpp
 	tcuTestHierarchyUtil.hpp
+	tcuMustpassGen.cpp
+	tcuMustpassGen.hpp
 	tcuAstcUtil.cpp
 	tcuAstcUtil.hpp
 	tcuRasterizationVerifier.cpp
@@ -104,6 +106,7 @@ set(TCUTIL_LIBS
 	qphelper
 	dethread
 	xexml
+	jsoncpp_static
 	${PNG_LIBRARY}
 	)
 
