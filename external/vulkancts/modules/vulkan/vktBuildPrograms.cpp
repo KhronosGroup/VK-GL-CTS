@@ -579,6 +579,8 @@ DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheTruncate, bool);
 DE_DECLARE_COMMAND_LINE_OPT(SpirvOptimize, bool);
 DE_DECLARE_COMMAND_LINE_OPT(SpirvOptimizationRecipe, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(SpirvAllow14, bool);
+DE_DECLARE_COMMAND_LINE_OPT(Fraction, std::string);
+DE_DECLARE_COMMAND_LINE_OPT(LogFilename, std::string);
 
 static const de::cmdline::NamedValue<bool> s_enableNames[] = {{"enable", true}, {"disable", false}};
 
@@ -608,7 +610,11 @@ void registerOptions(de::cmdline::Parser &parser)
            << Option<opt::SpirvOptimize>("o", "deqp-optimize-spirv", "Enable optimization for SPIR-V", s_enableNames,
                                          "disable")
            << Option<opt::SpirvOptimizationRecipe>("p", "deqp-optimization-recipe", "Shader optimization recipe")
-           << Option<opt::SpirvAllow14>("e", "allow-spirv-14", "Allow SPIR-V 1.4 with Vulkan 1.1");
+           << Option<opt::SpirvAllow14>("e", "allow-spirv-14", "Allow SPIR-V 1.4 with Vulkan 1.1")
+           << Option<opt::Fraction>(nullptr, "fraction",
+                                    "Run a fraction of the cases (forwarded as --deqp-fraction N,M)", "")
+           << Option<opt::LogFilename>(nullptr, "log-filename",
+                                       "Write test log to given file (forwarded as --deqp-log-filename)", "");
 }
 
 } // namespace opt
@@ -676,6 +682,18 @@ int main(int argc, const char *argv[])
         {
             deqpArgv.push_back("--deqp-optimization-recipe");
             deqpArgv.push_back(cmdLine.getOption<opt::SpirvOptimizationRecipe>().c_str());
+        }
+
+        if (cmdLine.hasOption<opt::Fraction>() && !cmdLine.getOption<opt::Fraction>().empty())
+        {
+            deqpArgv.push_back("--deqp-fraction");
+            deqpArgv.push_back(cmdLine.getOption<opt::Fraction>().c_str());
+        }
+
+        if (cmdLine.hasOption<opt::LogFilename>() && !cmdLine.getOption<opt::LogFilename>().empty())
+        {
+            deqpArgv.push_back("--deqp-log-filename");
+            deqpArgv.push_back(cmdLine.getOption<opt::LogFilename>().c_str());
         }
 
         if (!deqpCmdLine.parse((int)deqpArgv.size(), &deqpArgv[0]))
