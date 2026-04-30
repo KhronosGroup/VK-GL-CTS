@@ -138,6 +138,11 @@ def readCaseList (filename):
         for line in f:
             if line[:6] == "TEST: ":
                 cases.append(line[6:].strip())
+    # Sort by dot-segment tuple: matches the order a depth-first walk of an
+    # alphabetically-sorted test tree produces, so the upcoming framework
+    # change (sorted insert in TestNode::addChild) leaves these files
+    # untouched.  Vulkan/android pipelines do an equivalent sort already.
+    cases.sort(key=lambda c: c.split('.'))
     return cases
 
 def getCaseList (buildCfg, generator, module):
