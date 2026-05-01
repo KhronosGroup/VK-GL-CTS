@@ -2117,7 +2117,8 @@ MaybeFormatProperties getVideoFormatProperties(const InstanceInterface &vki, VkP
         return ret;
     }
 
-    DE_ASSERT(numVideoFormatInfos > 0);
+    if (numVideoFormatInfos == 0)
+        TCU_THROW(TestError, "vkGetPhysicalDeviceVideoFormatPropertiesKHR returned VK_SUCCESS with zero formats");
 
     ret.items.resize(numVideoFormatInfos);
     for (auto &item : ret.items)
