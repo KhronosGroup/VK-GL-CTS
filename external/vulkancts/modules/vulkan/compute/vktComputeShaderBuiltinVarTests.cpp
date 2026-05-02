@@ -137,23 +137,20 @@ private:
     UVec3 m_numWorkGroups;
 };
 
-class ComputeBuiltinVarInstance : public vkt::TestInstance
+class ComputeBuiltinVarInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     ComputeBuiltinVarInstance(Context &context, const vector<SubCase> &subCases, const glu::DataType varType,
                               const ComputeBuiltinVarCase *builtinVarCase,
                               const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-    virtual tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     const VkDevice m_device;
     const DeviceInterface &m_vki;
-    const VkQueue m_queue;
-    const uint32_t m_queueFamilyIndex;
     vector<SubCase> m_subCases;
     const ComputeBuiltinVarCase *m_builtin_var_case;
-    int m_subCaseNdx;
     const glu::DataType m_varType;
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
@@ -452,184 +449,188 @@ ComputeBuiltinVarInstance::ComputeBuiltinVarInstance(
     Context &context, const vector<SubCase> &subCases, const glu::DataType varType,
     const ComputeBuiltinVarCase *builtinVarCase,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : vkt::TestInstance(context)
+    : vkt::MultiQueueRunnerTestInstance(context, COMPUTE_QUEUE)
     , m_device(m_context.getDevice())
     , m_vki(m_context.getDeviceInterface())
-    , m_queue(context.getUniversalQueue())
-    , m_queueFamilyIndex(context.getUniversalQueueFamilyIndex())
     , m_subCases(subCases)
     , m_builtin_var_case(builtinVarCase)
-    , m_subCaseNdx(0)
     , m_varType(varType)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
 
-tcu::TestStatus ComputeBuiltinVarInstance::iterate(void)
+tcu::TestStatus ComputeBuiltinVarInstance::queuePass(const vkt::QueueData &queueData)
 {
-    std::ostringstream program_name;
-    program_name << s_prefixProgramName << m_subCaseNdx;
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
 
-    const SubCase &subCase      = m_subCases[m_subCaseNdx];
-    const tcu::UVec3 globalSize = subCase.localSize() * subCase.numWorkGroups();
-    const tcu::UVec2 stride(globalSize[0] * globalSize[1], globalSize[0]);
-    const uint32_t sizeOfUniformBuffer = sizeof(stride);
-    const int numScalars               = glu::getDataTypeScalarSize(m_varType);
-    const uint32_t numInvocations      = subCase.localSize()[0] * subCase.localSize()[1] * subCase.localSize()[2] *
-                                    subCase.numWorkGroups()[0] * subCase.numWorkGroups()[1] *
-                                    subCase.numWorkGroups()[2];
-
-    uint32_t resultBufferStride = 0;
-    switch (m_varType)
+    for (int subCaseNdx = 0; subCaseNdx < (int)m_subCases.size(); ++subCaseNdx)
     {
-    case glu::TYPE_UINT:
-        resultBufferStride = sizeof(uint32_t);
-        break;
-    case glu::TYPE_UINT_VEC2:
-        resultBufferStride = sizeof(tcu::UVec2);
-        break;
-    case glu::TYPE_UINT_VEC3:
-    case glu::TYPE_UINT_VEC4:
-        resultBufferStride = sizeof(tcu::UVec4);
-        break;
-    default:
-        DE_FATAL("Illegal data type");
-    }
+        std::ostringstream program_name;
+        program_name << s_prefixProgramName << subCaseNdx;
 
-    const uint32_t resultBufferSize = numInvocations * resultBufferStride;
+        const SubCase &subCase      = m_subCases[subCaseNdx];
+        const tcu::UVec3 globalSize = subCase.localSize() * subCase.numWorkGroups();
+        const tcu::UVec2 stride(globalSize[0] * globalSize[1], globalSize[0]);
+        const uint32_t sizeOfUniformBuffer = sizeof(stride);
+        const int numScalars               = glu::getDataTypeScalarSize(m_varType);
+        const uint32_t numInvocations      = subCase.localSize()[0] * subCase.localSize()[1] * subCase.localSize()[2] *
+                                        subCase.numWorkGroups()[0] * subCase.numWorkGroups()[1] *
+                                        subCase.numWorkGroups()[2];
 
-    // Create result buffer
-    vk::BufferWithMemory uniformBuffer(m_vki, m_device, m_context.getDefaultAllocator(),
-                                       makeBufferCreateInfo(sizeOfUniformBuffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
-                                       MemoryRequirement::HostVisible);
-    vk::BufferWithMemory resultBuffer(m_vki, m_device, m_context.getDefaultAllocator(),
-                                      makeBufferCreateInfo(resultBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
-                                      MemoryRequirement::HostVisible);
+        uint32_t resultBufferStride = 0;
+        switch (m_varType)
+        {
+        case glu::TYPE_UINT:
+            resultBufferStride = sizeof(uint32_t);
+            break;
+        case glu::TYPE_UINT_VEC2:
+            resultBufferStride = sizeof(tcu::UVec2);
+            break;
+        case glu::TYPE_UINT_VEC3:
+        case glu::TYPE_UINT_VEC4:
+            resultBufferStride = sizeof(tcu::UVec4);
+            break;
+        default:
+            DE_FATAL("Illegal data type");
+        }
 
-    {
-        const Allocation &alloc = uniformBuffer.getAllocation();
-        memcpy(alloc.getHostPtr(), &stride, sizeOfUniformBuffer);
-        flushAlloc(m_vki, m_device, alloc);
-    }
+        const uint32_t resultBufferSize = numInvocations * resultBufferStride;
 
-    // Create descriptorSetLayout
-    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
-        DescriptorSetLayoutBuilder()
-            .addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
-            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
-            .build(m_vki, m_device));
+        // Create result buffer
+        vk::BufferWithMemory uniformBuffer(
+            m_vki, m_device, m_context.getDefaultAllocator(),
+            makeBufferCreateInfo(sizeOfUniformBuffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
+            MemoryRequirement::HostVisible);
+        vk::BufferWithMemory resultBuffer(m_vki, m_device, m_context.getDefaultAllocator(),
+                                          makeBufferCreateInfo(resultBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+                                          MemoryRequirement::HostVisible);
 
-    ComputePipelineWrapper pipeline(m_vki, m_device, m_computePipelineConstructionType,
-                                    m_context.getBinaryCollection().get(program_name.str()));
-    pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
-    pipeline.buildPipeline();
+        {
+            const Allocation &alloc = uniformBuffer.getAllocation();
+            memcpy(alloc.getHostPtr(), &stride, sizeOfUniformBuffer);
+            flushAlloc(m_vki, m_device, alloc);
+        }
 
-    const Unique<VkDescriptorPool> descriptorPool(
-        DescriptorPoolBuilder()
-            .addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-            .build(m_vki, m_device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+        // Create descriptorSetLayout
+        const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+            DescriptorSetLayoutBuilder()
+                .addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+                .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+                .build(m_vki, m_device));
 
-    const VkBufferMemoryBarrier bufferBarrier = makeBufferMemoryBarrier(
-        VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0ull, resultBufferSize);
+        ComputePipelineWrapper pipeline(m_vki, m_device, m_computePipelineConstructionType,
+                                        m_context.getBinaryCollection().get(program_name.str()));
+        pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+        pipeline.buildPipeline();
 
-    const Unique<VkCommandPool> cmdPool(makeCommandPool(m_vki, m_device, m_queueFamilyIndex));
-    const Unique<VkCommandBuffer> cmdBuffer(
-        allocateCommandBuffer(m_vki, m_device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+        const Unique<VkDescriptorPool> descriptorPool(
+            DescriptorPoolBuilder()
+                .addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+                .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+                .build(m_vki, m_device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-    // Start recording commands
-    beginCommandBuffer(m_vki, *cmdBuffer);
+        const VkBufferMemoryBarrier bufferBarrier = makeBufferMemoryBarrier(
+            VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0ull, resultBufferSize);
 
-    pipeline.bind(*cmdBuffer);
+        const Unique<VkCommandPool> cmdPool(makeCommandPool(m_vki, m_device, queueFamilyIndex));
+        const Unique<VkCommandBuffer> cmdBuffer(
+            allocateCommandBuffer(m_vki, m_device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-    // Create descriptor set
-    const Unique<VkDescriptorSet> descriptorSet(
-        makeDescriptorSet(m_vki, m_device, *descriptorPool, *descriptorSetLayout));
+        // Start recording commands
+        beginCommandBuffer(m_vki, *cmdBuffer);
 
-    const VkDescriptorBufferInfo resultDescriptorInfo = makeDescriptorBufferInfo(*resultBuffer, 0ull, resultBufferSize);
-    const VkDescriptorBufferInfo uniformDescriptorInfo =
-        makeDescriptorBufferInfo(*uniformBuffer, 0ull, sizeOfUniformBuffer);
+        pipeline.bind(*cmdBuffer);
 
-    DescriptorSetUpdateBuilder()
-        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
-                     VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uniformDescriptorInfo)
-        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u),
-                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultDescriptorInfo)
-        .update(m_vki, m_device);
+        // Create descriptor set
+        const Unique<VkDescriptorSet> descriptorSet(
+            makeDescriptorSet(m_vki, m_device, *descriptorPool, *descriptorSetLayout));
 
-    m_vki.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
-                                &descriptorSet.get(), 0u, nullptr);
+        const VkDescriptorBufferInfo resultDescriptorInfo =
+            makeDescriptorBufferInfo(*resultBuffer, 0ull, resultBufferSize);
+        const VkDescriptorBufferInfo uniformDescriptorInfo =
+            makeDescriptorBufferInfo(*uniformBuffer, 0ull, sizeOfUniformBuffer);
 
-    // Dispatch indirect compute command
-    m_vki.cmdDispatch(*cmdBuffer, subCase.numWorkGroups()[0], subCase.numWorkGroups()[1], subCase.numWorkGroups()[2]);
+        DescriptorSetUpdateBuilder()
+            .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uniformDescriptorInfo)
+            .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u),
+                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultDescriptorInfo)
+            .update(m_vki, m_device);
 
-    m_vki.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                             (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
+        m_vki.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
+                                    &descriptorSet.get(), 0u, nullptr);
 
-    // End recording commands
-    endCommandBuffer(m_vki, *cmdBuffer);
+        // Dispatch indirect compute command
+        m_vki.cmdDispatch(*cmdBuffer, subCase.numWorkGroups()[0], subCase.numWorkGroups()[1],
+                          subCase.numWorkGroups()[2]);
 
-    // Wait for command buffer execution finish
-    submitCommandsAndWait(m_vki, m_device, m_queue, *cmdBuffer);
+        m_vki.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
 
-    const Allocation &resultAlloc = resultBuffer.getAllocation();
-    invalidateAlloc(m_vki, m_device, resultAlloc);
+        // End recording commands
+        endCommandBuffer(m_vki, *cmdBuffer);
 
-    const uint8_t *ptr = reinterpret_cast<uint8_t *>(resultAlloc.getHostPtr());
+        // Wait for command buffer execution finish
+        submitCommandsAndWait(m_vki, m_device, queue, *cmdBuffer);
 
-    int numFailed          = 0;
-    const int maxLogPrints = 10;
+        const Allocation &resultAlloc = resultBuffer.getAllocation();
+        invalidateAlloc(m_vki, m_device, resultAlloc);
 
-    tcu::TestContext &testCtx = m_context.getTestContext();
+        const uint8_t *ptr = reinterpret_cast<uint8_t *>(resultAlloc.getHostPtr());
+
+        int numFailed          = 0;
+        const int maxLogPrints = 10;
+
+        tcu::TestContext &testCtx = m_context.getTestContext();
 
 #ifdef CTS_USES_VULKANSC
-    if (testCtx.getCommandLine().isSubProcess())
+        if (testCtx.getCommandLine().isSubProcess())
 #endif // CTS_USES_VULKANSC
-    {
-        for (uint32_t groupZ = 0; groupZ < subCase.numWorkGroups().z(); groupZ++)
-            for (uint32_t groupY = 0; groupY < subCase.numWorkGroups().y(); groupY++)
-                for (uint32_t groupX = 0; groupX < subCase.numWorkGroups().x(); groupX++)
-                    for (uint32_t localZ = 0; localZ < subCase.localSize().z(); localZ++)
-                        for (uint32_t localY = 0; localY < subCase.localSize().y(); localY++)
-                            for (uint32_t localX = 0; localX < subCase.localSize().x(); localX++)
-                            {
-                                const UVec3 refGroupID(groupX, groupY, groupZ);
-                                const UVec3 refLocalID(localX, localY, localZ);
-                                const UVec3 refGlobalID = refGroupID * subCase.localSize() + refLocalID;
-
-                                const uint32_t refOffset =
-                                    stride.x() * refGlobalID.z() + stride.y() * refGlobalID.y() + refGlobalID.x();
-
-                                const UVec3 refValue = m_builtin_var_case->computeReference(
-                                    subCase.numWorkGroups(), subCase.localSize(), refGroupID, refLocalID);
-
-                                const uint32_t *resPtr = (const uint32_t *)(ptr + refOffset * resultBufferStride);
-                                const UVec3 resValue   = readResultVec(resPtr, numScalars);
-
-                                if (!compareNumComponents(refValue, resValue, numScalars))
+        {
+            for (uint32_t groupZ = 0; groupZ < subCase.numWorkGroups().z(); groupZ++)
+                for (uint32_t groupY = 0; groupY < subCase.numWorkGroups().y(); groupY++)
+                    for (uint32_t groupX = 0; groupX < subCase.numWorkGroups().x(); groupX++)
+                        for (uint32_t localZ = 0; localZ < subCase.localSize().z(); localZ++)
+                            for (uint32_t localY = 0; localY < subCase.localSize().y(); localY++)
+                                for (uint32_t localX = 0; localX < subCase.localSize().x(); localX++)
                                 {
-                                    if (numFailed < maxLogPrints)
-                                        testCtx.getLog()
-                                            << TestLog::Message << "ERROR: comparison failed at offset " << refOffset
-                                            << ": expected " << LogComps(refValue, numScalars) << ", got "
-                                            << LogComps(resValue, numScalars) << TestLog::EndMessage;
-                                    else if (numFailed == maxLogPrints)
-                                        testCtx.getLog() << TestLog::Message << "..." << TestLog::EndMessage;
+                                    const UVec3 refGroupID(groupX, groupY, groupZ);
+                                    const UVec3 refLocalID(localX, localY, localZ);
+                                    const UVec3 refGlobalID = refGroupID * subCase.localSize() + refLocalID;
 
-                                    numFailed += 1;
+                                    const uint32_t refOffset =
+                                        stride.x() * refGlobalID.z() + stride.y() * refGlobalID.y() + refGlobalID.x();
+
+                                    const UVec3 refValue = m_builtin_var_case->computeReference(
+                                        subCase.numWorkGroups(), subCase.localSize(), refGroupID, refLocalID);
+
+                                    const uint32_t *resPtr = (const uint32_t *)(ptr + refOffset * resultBufferStride);
+                                    const UVec3 resValue   = readResultVec(resPtr, numScalars);
+
+                                    if (!compareNumComponents(refValue, resValue, numScalars))
+                                    {
+                                        if (numFailed < maxLogPrints)
+                                            testCtx.getLog()
+                                                << TestLog::Message << "ERROR: comparison failed at offset "
+                                                << refOffset << ": expected " << LogComps(refValue, numScalars)
+                                                << ", got " << LogComps(resValue, numScalars) << TestLog::EndMessage;
+                                        else if (numFailed == maxLogPrints)
+                                            testCtx.getLog() << TestLog::Message << "..." << TestLog::EndMessage;
+
+                                        numFailed += 1;
+                                    }
                                 }
-                            }
-    }
+        }
 
-    testCtx.getLog() << TestLog::Message << (numInvocations - numFailed) << " / " << numInvocations << " values passed"
-                     << TestLog::EndMessage;
+        testCtx.getLog() << TestLog::Message << (numInvocations - numFailed) << " / " << numInvocations
+                         << " values passed" << TestLog::EndMessage;
 
-    if (numFailed > 0)
-        return tcu::TestStatus::fail("Comparison failed");
+        if (numFailed > 0)
+            return tcu::TestStatus::fail("Comparison failed");
 
-    m_subCaseNdx += 1;
-    return (m_subCaseNdx < (int)m_subCases.size()) ? tcu::TestStatus::incomplete() :
-                                                     tcu::TestStatus::pass("Comparison succeeded");
+    } // end for subCaseNdx
+    return tcu::TestStatus::pass("Comparison succeeded");
 }
 
 class ComputeShaderBuiltinVarTests : public tcu::TestCaseGroup

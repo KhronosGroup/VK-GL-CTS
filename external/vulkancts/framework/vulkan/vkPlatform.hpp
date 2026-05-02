@@ -138,7 +138,6 @@ protected:
 #include "vkDeviceFunctionPointers.inl"
     };
 
-    bool m_computeOnlyMode;
     Functions m_vk;
 };
 
@@ -286,7 +285,6 @@ protected:
 };
 
 #endif // CTS_USES_VULKANSC
-#define THROW_NOT_SUPPORTED_COMPUTE_ONLY() TCU_THROW(NotSupportedError, "Not compute-only")
 
 // Defined in vkWsiPlatform.hpp
 namespace wsi

@@ -1148,9 +1148,6 @@ void VideoDevice::checkSupport(Context &context, const VideoCodecOperationFlags 
     DE_UNREF(videoCodecOperation);
     TCU_THROW(NotSupportedError, "Video tests are disabled via DEQP_DISABLE_VK_VIDEO_TESTS");
 #else
-    if (context.getTestContext().getCommandLine().isComputeOnly())
-        TCU_THROW(NotSupportedError, "Video tests are not supported in compute-only mode");
-
     DE_ASSERT(videoCodecOperation != 0 && isVideoOperation(videoCodecOperation));
 
     if (isVideoOperation(videoCodecOperation))

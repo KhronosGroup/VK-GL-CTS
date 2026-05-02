@@ -205,6 +205,7 @@ public:
     bool isDefaultContext() const;
     std::string getDeviceID() const;
     DevCaps::QueueInfo getDeviceQueueInfo(uint32_t queueIndex);
+    uint32_t getDeviceQueueCount() const;
 
     void collectAndReportDebugMessages();
 
@@ -307,7 +308,7 @@ private:
     TestInstance &operator=(const TestInstance &);
 };
 
-enum QueueCapabilities
+enum QueueCapabilities : int
 {
     GRAPHICS_QUEUE = 0,
     COMPUTE_QUEUE,

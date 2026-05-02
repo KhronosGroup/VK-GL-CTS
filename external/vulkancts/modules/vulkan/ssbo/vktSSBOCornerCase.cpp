@@ -147,18 +147,18 @@ vk::Move<vk::VkBuffer> createBuffer(Context &context, vk::VkDeviceSize bufferSiz
 
     return vk::createBuffer(vk, vkDevice, &bufferInfo);
 }
-class SSBOCornerCaseInstance : public TestInstance
+class SSBOCornerCaseInstance : public MultiQueueRunnerTestInstance
 {
 public:
     SSBOCornerCaseInstance(Context &context, int testSize);
     virtual ~SSBOCornerCaseInstance(void);
-    virtual tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     int m_testSize;
 };
 SSBOCornerCaseInstance::SSBOCornerCaseInstance(Context &context, int testSize)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context, COMPUTE_QUEUE)
     , m_testSize(testSize)
 {
 }
@@ -166,12 +166,12 @@ SSBOCornerCaseInstance::~SSBOCornerCaseInstance(void)
 {
 }
 
-tcu::TestStatus SSBOCornerCaseInstance::iterate(void)
+tcu::TestStatus SSBOCornerCaseInstance::queuePass(const vkt::QueueData &queueData)
 {
     const vk::DeviceInterface &vk   = m_context.getDeviceInterface();
     const vk::VkDevice device       = m_context.getDevice();
-    const vk::VkQueue queue         = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const vk::VkQueue queue         = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
 
     vk::Move<vk::VkBuffer> buffer;
     de::MovePtr<vk::Allocation> alloc;

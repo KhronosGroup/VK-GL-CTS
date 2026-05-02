@@ -45,7 +45,7 @@ struct Params
 {
 };
 
-class OpSelectDifferentStridesInstance : public TestInstance
+class OpSelectDifferentStridesInstance : public vkt::MultiQueueRunnerTestInstance
 {
     const Params m_params;
     struct PushConstant
@@ -56,10 +56,12 @@ class OpSelectDifferentStridesInstance : public TestInstance
                       PushConstant const &pcBar, uint32_t elementCount, std::string &errorMessage) const;
 
 public:
-    OpSelectDifferentStridesInstance(Context &context, Params const &params) : TestInstance(context), m_params(params)
+    OpSelectDifferentStridesInstance(Context &context, Params const &params)
+        : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
+        , m_params(params)
     {
     }
-    virtual tcu::TestStatus iterate() override;
+    virtual tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 };
 
 class OpSelectDifferentStridesCase : public TestCase
@@ -261,6 +263,8 @@ void OpSelectDifferentStridesCase::initDeviceCapabilities(DevCaps &caps)
 
     if (!caps.addFeature(&VkPhysicalDeviceFeatures::shaderInt64))
         trowNotSupported("shaderInt64");
+
+    caps.resetQueuesForMultiQueueRunner(vkt::COMPUTE_QUEUE);
 }
 
 void OpSelectDifferentStridesCase::initPrograms(SourceCollections &programCollection) const
@@ -295,12 +299,12 @@ VkDeviceAddress getBufferAddress(const DeviceInterface &di, VkDevice device, VkB
     return di.getBufferDeviceAddress(device, &addrInfo);
 }
 
-tcu::TestStatus OpSelectDifferentStridesInstance::iterate()
+tcu::TestStatus OpSelectDifferentStridesInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &di       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     const uint32_t pc0set[4]{0u, 3u, 7u, 5u};

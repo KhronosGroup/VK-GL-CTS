@@ -137,13 +137,13 @@ private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-class SharedVarTestInstance : public vkt::TestInstance
+class SharedVarTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     SharedVarTestInstance(Context &context, const tcu::IVec3 &localSize, const tcu::IVec3 &workSize,
                           const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     const tcu::IVec3 m_localSize;
@@ -205,19 +205,19 @@ TestInstance *SharedVarTest::createInstance(Context &context) const
 
 SharedVarTestInstance::SharedVarTestInstance(Context &context, const tcu::IVec3 &localSize, const tcu::IVec3 &workSize,
                                              const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
     , m_localSize(localSize)
     , m_workSize(workSize)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
 
-tcu::TestStatus SharedVarTestInstance::iterate(void)
+tcu::TestStatus SharedVarTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     const int workGroupSize  = multiplyComponents(m_localSize);
@@ -326,13 +326,13 @@ private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-class SharedVarAtomicOpTestInstance : public vkt::TestInstance
+class SharedVarAtomicOpTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     SharedVarAtomicOpTestInstance(Context &context, const tcu::IVec3 &localSize, const tcu::IVec3 &workSize,
                                   const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     const tcu::IVec3 m_localSize;
@@ -394,19 +394,19 @@ TestInstance *SharedVarAtomicOpTest::createInstance(Context &context) const
 SharedVarAtomicOpTestInstance::SharedVarAtomicOpTestInstance(
     Context &context, const tcu::IVec3 &localSize, const tcu::IVec3 &workSize,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
     , m_localSize(localSize)
     , m_workSize(workSize)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
 
-tcu::TestStatus SharedVarAtomicOpTestInstance::iterate(void)
+tcu::TestStatus SharedVarAtomicOpTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     const int workGroupSize  = multiplyComponents(m_localSize);
@@ -515,13 +515,13 @@ private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-class SSBOLocalBarrierTestInstance : public vkt::TestInstance
+class SSBOLocalBarrierTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     SSBOLocalBarrierTestInstance(Context &context, const tcu::IVec3 &localSize, const tcu::IVec3 &workSize,
                                  const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     const tcu::IVec3 m_localSize;
@@ -586,19 +586,19 @@ TestInstance *SSBOLocalBarrierTest::createInstance(Context &context) const
 SSBOLocalBarrierTestInstance::SSBOLocalBarrierTestInstance(
     Context &context, const tcu::IVec3 &localSize, const tcu::IVec3 &workSize,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
     , m_localSize(localSize)
     , m_workSize(workSize)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
 
-tcu::TestStatus SSBOLocalBarrierTestInstance::iterate(void)
+tcu::TestStatus SSBOLocalBarrierTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     const int workGroupSize  = multiplyComponents(m_localSize);
@@ -711,13 +711,13 @@ private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-class CopyImageToSSBOTestInstance : public vkt::TestInstance
+class CopyImageToSSBOTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     CopyImageToSSBOTestInstance(Context &context, const tcu::IVec2 &localSize, const tcu::IVec2 &imageSize,
                                 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     const tcu::IVec2 m_localSize;
@@ -769,19 +769,19 @@ TestInstance *CopyImageToSSBOTest::createInstance(Context &context) const
 CopyImageToSSBOTestInstance::CopyImageToSSBOTestInstance(
     Context &context, const tcu::IVec2 &localSize, const tcu::IVec2 &imageSize,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
     , m_localSize(localSize)
     , m_imageSize(imageSize)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
 
-tcu::TestStatus CopyImageToSSBOTestInstance::iterate(void)
+tcu::TestStatus CopyImageToSSBOTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     // Create an image
@@ -930,13 +930,13 @@ private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-class CopySSBOToImageTestInstance : public vkt::TestInstance
+class CopySSBOToImageTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     CopySSBOToImageTestInstance(Context &context, const tcu::IVec2 &localSize, const tcu::IVec2 &imageSize,
                                 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     const tcu::IVec2 m_localSize;
@@ -988,16 +988,18 @@ TestInstance *CopySSBOToImageTest::createInstance(Context &context) const
 CopySSBOToImageTestInstance::CopySSBOToImageTestInstance(
     Context &context, const tcu::IVec2 &localSize, const tcu::IVec2 &imageSize,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
     , m_localSize(localSize)
     , m_imageSize(imageSize)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
 
-tcu::TestStatus CopySSBOToImageTestInstance::iterate(void)
+tcu::TestStatus CopySSBOToImageTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     ContextCommonData data     = m_context.getContextCommonData();
+    data.qfIndex               = queueData.familyIndex;
+    data.queue                 = queueData.handle;
     const DeviceInterface &vkd = data.vkd;
 
     // Create an image, a view, and the output buffer
@@ -1603,13 +1605,13 @@ private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-class InvertSSBOInPlaceTestInstance : public vkt::TestInstance
+class InvertSSBOInPlaceTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     InvertSSBOInPlaceTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &workSize,
                                   const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     const uint32_t m_numValues;
@@ -1668,19 +1670,19 @@ TestInstance *InvertSSBOInPlaceTest::createInstance(Context &context) const
 InvertSSBOInPlaceTestInstance::InvertSSBOInPlaceTestInstance(
     Context &context, const uint32_t numValues, const tcu::IVec3 &workSize,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
     , m_numValues(numValues)
     , m_workSize(workSize)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
 
-tcu::TestStatus InvertSSBOInPlaceTestInstance::iterate(void)
+tcu::TestStatus InvertSSBOInPlaceTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     // Create an input/output buffer
@@ -1847,17 +1849,17 @@ void UntypedPointerTest::initPrograms(SourceCollections &sourceCollections) cons
     sourceCollections.spirvAsmSources.add("comp") << src << spvOptions;
 }
 
-class UntypedPointerTestInstance : public vkt::TestInstance
+class UntypedPointerTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     UntypedPointerTestInstance(Context &context,
                                const vk::ComputePipelineConstructionType computePipelineConstructionType)
-        : TestInstance(context)
+        : vkt::MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
         , m_computePipelineConstructionType(computePipelineConstructionType)
     {
     }
 
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     const vk::ComputePipelineConstructionType m_computePipelineConstructionType;
@@ -1868,8 +1870,9 @@ TestInstance *UntypedPointerTest::createInstance(Context &context) const
     return new UntypedPointerTestInstance(context, m_computePipelineConstructionType);
 }
 
-tcu::TestStatus UntypedPointerTestInstance::iterate(void)
+tcu::TestStatus UntypedPointerTestInstance::queuePass(const vkt::QueueData &queueData)
 {
+    DE_UNREF(queueData);
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
 
@@ -1909,13 +1912,13 @@ private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-class WriteToMultipleSSBOTestInstance : public vkt::TestInstance
+class WriteToMultipleSSBOTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     WriteToMultipleSSBOTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &workSize,
                                     const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     const uint32_t m_numValues;
@@ -1987,19 +1990,19 @@ TestInstance *WriteToMultipleSSBOTest::createInstance(Context &context) const
 WriteToMultipleSSBOTestInstance::WriteToMultipleSSBOTestInstance(
     Context &context, const uint32_t numValues, const tcu::IVec3 &workSize,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
     , m_numValues(numValues)
     , m_workSize(workSize)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
 
-tcu::TestStatus WriteToMultipleSSBOTestInstance::iterate(void)
+tcu::TestStatus WriteToMultipleSSBOTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     // Create two output buffers
@@ -2124,13 +2127,13 @@ private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-class ReadUnboundSSBOTestInstance : public vkt::TestInstance
+class ReadUnboundSSBOTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     ReadUnboundSSBOTestInstance(Context &context,
                                 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
@@ -2178,17 +2181,17 @@ TestInstance *ReadUnboundSSBOTest::createInstance(Context &context) const
 
 ReadUnboundSSBOTestInstance::ReadUnboundSSBOTestInstance(
     Context &context, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
 
-tcu::TestStatus ReadUnboundSSBOTestInstance::iterate(void)
+tcu::TestStatus ReadUnboundSSBOTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     // Create an output buffer
@@ -2320,13 +2323,13 @@ private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-class SSBOBarrierTestInstance : public vkt::TestInstance
+class SSBOBarrierTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     SSBOBarrierTestInstance(Context &context, const tcu::IVec3 &workSize,
                             const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     const tcu::IVec3 m_workSize;
@@ -2389,18 +2392,18 @@ TestInstance *SSBOBarrierTest::createInstance(Context &context) const
 SSBOBarrierTestInstance::SSBOBarrierTestInstance(
     Context &context, const tcu::IVec3 &workSize,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
     , m_workSize(workSize)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
 
-tcu::TestStatus SSBOBarrierTestInstance::iterate(void)
+tcu::TestStatus SSBOBarrierTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     // Create a work buffer used by both shaders
@@ -2567,13 +2570,13 @@ private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-class ImageAtomicOpTestInstance : public vkt::TestInstance
+class ImageAtomicOpTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     ImageAtomicOpTestInstance(Context &context, const uint32_t localSize, const tcu::IVec2 &imageSize,
                               const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     const uint32_t m_localSize;
@@ -2629,19 +2632,19 @@ TestInstance *ImageAtomicOpTest::createInstance(Context &context) const
 ImageAtomicOpTestInstance::ImageAtomicOpTestInstance(
     Context &context, const uint32_t localSize, const tcu::IVec2 &imageSize,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
     , m_localSize(localSize)
     , m_imageSize(imageSize)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
 
-tcu::TestStatus ImageAtomicOpTestInstance::iterate(void)
+tcu::TestStatus ImageAtomicOpTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     // Create an image
@@ -2797,13 +2800,13 @@ private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-class ImageBarrierTestInstance : public vkt::TestInstance
+class ImageBarrierTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     ImageBarrierTestInstance(Context &context, const tcu::IVec2 &imageSize,
                              const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     const tcu::IVec2 m_imageSize;
@@ -2860,18 +2863,18 @@ TestInstance *ImageBarrierTest::createInstance(Context &context) const
 ImageBarrierTestInstance::ImageBarrierTestInstance(
     Context &context, const tcu::IVec2 &imageSize,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
     , m_imageSize(imageSize)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
 
-tcu::TestStatus ImageBarrierTestInstance::iterate(void)
+tcu::TestStatus ImageBarrierTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     // Create an image used by both shaders
@@ -3493,14 +3496,14 @@ private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-class SequentialDispatchTestInstance : public vkt::TestInstance
+class SequentialDispatchTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     SequentialDispatchTestInstance(Context &context,
                                    const vk::ComputePipelineConstructionType computePipelineConstructionType);
     ~SequentialDispatchTestInstance(void);
 
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
@@ -3551,7 +3554,7 @@ TestInstance *SequentialDispatchTest::createInstance(Context &context) const
 
 SequentialDispatchTestInstance::SequentialDispatchTestInstance(
     Context &context, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
@@ -3560,12 +3563,12 @@ SequentialDispatchTestInstance::~SequentialDispatchTestInstance(void)
 {
 }
 
-tcu::TestStatus SequentialDispatchTestInstance::iterate(void)
+tcu::TestStatus SequentialDispatchTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     // Indirect dispatch buffer.
@@ -4408,12 +4411,12 @@ protected:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-class EmptyWorkGroupInstance : public vkt::TestInstance
+class EmptyWorkGroupInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     EmptyWorkGroupInstance(Context &context, const tcu::UVec3 &dispatchSize,
                            const vk::ComputePipelineConstructionType computePipelineConstructionType)
-        : vkt::TestInstance(context)
+        : vkt::MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
         , m_dispatchSize(dispatchSize)
         , m_computePipelineConstructionType(computePipelineConstructionType)
     {
@@ -4422,7 +4425,7 @@ public:
     {
     }
 
-    tcu::TestStatus iterate(void) override;
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 protected:
     const tcu::UVec3 m_dispatchSize;
@@ -4460,13 +4463,13 @@ void EmptyWorkGroupCase::initPrograms(vk::SourceCollections &programCollection) 
     programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
 }
 
-tcu::TestStatus EmptyWorkGroupInstance::iterate(void)
+tcu::TestStatus EmptyWorkGroupInstance::queuePass(const vkt::QueueData &queueData)
 {
     const auto &vkd       = m_context.getDeviceInterface();
     const auto device     = m_context.getDevice();
     auto &alloc           = m_context.getDefaultAllocator();
-    const auto queueIndex = m_context.getUniversalQueueFamilyIndex();
-    const auto queue      = m_context.getUniversalQueue();
+    const auto queueIndex = queueData.familyIndex;
+    const auto queue      = queueData.handle;
 
     const auto verifBufferSize = static_cast<VkDeviceSize>(sizeof(uint32_t));
     const auto verifBufferInfo = makeBufferCreateInfo(verifBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
@@ -4577,7 +4580,7 @@ private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-class MaxWorkGroupSizeInstance : public vkt::TestInstance
+class MaxWorkGroupSizeInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     MaxWorkGroupSizeInstance(Context &context, const MaxWorkGroupSizeTest::Params &params,
@@ -4586,7 +4589,7 @@ public:
     {
     }
 
-    virtual tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     MaxWorkGroupSizeTest::Params m_params;
@@ -4673,21 +4676,21 @@ void MaxWorkGroupSizeTest::checkSupport(Context &context) const
 MaxWorkGroupSizeInstance::MaxWorkGroupSizeInstance(
     Context &context, const MaxWorkGroupSizeTest::Params &params,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : vkt::TestInstance(context)
+    : vkt::MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
     , m_params(params)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
 }
 
-tcu::TestStatus MaxWorkGroupSizeInstance::iterate(void)
+tcu::TestStatus MaxWorkGroupSizeInstance::queuePass(const vkt::QueueData &queueData)
 {
     const auto &vki           = m_context.getInstanceInterface();
     const auto &vkd           = m_context.getDeviceInterface();
     const auto physicalDevice = m_context.getPhysicalDevice();
     const auto device         = m_context.getDevice();
     auto &alloc               = m_context.getDefaultAllocator();
-    const auto queueIndex     = m_context.getUniversalQueueFamilyIndex();
-    const auto queue          = m_context.getUniversalQueue();
+    const auto queueIndex     = queueData.familyIndex;
+    const auto queue          = queueData.handle;
     auto &log                 = m_context.getTestContext().getLog();
 
     const auto axis        = MaxWorkGroupSizeTest::getIndex(m_params.axis);
@@ -5118,13 +5121,13 @@ private:
     InstType m_instType;
 };
 
-class ReplicatedCompositesTestInstance : public vkt::TestInstance
+class ReplicatedCompositesTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     ReplicatedCompositesTestInstance(Context &context, const CompositeType compositeType, const InstType instType,
                                      const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
@@ -5413,19 +5416,19 @@ TestInstance *ReplicatedCompositesTest::createInstance(Context &context) const
 ReplicatedCompositesTestInstance::ReplicatedCompositesTestInstance(
     Context &context, const CompositeType compositeType, const InstType instType,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
     , m_computePipelineConstructionType(computePipelineConstructionType)
     , m_compositeType(compositeType)
     , m_instType(instType)
 {
 }
 
-tcu::TestStatus ReplicatedCompositesTestInstance::iterate(void)
+tcu::TestStatus ReplicatedCompositesTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     // Create a buffer and host-visible memory for it

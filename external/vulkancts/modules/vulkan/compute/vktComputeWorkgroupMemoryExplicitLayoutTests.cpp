@@ -141,7 +141,8 @@ void checkSupportWithParams(Context &context, const CheckSupportParams &params)
 }
 
 tcu::TestStatus runCompute(Context &context, uint32_t workgroupSize,
-                           const vk::ComputePipelineConstructionType computePipelineConstructionType)
+                           const vk::ComputePipelineConstructionType computePipelineConstructionType, VkQueue queue,
+                           uint32_t queueFamilyIndex)
 {
     const DeviceInterface &vk = context.getDeviceInterface();
     const VkDevice device     = context.getDevice();
@@ -182,9 +183,8 @@ tcu::TestStatus runCompute(Context &context, uint32_t workgroupSize,
     pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
     pipeline.buildPipeline();
 
-    const VkQueue queue             = context.getUniversalQueue();
-    Move<VkCommandPool> cmdPool     = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-                                                        context.getUniversalQueueFamilyIndex());
+    Move<VkCommandPool> cmdPool =
+        createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
     Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
     DescriptorSetUpdateBuilder setUpdateBuilder;
@@ -374,20 +374,21 @@ public:
     virtual void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
 
-    class Instance : public vkt::TestInstance
+    class Instance : public vkt::MultiQueueRunnerTestInstance
     {
     public:
         Instance(Context &context, const CaseDef &caseDef,
                  const vk::ComputePipelineConstructionType computePipelineConstructionType)
-            : TestInstance(context)
+            : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
             , m_caseDef(caseDef)
             , m_computePipelineConstructionType(computePipelineConstructionType)
         {
         }
 
-        tcu::TestStatus iterate(void)
+        tcu::TestStatus queuePass(const vkt::QueueData &queueData) override
         {
-            return runCompute(m_context, 1u, m_computePipelineConstructionType);
+            return runCompute(m_context, 1u, m_computePipelineConstructionType, queueData.handle,
+                              queueData.familyIndex);
         }
 
     private:
@@ -707,18 +708,19 @@ public:
     virtual void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
 
-    class Instance : public vkt::TestInstance
+    class Instance : public vkt::MultiQueueRunnerTestInstance
     {
     public:
         Instance(Context &context, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-            : TestInstance(context)
+            : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
             , m_computePipelineConstructionType(computePipelineConstructionType)
         {
         }
 
-        tcu::TestStatus iterate(void)
+        tcu::TestStatus queuePass(const vkt::QueueData &queueData) override
         {
-            return runCompute(m_context, 1u, m_computePipelineConstructionType);
+            return runCompute(m_context, 1u, m_computePipelineConstructionType, queueData.handle,
+                              queueData.familyIndex);
         }
 
     private:
@@ -970,20 +972,21 @@ public:
     virtual void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
 
-    class Instance : public vkt::TestInstance
+    class Instance : public vkt::MultiQueueRunnerTestInstance
     {
     public:
         Instance(Context &context, const CaseDef &caseDef,
                  const vk::ComputePipelineConstructionType computePipelineConstructionType)
-            : TestInstance(context)
+            : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
             , m_caseDef(caseDef)
             , m_computePipelineConstructionType(computePipelineConstructionType)
         {
         }
 
-        tcu::TestStatus iterate(void)
+        tcu::TestStatus queuePass(const vkt::QueueData &queueData) override
         {
-            return runCompute(m_context, 1u, m_computePipelineConstructionType);
+            return runCompute(m_context, 1u, m_computePipelineConstructionType, queueData.handle,
+                              queueData.familyIndex);
         }
 
     private:
@@ -1122,18 +1125,19 @@ public:
     virtual void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
 
-    class Instance : public vkt::TestInstance
+    class Instance : public vkt::MultiQueueRunnerTestInstance
     {
     public:
         Instance(Context &context, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-            : TestInstance(context)
+            : MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
             , m_computePipelineConstructionType(computePipelineConstructionType)
         {
         }
 
-        tcu::TestStatus iterate(void)
+        tcu::TestStatus queuePass(const vkt::QueueData &queueData) override
         {
-            return runCompute(m_context, 1u, m_computePipelineConstructionType);
+            return runCompute(m_context, 1u, m_computePipelineConstructionType, queueData.handle,
+                              queueData.familyIndex);
         }
 
     private:

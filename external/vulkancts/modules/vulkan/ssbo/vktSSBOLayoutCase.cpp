@@ -2237,14 +2237,14 @@ vk::Move<vk::VkBuffer> createBuffer(Context &context, vk::VkDeviceSize bufferSiz
 
 // SSBOLayoutCaseInstance
 
-class SSBOLayoutCaseInstance : public TestInstance
+class SSBOLayoutCaseInstance : public MultiQueueRunnerTestInstance
 {
 public:
     SSBOLayoutCaseInstance(Context &context, SSBOLayoutCase::BufferMode bufferMode, const ShaderInterface &interface,
                            const BufferLayout &refLayout, const RefDataStorage &initialData,
                            const RefDataStorage &writeData, bool usePhysStorageBuffer, bool use64BitIndexing);
     virtual ~SSBOLayoutCaseInstance(void);
-    virtual tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     SSBOLayoutCase::BufferMode m_bufferMode;
@@ -2268,7 +2268,7 @@ SSBOLayoutCaseInstance::SSBOLayoutCaseInstance(Context &context, SSBOLayoutCase:
                                                const ShaderInterface &interface, const BufferLayout &refLayout,
                                                const RefDataStorage &initialData, const RefDataStorage &writeData,
                                                bool usePhysStorageBuffer, bool use64BitIndexing)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context, COMPUTE_QUEUE)
     , m_bufferMode(bufferMode)
     , m_interface(interface)
     , m_refLayout(refLayout)
@@ -2288,13 +2288,16 @@ SSBOLayoutCaseInstance::~SSBOLayoutCaseInstance(void)
     m_writeData.data.clear();
 }
 
-tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
+tcu::TestStatus SSBOLayoutCaseInstance::queuePass(const vkt::QueueData &queueData)
 {
-    // todo: add compute stage availability check
+    // Clear accumulated buffers from any prior pass.
+    m_uniformBuffers.clear();
+    m_uniformAllocs.clear();
+
     const vk::DeviceInterface &vk   = m_context.getDeviceInterface();
     const vk::VkDevice device       = m_context.getDevice();
-    const vk::VkQueue queue         = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const vk::VkQueue queue         = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
 
     // Create descriptor set
     const uint32_t acBufferSize = 1024;

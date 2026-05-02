@@ -3860,10 +3860,9 @@ tcu::TestStatus deviceMandatoryFeatures(Context &context)
     {
         const InstanceInterface &vki    = context.getInstanceInterface();
         VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
-        const auto &cmdLine             = context.getTestContext().getCommandLine();
         const auto &vulkan14Features    = context.getDeviceVulkan14Features();
 
-        if (!cmdLine.isComputeOnly() && (vulkan14Features.hostImageCopy == VK_FALSE))
+        if (vulkan14Features.hostImageCopy == VK_FALSE)
         {
             // find graphics and transfer queues
             std::optional<size_t> graphicsQueueNdx;

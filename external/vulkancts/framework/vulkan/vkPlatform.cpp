@@ -140,9 +140,9 @@ VkResult InstanceDriverSC::createDevice(VkPhysicalDevice physicalDevice, const V
 
 DeviceDriver::DeviceDriver(const PlatformInterface &platformInterface, VkInstance instance, VkDevice device,
                            uint32_t usedApiVersion, const tcu::CommandLine &cmdLine)
-    : m_computeOnlyMode(cmdLine.isComputeOnly())
 {
     DE_UNREF(usedApiVersion);
+    DE_UNREF(cmdLine);
     deMemset(&m_vk, 0, sizeof(m_vk));
 
     m_vk.getDeviceProcAddr =

@@ -228,6 +228,8 @@ struct hasPnextOfVoidPtr<X, std::void_t<decltype(std::declval<X>().pNext)>>
 {
 };
 
+enum QueueCapabilities : int;
+
 // The DevCaps class encapsulates the requirements for creating a new device.
 // A key attribute is the DevCaps::id field, which the framework relies on to
 // distinguish between a default device and a custom device. By default, this
@@ -265,6 +267,10 @@ class DevCaps
         QueueInfo_ getQueue(const vk::DeviceInterface &, vk::VkDevice, uint32_t queueIndex,
                             bool isDefaultContext) const;
         const AllocatorParams_ &getAllocatorCreateParams() const;
+        uint32_t getQueueCount() const
+        {
+            return static_cast<uint32_t>(familyToQueueIndices.size());
+        }
         RuntimeData_() = default;
         RuntimeData_(const DevCaps &caps); // calls resetQueues
 
@@ -455,6 +461,12 @@ public:
     {
         resetQueues(infos, N);
     }
+    void resetQueues(const std::vector<QueueCreateInfo> &infos)
+    {
+        resetQueues(infos.data(), static_cast<uint32_t>(infos.size()));
+    }
+
+    void resetQueuesForMultiQueueRunner(QueueCapabilities caps);
 
     void setAllocatorParams(const AllocatorParams &allocatorCreateParams)
     {

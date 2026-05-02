@@ -554,20 +554,6 @@ tcu::TestStatus AmberTestInstance::iterate(void)
     amber_options.config         = createEngineConfig(m_context, m_customDevice);
     amber_options.execution_type = amber::ExecutionType::kExecute;
 
-    // Amber should not execute any graphic related shaders when using --deqp-compute-only=enable flag
-    if (m_context.getTestContext().getCommandLine().isComputeOnly())
-    {
-        std::vector<amber::ShaderInfo> shaders_info = m_recipe->GetShaderInfo();
-
-        for (amber::ShaderInfo info : shaders_info)
-        {
-            if (info.type != amber::ShaderType::kShaderTypeCompute)
-            {
-                TCU_THROW(NotSupportedError, "Non compute shaders are not allow when using --deqp-compute-only=enable");
-            }
-        }
-    }
-
     // Check for extensions as declared by the Amber script itself.  Throw an internal
     // error if that's more demanding.
     r = am.AreAllRequirementsSupported(m_recipe, &amber_options);

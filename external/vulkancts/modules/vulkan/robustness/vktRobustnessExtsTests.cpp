@@ -3340,7 +3340,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
     memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-    if (!m_context.getTestContext().getCommandLine().isComputeOnly() && !m_data.useComputeQueue)
+    if (!m_data.useComputeQueue)
         memBarrier.dstAccessMask |= VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, m_data.allPipelineStages, 0, 1, &memBarrier, 0,
                           nullptr, 0, nullptr);

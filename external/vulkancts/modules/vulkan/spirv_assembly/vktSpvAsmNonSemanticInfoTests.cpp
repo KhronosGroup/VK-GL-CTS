@@ -74,8 +74,6 @@ class SpvAsmSpirvNonSemanticInfoBasicInstance : public ComputeShaderSpec, public
 public:
     SpvAsmSpirvNonSemanticInfoBasicInstance(Context &ctx, TestType type);
 
-    tcu::TestStatus iterate(void);
-
 protected:
     TestType m_testType;
 };
@@ -85,11 +83,6 @@ SpvAsmSpirvNonSemanticInfoBasicInstance::SpvAsmSpirvNonSemanticInfoBasicInstance
     , SpvAsmComputeShaderInstance(ctx, *this)
     , m_testType(type)
 {
-}
-
-tcu::TestStatus SpvAsmSpirvNonSemanticInfoBasicInstance::iterate(void)
-{
-    return SpvAsmComputeShaderInstance::iterate();
 }
 
 class SpvAsmSpirvNonSemanticInfoBasicCase : public TestCase

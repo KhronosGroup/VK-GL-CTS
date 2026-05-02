@@ -198,7 +198,7 @@ VkShaderStageFlagBits getShaderStageFlag(const Stage stage)
 }
 #endif
 
-VkShaderStageFlags getAllShaderStagesFor(Stage stage, tcu::TestContext &testCtx)
+VkShaderStageFlags getAllShaderStagesFor(Stage stage)
 {
 #ifndef CTS_USES_VULKANSC
     if (stage == STAGE_RAYGEN_NV)
@@ -213,13 +213,10 @@ VkShaderStageFlags getAllShaderStagesFor(Stage stage, tcu::TestContext &testCtx)
     DE_UNREF(stage);
 #endif // CTS_USES_VULKANSC
 
-    if (testCtx.getCommandLine().isComputeOnly())
-        return VK_SHADER_STAGE_COMPUTE_BIT;
-
     return (VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 }
 
-VkPipelineStageFlags getAllPipelineStagesFor(Stage stage, tcu::TestContext &testCtx)
+VkPipelineStageFlags getAllPipelineStagesFor(Stage stage)
 {
 #ifndef CTS_USES_VULKANSC
     if (stage == STAGE_RAYGEN_NV)
@@ -234,9 +231,6 @@ VkPipelineStageFlags getAllPipelineStagesFor(Stage stage, tcu::TestContext &test
 #else
     DE_UNREF(stage);
 #endif // CTS_USES_VULKANSC
-
-    if (testCtx.getCommandLine().isComputeOnly())
-        return VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 
     return (VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
@@ -292,12 +286,12 @@ struct CaseDef
     std::shared_ptr<RandomLayout> randomLayout;
 };
 
-class DescriptorSetRandomTestInstance : public TestInstance
+class DescriptorSetRandomTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     DescriptorSetRandomTestInstance(Context &context, const std::shared_ptr<CaseDef> &data);
     ~DescriptorSetRandomTestInstance(void);
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     // Shared pointer because the test case and the test instance need to share the random layout information. Specifically, the
@@ -307,7 +301,8 @@ private:
 };
 
 DescriptorSetRandomTestInstance::DescriptorSetRandomTestInstance(Context &context, const std::shared_ptr<CaseDef> &data)
-    : vkt::TestInstance(context)
+    : vkt::MultiQueueRunnerTestInstance(context,
+                                        data->stage == STAGE_COMPUTE ? vkt::COMPUTE_QUEUE : vkt::GRAPHICS_QUEUE)
     , m_data_ptr(data)
     , m_data(*m_data_ptr.get())
 {
@@ -1469,14 +1464,17 @@ void appendShaderStageCreateInfo(std::vector<VkPipelineShaderStageCreateInfo> &v
     vec.push_back(info);
 }
 
-tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
+tcu::TestStatus DescriptorSetRandomTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const InstanceInterface &vki          = m_context.getInstanceInterface();
     const DeviceInterface &vk             = m_context.getDeviceInterface();
     const VkDevice device                 = m_context.getDevice();
     const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
     Allocator &allocator                  = m_context.getDefaultAllocator();
-    const uint32_t queueFamilyIndex       = m_context.getUniversalQueueFamilyIndex();
+
+    const VkFlags barrierPipelineStages =
+        (m_data.stage == STAGE_COMPUTE) ? (VkFlags)VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : m_data.allPipelineStages;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
 
     deRandom rnd;
     VkPhysicalDeviceProperties2 properties = getPhysicalDeviceExtensionProperties(vki, physicalDevice);
@@ -1844,8 +1842,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
     // written to from the shader, store a -1 in it instead. Skip inline uniform blocks and use images for input attachments and
     // storage images.
 
-    Move<VkCommandPool> cmdPool     = createCommandPool(vk, device, 0, queueFamilyIndex);
-    const VkQueue queue             = m_context.getUniversalQueue();
+    Move<VkCommandPool> cmdPool     = createCommandPool(vk, device, 0, queueData.familyIndex);
     Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
     const VkImageSubresourceRange clearRange = {
@@ -2024,7 +2021,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
                                           1, &preStorageImageBarrier);
                     vk.cmdClearColorImage(*cmdBuffer, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue, 1,
                                           &clearRange);
-                    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, m_data.allPipelineStages,
+                    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, barrierPipelineStages,
                                           (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postStorageImageBarrier);
 
                     ++storageImgIndex;
@@ -2979,7 +2976,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
 
     memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, m_data.allPipelineStages, 0, 1, &memBarrier, 0,
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, barrierPipelineStages, 0, 1, &memBarrier, 0,
                           nullptr, 0, nullptr);
 
     if (m_data.stage == STAGE_COMPUTE)
@@ -3022,7 +3019,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
 
     memBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
     memBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-    vk.cmdPipelineBarrier(*cmdBuffer, m_data.allPipelineStages, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &memBarrier, 0,
+    vk.cmdPipelineBarrier(*cmdBuffer, barrierPipelineStages, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &memBarrier, 0,
                           nullptr, 0, nullptr);
 
     const VkBufferImageCopy copyRegion = makeBufferImageCopy(
@@ -3091,12 +3088,12 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
     };
 
     // Add a barrier to read stored data from shader writes in descriptor memory for other types of descriptors.
-    vk.cmdPipelineBarrier(*cmdBuffer, m_data.allPipelineStages, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u,
+    vk.cmdPipelineBarrier(*cmdBuffer, barrierPipelineStages, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u,
                           &descriptorBufferBarrier, 0u, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 
-    submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+    submitCommandsAndWait(vk, device, queueData.handle, cmdBuffer.get());
 
     // Re-enable watchdog interval timer here to favor virtualized vulkan
     // implementation that asynchronously creates the pipeline on the host.
@@ -3318,8 +3315,8 @@ tcu::TestCaseGroup *createDescriptorSetRandomTests(tcu::TestContext &testCtx)
                                     for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
                                     {
                                         const Stage currentStage  = static_cast<Stage>(stageCases[stageNdx].count);
-                                        const auto shaderStages   = getAllShaderStagesFor(currentStage, testCtx);
-                                        const auto pipelineStages = getAllPipelineStagesFor(currentStage, testCtx);
+                                        const auto shaderStages   = getAllShaderStagesFor(currentStage);
+                                        const auto pipelineStages = getAllPipelineStagesFor(currentStage);
 
                                         de::MovePtr<tcu::TestCaseGroup> stageGroup(
                                             new tcu::TestCaseGroup(testCtx, stageCases[stageNdx].name));

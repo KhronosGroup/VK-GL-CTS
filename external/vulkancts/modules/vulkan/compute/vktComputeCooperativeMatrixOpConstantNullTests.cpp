@@ -224,14 +224,12 @@ struct Params
     bool allowDynamicConfigurations;
 };
 
-class CoopMtxOpConstantNullInstance : public TestInstance
+class CoopMtxOpConstantNullInstance : public MultiQueueRunnerTestInstance
 {
     const Params m_params;
     const bool m_allowDynamicConfigurations;
     const std::vector<VkCooperativeMatrixPropertiesKHR> m_iterations;
     const std::vector<VkCooperativeMatrixPropertiesKHR> m_skippedIterations;
-    uint32_t m_iteration;
-    uint32_t m_failCount;
 
 public:
     struct Executor
@@ -250,7 +248,8 @@ public:
             }
         };
 
-        Executor(Context &context, const VkCooperativeMatrixPropertiesKHR &conf, const Params &params);
+        Executor(Context &context, const VkCooperativeMatrixPropertiesKHR &conf, const Params &params, VkQueue queue,
+                 uint32_t queueFamilyIndex);
         void execute(Matrices targetMatrix);
         std::vector<float> getMatrix(Matrices m) const;
         const VkCooperativeMatrixPropertiesKHR &getConfiguration() const
@@ -282,16 +281,14 @@ public:
 
 public:
     CoopMtxOpConstantNullInstance(Context &context, const Params &params, bool allowDynamicConfigurations)
-        : TestInstance(context)
+        : MultiQueueRunnerTestInstance(context, COMPUTE_QUEUE)
         , m_params(params)
         , m_allowDynamicConfigurations(allowDynamicConfigurations)
         , m_iterations(genIterations())
         , m_skippedIterations(genSkippedIterations())
-        , m_iteration(0u)
-        , m_failCount(0u)
     {
     }
-    virtual tcu::TestStatus iterate() override;
+    virtual tcu::TestStatus queuePass(const QueueData &queueData) override;
     std::vector<VkCooperativeMatrixPropertiesKHR> genIterations() const;
     std::vector<VkCooperativeMatrixPropertiesKHR> genSkippedIterations() const;
     void logConfiguration(const VkCooperativeMatrixPropertiesKHR &conf, uint32_t number, bool skipped,
@@ -1506,7 +1503,7 @@ std::vector<float> CoopMtxOpConstantNullInstance::Executor::getMatrix(Matrices m
 }
 
 CoopMtxOpConstantNullInstance::Executor::Executor(Context &context, const VkCooperativeMatrixPropertiesKHR &conf,
-                                                  const Params &params)
+                                                  const Params &params, VkQueue queue, uint32_t queueFamilyIndex)
     : m_context(context)
     , m_configuration(conf)
 {
@@ -1611,9 +1608,8 @@ CoopMtxOpConstantNullInstance::Executor::Executor(Context &context, const VkCoop
         m_pipeline->buildPipeline();
     }
 
-    m_queue         = context.getDeviceQueueInfo(0).queue;
-    m_commandPool   = createCommandPool(di, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-                                        context.getDeviceQueueInfo(0).familyIndex);
+    m_queue         = queue;
+    m_commandPool   = createCommandPool(di, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
     m_commandBuffer = allocateCommandBuffer(di, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
 
@@ -1885,80 +1881,81 @@ std::vector<VkCooperativeMatrixPropertiesKHR> CoopMtxOpConstantNullInstance::gen
     return iterations;
 }
 
-tcu::TestStatus CoopMtxOpConstantNullInstance::iterate()
+tcu::TestStatus CoopMtxOpConstantNullInstance::queuePass(const QueueData &queueData)
 {
     tcu::TestLog &log = m_context.getTestContext().getLog();
 
-    const VkCooperativeMatrixPropertiesKHR configuration = m_iterations[m_iteration];
-    logConfiguration(configuration, m_iteration, false, log);
+    uint32_t iteration      = 0u;
+    uint32_t failCount      = 0u;
+    const auto viableCount  = m_iterations.size();
+    const auto skippedCount = m_skippedIterations.size();
 
-    std::string errorMessage;
-    Executor executor(m_context, configuration, m_params);
-
-    executor.execute(m_params.matrix);
-
-    bool all_ok = verifyResult(executor, m_params.matrix, errorMessage);
-    if (all_ok)
+    for (; iteration < viableCount; ++iteration)
     {
-        log << tcu::TestLog::Message << "Configuration " << m_iteration << " - normal multiplication: PASS"
-            << tcu::TestLog::EndMessage;
-    }
-    else
-    {
-        log << tcu::TestLog::Message << "Configuration " << m_iteration
-            << " - normal multiplication failed: " << errorMessage << tcu::TestLog::EndMessage;
+        const VkCooperativeMatrixPropertiesKHR &configuration = m_iterations[iteration];
+        logConfiguration(configuration, iteration, false, log);
 
-        auto stream = log << tcu::TestLog::Message;
-        executor.dumpMatrices(stream, true);
-        stream << tcu::TestLog::EndMessage;
+        std::string errorMessage;
+        Executor executor(m_context, configuration, m_params, queueData.handle, queueData.familyIndex);
 
-        m_failCount = m_failCount + 1u;
-    }
-
-    executor.execute(m_params.matrix);
-    bool sel_ok = verifyResult(executor, m_params.matrix, errorMessage);
-    if (sel_ok)
-    {
-        log << tcu::TestLog::Message << "Configuration " << m_iteration << " - OpConstantNull: PASS"
-            << tcu::TestLog::EndMessage;
-    }
-    else
-    {
-        log << tcu::TestLog::Message << "Configuration " << m_iteration << " - OpConstantNull failed: " << errorMessage
-            << tcu::TestLog::EndMessage;
+        executor.execute(m_params.matrix);
+        bool all_ok = verifyResult(executor, m_params.matrix, errorMessage);
         if (all_ok)
         {
-            m_failCount = m_failCount + 1u;
+            log << tcu::TestLog::Message << "Configuration " << iteration << " - normal multiplication: PASS"
+                << tcu::TestLog::EndMessage;
+        }
+        else
+        {
+            log << tcu::TestLog::Message << "Configuration " << iteration
+                << " - normal multiplication failed: " << errorMessage << tcu::TestLog::EndMessage;
+
+            auto stream = log << tcu::TestLog::Message;
+            executor.dumpMatrices(stream, true);
+            stream << tcu::TestLog::EndMessage;
+
+            failCount = failCount + 1u;
+        }
+
+        executor.execute(m_params.matrix);
+        bool sel_ok = verifyResult(executor, m_params.matrix, errorMessage);
+        if (sel_ok)
+        {
+            log << tcu::TestLog::Message << "Configuration " << iteration << " - OpConstantNull: PASS"
+                << tcu::TestLog::EndMessage;
+        }
+        else
+        {
+            log << tcu::TestLog::Message << "Configuration " << iteration
+                << " - OpConstantNull failed: " << errorMessage << tcu::TestLog::EndMessage;
+            if (all_ok)
+            {
+                failCount = failCount + 1u;
+            }
         }
     }
 
-    if (const auto viableCount = m_iterations.size(); ++m_iteration >= viableCount)
+    if (skippedCount)
     {
-        const auto skippedCount = m_skippedIterations.size();
-        if (skippedCount)
-        {
-            for (uint32_t skipped = 0u; skipped << skippedCount; ++skipped)
-                logConfiguration(m_skippedIterations[skipped], skipped, true, log);
-        }
+        for (uint32_t skipped = 0u; skipped < skippedCount; ++skipped)
+            logConfiguration(m_skippedIterations[skipped], skipped, true, log);
+    }
 
-        std::ostringstream finalMessage;
-        if (m_failCount)
-        {
-            finalMessage << m_failCount << " from " << viableCount;
-            if (skippedCount)
-                finalMessage << ", skipped " << skippedCount;
-            finalMessage.flush();
-            return tcu::TestStatus::fail(finalMessage.str());
-        }
-
-        finalMessage << m_iteration << " from " << viableCount;
+    std::ostringstream finalMessage;
+    if (failCount)
+    {
+        finalMessage << failCount << " from " << viableCount;
         if (skippedCount)
             finalMessage << ", skipped " << skippedCount;
         finalMessage.flush();
-        return tcu::TestStatus::pass(finalMessage.str());
+        return tcu::TestStatus::fail(finalMessage.str());
     }
 
-    return tcu::TestStatus::incomplete();
+    finalMessage << iteration << " from " << viableCount;
+    if (skippedCount)
+        finalMessage << ", skipped " << skippedCount;
+    finalMessage.flush();
+    return tcu::TestStatus::pass(finalMessage.str());
 }
 
 } // unnamed namespace

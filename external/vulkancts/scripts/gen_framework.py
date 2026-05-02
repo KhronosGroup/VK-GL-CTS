@@ -1184,18 +1184,6 @@ class InitFunctionPointersGenerator(CTSGenerator):
         for v in self.resultDict.values():
             self.write(v)
 
-# List pre filled manually with commands forbidden for computation only implementations
-computeOnlyForbiddenCommands = [
-    "destroyRenderPass",
-    "createRenderPass2",
-    "createRenderPass",
-    "createGraphicsPipelines"
-]
-computeOnlyRestrictedCommands = {
-    "createComputePipelines"  : "\t\tfor (uint32_t i=0; i<createInfoCount; ++i)\n\t\t\tif ((pCreateInfos[i].stage.stage & VK_SHADER_STAGE_ALL_GRAPHICS) != 0) THROW_NOT_SUPPORTED_COMPUTE_ONLY();",
-    "createBuffer"            : "\t\tif ((pCreateInfo->usage & ( VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT )) !=0) THROW_NOT_SUPPORTED_COMPUTE_ONLY();",
-}
-
 class FuncPtrInterfaceImplGenerator(CTSGenerator):
     def __init__(self, ctsLists, _):
         CTSGenerator.__init__(self, ctsLists)
@@ -1222,15 +1210,6 @@ class FuncPtrInterfaceImplGenerator(CTSGenerator):
             yield ""
             yield "%s %sDriver::%s (%s) const" % (function.returnType, processedClassName, functionInterfaceName, argListToStr(function.params))
             yield "{"
-            # Check for compute only forbidden commands
-            if functionInterfaceName in computeOnlyForbiddenCommands:
-                yield "    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();"
-            # Check for compute only restricted commands
-            if functionInterfaceName in computeOnlyRestrictedCommands:
-                yield "\tif( m_computeOnlyMode )"
-                yield "\t{"
-                yield computeOnlyRestrictedCommands[functionInterfaceName]
-                yield "\t}"
             # Special case for vkEnumerateInstanceVersion
             if function.name == "vkEnumerateInstanceVersion":
                 yield "    if (m_vk.enumerateInstanceVersion)"
@@ -1266,18 +1245,6 @@ class FuncPtrInterfaceImplGenerator(CTSGenerator):
             yield "}\n"
 
     def generate(self):
-        # populate compute only forbidden commands
-        for fun in self.cts.commands:
-            if "VK_QUEUE_GRAPHICS_BIT" in fun.queues and not ("VK_QUEUE_COMPUTE_BIT" in fun.queues):
-                # remove the 'vk' prefix and change the first character of the remaining string to lowercase
-                commandName = fun.name[2:3].lower() + fun.name[3:]
-                computeOnlyForbiddenCommands.append(commandName)
-
-                # if the command has an alias, also add it
-                if fun.alias:
-                    alias_name_without_vk = fun.alias[2:3].lower() + fun.alias[3:]
-                    computeOnlyForbiddenCommands.append(alias_name_without_vk)
-
         self.write(INL_HEADER)
         for l in self.makeFuncPtrInterfaceImpl():
             self.write(l)
@@ -1369,15 +1336,6 @@ class FuncPtrInterfaceSCImplGenerator(CTSGenerator):
             yield ""
             yield "%s DeviceDriverSC::%s (%s) const" % (function.returnType, ifaceName, argListToStr(function.params))
             yield "{"
-            # Check for compute only forbidden commands
-            if ifaceName in computeOnlyForbiddenCommands:
-                yield "\tif( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();"
-            # Check for compute only restricted commands
-            if ifaceName in computeOnlyRestrictedCommands:
-                yield "\tif( m_computeOnlyMode )"
-                yield "\t{"
-                yield computeOnlyRestrictedCommands[ifaceName]
-                yield "\t}"
             if ( ifaceName in self.normFuncs ) or ( ifaceName in self.statFuncs ):
                 yield "\tstd::lock_guard<std::mutex> lock(functionMutex);"
             if ifaceName != "getDeviceProcAddr" :

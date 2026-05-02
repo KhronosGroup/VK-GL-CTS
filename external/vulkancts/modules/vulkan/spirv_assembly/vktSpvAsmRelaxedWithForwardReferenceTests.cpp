@@ -64,8 +64,6 @@ class SpvAsmSpirvRelaxedForwardReferenceBasicInstance : public ComputeShaderSpec
 public:
     SpvAsmSpirvRelaxedForwardReferenceBasicInstance(Context &ctx, const std::string &shader);
 
-    tcu::TestStatus iterate(void);
-
 protected:
     std::string m_shaderCode;
 };
@@ -76,11 +74,6 @@ SpvAsmSpirvRelaxedForwardReferenceBasicInstance::SpvAsmSpirvRelaxedForwardRefere
     , SpvAsmComputeShaderInstance(ctx, *this)
     , m_shaderCode(shader)
 {
-}
-
-tcu::TestStatus SpvAsmSpirvRelaxedForwardReferenceBasicInstance::iterate(void)
-{
-    return SpvAsmComputeShaderInstance::iterate();
 }
 
 class SpvAsmSpirvRelaxedForwardReferenceBasicCase : public TestCase

@@ -160,12 +160,12 @@ static CustomDevice createBufferDeviceAddressCaptureDevice(Context &context, con
     return instance.createCustomDevice(&deviceCreateInfo);
 }
 
-class BufferAddressTestInstance : public TestInstance
+class BufferAddressTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     BufferAddressTestInstance(Context &context, const CaseDef &data);
     ~BufferAddressTestInstance(void);
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
     virtual void fillBuffer(const std::vector<uint8_t *> &cpuAddrs, const std::vector<uint64_t> &gpuAddrs,
                             uint32_t bufNum, uint32_t curDepth) const;
 
@@ -180,7 +180,7 @@ private:
 };
 
 BufferAddressTestInstance::BufferAddressTestInstance(Context &context, const CaseDef &data)
-    : vkt::TestInstance(context)
+    : vkt::MultiQueueRunnerTestInstance(context, data.stage == STAGE_COMPUTE ? vkt::COMPUTE_QUEUE : vkt::GRAPHICS_QUEUE)
     , m_data(data)
 {
 }
@@ -623,7 +623,7 @@ VkBufferCreateInfo makeBufferCreateInfo(const void *pNext, const VkDeviceSize bu
     return bufferCreateInfo;
 }
 
-tcu::TestStatus BufferAddressTestInstance::iterate(void)
+tcu::TestStatus BufferAddressTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const InstanceWrapper instance(m_context);
     DeviceWrapper device(m_context);
@@ -633,14 +633,11 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
     Allocator &allocator               = device.getAllocator();
     const bool useKHR                  = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 
-    const bool isComputeOnly = m_context.getTestContext().getCommandLine().isComputeOnly();
-    VkFlags allShaderStages =
-        isComputeOnly ? VK_SHADER_STAGE_COMPUTE_BIT :
-                        VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-    VkFlags allPipelineStages = isComputeOnly ?
-                                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT :
-                                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
-                                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    VkFlags allShaderStages   = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    VkFlags allPipelineStages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    const VkFlags barrierPipelineStages =
+        (m_data.stage == STAGE_COMPUTE) ? (VkFlags)VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : allPipelineStages;
 
 #if ENABLE_RAYTRACING
     if (m_data.stage == STAGE_RAYGEN)
@@ -910,8 +907,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
     for (uint32_t i = 0; i < numBuffers; ++i)
         flushAlloc(vk, device, *allocations[i]);
 
-    const VkQueue queue             = m_context.getUniversalQueue();
-    Move<VkCommandPool> cmdPool     = createCommandPool(vk, device, 0, m_context.getUniversalQueueFamilyIndex());
+    Move<VkCommandPool> cmdPool     = createCommandPool(vk, device, 0, queueData.familyIndex);
     Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
     beginCommandBuffer(vk, *cmdBuffer, 0u);
@@ -1325,8 +1321,8 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
 
     memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, allPipelineStages, 0, 1, &memBarrier, 0, nullptr,
-                          0, nullptr);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, barrierPipelineStages, 0, 1, &memBarrier, 0,
+                          nullptr, 0, nullptr);
 
     if (m_data.stage == STAGE_COMPUTE)
     {
@@ -1356,8 +1352,8 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
 
     memBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
     memBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-    vk.cmdPipelineBarrier(*cmdBuffer, allPipelineStages, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &memBarrier, 0, nullptr,
-                          0, nullptr);
+    vk.cmdPipelineBarrier(*cmdBuffer, barrierPipelineStages, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &memBarrier, 0,
+                          nullptr, 0, nullptr);
 
     const VkBufferImageCopy copyRegion = makeBufferImageCopy(
         makeExtent3D(DIM, DIM, 1u), makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
@@ -1365,7 +1361,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
 
     endCommandBuffer(vk, *cmdBuffer);
 
-    submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+    submitCommandsAndWait(vk, device, queueData.handle, cmdBuffer.get());
 
     uint32_t *ptr = (uint32_t *)copyBuffer->getAllocation().getHostPtr();
     invalidateAlloc(vk, device, copyBuffer->getAllocation());

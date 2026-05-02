@@ -106,10 +106,6 @@ std::string getShaderStageName(VkShaderStageFlagBits stage)
 
 void checkSupportForFormatBlit(Context &context, VkFormat format)
 {
-    // Blit image command not allowed when using --deqp-compute-only=enable
-    if (context.getTestContext().getCommandLine().isComputeOnly())
-        THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-
     const InstanceInterface &vki      = context.getInstanceInterface();
     const VkPhysicalDevice physDevice = context.getPhysicalDevice();
 

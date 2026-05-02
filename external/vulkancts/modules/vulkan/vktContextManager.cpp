@@ -302,10 +302,116 @@ void DevCaps::reset()
     m_features.clear();
     setOwnExtensions();
 
-    const VkQueueFlags requiredFlags = m_contextManager->getCommandLine().isComputeOnly() ?
-                                           VkQueueFlags(VK_QUEUE_COMPUTE_BIT) :
-                                           (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+    const auto &vki            = m_contextManager->getInstanceInterface();
+    const auto physDev         = m_contextManager->getPhysicalDevice();
+    VkQueueFlags requiredFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+    try
+    {
+        findQueueFamilyIndexWithCaps(vki, physDev, requiredFlags);
+    }
+    catch (const tcu::NotSupportedError &)
+    {
+        requiredFlags = VK_QUEUE_COMPUTE_BIT;
+    }
     resetQueues({{requiredFlags, 0, 1u, 1.0f}});
+}
+
+void DevCaps::resetQueuesForMultiQueueRunner(QueueCapabilities caps)
+{
+    const auto &vki    = m_contextManager->getInstanceInterface();
+    const auto physDev = m_contextManager->getPhysicalDevice();
+
+    if (caps == COMPUTE_QUEUE)
+    {
+        bool hasUniversal        = false;
+        bool hasDedicatedCompute = false;
+
+        try
+        {
+            findQueueFamilyIndexWithCaps(vki, physDev, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+            hasUniversal = true;
+            try
+            {
+                findQueueFamilyIndexWithCaps(vki, physDev, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT);
+                hasDedicatedCompute = true;
+            }
+            catch (const tcu::NotSupportedError &)
+            {
+            }
+        }
+        catch (const tcu::NotSupportedError &)
+        {
+        }
+
+        if (hasUniversal && hasDedicatedCompute)
+        {
+            QueueCreateInfo infos[]{
+                {VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 0, 1u, 1.0f},
+                {VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT, 1u, 1.0f},
+            };
+            resetQueues(infos);
+        }
+        else if (hasUniversal)
+        {
+            resetQueues({{VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 0, 1u, 1.0f}});
+        }
+        else
+        {
+            resetQueues({{VK_QUEUE_COMPUTE_BIT, 0, 1u, 1.0f}});
+        }
+    }
+    else if (caps == TRANSFER_QUEUE)
+    {
+        bool hasUniversal         = false;
+        bool hasDedicatedCompute  = false;
+        bool hasDedicatedTransfer = false;
+
+        try
+        {
+            findQueueFamilyIndexWithCaps(vki, physDev, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+            hasUniversal = true;
+        }
+        catch (const tcu::NotSupportedError &)
+        {
+        }
+
+        if (hasUniversal)
+        {
+            try
+            {
+                findQueueFamilyIndexWithCaps(vki, physDev, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT);
+                hasDedicatedCompute = true;
+            }
+            catch (const tcu::NotSupportedError &)
+            {
+            }
+        }
+
+        try
+        {
+            findQueueFamilyIndexWithCaps(vki, physDev, VK_QUEUE_TRANSFER_BIT,
+                                         VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+            hasDedicatedTransfer = true;
+        }
+        catch (const tcu::NotSupportedError &)
+        {
+        }
+
+        std::vector<QueueCreateInfo> infos;
+        if (hasUniversal)
+            infos.push_back({VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 0, 1u, 1.0f});
+        else
+            infos.push_back({VK_QUEUE_COMPUTE_BIT, 0, 1u, 1.0f}); // compute-only hardware fallback
+        if (hasDedicatedCompute)
+            infos.push_back({VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT, 1u, 1.0f});
+        if (hasDedicatedTransfer)
+            infos.push_back({VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 1u, 1.0f});
+        resetQueues(infos);
+    }
+    else if (caps == GRAPHICS_QUEUE)
+    {
+        resetQueues({{VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 0, 1u, 1.0f}});
+    }
 }
 
 template <class Stream>
@@ -911,9 +1017,8 @@ Move<VkDevice> ContextManager::createDevice(const DevCaps &caps, DevCaps::Runtim
     const InstanceInterface &vki                           = getInstanceInterface();
     const VkPhysicalDevice physicalDevice                  = getPhysicalDevice();
     const VkInstance instance                              = getInstanceHandle();
-    const uint32_t universalQueueIndex                     = findQueueFamilyIndexWithCaps(
-        vki, physicalDevice,
-        cmdLine.isComputeOnly() ? VK_QUEUE_COMPUTE_BIT : VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+    const uint32_t universalQueueIndex =
+        findQueueFamilyIndexWithCaps(vki, physicalDevice, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 
     // queues block
     std::vector<float> queuePriorities;

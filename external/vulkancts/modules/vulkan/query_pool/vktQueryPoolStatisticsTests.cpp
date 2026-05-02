@@ -648,6 +648,7 @@ protected:
                parm.groupSize.z();
     }
     const std::vector<ParametersCompute> &m_parameters;
+    uint32_t m_queueIndex{0};
 };
 
 ComputeInvocationsTestInstance::ComputeInvocationsTestInstance(Context &context,
@@ -660,10 +661,9 @@ ComputeInvocationsTestInstance::ComputeInvocationsTestInstance(Context &context,
 
 tcu::TestStatus ComputeInvocationsTestInstance::iterate(void)
 {
-    const uint32_t queueFamilyIndex = m_context.getDeviceQueueInfo(0u).familyIndex;
-    const DeviceInterface &vk       = m_context.getDeviceInterface();
-    const VkDevice device           = m_context.getDevice();
-    uint32_t maxSize                = 0u;
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    uint32_t maxSize          = 0u;
 
     for (size_t parametersNdx = 0; parametersNdx < m_parameters.size(); ++parametersNdx)
         maxSize = deMaxu32(maxSize, getComputeExecution(m_parameters[parametersNdx]));
@@ -707,10 +707,17 @@ tcu::TestStatus ComputeInvocationsTestInstance::iterate(void)
                      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo)
         .update(vk, device);
 
-    const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
-    const Unique<VkCommandPool> cmdPool(createCommandPool(vk, device, &cmdPoolCreateInfo));
-
-    return executeTest(*cmdPool, *pipelineLayout, *descriptorSet, buffer, bufferSizeBytes);
+    const uint32_t queueCount = m_context.getDeviceQueueCount();
+    for (uint32_t qi = 0; qi < queueCount; ++qi)
+    {
+        m_queueIndex = qi;
+        const CmdPoolCreateInfo cmdPoolCreateInfo(m_context.getDeviceQueueInfo(qi).familyIndex);
+        const Unique<VkCommandPool> cmdPool(createCommandPool(vk, device, &cmdPoolCreateInfo));
+        const tcu::TestStatus result = executeTest(*cmdPool, *pipelineLayout, *descriptorSet, buffer, bufferSizeBytes);
+        if (result.getCode() != QP_TEST_RESULT_PASS)
+            return result;
+    }
+    return tcu::TestStatus::pass("Pass");
 }
 
 tcu::TestStatus ComputeInvocationsTestInstance::executeTest(const VkCommandPool &cmdPool,
@@ -720,7 +727,7 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest(const VkCommandPool 
 {
     const DeviceInterface &vk                        = m_context.getDeviceInterface();
     const VkDevice device                            = m_context.getDevice();
-    const VkQueue queue                              = m_context.getDeviceQueueInfo(0u).queue;
+    const VkQueue queue                              = m_context.getDeviceQueueInfo(m_queueIndex).queue;
     const VkBufferMemoryBarrier computeFinishBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,                // VkStructureType sType;
         nullptr,                                                // const void* pNext;
@@ -976,7 +983,7 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest(const VkCom
 
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
-    const VkQueue queue       = m_context.getDeviceQueueInfo(0u).queue;
+    const VkQueue queue       = m_context.getDeviceQueueInfo(m_queueIndex).queue;
 
     const VkBufferMemoryBarrier computeShaderWriteBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,                // VkStructureType sType;
@@ -1242,7 +1249,7 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest(co
 
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
-    const VkQueue queue       = m_context.getDeviceQueueInfo(0u).queue;
+    const VkQueue queue       = m_context.getDeviceQueueInfo(m_queueIndex).queue;
 
     const VkBufferMemoryBarrier computeShaderWriteBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,                // VkStructureType sType;
@@ -3954,7 +3961,6 @@ public:
                               bool useDeviceAddressCommands = false)
         : TestCase(context, name.c_str())
         , m_useComputeQueue(useComputeQueue)
-        , m_cqInfo({VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT, 1u, 1.0f})
         , m_useDeviceAddressCommands(useDeviceAddressCommands)
     {
         const tcu::UVec3 localSize[] = {
@@ -4003,13 +4009,6 @@ public:
                 TCU_THROW(NotSupportedError, "Inherited queries are not supported");
         }
 
-        if (m_useComputeQueue)
-        {
-            const auto &vki           = context.getInstanceInterface();
-            const auto physicalDevice = context.getPhysicalDevice();
-
-            findQueueFamilyIndexWithCaps(vki, physicalDevice, m_cqInfo.required, m_cqInfo.excluded);
-        }
         if (m_useDeviceAddressCommands)
             context.requireDeviceFunctionality("VK_KHR_device_address_commands");
     }
@@ -4063,8 +4062,7 @@ public:
 
     void initDeviceCapabilities(DevCaps &caps) override
     {
-        DevCaps::QueueCreateInfo queueInfos[]{m_cqInfo};
-        caps.resetQueues(queueInfos);
+        caps.resetQueuesForMultiQueueRunner(vkt::COMPUTE_QUEUE);
 
         caps.addExtension("VK_EXT_host_query_reset");
         caps.addExtension("VK_KHR_portability_subset");
@@ -4081,7 +4079,6 @@ public:
 private:
     std::vector<ComputeInvocationsTestInstance::ParametersCompute> m_parameters;
     const bool m_useComputeQueue;
-    const DevCaps::QueueCreateInfo m_cqInfo;
     const bool m_useDeviceAddressCommands;
 };
 

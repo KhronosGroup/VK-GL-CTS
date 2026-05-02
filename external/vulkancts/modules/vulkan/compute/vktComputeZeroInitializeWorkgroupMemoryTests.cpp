@@ -61,7 +61,8 @@ namespace
 
 tcu::TestStatus runCompute(Context &context, uint32_t bufferSize, uint32_t numWGX, uint32_t numWGY, uint32_t numWGZ,
                            vk::ComputePipelineConstructionType m_computePipelineConstructionType,
-                           const std::vector<uint32_t> specValues = {}, uint32_t increment = 0)
+                           const std::vector<uint32_t> specValues, uint32_t increment, VkQueue queue,
+                           uint32_t queueFamilyIndex)
 {
     const DeviceInterface &vk = context.getDeviceInterface();
     const VkDevice device     = context.getDevice();
@@ -115,9 +116,8 @@ tcu::TestStatus runCompute(Context &context, uint32_t bufferSize, uint32_t numWG
     pipeline.setSpecializationInfo(specInfo);
     pipeline.buildPipeline();
 
-    const VkQueue queue             = context.getUniversalQueue();
-    Move<VkCommandPool> cmdPool     = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-                                                        context.getUniversalQueueFamilyIndex());
+    Move<VkCommandPool> cmdPool =
+        createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
     Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
     DescriptorSetUpdateBuilder setUpdateBuilder;
@@ -161,17 +161,17 @@ tcu::TestStatus runCompute(Context &context, uint32_t bufferSize, uint32_t numWG
     return tcu::TestStatus::pass("compute succeeded");
 }
 
-class MaxWorkgroupMemoryInstance : public vkt::TestInstance
+class MaxWorkgroupMemoryInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     MaxWorkgroupMemoryInstance(Context &context, uint32_t numWorkgroups,
                                const vk::ComputePipelineConstructionType computePipelineConstructionType)
-        : TestInstance(context)
+        : MultiQueueRunnerTestInstance(context, COMPUTE_QUEUE)
         , m_numWorkgroups(numWorkgroups)
         , m_computePipelineConstructionType(computePipelineConstructionType)
     {
     }
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     uint32_t m_numWorkgroups;
@@ -240,7 +240,7 @@ void MaxWorkgroupMemoryTest::initPrograms(SourceCollections &sourceCollections) 
     sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
 }
 
-tcu::TestStatus MaxWorkgroupMemoryInstance::iterate(void)
+tcu::TestStatus MaxWorkgroupMemoryInstance::queuePass(const vkt::QueueData &queueData)
 {
     VkPhysicalDeviceProperties properties;
     m_context.getInstanceInterface().getPhysicalDeviceProperties(m_context.getPhysicalDevice(), &properties);
@@ -262,7 +262,7 @@ tcu::TestStatus MaxWorkgroupMemoryInstance::iterate(void)
     const uint32_t numElems = maxMemSize / 16;
 
     return runCompute(m_context, size, m_numWorkgroups, 1, 1, m_computePipelineConstructionType,
-                      {wgx, wgy, wgz, numElems}, /*increment*/ 1);
+                      {wgx, wgy, wgz, numElems}, /*increment*/ 1, queueData.handle, queueData.familyIndex);
 }
 
 void AddMaxWorkgroupMemoryTests(tcu::TestCaseGroup *group,
@@ -286,17 +286,17 @@ struct TypeCaseDef
     uint32_t numVariables;
 };
 
-class TypeTestInstance : public vkt::TestInstance
+class TypeTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     TypeTestInstance(Context &context, const TypeCaseDef &caseDef,
                      const vk::ComputePipelineConstructionType computePipelineConstructionType)
-        : TestInstance(context)
+        : MultiQueueRunnerTestInstance(context, COMPUTE_QUEUE)
         , m_caseDef(caseDef)
         , m_computePipelineConstructionType(computePipelineConstructionType)
     {
     }
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     TypeCaseDef m_caseDef;
@@ -433,10 +433,11 @@ void TypeTest::initPrograms(SourceCollections &sourceCollections) const
     sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
 }
 
-tcu::TestStatus TypeTestInstance::iterate(void)
+tcu::TestStatus TypeTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const uint32_t varBytes = m_caseDef.numElements * m_caseDef.numRows * (uint32_t)sizeof(uint32_t);
-    return runCompute(m_context, varBytes * m_caseDef.numVariables, 1, 1, 1, m_computePipelineConstructionType);
+    return runCompute(m_context, varBytes * m_caseDef.numVariables, 1, 1, 1, m_computePipelineConstructionType, {}, 0,
+                      queueData.handle, queueData.familyIndex);
 }
 
 void AddTypeTests(tcu::TestCaseGroup *group, vk::ComputePipelineConstructionType computePipelineConstructionType)
@@ -492,17 +493,17 @@ struct CompositeCaseDef
     }
 };
 
-class CompositeTestInstance : public vkt::TestInstance
+class CompositeTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     CompositeTestInstance(Context &context, const CompositeCaseDef &caseDef,
                           const vk::ComputePipelineConstructionType computePipelineConstructionType)
-        : TestInstance(context)
+        : MultiQueueRunnerTestInstance(context, COMPUTE_QUEUE)
         , m_caseDef(caseDef)
         , m_computePipelineConstructionType(computePipelineConstructionType)
     {
     }
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     CompositeCaseDef m_caseDef;
@@ -591,10 +592,11 @@ void CompositeTest::initPrograms(SourceCollections &sourceCollections) const
     sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
 }
 
-tcu::TestStatus CompositeTestInstance::iterate(void)
+tcu::TestStatus CompositeTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const uint32_t bufferSize = (uint32_t)sizeof(uint32_t) * m_caseDef.elements;
-    return runCompute(m_context, bufferSize, 1, 1, 1, m_computePipelineConstructionType, m_caseDef.specValues);
+    return runCompute(m_context, bufferSize, 1, 1, 1, m_computePipelineConstructionType, m_caseDef.specValues, 0,
+                      queueData.handle, queueData.familyIndex);
 }
 
 void AddCompositeTests(tcu::TestCaseGroup *group, vk::ComputePipelineConstructionType computePipelineConstructionType)
@@ -879,17 +881,17 @@ enum Dim
     DimZ,
 };
 
-class MaxWorkgroupsInstance : public vkt::TestInstance
+class MaxWorkgroupsInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     MaxWorkgroupsInstance(Context &context, Dim dim,
                           const vk::ComputePipelineConstructionType computePipelineConstructionType)
-        : TestInstance(context)
+        : MultiQueueRunnerTestInstance(context, COMPUTE_QUEUE)
         , m_dim(dim)
         , m_computePipelineConstructionType(computePipelineConstructionType)
     {
     }
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     Dim m_dim;
@@ -964,7 +966,7 @@ void MaxWorkgroupsTest::initPrograms(SourceCollections &sourceCollections) const
     sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
 }
 
-tcu::TestStatus MaxWorkgroupsInstance::iterate(void)
+tcu::TestStatus MaxWorkgroupsInstance::queuePass(const vkt::QueueData &queueData)
 {
     VkPhysicalDeviceProperties properties;
     deMemset(&properties, 0, sizeof(properties));
@@ -989,7 +991,7 @@ tcu::TestStatus MaxWorkgroupsInstance::iterate(void)
     uint32_t num_wgz = m_dim == DimZ ? 65535 : 1;
 
     return runCompute(m_context, size, num_wgx, num_wgy, num_wgz, m_computePipelineConstructionType, {wgx, wgy, wgz},
-                      /*increment*/ 1);
+                      /*increment*/ 1, queueData.handle, queueData.familyIndex);
 }
 
 void AddMaxWorkgroupsTests(tcu::TestCaseGroup *group,
@@ -1000,19 +1002,19 @@ void AddMaxWorkgroupsTests(tcu::TestCaseGroup *group,
     group->addChild(new MaxWorkgroupsTest(group->getTestContext(), "z", DimZ, computePipelineConstructionType));
 }
 
-class SpecializeWorkgroupInstance : public vkt::TestInstance
+class SpecializeWorkgroupInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     SpecializeWorkgroupInstance(Context &context, uint32_t x, uint32_t y, uint32_t z,
                                 const vk::ComputePipelineConstructionType computePipelineConstructionType)
-        : TestInstance(context)
+        : MultiQueueRunnerTestInstance(context, COMPUTE_QUEUE)
         , m_x(x)
         , m_y(y)
         , m_z(z)
         , m_computePipelineConstructionType(computePipelineConstructionType)
     {
     }
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     uint32_t m_x;
@@ -1083,10 +1085,11 @@ void SpecializeWorkgroupTest::initPrograms(SourceCollections &sourceCollections)
     sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
 }
 
-tcu::TestStatus SpecializeWorkgroupInstance::iterate(void)
+tcu::TestStatus SpecializeWorkgroupInstance::queuePass(const vkt::QueueData &queueData)
 {
     const uint32_t size = (uint32_t)sizeof(uint32_t) * m_x * m_y * m_z;
-    return runCompute(m_context, size, 1, 1, 1, m_computePipelineConstructionType, {m_x, m_y, m_z});
+    return runCompute(m_context, size, 1, 1, 1, m_computePipelineConstructionType, {m_x, m_y, m_z}, 0, queueData.handle,
+                      queueData.familyIndex);
 }
 
 void AddSpecializeWorkgroupTests(tcu::TestCaseGroup *group,
@@ -1106,17 +1109,17 @@ void AddSpecializeWorkgroupTests(tcu::TestCaseGroup *group,
     }
 }
 
-class RepeatedPipelineInstance : public vkt::TestInstance
+class RepeatedPipelineInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     RepeatedPipelineInstance(Context &context, uint32_t xSize, uint32_t repeat, uint32_t odd)
-        : TestInstance(context)
+        : MultiQueueRunnerTestInstance(context, COMPUTE_QUEUE)
         , m_xSize(xSize)
         , m_repeat(repeat)
         , m_odd(odd)
     {
     }
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     uint32_t m_xSize;
@@ -1184,7 +1187,7 @@ void RepeatedPipelineTest::initPrograms(SourceCollections &sourceCollections) co
     sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
 }
 
-tcu::TestStatus RepeatedPipelineInstance::iterate(void)
+tcu::TestStatus RepeatedPipelineInstance::queuePass(const vkt::QueueData &queueData)
 {
     Context &context          = m_context;
     const uint32_t bufferSize = m_xSize * 2 * (uint32_t)sizeof(uint32_t);
@@ -1274,9 +1277,9 @@ tcu::TestStatus RepeatedPipelineInstance::iterate(void)
     };
     Move<VkPipeline> pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineInfo, NULL);
 
-    const VkQueue queue             = context.getUniversalQueue();
-    Move<VkCommandPool> cmdPool     = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-                                                        context.getUniversalQueueFamilyIndex());
+    const VkQueue queue = queueData.handle;
+    Move<VkCommandPool> cmdPool =
+        createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueData.familyIndex);
     Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
     DescriptorSetUpdateBuilder setUpdateBuilder;

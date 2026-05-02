@@ -708,19 +708,19 @@ uint32_t getSubgroupSizeFromMode(Context &context, const SubgroupSizeMode subgro
     }
 }
 
-class CooperativeMatrixTestInstance : public TestInstance
+class CooperativeMatrixTestInstance : public MultiQueueRunnerTestInstance
 {
 public:
     CooperativeMatrixTestInstance(Context &context, const CaseDef &data);
     ~CooperativeMatrixTestInstance(void);
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     CaseDef m_data;
 };
 
 CooperativeMatrixTestInstance::CooperativeMatrixTestInstance(Context &context, const CaseDef &data)
-    : vkt::TestInstance(context)
+    : vkt::MultiQueueRunnerTestInstance(context, COMPUTE_QUEUE)
     , m_data(data)
 {
 }
@@ -2979,7 +2979,7 @@ tcu::Maybe<float> calcB16Threshold(const float origRef)
     return tcu::just(threshold);
 }
 
-tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
+tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
@@ -3771,8 +3771,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                      getSubgroupSizeFromMode(m_context, m_data.subgroupSizeMode));
         pipeline.buildPipeline();
 
-        const VkQueue queue             = m_context.getUniversalQueue();
-        Move<VkCommandPool> cmdPool     = createCommandPool(vk, device, 0, m_context.getUniversalQueueFamilyIndex());
+        const VkQueue queue             = queueData.handle;
+        Move<VkCommandPool> cmdPool     = createCommandPool(vk, device, 0, queueData.familyIndex);
         Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
         beginCommandBuffer(vk, *cmdBuffer, 0u);
@@ -6368,13 +6368,13 @@ private:
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-class CoopMat64bTestInstance : public vkt::TestInstance
+class CoopMat64bTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     CoopMat64bTestInstance(Context &context, const uint32_t numValues, const uint32_t offset, const bool tensorLayout,
                            const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     const uint32_t m_numValues;
@@ -6456,7 +6456,7 @@ TestInstance *CoopMat64bTest::createInstance(Context &context) const
 CoopMat64bTestInstance::CoopMat64bTestInstance(
     Context &context, const uint32_t numValues, const uint32_t offset, const bool tensorLayout,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : TestInstance(context)
+    : vkt::MultiQueueRunnerTestInstance(context, COMPUTE_QUEUE)
     , m_numValues(numValues)
     , m_offset(offset)
     , m_tensorLayout(tensorLayout)
@@ -6464,12 +6464,12 @@ CoopMat64bTestInstance::CoopMat64bTestInstance(
 {
 }
 
-tcu::TestStatus CoopMat64bTestInstance::iterate(void)
+tcu::TestStatus CoopMat64bTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     try

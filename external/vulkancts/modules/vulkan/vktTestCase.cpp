@@ -485,6 +485,15 @@ int findQueueFamilyIndexWithCapsNoThrow(const InstanceInterface &vkInstance, VkP
     }
 }
 
+static uint32_t findComputeCapableQueueFamily(const InstanceInterface &vkInstance, VkPhysicalDevice physicalDevice)
+{
+    int idx = findQueueFamilyIndexWithCapsNoThrow(vkInstance, physicalDevice,
+                                                  VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 0u);
+    if (idx >= 0)
+        return static_cast<uint32_t>(idx);
+    return findQueueFamilyIndexWithCaps(vkInstance, physicalDevice, VK_QUEUE_COMPUTE_BIT);
+}
+
 uint32_t findQueueFamilyIndexWithCaps(const InstanceInterface &vkInstance, VkPhysicalDevice physicalDevice,
                                       VkQueueFlags requiredCaps, VkQueueFlags excludedCaps, uint32_t *availableCount)
 {
@@ -910,9 +919,7 @@ DefaultDevice::DefaultDevice(const PlatformInterface &vkPlatform, const tcu::Com
     , m_deviceExtensions((deviceID != DevCaps::DefDevId) ? *pDeviceExtensions : m_contextManager->getDeviceExtensions())
     , m_deviceFeaturesPtr(m_contextManager->getDeviceFeaturesPtr())
     , m_deviceFeatures(*m_deviceFeaturesPtr)
-    , m_universalQueueFamilyIndex(findQueueFamilyIndexWithCaps(
-          *m_instanceInterface, m_physicalDevice,
-          cmdLine.isComputeOnly() ? VK_QUEUE_COMPUTE_BIT : VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT))
+    , m_universalQueueFamilyIndex(findComputeCapableQueueFamily(*m_instanceInterface, m_physicalDevice))
 #ifndef CTS_USES_VULKANSC
     , m_sparseQueueFamilyIndex(
           m_deviceFeatures.getCoreFeatures2().features.sparseBinding ?
@@ -1791,6 +1798,12 @@ DevCaps::QueueInfo Context::getDeviceQueueInfo(uint32_t queueIndex)
     return m_deviceRuntimeData->getQueue(getDeviceInterface(), getDevice(), queueIndex, isDefaultContext());
 }
 
+uint32_t Context::getDeviceQueueCount() const
+{
+    DE_ASSERT(m_deviceRuntimeData);
+    return m_deviceRuntimeData->getQueueCount();
+}
+
 void Context::collectAndReportDebugMessages()
 {
 #ifndef CTS_USES_VULKANSC
@@ -1823,37 +1836,49 @@ MultiQueueRunnerTestInstance::MultiQueueRunnerTestInstance(Context &context, Que
     : TestInstance(context)
     , m_queueCaps(queueCaps)
 {
-    // building vector of unique queues
-    if (m_queueCaps == QueueCapabilities::GRAPHICS_QUEUE)
+    if (!context.isDefaultContext())
     {
-        m_queues.emplace_back(context.getUniversalQueue(), (uint32_t)context.getUniversalQueueFamilyIndex());
-    }
-    else if (m_queueCaps == QueueCapabilities::COMPUTE_QUEUE)
-    {
-        // universal queue supports compute
-        m_queues.emplace_back(context.getUniversalQueue(), (uint32_t)context.getUniversalQueueFamilyIndex());
-        // checking for other queue that supports compute
-        if ((m_context.getComputeQueueFamilyIndex() != -1))
+        const uint32_t queueCount = context.getDeviceQueueCount();
+        for (uint32_t i = 0; i < queueCount; ++i)
         {
-            m_queues.emplace_back(context.getComputeQueue(), (uint32_t)context.getComputeQueueFamilyIndex());
-        }
-    }
-    else if (m_queueCaps == QueueCapabilities::TRANSFER_QUEUE)
-    {
-        // all queues support transfer
-        m_queues.emplace_back(context.getUniversalQueue(), (uint32_t)context.getUniversalQueueFamilyIndex());
-        if ((m_context.getComputeQueueFamilyIndex() != -1))
-        {
-            m_queues.emplace_back(context.getComputeQueue(), (uint32_t)context.getComputeQueueFamilyIndex());
-        }
-        if ((m_context.getTransferQueueFamilyIndex() != -1))
-        {
-            m_queues.emplace_back(context.getTransferQueue(), (uint32_t)context.getTransferQueueFamilyIndex());
+            auto qInfo = context.getDeviceQueueInfo(i);
+            m_queues.emplace_back(qInfo.queue, qInfo.familyIndex);
         }
     }
     else
     {
-        DE_ASSERT(false);
+        if (m_queueCaps == QueueCapabilities::GRAPHICS_QUEUE)
+        {
+            m_queues.emplace_back(context.getUniversalQueue(), (uint32_t)context.getUniversalQueueFamilyIndex());
+        }
+        else if (m_queueCaps == QueueCapabilities::COMPUTE_QUEUE)
+        {
+            m_queues.emplace_back(context.getUniversalQueue(), (uint32_t)context.getUniversalQueueFamilyIndex());
+            if ((m_context.getComputeQueueFamilyIndex() != -1) &&
+                ((uint32_t)m_context.getComputeQueueFamilyIndex() != context.getUniversalQueueFamilyIndex()))
+            {
+                m_queues.emplace_back(context.getComputeQueue(), (uint32_t)context.getComputeQueueFamilyIndex());
+            }
+        }
+        else if (m_queueCaps == QueueCapabilities::TRANSFER_QUEUE)
+        {
+            m_queues.emplace_back(context.getUniversalQueue(), (uint32_t)context.getUniversalQueueFamilyIndex());
+            if ((m_context.getComputeQueueFamilyIndex() != -1) &&
+                ((uint32_t)m_context.getComputeQueueFamilyIndex() != context.getUniversalQueueFamilyIndex()))
+            {
+                m_queues.emplace_back(context.getComputeQueue(), (uint32_t)context.getComputeQueueFamilyIndex());
+            }
+            if ((m_context.getTransferQueueFamilyIndex() != -1) &&
+                ((uint32_t)m_context.getTransferQueueFamilyIndex() != context.getUniversalQueueFamilyIndex()) &&
+                (m_context.getTransferQueueFamilyIndex() != m_context.getComputeQueueFamilyIndex()))
+            {
+                m_queues.emplace_back(context.getTransferQueue(), (uint32_t)context.getTransferQueueFamilyIndex());
+            }
+        }
+        else
+        {
+            DE_ASSERT(false);
+        }
     }
 
     if (m_queues.empty())
