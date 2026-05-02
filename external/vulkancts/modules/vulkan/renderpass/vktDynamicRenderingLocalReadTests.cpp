@@ -46,6 +46,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <sstream>
 
 namespace vkt::renderpass
 {
@@ -3739,6 +3740,406 @@ tcu::TestStatus RemapToHighLocationTestInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+struct AttachmentMappingParams
+{
+    uint32_t pipelineMappingCount;
+    uint32_t inputAttachmentCount;
+    uint32_t attachmentCount;
+    bool differentIndices;
+};
+
+class AttachmentMappingTestInstance : public TestInstance
+{
+public:
+    AttachmentMappingTestInstance(Context &ctx, const AttachmentMappingParams &params)
+        : TestInstance(ctx)
+        , m_params(params)
+    {
+    }
+    virtual ~AttachmentMappingTestInstance(void) = default;
+    tcu::TestStatus iterate(void);
+
+private:
+    const AttachmentMappingParams m_params;
+};
+
+tcu::TestStatus AttachmentMappingTestInstance::iterate(void)
+{
+    const DeviceInterface &vkd    = m_context.getDeviceInterface();
+    const VkDevice device         = m_context.getDevice();
+    const uint32_t queueFamilyIdx = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue           = m_context.getUniversalQueue();
+    Allocator &alloc              = m_context.getDefaultAllocator();
+    tcu::TestLog &log             = m_context.getTestContext().getLog();
+
+    const uint32_t renderSize              = 16u;
+    const VkRect2D renderArea              = makeRect2D(renderSize, renderSize);
+    const uint32_t colorAttachmentCount    = m_params.attachmentCount;
+    const VkFormat colorImageFormat        = VK_FORMAT_R8G8B8A8_UNORM;
+    const tcu::TextureFormat textureFormat = mapVkFormat(colorImageFormat);
+    const VkImageSubresourceRange colorSRR = makeDefaultImageSubresourceRange();
+    const VkClearValue clearValue          = makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+    auto colorAttachment           = makeDynamicRenderingAttachmentInfo(clearValue);
+    colorAttachment.imageLayout    = VK_IMAGE_LAYOUT_GENERAL;
+    const uint32_t inputsCount     = m_params.inputAttachmentCount;
+    const bool hasInputAttachments = inputsCount > 0;
+
+    VkImageMemoryBarrier colorImageBarrier =
+        makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                               VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE, colorSRR);
+    VkImageMemoryBarrier drawImageBarrier =
+        makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+                               VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE, colorSRR);
+
+    const VkDeviceSize outputBufferSize = (VkDeviceSize)renderSize * renderSize * tcu::getPixelSize(textureFormat);
+    const VkBufferCreateInfo outputBufferInfo =
+        makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+    std::vector<ImageWithMemorySp> images(colorAttachmentCount, ImageWithMemorySp());
+    std::vector<VkImageViewSp> imageViews(colorAttachmentCount, VkImageViewSp());
+    std::vector<VkFormat> colorImageFormats(colorAttachmentCount, colorImageFormat);
+    std::vector<VkRenderingAttachmentInfo> colorAttachments(colorAttachmentCount, colorAttachment);
+    std::vector<VkImageMemoryBarrier> colorImageBarriers(colorAttachmentCount, colorImageBarrier);
+    std::vector<VkImageMemoryBarrier> drawImageBarriers(colorAttachmentCount, drawImageBarrier);
+    std::vector<BufferWithMemorySp> outputBuffers(colorAttachmentCount, BufferWithMemorySp());
+
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+    {
+        VkImageUsageFlags imageUsage =
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        if (hasInputAttachments)
+            imageUsage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+        images[i]     = createImage(m_context, renderSize, colorImageFormats[i], imageUsage);
+        imageViews[i] = VkImageViewSp(new Move<VkImageView>(
+            makeImageView(vkd, device, **images[i], VK_IMAGE_VIEW_TYPE_2D, colorImageFormats[i], colorSRR)));
+
+        colorAttachments[i].imageView = **imageViews[i];
+        if (i < inputsCount)
+            colorAttachments[i].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        colorImageBarriers[i].image = **images[i];
+        drawImageBarriers[i].image  = **images[i];
+
+        outputBuffers[i] = BufferWithMemorySp(
+            new BufferWithMemory(vkd, device, alloc, outputBufferInfo, MemoryRequirement::HostVisible));
+    }
+
+    std::vector<uint32_t> inputAttachmentIndices = {0u, 1u, 2u, 3u, 4u, 5u, 6u, 7u};
+    if (m_params.pipelineMappingCount > 1u)
+    {
+        std::rotate(inputAttachmentIndices.begin(), inputAttachmentIndices.begin() + 1u,
+                    inputAttachmentIndices.begin() + m_params.pipelineMappingCount);
+    }
+
+    VkRenderingInputAttachmentIndexInfo renderingInputAttachmentIndexInfo = initVulkanStructure();
+    renderingInputAttachmentIndexInfo.colorAttachmentCount                = colorAttachmentCount;
+    renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices        = de::dataOrNull(inputAttachmentIndices);
+
+    std::vector<uint32_t> inputAttachmentIndicesPipeline = inputAttachmentIndices;
+    if (m_params.differentIndices)
+    {
+        // Shuffle indices that are not used by the shader
+        std::vector<uint32_t> inputAttachmentIndexToColorAttachment(m_params.pipelineMappingCount);
+        for (uint32_t colorIndex = 0u; colorIndex < m_params.pipelineMappingCount; ++colorIndex)
+        {
+            const uint32_t inputIndex                         = inputAttachmentIndices[colorIndex];
+            inputAttachmentIndexToColorAttachment[inputIndex] = colorIndex;
+        }
+
+        const auto unusedInputAttachmentBegin =
+            inputAttachmentIndexToColorAttachment.begin() + m_params.inputAttachmentCount;
+        const auto unusedInputAttachmentEnd = inputAttachmentIndexToColorAttachment.end();
+        if ((m_params.pipelineMappingCount - m_params.inputAttachmentCount) > 1u)
+        {
+            std::rotate(unusedInputAttachmentBegin, unusedInputAttachmentBegin + 1, unusedInputAttachmentEnd);
+        }
+
+        for (uint32_t inputIndex = 0u; inputIndex < m_params.pipelineMappingCount; ++inputIndex)
+        {
+            const uint32_t colorIndex                  = inputAttachmentIndexToColorAttachment[inputIndex];
+            inputAttachmentIndicesPipeline[colorIndex] = inputIndex;
+        }
+    }
+
+    std::vector<uint32_t> inputAttachmentImageIndices(inputsCount);
+    for (uint32_t attachmentIndex = 0; attachmentIndex < colorAttachmentCount; ++attachmentIndex)
+    {
+        const uint32_t inputIndex = inputAttachmentIndices[attachmentIndex];
+        if (inputIndex < inputsCount)
+            inputAttachmentImageIndices[inputIndex] = attachmentIndex;
+    }
+
+    VkRenderingInputAttachmentIndexInfo pipelineInputAttachmentIndexInfo = initVulkanStructure();
+    pipelineInputAttachmentIndexInfo.colorAttachmentCount                = m_params.pipelineMappingCount;
+    pipelineInputAttachmentIndexInfo.pColorAttachmentInputIndices = de::dataOrNull(inputAttachmentIndicesPipeline);
+
+    const auto descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+    Move<VkDescriptorPool> descriptorPool;
+    DescriptorSetLayoutBuilder descriptorSetLayoutBuilder;
+    Move<VkDescriptorSetLayout> descriptorSetLayout;
+    Move<VkDescriptorSet> descriptorSet;
+    DescriptorSetUpdateBuilder descriptorSetUpdateBuilder;
+
+    if (hasInputAttachments)
+    {
+
+        descriptorPool = DescriptorPoolBuilder()
+                             .addType(descriptorType, inputsCount)
+                             .build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
+        for (uint32_t i = 0; i < inputsCount; ++i)
+            descriptorSetLayoutBuilder.addSingleBinding(descriptorType, VK_SHADER_STAGE_FRAGMENT_BIT);
+        descriptorSetLayout = descriptorSetLayoutBuilder.build(vkd, device);
+        descriptorSet       = makeDescriptorSet(vkd, device, *descriptorPool, *descriptorSetLayout);
+        auto di             = makeDescriptorImageInfo(VK_NULL_HANDLE, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL);
+        for (uint32_t i = 0; i < inputsCount; ++i)
+        {
+            di.imageView = **imageViews[inputAttachmentImageIndices[i]];
+            descriptorSetUpdateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(i),
+                                                   descriptorType, &di);
+        }
+        descriptorSetUpdateBuilder.update(vkd, device);
+    }
+
+    const auto pipelineLayout =
+        hasInputAttachments ? makePipelineLayout(vkd, device, *descriptorSetLayout) : makePipelineLayout(vkd, device);
+    const auto vertShaderModule  = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"));
+    const auto frag0ShaderModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag0"));
+
+    auto dynRenderingInfo =
+        makeDynamicRenderingInfo(renderArea, de::sizeU32(colorAttachments), de::dataOrNull(colorAttachments));
+
+    auto dynRenderingCreateInfo =
+        makeDynamicRenderingCreateInfo(colorAttachmentCount, de::dataOrNull(colorImageFormats), nullptr);
+
+    const std::vector<VkViewport> viewports{makeViewport(renderSize, renderSize)};
+    const std::vector<VkRect2D> scissors{renderArea};
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+    const VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {0,
+                                                                           VK_BLEND_FACTOR_ZERO,
+                                                                           VK_BLEND_FACTOR_ZERO,
+                                                                           VK_BLEND_OP_ADD,
+                                                                           VK_BLEND_FACTOR_ZERO,
+                                                                           VK_BLEND_FACTOR_ZERO,
+                                                                           VK_BLEND_OP_ADD,
+                                                                           0xf};
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(colorAttachmentCount,
+                                                                                colorBlendAttachmentState);
+    VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = initVulkanStructure();
+    colorBlendStateCreateInfo.attachmentCount                     = de::sizeU32(colorBlendAttachmentStates);
+    colorBlendStateCreateInfo.pAttachments                        = de::dataOrNull(colorBlendAttachmentStates);
+
+    if (!hasInputAttachments)
+        dynRenderingCreateInfo.pNext = &pipelineInputAttachmentIndexInfo;
+
+    Move<VkPipeline> graphicsPipeline0 = makeGraphicsPipeline(
+        vkd, device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        *frag0ShaderModule, VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
+        &vertexInputState, nullptr, nullptr, nullptr, &colorBlendStateCreateInfo, nullptr, &dynRenderingCreateInfo);
+
+    Move<VkPipeline> graphicsPipeline1;
+    if (hasInputAttachments)
+    {
+        dynRenderingCreateInfo.pNext = &pipelineInputAttachmentIndexInfo;
+        const auto frag1ShaderModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag1"));
+        graphicsPipeline1            = makeGraphicsPipeline(
+            vkd, device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+            *frag1ShaderModule, VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
+            &vertexInputState, nullptr, nullptr, nullptr, &colorBlendStateCreateInfo, nullptr, &dynRenderingCreateInfo);
+    }
+
+    const auto cmdPool =
+        createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIdx);
+    const auto cmdBufferPtr = allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    const auto cmdBuffer    = *cmdBufferPtr;
+
+    beginCommandBuffer(vkd, cmdBuffer);
+
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_NONE, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u,
+                           NULL, 0u, NULL, colorAttachmentCount, de::dataOrNull(colorImageBarriers));
+
+    vkd.cmdBeginRendering(cmdBuffer, &dynRenderingInfo);
+
+    if (!hasInputAttachments)
+    {
+        vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline0);
+        vkd.cmdSetRenderingInputAttachmentIndices(cmdBuffer, &renderingInputAttachmentIndexInfo);
+        vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+    }
+    else
+    {
+        vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline0);
+        vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+        vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0u, NULL, 0u, NULL,
+                               colorAttachmentCount, de::dataOrNull(drawImageBarriers));
+
+        vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline1);
+        vkd.cmdSetRenderingInputAttachmentIndices(cmdBuffer, &renderingInputAttachmentIndexInfo);
+        vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet,
+                                  0u, nullptr);
+        vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+    }
+    vkd.cmdEndRendering(cmdBuffer);
+
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+    {
+        colorImageBarriers[i].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        colorImageBarriers[i].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        colorImageBarriers[i].oldLayout     = VK_IMAGE_LAYOUT_GENERAL;
+        colorImageBarriers[i].newLayout     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    }
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+                           0u, NULL, 0u, NULL, colorAttachmentCount, de::dataOrNull(colorImageBarriers));
+
+    const VkImageSubresourceLayers colorSL = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+    const VkBufferImageCopy copyRegion     = makeBufferImageCopy({renderSize, renderSize, 1u}, colorSL);
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+        vkd.cmdCopyImageToBuffer(cmdBuffer, **images[i], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **outputBuffers[i], 1u,
+                                 &copyRegion);
+
+    endCommandBuffer(vkd, cmdBuffer);
+    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+    const tcu::Vec4 threshold(0.005f);
+
+    const std::vector<tcu::Vec4> expectedColors = {
+        tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f),
+        tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f), tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f), tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),
+        tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::Vec4(0.5f, 0.5f, 0.5f, 1.0f),
+    };
+
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+    {
+        auto &allocation = outputBuffers[i]->getAllocation();
+        invalidateAlloc(vkd, device, allocation);
+
+        tcu::TextureLevel textureLevel(textureFormat, renderSize, renderSize, 1u);
+        const tcu::PixelBufferAccess expectedImage = textureLevel.getAccess();
+        uint32_t j = i < m_params.inputAttachmentCount ? inputAttachmentImageIndices[i] : i;
+        tcu::clear(expectedImage, expectedColors[j]);
+
+        tcu::ConstPixelBufferAccess resultImage(textureFormat, renderSize, renderSize, 1u, allocation.getHostPtr());
+        const std::string imageSetDesc = "Image comparison " + de::toString(i);
+
+        if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Image comparison", imageSetDesc.c_str(),
+                                        expectedImage, resultImage, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        {
+            std::ostringstream msg;
+            msg << "vkCmdSetRenderingInputAttachmentIndices set pColorAttachmentInputIndices to: ";
+            for (uint32_t attachmentIndex = 0u; attachmentIndex < colorAttachmentCount; ++attachmentIndex)
+                msg << (attachmentIndex == 0u ? "" : ", ") << inputAttachmentIndices[attachmentIndex];
+            msg << "\nVkRenderingInputAttachmentIndexInfo::pColorAttachmentInputIndices were set to: ";
+            for (uint32_t attachmentIndex = 0u; attachmentIndex < m_params.pipelineMappingCount; ++attachmentIndex)
+                msg << (attachmentIndex == 0u ? "" : ", ") << inputAttachmentIndicesPipeline[attachmentIndex];
+
+            log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+
+            return tcu::TestStatus::fail("Fail");
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class AttachmentMappingTestCase : public TestCase
+{
+public:
+    AttachmentMappingTestCase(tcu::TestContext &ctx, const std::string &name, const AttachmentMappingParams &params)
+        : TestCase(ctx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~AttachmentMappingTestCase(void) = default;
+    virtual void checkSupport(Context &context) const;
+    virtual void initPrograms(SourceCollections &programCollection) const;
+    virtual TestInstance *createInstance(Context &context) const
+    {
+        return new AttachmentMappingTestInstance(context, m_params);
+    }
+
+private:
+    const AttachmentMappingParams m_params;
+};
+
+void AttachmentMappingTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
+
+    const auto &limits = context.getDeviceProperties().limits;
+
+    if (m_params.attachmentCount > limits.maxColorAttachments)
+        TCU_THROW(NotSupportedError, "attachmentCount is greater than maxColorAttachments");
+
+    if (m_params.inputAttachmentCount > limits.maxPerStageDescriptorInputAttachments)
+        TCU_THROW(NotSupportedError, "inputAttachmentCount is greater than maxPerStageDescriptorInputAttachments");
+}
+
+void AttachmentMappingTestCase::initPrograms(SourceCollections &programCollection) const
+{
+    // vertex shader generates fullscreen quad
+    std::string vertSrc("#version 450\n"
+                        "void main (void)\n"
+                        "{\n"
+                        "  const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
+                        "  const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
+                        "  gl_Position = vec4(x, y, 0.0, 1.0);\n"
+                        "}\n");
+    programCollection.glslSources.add("vert") << glu::VertexSource(vertSrc);
+
+    const std::vector<tcu::Vec4> expectedColors = {
+        tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f),
+        tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f), tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f), tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),
+        tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::Vec4(0.5f, 0.5f, 0.5f, 1.0f),
+    };
+
+    std::stringstream frag0Src;
+    frag0Src << "#version 450\n";
+    for (uint32_t i = 0; i < m_params.attachmentCount; i++)
+        frag0Src << "layout(location = " << i << ") out vec4 outColor" << i << ";\n";
+    frag0Src << "void main (void)\n"
+                "{\n";
+    for (uint32_t i = 0; i < m_params.attachmentCount; i++)
+    {
+        float r = expectedColors[i].x();
+        float g = expectedColors[i].y();
+        float b = expectedColors[i].z();
+        float a = expectedColors[i].w();
+        frag0Src << "  outColor" << i << " = vec4(" << r << ", " << g << ", " << b << ", " << a << ");\n";
+    }
+    frag0Src << "}\n";
+    programCollection.glslSources.add("frag0") << glu::FragmentSource(frag0Src.str());
+
+    if (m_params.inputAttachmentCount > 0)
+    {
+        std::stringstream frag1Src;
+        frag1Src << "#version 450\n";
+        for (uint32_t i = 0; i < m_params.inputAttachmentCount; i++)
+            frag1Src << "layout(input_attachment_index=" << i << ", binding=" << i << ") uniform subpassInput inColor"
+                     << i << ";\n";
+        for (uint32_t i = 0; i < m_params.attachmentCount; i++)
+            frag1Src << "layout(location = " << i << ") out vec4 outColor" << i << ";\n";
+        frag1Src << "void main (void)\n"
+                    "{\n";
+        for (uint32_t i = 0; i < m_params.attachmentCount; i++)
+        {
+            if (i < m_params.inputAttachmentCount)
+            {
+                frag1Src << "  outColor" << i << " = subpassLoad(inColor" << i << ");\n";
+            }
+            else
+            {
+                float r = expectedColors[i].x();
+                float g = expectedColors[i].y();
+                float b = expectedColors[i].z();
+                float a = expectedColors[i].w();
+                frag1Src << "  outColor" << i << " = vec4(" << r << ", " << g << ", " << b << ", " << a << ");\n";
+            }
+        }
+        frag1Src << "}\n";
+        programCollection.glslSources.add("frag1") << glu::FragmentSource(frag1Src.str());
+    }
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testCtx, const SharedGroupParams grpParams)
@@ -3814,6 +4215,49 @@ tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testC
                 mainGroup->addChild(
                     new RemappingToHighLocationTestCase(testCtx, testName, numAttachments, firstRemapLocation));
             }
+        }
+    }
+
+    // Test mismatched pipeline input attachment mapping with render pass attachment mapping
+    {
+        struct AttachmentMappingTest
+        {
+            uint32_t pipelineMappingCount;
+            uint32_t inputAttachmentCount;
+            uint32_t attachmentCount;
+            bool differentIndices;
+            const char *name;
+        } attachmentMappingTests[] = {
+            {0, 0, 4, false, "attachment_mapping_no_mappings"},
+            {2, 0, 4, false, "attachment_mapping_some_mappings"},
+            {4, 0, 4, false, "attachment_mapping_all_mappings"},
+            {2, 0, 4, true, "attachment_mapping_some_mappings_different"},
+            {4, 0, 4, true, "attachment_mapping_all_mappings_different"},
+            {2, 2, 4, false, "attachment_mapping_input_attachments"},
+            {4, 2, 4, false, "attachment_mapping_input_attachments_all"},
+            {3, 2, 4, false, "attachment_mapping_input_attachments_superset"},
+            {4, 2, 4, true, "attachment_mapping_input_attachments_all_different"},
+            {3, 2, 4, true, "attachment_mapping_input_attachments_superset_different"},
+            {4, 4, 8, false, "attachment_mapping_input_attachments_4"},
+            {8, 4, 8, false, "attachment_mapping_input_attachments_all_4"},
+            {6, 4, 8, false, "attachment_mapping_input_attachments_superset_4"},
+            {8, 4, 8, true, "attachment_mapping_input_attachments_all_different_4"},
+            {6, 4, 8, true, "attachment_mapping_input_attachments_superset_different_4"},
+            {6, 6, 8, false, "attachment_mapping_input_attachments_6"},
+            {8, 6, 8, false, "attachment_mapping_input_attachments_all_6"},
+            {7, 6, 8, false, "attachment_mapping_input_attachments_superset_6"},
+            {8, 6, 8, true, "attachment_mapping_input_attachments_all_different_6"},
+            {7, 6, 8, true, "attachment_mapping_input_attachments_superset_different_6"},
+        };
+
+        for (const auto &attachmentMappingTest : attachmentMappingTests)
+        {
+            AttachmentMappingParams params;
+            params.pipelineMappingCount = attachmentMappingTest.pipelineMappingCount;
+            params.inputAttachmentCount = attachmentMappingTest.inputAttachmentCount;
+            params.attachmentCount      = attachmentMappingTest.attachmentCount;
+            params.differentIndices     = attachmentMappingTest.differentIndices;
+            mainGroup->addChild(new AttachmentMappingTestCase(testCtx, attachmentMappingTest.name, params));
         }
     }
 
