@@ -2524,8 +2524,8 @@ bool check_VK_KHR_device_fault(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 	if (!isSupported(vDEP, "VK_KHR_device_fault"))
 		return true;
 
-	// depends attribute in xml: VK_KHR_get_physical_device_properties2
-	return (isCompatible(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_device_group(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2834,6 +2834,18 @@ bool check_VK_KHR_maintenance10(const tcu::UVec2& v, const ExtPropVect& vIEP, co
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_maintenance10"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
+bool check_VK_KHR_maintenance11(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_maintenance11"))
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
@@ -3164,8 +3176,8 @@ bool check_VK_KHR_shader_abort(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 	if (!isSupported(vDEP, "VK_KHR_shader_abort"))
 		return true;
 
-	// depends attribute in xml: VK_KHR_get_physical_device_properties2+VK_KHR_device_fault+VK_KHR_shader_constant_data
-	return ((isCompatible(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && isSupported(vDEP, "VK_KHR_device_fault") && isSupported(vDEP, "VK_KHR_shader_constant_data"));
+	// depends attribute in xml: VK_KHR_device_fault+VK_KHR_shader_constant_data
+	return (isSupported(vDEP, "VK_KHR_device_fault") && isSupported(vDEP, "VK_KHR_shader_constant_data"));
 }
 
 bool check_VK_KHR_shader_atomic_int64(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3200,6 +3212,18 @@ bool check_VK_KHR_shader_clock(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 	DE_UNREF(vIEP);
 
 	if (!isSupported(vDEP, "VK_KHR_shader_clock"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
+bool check_VK_KHR_shader_constant_data(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_shader_constant_data"))
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
@@ -4861,6 +4885,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_internally_synchronized_queues",					&check_VK_KHR_internally_synchronized_queues),
 	std::make_pair("VK_KHR_line_rasterization",								&check_VK_KHR_line_rasterization),
 	std::make_pair("VK_KHR_maintenance10",									&check_VK_KHR_maintenance10),
+	std::make_pair("VK_KHR_maintenance11",									&check_VK_KHR_maintenance11),
 	std::make_pair("VK_KHR_maintenance3",									&check_VK_KHR_maintenance3),
 	std::make_pair("VK_KHR_maintenance4",									&check_VK_KHR_maintenance4),
 	std::make_pair("VK_KHR_maintenance5",									&check_VK_KHR_maintenance5),
@@ -4890,6 +4915,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_shader_atomic_int64",							&check_VK_KHR_shader_atomic_int64),
 	std::make_pair("VK_KHR_shader_bfloat16",								&check_VK_KHR_shader_bfloat16),
 	std::make_pair("VK_KHR_shader_clock",									&check_VK_KHR_shader_clock),
+	std::make_pair("VK_KHR_shader_constant_data",							&check_VK_KHR_shader_constant_data),
 	std::make_pair("VK_KHR_shader_expect_assume",							&check_VK_KHR_shader_expect_assume),
 	std::make_pair("VK_KHR_shader_float16_int8",							&check_VK_KHR_shader_float16_int8),
 	std::make_pair("VK_KHR_shader_float_controls",							&check_VK_KHR_shader_float_controls),
@@ -5050,6 +5076,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_ANDROID_external_memory_android_hardware_buffer"),
 	std::make_tuple(1, 3, "VK_ARM_data_graph"),
 	std::make_tuple(1, 3, "VK_ARM_data_graph_instruction_set_tosa"),
+	std::make_tuple(1, 0, "VK_ARM_data_graph_neural_accelerator_statistics"),
 	std::make_tuple(1, 3, "VK_ARM_data_graph_optical_flow"),
 	std::make_tuple(1, 0, "VK_ARM_format_pack"),
 	std::make_tuple(1, 0, "VK_ARM_performance_counters_by_region"),
@@ -5284,6 +5311,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_load_store_op_none"),
 	std::make_tuple(1, 0, "VK_KHR_maintenance1"),
 	std::make_tuple(1, 0, "VK_KHR_maintenance10"),
+	std::make_tuple(1, 0, "VK_KHR_maintenance11"),
 	std::make_tuple(1, 0, "VK_KHR_maintenance2"),
 	std::make_tuple(1, 0, "VK_KHR_maintenance3"),
 	std::make_tuple(1, 1, "VK_KHR_maintenance4"),
@@ -5470,6 +5498,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_QNX_screen_surface"),
 	std::make_tuple(1, 0, "VK_SEC_amigo_profiling"),
 	std::make_tuple(1, 0, "VK_SEC_pipeline_cache_incremental_mode"),
+	std::make_tuple(1, 0, "VK_SEC_throttle_hint"),
 	std::make_tuple(1, 0, "VK_SEC_ubm_surface"),
 	std::make_tuple(1, 0, "VK_VALVE_descriptor_set_host_mapping"),
 	std::make_tuple(1, 0, "VK_VALVE_fragment_density_map_layered"),

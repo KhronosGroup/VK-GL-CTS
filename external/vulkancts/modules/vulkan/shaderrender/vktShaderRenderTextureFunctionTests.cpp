@@ -2048,6 +2048,19 @@ void ShaderTextureFunctionCase::checkSupport(Context &context) const
 
     if (m_lookupSpec.pcOffset)
         context.requireDeviceFunctionality("VK_KHR_maintenance8");
+
+    // Implicit-LoD texture sampling in compute shaders needs derivatives, which require
+    // VK_KHR_compute_shader_derivatives. Explicit-LoD/grad and texelFetch don't.
+    if (m_useCompute && !functionHasLod(m_lookupSpec.function) && !functionHasGrad(m_lookupSpec.function))
+    {
+#ifndef CTS_USES_VULKANSC
+        context.requireDeviceFunctionality("VK_KHR_compute_shader_derivatives");
+        if (!context.getComputeShaderDerivativesFeatures().computeDerivativeGroupQuads)
+            TCU_THROW(NotSupportedError, "computeDerivativeGroupQuads feature is not supported");
+#else
+        TCU_THROW(NotSupportedError, "VK_KHR_compute_shader_derivatives is not available in Vulkan SC");
+#endif
+    }
 }
 
 void ShaderTextureFunctionCase::initShaderSources(void)
@@ -2169,6 +2182,8 @@ void ShaderTextureFunctionCase::initShaderSources(void)
 
     const auto pcOffsetExt = "#extension GL_EXT_texture_offset_non_const : enable\n";
 
+    const bool needsComputeDerivatives = m_useCompute && !functionHasLod(function) && !functionHasGrad(function);
+
     if (m_useCompute)
     {
         comp << "#version 450 core\n";
@@ -2179,7 +2194,13 @@ void ShaderTextureFunctionCase::initShaderSources(void)
         if (m_lookupSpec.pcOffset)
             comp << pcOffsetExt;
 
-        comp << "layout(local_size_x = 8, local_size_y = 8) in;\n\n";
+        if (needsComputeDerivatives)
+            comp << "#extension GL_KHR_compute_shader_derivatives : require\n";
+
+        comp << "layout(local_size_x = 8, local_size_y = 8) in;\n";
+        if (needsComputeDerivatives)
+            comp << "layout(derivative_group_quadsKHR) in;\n";
+        comp << "\n";
 
         comp << "layout(set = 0, binding = 0) uniform highp " << glu::getDataTypeName(samplerType) << " u_sampler;\n"
              << "layout(set = 0, binding = 1) uniform buf0 { highp vec4 u_scale; };\n"
@@ -4583,6 +4604,8 @@ void SparseShaderTextureFunctionCase::initShaderSources(void)
 
     const auto pcOffsetExt = "#extension GL_EXT_texture_offset_non_const : enable\n";
 
+    const bool needsComputeDerivatives = m_useCompute && !functionHasLod(function) && !functionHasGrad(function);
+
     if (m_useCompute)
     {
         comp << "#version 450\n"
@@ -4594,7 +4617,13 @@ void SparseShaderTextureFunctionCase::initShaderSources(void)
         if (m_lookupSpec.useClamp)
             comp << "#extension GL_ARB_sparse_texture_clamp : require\n";
 
-        comp << "layout(local_size_x = 8, local_size_y = 8) in;\n\n";
+        if (needsComputeDerivatives)
+            comp << "#extension GL_KHR_compute_shader_derivatives : require\n";
+
+        comp << "layout(local_size_x = 8, local_size_y = 8) in;\n";
+        if (needsComputeDerivatives)
+            comp << "layout(derivative_group_quadsKHR) in;\n";
+        comp << "\n";
 
         comp << "layout(set = 0, binding = 0) uniform highp " << glu::getDataTypeName(samplerType) << " u_sampler;\n"
              << "layout(set = 0, binding = 1) uniform buf0 { highp vec4 u_scale; };\n"
@@ -4903,6 +4932,13 @@ void SparseShaderTextureFunctionCase::checkSupport(Context &context) const
 
     if (m_lookupSpec.pcOffset)
         context.requireDeviceFunctionality("VK_KHR_maintenance8");
+
+    if (m_useCompute && !functionHasLod(m_lookupSpec.function) && !functionHasGrad(m_lookupSpec.function))
+    {
+        context.requireDeviceFunctionality("VK_KHR_compute_shader_derivatives");
+        if (!context.getComputeShaderDerivativesFeatures().computeDerivativeGroupQuads)
+            TCU_THROW(NotSupportedError, "computeDerivativeGroupQuads feature is not supported");
+    }
 }
 
 #endif // CTS_USES_VULKANSC
