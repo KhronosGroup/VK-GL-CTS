@@ -25,9 +25,9 @@
 
 #include "vktPipelineLibraryTests.hpp"
 
-#include "tcuTextureUtil.hpp"
 #include "vkDefs.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkMemUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkQueryUtil.hpp"
@@ -46,6 +46,8 @@
 #include "tcuImageCompare.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuRGBA.hpp"
+#include "tcuTextureUtil.hpp"
+#include "tcuVectorType.hpp"
 
 #include "../draw/vktDrawCreateInfoUtil.hpp"
 #include "deMath.h"
@@ -5970,6 +5972,386 @@ tcu::TestStatus PrimaryRebindRun(Context &context, PipelineConstructionType cons
     return tcu::TestStatus::pass("Pass");
 }
 
+// Tests rebinding pipeline B in primary after executing a secondary that used pipeline A,
+// where A and B differ only in descriptor set count.
+void PrimaryRebindDiffLayoutsCheckSupport(Context &context, PipelineConstructionType constructionType)
+{
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, constructionType);
+    context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+    if (!context.getExtendedDynamicState3FeaturesEXT().extendedDynamicState3ColorWriteMask)
+        TCU_THROW(NotSupportedError, "extendedDynamicState3ColorWriteMask not supported");
+}
+
+void PrimaryRebindDiffLayoutsInitPrograms(vk::SourceCollections &dst, PipelineConstructionType)
+{
+    std::ostringstream vert;
+    vert << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+         << "void main(void) {\n"
+         << "    const float x = float((gl_VertexIndex >> 1) & 1) * 2.0 - 1.0;\n"
+         << "    const float y = float((gl_VertexIndex >> 0) & 1) * 2.0 - 1.0;\n"
+         << "    gl_Position = vec4(x, y, 0.0, 1.0);\n"
+         << "}\n";
+    dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream fragA;
+    fragA << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+          << "layout (location=0) out vec4 outColor;\n"
+          << "layout(set = 0, binding = 0) buffer DataX {\n"
+          << "    float value;\n"
+          << "} dataX;\n"
+          << "layout (push_constant) uniform PCBlock { vec4 color; } pc;\n"
+          << "void main(void) {\n"
+          << "    outColor = vec4(pc.color.r - dataX.value, pc.color.g, pc.color.b, pc.color.a);\n"
+          << "}\n";
+    dst.glslSources.add("fragA") << glu::FragmentSource(fragA.str());
+
+    std::ostringstream fragB;
+    fragB << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+          << "layout (location=0) out vec4 outColor;\n"
+          << "layout(set = 0, binding = 0) buffer DataX {\n"
+          << "    float value;\n"
+          << "} dataX;\n"
+          << "layout(set = 1, binding = 0) buffer DataY {\n"
+          << "    float value;\n"
+          << "} dataY;\n"
+          << "layout (push_constant) uniform PCBlock { vec4 color; } pc;\n"
+          << "void main(void) {\n"
+          << "    outColor = vec4(pc.color.r + dataX.value + dataY.value, pc.color.g, pc.color.b, pc.color.a);\n"
+          << "}\n";
+    dst.glslSources.add("fragB") << glu::FragmentSource(fragB.str());
+}
+
+tcu::TestStatus PrimaryRebindDiffLayoutsRun(Context &context, PipelineConstructionType constructionType)
+{
+    const tcu::IVec3 extent(1, 1, 1);
+    const auto extentVk    = makeExtent3D(extent);
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto colorUsage =
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto imageType   = VK_IMAGE_TYPE_2D;
+    const auto sampleCount = VK_SAMPLE_COUNT_1_BIT;
+
+    const auto ctx = context.getContextCommonData();
+
+    // Images for drawing
+    ImageWithBuffer primaryImage(ctx.vkd, ctx.device, ctx.allocator, extentVk, colorFormat, colorUsage, imageType);
+    ImageWithBuffer secondaryImage(ctx.vkd, ctx.device, ctx.allocator, extentVk, colorFormat, colorUsage, imageType);
+
+    // Buffers for descriptors
+    const VkDeviceSize bufferSizeBytes = sizeof(float);
+    BufferWithMemory dataBufferA{ctx.vkd, ctx.device, ctx.allocator,
+                                 makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+                                 MemoryRequirement::HostVisible};
+    BufferWithMemory dataBufferB0{ctx.vkd, ctx.device, ctx.allocator,
+                                  makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+                                  MemoryRequirement::HostVisible};
+    BufferWithMemory dataBufferB1{ctx.vkd, ctx.device, ctx.allocator,
+                                  makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+                                  MemoryRequirement::HostVisible};
+
+    // Data buffer A  = 0.1f
+    // Data buffer B0 = 0.2f
+    // Data buffer B1 = 0.3f
+    float k = 1.0f;
+    for (const auto buffer : {&dataBufferA, &dataBufferB0, &dataBufferB1})
+    {
+        auto &bufferAlloc = buffer->getAllocation();
+        auto bufferPtr    = reinterpret_cast<float *>(bufferAlloc.getHostPtr());
+        *bufferPtr        = k / 10.0f;
+
+        flushAlloc(ctx.vkd, ctx.device, bufferAlloc);
+        k++;
+    }
+
+    // Shaders
+    const auto &binaries = context.getBinaryCollection();
+    ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
+    ShaderWrapper fragShaderA(ctx.vkd, ctx.device, binaries.get("fragA"));
+    ShaderWrapper fragShaderB(ctx.vkd, ctx.device, binaries.get("fragB"));
+
+    // Pipeline vertex input state
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructureConst();
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+
+    // Push constants
+    const auto pcSize   = sizeof(Vec4);
+    const auto pcStages = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
+
+    const auto descPoolCreateFlags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    const auto descType            = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+    // Descriptor set layout for pipeline A
+    DescriptorSetLayoutBuilder layoutBuilderA;
+    layoutBuilderA.addSingleBinding(descType, VK_SHADER_STAGE_FRAGMENT_BIT);
+    Move<VkDescriptorSetLayout> dsl0 = layoutBuilderA.build(ctx.vkd, ctx.device);
+
+    // Descriptor set layout for pipeline B - add another set.
+    DescriptorSetLayoutBuilder layoutBuilderB;
+    layoutBuilderB.addSingleBinding(descType, VK_SHADER_STAGE_FRAGMENT_BIT);
+    Move<VkDescriptorSetLayout> dsl1 = layoutBuilderB.build(ctx.vkd, ctx.device);
+
+    // Descriptor pool
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType, 3u);
+    Move<VkDescriptorPool> descriptorPool = poolBuilder.build(ctx.vkd, ctx.device, descPoolCreateFlags, 3u);
+
+    // Set for pipeline A (set 0).
+    Move<VkDescriptorSet> descSetA = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *dsl0);
+
+    // Sets for pipeline B (sets 0 and 1).
+    Move<VkDescriptorSet> descSetB0 = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *dsl0);
+    Move<VkDescriptorSet> descSetB1 = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *dsl1);
+
+    // Write the descriptors.
+    DescriptorSetUpdateBuilder updateBuilderA;
+    const VkDescriptorBufferInfo bufferADescriptorInfo = makeDescriptorBufferInfo(*dataBufferA, 0ull, bufferSizeBytes);
+    updateBuilderA.writeSingle(*descSetA, DescriptorSetUpdateBuilder::Location::binding(0u),
+                               VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferADescriptorInfo);
+
+    DescriptorSetUpdateBuilder updateBuilderB0;
+    const VkDescriptorBufferInfo bufferB0DescriptorInfo =
+        makeDescriptorBufferInfo(*dataBufferB0, 0ull, bufferSizeBytes);
+    updateBuilderB0.writeSingle(*descSetB0, DescriptorSetUpdateBuilder::Location::binding(0u),
+                                VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferB0DescriptorInfo);
+
+    DescriptorSetUpdateBuilder updateBuilderB1;
+    const VkDescriptorBufferInfo bufferB1DescriptorInfo =
+        makeDescriptorBufferInfo(*dataBufferB1, 0ull, bufferSizeBytes);
+    updateBuilderB1.writeSingle(*descSetB1, DescriptorSetUpdateBuilder::Location::binding(0u),
+                                VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferB1DescriptorInfo);
+
+    updateBuilderA.update(ctx.vkd, ctx.device);
+    updateBuilderB0.update(ctx.vkd, ctx.device);
+    updateBuilderB1.update(ctx.vkd, ctx.device);
+
+    // Pipeline layouts
+    const VkDescriptorSetLayout layoutADSLs[] = {*dsl0};
+    PipelineLayoutWrapper pipelineLayoutA(constructionType, ctx.vkd, ctx.device, 1u, layoutADSLs, 1u, &pcRange);
+
+    const VkDescriptorSetLayout layoutBDSLs[] = {*dsl0, *dsl1};
+    PipelineLayoutWrapper pipelineLayoutB(constructionType, ctx.vkd, ctx.device, 2u, layoutBDSLs, 1u, &pcRange);
+
+    // Attachments
+    const auto attLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    const auto attDesc   = makeAttachmentDescription(0u, colorFormat, sampleCount, VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                                     VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                                     VK_ATTACHMENT_STORE_OP_DONT_CARE, attLayout, attLayout);
+
+    const VkAttachmentReference attRef     = makeAttachmentReference(0u, attLayout);
+    const VkSubpassDescription subpassDesc = {
+        0u, VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, nullptr, 1u, &attRef, nullptr, nullptr, 0u, nullptr,
+    };
+    const VkRenderPassCreateInfo renderPassInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, nullptr, 0u, 1u, &attDesc, 1u, &subpassDesc, 0u, nullptr,
+    };
+
+    // Render passes
+    RenderPassWrapper primaryRP(ctx.vkd, ctx.device, &renderPassInfo, true /*dynamic rendering*/);
+    RenderPassWrapper secondaryRP = primaryRP.clone();
+    primaryRP.createFramebuffer(ctx.vkd, ctx.device, primaryImage.getImage(), primaryImage.getImageView(),
+                                extentVk.width, extentVk.height);
+    secondaryRP.createFramebuffer(ctx.vkd, ctx.device, secondaryImage.getImage(), secondaryImage.getImageView(),
+                                  extentVk.width, extentVk.height);
+
+    const std::vector<VkFormat> colorFormats(1u, colorFormat);
+    VkPipelineRenderingCreateInfo pipelineRenderingInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(colorFormats),
+        de::dataOrNull(colorFormats),
+        VK_FORMAT_UNDEFINED,
+        VK_FORMAT_UNDEFINED,
+    };
+
+    // Write mask is zero in the static state; it is set dynamically via cmdSetColorWriteMaskEXT.
+    VkPipelineColorBlendAttachmentState attBlend;
+    memset(&attBlend, 0, sizeof(attBlend));
+    const VkPipelineColorBlendStateCreateInfo colorBlendState = {
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_FALSE,
+        VK_LOGIC_OP_CLEAR,
+        1u,
+        &attBlend,
+        {0.0f, 0.0f, 0.0f, 0.0f},
+    };
+
+    const std::vector<VkDynamicState> dynamicStates{VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT};
+    const VkPipelineDynamicStateCreateInfo dynamicStateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
+    // Pipeline A: 1 descriptor set layout, used in the secondary command buffer.
+    GraphicsPipelineWrapper pipelineA(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(),
+                                      constructionType);
+    pipelineA.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDynamicState(&dynamicStateInfo)
+        .setupVertexInputState(&vertexInputState)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayoutA, secondaryRP.get(), 0u, vertShader,
+                                          nullptr, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), nullptr, nullptr,
+                                          &pipelineRenderingInfo)
+        .setupFragmentShaderState(pipelineLayoutA, secondaryRP.get(), 0u, fragShaderA)
+        .setupFragmentOutputState(secondaryRP.get(), 0u, &colorBlendState)
+        .buildPipeline();
+
+    // Pipeline B: 2 descriptor set layouts, used in the primary command buffer.
+    GraphicsPipelineWrapper pipelineB(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(),
+                                      constructionType);
+    pipelineB.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDynamicState(&dynamicStateInfo)
+        .setupVertexInputState(&vertexInputState)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayoutB, primaryRP.get(), 0u, vertShader,
+                                          nullptr, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), nullptr, nullptr,
+                                          &pipelineRenderingInfo)
+        .setupFragmentShaderState(pipelineLayoutB, primaryRP.get(), 0u, fragShaderB)
+        .setupFragmentOutputState(primaryRP.get(), 0u, &colorBlendState)
+        .buildPipeline();
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto primaryCmd = *cmd.cmdBuffer;
+    const auto secondaryCmdPtr =
+        allocateCommandBuffer(ctx.vkd, ctx.device, *cmd.cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+    const auto secondaryCmd = *secondaryCmdPtr;
+
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    const auto clearColorVk = makeClearValueColor(clearColor);
+    const tcu::Vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
+    const tcu::Vec4 green(0.0f, 1.0f, 0.0f, 1.0f);
+    const tcu::Vec4 blue(0.0f, 0.0f, 1.0f, 1.0f);
+
+    const std::vector<VkImage> allImages{primaryImage.getImage(), secondaryImage.getImage()};
+    const auto srr = makeDefaultImageSubresourceRange();
+
+    const VkDescriptorSet rawDescSetA    = *descSetA;
+    const VkDescriptorSet rawDescSetsB[] = {*descSetB0, *descSetB1};
+
+    const VkColorComponentFlags fullWriteMask = 0xFu;
+
+    // Secondary: bind pipeline A (1 descriptor set layout), bind set 0, set equal graphics state, push red, draw.
+    beginSecondaryCommandBuffer(ctx.vkd, secondaryCmd);
+    secondaryRP.begin(ctx.vkd, secondaryCmd, scissors.front());
+    pipelineA.bind(secondaryCmd);
+    ctx.vkd.cmdBindDescriptorSets(secondaryCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayoutA.get(), 0u, 1u,
+                                  &rawDescSetA, 0u, nullptr);
+    ctx.vkd.cmdSetColorWriteMaskEXT(secondaryCmd, 0u, 1u, &fullWriteMask);
+    ctx.vkd.cmdPushConstants(secondaryCmd, pipelineLayoutA.get(), pcStages, 0u, pcSize, &red);
+    ctx.vkd.cmdDraw(secondaryCmd, 4u, 1u, 0u, 0u);
+    secondaryRP.end(ctx.vkd, secondaryCmd);
+    endCommandBuffer(ctx.vkd, secondaryCmd);
+
+    beginCommandBuffer(ctx.vkd, primaryCmd);
+    {
+        std::vector<VkImageMemoryBarrier> preClear;
+        preClear.reserve(allImages.size());
+        for (const auto img : allImages)
+            preClear.push_back(makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, img, srr));
+        cmdPipelineImageMemoryBarrier(ctx.vkd, primaryCmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                      VK_PIPELINE_STAGE_TRANSFER_BIT, de::dataOrNull(preClear), preClear.size());
+
+        for (const auto img : allImages)
+            ctx.vkd.cmdClearColorImage(primaryCmd, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorVk.color, 1u,
+                                       &srr);
+
+        std::vector<VkImageMemoryBarrier> postClear;
+        postClear.reserve(allImages.size());
+        const auto postSrcAccess = static_cast<VkAccessFlags>(VK_ACCESS_TRANSFER_WRITE_BIT);
+        const auto postDstAccess =
+            static_cast<VkAccessFlags>(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+        const auto postSrcStage = static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_TRANSFER_BIT);
+        const auto postDstStage = static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+        for (const auto img : allImages)
+            postClear.push_back(makeImageMemoryBarrier(postSrcAccess, postDstAccess,
+                                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, attLayout, img, srr));
+        cmdPipelineImageMemoryBarrier(ctx.vkd, primaryCmd, postSrcStage, postDstStage, de::dataOrNull(postClear),
+                                      postClear.size());
+    }
+
+    // Primary first draw: bind pipeline B (2 descriptor set layouts), bind sets 0+1, set equal graphics state, push green.
+    primaryRP.begin(ctx.vkd, primaryCmd, scissors.front());
+    pipelineB.bind(primaryCmd);
+    ctx.vkd.cmdBindDescriptorSets(primaryCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayoutB.get(), 0u, 2u,
+                                  rawDescSetsB, 0u, nullptr);
+    ctx.vkd.cmdSetColorWriteMaskEXT(primaryCmd, 0u, 1u, &fullWriteMask);
+    ctx.vkd.cmdPushConstants(primaryCmd, pipelineLayoutB.get(), pcStages, 0u, pcSize, &green);
+    ctx.vkd.cmdDraw(primaryCmd, 4u, 1u, 0u, 0u);
+    primaryRP.end(ctx.vkd, primaryCmd);
+
+    // Execute secondary (binds pipeline A with 1 descriptor set layout).
+    ctx.vkd.cmdExecuteCommands(primaryCmd, 1u, &secondaryCmd);
+
+    // Primary second draw: rebind pipeline B (2 descriptor set layouts), bind sets 0+1, push blue.
+    primaryRP.begin(ctx.vkd, primaryCmd, scissors.front());
+    pipelineB.bind(primaryCmd);
+    ctx.vkd.cmdBindDescriptorSets(primaryCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayoutB.get(), 0u, 2u,
+                                  rawDescSetsB, 0u, nullptr);
+    ctx.vkd.cmdPushConstants(primaryCmd, pipelineLayoutB.get(), pcStages, 0u, pcSize, &blue);
+    ctx.vkd.cmdDraw(primaryCmd, 4u, 1u, 0u, 0u);
+    primaryRP.end(ctx.vkd, primaryCmd);
+
+    {
+        const auto copyExtent = extent.swizzle(0, 1);
+        copyImageToBuffer(ctx.vkd, primaryCmd, primaryImage.getImage(), primaryImage.getBuffer(), copyExtent);
+        copyImageToBuffer(ctx.vkd, primaryCmd, secondaryImage.getImage(), secondaryImage.getBuffer(), copyExtent);
+    }
+    endCommandBuffer(ctx.vkd, primaryCmd);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, primaryCmd);
+
+    struct Verification
+    {
+        const ImageWithBuffer *image;
+        const char *imageName;
+        tcu::Vec4 expectedColor;
+    };
+
+    // Primary image: last primary draw is blue + 0.5f (overwrites the first green draw)
+    // Secondary image: secondary drew red - 0.1f
+    const std::vector<Verification> verifications{
+        {&primaryImage, "Primary Image", Vec4(blue.x() + 0.5f /* data buffer B0+B1 */, blue.y(), blue.z(), blue.w())},
+        {&secondaryImage, "Secondary Image", Vec4(red.x() - 0.1f /* data buffer A */, red.y(), red.z(), red.w())},
+    };
+
+    const auto tcuFormat = mapVkFormat(colorFormat);
+    const tcu::Vec4 threshold(0.01f);
+    auto &log = context.getTestContext().getLog();
+    bool fail = false;
+
+    for (const auto &verif : verifications)
+    {
+        tcu::TextureLevel refLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+        tcu::PixelBufferAccess reference = refLevel.getAccess();
+        tcu::clear(reference, verif.expectedColor);
+
+        auto &alloc = verif.image->getBufferAllocation();
+        invalidateAlloc(ctx.vkd, ctx.device, alloc);
+        tcu::ConstPixelBufferAccess result(tcuFormat, extent, alloc.getHostPtr());
+
+        if (!tcu::floatThresholdCompare(log, verif.imageName, "Image comparison", reference, result, threshold,
+                                        COMPARE_LOG_ON_ERROR))
+            fail = true;
+    }
+
+    if (fail)
+        TCU_FAIL("Unexpected results in some output buffers; check log for details");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 void viewMaskSupportCheck(Context &context, bool)
 {
     context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
@@ -6443,6 +6825,21 @@ tcu::TestCaseGroup *createPipelineLibraryTests(tcu::TestContext &testCtx)
         }
 
         miscTests->addChild(primRebindGroup.release());
+
+        // Variant: pipeline A (secondary) and pipeline B (primary) differ only in descriptor set count
+        {
+            de::MovePtr<tcu::TestCaseGroup> primRebindGroup2(
+                new tcu::TestCaseGroup(testCtx, "primary_rebind_diff_layouts"));
+
+            for (const auto &constructionCase : ConstructionTypeCases)
+            {
+                addFunctionCaseWithPrograms(primRebindGroup2.get(), constructionCase.name,
+                                            PrimaryRebindDiffLayoutsCheckSupport, PrimaryRebindDiffLayoutsInitPrograms,
+                                            PrimaryRebindDiffLayoutsRun, constructionCase.constructionType);
+            }
+
+            miscTests->addChild(primRebindGroup2.release());
+        }
     }
 
     // Test case to check if viewMask is needed the fragment output library.
