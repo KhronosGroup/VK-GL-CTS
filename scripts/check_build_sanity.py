@@ -308,6 +308,10 @@ def parseArgs ():
                         dest="applyPostExternalDependencyCleanup",
                         action="store_true",
                         help="skip external dependency clean up")
+    parser.add_argument("--clean-mustpass",
+                        dest="cleanMustpass",
+                        action="store_true",
+                        help="Wipe generated mustpass output (keeping hand-maintained inputs) before any recipe runs. Intended for the maintainer workflow that prunes obsolete files; not for CI.")
     parser.add_argument("-v", "--verbose",
                         dest="verbose",
                         action="store_true",
@@ -327,6 +331,9 @@ if __name__ == "__main__":
                     print(name)
                     break
     else:
+        if args.cleanMustpass:
+            RunScript(os.path.join("scripts", "clean_generated_mustpass.py")).run(env)
+
         selectedRecipes = getAllRecipe(RECIPES) if args.recipes == "all" \
                         else getRecipesByName(RECIPES, args.recipes)
 
