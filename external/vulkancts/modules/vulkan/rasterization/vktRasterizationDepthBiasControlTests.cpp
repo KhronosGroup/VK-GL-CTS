@@ -686,7 +686,7 @@ tcu::TestStatus DepthBiasControlInstance::iterate(void)
                                     tcu::COMPARE_LOG_ON_ERROR))
     {
         log << tcu::TestLog::Message << "Color buffer failed: expected " << expectedColor << " (threshold "
-            << colorThreshold << ") and found " << depthResultAccess.getPixel(0, 0) << tcu::TestLog::EndMessage;
+            << colorThreshold << ") and found " << colorResultAccess.getPixel(0, 0) << tcu::TestLog::EndMessage;
         fail = true;
     }
 

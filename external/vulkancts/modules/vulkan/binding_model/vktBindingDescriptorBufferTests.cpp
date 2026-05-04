@@ -6030,8 +6030,12 @@ tcu::TestStatus testLimits(Context &context)
     if (context.isDeviceFunctionalitySupported("VK_EXT_descriptor_buffer"))
     {
         const auto &features = context.getDescriptorBufferFeaturesEXT();
-        const auto &props    = context.getDescriptorBufferPropertiesEXT();
-        const bool hasRT     = context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline") ||
+
+        if (features.descriptorBuffer != VK_TRUE)
+            TCU_THROW(NotSupportedError, "descriptorBuffer feature is not supported");
+
+        const auto &props = context.getDescriptorBufferPropertiesEXT();
+        const bool hasRT  = context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline") ||
                            context.isDeviceFunctionalitySupported("VK_KHR_ray_query");
         const size_t maxResourceDescriptorSize = std::max(
             props.storageImageDescriptorSize,
@@ -6043,8 +6047,6 @@ tcu::TestStatus testLimits(Context &context)
                                                          std::max(props.inputAttachmentDescriptorSize,
                                                                   std::max(props.accelerationStructureDescriptorSize,
                                                                            size_t(0u)))))))));
-
-        DE_ASSERT(features.descriptorBuffer == VK_TRUE);
 
         // Must be queried directly from the physical device, the structure cached in the context has robustness disabled.
         VkPhysicalDeviceFeatures physDeviceFeatures{};

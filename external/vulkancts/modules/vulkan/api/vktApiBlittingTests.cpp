@@ -490,7 +490,10 @@ tcu::TestStatus BlittingImages::iterate(void)
         tcu::TextureLevel decompressedLevel(getUncompressedFormat(dstCompressedFormat), dstWidth, dstHeight, dstDepth);
         tcu::PixelBufferAccess decompressedAccess(decompressedLevel.getAccess());
 
-        tcu::decompress(decompressedAccess, dstCompressedFormat, compressedDataSrc);
+        const tcu::TexDecompressionParams params(tcu::isAstcSFLOATFormat(dstCompressedFormat) ?
+                                                     tcu::TexDecompressionParams::ASTCMODE_HDR :
+                                                     tcu::TexDecompressionParams::ASTCMODE_LDR);
+        tcu::decompress(decompressedAccess, dstCompressedFormat, compressedDataSrc, params);
 
         return checkTestResult(decompressedAccess);
     }
@@ -553,14 +556,17 @@ bool BlittingImages::checkNonNearestFilteredResult(const tcu::ConstPixelBufferAc
         const tcu::IVec4 srcBitDepth = tcu::getTextureFormatBitDepth(srcFormat);
         for (uint32_t i = 0; i < 4; ++i)
         {
-            DE_ASSERT(dstBitDepth[i] < std::numeric_limits<uint64_t>::digits);
-            DE_ASSERT(srcBitDepth[i] < std::numeric_limits<uint64_t>::digits);
-            uint64_t threshold64 =
-                1 + de::max(((UINT64_C(1) << dstBitDepth[i]) - 1) /
-                                de::clamp((UINT64_C(1) << srcBitDepth[i]) - 1, UINT64_C(1), UINT64_C(256)),
-                            UINT64_C(1));
-            DE_ASSERT(threshold64 <= std::numeric_limits<uint32_t>::max());
-            threshold[i] = static_cast<uint32_t>(threshold64);
+            const uint64_t dstMax = (dstBitDepth[i] == std::numeric_limits<uint64_t>::digits) ?
+                                        std::numeric_limits<uint64_t>::max() :
+                                        (UINT64_C(1) << dstBitDepth[i]) - 1;
+            const uint64_t srcMax = (srcBitDepth[i] == std::numeric_limits<uint64_t>::digits) ?
+                                        std::numeric_limits<uint64_t>::max() :
+                                        (UINT64_C(1) << srcBitDepth[i]) - 1;
+
+            const uint64_t threshold64 =
+                1 + de::max(dstMax / de::clamp(srcMax, UINT64_C(1), UINT64_C(256)), UINT64_C(1));
+
+            threshold[i] = static_cast<uint32_t>(de::min(threshold64, uint64_t(std::numeric_limits<uint32_t>::max())));
         }
 
         isOk = tcu::intThresholdCompare(log, "Compare", "Result comparsion", clampedExpected, result, threshold,
@@ -666,20 +672,22 @@ bool BlittingImages::checkCompressedNonNearestFilteredResult(const tcu::ConstPix
         filteredResultVerification ? filteredClampedReference.getAccess() : clampedReference;
     const tcu::ConstPixelBufferAccess res = filteredResultVerification ? filteredResult.getAccess() : result;
 
-    log << tcu::TestLog::Section("ClampedSourceImage", "Region with clamped edges on source image.");
-    bool isOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", clampedRef, res, threshold,
-                                           tcu::COMPARE_LOG_ON_ERROR);
-    log << tcu::TestLog::EndSection;
+    bool isOk;
+    {
+        const tcu::ScopedLogSection section(log, "ClampedSourceImage", "Region with clamped edges on source image.");
+        isOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", clampedRef, res, threshold,
+                                          tcu::COMPARE_LOG_ON_ERROR);
+    }
 
     if (!isOk)
     {
         const tcu::ConstPixelBufferAccess unclampedRef =
             filteredResultVerification ? filteredUnclampedReference.getAccess() : unclampedReference;
 
-        log << tcu::TestLog::Section("NonClampedSourceImage", "Region with non-clamped edges on source image.");
+        const tcu::ScopedLogSection section(log, "NonClampedSourceImage",
+                                            "Region with non-clamped edges on source image.");
         isOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", unclampedRef, res, threshold,
                                           tcu::COMPARE_LOG_ON_ERROR);
-        log << tcu::TestLog::EndSection;
     }
 
     return isOk;
