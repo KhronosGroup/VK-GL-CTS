@@ -32,9 +32,8 @@
 #pragma clang diagnostic ignored "-Wpointer-bool-conversion"
 #endif
 
-#include "vulkan_json_parser.hpp"
-#include "vulkan_json_data.hpp"
-
+#include <json/json.h>
+#include <vulkan/pcjson/vksc_pipeline_json.h>
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif // __GNUC__
@@ -43,6 +42,11 @@
 #endif
 
 #include "vksStructsVKSC.hpp"
+#include "vkQueryUtil.hpp"
+
+#include <numeric>
+
+using namespace vk;
 
 namespace vksc_server
 {
@@ -50,7 +54,136 @@ namespace vksc_server
 namespace json
 {
 
-Context::Context()
+// Helper class to remap and store object names
+template <typename T>
+struct PipelineLayoutAndChildObjectInfo
+{
+    vk::VkPipelineLayoutCreateInfo pipelineLayout{};
+    std::vector<vk::VkDescriptorSetLayoutCreateInfo> descriptorSetLayouts{};
+    std::vector<vk::VkSamplerCreateInfo> immutableSamplers{};
+    std::vector<vk::VkSamplerYcbcrConversionCreateInfo> ycbcrSamplers{};
+    std::vector<std::string> namesStorage{};
+    std::vector<const char *> descriptorSetLayoutNames{};
+    std::vector<uint64_t> descriptorSetLayoutIds{};
+    std::vector<const char *> immutableSamplerNames{};
+    std::vector<uint64_t> immutableSamplerIds{};
+    std::vector<const char *> ycbcrSamplerNames{};
+    std::vector<uint64_t> ycbcrSamplerIds{};
+
+    PipelineLayoutAndChildObjectInfo(Context &context, T &state,
+                                     const vksc_server::PipelineLayoutData &pipelineLayoutData)
+    {
+        readJSON_VkPipelineLayoutCreateInfo(context, pipelineLayoutData.json, pipelineLayout);
+
+        uint32_t namesRequired = 0;
+        for (size_t i = 0; i < pipelineLayoutData.descriptorSetLayouts.size(); ++i)
+        {
+            ++namesRequired;
+            for (size_t j = 0; j < pipelineLayoutData.descriptorSetLayouts[i].immutableSamplers.size(); ++j)
+            {
+                ++namesRequired;
+                if (pipelineLayoutData.descriptorSetLayouts[i].immutableSamplers[j].samplerYcbcrConversion.has_value())
+                {
+                    ++namesRequired;
+                }
+            }
+        }
+        namesStorage.reserve(namesRequired);
+        auto notContains = [](const auto &container, const uint64_t uniqueObjId)
+        { return std::find(std::cbegin(container), std::cend(container), uniqueObjId) == std::cend(container); };
+        for (size_t i = 0; i < pipelineLayoutData.descriptorSetLayouts.size(); ++i)
+        {
+            const auto &descriptorSetLayout = pipelineLayoutData.descriptorSetLayouts[i];
+            if (notContains(descriptorSetLayoutIds, descriptorSetLayout.uniqueObjId))
+            {
+                namesStorage.push_back(std::to_string(descriptorSetLayoutIds.size() + 1));
+                descriptorSetLayoutIds.push_back(descriptorSetLayout.uniqueObjId);
+                descriptorSetLayoutNames.push_back(namesStorage.back().c_str());
+                descriptorSetLayouts.push_back({});
+                readJSON_VkDescriptorSetLayoutCreateInfo(context, descriptorSetLayout.json,
+                                                         descriptorSetLayouts.back());
+            }
+            for (size_t j = 0; j < pipelineLayoutData.descriptorSetLayouts[i].immutableSamplers.size(); ++j)
+            {
+                const auto &immutableSampler = descriptorSetLayout.immutableSamplers[j];
+                if (notContains(immutableSamplerIds, immutableSampler.uniqueObjId))
+                {
+                    namesStorage.push_back(std::to_string(immutableSamplerNames.size() + 1));
+                    immutableSamplerIds.push_back(immutableSampler.uniqueObjId);
+                    immutableSamplerNames.push_back(namesStorage.back().c_str());
+                    immutableSamplers.push_back({});
+                    readJSON_VkSamplerCreateInfo(context, immutableSampler.json, immutableSamplers.back());
+                }
+                if (immutableSampler.samplerYcbcrConversion.has_value())
+                {
+                    const auto &ycbcrSampler = immutableSampler.samplerYcbcrConversion.value();
+                    if (notContains(ycbcrSamplerIds, ycbcrSampler.uniqueObjId))
+                    {
+                        namesStorage.push_back(std::to_string(ycbcrSamplerNames.size() + 1));
+                        ycbcrSamplerIds.push_back(ycbcrSampler.uniqueObjId);
+                        ycbcrSamplerNames.push_back(namesStorage.back().c_str());
+                        ycbcrSamplers.push_back({});
+                        readJSON_VkSamplerYcbcrConversionCreateInfo(context, ycbcrSampler.json, ycbcrSamplers.back());
+                    }
+                }
+            }
+        }
+        // Rewrite autoinc ids to indices
+        auto findId = [](const auto &container, const uint64_t uniqueObjId)
+        { return std::find(std::cbegin(container), std::cend(container), uniqueObjId); };
+        for (size_t i = 0; i < pipelineLayout.setLayoutCount; ++i)
+        {
+            auto pipelineLayoutSets = const_cast<VkDescriptorSetLayout *>(pipelineLayout.pSetLayouts);
+            pipelineLayoutSets[i]   = (const void *)std::distance(
+                std::cbegin(descriptorSetLayoutIds),
+                findId(descriptorSetLayoutIds, pipelineLayout.pSetLayouts[i].getInternal()));
+        }
+        for (auto &descriptorSetLayout : descriptorSetLayouts)
+        {
+            for (size_t i = 0; i < descriptorSetLayout.bindingCount; ++i)
+            {
+                if (descriptorSetLayout.pBindings[i].pImmutableSamplers)
+                {
+                    for (size_t j = 0; j < descriptorSetLayout.pBindings[i].descriptorCount; ++j)
+                    {
+                        auto bindingImmutableSamplers =
+                            const_cast<VkSampler *>(descriptorSetLayout.pBindings[i].pImmutableSamplers);
+                        bindingImmutableSamplers[j] = (const void *)std::distance(
+                            std::cbegin(immutableSamplerIds),
+                            findId(immutableSamplerIds,
+                                   descriptorSetLayout.pBindings[i].pImmutableSamplers[j].getInternal()));
+                    }
+                }
+            }
+        }
+        for (auto &immutableSampler : immutableSamplers)
+        {
+            auto ycbcr = findStructure<VkSamplerYcbcrConversionInfo>(const_cast<void *>(immutableSampler.pNext));
+            if (ycbcr)
+            {
+                ycbcr->conversion = (const void *)std::distance(
+                    std::cbegin(ycbcrSamplerIds), findId(ycbcrSamplerIds, ycbcr->conversion.getInternal()));
+            }
+        }
+
+        // Write to state
+        state.pPipelineLayout = &pipelineLayout;
+
+        state.descriptorSetLayoutCount   = static_cast<uint32_t>(descriptorSetLayouts.size());
+        state.pDescriptorSetLayouts      = descriptorSetLayouts.size() ? descriptorSetLayouts.data() : nullptr;
+        state.ppDescriptorSetLayoutNames = descriptorSetLayoutNames.size() ? descriptorSetLayoutNames.data() : nullptr;
+
+        state.immutableSamplerCount   = static_cast<uint32_t>(immutableSamplers.size());
+        state.pImmutableSamplers      = immutableSamplers.size() ? immutableSamplers.data() : 0;
+        state.ppImmutableSamplerNames = immutableSamplerNames.size() ? immutableSamplerNames.data() : nullptr;
+
+        state.ycbcrSamplerCount   = static_cast<uint32_t>(ycbcrSamplers.size());
+        state.pYcbcrSamplers      = ycbcrSamplers.size() ? ycbcrSamplers.data() : nullptr;
+        state.ppYcbcrSamplerNames = ycbcrSamplerNames.size() ? ycbcrSamplerNames.data() : nullptr;
+    }
+};
+
+Context::Context() : parser{vpjCreateParser()}, gen{vpjCreateGenerator()}, reader{nullptr}, writer{new Json::FastWriter}
 {
     Json::CharReaderBuilder builder;
     builder.settings_["allowSpecialFloats"] = 1;
@@ -59,906 +192,483 @@ Context::Context()
 
 Context::~Context()
 {
+    vpjDestroyParser(parser);
+    vpjDestroyGenerator(gen);
 }
 
-void runGarbageCollection()
+void runGarbageCollection(Context &context)
 {
-    vk_json_parser::s_globalMem.clear();
-}
-
-void VkObjectToString(const vk::VkDeviceObjectReservationCreateInfo &in, string &out)
-{
-    vk_json::_string_stream.str({});
-    vk_json::_string_stream.clear();
-    vk_json::print_VkDeviceObjectReservationCreateInfo(&in, "", false);
-    out = vk_json::_string_stream.str();
-}
-
-void StringToVkObject(const string &in, vk::VkDeviceObjectReservationCreateInfo &out)
-{
+    vpjFreeParserOutputs(context.parser);
     Json::CharReaderBuilder builder;
     builder.settings_["allowSpecialFloats"] = 1;
-    std::unique_ptr<Json::CharReader> jsonReader(builder.newCharReader());
+    context.reader.reset(builder.newCharReader());
+}
 
-    Json::Value jsonRoot;
-    string errors;
-    if (!jsonReader->parse(in.data(), in.data() + in.size(), &jsonRoot, &errors))
+std::vector<const char *> serializeCStringPtrs(const std::vector<std::string> &v)
+{
+    std::vector<const char *> res;
+    res.reserve(v.size());
+    std::transform(v.begin(), v.end(), std::back_insert_iterator(res), [](const std::string &s) { return s.c_str(); });
+    return res;
+};
+const char *stage_bit_to_string(const vk::VkShaderStageFlagBits stage)
+{
+    switch (stage)
     {
-        throw std::runtime_error("json parse error");
+    case vk::VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT:
+        return "vert";
+        break;
+    case vk::VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+        return "tesc";
+        break;
+    case vk::VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+        return "tese";
+        break;
+    case vk::VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT:
+        return "geom";
+        break;
+    case vk::VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT:
+        return "frag";
+        break;
+    case vk::VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT:
+        return "comp";
+        break;
+    default:
+        TCU_THROW(InternalError, "Unrecognized shader stage");
     }
-    vk_json_parser::parse_VkDeviceObjectReservationCreateInfo(jsonRoot, out);
-}
+};
 
-string writeJSON_VkGraphicsPipelineCreateInfo(const VkGraphicsPipelineCreateInfo &pCreateInfo)
+OwningVpjShaderFilenames getShaderFilenames(const vk::VkComputePipelineCreateInfo &ci, const std::string &prefix,
+                                            const uint32_t index)
 {
-    vk_json::_string_stream.str({});
-    vk_json::_string_stream.clear();
-    vk_json::print_VkGraphicsPipelineCreateInfo(pCreateInfo, "", 0);
-    return vk_json::_string_stream.str();
-}
-
-string writeJSON_VkComputePipelineCreateInfo(const VkComputePipelineCreateInfo &pCreateInfo)
-{
-    vk_json::_string_stream.str({});
-    vk_json::_string_stream.clear();
-    vk_json::print_VkComputePipelineCreateInfo(pCreateInfo, "", 0);
-    return vk_json::_string_stream.str();
-}
-
-string writeJSON_VkRenderPassCreateInfo(const VkRenderPassCreateInfo &pCreateInfo)
-{
-
-    vk_json::_string_stream.str({});
-    vk_json::_string_stream.clear();
-    vk_json::print_VkRenderPassCreateInfo(&pCreateInfo, "", false);
-    return vk_json::_string_stream.str();
-}
-
-string writeJSON_VkRenderPassCreateInfo2(const VkRenderPassCreateInfo2 &pCreateInfo)
-{
-    vk_json::_string_stream.str({});
-    vk_json::_string_stream.clear();
-    vk_json::print_VkRenderPassCreateInfo2(&pCreateInfo, "", false);
-    return vk_json::_string_stream.str();
-}
-
-string writeJSON_VkPipelineLayoutCreateInfo(const VkPipelineLayoutCreateInfo &pCreateInfo)
-{
-    vk_json::_string_stream.str({});
-    vk_json::_string_stream.clear();
-    vk_json::print_VkPipelineLayoutCreateInfo(&pCreateInfo, "", false);
-    return vk_json::_string_stream.str();
-}
-
-string writeJSON_VkDescriptorSetLayoutCreateInfo(const VkDescriptorSetLayoutCreateInfo &pCreateInfo)
-{
-    vk_json::_string_stream.str({});
-    vk_json::_string_stream.clear();
-    vk_json::print_VkDescriptorSetLayoutCreateInfo(&pCreateInfo, "", false);
-    return vk_json::_string_stream.str();
-}
-
-string writeJSON_VkSamplerCreateInfo(const VkSamplerCreateInfo &pCreateInfo)
-{
-    vk_json::_string_stream.str({});
-    vk_json::_string_stream.clear();
-    vk_json::print_VkSamplerCreateInfo(&pCreateInfo, "", false);
-    return vk_json::_string_stream.str();
-}
-
-string writeJSON_VkDeviceObjectReservationCreateInfo(const VkDeviceObjectReservationCreateInfo &dmrCI)
-{
-    vk_json::_string_stream.str({});
-    vk_json::_string_stream.clear();
-    vk_json::print_VkDeviceObjectReservationCreateInfo(&dmrCI, "", false);
-    return vk_json::_string_stream.str();
-}
-
-string writeJSON_VkPipelineOfflineCreateInfo(const vk::VkPipelineOfflineCreateInfo &piInfo)
-{
-    vk_json::_string_stream.str({});
-    vk_json::_string_stream.clear();
-    vk_json::print_VkPipelineOfflineCreateInfo(&piInfo, "", false);
-    return vk_json::_string_stream.str();
-}
-
-string writeJSON_GraphicsPipeline_vkpccjson(
-    const std::string &filePrefix, uint32_t pipelineIndex, const vk::VkPipelineOfflineCreateInfo id,
-    const VkGraphicsPipelineCreateInfo &gpCI, const vk::VkPhysicalDeviceFeatures2 &deviceFeatures2,
-    const std::vector<std::string> &deviceExtensions,
-    const std::map<VkSamplerYcbcrConversion, VkSamplerYcbcrConversionCreateInfo> &samplerYcbcrConversions,
-    const std::map<VkSampler, VkSamplerCreateInfo> &samplers,
-    const std::map<VkDescriptorSetLayout, VkDescriptorSetLayoutCreateInfo> &descriptorSetLayouts,
-    const std::map<VkRenderPass, VkRenderPassCreateInfo> &renderPasses,
-    const std::map<VkRenderPass, VkRenderPassCreateInfo2> &renderPasses2,
-    const std::map<VkPipelineLayout, VkPipelineLayoutCreateInfo> &pipelineLayouts)
-{
-    vk_json::_string_stream.str({});
-    vk_json::_string_stream.clear();
-
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "{" << std::endl;
-    vk_json::s_num_spaces += 4;
-
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "\"GraphicsPipelineState\" :" << std::endl;
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "{" << std::endl;
-    vk_json::s_num_spaces += 4;
-
-    if (!renderPasses.empty())
+    const auto shader_filename = [&](const vk::VkPipelineShaderStageCreateInfo &pss_ci) -> std::string
     {
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "\"Renderpass\" : " << std::endl;
-        vk_json::print_VkRenderPassCreateInfo(begin(renderPasses)->second, "", true);
+        return prefix + "shader_" + std::to_string(index) + '_' + std::to_string(pss_ci.module.getInternal()) + '.' +
+               stage_bit_to_string(pss_ci.stage) + ".spv";
+    };
+    OwningVpjShaderFilenames res;
+    res.storage.emplace_back(shader_filename(ci.stage));
+    res.filenames.push_back(
+        VpjShaderFileName{static_cast<int32_t>(ci.stage.stage), res.storage.back().c_str(), 0, nullptr});
+    return res;
+};
+OwningVpjShaderFilenames getShaderFilenames(const vk::VkGraphicsPipelineCreateInfo &ci, const std::string &prefix,
+                                            const uint32_t index)
+{
+    const auto shader_filename = [&](const vk::VkPipelineShaderStageCreateInfo &pss_ci) -> std::string
+    {
+        return prefix + "shader_" + std::to_string(index) + '_' + std::to_string(pss_ci.module.getInternal()) + '.' +
+               stage_bit_to_string(pss_ci.stage) + ".spv";
+    };
+    const auto filename_accumulator =
+        [&](OwningVpjShaderFilenames &acc,
+            const vk::VkPipelineShaderStageCreateInfo &pss_ci) -> OwningVpjShaderFilenames &
+    {
+        acc.storage.emplace_back(shader_filename(pss_ci));
+        acc.filenames.push_back(
+            VpjShaderFileName{static_cast<int32_t>(pss_ci.stage), acc.storage.back().c_str(), 0, nullptr});
+        return acc;
+    };
+    return std::accumulate(ci.pStages, ci.pStages + ci.stageCount, OwningVpjShaderFilenames{}, filename_accumulator);
+};
+
+string writeJSON_VkGraphicsPipelineCreateInfo(const Context &context,
+                                              const vk::VkGraphicsPipelineCreateInfo &pCreateInfo)
+{
+    const char *str, *msg;
+    if (!vpjGenerateSingleStructJson(context.gen, &pCreateInfo, &str, &msg))
+    {
+        TCU_THROW(InternalError, msg);
     }
-    if (!renderPasses2.empty())
+    std::string res = str;
+    vpjFreeGeneratorOutputs(context.gen);
+    return res;
+}
+
+string writeJSON_VkComputePipelineCreateInfo(const Context &context, const vk::VkComputePipelineCreateInfo &pCreateInfo)
+{
+    const char *str, *msg;
+    if (!vpjGenerateSingleStructJson(context.gen, &pCreateInfo, &str, &msg))
     {
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "\"Renderpass2\" : " << std::endl;
-        vk_json::print_VkRenderPassCreateInfo2(begin(renderPasses2)->second, "", true);
+        TCU_THROW(InternalError, msg);
     }
-    if (!samplerYcbcrConversions.empty())
+    std::string res = str;
+    vpjFreeGeneratorOutputs(context.gen);
+    return res;
+}
+
+string writeJSON_VkRenderPassCreateInfo(const Context &context, const vk::VkRenderPassCreateInfo &pCreateInfo)
+{
+    const char *str, *msg;
+    if (!vpjGenerateSingleStructJson(context.gen, &pCreateInfo, &str, &msg))
     {
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "\"YcbcrSamplers\" :" << std::endl;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "[" << std::endl;
-        vk_json::s_num_spaces += 4;
-
-        size_t j = 0u;
-        for (auto it = begin(samplerYcbcrConversions); it != end(samplerYcbcrConversions); ++it, ++j)
-        {
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            vk_json::_string_stream << "{" << std::endl;
-            vk_json::s_num_spaces += 4;
-
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            vk_json::_string_stream << "\"" << it->first.getInternal() << "\":" << std::endl;
-
-            vk_json::print_VkSamplerYcbcrConversionCreateInfo(it->second, "", false);
-
-            vk_json::s_num_spaces -= 4;
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            if ((j + 1) < samplerYcbcrConversions.size())
-                vk_json::_string_stream << "}," << std::endl;
-            else
-                vk_json::_string_stream << "}" << std::endl;
-        }
-
-        vk_json::s_num_spaces -= 4;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "]," << std::endl;
+        TCU_THROW(InternalError, msg);
     }
+    std::string res = str;
+    vpjFreeGeneratorOutputs(context.gen);
+    return res;
+}
 
-    if (!samplers.empty())
+string writeJSON_VkRenderPassCreateInfo2(const Context &context, const vk::VkRenderPassCreateInfo2 &pCreateInfo)
+{
+    const char *str, *msg;
+    if (!vpjGenerateSingleStructJson(context.gen, &pCreateInfo, &str, &msg))
     {
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "\"ImmutableSamplers\" :" << std::endl;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "[" << std::endl;
-        vk_json::s_num_spaces += 4;
-
-        size_t j = 0u;
-        for (auto it = begin(samplers); it != end(samplers); ++it, ++j)
-        {
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            vk_json::_string_stream << "{" << std::endl;
-            vk_json::s_num_spaces += 4;
-
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            vk_json::_string_stream << "\"" << it->first.getInternal() << "\":" << std::endl;
-
-            vk_json::print_VkSamplerCreateInfo(it->second, "", false);
-
-            vk_json::s_num_spaces -= 4;
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-
-            if ((j + 1) < samplers.size())
-                vk_json::_string_stream << "}," << std::endl;
-            else
-                vk_json::_string_stream << "}" << std::endl;
-        }
-
-        vk_json::s_num_spaces -= 4;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "]," << std::endl;
+        TCU_THROW(InternalError, msg);
     }
+    std::string res = str;
+    vpjFreeGeneratorOutputs(context.gen);
+    return res;
+}
 
-    if (!descriptorSetLayouts.empty())
+string writeJSON_VkPipelineLayoutCreateInfo(const Context &context, const vk::VkPipelineLayoutCreateInfo &pCreateInfo)
+{
+    const char *str, *msg;
+    if (!vpjGenerateSingleStructJson(context.gen, &pCreateInfo, &str, &msg))
     {
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "\"DescriptorSetLayouts\" :" << std::endl;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "[" << std::endl;
-        vk_json::s_num_spaces += 4;
+        TCU_THROW(InternalError, msg);
+    }
+    std::string res = str;
+    vpjFreeGeneratorOutputs(context.gen);
+    return res;
+}
 
-        size_t j = 0u;
-        for (auto it = begin(descriptorSetLayouts); it != end(descriptorSetLayouts); ++it, ++j)
-        {
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            vk_json::_string_stream << "{" << std::endl;
-            vk_json::s_num_spaces += 4;
+string writeJSON_VkDescriptorSetLayoutCreateInfo(const Context &context,
+                                                 const vk::VkDescriptorSetLayoutCreateInfo &pCreateInfo)
+{
+    const char *str, *msg;
+    if (!vpjGenerateSingleStructJson(context.gen, &pCreateInfo, &str, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
+    std::string res = str;
+    vpjFreeGeneratorOutputs(context.gen);
+    return res;
+}
 
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            vk_json::_string_stream << "\"" << it->first.getInternal() << "\":" << std::endl;
+string writeJSON_VkSamplerCreateInfo(const Context &context, const vk::VkSamplerCreateInfo &pCreateInfo)
+{
+    const char *str, *msg;
+    if (!vpjGenerateSingleStructJson(context.gen, &pCreateInfo, &str, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
+    std::string res = str;
+    vpjFreeGeneratorOutputs(context.gen);
+    return res;
+}
 
-            vk_json::print_VkDescriptorSetLayoutCreateInfo(it->second, "", false);
+string writeJSON_VkSamplerYcbcrConversionCreateInfo(const Context &context,
+                                                    const VkSamplerYcbcrConversionCreateInfo &pCreateInfo)
+{
+    const char *str, *msg;
+    if (!vpjGenerateSingleStructJson(context.gen, &pCreateInfo, &str, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
+    std::string res = str;
+    vpjFreeGeneratorOutputs(context.gen);
+    return res;
+}
 
-            vk_json::s_num_spaces -= 4;
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
+string writeJSON_VkShaderModuleCreateInfo(const Context &context, const VkShaderModuleCreateInfo &smCI)
+{
+    const char *str, *msg;
+    if (!vpjGenerateSingleStructJson(context.gen, &smCI, &str, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
+    std::string res = str;
+    vpjFreeGeneratorOutputs(context.gen);
+    return res;
+}
 
-            if ((j + 1) < descriptorSetLayouts.size())
-                vk_json::_string_stream << "}," << std::endl;
-            else
-                vk_json::_string_stream << "}" << std::endl;
-        }
+string writeJSON_VkDeviceObjectReservationCreateInfo(const Context &context,
+                                                     const vk::VkDeviceObjectReservationCreateInfo &dmrCI)
+{
+    const char *str, *msg;
+    if (!vpjGenerateSingleStructJson(context.gen, &dmrCI, &str, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
+    std::string res = str;
+    vpjFreeGeneratorOutputs(context.gen);
+    return res;
+}
 
-        vk_json::s_num_spaces -= 4;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "]," << std::endl;
+string writeJSON_VkPipelineOfflineCreateInfo(const Context &context, const vk::VkPipelineOfflineCreateInfo &piInfo)
+{
+    const char *str, *msg;
+    if (!vpjGenerateSingleStructJson(context.gen, &piInfo, &str, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
+    std::string res = str;
+    vpjFreeGeneratorOutputs(context.gen);
+    return res;
+}
+
+string writeJSON_GraphicsPipeline_vkpccjson(Context &context, const VulkanJsonPipelineDescription &pipelineDescription,
+                                            const std::string &filePrefix, const uint32_t pipelineIndex)
+{
+    if (!std::holds_alternative<GraphicsPipelineData>(pipelineDescription.pipelineData))
+    {
+        TCU_THROW(InternalError, "Pipeline description holds wrong type of pipeline data.");
     }
 
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "\"PipelineLayout\" : " << std::endl;
-    vk_json::print_VkPipelineLayoutCreateInfo(begin(pipelineLayouts)->second, "", true);
+    auto &pipelineData = std::get<GraphicsPipelineData>(pipelineDescription.pipelineData);
+    vk::VkGraphicsPipelineCreateInfo graphicsPipeline{};
+    readJSON_VkGraphicsPipelineCreateInfo(context, pipelineData.json, graphicsPipeline);
 
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "\"GraphicsPipeline\" : " << std::endl;
-    vk_json::print_VkGraphicsPipelineCreateInfo(gpCI, "", true);
+    VpjData data{};
+    data.graphicsPipelineState.pGraphicsPipeline = &graphicsPipeline;
 
-    // shaders
+    PipelineLayoutAndChildObjectInfo objectInfo(context, data.graphicsPipelineState, pipelineData.pipelineLayoutData);
+
+    auto shaderFilenames                           = getShaderFilenames(graphicsPipeline, filePrefix, pipelineIndex);
+    data.graphicsPipelineState.shaderFileNameCount = static_cast<uint32_t>(shaderFilenames.filenames.size());
+    data.graphicsPipelineState.pShaderFileNames    = shaderFilenames.filenames.data();
+
+    vk::VkPhysicalDeviceFeatures2 deviceFeatures2{};
+    readJSON_VkPhysicalDeviceFeatures2(context, pipelineDescription.deviceFeatures, deviceFeatures2);
+    data.graphicsPipelineState.pPhysicalDeviceFeatures = &deviceFeatures2;
+
+    auto deviceExtensionCstrs  = serializeCStringPtrs(pipelineDescription.deviceExtensions);
+    data.enabledExtensionCount = static_cast<uint32_t>(deviceExtensionCstrs.size());
+    data.ppEnabledExtensions   = deviceExtensionCstrs.data();
+
+    std::variant<vk::VkRenderPassCreateInfo, vk::VkRenderPassCreateInfo2> renderPass;
+    if (pipelineData.renderPassData.json.find("VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO"))
     {
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "\"ShaderFileNames\" :" << std::endl;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "[" << std::endl;
-        vk_json::s_num_spaces += 4;
-
-        for (uint32_t j = 0; j < gpCI.stageCount; ++j)
-        {
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            vk_json::_string_stream << "{" << std::endl;
-            vk_json::s_num_spaces += 4;
-
-            vk_json::print_VkShaderStageFlagBits(gpCI.pStages[j].stage, "stage", 1);
-
-            std::stringstream shaderName;
-            shaderName << filePrefix << "shader_" << pipelineIndex << "_" << gpCI.pStages[j].module.getInternal()
-                       << ".";
-
-            switch (gpCI.pStages[j].stage)
-            {
-            case VK_SHADER_STAGE_VERTEX_BIT:
-                shaderName << "vert";
-                break;
-            case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
-                shaderName << "tesc";
-                break;
-            case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
-                shaderName << "tese";
-                break;
-            case VK_SHADER_STAGE_GEOMETRY_BIT:
-                shaderName << "geom";
-                break;
-            case VK_SHADER_STAGE_FRAGMENT_BIT:
-                shaderName << "frag";
-                break;
-            default:
-                TCU_THROW(InternalError, "Unrecognized shader stage");
-            }
-            shaderName << ".spv";
-
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            vk_json::_string_stream << "\"filename\" : \"" << shaderName.str() << "\"" << std::endl;
-            vk_json::s_num_spaces -= 4;
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-
-            if ((j + 1) >= gpCI.stageCount)
-                vk_json::_string_stream << "}" << std::endl;
-            else
-                vk_json::_string_stream << "}," << std::endl;
-        }
-
-        vk_json::s_num_spaces -= 4;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "]," << std::endl;
+        renderPass = vk::VkRenderPassCreateInfo{};
+        readJSON_VkRenderPassCreateInfo(context, pipelineData.renderPassData.json,
+                                        std::get<vk::VkRenderPassCreateInfo>(renderPass));
+        data.graphicsPipelineState.pRenderPass =
+            reinterpret_cast<const void *>(&std::get<vk::VkRenderPassCreateInfo>(renderPass));
     }
-
-    // device features
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "\"PhysicalDeviceFeatures\" : " << std::endl;
-    vk_json::print_VkPhysicalDeviceFeatures2(deviceFeatures2, "", false);
-
-    // close GraphicsPipelineState
-    vk_json::s_num_spaces -= 4;
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "}," << std::endl;
-
-    // device extensions
+    else if (pipelineData.renderPassData.json.find("VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2"))
     {
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "\"EnabledExtensions\" : " << std::endl;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "[" << std::endl;
-        vk_json::s_num_spaces += 4;
-
-        for (unsigned int j = 0; j < deviceExtensions.size(); j++)
-            vk_json::print_char(deviceExtensions[j].data(), "", (j + 1) != deviceExtensions.size());
-
-        vk_json::s_num_spaces -= 4;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "]," << std::endl;
-    }
-
-    // pipeline identifier
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "\"PipelineUUID\" : " << std::endl;
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "[" << std::endl;
-    vk_json::s_num_spaces += 4;
-    for (unsigned int j = 0; j < VK_UUID_SIZE; j++)
-        vk_json::print_uint32_t((uint32_t)id.pipelineIdentifier[j], "", (j + 1) != VK_UUID_SIZE);
-    vk_json::s_num_spaces -= 4;
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "]" << std::endl;
-
-    vk_json::s_num_spaces -= 4;
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "}" << std::endl;
-
-    return vk_json::_string_stream.str();
-}
-
-string writeJSON_ComputePipeline_vkpccjson(
-    const std::string &filePrefix, uint32_t pipelineIndex, const vk::VkPipelineOfflineCreateInfo id,
-    const VkComputePipelineCreateInfo &cpCI, const vk::VkPhysicalDeviceFeatures2 &deviceFeatures2,
-    const std::vector<std::string> &deviceExtensions,
-    const std::map<VkSamplerYcbcrConversion, VkSamplerYcbcrConversionCreateInfo> &samplerYcbcrConversions,
-    const std::map<VkSampler, VkSamplerCreateInfo> &samplers,
-    const std::map<VkDescriptorSetLayout, VkDescriptorSetLayoutCreateInfo> &descriptorSetLayouts,
-    const std::map<VkPipelineLayout, VkPipelineLayoutCreateInfo> &pipelineLayouts)
-{
-    vk_json::_string_stream.str({});
-    vk_json::_string_stream.clear();
-
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "{" << std::endl;
-    vk_json::s_num_spaces += 4;
-
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "\"ComputePipelineState\" :" << std::endl;
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "{" << std::endl;
-    vk_json::s_num_spaces += 4;
-
-    if (!samplerYcbcrConversions.empty())
-    {
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "\"YcbcrSamplers\" :" << std::endl;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "[" << std::endl;
-        vk_json::s_num_spaces += 4;
-
-        size_t j = 0u;
-        for (auto it = begin(samplerYcbcrConversions); it != end(samplerYcbcrConversions); ++it, ++j)
-        {
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            vk_json::_string_stream << "{" << std::endl;
-            vk_json::s_num_spaces += 4;
-
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            vk_json::_string_stream << "\"" << it->first.getInternal() << "\":" << std::endl;
-
-            vk_json::print_VkSamplerYcbcrConversionCreateInfo(it->second, "", false);
-
-            vk_json::s_num_spaces -= 4;
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            if ((j + 1) < samplerYcbcrConversions.size())
-                vk_json::_string_stream << "}," << std::endl;
-            else
-                vk_json::_string_stream << "}" << std::endl;
-        }
-
-        vk_json::s_num_spaces -= 4;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "]," << std::endl;
-    }
-
-    if (!samplers.empty())
-    {
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "\"ImmutableSamplers\" :" << std::endl;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "[" << std::endl;
-        vk_json::s_num_spaces += 4;
-
-        size_t j = 0u;
-        for (auto it = begin(samplers); it != end(samplers); ++it, ++j)
-        {
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            vk_json::_string_stream << "{" << std::endl;
-            vk_json::s_num_spaces += 4;
-
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            vk_json::_string_stream << "\"" << it->first.getInternal() << "\":" << std::endl;
-
-            vk_json::print_VkSamplerCreateInfo(it->second, "", false);
-
-            vk_json::s_num_spaces -= 4;
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-
-            if ((j + 1) < samplers.size())
-                vk_json::_string_stream << "}," << std::endl;
-            else
-                vk_json::_string_stream << "}" << std::endl;
-        }
-
-        vk_json::s_num_spaces -= 4;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "]," << std::endl;
-    }
-
-    if (!descriptorSetLayouts.empty())
-    {
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "\"DescriptorSetLayouts\" :" << std::endl;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "[" << std::endl;
-        vk_json::s_num_spaces += 4;
-
-        size_t j = 0u;
-        for (auto it = begin(descriptorSetLayouts); it != end(descriptorSetLayouts); ++it, ++j)
-        {
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            vk_json::_string_stream << "{" << std::endl;
-            vk_json::s_num_spaces += 4;
-
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            vk_json::_string_stream << "\"" << it->first.getInternal() << "\":" << std::endl;
-
-            vk_json::print_VkDescriptorSetLayoutCreateInfo(it->second, "", false);
-
-            vk_json::s_num_spaces -= 4;
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-
-            if ((j + 1) < descriptorSetLayouts.size())
-                vk_json::_string_stream << "}," << std::endl;
-            else
-                vk_json::_string_stream << "}" << std::endl;
-        }
-
-        vk_json::s_num_spaces -= 4;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "]," << std::endl;
-    }
-
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "\"PipelineLayout\" : " << std::endl;
-    vk_json::print_VkPipelineLayoutCreateInfo(begin(pipelineLayouts)->second, "", true);
-
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "\"ComputePipeline\" : " << std::endl;
-    vk_json::print_VkComputePipelineCreateInfo(cpCI, "", true);
-
-    // shaders
-    {
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "\"ShaderFileNames\" :" << std::endl;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "[" << std::endl;
-        vk_json::s_num_spaces += 4;
-
-        {
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            vk_json::_string_stream << "{" << std::endl;
-            vk_json::s_num_spaces += 4;
-
-            vk_json::print_VkShaderStageFlagBits(cpCI.stage.stage, "stage", 1);
-
-            std::stringstream shaderName;
-            shaderName << filePrefix << "shader_" << pipelineIndex << "_" << cpCI.stage.module.getInternal() << ".";
-
-            switch (cpCI.stage.stage)
-            {
-            case VK_SHADER_STAGE_COMPUTE_BIT:
-                shaderName << "comp";
-                break;
-            default:
-                TCU_THROW(InternalError, "Unrecognized shader stage");
-            }
-            shaderName << ".spv";
-
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-            vk_json::_string_stream << "\"filename\" : \"" << shaderName.str() << "\"" << std::endl;
-            vk_json::s_num_spaces -= 4;
-            for (int i = 0; i < vk_json::s_num_spaces; i++)
-                vk_json::_string_stream << " ";
-
-            vk_json::_string_stream << "}" << std::endl;
-        }
-
-        vk_json::s_num_spaces -= 4;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "]," << std::endl;
-    }
-
-    // device features
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "\"PhysicalDeviceFeatures\" : " << std::endl;
-    vk_json::print_VkPhysicalDeviceFeatures2(deviceFeatures2, "", false);
-
-    // close ComputePipelineState
-    vk_json::s_num_spaces -= 4;
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "}," << std::endl;
-
-    // device extensions
-    {
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "\"EnabledExtensions\" : " << std::endl;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "[" << std::endl;
-        vk_json::s_num_spaces += 4;
-
-        for (unsigned int j = 0; j < deviceExtensions.size(); j++)
-            vk_json::print_char(deviceExtensions[j].data(), "", (j + 1) != deviceExtensions.size());
-
-        vk_json::s_num_spaces -= 4;
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "]," << std::endl;
-    }
-
-    // pipeline identifier
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "\"PipelineUUID\" : " << std::endl;
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "[" << std::endl;
-    vk_json::s_num_spaces += 4;
-    for (unsigned int j = 0; j < VK_UUID_SIZE; j++)
-        vk_json::print_uint32_t((uint32_t)id.pipelineIdentifier[j], "", (j + 1) != VK_UUID_SIZE);
-    vk_json::s_num_spaces -= 4;
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "]" << std::endl;
-
-    vk_json::s_num_spaces -= 4;
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "}" << std::endl;
-
-    return vk_json::_string_stream.str();
-}
-
-string writeJSON_VkPhysicalDeviceFeatures2(const vk::VkPhysicalDeviceFeatures2 &features)
-{
-    vk_json::_string_stream.str({});
-    vk_json::_string_stream.clear();
-    vk_json::print_VkPhysicalDeviceFeatures2(&features, "", false);
-    return vk_json::_string_stream.str();
-}
-
-string writeJSON_pNextChain(const void *pNext)
-{
-    vk_json::_string_stream.str({});
-    vk_json::_string_stream.clear();
-    vk_json::dumpPNextChain(pNext);
-    std::string result = vk_json::_string_stream.str();
-    // remove "pNext" at the beggining of result and trailing comma
-    return std::string(begin(result) + result.find_first_of('{'), begin(result) + result.find_last_of('}') + 1u);
-}
-
-string writeJSON_VkSamplerYcbcrConversionCreateInfo(const VkSamplerYcbcrConversionCreateInfo &pCreateInfo)
-{
-    vk_json::_string_stream.str({});
-    vk_json::_string_stream.clear();
-    vk_json::print_VkSamplerYcbcrConversionCreateInfo(&pCreateInfo, "", false);
-    return vk_json::_string_stream.str();
-}
-
-static void print_VkShaderModuleCreateInfo(const VkShaderModuleCreateInfo *obj, const string &s, bool commaNeeded)
-{
-    DE_UNREF(s);
-
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    vk_json::_string_stream << "{" << std::endl;
-    vk_json::s_num_spaces += 4;
-
-    vk_json::print_VkStructureType(obj->sType, "sType", 1);
-
-    if (obj->pNext)
-    {
-        vk_json::dumpPNextChain(obj->pNext);
+        renderPass = vk::VkRenderPassCreateInfo2{};
+        readJSON_VkRenderPassCreateInfo2(context, pipelineData.renderPassData.json,
+                                         std::get<vk::VkRenderPassCreateInfo2>(renderPass));
+        data.graphicsPipelineState.pRenderPass =
+            reinterpret_cast<const void *>(&std::get<vk::VkRenderPassCreateInfo2>(renderPass));
     }
     else
     {
-        for (int i = 0; i < vk_json::s_num_spaces; i++)
-            vk_json::_string_stream << " ";
-        vk_json::_string_stream << "\"pNext\":"
-                                << "\"NULL\""
-                                << "," << std::endl;
+        TCU_THROW(InternalError, "Renderpass create info is of unkown type.");
     }
 
-    // VkShaderModuleCreateFlags is reserved for future use and must be 0.
-    vk_json::print_uint32_t((uint32_t)obj->flags, "flags", 1);
-    vk_json::print_uint64_t((uint64_t)obj->codeSize, "codeSize", 1);
+    std::copy(pipelineDescription.id.pipelineIdentifier, pipelineDescription.id.pipelineIdentifier + VK_UUID_SIZE,
+              data.pipelineUUID);
 
-    // pCode must be translated into base64, because JSON
-    vk_json::print_void_data(obj->pCode, static_cast<int>(obj->codeSize), "pCode", 0);
+    const char *str, *msg;
+    if (!vpjGeneratePipelineJson(context.gen, &data, &str, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
 
-    vk_json::s_num_spaces -= 4;
-    for (int i = 0; i < vk_json::s_num_spaces; i++)
-        vk_json::_string_stream << " ";
-    if (commaNeeded)
-        vk_json::_string_stream << "}," << std::endl;
-    else
-        vk_json::_string_stream << "}" << std::endl;
+    std::string res = str;
+    vpjFreeGeneratorOutputs(context.gen);
+
+    return res;
 }
 
-string writeJSON_VkShaderModuleCreateInfo(const VkShaderModuleCreateInfo &smCI)
+string writeJSON_ComputePipeline_vkpccjson(Context &context, const VulkanJsonPipelineDescription &pipelineDescription,
+                                           const std::string &filePrefix, const uint32_t pipelineIndex)
 {
-    vk_json::_string_stream.str({});
-    vk_json::_string_stream.clear();
-    print_VkShaderModuleCreateInfo(&smCI, "", false);
-    return vk_json::_string_stream.str();
+    if (!std::holds_alternative<ComputePipelineData>(pipelineDescription.pipelineData))
+    {
+        TCU_THROW(InternalError, "Pipeline description holds wrong type of pipeline data.");
+    }
+
+    auto &pipelineData = std::get<ComputePipelineData>(pipelineDescription.pipelineData);
+    vk::VkComputePipelineCreateInfo computePipeline{};
+    readJSON_VkComputePipelineCreateInfo(context, pipelineData.json, computePipeline);
+
+    VpjData data{};
+    data.computePipelineState.pComputePipeline = &computePipeline;
+
+    PipelineLayoutAndChildObjectInfo objectInfo(context, data.computePipelineState, pipelineData.pipelineLayoutData);
+
+    auto shaderFilenames                          = getShaderFilenames(computePipeline, filePrefix, pipelineIndex);
+    data.computePipelineState.shaderFileNameCount = static_cast<uint32_t>(shaderFilenames.filenames.size());
+    data.computePipelineState.pShaderFileNames    = shaderFilenames.filenames.data();
+
+    vk::VkPhysicalDeviceFeatures2 deviceFeatures2{};
+    readJSON_VkPhysicalDeviceFeatures2(context, pipelineDescription.deviceFeatures, deviceFeatures2);
+    data.computePipelineState.pPhysicalDeviceFeatures = &deviceFeatures2;
+
+    auto deviceExtensionCstrs  = serializeCStringPtrs(pipelineDescription.deviceExtensions);
+    data.enabledExtensionCount = static_cast<uint32_t>(deviceExtensionCstrs.size());
+    data.ppEnabledExtensions   = deviceExtensionCstrs.data();
+
+    std::copy(pipelineDescription.id.pipelineIdentifier, pipelineDescription.id.pipelineIdentifier + VK_UUID_SIZE,
+              data.pipelineUUID);
+
+    const char *str, *msg;
+    if (!vpjGeneratePipelineJson(context.gen, &data, &str, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
+
+    std::string res = str;
+    vpjFreeGeneratorOutputs(context.gen);
+
+    return res;
+}
+
+string writeJSON_VkPhysicalDeviceFeatures2(const Context &context, const vk::VkPhysicalDeviceFeatures2 &features)
+{
+    const char *str, *msg;
+    if (!vpjGenerateSingleStructJson(context.gen, &features, &str, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
+    std::string res = str;
+    vpjFreeGeneratorOutputs(context.gen);
+    return res;
+}
+
+string writeJSON_VkPhysicalDeviceFeatures2(const Context &context, const vk::VkDeviceCreateInfo &pCreateInfo)
+{
+    const char *msg;
+    const void *in_chain                      = pCreateInfo.pNext;
+    const void *out_features                  = nullptr;
+    VkPhysicalDeviceFeatures2 deviceFeatures2 = initVulkanStructure();
+
+    if (!findStructureInChain(in_chain, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2) &&
+        pCreateInfo.pEnabledFeatures != NULL)
+    {
+        deviceFeatures2.features = *(pCreateInfo.pEnabledFeatures);
+        deviceFeatures2.pNext    = (void *)pCreateInfo.pNext;
+    }
+
+    if (!vpjFilterDeviceFeatures(context.gen, in_chain, &out_features, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
+
+    return writeJSON_VkPhysicalDeviceFeatures2(context,
+                                               *reinterpret_cast<const VkPhysicalDeviceFeatures2 *>(out_features));
 }
 
 void readJSON_VkGraphicsPipelineCreateInfo(Context &context, const string &graphicsPipelineCreateInfo,
-                                           VkGraphicsPipelineCreateInfo &gpCI)
+                                           vk::VkGraphicsPipelineCreateInfo &gpCI)
 {
-    Json::Value jsonRoot;
-    string errors;
-    bool parsingSuccessful = context.reader->parse(
-        graphicsPipelineCreateInfo.c_str(), graphicsPipelineCreateInfo.c_str() + graphicsPipelineCreateInfo.size(),
-        &jsonRoot, &errors);
-    if (!parsingSuccessful)
-        TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkGraphicsPipelineCreateInfo(jsonRoot, gpCI);
+    const char *msg;
+    if (!vpjParseSingleStructJson(context.parser, graphicsPipelineCreateInfo.c_str(), &gpCI, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
 }
 
 void readJSON_VkComputePipelineCreateInfo(Context &context, const string &computePipelineCreateInfo,
-                                          VkComputePipelineCreateInfo &cpCI)
+                                          vk::VkComputePipelineCreateInfo &cpCI)
 {
-    Json::Value jsonRoot;
-    string errors;
-    bool parsingSuccessful =
-        context.reader->parse(computePipelineCreateInfo.c_str(),
-                              computePipelineCreateInfo.c_str() + computePipelineCreateInfo.size(), &jsonRoot, &errors);
-    if (!parsingSuccessful)
-        TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkComputePipelineCreateInfo(jsonRoot, cpCI);
+    const char *msg;
+    if (!vpjParseSingleStructJson(context.parser, computePipelineCreateInfo.c_str(), &cpCI, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
 }
 
 void readJSON_VkRenderPassCreateInfo(Context &context, const string &renderPassCreateInfo, VkRenderPassCreateInfo &rpCI)
 {
-    Json::Value jsonRoot;
-    string errors;
-    bool parsingSuccessful = context.reader->parse(
-        renderPassCreateInfo.c_str(), renderPassCreateInfo.c_str() + renderPassCreateInfo.size(), &jsonRoot, &errors);
-    if (!parsingSuccessful)
-        TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkRenderPassCreateInfo(jsonRoot, rpCI);
+    const char *msg;
+    if (!vpjParseSingleStructJson(context.parser, renderPassCreateInfo.c_str(), &rpCI, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
 }
 
 void readJSON_VkRenderPassCreateInfo2(Context &context, const string &renderPassCreateInfo,
-                                      VkRenderPassCreateInfo2 &rpCI)
+                                      vk::VkRenderPassCreateInfo2 &rpCI)
 {
-    Json::Value jsonRoot;
-    string errors;
-    bool parsingSuccessful = context.reader->parse(
-        renderPassCreateInfo.c_str(), renderPassCreateInfo.c_str() + renderPassCreateInfo.size(), &jsonRoot, &errors);
-    if (!parsingSuccessful)
-        TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkRenderPassCreateInfo2(jsonRoot, rpCI);
+    const char *msg;
+    if (!vpjParseSingleStructJson(context.parser, renderPassCreateInfo.c_str(), &rpCI, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
 }
 
 void readJSON_VkDescriptorSetLayoutCreateInfo(Context &context, const string &descriptorSetLayoutCreateInfo,
-                                              VkDescriptorSetLayoutCreateInfo &dsCI)
+                                              vk::VkDescriptorSetLayoutCreateInfo &dsCI)
 {
-    Json::Value jsonRoot;
-    string errors;
-    bool parsingSuccessful = context.reader->parse(
-        descriptorSetLayoutCreateInfo.c_str(),
-        descriptorSetLayoutCreateInfo.c_str() + descriptorSetLayoutCreateInfo.size(), &jsonRoot, &errors);
-    if (!parsingSuccessful)
-        TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkDescriptorSetLayoutCreateInfo(jsonRoot, dsCI);
+    const char *msg;
+    if (!vpjParseSingleStructJson(context.parser, descriptorSetLayoutCreateInfo.c_str(), &dsCI, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
 }
 
 void readJSON_VkPipelineLayoutCreateInfo(Context &context, const string &pipelineLayoutCreateInfo,
-                                         VkPipelineLayoutCreateInfo &plCI)
+                                         vk::VkPipelineLayoutCreateInfo &plCI)
 {
-    Json::Value jsonRoot;
-    string errors;
-    bool parsingSuccessful =
-        context.reader->parse(pipelineLayoutCreateInfo.c_str(),
-                              pipelineLayoutCreateInfo.c_str() + pipelineLayoutCreateInfo.size(), &jsonRoot, &errors);
-    if (!parsingSuccessful)
-        TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkPipelineLayoutCreateInfo(jsonRoot, plCI);
+    const char *msg;
+    if (!vpjParseSingleStructJson(context.parser, pipelineLayoutCreateInfo.c_str(), &plCI, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
 }
 
 void readJSON_VkDeviceObjectReservationCreateInfo(Context &context, const string &deviceMemoryReservation,
                                                   VkDeviceObjectReservationCreateInfo &dmrCI)
 {
-    Json::Value jsonRoot;
-    string errors;
-    bool parsingSuccessful =
-        context.reader->parse(deviceMemoryReservation.c_str(),
-                              deviceMemoryReservation.c_str() + deviceMemoryReservation.size(), &jsonRoot, &errors);
-    if (!parsingSuccessful)
-        TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkDeviceObjectReservationCreateInfo(jsonRoot, dmrCI);
+    const char *msg;
+    if (!vpjParseSingleStructJson(context.parser, deviceMemoryReservation.c_str(), &dmrCI, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
 }
 
 void readJSON_VkPipelineOfflineCreateInfo(Context &context, const string &pipelineIdentifierInfo,
                                           vk::VkPipelineOfflineCreateInfo &piInfo)
 {
-    Json::Value jsonRoot;
-    string errors;
-    bool parsingSuccessful =
-        context.reader->parse(pipelineIdentifierInfo.c_str(),
-                              pipelineIdentifierInfo.c_str() + pipelineIdentifierInfo.size(), &jsonRoot, &errors);
-    if (!parsingSuccessful)
-        TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkPipelineOfflineCreateInfo(jsonRoot, piInfo);
+    const char *msg;
+    if (!vpjParseSingleStructJson(context.parser, pipelineIdentifierInfo.c_str(), &piInfo, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
 }
 
 void readJSON_VkSamplerCreateInfo(Context &context, const string &samplerCreateInfo, VkSamplerCreateInfo &sCI)
 {
-    Json::Value jsonRoot;
-    string errors;
-    bool parsingSuccessful = context.reader->parse(
-        samplerCreateInfo.c_str(), samplerCreateInfo.c_str() + samplerCreateInfo.size(), &jsonRoot, &errors);
-    if (!parsingSuccessful)
-        TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    vk_json_parser::parse_VkSamplerCreateInfo(jsonRoot, sCI);
+    const char *msg;
+    if (!vpjParseSingleStructJson(context.parser, samplerCreateInfo.c_str(), &sCI, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
 }
 
 void readJSON_VkSamplerYcbcrConversionCreateInfo(Context &context, const std::string &samplerYcbcrConversionCreateInfo,
                                                  VkSamplerYcbcrConversionCreateInfo &sycCI)
 {
-    Json::Value jsonRoot;
-    std::string errors;
-    bool parsingSuccessful = context.reader->parse(
-        samplerYcbcrConversionCreateInfo.c_str(),
-        samplerYcbcrConversionCreateInfo.c_str() + samplerYcbcrConversionCreateInfo.size(), &jsonRoot, &errors);
-    if (!parsingSuccessful)
-        TCU_THROW(InternalError, (std::string("JSON parsing error: ") + errors).c_str());
-    vk_json_parser::parse_VkSamplerYcbcrConversionCreateInfo(jsonRoot, sycCI);
+    const char *msg;
+    if (!vpjParseSingleStructJson(context.parser, samplerYcbcrConversionCreateInfo.c_str(), &sycCI, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
 }
 
 void readJSON_VkPhysicalDeviceFeatures2(Context &context, const std::string &featuresJson,
                                         vk::VkPhysicalDeviceFeatures2 &features)
 {
-    Json::Value jsonRoot;
-    std::string errors;
-    bool parsingSuccessful =
-        context.reader->parse(featuresJson.c_str(), featuresJson.c_str() + featuresJson.size(), &jsonRoot, &errors);
-    if (!parsingSuccessful)
-        TCU_THROW(InternalError, (std::string("JSON parsing error: ") + errors).c_str());
-    vk_json_parser::parse_VkPhysicalDeviceFeatures2(jsonRoot, features);
-}
-
-void *readJSON_pNextChain(Context &context, const std::string &chainJson)
-{
-    Json::Value jsonRoot;
-    std::string errors;
-    bool parsingSuccessful =
-        context.reader->parse(chainJson.c_str(), chainJson.c_str() + chainJson.size(), &jsonRoot, &errors);
-    if (!parsingSuccessful)
-        TCU_THROW(InternalError, (std::string("JSON parsing error: ") + errors).c_str());
-    return vk_json_parser::parsePNextChain(jsonRoot);
-}
-
-static void parse_VkShaderModuleCreateInfo(const char *s, Json::Value &obj, VkShaderModuleCreateInfo &o,
-                                           std::vector<uint8_t> &spirvShader)
-{
-    DE_UNREF(s);
-
-    vk_json_parser::parse_VkStructureType(obj["sType"], (o.sType));
-
-    o.pNext = (VkDeviceObjectReservationCreateInfo *)vk_json_parser::parsePNextChain(obj);
-
-    vk_json_parser::parse_uint32_t(obj["flags"], (o.flags));
-    uint64_t codeSizeValue;
-    vk_json_parser::parse_uint64_t(obj["codeSize"], (codeSizeValue));
-    o.codeSize = (uintptr_t)codeSizeValue;
-
-    // pCode is encoded using Base64.
-    spirvShader = vk_json_parser::base64decode(obj["pCode"].asString());
-    // Base64 always decodes a multiple of 3 bytes, so the size could mismatch the module
-    // size by one or two bytes. resize spirvShader to match.
-    spirvShader.resize(o.codeSize);
-    o.pCode = (uint32_t *)spirvShader.data();
+    const char *msg;
+    if (!vpjParseSingleStructJson(context.parser, featuresJson.c_str(), &features, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
 }
 
 void readJSON_VkShaderModuleCreateInfo(Context &context, const string &shaderModuleCreate,
-                                       VkShaderModuleCreateInfo &smCI, std::vector<uint8_t> &spirvShader)
+                                       VkShaderModuleCreateInfo &smCI)
 {
-    Json::Value jsonRoot;
-    string errors;
-    bool parsingSuccessful = context.reader->parse(
-        shaderModuleCreate.c_str(), shaderModuleCreate.c_str() + shaderModuleCreate.size(), &jsonRoot, &errors);
-    if (!parsingSuccessful)
-        TCU_THROW(InternalError, ("JSON parsing error: " + errors).c_str());
-    parse_VkShaderModuleCreateInfo("", jsonRoot, smCI, spirvShader);
+    const char *msg;
+    if (!vpjParseSingleStructJson(context.parser, shaderModuleCreate.c_str(), &smCI, &msg))
+    {
+        TCU_THROW(InternalError, msg);
+    }
 }
 
 } // namespace json

@@ -33,6 +33,7 @@
 #include "vksCacheBuilder.hpp"
 #include "vksSerializer.hpp"
 #include "vkApiVersion.hpp"
+#include <json/json.h>
 using namespace vksc_server::json;
 #endif // CTS_USES_VULKANSC
 
@@ -44,6 +45,7 @@ ResourceInterface::ResourceInterface(tcu::TestContext &testCtx)
 #ifdef CTS_USES_VULKANSC
     , m_commandPoolIndex(0u)
     , m_resourceCounter(0u)
+    , m_uniqueObjIdCounter(0u)
     , m_statCurrent(resetDeviceObjectReservationCreateInfo())
     , m_statMax(resetDeviceObjectReservationCreateInfo())
     , m_enabledHandleDestroy(true)
@@ -71,6 +73,21 @@ const std::string &ResourceInterface::getCasePath() const
 }
 
 #ifdef CTS_USES_VULKANSC
+Json::Value &findStructureInJson(Json::Value &first, const char *type)
+{
+    Json::Value *cur = &first;
+
+    while (!(cur->isString() && cur->asString() == "NULL"))
+    {
+        if ((*cur)["sType"] == type)
+            break;
+        else
+            cur = &(*cur)["pNext"];
+    }
+
+    return *cur;
+}
+
 void ResourceInterface::initApiVersion(const uint32_t version)
 {
     const ApiVersion apiVersion = unpackVersion(version);
@@ -113,127 +130,6 @@ void ResourceInterface::setHandleDestroy(bool value)
 bool ResourceInterface::isEnabledHandleDestroy() const
 {
     return m_enabledHandleDestroy;
-}
-
-void ResourceInterface::removeRedundantObjects()
-{
-    // At the end of the day we only need to export objects used in pipelines.
-    // Rest of the objects may be removed from m_json* structures as redundant
-    std::set<VkSamplerYcbcrConversion> samplerYcbcrConversionsInPipeline;
-    std::set<VkSampler> samplersInPipeline;
-    std::set<VkShaderModule> shadersInPipeline;
-    std::set<VkRenderPass> renderPassesInPipeline;
-    std::set<VkPipelineLayout> pipelineLayoutsInPipeline;
-    std::set<VkDescriptorSetLayout> descriptorSetLayoutsInPipeline;
-
-    Context jsonReader;
-
-    for (auto it = begin(m_pipelineInput.pipelines); it != end(m_pipelineInput.pipelines); ++it)
-    {
-        if (it->pipelineContents.find("VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO") != std::string::npos)
-        {
-            VkGraphicsPipelineCreateInfo gpCI;
-            deMemset(&gpCI, 0, sizeof(gpCI));
-            readJSON_VkGraphicsPipelineCreateInfo(jsonReader, it->pipelineContents, gpCI);
-
-            for (uint32_t i = 0; i < gpCI.stageCount; ++i)
-                shadersInPipeline.insert(gpCI.pStages[i].module);
-            renderPassesInPipeline.insert(gpCI.renderPass);
-            pipelineLayoutsInPipeline.insert(gpCI.layout);
-        }
-        else if (it->pipelineContents.find("VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO") != std::string::npos)
-        {
-            VkComputePipelineCreateInfo cpCI;
-            deMemset(&cpCI, 0, sizeof(cpCI));
-            readJSON_VkComputePipelineCreateInfo(jsonReader, it->pipelineContents, cpCI);
-
-            shadersInPipeline.insert(cpCI.stage.module);
-            pipelineLayoutsInPipeline.insert(cpCI.layout);
-        }
-        else
-            TCU_THROW(InternalError, "Could not recognize pipeline type");
-    }
-    for (auto it = begin(m_pipelineInput.shaderModules); it != end(m_pipelineInput.shaderModules);)
-    {
-        if (shadersInPipeline.find(it->first) == end(shadersInPipeline))
-            it = m_pipelineInput.shaderModules.erase(it);
-        else
-            ++it;
-    }
-    for (auto it = begin(m_pipelineInput.renderPasses); it != end(m_pipelineInput.renderPasses);)
-    {
-        if (renderPassesInPipeline.find(it->first) == end(renderPassesInPipeline))
-            it = m_pipelineInput.renderPasses.erase(it);
-        else
-            ++it;
-    }
-    for (auto it = begin(m_pipelineInput.pipelineLayouts); it != end(m_pipelineInput.pipelineLayouts);)
-    {
-        if (pipelineLayoutsInPipeline.find(it->first) == end(pipelineLayoutsInPipeline))
-        {
-            it = m_pipelineInput.pipelineLayouts.erase(it);
-        }
-        else
-        {
-            VkPipelineLayoutCreateInfo plCI;
-            deMemset(&plCI, 0, sizeof(plCI));
-            readJSON_VkPipelineLayoutCreateInfo(jsonReader, it->second, plCI);
-            for (uint32_t i = 0; i < plCI.setLayoutCount; ++i)
-                descriptorSetLayoutsInPipeline.insert(plCI.pSetLayouts[i]);
-            ++it;
-        }
-    }
-    for (auto it = begin(m_pipelineInput.descriptorSetLayouts); it != end(m_pipelineInput.descriptorSetLayouts);)
-    {
-        if (descriptorSetLayoutsInPipeline.find(it->first) == end(descriptorSetLayoutsInPipeline))
-            it = m_pipelineInput.descriptorSetLayouts.erase(it);
-        else
-        {
-            VkDescriptorSetLayoutCreateInfo dsCI;
-            deMemset(&dsCI, 0, sizeof(dsCI));
-            readJSON_VkDescriptorSetLayoutCreateInfo(jsonReader, it->second, dsCI);
-
-            for (uint32_t i = 0; i < dsCI.bindingCount; ++i)
-            {
-                if (dsCI.pBindings[i].pImmutableSamplers == NULL)
-                    continue;
-                for (uint32_t j = 0; j < dsCI.pBindings[i].descriptorCount; ++j)
-                {
-                    if (dsCI.pBindings[i].pImmutableSamplers[j] == VK_NULL_HANDLE)
-                        continue;
-                    samplersInPipeline.insert(dsCI.pBindings[i].pImmutableSamplers[j]);
-                }
-            }
-            ++it;
-        }
-    }
-
-    for (auto it = begin(m_pipelineInput.samplers); it != end(m_pipelineInput.samplers);)
-    {
-        if (samplersInPipeline.find(it->first) == end(samplersInPipeline))
-            it = m_pipelineInput.samplers.erase(it);
-        else
-        {
-            VkSamplerCreateInfo sCI;
-            deMemset(&sCI, 0, sizeof(sCI));
-            readJSON_VkSamplerCreateInfo(jsonReader, it->second, sCI);
-
-            if (sCI.pNext != nullptr)
-            {
-                VkSamplerYcbcrConversionInfo *info = (VkSamplerYcbcrConversionInfo *)(sCI.pNext);
-                if (info->sType == VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO)
-                    samplerYcbcrConversionsInPipeline.insert(info->conversion);
-            }
-            ++it;
-        }
-    }
-    for (auto it = begin(m_pipelineInput.samplerYcbcrConversions); it != end(m_pipelineInput.samplerYcbcrConversions);)
-    {
-        if (samplerYcbcrConversionsInPipeline.find(it->first) == end(samplerYcbcrConversionsInPipeline))
-            it = m_pipelineInput.samplerYcbcrConversions.erase(it);
-        else
-            ++it;
-    }
 }
 
 void ResourceInterface::finalizeCommandBuffers()
@@ -479,21 +375,7 @@ void ResourceInterfaceStandard::deinitDevice(VkDevice device)
 
 void ResourceInterfaceStandard::registerDeviceFeatures(VkDevice device, const VkDeviceCreateInfo *pCreateInfo) const
 {
-    VkPhysicalDeviceFeatures2 *chainedFeatures = (VkPhysicalDeviceFeatures2 *)findStructureInChain(
-        pCreateInfo->pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
-    if (chainedFeatures != NULL)
-    {
-        m_deviceFeatures[device] = writeJSON_pNextChain(pCreateInfo->pNext);
-    }
-    else
-    {
-        VkPhysicalDeviceFeatures2 deviceFeatures2 = initVulkanStructure();
-        if (pCreateInfo->pEnabledFeatures != NULL)
-            deviceFeatures2.features = *(pCreateInfo->pEnabledFeatures);
-
-        deviceFeatures2.pNext    = (void *)pCreateInfo->pNext;
-        m_deviceFeatures[device] = writeJSON_VkPhysicalDeviceFeatures2(deviceFeatures2);
-    }
+    m_deviceFeatures[device] = writeJSON_VkPhysicalDeviceFeatures2(m_jsonContext, *pCreateInfo);
 
     std::vector<std::string> extensions;
     for (uint32_t i = 0; i < pCreateInfo->enabledExtensionCount; ++i)
@@ -537,7 +419,9 @@ VkResult ResourceInterfaceStandard::createShaderModule(VkDevice device, const Vk
     // main process: store VkShaderModuleCreateInfo in JSON format. Shaders will be sent later for device pipeline cache creation ( and sent through file to another process )
     *pShaderModule = incResourceCounter<VkShaderModule>();
     registerObjectHash(pShaderModule->getInternal(), calculateShaderModuleHash(*pCreateInfo, getObjectHashes()));
-    m_pipelineInput.shaderModules.insert({*pShaderModule, writeJSON_VkShaderModuleCreateInfo(*pCreateInfo)});
+    m_pipelineInput.shaderModules.insert(
+        {*pShaderModule,
+         {writeJSON_VkShaderModuleCreateInfo(m_jsonContext, *pCreateInfo), pShaderModule->getInternal()}});
     return VK_SUCCESS;
 }
 
@@ -599,112 +483,6 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines(VkDevice device, VkP
             fillPoolEntrySize(pipelineIDs.back());
     }
 
-    // reset not used pointers, so that JSON generation does not crash
-    std::vector<VkPipelineViewportStateCreateInfo> viewportStateCopies(createInfoCount);
-    if (!normalMode)
-    {
-        for (uint32_t i = 0; i < createInfoCount; ++i)
-        {
-            bool vertexInputStateRequired       = false;
-            bool inputAssemblyStateRequired     = false;
-            bool tessellationStateRequired      = false;
-            bool viewportStateRequired          = false;
-            bool viewportStateViewportsRequired = false;
-            bool viewportStateScissorsRequired  = false;
-            bool multiSampleStateRequired       = false;
-            bool depthStencilStateRequired      = false;
-            bool colorBlendStateRequired        = false;
-
-            if (pCreateInfoCopies[i].pStages != nullptr)
-            {
-                for (uint32_t j = 0; j < pCreateInfoCopies[i].stageCount; ++j)
-                {
-                    if (pCreateInfoCopies[i].pStages[j].stage == VK_SHADER_STAGE_VERTEX_BIT)
-                    {
-                        vertexInputStateRequired   = true;
-                        inputAssemblyStateRequired = true;
-                    }
-                    if (pCreateInfoCopies[i].pStages[j].stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
-                    {
-                        tessellationStateRequired = true;
-                    }
-                }
-            }
-            if (pCreateInfoCopies[i].pDynamicState != nullptr)
-            {
-                if (pCreateInfoCopies[i].pDynamicState->pDynamicStates != nullptr)
-                    for (uint32_t j = 0; j < pCreateInfoCopies[i].pDynamicState->dynamicStateCount; ++j)
-                    {
-                        if (pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] == VK_DYNAMIC_STATE_VIEWPORT ||
-                            pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] ==
-                                VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT_EXT)
-                        {
-                            viewportStateRequired          = true;
-                            viewportStateViewportsRequired = true;
-                        }
-                        if (pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] == VK_DYNAMIC_STATE_SCISSOR ||
-                            pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] ==
-                                VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT_EXT)
-                        {
-                            viewportStateRequired         = true;
-                            viewportStateScissorsRequired = true;
-                        }
-                        if (pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] ==
-                            VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT)
-                            viewportStateRequired = true;
-                    }
-            }
-            if (pCreateInfoCopies[i].pRasterizationState != nullptr)
-            {
-                if (pCreateInfoCopies[i].pRasterizationState->rasterizerDiscardEnable == VK_FALSE)
-                {
-                    viewportStateRequired          = true;
-                    viewportStateViewportsRequired = true;
-                    viewportStateScissorsRequired  = true;
-                    multiSampleStateRequired       = true;
-                    depthStencilStateRequired      = true;
-                    colorBlendStateRequired        = true;
-                }
-            }
-            if (pCreateInfoCopies[i].pVertexInputState != nullptr && !vertexInputStateRequired)
-                pCreateInfoCopies[i].pVertexInputState = nullptr;
-            if (pCreateInfoCopies[i].pInputAssemblyState != nullptr && !inputAssemblyStateRequired)
-                pCreateInfoCopies[i].pInputAssemblyState = nullptr;
-            if (pCreateInfoCopies[i].pTessellationState != nullptr && !tessellationStateRequired)
-                pCreateInfoCopies[i].pTessellationState = nullptr;
-            if (pCreateInfoCopies[i].pViewportState != nullptr)
-            {
-                if (viewportStateRequired)
-                {
-                    viewportStateCopies[i] = *(pCreateInfoCopies[i].pViewportState);
-                    bool exchangeVP        = false;
-                    if (pCreateInfoCopies[i].pViewportState->pViewports != nullptr && !viewportStateViewportsRequired)
-                    {
-                        viewportStateCopies[i].pViewports    = nullptr;
-                        viewportStateCopies[i].viewportCount = 0u;
-                        exchangeVP                           = true;
-                    }
-                    if (pCreateInfoCopies[i].pViewportState->pScissors != nullptr && !viewportStateScissorsRequired)
-                    {
-                        viewportStateCopies[i].pScissors    = nullptr;
-                        viewportStateCopies[i].scissorCount = 0u;
-                        exchangeVP                          = true;
-                    }
-                    if (exchangeVP)
-                        pCreateInfoCopies[i].pViewportState = &(viewportStateCopies[i]);
-                }
-                else
-                    pCreateInfoCopies[i].pViewportState = nullptr;
-            }
-            if (pCreateInfoCopies[i].pMultisampleState != nullptr && !multiSampleStateRequired)
-                pCreateInfoCopies[i].pMultisampleState = nullptr;
-            if (pCreateInfoCopies[i].pDepthStencilState != nullptr && !depthStencilStateRequired)
-                pCreateInfoCopies[i].pDepthStencilState = nullptr;
-            if (pCreateInfoCopies[i].pColorBlendState != nullptr && !colorBlendStateRequired)
-                pCreateInfoCopies[i].pColorBlendState = nullptr;
-        }
-    }
-
     // Include pipelineIdentifiers into pNext chain of pCreateInfoCopies - skip this operation if pipeline identifier was created inside test
     for (uint32_t i = 0; i < createInfoCount; ++i)
     {
@@ -744,14 +522,31 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines(VkDevice device, VkP
         {
             const auto &featIt = m_deviceFeatures.find(device);
             if (featIt == end(m_deviceFeatures))
-                TCU_THROW(InternalError, "Can't find device features for this pipeline");
+                TCU_THROW(InternalError, "Failed to find device features for graphics pipeline");
             const auto &extIt = m_deviceExtensions.find(device);
             if (extIt == end(m_deviceExtensions))
-                TCU_THROW(InternalError, "Can't find device extensions for this pipeline");
+                TCU_THROW(InternalError, "Failed to find device extensions for graphics pipeline");
+            auto renderPassResult = m_pipelineInput.renderPasses.find(pCreateInfos[i].renderPass);
+            if (renderPassResult == end(m_pipelineInput.renderPasses))
+                TCU_THROW(InternalError, "Failed to find renderpass for graphics pipeline");
+
+            auto layoutResult = m_pipelineInput.pipelineLayouts.find(pCreateInfos[i].layout);
+            std::vector<vksc_server::ShaderModuleData> shaderModuleData;
+            for (uint32_t j = 0; j < pCreateInfos[i].stageCount; ++j)
+            {
+                auto shaderModuleResult = m_pipelineInput.shaderModules.find(pCreateInfos[i].pStages[j].module);
+                if (shaderModuleResult == end(m_pipelineInput.shaderModules))
+                    TCU_THROW(InternalError, "Failed to find a shader module for graphics pipeline");
+                else
+                    shaderModuleData.push_back({shaderModuleResult->second});
+            }
 
             m_pipelineInput.pipelines.push_back(vksc_server::VulkanJsonPipelineDescription(
-                pipelineIDs[i], writeJSON_VkGraphicsPipelineCreateInfo(pCreateInfoCopies[i]), featIt->second,
-                extIt->second, m_currentTestPath));
+                pipelineIDs[i],
+                vksc_server::GraphicsPipelineData{
+                    writeJSON_VkGraphicsPipelineCreateInfo(m_jsonContext, pCreateInfoCopies[i]), layoutResult->second,
+                    renderPassResult->second, std::move(shaderModuleData), pPipelines[i].getInternal()},
+                featIt->second, extIt->second, m_currentTestPath));
         }
         else
             it->add(m_currentTestPath);
@@ -833,14 +628,32 @@ VkResult ResourceInterfaceStandard::createComputePipelines(VkDevice device, VkPi
         {
             const auto &featIt = m_deviceFeatures.find(device);
             if (featIt == end(m_deviceFeatures))
-                TCU_THROW(InternalError, "Can't find device features for this pipeline");
+                TCU_THROW(InternalError, "Failed to find device features for compute pipeline");
             const auto &extIt = m_deviceExtensions.find(device);
             if (extIt == end(m_deviceExtensions))
-                TCU_THROW(InternalError, "Can't find device extensions for this pipeline");
+                TCU_THROW(InternalError, "Failed to find device extensions for compute pipeline");
+
+            auto layoutResult       = m_pipelineInput.pipelineLayouts.find(pCreateInfos[i].layout);
+            auto shaderModuleResult = m_pipelineInput.shaderModules.find(pCreateInfos[i].stage.module);
+            if (layoutResult == std::end(m_pipelineInput.pipelineLayouts))
+            {
+                TCU_THROW(InternalError, "Failed to find pipeline layout for compute pipeline");
+            }
+
+            if (shaderModuleResult == std::end(m_pipelineInput.shaderModules))
+            {
+                TCU_THROW(InternalError, "Failed to find shader module for compute pipeline");
+            }
+
+            // Rewrite handle of pipeline layout in graphics pipeline with autoinc unique_obj_id
+            pCreateInfoCopies[i].layout = reinterpret_cast<vk::VkPipelineLayout *>(layoutResult->second.uniqueObjId);
 
             m_pipelineInput.pipelines.push_back(vksc_server::VulkanJsonPipelineDescription(
-                pipelineIDs[i], writeJSON_VkComputePipelineCreateInfo(pCreateInfoCopies[i]), featIt->second,
-                extIt->second, m_currentTestPath));
+                pipelineIDs[i],
+                vksc_server::ComputePipelineData{
+                    writeJSON_VkComputePipelineCreateInfo(m_jsonContext, pCreateInfoCopies[i]), layoutResult->second,
+                    shaderModuleResult->second, pPipelines[i].getInternal()},
+                featIt->second, extIt->second, m_currentTestPath));
         }
         else
             it->add(m_currentTestPath);
@@ -856,12 +669,12 @@ void ResourceInterfaceStandard::destroyPipeline(VkDevice device, VkPipeline pipe
 
     auto it = m_pipelineIdentifiers.find(pipeline);
     if (it == end(m_pipelineIdentifiers))
-        TCU_THROW(InternalError, "Can't find pipeline");
+        TCU_THROW(InternalError, "Failed to find pipeline");
 
     auto pit = std::find_if(begin(m_pipelineInput.pipelines), end(m_pipelineInput.pipelines),
                             vksc_server::PipelineIdentifierEqual(it->second));
     if (pit == end(m_pipelineInput.pipelines))
-        TCU_THROW(InternalError, "Can't find pipeline identifier");
+        TCU_THROW(InternalError, "Failed to find pipeline identifier");
     pit->remove();
 }
 
@@ -871,7 +684,8 @@ void ResourceInterfaceStandard::createRenderPass(VkDevice device, const VkRender
 {
     DE_UNREF(device);
     DE_UNREF(pAllocator);
-    m_pipelineInput.renderPasses.insert({*pRenderPass, writeJSON_VkRenderPassCreateInfo(*pCreateInfo)});
+    m_pipelineInput.renderPasses.insert(
+        {*pRenderPass, {writeJSON_VkRenderPassCreateInfo(m_jsonContext, *pCreateInfo), pRenderPass->getInternal()}});
 }
 
 void ResourceInterfaceStandard::createRenderPass2(VkDevice device, const VkRenderPassCreateInfo2 *pCreateInfo,
@@ -880,7 +694,8 @@ void ResourceInterfaceStandard::createRenderPass2(VkDevice device, const VkRende
 {
     DE_UNREF(device);
     DE_UNREF(pAllocator);
-    m_pipelineInput.renderPasses.insert({*pRenderPass, writeJSON_VkRenderPassCreateInfo2(*pCreateInfo)});
+    m_pipelineInput.renderPasses.insert(
+        {*pRenderPass, {writeJSON_VkRenderPassCreateInfo2(m_jsonContext, *pCreateInfo), pRenderPass->getInternal()}});
 }
 
 void ResourceInterfaceStandard::createPipelineLayout(VkDevice device, const VkPipelineLayoutCreateInfo *pCreateInfo,
@@ -889,7 +704,30 @@ void ResourceInterfaceStandard::createPipelineLayout(VkDevice device, const VkPi
 {
     DE_UNREF(device);
     DE_UNREF(pAllocator);
-    m_pipelineInput.pipelineLayouts.insert({*pPipelineLayout, writeJSON_VkPipelineLayoutCreateInfo(*pCreateInfo)});
+    std::vector<vksc_server::DescriptorSetLayoutData> descriptorSetLayouts;
+    descriptorSetLayouts.reserve(pCreateInfo->setLayoutCount);
+    auto pCreateInfoString = vksc_server::json::writeJSON_VkPipelineLayoutCreateInfo(m_jsonContext, *pCreateInfo);
+    Json::Value pCreateInfoJson;
+    m_jsonContext.reader->parse(pCreateInfoString.c_str(), pCreateInfoString.c_str() + pCreateInfoString.size(),
+                                &pCreateInfoJson, nullptr);
+    for (uint32_t i = 0; i < pCreateInfo->setLayoutCount; ++i)
+    {
+        if (auto result = m_pipelineInput.descriptorSetLayouts.find(pCreateInfo->pSetLayouts[i]);
+            result != std::end(m_pipelineInput.descriptorSetLayouts))
+        {
+            // Rewrite handle(s) in create info to unique_obj_id(s)
+            pCreateInfoJson["pSetLayouts"][i] = result->second.uniqueObjId;
+            // Store local copy of dependent create info
+            descriptorSetLayouts.emplace_back(result->second);
+        }
+        else
+        {
+            TCU_THROW(InternalError, "Failed to find descriptor set layout referenced by pipeline layout");
+        }
+    }
+    m_pipelineInput.pipelineLayouts.insert(
+        {*pPipelineLayout,
+         {m_jsonContext.writer->write(pCreateInfoJson), std::move(descriptorSetLayouts), ++m_uniqueObjIdCounter}});
 }
 
 void ResourceInterfaceStandard::createDescriptorSetLayout(VkDevice device,
@@ -899,7 +737,36 @@ void ResourceInterfaceStandard::createDescriptorSetLayout(VkDevice device,
 {
     DE_UNREF(device);
     DE_UNREF(pAllocator);
-    m_pipelineInput.descriptorSetLayouts.insert({*pSetLayout, writeJSON_VkDescriptorSetLayoutCreateInfo(*pCreateInfo)});
+    std::vector<vksc_server::SamplerData> immutableSamplers{};
+    auto pCreateInfoString = vksc_server::json::writeJSON_VkDescriptorSetLayoutCreateInfo(m_jsonContext, *pCreateInfo);
+    Json::Value pCreateInfoJson;
+    m_jsonContext.reader->parse(pCreateInfoString.c_str(), pCreateInfoString.c_str() + pCreateInfoString.size(),
+                                &pCreateInfoJson, nullptr);
+    for (uint32_t i = 0; i < pCreateInfo->bindingCount; ++i)
+    {
+        if (pCreateInfo->pBindings[i].pImmutableSamplers)
+        {
+            immutableSamplers.reserve(immutableSamplers.size() + pCreateInfo->pBindings[i].descriptorCount);
+            for (uint32_t j = 0; j < pCreateInfo->pBindings[i].descriptorCount; ++j)
+            {
+                if (auto result = m_pipelineInput.samplers.find(pCreateInfo->pBindings[i].pImmutableSamplers[j]);
+                    result != std::end(m_pipelineInput.samplers))
+                {
+                    // Rewrite handle(s) in create info to unique_obj_id(s)
+                    pCreateInfoJson["pBindings"][i]["pImmutableSamplers"][j] = result->second.uniqueObjId;
+                    // Store local copy of dependent create info
+                    immutableSamplers.emplace_back(result->second);
+                }
+                else
+                {
+                    TCU_THROW(InternalError, "Failed to find sampler referenced by descriptor set layout");
+                }
+            }
+        }
+    }
+    m_pipelineInput.descriptorSetLayouts.insert(
+        {*pSetLayout,
+         {m_jsonContext.writer->write(pCreateInfoJson), std::move(immutableSamplers), ++m_uniqueObjIdCounter}});
 }
 
 void ResourceInterfaceStandard::createSampler(VkDevice device, const VkSamplerCreateInfo *pCreateInfo,
@@ -907,7 +774,34 @@ void ResourceInterfaceStandard::createSampler(VkDevice device, const VkSamplerCr
 {
     DE_UNREF(device);
     DE_UNREF(pAllocator);
-    m_pipelineInput.samplers.insert({*pSampler, writeJSON_VkSamplerCreateInfo(*pCreateInfo)});
+    auto ycbcr = reinterpret_cast<const VkSamplerYcbcrConversionInfo *>(
+        findStructureInChain(pCreateInfo->pNext, VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO));
+    if (ycbcr)
+    {
+        if (auto result = m_pipelineInput.samplerYcbcrConversions.find(ycbcr->conversion);
+            result != std::end(m_pipelineInput.samplerYcbcrConversions))
+        {
+            // Rewrite handle(s) in create info to unique object id(s)
+            auto pCreateInfoString = vksc_server::json::writeJSON_VkSamplerCreateInfo(m_jsonContext, *pCreateInfo);
+            Json::Value pCreateInfoJson;
+            m_jsonContext.reader->parse(pCreateInfoString.c_str(), pCreateInfoString.c_str() + pCreateInfoString.size(),
+                                        &pCreateInfoJson, nullptr);
+            auto &ycbcrJson = findStructureInJson(pCreateInfoJson, "VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO");
+            ycbcrJson["conversion"] = result->second.uniqueObjId;
+            // Store local copy of dependent create info
+            m_pipelineInput.samplers.insert(
+                {*pSampler, {m_jsonContext.writer->write(pCreateInfoJson), {result->second}, ++m_uniqueObjIdCounter}});
+        }
+        else
+        {
+            TCU_THROW(InternalError, "Failed to find sampler ycbcr conversion referenced by sampler");
+        }
+    }
+    else
+    {
+        m_pipelineInput.samplers.insert(
+            {*pSampler, {writeJSON_VkSamplerCreateInfo(m_jsonContext, *pCreateInfo), {}, ++m_uniqueObjIdCounter}});
+    }
 }
 
 void ResourceInterfaceStandard::createSamplerYcbcrConversion(VkDevice device,
@@ -918,7 +812,8 @@ void ResourceInterfaceStandard::createSamplerYcbcrConversion(VkDevice device,
     DE_UNREF(device);
     DE_UNREF(pAllocator);
     m_pipelineInput.samplerYcbcrConversions.insert(
-        {*pYcbcrConversion, writeJSON_VkSamplerYcbcrConversionCreateInfo(*pCreateInfo)});
+        {*pYcbcrConversion,
+         {writeJSON_VkSamplerYcbcrConversionCreateInfo(m_jsonContext, *pCreateInfo), ++m_uniqueObjIdCounter}});
 }
 
 void ResourceInterfaceStandard::createCommandPool(VkDevice device, const VkCommandPoolCreateInfo *pCreateInfo,
@@ -1011,7 +906,7 @@ void ResourceInterfaceStandard::resetObjects()
     m_pipelineIdentifiers.clear();
     m_pipelineSizes.clear();
     m_pipelinePoolSizes.clear();
-    runGarbageCollection();
+    runGarbageCollection(m_jsonContext);
 }
 
 void ResourceInterfaceStandard::resetPipelineCaches()

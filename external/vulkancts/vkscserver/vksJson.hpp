@@ -25,62 +25,73 @@
 
 #include "vkPrograms.hpp"
 
-#include "vksDefs.hpp"
+#include "vkDefs.hpp"
+#include <vulkan/pcjson/vksc_pipeline_json.h>
 using namespace vk;
 
 namespace Json
 {
 class CharReader;
-}
+class FastWriter;
+} // namespace Json
 
 namespace vksc_server
 {
 
-struct VulkanPipelineStatistics;
+struct VulkanJsonPipelineDescription;
 
 namespace json
 {
+
+struct OwningVpjShaderFilenames
+{
+    std::vector<std::string> storage;
+    std::vector<VpjShaderFileName> filenames;
+};
+
+vk::VkShaderStageFlagBits stage_string_to_bit(const std::string &stage);
+const char *stage_bit_to_string(const vk::VkShaderStageFlagBits stage);
+OwningVpjShaderFilenames getShaderFilenames(const vk::VkComputePipelineCreateInfo &ci, const std::string &prefix,
+                                            const uint32_t index);
+OwningVpjShaderFilenames getShaderFilenames(const vk::VkGraphicsPipelineCreateInfo &ci, const std::string &prefix,
+                                            const uint32_t index);
 
 struct Context
 {
     Context();
     ~Context();
+    void *parser;
+    void *gen;
     std::unique_ptr<Json::CharReader> reader;
+    std::unique_ptr<Json::FastWriter> writer;
 };
 
-void runGarbageCollection();
+void runGarbageCollection(Context &context);
 
-string writeJSON_VkGraphicsPipelineCreateInfo(const vk::VkGraphicsPipelineCreateInfo &pCreateInfo);
-string writeJSON_VkComputePipelineCreateInfo(const vk::VkComputePipelineCreateInfo &pCreateInfo);
-string writeJSON_VkRenderPassCreateInfo(const vk::VkRenderPassCreateInfo &pCreateInfo);
-string writeJSON_VkRenderPassCreateInfo2(const vk::VkRenderPassCreateInfo2 &pCreateInfo);
-string writeJSON_VkPipelineLayoutCreateInfo(const vk::VkPipelineLayoutCreateInfo &pCreateInfo);
-string writeJSON_VkDescriptorSetLayoutCreateInfo(const vk::VkDescriptorSetLayoutCreateInfo &pCreateInfo);
-string writeJSON_VkSamplerCreateInfo(const vk::VkSamplerCreateInfo &pCreateInfo);
-string writeJSON_VkSamplerYcbcrConversionCreateInfo(const vk::VkSamplerYcbcrConversionCreateInfo &pCreateInfo);
-string writeJSON_VkShaderModuleCreateInfo(const vk::VkShaderModuleCreateInfo &smCI);
-string writeJSON_VkDeviceObjectReservationCreateInfo(const vk::VkDeviceObjectReservationCreateInfo &dmrCI);
-string writeJSON_VkPipelineOfflineCreateInfo(const vk::VkPipelineOfflineCreateInfo &piInfo);
-string writeJSON_GraphicsPipeline_vkpccjson(
-    const std::string &filePrefix, uint32_t pipelineIndex, const vk::VkPipelineOfflineCreateInfo id,
-    const vk::VkGraphicsPipelineCreateInfo &gpCI, const vk::VkPhysicalDeviceFeatures2 &deviceFeatures2,
-    const std::vector<std::string> &deviceExtensions,
-    const std::map<vk::VkSamplerYcbcrConversion, vk::VkSamplerYcbcrConversionCreateInfo> &samplerYcbcrConversions,
-    const std::map<vk::VkSampler, vk::VkSamplerCreateInfo> &samplers,
-    const std::map<vk::VkDescriptorSetLayout, vk::VkDescriptorSetLayoutCreateInfo> &descriptorSetLayouts,
-    const std::map<vk::VkRenderPass, vk::VkRenderPassCreateInfo> &renderPasses,
-    const std::map<vk::VkRenderPass, vk::VkRenderPassCreateInfo2> &renderPasses2,
-    const std::map<vk::VkPipelineLayout, vk::VkPipelineLayoutCreateInfo> &pipelineLayouts);
-string writeJSON_ComputePipeline_vkpccjson(
-    const std::string &filePrefix, uint32_t pipelineIndex, const vk::VkPipelineOfflineCreateInfo id,
-    const vk::VkComputePipelineCreateInfo &cpCI, const vk::VkPhysicalDeviceFeatures2 &deviceFeatures2,
-    const std::vector<std::string> &deviceExtensions,
-    const std::map<vk::VkSamplerYcbcrConversion, vk::VkSamplerYcbcrConversionCreateInfo> &samplerYcbcrConversions,
-    const std::map<vk::VkSampler, vk::VkSamplerCreateInfo> &samplers,
-    const std::map<vk::VkDescriptorSetLayout, vk::VkDescriptorSetLayoutCreateInfo> &descriptorSetLayouts,
-    const std::map<vk::VkPipelineLayout, vk::VkPipelineLayoutCreateInfo> &pipelineLayouts);
-string writeJSON_VkPhysicalDeviceFeatures2(const vk::VkPhysicalDeviceFeatures2 &features);
-string writeJSON_pNextChain(const void *pNext);
+string writeJSON_VkGraphicsPipelineCreateInfo(const Context &context,
+                                              const vk::VkGraphicsPipelineCreateInfo &pCreateInfo);
+string writeJSON_VkComputePipelineCreateInfo(const Context &context,
+                                             const vk::VkComputePipelineCreateInfo &pCreateInfo);
+string writeJSON_VkRenderPassCreateInfo(const Context &context, const vk::VkRenderPassCreateInfo &pCreateInfo);
+string writeJSON_VkRenderPassCreateInfo2(const Context &context, const vk::VkRenderPassCreateInfo2 &pCreateInfo);
+string writeJSON_VkPipelineLayoutCreateInfo(const Context &context, const vk::VkPipelineLayoutCreateInfo &pCreateInfo);
+string writeJSON_VkDescriptorSetLayoutCreateInfo(const Context &context,
+                                                 const vk::VkDescriptorSetLayoutCreateInfo &pCreateInfo);
+string writeJSON_VkSamplerCreateInfo(const Context &context, const vk::VkSamplerCreateInfo &pCreateInfo);
+string writeJSON_VkSamplerYcbcrConversionCreateInfo(const Context &context,
+                                                    const vk::VkSamplerYcbcrConversionCreateInfo &pCreateInfo);
+string writeJSON_VkShaderModuleCreateInfo(const Context &context, const vk::VkShaderModuleCreateInfo &smCI);
+string writeJSON_VkDeviceObjectReservationCreateInfo(const Context &context,
+                                                     const vk::VkDeviceObjectReservationCreateInfo &dmrCI);
+string writeJSON_VkPipelineOfflineCreateInfo(const Context &context, const vk::VkPipelineOfflineCreateInfo &piInfo);
+string writeJSON_GraphicsPipeline_vkpccjson(Context &context,
+                                            const vksc_server::VulkanJsonPipelineDescription &pipelineDescription,
+                                            const std::string &filePrefix, const uint32_t pipelineIndex);
+string writeJSON_ComputePipeline_vkpccjson(Context &context,
+                                           const vksc_server::VulkanJsonPipelineDescription &pipelineDescription,
+                                           const std::string &filePrefix, const uint32_t pipelineIndex);
+string writeJSON_VkPhysicalDeviceFeatures2(const Context &context, const vk::VkPhysicalDeviceFeatures2 &features);
+string writeJSON_VkPhysicalDeviceFeatures2(const Context &context, const vk::VkDeviceCreateInfo &device_create_info);
 
 void readJSON_VkGraphicsPipelineCreateInfo(Context &context, const string &graphicsPipelineCreateInfo,
                                            vk::VkGraphicsPipelineCreateInfo &gpCI);
@@ -95,7 +106,7 @@ void readJSON_VkDescriptorSetLayoutCreateInfo(Context &context, const string &de
 void readJSON_VkPipelineLayoutCreateInfo(Context &context, const string &pipelineLayoutCreateInfo,
                                          vk::VkPipelineLayoutCreateInfo &plCI);
 void readJSON_VkShaderModuleCreateInfo(Context &context, const string &shaderModuleCreate,
-                                       vk::VkShaderModuleCreateInfo &smCI, vector<uint8_t> &spirvShader);
+                                       vk::VkShaderModuleCreateInfo &smCI);
 void readJSON_VkDeviceObjectReservationCreateInfo(Context &context, const string &deviceMemoryReservation,
                                                   vk::VkDeviceObjectReservationCreateInfo &dmrCI);
 void readJSON_VkPipelineOfflineCreateInfo(Context &context, const string &pipelineIdentifierInfo,
@@ -105,7 +116,6 @@ void readJSON_VkSamplerYcbcrConversionCreateInfo(Context &context, const std::st
                                                  vk::VkSamplerYcbcrConversionCreateInfo &sycCI);
 void readJSON_VkPhysicalDeviceFeatures2(Context &context, const std::string &featuresJson,
                                         vk::VkPhysicalDeviceFeatures2 &features);
-void *readJSON_pNextChain(Context &context, const std::string &chainJson);
 
 } // namespace json
 

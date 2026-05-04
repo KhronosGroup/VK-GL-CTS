@@ -954,7 +954,6 @@ void TestCaseExecutor::runTestsInSubprocess(tcu::TestContext &testCtx)
 
     // export data collected during statistics gathering to JSON file ( VkDeviceObjectReservationCreateInfo, SPIR-V shaders, pipelines )
     {
-        m_resourceInterface->removeRedundantObjects();
         m_resourceInterface->finalizeCommandBuffers();
         std::vector<uint8_t> data = m_resourceInterface->exportData();
         m_parentIPC->SetFile(jsonFileName.str(), data);

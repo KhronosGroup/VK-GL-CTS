@@ -23,6 +23,11 @@
 
 #include "vksSerializerVKSC.hpp"
 
+#include "vksJson.hpp"
+
+#include <variant>
+#include <optional>
+
 namespace vksc_server
 {
 
@@ -48,16 +53,143 @@ struct SourceVariant
     }
 };
 
+struct YcbcrData
+{
+    std::string json;
+    std::uint64_t uniqueObjId;
+};
+
+template <typename TYPE>
+inline void SerializeItem(Serializer<TYPE> &serializer, YcbcrData &v)
+{
+    serializer.Serialize(v.json, v.uniqueObjId);
+}
+
+struct SamplerData
+{
+    std::string json;
+    std::optional<YcbcrData> samplerYcbcrConversion;
+    std::uint64_t uniqueObjId;
+};
+
+inline void SerializeItem(Serializer<ToRead> &serializer, SamplerData &v)
+{
+    std::vector<YcbcrData> samplerYcbcrConversion{};
+
+    serializer.Serialize(v.json, samplerYcbcrConversion, v.uniqueObjId);
+
+    if (!samplerYcbcrConversion.empty())
+    {
+        v.samplerYcbcrConversion = samplerYcbcrConversion[0];
+    }
+    else
+    {
+        v.samplerYcbcrConversion = std::nullopt;
+    }
+}
+
+inline void SerializeItem(Serializer<ToWrite> &serializer, SamplerData &v)
+{
+    std::vector<YcbcrData> samplerYcbcrConversion{};
+
+    if (v.samplerYcbcrConversion)
+    {
+        samplerYcbcrConversion.push_back(v.samplerYcbcrConversion.value());
+    }
+
+    serializer.Serialize(v.json, samplerYcbcrConversion, v.uniqueObjId);
+}
+
+struct DescriptorSetLayoutData
+{
+    std::string json;
+    std::vector<SamplerData> immutableSamplers;
+    std::uint64_t uniqueObjId;
+};
+
+template <typename TYPE>
+inline void SerializeItem(Serializer<TYPE> &serializer, DescriptorSetLayoutData &v)
+{
+    serializer.Serialize(v.json, v.immutableSamplers, v.uniqueObjId);
+}
+
+struct PipelineLayoutData
+{
+    std::string json;
+    std::vector<DescriptorSetLayoutData> descriptorSetLayouts;
+    std::uint64_t uniqueObjId;
+};
+
+template <typename TYPE>
+inline void SerializeItem(Serializer<TYPE> &serializer, PipelineLayoutData &v)
+{
+    serializer.Serialize(v.json, v.descriptorSetLayouts, v.uniqueObjId);
+}
+
+struct ShaderModuleData
+{
+    std::string json;
+    std::uint64_t uniqueObjId;
+};
+
+template <typename TYPE>
+inline void SerializeItem(Serializer<TYPE> &serializer, ShaderModuleData &v)
+{
+    serializer.Serialize(v.json);
+}
+
+struct RenderPassData
+{
+    std::string json;
+    std::uint64_t uniqueObjId;
+};
+
+template <typename TYPE>
+inline void SerializeItem(Serializer<TYPE> &serializer, RenderPassData &v)
+{
+    serializer.Serialize(v.json);
+}
+
+struct GraphicsPipelineData
+{
+    std::string json;
+    PipelineLayoutData pipelineLayoutData;
+    RenderPassData renderPassData;
+    std::vector<ShaderModuleData> shaderModuleData;
+    std::uint64_t uniqueObjId;
+};
+
+template <typename TYPE>
+inline void SerializeItem(Serializer<TYPE> &serializer, GraphicsPipelineData &v)
+{
+    serializer.Serialize(v.json, v.pipelineLayoutData, v.renderPassData, v.shaderModuleData, v.uniqueObjId);
+}
+
+struct ComputePipelineData
+{
+    std::string json;
+    PipelineLayoutData pipelineLayoutData;
+    ShaderModuleData shaderModuleData;
+    std::uint64_t uniqueObjId;
+};
+
+template <typename TYPE>
+inline void SerializeItem(Serializer<TYPE> &serializer, ComputePipelineData &v)
+{
+    serializer.Serialize(v.json, v.pipelineLayoutData, v.shaderModuleData, v.uniqueObjId);
+}
+
 struct VulkanJsonPipelineDescription
 {
     VulkanJsonPipelineDescription() : currentCount(0u), maxCount(0u), allCount(0u)
     {
     }
-    VulkanJsonPipelineDescription(const vk::VkPipelineOfflineCreateInfo &id_, const string &pipelineContents_,
+    VulkanJsonPipelineDescription(const vk::VkPipelineOfflineCreateInfo &id_,
+                                  const std::variant<ComputePipelineData, GraphicsPipelineData> &pipelineData_,
                                   const string &deviceFeatures_, const vector<string> &deviceExtensions_,
                                   const std::string &test)
         : id(id_)
-        , pipelineContents(pipelineContents_)
+        , pipelineData(pipelineData_)
         , deviceFeatures(deviceFeatures_)
         , deviceExtensions(deviceExtensions_)
         , currentCount(1u)
@@ -81,9 +213,10 @@ struct VulkanJsonPipelineDescription
     }
 
     vk::VkPipelineOfflineCreateInfo id;
-    string pipelineContents;
-    string deviceFeatures;
-    vector<string> deviceExtensions;
+    std::variant<ComputePipelineData, GraphicsPipelineData> pipelineData;
+    std::string deviceFeatures;
+    vector<std::string> deviceExtensions;
+
     uint32_t currentCount;
     uint32_t maxCount;
     uint32_t allCount;
@@ -92,14 +225,46 @@ struct VulkanJsonPipelineDescription
 
 inline void SerializeItem(Serializer<ToRead> &serializer, VulkanJsonPipelineDescription &v)
 {
-    serializer.Serialize(v.id, v.pipelineContents, v.deviceFeatures, v.deviceExtensions, v.currentCount, v.maxCount,
-                         v.allCount, v.tests);
+    std::vector<ComputePipelineData> computePipelineData{};
+    std::vector<GraphicsPipelineData> graphicsPipelineData{};
+
+    serializer.Serialize(v.id, computePipelineData, graphicsPipelineData, v.deviceFeatures, v.deviceExtensions,
+                         v.currentCount, v.maxCount, v.allCount, v.tests);
+
+    if (!computePipelineData.empty())
+    {
+        v.pipelineData = computePipelineData[0];
+    }
+    else if (!graphicsPipelineData.empty())
+    {
+        v.pipelineData = graphicsPipelineData[0];
+    }
+    else
+    {
+        TCU_THROW(InternalError, "Reading empty variant. This should not have happened.");
+    }
 }
 
 inline void SerializeItem(Serializer<ToWrite> &serializer, VulkanJsonPipelineDescription &v)
 {
-    serializer.Serialize(v.id, v.pipelineContents, v.deviceFeatures, v.deviceExtensions, v.currentCount, v.maxCount,
-                         v.allCount, v.tests);
+    std::vector<ComputePipelineData> computePipelineData{};
+    std::vector<GraphicsPipelineData> graphicsPipelineData{};
+
+    if (std::holds_alternative<ComputePipelineData>(v.pipelineData))
+    {
+        computePipelineData.push_back(std::get<ComputePipelineData>(v.pipelineData));
+    }
+    else if (std::holds_alternative<GraphicsPipelineData>(v.pipelineData))
+    {
+        graphicsPipelineData.push_back(std::get<GraphicsPipelineData>(v.pipelineData));
+    }
+    else
+    {
+        TCU_THROW(InternalError, "Writing empty variant. This should not have happened.");
+    }
+
+    serializer.Serialize(v.id, computePipelineData, graphicsPipelineData, v.deviceFeatures, v.deviceExtensions,
+                         v.currentCount, v.maxCount, v.allCount, v.tests);
 }
 
 struct VulkanPipelineSize
@@ -144,32 +309,29 @@ struct PipelineIdentifierEqual
 
 struct VulkanPipelineCacheInput
 {
-    std::map<vk::VkSamplerYcbcrConversion, string> samplerYcbcrConversions;
-    std::map<vk::VkSampler, string> samplers;
-    std::map<vk::VkShaderModule, string> shaderModules;
-    std::map<vk::VkRenderPass, string> renderPasses;
-    std::map<vk::VkPipelineLayout, string> pipelineLayouts;
-    std::map<vk::VkDescriptorSetLayout, string> descriptorSetLayouts;
+    std::map<vk::VkSamplerYcbcrConversion, YcbcrData> samplerYcbcrConversions;
+    std::map<vk::VkSampler, SamplerData> samplers;
+    std::map<vk::VkDescriptorSetLayout, DescriptorSetLayoutData> descriptorSetLayouts;
+    std::map<vk::VkPipelineLayout, PipelineLayoutData> pipelineLayouts;
+    std::map<vk::VkShaderModule, ShaderModuleData> shaderModules;
+    std::map<vk::VkRenderPass, RenderPassData> renderPasses;
     std::vector<VulkanJsonPipelineDescription> pipelines;
 
     template <typename TYPE>
     void Serialize(Serializer<TYPE> &archive)
     {
-        archive.Serialize(samplerYcbcrConversions, samplers, shaderModules, renderPasses, pipelineLayouts,
-                          descriptorSetLayouts, pipelines);
+        archive.Serialize(pipelines);
     }
 };
 
 inline void SerializeItem(Serializer<ToRead> &serializer, VulkanPipelineCacheInput &v)
 {
-    serializer.Serialize(v.samplerYcbcrConversions, v.samplers, v.shaderModules, v.renderPasses, v.pipelineLayouts,
-                         v.descriptorSetLayouts, v.pipelines);
+    serializer.Serialize(v.pipelines);
 }
 
 inline void SerializeItem(Serializer<ToWrite> &serializer, VulkanPipelineCacheInput &v)
 {
-    serializer.Serialize(v.samplerYcbcrConversions, v.samplers, v.shaderModules, v.renderPasses, v.pipelineLayouts,
-                         v.descriptorSetLayouts, v.pipelines);
+    serializer.Serialize(v.pipelines);
 }
 
 struct VulkanCommandMemoryConsumption

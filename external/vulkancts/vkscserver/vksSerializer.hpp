@@ -23,6 +23,9 @@
 
 #include "vksCommon.hpp"
 #include "vksEndian.hpp"
+#ifdef CTS_USES_VULKANSC
+#include "vksJson.hpp"
+#endif
 
 #include <cstring>
 #include <map>
@@ -94,6 +97,10 @@ public:
         SerializeItem(*this, first);
         Serialize(args...);
     }
+
+#ifdef CTS_USES_VULKANSC
+    json::Context ctx;
+#endif
 };
 
 template <typename TYPE>

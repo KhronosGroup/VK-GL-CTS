@@ -392,8 +392,13 @@ PACKAGES = [
     GitRepo(
         "https://github.com/open-source-parsers/jsoncpp.git",
         "git@github.com:open-source-parsers/jsoncpp.git",
-        "9059f5cad030ba11d37818847443a53918c327b1",
+        "89e2973c754a9c02a49974d839779b151e95afd6",
         "jsoncpp"),
+    GitRepo(
+        "https://github.com/KhronosGroup/VulkanSC-pcutil.git",
+        "git@github.com:KhronosGroup/VulkanSC-pcutil.git",
+        "1de6df7e8173762e6a27dfa2cec604687bc03dab",
+        "vulkansc-pcutil"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
         "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",

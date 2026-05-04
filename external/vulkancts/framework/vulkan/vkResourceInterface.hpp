@@ -33,8 +33,8 @@
 #include <map>
 #ifdef CTS_USES_VULKANSC
 #include "vksClient.hpp"
+#include "vksJson.hpp"
 #include "tcuMaybe.hpp"
-//    #include "vksStructsVKSC.hpp"
 #endif // CTS_USES_VULKANSC
 
 namespace vk
@@ -175,7 +175,13 @@ protected:
     std::map<VkDevice, DevicePipelineCacheInfo> m_devicePipelineCaches;
 
     mutable std::mutex m_mutex;
+    // NOTE: m_resourceCounter is used to drive parent process handle generation
+    //       m_uniqueObjIdCounter behaves similarly, drives pipeline cache handle uniqueness,
+    //       but unlike m_resourceCounter is used in the subprocess too.
+    //       A new variable is introduced for clarity, not to conflate the same variable
+    //       being used for two different, yet similar purposes.
     mutable uint64_t m_resourceCounter;
+    mutable uint64_t m_uniqueObjIdCounter;
     mutable VkDeviceObjectReservationCreateInfo m_statCurrent;
     mutable VkDeviceObjectReservationCreateInfo m_statMax;
 
@@ -316,6 +322,11 @@ protected:
     std::map<VkDevice, CreateShaderModuleFunc> m_createShaderModuleFunc;
     std::map<VkDevice, CreateGraphicsPipelinesFunc> m_createGraphicsPipelinesFunc;
     std::map<VkDevice, CreateComputePipelinesFunc> m_createComputePipelinesFunc;
+
+private:
+#ifdef CTS_USES_VULKANSC
+    vksc_server::json::Context m_jsonContext;
+#endif
 };
 
 #ifdef CTS_USES_VULKANSC
