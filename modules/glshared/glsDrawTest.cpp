@@ -2022,6 +2022,9 @@ template <typename T, typename GLType>
 char *RandomArrayGenerator::createBasicArray(int seed, int elementCount, int componentCount, int offset, int stride)
 {
     DE_ASSERT(componentCount >= 1 && componentCount <= 4);
+    // Make the bound explicit so GCC 14 doesn't emit false-positive -Wstringop-overflow on the writes below.
+    if (componentCount > 4)
+        componentCount = 4;
 
     const GLType min = extractGLValue<GLType>(GLValue::getMinValue(GLValueTypeTraits<GLType>::Type));
     const GLType max = extractGLValue<GLType>(GLValue::getMaxValue(GLValueTypeTraits<GLType>::Type));
