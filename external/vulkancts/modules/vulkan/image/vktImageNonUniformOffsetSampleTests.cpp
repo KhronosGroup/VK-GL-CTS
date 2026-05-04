@@ -750,6 +750,11 @@ tcu::TestCaseGroup *createImageNonUniformOffsetSampleTests(tcu::TestContext &tes
                 if (multiMip && !hasLodArg(testFunc.testFunc))
                     continue;
 
+                // Implicit-LOD sampling requires derivatives, which aren't available in compute
+                // shaders without GL_KHR_compute_shader_derivatives. Skip those combinations.
+                if (testStage.stage == VK_SHADER_STAGE_COMPUTE_BIT && !hasLodArg(testFunc.testFunc))
+                    continue;
+
                 const TestParams params{
                     testStage.stage,
                     testFunc.testFunc,
