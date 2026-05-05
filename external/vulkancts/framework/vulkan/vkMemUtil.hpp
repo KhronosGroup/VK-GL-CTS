@@ -173,7 +173,8 @@ public:
     virtual de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements, MemoryRequirement requirement,
                                              uint64_t memoryOpaqueCaptureAddr = 0u)                         = 0;
     virtual de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memReqs, HostIntent intent,
-                                             VkMemoryAllocateFlags allocFlags = 0u)                         = 0;
+                                             VkMemoryAllocateFlags allocFlags = 0u,
+                                             uint64_t memoryOpaqueCaptureAddr = 0ull)                       = 0;
 };
 
 //! Allocator that backs every allocation with its own VkDeviceMemory
@@ -194,7 +195,8 @@ public:
     de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements, MemoryRequirement requirement,
                                      uint64_t memoryOpaqueCaptureAddr = 0u) override;
     de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memReqs, HostIntent intent,
-                                     VkMemoryAllocateFlags allocFlags = 0u) override;
+                                     VkMemoryAllocateFlags allocFlags = 0u,
+                                     uint64_t memoryOpaqueCaptureAddr = 0ull) override;
 
 private:
     de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memRequirements, MemoryRequirement requirement,
@@ -222,7 +224,8 @@ public:
     de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memReqs, MemoryRequirement requirement,
                                      uint64_t memoryOpaqueCaptureAddr) override;
     de::MovePtr<Allocation> allocate(const VkMemoryRequirements &memReqs, HostIntent intent,
-                                     VkMemoryAllocateFlags allocFlags) override;
+                                     VkMemoryAllocateFlags allocFlags,
+                                     uint64_t memoryOpaqueCaptureAddr = 0ull) override;
 
     static bool isSupported();
 

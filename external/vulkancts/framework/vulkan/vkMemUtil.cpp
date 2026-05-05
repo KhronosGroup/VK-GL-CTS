@@ -346,7 +346,7 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
 }
 
 MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReqs, HostIntent intent,
-                                              VkMemoryAllocateFlags allocFlags)
+                                              VkMemoryAllocateFlags allocFlags, uint64_t memoryOpaqueCaptureAddr)
 {
     const bool devAddrCR = (allocFlags & VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT);
     const bool devAddr   = (allocFlags & VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT);
@@ -366,7 +366,7 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
                               | ziReq
 #endif // CTS_USES_VULKANSC
     );
-    return SimpleAllocator::allocate(memReqs, requirement, tcu::just(intent));
+    return SimpleAllocator::allocate(memReqs, requirement, tcu::just(intent), memoryOpaqueCaptureAddr);
 }
 
 #if ENABLE_DMA_HEAP_ALLOCATOR
@@ -494,11 +494,12 @@ MovePtr<Allocation> DmaHeapAllocator::allocate(const VkMemoryAllocateInfo &alloc
 }
 
 MovePtr<Allocation> DmaHeapAllocator::allocate(const VkMemoryRequirements &memReqs, HostIntent intent,
-                                               VkMemoryAllocateFlags allocFlags)
+                                               VkMemoryAllocateFlags allocFlags, uint64_t memoryOpaqueCaptureAddr)
 {
     DE_UNREF(memReqs);
     DE_UNREF(intent);
     DE_UNREF(allocFlags);
+    DE_UNREF(memoryOpaqueCaptureAddr);
 
     // Intent-based allocation not supported
     DE_ASSERT(false);
@@ -594,11 +595,12 @@ MovePtr<Allocation> DmaHeapAllocator::allocate(const VkMemoryAllocateInfo &alloc
 }
 
 MovePtr<Allocation> DmaHeapAllocator::allocate(const VkMemoryRequirements &memReqs, HostIntent intent,
-                                               VkMemoryAllocateFlags allocFlags)
+                                               VkMemoryAllocateFlags allocFlags, uint64_t memoryOpaqueCaptureAddr)
 {
     DE_UNREF(memReqs);
     DE_UNREF(intent);
     DE_UNREF(allocFlags);
+    DE_UNREF(memoryOpaqueCaptureAddr);
 
     // DMA heap allocation are not supported
     DE_ASSERT(false);

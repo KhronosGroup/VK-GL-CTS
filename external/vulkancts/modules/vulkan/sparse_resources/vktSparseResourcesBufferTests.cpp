@@ -2092,6 +2092,7 @@ public:
         bool useLocalInvocationIndex;    // This may affect the implementation/compiler.
         bool mapFirst;                   // Do an initial map, and unmap later.
         bool write;                      // Check writes. If false, check reads.
+        bool captureReplay;              // Run the test in capture-replay mode for the sparse buffer.
 
         uint32_t getValueCount() const
         {
@@ -2129,6 +2130,20 @@ public:
     tcu::TestStatus iterate(void) override;
 
 protected:
+    struct ReplayParams
+    {
+        bool haveParams; // If false, we're going to capture addresses here.
+        uint64_t bufferOpaqueAddress;
+        uint64_t memoryOpaqueAddress;
+        VkDeviceAddress bufferDeviceAddress;
+
+        ReplayParams() : haveParams(false), bufferOpaqueAddress(0), memoryOpaqueAddress(0), bufferDeviceAddress(0)
+        {
+        }
+    };
+
+    tcu::TestStatus runTest(ReplayParams &replayParams);
+
     const Params m_params;
 };
 
@@ -2163,6 +2178,13 @@ void NullAddressCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_buffer_device_address");
     else if (m_params.accessType == ResourceAccessType::DESCRIPTOR_HEAP)
         context.requireDeviceFunctionality("VK_EXT_descriptor_heap");
+
+    if (m_params.captureReplay)
+    {
+        const auto &bdaFeatures = context.getBufferDeviceAddressFeatures();
+        if (!bdaFeatures.bufferDeviceAddressCaptureReplay)
+            TCU_THROW(NotSupportedError, "bufferDeviceAddressCaptureReplay not supported");
+    }
 
     const auto &sparseProperties = context.getDeviceProperties().sparseProperties;
     if (!sparseProperties.residencyNonResidentStrict)
@@ -2330,6 +2352,25 @@ void copyMemoryToVector(const DeviceInterface &vkd, VkDevice device, std::vector
 
 tcu::TestStatus NullAddressInstance::iterate()
 {
+    ReplayParams replayParams;
+    const auto firstStatus = runTest(replayParams);
+    if (!m_params.captureReplay || firstStatus.getCode() != QP_TEST_RESULT_PASS)
+        return firstStatus;
+
+    // There is capture replay and the first run passed.
+    replayParams.haveParams = true;
+    return runTest(replayParams);
+}
+
+tcu::TestStatus NullAddressInstance::runTest(ReplayParams &replayParams)
+{
+    // Decide first if we capture, replay or none.
+    const bool capture = (m_params.captureReplay && !replayParams.haveParams);
+    const bool replay  = (m_params.captureReplay && replayParams.haveParams);
+
+    if (m_params.captureReplay)
+        DE_ASSERT(m_params.accessType != ResourceAccessType::DESCRIPTOR_SET);
+
     const auto ctx             = m_context.getContextCommonData();
     const auto valueCount      = m_params.getValueCount();
     const bool isUniformBuffer = (m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -2341,20 +2382,9 @@ tcu::TestStatus NullAddressInstance::iterate()
     const auto bufferSize = static_cast<VkDeviceSize>(de::dataSize(zeroValues));
 
     // Regular buffer data will be copied to or from.
-    VkShaderStageFlags extraFlag = 0u;
+    VkShaderStageFlags extraUsageFlag = 0u;
     if (m_params.accessType != ResourceAccessType::DESCRIPTOR_SET)
-        extraFlag |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
-
-    const auto regularBufferUsage = (extraFlag | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                                     VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    const auto regularBufferInfo  = vk::makeBufferCreateInfo(bufferSize, regularBufferUsage);
-    BufferWithMemory regularBuffer(ctx.vkd, ctx.device, ctx.allocator, regularBufferInfo,
-                                   MemoryRequirement::DeviceAddress);
-
-    // Staging host-visible buffer to be used with the regular one.
-    const auto stagingBufferUsage = (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    const auto stagingBufferInfo  = vk::makeBufferCreateInfo(bufferSize, stagingBufferUsage);
-    BufferWithMemory stagingBuffer(ctx.vkd, ctx.device, ctx.allocator, stagingBufferInfo, HostIntent::RW);
+        extraUsageFlag |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
     // Sparse buffer.
     VkBufferUsageFlags sparseBufferMainUsage = 0u;
@@ -2369,11 +2399,23 @@ tcu::TestStatus NullAddressInstance::iterate()
     else
         DE_ASSERT(false);
 
-    const auto sparseBufferUsage = (extraFlag | sparseBufferMainUsage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-    const auto sparseBufferFlags = (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT);
+    const auto sparseBufferUsage = (extraUsageFlag | sparseBufferMainUsage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    const auto sparseBufferExtraCreateFlag = static_cast<VkBufferCreateFlags>(
+        m_params.captureReplay ? VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT : 0);
+    const auto sparseBufferFlags =
+        (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT | sparseBufferExtraCreateFlag);
+
+    VkBufferOpaqueCaptureAddressCreateInfo bufferOpaqueCaptureAddressCreateInfo = initVulkanStructure();
+    const VkBufferOpaqueCaptureAddressCreateInfo *sparseBufferCreateInfoPNext   = nullptr;
+    if (replay)
+    {
+        bufferOpaqueCaptureAddressCreateInfo.opaqueCaptureAddress = replayParams.bufferOpaqueAddress;
+        sparseBufferCreateInfoPNext                               = &bufferOpaqueCaptureAddressCreateInfo;
+    }
+
     const VkBufferCreateInfo sparseBufferInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        nullptr,
+        sparseBufferCreateInfoPNext,
         sparseBufferFlags,
         bufferSize, // Same size.
         sparseBufferUsage,
@@ -2382,6 +2424,39 @@ tcu::TestStatus NullAddressInstance::iterate()
         nullptr,
     };
     const auto sparseBuffer = createBuffer(ctx.vkd, ctx.device, &sparseBufferInfo);
+
+    if (capture)
+    {
+        const VkBufferDeviceAddressInfo info{
+            VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+            nullptr,
+            *sparseBuffer,
+        };
+        replayParams.bufferOpaqueAddress = ctx.vkd.getBufferOpaqueCaptureAddress(ctx.device, &info);
+    }
+
+    if (m_params.captureReplay)
+    {
+        const auto sparseBDA = getBDA(ctx.vkd, ctx.device, *sparseBuffer);
+        if (capture)
+            replayParams.bufferDeviceAddress = sparseBDA;
+        else if (replay)
+        {
+            if (sparseBDA != replayParams.bufferDeviceAddress)
+                TCU_FAIL("Sparse buffer replay device address does not match capture device address");
+        }
+    }
+
+    const auto regularBufferUsage = (extraUsageFlag | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto regularBufferInfo  = vk::makeBufferCreateInfo(bufferSize, regularBufferUsage);
+    BufferWithMemory regularBuffer(ctx.vkd, ctx.device, ctx.allocator, regularBufferInfo,
+                                   MemoryRequirement::DeviceAddress);
+
+    // Staging host-visible buffer to be used with the regular one.
+    const auto stagingBufferUsage = (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto stagingBufferInfo  = vk::makeBufferCreateInfo(bufferSize, stagingBufferUsage);
+    BufferWithMemory stagingBuffer(ctx.vkd, ctx.device, ctx.allocator, stagingBufferInfo, HostIntent::RW);
 
     // Decide which buffer will be the source and the destination in the shader, depending on test parameters.
     const auto srcBuffer = (m_params.write ? *regularBuffer : *sparseBuffer);
@@ -2722,8 +2797,32 @@ tcu::TestStatus NullAddressInstance::iterate()
     de::MovePtr<Allocation> sparseMemory;
     if (m_params.mapFirst)
     {
+        VkMemoryAllocateFlags sparseMemoryFlags = 0u;
+        uint64_t memoryOpaqueCaptureAddr        = 0ull;
+
+        if (m_params.accessType != ResourceAccessType::DESCRIPTOR_SET)
+        {
+            sparseMemoryFlags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+            if (m_params.captureReplay)
+            {
+                sparseMemoryFlags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+                if (replay)
+                    memoryOpaqueCaptureAddr = replayParams.memoryOpaqueAddress;
+            }
+        }
+
         const auto memReqs = getBufferMemoryRequirements(ctx.vkd, ctx.device, *sparseBuffer);
-        sparseMemory       = ctx.allocator.allocate(memReqs, HostIntent::RW);
+        sparseMemory = ctx.allocator.allocate(memReqs, HostIntent::RW, sparseMemoryFlags, memoryOpaqueCaptureAddr);
+
+        if (capture)
+        {
+            const VkDeviceMemoryOpaqueCaptureAddressInfo info{
+                VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO,
+                nullptr,
+                sparseMemory->getMemory(),
+            };
+            replayParams.memoryOpaqueAddress = ctx.vkd.getDeviceMemoryOpaqueCaptureAddress(ctx.device, &info);
+        }
 
         VkSparseMemoryBind memoryBind = {
             0ull, memReqs.size, VK_NULL_HANDLE, 0ull, 0u,
@@ -3087,34 +3186,39 @@ void populateTestGroup(tcu::TestCaseGroup *parentGroup)
 
                     for (const auto mapFirst : {false, true})
                         for (const auto write : {false, true})
-                        {
-                            if (write && readOnlyDescriptor)
-                                continue;
+                            for (const auto captureReplay : {false, true})
+                            {
+                                if (captureReplay && accessType == ResourceAccessType::DESCRIPTOR_SET)
+                                    continue;
 
-                            const NullAddressInstance::Params params{
-                                descriptorType, accessType, useLocalInvocationIndex, mapFirst, write,
-                            };
+                                if (write && readOnlyDescriptor)
+                                    continue;
 
-                            std::string accessSuffix;
-                            if (accessType == ResourceAccessType::DESCRIPTOR_SET)
-                                accessSuffix = "_descriptors";
-                            else if (accessType == ResourceAccessType::DESCRIPTOR_HEAP)
-                                accessSuffix = "_descriptor_heap";
+                                const NullAddressInstance::Params params{
+                                    descriptorType, accessType, useLocalInvocationIndex,
+                                    mapFirst,       write,      captureReplay};
 
-                            std::string descTypeSuffix;
-                            if (isUniformBuffer)
-                                descTypeSuffix = "_uniform_buffer";
-                            else if (isUniformTexelBuffer)
-                                descTypeSuffix = "_uniform_texel_buffer";
-                            else if (isStorageTexelBuffer)
-                                descTypeSuffix = "_storage_texel_buffer";
+                                std::string accessSuffix;
+                                if (accessType == ResourceAccessType::DESCRIPTOR_SET)
+                                    accessSuffix = "_descriptors";
+                                else if (accessType == ResourceAccessType::DESCRIPTOR_HEAP)
+                                    accessSuffix = "_descriptor_heap";
 
-                            const auto testName = std::string("null_address_") + (write ? "write" : "read") +
-                                                  (useLocalInvocationIndex ? "_local_inv_idx" : "") + accessSuffix +
-                                                  (mapFirst ? "_map_first" : "") + descTypeSuffix;
+                                std::string descTypeSuffix;
+                                if (isUniformBuffer)
+                                    descTypeSuffix = "_uniform_buffer";
+                                else if (isUniformTexelBuffer)
+                                    descTypeSuffix = "_uniform_texel_buffer";
+                                else if (isStorageTexelBuffer)
+                                    descTypeSuffix = "_storage_texel_buffer";
 
-                            miscGroup->addChild(new NullAddressCase(testCtx, testName, params));
-                        }
+                                const auto testName = std::string("null_address_") + (write ? "write" : "read") +
+                                                      (useLocalInvocationIndex ? "_local_inv_idx" : "") + accessSuffix +
+                                                      (mapFirst ? "_map_first" : "") + descTypeSuffix +
+                                                      (captureReplay ? "_capture_replay" : "");
+
+                                miscGroup->addChild(new NullAddressCase(testCtx, testName, params));
+                            }
                 }
         }
 
