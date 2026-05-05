@@ -322,9 +322,15 @@ void AfterUsageCase::checkSupport(Context &context) const
         for (uint32_t layerIdx = 0u; layerIdx < de::sizeU32(m_params.copyRegions); ++layerIdx)
         {
             const auto &copyRegion = m_params.copyRegions.at(layerIdx);
-            const auto srl         = makeImageSubresourceLayers(VK_IMAGE_ASPECT_NONE, 0u, layerIdx, 1u);
-            const auto offset      = makeOffset3D(copyRegion.offset.x, copyRegion.offset.y, 0);
-            const auto extent      = makeExtent3D(copyRegion.extent.width, copyRegion.extent.height, 1u);
+            const auto srl         = makeImageSubresourceLayers(
+#ifndef CTS_USES_VULKANSC
+                VK_IMAGE_ASPECT_NONE,
+#else
+                (VkImageAspectFlags)0u,
+#endif
+                0u, layerIdx, 1u);
+            const auto offset = makeOffset3D(copyRegion.offset.x, copyRegion.offset.y, 0);
+            const auto extent = makeExtent3D(copyRegion.extent.width, copyRegion.extent.height, 1u);
 
             const VkBufferImageCopy region = {0ull, 0u, 0u, srl, offset, extent};
 

@@ -783,5 +783,3 @@ std::ostream&	operator<<	(std::ostream& s, const VkViewport& value);
 std::ostream&	operator<<	(std::ostream& s, const VkWriteDescriptorSet& value);
 std::ostream&	operator<<	(std::ostream& s, const VkWriteDescriptorSetInlineUniformBlock& value);
 std::ostream&	operator<<	(std::ostream& s, const VkXYColorEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDrmFormatModifierProperties2EXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDrmFormatModifierPropertiesList2EXT& value);

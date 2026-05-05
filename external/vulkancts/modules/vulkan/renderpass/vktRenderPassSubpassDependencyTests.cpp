@@ -2358,7 +2358,11 @@ void SeparateChannelsTestInstance::setup(void)
     // VUID-vkCmdBeginRendering-pRenderingInfo-09592
     VkImageLayout colorImageLayout = isDSFormat ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
                                                   (m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING ?
+#ifndef CTS_USES_VULKANSC
                                                        VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ :
+#else
+                                                       VK_IMAGE_LAYOUT_GENERAL :
+#endif
                                                        VK_IMAGE_LAYOUT_GENERAL);
 
     // Create image used for both input and output in case of color test, and as a color output in depth/stencil test.
@@ -2496,7 +2500,11 @@ void SeparateChannelsTestInstance::setup(void)
     {
         // VUID-vkCmdDraw-imageLayout-00344
         const VkImageLayout inputAttachmentLayout = (m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ?
+#ifndef CTS_USES_VULKANSC
                                                         VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ :
+#else
+                                                        VK_IMAGE_LAYOUT_GENERAL :
+#endif
                                                         VK_IMAGE_LAYOUT_GENERAL;
         VkDescriptorImageInfo descInputAttachment =
             makeDescriptorImageInfo(VK_NULL_HANDLE, *m_imageView, inputAttachmentLayout);
@@ -2788,7 +2796,11 @@ void SeparateChannelsTestInstance::postRenderCommands(VkCommandBuffer cmdBuffer)
     {
         // VUID-vkCmdCopyImageToBuffer-srcImageLayout-00189
         const VkImageLayout colorImageLayout = (m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ?
+#ifndef CTS_USES_VULKANSC
                                                    VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ :
+#else
+                                                   VK_IMAGE_LAYOUT_GENERAL :
+#endif
                                                    VK_IMAGE_LAYOUT_GENERAL;
         copyImageToBuffer(vkd, cmdBuffer, *m_colorImage, *m_resultBuffer0, tcu::IVec2(m_width, m_height),
                           VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, colorImageLayout);

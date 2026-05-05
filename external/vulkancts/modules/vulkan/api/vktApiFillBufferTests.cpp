@@ -122,7 +122,11 @@ Move<VkDevice> createCustomDevice(Context &context,
 
     if (context.isDeviceFunctionalitySupported("VK_KHR_synchronization2"))
     {
+#ifndef CTS_USES_VULKANSC
         if (context.getEquivalentApiVersion() < VK_API_VERSION_1_3)
+#else
+        if (true)
+#endif
         {
             synchronization2Features.pNext = &deviceFeatures2;
             pNext                          = &synchronization2Features;
@@ -219,8 +223,8 @@ FillWholeBufferTestInstance::FillWholeBufferTestInstance(Context &context, const
     const VkPhysicalDevice physDevice =
         vk::chooseDevice(vki, m_customInstance, m_context.getTestContext().getCommandLine());
 #else
-    const vk::InstanceInterface &vki            = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice           = m_context.getPhysicalDevice();
+    const vk::InstanceInterface &vki  = m_context.getInstanceInterface();
+    const VkPhysicalDevice physDevice = m_context.getPhysicalDevice();
 #endif // CTS_USES_VULKANSC
     const DeviceInterface &vk = m_context.getDeviceInterface();
 
@@ -301,11 +305,11 @@ tcu::TestStatus FillWholeBufferTestInstance::iterate(void)
     auto cmdPipelineBarrier2Fun   = &DeviceInterface::cmdPipelineBarrier2;
     auto queueSubmit2Fun          = &DeviceInterface::queueSubmit2;
 #else
-    using DependencyInfo                        = VkDependencyInfoKHR;
-    using CommandBufferSubmitInfo               = VkCommandBufferSubmitInfoKHR;
-    using SubmitInfo2                           = VkSubmitInfo2KHR;
-    auto cmdPipelineBarrier2Fun                 = &DeviceInterface::cmdPipelineBarrier2KHR;
-    auto queueSubmit2Fun                        = &DeviceInterface::queueSubmit2KHR;
+    using DependencyInfo              = VkDependencyInfoKHR;
+    using CommandBufferSubmitInfo     = VkCommandBufferSubmitInfoKHR;
+    using SubmitInfo2                 = VkSubmitInfo2KHR;
+    auto cmdPipelineBarrier2Fun       = &DeviceInterface::cmdPipelineBarrier2KHR;
+    auto queueSubmit2Fun              = &DeviceInterface::queueSubmit2KHR;
 #endif // CTS_USES_VULKANSC
 
     auto gpuToHostBarrier2 = makeBufferMemoryBarrier2(

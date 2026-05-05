@@ -1158,7 +1158,9 @@ uint32_t getYCbCrFormatChannelCount(vk::VkFormat format)
     switch (format)
     {
     case vk::VK_FORMAT_A1R5G5B5_UNORM_PACK16:
+#ifndef CTS_USES_VULKANSC
     case vk::VK_FORMAT_A1B5G5R5_UNORM_PACK16:
+#endif
     case vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32:
     case vk::VK_FORMAT_A2R10G10B10_UNORM_PACK32:
     case vk::VK_FORMAT_A8B8G8R8_UNORM_PACK32:
@@ -1225,7 +1227,9 @@ uint32_t getYCbCrFormatChannelCount(vk::VkFormat format)
     case vk::VK_FORMAT_R10X6_UNORM_PACK16:
     case vk::VK_FORMAT_R12X4_UNORM_PACK16:
     case vk::VK_FORMAT_R16_UNORM:
+#ifndef CTS_USES_VULKANSC
     case vk::VK_FORMAT_A8_UNORM:
+#endif
     case vk::VK_FORMAT_R8_UNORM:
         return 1;
 

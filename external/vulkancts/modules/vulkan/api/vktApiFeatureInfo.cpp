@@ -5156,7 +5156,11 @@ tcu::TestStatus unsupportedImageUsage(Context &context, const VkFormat format, c
 #endif
     TestLog &log = context.getTestContext().getLog();
 
+#ifndef CTS_USES_VULKANSC
     VkFormatFeatureFlags2 usageRequiredFeatures = 0u;
+#else
+    VkFormatFeatureFlags usageRequiredFeatures   = 0u;
+#endif
     switch (imageUsage)
     {
     case VK_IMAGE_USAGE_SAMPLED_BIT:
@@ -8539,23 +8543,23 @@ tcu::TestStatus FormatPropsTest::iterate(void)
     VkFormatProperties2 retryProps = initVulkanStructure();
     const auto addProperties       = makeStructChainAdder(&retryProps);
 
-    VkDrmFormatModifierPropertiesListEXT drmModProps   = initVulkanStructure();
-    VkDrmFormatModifierPropertiesList2EXT drmModProps2 = initVulkanStructure();
-    VkFormatProperties3 props3                         = initVulkanStructure();
+    VkDrmFormatModifierPropertiesListEXT drmModProps = initVulkanStructure();
 #ifndef CTS_USES_VULKANSC
+    VkDrmFormatModifierPropertiesList2EXT drmModProps2      = initVulkanStructure();
+    VkFormatProperties3 props3                              = initVulkanStructure();
     VkSubpassResolvePerformanceQueryEXT subpassResolveProps = initVulkanStructure();
 #endif // CTS_USES_VULKANSC
 
     if (m_params.pNextFlags & PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST)
         addProperties(&drmModProps);
 
+#ifndef CTS_USES_VULKANSC
     if (m_params.pNextFlags & PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2)
         addProperties(&drmModProps2);
 
     if (m_params.pNextFlags & PNEXT_FORMAT_PROPERTIES_3)
         addProperties(&props3);
 
-#ifndef CTS_USES_VULKANSC
     if (m_params.pNextFlags & PNEXT_SUBPASS_RESOLVE_PERFORMANCE_QUERY)
         addProperties(&subpassResolveProps);
 #endif // CTS_USES_VULKANSC
@@ -8571,6 +8575,7 @@ tcu::TestStatus FormatPropsTest::iterate(void)
     if (basicProps.formatProperties.optimalTilingFeatures != retryProps.formatProperties.optimalTilingFeatures)
         TCU_FAIL("Mismatch in optimalTilingFeatures");
 
+#ifndef CTS_USES_VULKANSC
     if (m_params.pNextFlags & PNEXT_FORMAT_PROPERTIES_3)
     {
         const auto basicBufferFeatures2 =
@@ -8589,6 +8594,7 @@ tcu::TestStatus FormatPropsTest::iterate(void)
         if ((basicOptimalTilingFeatures2 & props3.optimalTilingFeatures) != basicOptimalTilingFeatures2)
             TCU_FAIL("Mismatch in optimalTilingFeatures from VkFormatProperties3");
     }
+#endif // CTS_USES_VULKANSC
 
     return tcu::TestStatus::pass("Pass");
 }

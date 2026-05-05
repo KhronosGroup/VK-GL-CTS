@@ -1573,8 +1573,13 @@ struct MergedPipelineCache
             Move<VkPipeline> pipeline = createComputePipeline(env.vkd, env.device, VK_NULL_HANDLE, &pipelineInfo);
         }
 
+#ifdef CTS_USES_VULKANSC
+        DE_UNREF(params);
+#endif
         VkPipelineCacheCreateFlags pipelineCacheCreateFlags =
+#ifndef CTS_USES_VULKANSC
             params.dstExternSync ? (VkPipelineCacheCreateFlags)VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT :
+#endif
                                    0u;
 
         const VkPipelineCacheCreateInfo pipelineCacheInfo = {
@@ -3504,11 +3509,13 @@ void checkEventSupport(Context &context, const Event::Parameters)
 
 void checkPipelineCacheControlSupport(Context &context, const MergedPipelineCache::Parameters)
 {
-    (void)context;
 #ifndef CTS_USES_VULKANSC
     if (!context.isDeviceFunctionalitySupported("VK_EXT_pipeline_creation_cache_control") ||
         !context.getPipelineCreationCacheControlFeatures().pipelineCreationCacheControl)
         TCU_THROW(NotSupportedError, "pipelineCreationCacheControl not supported by this implementation");
+#else
+    (void)context;
+    TCU_THROW(NotSupportedError, "pipelineCreationCacheControl not supported in VulkanSC");
 #endif // CTS_USES_VULKANSC
 }
 

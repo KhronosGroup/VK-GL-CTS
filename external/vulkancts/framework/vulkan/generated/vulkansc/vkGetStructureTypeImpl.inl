@@ -1963,8 +1963,3 @@ template<> VkStructureType getStructureType<VkWriteDescriptorSetInlineUniformBlo
 	return VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK;
 }
 
-template<> VkStructureType getStructureType<VkDrmFormatModifierPropertiesList2EXT> (void)
-{
-	return VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT;
-}
-
