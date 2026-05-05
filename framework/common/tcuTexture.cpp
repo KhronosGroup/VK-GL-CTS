@@ -34,6 +34,7 @@
 #include "deArrayUtil.hpp"
 #include "tcuMatrix.hpp"
 
+#include <cstring>
 #include <limits>
 
 namespace tcu
@@ -120,6 +121,20 @@ inline uint32_t readUint24(const uint8_t *src)
 #endif
 }
 
+template <typename T>
+inline T readUnaligned(const uint8_t *ptr)
+{
+    T val;
+    memcpy(&val, ptr, sizeof(T));
+    return val;
+}
+
+template <typename T>
+inline void writeUnaligned(uint8_t *ptr, T val)
+{
+    memcpy(ptr, &val, sizeof(T));
+}
+
 inline uint8_t readUint32Low8(const uint8_t *src)
 {
 #if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
@@ -172,7 +187,7 @@ inline uint32_t readUint32High16(const uint8_t *src)
     const uint32_t uint32ByteOffset16To32     = 0;
 #endif
 
-    return *(const uint16_t *)(src + uint32ByteOffset16To32);
+    return readUnaligned<uint16_t>(src + uint32ByteOffset16To32);
 }
 
 inline void writeUint32High16(uint8_t *dst, uint16_t val)
@@ -183,7 +198,7 @@ inline void writeUint32High16(uint8_t *dst, uint16_t val)
     const uint32_t uint32ByteOffset16To32     = 0;
 #endif
 
-    *(uint16_t *)(dst + uint32ByteOffset16To32) = val;
+    writeUnaligned<uint16_t>(dst + uint32ByteOffset16To32, val);
 }
 
 inline uint32_t readUint32Low24(const uint8_t *src)
@@ -290,53 +305,53 @@ inline float channelToFloat(const uint8_t *value, TextureFormat::ChannelType typ
     case TextureFormat::SNORM_INT8:
         return de::max(-1.0f, (float)*((const int8_t *)value) / 127.0f);
     case TextureFormat::SNORM_INT16:
-        return de::max(-1.0f, (float)*((const int16_t *)value) / 32767.0f);
+        return de::max(-1.0f, (float)readUnaligned<int16_t>(value) / 32767.0f);
     case TextureFormat::SNORM_INT32:
-        return de::max(-1.0f, (float)*((const int32_t *)value) / 2147483647.0f);
+        return de::max(-1.0f, (float)readUnaligned<int32_t>(value) / 2147483647.0f);
     case TextureFormat::UNORM_INT8:
         return (float)*((const uint8_t *)value) / 255.0f;
     case TextureFormat::UNORM_INT16:
-        return (float)*((const uint16_t *)value) / 65535.0f;
+        return (float)readUnaligned<uint16_t>(value) / 65535.0f;
     case TextureFormat::UNORM_INT24:
         return (float)readUint24(value) / 16777215.0f;
     case TextureFormat::UNORM_INT32:
-        return (float)*((const uint32_t *)value) / 4294967295.0f;
+        return (float)readUnaligned<uint32_t>(value) / 4294967295.0f;
     case TextureFormat::SIGNED_INT8:
         return (float)*((const int8_t *)value);
     case TextureFormat::SIGNED_INT16:
-        return (float)*((const int16_t *)value);
+        return (float)readUnaligned<int16_t>(value);
     case TextureFormat::SIGNED_INT32:
-        return (float)*((const int32_t *)value);
+        return (float)readUnaligned<int32_t>(value);
     case TextureFormat::SIGNED_INT64:
-        return (float)*((const int64_t *)value);
+        return (float)readUnaligned<int64_t>(value);
     case TextureFormat::UNSIGNED_INT8:
         return (float)*((const uint8_t *)value);
     case TextureFormat::UNSIGNED_INT16:
-        return (float)*((const uint16_t *)value);
+        return (float)readUnaligned<uint16_t>(value);
     case TextureFormat::UNSIGNED_INT24:
         return (float)readUint24(value);
     case TextureFormat::UNSIGNED_INT32:
-        return (float)*((const uint32_t *)value);
+        return (float)readUnaligned<uint32_t>(value);
     case TextureFormat::UNSIGNED_INT64:
-        return (float)*((const uint64_t *)value);
+        return (float)readUnaligned<uint64_t>(value);
     case TextureFormat::HALF_FLOAT:
-        return deFloat16To32(*(const deFloat16 *)value);
+        return deFloat16To32(readUnaligned<deFloat16>(value));
     case TextureFormat::FLOAT:
-        return *((const float *)value);
+        return readUnaligned<float>(value);
     case TextureFormat::FLOAT64:
-        return (float)*((const double *)value);
+        return (float)readUnaligned<double>(value);
     case TextureFormat::UNORM_SHORT_10:
-        return (float)((*((const uint16_t *)value)) >> 6u) / 1023.0f;
+        return (float)(readUnaligned<uint16_t>(value) >> 6u) / 1023.0f;
     case TextureFormat::UNORM_SHORT_12:
-        return (float)((*((const uint16_t *)value)) >> 4u) / 4095.0f;
+        return (float)(readUnaligned<uint16_t>(value) >> 4u) / 4095.0f;
     case TextureFormat::USCALED_INT8:
         return (float)*((const uint8_t *)value);
     case TextureFormat::USCALED_INT16:
-        return (float)*((const uint16_t *)value);
+        return (float)readUnaligned<uint16_t>(value);
     case TextureFormat::SSCALED_INT8:
         return (float)*((const int8_t *)value);
     case TextureFormat::SSCALED_INT16:
-        return (float)*((const int16_t *)value);
+        return (float)readUnaligned<int16_t>(value);
     default:
         DE_ASSERT(false);
         return 0.0f;
@@ -354,70 +369,70 @@ inline T channelToIntType(const uint8_t *value, TextureFormat::ChannelType type)
     case TextureFormat::SNORM_INT8:
         return (T) * ((const int8_t *)value);
     case TextureFormat::SNORM_INT16:
-        return (T) * ((const int16_t *)value);
+        return (T)readUnaligned<int16_t>(value);
     case TextureFormat::SNORM_INT32:
-        return (T) * ((const int32_t *)value);
+        return (T)readUnaligned<int32_t>(value);
     case TextureFormat::UNORM_INT8:
         return (T) * ((const uint8_t *)value);
     case TextureFormat::UNORM_INT16:
-        return (T) * ((const uint16_t *)value);
+        return (T)readUnaligned<uint16_t>(value);
     case TextureFormat::UNORM_INT24:
         return (T)readUint24(value);
     case TextureFormat::UNORM_INT32:
-        return (T) * ((const uint32_t *)value);
+        return (T)readUnaligned<uint32_t>(value);
     case TextureFormat::SIGNED_INT8:
         return (T) * ((const int8_t *)value);
     case TextureFormat::SIGNED_INT16:
-        return (T) * ((const int16_t *)value);
+        return (T)readUnaligned<int16_t>(value);
     case TextureFormat::SIGNED_INT32:
-        return (T) * ((const int32_t *)value);
+        return (T)readUnaligned<int32_t>(value);
     case TextureFormat::SIGNED_INT64:
-        return (T) * ((const int64_t *)value);
+        return (T)readUnaligned<int64_t>(value);
     case TextureFormat::UNSIGNED_INT8:
         return (T) * ((const uint8_t *)value);
     case TextureFormat::UNSIGNED_INT16:
-        return (T) * ((const uint16_t *)value);
+        return (T)readUnaligned<uint16_t>(value);
     case TextureFormat::UNSIGNED_INT24:
         return (T)readUint24(value);
     case TextureFormat::UNSIGNED_INT32:
-        return (T) * ((const uint32_t *)value);
+        return (T)readUnaligned<uint32_t>(value);
     case TextureFormat::UNSIGNED_INT64:
-        return (T) * ((const uint64_t *)value);
+        return (T)readUnaligned<uint64_t>(value);
     case TextureFormat::HALF_FLOAT:
-        return (T)deFloat16To32(*(const deFloat16 *)value);
+        return (T)deFloat16To32(readUnaligned<deFloat16>(value));
     case TextureFormat::FLOAT:
-        return (T) * ((const float *)value);
+        return (T)readUnaligned<float>(value);
     case TextureFormat::FLOAT64:
-        return (T) * ((const double *)value);
+        return (T)readUnaligned<double>(value);
     case TextureFormat::UNORM_SHORT_10:
-        return (T)((*(((const uint16_t *)value))) >> 6u);
+        return (T)(readUnaligned<uint16_t>(value) >> 6u);
     case TextureFormat::UNORM_SHORT_12:
-        return (T)((*(((const uint16_t *)value))) >> 4u);
+        return (T)(readUnaligned<uint16_t>(value) >> 4u);
     case TextureFormat::USCALED_INT8:
         return (T) * ((const uint8_t *)value);
     case TextureFormat::USCALED_INT16:
-        return (T) * ((const uint16_t *)value);
+        return (T)readUnaligned<uint16_t>(value);
     case TextureFormat::SSCALED_INT8:
         return (T) * ((const int8_t *)value);
     case TextureFormat::SSCALED_INT16:
-        return (T) * ((const int16_t *)value);
+        return (T)readUnaligned<int16_t>(value);
     // required by modifiers tests
     case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
-        return (T) * ((const uint32_t *)value);
+        return (T)readUnaligned<uint32_t>(value);
     case TextureFormat::UNORM_INT_1010102_REV:
-        return (T) * ((const uint32_t *)value);
+        return (T)readUnaligned<uint32_t>(value);
     case TextureFormat::SNORM_INT_1010102_REV:
-        return (T) * ((const uint32_t *)value);
+        return (T)readUnaligned<uint32_t>(value);
     case TextureFormat::USCALED_INT_1010102_REV:
-        return (T) * ((const uint32_t *)value);
+        return (T)readUnaligned<uint32_t>(value);
     case TextureFormat::SSCALED_INT_1010102_REV:
-        return (T) * ((const uint32_t *)value);
+        return (T)readUnaligned<uint32_t>(value);
     case TextureFormat::UNSIGNED_INT_1010102_REV:
-        return (T) * ((const uint32_t *)value);
+        return (T)readUnaligned<uint32_t>(value);
     case TextureFormat::SIGNED_INT_1010102_REV:
-        return (T) * ((const uint32_t *)value);
+        return (T)readUnaligned<uint32_t>(value);
     case TextureFormat::UNSIGNED_INT_999_E5_REV:
-        return (T) * ((const uint32_t *)value);
+        return (T)readUnaligned<uint32_t>(value);
     default:
         DE_ASSERT(false);
         return 0;
@@ -434,53 +449,53 @@ inline uint64_t retrieveChannelBitsAsUint64(const uint8_t *value, TextureFormat:
     case TextureFormat::SNORM_INT8:
         return (uint64_t) * ((const uint8_t *)value);
     case TextureFormat::SNORM_INT16:
-        return (uint64_t) * ((const uint16_t *)value);
+        return (uint64_t)readUnaligned<uint16_t>(value);
     case TextureFormat::SNORM_INT32:
-        return (uint64_t) * ((const uint32_t *)value);
+        return (uint64_t)readUnaligned<uint32_t>(value);
     case TextureFormat::UNORM_INT8:
         return (uint64_t) * ((const uint8_t *)value);
     case TextureFormat::UNORM_INT16:
-        return (uint64_t) * ((const uint16_t *)value);
+        return (uint64_t)readUnaligned<uint16_t>(value);
     case TextureFormat::UNORM_INT24:
         return (uint64_t)readUint24(value);
     case TextureFormat::UNORM_INT32:
-        return (uint64_t) * ((const uint32_t *)value);
+        return (uint64_t)readUnaligned<uint32_t>(value);
     case TextureFormat::SIGNED_INT8:
         return (uint64_t) * ((const uint8_t *)value);
     case TextureFormat::SIGNED_INT16:
-        return (uint64_t) * ((const uint16_t *)value);
+        return (uint64_t)readUnaligned<uint16_t>(value);
     case TextureFormat::SIGNED_INT32:
-        return (uint64_t) * ((const uint32_t *)value);
+        return (uint64_t)readUnaligned<uint32_t>(value);
     case TextureFormat::SIGNED_INT64:
-        return (uint64_t) * ((const uint64_t *)value);
+        return (uint64_t)readUnaligned<uint64_t>(value);
     case TextureFormat::UNSIGNED_INT8:
         return (uint64_t) * ((const uint8_t *)value);
     case TextureFormat::UNSIGNED_INT16:
-        return (uint64_t) * ((const uint16_t *)value);
+        return (uint64_t)readUnaligned<uint16_t>(value);
     case TextureFormat::UNSIGNED_INT24:
         return (uint64_t)readUint24(value);
     case TextureFormat::UNSIGNED_INT32:
-        return (uint64_t) * ((const uint32_t *)value);
+        return (uint64_t)readUnaligned<uint32_t>(value);
     case TextureFormat::UNSIGNED_INT64:
-        return (uint64_t) * ((const uint64_t *)value);
+        return (uint64_t)readUnaligned<uint64_t>(value);
     case TextureFormat::HALF_FLOAT:
-        return (uint64_t) * ((const uint16_t *)value);
+        return (uint64_t)readUnaligned<uint16_t>(value);
     case TextureFormat::FLOAT:
-        return (uint64_t) * ((const uint32_t *)value);
+        return (uint64_t)readUnaligned<uint32_t>(value);
     case TextureFormat::FLOAT64:
-        return (uint64_t) * ((const uint64_t *)value);
+        return (uint64_t)readUnaligned<uint64_t>(value);
     case TextureFormat::UNORM_SHORT_10:
-        return (uint64_t)((*((const uint16_t *)value)) >> 6u);
+        return (uint64_t)(readUnaligned<uint16_t>(value) >> 6u);
     case TextureFormat::UNORM_SHORT_12:
-        return (uint64_t)((*((const uint16_t *)value)) >> 4u);
+        return (uint64_t)(readUnaligned<uint16_t>(value) >> 4u);
     case TextureFormat::USCALED_INT8:
         return (uint64_t) * ((const uint8_t *)value);
     case TextureFormat::USCALED_INT16:
-        return (uint64_t) * ((const uint16_t *)value);
+        return (uint64_t)readUnaligned<uint16_t>(value);
     case TextureFormat::SSCALED_INT8:
         return (uint64_t) * ((const uint8_t *)value);
     case TextureFormat::SSCALED_INT16:
-        return (uint64_t) * ((const uint16_t *)value);
+        return (uint64_t)readUnaligned<uint16_t>(value);
     default:
         DE_ASSERT(false);
         return 0;
@@ -500,73 +515,79 @@ void floatToChannel(uint8_t *dst, float src, TextureFormat::ChannelType type)
     switch (type)
     {
     case TextureFormat::SNORM_INT8:
-        *((int8_t *)dst) = convertSatRte<int8_t>(src * 127.0f);
+        writeUnaligned<int8_t>(dst, convertSatRte<int8_t>(src * 127.0f));
         break;
     case TextureFormat::SNORM_INT16:
-        *((int16_t *)dst) = convertSatRte<int16_t>(src * 32767.0f);
+        writeUnaligned<int16_t>(dst, convertSatRte<int16_t>(src * 32767.0f));
         break;
     case TextureFormat::SNORM_INT32:
-        *((int32_t *)dst) = convertSatRte<int32_t>(src * 2147483647.0f);
+        writeUnaligned<int32_t>(dst, convertSatRte<int32_t>(src * 2147483647.0f));
         break;
     case TextureFormat::UNORM_INT8:
-        *((uint8_t *)dst) = convertSatRte<uint8_t>(src * 255.0f);
+        writeUnaligned<uint8_t>(dst, convertSatRte<uint8_t>(src * 255.0f));
         break;
     case TextureFormat::UNORM_INT16:
-        *((uint16_t *)dst) = convertSatRte<uint16_t>(src * 65535.0f);
+        writeUnaligned<uint16_t>(dst, convertSatRte<uint16_t>(src * 65535.0f));
         break;
     case TextureFormat::UNORM_INT24:
         writeUint24(dst, convertSatRteUint24(src * 16777215.0f));
         break;
     case TextureFormat::UNORM_INT32:
-        *((uint32_t *)dst) = convertSatRte<uint32_t>(src * 4294967295.0f);
+        writeUnaligned<uint32_t>(dst, convertSatRte<uint32_t>(src * 4294967295.0f));
         break;
     case TextureFormat::SIGNED_INT8:
-        *((int8_t *)dst) = convertSatRte<int8_t>(src);
+        writeUnaligned<int8_t>(dst, convertSatRte<int8_t>(src));
         break;
     case TextureFormat::SIGNED_INT16:
-        *((int16_t *)dst) = convertSatRte<int16_t>(src);
+        writeUnaligned<int16_t>(dst, convertSatRte<int16_t>(src));
         break;
     case TextureFormat::SIGNED_INT32:
-        *((int32_t *)dst) = convertSatRte<int32_t>(src);
+        writeUnaligned<int32_t>(dst, convertSatRte<int32_t>(src));
+        break;
+    case TextureFormat::SIGNED_INT64:
+        writeUnaligned<int64_t>(dst, convertSatRte<int32_t>(src)); // Note we convert as 32-bits, but store as 64.
         break;
     case TextureFormat::UNSIGNED_INT8:
-        *((uint8_t *)dst) = convertSatRte<uint8_t>(src);
+        writeUnaligned<uint8_t>(dst, convertSatRte<uint8_t>(src));
         break;
     case TextureFormat::UNSIGNED_INT16:
-        *((uint16_t *)dst) = convertSatRte<uint16_t>(src);
+        writeUnaligned<uint16_t>(dst, convertSatRte<uint16_t>(src));
         break;
     case TextureFormat::UNSIGNED_INT24:
         writeUint24(dst, convertSatRteUint24(src));
         break;
     case TextureFormat::UNSIGNED_INT32:
-        *((uint32_t *)dst) = convertSatRte<uint32_t>(src);
+        writeUnaligned<uint32_t>(dst, convertSatRte<uint32_t>(src));
+        break;
+    case TextureFormat::UNSIGNED_INT64:
+        writeUnaligned<uint64_t>(dst, convertSatRte<uint32_t>(src)); // Note we convert as 32-bits, but store as 64.
         break;
     case TextureFormat::HALF_FLOAT:
-        *((deFloat16 *)dst) = deFloat32To16(src);
+        writeUnaligned<deFloat16>(dst, deFloat32To16(src));
         break;
     case TextureFormat::FLOAT:
-        *((float *)dst) = src;
+        writeUnaligned<float>(dst, src);
         break;
     case TextureFormat::FLOAT64:
-        *((double *)dst) = (double)src;
+        writeUnaligned<double>(dst, (double)src);
         break;
     case TextureFormat::UNORM_SHORT_10:
-        *((uint16_t *)dst) = (uint16_t)(convertSatRteUint10(src * 1023.0f) << 6u);
+        writeUnaligned<uint16_t>(dst, (uint16_t)(convertSatRteUint10(src * 1023.0f) << 6u));
         break;
     case TextureFormat::UNORM_SHORT_12:
-        *((uint16_t *)dst) = (uint16_t)(convertSatRteUint12(src * 4095.0f) << 4u);
+        writeUnaligned<uint16_t>(dst, (uint16_t)(convertSatRteUint12(src * 4095.0f) << 4u));
         break;
     case TextureFormat::USCALED_INT8:
-        *((uint8_t *)dst) = convertSatRte<uint8_t>(src);
+        writeUnaligned<uint8_t>(dst, convertSatRte<uint8_t>(src));
         break;
     case TextureFormat::USCALED_INT16:
-        *((uint16_t *)dst) = convertSatRte<uint16_t>(src);
+        writeUnaligned<uint16_t>(dst, convertSatRte<uint16_t>(src));
         break;
     case TextureFormat::SSCALED_INT8:
-        *((int8_t *)dst) = convertSatRte<int8_t>(src);
+        writeUnaligned<int8_t>(dst, convertSatRte<int8_t>(src));
         break;
     case TextureFormat::SSCALED_INT16:
-        *((int16_t *)dst) = convertSatRte<int16_t>(src);
+        writeUnaligned<int16_t>(dst, convertSatRte<int16_t>(src));
         break;
     default:
         DE_ASSERT(false);
@@ -637,73 +658,73 @@ void intToChannel(uint8_t *dst, int src, TextureFormat::ChannelType type)
     switch (type)
     {
     case TextureFormat::SNORM_INT8:
-        *((int8_t *)dst) = convertSat<int8_t>(src);
+        writeUnaligned<int8_t>(dst, convertSat<int8_t>(src));
         break;
     case TextureFormat::SNORM_INT16:
-        *((int16_t *)dst) = convertSat<int16_t>(src);
+        writeUnaligned<int16_t>(dst, convertSat<int16_t>(src));
         break;
     case TextureFormat::UNORM_INT8:
-        *((uint8_t *)dst) = convertSat<uint8_t>(src);
+        writeUnaligned<uint8_t>(dst, convertSat<uint8_t>(src));
         break;
     case TextureFormat::UNORM_INT16:
-        *((uint16_t *)dst) = convertSat<uint16_t>(src);
+        writeUnaligned<uint16_t>(dst, convertSat<uint16_t>(src));
         break;
     case TextureFormat::UNORM_INT24:
         writeUint24(dst, convertSatUint24(src));
         break;
     case TextureFormat::SIGNED_INT8:
-        *((int8_t *)dst) = convertSat<int8_t>(src);
+        writeUnaligned<int8_t>(dst, convertSat<int8_t>(src));
         break;
     case TextureFormat::SIGNED_INT16:
-        *((int16_t *)dst) = convertSat<int16_t>(src);
+        writeUnaligned<int16_t>(dst, convertSat<int16_t>(src));
         break;
     case TextureFormat::SIGNED_INT32:
-        *((int32_t *)dst) = convertSat<int32_t>(src);
+        writeUnaligned<int32_t>(dst, convertSat<int32_t>(src));
         break;
     case TextureFormat::SIGNED_INT64:
-        *((int64_t *)dst) = convertSat<int64_t>((int64_t)src);
+        writeUnaligned<int64_t>(dst, convertSat<int64_t>((int64_t)src));
         break;
     case TextureFormat::UNSIGNED_INT8:
-        *((uint8_t *)dst) = convertSat<uint8_t>((uint32_t)src);
+        writeUnaligned<uint8_t>(dst, convertSat<uint8_t>((uint32_t)src));
         break;
     case TextureFormat::UNSIGNED_INT16:
-        *((uint16_t *)dst) = convertSat<uint16_t>((uint32_t)src);
+        writeUnaligned<uint16_t>(dst, convertSat<uint16_t>((uint32_t)src));
         break;
     case TextureFormat::UNSIGNED_INT24:
         writeUint24(dst, convertSatUint24((uint32_t)src));
         break;
     case TextureFormat::UNSIGNED_INT32:
-        *((uint32_t *)dst) = convertSat<uint32_t>((uint32_t)src);
+        writeUnaligned<uint32_t>(dst, convertSat<uint32_t>((uint32_t)src));
         break;
     case TextureFormat::UNSIGNED_INT64:
-        *((uint64_t *)dst) = convertSat<uint64_t>((uint64_t)src);
+        writeUnaligned<uint64_t>(dst, convertSat<uint64_t>((uint64_t)src));
         break;
     case TextureFormat::HALF_FLOAT:
-        *((deFloat16 *)dst) = deFloat32To16((float)src);
+        writeUnaligned<deFloat16>(dst, deFloat32To16((float)src));
         break;
     case TextureFormat::FLOAT:
-        *((float *)dst) = (float)src;
+        writeUnaligned<float>(dst, (float)src);
         break;
     case TextureFormat::FLOAT64:
-        *((double *)dst) = (double)src;
+        writeUnaligned<double>(dst, (double)src);
         break;
     case TextureFormat::UNORM_SHORT_10:
-        *((uint16_t *)dst) = (uint16_t)(convertSatUint10(src) << 6u);
+        writeUnaligned<uint16_t>(dst, (uint16_t)(convertSatUint10(src) << 6u));
         break;
     case TextureFormat::UNORM_SHORT_12:
-        *((uint16_t *)dst) = (uint16_t)(convertSatUint12(src) << 4u);
+        writeUnaligned<uint16_t>(dst, (uint16_t)(convertSatUint12(src) << 4u));
         break;
     case TextureFormat::USCALED_INT8:
-        *((uint8_t *)dst) = convertSat<uint8_t>((uint32_t)src);
+        writeUnaligned<uint8_t>(dst, convertSat<uint8_t>((uint32_t)src));
         break;
     case TextureFormat::USCALED_INT16:
-        *((uint16_t *)dst) = convertSat<uint16_t>((uint32_t)src);
+        writeUnaligned<uint16_t>(dst, convertSat<uint16_t>((uint32_t)src));
         break;
     case TextureFormat::SSCALED_INT8:
-        *((int8_t *)dst) = convertSat<int8_t>(src);
+        writeUnaligned<int8_t>(dst, convertSat<int8_t>(src));
         break;
     case TextureFormat::SSCALED_INT16:
-        *((int16_t *)dst) = convertSat<int16_t>(src);
+        writeUnaligned<int16_t>(dst, convertSat<int16_t>(src));
         break;
     default:
         DE_ASSERT(false);
@@ -1482,8 +1503,8 @@ Vec4 ConstPixelBufferAccess::getPixel(int x, int y, int z) const
     }
 
 #define UI8(OFFS, COUNT) ((*((const uint8_t *)pixelPtr) >> (OFFS)) & ((1 << (COUNT)) - 1))
-#define UI16(OFFS, COUNT) ((*((const uint16_t *)pixelPtr) >> (OFFS)) & ((1 << (COUNT)) - 1))
-#define UI32(OFFS, COUNT) ((*((const uint32_t *)pixelPtr) >> (OFFS)) & ((1 << (COUNT)) - 1))
+#define UI16(OFFS, COUNT) ((readUnaligned<uint16_t>(pixelPtr) >> (OFFS)) & ((1 << (COUNT)) - 1))
+#define UI32(OFFS, COUNT) ((readUnaligned<uint32_t>(pixelPtr) >> (OFFS)) & ((1 << (COUNT)) - 1))
 #define SI32(OFFS, COUNT) signExtend(UI32(OFFS, COUNT), (COUNT))
 #define UN8(OFFS, COUNT) channelToUnormFloat(UI8(OFFS, COUNT), (COUNT))
 #define UN16(OFFS, COUNT) channelToUnormFloat(UI16(OFFS, COUNT), (COUNT))
@@ -1535,7 +1556,7 @@ Vec4 ConstPixelBufferAccess::getPixel(int x, int y, int z) const
                          TextureFormat::RGBA)
             .cast<float>();
     case TextureFormat::UNSIGNED_INT_999_E5_REV:
-        return unpackRGB999E5(*((const uint32_t *)pixelPtr));
+        return unpackRGB999E5(readUnaligned<uint32_t>(pixelPtr));
 
     case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
         return Vec4(Float11(UI32(0, 11)).asFloat(), Float11(UI32(11, 11)).asFloat(), Float10(UI32(22, 10)).asFloat(),
@@ -1677,8 +1698,8 @@ IVec4 ConstPixelBufferAccess::getPixelInt(int x, int y, int z) const
     }
 
 #define U8(OFFS, COUNT) ((*((const uint8_t *)pixelPtr) >> (OFFS)) & ((1 << (COUNT)) - 1))
-#define U16(OFFS, COUNT) ((*((const uint16_t *)pixelPtr) >> (OFFS)) & ((1 << (COUNT)) - 1))
-#define U32(OFFS, COUNT) ((*((const uint32_t *)pixelPtr) >> (OFFS)) & ((1 << (COUNT)) - 1))
+#define U16(OFFS, COUNT) ((readUnaligned<uint16_t>(pixelPtr) >> (OFFS)) & ((1 << (COUNT)) - 1))
+#define U32(OFFS, COUNT) ((readUnaligned<uint32_t>(pixelPtr) >> (OFFS)) & ((1 << (COUNT)) - 1))
 #define S32(OFFS, COUNT) signExtend(U32(OFFS, COUNT), (COUNT))
 
     switch (m_format.type)
@@ -1786,8 +1807,8 @@ U64Vec4 ConstPixelBufferAccess::getPixelBitsAsUint64(int x, int y, int z) const
     }
 
 #define U8(OFFS, COUNT) ((*((const uint8_t *)pixelPtr) >> (OFFS)) & ((1 << (COUNT)) - 1))
-#define U16(OFFS, COUNT) ((*((const uint16_t *)pixelPtr) >> (OFFS)) & ((1 << (COUNT)) - 1))
-#define U32(OFFS, COUNT) ((*((const uint32_t *)pixelPtr) >> (OFFS)) & ((1 << (COUNT)) - 1))
+#define U16(OFFS, COUNT) ((readUnaligned<uint16_t>(pixelPtr) >> (OFFS)) & ((1 << (COUNT)) - 1))
+#define U32(OFFS, COUNT) ((readUnaligned<uint32_t>(pixelPtr) >> (OFFS)) & ((1 << (COUNT)) - 1))
 
     switch (m_format.type)
     {
@@ -1886,7 +1907,7 @@ float ConstPixelBufferAccess::getPixDepth(int x, int y, int z) const
 
     case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
         DE_ASSERT(m_format.order == TextureFormat::DS);
-        return *((const float *)pixelPtr);
+        return readUnaligned<float>(pixelPtr);
 
     default:
         DE_ASSERT(m_format.order == TextureFormat::D); // no other combined depth stencil types
@@ -1958,113 +1979,116 @@ void PixelBufferAccess::setPixel(const Vec4 &color, int x, int y, int z) const
     switch (m_format.type)
     {
     case TextureFormat::UNORM_BYTE_44:
-        *((uint8_t *)pixelPtr) = (uint8_t)(PN(color[0], 4, 4) | PN(color[1], 0, 4));
+        pixelPtr[0] = (uint8_t)(PN(color[0], 4, 4) | PN(color[1], 0, 4));
         break;
     case TextureFormat::UNSIGNED_BYTE_44:
-        *((uint8_t *)pixelPtr) = (uint8_t)(PU((uint32_t)color[0], 4, 4) | PU((uint32_t)color[1], 0, 4));
+        pixelPtr[0] = (uint8_t)(PU((uint32_t)color[0], 4, 4) | PU((uint32_t)color[1], 0, 4));
         break;
     case TextureFormat::UNORM_INT_101010:
-        *((uint32_t *)pixelPtr) = PN(color[0], 22, 10) | PN(color[1], 12, 10) | PN(color[2], 2, 10);
+        writeUnaligned<uint32_t>(pixelPtr, PN(color[0], 22, 10) | PN(color[1], 12, 10) | PN(color[2], 2, 10));
         break;
 
     case TextureFormat::UNORM_SHORT_565:
     {
-        const Vec4 swizzled     = swizzleGe(color, TextureFormat::RGB, m_format.order);
-        *((uint16_t *)pixelPtr) = (uint16_t)(PN(swizzled[0], 11, 5) | PN(swizzled[1], 5, 6) | PN(swizzled[2], 0, 5));
+        const Vec4 swizzled = swizzleGe(color, TextureFormat::RGB, m_format.order);
+        writeUnaligned<uint16_t>(pixelPtr,
+                                 (uint16_t)(PN(swizzled[0], 11, 5) | PN(swizzled[1], 5, 6) | PN(swizzled[2], 0, 5)));
         break;
     }
 
     case TextureFormat::UNSIGNED_SHORT_565:
     {
-        const UVec4 swizzled    = swizzleGe(color.cast<uint32_t>(), TextureFormat::RGB, m_format.order);
-        *((uint16_t *)pixelPtr) = (uint16_t)(PU(swizzled[0], 11, 5) | PU(swizzled[1], 5, 6) | PU(swizzled[2], 0, 5));
+        const UVec4 swizzled = swizzleGe(color.cast<uint32_t>(), TextureFormat::RGB, m_format.order);
+        writeUnaligned<uint16_t>(pixelPtr,
+                                 (uint16_t)(PU(swizzled[0], 11, 5) | PU(swizzled[1], 5, 6) | PU(swizzled[2], 0, 5)));
         break;
     }
 
     case TextureFormat::UNORM_SHORT_555:
     {
-        const Vec4 swizzled     = swizzleGe(color, TextureFormat::RGB, m_format.order);
-        *((uint16_t *)pixelPtr) = (uint16_t)(PN(swizzled[0], 10, 5) | PN(swizzled[1], 5, 5) | PN(swizzled[2], 0, 5));
+        const Vec4 swizzled = swizzleGe(color, TextureFormat::RGB, m_format.order);
+        writeUnaligned<uint16_t>(pixelPtr,
+                                 (uint16_t)(PN(swizzled[0], 10, 5) | PN(swizzled[1], 5, 5) | PN(swizzled[2], 0, 5)));
         break;
     }
 
     case TextureFormat::UNORM_SHORT_4444:
     {
         const Vec4 swizzled = swizzleGe(color, TextureFormat::RGBA, m_format.order);
-        *((uint16_t *)pixelPtr) =
-            (uint16_t)(PN(swizzled[0], 12, 4) | PN(swizzled[1], 8, 4) | PN(swizzled[2], 4, 4) | PN(swizzled[3], 0, 4));
+        writeUnaligned<uint16_t>(pixelPtr, (uint16_t)(PN(swizzled[0], 12, 4) | PN(swizzled[1], 8, 4) |
+                                                      PN(swizzled[2], 4, 4) | PN(swizzled[3], 0, 4)));
         break;
     }
 
     case TextureFormat::UNSIGNED_SHORT_4444:
     {
         const UVec4 swizzled = swizzleGe(color.cast<uint32_t>(), TextureFormat::RGBA, m_format.order);
-        *((uint16_t *)pixelPtr) =
-            (uint16_t)(PU(swizzled[0], 12, 4) | PU(swizzled[1], 8, 4) | PU(swizzled[2], 4, 4) | PU(swizzled[3], 0, 4));
+        writeUnaligned<uint16_t>(pixelPtr, (uint16_t)(PU(swizzled[0], 12, 4) | PU(swizzled[1], 8, 4) |
+                                                      PU(swizzled[2], 4, 4) | PU(swizzled[3], 0, 4)));
         break;
     }
 
     case TextureFormat::UNORM_SHORT_5551:
     {
         const Vec4 swizzled = swizzleGe(color, TextureFormat::RGBA, m_format.order);
-        *((uint16_t *)pixelPtr) =
-            (uint16_t)(PN(swizzled[0], 11, 5) | PN(swizzled[1], 6, 5) | PN(swizzled[2], 1, 5) | PN(swizzled[3], 0, 1));
+        writeUnaligned<uint16_t>(pixelPtr, (uint16_t)(PN(swizzled[0], 11, 5) | PN(swizzled[1], 6, 5) |
+                                                      PN(swizzled[2], 1, 5) | PN(swizzled[3], 0, 1)));
         break;
     }
 
     case TextureFormat::UNORM_SHORT_1555:
     {
         const Vec4 swizzled = swizzleGe(color, TextureFormat::RGBA, m_format.order);
-        *((uint16_t *)pixelPtr) =
-            (uint16_t)(PN(swizzled[0], 15, 1) | PN(swizzled[1], 10, 5) | PN(swizzled[2], 5, 5) | PN(swizzled[3], 0, 5));
+        writeUnaligned<uint16_t>(pixelPtr, (uint16_t)(PN(swizzled[0], 15, 1) | PN(swizzled[1], 10, 5) |
+                                                      PN(swizzled[2], 5, 5) | PN(swizzled[3], 0, 5)));
         break;
     }
 
     case TextureFormat::UNSIGNED_SHORT_5551:
     {
         const UVec4 swizzled = swizzleGe(color.cast<uint32_t>(), TextureFormat::RGBA, m_format.order);
-        *((uint16_t *)pixelPtr) =
-            (uint16_t)(PU(swizzled[0], 11, 5) | PU(swizzled[1], 6, 5) | PU(swizzled[2], 1, 5) | PU(swizzled[3], 0, 1));
+        writeUnaligned<uint16_t>(pixelPtr, (uint16_t)(PU(swizzled[0], 11, 5) | PU(swizzled[1], 6, 5) |
+                                                      PU(swizzled[2], 1, 5) | PU(swizzled[3], 0, 1)));
         break;
     }
 
     case TextureFormat::UNORM_INT_1010102_REV:
     {
-        const Vec4 u            = swizzleGe(color, TextureFormat::RGBA, m_format.order);
-        *((uint32_t *)pixelPtr) = PN(u[0], 0, 10) | PN(u[1], 10, 10) | PN(u[2], 20, 10) | PN(u[3], 30, 2);
+        const Vec4 u = swizzleGe(color, TextureFormat::RGBA, m_format.order);
+        writeUnaligned<uint32_t>(pixelPtr, PN(u[0], 0, 10) | PN(u[1], 10, 10) | PN(u[2], 20, 10) | PN(u[3], 30, 2));
         break;
     }
 
     case TextureFormat::SNORM_INT_1010102_REV:
     {
-        const Vec4 u            = swizzleGe(color, TextureFormat::RGBA, m_format.order);
-        *((uint32_t *)pixelPtr) = PS(u[0], 0, 10) | PS(u[1], 10, 10) | PS(u[2], 20, 10) | PS(u[3], 30, 2);
+        const Vec4 u = swizzleGe(color, TextureFormat::RGBA, m_format.order);
+        writeUnaligned<uint32_t>(pixelPtr, PS(u[0], 0, 10) | PS(u[1], 10, 10) | PS(u[2], 20, 10) | PS(u[3], 30, 2));
         break;
     }
 
     case TextureFormat::UNSIGNED_INT_1010102_REV:
     case TextureFormat::USCALED_INT_1010102_REV:
     {
-        const UVec4 u           = swizzleGe(color.cast<uint32_t>(), TextureFormat::RGBA, m_format.order);
-        *((uint32_t *)pixelPtr) = PU(u[0], 0, 10) | PU(u[1], 10, 10) | PU(u[2], 20, 10) | PU(u[3], 30, 2);
+        const UVec4 u = swizzleGe(color.cast<uint32_t>(), TextureFormat::RGBA, m_format.order);
+        writeUnaligned<uint32_t>(pixelPtr, PU(u[0], 0, 10) | PU(u[1], 10, 10) | PU(u[2], 20, 10) | PU(u[3], 30, 2));
         break;
     }
 
     case TextureFormat::SIGNED_INT_1010102_REV:
     case TextureFormat::SSCALED_INT_1010102_REV:
     {
-        const IVec4 u           = swizzleGe(color.cast<int32_t>(), TextureFormat::RGBA, m_format.order);
-        *((uint32_t *)pixelPtr) = PI(u[0], 0, 10) | PI(u[1], 10, 10) | PI(u[2], 20, 10) | PI(u[3], 30, 2);
+        const IVec4 u = swizzleGe(color.cast<int32_t>(), TextureFormat::RGBA, m_format.order);
+        writeUnaligned<uint32_t>(pixelPtr, PI(u[0], 0, 10) | PI(u[1], 10, 10) | PI(u[2], 20, 10) | PI(u[3], 30, 2));
         break;
     }
 
     case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
-        *((uint32_t *)pixelPtr) =
-            Float11(color[0]).bits() | (Float11(color[1]).bits() << 11) | (Float10(color[2]).bits() << 22);
+        writeUnaligned<uint32_t>(pixelPtr, Float11(color[0]).bits() | (Float11(color[1]).bits() << 11) |
+                                               (Float10(color[2]).bits() << 22));
         break;
 
     case TextureFormat::UNSIGNED_INT_999_E5_REV:
-        *((uint32_t *)pixelPtr) = packRGB999E5(color);
+        writeUnaligned<uint32_t>(pixelPtr, packRGB999E5(color));
         break;
 
     default:
@@ -2121,24 +2145,26 @@ void PixelBufferAccess::setPixel(const IVec4 &color, int x, int y, int z) const
     {
     case TextureFormat::UNSIGNED_BYTE_44: // Fall-through
     case TextureFormat::UNORM_BYTE_44:
-        *((uint8_t *)pixelPtr) = (uint8_t)(PU(color[0], 4, 4) | PU(color[1], 0, 4));
+        pixelPtr[0] = (uint8_t)(PU(color[0], 4, 4) | PU(color[1], 0, 4));
         break;
     case TextureFormat::UNORM_INT_101010:
-        *((uint32_t *)pixelPtr) = PU(color[0], 22, 10) | PU(color[1], 12, 10) | PU(color[2], 2, 10);
+        writeUnaligned<uint32_t>(pixelPtr, PU(color[0], 22, 10) | PU(color[1], 12, 10) | PU(color[2], 2, 10));
         break;
 
     case TextureFormat::UNORM_SHORT_565:
     case TextureFormat::UNSIGNED_SHORT_565:
     {
-        const IVec4 swizzled    = swizzleGe(color, TextureFormat::RGB, m_format.order);
-        *((uint16_t *)pixelPtr) = (uint16_t)(PU(swizzled[0], 11, 5) | PU(swizzled[1], 5, 6) | PU(swizzled[2], 0, 5));
+        const IVec4 swizzled = swizzleGe(color, TextureFormat::RGB, m_format.order);
+        writeUnaligned<uint16_t>(pixelPtr,
+                                 (uint16_t)(PU(swizzled[0], 11, 5) | PU(swizzled[1], 5, 6) | PU(swizzled[2], 0, 5)));
         break;
     }
 
     case TextureFormat::UNORM_SHORT_555:
     {
-        const IVec4 swizzled    = swizzleGe(color, TextureFormat::RGB, m_format.order);
-        *((uint16_t *)pixelPtr) = (uint16_t)(PU(swizzled[0], 10, 5) | PU(swizzled[1], 5, 5) | PU(swizzled[2], 0, 5));
+        const IVec4 swizzled = swizzleGe(color, TextureFormat::RGB, m_format.order);
+        writeUnaligned<uint16_t>(pixelPtr,
+                                 (uint16_t)(PU(swizzled[0], 10, 5) | PU(swizzled[1], 5, 5) | PU(swizzled[2], 0, 5)));
         break;
     }
 
@@ -2146,8 +2172,8 @@ void PixelBufferAccess::setPixel(const IVec4 &color, int x, int y, int z) const
     case TextureFormat::UNSIGNED_SHORT_4444:
     {
         const IVec4 swizzled = swizzleGe(color, TextureFormat::RGBA, m_format.order);
-        *((uint16_t *)pixelPtr) =
-            (uint16_t)(PU(swizzled[0], 12, 4) | PU(swizzled[1], 8, 4) | PU(swizzled[2], 4, 4) | PU(swizzled[3], 0, 4));
+        writeUnaligned<uint16_t>(pixelPtr, (uint16_t)(PU(swizzled[0], 12, 4) | PU(swizzled[1], 8, 4) |
+                                                      PU(swizzled[2], 4, 4) | PU(swizzled[3], 0, 4)));
         break;
     }
 
@@ -2155,16 +2181,16 @@ void PixelBufferAccess::setPixel(const IVec4 &color, int x, int y, int z) const
     case TextureFormat::UNSIGNED_SHORT_5551:
     {
         const IVec4 swizzled = swizzleGe(color, TextureFormat::RGBA, m_format.order);
-        *((uint16_t *)pixelPtr) =
-            (uint16_t)(PU(swizzled[0], 11, 5) | PU(swizzled[1], 6, 5) | PU(swizzled[2], 1, 5) | PU(swizzled[3], 0, 1));
+        writeUnaligned<uint16_t>(pixelPtr, (uint16_t)(PU(swizzled[0], 11, 5) | PU(swizzled[1], 6, 5) |
+                                                      PU(swizzled[2], 1, 5) | PU(swizzled[3], 0, 1)));
         break;
     }
 
     case TextureFormat::UNORM_SHORT_1555:
     {
         const IVec4 swizzled = swizzleGe(color, TextureFormat::RGBA, m_format.order);
-        *((uint16_t *)pixelPtr) =
-            (uint16_t)(PU(swizzled[0], 15, 1) | PU(swizzled[1], 10, 5) | PU(swizzled[2], 5, 5) | PU(swizzled[3], 0, 5));
+        writeUnaligned<uint16_t>(pixelPtr, (uint16_t)(PU(swizzled[0], 15, 1) | PU(swizzled[1], 10, 5) |
+                                                      PU(swizzled[2], 5, 5) | PU(swizzled[3], 0, 5)));
         break;
     }
 
@@ -2173,8 +2199,8 @@ void PixelBufferAccess::setPixel(const IVec4 &color, int x, int y, int z) const
     case TextureFormat::USCALED_INT_1010102_REV:
     {
         const IVec4 swizzled = swizzleGe(color, TextureFormat::RGBA, m_format.order);
-        *((uint32_t *)pixelPtr) =
-            PU(swizzled[0], 0, 10) | PU(swizzled[1], 10, 10) | PU(swizzled[2], 20, 10) | PU(swizzled[3], 30, 2);
+        writeUnaligned<uint32_t>(pixelPtr, PU(swizzled[0], 0, 10) | PU(swizzled[1], 10, 10) | PU(swizzled[2], 20, 10) |
+                                               PU(swizzled[3], 30, 2));
         break;
     }
 
@@ -2183,8 +2209,8 @@ void PixelBufferAccess::setPixel(const IVec4 &color, int x, int y, int z) const
     case TextureFormat::SSCALED_INT_1010102_REV:
     {
         const IVec4 swizzled = swizzleGe(color, TextureFormat::RGBA, m_format.order);
-        *((uint32_t *)pixelPtr) =
-            PI(swizzled[0], 0, 10) | PI(swizzled[1], 10, 10) | PI(swizzled[2], 20, 10) | PI(swizzled[3], 30, 2);
+        writeUnaligned<uint32_t>(pixelPtr, PI(swizzled[0], 0, 10) | PI(swizzled[1], 10, 10) | PI(swizzled[2], 20, 10) |
+                                               PI(swizzled[3], 30, 2));
         break;
     }
 
@@ -2235,7 +2261,7 @@ void PixelBufferAccess::setPixDepth(float depth, int x, int y, int z) const
 
     case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
         DE_ASSERT(m_format.order == TextureFormat::DS);
-        *((float *)pixelPtr) = depth;
+        writeUnaligned<float>(pixelPtr, depth);
         break;
 
     default:
