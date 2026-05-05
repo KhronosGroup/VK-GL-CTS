@@ -310,43 +310,92 @@ void ImageArrayCase::initPrograms(vk::SourceCollections &programCollection) cons
 
     const auto wgSize = m_params.getWorkGroupSize();
 
+    std::string coordsType;
     std::string coords;
+    std::string normCoordsType;
+
     if (m_params.imageType == VK_IMAGE_TYPE_1D)
-        coords = (arrayInShader ? "ivec2(invCol, 0)" : "int(invCol)");
+    {
+        coordsType     = (arrayInShader ? "ivec2" : "int");
+        normCoordsType = (arrayInShader ? "vec2" : "float");
+        coords         = (arrayInShader ? "ivec2(invCol, 0)" : "int(invCol)");
+    }
     else if (m_params.imageType == VK_IMAGE_TYPE_2D)
-        coords = (arrayInShader ? "ivec3(invCol, invRow, 0)" : "ivec2(invCol, invRow)");
+    {
+        coordsType     = (arrayInShader ? "ivec3" : "ivec2");
+        normCoordsType = (arrayInShader ? "vec3" : "vec2");
+        coords         = (arrayInShader ? "ivec3(invCol, invRow, 0)" : "ivec2(invCol, invRow)");
+    }
     else
         DE_ASSERT(false);
+    const std::string normCoords =
+        "((" + normCoordsType + "(coords) + " + normCoordsType + "(0.5)) / " + normCoordsType + "(imageSize))";
 
     std::string work = "        ";
     if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
     {
         if (m_params.store)
-            work += "imageStore(img, " + coords + ", ssbo.values[globalInvocationIndex]);\n";
+            work += "imageStore(img, coords, ssbo.values[globalInvocationIndex]);\n";
         else
-            work += "ssbo.values[globalInvocationIndex] = imageLoad(img, " + coords + ");\n";
+            work += "ssbo.values[globalInvocationIndex] = imageLoad(img, coords);\n";
     }
     else if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
     {
-        work += "ssbo.values[globalInvocationIndex] = texelFetch(img, " + coords + ", " + std::to_string(m_params.lod) +
-                ");\n";
+        work +=
+            "ssbo.values[globalInvocationIndex] = textureLod(img, normCoords, " + std::to_string(m_params.lod) + ");\n";
     }
     else
         DE_ASSERT(false);
 
+    // Get the image size from the descriptor itself.
+    std::string imageSizeExpr          = "    const uvec3 imageSize = uvec3(";
+    const auto wantedSizeFuncCompCount = 3u; // We want 3 components for the uvec3 above.
+    uint32_t sizeFuncCompCount         = 0u; // How many components the size function will return.
+    if (m_params.imageType == VK_IMAGE_TYPE_1D)
+        sizeFuncCompCount = 1u;
+    else if (m_params.imageType == VK_IMAGE_TYPE_2D)
+        sizeFuncCompCount = 2u;
+    else
+        DE_ASSERT(false);
+    if (arrayInShader)
+        ++sizeFuncCompCount;
+
+    // We will fill the missing components manually.
+    const auto missingSizeFuncCompCount = wantedSizeFuncCompCount - sizeFuncCompCount;
+    std::string missingSizeFuncCompValues;
+    for (uint32_t i = 0u; i < missingSizeFuncCompCount; ++i)
+        missingSizeFuncCompValues += ", 1";
+
+    // We want the result as uints, so we will cast the size function result to uint/uvecN.
+    const auto imageSizeCastType = (sizeFuncCompCount == 1 ? "uint" : "uvec" + std::to_string(sizeFuncCompCount));
+
+    // Get the result as a uint3 by calling the image query and adding the missing components manually.
+    if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+        imageSizeExpr += imageSizeCastType + "(imageSize(img))" + missingSizeFuncCompValues + ");\n";
+    else if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+        imageSizeExpr += imageSizeCastType + "(textureSize(img, " + std::to_string(m_params.lod) + "))" +
+                         missingSizeFuncCompValues + ");\n";
+    else
+        DE_ASSERT(false);
+
+    const auto mipExtent = m_params.getMipLevelExtent();
+
     std::ostringstream comp;
     comp << "#version 460\n"
          << "layout (local_size_x=" << wgSize << ", local_size_y=1, local_size_z=1) in;\n"
-         << "layout (push_constant, std430) uniform PCBlock { uvec4 imageSize; } pc;\n"
          << "layout (set=0, binding=0" << formatQualifier << ") uniform " << descTypePrefix << descType << descDim
          << descTypeSuffix << " img;\n"
          << "layout (set=0, binding=1) buffer BufferBlock { " << descTypePrefix << "vec4 values[]; } ssbo;\n"
          << "void main (void) {\n"
-         << "    const uint pixelCount = pc.imageSize.x * pc.imageSize.y;\n"
+         << imageSizeExpr << "    const bool sizeOK = (imageSize == uvec3(" << mipExtent.width << ", "
+         << mipExtent.height << ", " << mipExtent.depth << "));\n"
+         << "    const uint pixelCount = imageSize.x * imageSize.y;\n"
          << "    const uint globalInvocationIndex = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationIndex;\n"
-         << "    if (globalInvocationIndex < pixelCount) {\n"
-         << "        const uint invRow = globalInvocationIndex / pc.imageSize.x;\n"
-         << "        const uint invCol = globalInvocationIndex % pc.imageSize.x;\n"
+         << "    if (sizeOK && globalInvocationIndex < pixelCount) {\n"
+         << "        const uint invRow = globalInvocationIndex / imageSize.x;\n"
+         << "        const uint invCol = globalInvocationIndex % imageSize.x;\n"
+         << "        const " << coordsType << " coords = " << coords << ";\n"
+         << "        const " << normCoordsType << " normCoords = " << normCoords << ";\n"
          << work << "    }\n"
          << "}\n";
     programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
@@ -463,7 +512,7 @@ tcu::TestStatus ImageArrayInstance::iterate(void)
     BufferWithMemory vecBuffer(ctx.vkd, ctx.device, ctx.allocator, vecBufferCreateInfo,
                                (m_params.store ? HostIntent::W : HostIntent::R));
 
-    // Pixel buffer, potentially smaller, used to copy image data in our out.
+    // Pixel buffer, potentially smaller, used to copy image data in or out.
     const auto pxBufferUsage = (m_params.store ? VK_BUFFER_USAGE_TRANSFER_DST_BIT : VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     const auto pxBufferCreateInfo = makeBufferCreateInfo(pixelBufferSize, pxBufferUsage);
     BufferWithMemory pxBuffer(ctx.vkd, ctx.device, ctx.allocator, pxBufferCreateInfo,
@@ -566,12 +615,7 @@ tcu::TestStatus ImageArrayInstance::iterate(void)
 
     setUpdateBuilder.update(ctx.vkd, ctx.device);
 
-    const tcu::UVec4 pcData(mipExtent.width, mipExtent.height, mipExtent.depth, 0u);
-    const auto pcStages = shaderStages;
-    const auto pcSize   = DE_SIZEOF32(pcData);
-    const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
-
-    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout, &pcRange);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
 
     const auto &binaries  = m_context.getBinaryCollection();
     const auto compShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("comp"));
@@ -619,7 +663,6 @@ tcu::TestStatus ImageArrayInstance::iterate(void)
         const auto bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
         ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
         ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
-        ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, pcSize, &pcData);
         const auto wgCount = (pixelCount + m_params.getWorkGroupSize() - 1u) / m_params.getWorkGroupSize();
         ctx.vkd.cmdDispatch(cmdBuffer, wgCount, 1u, 1u);
     }
