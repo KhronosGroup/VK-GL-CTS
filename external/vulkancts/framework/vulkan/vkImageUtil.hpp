@@ -384,7 +384,7 @@ void allocateAndBindSparseImage(const vk::DeviceInterface &vk, vk::VkDevice devi
                                 const vk::VkImageCreateInfo &imageCreateInfo, const vk::VkSemaphore &signalSemaphore,
                                 vk::VkQueue queue, vk::Allocator &allocator,
                                 std::vector<de::SharedPtr<vk::Allocation>> &allocations, tcu::TextureFormat format,
-                                vk::VkImage destImage);
+                                vk::VkImage destImage, vk::VkFence fence = VK_NULL_HANDLE);
 #endif // CTS_USES_VULKANSC
 } // namespace vk
 
