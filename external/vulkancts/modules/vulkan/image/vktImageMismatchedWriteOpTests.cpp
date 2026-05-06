@@ -608,7 +608,6 @@ void MismatchedWriteOpTest::getProgramCodeAndVariables(StringTemplate &code, str
                               ${CAPABILITY_VEC5}
                               OpExtension      "SPV_KHR_variable_pointers"
                               OpExtension      "SPV_KHR_storage_buffer_storage_class"
-                              OpExtension      "SPV_EXT_long_vector"
                               ${EXTENSIONS}
 
                     %std450 = OpExtInstImport  "GLSL.std.450"
@@ -760,7 +759,8 @@ void MismatchedWriteOpTest::getProgramCodeAndVariables(StringTemplate &code, str
     }
     if (sourceWidth == 5)
     {
-        variables["EXTENSIONS"] += "OpExtension       \"SPV_EXT_shader_image_int64\"";
+        variables["EXTENSIONS"] += "OpExtension       \"SPV_EXT_shader_image_int64\"\n";
+        variables["EXTENSIONS"] += "OpExtension       \"SPV_EXT_long_vector\"";
         variables["CAPABILITY_VEC5"] = "OpCapability LongVectorEXT\n";
         variables["TYPES_VEC5"]      = typesVec5;
         if (is64BitIntegerFormat(m_params->vkFormat))
