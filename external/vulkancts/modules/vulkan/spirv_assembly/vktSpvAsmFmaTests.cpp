@@ -467,7 +467,7 @@ static vector<T> getRefValues(T a, T b, T c, RoundingMode m, DenormMode d, bool 
                 ret.push_back(negate(T(0)));
             }
             if (isZero(r) && !signedZero)
-                ret.push_back(-r);
+                ret.push_back(static_cast<T>(-r));
         }
     }
 
