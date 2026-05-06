@@ -1853,6 +1853,256 @@ std::vector<uint16_t> TessInstancedDrawTestInstance::genIndexData()
     return indices;
 }
 
+#ifndef CTS_USES_VULKANSC
+namespace TessFactorBarrierBug
+{
+
+void checkSupport(Context &context)
+{
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
+}
+
+void initPrograms(vk::SourceCollections &dst)
+{
+    std::ostringstream vert;
+    vert << "#version 450 core\n"
+         << "\n"
+         << "layout(set = 0, binding = 0) buffer coherent block {\n"
+         << "   uint ssbo_val;\n"
+         << "};\n"
+         << "\n"
+         << "layout(location=0) in vec2 position;\n"
+         << "layout(location=0) out uint patch_index;\n"
+         << "\n"
+         << "void main() {\n"
+         << "   gl_Position = vec4(position, 0.0, 1.0);\n"
+         << "   patch_index = gl_InstanceIndex;\n"
+         << "\n"
+         << "   /*\n"
+         << "    * RADV groups TCS wave in workgroups similar to compute ones.\n"
+         << "    *\n"
+         << "    * This test assumes that the TCS workgroup has at most 256 invocations (64 patches). Try to\n"
+         << "    * cause the first wave of the workgroup to start the TCS much later than ones which write\n"
+         << "    * non-zero factors.\n"
+         << "    *\n"
+         << "    * This loop makes the test much more likely to fail.\n"
+         << "   */\n"
+         << "   uint wave32_in_workgroup = patch_index % 64u / 8u;\n"
+         << "   uint threshold = patch_index / 64u % 8u;\n"
+         << "   if (wave32_in_workgroup <= threshold) {\n"
+         << "      /*for (uint i = 0; i < 8192; i++) {\n"
+         << "         patch_index += (i & 0x1) == 0 ? -1 : 1;\n"
+         << "      }*/\n"
+         << "      for (uint i = 0; i < 512; i++)\n"
+         << "         atomicAdd(ssbo_val, i);\n"
+         << "   }\n"
+         << "}\n";
+    dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream tesc;
+    tesc << "#version 450 core\n"
+         << "\n"
+         << "/*\n"
+         << " * For the workgroup barriers to be optimized to wave ones, each TCS output patch must be part of a\n"
+         << " * single wave.\n"
+         << " */\n"
+         << "layout(vertices = 4) out;\n"
+         << "\n"
+         << "layout(location=0) in uint patch_index_in[];\n"
+         << "\n"
+         << "void main() {\n"
+         << "   gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+         << "\n"
+         << "   /* The compiler must either know that all invocations define tessellation levels or that a\n"
+         << "    * workgroup barrier exists. This test ensures that both are true.\n"
+         << "    */\n"
+         << "   barrier();\n"
+         << "\n"
+         << "   /*\n"
+         << "    * We assume that the TCS workgroup has 256 invocations (64 patches). All waves in the workgroup\n"
+         << "    * will discard all patches except for the last. If the timing is right, the bug causes the\n"
+         << "    * factors of the last wave to be dismissed when determining whether all waves in the workgroup\n"
+         << "    * write zero as a factor.\n"
+         << "   */\n"
+         << "   uint patch_index = patch_index_in[gl_InvocationID];\n"
+         << "   uint wave32_in_workgroup = patch_index % 64u / 8u;\n"
+         << "   if (wave32_in_workgroup == 7) {\n"
+         << "      uint index_in_wave32 = patch_index % 8u;\n"
+         << "      uint workgroup_index = patch_index / 64u;\n"
+         << "      uint index = (workgroup_index * 8u) + index_in_wave32;\n"
+         << "      uint grid_size = 256;\n"
+         << "      vec2 pos = (vec2(index % grid_size, index / grid_size) + gl_out[gl_InvocationID].gl_Position.xy);\n"
+         << "      gl_out[gl_InvocationID].gl_Position.xy = pos / float(grid_size) * 2.0 - 1.0;\n"
+         << "\n"
+         << "      gl_TessLevelOuter = float[4](1.0, 1.0, 1.0, 1.0);\n"
+         << "   } else {\n"
+         << "      gl_TessLevelOuter = float[4](0.0, 0.0, 0.0, 0.0);\n"
+         << "   }\n"
+         << "   gl_TessLevelInner = float[2](0.0, 0.0);\n"
+         << "}\n";
+    dst.glslSources.add("tesc") << glu::TessellationControlSource(tesc.str());
+
+    std::ostringstream tese;
+    tese << "#version 450 core\n"
+         << "\n"
+         << "layout(quads) in;\n"
+         << "\n"
+         << "void main() {\n"
+         << "   vec4 low = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord[0]);\n"
+         << "   vec4 high = mix(gl_in[3].gl_Position, gl_in[2].gl_Position, gl_TessCoord[0]);\n"
+         << "   gl_Position = mix(low, high, gl_TessCoord[1]);\n"
+         << "}\n";
+    dst.glslSources.add("tese") << glu::TessellationEvaluationSource(tese.str());
+
+    std::ostringstream frag;
+    frag << "#version 450 core\n"
+         << "\n"
+         << "layout(location = 0) out vec4 color;\n"
+         << "\n"
+         << "void main() {\n"
+         << "   color = vec4(0.502, 1.0, 0.502, 1.0);\n"
+         << "}\n";
+    dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus iterate(Context &context)
+{
+    const tcu::IVec3 extent(128, 128, 1);
+    const auto extentVk    = makeExtent3D(extent);
+    const auto colorFormat = VK_FORMAT_B8G8R8A8_UNORM;
+    const auto ctx         = context.getContextCommonData();
+
+    // Buffer for atomics.
+    const auto storageBufferSize = static_cast<VkDeviceSize>(sizeof(uint32_t));
+    const auto storageBufferUsage =
+        static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto storageBufferInfo = makeBufferCreateInfo(storageBufferSize, storageBufferUsage);
+    // HostIntent::NONE may be important for performance.
+    BufferWithMemory storageBuffer(ctx.vkd, ctx.device, ctx.allocator, storageBufferInfo, HostIntent::NONE);
+
+    // Vertex buffer.
+    const std::vector<tcu::Vec2> positions{
+        tcu::Vec2(0.0f, 0.0f),
+        tcu::Vec2(1.0f, 0.0f),
+        tcu::Vec2(1.0f, 1.0f),
+        tcu::Vec2(0.0f, 1.0f),
+    };
+    const auto vertexBufferSize   = static_cast<VkDeviceSize>(de::dataSize(positions));
+    const auto vertexBufferUsage  = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    const auto vertexBufferInfo   = makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage);
+    const auto vertexBufferOffset = static_cast<VkDeviceSize>(0ull);
+    BufferWithMemory vertexBuffer(ctx.vkd, ctx.device, ctx.allocator, vertexBufferInfo, HostIntent::W);
+    {
+        auto &alloc = vertexBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(positions), de::dataSize(positions));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Framebuffer.
+    const auto colorUsage = static_cast<VkImageUsageFlags>(
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto imageType = VK_IMAGE_TYPE_2D;
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, colorFormat, colorUsage, imageType);
+
+    const auto descType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const auto descStages = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_VERTEX_BIT);
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType);
+    const auto descPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(descType, descStages);
+    const auto setLayout      = setLayoutBuilder.build(ctx.vkd, ctx.device);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+    const auto descriptorSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descPool, *setLayout);
+
+    DescriptorSetUpdateBuilder updateBuilder;
+    const auto binding  = DescriptorSetUpdateBuilder::Location::binding;
+    const auto descInfo = makeDescriptorBufferInfo(*storageBuffer, 0ull, storageBufferSize);
+    updateBuilder.writeSingle(*descriptorSet, binding(0u), descType, &descInfo);
+    updateBuilder.update(ctx.vkd, ctx.device);
+
+    const auto &binaries  = context.getBinaryCollection();
+    const auto vertShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+    const auto tescShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("tesc"));
+    const auto teseShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("tese"));
+    const auto fragShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const auto renderPass  = makeRenderPass(ctx.vkd, ctx.device, colorFormat);
+    const auto framebuffer = makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(),
+                                             extentVk.width, extentVk.height, extentVk.depth);
+
+    const std::vector<VkVertexInputBindingDescription> vertexBindings{
+        makeVertexInputBindingDescription(0u, DE_SIZEOF32(decltype(positions)::value_type),
+                                          VK_VERTEX_INPUT_RATE_VERTEX),
+    };
+
+    const std::vector<VkVertexInputAttributeDescription> vertexAttributes{
+        makeVertexInputAttributeDescription(0u, 0u, VK_FORMAT_R32G32_SFLOAT, 0u),
+    };
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(vertexBindings),
+        de::dataOrNull(vertexBindings),
+        de::sizeU32(vertexAttributes),
+        de::dataOrNull(vertexAttributes),
+    };
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+
+    const auto patchControlPoints = 4u;
+
+    const auto pipeline =
+        makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *vertShader, *tescShader, *teseShader,
+                             VK_NULL_HANDLE, *fragShader, *renderPass, viewports, scissors,
+                             VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, 0u, patchControlPoints, &vertexInputStateCreateInfo);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    const auto bindPoint     = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    const auto instanceCount = 524288u;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.front(), clearColor);
+    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+    ctx.vkd.cmdDraw(cmdBuffer, patchControlPoints, instanceCount, 0u, 0u);
+    endRenderPass(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    const auto tcuFormat = mapVkFormat(colorFormat);
+    const tcu::Vec4 expectedColor(0.502f, 1.0f, 0.502f, 1.0f);
+
+    tcu::TextureLevel refLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess reference = refLevel.getAccess();
+    tcu::clear(reference, expectedColor);
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+    tcu::ConstPixelBufferAccess result(tcuFormat, extent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    // Expect more or less exact results.
+    const tcu::Vec4 threshold(0.005f, 0.0f, 0.005f, 0.0f);
+    auto &log = context.getTestContext().getLog();
+    if (!tcu::floatThresholdCompare(log, "Color", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected results in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+} // namespace TessFactorBarrierBug
+#endif // CTS_USES_VULKANSC
+
 } // namespace
 
 //! These tests correspond to dEQP-GLES31.functional.tessellation.misc_draw.*
@@ -2072,12 +2322,8 @@ tcu::TestCaseGroup *createMiscDrawTests(tcu::TestContext &testCtx)
 
 #ifndef CTS_USES_VULKANSC
     {
-        const auto testName = std::string("tess_factor_barrier_bug");
-        const auto dataDir  = "tessellation";
-        const std::vector<std::string> requirements{"Features.tessellationShader",
-                                                    "Features.vertexPipelineStoresAndAtomics"};
-        group->addChild(
-            cts_amber::createAmberTestCase(testCtx, testName.c_str(), dataDir, testName + ".amber", requirements));
+        addFunctionCaseWithPrograms(group.get(), "tess_factor_barrier_bug", TessFactorBarrierBug::checkSupport,
+                                    TessFactorBarrierBug::initPrograms, TessFactorBarrierBug::iterate);
     }
 #endif // CTS_USES_VULKANSC
 
