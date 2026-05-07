@@ -1409,7 +1409,7 @@ static void evalTexelFetch1DArray(ShaderEvalContext &c, const TexLookupParams &p
 class TexLookupEvaluator : public ShaderEvaluator
 {
 public:
-    TexLookupEvaluator(TexEvalFunc evalFunc, const TexLookupParams &lookupParams)
+    TexLookupEvaluator(TexEvalFunc evalFunc, const TexLookupParams *lookupParams)
         : m_evalFunc(evalFunc)
         , m_lookupParams(lookupParams)
     {
@@ -1420,12 +1420,12 @@ public:
 
     virtual void evaluate(ShaderEvalContext &ctx) const
     {
-        m_evalFunc(ctx, m_lookupParams);
+        m_evalFunc(ctx, *m_lookupParams);
     }
 
 private:
     TexEvalFunc m_evalFunc;
-    const TexLookupParams &m_lookupParams;
+    const TexLookupParams *m_lookupParams;
 };
 
 static void checkDeviceFeatures(Context &context, TextureType textureType)
@@ -2021,11 +2021,13 @@ protected:
 ShaderTextureFunctionCase::ShaderTextureFunctionCase(tcu::TestContext &testCtx, const std::string &name,
                                                      const TextureLookupSpec &lookup, const TextureSpec &texture,
                                                      TexEvalFunc evalFunc, bool isVertexCase, bool useCompute)
-    : ShaderRenderCase(testCtx, name, isVertexCase, new TexLookupEvaluator(evalFunc, m_lookupParams), NULL, NULL)
+    : ShaderRenderCase(testCtx, name, isVertexCase, static_cast<const ShaderEvaluator *>(nullptr), nullptr, nullptr)
     , m_lookupSpec(lookup)
     , m_textureSpec(texture)
+    , m_lookupParams()
     , m_useCompute(useCompute)
 {
+    setEvaluator(new TexLookupEvaluator(evalFunc, &m_lookupParams));
     initShaderSources();
 }
 

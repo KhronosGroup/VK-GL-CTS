@@ -21,22 +21,27 @@
 #include "vksJson.hpp"
 
 #define VULKAN_JSON_CTS
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wunused-function"
 #pragma GCC diagnostic ignored "-Wunused-variable"
-#endif // __GNUC__
+#pragma GCC diagnostic ignored "-Wvolatile"
+#endif // defined(__GNUC__) && !defined(__clang__)
 #ifdef __clang__
 #pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wunused-function"
 #pragma clang diagnostic ignored "-Wpointer-bool-conversion"
+#pragma clang diagnostic ignored "-Wdeprecated-volatile"
 #endif
 
 #include <json/json.h>
 #include <vulkan/pcjson/vksc_pipeline_json.h>
-#ifdef __GNUC__
+
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
-#endif // __GNUC__
+#endif // defined(__GNUC__) && !defined(__clang__)
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif

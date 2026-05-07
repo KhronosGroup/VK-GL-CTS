@@ -570,7 +570,7 @@ private:
     void renderTo(tcu::Surface &dst);
 
     TestSpec genTestSpec(int flags) const;
-    std::string genTestDescription(int flags) const;
+    static std::string genTestDescription(int flags);
     void createBuffers(void);
     void createShader(void);
 
@@ -714,7 +714,7 @@ MultipleBindingCase::TestSpec MultipleBindingCase::genTestSpec(int flags) const
     return spec;
 }
 
-std::string MultipleBindingCase::genTestDescription(int flags) const
+std::string MultipleBindingCase::genTestDescription(int flags)
 {
     std::ostringstream buf;
     buf << "draw test pattern";

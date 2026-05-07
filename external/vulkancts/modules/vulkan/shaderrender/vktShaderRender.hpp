@@ -43,6 +43,8 @@
 
 #include "vktTestCaseUtil.hpp"
 
+#include <memory>
+
 namespace vkt
 {
 namespace sr
@@ -370,6 +372,11 @@ public:
     virtual void initPrograms(vk::SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
 
+    void setEvaluator(const ShaderEvaluator *evaluator)
+    {
+        m_evaluator.reset(evaluator);
+    }
+
 protected:
     std::string m_vertShaderSource;
     std::string m_fragShaderSource;
@@ -379,7 +386,7 @@ protected:
     de::MovePtr<vk::ShaderBuildOptions> m_compShaderBuildOptions;
 
     const bool m_isVertexCase;
-    const de::UniquePtr<const ShaderEvaluator> m_evaluator;
+    std::unique_ptr<const ShaderEvaluator> m_evaluator;
     const de::UniquePtr<const UniformSetup> m_uniformSetup;
     const AttributeSetupFunc m_attribFunc;
 };
