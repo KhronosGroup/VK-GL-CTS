@@ -716,7 +716,9 @@ void PerformanceCountersByRegionContainer::createRenderPipeline(const BinaryColl
 {
     ShaderWrapper vertexShaderModule(m_deviceDriver, *m_device, binaryCollection.get("vert"), 0u);
     ShaderWrapper fragmentShaderModule(m_deviceDriver, *m_device, binaryCollection.get("frag"), 0u);
-    ShaderWrapper geometryShaderModule(m_deviceDriver, *m_device, binaryCollection.get("geom"), 0u);
+    ShaderWrapper geometryShaderModule(m_layerCount == 1 ?
+                                           ShaderWrapper() :
+                                           ShaderWrapper(m_deviceDriver, *m_device, binaryCollection.get("geom"), 0u));
 
     // Disable blending
     const VkPipelineColorBlendAttachmentState attachmentBlendState = {

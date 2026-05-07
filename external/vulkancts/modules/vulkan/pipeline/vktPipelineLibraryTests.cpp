@@ -3502,7 +3502,8 @@ tcu::TestStatus CreateViewIndexFromDeviceIndexInstance::iterate()
     const auto viewCount   = 3u;
     const auto imageSize   = 8u;
     const auto colorFormat = VK_FORMAT_R8G8B8A8_UINT;
-    const auto extent      = makeExtent3D(imageSize, imageSize, 1u);
+    const tcu::UVec3 tcuExtent(imageSize, imageSize, 1u);
+    const auto extent = makeExtent3D(tcuExtent);
 
     VkPipelineCreateFlags basePipelineFlags = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
     if (modeParams.useLinkTimeOptimization)
@@ -3555,9 +3556,6 @@ tcu::TestStatus CreateViewIndexFromDeviceIndexInstance::iterate()
                                                 colorFormat, imageSubresourceRange);
 
     const auto &multiviewFeatures(m_context.getMultiviewFeatures());
-    const auto srl(makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, viewCount));
-    const auto copyRegion(makeBufferImageCopy(extent, srl));
-    const auto beforeCopyBarrier(makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT));
     const auto clearValue(makeClearValueColor(tcu::Vec4(0.0f)));
 
     const auto pipelineLayout(makePipelineLayout(vk, device));
@@ -3615,9 +3613,9 @@ tcu::TestStatus CreateViewIndexFromDeviceIndexInstance::iterate()
     multiviewInfo.pCorrelationMasks               = &correlationMask;
 
     auto renderPass = makeRenderPass(
-        vk, device, colorFormat, VK_FORMAT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 0, &multiviewInfo);
+        vk, device, colorFormat, VK_FORMAT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_CLEAR,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 0, &multiviewInfo);
 
     const auto framebufferCreateInfo = makeFramebufferCreateInfo(*renderPass, 1u, &*imageView, imageSize, imageSize);
     auto framebuffer                 = createFramebuffer(vk, device, &framebufferCreateInfo);
@@ -3685,11 +3683,9 @@ tcu::TestStatus CreateViewIndexFromDeviceIndexInstance::iterate()
 
     endRenderPass(vk, *cmdBuffer);
 
-    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 1,
-                          &beforeCopyBarrier, 0, 0, 0, 0);
-
-    vk.cmdCopyImageToBuffer(*cmdBuffer, imageWithBuffer.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                            imageWithBuffer.getBuffer(), 1u, &copyRegion);
+    copyImageToBuffer(vk, *cmdBuffer, imageWithBuffer.getImage(), imageWithBuffer.getBuffer(),
+                      tcuExtent.asInt().swizzle(0, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, viewCount);
 
     endCommandBuffer(vk, *cmdBuffer);
     const VkQueue queue = getDeviceQueue(vk, device, queueFamilyIndex, 0);

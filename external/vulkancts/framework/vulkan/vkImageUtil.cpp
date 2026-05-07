@@ -5948,7 +5948,7 @@ void allocateAndBindSparseImage(const DeviceInterface &vk, VkDevice device, cons
                                 const InstanceInterface &instance, const VkImageCreateInfo &imageCreateInfo,
                                 const VkSemaphore &signalSemaphore, VkQueue queue, Allocator &allocator,
                                 std::vector<de::SharedPtr<Allocation>> &allocations, tcu::TextureFormat format,
-                                VkImage destImage)
+                                VkImage destImage, VkFence fence)
 {
     const VkImageAspectFlags imageAspectFlags         = getImageAspectFlags(format);
     const VkPhysicalDeviceProperties deviceProperties = getPhysicalDeviceProperties(instance, physicalDevice);
@@ -6185,7 +6185,7 @@ void allocateAndBindSparseImage(const DeviceInterface &vk, VkDevice device, cons
         bindSparseInfo.pImageOpaqueBinds    = &imageMipTailBindInfo;
     }
 
-    VK_CHECK(vk.queueBindSparse(queue, 1u, &bindSparseInfo, VK_NULL_HANDLE));
+    VK_CHECK(vk.queueBindSparse(queue, 1u, &bindSparseInfo, fence));
 }
 
 bool checkSparseImageFormatSupport(const VkPhysicalDevice physicalDevice, const InstanceInterface &instance,
