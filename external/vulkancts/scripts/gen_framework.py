@@ -3638,7 +3638,7 @@ class FormatListsGenerator(CTSGenerator):
                 return False
             self.writeList(f'compatibleFormats{arraySubName}s', intCompatibleFormatsCheckFun)
 
-        floatVariants = ['UNORM', 'SNORM', 'USCALED', 'SSCALED', 'SFLOAT', 'UFLOAT']
+        floatVariants = ['UNORM', 'SNORM', 'SFLOAT', 'UFLOAT']
         def compatibleFormatsFloatsCheckFun(f):
             if any(sub in f.name for sub in floatVariants):
                 if f.compressed is None and not f.className.startswith('D'):
