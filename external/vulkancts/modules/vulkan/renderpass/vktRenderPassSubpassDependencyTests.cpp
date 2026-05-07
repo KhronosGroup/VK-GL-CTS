@@ -2863,14 +2863,14 @@ tcu::TestStatus SeparateChannelsTestInstance::verifyResults(void)
             }
 
         if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), // log
-                                        "Rendered result",                   // imageSetName
+                                        "Image comparison result",           // imageSetName
                                         "",                                  // imageSetDesc
                                         referenceAccess,                     // reference
                                         resultAccess,                        // result
                                         Vec4(0.01f),                         // threshold
                                         tcu::COMPARE_LOG_RESULT))            // logMode
         {
-            resultCollector.fail("Image compare failed.");
+            resultCollector.fail("Image comparison failed.");
         }
     }
 
@@ -3511,14 +3511,14 @@ tcu::TestStatus SingleAttachmentTestInstance::verifyResults()
         }
 
     if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), // log
-                                    "Rendered result",                   // imageSetName
+                                    "Image comparison result",           // imageSetName
                                     "",                                  // imageSetDesc
                                     referenceAccess,                     // reference
                                     resultAccess,                        // result
                                     Vec4(0.05f),                         // threshold
                                     tcu::COMPARE_LOG_RESULT))            // logMode
     {
-        resultCollector.fail("Image compare failed.");
+        resultCollector.fail("Image comparison failed.");
     }
 
     return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
