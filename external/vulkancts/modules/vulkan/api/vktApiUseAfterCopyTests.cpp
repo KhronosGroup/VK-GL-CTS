@@ -637,6 +637,8 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
 {
     const auto ctx = m_context.getContextCommonData();
 
+    const bool useDeviceAddresses = (m_context.getDeviceVulkan12Features().bufferDeviceAddress == VK_TRUE);
+
     const auto isDS       = m_params.isDepthStencilCase();
     const auto isMS       = m_params.multiSample();
     const auto isSrgb     = (!isDS && isSrgbFormat(m_params.format));
@@ -893,8 +895,11 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
 
     // Depth or texture memory (buffer).
     std::unique_ptr<BufferWithMemory> memoryBuffer;
-    const auto memoryBufferUsage =
-        static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    const auto memoryBufferUsage = static_cast<VkBufferUsageFlags>(
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+        (useDeviceAddresses ? static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) : 0u));
+    const VkMemoryAllocateFlags memAllocDevAddr =
+        useDeviceAddresses ? static_cast<VkMemoryAllocateFlags>(VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT) : 0u;
 
     if (isDS)
     {
@@ -902,7 +907,7 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
         const auto depthMemoryBufferInfo = makeBufferCreateInfo(depthMemoryBufferSize, memoryBufferUsage);
 
         memoryBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, depthMemoryBufferInfo,
-                                                HostIntent::W, true, VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT));
+                                                HostIntent::W, true, memAllocDevAddr));
         {
             auto &alloc = memoryBuffer->getAllocation();
             memcpy(alloc.getHostPtr(), de::dataOrNull(depthMemoryBytes), de::dataSize(depthMemoryBytes));
@@ -915,14 +920,15 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
         const auto texMemoryBufferInfo = makeBufferCreateInfo(texMemoryBufferSize, memoryBufferUsage);
 
         memoryBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, texMemoryBufferInfo, HostIntent::W,
-                                                true, VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT));
+                                                true, memAllocDevAddr));
         {
             auto &alloc = memoryBuffer->getAllocation();
             memcpy(alloc.getHostPtr(), textureAccess->getDataPtr(), static_cast<size_t>(texMemoryBufferSize));
             flushAlloc(ctx.vkd, ctx.device, alloc);
         }
     }
-    const auto baseMemoryAddress = getBufferDeviceAddress(ctx.vkd, ctx.device, memoryBuffer->get());
+    const VkDeviceAddress baseMemoryAddress =
+        useDeviceAddresses ? getBufferDeviceAddress(ctx.vkd, ctx.device, memoryBuffer->get()) : 0u;
 
     DE_ASSERT(imgCreateInfo.mipLevels == 1u);
     const auto copyCount = m_params.copyRegions.empty() ? 1u : m_params.copyRegions.size();
@@ -1000,10 +1006,13 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
     }
 
     const auto indirectBufferSize  = static_cast<VkDeviceSize>(de::dataSize(indirectCmds));
-    const auto indirectBufferUsage = (VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-    const auto indirectBufferInfo  = makeBufferCreateInfo(indirectBufferSize, indirectBufferUsage);
-    BufferWithMemory indirectBuffer(ctx.vkd, ctx.device, ctx.allocator, indirectBufferInfo, HostIntent::W, true,
-                                    VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT);
+    const auto indirectBufferUsage = static_cast<VkBufferUsageFlags>(
+        VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
+        (useDeviceAddresses ? static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) : 0u));
+    const auto indirectBufferInfo = makeBufferCreateInfo(indirectBufferSize, indirectBufferUsage);
+    BufferWithMemory indirectBuffer(
+        ctx.vkd, ctx.device, ctx.allocator, indirectBufferInfo, HostIntent::W, true,
+        useDeviceAddresses ? static_cast<VkMemoryAllocateFlags>(VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT) : 0u);
     {
         auto &alloc = indirectBuffer.getAllocation();
         memcpy(alloc.getHostPtr(), de::dataOrNull(indirectCmds), de::dataSize(indirectCmds));
