@@ -4099,6 +4099,8 @@ dEQP-VK.pipeline.monolithic.vertex_input.max_attributes.64_attributes.binding_on
 dEQP-VK.pipeline.monolithic.vertex_input.max_attributes.query_max_attributes.binding_one_to_many.interleaved
 dEQP-VK.pipeline.monolithic.vertex_input.max_attributes.query_max_attributes.binding_one_to_many.sequential
 dEQP-VK.pipeline.monolithic.vertex_input.max_attributes.query_max_attributes.binding_one_to_one.interleaved
+dEQP-VK.pipeline.monolithic.vertex_input.misc.null_state_dynamic_input_rast_discard
+dEQP-VK.pipeline.monolithic.vertex_input.misc.null_state_dynamic_input_rast_discard_dynamic
 dEQP-VK.pipeline.monolithic.vertex_input.misc.stride_change_vert_frag
 dEQP-VK.pipeline.monolithic.vertex_input.misc.stride_change_vert_geom_frag
 dEQP-VK.pipeline.monolithic.vertex_input.misc.stride_change_vert_tess_frag
