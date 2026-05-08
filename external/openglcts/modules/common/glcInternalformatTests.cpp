@@ -1586,10 +1586,6 @@ void InternalformatTests::getESTestData(TestData &testData, glu::ContextType &co
         TF(GL_RGBA, GL_HALF_FLOAT_OES, GL_RGBA, OES_texture_half_float),
         TF(GL_RGB, GL_HALF_FLOAT_OES, GL_RGB, OES_texture_half_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
         TF(GL_RGBA, GL_HALF_FLOAT_OES, GL_RGBA, OES_texture_half_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
-        TF(GL_RGB, GL_FLOAT, GL_RGB32F, OES_texture_float),
-        TF(GL_RGBA, GL_FLOAT, GL_RGBA32F, OES_texture_float),
-        TF(GL_RGB, GL_FLOAT, GL_RGB32F, OES_texture_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
-        TF(GL_RGBA, GL_FLOAT, GL_RGBA32F, OES_texture_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
     };
 
     CopyTexImageFormat commonCopyTexImageFormats[] = {
@@ -1636,6 +1632,10 @@ void InternalformatTests::getESTestData(TestData &testData, glu::ContextType &co
             TF(GL_RGB, GL_FLOAT, GL_RGB16F),
             TF(GL_RGB, GL_FLOAT, GL_R11F_G11F_B10F),
             TF(GL_RGB, GL_FLOAT, GL_RGB9_E5),
+            TF(GL_RGB, GL_FLOAT, GL_RGB32F, OES_texture_float),
+            TF(GL_RGBA, GL_FLOAT, GL_RGBA32F, OES_texture_float),
+            TF(GL_RGB, GL_FLOAT, GL_RGB32F, OES_texture_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
+            TF(GL_RGBA, GL_FLOAT, GL_RGBA32F, OES_texture_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
             TF(GL_RGB_INTEGER, GL_UNSIGNED_BYTE, GL_RGB8UI),
             TF(GL_RGB_INTEGER, GL_BYTE, GL_RGB8I),
             TF(GL_RGB_INTEGER, GL_UNSIGNED_SHORT, GL_RGB16UI),
@@ -1699,6 +1699,10 @@ void InternalformatTests::getESTestData(TestData &testData, glu::ContextType &co
             TF(GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, GL_RGB5_A1, OES_required_internalformat),
             TF(GL_RGB, GL_UNSIGNED_SHORT_5_6_5, GL_RGB, OES_required_internalformat),
             TF(GL_RGB, GL_UNSIGNED_SHORT_5_6_5, GL_RGB565, OES_required_internalformat),
+            TF(GL_RGB, GL_FLOAT, GL_RGB, OES_texture_float),
+            TF(GL_RGBA, GL_FLOAT, GL_RGBA, OES_texture_float),
+            TF(GL_RGB, GL_FLOAT, GL_RGB, OES_texture_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
+            TF(GL_RGBA, GL_FLOAT, GL_RGBA, OES_texture_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
             TF(GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, GL_LUMINANCE8_ALPHA8_OES, OES_required_internalformat),
             TF(GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, GL_LUMINANCE4_ALPHA4_OES, OES_required_internalformat),
             TF(GL_LUMINANCE, GL_UNSIGNED_BYTE, GL_LUMINANCE8_OES, OES_required_internalformat),
