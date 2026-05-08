@@ -88,6 +88,8 @@ set(DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmRawAccessChainTests.hpp
 	vktSpvAsmMaint9VectorizationTests.cpp
 	vktSpvAsmMaint9VectorizationTests.hpp
+	vktSpvAsmOpUndefTests.cpp
+	vktSpvAsmOpUndefTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_SRCS

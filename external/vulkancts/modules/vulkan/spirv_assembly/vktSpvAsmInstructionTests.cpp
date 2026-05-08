@@ -98,6 +98,7 @@
 #include "vktSpvAsmRawAccessChainTests.hpp"
 #include "vktSpvAsmLdexpTests.hpp"
 #include "vktSpvAsmMaint9VectorizationTests.hpp"
+#include "vktSpvAsmOpUndefTests.hpp"
 
 #include <cmath>
 #include <limits>
@@ -7468,6 +7469,8 @@ tcu::TestCaseGroup *createOpUndefGroup(tcu::TestContext &testCtx)
         }
     }
 #endif
+
+    appendOpUndefTests(testCtx, group.get());
 
     return group.release();
 }
