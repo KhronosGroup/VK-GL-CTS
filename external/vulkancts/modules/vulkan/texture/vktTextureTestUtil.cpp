@@ -2442,6 +2442,7 @@ void GraphicsBackend::recordCommands()
 {
     const DeviceInterface &vkd = m_context.getDeviceInterface();
 
+    m_context.resetCommandPoolForVKSC(getDevice(), *m_commandPool);
     // Begin Command Buffer
     beginCommandBuffer(vkd, m_commandBuffer.get());
 
@@ -2727,6 +2728,7 @@ void ComputeBackend::recordCommands()
 {
     const DeviceInterface &vkd = m_context.getDeviceInterface();
 
+    m_context.resetCommandPoolForVKSC(getDevice(), *m_commandPool);
     beginCommandBuffer(vkd, *m_commandBuffer);
 
     vkd.cmdBindPipeline(*m_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipeline);
