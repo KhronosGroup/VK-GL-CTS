@@ -55,24 +55,28 @@ public:
                                   VkBufferUsageFlags usage, Context &context, Allocator &allocator,
                                   Move<VkBuffer> &buffer, const MemoryRequirement &requirement,
                                   de::MovePtr<Allocation> &memory) const = 0;
+
+    virtual void checkSupport(Context &) const = 0;
 };
 
 class BufferSuballocation : public IBufferAllocator
 {
 public:
-    virtual void createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, VkDeviceSize size,
-                                  VkBufferUsageFlags usage, Context &context, Allocator &allocator,
-                                  Move<VkBuffer> &buffer, const MemoryRequirement &requirement,
-                                  de::MovePtr<Allocation> &memory) const; // override
+    void createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, VkDeviceSize size, VkBufferUsageFlags usage,
+                          Context &context, Allocator &allocator, Move<VkBuffer> &buffer,
+                          const MemoryRequirement &requirement, de::MovePtr<Allocation> &memory) const override;
+
+    void checkSupport(Context &) const override;
 };
 
 class BufferDedicatedAllocation : public IBufferAllocator
 {
 public:
-    virtual void createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, VkDeviceSize size,
-                                  VkBufferUsageFlags usage, Context &context, Allocator &allocator,
-                                  Move<VkBuffer> &buffer, const MemoryRequirement &requirement,
-                                  de::MovePtr<Allocation> &memory) const; // override
+    void createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, VkDeviceSize size, VkBufferUsageFlags usage,
+                          Context &context, Allocator &allocator, Move<VkBuffer> &buffer,
+                          const MemoryRequirement &requirement, de::MovePtr<Allocation> &memory) const override;
+
+    void checkSupport(Context &) const override;
 };
 
 class IImageAllocator

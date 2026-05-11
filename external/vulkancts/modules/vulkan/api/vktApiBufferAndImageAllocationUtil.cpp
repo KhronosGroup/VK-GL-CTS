@@ -24,13 +24,9 @@
 
 #include "vktApiBufferAndImageAllocationUtil.hpp"
 
-#include "deInt32.h"
-#include "tcuVectorUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkRefUtil.hpp"
-
-#include <sstream>
 
 namespace vkt
 {
@@ -57,8 +53,14 @@ void BufferSuballocation::createTestBuffer(const DeviceInterface &vk, VkDevice v
     };
 
     buffer = vk::createBuffer(vk, vkDevice, &bufferParams, nullptr);
-    memory = allocator.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), requirement);
-    VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, memory->getMemory(), 0));
+
+    auto memReqs = getBufferMemoryRequirements(vk, vkDevice, *buffer);
+    memory       = allocator.allocate(memReqs, requirement);
+    VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, memory->getMemory(), memory->getOffset()));
+}
+
+void BufferSuballocation::checkSupport(Context &) const
+{
 }
 
 void BufferDedicatedAllocation::createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, VkDeviceSize size,
@@ -67,8 +69,6 @@ void BufferDedicatedAllocation::createTestBuffer(const DeviceInterface &vk, VkDe
                                                  de::MovePtr<Allocation> &memory) const
 {
     DE_UNREF(allocator);
-    if (!context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
-        TCU_THROW(NotSupportedError, "Not supported");
 
     const InstanceInterface &vkInstance     = context.getInstanceInterface();
     const VkPhysicalDevice vkPhysicalDevice = context.getPhysicalDevice();
@@ -87,6 +87,11 @@ void BufferDedicatedAllocation::createTestBuffer(const DeviceInterface &vk, VkDe
     buffer = vk::createBuffer(vk, vkDevice, &bufferParams, nullptr);
     memory = allocateDedicated(vkInstance, vk, vkPhysicalDevice, vkDevice, buffer.get(), requirement);
     VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, memory->getMemory(), memory->getOffset()));
+}
+
+void BufferDedicatedAllocation::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 }
 
 void ImageSuballocation::createTestImage(tcu::IVec2 size, VkFormat format, Context &context, Allocator &allocator,
