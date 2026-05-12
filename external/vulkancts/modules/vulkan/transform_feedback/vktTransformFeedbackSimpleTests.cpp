@@ -142,6 +142,7 @@ struct TestParameters
     bool useDeviceAddressCommands;
     VkPrimitiveTopology primTopology;
     bool queryResultWithAvailability;
+    bool nullCounterBuffers;
 
     bool isPoints(void) const
     {
@@ -326,9 +327,7 @@ public:
         };
 
         // Create custom device and related objects
-        const auto enableValidation = context.getTestContext().getCommandLine().isValidationEnabled();
-
-        m_device = createCustomDevice(enableValidation, vkp, instance, vki, physicalDevice, &createInfo);
+        m_device = createCustomDevice(vkp, instance, vki, physicalDevice, &createInfo);
         m_vkd.reset(new DeviceDriver(vkp, instance, *m_device, context.getUsedApiVersion(),
                                      context.getTestContext().getCommandLine()));
         m_queue = getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
@@ -1090,7 +1089,7 @@ void TransformFeedbackTestInstance::cmdDrawIndirectCount(const DeviceInterface &
     if (m_parameters.useDeviceAddressCommands)
     {
         VkDrawIndirectCount2InfoKHR drawIndirectCount2Info = initVulkanStructure();
-        drawIndirectCount2Info.addressRange                = {bufferDeviceAddress + offset, size, stride};
+        drawIndirectCount2Info.addressRange                = {bufferDeviceAddress + offset, size - offset, stride};
         drawIndirectCount2Info.countAddressRange           = {countBufferDeviceAddress + countOffset, countSize};
         drawIndirectCount2Info.maxDrawCount                = maxDrawCount;
 
@@ -1424,7 +1423,7 @@ tcu::TestStatus TransformFeedbackResumeTestInstance::iterate(void)
         {
             const uint32_t startValue        = static_cast<uint32_t>(chunkOffsetsList[drawNdx] / sizeof(uint32_t));
             const uint32_t numPoints         = static_cast<uint32_t>(chunkSizesList[drawNdx] / sizeof(uint32_t));
-            const uint32_t countBuffersCount = (drawNdx == 0) ? 0 : 1;
+            const uint32_t countBuffersCount = (drawNdx == 0 && !m_parameters.nullCounterBuffers) ? 0 : 1;
 
             beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(m_imageExtent2D));
             {
@@ -6493,6 +6492,7 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
                                                  false,
                                                  false,
                                                  VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+                                                 false,
                                                  false};
 
                     // Simple Transform Feedback test
@@ -6517,6 +6517,13 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
                         addTransformFeedbackTestCaseVariants(group, (testName + postfixStr + "_device_address"),
                                                              parameters);
                     }
+                    if (testType == TEST_TYPE_RESUME && partCount == 1)
+                    {
+                        parameters.useDeviceAddressCommands = false;
+                        parameters.nullCounterBuffers       = true;
+                        addTransformFeedbackTestCaseVariants(group, (testName + postfixStr + "_null_counter_buffers"),
+                                                             parameters);
+                    }
                 }
             }
         }
@@ -6539,7 +6546,7 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
 
                 TestParameters parameters = {constructionType,   testType, 0u,    vertexCount, 0u,    0u,    0u,
                                              STREAM_ID_0_NORMAL, false,    false, false,       false, false, false,
-                                             topology.first,     false};
+                                             topology.first,     false,    false};
 
                 // Topology winding test
                 addTransformFeedbackTestCaseVariants(
@@ -6596,6 +6603,7 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
                                                      false,
                                                      false,
                                                      VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+                                                     false,
                                                      false};
 
                         // Rendering tests with various strides
@@ -6647,6 +6655,7 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
                                            false,
                                            false,
                                            VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+                                           false,
                                            false};
 
             // Rendering test checks backward pipeline dependency
@@ -6715,7 +6724,7 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
                         TestParameters parameters     = {
                             constructionType,   testType,    bufferSize, 0u,   streamId, 0u,    0u,
                             STREAM_ID_0_NORMAL, query64Bits, false,      true, false,    false, false,
-                            topology.first,     false};
+                            topology.first,     false,       false};
                         const std::string fullTestName = testName + "_" + topology.second.topologyName +
                                                          de::toString(streamId) + "_" + de::toString(vertexCount) +
                                                          widthStr;
@@ -6725,7 +6734,7 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
                         TestParameters omitParameters = {
                             constructionType,   testType,    bufferSize, 0u,   streamId, 0u,    0u,
                             STREAM_ID_0_NORMAL, query64Bits, false,      true, true,     false, false,
-                            topology.first,     false};
+                            topology.first,     false,       false};
                         const std::string omitTestName = testName + "_omit_write_" + topology.second.topologyName +
                                                          de::toString(streamId) + "_" + de::toString(vertexCount) +
                                                          widthStr;
@@ -6749,6 +6758,7 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
                                                                   false,
                                                                   false,
                                                                   topology.first,
+                                                                  false,
                                                                   false};
                             const std::string fullTestNameCopy = testNameCopy[testTypeCopyNdx] + "_" +
                                                                  topology.second.topologyName + de::toString(streamId) +
@@ -6779,6 +6789,7 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
                                                                          false,
                                                                          false,
                                                                          topology.first,
+                                                                         false,
                                                                          false};
                         const std::string fullTestNameHostQueryReset =
                             testNameHostQueryReset + "_" + topology.second.topologyName + de::toString(streamId) + "_" +
@@ -6821,6 +6832,7 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
                                      false,
                                      false,
                                      VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+                                     false,
                                      false};
 
         addTransformFeedbackTestCaseVariants(group, "depth_clip_control_vertex", parameters);
@@ -6841,6 +6853,7 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
                                      false,
                                      false,
                                      VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+                                     false,
                                      false};
 
         addTransformFeedbackTestCaseVariants(group, "depth_clip_control_geometry", parameters);
@@ -6861,6 +6874,7 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
                                      false,
                                      false,
                                      VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
+                                     false,
                                      false};
 
         addTransformFeedbackTestCaseVariants(group, "depth_clip_control_tese", parameters);
@@ -6903,7 +6917,8 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
                     false,              //  bool useMaintenance5;
                     false,              //  bool useDeviceAddressCommands;
                     topology.first,     //  VkPrimitiveTopology primTopology;
-                    false               //  bool queryResultWithAvailability;
+                    false,              //  bool queryResultWithAvailability;
+                    false               //  bool nullCounterBuffers
                 };
 
                 addTransformFeedbackTestCaseVariants(group, fullTestName, parameters);
@@ -6929,7 +6944,8 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
             true,                                 //  bool useMaintenance5;
             false,                                //  bool useDeviceAddressCommands;
             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, //  VkPrimitiveTopology primTopology;
-            false                                 //  bool queryResultWithAvailability
+            false,                                //  bool queryResultWithAvailability
+            false                                 //  bool nullCounterBuffers
         };
         group->addChild(new TransformFeedbackTestCase(group->getTestContext(), "maintenance5", parameters));
     }
@@ -6952,7 +6968,8 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
             false,                                //  bool useMaintenance5;
             false,                                //  bool useDeviceAddressCommands;
             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, //  VkPrimitiveTopology primTopology;
-            false                                 //  bool queryResultWithAvailability
+            false,                                //  bool queryResultWithAvailability
+            false                                 //  bool nullCounterBuffers
         };
         group->addChild(new TransformFeedbackTestCase(group->getTestContext(), "basic_triangles", parameters));
     }
@@ -6977,7 +6994,8 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
             false,                            //  bool useMaintenance5;
             false,                            //  bool useDeviceAddressCommands;
             VK_PRIMITIVE_TOPOLOGY_POINT_LIST, //  VkPrimitiveTopology primTopology;
-            false                             //  bool                queryResultWithAvailability
+            false,                            //  bool queryResultWithAvailability
+            false                             //  bool nullCounterBuffers
         };
         group->addChild(new TransformFeedbackTestCase(group->getTestContext(), "shader_object_rebind", parameters));
     }
@@ -7015,6 +7033,7 @@ void createTransformFeedbackStreamsSimpleTests(tcu::TestCaseGroup *group, vk::Pi
                                          false,
                                          false,
                                          VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+                                         false,
                                          false};
 
             // Streams usage test
@@ -7046,6 +7065,7 @@ void createTransformFeedbackStreamsSimpleTests(tcu::TestCaseGroup *group, vk::Pi
                                                 false,
                                                 false,
                                                 VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+                                                false,
                                                 false};
 
             // Simultaneous multiple streams usage test
@@ -7074,6 +7094,7 @@ void createTransformFeedbackStreamsSimpleTests(tcu::TestCaseGroup *group, vk::Pi
                                                false,
                                                false,
                                                VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+                                               false,
                                                false};
 
             // Simultaneous multiple streams to the same location usage test
@@ -7105,6 +7126,7 @@ void createTransformFeedbackStreamsSimpleTests(tcu::TestCaseGroup *group, vk::Pi
                                                         false,
                                                         false,
                                                         VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+                                                        false,
                                                         false};
             const TestParameters writeOmitParameters = {constructionType,
                                                         testType,
@@ -7121,6 +7143,7 @@ void createTransformFeedbackStreamsSimpleTests(tcu::TestCaseGroup *group, vk::Pi
                                                         false,
                                                         false,
                                                         VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+                                                        false,
                                                         false};
 
             // Simultaneous multiple queries usage test
@@ -7161,8 +7184,8 @@ void createTransformFeedbackStreamsSimpleTests(tcu::TestCaseGroup *group, vk::Pi
                                                 false,
                                                 false,
                                                 VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+                                                false,
                                                 false};
-                ;
 
                 // Test skipping components in the XFB buffer
                 group->addChild(new TransformFeedbackTestCase(group->getTestContext(),
@@ -7193,6 +7216,7 @@ void createTransformFeedbackStreamsSimpleTests(tcu::TestCaseGroup *group, vk::Pi
                                             false,
                                             false,
                                             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+                                            false,
                                             false};
 
             // Save a large number of components to the transform feedback buffer
@@ -7231,6 +7255,7 @@ public:
     void deinit(void) override
     {
         cleanupDevices();
+        tcu::TestCaseGroup::deinit();
     }
 };
 

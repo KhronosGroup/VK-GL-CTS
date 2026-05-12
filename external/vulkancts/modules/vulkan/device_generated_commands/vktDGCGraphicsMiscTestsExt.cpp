@@ -1460,7 +1460,6 @@ tcu::TestStatus NullVBOInstance::iterate(void)
 {
     // Custom device with robust buffer access.
     const auto &cmdLine       = m_context.getTestContext().getCommandLine();
-    const auto validation     = cmdLine.isValidationEnabled();
     const auto customInstance = createCustomInstanceWithExtension(m_context, "VK_KHR_get_physical_device_properties2");
     const auto &vki           = customInstance.getDriver();
     const auto &vkp           = m_context.getPlatformInterface();
@@ -1529,9 +1528,8 @@ tcu::TestStatus NullVBOInstance::iterate(void)
         nullptr,                              //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    const auto customDevice =
-        createCustomDevice(validation, vkp, customInstance, vki, physicalDevice, &deviceCreateInfo);
-    const auto &device = customDevice.get();
+    const auto customDevice = createCustomDevice(vkp, customInstance, vki, physicalDevice, &deviceCreateInfo);
+    const auto &device      = customDevice.get();
     const DeviceDriver vkd(vkp, customInstance, device, m_context.getUsedApiVersion(), cmdLine);
     const auto queue = getDeviceQueue(vkd, device, qfIndex, 0u);
 

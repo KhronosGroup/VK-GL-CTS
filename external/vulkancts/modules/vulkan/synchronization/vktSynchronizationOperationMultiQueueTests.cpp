@@ -225,8 +225,7 @@ class MultiQueues
                 nullptr //const VkPhysicalDeviceFeatures* pEnabledFeatures;
             };
 
-            m_logicalDevice = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                                                 context.getPlatformInterface(), instance, instanceDriver,
+            m_logicalDevice = createCustomDevice(context.getPlatformInterface(), instance, instanceDriver,
                                                  physicalDevice, &deviceInfo);
 #ifndef CTS_USES_VULKANSC
             m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance,

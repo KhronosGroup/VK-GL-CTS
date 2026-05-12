@@ -425,7 +425,8 @@ tcu::TestStatus testCaseWsi(Context &context, vk::wsi::Type wsiType)
     VkPipelineStageFlags waitStageMask[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
     uint32_t currentBuffer = 0;
-    VK_CHECK(vk.acquireNextImageKHR(vkDevice, *swapchain, ~0ull, *acquireSemaphore, VK_NULL_HANDLE, &currentBuffer));
+    VK_CHECK_WSI(
+        vk.acquireNextImageKHR(vkDevice, *swapchain, ~0ull, *acquireSemaphore, VK_NULL_HANDLE, &currentBuffer));
 
     recordCommands(context, *cmdBuffer, swapchainImages[currentBuffer]);
 

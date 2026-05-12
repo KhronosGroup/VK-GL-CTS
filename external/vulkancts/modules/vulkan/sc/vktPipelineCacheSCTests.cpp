@@ -321,14 +321,6 @@ tcu::TestStatus createPipelineCacheTest(Context &context, TestParams testParams)
     tcu::TestStatus testStatus = tcu::TestStatus::pass("Pass");
     Move<VkDevice> device;
     {
-        std::vector<const char *> enabledLayers;
-
-        if (deviceCreateInfo.enabledLayerCount == 0u && context.getTestContext().getCommandLine().isValidationEnabled())
-        {
-            enabledLayers                        = getValidationLayers(instanceDriver, physicalDevice);
-            deviceCreateInfo.enabledLayerCount   = static_cast<uint32_t>(enabledLayers.size());
-            deviceCreateInfo.ppEnabledLayerNames = (enabledLayers.empty() ? nullptr : enabledLayers.data());
-        }
         VkDevice object = VK_NULL_HANDLE;
         VkResult result = instanceDriver.createDevice(physicalDevice, &deviceCreateInfo, nullptr, &object);
         switch (testParams.type)

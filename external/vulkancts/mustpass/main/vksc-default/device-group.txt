@@ -4,3 +4,6 @@ dEQP-VKSC.device_group.afr_dedicated_peer
 dEQP-VKSC.device_group.afr_sys
 dEQP-VKSC.device_group.afr_tessellated
 dEQP-VKSC.device_group.afr_tessellated_linefill
+dEQP-VKSC.device_group.compute_alternate_dispatch
+dEQP-VKSC.device_group.compute_alternate_dispatch_dedicated
+dEQP-VKSC.device_group.compute_alternate_dispatch_peer

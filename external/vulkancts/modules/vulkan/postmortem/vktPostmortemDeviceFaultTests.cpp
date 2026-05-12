@@ -167,8 +167,8 @@ public:
             nullptr                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
         };
 
-        m_logicalDevice = createCustomDevice(useValidation, platformInterface, instance, instanceInterface,
-                                             physicalDevice, &deviceCreateInfo);
+        m_logicalDevice =
+            createCustomDevice(platformInterface, instance, instanceInterface, physicalDevice, &deviceCreateInfo);
     }
 
     VkDevice getDevice() const

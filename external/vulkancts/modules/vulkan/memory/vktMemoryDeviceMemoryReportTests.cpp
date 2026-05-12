@@ -162,10 +162,9 @@ struct Dependency
     }
 };
 
-static Move<VkDevice> createDeviceWithMemoryReport(bool isValidationEnabled, const PlatformInterface &vkp,
-                                                   VkInstance instance, const InstanceInterface &vki,
-                                                   VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex,
-                                                   const CallbackRecorder *recorder)
+static Move<VkDevice> createDeviceWithMemoryReport(const PlatformInterface &vkp, VkInstance instance,
+                                                   const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
+                                                   uint32_t queueFamilyIndex, const CallbackRecorder *recorder)
 {
     const uint32_t queueCount                                                      = 1;
     const float queuePriority                                                      = 1.0f;
@@ -206,7 +205,7 @@ static Move<VkDevice> createDeviceWithMemoryReport(bool isValidationEnabled, con
         &enabledFeatures.features,             // const VkPhysicalDeviceFeatures*        pEnabledFeatures
     };
 
-    return createCustomDevice(isValidationEnabled, vkp, instance, vki, physicalDevice, &deviceCreateInfo);
+    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceCreateInfo);
 }
 
 struct Device
@@ -229,8 +228,8 @@ struct Device
 
     static Move<VkDevice> create(const Environment &env, const Resources &, const Parameters &)
     {
-        return createDeviceWithMemoryReport(env.commandLine.isValidationEnabled(), env.vkp, env.instance, env.vki,
-                                            env.physicalDevice, env.queueFamilyIndex, env.recorder);
+        return createDeviceWithMemoryReport(env.vkp, env.instance, env.vki, env.physicalDevice, env.queueFamilyIndex,
+                                            env.recorder);
     }
 };
 
@@ -1772,9 +1771,8 @@ tcu::TestStatus vkDeviceMemoryAllocateAndFreeTest(Context &context)
     const InstanceInterface &vki          = context.getInstanceInterface();
     const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
     const uint32_t queueFamilyIndex       = context.getUniversalQueueFamilyIndex();
-    const bool isValidationEnabled        = context.getTestContext().getCommandLine().isValidationEnabled();
-    const Unique<VkDevice> device(createDeviceWithMemoryReport(isValidationEnabled, vkp, instance, vki, physicalDevice,
-                                                               queueFamilyIndex, &recorder));
+    const Unique<VkDevice> device(
+        createDeviceWithMemoryReport(vkp, instance, vki, physicalDevice, queueFamilyIndex, &recorder));
     const DeviceDriver vkd(vkp, instance, *device, context.getUsedApiVersion(),
                            context.getTestContext().getCommandLine());
     const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(vki, physicalDevice);
@@ -1904,10 +1902,9 @@ static std::vector<std::string> getInstanceExtensions(const uint32_t instanceVer
     return instanceExtensions;
 }
 
-static Move<VkDevice> createExternalMemoryDevice(bool isValidationEnabled, const PlatformInterface &vkp,
-                                                 VkInstance instance, const InstanceInterface &vki,
-                                                 VkPhysicalDevice physicalDevice, uint32_t apiVersion,
-                                                 uint32_t queueFamilyIndex,
+static Move<VkDevice> createExternalMemoryDevice(const PlatformInterface &vkp, VkInstance instance,
+                                                 const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
+                                                 uint32_t apiVersion, uint32_t queueFamilyIndex,
                                                  VkExternalMemoryHandleTypeFlagBits externalMemoryType,
                                                  const CallbackRecorder *recorder)
 {
@@ -1989,7 +1986,7 @@ static Move<VkDevice> createExternalMemoryDevice(bool isValidationEnabled, const
         nullptr,                              // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    return createCustomDevice(isValidationEnabled, vkp, instance, vki, physicalDevice, &deviceCreateInfo);
+    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceCreateInfo);
 }
 
 static void checkBufferSupport(const InstanceInterface &vki, VkPhysicalDevice device, VkBufferUsageFlags usage,
@@ -2027,9 +2024,9 @@ tcu::TestStatus testImportAndUnimportExternalMemory(Context &context,
     const InstanceDriver &vki(instance.getDriver());
     const VkPhysicalDevice physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
     const uint32_t queueFamilyIndex(context.getUniversalQueueFamilyIndex());
-    const Unique<VkDevice> device(createExternalMemoryDevice(
-        context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice,
-        context.getUsedApiVersion(), queueFamilyIndex, externalMemoryType, &recorder));
+    const Unique<VkDevice> device(createExternalMemoryDevice(vkp, instance, vki, physicalDevice,
+                                                             context.getUsedApiVersion(), queueFamilyIndex,
+                                                             externalMemoryType, &recorder));
     const DeviceDriver vkd(vkp, instance, *device, context.getUsedApiVersion(),
                            context.getTestContext().getCommandLine());
     const VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;

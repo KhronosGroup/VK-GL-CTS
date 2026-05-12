@@ -70,46 +70,55 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
     bool khrBufferDeviceAddress = false;
     bool excludeExtension       = false;
 
-    const char *extensionGroups[] = {"VK_KHR_",
-                                     "VK_EXT_",
-                                     "VK_KHX_",
-                                     "VK_NV_cooperative_matrix",
-                                     "VK_NV_ray_tracing",
-                                     "VK_NV_inherited_viewport_scissor",
-                                     "VK_NV_mesh_shader",
-                                     "VK_AMD_mixed_attachment_samples",
-                                     "VK_AMD_buffer_marker",
-                                     "VK_AMD_shader_explicit_vertex_parameter",
-                                     "VK_AMD_shader_image_load_store_lod",
-                                     "VK_AMD_shader_trinary_minmax",
-                                     "VK_AMD_texture_gather_bias_lod",
-                                     "VK_AMD_shader_early_and_late_fragment_tests",
-                                     "VK_ANDROID_external_memory_android_hardware_buffer",
-                                     "VK_ANDROID_external_format_resolve",
-                                     "VK_VALVE_mutable_descriptor_type",
-                                     "VK_NV_shader_subgroup_partitioned",
-                                     "VK_NV_clip_space_w_scaling",
-                                     "VK_NV_scissor_exclusive",
-                                     "VK_NV_shading_rate_image",
-                                     "VK_ARM_rasterization_order_attachment_access",
-                                     "VK_GOOGLE_surfaceless_query",
-                                     "VK_FUCHSIA_",
-                                     "VK_NV_fragment_coverage_to_color",
-                                     "VK_NV_framebuffer_mixed_samples",
-                                     "VK_NV_coverage_reduction_mode",
-                                     "VK_NV_viewport_swizzle",
-                                     "VK_NV_representative_fragment_test",
-                                     "VK_NV_device_generated_commands", // This filter also applies to _compute.
-                                     "VK_NV_shader_atomic_float16_vector",
-                                     "VK_MVK_macos_surface",
-                                     "VK_NV_raw_access_chains",
-                                     "VK_NV_linear_color_attachment",
-                                     "VK_NV_cooperative_matrix2",
-                                     "VK_NV_cooperative_vector",
-                                     "VK_NV_low_latency2",
-                                     "VK_QCOM_fragment_density_map_offset",
-                                     "VK_NV_command_buffer_inheritance",
-                                     "VK_NV_push_constant_bank"};
+    const char *extensionGroups[] = {
+        "VK_KHR_",
+        "VK_EXT_",
+        "VK_KHX_",
+        "VK_NV_cooperative_matrix",
+        "VK_NV_ray_tracing",
+        "VK_NV_inherited_viewport_scissor",
+        "VK_NV_mesh_shader",
+        "VK_AMD_mixed_attachment_samples",
+        "VK_AMD_buffer_marker",
+        "VK_AMD_shader_explicit_vertex_parameter",
+        "VK_AMD_shader_image_load_store_lod",
+        "VK_AMD_shader_trinary_minmax",
+        "VK_AMD_texture_gather_bias_lod",
+        "VK_AMD_shader_early_and_late_fragment_tests",
+        "VK_ANDROID_external_memory_android_hardware_buffer",
+        "VK_ANDROID_external_format_resolve",
+        "VK_VALVE_mutable_descriptor_type",
+        "VK_NV_shader_subgroup_partitioned",
+        "VK_NV_clip_space_w_scaling",
+        "VK_NV_scissor_exclusive",
+        "VK_NV_shading_rate_image",
+        "VK_ARM_data_graph",
+        "VK_ARM_rasterization_order_attachment_access",
+        "VK_ARM_tensors",
+        "VK_GOOGLE_surfaceless_query",
+        "VK_FUCHSIA_",
+        "VK_NV_fragment_coverage_to_color",
+        "VK_NV_framebuffer_mixed_samples",
+        "VK_NV_coverage_reduction_mode",
+        "VK_NV_viewport_swizzle",
+        "VK_NV_representative_fragment_test",
+        "VK_NV_device_generated_commands", // This filter also applies to _compute.
+        "VK_NV_shader_atomic_float16_vector",
+        "VK_MVK_macos_surface",
+        "VK_NV_raw_access_chains",
+        "VK_NV_linear_color_attachment",
+        "VK_NV_cooperative_matrix2",
+        "VK_NV_cooperative_vector",
+        "VK_NV_low_latency2",
+        "VK_QCOM_fragment_density_map_offset",
+        "VK_NV_command_buffer_inheritance",
+        "VK_NV_push_constant_bank",
+        "VK_QCOM_image_processing",
+        "VK_ARM_performance_counters_by_region",
+        "VK_IMG_format_pvrtc",
+        "VK_QCOM_multiview_per_view_viewports",
+        "VK_QCOM_multiview_per_view_render_areas",
+    };
 
     const char *exclusions[] = {"VK_EXT_device_address_binding_report", "VK_EXT_device_memory_report"};
 
@@ -330,10 +339,9 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
                                    de::SharedPtr<vk::ResourceInterface> resourceInterface)
 {
     VkDeviceQueueCreateInfo queueInfo[4];
-    VkDeviceCreateInfo deviceInfo;
-    vector<const char *> enabledLayers;
-    const float queuePriority = 1.0f;
-    uint32_t numQueues        = 1;
+    VkDeviceCreateInfo deviceInfo = initVulkanStructure();
+    const float queuePriority     = 1.0f;
+    uint32_t numQueues            = 1;
 
     deMemset(&queueInfo, 0, sizeof(queueInfo));
 
@@ -377,23 +385,12 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
         numQueues++;
     }
 
-    if (cmdLine.isValidationEnabled())
-    {
-        enabledLayers = vkt::getValidationLayers(vki, physicalDevice);
-        if (enabledLayers.empty())
-            TCU_THROW(NotSupportedError, "No validation layers found");
-    }
-
-    deMemset(&deviceInfo, 0, sizeof(deviceInfo));
     // VK_KHR_get_physical_device_properties2 is used if enabledFeatures.pNext != 0
-    deviceInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     deviceInfo.pNext                   = enabledFeatures.pNext ? &enabledFeatures : nullptr;
     deviceInfo.queueCreateInfoCount    = numQueues;
     deviceInfo.pQueueCreateInfos       = queueInfo;
     deviceInfo.enabledExtensionCount   = de::sizeU32(usedExtensions);
     deviceInfo.ppEnabledExtensionNames = de::dataOrNull(usedExtensions);
-    deviceInfo.enabledLayerCount       = de::sizeU32(enabledLayers);
-    deviceInfo.ppEnabledLayerNames     = de::dataOrNull(enabledLayers);
     deviceInfo.pEnabledFeatures        = enabledFeatures.pNext ? nullptr : &enabledFeatures.features;
 
 #ifdef CTS_USES_VULKANSC
@@ -464,6 +461,7 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
     }
 
 #else
+    DE_UNREF(cmdLine);
     DE_UNREF(resourceInterface);
 #endif // CTS_USES_VULKANSC
 

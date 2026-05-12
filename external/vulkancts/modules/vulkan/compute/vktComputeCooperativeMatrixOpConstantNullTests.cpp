@@ -163,6 +163,20 @@ class CoopMtxOpConstantNullInstance : public TestInstance
 public:
     struct Executor
     {
+        struct PushConstant
+        {
+            Matrices testMatrix;
+            Matrices matrixA, matrixB, matrixC, matrixR;
+            PushConstant(Matrices matrixToTest)
+                : testMatrix(matrixToTest)
+                , matrixA(Matrices::A)
+                , matrixB(Matrices::B)
+                , matrixC(Matrices::C)
+                , matrixR(Matrices::R)
+            {
+            }
+        };
+
         Executor(Context &context, const VkCooperativeMatrixPropertiesKHR &conf, const Params &params);
         void execute(Matrices targetMatrix);
         std::vector<float> getMatrix(Matrices m) const;
@@ -711,7 +725,8 @@ std::string genShaderCode(const VkCooperativeMatrixPropertiesKHR &conf)
     #extension GL_EXT_buffer_reference : require
 
     layout(local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
-    layout(push_constant) uniform PC { uint REQUESTED_MATRIX; };
+    layout(push_constant) uniform PC {
+        uint REQUESTED_MATRIX,MAT_A, MAT_B, MAT_C, MAT_R; };
     layout(constant_id = 1) const int M = 1;
     layout(constant_id = 2) const int K = 1;
     layout(constant_id = 3) const int N = 1;
@@ -728,26 +743,26 @@ std::string genShaderCode(const VkCooperativeMatrixPropertiesKHR &conf)
     coopmat<float16_t, gl_ScopeSubgroup, M, N, gl_MatrixUseAccumulator> R;
 
     void loadMatrix(out coopmat<float16_t, gl_ScopeSubgroup, M, K, gl_MatrixUseA> mtx) {
-        if (REQUESTED_MATRIX == 11)
+        if (REQUESTED_MATRIX == MAT_A)
             mtx = null;
         else
             coopMatLoad(mtx, a, 0, 2, gl_CooperativeMatrixLayoutRowMajor);
     }
     void loadMatrix(out coopmat<float16_t, gl_ScopeSubgroup, K, N, gl_MatrixUseB> mtx) {
-        if (REQUESTED_MATRIX == 12)
+        if (REQUESTED_MATRIX == MAT_B)
             mtx = null;
         else
             coopMatLoad(mtx, b, 0, 2, gl_CooperativeMatrixLayoutRowMajor);
     }
     void loadMatrix(out coopmat<float16_t, gl_ScopeSubgroup, M, N, gl_MatrixUseAccumulator> mtx) {
-        if (REQUESTED_MATRIX == 13)
+        if (REQUESTED_MATRIX == MAT_C)
             mtx = null
         else
             coopMatLoad(mtx, c, 0, 2, gl_CooperativeMatrixLayoutRowMajor);
     }
     coopmat<float16_t, gl_ScopeSubgroup, M, N, gl_MatrixUseAccumulator> genOutputMatrix() {
         coopmat<float16_t, gl_ScopeSubgroup, M, N, gl_MatrixUseAccumulator> res;
-        if (REQUESTED_MATRIX == 14)
+        if (REQUESTED_MATRIX == MAT_R)
             res = null;
         else
             res = coopMatMulAdd(A, B, C);
@@ -765,7 +780,7 @@ std::string genShaderCode(const VkCooperativeMatrixPropertiesKHR &conf)
 ; SPIR-V
 ; Version: 1.3
 ; Generator: Khronos Glslang Reference Front End; 11
-; Bound: 131
+; Bound: 150
 ; Schema: 0
                OpCapability Shader
 ${Capabilities}
@@ -783,252 +798,271 @@ ${Extensions}
                OpDecorate %M SpecId 1
                OpDecorate %K SpecId 2
                OpDecorate %N SpecId 3
-               OpDecorate %V SpecId 4
                OpDecorate %PC Block
                OpMemberDecorate %PC 0 Offset 0
-               ;
+               OpMemberDecorate %PC 1 Offset 4
+               OpMemberDecorate %PC 2 Offset 8
+               OpMemberDecorate %PC 3 Offset 12
+               OpMemberDecorate %PC 4 Offset 16
                OpDecorate %_runtimearr_adata ArrayStride ${AStride}
-               OpDecorate %AData Block
-               OpMemberDecorate %AData 0 Offset 0
-               OpDecorate %_ Binding 0
-               OpDecorate %_ DescriptorSet 0
-               ;
-               OpDecorate %_runtimearr_bdata ArrayStride ${BStride}
-               OpDecorate %BData Block
-               OpMemberDecorate %BData 0 Offset 0
-               OpDecorate %__0 Binding 1
+               OpDecorate %DataA Block
+               OpMemberDecorate %DataA 0 Offset 0
+               OpDecorate %__0 Binding 0
                OpDecorate %__0 DescriptorSet 0
-               ;
-               OpDecorate %_runtimearr_cdata ArrayStride ${CStride}
-               OpDecorate %CData Block
-               OpMemberDecorate %CData 0 Offset 0
-               OpDecorate %__1 Binding 2
+               OpDecorate %_runtimearr_bdata ArrayStride ${BStride}
+               OpDecorate %DataB Block
+               OpMemberDecorate %DataB 0 Offset 0
+               OpDecorate %__1 Binding 1
                OpDecorate %__1 DescriptorSet 0
-               ;
-               OpDecorate %_runtimearr_rdata ArrayStride ${RStride}
-               OpDecorate %RData Block
-               OpMemberDecorate %RData 0 Offset 0
-               OpDecorate %__2 Binding 3
+               OpDecorate %_runtimearr_cdata ArrayStride ${CStride}
+               OpDecorate %DataC Block
+               OpMemberDecorate %DataC 0 Offset 0
+               OpDecorate %__2 Binding 2
                OpDecorate %__2 DescriptorSet 0
-               ;
-               OpDecorate %128 SpecId 0
+               OpDecorate %_runtimearr_rdata ArrayStride ${RStride}
+               OpDecorate %DataR Block
+               OpMemberDecorate %DataR 0 Offset 0
+               OpDecorate %__3 Binding 3
+               OpDecorate %__3 DescriptorSet 0
+               OpDecorate %147 SpecId 0
                OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
 
                ; Types, variables and constants
        %void = OpTypeVoid
-       %bool = OpTypeBool
           %3 = OpTypeFunction %void
+       %bool = OpTypeBool
        %uint = OpTypeInt 32 0
-  %uint_vec2 = OpTypeVector %uint 2
-  %uint_vec4 = OpTypeVector %uint 4
         %int = OpTypeInt 32 1
-   %int_vec2 = OpTypeVector %int 2
-   %int_vec4 = OpTypeVector %int 4
-
-         ${TypeList}
-          %M = OpSpecConstant %int 1                ; SpecId 1
-          %K = OpSpecConstant %int 1                ; SpecId 2
-          %N = OpSpecConstant %int 1                ; SpecId 3
-          %V = OpSpecConstant %int 1                ; SpecId 4
+${TypeList}
      %uint_0 = OpConstant %uint 0
      %uint_1 = OpConstant %uint 1
      %uint_2 = OpConstant %uint 2
      %uint_3 = OpConstant %uint 3
-         %PC = OpTypeStruct %uint
-         %ptr_PC = OpTypePointer PushConstant %PC
-         %var_PC = OpVariable %ptr_PC PushConstant
-         %ptr_PC_uint = OpTypePointer PushConstant %uint
-         %matA_type = OpTypeCooperativeMatrixKHR ${AType} %uint_3 %M %K %uint_0
-         %matA_null = OpConstantNull %matA_type
-%ptr_fun_matA = OpTypePointer Function %matA_type
-         %15 = OpTypeFunction %void %ptr_fun_matA
-         %matB_type = OpTypeCooperativeMatrixKHR ${BType} %uint_3 %K %N %uint_1
-         %matB_null = OpConstantNull %matB_type
-%ptr_fun_matB = OpTypePointer Function %matB_type
-         %23 = OpTypeFunction %void %ptr_fun_matB
-         %matCR_type = OpTypeCooperativeMatrixKHR ${CRType} %uint_3 %M %N %uint_2
-         %matCR_null = OpConstantNull %matCR_type
-%ptr_fun_matCR = OpTypePointer Function %matCR_type
-         %30 = OpTypeFunction %void %ptr_fun_matCR
-         %34 = OpTypeFunction %matCR_type
-    %uint_11 = OpConstant %uint 11
-%_runtimearr_adata = OpTypeRuntimeArray ${AType}
-      %AData = OpTypeStruct %_runtimearr_adata       ; Block
-%ptr_sb_AData = OpTypePointer StorageBuffer %AData
-          %_ = OpVariable %ptr_sb_AData StorageBuffer   ; Binding 0, DescriptorSet 0
-      %int_0 = OpConstant %int 0
      %uint_5 = OpConstant %uint 5
-         %51 = OpSpecConstantOp %uint IAdd %K %uint_0
-         %55 = OpSpecConstantOp %uint IAdd %K %uint_0
-    %uint_12 = OpConstant %uint 12
-%_runtimearr_bdata = OpTypeRuntimeArray ${BType}
-      %BData = OpTypeStruct %_runtimearr_bdata     ; Block
-%ptr_sb_BData = OpTypePointer StorageBuffer %BData
-        %__0 = OpVariable %ptr_sb_BData StorageBuffer   ; Binding 1, DescriptorSet 0
-         %66 = OpSpecConstantOp %uint IAdd %N %uint_0
-         %70 = OpSpecConstantOp %uint IAdd %N %uint_0
-    %uint_13 = OpConstant %uint 13
-%_runtimearr_cdata = OpTypeRuntimeArray ${CRType}
-      %CData = OpTypeStruct %_runtimearr_cdata     ; Block
-%ptr_sb_CData = OpTypePointer StorageBuffer %CData
-        %__1 = OpVariable %ptr_sb_CData StorageBuffer   ; Binding 2, DescriptorSet 0
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+      %int_2 = OpConstant %int 2
+      %int_3 = OpConstant %int 3
+      %int_4 = OpConstant %int 4
+          %M = OpSpecConstant %int 1                ; SpecId 1
+          %K = OpSpecConstant %int 1                ; SpecId 2
+          %N = OpSpecConstant %int 1                ; SpecId 3
+
+  %matA_type = OpTypeCooperativeMatrixKHR ${AType} %uint_3 %M %K %uint_0
+  %matA_null = OpConstantNull %matA_type
+   %matA_ptr = OpTypePointer Function %matA_type
+%loadMatA_type = OpTypeFunction %void %matA_ptr
+
+  %matB_type = OpTypeCooperativeMatrixKHR ${BType} %uint_3 %K %N %uint_1
+  %matB_null = OpConstantNull %matB_type
+   %matB_ptr = OpTypePointer Function %matB_type
+%loadMatB_type = OpTypeFunction %void %matB_ptr
+
+ %matC_type = OpTypeCooperativeMatrixKHR ${CType} %uint_3 %M %N %uint_2
+ %matC_null = OpConstantNull %matC_type
+  %matC_ptr = OpTypePointer Function %matC_type
+%loadMatC_type = OpTypeFunction %void %matC_ptr
+
+; if (RType != CType) {
+;     %matR_type = OpTypeCooperativeMatrixKHR ${RType} %uint_3 %M %N %uint_2
+;     %matR_null = OpConstantNull %matR_type
+;     %matR_ptr = OpTypePointer Function %matR_type
+; }
+${matR_*}
+%genMatR_type = OpTypeFunction ${mat(C|R)_type}
+
+         %PC = OpTypeStruct %uint %uint %uint %uint %uint   ; Block
+%_ptr_PushConstant_PC = OpTypePointer PushConstant %PC
+          %_ = OpVariable %_ptr_PushConstant_PC PushConstant
+%_ptr_PushConstant_uint = OpTypePointer PushConstant %uint
+
+%_runtimearr_adata = OpTypeRuntimeArray ${AType}     ; ArrayStride ${AStride}
+      %DataA = OpTypeStruct %_runtimearr_adata       ; Block
+%_ptr_StorageBuffer_DataA = OpTypePointer StorageBuffer %DataA
+        %__0 = OpVariable %_ptr_StorageBuffer_DataA StorageBuffer   ; Binding 0, DescriptorSet 0
+         %58 = OpSpecConstantOp %uint IAdd %K %uint_0
+         %62 = OpSpecConstantOp %uint IAdd %K %uint_0
+
+%_runtimearr_bdata = OpTypeRuntimeArray ${BType}   ; ArrayStride ${BStride}
+      %DataB = OpTypeStruct %_runtimearr_bdata     ; Block
+%_ptr_StorageBuffer_DataB = OpTypePointer StorageBuffer %DataB
+        %__1 = OpVariable %_ptr_StorageBuffer_DataB StorageBuffer   ; Binding 1, DescriptorSet 0
+         %77 = OpSpecConstantOp %uint IAdd %N %uint_0
          %81 = OpSpecConstantOp %uint IAdd %N %uint_0
-         %85 = OpSpecConstantOp %uint IAdd %N %uint_0
-    %uint_14 = OpConstant %uint 14
-%_ptr_Private_13 = OpTypePointer Private %matA_type
-          %A = OpVariable %_ptr_Private_13 Private
-%_ptr_Private_21 = OpTypePointer Private %matB_type
-          %B = OpVariable %_ptr_Private_21 Private
-%_ptr_Private_28 = OpTypePointer Private %matCR_type
-          %C = OpVariable %_ptr_Private_28 Private
-          %D = OpVariable %_ptr_Private_28 Private
-%_runtimearr_rdata = OpTypeRuntimeArray ${CRType}
-      %RData = OpTypeStruct %_runtimearr_rdata     ; Block
-%ptr_sb_RData = OpTypePointer StorageBuffer %RData
-        %__2 = OpVariable %ptr_sb_RData StorageBuffer   ; Binding 3, DescriptorSet 0
-        %127 = OpSpecConstantOp %uint IAdd %N %uint_0
-        %128 = OpSpecConstant %uint 1               ; SpecId 0
+
+%_runtimearr_cdata = OpTypeRuntimeArray ${CType}  ; ArrayStride ${CStride}
+      %DataC = OpTypeStruct %_runtimearr_cdata     ; Block
+%_ptr_StorageBuffer_DataC = OpTypePointer StorageBuffer %DataC
+        %__2 = OpVariable %_ptr_StorageBuffer_DataC StorageBuffer   ; Binding 2, DescriptorSet 0
+         %96 = OpSpecConstantOp %uint IAdd %N %uint_0
+        %100 = OpSpecConstantOp %uint IAdd %N %uint_0
+
+%_ptr_StorageBuffer_AType = OpTypePointer StorageBuffer ${AType}
+%_ptr_StorageBuffer_BType = OpTypePointer StorageBuffer ${BType}
+%_ptr_StorageBuffer_CType = OpTypePointer StorageBuffer ${CType}
+%_ptr_StorageBuffer_RType = OpTypePointer StorageBuffer ${RType}
+
+%_ptr_Private_A = OpTypePointer Private %matA_type
+          %A = OpVariable %_ptr_Private_A Private
+%_ptr_Private_B = OpTypePointer Private %matB_type
+          %B = OpVariable %_ptr_Private_B Private
+%_ptr_Private_C = OpTypePointer Private %matC_type
+          %C = OpVariable %_ptr_Private_C Private
+%_ptr_Private_R = OpTypePointer Private ${mat(C|R)_type} ; (RType == CType) ? %matC_type : %matR_type
+          %R = OpVariable %_ptr_Private_R Private
+
+%_runtimearr_rdata = OpTypeRuntimeArray ${RType}  ; ArrayStride ${RStride}
+      %DataR = OpTypeStruct %_runtimearr_rdata     ; Block
+%_ptr_StorageBuffer_DataR = OpTypePointer StorageBuffer %DataR
+        %__3 = OpVariable %_ptr_StorageBuffer_DataR StorageBuffer   ; Binding 3, DescriptorSet 0
+        %146 = OpSpecConstantOp %uint IAdd %N %uint_0
+        %147 = OpSpecConstant %uint 1               ; SpecId 0
      %v3uint = OpTypeVector %uint 3
-%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %128 %uint_1 %uint_1    ; BuiltIn WorkgroupSize
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %147 %uint_1 %uint_1    ; BuiltIn WorkgroupSize
 
                ; Function main
        %main = OpFunction %void None %3
           %5 = OpLabel
-      %param = OpVariable %ptr_fun_matA Function
-    %param_0 = OpVariable %ptr_fun_matB Function
-    %param_1 = OpVariable %ptr_fun_matCR Function
-        %111 = OpFunctionCall %void %loadMatrix_A %param
-        %112 = OpLoad %matA_type %param
-               OpStore %A %112
-        %114 = OpFunctionCall %void %loadMatrix_B %param_0
-        %115 = OpLoad %matB_type %param_0
-               OpStore %B %115
-        %117 = OpFunctionCall %void %loadMatrix_C %param_1
-        %118 = OpLoad %matCR_type %param_1
-               OpStore %C %118
-        %120 = OpFunctionCall %matCR_type %genOutputMatrix_
-               OpStore %D %120
+    %param_0 = OpVariable %matA_ptr Function
+    %param_1 = OpVariable %matB_ptr Function
+    %param_2 = OpVariable %matC_ptr Function
+        %130 = OpFunctionCall %void %loadMatA_def %param_0
+        %131 = OpLoad %matA_type %param_0
+               OpStore %A %131
+        %133 = OpFunctionCall %void %loadMatB_def %param_1
+        %134 = OpLoad %matB_type %param_1
+               OpStore %B %134
+        %136 = OpFunctionCall %void %loadMatC_def %param_2
+        %137 = OpLoad %matC_type %param_2
+               OpStore %C %137
+        %139 = OpFunctionCall ${mat(C|R)_type} %genMatR_def
+               OpStore %R %139
 
-         %ld = OpLoad %matCR_type %D
-        %ddd = OpAccessChain ${CRTypePtr} %__2 %int_0 %uint_0
-               OpCooperativeMatrixStoreKHR %ddd %ld %int_0 %127 MakePointerAvailable|NonPrivatePointer %uint_5
+       %matR = OpLoad ${mat(C|R)_type} %R
+     %p_sb_R = OpAccessChain %_ptr_StorageBuffer_RType %__3 %int_0 %uint_0
+               OpCooperativeMatrixStoreKHR %p_sb_R %matR %int_0 %146 MakePointerAvailable|NonPrivatePointer %uint_5
 
-         %lc = OpLoad %matCR_type %C
-        %ccc = OpAccessChain ${CRTypePtr} %__1 %int_0 %uint_0
-               OpCooperativeMatrixStoreKHR %ccc %lc %int_0 %85 MakePointerAvailable|NonPrivatePointer %uint_5
+       %matC = OpLoad %matC_type %C
+     %p_sb_C = OpAccessChain %_ptr_StorageBuffer_CType %__2 %int_0 %uint_0
+               OpCooperativeMatrixStoreKHR %p_sb_C %matC %int_0 %100 MakePointerAvailable|NonPrivatePointer %uint_5
 
-         %lb = OpLoad %matB_type %B
-        %bbb = OpAccessChain ${BTypePtr} %__0 %int_0 %uint_0
-               OpCooperativeMatrixStoreKHR %bbb %lb %int_0 %70 MakePointerAvailable|NonPrivatePointer %uint_5
+       %matB = OpLoad %matB_type %B
+     %p_sb_B = OpAccessChain %_ptr_StorageBuffer_BType %__1 %int_0 %uint_0
+               OpCooperativeMatrixStoreKHR %p_sb_B %matB %int_0 %81 MakePointerAvailable|NonPrivatePointer %uint_5
 
-         %la = OpLoad %matA_type %A
-        %aaa = OpAccessChain ${ATypePtr} %_ %int_0 %uint_0
-               OpCooperativeMatrixStoreKHR %aaa %la %int_0 %55 MakePointerAvailable|NonPrivatePointer %uint_5
+       %matA = OpLoad %matA_type %A
+     %p_sb_A = OpAccessChain %_ptr_StorageBuffer_AType %__0 %int_0 %uint_0
+               OpCooperativeMatrixStoreKHR %p_sb_A %matA %int_0 %62 MakePointerAvailable|NonPrivatePointer %uint_5
 
                OpReturn
                OpFunctionEnd
 
-               ; Function loadMatrix_A
-%loadMatrix_A = OpFunction %void None %15
-        %mtx = OpFunctionParameter %ptr_fun_matA
+               ; Function loadMatA
+%loadMatA_def = OpFunction %void None %loadMatA_type
+       %mtxA = OpFunctionParameter %matA_ptr
          %18 = OpLabel
-     %p_PC_A = OpAccessChain %ptr_PC_uint %var_PC %int_0
-     %v_PC_A = OpLoad %uint %p_PC_A
-         %40 = OpIEqual %bool %v_PC_A %uint_11
-               OpSelectionMerge %42 None
-               OpBranchConditional %40 %41 %53
-         %41 = OpLabel
-               OpStore %mtx %matA_null
-               OpBranch %42
-         %53 = OpLabel
-         %54 = OpAccessChain ${ATypePtr} %_ %int_0 %uint_0
-         %56 = OpCooperativeMatrixLoadKHR %matA_type %54 %int_0 %55 MakePointerVisible|NonPrivatePointer %uint_5
-               OpStore %mtx %56
-               OpBranch %42
-         %42 = OpLabel
-               OpReturn
-               OpFunctionEnd
-
-               ; Function loadMatrix_B
-%loadMatrix_B = OpFunction %void None %23
-      %mtx_0 = OpFunctionParameter %ptr_fun_matB
-         %26 = OpLabel
-     %p_PC_B = OpAccessChain %ptr_PC_uint %var_PC %int_0
-     %v_PC_B = OpLoad %uint %p_PC_B
-         %58 = OpIEqual %bool %v_PC_B %uint_12
-               OpSelectionMerge %60 None
-               OpBranchConditional %58 %59 %68
-         %59 = OpLabel
-               OpStore %mtx_0 %matB_null
-               OpBranch %60
-         %68 = OpLabel
-         %69 = OpAccessChain ${BTypePtr} %__0 %int_0 %uint_0
-         %71 = OpCooperativeMatrixLoadKHR %matB_type %69 %int_0 %70 MakePointerVisible|NonPrivatePointer %uint_5
-               OpStore %mtx_0 %71
-               OpBranch %60
+         %42 = OpAccessChain %_ptr_PushConstant_uint %_ %int_0
+         %43 = OpLoad %uint %42
+         %45 = OpAccessChain %_ptr_PushConstant_uint %_ %int_1
+         %46 = OpLoad %uint %45
+         %48 = OpIEqual %bool %43 %46
+               OpSelectionMerge %50 None
+               OpBranchConditional %48 %49 %60
+         %49 = OpLabel
+               OpStore %mtxA %matA_null ; %59
+               OpBranch %50
          %60 = OpLabel
+         %61 = OpAccessChain %_ptr_StorageBuffer_AType %__0 %int_0 %uint_0
+         %63 = OpCooperativeMatrixLoadKHR %matA_type %61 %int_0 %62 MakePointerVisible|NonPrivatePointer %uint_5
+               OpStore %mtxA %63
+               OpBranch %50
+         %50 = OpLabel
                OpReturn
                OpFunctionEnd
 
-               ; Function loadMatrix_C
-%loadMatrix_C = OpFunction %void None %30
-      %mtx_1 = OpFunctionParameter %ptr_fun_matCR
+               ; Function loadMatB
+%loadMatB_def = OpFunction %void None %loadMatB_type
+       %mtxB = OpFunctionParameter %matB_ptr
+         %26 = OpLabel
+         %64 = OpAccessChain %_ptr_PushConstant_uint %_ %int_0
+         %65 = OpLoad %uint %64
+         %67 = OpAccessChain %_ptr_PushConstant_uint %_ %int_2
+         %68 = OpLoad %uint %67
+         %69 = OpIEqual %bool %65 %68
+               OpSelectionMerge %71 None
+               OpBranchConditional %69 %70 %79
+         %70 = OpLabel
+               OpStore %mtxB %matB_null ; %78
+               OpBranch %71
+         %79 = OpLabel
+         %80 = OpAccessChain %_ptr_StorageBuffer_BType %__1 %int_0 %uint_0
+         %82 = OpCooperativeMatrixLoadKHR %matB_type %80 %int_0 %81 MakePointerVisible|NonPrivatePointer %uint_5
+               OpStore %mtxB %82
+               OpBranch %71
+         %71 = OpLabel
+               OpReturn
+               OpFunctionEnd
+
+               ; Function loadMatC
+%loadMatC_def = OpFunction %void None %loadMatC_type
+       %mtxC = OpFunctionParameter %matC_ptr
          %33 = OpLabel
-     %p_PC_C = OpAccessChain %ptr_PC_uint %var_PC %int_0
-     %v_PC_C = OpLoad %uint %p_PC_C
-         %73 = OpIEqual %bool %v_PC_C %uint_13
-               OpSelectionMerge %75 None
-               OpBranchConditional %73 %74 %83
-         %74 = OpLabel
-               OpStore %mtx_1 %matCR_null
-               OpBranch %75
-         %83 = OpLabel
-         %84 = OpAccessChain ${CRTypePtr} %__1 %int_0 %uint_0
-         %86 = OpCooperativeMatrixLoadKHR %matCR_type %84 %int_0 %85 MakePointerVisible|NonPrivatePointer %uint_5
-               OpStore %mtx_1 %86
-               OpBranch %75
-         %75 = OpLabel
-               OpReturn
-               OpFunctionEnd
-
-               ; Function genOutputMatrix_
-%genOutputMatrix_ = OpFunction %matCR_type None %34
-         %36 = OpLabel
-        %res = OpVariable %ptr_fun_matCR Function
-     %p_PC_R = OpAccessChain %ptr_PC_uint %var_PC %int_0
-     %v_PC_R = OpLoad %uint %p_PC_R
-         %88 = OpIEqual %bool %v_PC_R %uint_14
+         %83 = OpAccessChain %_ptr_PushConstant_uint %_ %int_0
+         %84 = OpLoad %uint %83
+         %86 = OpAccessChain %_ptr_PushConstant_uint %_ %int_3
+         %87 = OpLoad %uint %86
+         %88 = OpIEqual %bool %84 %87
                OpSelectionMerge %90 None
-               OpBranchConditional %88 %89 %102
+               OpBranchConditional %88 %89 %98
          %89 = OpLabel
-               OpStore %res %matCR_null
+               OpStore %mtxC %matC_null ; %97
                OpBranch %90
-        %102 = OpLabel
-        %103 = OpLoad %matA_type %A
-        %104 = OpLoad %matB_type %B
-        %105 = OpLoad %matCR_type %C
-        %106 = OpCooperativeMatrixMulAddKHR %matCR_type %103 %104 %105 ${Operands}
-               OpStore %res %106
+         %98 = OpLabel
+         %99 = OpAccessChain %_ptr_StorageBuffer_CType %__2 %int_0 %uint_0
+        %101 = OpCooperativeMatrixLoadKHR %matC_type %99 %int_0 %100 MakePointerVisible|NonPrivatePointer %uint_5
+               OpStore %mtxC %101
                OpBranch %90
          %90 = OpLabel
-        %107 = OpLoad %matCR_type %res
-               OpReturnValue %107
+               OpReturn
+               OpFunctionEnd
+
+               ; Function genMatR
+%genMatR_def = OpFunction ${mat(C|R)_type} None %genMatR_type
+         %36 = OpLabel
+       %mtxR = OpVariable ${mat(C|R)_ptr} Function
+        %102 = OpAccessChain %_ptr_PushConstant_uint %_ %int_0
+        %103 = OpLoad %uint %102
+        %105 = OpAccessChain %_ptr_PushConstant_uint %_ %int_4
+        %106 = OpLoad %uint %105
+        %107 = OpIEqual %bool %103 %106
+               OpSelectionMerge %109 None
+               OpBranchConditional %107 %108 %121
+        %108 = OpLabel
+               OpStore %mtxR ${mat(C|R)_null} ; %120
+               OpBranch %109
+        %121 = OpLabel
+        %122 = OpLoad %matA_type %A
+        %123 = OpLoad %matB_type %B
+        %124 = OpLoad %matC_type %C
+        %125 = OpCooperativeMatrixMulAddKHR ${mat(C|R)_type} %122 %123 %124 ${Operands}
+               OpStore %mtxR %125
+               OpBranch %109
+        %109 = OpLabel
+        %126 = OpLoad ${mat(C|R)_type} %mtxR
+               OpReturnValue %126
                OpFunctionEnd
     )spirv");
 
-    std::string AType, ATypePtr, ATypePtrDef;
-    std::string BType, BTypePtr, BTypePtrDef;
-    std::string CRType, CRTypePtr, CRTypePtrDef;
+    std::string AType, BType, CType, RType;
     std::set<std::string> capabilityList;
     std::set<std::string> extensionList;
 
-    ATypePtr  = "%ptr_sb_A";
-    BTypePtr  = "%ptr_sb_B";
-    CRTypePtr = "%ptr_sb_CR";
+    const VkComponentTypeKHR matList[]{conf.AType, conf.BType, conf.CType, conf.ResultType};
+    constexpr auto matListLen = DE_LENGTH_OF_ARRAY(matList);
 
     std::ostringstream typeList;
     std::vector<VkComponentTypeKHR> types{VK_COMPONENT_TYPE_UINT32_KHR, VK_COMPONENT_TYPE_SINT32_KHR};
-    for (const VkComponentTypeKHR matType : {conf.AType, conf.BType, conf.CType, conf.ResultType})
+    for (const VkComponentTypeKHR matType : matList)
     {
         if (auto typePtr = std::find(types.begin(), types.end(), matType); typePtr == types.end())
         {
@@ -1047,16 +1081,12 @@ ${Extensions}
         }
     }
 
-    const VkComponentTypeKHR matList[]{conf.AType, conf.BType, conf.CType};
-    std::string *matTypes[]{&AType, &BType, &CRType};
-    std::string *const matStorages[]{&ATypePtr, &BTypePtr, &CRTypePtr};
-
-    for (uint32_t i = 0u; i < 3u; ++i)
+    std::string *matTypes[matListLen]{&AType, &BType, &CType, &RType};
+    for (uint32_t i = 0u; i < matListLen; ++i)
     {
         const Value v(matList[i]);
         const auto [typeName, typeDef] = v.getSpirvNames();
         matTypes[i]->assign(typeName);
-        typeList << *matStorages[i] << " = OpTypePointer StorageBuffer " << typeName << " ; generated" << std::endl;
     }
 
     std::ostringstream capabilities;
@@ -1083,20 +1113,28 @@ ${Extensions}
         }
     }
 
-    const std::map<std::string, std::string> variables{{"TypeList", typeList.str()},
-                                                       {"AStride", std::to_string(Value(conf.AType).size())},
-                                                       {"BStride", std::to_string(Value(conf.BType).size())},
-                                                       {"CStride", std::to_string(Value(conf.CType).size())},
-                                                       {"RStride", std::to_string(Value(conf.ResultType).size())},
-                                                       {"AType", AType},
-                                                       {"BType", BType},
-                                                       {"CRType", CRType},
-                                                       {"ATypePtr", ATypePtr},
-                                                       {"BTypePtr", BTypePtr},
-                                                       {"CRTypePtr", CRTypePtr},
-                                                       {"Capabilities", capabilities.str()},
-                                                       {"Extensions", extensions.str()},
-                                                       {"Operands", operands.str()}};
+    const std::string matR_defs = "%matR_type = OpTypeCooperativeMatrixKHR " + RType +
+                                  " %uint_3 %M %N %uint_2\n"
+                                  "%matR_null = OpConstantNull %matR_type\n"
+                                  "%matR_ptr = OpTypePointer Function %matR_type\n";
+
+    const std::map<std::string, std::string> variables{
+        {"TypeList", typeList.str()},
+        {"AStride", std::to_string(Value(conf.AType).size())},
+        {"BStride", std::to_string(Value(conf.BType).size())},
+        {"CStride", std::to_string(Value(conf.CType).size())},
+        {"RStride", std::to_string(Value(conf.ResultType).size())},
+        {"AType", AType},
+        {"BType", BType},
+        {"CType", CType},
+        {"RType", RType},
+        {"matR_*", (conf.ResultType == conf.CType) ? std::string() : matR_defs},
+        {"mat(C|R)_type", (conf.ResultType == conf.CType) ? "%matC_type" : "%matR_type"},
+        {"mat(C|R)_null", (conf.ResultType == conf.CType) ? "%matC_null" : "%matR_null"},
+        {"mat(C|R)_ptr", (conf.ResultType == conf.CType) ? "%matC_ptr" : "%matR_ptr"},
+        {"Capabilities", capabilities.str()},
+        {"Extensions", extensions.str()},
+        {"Operands", operands.str()}};
 
     return code.specialize(variables);
 }
@@ -1218,50 +1256,51 @@ auto computePossibleConfigurationsStatic() -> CoopMtxOpConstantNullCase::Confs
 
     for (auto AType : PossibleTypes)
         for (auto BType : PossibleTypes)
-            for (auto CRType : PossibleTypes)
-                for (auto MSize : PossibleSizes)
-                    for (auto NSize : PossibleSizes)
-                        for (auto KSize : PossibleSizes)
-                        {
-                            // RULE 1: A/B must be valid operand types
-                            if (!isValidOperand(AType) || !isValidOperand(BType))
-                                continue;
-
-                            // RULE 2: A/B must be both float or both int
-                            if (isFloatType(AType) != isFloatType(BType))
-                                continue;
-
-                            // RULE 3: CType must be compatible with A/B
-                            if (isFloatType(AType))
+            for (auto CType : PossibleTypes)
+                for (auto RType : PossibleTypes)
+                    for (auto MSize : PossibleSizes)
+                        for (auto NSize : PossibleSizes)
+                            for (auto KSize : PossibleSizes)
                             {
-                                // float accumulation must be float
-                                if (!isFloatType(CRType))
+                                // RULE 1: A/B must be valid operand types
+                                if (!isValidOperand(AType) || !isValidOperand(BType))
                                     continue;
-                            }
-                            else
-                            {
-                                // int accumulation must be int
-                                if (!isIntType(CRType))
+
+                                // RULE 2: A/B must be both float or both int
+                                if (isFloatType(AType) != isFloatType(BType))
                                     continue;
+
+                                // RULE 3: CType must be compatible with A/B
+                                if (isFloatType(AType))
+                                {
+                                    // float accumulation must be float
+                                    if (!isFloatType(CType))
+                                        continue;
+                                }
+                                else
+                                {
+                                    // int accumulation must be int
+                                    if (!isIntType(CType))
+                                        continue;
+                                }
+
+                                // RULE 4: sizes must be multiples of 4
+                                if ((MSize % 4) || (NSize % 4) || (KSize % 4))
+                                    continue;
+
+                                VkCooperativeMatrixPropertiesKHR p{};
+                                p.sType      = VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR;
+                                p.AType      = AType;
+                                p.BType      = BType;
+                                p.CType      = CType;
+                                p.ResultType = RType;
+                                p.MSize      = MSize;
+                                p.NSize      = NSize;
+                                p.KSize      = KSize;
+                                p.scope      = VK_SCOPE_SUBGROUP_KHR; // default
+
+                                confs.push_back(p);
                             }
-
-                            // RULE 4: sizes must be multiples of 4
-                            if ((MSize % 4) || (NSize % 4) || (KSize % 4))
-                                continue;
-
-                            VkCooperativeMatrixPropertiesKHR p{};
-                            p.sType      = VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR;
-                            p.AType      = AType;
-                            p.BType      = BType;
-                            p.CType      = CRType;
-                            p.ResultType = CRType;
-                            p.MSize      = MSize;
-                            p.NSize      = NSize;
-                            p.KSize      = KSize;
-                            p.scope      = VK_SCOPE_SUBGROUP_KHR; // default
-
-                            confs.push_back(p);
-                        }
     return confs;
 }
 
@@ -1462,15 +1501,13 @@ CoopMtxOpConstantNullInstance::Executor::Executor(Context &context, const VkCoop
     {
         const uint32_t subgroupSize = context.getSubgroupProperties().subgroupSize;
 
-        const uint32_t specData[5]{subgroupSize, conf.MSize, conf.KSize, conf.NSize,
-                                   std::numeric_limits<uint32_t>::max()};
+        const uint32_t specData[4]{subgroupSize, conf.MSize, conf.KSize, conf.NSize};
 
         const VkSpecializationMapEntry entries[DE_LENGTH_OF_ARRAY(specData)]{
             {0u, uint32_t(sizeof(uint32_t)) * 0u, size_t(sizeof(uint32_t))},
             {1u, uint32_t(sizeof(uint32_t)) * 1u, size_t(sizeof(uint32_t))},
             {2u, uint32_t(sizeof(uint32_t)) * 2u, size_t(sizeof(uint32_t))},
             {3u, uint32_t(sizeof(uint32_t)) * 3u, size_t(sizeof(uint32_t))},
-            {4u, uint32_t(sizeof(uint32_t)) * 4u, size_t(sizeof(uint32_t))},
         };
 
         const VkSpecializationInfo specInfo{
@@ -1481,9 +1518,9 @@ CoopMtxOpConstantNullInstance::Executor::Executor(Context &context, const VkCoop
         };
 
         const VkPushConstantRange pushRange{
-            VK_SHADER_STAGE_COMPUTE_BIT, // stageFlags
-            0u,                          // offset
-            uint32_t(sizeof(uint32_t))   // size
+            VK_SHADER_STAGE_COMPUTE_BIT,   // stageFlags
+            0u,                            // offset
+            uint32_t(sizeof(PushConstant)) // size
         };
 
         m_pipeline = de::MovePtr<ComputePipelineWrapper>(new ComputePipelineWrapper(
@@ -1548,11 +1585,13 @@ void CoopMtxOpConstantNullInstance::Executor::execute(Matrices targetMatrix)
         populate(m_configuration.ResultType, count, *m_bufferR, nullptr);
     }
 
+    PushConstant pushConstant(targetMatrix);
+
     beginCommandBuffer(di, *m_commandBuffer, 0u);
     di.cmdBindDescriptorSets(*m_commandBuffer, bindPoint, m_pipeline->getPipelineLayout(), //
                              0u, 1u, &*m_descriptorSet, 0u, nullptr);
     di.cmdPushConstants(*m_commandBuffer, m_pipeline->getPipelineLayout(), //
-                        stage, 0, uint32_t(sizeof(targetMatrix)), &targetMatrix);
+                        stage, 0, uint32_t(sizeof(pushConstant)), &pushConstant);
     m_pipeline->bind(*m_commandBuffer);
     di.cmdDispatch(*m_commandBuffer, 3u, 1u, 1u);
     endCommandBuffer(di, *m_commandBuffer);
@@ -1643,20 +1682,7 @@ bool CoopMtxOpConstantNullInstance::verifyResult(const Executor &executor, Matri
         }
     };
 
-    if (Matrices::All == targetMatrix)
-    {
-        if (isNullMatrix(A) || isNullMatrix(B) || isNullMatrix(C))
-        {
-            mismatch     = std::numeric_limits<uint32_t>::max();
-            errorMessage = "Neither matrices A,B nor C might be null";
-        }
-        else
-        {
-            const std::vector<float> ref = addMatrices(mulMatrices(A, B, conf.MSize, conf.NSize), C);
-            cmp(ref, R);
-        }
-    }
-    else if (Matrices::A == targetMatrix || Matrices::B == targetMatrix)
+    if (Matrices::A == targetMatrix || Matrices::B == targetMatrix)
     {
         if (Matrices::A == targetMatrix)
         {
@@ -1710,9 +1736,19 @@ bool CoopMtxOpConstantNullInstance::verifyResult(const Executor &executor, Matri
             errorMessage = "Matrix R must be null";
         }
     }
-    else
+    else // (Matrices::All == targetMatrix)
     {
         DE_ASSERT(false);
+        if (isNullMatrix(A) || isNullMatrix(B) || isNullMatrix(C))
+        {
+            mismatch     = std::numeric_limits<uint32_t>::max();
+            errorMessage = "Neither matrices A,B nor C might be null";
+        }
+        else
+        {
+            const std::vector<float> ref = addMatrices(mulMatrices(A, B, conf.MSize, conf.NSize), C);
+            cmp(ref, R);
+        }
     }
 
     if (0u != mismatch && std::numeric_limits<uint32_t>::max() != mismatch)
@@ -1745,8 +1781,8 @@ tcu::TestStatus CoopMtxOpConstantNullInstance::iterate()
     std::string errorMessage;
     Executor executor(m_context, configuration, m_params);
 
-    executor.execute(Matrices::All);
-    bool all_ok = verifyResult(executor, Matrices::All, errorMessage);
+    executor.execute(m_params.matrix);
+    bool all_ok = verifyResult(executor, m_params.matrix, errorMessage);
     if (all_ok)
     {
         log << tcu::TestLog::Message << "Configuration " << m_iteration << " - normal multiplication: PASS"

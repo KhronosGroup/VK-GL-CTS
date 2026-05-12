@@ -31,18 +31,13 @@
 
 #include "vkPrograms.hpp"
 #include "vktTestCase.hpp"
-#include "vktTestGroupUtil.hpp"
-#include "vkTypeUtil.hpp"
-#include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
 
 #include "vktProtectedMemContext.hpp"
 #include "vktProtectedMemUtils.hpp"
 #include "vktProtectedMemBufferValidator.hpp"
 
-namespace vkt
-{
-namespace ProtectedMem
+namespace vkt::ProtectedMem
 {
 
 namespace
@@ -108,9 +103,10 @@ public:
     }
     virtual void checkSupport(Context &context) const
     {
-        checkProtectedQueueSupport(context);
+        checkProtectedContextSupport(context);
         if (m_useDeviceAddressCommands)
             context.requireDeviceFunctionality("VK_KHR_device_address_commands");
+
 #ifdef CTS_USES_VULKANSC
         if (m_cmdBufferType == CMD_BUFFER_SECONDARY &&
             context.getDeviceVulkanSC10Properties().secondaryCommandBufferNullOrImagelessFramebuffer == VK_FALSE)
@@ -652,5 +648,4 @@ tcu::TestCaseGroup *createCopyBufferTests(tcu::TestContext &testCtx)
     return copyTests.release();
 }
 
-} // namespace ProtectedMem
-} // namespace vkt
+} // namespace vkt::ProtectedMem

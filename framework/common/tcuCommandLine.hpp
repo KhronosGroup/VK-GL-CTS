@@ -150,6 +150,7 @@ private:
 
     CaseTreeNode *m_caseTree;
     de::MovePtr<const CasePaths> m_casePaths;
+    de::MovePtr<const CasePaths> m_excludePaths;
     std::vector<int> m_caseFraction;
     de::MovePtr<const CasePaths> m_caseFractionMandatoryTests;
     tcu::TestRunnerType m_runnerType;

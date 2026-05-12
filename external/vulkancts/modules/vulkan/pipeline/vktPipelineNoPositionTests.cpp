@@ -591,8 +591,7 @@ void NoPositionInstance::createDeviceGroup(void)
         nullptr,                              // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_logicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                         m_context.getPlatformInterface(), m_deviceGroupInstance, instance,
+    m_logicalDevice = createCustomDevice(m_context.getPlatformInterface(), m_deviceGroupInstance, instance,
                                          deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceCreateInfo);
 
 #ifndef CTS_USES_VULKANSC

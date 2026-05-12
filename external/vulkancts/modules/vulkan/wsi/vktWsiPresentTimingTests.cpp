@@ -196,8 +196,7 @@ vk::VkPhysicalDeviceFeatures getDeviceNullFeatures(void)
 Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkInstance instance,
                                        const InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
                                        const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
-                                       PresentAtMode presentAtMethod, bool validationEnabled,
-                                       bool requireFifoLatestReady,
+                                       PresentAtMode presentAtMethod, bool requireFifoLatestReady,
                                        const vk::VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[]                  = {1.0f};
@@ -262,7 +261,7 @@ Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkI
         nullptr,
     };
 
-    return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 vk::VkPresentTimingSurfaceCapabilitiesEXT getSurfacePresentTimingCapabilities(
@@ -460,8 +459,7 @@ struct DeviceHelper
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
         , device(createDeviceWithWsi(context.getPlatformInterface(), instance, vki, physicalDevice,
                                      enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr), queueFamilyIndex,
-                                     presentAtMethod, context.getTestContext().getCommandLine().isValidationEnabled(),
-                                     requireFifoLatestReady, pAllocator))
+                                     presentAtMethod, requireFifoLatestReady, pAllocator))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
@@ -1522,7 +1520,6 @@ tcu::TestStatus timingTestWithBackgroundQueryThreads(Context &context, Type wsiT
             de::ScopedLock lock(sharedState.m_swapchainMutex);
             VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, **renderSemaphores[frame.imageIndex], *swapchain,
                                                frame.imageIndex, timingInfo, currentPresentId));
-            sharedState.m_swapchainMutex.unlock();
 
             currentPresentId += presentIdStep;
         }
@@ -2138,6 +2135,7 @@ tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfi
         (config.timeDomain == VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT) ?
             kAllPresentStages :
             static_cast<VkPresentStageFlagsEXT>(VK_PRESENT_STAGE_QUEUE_OPERATIONS_END_BIT_EXT);
+    const VkPresentStageFlagsEXT verifyPresentStages = calibrationStageQueryMask;
     std::vector<VkSwapchainCalibratedTimestampInfoEXT> swapchainCalibratedTimesInfos{};
     do
     {
@@ -2196,7 +2194,7 @@ tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfi
     for (uint32_t i = 0; i < frameCount; i++)
     {
         // Check that each presented timestamp falls between the before/after calibrated timestamp
-        VkPresentStageFlagsEXT presentStages = kAllPresentStages;
+        VkPresentStageFlagsEXT presentStages = verifyPresentStages;
         do
         {
             const VkPresentStageFlagsEXT presentStage = presentStages & -static_cast<int32_t>(presentStages);

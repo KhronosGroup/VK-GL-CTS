@@ -341,8 +341,7 @@ MovePtr<MultiQueues> createQueues(Context &context, const VkQueueFlags &queueFla
     deviceInfo.queueCreateInfoCount    = static_cast<uint32_t>(queues.countQueueFamilyIndex());
     deviceInfo.pQueueCreateInfos       = &queueInfos[0];
 
-    queues.setDevice(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                                        context.getPlatformInterface(), instance, vki, physicalDevice, &deviceInfo),
+    queues.setDevice(createCustomDevice(context.getPlatformInterface(), instance, vki, physicalDevice, &deviceInfo),
                      instance, context);
     vk::DeviceInterface &vk = queues.getDeviceInterface();
 

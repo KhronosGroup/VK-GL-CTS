@@ -627,8 +627,18 @@ public:
                         VkDescriptorSetLayout extraResourcesLayout);
     virtual ~FragmentOutExecutor(void);
 
+    void executeCommon(int numValues, const void *const *inputs, void *const *outputs, DescriptorData descriptorData);
     virtual void execute(int numValues, const void *const *inputs, void *const *outputs,
                          VkDescriptorSet extraResources);
+
+#ifndef CTS_USES_VULKANSC
+    virtual void executeBuffer(int numValues, const void *const *inputs, void *const *outputs,
+                               std::vector<DescriptorData::BufferDescriptor> bufferDescriptors);
+    virtual void executeHeap(int numValues, const void *const *inputs, void *const *outputs,
+                             std::vector<vk::VkDescriptorSetAndBindingMappingEXT> mappings,
+                             std::vector<DescriptorData::ResourceDescriptor> resourceDescriptors,
+                             std::vector<DescriptorData::SamplerDescriptor> samplerDescriptors);
+#endif
 
 protected:
     const glu::ShaderType m_shaderType;
@@ -922,10 +932,11 @@ void FragmentOutExecutor::clearRenderData(void)
     m_vertexBufferAllocs.clear();
 }
 
-static Move<VkDescriptorSetLayout> createEmptyDescriptorSetLayout(const DeviceInterface &vkd, VkDevice device)
+static Move<VkDescriptorSetLayout> createEmptyDescriptorSetLayout(const DeviceInterface &vkd, VkDevice device,
+                                                                  VkDescriptorSetLayoutCreateFlags setLayoutFlags = 0)
 {
     const VkDescriptorSetLayoutCreateInfo createInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr, (VkDescriptorSetLayoutCreateFlags)0, 0u, nullptr,
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr, setLayoutFlags, 0u, nullptr,
     };
     return createDescriptorSetLayout(vkd, device, &createInfo);
 }
@@ -955,8 +966,8 @@ static Move<VkDescriptorSet> allocateSingleDescriptorSet(const DeviceInterface &
     return allocateDescriptorSet(vkd, device, &allocInfo);
 }
 
-void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void *const *outputs,
-                                  VkDescriptorSet extraResources)
+void FragmentOutExecutor::executeCommon(int numValues, const void *const *inputs, void *const *outputs,
+                                        DescriptorData descriptorData)
 {
     const VkDevice vkDevice         = m_context.getDevice();
     const DeviceInterface &vk       = m_context.getDeviceInterface();
@@ -995,10 +1006,137 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
     Move<VkCommandPool> cmdPool;
     Move<VkCommandBuffer> cmdBuffer;
 
-    Unique<VkDescriptorSetLayout> emptyDescriptorSetLayout(createEmptyDescriptorSetLayout(vk, vkDevice));
-    Unique<VkDescriptorPool> emptyDescriptorPool(createEmptyDescriptorPool(vk, vkDevice));
-    Unique<VkDescriptorSet> emptyDescriptorSet(
-        allocateSingleDescriptorSet(vk, vkDevice, *emptyDescriptorPool, *emptyDescriptorSetLayout));
+    Move<VkDescriptorSetLayout> emptyDescriptorSetLayout;
+    Move<VkDescriptorPool> emptyDescriptorPool;
+    Move<VkDescriptorSet> emptyDescriptorSet;
+
+#ifndef CTS_USES_VULKANSC
+    Move<VkBuffer> descriptorBuffer;
+    de::MovePtr<Allocation> descriptorBufferAlloc;
+    VkDeviceAddress descriptorBufferAddress = 0;
+    VkDeviceSize descriptorBufferSize       = 0;
+
+    Move<VkBuffer> resourceHeap;
+    de::MovePtr<Allocation> resourceAlloc;
+    Move<VkBuffer> samplerHeap;
+    de::MovePtr<Allocation> samplerAlloc;
+    VkDeviceAddress resourceHeapAddress = 0;
+    VkDeviceAddress samplerHeapAddress  = 0;
+    VkDeviceSize resourceHeapAppSize    = 0;
+    VkDeviceSize samplerHeapAppSize     = 0;
+    VkDeviceSize resourceHeapTotalSize  = 0;
+    VkDeviceSize samplerHeapTotalSize   = 0;
+
+    auto alignUp = [](VkDeviceSize value, VkDeviceSize alignment)
+    { return (value + alignment - 1) & ~(alignment - 1); };
+#endif
+
+    if (descriptorData.mode == ExecutorDescriptorMode::DESCRIPTOR_SET)
+    {
+        emptyDescriptorSetLayout = createEmptyDescriptorSetLayout(vk, vkDevice);
+        emptyDescriptorPool      = createEmptyDescriptorPool(vk, vkDevice);
+        emptyDescriptorSet = allocateSingleDescriptorSet(vk, vkDevice, *emptyDescriptorPool, *emptyDescriptorSetLayout);
+    }
+#ifndef CTS_USES_VULKANSC
+    else if (descriptorData.mode == ExecutorDescriptorMode::DESCRIPTOR_BUFFER)
+    {
+        emptyDescriptorSetLayout =
+            createEmptyDescriptorSetLayout(vk, vkDevice, VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT);
+        if (m_extraResourcesLayout != VK_NULL_HANDLE)
+        {
+            const auto &descriptorBufferProps = m_context.getDescriptorBufferPropertiesEXT();
+
+            vk.getDescriptorSetLayoutSizeEXT(vkDevice, m_extraResourcesLayout, &descriptorBufferSize);
+            descriptorBufferSize = alignUp(descriptorBufferSize, descriptorBufferProps.descriptorBufferOffsetAlignment);
+
+            const VkBufferCreateInfo descriptorBufferCreateInfo =
+                makeBufferCreateInfo(descriptorBufferSize, VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT |
+                                                               VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT |
+                                                               VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+            descriptorBuffer = createBuffer(vk, vkDevice, &descriptorBufferCreateInfo);
+            descriptorBufferAlloc =
+                memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *descriptorBuffer),
+                                  MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+            VK_CHECK(vk.bindBufferMemory(vkDevice, *descriptorBuffer, descriptorBufferAlloc->getMemory(),
+                                         descriptorBufferAlloc->getOffset()));
+            descriptorBufferAddress      = getBufferDeviceAddress(vk, vkDevice, *descriptorBuffer);
+            uint8_t *descriptorBufferPtr = reinterpret_cast<uint8_t *>(descriptorBufferAlloc->getHostPtr());
+
+            for (const auto &descriptor : descriptorData.bufferDescriptors)
+            {
+                VkDescriptorGetInfoEXT descGetInfo     = initVulkanStructure();
+                descGetInfo.type                       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                descGetInfo.data.pCombinedImageSampler = &descriptor.imageInfo;
+                size_t descriptorSize                  = descriptorBufferProps.combinedImageSamplerDescriptorSize *
+                                        descriptor.combinedSamplerDescriptorCount;
+                vk.getDescriptorEXT(vkDevice, &descGetInfo, descriptorSize,
+                                    descriptorBufferPtr + descriptor.bufferOffset);
+            }
+
+            flushAlloc(vk, vkDevice, *descriptorBufferAlloc);
+        }
+    }
+    else if (descriptorData.mode == ExecutorDescriptorMode::DESCRIPTOR_HEAP)
+    {
+        VkPhysicalDeviceDescriptorHeapPropertiesEXT heapProps = m_context.getDescriptorHeapPropertiesEXT();
+
+        for (const auto &resource : descriptorData.resourceDescriptors)
+            if (resource.heapOffset + resource.size > resourceHeapAppSize)
+                resourceHeapAppSize = resource.heapOffset + resource.size;
+        for (const auto &sampler : descriptorData.samplerDescriptors)
+            if (sampler.heapOffset + sampler.size > samplerHeapAppSize)
+                samplerHeapAppSize = sampler.heapOffset + sampler.size;
+
+        // Make sure size is never 0
+        resourceHeapAppSize = de::max(resourceHeapAppSize, heapProps.resourceHeapAlignment);
+        samplerHeapAppSize  = de::max(samplerHeapAppSize, heapProps.samplerHeapAlignment);
+
+        resourceHeapAppSize = alignUp(resourceHeapAppSize, heapProps.resourceHeapAlignment);
+        samplerHeapAppSize  = alignUp(samplerHeapAppSize, heapProps.samplerHeapAlignment);
+
+        resourceHeapTotalSize = resourceHeapAppSize + heapProps.minResourceHeapReservedRange;
+        samplerHeapTotalSize  = samplerHeapAppSize + heapProps.minSamplerHeapReservedRangeWithEmbedded;
+
+        VkBufferCreateInfo resourceHeapCreateInfo = makeBufferCreateInfo(
+            resourceHeapTotalSize, VK_BUFFER_USAGE_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+        resourceHeap = createBuffer(vk, vkDevice, &resourceHeapCreateInfo);
+        resourceAlloc =
+            m_context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *resourceHeap),
+                                                     MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+        VK_CHECK(vk.bindBufferMemory(vkDevice, *resourceHeap, resourceAlloc->getMemory(), resourceAlloc->getOffset()));
+        resourceHeapAddress      = getBufferDeviceAddress(vk, vkDevice, *resourceHeap);
+        uint8_t *resourceHeapPtr = reinterpret_cast<uint8_t *>(resourceAlloc->getHostPtr());
+
+        VkBufferCreateInfo samplerHeapCreateInfo = makeBufferCreateInfo(
+            samplerHeapTotalSize, VK_BUFFER_USAGE_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+        samplerHeap = createBuffer(vk, vkDevice, &samplerHeapCreateInfo);
+        samplerAlloc =
+            m_context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, vkDevice, *samplerHeap),
+                                                     MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+        VK_CHECK(vk.bindBufferMemory(vkDevice, *samplerHeap, samplerAlloc->getMemory(), samplerAlloc->getOffset()));
+        samplerHeapAddress      = getBufferDeviceAddress(vk, vkDevice, *samplerHeap);
+        uint8_t *samplerHeapPtr = reinterpret_cast<uint8_t *>(samplerAlloc->getHostPtr());
+
+        for (const auto &resource : descriptorData.resourceDescriptors)
+        {
+            VkHostAddressRangeEXT hostRange;
+            hostRange.address = resourceHeapPtr + resource.heapOffset;
+            hostRange.size    = static_cast<size_t>(resource.size);
+            vk.writeResourceDescriptorsEXT(vkDevice, 1u, &resource.descriptorInfo, &hostRange);
+        }
+
+        for (const auto &sampler : descriptorData.samplerDescriptors)
+        {
+            VkHostAddressRangeEXT hostRange;
+            hostRange.address = samplerHeapPtr + sampler.heapOffset;
+            hostRange.size    = static_cast<size_t>(sampler.size);
+            vk.writeSamplerDescriptorsEXT(vkDevice, 1u, &sampler.samplerCreateInfo, &hostRange);
+        }
+
+        flushAlloc(vk, vkDevice, *resourceAlloc);
+        flushAlloc(vk, vkDevice, *samplerAlloc);
+    }
+#endif
 
     clearRenderData();
 
@@ -1222,6 +1360,8 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
     }
 
     // Create pipeline layout
+    if (descriptorData.mode == ExecutorDescriptorMode::DESCRIPTOR_SET ||
+        descriptorData.mode == ExecutorDescriptorMode::DESCRIPTOR_BUFFER)
     {
         const VkDescriptorSetLayout setLayouts[]              = {*emptyDescriptorSetLayout, m_extraResourcesLayout};
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
@@ -1278,13 +1418,40 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
             {0.0f, 0.0f, 0.0f, 0.0f}        // float blendConst[4];
         };
 
+        const void *stagePNext                    = nullptr;
+        const void *pNext                         = nullptr;
+        VkPipelineCreateFlags pipelineCreateFlags = 0;
+#ifndef CTS_USES_VULKANSC
+        VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+        mappingInfo.mappingCount = static_cast<uint32_t>(descriptorData.mappings.size());
+        mappingInfo.pMappings    = descriptorData.mappings.data();
+
+        VkPipelineCreateFlags2CreateInfo pipelineCreateFlags2 = {
+            VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                               // const void* pNext;
+            VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT,          // VkPipelineCreateFlags2 flags;
+        };
+        if (descriptorData.mode == ExecutorDescriptorMode::DESCRIPTOR_BUFFER)
+        {
+            pipelineCreateFlags = VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
+        }
+        else if (descriptorData.mode == ExecutorDescriptorMode::DESCRIPTOR_HEAP)
+        {
+            stagePNext = &mappingInfo;
+            pNext      = &pipelineCreateFlags2;
+        }
+#endif
+
+        VkPipelineLayout pipelineLayoutHandle =
+            (descriptorData.mode == ExecutorDescriptorMode::DESCRIPTOR_HEAP) ? VK_NULL_HANDLE : *pipelineLayout;
+
         graphicsPipeline = makeGraphicsPipeline(
-            vk,                  // const DeviceInterface&                        vk
-            vkDevice,            // const VkDevice                                device
-            *pipelineLayout,     // const VkPipelineLayout                        pipelineLayout
-            *vertexShaderModule, // const VkShaderModule                          vertexShaderModule
-            VK_NULL_HANDLE,      // const VkShaderModule                          tessellationControlShaderModule
-            VK_NULL_HANDLE,      // const VkShaderModule                          tessellationEvalShaderModule
+            vk,                   // const DeviceInterface&                        vk
+            vkDevice,             // const VkDevice                                device
+            pipelineLayoutHandle, // const VkPipelineLayout                        pipelineLayout
+            *vertexShaderModule,  // const VkShaderModule                          vertexShaderModule
+            VK_NULL_HANDLE,       // const VkShaderModule                          tessellationControlShaderModule
+            VK_NULL_HANDLE,       // const VkShaderModule                          tessellationEvalShaderModule
             useGeometryShader ? *geometryShaderModule :
                                 VK_NULL_HANDLE, // const VkShaderModule                          geometryShaderModule
             *fragmentShaderModule,              // const VkShaderModule                          fragmentShaderModule
@@ -1298,7 +1465,11 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
             nullptr,                 // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
             nullptr,                 // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
             nullptr,                 // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-            &colorBlendStateParams); // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+            &colorBlendStateParams,  // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+            nullptr,                 // const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
+            pNext,                   // const void*                                   pNext
+            pipelineCreateFlags,     // const VkPipelineCreateFlags*                  pipelineCreateFlags
+            stagePNext);             // const void*                                   stagePNext
     }
 
     // Create command pool
@@ -1319,15 +1490,54 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
 
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
 
-        if (m_extraResourcesLayout != VK_NULL_HANDLE)
+        if (descriptorData.mode == ExecutorDescriptorMode::DESCRIPTOR_SET)
         {
-            DE_ASSERT(extraResources != VK_NULL_HANDLE);
-            const VkDescriptorSet descriptorSets[] = {*emptyDescriptorSet, extraResources};
-            vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u,
-                                     DE_LENGTH_OF_ARRAY(descriptorSets), descriptorSets, 0u, nullptr);
+            if (m_extraResourcesLayout != VK_NULL_HANDLE)
+            {
+                DE_ASSERT(descriptorData.extraResources != VK_NULL_HANDLE);
+                const VkDescriptorSet descriptorSets[] = {*emptyDescriptorSet, descriptorData.extraResources};
+                vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u,
+                                         DE_LENGTH_OF_ARRAY(descriptorSets), descriptorSets, 0u, nullptr);
+            }
+            else
+                DE_ASSERT(descriptorData.extraResources == VK_NULL_HANDLE);
         }
-        else
-            DE_ASSERT(extraResources == VK_NULL_HANDLE);
+#ifndef CTS_USES_VULKANSC
+        else if (descriptorData.mode == ExecutorDescriptorMode::DESCRIPTOR_BUFFER)
+        {
+            if (m_extraResourcesLayout != VK_NULL_HANDLE)
+            {
+                VkDescriptorBufferBindingInfoEXT descriptorBufferBindingInfo = initVulkanStructure();
+                descriptorBufferBindingInfo.address                          = descriptorBufferAddress;
+                descriptorBufferBindingInfo.usage = VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT |
+                                                    VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT;
+
+                const uint32_t bufferIndex      = 0u;
+                const VkDeviceSize bufferOffset = 0u;
+
+                vk.cmdBindDescriptorBuffersEXT(*cmdBuffer, 1u, &descriptorBufferBindingInfo);
+                vk.cmdSetDescriptorBufferOffsetsEXT(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout,
+                                                    EXTRA_RESOURCES_DESCRIPTOR_SET_INDEX, 1u, &bufferIndex,
+                                                    &bufferOffset);
+            }
+        }
+        else if (descriptorData.mode == ExecutorDescriptorMode::DESCRIPTOR_HEAP)
+        {
+            VkBindHeapInfoEXT resourceHeapInfo   = initVulkanStructure();
+            resourceHeapInfo.heapRange.address   = resourceHeapAddress;
+            resourceHeapInfo.heapRange.size      = resourceHeapTotalSize;
+            resourceHeapInfo.reservedRangeOffset = resourceHeapAppSize;
+            resourceHeapInfo.reservedRangeSize   = resourceHeapTotalSize - resourceHeapAppSize;
+            vk.cmdBindResourceHeapEXT(*cmdBuffer, &resourceHeapInfo);
+
+            VkBindHeapInfoEXT samplerHeapInfo   = initVulkanStructure();
+            samplerHeapInfo.heapRange.address   = samplerHeapAddress;
+            samplerHeapInfo.heapRange.size      = samplerHeapTotalSize;
+            samplerHeapInfo.reservedRangeOffset = samplerHeapAppSize;
+            samplerHeapInfo.reservedRangeSize   = samplerHeapTotalSize - samplerHeapAppSize;
+            vk.cmdBindSamplerHeapEXT(*cmdBuffer, &samplerHeapInfo);
+        }
+#endif
 
         const uint32_t numberOfVertexAttributes = (uint32_t)m_vertexBuffers.size();
 
@@ -1487,6 +1697,40 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
         }
     }
 }
+
+void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void *const *outputs,
+                                  VkDescriptorSet extraResources)
+{
+    DescriptorData descriptorData = {};
+    descriptorData.mode           = ExecutorDescriptorMode::DESCRIPTOR_SET;
+    descriptorData.extraResources = extraResources;
+    executeCommon(numValues, inputs, outputs, descriptorData);
+}
+
+#ifndef CTS_USES_VULKANSC
+
+void FragmentOutExecutor::executeBuffer(int numValues, const void *const *inputs, void *const *outputs,
+                                        std::vector<DescriptorData::BufferDescriptor> bufferDescriptors)
+{
+    DescriptorData descriptorData    = {};
+    descriptorData.mode              = ExecutorDescriptorMode::DESCRIPTOR_BUFFER;
+    descriptorData.bufferDescriptors = bufferDescriptors;
+    executeCommon(numValues, inputs, outputs, descriptorData);
+}
+
+void FragmentOutExecutor::executeHeap(int numValues, const void *const *inputs, void *const *outputs,
+                                      std::vector<vk::VkDescriptorSetAndBindingMappingEXT> mappings,
+                                      std::vector<DescriptorData::ResourceDescriptor> resourceDescriptors,
+                                      std::vector<DescriptorData::SamplerDescriptor> samplerDescriptors)
+{
+    DescriptorData descriptorData      = {};
+    descriptorData.mode                = ExecutorDescriptorMode::DESCRIPTOR_HEAP;
+    descriptorData.mappings            = mappings;
+    descriptorData.resourceDescriptors = resourceDescriptors;
+    descriptorData.samplerDescriptors  = samplerDescriptors;
+    executeCommon(numValues, inputs, outputs, descriptorData);
+}
+#endif
 
 // VertexShaderExecutor
 
@@ -4014,8 +4258,14 @@ ShaderExecutor *createExecutor(Context &context, glu::ShaderType shaderType, con
     }
 }
 
-bool executorSupported(glu::ShaderType shaderType)
+bool executorSupported(glu::ShaderType shaderType, ExecutorDescriptorMode descriptorMode)
 {
+    if (descriptorMode == ExecutorDescriptorMode::DESCRIPTOR_BUFFER ||
+        descriptorMode == ExecutorDescriptorMode::DESCRIPTOR_HEAP)
+    {
+        return shaderType == glu::SHADERTYPE_FRAGMENT;
+    }
+
     switch (shaderType)
     {
     case glu::SHADERTYPE_VERTEX:

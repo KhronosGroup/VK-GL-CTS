@@ -273,6 +273,16 @@ bool ExternalMemoryHostBaseTestInstance::findCompatibleMemoryTypeIndexToTest(uin
                                                                              uint32_t memoryPropertyFlagBits,
                                                                              uint32_t *outMemoryTypeIndexToTest)
 {
+#ifdef CTS_USES_VULKANSC
+    // We have to early out here in the parent process of Vulkan SC CTS to ensure that
+    // we don't end up with a lower memory object count in the device object reservation
+    // than necessary due to the special behavior of the parent process
+    if (!m_context.getTestContext().getCommandLine().isSubProcess())
+    {
+        *outMemoryTypeIndexToTest = 0;
+        return true;
+    }
+#endif
     for (uint32_t bitMaskPosition = 0; bitMaskPosition < VK_MAX_MEMORY_TYPES; bitMaskPosition++)
     {
         if (isBitSet(resourceMemoryTypeBits & hostPointerMemoryTypeBits, bitMaskPosition) &&

@@ -52,6 +52,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_load_store_op_none",
 	"VK_KHR_maintenance1",
 	"VK_KHR_maintenance10",
+	"VK_KHR_maintenance11",
 	"VK_KHR_maintenance2",
 	"VK_KHR_maintenance3",
 	"VK_KHR_maintenance4",

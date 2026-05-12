@@ -1387,9 +1387,7 @@ Move<VkDevice> createTestDevice(Context &context, const VkInstance &instance, co
         queueCreateInfo.pQueuePriorities = &(*queuePriorities.back().get())[0];
     }
 
-    const auto validation = context.getTestContext().getCommandLine().isValidationEnabled();
-
-    return createCustomDevice(validation, context.getPlatformInterface(), instance, vki, physicalDevice, &deviceInfo);
+    return createCustomDevice(context.getPlatformInterface(), instance, vki, physicalDevice, &deviceInfo);
 }
 
 // Class to wrap a singleton instance and device
@@ -1904,6 +1902,7 @@ public:
     void deinit(void)
     {
         cleanupGroup();
+        tcu::TestCaseGroup::deinit();
     }
 
 private:
@@ -2447,6 +2446,7 @@ public:
     void deinit(void)
     {
         cleanupGroup();
+        tcu::TestCaseGroup::deinit();
     }
 
 private:

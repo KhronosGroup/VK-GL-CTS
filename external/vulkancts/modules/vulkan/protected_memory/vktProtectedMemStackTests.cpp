@@ -111,9 +111,18 @@ public:
     {
     }
 
-    virtual ~StackTestCase(void)
+    virtual ~StackTestCase(void) = default;
+
+    void checkSupport(Context &context) const
     {
+        checkProtectedContextSupport(context);
+
+        // Check the number of invocations supported
+        const auto &properties = context.getDeviceProperties();
+        if (properties.limits.maxComputeWorkGroupInvocations < m_params.imageWidth * m_params.imageHeight)
+            throw tcu::NotSupportedError("Not enough compute workgroup invocations supported.");
     }
+
     virtual TestInstance *createInstance(Context &ctx) const
     {
         return new StackTestInstance(ctx, m_validator, m_params);
@@ -232,8 +241,6 @@ tcu::TestStatus StackTestInstance::iterate(void)
     const vk::VkDevice device       = ctx.getDevice();
     const vk::VkQueue queue         = ctx.getQueue();
     const uint32_t queueFamilyIndex = ctx.getQueueFamilyIndex();
-    const vk::VkPhysicalDeviceProperties properties =
-        vk::getPhysicalDeviceProperties(ctx.getInstanceDriver(), ctx.getPhysicalDevice());
 
     vk::Unique<vk::VkCommandPool> cmdPool(makeCommandPool(vk, device, PROTECTION_ENABLED, queueFamilyIndex));
 
@@ -255,10 +262,6 @@ tcu::TestStatus StackTestInstance::iterate(void)
     vk::Move<vk::VkDescriptorSetLayout> descriptorSetLayout;
     vk::Move<vk::VkDescriptorPool> descriptorPool;
     vk::Move<vk::VkDescriptorSet> descriptorSet;
-
-    // Check the number of invocations supported
-    if (properties.limits.maxComputeWorkGroupInvocations < m_params.imageWidth * m_params.imageHeight)
-        throw tcu::NotSupportedError("Not enough compute workgroup invocations supported.");
 
     // Create src and dst images
     {

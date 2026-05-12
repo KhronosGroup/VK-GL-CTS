@@ -114,13 +114,12 @@ inline void SerializeItem(Serializer<ToRead> &serializer, vk::VkDeviceObjectRese
 {
     string input;
     serializer.Serialize(input);
-    json::Context ctx;
-    json::readJSON_VkDeviceObjectReservationCreateInfo(ctx, input, v);
+    json::readJSON_VkDeviceObjectReservationCreateInfo(serializer.ctx, input, v);
 }
 
 inline void SerializeItem(Serializer<ToWrite> &serializer, vk::VkDeviceObjectReservationCreateInfo &v)
 {
-    string output = json::writeJSON_VkDeviceObjectReservationCreateInfo(v);
+    string output = json::writeJSON_VkDeviceObjectReservationCreateInfo(serializer.ctx, v);
     serializer.Serialize(output);
 }
 
@@ -128,13 +127,12 @@ inline void SerializeItem(Serializer<ToRead> &serializer, vk::VkPipelineOfflineC
 {
     string input;
     serializer.Serialize(input);
-    json::Context ctx;
-    json::readJSON_VkPipelineOfflineCreateInfo(ctx, input, v);
+    json::readJSON_VkPipelineOfflineCreateInfo(serializer.ctx, input, v);
 }
 
 inline void SerializeItem(Serializer<ToWrite> &serializer, vk::VkPipelineOfflineCreateInfo &v)
 {
-    string output = json::writeJSON_VkPipelineOfflineCreateInfo(v);
+    string output = json::writeJSON_VkPipelineOfflineCreateInfo(serializer.ctx, v);
     serializer.Serialize(output);
 }
 
@@ -142,13 +140,12 @@ inline void SerializeItem(Serializer<ToRead> &serializer, vk::VkPhysicalDeviceFe
 {
     string input;
     serializer.Serialize(input);
-    json::Context ctx;
-    json::readJSON_VkPhysicalDeviceFeatures2(ctx, input, v);
+    json::readJSON_VkPhysicalDeviceFeatures2(serializer.ctx, input, v);
 }
 
 inline void SerializeItem(Serializer<ToWrite> &serializer, vk::VkPhysicalDeviceFeatures2 &v)
 {
-    string output = json::writeJSON_VkPhysicalDeviceFeatures2(v);
+    string output = json::writeJSON_VkPhysicalDeviceFeatures2(serializer.ctx, v);
     serializer.Serialize(output);
 }
 

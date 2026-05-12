@@ -911,7 +911,7 @@ public:
     {
     }
 
-    void runSwapchain(Context &context, VkBuffer buffer, VkImage image);
+    void runSwapchain(Context &context, VkBuffer buffer, VkImage image, VkSemaphore imageReadySemaphore);
 
     void run(Context &context, VkBuffer buffer);
 
@@ -1028,7 +1028,8 @@ private:
     VkAccessFlagBits m_imageUploadAccessMask;
 };
 
-void UploadDownloadExecutor::runSwapchain(Context &context, VkBuffer buffer, VkImage image)
+void UploadDownloadExecutor::runSwapchain(Context &context, VkBuffer buffer, VkImage image,
+                                          VkSemaphore imageReadySemaphore)
 {
     m_imageIsIntegerFormat = isUintFormat(m_caseDef.imageFormat) || isIntFormat(m_caseDef.imageFormat);
     m_viewIsIntegerFormat  = isUintFormat(m_caseDef.viewFormat) || isIntFormat(m_caseDef.viewFormat);
@@ -1073,7 +1074,8 @@ void UploadDownloadExecutor::runSwapchain(Context &context, VkBuffer buffer, VkI
     }
 
     endCommandBuffer(m_vk, *m_cmdBuffer);
-    submitCommandsAndWait(m_vk, m_device, m_queue, *m_cmdBuffer);
+    VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    submitCommandsAndWait(m_vk, m_device, m_queue, *m_cmdBuffer, false, 1u, 1u, &imageReadySemaphore, &waitStage);
 }
 
 void UploadDownloadExecutor::run(Context &context, VkBuffer buffer)
@@ -2091,6 +2093,8 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, VkInstance inst
             memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
         }
     }
+#else
+    DE_UNREF(cmdLine);
 #endif // CTS_USES_VULKANSC
 
     const VkDeviceCreateInfo deviceParams = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -2110,8 +2114,7 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, VkInstance inst
             TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
     }
 
-    return createCustomDevice(cmdLine.isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceParams,
-                              pAllocator);
+    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 struct InstanceHelper
@@ -2326,6 +2329,11 @@ tcu::TestStatus testSwapchainMutable(Context &context, CaseDef caseDef)
                                                          imageUsage, desiredSize, 2));
     const vector<VkImage> swapchainImages = getSwapchainImages(vk, device, *swapchain);
 
+    uint32_t imageNdx;
+    const auto imageReadySemaphore = createSemaphore(vk, device);
+    vk.acquireNextImageKHR(device, *swapchain, std::numeric_limits<uint64_t>::max(), *imageReadySemaphore,
+                           VK_NULL_HANDLE, &imageNdx);
+
     // Create a color buffer for host-inspection of results
     // For the Copy download method, this is the target of the download, for other
     // download methods, pixel data will be copied to this buffer from the download
@@ -2341,7 +2349,7 @@ tcu::TestStatus testSwapchainMutable(Context &context, CaseDef caseDef)
     // Execute the test
     UploadDownloadExecutor executor(context, false, vk, device, devHelper.queue, devHelper.queueFamilyIndex, caseDef);
 
-    executor.runSwapchain(context, *colorBuffer, swapchainImages[0]);
+    executor.runSwapchain(context, *colorBuffer, swapchainImages[imageNdx], *imageReadySemaphore);
 
     // Verify results
     {

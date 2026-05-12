@@ -121,9 +121,9 @@ VkDevice getDevice(Context &context)
         nullptr,                              //pEnabledFeatures;
     };
 
-    Move<VkDevice> device = createCustomDevice(
-        context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
-        context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceCreateInfo);
+    Move<VkDevice> device =
+        createCustomDevice(context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
+                           context.getPhysicalDevice(), &deviceCreateInfo);
     g_singletonDevice = de::SharedPtr<Move<VkDevice>>(new Move<VkDevice>(device));
     return g_singletonDevice->get();
 }

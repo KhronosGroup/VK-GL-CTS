@@ -35,7 +35,6 @@
 #include <algorithm>
 #include <filesystem>
 #include <numeric>
-#include <chrono>
 
 #ifdef DE_BUILD_VIDEO
 #include <vulkan_video_encoder.h>
@@ -55,15 +54,15 @@ static uint32_t getMaxFrameCount();
 namespace
 {
 using namespace vk;
-using namespace std;
 
 using de::MovePtr;
 using vkt::ycbcr::getYCbCrBitDepth;
-using vkt::ycbcr::getYCbCrFormatChannelCount;
 using vkt::ycbcr::isXChromaSubsampled;
 using vkt::ycbcr::isYChromaSubsampled;
 
-#define PSNR_THRESHOLD_LOWER_LIMIT 50.0
+#ifdef DE_BUILD_VIDEO
+static constexpr double PSNR_THRESHOLD_LOWER_LIMIT = 50.0;
+#endif
 
 bool checkClipFileExists(const std::string &clipName);
 void removeClip(const std::string &clipName);
@@ -403,7 +402,7 @@ VkVideoChromaSubsamplingFlagsKHR getChromaSubSampling(enum ChromaSubsampling sub
         return VK_VIDEO_CHROMA_SUBSAMPLING_422_BIT_KHR;
     case CHROMA_SS_444:
         return VK_VIDEO_CHROMA_SUBSAMPLING_444_BIT_KHR;
-    };
+    }
     return VK_VIDEO_CHROMA_SUBSAMPLING_INVALID_KHR;
 }
 
@@ -417,7 +416,7 @@ VkVideoComponentBitDepthFlagBitsKHR getBitDepth(enum BitDepth bitDepth)
         return VK_VIDEO_COMPONENT_BIT_DEPTH_10_BIT_KHR;
     case BIT_DEPTH_12:
         return VK_VIDEO_COMPONENT_BIT_DEPTH_12_BIT_KHR;
-    };
+    }
     return VK_VIDEO_COMPONENT_BIT_DEPTH_INVALID_KHR;
 }
 
@@ -428,6 +427,7 @@ tcu::TestStatus VideoTestInstance::iterate(void)
 
 #ifdef DE_BUILD_VIDEO
     int64_t frameNumEncoded = 0;
+    bool allFramesEncoded   = true;
 
     // Encode all frames
     int64_t totalFrames = m_encoder->GetNumberOfFrames();
@@ -436,18 +436,20 @@ tcu::TestStatus VideoTestInstance::iterate(void)
         VkResult result = m_encoder->EncodeNextFrame(frameNumEncoded);
         if (result != VK_SUCCESS)
         {
-            status = tcu::TestStatus::fail("Failed to encode frame " + de::toString(i));
+            status           = tcu::TestStatus::fail("Failed to encode frame " + de::toString(i));
+            allFramesEncoded = false;
             break;
         }
         result = m_encoder->GetBitstream();
         if (result != VK_SUCCESS)
         {
-            status = tcu::TestStatus::fail("Failed to get bitstream for frame " + de::toString(i));
+            status           = tcu::TestStatus::fail("Failed to get bitstream for frame " + de::toString(i));
+            allFramesEncoded = false;
             break;
         }
     }
 
-    if (frameNumEncoded + 1 == totalFrames)
+    if (allFramesEncoded && frameNumEncoded + 1 == totalFrames)
     {
         status = validateEncodedContent(
             VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR, STD_VIDEO_AV1_PROFILE_MAIN, m_outputClipFilename.c_str(),
@@ -525,7 +527,7 @@ TestInstance *VideoTestCase::createInstance(Context &ctx) const
         std::cerr << "TEST ARGS: ";
         for (auto &arg : args)
             std::cerr << arg << " ";
-        std::cerr << endl;
+        std::cerr << std::endl;
     }
 
     if (!checkClipFileExists(inputClipName))
@@ -586,7 +588,7 @@ void VideoTestCase::checkSupport(Context &ctx) const
 void VideoTestCase::validateCapabilities(Context &context) const
 {
     const VkVideoCodecOperationFlagBitsKHR videoCodecEncodeOperation = m_requirements.codecOperation;
-    const VkImageUsageFlags usageFlag                                = VK_VIDEO_ENCODE_USAGE_DEFAULT_KHR;
+    const VkVideoEncodeUsageFlagBitsKHR usageFlag                    = VK_VIDEO_ENCODE_USAGE_DEFAULT_KHR;
     const VkImageUsageFlags imageFlag                                = VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR;
 
     const VkVideoEncodeAV1ProfileInfoKHR encodeProfileInfo = {
@@ -686,7 +688,7 @@ void VideoTestCase::validateCapabilities(Context &context) const
         }
     }
 
-    MovePtr<vector<VkFormat>> supportedFormats =
+    MovePtr<std::vector<VkFormat>> supportedFormats =
         getSupportedFormats(vki, physicalDevice, imageFlag, videoEncodeProfileList.get());
 
     if (!supportedFormats || supportedFormats->empty())
@@ -706,13 +708,6 @@ void VideoTestCase::validateCapabilities(Context &context) const
         {
             continue;
         }
-
-        // TODO nessery ?
-        // uint32_t channelCount = getYCbCrFormatChannelCount(supportedFormat);
-        // if (channelCount < 3) // Assuming we need at least 3 channels (Y, Cb, Cr)
-        // {
-        //     continue;
-        // }
 
         formatFound = true;
         break;
@@ -861,7 +856,7 @@ void VideoTestCase::buildEncoderParams(std::vector<std::string> &params) const
     }
 
     params.push_back("--inputChromaSubsampling");
-    params.push_back(std::to_string(m_definition.subsampling.subsampling).c_str());
+    params.push_back(std::to_string(m_definition.subsampling.subsampling));
 
     params.push_back("--inputBpp");
     params.push_back(std::to_string(m_definition.bitDepth.depth));
@@ -1126,8 +1121,8 @@ void buildTestRequirements(const TestDefinition &testDef, TestRequirements &requ
 
     requirements.requireBFrames = (testDef.gop.gop == GOP_I_P_B || testDef.gop.gop == GOP_IDR_P_B);
 
-    requirements.useVariableBitrate = (testDef.quantization.qIndex != 0);
-    requirements.useConstantBitrate = false;
+    requirements.useVariableBitrate = (testDef.rateControl.rc == RC_VBR);
+    requirements.useConstantBitrate = (testDef.rateControl.rc == RC_CBR);
 
     requirements.superblockSizes = (testDef.superblock.superblock == SUPERBLOCK_64x64) ?
                                        VK_VIDEO_ENCODE_AV1_SUPERBLOCK_SIZE_64_BIT_KHR :

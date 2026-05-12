@@ -1,3 +1,4 @@
+dEQP-VK.binding_model.buffer_device_address.misc.copy_struct
 dEQP-VK.binding_model.buffer_device_address.op_access_chain.fragment_store
 dEQP-VK.binding_model.buffer_device_address.op_access_chain.memory_model_offset
 dEQP-VK.binding_model.descriptor_buffer.sparse_binding_buffer.robust.null_descriptor_size.compute_comp_storage_texel_buffer
@@ -541,6 +542,8 @@ dEQP-VK.binding_model.descriptor_heap.resource_heap_access.graphics
 dEQP-VK.binding_model.descriptor_heap.resource_masking.resource_masking
 dEQP-VK.binding_model.descriptor_heap.sampler_heap_access.compute
 dEQP-VK.binding_model.descriptor_heap.sampler_heap_access.graphics
+dEQP-VK.binding_model.descriptor_heap.secondary.compute
+dEQP-VK.binding_model.descriptor_heap.secondary.graphics
 dEQP-VK.binding_model.descriptor_heap.shader_object_invariance.shader_object_invariance
 dEQP-VK.binding_model.descriptor_heap.special_heap.protected.acceleration_structure
 dEQP-VK.binding_model.descriptor_heap.special_heap.protected.sampled_image

@@ -186,9 +186,8 @@ SpecialDevice::SpecialDevice(Context &ctx, VkQueueFlagBits transitionFrom, VkQue
     deviceCreateInfo.ppEnabledLayerNames     = nullptr;
     deviceCreateInfo.enabledLayerCount       = 0;
 
-    m_createResult = SAVEEXPR(
-        createUncheckedDevice(cmdLine.isValidationEnabled(), vki, phys, &deviceCreateInfo, nullptr, &m_deviceHandle),
-        m_createExpression, m_createFileName, m_createFileLine);
+    m_createResult = SAVEEXPR(createUncheckedDevice(vki, phys, &deviceCreateInfo, nullptr, &m_deviceHandle),
+                              m_createExpression, m_createFileName, m_createFileLine);
     if (VK_SUCCESS == m_createResult && VK_NULL_HANDLE != m_deviceHandle)
     {
         m_allocator = de::MovePtr<vk::Allocator>(new SimpleAllocator(vkd, m_deviceHandle, memoryProperties));

@@ -206,7 +206,6 @@ vector<const char *> getMandatoryDeviceExtensions()
 vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkInstance instance,
                                            const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
                                            const vector<const char *> &extraExtensions, const uint32_t queueFamilyIndex,
-                                           bool validationEnabled,
                                            const vk::VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[]                  = {1.0f};
@@ -271,7 +270,7 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
                                                  extensions.data(),                        // ppEnabledExtensionNames
                                                  pNext ? nullptr : &features};
 
-    return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 struct DeviceHelper
@@ -288,8 +287,7 @@ struct DeviceHelper
         : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
         , queueFamilyIndex(vk::wsi::chooseQueueFamilyIndex(vki, physicalDevice, surfaces))
         , device(createDeviceWithWsi(context.getPlatformInterface(), instance, vki, physicalDevice, extraExtensions,
-                                     queueFamilyIndex, context.getTestContext().getCommandLine().isValidationEnabled(),
-                                     pAllocator))
+                                     queueFamilyIndex, pAllocator))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))

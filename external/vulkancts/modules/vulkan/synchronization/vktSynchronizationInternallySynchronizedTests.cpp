@@ -31,6 +31,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkBufferWithMemory.hpp"
+#include "tcuTextureUtil.hpp"
 #include "vkWsiUtil.hpp"
 #include "vkWsiPlatform.hpp"
 #include "tcuPlatform.hpp"
@@ -1545,9 +1546,9 @@ tcu::TestStatus InternallySynchronizedQueuesTestInstance::iterate(void)
         nullptr                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    Move<VkDevice> device = createCustomDevice(
-        m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(),
-        m_context.getInstance(), m_context.getInstanceInterface(), m_context.getPhysicalDevice(), &deviceInfo);
+    Move<VkDevice> device =
+        createCustomDevice(m_context.getPlatformInterface(), m_context.getInstance(), m_context.getInstanceInterface(),
+                           m_context.getPhysicalDevice(), &deviceInfo);
 
     DeviceDriver vkd(vkp, instance, *device, m_context.getUsedApiVersion(),
                      m_context.getTestContext().getCommandLine());

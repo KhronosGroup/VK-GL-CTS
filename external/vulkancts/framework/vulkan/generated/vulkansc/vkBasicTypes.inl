@@ -20,6 +20,7 @@
 #define VK_FALSE														(static_cast<uint32_t>	(0))
 #define VK_LOD_CLAMP_NONE												(static_cast<float>		(1000.0F))
 #define VK_LUID_SIZE													(static_cast<uint32_t>	(8))
+#define VK_MAX_DATA_GRAPH_TOSA_NAME_SIZE_ARM							(static_cast<uint32_t>	(128))
 #define VK_MAX_DESCRIPTION_SIZE											(static_cast<uint32_t>	(256))
 #define VK_MAX_DEVICE_GROUP_SIZE										(static_cast<uint32_t>	(32))
 #define VK_MAX_DRIVER_INFO_SIZE											(static_cast<uint32_t>	(256))

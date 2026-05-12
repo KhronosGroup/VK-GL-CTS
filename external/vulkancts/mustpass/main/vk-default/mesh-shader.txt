@@ -2000,6 +2000,7 @@ dEQP-VK.mesh_shader.ext.misc.multiple_outputs_vertices
 dEQP-VK.mesh_shader.ext.misc.no_lines
 dEQP-VK.mesh_shader.ext.misc.no_points
 dEQP-VK.mesh_shader.ext.misc.no_triangles
+dEQP-VK.mesh_shader.ext.misc.payload_not_accessed
 dEQP-VK.mesh_shader.ext.misc.payload_read
 dEQP-VK.mesh_shader.ext.misc.push_constant
 dEQP-VK.mesh_shader.ext.misc.push_constant_and_task_shader

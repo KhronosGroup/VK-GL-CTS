@@ -150,6 +150,9 @@ include_directories(external/amber)
 add_subdirectory(external/jsoncpp EXCLUDE_FROM_ALL)
 include_directories(external/jsoncpp/src/include)
 
+# pipeline cache utils
+add_subdirectory(external/vulkansc-pcutil EXCLUDE_FROM_ALL)
+
 # RenderDoc API
 include_directories(external/renderdoc/src)
 

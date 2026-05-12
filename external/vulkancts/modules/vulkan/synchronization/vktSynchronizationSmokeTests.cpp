@@ -105,7 +105,6 @@ Move<VkDevice> createTestDevice(Context &context, SemaphoreTestConfig &config, c
 {
     const PlatformInterface &vkp    = context.getPlatformInterface();
     VkPhysicalDevice physicalDevice = chooseDevice(vki, instance, context.getTestContext().getCommandLine());
-    bool validationEnabled          = context.getTestContext().getCommandLine().isValidationEnabled();
     VkDeviceQueueCreateInfo queueInfo;
     VkDeviceCreateInfo deviceInfo;
     size_t queueNdx;
@@ -218,7 +217,7 @@ Move<VkDevice> createTestDevice(Context &context, SemaphoreTestConfig &config, c
 
     *outQueueFamilyIndex = queueInfo.queueFamilyIndex;
 
-    return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceInfo);
+    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceInfo);
 }
 
 struct BufferParameters

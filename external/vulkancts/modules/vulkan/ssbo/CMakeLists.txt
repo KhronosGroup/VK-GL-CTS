@@ -10,6 +10,8 @@ set(DEQP_VK_SSBO_SRCS
 	vktSSBOLayoutTests.hpp
 	vktSSBOCornerCase.cpp
 	vktSSBOCornerCase.hpp
+	vktSSBOLayoutNestedUnsizedArraysTests.cpp
+	vktSSBOLayoutNestedUnsizedArraysTests.hpp
 	../util/vktTypeComparisonUtil.cpp
 	../util/vktTypeComparisonUtil.hpp
 )

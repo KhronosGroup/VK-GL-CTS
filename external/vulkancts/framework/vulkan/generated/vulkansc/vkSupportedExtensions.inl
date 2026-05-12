@@ -21,7 +21,8 @@ void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char
         dst.push_back("VK_KHR_create_renderpass2");
         dst.push_back("VK_KHR_dedicated_allocation");
         dst.push_back("VK_KHR_depth_stencil_resolve");
-        dst.push_back("VK_KHR_descriptor_update_templateVK_KHR_device_group");
+        dst.push_back("VK_KHR_descriptor_update_template");
+        dst.push_back("VK_KHR_device_group");
         dst.push_back("VK_KHR_draw_indirect_count");
         dst.push_back("VK_KHR_driver_properties");
         dst.push_back("VK_KHR_external_fence");

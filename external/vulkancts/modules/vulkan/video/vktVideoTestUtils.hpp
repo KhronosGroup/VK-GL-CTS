@@ -176,6 +176,7 @@ de::MovePtr<VkVideoEncodeH265ProfileInfoKHR> getVideoProfileExtensionH265E(
 de::MovePtr<VkVideoEncodeUsageInfoKHR> getEncodeUsageInfo(void *pNext, VkVideoEncodeUsageFlagsKHR videoUsageHints,
                                                           VkVideoEncodeContentFlagsKHR videoContentHints,
                                                           VkVideoEncodeTuningModeKHR tuningMode);
+de::MovePtr<VkVideoDecodeUsageInfoKHR> getDecodeUsageInfo(void *pNext, VkVideoDecodeUsageFlagsKHR videoUsageHints);
 de::MovePtr<VkVideoProfileInfoKHR> getVideoProfile(
     VkVideoCodecOperationFlagBitsKHR videoCodecOperation, void *pNext,
     VkVideoChromaSubsamplingFlagsKHR chromaSubsampling = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,

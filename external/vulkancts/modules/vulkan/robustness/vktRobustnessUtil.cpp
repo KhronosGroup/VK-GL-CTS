@@ -155,8 +155,7 @@ Move<VkDevice> createRobustBufferAccessDevice(Context &context,
     const auto physicalDevice = context.getPhysicalDevice();
 #endif // CTS_USES_VULKANSC
 
-    return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                              context.getPlatformInterface(), instance, vki, physicalDevice, &deviceParams);
+    return createCustomDevice(context.getPlatformInterface(), instance, vki, physicalDevice, &deviceParams);
 }
 
 bool areEqual(float a, float b)

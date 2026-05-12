@@ -141,6 +141,21 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		functions.push_back("vkGetPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM");
 		return;
 	}
+	if (extName == "VK_ARM_data_graph_instruction_set_tosa")
+	{
+		functions.push_back("vkGetPhysicalDeviceQueueFamilyDataGraphEngineOperationPropertiesARM");
+		return;
+	}
+	if (extName == "VK_ARM_data_graph_neural_accelerator_statistics")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_data_graph_optical_flow")
+	{
+		functions.push_back("vkGetPhysicalDeviceQueueFamilyDataGraphOpticalFlowImageFormatsARM");
+		functions.push_back("vkGetPhysicalDeviceQueueFamilyDataGraphEngineOperationPropertiesARM");
+		return;
+	}
 	if (extName == "VK_ARM_format_pack")
 	{
 		return;
@@ -588,6 +603,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_EXT_present_timing")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_primitive_restart_index")
 	{
 		return;
 	}
@@ -1125,6 +1144,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_KHR_maintenance10")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_maintenance11")
 	{
 		return;
 	}
@@ -1854,6 +1877,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_queue_perf_hint")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_render_pass_shader_resolve")
 	{
 		return;
@@ -1901,6 +1928,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_SEC_pipeline_cache_incremental_mode")
+	{
+		return;
+	}
+	if (extName == "VK_SEC_throttle_hint")
 	{
 		return;
 	}
@@ -2076,6 +2107,18 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkGetDataGraphPipelinePropertiesARM");
 		return;
 	}
+	if (extName == "VK_ARM_data_graph_instruction_set_tosa")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_data_graph_neural_accelerator_statistics")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_data_graph_optical_flow")
+	{
+		return;
+	}
 	if (extName == "VK_ARM_format_pack")
 	{
 		return;
@@ -2098,6 +2141,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	}
 	if (extName == "VK_ARM_scheduling_controls")
 	{
+		functions.push_back("vkCmdSetDispatchParametersARM");
 		return;
 	}
 	if (extName == "VK_ARM_shader_core_builtins")
@@ -2739,6 +2783,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkGetSwapchainTimingPropertiesEXT");
 		functions.push_back("vkGetSwapchainTimeDomainPropertiesEXT");
 		functions.push_back("vkGetPastPresentationTimingEXT");
+		return;
+	}
+	if (extName == "VK_EXT_primitive_restart_index")
+	{
+		functions.push_back("vkCmdSetPrimitiveRestartIndexEXT");
 		return;
 	}
 	if (extName == "VK_EXT_primitive_topology_list_restart")
@@ -3523,6 +3572,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	if (extName == "VK_KHR_maintenance10")
 	{
 		functions.push_back("vkCmdEndRendering2KHR");
+		return;
+	}
+	if (extName == "VK_KHR_maintenance11")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_maintenance2")
@@ -4386,6 +4439,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_queue_perf_hint")
+	{
+		functions.push_back("vkQueueSetPerfHintQCOM");
+		return;
+	}
 	if (extName == "VK_QCOM_render_pass_shader_resolve")
 	{
 		return;
@@ -4438,6 +4496,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_SEC_pipeline_cache_incremental_mode")
+	{
+		return;
+	}
+	if (extName == "VK_SEC_throttle_hint")
 	{
 		return;
 	}
@@ -4643,6 +4705,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_robustness2",
 	"VK_KHR_present_mode_fifo_latest_ready",
 	"VK_KHR_maintenance10",
+	"VK_KHR_maintenance11",
 	"VK_NV_glsl_shader",
 	"VK_EXT_depth_range_unrestricted",
 	"VK_IMG_filter_cubic",
@@ -4781,6 +4844,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_pipeline_creation_cache_control",
 	"VK_NV_device_diagnostics_config",
 	"VK_QCOM_render_pass_store_ops",
+	"VK_QCOM_queue_perf_hint",
 	"VK_NV_cuda_kernel_launch",
 	"VK_QCOM_tile_shading",
 	"VK_NV_low_latency",
@@ -4875,6 +4939,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_dynamic_rendering_unused_attachments",
 	"VK_NV_low_latency2",
 	"VK_ARM_data_graph",
+	"VK_ARM_data_graph_instruction_set_tosa",
 	"VK_QCOM_multiview_per_view_render_areas",
 	"VK_NV_per_stage_descriptor_set",
 	"VK_QCOM_image_processing2",
@@ -4916,12 +4981,16 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_shader_64bit_indexing",
 	"VK_EXT_custom_resolve",
 	"VK_QCOM_data_graph_model",
+	"VK_ARM_data_graph_optical_flow",
 	"VK_EXT_shader_long_vector",
 	"VK_SEC_pipeline_cache_incremental_mode",
 	"VK_EXT_shader_uniform_buffer_unsized_array",
 	"VK_NV_compute_occupancy_priority",
 	"VK_EXT_shader_subgroup_partitioned",
 	"VK_VALVE_shader_mixed_float_dot_product",
+	"VK_SEC_throttle_hint",
+	"VK_ARM_data_graph_neural_accelerator_statistics",
+	"VK_EXT_primitive_restart_index",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_KHR_ray_query",

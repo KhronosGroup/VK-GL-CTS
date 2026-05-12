@@ -275,8 +275,7 @@ void BaseAllocateTestInstance::createTestDevice(bool enable_descriptor_buffer)
     };
 
     m_logicalDevice =
-        createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                           m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
+        createCustomDevice(m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
 #ifndef CTS_USES_VULKANSC
     m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance,
                                                                 *m_logicalDevice, m_context.getUsedApiVersion(),
@@ -349,8 +348,7 @@ void BaseAllocateTestInstance::createDeviceGroup(void)
         &deviceFeatures,                                           // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_logicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                         m_context.getPlatformInterface(), instance, instanceDriver,
+    m_logicalDevice = createCustomDevice(m_context.getPlatformInterface(), instance, instanceDriver,
                                          deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
 #ifndef CTS_USES_VULKANSC
     m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance,

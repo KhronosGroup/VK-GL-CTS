@@ -62,9 +62,18 @@ enum class ResolveArea
 {
     FULL = 0,
     FULL_MULTILAYER,
-    REGION,             // 1 subregion in a single layer, only applies to CMD.
-    REGIONS_MULTILAYER, // 3 subregions in a couple of layers, only applies to CMD.
+    FULL_MULTILAYER_REM,        // Same as FULL_MULTILAYER but using VK_REMAINING_ARRAY_LAYERS.
+    FULL_MULTILAYER_REM_SINGLE, // Same as FULL_MULTILAYER_REM but only the second layer.
+    FULL_3D,                    // Resolve a slice of a 2D layered image to a slice of a 3D image, only applies to CMD.
+    REGION,                     // 1 subregion in a single layer, only applies to CMD.
+    REGIONS_MULTILAYER,         // 3 subregions in a couple of layers, only applies to CMD.
+    REGIONS_MULTILAYER_REM,     // 1 subregion in both layers, only applies to CMD, uses VK_REMAINING_ARRAY_LAYERS.
 };
+
+bool isMultiSlice(ResolveArea resolveArea)
+{
+    return (resolveArea != ResolveArea::FULL && resolveArea != ResolveArea::REGION);
+}
 
 enum class SRGBFlags
 {
@@ -89,26 +98,39 @@ struct TestParams
                 (static_cast<uint32_t>(resolveMode) << 12) | (static_cast<uint32_t>(sRGBFlags) << 10));
     }
 
-    // 16x16 with 1 or 2 layers. Note the Z member is the layer count, not the 3rd dimension.
-    // See getImageExtent() and getImageLayers() below.
+    // 16x16 with 1 or 2 layers. Z can be the layer count or the 3rd dimension. See below.
     tcu::IVec3 getExtent() const
     {
         tcu::IVec3 baseExtent(16, 16, 1);
-        if (resolveArea == ResolveArea::FULL_MULTILAYER || resolveArea == ResolveArea::REGIONS_MULTILAYER)
+        if (isMultiSlice(resolveArea))
             baseExtent.z() = 2;
         return baseExtent;
     }
 
-    tcu::IVec3 getImageExtent() const
+    bool is3DSingleSample() const
+    {
+        return (resolveArea == ResolveArea::FULL_3D);
+    }
+
+    tcu::IVec3 getMultiSampleExtent() const
     {
         const auto baseExtent = getExtent();
         return tcu::IVec3(baseExtent.x(), baseExtent.y(), 1);
     }
 
-    uint32_t getImageLayers() const
+    tcu::IVec3 getSingleSampleExtent() const
     {
-        const auto baseExtent = getExtent().asUint();
-        return baseExtent.z();
+        return (is3DSingleSample() ? getExtent() : getMultiSampleExtent());
+    }
+
+    uint32_t getMultiSampleLayers() const
+    {
+        return getExtent().asUint().z();
+    }
+
+    uint32_t getSingleSampleLayers() const
+    {
+        return (is3DSingleSample() ? 1u : getExtent().asUint().z());
     }
 
     VkSampleCountFlagBits getSampleCount() const
@@ -147,17 +169,27 @@ struct TestParams
         return usageFlags;
     }
 
-    VkImageCreateInfo getImageCreateInfo() const
+    VkImageType getMultiSampleImageType() const
+    {
+        return VK_IMAGE_TYPE_2D;
+    }
+
+    VkImageType getSingleSampleImageType() const
+    {
+        return (is3DSingleSample() ? VK_IMAGE_TYPE_3D : getMultiSampleImageType());
+    }
+
+    VkImageCreateInfo getMultiSampleCreateInfo() const
     {
         return VkImageCreateInfo{
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
             0u,
             0u, // flags
-            VK_IMAGE_TYPE_2D,
+            getMultiSampleImageType(),
             imageFormat,
-            makeExtent3D(getImageExtent()),
+            makeExtent3D(getMultiSampleExtent()),
             1u,
-            getImageLayers(),
+            getMultiSampleLayers(),
             getSampleCount(),
             VK_IMAGE_TILING_OPTIMAL,
             getImageUsage(),
@@ -166,6 +198,40 @@ struct TestParams
             nullptr,
             VK_IMAGE_LAYOUT_UNDEFINED,
         };
+    }
+
+    VkImageViewType getMultiSampleViewType() const
+    {
+        const auto imageType = getMultiSampleImageType();
+        if (imageType == VK_IMAGE_TYPE_3D)
+            return VK_IMAGE_VIEW_TYPE_3D;
+        const auto layerCount = getMultiSampleLayers();
+        return ((layerCount > 1u) ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
+    }
+
+    VkImageViewType getSingleSampleViewType() const
+    {
+        const auto imageType = getSingleSampleImageType();
+        if (imageType == VK_IMAGE_TYPE_3D)
+            return VK_IMAGE_VIEW_TYPE_3D;
+        const auto layerCount = getSingleSampleLayers();
+        return ((layerCount > 1u) ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
+    }
+
+    VkImageCreateInfo getSingleSampleCreateInfo() const
+    {
+        VkImageCreateInfo createInfo = getMultiSampleCreateInfo();
+
+        createInfo.samples     = VK_SAMPLE_COUNT_1_BIT;
+        createInfo.imageType   = getSingleSampleImageType();
+        createInfo.extent      = makeExtent3D(getSingleSampleExtent());
+        createInfo.arrayLayers = getSingleSampleLayers();
+
+        createInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT; // Always needed for verification.
+        if (resolveMethod == ResolveMethod::CMD)
+            createInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT; // Needed by vkCmdResolveImage2.
+
+        return createInfo;
     }
 };
 
@@ -220,7 +286,7 @@ void Maint10ResolveCase::checkSupport(Context &context) const
     else
         DE_ASSERT(false);
 
-    const auto multiLayer = (m_params.getImageLayers() > 1u);
+    const auto multiLayer = (m_params.getMultiSampleLayers() > 1u);
 
     if (multiLayer)
     {
@@ -280,25 +346,32 @@ void Maint10ResolveCase::checkSupport(Context &context) const
     {
         VkImageFormatProperties formatProps;
 
-        const auto imageInfo = m_params.getImageCreateInfo();
-        const auto result    = ctx.vki.getPhysicalDeviceImageFormatProperties(
-            ctx.physicalDevice, imageInfo.format, imageInfo.imageType, imageInfo.tiling, imageInfo.usage,
-            imageInfo.flags, &formatProps);
+        const std::vector<VkImageCreateInfo> createInfos{
+            m_params.getMultiSampleCreateInfo(),
+            m_params.getSingleSampleCreateInfo(),
+        };
 
-        if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
-            TCU_THROW(NotSupportedError, "Format not supported");
+        for (const auto &imageInfo : createInfos)
+        {
+            const auto result = ctx.vki.getPhysicalDeviceImageFormatProperties(
+                ctx.physicalDevice, imageInfo.format, imageInfo.imageType, imageInfo.tiling, imageInfo.usage,
+                imageInfo.flags, &formatProps);
 
-        VK_CHECK(result);
+            if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+                TCU_THROW(NotSupportedError, "Format not supported");
 
-        if ((formatProps.sampleCounts & imageInfo.samples) == 0u)
-            TCU_THROW(NotSupportedError, "Required sample count not supported");
+            VK_CHECK(result);
+
+            if ((formatProps.sampleCounts & imageInfo.samples) == 0u)
+                TCU_THROW(NotSupportedError, "Required sample count not supported");
+        }
     }
 }
 
 // The shaders will basically fill the multisample image with contents from a buffer.
 void Maint10ResolveCase::initPrograms(vk::SourceCollections &programCollection) const
 {
-    const auto layerCount      = m_params.getImageLayers();
+    const auto layerCount      = m_params.getMultiSampleLayers();
     const bool multiLayer      = (layerCount > 1u);
     const auto glslFragOutType = m_params.getGLSLFragOutType();
     const bool resolveDepth    = (m_params.resolveAspects & VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -352,32 +425,26 @@ struct ResolveRegion
     VkOffset2D srcOffset;
     VkOffset2D dstOffset;
     VkExtent2D extent;
-    uint32_t srcLayer;
-    uint32_t dstLayer;
-
-    ResolveRegion(VkRect2D rect, uint32_t layer)
-        : srcOffset(rect.offset)
-        , dstOffset(rect.offset)
-        , extent(rect.extent)
-        , srcLayer(layer)
-        , dstLayer(layer)
-    {
-    }
+    uint32_t srcSlice;
+    uint32_t dstSlice;
+    uint32_t sliceCount;
 
     ResolveRegion(const VkOffset2D &srcOffset_, const VkOffset2D &dstOffset_, const VkExtent2D &extent_,
-                  uint32_t srcLayer_, uint32_t dstLayer_)
+                  uint32_t srcSlice_, uint32_t dstSlice_, uint32_t sliceCount_)
         : srcOffset(srcOffset_)
         , dstOffset(dstOffset_)
         , extent(extent_)
-        , srcLayer(srcLayer_)
-        , dstLayer(dstLayer_)
+        , srcSlice(srcSlice_)
+        , dstSlice(dstSlice_)
+        , sliceCount(sliceCount_)
     {
     }
 };
 
 tcu::Maybe<tcu::UVec3> getSrcRegionCoords(const tcu::UVec3 &coords, const ResolveRegion &region)
 {
-    if (coords.z() != region.dstLayer)
+    if (coords.z() < region.dstSlice ||
+        (region.sliceCount != VK_REMAINING_ARRAY_LAYERS && coords.z() >= region.dstSlice + region.sliceCount))
         return tcu::Nothing;
 
     DE_ASSERT(region.dstOffset.x >= 0);
@@ -397,12 +464,13 @@ tcu::Maybe<tcu::UVec3> getSrcRegionCoords(const tcu::UVec3 &coords, const Resolv
     const tcu::IVec2 diff   = srcOffset - dstOffset;
     const tcu::IVec2 origXY = coords.swizzle(0, 1).asInt();
     const tcu::IVec2 newXY  = origXY + diff;
+    const uint32_t newSlice = coords.z() - region.dstSlice + region.srcSlice;
 
     DE_ASSERT(newXY.x() >= 0);
     DE_ASSERT(newXY.y() >= 0);
 
     const auto uNewXY = newXY.asUint();
-    return tcu::just(tcu::UVec3(uNewXY.x(), uNewXY.y(), region.srcLayer));
+    return tcu::just(tcu::UVec3(uNewXY.x(), uNewXY.y(), newSlice));
 }
 
 tcu::Maybe<tcu::UVec3> getFirstSrcRegionCoords(int x, int y, int z, const std::vector<ResolveRegion> &regions)
@@ -466,29 +534,28 @@ tcu::Vec4 getColorFormatThreshold(VkFormat format)
 
 tcu::TestStatus Maint10ResolveInstance::iterate(void)
 {
-    const auto ctx        = m_context.getContextCommonData();
-    const auto tcuFormat  = mapVkFormat(m_params.imageFormat);
-    const auto layerCount = m_params.getImageLayers();
-    const auto fullExtent = m_params.getExtent();
-    const auto multiLayer = (layerCount > 1u);
-    const auto viewType   = (multiLayer ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
-    const auto bindPoint  = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    const auto isSRGB     = tcu::isSRGB(tcuFormat);
+    const auto ctx          = m_context.getContextCommonData();
+    const auto tcuFormat    = mapVkFormat(m_params.imageFormat);
+    const auto msLayerCount = m_params.getMultiSampleLayers();
+    const auto ssLayerCount = m_params.getSingleSampleLayers();
+    const auto fullExtent   = m_params.getExtent();
+    const auto msViewType   = m_params.getMultiSampleViewType();
+    const auto ssViewType   = m_params.getSingleSampleViewType();
+    const auto bindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    const auto isSRGB       = tcu::isSRGB(tcuFormat);
+    const auto is3DSS       = m_params.is3DSingleSample();
 
     // Create the multisample image.
-    auto imageCreateInfo = m_params.getImageCreateInfo();
-    ImageWithMemory msImage(ctx.vkd, ctx.device, ctx.allocator, imageCreateInfo, MemoryRequirement::Any);
-    const auto fullSRR =
-        makeImageSubresourceRange(getImageAspectFlags(tcuFormat), 0u, 1u, 0u, imageCreateInfo.arrayLayers);
-    const auto msImageView = makeImageView(ctx.vkd, ctx.device, *msImage, viewType, m_params.imageFormat, fullSRR);
+    const auto msCreateInfo = m_params.getMultiSampleCreateInfo();
+    ImageWithMemory msImage(ctx.vkd, ctx.device, ctx.allocator, msCreateInfo, MemoryRequirement::Any);
+    const auto msSRR = makeImageSubresourceRange(getImageAspectFlags(tcuFormat), 0u, 1u, 0u, msCreateInfo.arrayLayers);
+    const auto msImageView = makeImageView(ctx.vkd, ctx.device, *msImage, msViewType, m_params.imageFormat, msSRR);
 
     // Create the single sample image, similar to the multi-sample one with a few changes.
-    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT; // Always needed for verification.
-    if (m_params.resolveMethod == ResolveMethod::CMD)
-        imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT; // Needed by vkCmdResolveImage2.
-    ImageWithMemory ssImage(ctx.vkd, ctx.device, ctx.allocator, imageCreateInfo, MemoryRequirement::Any);
-    const auto ssImageView = makeImageView(ctx.vkd, ctx.device, *ssImage, viewType, m_params.imageFormat, fullSRR);
+    const auto ssCreateInfo = m_params.getSingleSampleCreateInfo();
+    ImageWithMemory ssImage(ctx.vkd, ctx.device, ctx.allocator, ssCreateInfo, MemoryRequirement::Any);
+    const auto ssSRR = makeImageSubresourceRange(getImageAspectFlags(tcuFormat), 0u, 1u, 0u, ssCreateInfo.arrayLayers);
+    const auto ssImageView = makeImageView(ctx.vkd, ctx.device, *ssImage, ssViewType, m_params.imageFormat, ssSRR);
 
     // This is equivalent to the frag shaders's PixelData structure.
     struct PixelData
@@ -508,13 +575,29 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
     };
 
     std::vector<ResolveRegion> resolveRegions;
-    if (m_params.resolveArea == ResolveArea::FULL || m_params.resolveArea == ResolveArea::FULL_MULTILAYER)
+    if (m_params.resolveArea == ResolveArea::FULL || m_params.resolveArea == ResolveArea::FULL_MULTILAYER ||
+        m_params.resolveArea == ResolveArea::FULL_MULTILAYER_REM ||
+        m_params.resolveArea == ResolveArea::FULL_MULTILAYER_REM_SINGLE || m_params.resolveArea == ResolveArea::FULL_3D)
+    {
+        const auto srcSlice   = ((m_params.resolveArea == ResolveArea::FULL_MULTILAYER_REM_SINGLE ||
+                                m_params.resolveArea == ResolveArea::FULL_3D) ?
+                                     1u :
+                                     0u);
+        const auto dstSlice   = srcSlice;
+        const auto sliceCount = ((m_params.resolveArea == ResolveArea::FULL_MULTILAYER_REM ||
+                                  m_params.resolveArea == ResolveArea::FULL_MULTILAYER_REM_SINGLE) ?
+                                     VK_REMAINING_ARRAY_LAYERS :
+                                     ((m_params.resolveArea == ResolveArea::FULL_3D) ? 1u : fullExtent.asUint().z()));
+
+        const auto commonOffset = makeOffset2D(0, 0);
+        const auto commonExtent = makeExtent2D(msCreateInfo.extent.width, msCreateInfo.extent.height);
         resolveRegions.push_back(
-            ResolveRegion(makeRect2D(0, 0, imageCreateInfo.extent.width, imageCreateInfo.extent.height), 0u));
+            ResolveRegion(commonOffset, commonOffset, commonExtent, srcSlice, dstSlice, sliceCount));
+    }
     else
     {
         DE_ASSERT(m_params.resolveMethod == ResolveMethod::CMD);
-        const auto extent2D        = m_params.getImageExtent();
+        const auto extent2D        = m_params.getMultiSampleExtent();
         const auto quadrantExtent  = extent2D / tcu::IVec3(2, 2, 1);
         const auto quadrantExtentU = quadrantExtent.asUint();
 
@@ -523,22 +606,37 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
             // Resolve the top-left quadrant to the bottom-right quadrant.
             resolveRegions.push_back(ResolveRegion(makeOffset2D(0, 0),
                                                    makeOffset2D(quadrantExtent.x(), quadrantExtent.y()),
-                                                   makeExtent2D(quadrantExtentU.x(), quadrantExtentU.y()), 0u, 0u));
+                                                   makeExtent2D(quadrantExtentU.x(), quadrantExtentU.y()), 0u, 0u, 1u));
         }
         else if (m_params.resolveArea == ResolveArea::REGIONS_MULTILAYER)
         {
             // Resolve top-left quadrant in the first layer to the bottom-right quadrant in the second layer.
             resolveRegions.push_back(ResolveRegion(makeOffset2D(0, 0),
                                                    makeOffset2D(quadrantExtent.x(), quadrantExtent.y()),
-                                                   makeExtent2D(quadrantExtentU.x(), quadrantExtentU.y()), 0u, 1u));
+                                                   makeExtent2D(quadrantExtentU.x(), quadrantExtentU.y()), 0u, 1u, 1u));
             // Resolve top-right quadrant in the second layer to the bottom-left quadrant in the first layer.
             resolveRegions.push_back(ResolveRegion(makeOffset2D(quadrantExtent.x(), 0),
                                                    makeOffset2D(0, quadrantExtent.y()),
-                                                   makeExtent2D(quadrantExtentU.x(), quadrantExtentU.y()), 1u, 0u));
+                                                   makeExtent2D(quadrantExtentU.x(), quadrantExtentU.y()), 1u, 0u, 1u));
             // Resolve bottom-left quadrant in the second layer to the top-left quadrant in the first layer.
             resolveRegions.push_back(ResolveRegion(makeOffset2D(0, quadrantExtent.y()),
                                                    makeOffset2D(quadrantExtent.x(), 0),
-                                                   makeExtent2D(quadrantExtentU.x(), quadrantExtentU.y()), 1u, 0u));
+                                                   makeExtent2D(quadrantExtentU.x(), quadrantExtentU.y()), 1u, 0u, 1u));
+        }
+        else if (m_params.resolveArea == ResolveArea::REGIONS_MULTILAYER_REM)
+        {
+            // Resolve top-left quadrant to the bottom-left quadrant in the second layer.
+            resolveRegions.push_back(ResolveRegion(makeOffset2D(0, 0), makeOffset2D(0, quadrantExtent.y()),
+                                                   makeExtent2D(quadrantExtentU.x(), quadrantExtentU.y()), 1u, 1u,
+                                                   VK_REMAINING_ARRAY_LAYERS));
+            // Resolve bottom-left quadrant to the top-left quadrant in the second layer.
+            resolveRegions.push_back(ResolveRegion(makeOffset2D(0, quadrantExtent.y()), makeOffset2D(0, 0),
+                                                   makeExtent2D(quadrantExtentU.x(), quadrantExtentU.y()), 1u, 1u,
+                                                   VK_REMAINING_ARRAY_LAYERS));
+            // Resolve top-right quadrant in both layers to the bottom-right quadrant in both layers.
+            resolveRegions.push_back(ResolveRegion(
+                makeOffset2D(quadrantExtent.x(), 0), makeOffset2D(quadrantExtent.x(), quadrantExtent.y()),
+                makeExtent2D(quadrantExtentU.x(), quadrantExtentU.y()), 0u, 0u, VK_REMAINING_ARRAY_LAYERS));
         }
         else
             DE_ASSERT(false);
@@ -550,9 +648,9 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
 
     const auto sampleCount      = m_params.getSampleCount();
     const auto perPixelSamples  = static_cast<uint32_t>(sampleCount);
-    const auto layerPixelCount  = imageCreateInfo.extent.width * imageCreateInfo.extent.height;
-    const auto layerSampleCount = layerPixelCount * perPixelSamples;
-    const auto totalSamples     = layerSampleCount * imageCreateInfo.arrayLayers;
+    const auto slicePixelCount  = msCreateInfo.extent.width * msCreateInfo.extent.height;
+    const auto layerSampleCount = slicePixelCount * perPixelSamples;
+    const auto totalSamples     = layerSampleCount * msCreateInfo.arrayLayers;
     std::vector<PixelData> pixelDataVec(totalSamples, PixelData());
 
     const bool isInt   = isIntFormat(m_params.imageFormat);
@@ -565,73 +663,80 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
 
     for (const auto &resolveRegion : resolveRegions)
     {
-        for (uint32_t y = 0u; y < resolveRegion.extent.height; ++y)
+        const uint32_t sliceBegin = resolveRegion.srcSlice;
+        const uint32_t sliceEnd   = resolveRegion.srcSlice + ((resolveRegion.sliceCount == VK_REMAINING_ARRAY_LAYERS) ?
+                                                                  (msLayerCount - sliceBegin) :
+                                                                  resolveRegion.sliceCount);
+
+        for (uint32_t z = sliceBegin; z < sliceEnd; ++z)
         {
-            const uint32_t yCoord = y + static_cast<uint32_t>(resolveRegion.srcOffset.y);
-            for (uint32_t x = 0u; x < resolveRegion.extent.width; ++x)
+            for (uint32_t y = 0u; y < resolveRegion.extent.height; ++y)
             {
-                const uint32_t xCoord = x + static_cast<uint32_t>(resolveRegion.srcOffset.x);
-                for (int s = 0; s < sampleCount; ++s)
+                const uint32_t yCoord = y + static_cast<uint32_t>(resolveRegion.srcOffset.y);
+                for (uint32_t x = 0u; x < resolveRegion.extent.width; ++x)
                 {
-                    const uint32_t pixelIdx =
-                        (yCoord * imageCreateInfo.extent.width + xCoord) + (layerPixelCount * resolveRegion.srcLayer);
-                    const uint32_t sampleIdx = pixelIdx * sampleCount + s;
-
-                    auto &pixelData = pixelDataVec.at(sampleIdx);
-
-                    if (resolveDepth)
-                        pixelData.depthStencil.x() = rnd.getFloat();
-
-                    if (resolveStencil)
-                        pixelData.depthStencil.y() = static_cast<float>(rnd.getInt(0, 255));
-
-                    if (resolveColor)
+                    const uint32_t xCoord = x + static_cast<uint32_t>(resolveRegion.srcOffset.x);
+                    for (int s = 0; s < sampleCount; ++s)
                     {
-                        const auto bitDepth = tcu::getTextureFormatBitDepth(tcuFormat);
-                        if (isInt)
+                        const uint32_t pixelIdx = (yCoord * msCreateInfo.extent.width + xCoord) + (slicePixelCount * z);
+                        const uint32_t sampleIdx = pixelIdx * sampleCount + s;
+
+                        auto &pixelData = pixelDataVec.at(sampleIdx);
+
+                        if (resolveDepth)
+                            pixelData.depthStencil.x() = rnd.getFloat();
+
+                        if (resolveStencil)
+                            pixelData.depthStencil.y() = static_cast<float>(rnd.getInt(0, 255));
+
+                        if (resolveColor)
                         {
-                            for (int i = 0; i < 4; ++i)
+                            const auto bitDepth = tcu::getTextureFormatBitDepth(tcuFormat);
+                            if (isInt)
                             {
-                                if (bitDepth[i] == 0)
-                                    ;
-                                else if (bitDepth[i] == 8)
-                                    pixelData.iColor[i] = rnd.getInt(-127, 127);
-                                else if (bitDepth[i] == 16)
-                                    pixelData.iColor[i] = rnd.getInt(-32767, 32767);
-                                else if (bitDepth[i] == 32)
-                                    pixelData.iColor[i] = rnd.getInt(-2147483647, 2147483647);
-                                else
-                                    DE_ASSERT(false);
+                                for (int i = 0; i < 4; ++i)
+                                {
+                                    if (bitDepth[i] == 0)
+                                        ;
+                                    else if (bitDepth[i] == 8)
+                                        pixelData.iColor[i] = rnd.getInt(-127, 127);
+                                    else if (bitDepth[i] == 16)
+                                        pixelData.iColor[i] = rnd.getInt(-32767, 32767);
+                                    else if (bitDepth[i] == 32)
+                                        pixelData.iColor[i] = rnd.getInt(-2147483647, 2147483647);
+                                    else
+                                        DE_ASSERT(false);
+                                }
                             }
-                        }
-                        else if (isUint)
-                        {
-                            for (int i = 0; i < 4; ++i)
+                            else if (isUint)
                             {
-                                if (bitDepth[i] == 0)
-                                    ;
-                                else if (bitDepth[i] == 8)
-                                    pixelData.uColor[i] = rnd.getUint8();
-                                else if (bitDepth[i] == 16)
-                                    pixelData.uColor[i] = rnd.getUint16();
-                                else if (bitDepth[i] == 32)
-                                    pixelData.uColor[i] = rnd.getUint32();
-                                else
-                                    DE_ASSERT(false);
+                                for (int i = 0; i < 4; ++i)
+                                {
+                                    if (bitDepth[i] == 0)
+                                        ;
+                                    else if (bitDepth[i] == 8)
+                                        pixelData.uColor[i] = rnd.getUint8();
+                                    else if (bitDepth[i] == 16)
+                                        pixelData.uColor[i] = rnd.getUint16();
+                                    else if (bitDepth[i] == 32)
+                                        pixelData.uColor[i] = rnd.getUint32();
+                                    else
+                                        DE_ASSERT(false);
+                                }
                             }
-                        }
-                        else if (isFloat)
-                        {
-                            for (int i = 0; i < 4; ++i)
+                            else if (isFloat)
                             {
-                                if (bitDepth[i] == 0)
-                                    ;
-                                else
-                                    pixelData.fColor[i] = rnd.getFloat();
+                                for (int i = 0; i < 4; ++i)
+                                {
+                                    if (bitDepth[i] == 0)
+                                        ;
+                                    else
+                                        pixelData.fColor[i] = rnd.getFloat();
+                                }
                             }
+                            else
+                                DE_ASSERT(false);
                         }
-                        else
-                            DE_ASSERT(false);
                     }
                 }
             }
@@ -666,8 +771,8 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
     if (resolveColor)
     {
         const auto pixelBytes = tcu::getPixelSize(tcuFormat);
-        colorLayerBytes       = layerPixelCount * pixelBytes;
-        const auto bufferSize = colorLayerBytes * layerCount;
+        colorLayerBytes       = slicePixelCount * pixelBytes;
+        const auto bufferSize = colorLayerBytes * msLayerCount;
 
         const auto bufferInfo = makeBufferCreateInfo(bufferSize, verifBufferUsage);
         colorVerifBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, bufferInfo, HostIntent::R));
@@ -677,8 +782,8 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
     {
         depthCopyFormat       = getDepthCopyFormat(m_params.imageFormat);
         const auto pixelBytes = tcu::getPixelSize(depthCopyFormat);
-        depthLayerBytes       = layerPixelCount * pixelBytes;
-        const auto bufferSize = depthLayerBytes * layerCount;
+        depthLayerBytes       = slicePixelCount * pixelBytes;
+        const auto bufferSize = depthLayerBytes * msLayerCount;
 
         const auto bufferInfo = makeBufferCreateInfo(bufferSize, verifBufferUsage);
         depthVerifBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, bufferInfo, HostIntent::R));
@@ -688,8 +793,8 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
     {
         stencilCopyFormat     = getStencilCopyFormat(m_params.imageFormat);
         const auto pixelBytes = tcu::getPixelSize(stencilCopyFormat);
-        stencilLayerBytes     = layerPixelCount * pixelBytes;
-        const auto bufferSize = stencilLayerBytes * layerCount;
+        stencilLayerBytes     = slicePixelCount * pixelBytes;
+        const auto bufferSize = stencilLayerBytes * msLayerCount;
 
         const auto bufferInfo = makeBufferCreateInfo(bufferSize, verifBufferUsage);
         stencilVerifBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, bufferInfo, HostIntent::R));
@@ -726,8 +831,8 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
     ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
     ShaderWrapper fragShader(ctx.vkd, ctx.device, binaries.get("frag"));
 
-    const std::vector<VkViewport> viewports(1u, makeViewport(imageCreateInfo.extent));
-    const std::vector<VkRect2D> scissors(1u, makeRect2D(imageCreateInfo.extent));
+    const std::vector<VkViewport> viewports(1u, makeViewport(msCreateInfo.extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(msCreateInfo.extent));
 
     std::vector<VkAttachmentDescription2> attachmentDescriptions;
 
@@ -788,7 +893,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
 
     // Always used.
     const VkAttachmentReference2 msAttRef = {
-        VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2, nullptr, 0u, ssFinalRPLayout, fullSRR.aspectMask,
+        VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2, nullptr, 0u, ssFinalRPLayout, msSRR.aspectMask,
     };
 
     // Only used if ssInRP.
@@ -866,8 +971,8 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
         }
 
         renderPass.createFramebuffer(ctx.vkd, ctx.device, de::sizeU32(fbImages), de::dataOrNull(fbImages),
-                                     de::dataOrNull(fbViews), imageCreateInfo.extent.width,
-                                     imageCreateInfo.extent.height, imageCreateInfo.arrayLayers);
+                                     de::dataOrNull(fbViews), msCreateInfo.extent.width, msCreateInfo.extent.height,
+                                     msCreateInfo.arrayLayers);
     }
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructure();
@@ -959,7 +1064,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
     ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descSet.get(), 0u, nullptr);
     ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, dataStages, 0u, pcSize, &pcData);
     pipeline.bind(cmdBuffer);
-    ctx.vkd.cmdDraw(cmdBuffer, 3u, imageCreateInfo.arrayLayers, 0u, 0u);
+    ctx.vkd.cmdDraw(cmdBuffer, 3u, msCreateInfo.arrayLayers, 0u, 0u);
     renderPass.end(ctx.vkd, cmdBuffer);
 
     if (m_params.resolveMethod == ResolveMethod::CMD)
@@ -969,7 +1074,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
             // Move single-sample image to the right layout for clearing.
             {
                 const auto barrier = makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, ssLayout,
-                                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *ssImage, fullSRR);
+                                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *ssImage, ssSRR);
                 cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                               VK_PIPELINE_STAGE_TRANSFER_BIT, &barrier);
             }
@@ -979,19 +1084,19 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
             {
                 VkClearDepthStencilValue clearValue;
                 memset(&clearValue, 0, sizeof(clearValue));
-                ctx.vkd.cmdClearDepthStencilImage(cmdBuffer, *ssImage, ssLayout, &clearValue, 1u, &fullSRR);
+                ctx.vkd.cmdClearDepthStencilImage(cmdBuffer, *ssImage, ssLayout, &clearValue, 1u, &ssSRR);
             }
             else
             {
                 VkClearColorValue clearValue;
                 memset(&clearValue, 0, sizeof(clearValue));
-                ctx.vkd.cmdClearColorImage(cmdBuffer, *ssImage, ssLayout, &clearValue, 1u, &fullSRR);
+                ctx.vkd.cmdClearColorImage(cmdBuffer, *ssImage, ssLayout, &clearValue, 1u, &ssSRR);
             }
 
             // Sync single-sample clears with the resolve command.
             {
                 const auto barrier = makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
-                                                            ssLayout, ssLayout, *ssImage, fullSRR);
+                                                            ssLayout, ssLayout, *ssImage, ssSRR);
                 cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                               VK_PIPELINE_STAGE_TRANSFER_BIT, &barrier);
             }
@@ -1005,7 +1110,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
                 (isDS ? (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT) :
                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
             const auto barrier = makeImageMemoryBarrier(srcAccess, VK_ACCESS_TRANSFER_READ_BIT, ssFinalRPLayout,
-                                                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *msImage, fullSRR);
+                                                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *msImage, msSRR);
             cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, srcStages, VK_PIPELINE_STAGE_TRANSFER_BIT, &barrier);
         }
 
@@ -1017,29 +1122,44 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
 
             for (const auto &region : resolveRegions)
             {
-                const VkImageSubresourceLayers srcLayer = {
+                if (is3DSS)
+                    DE_ASSERT(region.sliceCount == 1u);
+
+                const auto msResolveBaseLayer  = region.srcSlice;
+                const auto msResolveLayerCount = region.sliceCount;
+
+                const VkImageSubresourceLayers msLayer = {
                     m_params.resolveAspects,
                     0u,
-                    region.srcLayer,
-                    1u,
+                    msResolveBaseLayer,
+                    msResolveLayerCount,
                 };
-                const VkImageSubresourceLayers dstLayer = {
+
+                const auto msOffset = makeOffset3D(region.srcOffset.x, region.srcOffset.y, 0);
+
+                const auto ssResolveBaseLayer  = (is3DSS ? 0u : region.dstSlice);
+                const auto ssResolveLayerCount = (is3DSS ? 1u : region.sliceCount);
+
+                const VkImageSubresourceLayers ssLayer = {
                     m_params.resolveAspects,
                     0u,
-                    region.dstLayer,
-                    1u,
+                    ssResolveBaseLayer,
+                    ssResolveLayerCount,
                 };
-                const auto srcOffset = makeOffset3D(region.srcOffset.x, region.srcOffset.y, 0);
-                const auto dstOffset = makeOffset3D(region.dstOffset.x, region.dstOffset.y, 0);
-                const auto extent    = makeExtent3D(region.extent.width, region.extent.height, 1u);
+
+                const auto ssZOffset = (is3DSS ? static_cast<int32_t>(region.dstSlice) : 0);
+                const auto ssOffset  = makeOffset3D(region.dstOffset.x, region.dstOffset.y, ssZOffset);
+
+                // Extent is common for both, and specifies a single slice.
+                const auto extent = makeExtent3D(region.extent.width, region.extent.height, 1u);
 
                 imageResolveRegions.push_back(VkImageResolve2{
                     VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2,
                     nullptr,
-                    srcLayer,
-                    srcOffset,
-                    dstLayer,
-                    dstOffset,
+                    msLayer,
+                    msOffset,
+                    ssLayer,
+                    ssOffset,
                     extent,
                 });
             }
@@ -1099,28 +1219,28 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
         const auto dstStage  = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
         const auto barrier = makeImageMemoryBarrier(srcAccess, dstAccess, ssLayout,
-                                                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *ssImage, fullSRR);
+                                                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *ssImage, ssSRR);
         cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, srcStage, dstStage, &barrier);
         ssLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
         if (resolveColor)
         {
-            const auto srLayers   = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, layerCount);
-            const auto copyRegion = makeBufferImageCopy(imageCreateInfo.extent, srLayers);
+            const auto srLayers   = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, ssLayerCount);
+            const auto copyRegion = makeBufferImageCopy(ssCreateInfo.extent, srLayers);
             ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, *ssImage, ssLayout, colorVerifBuffer->get(), 1u, &copyRegion);
         }
 
         if (resolveDepth)
         {
-            const auto srLayers   = makeImageSubresourceLayers(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, layerCount);
-            const auto copyRegion = makeBufferImageCopy(imageCreateInfo.extent, srLayers);
+            const auto srLayers   = makeImageSubresourceLayers(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, ssLayerCount);
+            const auto copyRegion = makeBufferImageCopy(ssCreateInfo.extent, srLayers);
             ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, *ssImage, ssLayout, depthVerifBuffer->get(), 1u, &copyRegion);
         }
 
         if (resolveStencil)
         {
-            const auto srLayers   = makeImageSubresourceLayers(VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, layerCount);
-            const auto copyRegion = makeBufferImageCopy(imageCreateInfo.extent, srLayers);
+            const auto srLayers   = makeImageSubresourceLayers(VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, ssLayerCount);
+            const auto copyRegion = makeBufferImageCopy(ssCreateInfo.extent, srLayers);
             ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, *ssImage, ssLayout, stencilVerifBuffer->get(), 1u, &copyRegion);
         }
     }
@@ -1367,7 +1487,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
     if (resolveColor)
     {
         tcu::ConstPixelBufferAccess colorReference = colorRefLevel->getAccess();
-        for (uint32_t i = 0u; i < layerCount; ++i)
+        for (uint32_t i = 0u; i < msLayerCount; ++i)
         {
             const auto refLayer =
                 tcu::getSubregion(colorReference, 0, 0, static_cast<int>(i), fullExtent.x(), fullExtent.y(), 1);
@@ -1395,7 +1515,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
     if (resolveDepth)
     {
         tcu::ConstPixelBufferAccess depthReference = depthRefLevel->getAccess();
-        for (uint32_t i = 0u; i < layerCount; ++i)
+        for (uint32_t i = 0u; i < msLayerCount; ++i)
         {
             const auto refLayer =
                 tcu::getSubregion(depthReference, 0, 0, static_cast<int>(i), fullExtent.x(), fullExtent.y(), 1);
@@ -1441,7 +1561,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
     if (resolveStencil)
     {
         tcu::ConstPixelBufferAccess stencilReference = stencilRefLevel->getAccess();
-        for (uint32_t i = 0u; i < layerCount; ++i)
+        for (uint32_t i = 0u; i < msLayerCount; ++i)
         {
             const auto refLayer =
                 tcu::getSubregion(stencilReference, 0, 0, static_cast<int>(i), fullExtent.x(), fullExtent.y(), 1);
@@ -1568,8 +1688,12 @@ tcu::TestCaseGroup *createMultisampleResolveMaint10Tests(tcu::TestContext &testC
     } resolveAreaCases[] = {
         {ResolveArea::FULL, "full"},
         {ResolveArea::FULL_MULTILAYER, "full_multilayer"},
+        {ResolveArea::FULL_MULTILAYER_REM, "full_multilayer_rem"},
+        {ResolveArea::FULL_MULTILAYER_REM_SINGLE, "full_multilayer_rem_single"},
+        {ResolveArea::FULL_3D, "full_3d"},
         {ResolveArea::REGION, "region"},
         {ResolveArea::REGIONS_MULTILAYER, "regions_multilayer"},
+        {ResolveArea::REGIONS_MULTILAYER_REM, "regions_multilayer_rem"},
     };
 
     const struct
@@ -1662,9 +1786,9 @@ tcu::TestCaseGroup *createMultisampleResolveMaint10Tests(tcu::TestContext &testC
 
                     for (const auto &resolveArea : resolveAreaCases)
                     {
-                        // Sub-area resolve can only be used with the resolve command.
-                        if ((resolveArea.resolveArea == ResolveArea::REGION ||
-                             resolveArea.resolveArea == ResolveArea::REGIONS_MULTILAYER) &&
+                        // Sub-area resolve can only be used with the resolve command, and 3D images cannot be used
+                        // in framebuffers.
+                        if (static_cast<int>(resolveArea.resolveArea) >= static_cast<int>(ResolveArea::FULL_3D) &&
                             resolveMethodCase.resolveMethod != ResolveMethod::CMD)
                             continue;
 

@@ -101,10 +101,14 @@ struct SpecializationInfo
         const size_t entrySize = size_t(sizeof(X));
         const uint32_t entryId = (id < 0) ? uint32_t(entries.size()) : uint32_t(id);
         assertEntryExists(entryId);
+        // round start address up to alignment of type X
+        size += (alignof(X) - (size % alignof(X))) % alignof(X);
         // { uint32_t constantID; uint32_t offset; size_t size }
         entries.push_back({entryId, uint32_t(size), entrySize});
 
         data.resize(size + entrySize);
+        // It is illegal to placement new to an unaligned address.
+        DE_ASSERT((uintptr_t)&data.data()[size] % alignof(X) == 0);
         new (&data.data()[size]) X(entry);
 
         size += entrySize;

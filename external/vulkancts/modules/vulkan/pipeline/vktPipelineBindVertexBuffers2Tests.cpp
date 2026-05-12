@@ -218,8 +218,7 @@ vk::Move<vk::VkDevice> createRobustBufferAccessDevice(Context &context,
     const auto instance       = context.getInstance();
     const auto physicalDevice = chooseDevice(vki, instance, context.getTestContext().getCommandLine());
 
-    return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                              context.getPlatformInterface(), instance, vki, physicalDevice, &deviceParams);
+    return createCustomDevice(context.getPlatformInterface(), instance, vki, physicalDevice, &deviceParams);
 }
 
 enum BeyondType

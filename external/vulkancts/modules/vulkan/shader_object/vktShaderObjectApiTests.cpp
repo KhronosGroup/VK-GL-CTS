@@ -99,8 +99,7 @@ tcu::TestStatus ShaderObjectApiInstance::iterate(void)
         nullptr,                                  // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    const auto device = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), vkp,
-                                           instance, vki, physicalDevice, &deviceInfo);
+    const auto device = createCustomDevice(vkp, instance, vki, physicalDevice, &deviceInfo);
 
     de::MovePtr<vk::DeviceDriver> vkd(new vk::DeviceDriver(vkp, instance, device.get(), m_context.getUsedApiVersion(),
                                                            m_context.getTestContext().getCommandLine()));

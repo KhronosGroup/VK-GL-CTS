@@ -57,7 +57,7 @@ enum ProtectionMode
 typedef std::vector<vk::VkVertexInputBindingDescription> VertexBindings;
 typedef std::vector<vk::VkVertexInputAttributeDescription> VertexAttribs;
 
-void checkProtectedQueueSupport(Context &context);
+void checkProtectedContextSupport(Context &context, bool useYCbCr = false, bool useProtectedAccess = false);
 
 CustomInstance makeProtectedMemInstance(vkt::Context &context,
                                         const std::vector<std::string> &extraExtensions = std::vector<std::string>());

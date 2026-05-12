@@ -846,6 +846,7 @@ public:
         bool intraOnlyDecodingNoSetupRef{};
         size_t pictureParameterUpdateTriggerHack{0};
         bool forceDisableFilmGrain{false};
+        bool useGeneralLayout{false};
         VkSharedBaseObj<VulkanVideoFrameBuffer> framebuffer;
     };
     explicit VideoBaseDecoder(Parameters &&params);
@@ -862,6 +863,10 @@ public:
     const VkVideoCapabilitiesKHR *getVideoCaps() const
     {
         return &m_videoCaps;
+    }
+    bool usesGeneralLayout() const
+    {
+        return m_useGeneralLayout;
     }
 
     // VkParserVideoDecodeClient callbacks
@@ -998,6 +1003,7 @@ public:
     bool m_outOfOrderDecoding{false};
     bool m_alwaysRecreateDPB{false};
     bool m_intraOnlyDecodingNoSetupRef{false};
+    bool m_useGeneralLayout{false};
     vector<VkParserPerFrameDecodeParameters *> m_pPerFrameDecodeParameters;
     vector<VkParserDecodePictureInfo *> m_pVulkanParserDecodePictureInfo;
     vector<NvVkDecodeFrameData *> m_pFrameDatas;

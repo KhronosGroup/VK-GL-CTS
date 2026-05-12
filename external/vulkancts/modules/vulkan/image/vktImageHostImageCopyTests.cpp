@@ -494,16 +494,19 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
         {
             createInfo.flags |= (vk::VK_IMAGE_CREATE_SPARSE_BINDING_BIT | vk::VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
             // VUID-VkImageCreateInfo-tiling-04121
-            createInfo.tiling  = vk::VK_IMAGE_TILING_OPTIMAL;
+            createInfo.tiling = vk::VK_IMAGE_TILING_OPTIMAL;
+            const auto waitType =
+                ((m_parameters.action == MEMORY_TO_IMAGE) ? SparseImage::WaitType::SEMAPHORE_AND_FENCE :
+                                                            SparseImage::WaitType::SEMAPHORE);
             sparseSampledImage = de::MovePtr<SparseImage>(new SparseImage(vk, device, physicalDevice, vki, createInfo,
                                                                           m_context.getSparseQueue(), alloc,
-                                                                          mapVkFormat(createInfo.format)));
+                                                                          mapVkFormat(createInfo.format), waitType));
             sampledImage       = **sparseSampledImage;
             if (m_parameters.action == MEMCPY)
             {
                 sparseSampledImageCopy = de::MovePtr<SparseImage>(
                     new SparseImage(vk, device, physicalDevice, vki, createInfo, m_context.getSparseQueue(), alloc,
-                                    mapVkFormat(createInfo.format)));
+                                    mapVkFormat(createInfo.format), SparseImage::WaitType::SEMAPHORE_AND_FENCE));
                 sampledImageCopy = **sparseSampledImageCopy;
             }
         }
@@ -758,6 +761,9 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
     // Load sampled image
     if (m_parameters.action == MEMORY_TO_IMAGE)
     {
+        if (sparseSampledImage && sparseSampledImage->getFence() != VK_NULL_HANDLE)
+            waitForFence(vk, device, sparseSampledImage->getFence());
+
         transitionImageLayout(&cmdBuffer, sampledImage, sampledImageUsage, vk::VK_IMAGE_LAYOUT_UNDEFINED,
                               m_parameters.dstLayout, sampledSubresourceRange);
         commandsLog << "vkTransitionImageLayoutEXT() image " << sampledImage << " to layout "
@@ -905,6 +911,9 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
         commandsLog << "vkCopyImageToMemoryEXT() with image " << sampledImage << ", xOffset (" << region.imageOffset.x
                     << "), yOffset (" << region.imageOffset.y << "), width (" << mipImageSize.width << "), height ("
                     << mipImageSize.height << ")\n";
+
+        if (sparseSampledImageCopy && sparseSampledImageCopy->getFence() != VK_NULL_HANDLE)
+            waitForFence(vk, device, sparseSampledImageCopy->getFence());
 
         transitionImageLayout(&cmdBuffer, sampledImageCopy, sampledImageUsage, vk::VK_IMAGE_LAYOUT_UNDEFINED,
                               m_parameters.dstLayout, sampledSubresourceRange);

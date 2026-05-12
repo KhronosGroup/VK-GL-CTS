@@ -442,8 +442,7 @@ tcu::TestStatus noResetDescriptorPoolTest(Context &context, const ResetDescripto
         vkt::CustomInstance instance = vkt::createCustomInstanceFromContext(context);
         VkPhysicalDevice physicalDevice =
             chooseDevice(instance.getDriver(), instance, context.getTestContext().getCommandLine());
-        Move<VkDevice> device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                                                   context.getPlatformInterface(), instance, instance.getDriver(),
+        Move<VkDevice> device = createCustomDevice(context.getPlatformInterface(), instance, instance.getDriver(),
                                                    physicalDevice, &deviceCreateInfo);
 
         VkDescriptorPool descriptorPool = VK_NULL_HANDLE;

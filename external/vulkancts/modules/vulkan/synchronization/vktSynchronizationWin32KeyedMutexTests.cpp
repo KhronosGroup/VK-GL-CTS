@@ -144,7 +144,6 @@ CustomInstance createTestInstance(Context &context)
 vk::Move<vk::VkDevice> createTestDevice(Context &context, vk::VkInstance instance, const vk::InstanceInterface &vki,
                                         vk::VkPhysicalDevice physicalDevice)
 {
-    const bool validationEnabled     = context.getTestContext().getCommandLine().isValidationEnabled();
     const uint32_t apiVersion        = context.getUsedApiVersion();
     const vk::PlatformInterface &vkp = context.getPlatformInterface();
     const float priority             = 0.0f;
@@ -193,7 +192,7 @@ vk::Move<vk::VkDevice> createTestDevice(Context &context, vk::VkInstance instanc
                                                    extensions.empty() ? nullptr : &extensions[0],
                                                    &features};
 
-        return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &createInfo);
+        return createCustomDevice(vkp, instance, vki, physicalDevice, &createInfo);
     }
     catch (const vk::Error &error)
     {

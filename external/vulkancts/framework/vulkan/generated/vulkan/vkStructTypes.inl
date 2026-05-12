@@ -2198,7 +2198,7 @@ struct VkDataGraphPipelineCreateInfoARM
 {
 	VkStructureType								sType;
 	const void*									pNext;
-	VkPipelineCreateFlags2KHR					flags;
+	VkPipelineCreateFlags2						flags;
 	VkPipelineLayout							layout;
 	uint32_t									resourceInfoCount;
 	const VkDataGraphPipelineResourceInfoARM*	pResourceInfos;
@@ -3602,13 +3602,13 @@ struct VkGeometryNV
 
 struct VkAccelerationStructureInfoNV
 {
-	VkStructureType						sType;
-	const void*							pNext;
-	VkAccelerationStructureTypeNV		type;
-	VkBuildAccelerationStructureFlagsNV	flags;
-	uint32_t							instanceCount;
-	uint32_t							geometryCount;
-	const VkGeometryNV*					pGeometries;
+	VkStructureType							sType;
+	const void*								pNext;
+	VkAccelerationStructureTypeNV			type;
+	VkBuildAccelerationStructureFlagsKHR	flags;
+	uint32_t								instanceCount;
+	uint32_t								geometryCount;
+	const VkGeometryNV*						pGeometries;
 };
 
 struct VkGraphicsPipelineLibraryCreateInfoEXT

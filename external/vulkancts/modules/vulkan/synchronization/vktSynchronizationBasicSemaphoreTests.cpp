@@ -749,8 +749,7 @@ tcu::TestStatus basicMultiQueueCase(Context &context, TestConfig config)
     deviceInfo.pQueueCreateInfos    = queueInfos;
 
     logicalDevice =
-        createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                           context.getPlatformInterface(), instance, instanceInterface, physicalDevice, &deviceInfo);
+        createCustomDevice(context.getPlatformInterface(), instance, instanceInterface, physicalDevice, &deviceInfo);
 
 #ifndef CTS_USES_VULKANSC
     de::MovePtr<VideoDevice> videoDevice(

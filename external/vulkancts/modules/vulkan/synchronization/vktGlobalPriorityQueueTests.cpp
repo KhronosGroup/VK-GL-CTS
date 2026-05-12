@@ -1740,13 +1740,12 @@ public:
         // Overwrite bad value.
         queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
 
-        const auto validationEnabled = context.getTestContext().getCommandLine().isValidationEnabled();
-        const auto &vkp              = context.getPlatformInterface();
+        const auto &vkp = context.getPlatformInterface();
 
         Move<VkDevice> device;
         try
         {
-            device = createCustomDevice(validationEnabled, vkp, instance, instance.getDriver(), physDev, &createInfo);
+            device = createCustomDevice(vkp, instance, instance.getDriver(), physDev, &createInfo);
         }
         catch (vk::Error &err)
         {

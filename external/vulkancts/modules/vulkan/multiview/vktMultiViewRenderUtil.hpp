@@ -47,7 +47,7 @@ vk::Move<vk::VkRenderPass> makeRenderPass(const vk::DeviceInterface &vk, const v
                                           const vk::VkFormat colorFormat, const std::vector<uint32_t> &viewMasks,
                                           const vk::VkSampleCountFlagBits samples,
                                           const vk::VkAttachmentLoadOp colorLoadOp, const vk::VkFormat dsFormat,
-                                          const bool useGeneralLayout);
+                                          const bool useGeneralLayout, const bool useResolveAttachment);
 
 template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep,
           typename RenderPassCreateInfo>

@@ -148,25 +148,25 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDriverProperties>(void)
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceExternalMemoryHostPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT, VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFloatControlsProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_PROPERTIES_KHR, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceHostImageCopyProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceHostImageCopyProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES, "unsupported_properties"}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceIDProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceInlineUniformBlockProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceInlineUniformBlockProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES, "unsupported_properties"}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceLineRasterizationProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES, VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance3Properties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance4Properties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance5Properties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance6Properties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance4Properties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES, "unsupported_properties"}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance5Properties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES, "unsupported_properties"}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance6Properties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_PROPERTIES, "unsupported_properties"}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMultiviewProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePCIBusInfoPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT, VK_EXT_PCI_BUS_INFO_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePerformanceQueryPropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_PROPERTIES_KHR, VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePipelineRobustnessProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_ROBUSTNESS_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePipelineRobustnessProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_ROBUSTNESS_PROPERTIES, "unsupported_properties"}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePointClippingProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceProtectedMemoryProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePushDescriptorProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePushDescriptorProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES, "unsupported_properties"}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceRobustness2PropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_PROPERTIES_KHR, VK_EXT_ROBUSTNESS_2_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSampleLocationsPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLE_LOCATIONS_PROPERTIES_EXT, VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSamplerFilterMinmaxProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderIntegerDotProductProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderIntegerDotProductProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES, "unsupported_properties"}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSubgroupProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSubgroupSizeControlProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES, VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceTexelBufferAlignmentProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES, VK_EXT_TEXEL_BUFFER_ALIGNMENT_EXTENSION_NAME}; }
@@ -185,25 +185,25 @@ static const PropertyStructCreationData propertyStructCreationArray[]
 	{ createPropertyStructWrapper<VkPhysicalDeviceExternalMemoryHostPropertiesEXT>, VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceFloatControlsProperties>, DECL_CORE_PROPERTIES_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME },
-	{ createPropertyStructWrapper<VkPhysicalDeviceHostImageCopyProperties>, DECL_CORE_PROPERTIES_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceHostImageCopyProperties>, "unsupported_properties" },
 	{ createPropertyStructWrapper<VkPhysicalDeviceIDProperties>, DECL_CORE_PROPERTIES_NAME },
-	{ createPropertyStructWrapper<VkPhysicalDeviceInlineUniformBlockProperties>, DECL_CORE_PROPERTIES_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceInlineUniformBlockProperties>, "unsupported_properties" },
 	{ createPropertyStructWrapper<VkPhysicalDeviceLineRasterizationProperties>, VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance3Properties>, DECL_CORE_PROPERTIES_NAME },
-	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance4Properties>, DECL_CORE_PROPERTIES_NAME },
-	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance5Properties>, DECL_CORE_PROPERTIES_NAME },
-	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance6Properties>, DECL_CORE_PROPERTIES_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance4Properties>, "unsupported_properties" },
+	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance5Properties>, "unsupported_properties" },
+	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance6Properties>, "unsupported_properties" },
 	{ createPropertyStructWrapper<VkPhysicalDeviceMultiviewProperties>, DECL_CORE_PROPERTIES_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDevicePCIBusInfoPropertiesEXT>, VK_EXT_PCI_BUS_INFO_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDevicePerformanceQueryPropertiesKHR>, VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME },
-	{ createPropertyStructWrapper<VkPhysicalDevicePipelineRobustnessProperties>, DECL_CORE_PROPERTIES_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDevicePipelineRobustnessProperties>, "unsupported_properties" },
 	{ createPropertyStructWrapper<VkPhysicalDevicePointClippingProperties>, DECL_CORE_PROPERTIES_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceProtectedMemoryProperties>, DECL_CORE_PROPERTIES_NAME },
-	{ createPropertyStructWrapper<VkPhysicalDevicePushDescriptorProperties>, DECL_CORE_PROPERTIES_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDevicePushDescriptorProperties>, "unsupported_properties" },
 	{ createPropertyStructWrapper<VkPhysicalDeviceRobustness2PropertiesKHR>, VK_EXT_ROBUSTNESS_2_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceSampleLocationsPropertiesEXT>, VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceSamplerFilterMinmaxProperties>, DECL_CORE_PROPERTIES_NAME },
-	{ createPropertyStructWrapper<VkPhysicalDeviceShaderIntegerDotProductProperties>, DECL_CORE_PROPERTIES_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceShaderIntegerDotProductProperties>, "unsupported_properties" },
 	{ createPropertyStructWrapper<VkPhysicalDeviceSubgroupProperties>, DECL_CORE_PROPERTIES_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceSubgroupSizeControlProperties>, VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceTexelBufferAlignmentProperties>, VK_EXT_TEXEL_BUFFER_ALIGNMENT_EXTENSION_NAME },
@@ -227,33 +227,21 @@ const std::string getPreviousPropertyExtName (const std::string &name)
 static const std::map<VkStructureType, uint32_t> sTypeBlobMap
 {
 	// VkPhysicalDeviceVulkan11Properties
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES,										VK_API_VERSION_1_1 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES,							VK_API_VERSION_1_1 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES,								VK_API_VERSION_1_1 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES,							VK_API_VERSION_1_1 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES,						VK_API_VERSION_1_1 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES,								VK_API_VERSION_1_1 },
+	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES,										VKSC_API_VERSION_1_0 },
+	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES,							VKSC_API_VERSION_1_0 },
+	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES,								VKSC_API_VERSION_1_0 },
+	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES,							VKSC_API_VERSION_1_0 },
+	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES,						VKSC_API_VERSION_1_0 },
+	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES,								VKSC_API_VERSION_1_0 },
 	// VkPhysicalDeviceVulkan12Properties
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES,					VK_API_VERSION_1_2 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES,						VK_API_VERSION_1_2 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES,									VK_API_VERSION_1_2 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES,							VK_API_VERSION_1_2 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES,					VK_API_VERSION_1_2 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES,						VK_API_VERSION_1_2 },
+	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES,					VKSC_API_VERSION_1_0 },
+	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES,						VKSC_API_VERSION_1_0 },
+	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES,									VKSC_API_VERSION_1_0 },
+	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES,							VKSC_API_VERSION_1_0 },
+	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES,					VKSC_API_VERSION_1_0 },
+	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES,						VKSC_API_VERSION_1_0 },
 	// VkPhysicalDeviceVulkan13Properties
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES,					VK_API_VERSION_1_3 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES,							VK_API_VERSION_1_3 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES,				VK_API_VERSION_1_3 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES,					VK_API_VERSION_1_3 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES,					VK_API_VERSION_1_3 },
 	// VkPhysicalDeviceVulkan14Properties
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES,							VK_API_VERSION_1_4 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES,						VK_API_VERSION_1_4 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES,							VK_API_VERSION_1_4 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_PROPERTIES,							VK_API_VERSION_1_4 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_ROBUSTNESS_PROPERTIES,						VK_API_VERSION_1_4 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES,							VK_API_VERSION_1_4 },
-	{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES,				VK_API_VERSION_1_4 },
 	// VkPhysicalDeviceVulkanSC10Properties
 };
 

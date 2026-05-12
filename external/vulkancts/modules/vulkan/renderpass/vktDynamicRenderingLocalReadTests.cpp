@@ -116,6 +116,10 @@ enum class TestType
     // One subpass input attachment, where that input is also the color attachment,
     // With VK_EXT_shader_object
     FEEDBACK_LOOP_ESO,
+
+    // One subpass input attachment, where that input is also the color attachment,
+    // MSAA variant
+    FEEDBACK_LOOP_MSAA,
 };
 
 bool isRemapSingle(TestType testType)
@@ -1543,8 +1547,7 @@ tcu::TestStatus MappingWithGraphicsPipelineLibraryTestInstance::iterate()
     const VkPipelineDepthStencilStateCreateInfo depthStencilStateInfo = initVulkanStructure();
     const VkPipelineTessellationStateCreateInfo tessellationStateInfo = initVulkanStructure();
 
-    VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
-    deMemset(&colorBlendAttachmentState, 0x00, sizeof(VkPipelineColorBlendAttachmentState));
+    VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {};
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(1 + inputsCount,
                                                                                 colorBlendAttachmentState);
     // render to last attachment
@@ -1825,9 +1828,8 @@ tcu::TestStatus MappingWithShaderObjectOrSingleAttachmentTestInstance::iterate()
     const std::vector<VkRect2D> emptyScissorList;
 
     VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
-    VkPipelineColorBlendAttachmentState colorBlendState;
-    deMemset(&colorBlendState, 0x00, sizeof(VkPipelineColorBlendAttachmentState));
-    colorBlendState.colorWriteMask = 0xf;
+    VkPipelineColorBlendAttachmentState colorBlendState   = {};
+    colorBlendState.colorWriteMask                        = 0xf;
     const std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(imageCount, colorBlendState);
     VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = initVulkanStructure();
     colorBlendStateCreateInfo.attachmentCount                     = imageCount;
@@ -2101,8 +2103,10 @@ tcu::TestStatus FeedbackLoopTestInstance::iterate()
     const VkFormat imageFormat      = VK_FORMAT_R8G8B8A8_UNORM;
     const uint32_t imageSize        = 1024; // 1024 size is required to trigger delta color compression
     const auto extent               = makeExtent3D(imageSize, imageSize, 1u);
+    const bool isMsaaTest           = m_testType == TestType::FEEDBACK_LOOP_MSAA;
+    const auto msaaSamples          = isMsaaTest ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
 
-    const PipelineConstructionType pipelineType = (m_testType == TestType::FEEDBACK_LOOP) ?
+    const PipelineConstructionType pipelineType = m_testType != TestType::FEEDBACK_LOOP_ESO ?
                                                       PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC :
                                                       PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_BINARY;
 
@@ -2133,9 +2137,19 @@ tcu::TestStatus FeedbackLoopTestInstance::iterate()
     ImageWithMemory imageWithMemory(vk, device, alloc, imageCreateInfo, MemoryRequirement::Any);
     auto imageView = makeImageView(vk, device, *imageWithMemory, VK_IMAGE_VIEW_TYPE_2D, imageFormat, srr);
 
+    std::unique_ptr<ImageWithMemory> msaaImageWithMemory;
+    Move<VkImageView> msaaImageView;
+    if (isMsaaTest)
+    {
+        imageCreateInfo.samples = msaaSamples;
+        msaaImageWithMemory.reset(new ImageWithMemory(vk, device, alloc, imageCreateInfo, MemoryRequirement::Any));
+        msaaImageView = makeImageView(vk, device, **msaaImageWithMemory, VK_IMAGE_VIEW_TYPE_2D, imageFormat, srr);
+    }
+
     const auto bufferSize = imageSize * imageSize * 4;
     const auto bufferCreateInfo =
-        makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+        makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     BufferWithMemory bufferWithMemory(vk, device, alloc, bufferCreateInfo, MemoryRequirement::HostVisible);
     auto &allocation = bufferWithMemory.getAllocation();
     void *inputData  = allocation.getHostPtr();
@@ -2153,18 +2167,34 @@ tcu::TestStatus FeedbackLoopTestInstance::iterate()
     const std::vector<VkRect2D> scissors{makeRect2D(imageSize, imageSize)};
 
     // setup descriptor set with single input attachment
-    const auto descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-    auto descriptorPool       = DescriptorPoolBuilder()
-                              .addType(descriptorType, 1)
+    auto msaaInitDescriptorPool = DescriptorPoolBuilder()
+                                      .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1)
+                                      .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
+    auto descriptorPool = DescriptorPoolBuilder()
+                              .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1)
                               .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
-    auto descriptorSetLayout =
-        DescriptorSetLayoutBuilder().addSingleBinding(descriptorType, VK_SHADER_STAGE_FRAGMENT_BIT).build(vk, device);
-    auto descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
-    auto di            = makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+    auto msaaInitDescriptorSetLayout =
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .build(vk, device);
+    auto descriptorSetLayout = DescriptorSetLayoutBuilder()
+                                   .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
+                                   .build(vk, device);
+    auto msaaInitDescriptorSet = makeDescriptorSet(vk, device, *msaaInitDescriptorPool, *msaaInitDescriptorSetLayout);
+    auto descriptorSet         = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+    auto di =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, isMsaaTest ? *msaaImageView : *imageView, VK_IMAGE_LAYOUT_GENERAL);
+    auto db = makeDescriptorBufferInfo(*bufferWithMemory, 0u, VK_WHOLE_SIZE);
     DescriptorSetUpdateBuilder()
-        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0), descriptorType, &di)
+        .writeSingle(*msaaInitDescriptorSet, DescriptorSetUpdateBuilder::Location::binding(0),
+                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &db)
+        .update(vk, device);
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0),
+                     VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &di)
         .update(vk, device);
 
+    PipelineLayoutWrapper msaaInitPipelineLayout(pipelineType, vk, device, *msaaInitDescriptorSetLayout);
     PipelineLayoutWrapper pipelineLayout(pipelineType, vk, device, *descriptorSetLayout);
     auto &bc = m_context.getBinaryCollection();
     ShaderWrapper vertShader(vk, device, bc.get("vert"));
@@ -2173,12 +2203,16 @@ tcu::TestStatus FeedbackLoopTestInstance::iterate()
     // define empty VertexInputState, full screen quad will be generated in vertex shader
     const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
 
-    VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
-    deMemset(&colorBlendAttachmentState, 0x00, sizeof(VkPipelineColorBlendAttachmentState));
+    VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {};
     colorBlendAttachmentState.colorWriteMask                      = 0xf;
     VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = initVulkanStructure();
     colorBlendStateCreateInfo.attachmentCount                     = 1;
     colorBlendStateCreateInfo.pAttachments                        = &colorBlendAttachmentState;
+
+    VkPipelineMultisampleStateCreateInfo multisampleState = initVulkanStructure();
+    multisampleState.rasterizationSamples                 = msaaSamples;
+    multisampleState.sampleShadingEnable                  = isMsaaTest;
+    multisampleState.minSampleShading                     = 1.0;
 
     VkPipelineRenderingCreateInfo renderingCreateInfo = initVulkanStructure();
     renderingCreateInfo.colorAttachmentCount          = 1;
@@ -2189,20 +2223,19 @@ tcu::TestStatus FeedbackLoopTestInstance::iterate()
     pipelineWrapper.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
         .setDefaultRasterizationState()
         .setDefaultDepthStencilState()
-        .setDefaultMultisampleState()
         .setMonolithicPipelineLayout(pipelineLayout)
         .setupVertexInputState(&vertexInputState)
         .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, VK_NULL_HANDLE, 0u, vertShader, 0, {},
                                           {}, {}, 0, nullptr, &renderingCreateInfo)
-        .setupFragmentShaderState(pipelineLayout, VK_NULL_HANDLE, 0u, fragShader)
-        .setupFragmentOutputState(VK_NULL_HANDLE, 0u, &colorBlendStateCreateInfo)
+        .setupFragmentShaderState(pipelineLayout, VK_NULL_HANDLE, 0u, fragShader, nullptr, &multisampleState)
+        .setupFragmentOutputState(VK_NULL_HANDLE, 0u, &colorBlendStateCreateInfo, &multisampleState)
         .buildPipeline();
 
-    const auto recordRenderPass = [&](VkCommandBuffer cmd)
+    const auto recordRenderPass =
+        [&](VkCommandBuffer cmd, VkPipelineLayout layout, GraphicsPipelineWrapper &pipeline, VkDescriptorSet descSet)
     {
-        pipelineWrapper.bind(cmd);
-        vk.cmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u,
-                                 nullptr);
+        pipeline.bind(cmd);
+        vk.cmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0u, 1u, &descSet, 0u, nullptr);
         vk.cmdDraw(cmd, 4u, 1u, 0u, 0u);
     };
 
@@ -2219,7 +2252,7 @@ tcu::TestStatus FeedbackLoopTestInstance::iterate()
             renderingCreateInfo.pColorAttachmentFormats,
             renderingCreateInfo.depthAttachmentFormat,
             renderingCreateInfo.stencilAttachmentFormat,
-            VK_SAMPLE_COUNT_1_BIT,
+            msaaSamples,
         };
 
         const VkCommandBufferInheritanceInfo inheritanceInfo = {
@@ -2241,25 +2274,119 @@ tcu::TestStatus FeedbackLoopTestInstance::iterate()
         };
 
         vk.beginCommandBuffer(*secondaryCommandBuffer, &beginInfo);
-        recordRenderPass(*secondaryCommandBuffer);
+        recordRenderPass(*secondaryCommandBuffer, *pipelineLayout, pipelineWrapper, *descriptorSet);
         endCommandBuffer(vk, *secondaryCommandBuffer);
     }
 
     // record primary command buffer
     beginCommandBuffer(vk, cmdBuffer);
-
-    copyBufferToImage(vk, cmdBuffer, *bufferWithMemory, bufferSize, copyRegions, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
-                      *imageWithMemory, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                      VK_ACCESS_COLOR_ATTACHMENT_READ_BIT);
-
     const auto renderingFlags =
-        (m_groupParams->useSecondaryCmdBuffer ? VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT : 0);
-    beginRendering(vk, cmdBuffer, *imageView, scissors[0], {}, VK_IMAGE_LAYOUT_GENERAL, VK_ATTACHMENT_LOAD_OP_LOAD,
-                   renderingFlags);
+        m_groupParams->useSecondaryCmdBuffer ? VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT : 0;
+
+    std::unique_ptr<ShaderWrapper> fragInitShader;
+    GraphicsPipelineWrapper msaaInitPipeline(vki, vk, physicalDevice, device, deviceExtensions, pipelineType);
+
+    if (isMsaaTest)
+    {
+        // If the image is MSAA, can't copy into it from a buffer, so a shader is used to initialize it.
+        fragInitShader.reset(new ShaderWrapper(vk, device, bc.get("frag_init")));
+        VkPipelineMultisampleStateCreateInfo initMultisampleState = multisampleState;
+        initMultisampleState.sampleShadingEnable                  = false;
+
+        msaaInitPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+            .setDefaultRasterizationState()
+            .setDefaultDepthStencilState()
+            .setMonolithicPipelineLayout(msaaInitPipelineLayout)
+            .setupVertexInputState(&vertexInputState)
+            .setupPreRasterizationShaderState(viewports, scissors, msaaInitPipelineLayout, VK_NULL_HANDLE, 0u,
+                                              vertShader, 0, {}, {}, {}, 0, nullptr, &renderingCreateInfo)
+            .setupFragmentShaderState(msaaInitPipelineLayout, VK_NULL_HANDLE, 0u, *fragInitShader, nullptr,
+                                      &initMultisampleState)
+            .setupFragmentOutputState(VK_NULL_HANDLE, 0u, &colorBlendStateCreateInfo, &initMultisampleState)
+            .buildPipeline();
+
+        // Barrier before draw to put the single-sampled and MSAA images in the right layout
+        VkImageMemoryBarrier barrier =
+            makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                   VK_IMAGE_LAYOUT_GENERAL, *imageWithMemory, srr);
+        vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_NONE, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u,
+                              nullptr, 0u, nullptr, 1, &barrier);
+        barrier.image = **msaaImageWithMemory;
+        vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_NONE, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u,
+                              nullptr, 0u, nullptr, 1, &barrier);
+
+        VkRenderingAttachmentInfoKHR colorAttachment = initVulkanStructure();
+        colorAttachment.imageView                    = *msaaImageView;
+        colorAttachment.imageLayout                  = VK_IMAGE_LAYOUT_GENERAL;
+        colorAttachment.loadOp                       = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        colorAttachment.storeOp                      = VK_ATTACHMENT_STORE_OP_STORE;
+
+        // When primary command buffers are used, it's easy to merge the two render passes, so do
+        // that for extra testing.
+        const bool useSinglePass = !m_groupParams->useSecondaryCmdBuffer;
+        if (useSinglePass)
+        {
+            colorAttachment.resolveMode        = VK_RESOLVE_MODE_AVERAGE_BIT;
+            colorAttachment.resolveImageView   = *imageView;
+            colorAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            colorAttachment.storeOp            = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        }
+
+        VkRenderingInfoKHR renderingInfo   = initVulkanStructure();
+        renderingInfo.renderArea           = scissors[0];
+        renderingInfo.layerCount           = 1;
+        renderingInfo.colorAttachmentCount = 1u;
+        renderingInfo.pColorAttachments    = &colorAttachment;
+
+        vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
+        recordRenderPass(cmdBuffer, *msaaInitPipelineLayout, msaaInitPipeline, *msaaInitDescriptorSet);
+
+        if (useSinglePass)
+        {
+            // Mid render pass barrier
+            VkMemoryBarrier memoryBarrier =
+                makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
+            vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 1u,
+                                  &memoryBarrier, 0u, nullptr, 0u, nullptr);
+        }
+        else
+        {
+            endRendering(vk, cmdBuffer);
+
+            // Barrier after draw, synchronizing with input attachment read in the next draw
+            barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+            barrier.oldLayout     = VK_IMAGE_LAYOUT_GENERAL;
+            vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1, &barrier);
+
+            // Start the render pass where attachment is used as input.  Equivalent to `else` block, but
+            // with a resolve attachment.
+            renderingInfo.flags                = renderingFlags;
+            colorAttachment.resolveMode        = VK_RESOLVE_MODE_AVERAGE_BIT;
+            colorAttachment.resolveImageView   = *imageView;
+            colorAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            colorAttachment.loadOp             = VK_ATTACHMENT_LOAD_OP_LOAD;
+            colorAttachment.storeOp            = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+            vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
+        }
+    }
+    else
+    {
+        copyBufferToImage(vk, cmdBuffer, *bufferWithMemory, bufferSize, copyRegions, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+                          *imageWithMemory, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          VK_ACCESS_COLOR_ATTACHMENT_READ_BIT);
+
+        beginRendering(vk, cmdBuffer, *imageView, scissors[0], {}, VK_IMAGE_LAYOUT_GENERAL, VK_ATTACHMENT_LOAD_OP_LOAD,
+                       renderingFlags);
+    }
+
     if (m_groupParams->useSecondaryCmdBuffer)
         vk.cmdExecuteCommands(cmdBuffer, 1u, &secondaryCommandBuffer.get());
     else
-        recordRenderPass(cmdBuffer);
+        recordRenderPass(cmdBuffer, *pipelineLayout, pipelineWrapper, *descriptorSet);
     endRendering(vk, cmdBuffer);
 
     copyImageToBuffer(vk, cmdBuffer, *imageWithMemory, *bufferWithMemory, tcu::IVec2(imageSize),
@@ -2927,7 +3054,7 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
                             "}\n");
         glslSources.add("frag") << glu::FragmentSource(fragSrc);
     }
-    else if ((m_testType == TestType::FEEDBACK_LOOP) || (m_testType == TestType::FEEDBACK_LOOP_ESO))
+    else if (m_testType == TestType::FEEDBACK_LOOP || m_testType == TestType::FEEDBACK_LOOP_ESO)
     {
         std::string fragSrc("#version 450\n"
                             "layout(input_attachment_index = 0, binding = 0) uniform subpassInput inColor;\n"
@@ -2941,6 +3068,32 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
                             "  outColor = color;\n"
                             "}\n");
         glslSources.add("frag") << glu::FragmentSource(fragSrc);
+    }
+    else if (m_testType == TestType::FEEDBACK_LOOP_MSAA)
+    {
+        std::string fragSrc("#version 450\n"
+                            "layout(input_attachment_index = 0, binding = 0) uniform subpassInputMS inColor;\n"
+                            "layout(location = 0) out vec4 outColor;\n"
+                            "void main()\n{\n"
+                            "  vec2 uvNormalized = gl_FragCoord.xy / vec2(1024);\n"
+                            "  vec4 color = subpassLoad(inColor, gl_SampleID);\n"
+                            // add or substract depending on value in inColor
+                            "  vec4 select = step(vec4(0.5), color);\n"
+                            "  color += mix(vec4(0.2), vec4(-0.2), select);\n"
+                            "  outColor = color;\n"
+                            "}\n");
+        glslSources.add("frag") << glu::FragmentSource(fragSrc);
+
+        std::string fragInitSrc("#version 450\n"
+                                "layout(set=0, binding=0, std430) readonly buffer Input\n{\n"
+                                "  uint v[];\n"
+                                "} inBuffer;\n"
+                                "layout(location = 0) out vec4 outColor;\n"
+                                "void main()\n{\n"
+                                "  uint index = uint(gl_FragCoord.y) * 1024 + uint(gl_FragCoord.x);\n"
+                                "  outColor = unpackUnorm4x8(inBuffer.v[index]);\n"
+                                "}\n");
+        glslSources.add("frag_init") << glu::FragmentSource(fragInitSrc);
     }
 
     if ((m_testType == TestType::MAX_INPUT_ATTACHMENTS) ||
@@ -2964,7 +3117,8 @@ TestInstance *LocalReadTestCase::createInstance(Context &context) const
         return new MappingWithBlendStateTestInstance(context, m_testType, m_groupParams);
     if (m_testType == TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY)
         return new MappingWithGraphicsPipelineLibraryTestInstance(context, m_testType, m_groupParams);
-    if ((m_testType == TestType::FEEDBACK_LOOP) || (m_testType == TestType::FEEDBACK_LOOP_ESO))
+    if (m_testType == TestType::FEEDBACK_LOOP || m_testType == TestType::FEEDBACK_LOOP_ESO ||
+        m_testType == TestType::FEEDBACK_LOOP_MSAA)
         return new FeedbackLoopTestInstance(context, m_testType, m_groupParams);
 
     if (isInteractionWithShaderObjOrRemapSingle(m_testType))
@@ -3615,6 +3769,7 @@ tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testC
         {"remap_single_attachment_shader_object", TestType::REMAP_SINGLE_ATTACHMENT_SHADER_OBJECT},
         {"feedback_loop", TestType::FEEDBACK_LOOP},
         {"feedback_loop_with_shader_object", TestType::FEEDBACK_LOOP_ESO},
+        {"feedback_loop_msaa", TestType::FEEDBACK_LOOP_MSAA},
     };
 
     de::MovePtr<tcu::TestCaseGroup> mainGroup(

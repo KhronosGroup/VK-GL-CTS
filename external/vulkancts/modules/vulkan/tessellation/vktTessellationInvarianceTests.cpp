@@ -1599,10 +1599,11 @@ tcu::TestStatus InvarianceTestInstance::iterate(void)
                 flushAlloc(vk, device, alloc);
             }
 
+            bool anySubtestFailed                   = false;
             int programNdx                          = 0;
             const std::vector<Winding> windingCases = getWindingCases(m_caseDef.windingUsage);
             for (std::vector<Winding>::const_iterator windingIter = windingCases.begin();
-                 windingIter != windingCases.end(); ++windingIter)
+                 windingIter != windingCases.end(); ++windingIter, ++programNdx)
             {
                 const Unique<VkPipeline> pipeline(
                     GraphicsPipelineBuilder()
@@ -1682,7 +1683,8 @@ tcu::TestStatus InvarianceTestInstance::iterate(void)
                         log << tcu::TestLog::Message << "Failure: got " << numPrimitives
                             << " primitives, but expected at least" << refNumPrimitives << tcu::TestLog::EndMessage;
 
-                        return tcu::TestStatus::fail("Invalid set of primitives");
+                        anySubtestFailed = true;
+                        continue;
                     }
 
                     const int half                  = static_cast<int>(primitives.size() / 2);
@@ -1698,7 +1700,8 @@ tcu::TestStatus InvarianceTestInstance::iterate(void)
                             << getTessellationLevelsString(tessLevels, m_caseDef.primitiveType)
                             << tcu::TestLog::EndMessage;
 
-                        return tcu::TestStatus::fail("Invalid set of primitives");
+                        anySubtestFailed = true;
+                        continue;
                     }
 
                     if (programNdx == 0 && subTessLevelCaseNdx == 0)
@@ -1719,12 +1722,15 @@ tcu::TestStatus InvarianceTestInstance::iterate(void)
                                 << getTessellationLevelsString(tessLevels, m_caseDef.primitiveType)
                                 << tcu::TestLog::EndMessage;
 
-                            return tcu::TestStatus::fail("Invalid set of primitives");
+                            anySubtestFailed = true;
+                            continue;
                         }
                     }
                 }
-                ++programNdx;
             }
+
+            if (anySubtestFailed)
+                return tcu::TestStatus::fail("Invalid set of primitives");
         }
     }
     return tcu::TestStatus::pass("OK");

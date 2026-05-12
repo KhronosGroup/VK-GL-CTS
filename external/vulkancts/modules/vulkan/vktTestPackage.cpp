@@ -715,7 +715,8 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
     }
 #endif // CTS_USES_VULKANSC
 
-    m_context = {/* conscious release of the references counter */};
+    currentContext = {/* conscious release of the references counter */};
+    m_context      = {/* conscious release of the references counter */};
     m_defaultContextManager->removeDevicesThatShouldBeRemovedOnTestExit(m_contextManager);
     // Intentionally reset m_context to allow devices cleanup.
     // At this point the old Context may be destroyed.
@@ -953,7 +954,6 @@ void TestCaseExecutor::runTestsInSubprocess(tcu::TestContext &testCtx)
 
     // export data collected during statistics gathering to JSON file ( VkDeviceObjectReservationCreateInfo, SPIR-V shaders, pipelines )
     {
-        m_resourceInterface->removeRedundantObjects();
         m_resourceInterface->finalizeCommandBuffers();
         std::vector<uint8_t> data = m_resourceInterface->exportData();
         m_parentIPC->SetFile(jsonFileName.str(), data);

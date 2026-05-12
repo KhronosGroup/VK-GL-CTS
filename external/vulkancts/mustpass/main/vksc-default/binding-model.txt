@@ -8,6 +8,7 @@ dEQP-VKSC.binding_model.buffer_device_address.capture_replay_stress.seed_6
 dEQP-VKSC.binding_model.buffer_device_address.capture_replay_stress.seed_7
 dEQP-VKSC.binding_model.buffer_device_address.capture_replay_stress.seed_8
 dEQP-VKSC.binding_model.buffer_device_address.capture_replay_stress.seed_9
+dEQP-VKSC.binding_model.buffer_device_address.misc.copy_struct
 dEQP-VKSC.binding_model.buffer_device_address.op_access_chain.fragment_store
 dEQP-VKSC.binding_model.buffer_device_address.op_access_chain.memory_model_offset
 dEQP-VKSC.binding_model.buffer_device_address.set0.depth1.basessbo.convert.nostore.multi.std140.comp

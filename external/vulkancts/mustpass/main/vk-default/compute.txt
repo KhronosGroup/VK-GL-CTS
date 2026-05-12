@@ -2,6 +2,7 @@ dEQP-VK.compute.pipeline.64b_indexing.copy_ssbo_64b
 dEQP-VK.compute.pipeline.64b_indexing.copy_ssbo_64b_bounds
 dEQP-VK.compute.pipeline.64b_indexing.copy_ssbo_64b_bounds_local
 dEQP-VK.compute.pipeline.64b_indexing.copy_ssbo_64b_execution_mode
+dEQP-VK.compute.pipeline.64b_indexing.untyped_pointers
 dEQP-VK.compute.pipeline.basic.atomic_barrier_sum_small
 dEQP-VK.compute.pipeline.basic.branch_past_barrier
 dEQP-VK.compute.pipeline.basic.concurrent_compute
@@ -18,6 +19,8 @@ dEQP-VK.compute.pipeline.basic.empty_workgroup_all
 dEQP-VK.compute.pipeline.basic.empty_workgroup_x
 dEQP-VK.compute.pipeline.basic.empty_workgroup_y
 dEQP-VK.compute.pipeline.basic.empty_workgroup_z
+dEQP-VK.compute.pipeline.basic.float16_isnan_isinf
+dEQP-VK.compute.pipeline.basic.float64_isnan_isinf
 dEQP-VK.compute.pipeline.basic.image_atomic_op_local_size_1
 dEQP-VK.compute.pipeline.basic.image_atomic_op_local_size_8
 dEQP-VK.compute.pipeline.basic.image_barrier_multiple
@@ -20293,6 +20296,7 @@ dEQP-VK.compute.shader_object_binary.64b_indexing.copy_ssbo_64b
 dEQP-VK.compute.shader_object_binary.64b_indexing.copy_ssbo_64b_bounds
 dEQP-VK.compute.shader_object_binary.64b_indexing.copy_ssbo_64b_bounds_local
 dEQP-VK.compute.shader_object_binary.64b_indexing.copy_ssbo_64b_execution_mode
+dEQP-VK.compute.shader_object_binary.64b_indexing.untyped_pointers
 dEQP-VK.compute.shader_object_binary.basic.concurrent_compute
 dEQP-VK.compute.shader_object_binary.basic.copy_image_to_ssbo_large
 dEQP-VK.compute.shader_object_binary.basic.copy_image_to_ssbo_small
@@ -40564,6 +40568,7 @@ dEQP-VK.compute.shader_object_spirv.64b_indexing.copy_ssbo_64b
 dEQP-VK.compute.shader_object_spirv.64b_indexing.copy_ssbo_64b_bounds
 dEQP-VK.compute.shader_object_spirv.64b_indexing.copy_ssbo_64b_bounds_local
 dEQP-VK.compute.shader_object_spirv.64b_indexing.copy_ssbo_64b_execution_mode
+dEQP-VK.compute.shader_object_spirv.64b_indexing.untyped_pointers
 dEQP-VK.compute.shader_object_spirv.basic.concurrent_compute
 dEQP-VK.compute.shader_object_spirv.basic.copy_image_to_ssbo_large
 dEQP-VK.compute.shader_object_spirv.basic.copy_image_to_ssbo_small

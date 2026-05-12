@@ -36700,6 +36700,7 @@ dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.destroy_resources_
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.destroy_resources_before_link_samplers_3
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.null_descriptor_set_in_monolithic_pipeline
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.null_rendering_create_info
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.null_rendering_create_info_ptr
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.transform_feedback_with_fast_link
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.unusual_multisample_state
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.view_index_from_device_index_in_all_stages
@@ -36718,6 +36719,8 @@ dEQP-VK.pipeline.pipeline_library.graphics_library.misc.primary_rebind.eso_unlin
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.primary_rebind.fast_lib
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.primary_rebind.monolithic
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.primary_rebind.optimized_lib
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.view_mask.fast
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.view_mask.optimized
 dEQP-VK.pipeline.pipeline_library.graphics_library.optimize.0_00_11_11
 dEQP-VK.pipeline.pipeline_library.graphics_library.optimize.0_01_11_1
 dEQP-VK.pipeline.pipeline_library.graphics_library.optimize.0_1111

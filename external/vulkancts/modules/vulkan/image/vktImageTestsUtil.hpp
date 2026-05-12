@@ -106,13 +106,25 @@ protected:
 class SparseImage : public Image
 {
 public:
+    enum class WaitType
+    {
+        SEMAPHORE = 0,
+        SEMAPHORE_AND_FENCE
+    };
+
     SparseImage(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkPhysicalDevice physicalDevice,
                 const vk::InstanceInterface &vki, const vk::VkImageCreateInfo &createInfo,
-                const vk::VkQueue sparseQueue, vk::Allocator &allocator, const tcu::TextureFormat &format);
+                const vk::VkQueue sparseQueue, vk::Allocator &allocator, const tcu::TextureFormat &format,
+                WaitType waitType = WaitType::SEMAPHORE);
 
-    virtual vk::VkSemaphore getSemaphore(void) const
+    vk::VkSemaphore getSemaphore(void) const override
     {
         return m_semaphore.get();
+    }
+
+    vk::VkFence getFence(void) const
+    {
+        return m_fence.get();
     }
 
     SparseImage(const SparseImage &)            = delete;
@@ -120,6 +132,7 @@ public:
 
 protected:
     vk::Move<vk::VkSemaphore> m_semaphore;
+    vk::Move<vk::VkFence> m_fence;
 };
 #endif // CTS_USES_VULKANSC
 

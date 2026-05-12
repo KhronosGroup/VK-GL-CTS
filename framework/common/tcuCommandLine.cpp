@@ -72,6 +72,7 @@ namespace opt
 {
 
 DE_DECLARE_COMMAND_LINE_OPT(CasePath, std::string);
+DE_DECLARE_COMMAND_LINE_OPT(ExcludeCasePath, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(CaseList, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(CaseListFile, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(CaseListResource, std::string);
@@ -211,6 +212,9 @@ void registerOptions(de::cmdline::Parser &parser)
         << Option<CasePath>("n", "deqp-case",
                             "Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*) and commas to separate "
                             "multiple patterns")
+        << Option<ExcludeCasePath>("e", "deqp-exclude-case",
+                                   "Test case(s) to exclude, supports wildcards (e.g. dEQP-GLES2.info.*) and commas to "
+                                   "separate multiple patterns")
         << Option<CaseListFile>("f", "deqp-caselist-file", "Read case list (in trie format) from given file")
         << Option<CaseList>(nullptr, "deqp-caselist",
                             "Case list to run in trie format (e.g. {dEQP-GLES2{info{version,renderer}}})")
@@ -273,11 +277,11 @@ void registerOptions(de::cmdline::Parser &parser)
         << Option<LogFlush>(nullptr, "deqp-log-flush", "Enable or disable log file fflush", s_enableNames, "enable")
         << Option<LogCompact>(nullptr, "deqp-log-compact", "Enable or disable the compact version of the log",
                               s_enableNames, "disable")
-        << Option<Validation>(nullptr, "deqp-validation", "Enable or disable test case validation", s_enableNames,
+        << Option<Validation>(nullptr, "deqp-vk-validation", "Enable or disable test case validation", s_enableNames,
                               "disable")
         << Option<SpirvValidation>(nullptr, "deqp-spirv-validation", "Enable or disable spir-v shader validation",
                                    s_enableNames, SPIRV_VALIDATION_DEFAULT)
-        << Option<PrintValidationErrors>(nullptr, "deqp-print-validation-errors",
+        << Option<PrintValidationErrors>(nullptr, "deqp-vk-print-validation-errors",
                                          "Print validation errors to standard error")
         << Option<DuplicateCheck>(nullptr, "deqp-duplicate-case-name-check",
                                   "Check for duplicate case names when creating test hierarchy", s_enableNames,
@@ -1588,9 +1592,13 @@ bool CaseListFilter::checkTestCaseName(const char *caseName) const
     else if (m_caseTree)
         result = tcu::checkTestCaseName(m_caseTree, caseName);
     else
-        return true;
+        result = true;
     if (!result && m_caseFractionMandatoryTests.get() != nullptr)
         result = m_caseFractionMandatoryTests->matches(caseName, false);
+
+    if (result && m_excludePaths && m_excludePaths->matches(caseName, false))
+        result = false;
+
     return result;
 }
 
@@ -1673,6 +1681,9 @@ CaseListFilter::CaseListFilter(const de::cmdline::CommandLine &cmdLine, const tc
     }
     else if (cmdLine.hasOption<opt::CasePath>())
         m_casePaths = de::MovePtr<const CasePaths>(new CasePaths(cmdLine.getOption<opt::CasePath>()));
+
+    if (cmdLine.hasOption<opt::ExcludeCasePath>())
+        m_excludePaths = de::MovePtr<const CasePaths>(new CasePaths(cmdLine.getOption<opt::ExcludeCasePath>()));
 
     if (!cmdLine.getOption<opt::SubProcess>())
         m_caseFraction = cmdLine.getOption<opt::CaseFraction>();

@@ -660,9 +660,11 @@ tcu::TestStatus VideoCapabilitiesQueryH264DecodeTestInstance::iterate(void)
         STD_VIDEO_H264_PROFILE_IDC_BASELINE,                  //  StdVideoH264ProfileIdc stdProfileIdc;
         VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_KHR,  //  VkVideoDecodeH264PictureLayoutFlagsKHR pictureLayout;
     };
+    const de::MovePtr<VkVideoDecodeUsageInfoKHR> videoDecodeUsageInfo =
+        getDecodeUsageInfo((void *)&videoProfileOperation, VK_VIDEO_DECODE_USAGE_DEFAULT_KHR);
     const VkVideoProfileInfoKHR videoProfile = {
         VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR, //  VkStructureType sType;
-        (void *)&videoProfileOperation,           //  void* pNext;
+        (void *)videoDecodeUsageInfo.get(),       //  void* pNext;
         videoCodecOperation,                      //  VkVideoCodecOperationFlagBitsKHR videoCodecOperation;
         VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,  //  VkVideoChromaSubsamplingFlagsKHR chromaSubsampling;
         VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR lumaBitDepth;
@@ -887,9 +889,11 @@ tcu::TestStatus VideoCapabilitiesQueryH265DecodeTestInstance::iterate(void)
         nullptr,                                              //  const void* pNext;
         STD_VIDEO_H265_PROFILE_IDC_MAIN,                      //  StdVideoH265ProfileIdc stdProfileIdc;
     };
+    const de::MovePtr<VkVideoDecodeUsageInfoKHR> videoDecodeUsageInfo =
+        getDecodeUsageInfo((void *)&videoProfileOperation, VK_VIDEO_DECODE_USAGE_DEFAULT_KHR);
     const VkVideoProfileInfoKHR videoProfile = {
         VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR, //  VkStructureType sType;
-        (void *)&videoProfileOperation,           //  void* pNext;
+        (void *)videoDecodeUsageInfo.get(),       //  void* pNext;
         videoCodecOperation,                      //  VkVideoCodecOperationFlagBitsKHR videoCodecOperation;
         VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,  //  VkVideoChromaSubsamplingFlagsKHR chromaSubsampling;
         VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR lumaBitDepth;
@@ -972,15 +976,17 @@ tcu::TestStatus VideoCapabilitiesQueryAV1DecodeTestInstance::iterate(void)
     const InstanceInterface &vk                                = m_context.getInstanceInterface();
     const VkPhysicalDevice physicalDevice                      = m_context.getPhysicalDevice();
     const VkVideoCodecOperationFlagBitsKHR videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR;
-    VkVideoDecodeAV1ProfileInfoKHR videoProfileOperation       = {
+    const VkVideoDecodeAV1ProfileInfoKHR videoProfileOperation = {
         VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PROFILE_INFO_KHR, //  VkStructureType sType;
         nullptr,                                             //  const void* pNext;
         STD_VIDEO_AV1_PROFILE_MAIN,                          //  StdVideoAV1ProfileIdc stdProfileIdc;
         false,                                               // VkBool filmGrainSupport
     };
-    VkVideoProfileInfoKHR videoProfile = {
+    const de::MovePtr<VkVideoDecodeUsageInfoKHR> videoDecodeUsageInfo =
+        getDecodeUsageInfo((void *)&videoProfileOperation, VK_VIDEO_DECODE_USAGE_DEFAULT_KHR);
+    const VkVideoProfileInfoKHR videoProfile = {
         VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR, //  VkStructureType sType;
-        (void *)&videoProfileOperation,           //  void* pNext;
+        (void *)videoDecodeUsageInfo.get(),       //  void* pNext;
         videoCodecOperation,                      //  VkVideoCodecOperationFlagBitsKHR videoCodecOperation;
         VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,  //  VkVideoChromaSubsamplingFlagsKHR chromaSubsampling;
         VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR lumaBitDepth;
@@ -1063,14 +1069,16 @@ tcu::TestStatus VideoCapabilitiesQueryVP9DecodeTestInstance::iterate(void)
     const InstanceInterface &vk                                = m_context.getInstanceInterface();
     const VkPhysicalDevice physicalDevice                      = m_context.getPhysicalDevice();
     const VkVideoCodecOperationFlagBitsKHR videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR;
-    VkVideoDecodeVP9ProfileInfoKHR videoProfileOperation       = {
+    const VkVideoDecodeVP9ProfileInfoKHR videoProfileOperation = {
         VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PROFILE_INFO_KHR, //  VkStructureType sType;
         nullptr,                                             //  const void* pNext;
-        STD_VIDEO_VP9_PROFILE_0,                             //  StdVideoAV1ProfileIdc stdProfileIdc;
+        STD_VIDEO_VP9_PROFILE_0,                             //  StdVideoVP9ProfileIdc stdProfileIdc;
     };
-    VkVideoProfileInfoKHR videoProfile = {
+    const de::MovePtr<VkVideoDecodeUsageInfoKHR> videoDecodeUsageInfo =
+        getDecodeUsageInfo((void *)&videoProfileOperation, VK_VIDEO_DECODE_USAGE_DEFAULT_KHR);
+    const VkVideoProfileInfoKHR videoProfile = {
         VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR, //  VkStructureType sType;
-        (void *)&videoProfileOperation,           //  void* pNext;
+        (void *)videoDecodeUsageInfo.get(),       //  void* pNext;
         videoCodecOperation,                      //  VkVideoCodecOperationFlagBitsKHR videoCodecOperation;
         VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,  //  VkVideoChromaSubsamplingFlagsKHR chromaSubsampling;
         VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR lumaBitDepth;

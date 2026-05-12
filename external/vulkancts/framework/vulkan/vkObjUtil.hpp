@@ -75,7 +75,7 @@ Move<VkPipeline> makeGraphicsPipeline(
     const VkPipelineDepthStencilStateCreateInfo *depthStencilStateCreateInfo   = nullptr,
     const VkPipelineColorBlendStateCreateInfo *colorBlendStateCreateInfo       = nullptr,
     const VkPipelineDynamicStateCreateInfo *dynamicStateCreateInfo = nullptr, const void *pNext = nullptr,
-    const VkPipelineCreateFlags pipelineCreateFlags = 0u);
+    const VkPipelineCreateFlags pipelineCreateFlags = 0u, const void *stagePNext = nullptr);
 
 Move<VkPipeline> makeGraphicsPipeline(
     const DeviceInterface &vk, const VkDevice device, const VkPipelineLayout pipelineLayout,
@@ -91,7 +91,7 @@ Move<VkPipeline> makeGraphicsPipeline(
     const VkPipelineDepthStencilStateCreateInfo *depthStencilStateCreateInfo   = nullptr,
     const VkPipelineColorBlendStateCreateInfo *colorBlendStateCreateInfo       = nullptr,
     const VkPipelineDynamicStateCreateInfo *dynamicStateCreateInfo = nullptr, const void *pNext = nullptr,
-    const VkPipelineCreateFlags pipelineCreateFlags = 0u);
+    const VkPipelineCreateFlags pipelineCreateFlags = 0u, const void *stagePNext = nullptr);
 
 #ifndef CTS_USES_VULKANSC
 Move<VkPipeline> makeGraphicsPipeline(

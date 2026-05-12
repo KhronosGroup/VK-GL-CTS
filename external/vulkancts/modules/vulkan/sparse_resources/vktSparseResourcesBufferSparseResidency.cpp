@@ -42,6 +42,7 @@
 
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
+#include <deMath.h>
 
 #include <string>
 #include <vector>
@@ -129,16 +130,14 @@ BufferSparseResidencyCase::BufferSparseResidencyCase(tcu::TestContext &testCtx, 
 {
 }
 
-void commonPrograms(SourceCollections &sourceCollections, const uint32_t bufferSize,
-                    const glu::GLSLVersion glslVersion = glu::GLSL_VERSION_440)
+void commonPrograms(SourceCollections &sourceCollections, const glu::GLSLVersion glslVersion = glu::GLSL_VERSION_440)
 {
-    const char *const versionDecl  = glu::getGLSLVersionDeclaration(glslVersion);
-    const uint32_t iterationsCount = bufferSize / SIZE_OF_UINT_IN_SHADER;
+    const char *const versionDecl = glu::getGLSLVersionDeclaration(glslVersion);
 
     std::ostringstream src;
 
     src << versionDecl << "\n"
-        << "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+        << "layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;\n"
         << "layout(set = 0, binding = 0, std430) readonly buffer Input\n"
         << "{\n"
         << "    uint data[];\n"
@@ -149,12 +148,15 @@ void commonPrograms(SourceCollections &sourceCollections, const uint32_t bufferS
         << "    uint result[];\n"
         << "} sb_out;\n"
         << "\n"
+        << "layout (push_constant, std430) uniform PushConstants\n"
+        << "{\n"
+        << "    uint bufferSize;\n"
+        << "} pc;\n"
         << "void main (void)\n"
         << "{\n"
-        << "    for(int i=0; i<" << iterationsCount << "; ++i) \n"
-        << "    {\n"
-        << "        sb_out.result[i] = sb_in.data[i];"
-        << "    }\n"
+        << "    uint index = gl_GlobalInvocationID.y * gl_WorkGroupSize.x * 32 + gl_GlobalInvocationID.x;\n"
+        << "    if (index < (pc.bufferSize / 4))\n"
+        << "        sb_out.result[index] = sb_in.data[index];\n"
         << "}\n";
 
     sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
@@ -162,7 +164,7 @@ void commonPrograms(SourceCollections &sourceCollections, const uint32_t bufferS
 
 void BufferSparseResidencyCase::initPrograms(SourceCollections &sourceCollections) const
 {
-    commonPrograms(sourceCollections, m_bufferSize, m_glslVersion);
+    commonPrograms(sourceCollections, m_glslVersion);
 }
 
 class BufferSparseResidencyInstance : public SparseResourcesBaseInstance
@@ -354,11 +356,19 @@ tcu::TestStatus BufferSparseResidencyInstance::iterate(void)
                 .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
                 .build(deviceInterface, getDevice()));
 
+        // Push constant range
+        const VkPushConstantRange pcRange = {
+            VK_SHADER_STAGE_COMPUTE_BIT,             // VkShaderStageFlags stageFlags;
+            0u,                                      // uint32_t offset;
+            static_cast<uint32_t>(sizeof(uint32_t)), // uint32_t size;
+        };
+        const VkPushConstantRange *pushConstRange = &pcRange;
+
         // Create compute pipeline
         const Unique<VkShaderModule> shaderModule(
             createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get("comp"), 0));
         const Unique<VkPipelineLayout> pipelineLayout(
-            makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout));
+            makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout, pushConstRange));
         const Unique<VkPipeline> computePipeline(
             makeComputePipeline(deviceInterface, getDevice(), *pipelineLayout, *shaderModule));
 
@@ -396,7 +406,15 @@ tcu::TestStatus BufferSparseResidencyInstance::iterate(void)
                                                &inputBufferBarrier, 0u, nullptr);
         }
 
-        deviceInterface.cmdDispatch(*commandBuffer, 1u, 1u, 1u);
+        {
+            const uint32_t sqrtSize = static_cast<uint32_t>(deFloatCeil(deFloatSqrt(static_cast<float>(m_bufferSize))));
+            // Spec minimum requirement for maxComputeWorkGroupCount[]
+            DE_ASSERT(sqrtSize <= 65535);
+
+            deviceInterface.cmdPushConstants(*commandBuffer, *pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                                             sizeof(m_bufferSize), &m_bufferSize);
+            deviceInterface.cmdDispatch(*commandBuffer, sqrtSize, sqrtSize, 1u);
+        }
 
         {
             const VkBufferMemoryBarrier sparseBufferBarrier = makeBufferMemoryBarrier(
@@ -560,7 +578,7 @@ void BufferSparseResidencyNonResidentCase::initPrograms(SourceCollections &sourc
     if ((m_testParams.bufferInitCmd == BUFF_INIT_COPY) && !m_testParams.isCopySrcSparse)
         copyVerificationProgram(sourceCollections);
     else
-        commonPrograms(sourceCollections, m_testParams.bufferSize);
+        commonPrograms(sourceCollections);
 }
 
 class BufferSparseResidencyNonResidentInstance : public SparseResourcesBaseInstance
@@ -905,7 +923,16 @@ tcu::TestStatus BufferSparseResidencyNonResidentInstance::iterate(void)
                                                       0u, 1u, &descriptorSet.get(), 0u, nullptr);
 
                 // Copy input buffer to sparse buffer in the compute shader
-                deviceInterface.cmdDispatch(*commandBuffer, 1u, 1u, 1u);
+                {
+                    const uint32_t sqrtSize =
+                        static_cast<uint32_t>(deFloatCeil(deFloatSqrt(static_cast<float>(m_testParams.bufferSize))));
+                    // Spec minimum requirement for maxComputeWorkGroupCount[]
+                    DE_ASSERT(sqrtSize <= 65535);
+
+                    deviceInterface.cmdPushConstants(*commandBuffer, *pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                                                     sizeof(m_testParams.bufferSize), &m_testParams.bufferSize);
+                    deviceInterface.cmdDispatch(*commandBuffer, sqrtSize, sqrtSize, 1u);
+                }
 
                 // Update sparse buffer before being read in the transfer
                 {
@@ -1192,6 +1219,9 @@ void TexelBufferSparseResidencyCase::checkSupport(Context &context) const
 
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_BUFFER);
+
+    if ((m_texelBufferOp == TEXEL_OP_SPARSE_FETCH) || (m_texelBufferOp == TEXEL_OP_SPARSE_READ))
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_RESOURCE_RESIDENCY);
 
     const VkFormatProperties3 formatProperties(context.getFormatProperties(m_format));
     if ((m_bufferType == TexelBufferType::TEXEL_BUFF_UNIFORM) &&

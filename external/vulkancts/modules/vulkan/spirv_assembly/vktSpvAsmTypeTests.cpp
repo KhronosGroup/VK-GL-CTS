@@ -43,6 +43,7 @@
 #include "spirv/unified1/GLSL.std.450.h"
 
 #include <cmath>
+#include <limits>
 
 #define TEST_DATASET_SIZE 10
 #define TEST_DATASET_SIZE_VEC(vecSize) ((vecSize) <= 4 ? TEST_DATASET_SIZE * vecSize : 60)
@@ -939,20 +940,171 @@ public:
     SpvAsmTypeTests(tcu::TestContext &testCtx, const char *name, const char *deviceFeature, const char *spirvCapability,
                     const char *spirvType, InputType inputType, uint32_t typeSize, VecSize vectorSize);
     ~SpvAsmTypeTests(void);
+
     void createTests(const char *testName, uint32_t spirvOperation, OpUnaryFuncType op, UnaryFilterFuncType filter,
                      InputRange inputRange, InputWidth inputWidth, const char *spirvExtension,
-                     const bool returnHighPart = false);
+                     const bool returnHighPart = false)
+    {
+        // Defer creation to ::init().
+        m_unaryTestsParams.emplace_back(testName, spirvOperation, op, filter, inputRange, inputWidth, spirvExtension,
+                                        returnHighPart);
+    }
+
     void createTests(const char *testName, uint32_t spirvOperation, OpBinaryFuncType op, BinaryFilterFuncType filter,
                      InputRange inputRange, InputWidth inputWidth, const char *spirvExtension,
-                     const bool returnHighPart = false);
+                     const bool returnHighPart = false)
+    {
+        // Defer creation to ::init().
+        m_binaryTestsParams.emplace_back(testName, spirvOperation, op, filter, inputRange, inputWidth, spirvExtension,
+                                         returnHighPart);
+    }
+
     void createTests(const char *testName, uint32_t spirvOperation, OpTernaryFuncType op, TernaryFilterFuncType filter,
                      InputRange inputRange, InputWidth inputWidth, const char *spirvExtension,
-                     const bool returnHighPart = false);
+                     const bool returnHighPart = false)
+    {
+        // Defer creation to ::init().
+        m_ternaryTestsParams.emplace_back(testName, spirvOperation, op, filter, inputRange, inputWidth, spirvExtension,
+                                          returnHighPart);
+    }
+
     void createTests(const char *testName, uint32_t spirvOperation, OpQuaternaryFuncType op,
                      QuaternaryFilterFuncType filter, InputRange inputRange, InputWidth inputWidth,
-                     const char *spirvExtension, const bool returnHighPart = false);
+                     const char *spirvExtension, const bool returnHighPart = false)
+    {
+        // Defer creation to ::init().
+        m_quaternaryTestsParams.emplace_back(testName, spirvOperation, op, filter, inputRange, inputWidth,
+                                             spirvExtension, returnHighPart);
+    }
+
+protected:
+    struct UnaryTestsCreationParams
+    {
+        UnaryTestsCreationParams(const char *testName_, uint32_t spirvOperation_, OpUnaryFuncType op_,
+                                 UnaryFilterFuncType filter_, InputRange inputRange_, InputWidth inputWidth_,
+                                 const char *spirvExtension_, const bool returnHighPart_)
+            : testName(testName_)
+            , spirvOperation(spirvOperation_)
+            , op(op_)
+            , filter(filter_)
+            , inputRange(inputRange_)
+            , inputWidth(inputWidth_)
+            , spirvExtension(spirvExtension_ ? spirvExtension_ : "")
+            , returnHighPart(returnHighPart_)
+        {
+        }
+
+        std::string testName;
+        uint32_t spirvOperation;
+        OpUnaryFuncType op;
+        UnaryFilterFuncType filter;
+        InputRange inputRange;
+        InputWidth inputWidth;
+        std::string spirvExtension;
+        bool returnHighPart;
+    };
+
+    struct BinaryTestsCreationParams
+    {
+        BinaryTestsCreationParams(const char *testName_, uint32_t spirvOperation_, OpBinaryFuncType op_,
+                                  BinaryFilterFuncType filter_, InputRange inputRange_, InputWidth inputWidth_,
+                                  const char *spirvExtension_, const bool returnHighPart_)
+            : testName(testName_)
+            , spirvOperation(spirvOperation_)
+            , op(op_)
+            , filter(filter_)
+            , inputRange(inputRange_)
+            , inputWidth(inputWidth_)
+            , spirvExtension(spirvExtension_ ? spirvExtension_ : "")
+            , returnHighPart(returnHighPart_)
+        {
+        }
+
+        std::string testName;
+        uint32_t spirvOperation;
+        OpBinaryFuncType op;
+        BinaryFilterFuncType filter;
+        InputRange inputRange;
+        InputWidth inputWidth;
+        std::string spirvExtension;
+        bool returnHighPart;
+    };
+
+    struct TernaryTestsCreationParams
+    {
+        TernaryTestsCreationParams(const char *testName_, uint32_t spirvOperation_, OpTernaryFuncType op_,
+                                   TernaryFilterFuncType filter_, InputRange inputRange_, InputWidth inputWidth_,
+                                   const char *spirvExtension_, const bool returnHighPart_)
+            : testName(testName_)
+            , spirvOperation(spirvOperation_)
+            , op(op_)
+            , filter(filter_)
+            , inputRange(inputRange_)
+            , inputWidth(inputWidth_)
+            , spirvExtension(spirvExtension_ ? spirvExtension_ : "")
+            , returnHighPart(returnHighPart_)
+        {
+        }
+
+        std::string testName;
+        uint32_t spirvOperation;
+        OpTernaryFuncType op;
+        TernaryFilterFuncType filter;
+        InputRange inputRange;
+        InputWidth inputWidth;
+        std::string spirvExtension;
+        bool returnHighPart;
+    };
+
+    struct QuaternaryTestsCreationParams
+    {
+        QuaternaryTestsCreationParams(const char *testName_, uint32_t spirvOperation_, OpQuaternaryFuncType op_,
+                                      QuaternaryFilterFuncType filter_, InputRange inputRange_, InputWidth inputWidth_,
+                                      const char *spirvExtension_, const bool returnHighPart_)
+            : testName(testName_)
+            , spirvOperation(spirvOperation_)
+            , op(op_)
+            , filter(filter_)
+            , inputRange(inputRange_)
+            , inputWidth(inputWidth_)
+            , spirvExtension(spirvExtension_ ? spirvExtension_ : "")
+            , returnHighPart(returnHighPart_)
+        {
+        }
+
+        std::string testName;
+        uint32_t spirvOperation;
+        OpQuaternaryFuncType op;
+        QuaternaryFilterFuncType filter;
+        InputRange inputRange;
+        InputWidth inputWidth;
+        std::string spirvExtension;
+        bool returnHighPart;
+    };
+
+    std::vector<UnaryTestsCreationParams> m_unaryTestsParams;
+    std::vector<BinaryTestsCreationParams> m_binaryTestsParams;
+    std::vector<TernaryTestsCreationParams> m_ternaryTestsParams;
+    std::vector<QuaternaryTestsCreationParams> m_quaternaryTestsParams;
+
+protected:
+    void doCreateTests(const char *testName, uint32_t spirvOperation, OpUnaryFuncType op, UnaryFilterFuncType filter,
+                       InputRange inputRange, InputWidth inputWidth, const char *spirvExtension,
+                       const bool returnHighPart);
+    void doCreateTests(const char *testName, uint32_t spirvOperation, OpBinaryFuncType op, BinaryFilterFuncType filter,
+                       InputRange inputRange, InputWidth inputWidth, const char *spirvExtension,
+                       const bool returnHighPart);
+    void doCreateTests(const char *testName, uint32_t spirvOperation, OpTernaryFuncType op,
+                       TernaryFilterFuncType filter, InputRange inputRange, InputWidth inputWidth,
+                       const char *spirvExtension, const bool returnHighPart);
+    void doCreateTests(const char *testName, uint32_t spirvOperation, OpQuaternaryFuncType op,
+                       QuaternaryFilterFuncType filter, InputRange inputRange, InputWidth inputWidth,
+                       const char *spirvExtension, const bool returnHighPart);
+
+public:
     void createSwitchTests(void);
-    void getConstantDataset(vector<T> inputDataset, vector<T> &outputDataset, uint32_t spirvOperation);
+
+    void getConstantDataset(const vector<T> &inputDataset, vector<T> &outputDataset, uint32_t spirvOperation);
     virtual void getDataset(vector<T> &input, uint32_t numElements)              = 0;
     virtual void pushResource(vector<Resource> &resource, const vector<T> &data) = 0;
 
@@ -962,6 +1114,7 @@ public:
     static bool filterNone(T a, T b, T c, T d);
     static bool filterZero(T a, T b);
     static bool filterNegativesAndZero(T a, T b);
+    static bool filterSignedDiv(T a, T b);
     static bool filterMinGtMax(T, T a, T b);
 
     static T zero(T);
@@ -970,6 +1123,33 @@ public:
     static T zero(T, T, T, T);
 
     static string replicate(const std::string &replicant, const uint32_t count);
+
+public:
+    void init(void) override
+    {
+        for (const auto &params : m_unaryTestsParams)
+            doCreateTests(params.testName.c_str(), params.spirvOperation, params.op, params.filter, params.inputRange,
+                          params.inputWidth, (params.spirvExtension.empty() ? nullptr : params.spirvExtension.c_str()),
+                          params.returnHighPart);
+
+        for (const auto &params : m_binaryTestsParams)
+            doCreateTests(params.testName.c_str(), params.spirvOperation, params.op, params.filter, params.inputRange,
+                          params.inputWidth, (params.spirvExtension.empty() ? nullptr : params.spirvExtension.c_str()),
+                          params.returnHighPart);
+
+        for (const auto &params : m_ternaryTestsParams)
+            doCreateTests(params.testName.c_str(), params.spirvOperation, params.op, params.filter, params.inputRange,
+                          params.inputWidth, (params.spirvExtension.empty() ? nullptr : params.spirvExtension.c_str()),
+                          params.returnHighPart);
+
+        for (const auto &params : m_quaternaryTestsParams)
+            doCreateTests(params.testName.c_str(), params.spirvOperation, params.op, params.filter, params.inputRange,
+                          params.inputWidth, (params.spirvExtension.empty() ? nullptr : params.spirvExtension.c_str()),
+                          params.returnHighPart);
+
+        if (m_vecSize == VEC_SIZE_SCALAR)
+            createSwitchTests();
+    }
 
 protected:
     de::Random m_rnd;
@@ -2016,9 +2196,9 @@ string getVariableStr(vector<T> &dataset, const char *spirvType, uint32_t spirvO
 }
 
 template <class T>
-void SpvAsmTypeTests<T>::createTests(const char *testName, uint32_t spirvOperation, OpUnaryFuncType operation,
-                                     UnaryFilterFuncType filter, InputRange inputRange, InputWidth inputWidth,
-                                     const char *spirvExtension, const bool returnHighPart)
+void SpvAsmTypeTests<T>::doCreateTests(const char *testName, uint32_t spirvOperation, OpUnaryFuncType operation,
+                                       UnaryFilterFuncType filter, InputRange inputRange, InputWidth inputWidth,
+                                       const char *spirvExtension, const bool returnHighPart)
 {
     DE_ASSERT(!isBooleanResultTest(spirvOperation));
 
@@ -2129,9 +2309,9 @@ void SpvAsmTypeTests<T>::createTests(const char *testName, uint32_t spirvOperati
 }
 
 template <class T>
-void SpvAsmTypeTests<T>::createTests(const char *testName, uint32_t spirvOperation, OpBinaryFuncType operation,
-                                     BinaryFilterFuncType filter, InputRange inputRange, InputWidth inputWidth,
-                                     const char *spirvExtension, const bool returnHighPart)
+void SpvAsmTypeTests<T>::doCreateTests(const char *testName, uint32_t spirvOperation, OpBinaryFuncType operation,
+                                       BinaryFilterFuncType filter, InputRange inputRange, InputWidth inputWidth,
+                                       const char *spirvExtension, const bool returnHighPart)
 {
     const bool isBoolean      = isBooleanResultTest(spirvOperation);
     const string resultName   = (returnHighPart || isBoolean) ? "%op_result_pre" : "%op_result";
@@ -2199,9 +2379,9 @@ void SpvAsmTypeTests<T>::createTests(const char *testName, uint32_t spirvOperati
 }
 
 template <class T>
-void SpvAsmTypeTests<T>::createTests(const char *testName, uint32_t spirvOperation, OpTernaryFuncType operation,
-                                     TernaryFilterFuncType filter, InputRange inputRange, InputWidth inputWidth,
-                                     const char *spirvExtension, const bool returnHighPart)
+void SpvAsmTypeTests<T>::doCreateTests(const char *testName, uint32_t spirvOperation, OpTernaryFuncType operation,
+                                       TernaryFilterFuncType filter, InputRange inputRange, InputWidth inputWidth,
+                                       const char *spirvExtension, const bool returnHighPart)
 {
     DE_ASSERT(!isBooleanResultTest(spirvOperation));
 
@@ -2252,9 +2432,9 @@ void SpvAsmTypeTests<T>::createTests(const char *testName, uint32_t spirvOperati
 }
 
 template <class T>
-void SpvAsmTypeTests<T>::createTests(const char *testName, uint32_t spirvOperation, OpQuaternaryFuncType operation,
-                                     QuaternaryFilterFuncType filter, InputRange inputRange, InputWidth inputWidth,
-                                     const char *spirvExtension, const bool returnHighPart)
+void SpvAsmTypeTests<T>::doCreateTests(const char *testName, uint32_t spirvOperation, OpQuaternaryFuncType operation,
+                                       QuaternaryFilterFuncType filter, InputRange inputRange, InputWidth inputWidth,
+                                       const char *spirvExtension, const bool returnHighPart)
 {
     DE_ASSERT(!spirvExtension);
     DE_ASSERT(!isBooleanResultTest(spirvOperation));
@@ -2552,7 +2732,8 @@ void SpvAsmTypeTests<T>::createSwitchTests(void)
 }
 
 template <class T>
-void SpvAsmTypeTests<T>::getConstantDataset(vector<T> inputDataset, vector<T> &outputDataset, uint32_t spirvOperation)
+void SpvAsmTypeTests<T>::getConstantDataset(const vector<T> &inputDataset, vector<T> &outputDataset,
+                                            uint32_t spirvOperation)
 {
     const uint32_t numElements = (uint32_t)inputDataset.size();
 
@@ -2651,6 +2832,18 @@ template <class T>
 bool SpvAsmTypeTests<T>::filterNegativesAndZero(T a, T b)
 {
     if (a < static_cast<T>(0) || b <= static_cast<T>(0))
+        return false;
+    else
+        return true;
+}
+
+template <class T>
+bool SpvAsmTypeTests<T>::filterSignedDiv(T a, T b)
+{
+    // We cannot divide by zero, and we cannot divide the min by -1.
+    if (b == static_cast<T>(0))
+        return false;
+    else if (b == static_cast<T>(-1) && a == std::numeric_limits<T>::min())
         return false;
     else
         return true;
@@ -3803,6 +3996,11 @@ public:
 #define U32_FILTER_NEGATIVES_AND_ZERO SpvAsmTypeUint32Tests::filterNegativesAndZero
 #define U64_FILTER_NEGATIVES_AND_ZERO SpvAsmTypeUint64Tests::filterNegativesAndZero
 
+#define I8_FILTER_SIGNED_DIV SpvAsmTypeInt8Tests::filterSignedDiv
+#define I16_FILTER_SIGNED_DIV SpvAsmTypeInt16Tests::filterSignedDiv
+#define I32_FILTER_SIGNED_DIV SpvAsmTypeInt32Tests::filterSignedDiv
+#define I64_FILTER_SIGNED_DIV SpvAsmTypeInt64Tests::filterSignedDiv
+
 #define I8_FILTER_MIN_GT_MAX SpvAsmTypeInt8Tests::filterMinGtMax
 #define I16_FILTER_MIN_GT_MAX SpvAsmTypeInt16Tests::filterMinGtMax
 #define I32_FILTER_MIN_GT_MAX SpvAsmTypeInt32Tests::filterMinGtMax
@@ -4116,7 +4314,7 @@ tcu::TestCaseGroup *createTypeTests(tcu::TestContext &testCtx)
     MAKE_TEST_SV_I_8136("add", SpvOpIAdd, add, FILTER_NONE, RANGE_FULL, nullptr)
     MAKE_TEST_SV_I_8136("sub", SpvOpISub, sub, FILTER_NONE, RANGE_FULL, nullptr)
     MAKE_TEST_SV_I_8136("mul", SpvOpIMul, mul, FILTER_NONE, RANGE_FULL, nullptr)
-    MAKE_TEST_SV_I_8136("div", SpvOpSDiv, div, FILTER_ZERO, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136("div", SpvOpSDiv, div, FILTER_SIGNED_DIV, RANGE_FULL, nullptr)
     MAKE_TEST_SV_U_8136("div", SpvOpUDiv, div, FILTER_ZERO, RANGE_FULL, nullptr)
     MAKE_TEST_SV_I_8136("rem", SpvOpSRem, rem, FILTER_NEGATIVES_AND_ZERO, RANGE_FULL, nullptr)
     MAKE_TEST_SV_I_8136("mod", SpvOpSMod, mod, FILTER_NEGATIVES_AND_ZERO, RANGE_FULL, nullptr)
@@ -4228,15 +4426,6 @@ tcu::TestCaseGroup *createTypeTests(tcu::TestContext &testCtx)
                        RANGE_FULL, nullptr)
     MAKE_TEST_V_I_8136("spec_constant_composite_initializer", SpvOpSpecConstantComposite, constant, FILTER_NONE,
                        RANGE_FULL, nullptr)
-
-    int8Tests[0]->createSwitchTests();
-    int16Tests[0]->createSwitchTests();
-    int32Tests[0]->createSwitchTests();
-    int64Tests[0]->createSwitchTests();
-    uint8Tests[0]->createSwitchTests();
-    uint16Tests[0]->createSwitchTests();
-    uint32Tests[0]->createSwitchTests();
-    uint64Tests[0]->createSwitchTests();
 
     typeScalarTests->addChild(int8Tests[0].release());
     typeScalarTests->addChild(int16Tests[0].release());

@@ -7031,7 +7031,7 @@ tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
         nullptr, //pEnabledFeatures;
     };
 
-    const Unique<VkDevice>            device            (createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+    const Unique<VkDevice>            device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
     const DeviceDriver                deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
     const VkQueue                    queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
 
@@ -7097,7 +7097,7 @@ tcu::TestStatus createDeviceWithPromoted12Structures (Context& context)
         nullptr, //pEnabledFeatures;
     };
 
-    const Unique<VkDevice>            device            (createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+    const Unique<VkDevice>            device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
     const DeviceDriver                deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
     const VkQueue                    queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
 
@@ -7163,7 +7163,7 @@ tcu::TestStatus createDeviceWithPromoted13Structures (Context& context)
         nullptr, //pEnabledFeatures;
     };
 
-    const Unique<VkDevice>            device            (createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+    const Unique<VkDevice>            device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
     const DeviceDriver                deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
     const VkQueue                    queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
 
@@ -7229,7 +7229,7 @@ tcu::TestStatus createDeviceWithPromoted14Structures (Context& context)
         nullptr, //pEnabledFeatures;
     };
 
-    const Unique<VkDevice>            device            (createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+    const Unique<VkDevice>            device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
     const DeviceDriver                deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
     const VkQueue                    queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
 

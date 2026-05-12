@@ -5850,6 +5850,270 @@ void MultipleOutputsVertsInstance::generateReferenceLevel()
         }
 }
 
+// Test that emits multiple constant outputs, one for each vertex, in the same mesh shader invocation.
+// The outputs should be interpolated in the result instead of being passed as flat to the frag shader.
+class PayloadNotAccessedCase : public MeshShaderMiscCase
+{
+public:
+    PayloadNotAccessedCase(tcu::TestContext &testCtx, const std::string &name, ParamsPtr params)
+        : MeshShaderMiscCase(testCtx, name, std::move(params))
+    {
+        const auto drawCount = m_params->drawCount();
+        DE_ASSERT(drawCount.x() == 1u && drawCount.y() == 1u && drawCount.z() == 1u);
+        DE_UNREF(drawCount); // For release builds.
+    }
+    virtual ~PayloadNotAccessedCase(void) = default;
+
+    TestInstance *createInstance(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+};
+
+class PayloadNotAccessedInstance : public MeshShaderMiscInstance
+{
+public:
+    PayloadNotAccessedInstance(Context &context, const MiscTestParams *params) : MeshShaderMiscInstance(context, params)
+    {
+    }
+
+    void generateReferenceLevel() override;
+
+    tcu::TestStatus iterate() override;
+};
+
+tcu::TestStatus PayloadNotAccessedInstance::iterate()
+{
+    const auto &vkd       = m_context.getDeviceInterface();
+    const auto device     = m_context.getDevice();
+    auto &alloc           = m_context.getDefaultAllocator();
+    const auto queueIndex = m_context.getUniversalQueueFamilyIndex();
+    const auto queue      = m_context.getUniversalQueue();
+
+    const auto imageFormat = getOutputFormat();
+    const auto tcuFormat   = mapVkFormat(imageFormat);
+    const auto imageExtent = makeExtent3D(m_params->width, m_params->height, 1u);
+    const auto imageUsage =
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT);
+
+    const VkImageCreateInfo colorBufferInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                             // const void* pNext;
+        0u,                                  // VkImageCreateFlags flags;
+        VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
+        imageFormat,                         // VkFormat format;
+        imageExtent,                         // VkExtent3D extent;
+        1u,                                  // uint32_t mipLevels;
+        1u,                                  // uint32_t arrayLayers;
+        VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits samples;
+        VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling tiling;
+        imageUsage,                          // VkImageUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
+        0u,                                  // uint32_t queueFamilyIndexCount;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
+    };
+
+    // Create color image and view.
+    ImageWithMemory colorImage(vkd, device, alloc, colorBufferInfo, MemoryRequirement::Any);
+    const auto colorSRR  = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+    const auto colorSRL  = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+    const auto colorView = makeImageView(vkd, device, colorImage.get(), VK_IMAGE_VIEW_TYPE_2D, imageFormat, colorSRR);
+
+    // Create a memory buffer for verification.
+    const auto verificationBufferSize =
+        static_cast<VkDeviceSize>(imageExtent.width * imageExtent.height * tcu::getPixelSize(tcuFormat));
+    const auto verificationBufferUsage = (VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto verificationBufferInfo  = makeBufferCreateInfo(verificationBufferSize, verificationBufferUsage);
+
+    BufferWithMemory verificationBuffer(vkd, device, alloc, verificationBufferInfo, MemoryRequirement::HostVisible);
+    auto &verificationBufferAlloc = verificationBuffer.getAllocation();
+    void *verificationBufferData  = verificationBufferAlloc.getHostPtr();
+
+    // Pipeline layout.
+    VkPushConstantRange pushConstantRange = {
+        VK_SHADER_STAGE_MESH_BIT_EXT,
+        0u,
+        sizeof(float),
+    };
+    const auto pipelineLayout = makePipelineLayout(vkd, device, VK_NULL_HANDLE, &pushConstantRange);
+
+    // Shader modules.
+    const auto &binaries = m_context.getBinaryCollection();
+    const auto hasTask   = binaries.contains("task");
+
+    const auto meshShader = createShaderModule(vkd, device, binaries.get("mesh"));
+    const auto fragShader = createShaderModule(vkd, device, binaries.get("frag"));
+
+    Move<VkShaderModule> taskShader;
+    if (hasTask)
+        taskShader = createShaderModule(vkd, device, binaries.get("task"));
+
+    // Render pass.
+    const auto renderPass = makeRenderPass(vkd, device, imageFormat);
+
+    // Framebuffer.
+    const auto framebuffer =
+        makeFramebuffer(vkd, device, *renderPass, 1u, &colorView.get(), imageExtent.width, imageExtent.height);
+
+    // Viewport and scissor.
+    const std::vector<VkViewport> viewports(1u, makeViewport(imageExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(imageExtent));
+
+    // Color blending.
+    const auto colorWriteMask =
+        (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+    const VkPipelineColorBlendAttachmentState blendAttState = {
+        VK_TRUE,             // VkBool32 blendEnable;
+        VK_BLEND_FACTOR_ONE, // VkBlendFactor srcColorBlendFactor;
+        VK_BLEND_FACTOR_ONE, // VkBlendFactor dstColorBlendFactor;
+        VK_BLEND_OP_ADD,     // VkBlendOp colorBlendOp;
+        VK_BLEND_FACTOR_ONE, // VkBlendFactor srcAlphaBlendFactor;
+        VK_BLEND_FACTOR_ONE, // VkBlendFactor dstAlphaBlendFactor;
+        VK_BLEND_OP_ADD,     // VkBlendOp alphaBlendOp;
+        colorWriteMask,      // VkColorComponentFlags colorWriteMask;
+    };
+
+    const VkPipelineColorBlendStateCreateInfo colorBlendInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                                  // const void* pNext;
+        0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
+        VK_FALSE,                                                 // VkBool32 logicOpEnable;
+        VK_LOGIC_OP_OR,                                           // VkLogicOp logicOp;
+        1u,                                                       // uint32_t attachmentCount;
+        &blendAttState,           // const VkPipelineColorBlendAttachmentState* pAttachments;
+        {0.0f, 0.0f, 0.0f, 0.0f}, // float blendConstants[4];
+    };
+
+    const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(), taskShader.get(), meshShader.get(),
+                                               fragShader.get(), renderPass.get(), viewports, scissors, 0u /*subpass*/,
+                                               nullptr, nullptr, nullptr, &colorBlendInfo);
+
+    // Command pool and buffer.
+    const auto cmdPool      = makeCommandPool(vkd, device, queueIndex);
+    const auto cmdBufferPtr = allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    const auto cmdBuffer    = cmdBufferPtr.get();
+
+    beginCommandBuffer(vkd, cmdBuffer);
+    float value = 1.0f;
+    vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), VK_SHADER_STAGE_MESH_BIT_EXT, 0u, sizeof(float), &value);
+
+    // Run pipeline.
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    const auto drawCount = m_params->drawCount();
+    beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), clearColor);
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+    vkd.cmdDrawMeshTasksEXT(cmdBuffer, drawCount.x(), drawCount.y(), drawCount.z());
+    endRenderPass(vkd, cmdBuffer);
+
+    // Copy color buffer to verification buffer.
+    const auto colorAccess =
+        (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
+    const auto transferRead  = VK_ACCESS_TRANSFER_READ_BIT;
+    const auto transferWrite = VK_ACCESS_TRANSFER_WRITE_BIT;
+    const auto hostRead      = VK_ACCESS_HOST_READ_BIT;
+
+    const auto preCopyLayout  = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    const auto preCopyBarrier = makeImageMemoryBarrier(
+        colorAccess, transferRead, preCopyLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorImage.get(), colorSRR);
+    const auto postCopyBarrier = makeMemoryBarrier(transferWrite, hostRead);
+    const auto copyRegion      = makeBufferImageCopy(imageExtent, colorSRL);
+
+    const auto writeStages = (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT);
+    vkd.cmdPipelineBarrier(cmdBuffer, writeStages, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
+                           &preCopyBarrier);
+    vkd.cmdCopyImageToBuffer(cmdBuffer, colorImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                             verificationBuffer.get(), 1u, &copyRegion);
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u,
+                           &postCopyBarrier, 0u, nullptr, 0u, nullptr);
+
+    endCommandBuffer(vkd, cmdBuffer);
+    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+    // Generate reference image and compare results.
+    const tcu::IVec3 iExtent(static_cast<int>(imageExtent.width), static_cast<int>(imageExtent.height), 1);
+    const tcu::ConstPixelBufferAccess verificationAccess(tcuFormat, iExtent, verificationBufferData);
+
+    generateReferenceLevel();
+    invalidateAlloc(vkd, device, verificationBufferAlloc);
+    if (!verifyResult(verificationAccess))
+        TCU_FAIL("Result does not match reference; check log for details");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+TestInstance *PayloadNotAccessedCase::createInstance(Context &context) const
+{
+    return new PayloadNotAccessedInstance(context, m_params.get());
+}
+
+void PayloadNotAccessedCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::ostringstream mesh;
+    mesh << "#version 460\n"
+         << "#extension GL_EXT_mesh_shader : require\n"
+         << "\n"
+         << "layout (local_size_x=1) in;\n"
+         << "layout (max_vertices=3, max_primitives=1) out;\n"
+         << "layout (triangles) out;\n"
+         << "\n"
+         << "layout (location=0) out vec4 color[];\n"
+         << "\n"
+         << "taskPayloadSharedEXT float payload;"
+         << "layout(push_constant) uniform PushConst {\n"
+         << "    float value;\n"
+         << "};\n"
+         << "\n"
+         << "void main()\n"
+         << "{\n"
+         << "    float three = 3.0f;\n"
+         << "    if (value > 2.0f) {\n"
+         << "        three = payload;\n"
+         << "    }\n"
+         << "\n"
+         << "    SetMeshOutputsEXT(3, 1);\n"
+         << "\n"
+         << "    color[0] = vec4(0.0, 0.0, 0.0, 1.0);\n"
+         << "    color[1] = vec4(0.0, 0.0, 1.0, 1.0);\n"
+         << "    color[2] = vec4(1.0, 0.0, 0.0, 1.0);\n"
+         << "\n"
+         << "    gl_MeshVerticesEXT[0].gl_Position = vec4( -1.0,  -1.0, 0.0, 1.0);\n"
+         << "    gl_MeshVerticesEXT[1].gl_Position = vec4( -1.0, three, 0.0, 1.0);\n"
+         << "    gl_MeshVerticesEXT[2].gl_Position = vec4(three,  -1.0, 0.0, 1.0);\n"
+         << "\n"
+         << "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
+         << "}\n";
+    const auto buildOptions = getMinMeshEXTBuildOptions(programCollection.usedVulkanVersion);
+    programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) in vec4 inColor;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main() {\n"
+         << "    outColor = inColor;\n"
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+void PayloadNotAccessedInstance::generateReferenceLevel()
+{
+    const tcu::UVec3 uExtent(m_params->width, m_params->height, 1u);
+    const auto extent    = uExtent.asInt();
+    const auto fExtent   = uExtent.asFloat();
+    const auto tcuFormat = mapVkFormat(getOutputFormat());
+
+    m_referenceLevel.reset(new tcu::TextureLevel(tcuFormat, extent.x(), extent.y(), extent.z()));
+    tcu::PixelBufferAccess reference = m_referenceLevel->getAccess();
+
+    for (int y = 0; y < extent.y(); ++y)
+        for (int x = 0; x < extent.x(); ++x)
+        {
+            // We halve the red and green values because value 1.0 is at coordinate 3.0 for both.
+            const float red  = (static_cast<float>(x) + 0.5f) / fExtent.x() * 0.5f;
+            const float blue = (static_cast<float>(y) + 0.5f) / fExtent.y() * 0.5f;
+            reference.setPixel(tcu::Vec4(red, 0.0f, blue, 1.0f), x, y);
+        }
+}
+
 // The goal here is to make sure the compiler doesn't choke and also that it uses the right EmitMeshTasksEXT call.
 // We will launch a single workgroup and the task shader should only dispatch one mesh workgroup. That workgroup will
 // draw only on half the framebuffer. If the workgroup id of the task shader is non-zero (it should not be), the task
@@ -6910,6 +7174,16 @@ tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
             /*height*/ 8u));
 
         miscTests->addChild(new MultipleOutputsVertsCase(testCtx, "multiple_outputs_vertices", std::move(paramsPtr)));
+    }
+
+    {
+        ParamsPtr paramsPtr(new MiscTestParams(
+            /*taskCount*/ tcu::Nothing,
+            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+            /*width*/ 8u,
+            /*height*/ 8u));
+
+        miscTests->addChild(new PayloadNotAccessedCase(testCtx, "payload_not_accessed", std::move(paramsPtr)));
     }
 
     for (const bool badEmitLast : {false, true})

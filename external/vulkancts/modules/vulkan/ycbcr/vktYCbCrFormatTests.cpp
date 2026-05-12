@@ -91,14 +91,12 @@ Move<VkImage> createTestImage(const DeviceInterface &vkd, VkDevice device, VkFor
     return createImage(vkd, device, &createInfo);
 }
 
-Move<VkImageView> createImageView(const DeviceInterface &vkd, VkDevice device, VkImage image, VkFormat format,
-                                  VkSamplerYcbcrConversion conversion, uint32_t layerCount)
+VkImageViewCreateInfo makeImageViewCreateInfo(VkImage image, VkFormat format,
+                                              const VkSamplerYcbcrConversionInfo *conversionInfo, uint32_t layerCount)
 {
-    const VkSamplerYcbcrConversionInfo conversionInfo = {VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO, nullptr,
-                                                         conversion};
-    const VkImageViewCreateInfo viewInfo              = {
+    const VkImageViewCreateInfo viewInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        &conversionInfo,
+        conversionInfo,
         (VkImageViewCreateFlags)0,
         image,
         (layerCount > 1) ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D,
@@ -112,21 +110,19 @@ Move<VkImageView> createImageView(const DeviceInterface &vkd, VkDevice device, V
         {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, layerCount},
     };
 
-    return createImageView(vkd, device, &viewInfo);
+    return viewInfo;
 }
 
-Move<VkDescriptorSetLayout> createDescriptorSetLayout(const DeviceInterface &vkd, VkDevice device, VkSampler sampler)
+Move<VkDescriptorSetLayout> createDescriptorSetLayout(
+    const DeviceInterface &vkd, VkDevice device, VkSampler sampler,
+    VkDescriptorSetLayoutCreateFlags flags = (VkDescriptorSetLayoutCreateFlags)0u)
 {
     const VkDescriptorSetLayoutBinding binding       = {0u, // binding
                                                         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                                                         1u, // descriptorCount
                                                         VK_SHADER_STAGE_ALL, &sampler};
     const VkDescriptorSetLayoutCreateInfo layoutInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        nullptr,
-        (VkDescriptorSetLayoutCreateFlags)0u,
-        1u,
-        &binding,
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr, flags, 1u, &binding,
     };
 
     return createDescriptorSetLayout(vkd, device, &layoutInfo);
@@ -187,6 +183,74 @@ Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkd, VkDevice d
     return descSet;
 }
 
+#ifndef CTS_USES_VULKANSC
+struct DescriptorBufferResources
+{
+    std::vector<DescriptorData::BufferDescriptor> bufferDescriptors{};
+};
+
+void createDescriptorBufferResources(const DeviceInterface &vkd, VkDevice device,
+                                     DescriptorBufferResources &descriptorBufferResources,
+                                     VkDescriptorSetLayout descriptorSetLayout, VkImageView imageView,
+                                     VkSampler sampler, uint32_t combinedSamplerDescriptorCount)
+{
+    DescriptorData::BufferDescriptor imageDescriptor;
+    imageDescriptor.imageInfo                      = {sampler, imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+    imageDescriptor.combinedSamplerDescriptorCount = combinedSamplerDescriptorCount;
+    vkd.getDescriptorSetLayoutBindingOffsetEXT(device, descriptorSetLayout, 0u, &imageDescriptor.bufferOffset);
+    descriptorBufferResources.bufferDescriptors.push_back(imageDescriptor);
+}
+
+struct DescriptorHeapResources
+{
+    VkImageDescriptorInfoEXT imageDescriptor = initVulkanStructure();
+    std::vector<VkDescriptorSetAndBindingMappingEXT> mappings{};
+    std::vector<DescriptorData::ResourceDescriptor> resourceDescriptors{};
+    std::vector<DescriptorData::SamplerDescriptor> samplerDescriptors{};
+};
+
+VkDeviceSize alignUp(VkDeviceSize value, VkDeviceSize alignment)
+{
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+
+VkDeviceSize getImageDescriptorStride(const VkPhysicalDeviceDescriptorHeapPropertiesEXT &properties)
+{
+    return alignUp(properties.imageDescriptorSize, properties.imageDescriptorAlignment);
+}
+
+void createDescriptorHeapResources(Context &context, DescriptorHeapResources &descriptorHeapResources,
+                                   const VkImageViewCreateInfo *imageViewCreateInfo,
+                                   const VkSamplerCreateInfo &samplerInfo, uint32_t combinedSamplerDescriptorCount)
+{
+    const auto heapProps = context.getDescriptorHeapPropertiesEXT();
+
+    descriptorHeapResources.imageDescriptor.pView  = imageViewCreateInfo;
+    descriptorHeapResources.imageDescriptor.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    DescriptorData::ResourceDescriptor resourceDescriptor{};
+    resourceDescriptor.descriptorInfo             = initVulkanStructure();
+    resourceDescriptor.descriptorInfo.type        = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    resourceDescriptor.descriptorInfo.data.pImage = &descriptorHeapResources.imageDescriptor;
+    resourceDescriptor.heapOffset                 = 0u;
+    resourceDescriptor.size =
+        static_cast<VkDeviceSize>(combinedSamplerDescriptorCount) * getImageDescriptorStride(heapProps);
+
+    descriptorHeapResources.resourceDescriptors.push_back(resourceDescriptor);
+
+    VkDescriptorSetAndBindingMappingEXT mapping        = initVulkanStructure();
+    mapping.descriptorSet                              = 1u;
+    mapping.firstBinding                               = 0u;
+    mapping.bindingCount                               = 1u;
+    mapping.resourceMask                               = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    mapping.source                                     = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mapping.sourceData.constantOffset.heapOffset       = 0u;
+    mapping.sourceData.constantOffset.pEmbeddedSampler = &samplerInfo;
+
+    descriptorHeapResources.mappings.push_back(mapping);
+}
+#endif
+
 struct TestParameters
 {
     VkFormat format;
@@ -196,9 +260,11 @@ struct TestParameters
     glu::ShaderType shaderType;
     bool useMappedMemory;
     bool useArrayLayers;
+    ExecutorDescriptorMode descriptorType;
 
     TestParameters(VkFormat format_, const UVec2 &size_, VkImageCreateFlags flags_, VkImageTiling tiling_,
-                   glu::ShaderType shaderType_, bool useMappedMemory_, bool useArrayLayers_)
+                   glu::ShaderType shaderType_, bool useMappedMemory_, bool useArrayLayers_,
+                   ExecutorDescriptorMode descriptorType_)
         : format(format_)
         , size(size_)
         , flags(flags_)
@@ -206,6 +272,7 @@ struct TestParameters
         , shaderType(shaderType_)
         , useMappedMemory(useMappedMemory_)
         , useArrayLayers(useArrayLayers_)
+        , descriptorType(descriptorType_)
     {
     }
 
@@ -216,6 +283,7 @@ struct TestParameters
         , shaderType(glu::SHADERTYPE_LAST)
         , useMappedMemory(false)
         , useArrayLayers(false)
+        , descriptorType(ExecutorDescriptorMode::DESCRIPTOR_SET)
     {
     }
 };
@@ -260,6 +328,12 @@ void checkSupport(Context &context, const TestParameters params)
     if (params.shaderType == glu::SHADERTYPE_VERTEX || params.shaderType == glu::SHADERTYPE_TESSELLATION_CONTROL ||
         params.shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION || params.shaderType == glu::SHADERTYPE_GEOMETRY)
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
+
+    if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_BUFFER)
+        context.requireDeviceFunctionality("VK_EXT_descriptor_buffer");
+
+    if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_HEAP)
+        context.requireDeviceFunctionality("VK_EXT_descriptor_heap");
 }
 
 void generateLookupCoordinates(const UVec2 &imageSize, vector<Vec2> *dst)
@@ -325,13 +399,15 @@ tcu::TestStatus testFormat(Context &context, TestParameters params)
         VK_FALSE, // forceExplicitReconstruction
     };
     const Unique<VkSamplerYcbcrConversion> conversion(createSamplerYcbcrConversion(vkd, device, &conversionInfo));
-    const Unique<VkImageView> imageView(createImageView(vkd, device, *image, format, *conversion, arrayLayers));
 
     const VkSamplerYcbcrConversionInfo samplerConversionInfo = {
         VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
         nullptr,
         *conversion,
     };
+    const VkImageViewCreateInfo imageViewCreateInfo =
+        makeImageViewCreateInfo(*image, format, &samplerConversionInfo, arrayLayers);
+    const Unique<VkImageView> imageView(vk::createImageView(vkd, device, &imageViewCreateInfo));
 
     const VkSamplerCreateInfo samplerInfo = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -396,10 +472,34 @@ tcu::TestStatus testFormat(Context &context, TestParameters params)
 
     const Unique<VkSampler> sampler(createSampler(vkd, device, &samplerInfo));
 
-    const Unique<VkDescriptorSetLayout> descLayout(createDescriptorSetLayout(vkd, device, *sampler));
-    const Unique<VkDescriptorPool> descPool(
-        createDescriptorPool(vkd, device, ycbcrProperties.combinedImageSamplerDescriptorCount));
-    const Unique<VkDescriptorSet> descSet(createDescriptorSet(vkd, device, *descPool, *descLayout, *imageView));
+    Move<VkDescriptorSetLayout> descLayout;
+    Move<VkDescriptorPool> descPool;
+    Move<VkDescriptorSet> descSet;
+#ifndef CTS_USES_VULKANSC
+    DescriptorBufferResources descriptorBufferResources;
+    DescriptorHeapResources descriptorHeapResources;
+#endif
+
+    if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_SET)
+    {
+        descLayout = createDescriptorSetLayout(vkd, device, *sampler);
+        descPool   = createDescriptorPool(vkd, device, ycbcrProperties.combinedImageSamplerDescriptorCount);
+        descSet    = createDescriptorSet(vkd, device, *descPool, *descLayout, *imageView);
+    }
+#ifndef CTS_USES_VULKANSC
+    else if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_BUFFER)
+    {
+        descLayout =
+            createDescriptorSetLayout(vkd, device, *sampler, VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT);
+        createDescriptorBufferResources(vkd, device, descriptorBufferResources, *descLayout, *imageView, *sampler,
+                                        ycbcrProperties.combinedImageSamplerDescriptorCount);
+    }
+    else if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_HEAP)
+    {
+        createDescriptorHeapResources(context, descriptorHeapResources, &imageViewCreateInfo, samplerInfo,
+                                      ycbcrProperties.combinedImageSamplerDescriptorCount);
+    }
+#endif
 
     MultiPlaneImageData imageData(format, size);
 
@@ -451,12 +551,31 @@ tcu::TestStatus testFormat(Context &context, TestParameters params)
         reference.resize(texCoord.size());
 
         {
+            const VkDescriptorSetLayout extraResourcesLayout =
+                (params.descriptorType != ExecutorDescriptorMode::DESCRIPTOR_HEAP) ? *descLayout : VK_NULL_HANDLE;
+
             UniquePtr<ShaderExecutor> executor(
-                createExecutor(context, params.shaderType, getShaderSpec(params), *descLayout));
+                createExecutor(context, params.shaderType, getShaderSpec(params), extraResourcesLayout));
             const void *inputs[] = {texCoord[0].getPtr()};
             void *outputs[]      = {result[0].getPtr()};
 
-            executor->execute((int)texCoord.size(), inputs, outputs, *descSet);
+#ifndef CTS_USES_VULKANSC
+            if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_BUFFER)
+            {
+                executor->executeBuffer((int)texCoord.size(), inputs, outputs,
+                                        descriptorBufferResources.bufferDescriptors);
+            }
+            else if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_HEAP)
+            {
+                executor->executeHeap((int)texCoord.size(), inputs, outputs, descriptorHeapResources.mappings,
+                                      descriptorHeapResources.resourceDescriptors,
+                                      descriptorHeapResources.samplerDescriptors);
+            }
+            else
+#endif
+            {
+                executor->execute((int)texCoord.size(), inputs, outputs, *descSet);
+            }
         }
 
         for (uint32_t channelNdx = 0; channelNdx < 4; channelNdx++)
@@ -533,38 +652,61 @@ void populatePerFormatGroup(tcu::TestCaseGroup *group, VkFormat format)
         VkImageTiling value;
     } tilings[] = {{"optimal", VK_IMAGE_TILING_OPTIMAL}, {"linear", VK_IMAGE_TILING_LINEAR}};
 
+    struct
+    {
+        ExecutorDescriptorMode descriptorType;
+        const char *name;
+    } descriptorTypes[] = {
+        {ExecutorDescriptorMode::DESCRIPTOR_SET, ""},
+#ifndef CTS_USES_VULKANSC
+        {ExecutorDescriptorMode::DESCRIPTOR_BUFFER, "_descriptor_buffer"},
+        {ExecutorDescriptorMode::DESCRIPTOR_HEAP, "_descriptor_heap"},
+#endif
+    };
+
     for (glu::ShaderType shaderType : shaderTypes)
-        for (int tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(tilings); tilingNdx++)
-            for (int useArrayLayers = 0; useArrayLayers < 2; useArrayLayers++)
+    {
+        for (const auto &descriptorType : descriptorTypes)
+        {
+            if (!executorSupported(shaderType, descriptorType.descriptorType))
+                continue;
+
+            for (int tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(tilings); tilingNdx++)
             {
-                const VkImageTiling tiling       = tilings[tilingNdx].value;
-                const char *const tilingName     = tilings[tilingNdx].name;
-                const char *const shaderTypeName = glu::getShaderTypeName(shaderType);
-                const string name = string(shaderTypeName) + "_" + tilingName + ((useArrayLayers) ? "_array" : "");
-
-                addFunctionCaseWithPrograms(
-                    group, name, checkSupport, initPrograms, testFormat,
-                    TestParameters(format, size, 0u, tiling, shaderType, false, useArrayLayers));
-
-                if (getPlaneCount(format) > 1)
-                    addFunctionCaseWithPrograms(group, name + "_disjoint", checkSupport, initPrograms, testFormat,
-                                                TestParameters(format, size,
-                                                               (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, tiling,
-                                                               shaderType, false, useArrayLayers));
-
-                if (tiling == VK_IMAGE_TILING_LINEAR)
+                for (int useArrayLayers = 0; useArrayLayers < 2; useArrayLayers++)
                 {
-                    addFunctionCaseWithPrograms(
-                        group, name + "_mapped", checkSupport, initPrograms, testFormat,
-                        TestParameters(format, size, 0u, tiling, shaderType, true, useArrayLayers));
+                    const VkImageTiling tiling       = tilings[tilingNdx].value;
+                    const char *const tilingName     = tilings[tilingNdx].name;
+                    const char *const shaderTypeName = glu::getShaderTypeName(shaderType);
+                    const string name = string(shaderTypeName) + "_" + tilingName + ((useArrayLayers) ? "_array" : "") +
+                                        descriptorType.name;
+
+                    addFunctionCaseWithPrograms(group, name, checkSupport, initPrograms, testFormat,
+                                                TestParameters(format, size, 0u, tiling, shaderType, false,
+                                                               useArrayLayers, descriptorType.descriptorType));
 
                     if (getPlaneCount(format) > 1)
                         addFunctionCaseWithPrograms(
-                            group, name + "_disjoint_mapped", checkSupport, initPrograms, testFormat,
+                            group, name + "_disjoint", checkSupport, initPrograms, testFormat,
                             TestParameters(format, size, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, tiling,
-                                           shaderType, true, useArrayLayers));
+                                           shaderType, false, useArrayLayers, descriptorType.descriptorType));
+
+                    if (tiling == VK_IMAGE_TILING_LINEAR)
+                    {
+                        addFunctionCaseWithPrograms(group, name + "_mapped", checkSupport, initPrograms, testFormat,
+                                                    TestParameters(format, size, 0u, tiling, shaderType, true,
+                                                                   useArrayLayers, descriptorType.descriptorType));
+
+                        if (getPlaneCount(format) > 1)
+                            addFunctionCaseWithPrograms(
+                                group, name + "_disjoint_mapped", checkSupport, initPrograms, testFormat,
+                                TestParameters(format, size, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, tiling,
+                                               shaderType, true, useArrayLayers, descriptorType.descriptorType));
+                    }
                 }
             }
+        }
+    }
 }
 
 void populateFormatGroup(tcu::TestCaseGroup *group)

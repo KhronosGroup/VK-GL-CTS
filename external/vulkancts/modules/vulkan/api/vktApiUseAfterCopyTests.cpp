@@ -49,6 +49,7 @@ struct AfterUsageParams
     bool colorAttFlag;                 // Only applies to color formats: set color attachment usage bit.
     bool imageToImage;                 // Only when indirect is false.
     bool linear;                       // Use linear tiling for the test image.
+    VkSampleCountFlagBits sampleCount; // If samples > 1, imageToImage must be true.
 
     bool isDepthStencilCase() const
     {
@@ -104,7 +105,7 @@ struct AfterUsageParams
             makeExtent3D(creationExtent),
             1u,
             creationLayers,
-            VK_SAMPLE_COUNT_1_BIT,
+            sampleCount,
             tiling,
             usage,
             VK_SHARING_MODE_EXCLUSIVE,
@@ -116,12 +117,13 @@ struct AfterUsageParams
         return createInfo;
     }
 
-    VkImageCreateInfo getColorAttCreateInfo() const
+    VkImageCreateInfo getColorAttCreateInfo(bool singleSample) const
     {
         const tcu::IVec3 creationExtent(extent.x(), extent.y(), 1);
         const auto creationLayers = static_cast<uint32_t>(extent.z());
         const auto usage =
             (VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+        const auto attSampleCount = (singleSample ? VK_SAMPLE_COUNT_1_BIT : sampleCount);
 
         const VkImageCreateInfo createInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -132,7 +134,7 @@ struct AfterUsageParams
             makeExtent3D(creationExtent),
             1u,
             creationLayers,
-            VK_SAMPLE_COUNT_1_BIT,
+            attSampleCount,
             VK_IMAGE_TILING_OPTIMAL,
             usage,
             VK_SHARING_MODE_EXCLUSIVE,
@@ -147,8 +149,16 @@ struct AfterUsageParams
     // This one is used in image-to-image operations and is essentially identical to the regular image.
     VkImageCreateInfo getAuxiliarImageCreateInfo() const
     {
-        auto createInfo  = getImageCreateInfo();
-        createInfo.usage = (VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT); // Only transfers.
+        const bool isMS = multiSample();
+        const bool isDS = isDepthStencilCase();
+
+        auto createInfo = getImageCreateInfo();
+        // In the multisample case, the auxiliary image will be filled using a fragment shader. In the single-sample
+        // case we can use a copyBufferToImage operation.
+        const auto fillUsage(
+            isMS ? (isDS ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) :
+                   VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+        createInfo.usage = (fillUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
         return createInfo;
     }
 
@@ -197,6 +207,11 @@ struct AfterUsageParams
     bool multiSlice() const
     {
         return (extent.z() > 1);
+    }
+
+    bool multiSample() const
+    {
+        return (sampleCount > VK_SAMPLE_COUNT_1_BIT);
     }
 };
 
@@ -363,6 +378,9 @@ void AfterUsageCase::checkSupport(Context &context) const
         formatProperties.maxExtent.height < createInfo.extent.height)
         TCU_THROW(NotSupportedError, "Format does not support the required image extent");
 
+    if ((formatProperties.sampleCounts & createInfo.samples) == 0)
+        TCU_THROW(NotSupportedError, "Format does not support the required sample count");
+
     if (m_params.multiSlice())
     {
         context.requireDeviceFunctionality("VK_EXT_shader_viewport_index_layer");
@@ -397,16 +415,41 @@ void AfterUsageCase::initPrograms(vk::SourceCollections &dst) const
     dst.glslSources.add("vert-spv10") << glu::VertexSource(src);
     dst.glslSources.add("vert-spv15") << glu::VertexSource(src) << spv15Opts;
 
+    // Vertex shader used to copy values from a buffer to a multisample image. It has to generate a full-screen quad.
+    std::ostringstream vertFill;
+    vertFill << "#version 460\n"
+             << (multiSlice ? "#extension GL_ARB_shader_viewport_layer_array : enable\n" : "")
+             << "layout (location=0) out flat uint layerIndex;\n"
+             << "void main(void) {\n"
+             << "    const float x = float((gl_VertexIndex >> 1) & 1) * 2.0 - 1.0;\n"
+             << "    const float y = float((gl_VertexIndex >> 0) & 1) * 2.0 - 1.0;\n"
+             << "    gl_Position = vec4(x, y, 0.0, 1.0);\n"
+             << "    gl_PointSize = 1.0;\n"
+             << "    layerIndex = uint(gl_InstanceIndex);\n"
+             << (multiSlice ? "    gl_Layer = gl_InstanceIndex;\n" : "") << "}\n";
+    const auto fillSrc = vertFill.str();
+    dst.glslSources.add("vert-fill-spv10") << glu::VertexSource(fillSrc);
+    dst.glslSources.add("vert-fill-spv15") << glu::VertexSource(fillSrc) << spv15Opts;
+
     const auto geomColor   = m_params.getGeomColor();
     const bool isColorCase = !m_params.isDepthStencilCase();
     const bool &texIs3D    = m_params.viewIs3D;
+    const bool isMS        = m_params.multiSample();
+
+    if (isColorCase && texIs3D)
+        DE_ASSERT(!isMS); // There is no 3D MS sampler.
+
+    // For isColorCase
+    std::string texSamplerType = "sampler";
+    texSamplerType += (texIs3D ? "3D" : "2D");
+    texSamplerType += (isMS ? "MS" : "");
+    texSamplerType += ((multiSlice && !texIs3D) ? "Array" : "");
+
+    const std::string lodOrSample = (isMS ? "gl_SampleID" : "0");
 
     std::ostringstream frag;
     frag << "#version 460\n"
-         << (isColorCase ?
-                 "layout (set=0, binding=0) uniform " +
-                     std::string(texIs3D ? "sampler3D" : (multiSlice ? "sampler2DArray" : "sampler2D")) + " tex;\n" :
-                 "")
+         << (isColorCase ? "layout (set=0, binding=0) uniform " + texSamplerType + " tex;\n" : "")
          << "layout (location=0) in flat int layerIndex;\n"
          << "layout (location=0) out vec4 outColor;\n"
          << "void main(void) {\n";
@@ -414,13 +457,36 @@ void AfterUsageCase::initPrograms(vk::SourceCollections &dst) const
     if (isColorCase)
     {
         const auto coords = ((multiSlice || texIs3D) ? "ivec3(gl_FragCoord.xy, layerIndex)" : "ivec2(gl_FragCoord.xy)");
-        frag << "    outColor = texelFetch(tex, " << coords << ", 0);\n";
+        frag << "    outColor = texelFetch(tex, " << coords << ", " << lodOrSample << ");\n";
     }
     else
         frag << "    outColor = vec4" << geomColor << ";\n";
 
     frag << "}\n";
     dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+
+    // Fragment shader that fills a multisample color attachment with values from a buffer.
+    std::ostringstream fragFill;
+    fragFill << "#version 460\n"
+             << "layout (location=0) in flat uint layerIndex;\n"
+             << (isColorCase ? "layout (location=0) out vec4 outColor;\n" : "")
+             << "layout (set=0, binding=0) readonly buffer PixelValuesBlock {\n"
+             << "    vec4 values[];\n" // The depth value is in .x for depth/stencil cases.
+             << "} pixels;\n"
+             << "layout (push_constant, std430) uniform PushConstantBlock {\n"
+             << "    float width;\n"
+             << "    float height;\n"
+             << "} pc;\n"
+             << "void main (void) {\n"
+             << "    const uint pixelsPerLayer = uint(pc.width * pc.height);\n"
+             << "    const uint pixelIndex = pixelsPerLayer * layerIndex + uint(floor(gl_FragCoord.y) * pc.width + "
+                "floor(gl_FragCoord.x));\n"
+             << "    const uint sampleIndex = pixelIndex * " << static_cast<int>(m_params.sampleCount)
+             << " + uint(gl_SampleID);\n"
+             << (isColorCase ? "    outColor = pixels.values[sampleIndex];\n" :
+                               "    gl_FragDepth = pixels.values[sampleIndex].x;\n")
+             << "}\n";
+    dst.glslSources.add("frag-fill") << glu::FragmentSource(fragFill.str());
 }
 
 // Converts floating point width (total or mantissa) to a threshold.
@@ -467,14 +533,110 @@ tcu::Vec4 getColorFormatThreshold(VkFormat format)
     return threshold;
 }
 
+Move<VkRenderPass> makeCustomRenderPass(const DeviceInterface &vkd, VkDevice device, VkFormat colorFormat,
+                                        VkFormat depthStencilFormat, VkSampleCountFlagBits sampleCount, bool resolve,
+                                        VkAttachmentLoadOp loadOp)
+{
+    const bool isMS               = (sampleCount > VK_SAMPLE_COUNT_1_BIT);
+    const bool hasColor           = (colorFormat != VK_FORMAT_UNDEFINED);
+    const bool hasDS              = (depthStencilFormat != VK_FORMAT_UNDEFINED);
+    const bool isClear            = (loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR);
+    const auto initialLayoutColor = (isClear ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    const auto initialLayoutDS =
+        (isClear ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+    if (resolve)
+        DE_ASSERT(isMS);
+
+    std::vector<VkAttachmentDescription> attDescs;
+    std::vector<VkAttachmentReference> attRefs;
+
+    const VkAttachmentReference *colorAtt   = nullptr;
+    const VkAttachmentReference *resolveAtt = nullptr;
+    const VkAttachmentReference *dsAtt      = nullptr;
+
+    // Upper limits, makes sure pointers do not change.
+    attDescs.reserve(3u);
+    attRefs.reserve(3u);
+
+    // Main color attachment, which may be multisample.
+    if (hasColor)
+    {
+        const auto storeOp = ((isMS && resolve) ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE);
+
+        attDescs.push_back(makeAttachmentDescription(0u, colorFormat, sampleCount, loadOp, storeOp,
+                                                     VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                                     VK_ATTACHMENT_STORE_OP_DONT_CARE, // Stencil ops.
+                                                     initialLayoutColor, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+
+        attRefs.push_back(makeAttachmentReference(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+
+        colorAtt = &attRefs.back();
+    }
+
+    // Color resolve attachment.
+    if (hasColor && resolve)
+    {
+        const auto ssLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // Values will be loaded or cleared in the MS attachment.
+        const auto storeOp  = VK_ATTACHMENT_STORE_OP_STORE;    // Store the result of the resolve.
+
+        attDescs.push_back(makeAttachmentDescription(0u, colorFormat, VK_SAMPLE_COUNT_1_BIT, ssLoadOp, storeOp,
+                                                     VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                                     VK_ATTACHMENT_STORE_OP_DONT_CARE, // Stencil ops.
+                                                     initialLayoutColor, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+
+        const auto attIndex = de::sizeU32(attDescs) - 1u;
+        attRefs.push_back(makeAttachmentReference(attIndex, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+
+        resolveAtt = &attRefs.back();
+    }
+
+    // Main depth/stencil attachment, which may be multisample.
+    if (hasDS)
+    {
+        const auto storeOp = VK_ATTACHMENT_STORE_OP_STORE; // Always store in case we want to use the values later.
+
+        attDescs.push_back(
+            makeAttachmentDescription(0u, depthStencilFormat, sampleCount, loadOp, storeOp,
+                                      VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE, // Stencil ops.
+                                      initialLayoutDS, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
+
+        const auto attIndex = de::sizeU32(attDescs) - 1u;
+        attRefs.push_back(makeAttachmentReference(attIndex, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
+
+        dsAtt = &attRefs.back();
+    }
+
+    const VkSubpassDescription subpassDescription = {
+        0u,      VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, nullptr, (colorAtt ? 1u : 0u), colorAtt, resolveAtt, dsAtt, 0u,
+        nullptr,
+    };
+
+    const VkRenderPassCreateInfo rpCreateInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(attDescs),
+        de::dataOrNull(attDescs),
+        1u,
+        &subpassDescription,
+        0u,
+        nullptr,
+    };
+
+    return createRenderPass(vkd, device, &rpCreateInfo);
+}
+
 tcu::TestStatus AfterUsageInstance::iterate(void)
 {
     const auto ctx = m_context.getContextCommonData();
 
     const auto isDS       = m_params.isDepthStencilCase();
+    const auto isMS       = m_params.multiSample();
     const auto isSrgb     = (!isDS && isSrgbFormat(m_params.format));
     const auto geomColor  = m_params.getGeomColor();
     const auto clearColor = m_params.getClearColor();
+    const auto bindPoint  = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
     const auto imgCreateInfo = m_params.getImageCreateInfo();
     ImageWithMemory image(ctx.vkd, ctx.device, ctx.allocator, imgCreateInfo, MemoryRequirement::Any);
@@ -486,12 +648,30 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
                              (m_params.multiSlice() ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D));
     const auto view = makeImageView(ctx.vkd, ctx.device, *image, imageViewType, imgCreateInfo.format, imgSRR);
 
-    const auto attCreateInfo = m_params.getColorAttCreateInfo();
+    // This will be the main or resolve attachment.
+    const auto attCreateInfo = m_params.getColorAttCreateInfo(true /*do not force single-sample*/);
     const auto attSRR        = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, attCreateInfo.mipLevels, 0u,
                                                          attCreateInfo.arrayLayers);
     ImageWithBuffer attImage(ctx.vkd, ctx.device, ctx.allocator, attCreateInfo.extent, attCreateInfo.format,
                              attCreateInfo.usage, attCreateInfo.imageType, attSRR, attCreateInfo.arrayLayers,
                              attCreateInfo.samples, attCreateInfo.tiling, attCreateInfo.mipLevels);
+
+    // This will be the multisample attachment, if needed.
+    using ImageWithMemoryPtr = std::unique_ptr<ImageWithMemory>;
+    ImageWithMemoryPtr msAttImage;
+    Move<VkImageView> msAttView;
+    if (isMS)
+    {
+        DE_ASSERT(m_params.imageToImage);
+
+        const auto msAttCreateInfo = m_params.getColorAttCreateInfo(false /*do not force single-sample*/);
+        msAttImage.reset(
+            new ImageWithMemory(ctx.vkd, ctx.device, ctx.allocator, msAttCreateInfo, MemoryRequirement::Any));
+
+        const auto viewType =
+            ((msAttCreateInfo.arrayLayers == 1) ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY);
+        msAttView = makeImageView(ctx.vkd, ctx.device, msAttImage->get(), viewType, msAttCreateInfo.format, attSRR);
+    }
 
     // The image-to-image case is essentially similar to buffer-to-image. However, instead of copying data from the
     // buffer to the image, in whole or in part, the full buffer is copied first to an auxiliary image, declared below.
@@ -499,9 +679,19 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
     // region as the source and destination in both images.
     const auto auxImgCreateInfo = m_params.getAuxiliarImageCreateInfo();
     std::unique_ptr<ImageWithMemory> auxImage;
+    Move<VkImageView> auxImageView;
     if (m_params.imageToImage)
+    {
         auxImage.reset(
             new ImageWithMemory(ctx.vkd, ctx.device, ctx.allocator, auxImgCreateInfo, MemoryRequirement::Any));
+        if (isMS)
+        {
+            const auto viewType =
+                ((auxImgCreateInfo.arrayLayers == 1) ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY);
+            auxImageView =
+                makeImageView(ctx.vkd, ctx.device, auxImage->get(), viewType, auxImgCreateInfo.format, imgSRR);
+        }
+    }
 
     const auto useStage = static_cast<VkPipelineStageFlags>(
         isDS ? (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT) :
@@ -524,8 +714,11 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
     // In the color case, we're going to generate pseudorandom color values for the color texture, and those values are
     // going to be read from the fragment shader and stored in the color buffer.
     const auto extentU            = m_params.extent.asUint();
+    const auto perPixelSamples    = static_cast<uint32_t>(m_params.sampleCount);
+    const auto perPixelSamplesI   = static_cast<int>(m_params.sampleCount);
     const auto pixelCountPerLayer = extentU.x() * extentU.y();
     const auto pixelCount         = pixelCountPerLayer * extentU.z();
+    const auto totalSampleCount   = pixelCount * perPixelSamples;
 
     std::vector<uint16_t> depthBufferValues;
     std::vector<uint16_t> pointDepthValues;
@@ -533,21 +726,38 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
     std::unique_ptr<tcu::TextureLevel> textureLevel;
     std::unique_ptr<tcu::PixelBufferAccess> textureAccess;
 
+    // These will be used as a buffer in the multisample case to fill the auxiliary image.
+    std::vector<tcu::Vec4> fragFillValues;
+    if (isMS)
+        fragFillValues.reserve(totalSampleCount);
+
+    const float maxDepth = static_cast<float>(std::numeric_limits<uint16_t>::max());
+
     if (isDS)
     {
-        depthBufferValues.reserve(pixelCount);
+        depthBufferValues.reserve(totalSampleCount);
         pointDepthValues.reserve(pixelCount);
 
         for (uint32_t i = 0u; i < pixelCount; ++i)
         {
-            depthBufferValues.push_back(rng.getUint16());
+            const auto depthBufferValue = rng.getUint16();
+            const auto normDepth        = static_cast<float>(depthBufferValue) / maxDepth;
+            for (uint32_t s = 0u; s < perPixelSamples; ++s)
+            {
+                fragFillValues.emplace_back(normDepth, 0.0f, 0.0f, 0.0f);
+                depthBufferValues.push_back(depthBufferValue);
+            }
             pointDepthValues.push_back(rng.getUint16());
         }
     }
     else
     {
+        // For the multisample case, group all samples in a single pixel next to each other.
+        const int iSampleCount         = static_cast<int>(m_params.sampleCount);
+        const int realHorizontalExtent = m_params.extent.x() * iSampleCount;
+
         textureLevel.reset(
-            new tcu::TextureLevel(tcuFormat, m_params.extent.x(), m_params.extent.y(), m_params.extent.z()));
+            new tcu::TextureLevel(tcuFormat, realHorizontalExtent, m_params.extent.y(), m_params.extent.z()));
         textureAccess.reset(new tcu::PixelBufferAccess(textureLevel->getAccess()));
 
         for (int z = 0; z < m_params.extent.z(); ++z)
@@ -558,7 +768,14 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
                     const auto green = rng.getFloat();
                     const auto blue  = rng.getFloat();
                     const tcu::Vec4 color(red, blue, green, 1.0f);
-                    textureAccess->setPixel(color, x, y, z);
+
+                    for (int s = 0; s < iSampleCount; ++s)
+                    {
+                        if (isMS)
+                            fragFillValues.push_back(color);
+                        const auto realX = x * iSampleCount + s;
+                        textureAccess->setPixel(color, realX, y, z);
+                    }
                 }
     }
 
@@ -571,8 +788,6 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
 
     const auto getPixelID = [](uint32_t x, uint32_t y, uint32_t z, const tcu::UVec3 &extent)
     { return (z * extent.x() * extent.y() + y * extent.x() + x); };
-
-    const float maxDepth = static_cast<float>(std::numeric_limits<uint16_t>::max());
 
     for (uint32_t z = 0u; z < extentU.z(); ++z)
         for (uint32_t y = 0u; y < extentU.y(); ++y)
@@ -625,7 +840,7 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
 
     if (isDS)
     {
-        const auto depthMemorySize = itemSize * pixelCount;
+        const auto depthMemorySize = itemSize * totalSampleCount;
         depthMemoryBytes.reserve(depthMemorySize);
 
         // Depth buffer values, in the format expected for copying.
@@ -690,7 +905,7 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
     }
     else
     {
-        const auto texMemoryBufferSize = static_cast<VkDeviceSize>(itemSize * pixelCount);
+        const auto texMemoryBufferSize = static_cast<VkDeviceSize>(itemSize * totalSampleCount);
         const auto texMemoryBufferInfo = makeBufferCreateInfo(texMemoryBufferSize, memoryBufferUsage);
 
         memoryBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, texMemoryBufferInfo, HostIntent::W,
@@ -801,13 +1016,12 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
     const auto cmdBufferClearPtr =
         allocateCommandBuffer(ctx.vkd, ctx.device, *cmdGraphics.cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
     const auto cmdBufferClear = *cmdBufferClearPtr;
-    const auto cmdBufferAuxPtr =
-        allocateCommandBuffer(ctx.vkd, ctx.device, *cmdGraphics.cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-    const auto cmdBufferAux = *cmdBufferAuxPtr;
 
     // Partial copies imply a clear to get predictable results, and tests using the color attachment usage flag are more
     // interesting if we force a clear using a render pass.
     const bool needsClear  = (!m_params.copyRegions.empty() || m_params.colorAttFlag);
+    const bool needsFill   = (m_params.imageToImage && isMS);
+    const bool needsAux    = (m_params.imageToImage && !isMS);
     const bool queueSwitch = (qfIndex != ctx.qfIndex);
 
     // Barrier that handles moving the resource image the transfer queue to the use queue.
@@ -845,6 +1059,15 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
         cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, srcStage, VK_PIPELINE_STAGE_TRANSFER_BIT, &barrier);
     };
 
+    const auto fillToTransferBarrier =
+        [&](VkCommandBuffer cmdBuffer, VkAccessFlags srcAccess, VkPipelineStageFlags srcStage, VkImageLayout srcLayout)
+    {
+        const auto barrier =
+            makeImageMemoryBarrier(srcAccess, VK_ACCESS_TRANSFER_READ_BIT, srcLayout,
+                                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, auxImage->get(), imgSRR, ctx.qfIndex, qfIndex);
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, srcStage, VK_PIPELINE_STAGE_TRANSFER_BIT, &barrier);
+    };
+
     // When we need to clear color images and we have enabled color attachment usage, we'll make the test a bit more
     // interesting by clearing the image using a "fake" render pass with a clear op.
     Move<VkRenderPass> clearRenderPass;
@@ -853,88 +1076,231 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
     const auto layoutAfterClear =
         (clearWithRenderPass ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : m_params.transferLayout);
 
-    if (needsClear)
+    // For the fill pipeline, if used.
+    Move<VkDescriptorPool> fillPool;
+    Move<VkDescriptorSetLayout> fillSetLayout;
+    Move<VkPipelineLayout> fillPipelineLayout;
+    Move<VkDescriptorSet> fillSet;
+    std::unique_ptr<BufferWithMemory> fillBuffer;
+    Move<VkRenderPass> fillRP;
+    Move<VkFramebuffer> fillFB;
+    Move<VkPipeline> fillPipeline;
+    VkImageLayout afterFillLayout =
+        (isDS ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+    const auto dataStages  = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto fillPcSize  = DE_SIZEOF32(tcu::Vec2);
+    const auto fillPcRange = makePushConstantRange(dataStages, 0u, fillPcSize);
+    const auto binding     = DescriptorSetUpdateBuilder::Location::binding;
+
+    const auto &binaries   = m_context.getBinaryCollection();
+    const auto vk12Support = m_context.contextSupports(vk::ApiVersion(0u, 1u, 2u, 0u));
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(m_params.extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(m_params.extent));
+
+    if (needsClear || needsFill || needsAux)
     {
         // Command buffer with the clear op.
         beginCommandBuffer(ctx.vkd, cmdBufferClear);
 
-        if (!clearWithRenderPass) // Else: the clear render pass will transition layouts.
-            recordInitialLayoutBarrier(cmdBufferClear, *image);
+        if (needsClear)
+        {
+            if (!clearWithRenderPass) // Else: the clear render pass will transition layouts.
+                recordInitialLayoutBarrier(cmdBufferClear, *image);
 
-        if (isDS)
-        {
-            // Cleared values would never pass the depth test.
-            const auto clearDepthValue = makeClearValueDepthStencil(0.0f, 0u);
-            ctx.vkd.cmdClearDepthStencilImage(cmdBufferClear, *image, m_params.transferLayout,
-                                              &clearDepthValue.depthStencil, 1u, &imgSRR);
-        }
-        else
-        {
-            if (m_params.colorAttFlag)
+            if (isDS)
             {
-                clearRenderPass = makeRenderPass(ctx.vkd, ctx.device, m_params.format);
-                clearFramebuffer =
-                    makeFramebuffer(ctx.vkd, ctx.device, *clearRenderPass, *view, imgCreateInfo.extent.width,
-                                    imgCreateInfo.extent.height, imgCreateInfo.arrayLayers);
-                const auto renderArea = makeRect2D(imgCreateInfo.extent.width, imgCreateInfo.extent.height);
-                beginRenderPass(ctx.vkd, cmdBufferClear, *clearRenderPass, *clearFramebuffer, renderArea, clearColor);
-                endRenderPass(ctx.vkd, cmdBufferClear);
+                // Cleared values would never pass the depth test.
+                const auto clearDepthValue = makeClearValueDepthStencil(0.0f, 0u);
+                ctx.vkd.cmdClearDepthStencilImage(cmdBufferClear, *image, m_params.transferLayout,
+                                                  &clearDepthValue.depthStencil, 1u, &imgSRR);
             }
             else
             {
-                const auto clearColorValue = makeClearValueColor(clearColor);
-                ctx.vkd.cmdClearColorImage(cmdBufferClear, *image, m_params.transferLayout, &clearColorValue.color, 1u,
-                                           &imgSRR);
+                if (m_params.colorAttFlag)
+                {
+                    clearRenderPass = makeCustomRenderPass(ctx.vkd, ctx.device, m_params.format, VK_FORMAT_UNDEFINED,
+                                                           m_params.sampleCount, false, VK_ATTACHMENT_LOAD_OP_CLEAR);
+                    clearFramebuffer =
+                        makeFramebuffer(ctx.vkd, ctx.device, *clearRenderPass, *view, imgCreateInfo.extent.width,
+                                        imgCreateInfo.extent.height, imgCreateInfo.arrayLayers);
+                    const auto renderArea = makeRect2D(imgCreateInfo.extent.width, imgCreateInfo.extent.height);
+                    beginRenderPass(ctx.vkd, cmdBufferClear, *clearRenderPass, *clearFramebuffer, renderArea,
+                                    clearColor);
+                    endRenderPass(ctx.vkd, cmdBufferClear);
+                }
+                else
+                {
+                    const auto clearColorValue = makeClearValueColor(clearColor);
+                    ctx.vkd.cmdClearColorImage(cmdBufferClear, *image, m_params.transferLayout, &clearColorValue.color,
+                                               1u, &imgSRR);
+                }
             }
+
+            const auto srcAccess =
+                (clearWithRenderPass ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : VK_ACCESS_TRANSFER_WRITE_BIT);
+            const auto srcStage =
+                (clearWithRenderPass ? VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT);
+            clearToTransferBarrier(cmdBufferClear, srcAccess, srcStage,
+                                   layoutAfterClear); // Sync clear and transfer, and maybe release resource.
         }
 
-        const auto srcAccess =
-            (clearWithRenderPass ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : VK_ACCESS_TRANSFER_WRITE_BIT);
-        const auto srcStage =
-            (clearWithRenderPass ? VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT);
-        clearToTransferBarrier(cmdBufferClear, srcAccess, srcStage,
-                               layoutAfterClear); // Sync clear and transfer, and maybe release resource.
+        if (needsFill)
+        {
+            // We need to fill the auxiliary image using a copy pipeline, using fragCopyValues.
+            const auto copyBufferSize       = static_cast<VkDeviceSize>(de::dataSize(fragFillValues));
+            const auto copyBufferCreateInfo = makeBufferCreateInfo(copyBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+            fillBuffer.reset(
+                new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, copyBufferCreateInfo, HostIntent::W));
+            {
+                auto &alloc = fillBuffer->getAllocation();
+                memcpy(alloc.getHostPtr(), de::dataOrNull(fragFillValues), de::dataSize(fragFillValues));
+                flushAlloc(ctx.vkd, ctx.device, alloc);
+            }
+
+            const auto descType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            DescriptorPoolBuilder poolBuilder;
+            poolBuilder.addType(descType);
+            fillPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+            DescriptorSetLayoutBuilder setLayoutBuilder;
+            setLayoutBuilder.addSingleBinding(descType, dataStages);
+            fillSetLayout      = setLayoutBuilder.build(ctx.vkd, ctx.device);
+            fillPipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *fillSetLayout, &fillPcRange);
+            fillSet            = makeDescriptorSet(ctx.vkd, ctx.device, *fillPool, *fillSetLayout);
+
+            DescriptorSetUpdateBuilder updateBuilder;
+            const auto bufferInfo = makeDescriptorBufferInfo(fillBuffer->get(), 0u, VK_WHOLE_SIZE);
+            updateBuilder.writeSingle(*fillSet, binding(0u), descType, &bufferInfo);
+            updateBuilder.update(ctx.vkd, ctx.device);
+
+            const auto rpColorFormat = (isDS ? VK_FORMAT_UNDEFINED : auxImgCreateInfo.format);
+            const auto rpDSFormat    = (isDS ? auxImgCreateInfo.format : VK_FORMAT_UNDEFINED);
+            fillRP = makeCustomRenderPass(ctx.vkd, ctx.device, rpColorFormat, rpDSFormat, m_params.sampleCount, false,
+                                          VK_ATTACHMENT_LOAD_OP_CLEAR);
+            fillFB = makeFramebuffer(ctx.vkd, ctx.device, *fillRP, *auxImageView, auxImgCreateInfo.extent.width,
+                                     auxImgCreateInfo.extent.height, auxImgCreateInfo.arrayLayers);
+
+            const auto vertFillShader = createShaderModule(
+                ctx.vkd, ctx.device, binaries.get(vk12Support ? "vert-fill-spv15" : "vert-fill-spv10"));
+            const auto fragFillShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag-fill"));
+
+            const VkPipelineVertexInputStateCreateInfo fillVertexInputState = initVulkanStructureConst();
+            const VkPipelineMultisampleStateCreateInfo fillMSState          = {
+                VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+                nullptr,
+                0u,
+                m_params.sampleCount,
+                VK_FALSE,
+                0.0f,
+                nullptr,
+                VK_FALSE,
+                VK_FALSE,
+            };
+            VkStencilOpState stencilOpState;
+            memset(&stencilOpState, 0, sizeof(stencilOpState));
+            const VkPipelineDepthStencilStateCreateInfo fillDSState = {
+                VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+                nullptr,
+                0u,
+                (isDS ? VK_TRUE : VK_FALSE),
+                (isDS ? VK_TRUE : VK_FALSE),
+                VK_COMPARE_OP_ALWAYS,
+                VK_FALSE,
+                VK_FALSE,
+                stencilOpState,
+                stencilOpState,
+                0.0f,
+                1.0f,
+            };
+            std::vector<VkPipelineColorBlendAttachmentState> fillCBAttState;
+            if (!isDS)
+            {
+                VkPipelineColorBlendAttachmentState attState;
+                memset(&attState, 0, sizeof(attState));
+                attState.colorWriteMask = 0xFu;
+                fillCBAttState.push_back(attState);
+            }
+            const VkPipelineColorBlendStateCreateInfo fillCBState = {
+                VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+                nullptr,
+                0u,
+                VK_FALSE,
+                vk::VK_LOGIC_OP_AND,
+                de::sizeU32(fillCBAttState),
+                de::dataOrNull(fillCBAttState),
+                {0.0f, 0.0f, 0.0f, 0.0f},
+            };
+            fillPipeline = makeGraphicsPipeline(
+                ctx.vkd, ctx.device, *fillPipelineLayout, *vertFillShader, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                VK_NULL_HANDLE, *fragFillShader, *fillRP, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u,
+                0u, &fillVertexInputState, nullptr, &fillMSState, &fillDSState, &fillCBState);
+
+            const auto pcValues       = m_params.extent.swizzle(0, 1).asFloat();
+            const auto fillClearValue = makeClearValueColor(tcu::Vec4(0.0f));
+
+            beginRenderPass(ctx.vkd, cmdBufferClear, *fillRP, *fillFB, scissors.front(), fillClearValue);
+            ctx.vkd.cmdBindDescriptorSets(cmdBufferClear, bindPoint, *fillPipelineLayout, 0u, 1u, &fillSet.get(), 0u,
+                                          nullptr);
+            ctx.vkd.cmdPushConstants(cmdBufferClear, *fillPipelineLayout, dataStages, 0u, fillPcSize, &pcValues);
+            ctx.vkd.cmdBindPipeline(cmdBufferClear, bindPoint, *fillPipeline);
+            ctx.vkd.cmdDraw(cmdBufferClear, 4u, auxImgCreateInfo.arrayLayers, 0u, 0u);
+            endRenderPass(ctx.vkd, cmdBufferClear);
+
+            const auto srcAccess = static_cast<VkAccessFlags>(isDS ? VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT :
+                                                                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+            const auto srcStage  = static_cast<VkPipelineStageFlags>(
+                isDS ? (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT) :
+                        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+            fillToTransferBarrier(cmdBufferClear, srcAccess, srcStage, afterFillLayout);
+        }
+
+        if (needsAux)
+        {
+            // For the non-MS image-to-image case, we will copy the whole buffer first to the auxiliary image using a full
+            // image copy with vkCmdCopyBufferToImage.
+            const auto auxImgHandle = auxImage->get();
+
+            // Prepare auxiliary image with the full buffer contents.
+            recordInitialLayoutBarrier(cmdBufferClear, auxImgHandle);
+
+            // Copy the full buffer to the auxiliary image.
+            const auto fullSRL    = makeImageSubresourceLayers(copyAspect, 0u, 0u, imgCreateInfo.arrayLayers);
+            const auto fullRegion = makeBufferImageCopy(auxImgCreateInfo.extent, fullSRL);
+            ctx.vkd.cmdCopyBufferToImage(cmdBufferClear, memoryBuffer->get(), auxImgHandle, m_params.transferLayout, 1u,
+                                         &fullRegion);
+
+            cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBufferClear, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                          VK_PIPELINE_STAGE_TRANSFER_BIT, &preCopyAuxBarrier);
+        }
 
         endCommandBuffer(ctx.vkd, cmdBufferClear);
-    }
-
-    if (m_params.imageToImage)
-    {
-        beginCommandBuffer(ctx.vkd, cmdBufferAux);
-
-        const auto auxImgHandle = auxImage->get();
-
-        // Prepare auxiliary image with the full buffer contents.
-        recordInitialLayoutBarrier(cmdBufferAux, auxImgHandle);
-
-        // Copy the full buffer to the auxiliary image.
-        const auto fullSRL    = makeImageSubresourceLayers(copyAspect, 0u, 0u, imgCreateInfo.arrayLayers);
-        const auto fullRegion = makeBufferImageCopy(auxImgCreateInfo.extent, fullSRL);
-        ctx.vkd.cmdCopyBufferToImage(cmdBufferAux, memoryBuffer->get(), auxImgHandle, m_params.transferLayout, 1u,
-                                     &fullRegion);
-
-        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBufferAux, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                      VK_PIPELINE_STAGE_TRANSFER_BIT, &preCopyAuxBarrier);
-
-        endCommandBuffer(ctx.vkd, cmdBufferAux);
     }
 
     // Command buffer with the transfer op.
     beginCommandBuffer(ctx.vkd, cmdBufferTransfer);
 
-    if (needsClear)
-    {
-        if (queueSwitch)
-            clearToTransferBarrier(cmdBufferTransfer, 0u, 0u, layoutAfterClear); // Acquire.
-    }
-    else
+    if (!needsClear)
         recordInitialLayoutBarrier(cmdBufferTransfer, *image);
 
-    if (queueSwitch && m_params.imageToImage)
+    if (queueSwitch && needsAux)
     {
         // Acquire auxiliary image if needed.
         cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBufferTransfer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                       VK_PIPELINE_STAGE_TRANSFER_BIT, &preCopyAuxBarrier);
+    }
+
+    if (needsClear || needsFill)
+    {
+        if (queueSwitch)
+        {
+            // Acquisition barriers.
+            if (needsClear)
+                clearToTransferBarrier(cmdBufferTransfer, 0u, 0u, layoutAfterClear);
+            if (needsFill)
+                fillToTransferBarrier(cmdBufferTransfer, 0u, 0u, afterFillLayout);
+        }
     }
 
     if (m_params.indirect)
@@ -1048,7 +1414,6 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
         descriptorPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
         descriptorSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
 
-        const auto binding  = DescriptorSetUpdateBuilder::Location::binding;
         const auto descInfo = makeDescriptorImageInfo(*sampler, *view, useLayout);
         setUpdateBuilder.writeSingle(*descriptorSet, binding(0u), descriptorType, &descInfo);
         setUpdateBuilder.update(ctx.vkd, ctx.device);
@@ -1056,23 +1421,23 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
 
     const auto pipelineLayout       = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
     const auto rpDepthStencilFormat = (isDS ? imgCreateInfo.format : VK_FORMAT_UNDEFINED);
-    const auto renderPass =
-        makeRenderPass(ctx.vkd, ctx.device, attCreateInfo.format, rpDepthStencilFormat, VK_ATTACHMENT_LOAD_OP_LOAD);
-    std::vector<VkImageView> fbViews(1u, attImage.getImageView());
+    const auto renderPass = makeCustomRenderPass(ctx.vkd, ctx.device, attCreateInfo.format, rpDepthStencilFormat,
+                                                 m_params.sampleCount, isMS, VK_ATTACHMENT_LOAD_OP_LOAD);
+
+    std::vector<VkImageView> fbViews;
+    if (msAttImage)
+        fbViews.push_back(*msAttView);
+    fbViews.push_back(attImage.getImageView());
     if (isDS)
         fbViews.push_back(*view);
+
     const auto framebuffer =
         makeFramebuffer(ctx.vkd, ctx.device, *renderPass, de::sizeU32(fbViews), de::dataOrNull(fbViews),
                         attCreateInfo.extent.width, attCreateInfo.extent.height, attCreateInfo.arrayLayers);
 
-    const auto &binaries   = m_context.getBinaryCollection();
-    const auto vk12Support = m_context.contextSupports(vk::ApiVersion(0u, 1u, 2u, 0u));
     const auto vertShader =
         createShaderModule(ctx.vkd, ctx.device, binaries.get(vk12Support ? "vert-spv15" : "vert-spv10"));
     const auto fragShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
-
-    const std::vector<VkViewport> viewports(1u, makeViewport(m_params.extent));
-    const std::vector<VkRect2D> scissors(1u, makeRect2D(m_params.extent));
 
     const auto depthTestEnable = makeVkBool(isDS);
     const auto stencilOp       = makeStencilOpState(VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP,
@@ -1092,10 +1457,22 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
         0.0f,
     };
 
+    const VkPipelineMultisampleStateCreateInfo multisampleState = {
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        m_params.sampleCount,
+        VK_FALSE,
+        0.0f,
+        nullptr,
+        VK_FALSE,
+        VK_FALSE,
+    };
+
     const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *vertShader, VK_NULL_HANDLE,
                                                VK_NULL_HANDLE, VK_NULL_HANDLE, *fragShader, *renderPass, viewports,
                                                scissors, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, 0u, nullptr, nullptr,
-                                               nullptr, &pipelineDepthStencilState);
+                                               &multisampleState, &pipelineDepthStencilState);
 
     beginCommandBuffer(ctx.vkd, cmdBufferGraphics);
 
@@ -1110,25 +1487,41 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
 
     // As attachments will be loaded, we need to move the color att. to the proper layout and clear it before the RP.
     {
-        const auto preClearBarrier =
-            makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, attImage.getImage(), attSRR);
+        std::vector<VkImage> attImages;
+        attImages.push_back(attImage.getImage());
+        if (msAttImage)
+            attImages.push_back(msAttImage->get());
+
+        std::vector<VkImageMemoryBarrier> preClearBarriers;
+        for (const auto img : attImages)
+        {
+            preClearBarriers.push_back(makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT,
+                                                              VK_IMAGE_LAYOUT_UNDEFINED,
+                                                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, img, attSRR));
+        }
         cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBufferGraphics, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                      VK_PIPELINE_STAGE_TRANSFER_BIT, &preClearBarrier);
+                                      VK_PIPELINE_STAGE_TRANSFER_BIT, preClearBarriers.data(), preClearBarriers.size());
 
         const auto clearColorVk = makeClearValueColor(clearColor);
-        ctx.vkd.cmdClearColorImage(cmdBufferGraphics, attImage.getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                   &clearColorVk.color, 1u, &attSRR);
+        for (const auto img : attImages)
+        {
+            ctx.vkd.cmdClearColorImage(cmdBufferGraphics, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                       &clearColorVk.color, 1u, &attSRR);
+        }
 
         const auto colorAccess = (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT);
-        const auto postClearBarrier =
-            makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, colorAccess, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, attImage.getImage(), attSRR);
+        std::vector<VkImageMemoryBarrier> postClearBarriers;
+        for (const auto img : attImages)
+        {
+            postClearBarriers.push_back(makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, colorAccess,
+                                                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, img, attSRR));
+        }
         cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBufferGraphics, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, &postClearBarrier);
+                                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, postClearBarriers.data(),
+                                      postClearBarriers.size());
     }
 
-    const auto bindPoint          = VK_PIPELINE_BIND_POINT_GRAPHICS;
     const auto vertexBufferOffset = static_cast<VkDeviceSize>(0);
 
     beginRenderPass(ctx.vkd, cmdBufferGraphics, *renderPass, *framebuffer, scissors.front());
@@ -1174,32 +1567,12 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
         // clang-format on
     };
 
-    const VkSubmitInfo auxSubmitInfo = {
-        // clang-format off
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        nullptr,
-        0u,
-        nullptr,
-        nullptr,
-        1u,
-        &cmdBufferAux,
-        1u,
-        &auxSem.get(),
-        // clang-format on
-    };
-
     std::vector<VkSemaphore> waitSemaphores;
     std::vector<VkPipelineStageFlags> waitStages;
 
-    if (needsClear)
+    if (needsClear || needsFill || needsAux)
     {
         waitSemaphores.push_back(*clearSem);
-        waitStages.push_back(waitStage);
-    }
-
-    if (m_params.imageToImage)
-    {
-        waitSemaphores.push_back(*auxSem);
         waitStages.push_back(waitStage);
     }
 
@@ -1234,10 +1607,8 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
     };
 
     const auto fence = createFence(ctx.vkd, ctx.device);
-    if (needsClear)
+    if (needsClear || needsFill || needsAux)
         ctx.vkd.queueSubmit(ctx.queue, 1u, &clearSubmitInfo, VK_NULL_HANDLE);
-    if (m_params.imageToImage)
-        ctx.vkd.queueSubmit(ctx.queue, 1u, &auxSubmitInfo, VK_NULL_HANDLE);
     ctx.vkd.queueSubmit(queue, 1u, &transferSubmitInfo, VK_NULL_HANDLE);
     ctx.vkd.queueSubmit(ctx.queue, 1u, &graphicsSubmitInfo, *fence);
     waitForFence(ctx.vkd, ctx.device, *fence);
@@ -1272,7 +1643,8 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
                     {
                         const auto pixelId    = getPixelID(static_cast<uint32_t>(x), static_cast<uint32_t>(y),
                                                            static_cast<uint32_t>(z), extentU);
-                        const auto &bufferVal = depthBufferValues.at(pixelId);
+                        const auto sampleId   = pixelId * perPixelSamples;
+                        const auto &bufferVal = depthBufferValues.at(sampleId);
                         const auto &geomVal   = pointDepthValues.at(pixelId);
                         const bool depthPass  = (geomVal < bufferVal);
                         const auto &color     = (depthPass ? geomColor : clearColor);
@@ -1280,8 +1652,29 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
                     }
                     else
                     {
-                        const auto color = textureAccess->getPixel(x, y, z);
-                        fullReference.setPixel((isSrgb ? tcu::sRGBToLinear(color) : color), x, y, z);
+                        const auto realX = x * perPixelSamplesI;
+                        const auto color = textureAccess->getPixel(realX, y, z);
+
+                        // We convert values from sRGB to linear in sRGB cases but skip that conversion in MSAA cases.
+                        // The reasoning follows:
+                        //
+                        // * In the non-MSAA cases, values are copied from a buffer to the image using
+                        //   vkCmdCopyBufferToImage. When this happens, the values are copied directly into the image
+                        //   (memcpy semantics), and are presumed to already be in sRGB for sRGB formats. That image is
+                        //   then sampled as a texture in a render pass, and stored in a non-SRGB attachment. Shaders
+                        //   are supposed to always work in linear space (sRGB conversions happen when reading from or
+                        //   storing data in images), so the sampling operation converts values to linear before storing
+                        //   them in the non-sRGB attachment. The result is a conversion from sRGB to linear in the data
+                        //   originally stored in the buffer, that we replicate below.
+                        //
+                        // * In the MSAA case, values are copied from a buffer to an MSAA image using a pipeline and a
+                        //   fragment shader. The buffer is a descriptor in the shader, and the image is a color
+                        //   attachment in the render pass. This means values in the buffer are considered to be in
+                        //   linear space, and converted to sRGB when they are stored in the framebuffer. The image is
+                        //   then sampled as a texture, converting the values back to linear, and stored as linear in
+                        //   the non-sRGB attachment. The end result is that 2 conversions have taken place, but the
+                        //   result values should match the original ones (both linear).
+                        fullReference.setPixel(((isSrgb && !isMS) ? tcu::sRGBToLinear(color) : color), x, y, z);
                     }
                 }
             }
@@ -1369,12 +1762,16 @@ tcu::TestCaseGroup *createUseAfterXferGroup(tcu::TestContext &testCtx, bool indi
 
                 for (const int layerCount : {1, 2})
                 {
-                    const auto imageExtent = tcu::IVec3(32, 32, layerCount);
-
                     for (const auto queueSelection :
                          {QueueSelectionOptions::Universal, QueueSelectionOptions::ComputeOnly,
                           QueueSelectionOptions::TransferOnly})
                     {
+                        // We choose a larger baseSize for the transfer queue because that helps us get some regions,
+                        // declarede below, meet the transfer queue granularity requirements on some implementations.
+                        // Those interesting tests can run, then, on more systems.
+                        const auto baseSize    = ((queueSelection == QueueSelectionOptions::TransferOnly) ? 64 : 32);
+                        const auto imageExtent = tcu::IVec3(baseSize, baseSize, layerCount);
+
                         // VUID-VkCopyMemoryToImageIndirectInfoKHR-commandBuffer-07674
                         // Depth and stencil memory copies can only happen in queues with graphics capabilities.
                         if (indirect && isDS && queueSelection != QueueSelectionOptions::Universal)
@@ -1460,68 +1857,82 @@ tcu::TestCaseGroup *createUseAfterXferGroup(tcu::TestContext &testCtx, bool indi
                                                 if (imageToImage && (indirect || use3DImage || layerCount == 1u))
                                                     continue;
 
-                                                // clang-format off
-                                                AfterUsageParams params{
-                                                    testFormat,
-                                                    imageExtent,
-                                                    queueSelection,
-                                                    xferLayout,
-                                                    copyRegions,
-                                                    indirect,
-                                                    use3DImage,
-                                                    viewIs3D,
-                                                    colorAttFlag,
-                                                    imageToImage,
-                                                    linear,
-                                                };
-                                                // clang-format on
-
-                                                if (colorAttFlag)
+                                                for (const bool multiSample : {false, true})
                                                 {
-                                                    // Use larger images in these cases. This makes some drivers enable color
-                                                    // compression for these images, which may result in problems after copying.
-                                                    const int32_t sizeFactor   = 32;
-                                                    const uint32_t sizeFactorU = uint32_t{sizeFactor};
+                                                    // Cannot copy from buffer to MS image.
+                                                    if (multiSample && !imageToImage)
+                                                        continue;
 
-                                                    params.extent =
-                                                        params.extent * tcu::IVec3(sizeFactor, sizeFactor, 1);
-                                                    for (auto &region : params.copyRegions)
+                                                    // clang-format off
+                                                    AfterUsageParams params{
+                                                        testFormat,
+                                                        imageExtent,
+                                                        queueSelection,
+                                                        xferLayout,
+                                                        copyRegions,
+                                                        indirect,
+                                                        use3DImage,
+                                                        viewIs3D,
+                                                        colorAttFlag,
+                                                        imageToImage,
+                                                        linear,
+                                                        (multiSample ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT),
+                                                    };
+                                                    // clang-format on
+
+                                                    if (colorAttFlag)
                                                     {
-                                                        region.offset.x *= sizeFactor;
-                                                        region.offset.y *= sizeFactor;
-                                                        region.extent.width *= sizeFactorU;
-                                                        region.extent.height *= sizeFactorU;
+                                                        // Use larger images in these cases. This makes some drivers
+                                                        // enable color compression for these images, which may result
+                                                        // in problems after copying.
+                                                        const int32_t targetSize   = 1024;
+                                                        const int32_t sizeFactor   = targetSize / baseSize;
+                                                        const uint32_t sizeFactorU = static_cast<uint32_t>(sizeFactor);
+
+                                                        params.extent =
+                                                            params.extent * tcu::IVec3(sizeFactor, sizeFactor, 1);
+                                                        for (auto &region : params.copyRegions)
+                                                        {
+                                                            region.offset.x *= sizeFactor;
+                                                            region.offset.y *= sizeFactor;
+                                                            region.extent.width *= sizeFactorU;
+                                                            region.extent.height *= sizeFactorU;
+                                                        }
                                                     }
+
+                                                    auto testName = std::to_string(params.extent.x()) + "x" +
+                                                                    std::to_string(params.extent.y()) + "x" +
+                                                                    std::to_string(params.extent.z());
+
+                                                    if (queueSelection == QueueSelectionOptions::ComputeOnly)
+                                                        testName += "_cq";
+                                                    else if (queueSelection == QueueSelectionOptions::TransferOnly)
+                                                        testName += "_tq";
+
+                                                    if (!fullCopy)
+                                                        testName += "_regions";
+
+                                                    if (use3DImage)
+                                                        testName += "_3d_img";
+
+                                                    if (viewIs3D)
+                                                        testName += "_3d_view";
+
+                                                    if (colorAttFlag)
+                                                        testName += "_color_att_flag";
+
+                                                    if (imageToImage)
+                                                        testName += "_img2img";
+
+                                                    if (linear)
+                                                        testName += "_linear";
+
+                                                    if (multiSample)
+                                                        testName += "_msaa";
+
+                                                    layoutGroup->addChild(
+                                                        new AfterUsageCase(testCtx, testName, params));
                                                 }
-
-                                                auto testName = std::to_string(params.extent.x()) + "x" +
-                                                                std::to_string(params.extent.y()) + "x" +
-                                                                std::to_string(params.extent.z());
-
-                                                if (queueSelection == QueueSelectionOptions::ComputeOnly)
-                                                    testName += "_cq";
-                                                else if (queueSelection == QueueSelectionOptions::TransferOnly)
-                                                    testName += "_tq";
-
-                                                if (!fullCopy)
-                                                    testName += "_regions";
-
-                                                if (use3DImage)
-                                                    testName += "_3d_img";
-
-                                                if (viewIs3D)
-                                                    testName += "_3d_view";
-
-                                                if (colorAttFlag)
-                                                    testName += "_color_att_flag";
-
-                                                if (imageToImage)
-                                                    testName += "_img2img";
-
-                                                if (linear)
-                                                    testName += "_linear";
-
-                                                layoutGroup->addChild(new AfterUsageCase(testCtx, testName, params));
                                             }
                                     }
                                 }

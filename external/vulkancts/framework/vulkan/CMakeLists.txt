@@ -195,8 +195,6 @@ set(VKSCUTILNOSHADER_INLS
 	generated/vulkansc/vkDeviceFeatures.inl
 	generated/vulkansc/vkDeviceFeatureTest.inl
 	generated/vulkansc/vkDeviceProperties.inl
-	generated/vulkansc/vulkan_json_data.hpp
-	generated/vulkansc/vulkan_json_parser.hpp
 	)
 
 set(VKUTIL_SRCS

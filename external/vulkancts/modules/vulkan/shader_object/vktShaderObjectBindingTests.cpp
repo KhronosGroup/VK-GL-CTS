@@ -145,8 +145,7 @@ void ShaderObjectBindingDrawInstance::createDevice(void)
         nullptr // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_customDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                        m_context.getPlatformInterface(), m_context.getInstance(),
+    m_customDevice = createCustomDevice(m_context.getPlatformInterface(), m_context.getInstance(),
                                         m_context.getInstanceInterface(), m_context.getPhysicalDevice(), &deviceInfo);
 }
 
