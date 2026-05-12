@@ -1563,7 +1563,7 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate(void)
             VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *readbackBuffer, 0ull, bufferSizeBytes);
 
         // Start recording commands
-
+        m_context.resetCommandPoolForVKSC(device, *cmdPool);
         beginCommandBuffer(vk, *cmdBuffer);
 
         pipeline.bind(*cmdBuffer);
@@ -1588,6 +1588,7 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate(void)
         if (m_deviceLocal)
         {
             VkBufferCopy copy{0, 0, bufferSizeBytes};
+            m_context.resetCommandPoolForVKSC(device, *cmdPool);
             beginCommandBuffer(vk, *cmdBuffer);
 
             vk.cmdCopyBuffer(*cmdBuffer, outputBuffer->get(), *readbackBuffer, 1, &copy);
