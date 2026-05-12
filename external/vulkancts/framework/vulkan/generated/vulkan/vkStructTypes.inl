@@ -4570,12 +4570,13 @@ struct VkMicromapCreateInfoEXT
 	VkDeviceAddress				deviceAddress;
 };
 
-struct VkMicromapTriangleEXT
+struct VkMicromapTriangleKHR
 {
 	uint32_t	dataOffset;
 	uint16_t	subdivisionLevel;
 	uint16_t	format;
 };
+typedef VkMicromapTriangleKHR VkMicromapTriangleEXT;
 
 struct VkMicromapUsageEXT
 {
@@ -12665,6 +12666,9 @@ typedef VkMemoryToImageCopy VkMemoryToImageCopyEXT;
 
 
 typedef VkMemoryUnmapInfo VkMemoryUnmapInfoKHR;
+
+
+typedef VkMicromapTriangleKHR VkMicromapTriangleEXT;
 
 
 typedef VkMutableDescriptorTypeCreateInfoEXT VkMutableDescriptorTypeCreateInfoVALVE;

@@ -81,6 +81,20 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdDrawIndexedIndirectCountAMD",
 		"vkCmdDrawIndirectCountAMD",
 
+		// "VK_AMD_gpa_interface
+		"vkCmdBeginGpaSampleAMD",
+		"vkCmdBeginGpaSessionAMD",
+		"vkCmdCopyGpaSessionResultsAMD",
+		"vkCmdEndGpaSampleAMD",
+		"vkCmdEndGpaSessionAMD",
+		"vkCreateGpaSessionAMD",
+		"vkDestroyGpaSessionAMD",
+		"vkGetGpaDeviceClockInfoAMD",
+		"vkGetGpaSessionResultsAMD",
+		"vkGetGpaSessionStatusAMD",
+		"vkResetGpaSessionAMD",
+		"vkSetGpaDeviceClockModeAMD",
+
 		// "VK_AMD_shader_info
 		"vkGetShaderInfoAMD",
 
