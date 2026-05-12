@@ -397,7 +397,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/VulkanSC-pcutil.git",
         "git@github.com:KhronosGroup/VulkanSC-pcutil.git",
-        "1de6df7e8173762e6a27dfa2cec604687bc03dab",
+        "0c58b610a758957bb707f7bcad9505f389add0b3",
         "vulkansc-pcutil"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",

@@ -49,8 +49,6 @@
 #include "vksStructsVKSC.hpp"
 #include "vkQueryUtil.hpp"
 
-#include <numeric>
-
 using namespace vk;
 
 namespace vksc_server
@@ -265,16 +263,15 @@ OwningVpjShaderFilenames getShaderFilenames(const vk::VkGraphicsPipelineCreateIn
         return prefix + "shader_" + std::to_string(index) + '_' + std::to_string(pss_ci.module.getInternal()) + '.' +
                stage_bit_to_string(pss_ci.stage) + ".spv";
     };
-    const auto filename_accumulator =
-        [&](OwningVpjShaderFilenames &acc,
-            const vk::VkPipelineShaderStageCreateInfo &pss_ci) -> OwningVpjShaderFilenames &
+    OwningVpjShaderFilenames acc;
+    for (uint32_t i = 0u; i < ci.stageCount; ++i)
     {
+        const auto &pss_ci = ci.pStages[i];
         acc.storage.emplace_back(shader_filename(pss_ci));
         acc.filenames.push_back(
             VpjShaderFileName{static_cast<int32_t>(pss_ci.stage), acc.storage.back().c_str(), 0, nullptr});
-        return acc;
-    };
-    return std::accumulate(ci.pStages, ci.pStages + ci.stageCount, OwningVpjShaderFilenames{}, filename_accumulator);
+    }
+    return acc;
 };
 
 string writeJSON_VkGraphicsPipelineCreateInfo(const Context &context,
