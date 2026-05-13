@@ -1908,7 +1908,7 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 
             // release exclusive ownership from the transfer queue family
             srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            dstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
             VkImageMemoryBarrier srImageBarrierOwnershipTransfer =
                 makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_NONE_KHR, VK_IMAGE_LAYOUT_GENERAL,
                                        VK_IMAGE_LAYOUT_GENERAL, **m_srImage[0], m_defaultImageSubresourceRange);
@@ -1929,7 +1929,7 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
                                   &srImageBarrierOwnershipTransfer);
 
             // wait till sr image layout is changed
-            srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
             dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
             VkMemoryBarrier srMemoryBarrierShadingRate =
                 makeMemoryBarrier(VK_ACCESS_NONE_KHR, VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR);
