@@ -947,7 +947,7 @@ void initMultisamplePrograms(SourceCollections &sources, MultisampleTestParams p
     sources.glslSources.add("color_frag") << glu::FragmentSource(fragmentSource);
 }
 
-void initSampleShadingPrograms(SourceCollections &sources, MultisampleTestParams params, bool minSampleShadingEnabled)
+void initSampleShadingPrograms(SourceCollections &sources, MultisampleTestParams params)
 {
     {
         const std::string pointSize =
@@ -968,13 +968,8 @@ void initSampleShadingPrograms(SourceCollections &sources, MultisampleTestParams
         fragmentSource << "#version 440\n"
                           "layout(location = 0) out highp vec4 fragColor;\n"
                           "void main (void)\n"
-                          "{\n";
-        if (minSampleShadingEnabled)
-        {
-            fragmentSource
-                << "    uint sampleId = gl_SampleID;\n"; // Enable sample shading for shader objects by reading gl_SampleID
-        }
-        fragmentSource << "    fragColor = vec4(fract(gl_FragCoord.xy), 0.0, 1.0);\n"
+                          "{\n"
+                          "    fragColor = vec4(fract(gl_FragCoord.xy), 0.0, 1.0);\n"
                           "}\n";
 
         sources.glslSources.add("color_vert") << glu::VertexSource(vertexSource.str());
@@ -1465,7 +1460,7 @@ void MinSampleShadingTest::initPrograms(SourceCollections &programCollection) co
 {
     MultisampleTestParams params = {m_pipelineConstructionType, m_geometryType, m_pointSize, m_backingMode,
                                     m_useFragmentShadingRate};
-    initSampleShadingPrograms(programCollection, params, m_minSampleShadingEnabled);
+    initSampleShadingPrograms(programCollection, params);
 }
 
 TestInstance *MinSampleShadingTest::createMultisampleTestInstance(
