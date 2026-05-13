@@ -1860,9 +1860,7 @@ de::MovePtr<BufferWithMemory> RayTracingSERTestInstance::runTest()
 
     // Add shader record data in the SBT
     std::vector<uint32_t> uintVector = {10, 20, 30, 40};
-    std::vector<void *> voidPtrVector;
-    for (uint32_t &value : uintVector)
-        voidPtrVector.push_back(static_cast<void *>(&value));
+    std::vector<void *> voidPtrVector(uintVector.size(), uintVector.data());
     uint32_t shaderRecordSize = m_data.testType == HitObjectTestType::HIT_OBJECT_GET_SBT_RECORD_HANDLE ?
                                     static_cast<uint32_t>(sizeof(uint32_t) * uintVector.size()) :
                                     0;

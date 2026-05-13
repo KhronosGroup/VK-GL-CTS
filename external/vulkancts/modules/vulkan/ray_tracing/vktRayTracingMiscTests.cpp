@@ -8188,8 +8188,8 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
     auto missShaderBindingTablePtr = de::MovePtr<BufferWithMemory>();
     if (nMissGroups > 0u)
     {
-        const void *missShaderBindingGroupShaderRecordDataPtr =
-            m_testPtr->getShaderRecordData(ShaderGroups::MISS_GROUP);
+        const void *missRecordData = m_testPtr->getShaderRecordData(ShaderGroups::MISS_GROUP);
+        const std::vector<const void *> missShaderGroupDataPtrs(nMissGroups, missRecordData);
         missShaderBindingTablePtr = rayTracingPipelinePtr->createShaderBindingTable(
             deviceInterface, deviceVk, *pipelineVkPtr, allocator, m_rayTracingPropsPtr->getShaderGroupHandleSize(),
             m_rayTracingPropsPtr->getShaderGroupBaseAlignment(), missGroupIndex,
@@ -8198,14 +8198,16 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
             0u,                         /* additionalBufferUsageFlags  */
             MemoryRequirement::Any, 0u, /* opaqueCaptureAddress       */
             0u,                         /* shaderBindingTableOffset   */
-            m_testPtr->getShaderRecordSize(ShaderGroups::MISS_GROUP), &missShaderBindingGroupShaderRecordDataPtr);
+            m_testPtr->getShaderRecordSize(ShaderGroups::MISS_GROUP),
+            const_cast<const void **>(missShaderGroupDataPtrs.data()));
     }
 
     auto hitShaderBindingTablePtr = de::MovePtr<BufferWithMemory>();
     if (nHitGroups > 0u)
     {
-        const void *hitShaderBindingGroupShaderRecordDataPtr = m_testPtr->getShaderRecordData(ShaderGroups::HIT_GROUP);
-        hitShaderBindingTablePtr                             = rayTracingPipelinePtr->createShaderBindingTable(
+        const void *hitRecordData = m_testPtr->getShaderRecordData(ShaderGroups::HIT_GROUP);
+        const std::vector<const void *> hitShaderGroupDataPtrs(nHitGroups, hitRecordData);
+        hitShaderBindingTablePtr = rayTracingPipelinePtr->createShaderBindingTable(
             deviceInterface, deviceVk, *pipelineVkPtr, allocator, m_rayTracingPropsPtr->getShaderGroupHandleSize(),
             m_rayTracingPropsPtr->getShaderGroupBaseAlignment(), hitGroupIndex,
             nHitGroups,                 /* groupCount                  */
@@ -8213,7 +8215,8 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
             0u,                         /* additionalBufferUsageFlags  */
             MemoryRequirement::Any, 0u, /* opaqueCaptureAddress       */
             0u,                         /* shaderBindingTableOffset   */
-            m_testPtr->getShaderRecordSize(ShaderGroups::HIT_GROUP), &hitShaderBindingGroupShaderRecordDataPtr);
+            m_testPtr->getShaderRecordSize(ShaderGroups::HIT_GROUP),
+            const_cast<const void **>(hitShaderGroupDataPtrs.data()));
     }
 
     {
