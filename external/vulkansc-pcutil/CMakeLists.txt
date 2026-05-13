@@ -37,8 +37,7 @@ if (EXISTS ${VULKANSC_PCUTIL_ABS_PATH}/CMakeLists.txt)
 		"-DPCU_WERROR:BOOL=OFF"
 	)
 	set(SOURCE_DIR "${VULKANSC_PCUTIL_SRC_PATH}")
-	set(BINARY_DIR "${SOURCE_DIR}/VulkanSC-pcutil-build")
-	set(TMP_DIR "${SOURCE_DIR}/VulkanSC-pcutil-tmp")
+	set(BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/src/VulkanSC-pcutil-build")
 	get_property(GENERATOR_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 	# ExternalProject does an extremely poor job of propagating even the most basic built-in variables to sub-builds.
 	# Vulkan ecosystem repositories rely on CMAKE_BUILD_TYPE for driving the build type of external deps when using
@@ -68,8 +67,7 @@ if (EXISTS ${VULKANSC_PCUTIL_ABS_PATH}/CMakeLists.txt)
 	endif()
 	ExternalProject_Add(VulkanSC-pcutil
 		SOURCE_DIR "${SOURCE_DIR}"
-		BINARY_DIR "${BINARY_DIR}"
-		TMP_DIR "${TMP_DIR}"
+		PREFIX "${CMAKE_CURRENT_BINARY_DIR}"
 		CMAKE_CACHE_ARGS "${VULKANSC_PCUTIL_CACHE_ARGS}"
 		INSTALL_COMMAND "" # Consuming the install-tree would restrict us to a single configuration,
 		                   # therefor we consume the build tree.
