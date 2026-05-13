@@ -488,12 +488,24 @@ protected:
     {
 
         const tcu::PixelFormat &pixelFormat = m_context.getRenderContext().getRenderTarget().getPixelFormat();
-        tcu::Vec4 epsilon                   = tcu::Vec4(
-            1.f / static_cast<float>(1 << pixelFormat.redBits), 1.f / static_cast<float>(1 << pixelFormat.greenBits),
-            1.f / static_cast<float>(1 << pixelFormat.blueBits), 1.f / static_cast<float>(1 << pixelFormat.alphaBits));
+        tcu::Vec4 bpc;
 
-        double stepX = widthRef / static_cast<double>(widthTest);
-        double stepY = heightRef / static_cast<double>(heightTest);
+        /* glReadPixels uses either GL_UNSIGNED_INT_2_10_10_10_REV or GL_UNSIGNED_BYTE */
+        if (pixelFormat.redBits > 10 && pixelFormat.greenBits > 10 && pixelFormat.blueBits > 10)
+        {
+            bpc = tcu::Vec4(static_cast<float>(1 << 8), static_cast<float>(1 << 8), static_cast<float>(1 << 8),
+                            static_cast<float>(1 << pixelFormat.alphaBits));
+        }
+        else
+        {
+            bpc = tcu::Vec4(
+                static_cast<float>(1 << pixelFormat.redBits), static_cast<float>(1 << pixelFormat.greenBits),
+                static_cast<float>(1 << pixelFormat.blueBits), static_cast<float>(1 << pixelFormat.alphaBits));
+        }
+
+        tcu::Vec4 epsilon = tcu::Vec4(1.f / bpc[0], 1.f / bpc[1], 1.f / bpc[2], 1.f / bpc[3]);
+        double stepX      = widthRef / static_cast<double>(widthTest);
+        double stepY      = heightRef / static_cast<double>(heightTest);
         for (unsigned int i = 0; i < heightTest; ++i)
         {
             unsigned int offsetTest = i * widthTest;
