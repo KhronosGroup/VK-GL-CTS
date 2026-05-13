@@ -252,6 +252,37 @@ struct TestParams
         , computeOnlyQueue(computeQueueOnly_)
         , useDeviceAddressCommands(useDeviceAddressCommands_)
     {
+        // If one of the work group counts is zero, all of them must be and vice versa. This is because on some tests
+        // the compute shader will be different for the zero count cases, and both types of dispatches cannot coexist.
+        bool hasNullDispatches    = false;
+        bool hasNonNullDispatches = false;
+
+        DE_ASSERT(!dispatchCommands.empty());
+
+        for (size_t i = 0u; i < dispatchCommands.size(); ++i)
+        {
+            const auto &wgCount = dispatchCommands.at(i).m_numWorkGroups;
+            const auto totalWGs = wgCount.x() * wgCount.y() * wgCount.z();
+            if (totalWGs == 0)
+                hasNullDispatches = true;
+            else
+                hasNonNullDispatches = true;
+        }
+
+        if (hasNullDispatches)
+            DE_ASSERT(!hasNonNullDispatches);
+
+        // For release builds.
+        DE_UNREF(hasNullDispatches);
+        DE_UNREF(hasNonNullDispatches);
+    }
+
+    bool nullDispatch() const
+    {
+        // Check only the first dispatch. This should be enough with the constructor check.
+        const auto &wgCount = dispatchCommands.front().m_numWorkGroups;
+        const auto total    = wgCount.x() * wgCount.y() * wgCount.z();
+        return (total == 0);
     }
 
     const char *name;
@@ -637,7 +668,8 @@ void IndirectDispatchCaseBufferUpload::initPrograms(vk::SourceCollections &progr
                  << "} result;\n"
                  << "void main (void)\n"
                  << "{\n"
-                 << "    if (all(equal(result.expectedGroupCount, gl_NumWorkGroups)))\n"
+                 << (m_params.nullDispatch() ? "" :
+                                               "    if (all(equal(result.expectedGroupCount, gl_NumWorkGroups)))\n")
                  << "        atomicAdd(result.numPassed, 1u);\n"
                  << "}\n";
 
@@ -857,6 +889,12 @@ tcu::TestCaseGroup *createIndirectComputeDispatchTests(
                    {DispatchCommand((1 << 20) + 12, tcu::UVec3(1, 2, 3))}),
         TestParams("empty_command", INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
                    {DispatchCommand(0, tcu::UVec3(0, 0, 0))}),
+        TestParams("empty_command_x", INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
+                   {DispatchCommand(0, tcu::UVec3(0, 1, 1))}),
+        TestParams("empty_command_y", INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
+                   {DispatchCommand(0, tcu::UVec3(1, 0, 1))}),
+        TestParams("empty_command_z", INDIRECT_COMMAND_OFFSET, tcu::UVec3(1, 1, 1),
+                   {DispatchCommand(0, tcu::UVec3(1, 1, 0))}),
         // Dispatch multiple compute commands from single buffer
         TestParams("multi_dispatch", 1 << 10, tcu::UVec3(3, 1, 2),
                    {DispatchCommand(0, tcu::UVec3(1, 1, 1)),
