@@ -245,7 +245,7 @@ BlittingImages::BlittingImages(Context &context, TestParams params)
         srcCreateFlags,                      // VkImageCreateFlags flags;
         m_params.src.image.imageType,        // VkImageType imageType;
         m_params.src.image.format,           // VkFormat format;
-        m_params.src.image.extent,           // VkExtent3D extent;
+        getExtent3D(m_params.src.image),     // VkExtent3D extent;
         1u,                                  // uint32_t mipLevels;
         getArraySize(m_params.src.image),    // uint32_t arraySize;
         VK_SAMPLE_COUNT_1_BIT,               // uint32_t samples;
@@ -263,7 +263,7 @@ BlittingImages::BlittingImages(Context &context, TestParams params)
         dstCreateFlags,                      // VkImageCreateFlags flags;
         m_params.dst.image.imageType,        // VkImageType imageType;
         m_params.dst.image.format,           // VkFormat format;
-        m_params.dst.image.extent,           // VkExtent3D extent;
+        getExtent3D(m_params.dst.image),     // VkExtent3D extent;
         1u,                                  // uint32_t mipLevels;
         getArraySize(m_params.dst.image),    // uint32_t arraySize;
         VK_SAMPLE_COUNT_1_BIT,               // uint32_t samples;
