@@ -1828,6 +1828,12 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
     const uint32_t deviceIdx   = context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
     const vector<VkPhysicalDeviceGroupProperties> deviceGroupProps =
         enumeratePhysicalDeviceGroups(instHelper.vki, instHelper.instance);
+
+    if (devGroupIdx >= deviceGroupProps.size())
+        TCU_THROW(NotSupportedError, "Requested device group is not available");
+    if (deviceIdx >= deviceGroupProps[devGroupIdx].physicalDeviceCount)
+        TCU_THROW(NotSupportedError, "Requested device is not available in the device group");
+
     const std::vector<VkPhysicalDevice> physicalDevicesInGroup(deviceGroupProps[devGroupIdx].physicalDevices,
                                                                deviceGroupProps[devGroupIdx].physicalDevices +
                                                                    deviceGroupProps[devGroupIdx].physicalDeviceCount);
@@ -2043,6 +2049,12 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
     const uint32_t deviceIdx   = context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
     const vector<VkPhysicalDeviceGroupProperties> deviceGroupProps =
         enumeratePhysicalDeviceGroups(instHelper.vki, instHelper.instance);
+
+    if (devGroupIdx >= deviceGroupProps.size())
+        TCU_THROW(NotSupportedError, "Requested device group is not available");
+    if (deviceIdx >= deviceGroupProps[devGroupIdx].physicalDeviceCount)
+        TCU_THROW(NotSupportedError, "Requested device is not available in the device group");
+
     const std::vector<VkPhysicalDevice> physicalDevicesInGroup(deviceGroupProps[devGroupIdx].physicalDevices,
                                                                deviceGroupProps[devGroupIdx].physicalDevices +
                                                                    deviceGroupProps[devGroupIdx].physicalDeviceCount);

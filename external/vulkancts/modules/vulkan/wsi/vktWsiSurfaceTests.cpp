@@ -1336,6 +1336,11 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest(Context &context, Ty
     const vector<VkPhysicalDeviceGroupProperties> deviceGroupProps =
         enumeratePhysicalDeviceGroups(instHelper.vki, instHelper.instance);
 
+    if (devGroupIdx >= deviceGroupProps.size())
+        TCU_THROW(NotSupportedError, "Requested device group is not available");
+    if (deviceIdx >= deviceGroupProps[devGroupIdx].physicalDeviceCount)
+        TCU_THROW(NotSupportedError, "Requested device is not available in the device group");
+
     const std::vector<VkQueueFamilyProperties> queueProps = getPhysicalDeviceQueueFamilyProperties(
         instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
     for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
@@ -1450,6 +1455,12 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest(Context &context, Type wsiT
 
     const vector<VkPhysicalDeviceGroupProperties> deviceGroupProps =
         enumeratePhysicalDeviceGroups(instHelper.vki, instHelper.instance);
+
+    if (devGroupIdx >= deviceGroupProps.size())
+        TCU_THROW(NotSupportedError, "Requested device group is not available");
+    if (deviceIdx >= deviceGroupProps[devGroupIdx].physicalDeviceCount)
+        TCU_THROW(NotSupportedError, "Requested device is not available in the device group");
+
     const std::vector<VkQueueFamilyProperties> queueProps = getPhysicalDeviceQueueFamilyProperties(
         instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
     for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
