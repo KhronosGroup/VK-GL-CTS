@@ -234,7 +234,22 @@ private:
 struct VulkanWindowHeadless : public vk::wsi::Window
 {
 public:
-    void resize(const UVec2 &)
+    void setVisible(bool visible) override
+    {
+        DE_UNREF(visible);
+    }
+
+    bool setForeground(void) override
+    {
+        return true;
+    }
+
+    void setMinimized(bool minimized) override
+    {
+        DE_UNREF(minimized);
+    }
+
+    void resize(const UVec2 &) override
     {
     }
 };
