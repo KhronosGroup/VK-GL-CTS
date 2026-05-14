@@ -116,8 +116,11 @@ struct DescriptorResources
 using DescriptorResourcesPtr = std::unique_ptr<DescriptorResources>;
 
 // Helper: Create and initialize result buffer
-ResultBufferResourcesPtr createResultBuffer(const DeviceInterface &vkd, VkDevice device, Allocator &allocator)
+ResultBufferResourcesPtr createResultBuffer(const DeviceWrapper &device)
 {
+    const DeviceInterface &vkd = device.getDriver();
+    Allocator &allocator       = device.getAllocator();
+
     ResultBufferResourcesPtr resPtr(new ResultBufferResources);
     auto &res = *resPtr;
 
@@ -322,12 +325,10 @@ private:
 
     TestParams m_params;
 
-    VkPhysicalDevice m_physDevice;
-    Move<VkDevice> m_device;
-    MovePtr<DeviceDriver> m_deviceInterface;
+    InstanceWrapper m_instance;
+    DeviceWrapper m_device;
     VkQueue m_queue;
     uint32_t m_queueFamilyIndex;
-    MovePtr<Allocator> m_allocatorPtr;
 
     VkPhysicalDevicePushConstantBankPropertiesNV m_pushConstantBankProperties;
     VkPhysicalDeviceDescriptorHeapPropertiesEXT m_descriptorHeapProperties;
@@ -336,11 +337,13 @@ private:
 PushConstantBankTestInstance::PushConstantBankTestInstance(Context &context, const TestParams &params)
     : TestInstance(context)
     , m_params(params)
-    , m_physDevice(context.getPhysicalDevice())
+    , m_instance(context)
+    , m_device()
     , m_pushConstantBankProperties()
     , m_descriptorHeapProperties()
 {
-    const auto &vki              = context.getInstanceInterface();
+    const auto &vki              = m_instance.getDriver();
+    const auto physDevice        = m_instance.getPhysicalDevice();
     const bool useDescriptorHeap = usesDescriptorHeap(m_params.testType);
 
     // Query push constant bank properties
@@ -357,14 +360,14 @@ PushConstantBankTestInstance::PushConstantBankTestInstance(Context &context, con
         m_pushConstantBankProperties.pNext = &m_descriptorHeapProperties;
     }
 
-    vki.getPhysicalDeviceProperties2(m_physDevice, &properties2);
+    vki.getPhysicalDeviceProperties2(physDevice, &properties2);
 
     // Create custom device with required extensions and features
     const float queuePriority         = 1.0f;
     VkDeviceQueueCreateInfo queueInfo = initVulkanStructure();
 
     // Find appropriate queue family
-    const auto queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(vki, m_physDevice);
+    const auto queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(vki, physDevice);
     VkQueueFlags requiredQueueFlags  = isComputeTest(m_params.testType) ? VK_QUEUE_COMPUTE_BIT : VK_QUEUE_GRAPHICS_BIT;
 
     m_queueFamilyIndex = 0;
@@ -429,17 +432,9 @@ PushConstantBankTestInstance::PushConstantBankTestInstance(Context &context, con
     deviceInfo.enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size());
     deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    m_device =
-        createCustomDevice(context.getPlatformInterface(), context.getInstance(), vki, m_physDevice, &deviceInfo);
+    m_device = m_instance.createCustomDevice(physDevice, &deviceInfo);
 
-    m_deviceInterface =
-        MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device,
-                                               context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
-
-    m_deviceInterface->getDeviceQueue(*m_device, m_queueFamilyIndex, 0, &m_queue);
-
-    m_allocatorPtr = MovePtr<Allocator>(
-        new SimpleAllocator(*m_deviceInterface, *m_device, getPhysicalDeviceMemoryProperties(vki, m_physDevice)));
+    m_device.getDriver().getDeviceQueue(*m_device, m_queueFamilyIndex, 0, &m_queue);
 }
 
 tcu::TestStatus PushConstantBankTestInstance::iterate()
@@ -468,7 +463,7 @@ tcu::TestStatus PushConstantBankTestInstance::iterate()
 //
 tcu::TestStatus PushConstantBankTestInstance::runComputeTest()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const uint32_t maxBanks = m_pushConstantBankProperties.maxComputePushConstantBanks;
     const uint32_t numBanks = de::min(m_params.numBanks, de::min(maxBanks, kMaxTestBanks));
@@ -476,7 +471,7 @@ tcu::TestStatus PushConstantBankTestInstance::runComputeTest()
     if (numBanks < 1)
         TCU_THROW(NotSupportedError, "No compute push constant banks available");
 
-    auto resultResPtr = createResultBuffer(vkd, *m_device, *m_allocatorPtr);
+    auto resultResPtr = createResultBuffer(m_device);
     auto &resultRes   = *resultResPtr;
     auto descResPtr   = createDescriptorResources(vkd, *m_device, VK_SHADER_STAGE_COMPUTE_BIT, *resultRes.buffer);
     auto &descRes     = *descResPtr;
@@ -536,7 +531,7 @@ tcu::TestStatus PushConstantBankTestInstance::runComputeTest()
 //
 tcu::TestStatus PushConstantBankTestInstance::runGraphicsTest()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const uint32_t maxBanks = m_pushConstantBankProperties.maxGraphicsPushConstantBanks;
     const uint32_t numBanks = de::min(m_params.numBanks, de::min(maxBanks, kMaxTestBanks));
@@ -544,7 +539,7 @@ tcu::TestStatus PushConstantBankTestInstance::runGraphicsTest()
     if (numBanks < 1)
         TCU_THROW(NotSupportedError, "No graphics push constant banks available");
 
-    auto resultResPtr = createResultBuffer(vkd, *m_device, *m_allocatorPtr);
+    auto resultResPtr = createResultBuffer(m_device);
     auto &resultRes   = *resultResPtr;
     auto descResPtr   = createDescriptorResources(vkd, *m_device, VK_SHADER_STAGE_VERTEX_BIT, *resultRes.buffer);
     auto &descRes     = *descResPtr;
@@ -597,7 +592,7 @@ tcu::TestStatus PushConstantBankTestInstance::runGraphicsTest()
 //
 tcu::TestStatus PushConstantBankTestInstance::runComputeDescriptorHeapTest()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     // Determine number of banks to test - use push data banks for descriptor heap mode
     const uint32_t maxBanks = m_pushConstantBankProperties.maxComputePushDataBanks;
@@ -631,8 +626,8 @@ tcu::TestStatus PushConstantBankTestInstance::runComputeDescriptorHeapTest()
 
     Move<VkBuffer> resourceHeapBuffer = createBuffer(vkd, *m_device, &resourceHeapBufferInfo);
     MovePtr<Allocation> resourceHeapMemory =
-        m_allocatorPtr->allocate(getBufferMemoryRequirements(vkd, *m_device, *resourceHeapBuffer),
-                                 MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+        m_device.getAllocator().allocate(getBufferMemoryRequirements(vkd, *m_device, *resourceHeapBuffer),
+                                         MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
     VK_CHECK(vkd.bindBufferMemory(*m_device, *resourceHeapBuffer, resourceHeapMemory->getMemory(),
                                   resourceHeapMemory->getOffset()));
 
@@ -655,8 +650,8 @@ tcu::TestStatus PushConstantBankTestInstance::runComputeDescriptorHeapTest()
 
     Move<VkBuffer> resultBuffer = createBuffer(vkd, *m_device, &resultBufferInfo);
     MovePtr<Allocation> resultMemory =
-        m_allocatorPtr->allocate(getBufferMemoryRequirements(vkd, *m_device, *resultBuffer),
-                                 MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+        m_device.getAllocator().allocate(getBufferMemoryRequirements(vkd, *m_device, *resultBuffer),
+                                         MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
     VK_CHECK(vkd.bindBufferMemory(*m_device, *resultBuffer, resultMemory->getMemory(), resultMemory->getOffset()));
 
     VkBufferDeviceAddressInfo resultAddrInfo = initVulkanStructure();
@@ -781,7 +776,7 @@ tcu::TestStatus PushConstantBankTestInstance::runComputeDescriptorHeapTest()
 //
 tcu::TestStatus PushConstantBankTestInstance::runGraphicsDescriptorHeapTest()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     // Determine number of banks to test - use push data banks for descriptor heap mode
     const uint32_t maxBanks = m_pushConstantBankProperties.maxGraphicsPushDataBanks;
@@ -815,8 +810,8 @@ tcu::TestStatus PushConstantBankTestInstance::runGraphicsDescriptorHeapTest()
 
     Move<VkBuffer> resourceHeapBuffer = createBuffer(vkd, *m_device, &resourceHeapBufferInfo);
     MovePtr<Allocation> resourceHeapMemory =
-        m_allocatorPtr->allocate(getBufferMemoryRequirements(vkd, *m_device, *resourceHeapBuffer),
-                                 MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+        m_device.getAllocator().allocate(getBufferMemoryRequirements(vkd, *m_device, *resourceHeapBuffer),
+                                         MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
     VK_CHECK(vkd.bindBufferMemory(*m_device, *resourceHeapBuffer, resourceHeapMemory->getMemory(),
                                   resourceHeapMemory->getOffset()));
 
@@ -839,8 +834,8 @@ tcu::TestStatus PushConstantBankTestInstance::runGraphicsDescriptorHeapTest()
 
     Move<VkBuffer> resultBuffer = createBuffer(vkd, *m_device, &resultBufferInfo);
     MovePtr<Allocation> resultMemory =
-        m_allocatorPtr->allocate(getBufferMemoryRequirements(vkd, *m_device, *resultBuffer),
-                                 MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+        m_device.getAllocator().allocate(getBufferMemoryRequirements(vkd, *m_device, *resultBuffer),
+                                         MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
     VK_CHECK(vkd.bindBufferMemory(*m_device, *resultBuffer, resultMemory->getMemory(), resultMemory->getOffset()));
 
     VkBufferDeviceAddressInfo resultAddrInfo = initVulkanStructure();
@@ -1002,7 +997,7 @@ tcu::TestStatus PushConstantBankTestInstance::runGraphicsDescriptorHeapTest()
 //
 tcu::TestStatus PushConstantBankTestInstance::runComputeMemberOffsetTest()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const uint32_t maxBanks     = m_pushConstantBankProperties.maxComputePushConstantBanks;
     const uint32_t numBanks     = de::min(m_params.numBanks, de::min(maxBanks, kMaxTestBanks));
@@ -1011,7 +1006,7 @@ tcu::TestStatus PushConstantBankTestInstance::runComputeMemberOffsetTest()
     if (numBanks < 1)
         TCU_THROW(NotSupportedError, "No compute push constant banks available");
 
-    auto resultResPtr = createResultBuffer(vkd, *m_device, *m_allocatorPtr);
+    auto resultResPtr = createResultBuffer(m_device);
     auto &resultRes   = *resultResPtr;
     auto descResPtr   = createDescriptorResources(vkd, *m_device, VK_SHADER_STAGE_COMPUTE_BIT, *resultRes.buffer);
     auto &descRes     = *descResPtr;
@@ -1073,7 +1068,7 @@ tcu::TestStatus PushConstantBankTestInstance::runComputeMemberOffsetTest()
 //
 tcu::TestStatus PushConstantBankTestInstance::runGraphicsMemberOffsetTest()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const uint32_t maxBanks     = m_pushConstantBankProperties.maxGraphicsPushConstantBanks;
     const uint32_t numBanks     = de::min(m_params.numBanks, de::min(maxBanks, kMaxTestBanks));
@@ -1082,7 +1077,7 @@ tcu::TestStatus PushConstantBankTestInstance::runGraphicsMemberOffsetTest()
     if (numBanks < 1)
         TCU_THROW(NotSupportedError, "No graphics push constant banks available");
 
-    auto resultResPtr = createResultBuffer(vkd, *m_device, *m_allocatorPtr);
+    auto resultResPtr = createResultBuffer(m_device);
     auto &resultRes   = *resultResPtr;
     auto descResPtr   = createDescriptorResources(vkd, *m_device, VK_SHADER_STAGE_VERTEX_BIT, *resultRes.buffer);
     auto &descRes     = *descResPtr;

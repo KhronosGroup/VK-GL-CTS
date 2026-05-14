@@ -859,7 +859,7 @@ public:
 
     tcu::TestStatus iterate(void)
     {
-        const InstanceInterface &instance = m_context.getInstanceInterface();
+        const InstanceInterface &instance = getInstanceInterface();
         const DeviceInterface &vk         = getDeviceInterface();
         MovePtr<SparseAllocation> sparseAllocation;
         Move<VkBuffer> sparseBuffer;
@@ -1182,7 +1182,7 @@ public:
 
     void createResources(uint32_t memoryDeviceIndex)
     {
-        const InstanceInterface &instance            = m_context.getInstanceInterface();
+        const InstanceInterface &instance            = getInstanceInterface();
         const DeviceInterface &vk                    = getDeviceInterface();
         VkBufferCreateInfo referenceBufferCreateInfo = getSparseBufferCreateInfo(m_bufferUsage);
 

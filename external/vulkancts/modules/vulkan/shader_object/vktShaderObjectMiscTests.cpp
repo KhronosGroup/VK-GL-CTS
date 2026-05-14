@@ -678,6 +678,7 @@ public:
     ShaderObjectStateInstance(Context &context, const StateTestParams &testParams)
         : vkt::TestInstance(context)
         , m_params(testParams)
+        , m_instance(context)
     {
     }
     virtual ~ShaderObjectStateInstance(void)
@@ -693,10 +694,10 @@ private:
     void setDynamicStates(const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer);
     bool isInsidePrimitive(uint32_t i, uint32_t j, uint32_t width, uint32_t height);
 
-    vk::Move<vk::VkDevice> m_customDevice;
-    de::MovePtr<vk::DeviceDriver> m_logicalDeviceInterface;
-    vk::VkQueue m_logicalDeviceQueue;
     const StateTestParams m_params;
+    const InstanceWrapper m_instance;
+    DeviceWrapper m_logicalDevice;
+    vk::VkQueue m_logicalDeviceQueue;
 };
 
 void ShaderObjectStateInstance::createDevice(void)
@@ -865,13 +866,9 @@ void ShaderObjectStateInstance::createDevice(void)
         nullptr                                   // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_customDevice           = createCustomDevice(m_context.getPlatformInterface(), m_context.getInstance(),
-                                                  m_context.getInstanceInterface(), m_context.getPhysicalDevice(), &deviceInfo);
-    m_logicalDeviceInterface = de::MovePtr<vk::DeviceDriver>(
-        new vk::DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_customDevice,
-                             m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
-    m_logicalDeviceInterface->getDeviceQueue(*m_customDevice, m_context.getUniversalQueueFamilyIndex(), 0,
-                                             &m_logicalDeviceQueue);
+    m_logicalDevice = m_instance.createCustomDevice(&deviceInfo);
+    m_logicalDevice.getDriver().getDeviceQueue(m_logicalDevice, m_context.getUniversalQueueFamilyIndex(), 0,
+                                               &m_logicalDeviceQueue);
 }
 
 std::vector<vk::VkDynamicState> ShaderObjectStateInstance::getDynamicStates(void) const
@@ -1230,25 +1227,24 @@ bool ShaderObjectStateInstance::isInsidePrimitive(uint32_t i, uint32_t j, uint32
 
 tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 {
-    const vk::VkInstance instance = m_context.getInstance();
-    const vk::InstanceDriver instanceDriver(m_context.getPlatformInterface(), instance);
     createDevice();
-    const vk::DeviceInterface &vk   = *m_logicalDeviceInterface;
-    const vk::VkDevice device       = *m_customDevice;
+
+    const vk::InstanceInterface &instanceDriver = m_logicalDevice.getInstanceDriver();
+    const vk::VkPhysicalDevice physDevice       = m_logicalDevice.getPhysicalDevice();
+
+    const vk::DeviceInterface &vk   = m_logicalDevice.getDriver();
+    const vk::VkDevice device       = *m_logicalDevice;
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     const vk::VkQueue queue         = m_logicalDeviceQueue;
-    auto alloctor                   = de::MovePtr<vk::Allocator>(new vk::SimpleAllocator(
-        vk, device, getPhysicalDeviceMemoryProperties(instanceDriver, m_context.getPhysicalDevice())));
-    auto &alloc                     = *alloctor;
-    const auto deviceExtensions     = vk::removeUnsupportedShaderObjectExtensions(
-        m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
+    auto &alloc                     = m_logicalDevice.getAllocator();
+    const auto deviceExtensions =
+        vk::removeUnsupportedShaderObjectExtensions(instanceDriver, physDevice, m_context.getDeviceExtensions());
     const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;
     const bool geometrySupported     = m_context.getDeviceFeatures().geometryShader;
     tcu::TestLog &log                = m_context.getTestContext().getLog();
 
-    vk::VkFormat colorAttachmentFormat = vk::VK_FORMAT_R8G8B8A8_UNORM;
-    vk::VkFormat depthStencilAttachmentFormat =
-        findDSFormat(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+    vk::VkFormat colorAttachmentFormat        = vk::VK_FORMAT_R8G8B8A8_UNORM;
+    vk::VkFormat depthStencilAttachmentFormat = findDSFormat(instanceDriver, physDevice);
     const auto subresourceRange  = makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
     const auto subresourceLayers = vk::makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
     auto depthSubresourceRange =
@@ -1509,9 +1505,8 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
                 vk::VK_COLOR_COMPONENT_A_BIT, // VkColorComponentFlags colorWriteMask;
         };
 
-        const uint32_t colorAttachmentCount = 2;
-        const vk::VkPhysicalDeviceProperties properties =
-            vk::getPhysicalDeviceProperties(instanceDriver, m_context.getPhysicalDevice());
+        const uint32_t colorAttachmentCount             = 2;
+        const vk::VkPhysicalDeviceProperties properties = vk::getPhysicalDeviceProperties(instanceDriver, physDevice);
         std::vector<vk::VkBool32> colorWriteEnables(properties.limits.maxColorAttachments);
         for (uint32_t i = 0; i < properties.limits.maxColorAttachments; ++i)
         {

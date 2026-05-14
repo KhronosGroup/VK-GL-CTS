@@ -128,17 +128,9 @@ void copyAndFlush(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::Buffe
     vk::flushAlloc(vkd, device, alloc);
 }
 
-#ifndef CTS_USES_VULKANSC
-typedef de::MovePtr<vk::DeviceDriver> DeviceDriverPtr;
-#else
-typedef de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> DeviceDriverPtr;
-#endif // CTS_USES_VULKANSC
-
-typedef vk::Move<vk::VkDevice> DevicePtr;
-
-vk::Move<vk::VkDevice> createRobustBufferAccessDevice(Context &context,
-                                                      const std::vector<std::string> &enabledDeviceExtensions,
-                                                      const vk::VkPhysicalDeviceFeatures2 *enabledFeatures2)
+static CustomDevice createRobustBufferAccessDevice(Context &context, const InstanceWrapper &instance,
+                                                   const std::vector<std::string> &enabledDeviceExtensions,
+                                                   const vk::VkPhysicalDeviceFeatures2 *enabledFeatures2)
 {
     const float queuePriority = 1.0f;
 
@@ -159,48 +151,9 @@ vk::Move<vk::VkDevice> createRobustBufferAccessDevice(Context &context,
     for (const auto &ext : enabledDeviceExtensions)
         extensionPtrs.push_back(ext.c_str());
 
-    void *pNext = (void *)enabledFeatures2;
-#ifdef CTS_USES_VULKANSC
-    VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
-                                                                 context.getResourceInterface()->getStatMax() :
-                                                                 resetDeviceObjectReservationCreateInfo();
-    memReservationInfo.pNext                               = pNext;
-    pNext                                                  = &memReservationInfo;
-
-    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-    sc10Features.pNext                              = pNext;
-    pNext                                           = &sc10Features;
-
-    VkPipelineCacheCreateInfo pcCI;
-    std::vector<VkPipelinePoolSize> poolSizes;
-    if (context.getTestContext().getCommandLine().isSubProcess())
-    {
-        if (context.getResourceInterface()->getCacheDataSize() > 0)
-        {
-            pcCI = {
-                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                nullptr,                                      // const void* pNext;
-                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
-                context.getResourceInterface()->getCacheData()            // const void* pInitialData;
-            };
-            memReservationInfo.pipelineCacheCreateInfoCount = 1;
-            memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-        }
-
-        poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
-        if (!poolSizes.empty())
-        {
-            memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-            memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-        }
-    }
-#endif
-
     const vk::VkDeviceCreateInfo deviceParams = {
         vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,      // VkStructureType sType;
-        pNext,                                         // const void* pNext;
+        enabledFeatures2,                              // const void* pNext;
         0u,                                            // VkDeviceCreateFlags flags;
         1u,                                            // uint32_t queueCreateInfoCount;
         &queueParams,                                  // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
@@ -214,11 +167,7 @@ vk::Move<vk::VkDevice> createRobustBufferAccessDevice(Context &context,
     // We are creating a custom device with a potentially large amount of extensions and features enabled, using the default device
     // as a reference. Some implementations may only enable certain device extensions if some instance extensions are enabled, so in
     // this case it's important to reuse the context instance when creating the device.
-    const auto &vki           = context.getInstanceInterface();
-    const auto instance       = context.getInstance();
-    const auto physicalDevice = chooseDevice(vki, instance, context.getTestContext().getCommandLine());
-
-    return createCustomDevice(context.getPlatformInterface(), instance, vki, physicalDevice, &deviceParams);
+    return instance.createCustomDevice(&deviceParams);
 }
 
 enum BeyondType
@@ -964,25 +913,24 @@ void BindBuffers2MismatchCase::initPrograms(vk::SourceCollections &programCollec
 class BindVertexBuffers2Instance : public vkt::TestInstance
 {
 public:
-    BindVertexBuffers2Instance(Context &context, DeviceDriverPtr driver, DevicePtr device,
+    BindVertexBuffers2Instance(Context &context, InstanceWrapper &&instance, DeviceWrapper &&device,
                                vk::PipelineConstructionType pipelineConstructionType, const TestParamsMaint5 &params,
                                bool robustness2, const std::vector<std::string> &enabledDeviceExtensions)
         : vkt::TestInstance(context)
         , m_pipelineConstructionType(pipelineConstructionType)
         , m_params(params)
         , m_robustness2(robustness2)
-        , m_deviceDriver(driver)
-        , m_device(device)
-        , m_physicalDevice(chooseDevice(context.getInstanceInterface(), context.getInstance(),
-                                        context.getTestContext().getCommandLine()))
-        , m_allocator(getDeviceInterface(), getDevice(),
-                      getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), m_physicalDevice))
+        , m_instance(std::move(instance))
+        , m_device(std::move(device))
+        , m_physicalDevice(robustness2 ? m_device.getPhysicalDevice() : context.getPhysicalDevice())
         , m_enabledDeviceExtensions(enabledDeviceExtensions)
-        , m_pipelineWrapper(context.getInstanceInterface(), getDeviceInterface(), m_physicalDevice, getDevice(),
+        , m_pipelineWrapper(getInstanceInterface(), getDeviceInterface(), m_physicalDevice, getDevice(),
                             m_enabledDeviceExtensions, m_pipelineConstructionType, 0u)
         , m_vertShaderModule(getDeviceInterface(), getDevice(), m_context.getBinaryCollection().get("vert"))
         , m_fragShaderModule(getDeviceInterface(), getDevice(), m_context.getBinaryCollection().get("frag"))
     {
+        // If robustness2 is enabled we expect a custom device to be supplied
+        DE_ASSERT(!robustness2 || m_device);
     }
     virtual ~BindVertexBuffers2Instance(void) = default;
 
@@ -991,6 +939,7 @@ public:
 protected:
     typedef std::vector<vk::VkDeviceSize> Sizes;
     typedef std::vector<de::SharedPtr<vk::BufferWithMemory>> Buffers;
+    const vk::InstanceInterface &getInstanceInterface() const;
     const vk::DeviceInterface &getDeviceInterface() const;
     vk::VkDevice getDevice() const;
     vk::VkQueue getQueue() const;
@@ -1002,24 +951,28 @@ private:
     const vk::PipelineConstructionType m_pipelineConstructionType;
     const TestParamsMaint5 m_params;
     const bool m_robustness2;
-    DeviceDriverPtr m_deviceDriver;
-    DevicePtr m_device;
+    const InstanceWrapper m_instance;
+    const DeviceWrapper m_device;
     const vk::VkPhysicalDevice m_physicalDevice;
-    vk::SimpleAllocator m_allocator;
     const std::vector<std::string> m_enabledDeviceExtensions;
     vk::GraphicsPipelineWrapper m_pipelineWrapper;
     const vk::ShaderWrapper m_vertShaderModule;
     const vk::ShaderWrapper m_fragShaderModule;
 };
 
+const vk::InstanceInterface &BindVertexBuffers2Instance::getInstanceInterface() const
+{
+    return m_device.getInstanceDriver();
+}
+
 const vk::DeviceInterface &BindVertexBuffers2Instance::getDeviceInterface() const
 {
-    return m_robustness2 ? *m_deviceDriver : m_context.getDeviceInterface();
+    return m_device.getDriver();
 }
 
 vk::VkDevice BindVertexBuffers2Instance::getDevice() const
 {
-    return m_robustness2 ? *m_device : m_context.getDevice();
+    return *m_device;
 }
 
 vk::VkQueue BindVertexBuffers2Instance::getQueue() const
@@ -1028,7 +981,7 @@ vk::VkQueue BindVertexBuffers2Instance::getQueue() const
     if (m_robustness2)
     {
         const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
-        m_deviceDriver->getDeviceQueue(getDevice(), queueFamilyIndex, 0, &queue);
+        m_device.getDriver().getDeviceQueue(getDevice(), queueFamilyIndex, 0, &queue);
     }
     else
     {
@@ -1039,13 +992,13 @@ vk::VkQueue BindVertexBuffers2Instance::getQueue() const
 
 vk::Allocator &BindVertexBuffers2Instance::getAllocator()
 {
-    return m_allocator;
+    return m_device.getAllocator();
 }
 
 void BindVertexBuffers2Instance::createPipeline(const vk::PipelineLayoutWrapper &layout, vk::VkRenderPass renderPass)
 {
     vk::VkPhysicalDeviceProperties dp{};
-    m_context.getInstanceInterface().getPhysicalDeviceProperties(m_physicalDevice, &dp);
+    getInstanceInterface().getPhysicalDeviceProperties(m_physicalDevice, &dp);
 
     const std::vector<vk::VkViewport> viewports{vk::makeViewport(m_params.width, m_params.height)};
     const std::vector<vk::VkRect2D> scissors{vk::makeRect2D(m_params.width, m_params.height)};
@@ -1703,8 +1656,8 @@ void BindVertexBuffers2Case::initPrograms(vk::SourceCollections &programCollecti
 
 TestInstance *BindVertexBuffers2Case::createInstance(Context &context) const
 {
-    DevicePtr device;
-    DeviceDriverPtr driver;
+    InstanceWrapper instance(context);
+    DeviceWrapper device(context);
 
     std::vector<std::string> enabledDeviceExtensions;
     if (m_robustness2)
@@ -1753,19 +1706,7 @@ TestInstance *BindVertexBuffers2Case::createInstance(Context &context) const
         TCU_THROW(NotSupportedError, "VulkanSC does not support VK_EXT_graphics_pipeline_library");
 #endif // CTS_USES_VULKANSC
 
-        device = createRobustBufferAccessDevice(context, enabledDeviceExtensions, &features2);
-        driver =
-#ifndef CTS_USES_VULKANSC
-            DeviceDriverPtr(new vk::DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device,
-                                                 context.getUsedApiVersion(),
-                                                 context.getTestContext().getCommandLine()));
-#else
-            DeviceDriverPtr(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device,
-                                               context.getTestContext().getCommandLine(),
-                                               context.getResourceInterface(), context.getDeviceVulkanSC10Properties(),
-                                               context.getDeviceProperties(), context.getUsedApiVersion()),
-                            vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
-#endif // CTS_USES_VULKANSC
+        device = createRobustBufferAccessDevice(context, instance, enabledDeviceExtensions, &features2);
     }
     else
     {
@@ -1773,8 +1714,8 @@ TestInstance *BindVertexBuffers2Case::createInstance(Context &context) const
             enabledDeviceExtensions.push_back(ext);
     }
 
-    return (new BindVertexBuffers2Instance(context, driver, device, m_pipelineConstructionType, m_params, m_robustness2,
-                                           enabledDeviceExtensions));
+    return (new BindVertexBuffers2Instance(context, std::move(instance), std::move(device), m_pipelineConstructionType,
+                                           m_params, m_robustness2, enabledDeviceExtensions));
 }
 
 tcu::TestCaseGroup *createCmdBindVertexBuffers2Tests(tcu::TestContext &testCtx,

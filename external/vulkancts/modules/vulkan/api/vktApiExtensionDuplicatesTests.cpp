@@ -272,17 +272,9 @@ tcu::TestStatus InstanceExtensionDuplicatesInstance::iterate(void)
 
 tcu::TestStatus DeviceExtensionDuplicatesInstance::iterate(void)
 {
-#ifdef CTS_USES_VULKANSC
-    CustomInstance customInstance    = createCustomInstanceFromContext(m_context);
-    const vk::InstanceInterface &vki = customInstance.getDriver();
-    const VkPhysicalDevice phd       = chooseDevice(vki, customInstance, m_context.getTestContext().getCommandLine());
-#else
-    const vk::InstanceInterface &vki = m_context.getInstanceInterface();
-    const VkPhysicalDevice phd       = m_context.getPhysicalDevice();
-    const DeviceInterface &vkd       = m_context.getDeviceInterface();
-#endif // CTS_USES_VULKANSC
-    const uint32_t idx = m_context.getUniversalQueueFamilyIndex();
-    const float qpr    = 1.0f;
+    const auto instance = InstanceWrapper(m_context);
+    const uint32_t idx  = m_context.getUniversalQueueFamilyIndex();
+    const float qpr     = 1.0f;
     ut::StringDuplicator sd(m_context.getDeviceCreationExtensions());
 
     const std::vector<const char *> dup = m_byPointersOrNames ? sd.duplicatePointers() : sd.duplicateStrings();
@@ -302,22 +294,9 @@ tcu::TestStatus DeviceExtensionDuplicatesInstance::iterate(void)
         &qpr                                        // const float* pQueuePriorities;
     };
 
-    void *pNext = nullptr;
-#ifdef CTS_USES_VULKANSC
-    VkDeviceObjectReservationCreateInfo memReservationInfo =
-        m_context.getTestContext().getCommandLine().isSubProcess() ? m_context.getResourceInterface()->getStatMax() :
-                                                                     resetDeviceObjectReservationCreateInfo();
-    memReservationInfo.pNext = pNext;
-    pNext                    = &memReservationInfo;
-
-    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-    sc10Features.pNext                              = pNext;
-    pNext                                           = &sc10Features;
-#endif // CTS_USES_VULKANSC
-
     const VkDeviceCreateInfo deviceCreateInfo{
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType sType;
-        pNext,                                // const void* pNext;
+        nullptr,                              // const void* pNext;
         VkDeviceCreateFlags(0),               // VkDeviceCreateFlags flags;
         1u,                                   // uint32_t queueCreateInfoCount;
         &queueCreateInfo,                     // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
@@ -329,20 +308,8 @@ tcu::TestStatus DeviceExtensionDuplicatesInstance::iterate(void)
 
     };
 
-    VkDevice device    = VK_NULL_HANDLE;
-    const VkResult res = createUncheckedDevice(vki, phd, &deviceCreateInfo, nullptr, &device);
-    if (VK_SUCCESS == res && VK_NULL_HANDLE != device)
-    {
-// Creating an unchecked device on VKSC CTS requires a call to DeviceDriver::destroyDevice
-// instead of DeviceDriverSC::destroyDevice which would leak a device here.
-#ifdef CTS_USES_VULKANSC
-        DeviceDriver deviceDriver(m_context.getPlatformInterface(), customInstance, device,
-                                  m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine());
-        deviceDriver.destroyDevice(device, nullptr /*pAllocator*/);
-#else
-        vkd.destroyDevice(device, nullptr);
-#endif
-    }
+    UncheckedDevice device{};
+    const VkResult res = instance.createUncheckedDevice(&deviceCreateInfo, nullptr, &device);
 
     auto failMessage = [&]() -> std::string
     {

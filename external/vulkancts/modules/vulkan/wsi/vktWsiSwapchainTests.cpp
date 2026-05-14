@@ -139,11 +139,11 @@ VkPhysicalDeviceFeatures getDeviceFeaturesForWsi(void)
     return features;
 }
 
-Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVersion, VkInstance instance,
-                                   const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                   const Extensions &supportedExtensions, const vector<string> &additionalExtensions,
-                                   const vector<uint32_t> &queueFamilyIndices,
-                                   const VkAllocationCallbacks *pAllocator = nullptr)
+static CustomDevice createDeviceWithWsi(Context &context, const InstanceWrapper &instance,
+                                        VkPhysicalDevice physicalDevice, const Extensions &supportedExtensions,
+                                        const vector<string> &additionalExtensions,
+                                        const vector<uint32_t> &queueFamilyIndices,
+                                        const VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[] = {1.0f};
     vector<VkDeviceQueueCreateInfo> queueInfos;
@@ -168,7 +168,7 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
 
     for (const auto &extName : extensions)
     {
-        if (!isCoreDeviceExtension(apiVersion, extName) &&
+        if (!isCoreDeviceExtension(context.getUsedApiVersion(), extName) &&
             !isExtensionStructSupported(supportedExtensions, RequiredExtension(extName)))
             TCU_THROW(NotSupportedError, extName + " is not supported");
     }
@@ -229,14 +229,14 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
                                              extensionsChar.data(),                        // ppEnabledExtensionNames
                                              nullptr};
 
-    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return instance.createCustomDevice(physicalDevice, &deviceParams, pAllocator);
 }
 
 struct InstanceHelper
 {
     const vector<VkExtensionProperties> supportedExtensions;
-    const CustomInstance instance;
-    const InstanceDriver &vki;
+    const InstanceWrapper instance;
+    const InstanceInterface &vki;
 
     InstanceHelper(Context &context, Type wsiType, const VkAllocationCallbacks *pAllocator = nullptr)
         : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
@@ -271,36 +271,35 @@ struct DeviceHelper
     const VkPhysicalDevice physicalDevice;
     const uint32_t queueFamilyIndex;
     const uint32_t secondQueueFamilyIndex;
-    const Unique<VkDevice> device;
-    const DeviceDriver vkd;
+    const DeviceWrapper device;
+    const DeviceInterface &vkd;
     const VkQueue queue;
     const VkQueue secondQueue;
 
-    DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance,
-                 const vector<VkSurfaceKHR> &surface, const vector<string> &additionalExtensions = vector<string>(),
+    DeviceHelper(Context &context, const InstanceHelper &instanceHelper, const vector<VkSurfaceKHR> &surface,
+                 const vector<string> &additionalExtensions = vector<string>(),
                  const VkAllocationCallbacks *pAllocator = nullptr, bool requestSecondQueue = false)
-        : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
-        , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
+        : physicalDevice(instanceHelper.instance.getPhysicalDevice())
+        , queueFamilyIndex(chooseQueueFamilyIndex(instanceHelper.vki, physicalDevice, surface))
         , secondQueueFamilyIndex(requestSecondQueue ? findSecondQueueFamilyIndex(context) :
                                                       std::numeric_limits<uint32_t>::max())
-        , device(createDeviceWithWsi(context.getPlatformInterface(), context.getUsedApiVersion(), instance, vki,
-                                     physicalDevice, enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr),
+        , device(createDeviceWithWsi(context, instanceHelper.instance, physicalDevice,
+                                     enumerateDeviceExtensionProperties(instanceHelper.vki, physicalDevice, nullptr),
                                      additionalExtensions,
                                      requestSecondQueue ? vector<uint32_t>{queueFamilyIndex, secondQueueFamilyIndex} :
                                                           vector<uint32_t>{queueFamilyIndex},
                                      pAllocator))
-        , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
-              context.getTestContext().getCommandLine())
+        , vkd(device.getDriver())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
         , secondQueue(requestSecondQueue ? getDeviceQueue(vkd, *device, secondQueueFamilyIndex, 0) : VK_NULL_HANDLE)
     {
     }
 
     // Single-surface shortcut.
-    DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
+    DeviceHelper(Context &context, const InstanceHelper &instanceHelper, VkSurfaceKHR surface,
                  const vector<string> &additionalExtensions = vector<string>(),
                  const VkAllocationCallbacks *pAllocator    = nullptr)
-        : DeviceHelper(context, vki, instance, vector<VkSurfaceKHR>(1u, surface), additionalExtensions, pAllocator)
+        : DeviceHelper(context, instanceHelper, vector<VkSurfaceKHR>(1u, surface), additionalExtensions, pAllocator)
     {
     }
 };
@@ -310,28 +309,26 @@ struct MultiQueueDeviceHelper
 {
     const VkPhysicalDevice physicalDevice;
     const vector<uint32_t> queueFamilyIndices;
-    const Unique<VkDevice> device;
-    const DeviceDriver vkd;
+    const DeviceWrapper device;
+    const DeviceInterface &vkd;
 
-    MultiQueueDeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance,
-                           const vector<VkSurfaceKHR> &surface,
+    MultiQueueDeviceHelper(Context &context, const InstanceHelper &instanceHelper, const vector<VkSurfaceKHR> &surface,
                            const vector<string> &additionalExtensions = vector<string>(),
                            const VkAllocationCallbacks *pAllocator    = nullptr)
-        : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
-        , queueFamilyIndices(getCompatibleQueueFamilyIndices(vki, physicalDevice, surface))
-        , device(createDeviceWithWsi(context.getPlatformInterface(), context.getUsedApiVersion(), instance, vki,
-                                     physicalDevice, enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr),
+        : physicalDevice(instanceHelper.instance.getPhysicalDevice())
+        , queueFamilyIndices(getCompatibleQueueFamilyIndices(instanceHelper.vki, physicalDevice, surface))
+        , device(createDeviceWithWsi(context, instanceHelper.instance, physicalDevice,
+                                     enumerateDeviceExtensionProperties(instanceHelper.vki, physicalDevice, nullptr),
                                      additionalExtensions, queueFamilyIndices, pAllocator))
-        , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
-              context.getTestContext().getCommandLine())
+        , vkd(device.getDriver())
     {
     }
 
     // Single-surface shortcut.
-    MultiQueueDeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
+    MultiQueueDeviceHelper(Context &context, const InstanceHelper &instanceHelper, VkSurfaceKHR surface,
                            const vector<string> additionalExtensions = vector<string>(),
                            const VkAllocationCallbacks *pAllocator   = nullptr)
-        : MultiQueueDeviceHelper(context, vki, instance, vector<VkSurfaceKHR>(1u, surface), additionalExtensions,
+        : MultiQueueDeviceHelper(context, instanceHelper, vector<VkSurfaceKHR>(1u, surface), additionalExtensions,
                                  pAllocator)
     {
     }
@@ -634,8 +631,7 @@ tcu::TestStatus createSwapchainTest(Context &context, TestParameters params)
         additionalExtensions.push_back("VK_EXT_attachment_feedback_loop_layout");
     if (params.extendedFlags)
         additionalExtensions.push_back("VK_KHR_extended_flags");
-    const MultiQueueDeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface,
-                                           additionalExtensions);
+    const MultiQueueDeviceHelper devHelper(context, instHelper, *surface, additionalExtensions);
 
     const vector<VkSwapchainCreateInfoKHR> cases(generateSwapchainParameterCases(
         params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
@@ -785,7 +781,7 @@ tcu::TestStatus createSwapchainPrivateDataTest(Context &context, TestParameters 
     extraExts.push_back("VK_EXT_private_data");
     if (context.isDeviceFunctionalitySupported("VK_EXT_attachment_feedback_loop_layout"))
         extraExts.push_back("VK_EXT_attachment_feedback_loop_layout");
-    const MultiQueueDeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, extraExts);
+    const MultiQueueDeviceHelper devHelper(context, instHelper, *surface, extraExts);
     const vector<VkSwapchainCreateInfoKHR> cases(generateSwapchainParameterCases(
         params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
 
@@ -942,7 +938,7 @@ tcu::TestStatus createSwapchainSimulateOOMTest(Context &context, TestParameters 
         {
             additionalExtensions.push_back("VK_EXT_attachment_feedback_loop_layout");
         }
-        const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, additionalExtensions,
+        const DeviceHelper devHelper(context, instHelper, *surface, additionalExtensions,
                                      failingAllocator.getCallbacks());
         const vector<VkSwapchainCreateInfoKHR> allCases(generateSwapchainParameterCases(
             params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
@@ -1214,10 +1210,10 @@ tcu::TestStatus basicRenderTest(Context &context, Type wsiType)
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+    const DeviceHelper devHelper(context, instHelper, *surface);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
-    SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
+    vk::Allocator &allocator   = devHelper.device.getAllocator();
     const VkSwapchainCreateInfoKHR swapchainInfo =
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
     const Unique<VkSwapchainKHR> swapchain(createWsiSwapchain(wsiType, vkd, device, &swapchainInfo));
@@ -1331,8 +1327,8 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, ImageSwapchainCre
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, params.wsiType,
                                                      native.getDisplay(), native.getWindow(),
                                                      context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, {*surface},
-                                 vector<string>(1u, "VK_KHR_bind_memory2"), nullptr, true);
+    const DeviceHelper devHelper(context, instHelper, {*surface}, vector<string>(1u, "VK_KHR_bind_memory2"), nullptr,
+                                 true);
 
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice &device     = *devHelper.device;
@@ -1450,7 +1446,7 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, ImageSwapchainCre
     {
         swapchainImages.push_back(**image);
     }
-    SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
+    vk::Allocator &allocator = devHelper.device.getAllocator();
     AcquireNextImageWrapper acquireImageWrapper(vkd, device, 1u, *swapchain, std::numeric_limits<uint64_t>::max());
     if (!acquireImageWrapper.featureAvailable(context))
         TCU_THROW(NotSupportedError, "Required extension is not supported");
@@ -1701,10 +1697,10 @@ tcu::TestStatus multiSwapchainRenderTest(Context &context, MultiSwapchainParams 
     }
 
     // Create a device compatible with all surfaces.
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, surfaceKHR);
+    const DeviceHelper devHelper(context, instHelper, surfaceKHR);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
-    SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
+    vk::Allocator &allocator   = devHelper.device.getAllocator();
 
     // Create several swapchains and images.
     vector<VkSwapchainCreateInfoKHR> swapchainInfo;
@@ -1837,7 +1833,7 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
 {
     const InstanceHelper instHelper(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
     const tcu::CommandLine &cmdLine       = context.getTestContext().getCommandLine();
-    VkPhysicalDevice physicalDevice       = chooseDevice(instHelper.vki, instHelper.instance, cmdLine);
+    VkPhysicalDevice physicalDevice       = instHelper.instance.getPhysicalDevice();
     const Extensions &supportedExtensions = enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, nullptr);
 
     std::vector<const char *> deviceExtensions;
@@ -1905,13 +1901,11 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
         nullptr,                              // pEnabledFeatures
     };
 
-    Move<VkDevice> groupDevice = createCustomDevice(context.getPlatformInterface(), instHelper.instance, instHelper.vki,
-                                                    physicalDevicesInGroup[deviceIdx], &deviceCreateInfo);
-    const DeviceDriver vkd(context.getPlatformInterface(), instHelper.instance, *groupDevice,
-                           context.getUsedApiVersion(), context.getTestContext().getCommandLine());
+    const DeviceWrapper groupDevice =
+        instHelper.instance.createCustomDevice(physicalDevicesInGroup[deviceIdx], &deviceCreateInfo);
+    const DeviceInterface &vkd = groupDevice.getDriver();
     VkQueue queue(getDeviceQueue(vkd, *groupDevice, queueFamilyIndex, 0));
-    SimpleAllocator allocator(vkd, *groupDevice,
-                              getPhysicalDeviceMemoryProperties(instHelper.vki, physicalDevicesInGroup[deviceIdx]));
+    vk::Allocator &allocator = groupDevice.getAllocator();
 
     // create swapchain for device group
     VkDeviceGroupSwapchainCreateInfoKHR deviceGroupSwapchainInfo = initVulkanStructure();
@@ -2056,7 +2050,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
 {
     const InstanceHelper instHelper(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
     const tcu::CommandLine &cmdLine    = context.getTestContext().getCommandLine();
-    VkPhysicalDevice physicalDevice    = chooseDevice(instHelper.vki, instHelper.instance, cmdLine);
+    VkPhysicalDevice physicalDevice    = instHelper.instance.getPhysicalDevice();
     const Extensions &deviceExtensions = enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, nullptr);
 
     // structures this tests checks were added in revision 69
@@ -2130,13 +2124,11 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
         nullptr,                              // pEnabledFeatures
     };
 
-    Move<VkDevice> groupDevice = createCustomDevice(context.getPlatformInterface(), instHelper.instance, instHelper.vki,
-                                                    physicalDevicesInGroup[deviceIdx], &deviceCreateInfo);
-    const DeviceDriver vkd(context.getPlatformInterface(), instHelper.instance, *groupDevice,
-                           context.getUsedApiVersion(), context.getTestContext().getCommandLine());
+    const DeviceWrapper groupDevice =
+        instHelper.instance.createCustomDevice(physicalDevicesInGroup[deviceIdx], &deviceCreateInfo);
+    const DeviceInterface &vkd = groupDevice.getDriver();
     VkQueue queue(getDeviceQueue(vkd, *groupDevice, queueFamilyIndex, 0));
-    SimpleAllocator allocator(vkd, *groupDevice,
-                              getPhysicalDeviceMemoryProperties(instHelper.vki, physicalDevicesInGroup[deviceIdx]));
+    vk::Allocator &allocator = groupDevice.getAllocator();
 
     // create swapchain for device group
     const VkSurfaceCapabilitiesKHR capabilities =
@@ -2432,14 +2424,14 @@ tcu::TestStatus resizeSwapchainTest(Context &context, Type wsiType)
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+    const DeviceHelper devHelper(context, instHelper, *surface);
     const PlatformProperties &platformProperties = getPlatformProperties(wsiType);
     const VkSurfaceCapabilitiesKHR capabilities =
         getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
-    SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
-    vector<tcu::UVec2> sizes = getSwapchainSizeSequence(capabilities, desiredSize);
+    vk::Allocator &allocator   = devHelper.device.getAllocator();
+    vector<tcu::UVec2> sizes   = getSwapchainSizeSequence(capabilities, desiredSize);
     Move<VkSwapchainKHR> prevSwapchain;
 
     DE_ASSERT(platformProperties.swapchainExtent != PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE);
@@ -2561,7 +2553,7 @@ tcu::TestStatus getImagesIncompleteResultTest(Context &context, Type wsiType)
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+    const DeviceHelper devHelper(context, instHelper, *surface);
     const VkSwapchainCreateInfoKHR swapchainInfo =
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
     const Unique<VkSwapchainKHR> swapchain(
@@ -2590,7 +2582,7 @@ tcu::TestStatus getImagesResultsCountTest(Context &context, Type wsiType)
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+    const DeviceHelper devHelper(context, instHelper, *surface);
     const VkSwapchainCreateInfoKHR swapchainInfo =
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
     const Unique<VkSwapchainKHR> swapchain(
@@ -2622,7 +2614,7 @@ tcu::TestStatus destroyNullHandleSwapchainTest(Context &context, Type wsiType)
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType);
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+    const DeviceHelper devHelper(context, instHelper, *surface);
     const VkSwapchainKHR nullHandle = VK_NULL_HANDLE;
 
     // Default allocator
@@ -2648,7 +2640,7 @@ tcu::TestStatus destroyOldSwapchainTest(Context &context, Type wsiType)
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType);
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+    const DeviceHelper devHelper(context, instHelper, *surface);
 
     // Create the first swapchain.
     VkSwapchainCreateInfoKHR swapchainInfo =
@@ -2678,7 +2670,7 @@ tcu::TestStatus destroyOldSwapchainWithAcquiredImageTest(Context &context, Type 
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType);
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+    const DeviceHelper devHelper(context, instHelper, *surface);
 
     // Create the first swapchain.
     VkSwapchainCreateInfoKHR swapchainInfo =
@@ -2730,7 +2722,7 @@ tcu::TestStatus presentImageFromRetiredSwapchain(Context &context, Type wsiType)
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType);
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+    const DeviceHelper devHelper(context, instHelper, *surface);
 
     const auto &vk        = devHelper.vkd;
     const VkDevice device = *devHelper.device;
@@ -2816,7 +2808,7 @@ tcu::TestStatus acquireTooManyTest(Context &context, Type wsiType)
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+    const DeviceHelper devHelper(context, instHelper, *surface);
     const VkSwapchainCreateInfoKHR swapchainInfo =
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
     const Unique<VkSwapchainKHR> swapchain(
@@ -2866,7 +2858,7 @@ tcu::TestStatus acquireTooManyTimeoutTest(Context &context, Type wsiType)
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+    const DeviceHelper devHelper(context, instHelper, *surface);
     const VkSwapchainCreateInfoKHR swapchainInfo =
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
     const Unique<VkSwapchainKHR> swapchain(

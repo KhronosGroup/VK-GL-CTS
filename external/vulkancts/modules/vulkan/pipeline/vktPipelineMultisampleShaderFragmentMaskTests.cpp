@@ -194,7 +194,7 @@ enum SampleSource
 // which require the VK_AMD_shader_fragment extension.
 class SingletonDevice
 {
-    SingletonDevice(Context &context) : m_context(context), m_logicalDevice()
+    SingletonDevice(Context &context) : m_context(context), m_instance(context), m_logicalDevice()
     {
         const float queuePriority              = 1.0;
         const VkDeviceQueueCreateInfo queues[] = {{
@@ -204,10 +204,8 @@ class SingletonDevice
             &queuePriority, // pQueuePriorities
         }};
 
-        const auto &vkp                              = m_context.getPlatformInterface();
-        const auto &vki                              = m_context.getInstanceInterface();
-        const auto instance                          = m_context.getInstance();
-        const auto physicalDevice                    = m_context.getPhysicalDevice();
+        const auto &vki                              = m_instance.getDriver();
+        const auto physicalDevice                    = m_instance.getPhysicalDevice();
         std::vector<const char *> creationExtensions = m_context.getDeviceCreationExtensions();
 
         VkPhysicalDeviceFeatures2 features2                                                = initVulkanStructure();
@@ -242,10 +240,7 @@ class SingletonDevice
         createInfo.ppEnabledExtensionNames = de::dataOrNull(creationExtensions);
         createInfo.pEnabledFeatures        = nullptr;
 
-        m_logicalDevice = createCustomDevice(vkp, instance, vki, physicalDevice, &createInfo, nullptr);
-
-        m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(
-            vkp, instance, *m_logicalDevice, m_context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
+        m_logicalDevice = m_instance.createCustomDevice(physicalDevice, &createInfo);
     }
 
 public:
@@ -253,12 +248,20 @@ public:
     {
     }
 
+    static VkPhysicalDevice getPhysicalDevice(Context &context)
+    {
+        if (!m_singletonDevice)
+            m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+        DE_ASSERT(m_singletonDevice);
+        return m_singletonDevice->m_logicalDevice.getPhysicalDevice();
+    }
+
     static VkDevice getDevice(Context &context)
     {
         if (!m_singletonDevice)
             m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
         DE_ASSERT(m_singletonDevice);
-        return m_singletonDevice->m_logicalDevice.get();
+        return *m_singletonDevice->m_logicalDevice;
     }
 
     static VkQueue getUniversalQueue(Context &context)
@@ -267,12 +270,28 @@ public:
                               0);
     }
 
+    static const InstanceInterface &getInstanceInterface(Context &context)
+    {
+        if (!m_singletonDevice)
+            m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+        DE_ASSERT(m_singletonDevice);
+        return m_singletonDevice->m_logicalDevice.getInstanceDriver();
+    }
+
     static const DeviceInterface &getDeviceInterface(Context &context)
     {
         if (!m_singletonDevice)
             m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
         DE_ASSERT(m_singletonDevice);
-        return *(m_singletonDevice->m_deviceDriver.get());
+        return m_singletonDevice->m_logicalDevice.getDriver();
+    }
+
+    static vk::Allocator *getAllocator(Context &context)
+    {
+        if (!m_singletonDevice)
+            m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+        DE_ASSERT(m_singletonDevice);
+        return &m_singletonDevice->m_logicalDevice.getAllocator();
     }
 
     static void destroy()
@@ -282,8 +301,8 @@ public:
 
 private:
     const Context &m_context;
-    Move<vk::VkDevice> m_logicalDevice;
-    de::MovePtr<vk::DeviceDriver> m_deviceDriver;
+    const InstanceWrapper m_instance;
+    DeviceWrapper m_logicalDevice;
     static SharedPtr<SingletonDevice> m_singletonDevice;
 };
 
@@ -601,9 +620,9 @@ void drawAndSampleInputAttachment(Context &context, const TestParams &params, Wo
 {
     DE_ASSERT(params.numLayers == 1u); // subpass load with single-layer image
 
-    const InstanceInterface &vki          = context.getInstanceInterface();
+    const InstanceInterface &vki          = SingletonDevice::getInstanceInterface(context);
     const DeviceInterface &vk             = SingletonDevice::getDeviceInterface(context);
-    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const VkPhysicalDevice physicalDevice = SingletonDevice::getPhysicalDevice(context);
     const VkDevice device                 = SingletonDevice::getDevice(context);
 
     RenderPassWrapper renderPass;
@@ -914,9 +933,9 @@ void drawAndSampleInputAttachment(Context &context, const TestParams &params, Wo
 //! Only draw a multisampled image
 void draw(Context &context, const TestParams &params, WorkingData &wd)
 {
-    const InstanceInterface &vki          = context.getInstanceInterface();
+    const InstanceInterface &vki          = SingletonDevice::getInstanceInterface(context);
     const DeviceInterface &vk             = SingletonDevice::getDeviceInterface(context);
-    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const VkPhysicalDevice physicalDevice = SingletonDevice::getPhysicalDevice(context);
     const VkDevice device                 = SingletonDevice::getDevice(context);
 
     std::vector<ImageViewSp> imageViews;
@@ -1216,9 +1235,7 @@ tcu::TestStatus test(Context &context, const TestParams params)
     WorkingData wd;
     const DeviceInterface &vk = SingletonDevice::getDeviceInterface(context);
     const VkDevice device     = SingletonDevice::getDevice(context);
-
-    MovePtr<Allocator> allocator = MovePtr<Allocator>(new SimpleAllocator(
-        vk, device, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice())));
+    vk::Allocator *allocator  = SingletonDevice::getAllocator(context);
 
     // Initialize resources
     {

@@ -201,8 +201,8 @@ CustomInstance createInstanceWithWsi(Context &context, Type wsiType, const vecto
 struct InstanceHelper
 {
     const vector<VkExtensionProperties> supportedExtensions;
-    CustomInstance instance;
-    const InstanceDriver &vki;
+    const InstanceWrapper instance;
+    const InstanceInterface &vki;
 
     InstanceHelper(Context &context, Type wsiType, const VkAllocationCallbacks *pAllocator = nullptr)
         : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
@@ -237,8 +237,7 @@ tcu::TestStatus querySurfaceCounterTest(Context &context, Type wsiType)
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
     const vk::InstanceInterface &vki          = instHelper.vki;
-    const tcu::CommandLine &cmdLine           = context.getTestContext().getCommandLine();
-    const vk::VkPhysicalDevice physicalDevice = chooseDevice(vki, instHelper.instance, cmdLine);
+    const vk::VkPhysicalDevice physicalDevice = instHelper.instance.getPhysicalDevice();
     const bool isDisplay                      = isDisplaySurface(wsiType);
 
     if (!isInstanceExtensionSupported(context.getUsedApiVersion(), context.getInstanceExtensions(),
@@ -977,7 +976,7 @@ tcu::TestStatus querySurfacePresentModes2Test(Context &context, Type wsiType)
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
     const vector<VkPhysicalDevice> physicalDevices = enumeratePhysicalDevices(instHelper.vki, instHelper.instance);
     const std::vector<VkExtensionProperties> deviceExtensions(
-        enumerateDeviceExtensionProperties(instHelper.vki, context.getPhysicalDevice(), nullptr));
+        enumerateDeviceExtensionProperties(instHelper.vki, instHelper.instance.getPhysicalDevice(), nullptr));
     if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))
         TCU_THROW(NotSupportedError, "Extension VK_EXT_full_screen_exclusive not supported");
 
@@ -1057,7 +1056,7 @@ tcu::TestStatus querySurfacePresentModes2TestSurfaceless(Context &context, Type 
     const VkSurfaceKHR nullSurface                 = VK_NULL_HANDLE;
     const vector<VkPhysicalDevice> physicalDevices = enumeratePhysicalDevices(instHelper.vki, instHelper.instance);
     const std::vector<vk::VkExtensionProperties> deviceExtensions(
-        enumerateDeviceExtensionProperties(instHelper.vki, context.getPhysicalDevice(), nullptr));
+        enumerateDeviceExtensionProperties(instHelper.vki, instHelper.instance.getPhysicalDevice(), nullptr));
     const vector<VkPresentModeKHR> validPresentModes{VK_PRESENT_MODE_FIFO_KHR,
                                                      VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR,
                                                      VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR};
@@ -1250,7 +1249,7 @@ tcu::TestStatus querySurfacePresentModesTest(Context &context, Type wsiType)
     return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
-void checkDeprecatedExtensionGoogleSurfacelessQuery(const vk::InstanceDriver &vk, VkPhysicalDevice physicalDevice,
+void checkDeprecatedExtensionGoogleSurfacelessQuery(const vk::InstanceInterface &vk, VkPhysicalDevice physicalDevice,
                                                     VkSurfaceKHR surface, tcu::ResultCollector &result)
 {
     const VkSurfaceKHR nullSurface = VK_NULL_HANDLE;
@@ -1294,7 +1293,7 @@ void checkDeprecatedExtensionGoogleSurfacelessQuery(const vk::InstanceDriver &vk
     }
 }
 
-void checkExtensionGoogleSurfacelessQuery(const vk::InstanceDriver &vk, VkPhysicalDevice physicalDevice,
+void checkExtensionGoogleSurfacelessQuery(const vk::InstanceInterface &vk, VkPhysicalDevice physicalDevice,
                                           tcu::ResultCollector &result)
 {
     const VkSurfaceKHR nullSurface = VK_NULL_HANDLE;
@@ -1455,17 +1454,15 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest(Context &context, Ty
         nullptr,                                                     //pEnabledFeatures;
     };
 
-    Move<VkDevice> deviceGroup =
-        createCustomDevice(context.getPlatformInterface(), instHelper.instance, instHelper.vki,
-                           deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
-    const DeviceDriver vk(context.getPlatformInterface(), instHelper.instance, *deviceGroup,
-                          context.getUsedApiVersion(), context.getTestContext().getCommandLine());
+    const DeviceWrapper deviceGroup = instHelper.instance.createCustomDevice(
+        deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
+    const DeviceInterface &vk = deviceGroup.getDriver();
 
     presentCapabilities = reinterpret_cast<VkDeviceGroupPresentCapabilitiesKHR *>(buffer);
     deMemset(buffer, GUARD_VALUE, sizeof(buffer));
     presentCapabilities->sType = VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHR;
     presentCapabilities->pNext = nullptr;
-    VK_CHECK(vk.getDeviceGroupPresentCapabilitiesKHR(deviceGroup.get(), presentCapabilities));
+    VK_CHECK(vk.getDeviceGroupPresentCapabilitiesKHR(deviceGroup, presentCapabilities));
 
     // Guard check
     for (int32_t ndx = 0; ndx < GUARD_SIZE; ndx++)
@@ -1518,7 +1515,7 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest(Context &context, Type wsiT
     VkRect2D *presentRectangles;
     VkDeviceGroupPresentModeFlagsKHR *presentModeFlags;
     vector<uint8_t> rectanglesBuffer;
-    VkPhysicalDevice physicalDevice       = chooseDevice(instHelper.vki, instHelper.instance, cmdLine);
+    VkPhysicalDevice physicalDevice       = instHelper.instance.getPhysicalDevice();
     const Extensions &supportedExtensions = enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, nullptr);
     std::vector<const char *> deviceExtensions;
 
@@ -1575,15 +1572,13 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest(Context &context, Type wsiT
         nullptr,                                                     //pEnabledFeatures;
     };
 
-    Move<VkDevice> deviceGroup =
-        createCustomDevice(context.getPlatformInterface(), instHelper.instance, instHelper.vki,
-                           deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
-    const DeviceDriver vk(context.getPlatformInterface(), instHelper.instance, *deviceGroup,
-                          context.getUsedApiVersion(), context.getTestContext().getCommandLine());
-    presentModeFlags = reinterpret_cast<VkDeviceGroupPresentModeFlagsKHR *>(buffer);
+    const DeviceWrapper deviceGroup = instHelper.instance.createCustomDevice(
+        deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
+    const DeviceInterface &vk = deviceGroup.getDriver();
+    presentModeFlags          = reinterpret_cast<VkDeviceGroupPresentModeFlagsKHR *>(buffer);
     deMemset(buffer, GUARD_VALUE, sizeof(buffer));
 
-    VK_CHECK(vk.getDeviceGroupSurfacePresentModesKHR(deviceGroup.get(), *surface, presentModeFlags));
+    VK_CHECK(vk.getDeviceGroupSurfacePresentModesKHR(deviceGroup, *surface, presentModeFlags));
 
     // Guard check
     for (int32_t ndx = 0; ndx < GUARD_SIZE; ndx++)

@@ -184,8 +184,8 @@ CustomInstance createInstanceWithWsi(Context &context, vk::wsi::Type wsiType,
 struct InstanceHelper
 {
     const vector<vk::VkExtensionProperties> supportedExtensions;
-    CustomInstance instance;
-    const vk::InstanceDriver &vki;
+    const InstanceWrapper instance;
+    const vk::InstanceInterface &vki;
 
     InstanceHelper(Context &context, vk::wsi::Type wsiType, const vector<const char *> &additionalExtensions,
                    const vk::VkAllocationCallbacks *pAllocator = nullptr)
@@ -203,10 +203,9 @@ vector<const char *> getMandatoryDeviceExtensions()
     return mandatoryExtensions;
 }
 
-vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkInstance instance,
-                                           const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
-                                           const vector<const char *> &extraExtensions, const uint32_t queueFamilyIndex,
-                                           const vk::VkAllocationCallbacks *pAllocator = nullptr)
+static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, vk::VkPhysicalDevice physicalDevice,
+                                        const vector<const char *> &extraExtensions, const uint32_t queueFamilyIndex,
+                                        const vk::VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[]                  = {1.0f};
     const vk::VkDeviceQueueCreateInfo queueInfos[] = {{vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
@@ -270,26 +269,24 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
                                                  extensions.data(),                        // ppEnabledExtensionNames
                                                  pNext ? nullptr : &features};
 
-    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return instance.createCustomDevice(physicalDevice, &deviceParams, pAllocator);
 }
 
 struct DeviceHelper
 {
     const vk::VkPhysicalDevice physicalDevice;
     const uint32_t queueFamilyIndex;
-    const vk::Unique<vk::VkDevice> device;
-    const vk::DeviceDriver vkd;
+    const DeviceWrapper device;
+    const vk::DeviceInterface &vkd;
     const vk::VkQueue queue;
 
-    DeviceHelper(Context &context, const vk::InstanceInterface &vki, vk::VkInstance instance,
-                 const vector<vk::VkSurfaceKHR> &surfaces, const vector<const char *> &extraExtensions,
-                 const vk::VkAllocationCallbacks *pAllocator = nullptr)
-        : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
-        , queueFamilyIndex(vk::wsi::chooseQueueFamilyIndex(vki, physicalDevice, surfaces))
-        , device(createDeviceWithWsi(context.getPlatformInterface(), instance, vki, physicalDevice, extraExtensions,
-                                     queueFamilyIndex, pAllocator))
-        , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
-              context.getTestContext().getCommandLine())
+    DeviceHelper(const InstanceHelper &instanceHelper, const vector<vk::VkSurfaceKHR> &surfaces,
+                 const vector<const char *> &extraExtensions, const vk::VkAllocationCallbacks *pAllocator = nullptr)
+        : physicalDevice(instanceHelper.instance.getPhysicalDevice())
+        , queueFamilyIndex(vk::wsi::chooseQueueFamilyIndex(instanceHelper.vki, physicalDevice, surfaces))
+        , device(createDeviceWithWsi(instanceHelper.instance, physicalDevice, extraExtensions, queueFamilyIndex,
+                                     pAllocator))
+        , vkd(device.getDriver())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
     {
     }
@@ -443,14 +440,12 @@ tcu::TestStatus PresentIdWaitInstance::iterate(void)
     const vk::Unique<vk::VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, m_wsiType,
                                                              native.getDisplay(), native.getWindow(),
                                                              m_context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(m_context, instHelper.vki, instHelper.instance,
-                                 vector<vk::VkSurfaceKHR>(1u, surface.get()), getRequiredDeviceExts());
+    const DeviceHelper devHelper(instHelper, vector<vk::VkSurfaceKHR>(1u, surface.get()), getRequiredDeviceExts());
     if (m_ver == 2 && !surfaceSupportsPresentIdWait2(instHelper.vki, devHelper.physicalDevice, surface.get()))
         TCU_THROW(NotSupportedError, "PresentId2/PresentWait2 not supported for surface");
-    const vk::DeviceInterface &vkd = devHelper.vkd;
-    const vk::VkDevice device      = *devHelper.device;
-    vk::SimpleAllocator allocator(vkd, device,
-                                  getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
+    const vk::DeviceInterface &vkd                   = devHelper.vkd;
+    const vk::VkDevice device                        = *devHelper.device;
+    vk::Allocator &allocator                         = devHelper.device.getAllocator();
     const vk::VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(
         m_wsiType, m_ver, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
     const vk::Unique<vk::VkSwapchainKHR> swapchain(createWsiSwapchain(m_wsiType, vkd, device, &swapchainInfo));
@@ -1178,16 +1173,15 @@ tcu::TestStatus PresentWaitDualInstance::iterate(void)
     const vk::Unique<vk::VkSurfaceKHR> surface2(createSurface(instHelper.vki, instHelper.instance, m_wsiType,
                                                               native.getDisplay(), native.getWindow(1),
                                                               m_context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(m_context, instHelper.vki, instHelper.instance,
-                                 vector<vk::VkSurfaceKHR>{surface1.get(), surface2.get()}, getRequiredDeviceExts());
+    const DeviceHelper devHelper(instHelper, vector<vk::VkSurfaceKHR>{surface1.get(), surface2.get()},
+                                 getRequiredDeviceExts());
     if (m_ver == 2 && !surfaceSupportsPresentIdWait2(instHelper.vki, devHelper.physicalDevice, surface1.get()))
         TCU_THROW(NotSupportedError, "PresentId2/PresentWait2 not supported for surface)");
     if (m_ver == 2 && !surfaceSupportsPresentIdWait2(instHelper.vki, devHelper.physicalDevice, surface2.get()))
         TCU_THROW(NotSupportedError, "PresentId2/PresentWait2 not supported for surface)");
-    const vk::DeviceInterface &vkd = devHelper.vkd;
-    const vk::VkDevice device      = *devHelper.device;
-    vk::SimpleAllocator allocator(vkd, device,
-                                  getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
+    const vk::DeviceInterface &vkd                    = devHelper.vkd;
+    const vk::VkDevice device                         = *devHelper.device;
+    vk::Allocator &allocator                          = devHelper.device.getAllocator();
     const vk::VkSwapchainCreateInfoKHR swapchainInfo1 = getBasicSwapchainParameters(
         m_wsiType, m_ver, instHelper.vki, devHelper.physicalDevice, surface1.get(), desiredSize, 2);
     const vk::VkSwapchainCreateInfoKHR swapchainInfo2 = getBasicSwapchainParameters(

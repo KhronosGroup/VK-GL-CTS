@@ -246,6 +246,7 @@ uint32_t getDefaultTestThreadCount(void)
 
 struct Environment
 {
+    Context &context;
     const PlatformInterface &vkp;
     uint32_t apiVersion;
     const InstanceInterface &instanceInterface;
@@ -256,15 +257,11 @@ struct Environment
     const BinaryCollection &programBinaries;
     const VkAllocationCallbacks *allocationCallbacks;
     uint32_t maxResourceConsumers; // Maximum number of objects using same Object::Resources concurrently
-#ifdef CTS_USES_VULKANSC
-    de::SharedPtr<ResourceInterface> resourceInterface;
-    VkPhysicalDeviceVulkanSC10Properties vulkanSC10Properties;
-    VkPhysicalDeviceProperties properties;
-#endif // CTS_USES_VULKANSC
     const tcu::CommandLine &commandLine;
 
-    Environment(Context &context, uint32_t maxResourceConsumers_)
-        : vkp(context.getPlatformInterface())
+    Environment(Context &context_, uint32_t maxResourceConsumers_)
+        : context(context_)
+        , vkp(context.getPlatformInterface())
         , apiVersion(context.getUsedApiVersion())
         , instanceInterface(context.getInstanceInterface())
         , instance(context.getInstance())
@@ -274,25 +271,17 @@ struct Environment
         , programBinaries(context.getBinaryCollection())
         , allocationCallbacks(nullptr)
         , maxResourceConsumers(maxResourceConsumers_)
-#ifdef CTS_USES_VULKANSC
-        , resourceInterface(context.getResourceInterface())
-        , vulkanSC10Properties(context.getDeviceVulkanSC10Properties())
-        , properties(context.getDeviceProperties())
-#endif // CTS_USES_VULKANSC
         , commandLine(context.getTestContext().getCommandLine())
     {
     }
 
-    Environment(const PlatformInterface &vkp_, uint32_t apiVersion_, const InstanceInterface &instanceInterface_,
-                VkInstance instance_, const DeviceInterface &vkd_, VkDevice device_, uint32_t queueFamilyIndex_,
-                const BinaryCollection &programBinaries_, const VkAllocationCallbacks *allocationCallbacks_,
-                uint32_t maxResourceConsumers_,
-#ifdef CTS_USES_VULKANSC
-                de::SharedPtr<ResourceInterface> resourceInterface_,
-                const VkPhysicalDeviceVulkanSC10Properties &vulkanSC10Properties_,
-#endif // CTS_USES_VULKANSC
+    Environment(Context &context_, const PlatformInterface &vkp_, uint32_t apiVersion_,
+                const InstanceInterface &instanceInterface_, VkInstance instance_, const DeviceInterface &vkd_,
+                VkDevice device_, uint32_t queueFamilyIndex_, const BinaryCollection &programBinaries_,
+                const VkAllocationCallbacks *allocationCallbacks_, uint32_t maxResourceConsumers_,
                 const tcu::CommandLine &commandLine_)
-        : vkp(vkp_)
+        : context(context_)
+        , vkp(vkp_)
         , apiVersion(apiVersion_)
         , instanceInterface(instanceInterface_)
         , instance(instance_)
@@ -306,10 +295,6 @@ struct Environment
         , allocationCallbacks(allocationCallbacks_)
 #endif // CTS_USES_VULKANSC
         , maxResourceConsumers(maxResourceConsumers_)
-#ifdef CTS_USES_VULKANSC
-        , resourceInterface(resourceInterface_)
-        , vulkanSC10Properties(vulkanSC10Properties_)
-#endif // CTS_USES_VULKANSC
         , commandLine(commandLine_)
     {
 #ifdef CTS_USES_VULKANSC
@@ -322,7 +307,7 @@ template <typename Case>
 struct Dependency
 {
     typename Case::Resources resources;
-    Unique<typename Case::Type> object;
+    typename Case::UniqueObject object;
 
     Dependency(const Environment &env, const typename Case::Parameters &params)
         : resources(env, params)
@@ -393,19 +378,15 @@ template <typename Object>
 size_t computeSystemMemoryUsage(Context &context, const typename Object::Parameters &params)
 {
     AllocationCallbackRecorder allocRecorder(getSystemAllocator());
-    const Environment env(context.getPlatformInterface(), context.getUsedApiVersion(), context.getInstanceInterface(),
-                          context.getInstance(), context.getDeviceInterface(), context.getDevice(),
-                          context.getUniversalQueueFamilyIndex(), context.getBinaryCollection(),
-                          allocRecorder.getCallbacks(), 1u,
-#ifdef CTS_USES_VULKANSC
-                          context.getResourceInterface(), context.getDeviceVulkanSC10Properties(),
-#endif // CTS_USES_VULKANSC
-                          context.getTestContext().getCommandLine());
+    const Environment env(context, context.getPlatformInterface(), context.getUsedApiVersion(),
+                          context.getInstanceInterface(), context.getInstance(), context.getDeviceInterface(),
+                          context.getDevice(), context.getUniversalQueueFamilyIndex(), context.getBinaryCollection(),
+                          allocRecorder.getCallbacks(), 1u, context.getTestContext().getCommandLine());
     const typename Object::Resources res(env, params);
     const size_t resourceMemoryUsage = getCurrentSystemMemoryUsage(allocRecorder);
 
     {
-        Unique<typename Object::Type> obj(Object::create(env, res, params));
+        typename Object::UniqueObject obj(Object::create(env, res, params));
         const size_t totalMemoryUsage = getCurrentSystemMemoryUsage(allocRecorder);
 
         return totalMemoryUsage - resourceMemoryUsage;
@@ -481,6 +462,7 @@ enum
 struct Instance
 {
     typedef VkInstance Type;
+    typedef InstanceWrapper UniqueObject;
 
     struct Parameters
     {
@@ -507,7 +489,7 @@ struct Instance
         return getSafeObjectCount<Instance>(context, params, MAX_CONCURRENT_INSTANCES);
     }
 
-    static Move<VkInstance> create(const Environment &env, const Resources &, const Parameters &params)
+    static InstanceWrapper create(const Environment &env, const Resources &, const Parameters &params)
     {
         VkInstanceCreateFlags instanceFlags              = 0u;
         const vector<VkExtensionProperties> instanceExts = enumerateInstanceExtensionProperties(env.vkp, nullptr);
@@ -551,13 +533,14 @@ struct Instance
             extensionNamePtrs.empty() ? nullptr : &extensionNamePtrs[0], // ppEnabledExtensionNames
         };
 
-        return createInstance(env.vkp, &instanceInfo, env.allocationCallbacks);
+        return createCustomInstanceFromInfo(env.context, &instanceInfo, env.allocationCallbacks);
     }
 };
 
 struct Device
 {
     typedef VkDevice Type;
+    typedef DeviceWrapper UniqueObject;
 
     struct Parameters
     {
@@ -572,22 +555,14 @@ struct Device
     struct Resources
     {
         Dependency<Instance> instance;
-#ifndef CTS_USES_VULKANSC
-        InstanceDriver vki;
-#else
-        InstanceDriverSC vki;
-#endif // CTS_USES_VULKANSC
+        const InstanceInterface &vki;
 
         VkPhysicalDevice physicalDevice;
         uint32_t queueFamilyIndex;
 
         Resources(const Environment &env, const Parameters &params)
             : instance(env, Instance::Parameters(vector<string>{string{"VK_KHR_get_physical_device_properties2"}}))
-#ifndef CTS_USES_VULKANSC
-            , vki(env.vkp, *instance.object)
-#else
-            , vki(env.vkp, *instance.object, env.commandLine, env.resourceInterface)
-#endif // CTS_USES_VULKANSC
+            , vki(instance.object.getDriver())
             , physicalDevice(0)
             , queueFamilyIndex(~0u)
         {
@@ -625,7 +600,7 @@ struct Device
         return getSafeObjectCount<Device>(context, params, MAX_CONCURRENT_DEVICES);
     }
 
-    static Move<VkDevice> create(const Environment &env, const Resources &res, const Parameters &)
+    static DeviceWrapper create(const Environment &env, const Resources &res, const Parameters &)
     {
         const float queuePriority = 1.0;
 
@@ -637,43 +612,7 @@ struct Device
 
         void *pNext = nullptr;
         std::vector<const char *> extensions;
-#ifdef CTS_USES_VULKANSC
-        VkDeviceObjectReservationCreateInfo memReservationInfo = env.commandLine.isSubProcess() ?
-                                                                     env.resourceInterface->getStatMax() :
-                                                                     resetDeviceObjectReservationCreateInfo();
-        memReservationInfo.pNext                               = pNext;
-        pNext                                                  = &memReservationInfo;
-
-        VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-        sc10Features.pNext                              = pNext;
-        pNext                                           = &sc10Features;
-
-        VkPipelineCacheCreateInfo pcCI;
-        std::vector<VkPipelinePoolSize> poolSizes;
-        if (env.commandLine.isSubProcess())
-        {
-            if (env.resourceInterface->getCacheDataSize() > 0)
-            {
-                pcCI = {
-                    VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                    nullptr,                                      // const void* pNext;
-                    VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                        VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                    env.resourceInterface->getCacheDataSize(),                // uintptr_t initialDataSize;
-                    env.resourceInterface->getCacheData()                     // const void* pInitialData;
-                };
-                memReservationInfo.pipelineCacheCreateInfoCount = 1;
-                memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-            }
-
-            poolSizes = env.resourceInterface->getPipelinePoolSizes();
-            if (!poolSizes.empty())
-            {
-                memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-                memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-            }
-        }
-#else
+#ifndef CTS_USES_VULKANSC
         VkPhysicalDevicePipelineCreationCacheControlFeatures pipelineCreationCacheControlFeatures =
             vk::initVulkanStructure();
         VkPhysicalDeviceVulkan13Features vulkan13Features = vk::initVulkanStructure();
@@ -704,21 +643,21 @@ struct Device
             (VkDeviceCreateFlags)0,
             DE_LENGTH_OF_ARRAY(queues),
             queues,
-            0u,      // enabledLayerNameCount
-            nullptr, // ppEnabledLayerNames
-            0u,      // enabledExtensionNameCount
-            nullptr, // ppEnabledExtensionNames
-            nullptr, // pEnabledFeatures
+            0u,                                       // enabledLayerNameCount
+            nullptr,                                  // ppEnabledLayerNames
+            static_cast<uint32_t>(extensions.size()), // enabledExtensionNameCount
+            extensions.data(),                        // ppEnabledExtensionNames
+            nullptr,                                  // pEnabledFeatures
         };
 
-        return createCustomDevice(env.vkp, env.instance, res.vki, res.physicalDevice, &deviceInfo,
-                                  env.allocationCallbacks);
+        return res.instance.object.createCustomDevice(res.physicalDevice, &deviceInfo, env.allocationCallbacks);
     }
 };
 
 struct DeviceGroup
 {
     typedef VkDevice Type;
+    typedef DeviceWrapper UniqueObject;
 
     struct Parameters
     {
@@ -738,11 +677,7 @@ struct DeviceGroup
     {
         vector<string> extensions;
         Dependency<Instance> instance;
-#ifndef CTS_USES_VULKANSC
-        InstanceDriver vki;
-#else
-        InstanceDriverSC vki;
-#endif
+        const InstanceInterface &vki;
         vector<VkPhysicalDevice> physicalDevices;
         uint32_t physicalDeviceCount;
         uint32_t queueFamilyIndex;
@@ -750,11 +685,7 @@ struct DeviceGroup
         Resources(const Environment &env, const Parameters &params)
             : extensions(1, "VK_KHR_device_group_creation")
             , instance(env, Instance::Parameters(extensions))
-#ifndef CTS_USES_VULKANSC
-            , vki(env.vkp, *instance.object)
-#else
-            , vki(env.vkp, *instance.object, env.commandLine, env.resourceInterface)
-#endif
+            , vki(instance.object.getDriver())
             , physicalDeviceCount(0)
             , queueFamilyIndex(~0u)
         {
@@ -801,7 +732,7 @@ struct DeviceGroup
             context, params, MAX_CONCURRENT_DEVICES / devGroupProperties[params.deviceGroupIndex].physicalDeviceCount);
     }
 
-    static Move<VkDevice> create(const Environment &env, const Resources &res, const Parameters &params)
+    static DeviceWrapper create(const Environment &env, const Resources &res, const Parameters &params)
     {
         const float queuePriority = 1.0;
 
@@ -821,51 +752,12 @@ struct DeviceGroup
             res.physicalDevices.data()                         //physicalDevices
         };
 
-        void *pNext = &deviceGroupInfo;
-#ifdef CTS_USES_VULKANSC
-        VkDeviceObjectReservationCreateInfo memReservationInfo = env.commandLine.isSubProcess() ?
-                                                                     env.resourceInterface->getStatMax() :
-                                                                     resetDeviceObjectReservationCreateInfo();
-        memReservationInfo.pNext                               = pNext;
-        pNext                                                  = &memReservationInfo;
-
-        VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-        sc10Features.pNext                              = pNext;
-        pNext                                           = &sc10Features;
-
-        VkPipelineCacheCreateInfo pcCI;
-        std::vector<VkPipelinePoolSize> poolSizes;
-        if (env.commandLine.isSubProcess())
-        {
-            if (env.resourceInterface->getCacheDataSize() > 0)
-            {
-                pcCI = {
-                    VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                    nullptr,                                      // const void* pNext;
-                    VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                        VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                    env.resourceInterface->getCacheDataSize(),                // uintptr_t initialDataSize;
-                    env.resourceInterface->getCacheData()                     // const void* pInitialData;
-                };
-                memReservationInfo.pipelineCacheCreateInfoCount = 1;
-                memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-            }
-
-            poolSizes = env.resourceInterface->getPipelinePoolSizes();
-            if (!poolSizes.empty())
-            {
-                memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-                memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-            }
-        }
-#endif // CTS_USES_VULKANSC
-
         VkPhysicalDeviceFeatures enabledFeatures =
             getPhysicalDeviceFeatures(res.vki, res.physicalDevices[params.deviceIndex]);
 
         const VkDeviceCreateInfo deviceGroupCreateInfo = {
             VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            pNext,
+            &deviceGroupInfo,
             (VkDeviceCreateFlags)0,
             DE_LENGTH_OF_ARRAY(queues),
             queues,
@@ -876,14 +768,15 @@ struct DeviceGroup
             &enabledFeatures, // pEnabledFeatures
         };
 
-        return createCustomDevice(env.vkp, env.instance, res.vki, res.physicalDevices[params.deviceIndex],
-                                  &deviceGroupCreateInfo, env.allocationCallbacks);
+        return res.instance.object.createCustomDevice(res.physicalDevices[params.deviceIndex], &deviceGroupCreateInfo,
+                                                      env.allocationCallbacks);
     }
 };
 
 struct DeviceMemory
 {
     typedef VkDeviceMemory Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -940,6 +833,7 @@ DeviceMemory::Parameters getDeviceMemoryParameters(const Environment &env, VkBuf
 struct Buffer
 {
     typedef VkBuffer Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -987,6 +881,7 @@ struct Buffer
 struct BufferView
 {
     typedef VkBufferView Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -1039,6 +934,7 @@ struct BufferView
 struct Image
 {
     typedef VkImage Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -1113,6 +1009,7 @@ struct Image
 struct ImageView
 {
     typedef VkImageView Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -1171,6 +1068,7 @@ struct ImageView
 struct Semaphore
 {
     typedef VkSemaphore Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -1204,6 +1102,7 @@ struct Semaphore
 struct Fence
 {
     typedef VkFence Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -1237,6 +1136,7 @@ struct Fence
 struct Event
 {
     typedef VkEvent Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -1270,6 +1170,7 @@ struct Event
 struct QueryPool
 {
     typedef VkQueryPool Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -1313,6 +1214,7 @@ struct QueryPool
 struct ShaderModule
 {
     typedef VkShaderModule Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -1395,6 +1297,7 @@ struct ShaderModule
 struct PipelineCache
 {
     typedef VkPipelineCache Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -1479,8 +1382,8 @@ struct PipelineCache
 #else
             VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                 VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-            env.resourceInterface->getCacheDataSize(),                // uintptr_t initialDataSize;
-            env.resourceInterface->getCacheData()                     // const void* pInitialData;
+            env.context.getResourceInterface()->getCacheDataSize(),   // uintptr_t initialDataSize;
+            env.context.getResourceInterface()->getCacheData()        // const void* pInitialData;
 #endif // CTS_USES_VULKANSC
         };
 
@@ -1491,6 +1394,7 @@ struct PipelineCache
 struct MergedPipelineCache
 {
     typedef VkPipelineCache Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -1602,6 +1506,7 @@ struct MergedPipelineCache
 struct Sampler
 {
     typedef VkSampler Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -1684,6 +1589,7 @@ struct Sampler
 struct DescriptorSetLayout
 {
     typedef VkDescriptorSetLayout Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -1781,6 +1687,7 @@ struct DescriptorSetLayout
 struct PipelineLayout
 {
     typedef VkPipelineLayout Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -1848,6 +1755,7 @@ struct PipelineLayout
 struct RenderPass
 {
     typedef VkRenderPass Type;
+    typedef Unique<Type> UniqueObject;
 
     // \todo [2015-09-17 pyry] More interesting configurations
     struct Parameters
@@ -1882,6 +1790,7 @@ struct RenderPass
 struct GraphicsPipeline
 {
     typedef VkPipeline Type;
+    typedef Unique<Type> UniqueObject;
 
     // \todo [2015-09-17 pyry] More interesting configurations
     struct Parameters
@@ -2092,6 +2001,7 @@ struct GraphicsPipeline
 struct ComputePipeline
 {
     typedef VkPipeline Type;
+    typedef Unique<Type> UniqueObject;
 
     // \todo [2015-09-17 pyry] More interesting configurations
     struct Parameters
@@ -2203,6 +2113,7 @@ struct ComputePipeline
 struct DescriptorPool
 {
     typedef VkDescriptorPool Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -2256,6 +2167,7 @@ struct DescriptorPool
 struct DescriptorSet
 {
     typedef VkDescriptorSet Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -2359,6 +2271,7 @@ struct DescriptorSet
 struct Framebuffer
 {
     typedef VkFramebuffer Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -2424,6 +2337,7 @@ struct Framebuffer
 struct CommandPool
 {
     typedef VkCommandPool Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -2462,6 +2376,7 @@ struct CommandPool
 struct CommandBuffer
 {
     typedef VkCommandBuffer Type;
+    typedef Unique<Type> UniqueObject;
 
     struct Parameters
     {
@@ -2547,7 +2462,7 @@ tcu::TestStatus createSingleTest(Context &context, typename Object::Parameters p
     const typename Object::Resources res(env, params);
 
     {
-        Unique<typename Object::Type> obj(Object::create(env, res, params));
+        typename Object::UniqueObject obj(Object::create(env, res, params));
     }
 
     return tcu::TestStatus::pass("Ok");
@@ -2563,10 +2478,10 @@ tcu::TestStatus createMultipleUniqueResourcesTest(Context &context, typename Obj
     const typename Object::Resources res3(env, params);
 
     {
-        Unique<typename Object::Type> obj0(Object::create(env, res0, params));
-        Unique<typename Object::Type> obj1(Object::create(env, res1, params));
-        Unique<typename Object::Type> obj2(Object::create(env, res2, params));
-        Unique<typename Object::Type> obj3(Object::create(env, res3, params));
+        typename Object::UniqueObject obj0(Object::create(env, res0, params));
+        typename Object::UniqueObject obj1(Object::create(env, res1, params));
+        typename Object::UniqueObject obj2(Object::create(env, res2, params));
+        typename Object::UniqueObject obj3(Object::create(env, res3, params));
     }
 
     return tcu::TestStatus::pass("Ok");
@@ -2581,8 +2496,8 @@ tcu::TestStatus createMultipleUniqueResourcesTest<Instance>(Context &context, In
     const typename Instance::Resources res1(env, params);
 
     {
-        Unique<typename Instance::Type> obj0(Instance::create(env, res0, params));
-        Unique<typename Instance::Type> obj1(Instance::create(env, res1, params));
+        typename Instance::UniqueObject obj0(Instance::create(env, res0, params));
+        typename Instance::UniqueObject obj1(Instance::create(env, res1, params));
     }
 
     return tcu::TestStatus::pass("Ok");
@@ -2596,10 +2511,10 @@ tcu::TestStatus createMultipleSharedResourcesTest(Context &context, typename Obj
     const typename Object::Resources res(env, params);
 
     {
-        Unique<typename Object::Type> obj0(Object::create(env, res, params));
-        Unique<typename Object::Type> obj1(Object::create(env, res, params));
-        Unique<typename Object::Type> obj2(Object::create(env, res, params));
-        Unique<typename Object::Type> obj3(Object::create(env, res, params));
+        typename Object::UniqueObject obj0(Object::create(env, res, params));
+        typename Object::UniqueObject obj1(Object::create(env, res, params));
+        typename Object::UniqueObject obj2(Object::create(env, res, params));
+        typename Object::UniqueObject obj3(Object::create(env, res, params));
     }
 
     return tcu::TestStatus::pass("Ok");
@@ -2610,7 +2525,7 @@ tcu::TestStatus createMultipleSharedResourcesTest(Context &context, typename Obj
 // Class to wrap singleton devices used by private_data tests
 class SingletonDevice
 {
-    Move<VkDevice> createPrivateDataDevice(const Context &context, int idx)
+    CustomDevice createPrivateDataDevice(const Context &context, const InstanceWrapper &instance, int idx)
     {
         const int requestedSlots[NUM_DEVICES][2] = {
             {0, 0}, {1, 0}, {1, 1}, {4, 4}, {1, 100},
@@ -2657,7 +2572,7 @@ class SingletonDevice
         const char *extName = "VK_EXT_private_data";
 
         VkPhysicalDeviceFeatures enabledFeatures =
-            getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
+            getPhysicalDeviceFeatures(instance.getDriver(), instance.getPhysicalDevice());
 
         const VkDeviceCreateInfo deviceInfo = {
             VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -2672,26 +2587,34 @@ class SingletonDevice
             &enabledFeatures, // pEnabledFeatures
         };
 
-        Move<VkDevice> device =
-            createCustomDevice(context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
-                               context.getPhysicalDevice(), &deviceInfo, nullptr);
-        return device;
+        return instance.createCustomDevice(&deviceInfo);
     }
 
-    SingletonDevice(const Context &context, int idx) : m_logicalDevice(createPrivateDataDevice(context, idx))
+    SingletonDevice(Context &context, int idx)
+        : m_instance(context)
+        , m_logicalDevice(createPrivateDataDevice(context, m_instance, idx))
     {
     }
 
 public:
     static const int NUM_DEVICES = 5;
 
-    static const Unique<vk::VkDevice> &getDevice(const Context &context, int idx)
+    static const DeviceWrapper &getDevice(Context &context, int idx)
     {
         if (!m_singletonDevice[idx])
             m_singletonDevice[idx] = SharedPtr<SingletonDevice>(new SingletonDevice(context, idx));
 
         DE_ASSERT(m_singletonDevice[idx]);
         return m_singletonDevice[idx]->m_logicalDevice;
+    }
+
+    static const InstanceWrapper &getInstance(Context &context, int idx)
+    {
+        if (!m_singletonDevice[idx])
+            m_singletonDevice[idx] = SharedPtr<SingletonDevice>(new SingletonDevice(context, idx));
+
+        DE_ASSERT(m_singletonDevice[idx]);
+        return m_singletonDevice[idx]->m_instance;
     }
 
     static void destroy()
@@ -2701,7 +2624,8 @@ public:
     }
 
 private:
-    const Unique<vk::VkDevice> m_logicalDevice;
+    const InstanceWrapper m_instance;
+    const DeviceWrapper m_logicalDevice;
     static SharedPtr<SingletonDevice> m_singletonDevice[NUM_DEVICES];
 };
 
@@ -2726,11 +2650,12 @@ tcu::TestStatus createPrivateDataTest(Context &context, typename Object::Paramet
 
     for (int d = 0; d < SingletonDevice::NUM_DEVICES; ++d)
     {
-        const Unique<vk::VkDevice> &device = SingletonDevice::getDevice(context, d);
-        const Environment env(context.getPlatformInterface(), context.getUsedApiVersion(),
-                              context.getInstanceInterface(), context.getInstance(), context.getDeviceInterface(),
-                              *device, context.getUniversalQueueFamilyIndex(), context.getBinaryCollection(), nullptr,
-                              4u, context.getTestContext().getCommandLine());
+        const InstanceWrapper &instance = SingletonDevice::getInstance(context, d);
+        const DeviceWrapper &device     = SingletonDevice::getDevice(context, d);
+        const Environment env(context, context.getPlatformInterface(), context.getUsedApiVersion(),
+                              instance.getDriver(), *instance, device.getDriver(), *device,
+                              context.getUniversalQueueFamilyIndex(), context.getBinaryCollection(), nullptr, 4u,
+                              context.getTestContext().getCommandLine());
 
         const typename Object::Resources res(env, params);
 
@@ -2753,8 +2678,8 @@ tcu::TestStatus createPrivateDataTest(Context &context, typename Object::Paramet
             slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
         }
 
-        Unique<typename Object::Type> obj0(Object::create(env, res, params));
-        Unique<typename Object::Type> obj1(Object::create(env, res, params));
+        typename Object::UniqueObject obj0(Object::create(env, res, params));
+        typename Object::UniqueObject obj1(Object::create(env, res, params));
 
         for (int i = numSlots / 2; i < numSlots; ++i)
         {
@@ -2762,10 +2687,10 @@ tcu::TestStatus createPrivateDataTest(Context &context, typename Object::Paramet
             slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
         }
 
-        Unique<typename Object::Type> obj2(Object::create(env, res, params));
-        Unique<typename Object::Type> obj3(Object::create(env, res, params));
+        typename Object::UniqueObject obj2(Object::create(env, res, params));
+        typename Object::UniqueObject obj3(Object::create(env, res, params));
 
-        Unique<typename Object::Type> *objs[4] = {&obj0, &obj1, &obj2, &obj3};
+        typename Object::UniqueObject *objs[4] = {&obj0, &obj1, &obj2, &obj3};
 
         for (int r = 0; r < 3; ++r)
         {
@@ -2875,7 +2800,7 @@ tcu::TestStatus createPrivateDataTest(Context &context, typename Object::Paramet
 template <typename Object>
 tcu::TestStatus createMaxConcurrentTest(Context &context, typename Object::Parameters params)
 {
-    typedef Unique<typename Object::Type> UniqueObject;
+    typedef typename Object::UniqueObject UniqueObject;
     typedef SharedPtr<UniqueObject> ObjectPtr;
 
     const uint32_t numObjects = Object::getMaxConcurrent(context, params);
@@ -2976,7 +2901,7 @@ public:
                 barrier();
 
             {
-                Unique<typename Object::Type> obj(Object::create(m_env, m_resources, m_params));
+                typename Object::UniqueObject obj(Object::create(m_env, m_resources, m_params));
 #ifdef CTS_USES_VULKANSC
                 if (iterNdx == 0)
                 {
@@ -3040,32 +2965,19 @@ tcu::TestStatus multithreadedCreatePerThreadResourcesTest(Context &context, type
 struct EnvClone
 {
     Device::Resources deviceRes;
-    Unique<VkDevice> device;
-#ifndef CTS_USES_VULKANSC
-    de::MovePtr<vk::DeviceDriver> vkd;
-#else
-    de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> vkd;
-#endif // CTS_USES_VULKANSC
+    InstanceWrapper instance;
+    DeviceWrapper device;
+    const vk::DeviceInterface &vkd;
     Environment env;
 
-    EnvClone(const Environment &parent, const Device::Parameters &deviceParams, uint32_t maxResourceConsumers)
+    EnvClone(Context &context, const Environment &parent, const Device::Parameters &deviceParams,
+             uint32_t maxResourceConsumers)
         : deviceRes(parent, deviceParams)
         , device(Device::create(parent, deviceRes, deviceParams))
-#ifndef CTS_USES_VULKANSC
-        , vkd(de::MovePtr<DeviceDriver>(
-              new DeviceDriver(parent.vkp, parent.instance, *device, parent.apiVersion, parent.commandLine)))
-        , env(parent.vkp, parent.apiVersion, parent.instanceInterface, parent.instance, *vkd, *device,
+        , vkd(device.getDriver())
+        , env(context, parent.vkp, parent.apiVersion, parent.instanceInterface, parent.instance, vkd, device,
               deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers,
               parent.commandLine)
-#else
-        , vkd(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
-              new DeviceDriverSC(parent.vkp, parent.instance, *device, parent.commandLine, parent.resourceInterface,
-                                 parent.vulkanSC10Properties, parent.properties, parent.apiVersion),
-              vk::DeinitDeviceDeleter(parent.resourceInterface.get(), *device)))
-        , env(parent.vkp, parent.apiVersion, parent.instanceInterface, parent.instance, *vkd, *device,
-              deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers,
-              parent.resourceInterface, parent.vulkanSC10Properties, parent.commandLine)
-#endif // CTS_USES_VULKANSC
     {
     }
 };
@@ -3097,7 +3009,7 @@ tcu::TestStatus multithreadedCreatePerThreadDeviceTest(Context &context, typenam
 
     for (uint32_t ndx = 0; ndx < numThreads; ndx++)
     {
-        perThreadEnv[ndx] = EnvPtr(new EnvClone(sharedEnv, deviceParams, 1u));
+        perThreadEnv[ndx] = EnvPtr(new EnvClone(context, sharedEnv, deviceParams, 1u));
         resources[ndx]    = ResPtr(new typename Object::Resources(perThreadEnv[ndx]->env, params));
 
         threads.add(
@@ -3120,33 +3032,26 @@ tcu::TestStatus createSingleAllocCallbacksTest(Context &context, typename Object
     AllocationCallbackRecorder resCallbacks(getSystemAllocator(), 128);
 
     // Root environment still uses default instance and device, created without callbacks
-    const Environment rootEnv(context.getPlatformInterface(), context.getUsedApiVersion(),
+    const Environment rootEnv(context, context.getPlatformInterface(), context.getUsedApiVersion(),
                               context.getInstanceInterface(), context.getInstance(), context.getDeviceInterface(),
                               context.getDevice(), context.getUniversalQueueFamilyIndex(),
                               context.getBinaryCollection(), resCallbacks.getCallbacks(), 1u,
-#ifdef CTS_USES_VULKANSC
-                              context.getResourceInterface(), context.getDeviceVulkanSC10Properties(),
-#endif // CTS_USES_VULKANSC
                               context.getTestContext().getCommandLine());
 
     {
         // Test env has instance & device created with callbacks
-        const EnvClone resEnv(rootEnv, getDefaulDeviceParameters(context), 1u);
+        const EnvClone resEnv(context, rootEnv, getDefaulDeviceParameters(context), 1u);
         const typename Object::Resources res(resEnv.env, params);
 
         // Supply a separate callback recorder just for object construction
         AllocationCallbackRecorder objCallbacks(getSystemAllocator(), 128);
-        const Environment objEnv(resEnv.env.vkp, resEnv.env.apiVersion, resEnv.env.instanceInterface,
+        const Environment objEnv(context, resEnv.env.vkp, resEnv.env.apiVersion, resEnv.env.instanceInterface,
                                  resEnv.env.instance, resEnv.env.vkd, resEnv.env.device, resEnv.env.queueFamilyIndex,
                                  resEnv.env.programBinaries, objCallbacks.getCallbacks(),
-                                 resEnv.env.maxResourceConsumers,
-#ifdef CTS_USES_VULKANSC
-                                 resEnv.env.resourceInterface, resEnv.env.vulkanSC10Properties,
-#endif // CTS_USES_VULKANSC
-                                 resEnv.env.commandLine);
+                                 resEnv.env.maxResourceConsumers, resEnv.env.commandLine);
 
         {
-            Unique<typename Object::Type> obj(Object::create(objEnv, res, params));
+            typename Object::UniqueObject obj(Object::create(objEnv, res, params));
 
             // Validate that no command-level allocations are live
             if (!validateAndLog(context.getTestContext().getLog(), objCallbacks, noCmdScope))
@@ -3190,13 +3095,10 @@ template <typename Object>
 tcu::TestStatus allocCallbackFailTest(Context &context, typename Object::Parameters params)
 {
     AllocationCallbackRecorder resCallbacks(getSystemAllocator(), 128);
-    const Environment rootEnv(context.getPlatformInterface(), context.getUsedApiVersion(),
+    const Environment rootEnv(context, context.getPlatformInterface(), context.getUsedApiVersion(),
                               context.getInstanceInterface(), context.getInstance(), context.getDeviceInterface(),
                               context.getDevice(), context.getUniversalQueueFamilyIndex(),
                               context.getBinaryCollection(), resCallbacks.getCallbacks(), 1u,
-#ifdef CTS_USES_VULKANSC
-                              context.getResourceInterface(), context.getDeviceVulkanSC10Properties(),
-#endif // CTS_USES_VULKANSC
                               context.getTestContext().getCommandLine());
     uint32_t numPassingAllocs       = 0;
     const uint32_t cmdLineIterCount = (uint32_t)context.getTestContext().getCommandLine().getTestIterationCount();
@@ -3205,7 +3107,7 @@ tcu::TestStatus allocCallbackFailTest(Context &context, typename Object::Paramet
     bool createOk                   = false;
 
     {
-        const EnvClone resEnv(rootEnv, getDefaulDeviceParameters(context), 1u);
+        const EnvClone resEnv(context, rootEnv, getDefaulDeviceParameters(context), 1u);
         const typename Object::Resources res(resEnv.env, params);
 
         // Iterate over test until object allocation succeeds
@@ -3214,14 +3116,10 @@ tcu::TestStatus allocCallbackFailTest(Context &context, typename Object::Paramet
             DeterministicFailAllocator objAllocator(getSystemAllocator(),
                                                     DeterministicFailAllocator::MODE_COUNT_AND_FAIL, numPassingAllocs);
             AllocationCallbackRecorder recorder(objAllocator.getCallbacks(), 128);
-            const Environment objEnv(resEnv.env.vkp, resEnv.env.apiVersion, resEnv.env.instanceInterface,
+            const Environment objEnv(context, resEnv.env.vkp, resEnv.env.apiVersion, resEnv.env.instanceInterface,
                                      resEnv.env.instance, resEnv.env.vkd, resEnv.env.device,
                                      resEnv.env.queueFamilyIndex, resEnv.env.programBinaries, recorder.getCallbacks(),
-                                     resEnv.env.maxResourceConsumers,
-#ifdef CTS_USES_VULKANSC
-                                     resEnv.env.resourceInterface, resEnv.env.vulkanSC10Properties,
-#endif // CTS_USES_VULKANSC
-                                     resEnv.env.commandLine);
+                                     resEnv.env.maxResourceConsumers, resEnv.env.commandLine);
 
             context.getTestContext().getLog()
                 << TestLog::Message << "Trying to create object with " << numPassingAllocs << " allocation"
@@ -3230,7 +3128,7 @@ tcu::TestStatus allocCallbackFailTest(Context &context, typename Object::Paramet
             createOk = false;
             try
             {
-                Unique<typename Object::Type> obj(Object::create(objEnv, res, params));
+                typename Object::UniqueObject obj(Object::create(objEnv, res, params));
                 createOk = true;
             }
             catch (const vk::OutOfMemoryError &e)
@@ -3356,15 +3254,11 @@ tcu::TestStatus allocCallbackFailMultipleObjectsTest(Context &context, typename 
             DeterministicFailAllocator objAllocator(getSystemAllocator(), DeterministicFailAllocator::MODE_DO_NOT_COUNT,
                                                     0);
             AllocationCallbackRecorder recorder(objAllocator.getCallbacks(), 128);
-            const Environment objEnv(context.getPlatformInterface(), context.getUsedApiVersion(),
+            const Environment objEnv(context, context.getPlatformInterface(), context.getUsedApiVersion(),
                                      context.getInstanceInterface(), context.getInstance(),
                                      context.getDeviceInterface(), context.getDevice(),
                                      context.getUniversalQueueFamilyIndex(), context.getBinaryCollection(),
-                                     recorder.getCallbacks(), numObjects,
-#ifdef CTS_USES_VULKANSC
-                                     context.getResourceInterface(), context.getDeviceVulkanSC10Properties(),
-#endif // CTS_USES_VULKANSC
-                                     context.getTestContext().getCommandLine());
+                                     recorder.getCallbacks(), numObjects, context.getTestContext().getCommandLine());
 
             context.getTestContext().getLog()
                 << TestLog::Message << "Trying to create " << numObjects << " objects with " << numPassingAllocs

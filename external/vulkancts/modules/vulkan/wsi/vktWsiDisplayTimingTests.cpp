@@ -102,11 +102,10 @@ vk::VkPhysicalDeviceFeatures getDeviceNullFeatures(void)
     return features;
 }
 
-vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, const vk::VkInstance instance,
-                                           const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
-                                           const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
-                                           bool requiresDisplayTiming,
-                                           const vk::VkAllocationCallbacks *pAllocator = nullptr)
+static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, vk::VkPhysicalDevice physicalDevice,
+                                        const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
+                                        bool requiresDisplayTiming,
+                                        const vk::VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[]                  = {1.0f};
     const vk::VkDeviceQueueCreateInfo queueInfos[] = {{vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
@@ -132,7 +131,7 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, con
             TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
     }
 
-    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return instance.createCustomDevice(physicalDevice, &deviceParams, pAllocator);
 }
 
 de::MovePtr<vk::wsi::Display> createDisplay(const vk::Platform &platform, const Extensions &supportedExtensions,
@@ -434,8 +433,8 @@ private:
     const uint32_t m_quadCount;
     const vk::PlatformInterface &m_vkp;
     const Extensions m_instanceExtensions;
-    const CustomInstance m_instance;
-    const vk::InstanceDriver &m_vki;
+    const InstanceWrapper m_instance;
+    const vk::InstanceInterface &m_vki;
     const vk::VkPhysicalDevice m_physicalDevice;
     const vk::wsi::Type m_wsiType;
     const de::UniquePtr<vk::wsi::Display> m_nativeDisplay;
@@ -444,8 +443,8 @@ private:
 
     const uint32_t m_queueFamilyIndex;
     const Extensions m_deviceExtensions;
-    const vk::Unique<vk::VkDevice> m_device;
-    const vk::DeviceDriver m_vkd;
+    const DeviceWrapper m_device;
+    const vk::DeviceInterface &m_vkd;
     const vk::VkQueue m_queue;
 
     const vk::Unique<vk::VkCommandPool> m_commandPool;
@@ -585,7 +584,7 @@ DisplayTimingTestInstance::DisplayTimingTestInstance(Context &context, const Tes
     , m_instanceExtensions(vk::enumerateInstanceExtensionProperties(m_vkp, nullptr))
     , m_instance(createInstanceWithWsi(context, m_instanceExtensions, testConfig.wsiType))
     , m_vki(m_instance.getDriver())
-    , m_physicalDevice(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+    , m_physicalDevice(m_instance.getPhysicalDevice())
     , m_wsiType(testConfig.wsiType)
     , m_nativeDisplay(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), m_instanceExtensions,
                                     testConfig.wsiType))
@@ -595,9 +594,9 @@ DisplayTimingTestInstance::DisplayTimingTestInstance(Context &context, const Tes
 
     , m_queueFamilyIndex(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
     , m_deviceExtensions(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithWsi(m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex,
+    , m_device(createDeviceWithWsi(m_instance, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex,
                                    testConfig.useDisplayTiming))
-    , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
+    , m_vkd(m_device.getDriver())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
     , m_commandPool(createCommandPool(m_vkd, *m_device, m_queueFamilyIndex))

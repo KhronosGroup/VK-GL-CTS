@@ -45,7 +45,6 @@
 #include <string>
 #include <vector>
 #include <set>
-#include "vktCustomInstancesDevices.hpp"
 #include "tcuCommandLine.hpp"
 
 using tcu::TestLog;
@@ -968,7 +967,8 @@ void TextureBinding::updateTextureViewMipLevels(uint32_t baseLevel, uint32_t max
     m_textureImageView = createImageView(vkd, m_device, &viewParams);
 }
 
-Move<VkDevice> createRobustBufferAccessDevice(Context &context, const VkPhysicalDeviceFeatures2 *enabledFeatures2)
+static CustomDevice createRobustBufferAccessDevice(Context &context, const InstanceWrapper &instance,
+                                                   const VkPhysicalDeviceFeatures2 *enabledFeatures2)
 {
     const float queuePriority = 1.0f;
     uint32_t queueCnt         = 1u;
@@ -1013,8 +1013,7 @@ Move<VkDevice> createRobustBufferAccessDevice(Context &context, const VkPhysical
         nullptr                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    return createCustomDevice(context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
-                              context.getPhysicalDevice(), &deviceParams);
+    return instance.createCustomDevice(&deviceParams);
 }
 
 const uint16_t GraphicsBackend::s_vertexIndices[6]          = {0, 1, 2, 2, 1, 3};
@@ -1590,6 +1589,8 @@ RenderBackend::RenderBackend(Context &context, vk::VkSampleCountFlagBits sampleC
                              bool requireRobustness2, bool requireImageViewMinLod, bool useCompute)
     : m_context(context)
     , m_log(context.getTestContext().getLog())
+    , m_instance(context)
+    , m_device(context)
     , m_renderWidth(renderWidth)
     , m_renderHeight(renderHeight)
     , m_renderDepth(renderDepth)
@@ -1608,8 +1609,6 @@ RenderBackend::RenderBackend(Context &context, vk::VkSampleCountFlagBits sampleC
     , m_requireImageViewMinLod(requireImageViewMinLod)
     , m_useCompute(useCompute)
 {
-
-    const DeviceInterface &vkd      = m_context.getDeviceInterface();
     const uint32_t queueFamilyIndex = getQueueNdx(m_context, m_useCompute);
 
     if (m_requireRobustness2 || m_requireImageViewMinLod)
@@ -1640,14 +1639,13 @@ RenderBackend::RenderBackend(Context &context, vk::VkSampleCountFlagBits sampleC
             robustness2Features.robustImageAccess2 = true;
         }
 
-        context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
-        m_customDevice = createRobustBufferAccessDevice(context, &features2);
+        m_instance.getDriver().getPhysicalDeviceFeatures2(m_instance.getPhysicalDevice(), &features2);
+        m_device = createRobustBufferAccessDevice(context, m_instance, &features2);
     }
 
-    const VkDevice vkDevice = getDevice();
-    m_allocator             = de::MovePtr<Allocator>(new SimpleAllocator(
-        vkd, vkDevice,
-        getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice())));
+    const InstanceInterface &vki = getInstanceInterface();
+    const VkDevice vkDevice      = getDevice();
+    const DeviceInterface &vkd   = getDeviceInterface();
 
     // Command Pool
     m_commandPool = createCommandPool(vkd, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
@@ -1673,9 +1671,9 @@ RenderBackend::RenderBackend(Context &context, vk::VkSampleCountFlagBits sampleC
             imageUsage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         VkImageFormatProperties properties;
 
-        if ((m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
-                 m_context.getPhysicalDevice(), m_imageFormat, imageType, VK_IMAGE_TILING_OPTIMAL, imageUsage, 0,
-                 &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+        if ((vki.getPhysicalDeviceImageFormatProperties(getPhysicalDevice(), m_imageFormat, imageType,
+                                                        VK_IMAGE_TILING_OPTIMAL, imageUsage, 0,
+                                                        &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
         {
             TCU_THROW(NotSupportedError, "Format not supported");
         }
@@ -1706,7 +1704,7 @@ RenderBackend::RenderBackend(Context &context, vk::VkSampleCountFlagBits sampleC
         m_image = vk::createImage(vkd, vkDevice, &imageCreateInfo, nullptr);
 
         m_imageMemory =
-            m_allocator->allocate(getImageMemoryRequirements(vkd, vkDevice, *m_image), MemoryRequirement::Any);
+            getAllocator().allocate(getImageMemoryRequirements(vkd, vkDevice, *m_image), MemoryRequirement::Any);
         VK_CHECK(vkd.bindImageMemory(vkDevice, *m_image, m_imageMemory->getMemory(), m_imageMemory->getOffset()));
     }
 
@@ -1740,9 +1738,9 @@ RenderBackend::RenderBackend(Context &context, vk::VkSampleCountFlagBits sampleC
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
             VkImageFormatProperties properties;
 
-            if ((m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
-                     m_context.getPhysicalDevice(), m_imageFormat, imageType, VK_IMAGE_TILING_OPTIMAL, imageUsage, 0,
-                     &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+            if ((vki.getPhysicalDeviceImageFormatProperties(getPhysicalDevice(), m_imageFormat, imageType,
+                                                            VK_IMAGE_TILING_OPTIMAL, imageUsage, 0,
+                                                            &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
             {
                 TCU_THROW(NotSupportedError, "Format not supported");
             }
@@ -1766,8 +1764,8 @@ RenderBackend::RenderBackend(Context &context, vk::VkSampleCountFlagBits sampleC
             };
 
             m_resolvedImage       = vk::createImage(vkd, vkDevice, &imageCreateInfo, nullptr);
-            m_resolvedImageMemory = m_allocator->allocate(getImageMemoryRequirements(vkd, vkDevice, *m_resolvedImage),
-                                                          MemoryRequirement::Any);
+            m_resolvedImageMemory = getAllocator().allocate(getImageMemoryRequirements(vkd, vkDevice, *m_resolvedImage),
+                                                            MemoryRequirement::Any);
             VK_CHECK(vkd.bindImageMemory(vkDevice, *m_resolvedImage, m_resolvedImageMemory->getMemory(),
                                          m_resolvedImageMemory->getOffset()));
         }
@@ -1809,8 +1807,8 @@ RenderBackend::RenderBackend(Context &context, vk::VkSampleCountFlagBits sampleC
         };
 
         m_uniformBuffer       = createBuffer(vkd, vkDevice, &bufferCreateInfo);
-        m_uniformBufferMemory = m_allocator->allocate(getBufferMemoryRequirements(vkd, vkDevice, *m_uniformBuffer),
-                                                      MemoryRequirement::HostVisible);
+        m_uniformBufferMemory = getAllocator().allocate(getBufferMemoryRequirements(vkd, vkDevice, *m_uniformBuffer),
+                                                        MemoryRequirement::HostVisible);
 
         VK_CHECK(vkd.bindBufferMemory(vkDevice, *m_uniformBuffer, m_uniformBufferMemory->getMemory(),
                                       m_uniformBufferMemory->getOffset()));
@@ -1830,8 +1828,8 @@ RenderBackend::RenderBackend(Context &context, vk::VkSampleCountFlagBits sampleC
         };
 
         m_resultBuffer       = createBuffer(vkd, vkDevice, &bufferCreateInfo);
-        m_resultBufferMemory = m_allocator->allocate(getBufferMemoryRequirements(vkd, vkDevice, *m_resultBuffer),
-                                                     MemoryRequirement::HostVisible);
+        m_resultBufferMemory = getAllocator().allocate(getBufferMemoryRequirements(vkd, vkDevice, *m_resultBuffer),
+                                                       MemoryRequirement::HostVisible);
 
         VK_CHECK(vkd.bindBufferMemory(vkDevice, *m_resultBuffer, m_resultBufferMemory->getMemory(),
                                       m_resultBufferMemory->getOffset()));
@@ -1848,14 +1846,14 @@ void RenderBackend::add2DTexture(const TestTexture2DSp &texture, const vk::VkIma
                                  TextureBinding::ImageBackingMode backingMode)
 {
     m_textureBindings.push_back(
-        TextureBindingSp(new TextureBinding(m_context, getDevice(), *m_allocator, texture, TextureBinding::TYPE_2D,
+        TextureBindingSp(new TextureBinding(m_context, getDevice(), getAllocator(), texture, TextureBinding::TYPE_2D,
                                             aspectMask, backingMode, m_componentMapping, m_useCompute)));
 }
 
 void RenderBackend::addCubeTexture(const TestTextureCubeSp &texture, const vk::VkImageAspectFlags &aspectMask,
                                    TextureBinding::ImageBackingMode backingMode)
 {
-    m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, getDevice(), *m_allocator, texture,
+    m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, getDevice(), getAllocator(), texture,
                                                                     TextureBinding::TYPE_CUBE_MAP, aspectMask,
                                                                     backingMode, m_componentMapping, m_useCompute)));
 }
@@ -1863,7 +1861,7 @@ void RenderBackend::addCubeTexture(const TestTextureCubeSp &texture, const vk::V
 void RenderBackend::add2DArrayTexture(const TestTexture2DArraySp &texture, const vk::VkImageAspectFlags &aspectMask,
                                       TextureBinding::ImageBackingMode backingMode)
 {
-    m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, getDevice(), *m_allocator, texture,
+    m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, getDevice(), getAllocator(), texture,
                                                                     TextureBinding::TYPE_2D_ARRAY, aspectMask,
                                                                     backingMode, m_componentMapping, m_useCompute)));
 }
@@ -1872,7 +1870,7 @@ void RenderBackend::add3DTexture(const TestTexture3DSp &texture, const vk::VkIma
                                  TextureBinding::ImageBackingMode backingMode)
 {
     m_textureBindings.push_back(
-        TextureBindingSp(new TextureBinding(m_context, getDevice(), *m_allocator, texture, TextureBinding::TYPE_3D,
+        TextureBindingSp(new TextureBinding(m_context, getDevice(), getAllocator(), texture, TextureBinding::TYPE_3D,
                                             aspectMask, backingMode, m_componentMapping, m_useCompute)));
 }
 
@@ -1880,14 +1878,14 @@ void RenderBackend::add1DTexture(const TestTexture1DSp &texture, const vk::VkIma
                                  TextureBinding::ImageBackingMode backingMode)
 {
     m_textureBindings.push_back(
-        TextureBindingSp(new TextureBinding(m_context, getDevice(), *m_allocator, texture, TextureBinding::TYPE_1D,
+        TextureBindingSp(new TextureBinding(m_context, getDevice(), getAllocator(), texture, TextureBinding::TYPE_1D,
                                             aspectMask, backingMode, m_componentMapping, m_useCompute)));
 }
 
 void RenderBackend::add1DArrayTexture(const TestTexture1DArraySp &texture, const vk::VkImageAspectFlags &aspectMask,
                                       TextureBinding::ImageBackingMode backingMode)
 {
-    m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, getDevice(), *m_allocator, texture,
+    m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, getDevice(), getAllocator(), texture,
                                                                     TextureBinding::TYPE_1D_ARRAY, aspectMask,
                                                                     backingMode, m_componentMapping, m_useCompute)));
 }
@@ -1895,7 +1893,7 @@ void RenderBackend::add1DArrayTexture(const TestTexture1DArraySp &texture, const
 void RenderBackend::addCubeArrayTexture(const TestTextureCubeArraySp &texture, const vk::VkImageAspectFlags &aspectMask,
                                         TextureBinding::ImageBackingMode backingMode)
 {
-    m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, getDevice(), *m_allocator, texture,
+    m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, getDevice(), getAllocator(), texture,
                                                                     TextureBinding::TYPE_CUBE_ARRAY, aspectMask,
                                                                     backingMode, m_componentMapping, m_useCompute)));
 }
@@ -1980,19 +1978,39 @@ uint32_t RenderBackend::getRenderHeight(void) const
     return m_renderHeight;
 }
 
+vk::VkPhysicalDevice RenderBackend::getPhysicalDevice(void) const
+{
+    return m_device.getPhysicalDevice();
+}
+
 vk::VkDevice RenderBackend::getDevice(void) const
 {
     if ((m_requireRobustness2 || m_requireImageViewMinLod) && m_useCompute &&
         (m_context.getComputeQueueFamilyIndex() == -1))
         TCU_THROW(NotSupportedError, "Exclusive compute queue not supported.");
 
-    return (m_requireRobustness2 || m_requireImageViewMinLod) ? *m_customDevice : m_context.getDevice();
+    return *m_device;
+}
+
+const vk::InstanceInterface &RenderBackend::getInstanceInterface(void) const
+{
+    return m_device.getInstanceDriver();
+}
+
+const vk::DeviceInterface &RenderBackend::getDeviceInterface(void) const
+{
+    return m_device.getDriver();
+}
+
+vk::Allocator &RenderBackend::getAllocator(void) const
+{
+    return m_device.getAllocator();
 }
 
 vk::Move<vk::VkDescriptorSet> RenderBackend::makeDescriptorSet(const vk::VkDescriptorPool descriptorPool,
                                                                const vk::VkDescriptorSetLayout setLayout) const
 {
-    const DeviceInterface &vkd = m_context.getDeviceInterface();
+    const DeviceInterface &vkd = getDeviceInterface();
     const VkDevice vkDevice    = getDevice();
 
     const VkDescriptorSetAllocateInfo allocateParams = {
@@ -2011,7 +2029,7 @@ void RenderBackend::addImageTransitionBarrier(vk::VkCommandBuffer commandBuffer,
                                               vk::VkAccessFlags dstAccessMask, vk::VkImageLayout oldLayout,
                                               vk::VkImageLayout newLayout) const
 {
-    const DeviceInterface &vkd = m_context.getDeviceInterface();
+    const DeviceInterface &vkd = getDeviceInterface();
 
     const VkImageSubresourceRange subResourcerange = {
         VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
@@ -2044,7 +2062,7 @@ GraphicsBackend::GraphicsBackend(Context &context, vk::VkSampleCountFlagBits sam
     : RenderBackend(context, sampleCount, renderWidth, renderHeight, renderDepth, componentMapping, imageType,
                     imageViewType, imageFormat, requireRobustness2, requireImageViewMinLod)
 {
-    const DeviceInterface &vkd      = m_context.getDeviceInterface();
+    const DeviceInterface &vkd      = getDeviceInterface();
     const VkDevice vkDevice         = getDevice();
     const uint32_t queueFamilyIndex = getQueueNdx(m_context, false);
 
@@ -2170,7 +2188,7 @@ GraphicsBackend::GraphicsBackend(Context &context, vk::VkSampleCountFlagBits sam
         };
 
         m_vertexIndexBuffer       = createBuffer(vkd, vkDevice, &indexBufferParams);
-        m_vertexIndexBufferMemory = m_allocator->allocate(
+        m_vertexIndexBufferMemory = getAllocator().allocate(
             getBufferMemoryRequirements(vkd, vkDevice, *m_vertexIndexBuffer), MemoryRequirement::HostVisible);
 
         VK_CHECK(vkd.bindBufferMemory(vkDevice, *m_vertexIndexBuffer, m_vertexIndexBufferMemory->getMemory(),
@@ -2213,7 +2231,7 @@ void GraphicsBackend::createFrameResources(uint32_t numComps, Program progSpec, 
                                            const float *texCoord, const glu::TextureTestUtil::ReferenceParams &params,
                                            const float maxAnisotropy)
 {
-    const DeviceInterface &vkd      = m_context.getDeviceInterface();
+    const DeviceInterface &vkd      = getDeviceInterface();
     const VkDevice vkDevice         = getDevice();
     const uint32_t queueFamilyIndex = getQueueNdx(m_context, false);
 
@@ -2339,8 +2357,8 @@ void GraphicsBackend::createFrameResources(uint32_t numComps, Program progSpec, 
                 testTexture.isCompressed() ?
                     mapCompressedTextureFormat(testTexture.getCompressedLevel(0, 0).getFormat()) :
                     mapTextureFormat(testTexture.getTextureFormat());
-            const VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(
-                m_context.getInstanceInterface(), m_context.getPhysicalDevice(), textureFormat);
+            const VkFormatProperties formatProperties =
+                getPhysicalDeviceFormatProperties(getInstanceInterface(), getPhysicalDevice(), textureFormat);
 
             if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
                 TCU_THROW(NotSupportedError, "Linear filtering for this image format is not supported");
@@ -2413,8 +2431,8 @@ void GraphicsBackend::createFrameResources(uint32_t numComps, Program progSpec, 
         };
 
         m_vertexBuffer       = createBuffer(vkd, vkDevice, &vertexBufferParams);
-        m_vertexBufferMemory = m_allocator->allocate(getBufferMemoryRequirements(vkd, vkDevice, m_vertexBuffer.get()),
-                                                     MemoryRequirement::HostVisible);
+        m_vertexBufferMemory = getAllocator().allocate(getBufferMemoryRequirements(vkd, vkDevice, m_vertexBuffer.get()),
+                                                       MemoryRequirement::HostVisible);
 
         VK_CHECK(vkd.bindBufferMemory(vkDevice, m_vertexBuffer.get(), m_vertexBufferMemory.get()->getMemory(),
                                       m_vertexBufferMemory.get()->getOffset()));
@@ -2430,7 +2448,7 @@ void GraphicsBackend::createFrameResources(uint32_t numComps, Program progSpec, 
 
 void GraphicsBackend::uploadUniforms(ShaderParameters shaderParams)
 {
-    const DeviceInterface &vkd = m_context.getDeviceInterface();
+    const DeviceInterface &vkd = getDeviceInterface();
     const VkDevice vkDevice    = getDevice();
 
     deMemcpy(m_uniformBufferMemory->getHostPtr(), &shaderParams, sizeof(shaderParams));
@@ -2440,7 +2458,7 @@ void GraphicsBackend::uploadUniforms(ShaderParameters shaderParams)
 
 void GraphicsBackend::recordCommands()
 {
-    const DeviceInterface &vkd = m_context.getDeviceInterface();
+    const DeviceInterface &vkd = getDeviceInterface();
 
     m_context.resetCommandPoolForVKSC(getDevice(), *m_commandPool);
     // Begin Command Buffer
@@ -2481,7 +2499,7 @@ void GraphicsBackend::recordCommands()
 
 void GraphicsBackend::clearImage(vk::VkImage image)
 {
-    const DeviceInterface &vkd = m_context.getDeviceInterface();
+    const DeviceInterface &vkd = getDeviceInterface();
     const VkDevice vkDevice    = getDevice();
     Move<VkCommandBuffer> commandBuffer;
     const uint32_t queueFamilyIndex = getQueueNdx(m_context, false);
@@ -2514,7 +2532,7 @@ void GraphicsBackend::clearImage(vk::VkImage image)
 
 void GraphicsBackend::submit()
 {
-    const DeviceInterface &vkd      = m_context.getDeviceInterface();
+    const DeviceInterface &vkd      = getDeviceInterface();
     const VkDevice vkDevice         = getDevice();
     const uint32_t queueFamilyIndex = getQueueNdx(m_context, false);
     const VkQueue queue             = getDeviceQueue(vkd, vkDevice, queueFamilyIndex, 0);
@@ -2533,7 +2551,7 @@ ComputeBackend::ComputeBackend(Context &context, vk::VkSampleCountFlagBits sampl
     : RenderBackend(context, sampleCount, renderWidth, renderHeight, renderDepth, componentMapping, imageType,
                     imageViewType, imageFormat, requireRobustness2, requireImageViewMinLod, true)
 {
-    const DeviceInterface &vkd      = m_context.getDeviceInterface();
+    const DeviceInterface &vkd      = getDeviceInterface();
     const VkDevice vkDevice         = getDevice();
     const uint32_t queueFamilyIndex = getQueueNdx(m_context, true);
 
@@ -2600,8 +2618,8 @@ ComputeBackend::ComputeBackend(Context &context, vk::VkSampleCountFlagBits sampl
             &queueFamilyIndex                     // const uint32_t* pQueueFamilyIndices;
         };
         m_geometryBuffer       = createBuffer(vkd, vkDevice, &bufferParams);
-        m_geometryBufferMemory = m_allocator->allocate(getBufferMemoryRequirements(vkd, vkDevice, *m_geometryBuffer),
-                                                       MemoryRequirement::HostVisible);
+        m_geometryBufferMemory = getAllocator().allocate(getBufferMemoryRequirements(vkd, vkDevice, *m_geometryBuffer),
+                                                         MemoryRequirement::HostVisible);
         VK_CHECK(vkd.bindBufferMemory(vkDevice, *m_geometryBuffer, m_geometryBufferMemory->getMemory(),
                                       m_geometryBufferMemory->getOffset()));
     }
@@ -2613,7 +2631,7 @@ void ComputeBackend::createFrameResources(uint32_t numComps, Program progSpec, c
                                           const float *texCoord, const glu::TextureTestUtil::ReferenceParams &params,
                                           const float maxAnisotropy)
 {
-    const DeviceInterface &vkd = m_context.getDeviceInterface();
+    const DeviceInterface &vkd = getDeviceInterface();
     const VkDevice vkDevice    = getDevice();
 
     Unique<VkShaderModule> computeShaderModule(createShaderModule(
@@ -2667,8 +2685,8 @@ void ComputeBackend::createFrameResources(uint32_t numComps, Program progSpec, c
                 testTexture.isCompressed() ?
                     mapCompressedTextureFormat(testTexture.getCompressedLevel(0, 0).getFormat()) :
                     mapTextureFormat(testTexture.getTextureFormat());
-            const VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(
-                m_context.getInstanceInterface(), m_context.getPhysicalDevice(), textureFormat);
+            const VkFormatProperties formatProperties =
+                getPhysicalDeviceFormatProperties(getInstanceInterface(), getPhysicalDevice(), textureFormat);
 
             if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
                 TCU_THROW(NotSupportedError, "Linear filtering for this image format is not supported");
@@ -2714,7 +2732,7 @@ void ComputeBackend::createFrameResources(uint32_t numComps, Program progSpec, c
 
 void ComputeBackend::uploadUniforms(ShaderParameters shaderParams)
 {
-    const DeviceInterface &vkd = m_context.getDeviceInterface();
+    const DeviceInterface &vkd = getDeviceInterface();
     const VkDevice vkDevice    = getDevice();
 
     shaderParams.padding = tcu::Vec2(m_viewportWidth, m_viewportHeight);
@@ -2726,7 +2744,7 @@ void ComputeBackend::uploadUniforms(ShaderParameters shaderParams)
 
 void ComputeBackend::recordCommands()
 {
-    const DeviceInterface &vkd = m_context.getDeviceInterface();
+    const DeviceInterface &vkd = getDeviceInterface();
 
     m_context.resetCommandPoolForVKSC(getDevice(), *m_commandPool);
     beginCommandBuffer(vkd, *m_commandBuffer);
@@ -2762,7 +2780,7 @@ void ComputeBackend::recordCommands()
 
 void ComputeBackend::clearImage(vk::VkImage image)
 {
-    const DeviceInterface &vkd = m_context.getDeviceInterface();
+    const DeviceInterface &vkd = getDeviceInterface();
     const VkDevice vkDevice    = getDevice();
     Move<VkCommandBuffer> commandBuffer;
     const uint32_t queueFamilyIndex = getQueueNdx(m_context, true);
@@ -2795,7 +2813,7 @@ void ComputeBackend::clearImage(vk::VkImage image)
 
 void ComputeBackend::submit()
 {
-    const DeviceInterface &vkd      = m_context.getDeviceInterface();
+    const DeviceInterface &vkd      = getDeviceInterface();
     const VkDevice vkDevice         = getDevice();
     const uint32_t queueFamilyIndex = getQueueNdx(m_context, true);
     const VkQueue queue             = getDeviceQueue(vkd, vkDevice, queueFamilyIndex, 0);

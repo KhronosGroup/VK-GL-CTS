@@ -2039,16 +2039,13 @@ struct ProfileEntry
 void createTestDevice(Context &context, void *pNext, const char *const *ppEnabledExtensionNames,
                       uint32_t enabledExtensionCount)
 {
-    const PlatformInterface &platformInterface = context.getPlatformInterface();
-    const Unique<VkInstance> instance(createDefaultInstance(platformInterface, context.getUsedApiVersion(),
-                                                            context.getTestContext().getCommandLine()));
-    const InstanceDriver instanceDriver(platformInterface, instance.get());
-    const VkPhysicalDevice physicalDevice =
-        chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
-    const uint32_t queueFamilyIndex = 0;
-    const uint32_t queueCount       = 1;
-    const uint32_t queueIndex       = 0;
-    const float queuePriority       = 1.0f;
+    const InstanceWrapper instance(context);
+    const auto &instanceDriver            = instance.getDriver();
+    const VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
+    const uint32_t queueFamilyIndex       = 0;
+    const uint32_t queueCount             = 1;
+    const uint32_t queueIndex             = 0;
+    const float queuePriority             = 1.0f;
     const vector<VkQueueFamilyProperties> queueFamilyProperties =
         getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
     const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
@@ -2059,43 +2056,6 @@ void createTestDevice(Context &context, void *pNext, const char *const *ppEnable
         queueCount,                                 //  uint32_t queueCount;
         &queuePriority,                             //  const float* pQueuePriorities;
     };
-#ifdef CTS_USES_VULKANSC
-    VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
-                                                                 context.getResourceInterface()->getStatMax() :
-                                                                 resetDeviceObjectReservationCreateInfo();
-    memReservationInfo.pNext                               = pNext;
-    pNext                                                  = &memReservationInfo;
-
-    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-    sc10Features.pNext                              = pNext;
-    pNext                                           = &sc10Features;
-
-    VkPipelineCacheCreateInfo pcCI;
-    std::vector<VkPipelinePoolSize> poolSizes;
-    if (context.getTestContext().getCommandLine().isSubProcess())
-    {
-        if (context.getResourceInterface()->getCacheDataSize() > 0)
-        {
-            pcCI = {
-                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                nullptr,                                      // const void* pNext;
-                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
-                context.getResourceInterface()->getCacheData()            // const void* pInitialData;
-            };
-            memReservationInfo.pipelineCacheCreateInfoCount = 1;
-            memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-        }
-
-        poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
-        if (!poolSizes.empty())
-        {
-            memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-            memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-        }
-    }
-#endif // CTS_USES_VULKANSC
 
     const VkDeviceCreateInfo deviceCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //  VkStructureType sType;
@@ -2109,11 +2069,9 @@ void createTestDevice(Context &context, void *pNext, const char *const *ppEnable
         ppEnabledExtensionNames,              //  const char* const* ppEnabledExtensionNames;
         nullptr,                              //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
-    const Unique<VkDevice> device(
-        createCustomDevice(platformInterface, *instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-    const DeviceDriver deviceDriver(platformInterface, instance.get(), device.get(), context.getUsedApiVersion(),
-                                    context.getTestContext().getCommandLine());
-    const VkQueue queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
+    const DeviceWrapper device(instance.createCustomDevice(physicalDevice, &deviceCreateInfo));
+    const auto &deviceDriver = device.getDriver();
+    const VkQueue queue      = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
 
     VK_CHECK(deviceDriver.queueWaitIdle(queue));
 }
@@ -3495,9 +3453,8 @@ tcu::TestStatus deviceMemoryProperties(Context &context)
 tcu::TestStatus deviceGroupPeerMemoryFeatures(Context &context)
 {
     TestLog &log                    = context.getTestContext().getLog();
-    const PlatformInterface &vkp    = context.getPlatformInterface();
-    const VkInstance instance       = context.getInstance(); // "VK_KHR_device_group_creation"
-    const InstanceInterface &vki    = context.getInstanceInterface();
+    const auto instance             = InstanceWrapper(context); // "VK_KHR_device_group_creation"
+    const InstanceInterface &vki    = instance.getDriver();
     const tcu::CommandLine &cmdLine = context.getTestContext().getCommandLine();
     const uint32_t devGroupIdx      = cmdLine.getVKDeviceGroupId() - 1;
     const uint32_t deviceIdx        = vk::chooseDeviceIndex(vki, instance, cmdLine);
@@ -3561,43 +3518,6 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures(Context &context)
     };
 
     void *pNext = &deviceGroupInfo;
-#ifdef CTS_USES_VULKANSC
-    VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
-                                                                 context.getResourceInterface()->getStatMax() :
-                                                                 resetDeviceObjectReservationCreateInfo();
-    memReservationInfo.pNext                               = pNext;
-    pNext                                                  = &memReservationInfo;
-
-    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-    sc10Features.pNext                              = pNext;
-    pNext                                           = &sc10Features;
-
-    VkPipelineCacheCreateInfo pcCI;
-    std::vector<VkPipelinePoolSize> poolSizes;
-    if (context.getTestContext().getCommandLine().isSubProcess())
-    {
-        if (context.getResourceInterface()->getCacheDataSize() > 0)
-        {
-            pcCI = {
-                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                nullptr,                                      // const void* pNext;
-                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
-                context.getResourceInterface()->getCacheData()            // const void* pInitialData;
-            };
-            memReservationInfo.pipelineCacheCreateInfoCount = 1;
-            memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-        }
-
-        poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
-        if (!poolSizes.empty())
-        {
-            memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-            memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-        }
-    }
-#endif // CTS_USES_VULKANSC
 
     const VkDeviceCreateInfo deviceCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //sType;
@@ -3612,12 +3532,10 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures(Context &context)
         nullptr,                              //pEnabledFeatures;
     };
 
-    Move<VkDevice> deviceGroup = createCustomDevice(
-        vkp, instance, vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
-    const DeviceDriver vk(vkp, instance, *deviceGroup, context.getUsedApiVersion(),
-                          context.getTestContext().getCommandLine());
-    context.getInstanceInterface().getPhysicalDeviceMemoryProperties(
-        deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &memProps);
+    const DeviceWrapper deviceGroup =
+        instance.createCustomDevice(deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
+    const auto &vk = deviceGroup.getDriver();
+    vki.getPhysicalDeviceMemoryProperties(deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &memProps);
 
     peerMemFeatures = reinterpret_cast<VkPeerMemoryFeatureFlags *>(buffer);
     deMemset(buffer, GUARD_VALUE, sizeof(buffer));
@@ -3630,8 +3548,8 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures(Context &context)
             {
                 if (localDeviceIndex != remoteDeviceIndex)
                 {
-                    vk.getDeviceGroupPeerMemoryFeatures(deviceGroup.get(), heapIndex, localDeviceIndex,
-                                                        remoteDeviceIndex, peerMemFeatures);
+                    vk.getDeviceGroupPeerMemoryFeatures(deviceGroup, heapIndex, localDeviceIndex, remoteDeviceIndex,
+                                                        peerMemFeatures);
 
                     // Check guard
                     for (int32_t ndx = 0; ndx < GUARD_SIZE; ndx++)
@@ -3651,7 +3569,7 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures(Context &context)
                     if ((!(*peerMemFeatures & requiredFlag)) || *peerMemFeatures > maxValidFlag)
                         return tcu::TestStatus::fail("deviceGroupPeerMemoryFeatures invalid flag");
 
-                    log << TestLog::Message << "deviceGroup = " << deviceGroup.get() << TestLog::EndMessage
+                    log << TestLog::Message << "deviceGroup = " << deviceGroup << TestLog::EndMessage
                         << TestLog::Message << "heapIndex = " << heapIndex << TestLog::EndMessage << TestLog::Message
                         << "localDeviceIndex = " << localDeviceIndex << TestLog::EndMessage << TestLog::Message
                         << "remoteDeviceIndex = " << remoteDeviceIndex << TestLog::EndMessage << TestLog::Message

@@ -126,11 +126,11 @@ class BaseAllocateTestInstance : public TestInstance
 public:
     BaseAllocateTestInstance(Context &context, AllocationMode allocationMode, bool enable_descriptor_buffer = false)
         : TestInstance(context)
+        , m_instance(context)
         , m_allocationMode(allocationMode)
         , m_subsetAllocationAllowed(false)
         , m_numPhysDevices(1)
-        , m_memoryProperties(
-              getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()))
+        , m_memoryProperties(getPhysicalDeviceMemoryProperties(m_instance.getDriver(), m_instance.getPhysicalDevice()))
         , m_deviceCoherentMemSupported(false)
     {
         if (m_allocationMode == ALLOCATION_MODE_DEVICE_GROUP)
@@ -148,12 +148,16 @@ public:
     void createDeviceGroup(void);
     const vk::DeviceInterface &getDeviceInterface(void)
     {
-        return *m_deviceDriver;
+        return m_logicalDevice.getDriver();
     }
     vk::VkDevice getDevice(void)
     {
-        return m_logicalDevice.get();
+        return *m_logicalDevice;
     }
+
+private:
+    const InstanceWrapper m_instance;
+    DeviceWrapper m_logicalDevice;
 
 protected:
     AllocationMode m_allocationMode;
@@ -162,22 +166,12 @@ protected:
     uint32_t m_numPhysDevices;
     VkPhysicalDeviceMemoryProperties m_memoryProperties;
     bool m_deviceCoherentMemSupported;
-
-private:
-    vk::Move<vk::VkDevice> m_logicalDevice;
-#ifndef CTS_USES_VULKANSC
-    de::MovePtr<vk::DeviceDriver> m_deviceDriver;
-#else
-    de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> m_deviceDriver;
-#endif // CTS_USES_VULKANSC
 };
 
 void BaseAllocateTestInstance::createTestDevice(bool enable_descriptor_buffer)
 {
-    const auto &instanceDriver = m_context.getInstanceInterface();
-    const VkInstance instance  = m_context.getInstance();
-    const VkPhysicalDevice physicalDevice =
-        chooseDevice(instanceDriver, instance, m_context.getTestContext().getCommandLine());
+    const auto &instanceDriver                    = m_instance.getDriver();
+    const VkPhysicalDevice physicalDevice         = m_instance.getPhysicalDevice();
     const VkPhysicalDeviceFeatures deviceFeatures = getPhysicalDeviceFeatures(instanceDriver, physicalDevice);
     const float queuePriority                     = 1.0f;
     uint32_t queueFamilyIndex                     = 0;
@@ -274,20 +268,7 @@ void BaseAllocateTestInstance::createTestDevice(bool enable_descriptor_buffer)
             &deviceFeatures // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_logicalDevice =
-        createCustomDevice(m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
-#ifndef CTS_USES_VULKANSC
-    m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance,
-                                                                *m_logicalDevice, m_context.getUsedApiVersion(),
-                                                                m_context.getTestContext().getCommandLine()));
-#else
-    m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
-        new DeviceDriverSC(m_context.getPlatformInterface(), instance, *m_logicalDevice,
-                           m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(),
-                           m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(),
-                           m_context.getUsedApiVersion()),
-        vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
-#endif // CTS_USES_VULKANSC
+    m_logicalDevice = m_instance.createCustomDevice(physicalDevice, &deviceInfo);
 }
 
 void BaseAllocateTestInstance::createDeviceGroup(void)
@@ -297,8 +278,8 @@ void BaseAllocateTestInstance::createDeviceGroup(void)
     const uint32_t physDeviceIdx            = cmdLine.getVKDeviceId() - 1;
     const float queuePriority               = 1.0f;
     uint32_t queueFamilyIndex               = 0;
-    const InstanceInterface &instanceDriver = m_context.getInstanceInterface();
-    const VkInstance instance               = m_context.getInstance();
+    const InstanceInterface &instanceDriver = m_instance.getDriver();
+    const VkInstance instance               = *m_instance;
     std::vector<VkPhysicalDeviceGroupProperties> devGroupProperties =
         enumeratePhysicalDeviceGroups(instanceDriver, instance);
     m_numPhysDevices          = devGroupProperties[devGroupIdx].physicalDeviceCount;
@@ -348,20 +329,7 @@ void BaseAllocateTestInstance::createDeviceGroup(void)
         &deviceFeatures,                                           // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_logicalDevice = createCustomDevice(m_context.getPlatformInterface(), instance, instanceDriver,
-                                         deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
-#ifndef CTS_USES_VULKANSC
-    m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance,
-                                                                *m_logicalDevice, m_context.getUsedApiVersion(),
-                                                                m_context.getTestContext().getCommandLine()));
-#else
-    m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
-        new DeviceDriverSC(m_context.getPlatformInterface(), instance, *m_logicalDevice,
-                           m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(),
-                           m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(),
-                           m_context.getUsedApiVersion()),
-        vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
-#endif // CTS_USES_VULKANSC
+    m_logicalDevice = m_instance.createCustomDevice(deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
 
     m_memoryProperties =
         getPhysicalDeviceMemoryProperties(instanceDriver, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
@@ -705,8 +673,7 @@ private:
 RandomAllocFreeTestInstance::RandomAllocFreeTestInstance(Context &context, TestConfigRandom config)
     : BaseAllocateTestInstance(context, config.allocationMode, true)
     , m_opCount(128)
-    , m_allocSysMemSize(computeDeviceMemorySystemMemFootprint(getDeviceInterface(), context.getDevice()) +
-                        sizeof(MemoryObject))
+    , m_allocSysMemSize(computeDeviceMemorySystemMemFootprint(getDeviceInterface(), getDevice()) + sizeof(MemoryObject))
     , m_memoryLimits(tcu::getMemoryLimits(context.getTestContext().getPlatform()))
     , m_totalDeviceMaskCombinations(m_subsetAllocationAllowed ? (1 << m_numPhysDevices) - 1 : 1)
     , m_memoryObjectCount(0)

@@ -245,8 +245,6 @@ MultisampledImageSparseBindingInstance::MultisampledImageSparseBindingInstance(C
 
 tcu::TestStatus MultisampledImageSparseBindingInstance::iterate(void)
 {
-    const InstanceInterface &instance = m_context.getInstanceInterface();
-
     {
         // Create logical device supporting both sparse and compute queues
         QueueRequirementsVec queueRequirements;
@@ -256,6 +254,7 @@ tcu::TestStatus MultisampledImageSparseBindingInstance::iterate(void)
         createDeviceSupportingQueues(queueRequirements);
     }
 
+    const InstanceInterface &instance     = getInstanceInterface();
     const VkPhysicalDevice physicalDevice = getPhysicalDevice();
     std::vector<DeviceMemorySp> deviceMemUniquePtrVec;
 

@@ -27,6 +27,7 @@
 
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 namespace vkt
 {
@@ -40,11 +41,10 @@ public:
     virtual ~PostmortemTestInstance();
 
 protected:
-    vk::Unique<vk::VkDevice> m_logicalDevice;
-    vk::DeviceDriver m_deviceDriver;
+    const InstanceWrapper m_instance;
+    DeviceWrapper m_logicalDevice;
     uint32_t m_queueFamilyIndex;
     vk::VkQueue m_queue;
-    vk::SimpleAllocator m_allocator;
 };
 
 } // namespace postmortem

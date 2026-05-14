@@ -104,7 +104,6 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
         0,                                                 //physicalDeviceCount
         nullptr                                            //physicalDevices
     };
-    m_physicalDevices.push_back(m_context.getPhysicalDevice());
 
     // If requested, create an intance with device groups
     if (m_useDeviceGroups)
@@ -112,7 +111,8 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
         const std::vector<std::string> requiredExtensions{"VK_KHR_device_group_creation",
                                                           "VK_KHR_get_physical_device_properties2"};
         m_deviceGroupInstance = createCustomInstanceWithExtensions(m_context, requiredExtensions);
-        devGroupProperties    = enumeratePhysicalDeviceGroups(m_context.getInstanceInterface(), m_deviceGroupInstance);
+        m_instanceWrapper     = InstanceWrapper(m_deviceGroupInstance);
+        devGroupProperties    = enumeratePhysicalDeviceGroups(m_deviceGroupInstance.getDriver(), m_deviceGroupInstance);
         m_numPhysicalDevices  = devGroupProperties[m_deviceGroupIdx].physicalDeviceCount;
 
         m_physicalDevices.clear();
@@ -132,10 +132,11 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
     else
     {
         m_context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+        m_instanceWrapper = InstanceWrapper(m_context);
+        m_physicalDevices.push_back(m_instanceWrapper.getPhysicalDevice());
     }
 
-    const VkInstance &instance(m_useDeviceGroups ? m_deviceGroupInstance : m_context.getInstance());
-    InstanceDriver instanceDriver(m_context.getPlatformInterface(), instance);
+    const InstanceInterface &instanceDriver(m_instanceWrapper.getDriver());
     const VkPhysicalDevice physicalDevice = getPhysicalDevice();
     uint32_t queueFamilyPropertiesCount   = 0u;
     instanceDriver.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, nullptr);
@@ -287,7 +288,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
     }
 
     const std::vector<VkExtensionProperties> deviceExtensionProperties =
-        enumerateDeviceExtensionProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), nullptr);
+        enumerateDeviceExtensionProperties(instanceDriver, physicalDevice, nullptr);
 
     // Helper function to check if a device extension is supported
     auto isDeviceExtensionSupported = [&deviceExtensionProperties](const std::string &extensionName) -> bool
@@ -324,13 +325,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
         useFeatures2 ? nullptr : &deviceFeatures,   // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_logicalDevice =
-        createCustomDevice(m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
-    m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance,
-                                                                *m_logicalDevice, m_context.getUsedApiVersion(),
-                                                                m_context.getTestContext().getCommandLine()));
-    m_allocator    = de::MovePtr<Allocator>(new SimpleAllocator(
-        *m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice)));
+    m_logicalDevice = m_instanceWrapper.createCustomDevice(physicalDevice, &deviceInfo);
 
     for (QueuesMap::iterator queuesIter = m_queues.begin(); queuesIter != m_queues.end(); ++queuesIter)
     {
@@ -339,7 +334,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
             Queue &queue = queuesIter->second[queueNdx];
 
             queue.queueHandle =
-                getDeviceQueue(*m_deviceDriver, *m_logicalDevice, queue.queueFamilyIndex, queue.queueIndex);
+                getDeviceQueue(m_logicalDevice.getDriver(), *m_logicalDevice, queue.queueFamilyIndex, queue.queueIndex);
         }
     }
 }

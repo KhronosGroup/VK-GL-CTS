@@ -163,24 +163,6 @@ uint32_t calculateRate(uint32_t rateWidth, uint32_t rateHeight)
     return (deCtz32(rateWidth) << 2u) | deCtz32(rateHeight);
 }
 
-class DeviceHolder
-{
-public:
-    DeviceHolder(Move<VkDevice> device, de::MovePtr<DeviceDriver> vk, de::MovePtr<Allocator> allocator);
-
-private:
-    Move<VkDevice> m_device;
-    de::MovePtr<DeviceDriver> m_vk;
-    de::MovePtr<Allocator> m_allocator;
-};
-
-DeviceHolder::DeviceHolder(Move<VkDevice> device, de::MovePtr<DeviceDriver> vk, de::MovePtr<Allocator> allocator)
-    : m_device(device)
-    , m_vk(vk)
-    , m_allocator(allocator)
-{
-}
-
 class AttachmentRateInstance : public TestInstance
 {
 public:
@@ -236,7 +218,7 @@ private:
     void startRendering(const VkCommandBuffer commandBuffer, const VkRenderPass renderPass,
                         const VkFramebuffer framebuffer, const VkRect2D &renderArea,
                         const std::vector<FBAttachmentInfo> &attachmentInfo, const uint32_t srTileWidth = 0,
-                        const uint32_t srTileHeight = 0, const DeviceInterface *customDevice = nullptr) const;
+                        const uint32_t srTileHeight = 0) const;
     void finishRendering(const VkCommandBuffer commandBuffer) const;
 
     bool verifyUsingAtomicChecks(uint32_t tileWidth, uint32_t tileHeight, uint32_t rateWidth, uint32_t rateHeight,
@@ -252,13 +234,8 @@ private:
     bool runTwoSubpassMode(void);
 
 private:
-    // A custom device is by tests from runCopyModeOnTransferQueue.
-    // In this test the device is passed to various utils, that create
-    // Vulkan objects later assigned to various members below. To guarantee
-    // proper destruction order, below variable acts as an owner of this custom device
-    // - however, it is not to be used (the device is not accessible directly from this object
-    //   to avoid misusages of the framework device vs custom device).
-    de::MovePtr<DeviceHolder> m_customDeviceHolder;
+    const InstanceWrapper m_instance;
+    DeviceWrapper m_device;
 
     const de::SharedPtr<TestParams> m_params;
     const uint32_t m_cbWidth;
@@ -297,6 +274,8 @@ private:
 
 AttachmentRateInstance::AttachmentRateInstance(Context &context, const de::SharedPtr<TestParams> params)
     : vkt::TestInstance(context)
+    , m_instance(context)
+    , m_device(context)
     , m_params(params)
     , m_cbWidth(60)
     , m_cbHeight(60)
@@ -911,10 +890,9 @@ VkDescriptorSetAllocateInfo AttachmentRateInstance::makeDescriptorSetAllocInfo(
 void AttachmentRateInstance::startRendering(const VkCommandBuffer commandBuffer, const VkRenderPass renderPass,
                                             const VkFramebuffer framebuffer, const VkRect2D &renderArea,
                                             const std::vector<FBAttachmentInfo> &attachmentInfo,
-                                            const uint32_t srTileWidth, const uint32_t srTileHeight,
-                                            const DeviceInterface *customDevice) const
+                                            const uint32_t srTileWidth, const uint32_t srTileHeight) const
 {
-    const DeviceInterface &vk = (customDevice != nullptr) ? *customDevice : m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
     std::vector<VkClearValue> clearColor(attachmentInfo.size(), makeClearValueColorU32(0, 0, 0, 0));
 
 #ifndef CTS_USES_VULKANSC
@@ -1002,7 +980,7 @@ void AttachmentRateInstance::startRendering(const VkCommandBuffer commandBuffer,
 
 void AttachmentRateInstance::finishRendering(const VkCommandBuffer commandBuffer) const
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
 #ifndef CTS_USES_VULKANSC
     if (m_params->useDynamicRendering)
@@ -1683,9 +1661,8 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
     // the shading rate image on separate transfer queue and then use copied
     // image to draw a basic triangle and do basic checks
 
-    const PlatformInterface &vkp      = m_context.getPlatformInterface();
-    const InstanceInterface &vki      = m_context.getInstanceInterface();
-    VkPhysicalDevice pd               = m_context.getPhysicalDevice();
+    const InstanceInterface &vki      = m_instance.getDriver();
+    VkPhysicalDevice pd               = m_instance.getPhysicalDevice();
     uint32_t transferQueueFamilyIndex = std::numeric_limits<uint32_t>::max();
     uint32_t graphicsQueueFamilyIndex = std::numeric_limits<uint32_t>::max();
     VkMemoryBarrier memoryBarrier{VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, 0u, 0u};
@@ -1711,10 +1688,6 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
         queueFamilies = {graphicsQueueFamilyIndex, transferQueueFamilyIndex};
 
     // create custom device
-    VkDevice device;
-    DeviceInterface *driver;
-    Allocator *allocator;
-
     {
         const float queuePriorities = 1.0f;
         std::vector<VkDeviceQueueCreateInfo> queueInfo(
@@ -1768,28 +1741,19 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
             (VkDeviceCreateFlags)0u,                         // VkDeviceCreateFlags flags;
             2u,                                              // uint32_t queueCreateInfoCount;
             queueInfo.data(),                                // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
-            0u,                                              // uint32_t enabledLayerCount;
+            0,                                               // uint32_t enabledLayerCount;
             nullptr,                                         // const char* const* ppEnabledLayerNames;
             static_cast<uint32_t>(enabledExtensions.size()), // uint32_t enabledExtensionCount;
             enabledExtensions.data(),                        // const char* const* ppEnabledExtensionNames;
             nullptr                                          // const VkPhysicalDeviceFeatures* pEnabledFeatures;
         };
 
-        vk::Move<VkDevice> customDevice        = createDevice(vkp, m_context.getInstance(), vki, pd, &deviceInfo);
-        de::MovePtr<DeviceDriver> customDriver = de::MovePtr<DeviceDriver>(
-            new DeviceDriver(vkp, m_context.getInstance(), *customDevice, m_context.getUsedApiVersion(),
-                             m_context.getTestContext().getCommandLine()));
-        de::MovePtr<Allocator> customAllocator = de::MovePtr<Allocator>(
-            new SimpleAllocator(*customDriver, *customDevice, getPhysicalDeviceMemoryProperties(vki, pd)));
-
-        device    = *customDevice;
-        driver    = &*customDriver;
-        allocator = &*customAllocator;
-
-        m_customDeviceHolder = de::MovePtr<DeviceHolder>(new DeviceHolder(customDevice, customDriver, customAllocator));
+        m_device = m_instance.createCustomDevice(pd, &deviceInfo);
     }
 
-    DeviceInterface &vk = *driver;
+    VkDevice device           = *m_device;
+    const DeviceInterface &vk = m_device.getDriver();
+    Allocator *allocator      = &m_device.getAllocator();
 
     VkQueue transferQueue;
     vk.getDeviceQueue(device, transferQueueFamilyIndex, 0u, &transferQueue);
@@ -1951,7 +1915,7 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
                                   &cbImageBarrier);
 
             startRendering(*graphicsCmdBuffer, *renderPass, *framebuffer, makeRect2D(m_cbWidth, m_cbHeight),
-                           attachmentInfo, tileWidth, tileHeight, driver);
+                           attachmentInfo, tileWidth, tileHeight);
 
             // draw single triangle to cb
             vk.cmdBindDescriptorSets(*graphicsCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelineLayout, 0, 1,

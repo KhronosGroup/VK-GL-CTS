@@ -178,6 +178,7 @@ DeviceDriverSC::DeviceDriverSC(const PlatformInterface &platformInterface, VkIns
                                const VkPhysicalDeviceProperties &physicalDeviceProperties,
                                const uint32_t usedApiVersion)
     : DeviceDriver(platformInterface, instance, device, usedApiVersion, cmdLine)
+    , m_device(device)
     , m_normalMode(cmdLine.isSubProcess())
     , m_resourceInterface(resourceInterface)
     , m_physicalDeviceVulkanSC10Properties(physicalDeviceVulkanSC10Properties)
@@ -194,12 +195,13 @@ DeviceDriverSC::DeviceDriverSC(const PlatformInterface &platformInterface, VkIns
 
 DeviceDriverSC::~DeviceDriverSC(void)
 {
+    m_resourceInterface->deinitDevice(m_device);
 }
 
 void DeviceDriverSC::destroyDeviceHandler(VkDevice device, const VkAllocationCallbacks *pAllocator) const
 {
-    DE_UNREF(pAllocator);
     m_resourceInterface->unregisterDeviceFeatures(device);
+    m_vk.destroyDevice(device, pAllocator);
 }
 
 VkResult DeviceDriverSC::createDescriptorSetLayoutHandlerNorm(VkDevice device,

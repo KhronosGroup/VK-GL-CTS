@@ -104,7 +104,6 @@ BufferSparseBindingInstance::BufferSparseBindingInstance(Context &context, const
 
 tcu::TestStatus BufferSparseBindingInstance::iterate(void)
 {
-    const InstanceInterface &instance = m_context.getInstanceInterface();
     {
         // Create logical device supporting both sparse and compute operations
         QueueRequirementsVec queueRequirements;
@@ -113,11 +112,11 @@ tcu::TestStatus BufferSparseBindingInstance::iterate(void)
 
         createDeviceSupportingQueues(queueRequirements);
     }
+    const InstanceInterface &instance          = getInstanceInterface();
     const vk::VkPhysicalDevice &physicalDevice = getPhysicalDevice();
-
-    const DeviceInterface &deviceInterface = getDeviceInterface();
-    const Queue &sparseQueue               = getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
-    const Queue &computeQueue              = getQueue(VK_QUEUE_COMPUTE_BIT, 0);
+    const DeviceInterface &deviceInterface     = getDeviceInterface();
+    const Queue &sparseQueue                   = getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
+    const Queue &computeQueue                  = getQueue(VK_QUEUE_COMPUTE_BIT, 0);
 
     // Go through all physical devices
     for (uint32_t physDevID = 0; physDevID < m_numPhysicalDevices; physDevID++)

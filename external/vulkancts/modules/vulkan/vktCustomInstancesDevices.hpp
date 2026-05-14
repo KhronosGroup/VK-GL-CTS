@@ -62,14 +62,18 @@ public:
     ~CustomInstance();
     CustomInstance &operator=(CustomInstance &&other);
     operator vk::VkInstance() const;
+    vk::VkInstance operator*() const;
     void swap(CustomInstance &other);
     const vk::InstanceDriver &getDriver() const;
+    vk::VkPhysicalDevice getPhysicalDevice() const;
     void collectMessages();
 
     CustomInstance(const CustomInstance &other)            = delete;
     CustomInstance &operator=(const CustomInstance &other) = delete;
 
 private:
+    friend class InstanceWrapper;
+
     Context *m_context;
 #ifndef CTS_USES_VULKANSC
     std::unique_ptr<vk::DebugReportRecorder> m_recorder;
@@ -97,13 +101,18 @@ public:
     ~UncheckedInstance();
     UncheckedInstance &operator=(UncheckedInstance &&other);
     operator vk::VkInstance() const;
+    vk::VkInstance operator*() const;
     operator bool() const;
     void swap(UncheckedInstance &other);
+    const vk::InstanceDriver &getDriver() const;
+    vk::VkPhysicalDevice getPhysicalDevice() const;
 
     UncheckedInstance(const UncheckedInstance &other)            = delete;
     UncheckedInstance &operator=(const UncheckedInstance &other) = delete;
 
 private:
+    friend class InstanceWrapper;
+
     Context *m_context;
 #ifndef CTS_USES_VULKANSC
     std::unique_ptr<vk::DebugReportRecorder> m_recorder;
@@ -116,6 +125,195 @@ private:
 #else
     std::unique_ptr<vk::InstanceDriverSC> m_driver;
 #endif // CTS_USES_VULKANSC
+};
+
+class InstanceWrapper;
+
+class CustomDevice
+{
+public:
+    CustomDevice();
+    CustomDevice(CustomDevice &&other);
+    ~CustomDevice();
+    CustomDevice &operator=(CustomDevice &&other);
+    operator vk::VkDevice() const;
+    vk::VkDevice operator*() const;
+    void swap(CustomDevice &other);
+    vk::VkPhysicalDevice getPhysicalDevice() const;
+    const vk::InstanceInterface &getInstanceDriver() const;
+    const vk::DeviceDriver &getDriver() const;
+    vk::Allocator &getAllocator() const;
+
+    CustomDevice(const CustomDevice &other)            = delete;
+    CustomDevice &operator=(const CustomDevice &other) = delete;
+
+private:
+    friend class DeviceWrapper;
+
+    // Custom devices must always be created through the InstanceWrapper wrapper
+    friend class InstanceWrapper;
+    CustomDevice(Context &context, const InstanceWrapper &instance, vk::VkPhysicalDevice physicalDevice,
+                 vk::Move<vk::VkDevice> device);
+
+    Context *m_context;
+    const vk::InstanceInterface *m_instanceDriver;
+    vk::VkPhysicalDevice m_physicalDevice;
+    vk::Move<vk::VkDevice> m_device;
+#ifndef CTS_USES_VULKANSC
+    std::unique_ptr<vk::DeviceDriver> m_driver;
+#else
+    std::unique_ptr<vk::DeviceDriverSC> m_driver;
+#endif // CTS_USES_VULKANSC
+    std::unique_ptr<vk::SimpleAllocator> m_allocator;
+};
+
+class UncheckedDevice
+{
+public:
+    UncheckedDevice();
+    UncheckedDevice(UncheckedDevice &&other);
+    ~UncheckedDevice();
+    UncheckedDevice &operator=(UncheckedDevice &&other);
+    operator vk::VkDevice() const;
+    vk::VkDevice operator*() const;
+    operator bool() const;
+    void swap(UncheckedDevice &other);
+    vk::VkPhysicalDevice getPhysicalDevice() const;
+    const vk::InstanceInterface &getInstanceDriver() const;
+    const vk::DeviceDriver &getDriver() const;
+    vk::Allocator &getAllocator() const;
+
+    UncheckedDevice(const UncheckedDevice &other)            = delete;
+    UncheckedDevice &operator=(const UncheckedDevice &other) = delete;
+
+private:
+    friend class DeviceWrapper;
+
+    // Unchecked devices must always be created through the InstanceWrapper wrapper
+    friend class InstanceWrapper;
+    UncheckedDevice(Context &context, const InstanceWrapper &instance, vk::VkPhysicalDevice physicalDevice,
+                    vk::VkDevice device, const vk::VkAllocationCallbacks *pAllocator);
+
+    Context *m_context;
+    const vk::InstanceInterface *m_instanceDriver;
+    vk::VkPhysicalDevice m_physicalDevice;
+    const vk::VkAllocationCallbacks *m_allocationCallbacks;
+    vk::Move<vk::VkDevice> m_device;
+#ifndef CTS_USES_VULKANSC
+    std::unique_ptr<vk::DeviceDriver> m_driver;
+#else
+    std::unique_ptr<vk::DeviceDriverSC> m_driver;
+#endif // CTS_USES_VULKANSC
+    std::unique_ptr<vk::SimpleAllocator> m_allocator;
+};
+
+// This helper is a special wrapper for an instance that is capable of creating of a custom device.
+// This can hold or refer to either a custom instance, unchecked instance or the default instance.
+// In case of Vulkan SC, due to some implementations supporting only a single VkDevice per VkInstance
+// a custom instance is necessary for each custom device.
+//
+// Previously, there were two problems when dealing with custom devices:
+// - some cases did not create a custom instance, making the test incompatible with such SC implementations
+// - some cases create a custom instance even when unnecessary, penalizing Vulkan CTS execution time
+//
+// This wrapper exists to solve this by wrapping the default instance or a custom/unchecked instance as follows:
+// - if a custom/unchecked instance is specified when constructing it, then that custom instance will be used
+// - in case of Vulkan SC, if a custom/unchecked instance is not specified, one is created automatically with the
+//   default parameters for compatibility with SC implementations supporting a single VkDevice per VkInstance
+// - in case of Vulkan, if a custom/unchecked instance is not specified, then the default instance will be used
+//   therefore improving performance by avoiding having to create a custom instance
+class InstanceWrapper
+{
+public:
+    InstanceWrapper();
+    InstanceWrapper(Context &context);
+    InstanceWrapper(CustomInstance &&customInstance);
+    InstanceWrapper(const CustomInstance &customInstance);
+    InstanceWrapper(UncheckedInstance &&uncheckedInstance);
+    InstanceWrapper(const UncheckedInstance &uncheckedInstance);
+    InstanceWrapper(InstanceWrapper &&other);
+    ~InstanceWrapper();
+    InstanceWrapper &operator=(InstanceWrapper &&other);
+    operator vk::VkInstance() const;
+    vk::VkInstance operator*() const;
+    void swap(InstanceWrapper &other);
+    const vk::InstanceInterface &getDriver() const;
+    vk::VkPhysicalDevice getPhysicalDevice() const;
+
+    CustomDevice createCustomDevice(const vk::VkDeviceCreateInfo *pCreateInfo,
+                                    const vk::VkAllocationCallbacks *pAllocator = nullptr) const;
+    CustomDevice createCustomDevice(vk::VkPhysicalDevice physicalDevice, const vk::VkDeviceCreateInfo *pCreateInfo,
+                                    const vk::VkAllocationCallbacks *pAllocator = nullptr) const;
+    vk::VkResult createUncheckedDevice(const vk::VkDeviceCreateInfo *pCreateInfo,
+                                       const vk::VkAllocationCallbacks *pAllocator, UncheckedDevice *pDevice) const;
+    vk::VkResult createUncheckedDevice(vk::VkPhysicalDevice physicalDevice, const vk::VkDeviceCreateInfo *pCreateInfo,
+                                       const vk::VkAllocationCallbacks *pAllocator, UncheckedDevice *pDevice) const;
+
+    InstanceWrapper(const InstanceWrapper &other)            = delete;
+    InstanceWrapper &operator=(const InstanceWrapper &other) = delete;
+
+private:
+    vk::VkResult createDeviceInternal(vk::VkPhysicalDevice physicalDevice, const vk::VkDeviceCreateInfo *pCreateInfo,
+                                      const vk::VkAllocationCallbacks *pAllocator, vk::VkDevice *pDevice) const;
+
+    Context *m_context;
+
+    // These are the custom/unchecked instance objects stored when they are passed by move semantics.
+    // When the constructors taking custom/unchecked instance objects by reference are called, these remain
+    // empty and the custom/unchecked instance objects passed in by reference are expected to remain alive
+    // for the duration of the lifetime of this wrapper.
+    CustomInstance m_customInstance;
+    UncheckedInstance m_uncheckedInstance;
+
+    // Note that these are intentionally not "owned" values (i.e. not Move<VkInstance> and not unique_ptr<>)
+    // as they are either owned by the context (if default instance) or by the custom/unchecked instance.
+    vk::VkInstance m_instance;
+    const vk::InstanceInterface *m_driver;
+};
+
+// This helper is a special wrapper for a device.
+// This can hold or refer to either a custom device, unchecked device or the default device.
+class DeviceWrapper
+{
+public:
+    DeviceWrapper();
+    DeviceWrapper(Context &context);
+    DeviceWrapper(CustomDevice &&customDevice);
+    DeviceWrapper(const CustomDevice &customDevice);
+    DeviceWrapper(UncheckedDevice &&uncheckedDevice);
+    DeviceWrapper(const UncheckedDevice &uncheckedDevice);
+    DeviceWrapper(DeviceWrapper &&other);
+    ~DeviceWrapper();
+    DeviceWrapper &operator=(DeviceWrapper &&other);
+    operator vk::VkDevice() const;
+    vk::VkDevice operator*() const;
+    void swap(DeviceWrapper &other);
+    vk::VkPhysicalDevice getPhysicalDevice() const;
+    const vk::InstanceInterface &getInstanceDriver() const;
+    const vk::DeviceInterface &getDriver() const;
+    vk::Allocator &getAllocator() const;
+
+    DeviceWrapper(const DeviceWrapper &other)            = delete;
+    DeviceWrapper &operator=(const DeviceWrapper &other) = delete;
+
+private:
+    Context *m_context;
+
+    const vk::InstanceInterface *m_instanceDriver;
+    vk::VkPhysicalDevice m_physicalDevice;
+
+    // These are the custom/unchecked device objects stored when they are passed by move semantics.
+    // When the constructors taking custom/unchecked device objects by reference are called, these remain
+    // empty and the custom/unchecked device objects passed in by reference are expected to remain alive
+    // for the duration of the lifetime of this wrapper.
+    CustomDevice m_customDevice;
+    UncheckedDevice m_uncheckedDevice;
+
+    // Note that these are intentionally not "owned" values (i.e. not Move<VkDevice> and not unique_ptr<>)
+    // as they are either owned by the context (if default device) or by the custom/unchecked device.
+    vk::VkDevice m_device;
+    const vk::DeviceInterface *m_driver;
+    vk::Allocator *m_allocator;
 };
 
 // Custom instances.
@@ -140,27 +338,6 @@ CustomInstance createCustomInstanceFromInfo(Context &context, const vk::VkInstan
 vk::VkResult createUncheckedInstance(Context &context, const vk::VkInstanceCreateInfo *instanceCreateInfo,
                                      const vk::VkAllocationCallbacks *pAllocator, UncheckedInstance *instance,
                                      bool allowLayers = true);
-
-// Custom devices.
-
-vk::Move<vk::VkDevice> createCustomDevice(const vk::PlatformInterface &vkp, vk::VkInstance instance,
-                                          const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
-                                          const vk::VkDeviceCreateInfo *pCreateInfo,
-                                          const vk::VkAllocationCallbacks *pAllocator = nullptr);
-
-// Unchecked device: creation allowed to fail.
-
-vk::VkResult createUncheckedDevice(const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
-                                   const vk::VkDeviceCreateInfo *pCreateInfo,
-                                   const vk::VkAllocationCallbacks *pAllocator, vk::VkDevice *pDevice);
-
-class CustomInstanceWrapper
-{
-public:
-    CustomInstanceWrapper(Context &context);
-    CustomInstanceWrapper(Context &context, const std::vector<std::string> extensions);
-    vkt::CustomInstance instance;
-};
 
 class VideoDevice
 {
@@ -210,7 +387,7 @@ public:
     bool createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsRequired,
                                      const VideoCodecOperationFlags videoCodecOperationFlags,
                                      const VideoDeviceFlags videoDeviceFlags = VIDEO_DEVICE_FLAG_NONE);
-    const vk::DeviceDriver &getDeviceDriver(void);
+    const vk::DeviceInterface &getDeviceDriver(void);
     uint32_t getQueueFamilyIndexTransfer(void) const;
     uint32_t getQueueFamilyIndexDecode(void) const;
     uint32_t getQueueFamilyIndexEncode(void) const;
@@ -220,9 +397,8 @@ public:
 protected:
     Context &m_context;
 
-    vk::Move<vk::VkDevice> m_logicalDevice;
-    de::MovePtr<vk::DeviceDriver> m_deviceDriver;
-    de::MovePtr<vk::Allocator> m_allocator;
+    const InstanceWrapper m_instance;
+    DeviceWrapper m_logicalDevice;
     uint32_t m_queueFamilyTransfer;
     uint32_t m_queueFamilyDecode;
     uint32_t m_queueFamilyEncode;

@@ -2099,13 +2099,9 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     return createCustomInstanceWithExtensions(context, extensions, pAllocator);
 }
 
-Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, VkInstance instance, const InstanceInterface &vki,
-                                   VkPhysicalDevice physicalDevice, const Extensions &supportedExtensions,
-                                   const uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator,
-#ifdef CTS_USES_VULKANSC
-                                   de::SharedPtr<vk::ResourceInterface> resourceInterface,
-#endif // CTS_USES_VULKANSC
-                                   const tcu::CommandLine &cmdLine)
+static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, VkPhysicalDevice physicalDevice,
+                                        const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
+                                        const VkAllocationCallbacks *pAllocator)
 {
     const float queuePriorities[]              = {1.0f};
     const VkDeviceQueueCreateInfo queueInfos[] = {{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
@@ -2116,48 +2112,8 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, VkInstance inst
 
     const char *const extensions[] = {"VK_KHR_swapchain", "VK_KHR_swapchain_mutable_format"};
 
-    void *pNext = nullptr;
-#ifdef CTS_USES_VULKANSC
-    VkDeviceObjectReservationCreateInfo memReservationInfo =
-        cmdLine.isSubProcess() ? resourceInterface->getStatMax() : resetDeviceObjectReservationCreateInfo();
-    memReservationInfo.pNext = pNext;
-    pNext                    = &memReservationInfo;
-
-    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-    sc10Features.pNext                              = pNext;
-    pNext                                           = &sc10Features;
-
-    VkPipelineCacheCreateInfo pcCI;
-    std::vector<VkPipelinePoolSize> poolSizes;
-    if (cmdLine.isSubProcess())
-    {
-        if (resourceInterface->getCacheDataSize() > 0)
-        {
-            pcCI = {
-                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                nullptr,                                      // const void* pNext;
-                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                resourceInterface->getCacheDataSize(),                    // uintptr_t initialDataSize;
-                resourceInterface->getCacheData()                         // const void* pInitialData;
-            };
-            memReservationInfo.pipelineCacheCreateInfoCount = 1;
-            memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-        }
-
-        poolSizes = resourceInterface->getPipelinePoolSizes();
-        if (!poolSizes.empty())
-        {
-            memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-            memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-        }
-    }
-#else
-    DE_UNREF(cmdLine);
-#endif // CTS_USES_VULKANSC
-
     const VkDeviceCreateInfo deviceParams = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                                             pNext,
+                                             nullptr,
                                              (VkDeviceCreateFlags)0,
                                              DE_LENGTH_OF_ARRAY(queueInfos),
                                              &queueInfos[0],
@@ -2173,14 +2129,14 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, VkInstance inst
             TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
     }
 
-    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return instance.createCustomDevice(physicalDevice, &deviceParams, pAllocator);
 }
 
 struct InstanceHelper
 {
     const vector<VkExtensionProperties> supportedExtensions;
-    const CustomInstance instance;
-    const InstanceDriver &vki;
+    const InstanceWrapper instance;
+    const InstanceInterface &vki;
 
     InstanceHelper(Context &context, Type wsiType, const VkAllocationCallbacks *pAllocator = nullptr)
         : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
@@ -2194,23 +2150,18 @@ struct DeviceHelper
 {
     const VkPhysicalDevice physicalDevice;
     const uint32_t queueFamilyIndex;
-    const Unique<VkDevice> device;
-    const DeviceDriver vkd;
+    const DeviceWrapper device;
+    const DeviceInterface &vkd;
     const VkQueue queue;
 
-    DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
+    DeviceHelper(const InstanceHelper &instanceHelper, VkSurfaceKHR surface,
                  const VkAllocationCallbacks *pAllocator = nullptr)
-        : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
-        , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
-        , device(createDeviceWithWsi(context.getPlatformInterface(), context.getInstance(), vki, physicalDevice,
-                                     enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr), queueFamilyIndex,
-                                     pAllocator,
-#ifdef CTS_USES_VULKANSC
-                                     context.getResourceInterface(),
-#endif // CTS_USES_VULKANSC
-                                     context.getTestContext().getCommandLine()))
-        , vkd(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion(),
-              context.getTestContext().getCommandLine())
+        : physicalDevice(instanceHelper.instance.getPhysicalDevice())
+        , queueFamilyIndex(chooseQueueFamilyIndex(instanceHelper.vki, physicalDevice, surface))
+        , device(createDeviceWithWsi(instanceHelper.instance, physicalDevice,
+                                     enumerateDeviceExtensionProperties(instanceHelper.vki, physicalDevice, nullptr),
+                                     queueFamilyIndex, pAllocator))
+        , vkd(device.getDriver())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
     {
     }
@@ -2322,12 +2273,12 @@ tcu::TestStatus testSwapchainMutable(Context &context, CaseDef caseDef)
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, *native.display,
                                                      *native.window, context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+    const DeviceHelper devHelper(instHelper, *surface);
     const DeviceInterface &vk         = devHelper.vkd;
-    const InstanceDriver &vki         = instHelper.vki;
+    const InstanceInterface &vki      = instHelper.vki;
     const VkDevice device             = *devHelper.device;
     const VkPhysicalDevice physDevice = devHelper.physicalDevice;
-    SimpleAllocator allocator(vk, device, getPhysicalDeviceMemoryProperties(vki, context.getPhysicalDevice()));
+    SimpleAllocator allocator(vk, device, getPhysicalDeviceMemoryProperties(vki, physDevice));
 
     const VkImageUsageFlags imageUsage = getImageUsageForTestCase(caseDef);
 

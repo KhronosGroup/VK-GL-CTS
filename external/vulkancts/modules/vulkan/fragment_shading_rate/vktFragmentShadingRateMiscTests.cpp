@@ -811,9 +811,9 @@ void initOOBShaders(vk::SourceCollections &programCollection, TestParams param)
     programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
 }
 
-Move<VkDevice> getRobustDevice(Context &context, bool robustness2)
+static CustomDevice createRobustDevice(Context &context, const InstanceWrapper &instance, bool robustness2)
 {
-    const auto &vki           = context.getInstanceInterface();
+    const auto &vki           = instance.getDriver();
     const float queuePriority = 1.0f;
     // Create a universal queue that supports graphics and compute
     const VkDeviceQueueCreateInfo queueParams = {
@@ -825,7 +825,7 @@ Move<VkDevice> getRobustDevice(Context &context, bool robustness2)
         &queuePriority                              // const float*                 pQueuePriorities;
     };
 
-    VkPhysicalDeviceFeatures2 features2 = getPhysicalDeviceFeatures2(vki, context.getPhysicalDevice());
+    VkPhysicalDeviceFeatures2 features2 = getPhysicalDeviceFeatures2(vki, instance.getPhysicalDevice());
     VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features    = initVulkanStructure(&features2);
     robustness2Features.robustImageAccess2                        = true;
     VkPhysicalDeviceImageRobustnessFeaturesEXT robustnessFeatures = initVulkanStructure(&features2);
@@ -836,48 +836,9 @@ Move<VkDevice> getRobustDevice(Context &context, bool robustness2)
     fsrFeatures.pipelineFragmentShadingRate   = true;
     const auto &extensionPtrs                 = context.getDeviceCreationExtensions();
 
-    void *pNext = (void *)&fsrFeatures;
-#ifdef CTS_USES_VULKANSC
-    VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
-                                                                 context.getResourceInterface()->getStatMax() :
-                                                                 resetDeviceObjectReservationCreateInfo();
-    memReservationInfo.pNext                               = pNext;
-    pNext                                                  = &memReservationInfo;
-
-    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-    sc10Features.pNext                              = pNext;
-    pNext                                           = &sc10Features;
-
-    VkPipelineCacheCreateInfo pcCI;
-    std::vector<VkPipelinePoolSize> poolSizes;
-    if (context.getTestContext().getCommandLine().isSubProcess())
-    {
-        if (context.getResourceInterface()->getCacheDataSize() > 0)
-        {
-            pcCI = {
-                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType              sType;
-                nullptr,                                      // const void*                  pNext;
-                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags   flags;
-                context.getResourceInterface()->getCacheDataSize(), // uintptr_t                    initialDataSize;
-                context.getResourceInterface()->getCacheData()      // const void*                  pInitialData;
-            };
-            memReservationInfo.pipelineCacheCreateInfoCount = 1;
-            memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-        }
-
-        poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
-        if (!poolSizes.empty())
-        {
-            memReservationInfo.pipelinePoolSizeCount = static_cast<uint32_t>(poolSizes.size());
-            memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-        }
-    }
-#endif
-
     const VkDeviceCreateInfo deviceParams = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType                  sType;
-        pNext,                                // const void*                      pNext;
+        &fsrFeatures,                         // const void*                      pNext;
         0u,                                   // VkDeviceCreateFlags              flags;
         1u,                                   // uint32_t                         queueCreateInfoCount;
         &queueParams,                         // const VkDeviceQueueCreateInfo*   pQueueCreateInfos;
@@ -887,10 +848,8 @@ Move<VkDevice> getRobustDevice(Context &context, bool robustness2)
         de::dataOrNull(extensionPtrs),        // const char* const*               ppEnabledExtensionNames;
         nullptr                               // const VkPhysicalDeviceFeatures*  pEnabledFeatures;
     };
-    const auto instance = context.getInstance();
 
-    return createCustomDevice(context.getPlatformInterface(), instance, vki, context.getPhysicalDevice(),
-                              &deviceParams);
+    return instance.createCustomDevice(&deviceParams);
 }
 
 tcu::TestStatus testOOB(Context &context, TestParams params)
@@ -904,17 +863,12 @@ tcu::TestStatus testOOB(Context &context, TestParams params)
     const auto fsrFormat               = VK_FORMAT_R8_UINT;
     const auto fsrUsage = (VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
     const auto sampleCount = VK_SAMPLE_COUNT_1_BIT;
-    const auto &vki        = context.getInstanceInterface();
-    const auto &vkp        = context.getPlatformInterface();
-    const auto device      = getRobustDevice(context, params.useRobustness2);
-    const auto instance    = context.getInstance();
-    auto driver = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion(),
-                                                             context.getTestContext().getCommandLine()));
-    auto queueFamilyIndex      = context.getUniversalQueueFamilyIndex();
-    auto queue                 = getDeviceQueue(*driver, *device, queueFamilyIndex, 0u);
-    auto alloc                 = de::MovePtr<Allocator>(new SimpleAllocator(
-        *driver, device.get(), getPhysicalDeviceMemoryProperties(vki, context.getPhysicalDevice())));
-    const DeviceInterface &vkd = *driver;
+    const auto instance    = InstanceWrapper(context);
+    const auto device      = createRobustDevice(context, instance, params.useRobustness2);
+    const auto &vkd        = device.getDriver();
+    auto queueFamilyIndex  = context.getUniversalQueueFamilyIndex();
+    auto queue             = getDeviceQueue(vkd, device, queueFamilyIndex, 0u);
+    auto alloc             = &device.getAllocator();
 
     struct Dims
     {
@@ -930,7 +884,7 @@ tcu::TestStatus testOOB(Context &context, TestParams params)
     auto &bufferAlloc = buffer.getAllocation();
     void *bufferData  = bufferAlloc.getHostPtr();
     deMemcpy(bufferData, &dimensions, sizeof(Dims));
-    flushAlloc(vkd, device.get(), bufferAlloc);
+    flushAlloc(vkd, device, bufferAlloc);
 
     const auto outputSize = VkExtent3D{fsrAttachmentTexelSize.width * 4, fsrAttachmentTexelSize.height * 4, 1};
     const tcu::IVec3 fbExtent(static_cast<int>(outputSize.width), static_cast<int>(outputSize.height),
@@ -1073,8 +1027,8 @@ tcu::TestStatus testOOB(Context &context, TestParams params)
     DescriptorSetLayoutBuilder layoutBuilder;
     layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
 
-    auto descriptorSetLayout    = layoutBuilder.build(vkd, device.get());
-    auto graphicsPipelineLayout = makePipelineLayout(vkd, device.get(), descriptorSetLayout.get());
+    auto descriptorSetLayout    = layoutBuilder.build(vkd, device);
+    auto graphicsPipelineLayout = makePipelineLayout(vkd, device, descriptorSetLayout.get());
 
     static const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, //  VkStructureType                             sType;
@@ -1109,10 +1063,8 @@ tcu::TestStatus testOOB(Context &context, TestParams params)
     };
     DescriptorPoolBuilder poolBuilder;
     poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    const auto descriptorPool =
-        poolBuilder.build(vkd, device.get(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
-    const auto descriptorSetBuffer =
-        makeDescriptorSet(vkd, device.get(), descriptorPool.get(), descriptorSetLayout.get());
+    const auto descriptorPool = poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
+    const auto descriptorSetBuffer = makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayout.get());
 
     // Update descriptor sets.
     DescriptorSetUpdateBuilder updater;
@@ -1121,7 +1073,7 @@ tcu::TestStatus testOOB(Context &context, TestParams params)
     updater.writeSingle(descriptorSetBuffer.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo);
 
-    updater.update(vkd, device.get());
+    updater.update(vkd, device);
 
     beginCommandBuffer(vkd, cmdBuffer);
     const auto imgSRR = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, fsrMipCount, 0u, 1u);
@@ -1162,8 +1114,8 @@ tcu::TestStatus testOOB(Context &context, TestParams params)
                              &preHostBarrier);
 
     endCommandBuffer(vkd, cmdBuffer);
-    submitCommandsAndWait(vkd, device.get(), queue, cmdBuffer);
-    invalidateAlloc(vkd, device.get(), colorBuffer.getBufferAllocation());
+    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+    invalidateAlloc(vkd, device, colorBuffer.getBufferAllocation());
 
     const auto colorTcuFormat = mapVkFormat(colorFormat);
     const tcu::ConstPixelBufferAccess colorResultAccess(colorTcuFormat, fbExtent,

@@ -52,12 +52,6 @@ namespace vkt::robustness
 
 using namespace vk;
 
-#ifndef CTS_USES_VULKANSC
-typedef de::MovePtr<vk::DeviceDriver> DeviceDriverPtr;
-#else
-typedef de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> DeviceDriverPtr;
-#endif // CTS_USES_VULKANSC
-
 enum TestMode
 {
     TM_DRAW_INDEXED = 0,
@@ -118,49 +112,33 @@ static void copyImageToMemory(const DeviceInterface &vk, VkCommandBuffer cmdBuff
 class DrawIndexedInstance : public vkt::TestInstance
 {
 public:
-    DrawIndexedInstance(Context &context,
-#ifdef CTS_USES_VULKANSC
-                        de::MovePtr<CustomInstance> customInstance,
-#endif // CTS_USES_VULKANSC
-                        Move<VkDevice> device, DeviceDriverPtr deviceDriver, const TestParams &testParams);
+    DrawIndexedInstance(Context &context, InstanceWrapper &&instance, DeviceWrapper &&device,
+                        const TestParams &testParams);
 
     virtual ~DrawIndexedInstance(void) = default;
 
     virtual tcu::TestStatus iterate(void);
 
 protected:
-#ifdef CTS_USES_VULKANSC
-    de::MovePtr<CustomInstance> m_customInstance;
-#endif // CTS_USES_VULKANSC
-    Move<VkDevice> m_device;
-    DeviceDriverPtr m_deviceDriver;
+    const InstanceWrapper m_instance;
+    const DeviceWrapper m_device;
     const TestParams m_params;
 };
 
-DrawIndexedInstance::DrawIndexedInstance(Context &context,
-#ifdef CTS_USES_VULKANSC
-                                         de::MovePtr<CustomInstance> customInstance,
-#endif // CTS_USES_VULKANSC
-                                         Move<VkDevice> device, DeviceDriverPtr deviceDriver,
+DrawIndexedInstance::DrawIndexedInstance(Context &context, InstanceWrapper &&instance, DeviceWrapper &&device,
                                          const TestParams &testParams)
     : vkt::TestInstance(context)
-#ifdef CTS_USES_VULKANSC
-    , m_customInstance(customInstance)
-#endif
-    , m_device(device)
-    , m_deviceDriver(deviceDriver)
+    , m_instance(std::move(instance))
+    , m_device(std::move(device))
     , m_params(testParams)
 {
 }
 
 tcu::TestStatus DrawIndexedInstance::iterate(void)
 {
-    const DeviceInterface &vk       = *m_deviceDriver;
+    const DeviceInterface &vk       = m_device.getDriver();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
-    const auto &vki                 = m_context.getInstanceInterface();
-    const VkPhysicalDevice physicalDevice =
-        chooseDevice(vki, m_context.getInstance(), m_context.getTestContext().getCommandLine());
-    SimpleAllocator memAlloc(vk, *m_device, getPhysicalDeviceMemoryProperties(vki, physicalDevice));
+    vk::Allocator &memAlloc         = m_device.getAllocator();
 
     // this is testsed - first index in index buffer is outside of bounds
     const uint32_t oobFirstIndex = std::numeric_limits<uint32_t>::max() - 100;
@@ -473,11 +451,7 @@ public:
     void initPrograms(SourceCollections &programCollection) const override;
 
 protected:
-    void createDeviceAndDriver(Context &context,
-#ifdef CTS_USES_VULKANSC
-                               de::MovePtr<CustomInstance> &customInstance,
-#endif // CTS_USES_VULKANSC
-                               Move<VkDevice> &device, DeviceDriverPtr &driver) const;
+    CustomDevice createTestDevice(Context &context, const InstanceWrapper &instance) const;
     const TestParams m_params;
 };
 
@@ -522,11 +496,7 @@ void DrawIndexedTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_device_address_commands");
 }
 
-void DrawIndexedTestCase::createDeviceAndDriver(Context &context,
-#ifdef CTS_USES_VULKANSC
-                                                de::MovePtr<CustomInstance> &customInstance,
-#endif // CTS_USES_VULKANSC
-                                                Move<VkDevice> &device, DeviceDriverPtr &driver) const
+CustomDevice DrawIndexedTestCase::createTestDevice(Context &context, const InstanceWrapper &instance) const
 {
     VkPhysicalDeviceFeatures2 features2   = initVulkanStructure();
     features2.features.robustBufferAccess = true;
@@ -584,38 +554,14 @@ void DrawIndexedTestCase::createDeviceAndDriver(Context &context,
 #endif // CTS_USES_VULKANSC
     }
 
-#ifndef CTS_USES_VULKANSC
-    device = createRobustBufferAccessDevice(context, &features2);
-    driver = DeviceDriverPtr(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device,
-                                              context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
-#else
-    customInstance = de::MovePtr<CustomInstance>(new CustomInstance(createCustomInstanceFromContext(context)));
-    device         = createRobustBufferAccessDevice(context, *customInstance, &features2);
-    driver         = DeviceDriverPtr(new DeviceDriverSC(context.getPlatformInterface(), *customInstance, *device,
-                                                        context.getTestContext().getCommandLine(),
-                                                        context.getResourceInterface(), context.getDeviceVulkanSC10Properties(),
-                                                        context.getDeviceProperties(), context.getUsedApiVersion()),
-                                     vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
-#endif // CTS_USES_VULKANSC
+    return createRobustBufferAccessDevice(context, instance, &features2);
 }
 
 TestInstance *DrawIndexedTestCase::createInstance(Context &context) const
 {
-    Move<VkDevice> device;
-    DeviceDriverPtr deviceDriver;
-
-#ifndef CTS_USES_VULKANSC
-    createDeviceAndDriver(context, device, deviceDriver);
-#else
-    de::MovePtr<CustomInstance> customInstance;
-    createDeviceAndDriver(context, customInstance, device, deviceDriver);
-#endif // CTS_USES_VULKANSC
-
-    return new DrawIndexedInstance(context,
-#ifdef CTS_USES_VULKANSC
-                                   customInstance,
-#endif // CTS_USES_VULKANSC
-                                   device, deviceDriver, m_params);
+    InstanceWrapper instance(context);
+    DeviceWrapper device = createTestDevice(context, instance);
+    return new DrawIndexedInstance(context, std::move(instance), std::move(device), m_params);
 }
 
 void DrawIndexedTestCase::initPrograms(SourceCollections &sourceCollections) const
@@ -643,29 +589,20 @@ void DrawIndexedTestCase::initPrograms(SourceCollections &sourceCollections) con
 class BindIndexBuffer2Instance : public vkt::TestInstance
 {
 public:
-    BindIndexBuffer2Instance(Context &c,
-#ifdef CTS_USES_VULKANSC
-                             de::MovePtr<CustomInstance> customInstance,
-#endif // CTS_USES_VULKANSC
-                             Move<VkDevice> device, DeviceDriverPtr driver, const TestParams &params);
+    BindIndexBuffer2Instance(Context &c, InstanceWrapper &&instance, DeviceWrapper &&device, const TestParams &params);
     virtual ~BindIndexBuffer2Instance(void) = default;
 
     virtual tcu::TestStatus iterate(void) override;
 
 protected:
-#ifdef CTS_USES_VULKANSC
-    const de::MovePtr<CustomInstance> m_customInstance;
-#endif // CTS_USES_VULKANSC
-    const Move<VkDevice> m_device;
-    const DeviceDriverPtr m_driver;
+    InstanceWrapper m_instance;
+    DeviceWrapper m_device;
     const TestParams m_params;
-    VkPhysicalDevice m_physDevice;
-    SimpleAllocator m_allocator;
 
 protected:
     inline const DeviceInterface &getDeviceInterface() const
     {
-        return *m_driver;
+        return m_device.getDriver();
     }
     inline VkDevice getDevice() const
     {
@@ -673,31 +610,21 @@ protected:
     }
     inline VkPhysicalDevice getPhysicalDevice() const
     {
-        return m_physDevice;
+        return m_device.getPhysicalDevice();
     }
     inline Allocator &getAllocator()
     {
-        return m_allocator;
+        return m_device.getAllocator();
     }
     VkQueue getQueue() const;
 };
 
-BindIndexBuffer2Instance::BindIndexBuffer2Instance(Context &c,
-#ifdef CTS_USES_VULKANSC
-                                                   de::MovePtr<CustomInstance> customInstance,
-#endif
-                                                   Move<VkDevice> device, DeviceDriverPtr driver,
+BindIndexBuffer2Instance::BindIndexBuffer2Instance(Context &c, InstanceWrapper &&instance, DeviceWrapper &&device,
                                                    const TestParams &params)
     : vkt::TestInstance(c)
-#ifdef CTS_USES_VULKANSC
-    , m_customInstance(customInstance)
-#endif
-    , m_device(device)
-    , m_driver(driver)
+    , m_instance(std::move(instance))
+    , m_device(std::move(device))
     , m_params(params)
-    , m_physDevice(chooseDevice(c.getInstanceInterface(), c.getInstance(), c.getTestContext().getCommandLine()))
-    , m_allocator(getDeviceInterface(), getDevice(),
-                  getPhysicalDeviceMemoryProperties(c.getInstanceInterface(), m_physDevice))
 {
 }
 
@@ -757,22 +684,9 @@ void BindIndexBuffer2TestCase::initPrograms(SourceCollections &programs) const
 
 TestInstance *BindIndexBuffer2TestCase::createInstance(Context &context) const
 {
-    Move<VkDevice> device;
-    DeviceDriverPtr deviceDriver;
-
-#ifndef CTS_USES_VULKANSC
-    createDeviceAndDriver(context, device, deviceDriver);
-#else
-    de::MovePtr<CustomInstance> customInstance =
-        de::MovePtr<CustomInstance>(new CustomInstance(createCustomInstanceFromContext(context)));
-    createDeviceAndDriver(context, customInstance, device, deviceDriver);
-#endif // CTS_USES_VULKANSC
-
-    return new BindIndexBuffer2Instance(context,
-#ifdef CTS_USES_VULKANSC
-                                        customInstance,
-#endif // CTS_USES_VULKANSC
-                                        device, deviceDriver, m_params);
+    InstanceWrapper instance(context);
+    DeviceWrapper device = createTestDevice(context, instance);
+    return new BindIndexBuffer2Instance(context, std::move(instance), std::move(device), m_params);
 }
 
 tcu::TestStatus BindIndexBuffer2Instance::iterate(void)

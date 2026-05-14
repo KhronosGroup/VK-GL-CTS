@@ -1459,11 +1459,14 @@ TestInstance *NullVBOCase::createInstance(Context &context) const
 tcu::TestStatus NullVBOInstance::iterate(void)
 {
     // Custom device with robust buffer access.
-    const auto &cmdLine       = m_context.getTestContext().getCommandLine();
-    const auto customInstance = createCustomInstanceWithExtension(m_context, "VK_KHR_get_physical_device_properties2");
+#ifdef CTS_USES_VULKANSC
+    const InstanceWrapper customInstance = createCustomInstanceFromContext(m_context);
+#else
+    const InstanceWrapper customInstance =
+        createCustomInstanceWithExtension(m_context, "VK_KHR_get_physical_device_properties2");
+#endif // CTS_USES_VULKANSC
     const auto &vki           = customInstance.getDriver();
-    const auto &vkp           = m_context.getPlatformInterface();
-    const auto physicalDevice = m_context.getPhysicalDevice();
+    const auto physicalDevice = customInstance.getPhysicalDevice();
     const bool esoSupport     = m_context.getShaderObjectFeaturesEXT().shaderObject;
     const auto qfIndex        = m_context.getUniversalQueueFamilyIndex();
 
@@ -1528,13 +1531,10 @@ tcu::TestStatus NullVBOInstance::iterate(void)
         nullptr,                              //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    const auto customDevice = createCustomDevice(vkp, customInstance, vki, physicalDevice, &deviceCreateInfo);
-    const auto &device      = customDevice.get();
-    const DeviceDriver vkd(vkp, customInstance, device, m_context.getUsedApiVersion(), cmdLine);
-    const auto queue = getDeviceQueue(vkd, device, qfIndex, 0u);
-
-    const auto memoryProperties = getPhysicalDeviceMemoryProperties(vki, physicalDevice);
-    SimpleAllocator allocator(vkd, device, memoryProperties);
+    const auto device = customInstance.createCustomDevice(physicalDevice, &deviceCreateInfo);
+    const DeviceDriver &vkd(device.getDriver());
+    const auto queue         = getDeviceQueue(vkd, device, qfIndex, 0u);
+    vk::Allocator &allocator = device.getAllocator();
 
     // Test using that device for some vertex bindings.
     const tcu::IVec3 fbExtent(16, 16, 1);

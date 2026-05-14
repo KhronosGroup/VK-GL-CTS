@@ -1617,19 +1617,17 @@ tcu::TestStatus ConstantModuleIdentifiersInstance::runTest(const DeviceInterface
 // Helper to create a new device supporting shader module identifiers.
 struct DeviceHelper
 {
-    Move<VkDevice> device;
-    std::unique_ptr<DeviceDriver> vkd;
+    const InstanceWrapper instance;
+    DeviceWrapper device;
     uint32_t queueFamilyIndex;
     VkQueue queue;
-    std::unique_ptr<SimpleAllocator> allocator;
 
     // Forbid copy and assignment.
     DeviceHelper(const DeviceHelper &)                 = delete;
     DeviceHelper &operator=(const DeviceHelper &other) = delete;
 
-    DeviceHelper(Context &context)
+    DeviceHelper(Context &context) : instance(context)
     {
-        const auto ctx   = context.getContextCommonData();
         queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
         // Get device features (these have to be checked in the test case).
@@ -1675,7 +1673,7 @@ struct DeviceHelper
         if (bdaSupport)
             addFeatures(&bdaFeatures);
 
-        ctx.vki.getPhysicalDeviceFeatures2(ctx.physicalDevice, &features2);
+        instance.getDriver().getPhysicalDeviceFeatures2(instance.getPhysicalDevice(), &features2);
 
         // Make sure robust buffer access is disabled as in the default device.
         features2.features.robustBufferAccess = VK_FALSE;
@@ -1707,12 +1705,8 @@ struct DeviceHelper
         };
 
         // Create custom device and related objects
-        device = createCustomDevice(ctx.vkp, ctx.instance, ctx.vki, ctx.physicalDevice, &createInfo);
-        vkd.reset(new DeviceDriver(ctx.vkp, ctx.instance, device.get(), context.getUsedApiVersion(),
-                                   context.getTestContext().getCommandLine()));
-        queue = getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
-        allocator.reset(
-            new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(ctx.vki, ctx.physicalDevice)));
+        device = instance.createCustomDevice(&createInfo);
+        queue  = getDeviceQueue(device.getDriver(), *device, queueFamilyIndex, 0u);
     }
 };
 
@@ -1752,8 +1746,8 @@ tcu::TestStatus ConstantModuleIdentifiersInstance::iterate(void)
 
     const auto &di1 = vkd;
     const auto dev1 = device;
-    const auto &di2 = (m_params->differentDevices ? *helper.vkd : vkd);
-    const auto dev2 = (m_params->differentDevices ? helper.device.get() : device);
+    const auto &di2 = (m_params->differentDevices ? helper.device.getDriver() : vkd);
+    const auto dev2 = (m_params->differentDevices ? *helper.device : device);
 
     return runTest(di1, dev1, di2, dev2);
 }

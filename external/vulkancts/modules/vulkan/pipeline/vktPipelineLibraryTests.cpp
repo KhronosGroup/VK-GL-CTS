@@ -3477,11 +3477,10 @@ private:
     MiscTestParams m_testParams;
 
     uint32_t m_deviceGroupQueueFamilyIndex;
-    CustomInstance m_deviceGroupInstance;
-    vk::Move<vk::VkDevice> m_deviceGroupLogicalDevice;
+    InstanceWrapper m_deviceGroupInstance;
+    DeviceWrapper m_deviceGroupLogicalDevice;
     std::vector<vk::VkPhysicalDevice> m_deviceGroupPhysicalDevices;
-    de::MovePtr<vk::DeviceDriver> m_deviceGroupVk;
-    de::MovePtr<Allocator> m_deviceGroupAllocator;
+    const vk::DeviceInterface *m_deviceGroupVk;
 };
 
 CreateViewIndexFromDeviceIndexInstance::CreateViewIndexFromDeviceIndexInstance(Context &context,
@@ -3496,7 +3495,7 @@ tcu::TestStatus CreateViewIndexFromDeviceIndexInstance::iterate()
     const bool useDeviceGroup = createDeviceGroup();
     const auto &vk            = useDeviceGroup ? *m_deviceGroupVk : m_context.getDeviceInterface();
     const auto device         = useDeviceGroup ? *m_deviceGroupLogicalDevice : m_context.getDevice();
-    Allocator &allocator      = useDeviceGroup ? *m_deviceGroupAllocator : m_context.getDefaultAllocator();
+    Allocator &allocator = useDeviceGroup ? m_deviceGroupLogicalDevice.getAllocator() : m_context.getDefaultAllocator();
     uint32_t queueFamilyIndex =
         useDeviceGroup ? m_deviceGroupQueueFamilyIndex : m_context.getUniversalQueueFamilyIndex();
     const auto &modeParams = m_testParams.get<ViewIndexFromDeviceIndexParams>();
@@ -3782,19 +3781,19 @@ tcu::TestStatus CreateViewIndexFromDeviceIndexInstance::iterate()
 
 bool CreateViewIndexFromDeviceIndexInstance::createDeviceGroup(void)
 {
-    const auto &vki                 = m_context.getInstanceInterface();
     const tcu::CommandLine &cmdLine = m_context.getTestContext().getCommandLine();
     const uint32_t deviceGroupIndex = cmdLine.getVKDeviceGroupId() - 1;
     const float queuePriority       = 1.0f;
 
     // create vulkan instance, list all device groups and select proper one
-    m_deviceGroupInstance         = createCustomInstanceWithExtension(m_context, "VK_KHR_device_group_creation");
-    auto allDeviceGroupProperties = enumeratePhysicalDeviceGroups(vki, m_deviceGroupInstance);
+    m_deviceGroupInstance = createCustomInstanceWithExtension(m_context, "VK_KHR_device_group_creation");
+    const InstanceInterface &instance(m_deviceGroupInstance.getDriver());
+
+    auto allDeviceGroupProperties = enumeratePhysicalDeviceGroups(instance, m_deviceGroupInstance);
     auto &devGroupProperties      = allDeviceGroupProperties[deviceGroupIndex];
     if (devGroupProperties.physicalDeviceCount == 1)
         return false;
 
-    const InstanceDriver &instance(m_deviceGroupInstance.getDriver());
     VkPhysicalDeviceFeatures2 deviceFeatures2     = initVulkanStructure();
     VkDeviceGroupDeviceCreateInfo deviceGroupInfo = initVulkanStructure(&deviceFeatures2);
     deviceGroupInfo.physicalDeviceCount           = devGroupProperties.physicalDeviceCount;
@@ -3865,16 +3864,10 @@ bool CreateViewIndexFromDeviceIndexInstance::createDeviceGroup(void)
         nullptr,                              // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_deviceGroupLogicalDevice = createCustomDevice(m_context.getPlatformInterface(), m_deviceGroupInstance, instance,
-                                                    deviceGroupInfo.pPhysicalDevices[physicalDeviceIndex], &deviceInfo);
+    m_deviceGroupLogicalDevice =
+        m_deviceGroupInstance.createCustomDevice(deviceGroupInfo.pPhysicalDevices[physicalDeviceIndex], &deviceInfo);
 
-    m_deviceGroupVk = de::MovePtr<DeviceDriver>(
-        new DeviceDriver(m_context.getPlatformInterface(), m_deviceGroupInstance, *m_deviceGroupLogicalDevice,
-                         m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
-
-    m_deviceGroupAllocator = de::MovePtr<Allocator>(
-        new SimpleAllocator(*m_deviceGroupVk, *m_deviceGroupLogicalDevice,
-                            getPhysicalDeviceMemoryProperties(instance, m_deviceGroupPhysicalDevices[0])));
+    m_deviceGroupVk = &m_deviceGroupLogicalDevice.getDriver();
 
     return true;
 }

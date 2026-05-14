@@ -942,7 +942,7 @@ inline uint16_t roru16(uint16_t x, uint16_t n)
     return n == 0 ? x : (x >> n) | (x << (-n & 15));
 }
 
-static void copyAllPlanesToBuffers(const DeviceDriver &vkd, const DecodedFrame &frame, const VkExtent2D &imageExtent,
+static void copyAllPlanesToBuffers(const DeviceInterface &vkd, const DecodedFrame &frame, const VkExtent2D &imageExtent,
                                    const PlanarFormatDescription &planarDescription, VkCommandBuffer cmdbuf,
                                    std::vector<std::unique_ptr<BufferWithMemory>> &planeBuffers)
 {

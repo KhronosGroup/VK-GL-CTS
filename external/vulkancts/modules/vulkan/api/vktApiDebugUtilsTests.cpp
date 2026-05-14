@@ -50,13 +50,9 @@ struct TestParams
 tcu::TestStatus testLongDebugLabelsTest(Context &context, TestParams params)
 {
     // create custom instance to test debug_utils regardles of validation beeing enabled
-    const uint32_t apiVersion    = context.getUsedApiVersion();
-    const auto &cmdLine          = context.getTestContext().getCommandLine();
-    const PlatformInterface &vkp = context.getPlatformInterface();
-    std::vector<std::string> enabledExtensions{"VK_EXT_debug_utils"};
-    const Unique<VkInstance> instance(createDefaultInstance(vkp, apiVersion, {}, enabledExtensions, cmdLine));
-    const InstanceDriver vki(vkp, *instance);
-    const VkPhysicalDevice physicalDevice = chooseDevice(vki, *instance, cmdLine);
+    const auto instance = InstanceWrapper(createCustomInstanceWithExtension(context, "VK_EXT_debug_utils"));
+    const auto &vki     = instance.getDriver();
+    const VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
     int queueFamilyIndex = findQueueFamilyIndexWithCaps(vki, physicalDevice, params.required, params.excluded);
 
     void *pNextForDeviceCreateInfo                = nullptr;
@@ -68,31 +64,14 @@ tcu::TestStatus testLongDebugLabelsTest(Context &context, TestParams params)
     deviceQueueCreateInfo.queueCount              = 1;
     deviceQueueCreateInfo.pQueuePriorities        = &queuePriority;
 
-#ifdef CTS_USES_VULKANSC
-    VkDeviceObjectReservationCreateInfo memReservationInfo = initVulkanStructure();
-    memReservationInfo.commandBufferRequestCount           = 1;
-    memReservationInfo.fenceRequestCount                   = 1;
-    memReservationInfo.deviceMemoryRequestCount            = 1;
-    memReservationInfo.bufferRequestCount                  = 1;
-    memReservationInfo.commandPoolRequestCount             = 1;
-
-    VkPhysicalDeviceVulkanSC10Features sc10Features = initVulkanStructure(&memReservationInfo);
-    pNextForDeviceCreateInfo                        = &sc10Features;
-
-    VkCommandPoolMemoryReservationCreateInfo memoryReservationCreateInfo = initVulkanStructure();
-    memoryReservationCreateInfo.commandPoolReservedSize                  = 64u * cmdLine.getCommandDefaultSize();
-    memoryReservationCreateInfo.commandPoolMaxCommandBuffers             = 1;
-    pNextForCommandPoolCreateInfo                                        = &memoryReservationCreateInfo;
-#endif // CTS_USES_VULKANSC
-
     VkDeviceCreateInfo deviceCreateInfo   = initVulkanStructure(pNextForDeviceCreateInfo);
     deviceCreateInfo.queueCreateInfoCount = 1;
     deviceCreateInfo.pQueueCreateInfos    = &deviceQueueCreateInfo;
 
-    const Unique<VkDevice> device(createCustomDevice(vkp, *instance, vki, physicalDevice, &deviceCreateInfo));
-    const DeviceDriver vk(vkp, *instance, *device, apiVersion, cmdLine);
-    const VkQueue queue = getDeviceQueue(vk, *device, queueFamilyIndex, 0);
-    SimpleAllocator allocator(vk, *device, getPhysicalDeviceMemoryProperties(vki, physicalDevice));
+    const auto device        = instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
+    const auto &vk           = device.getDriver();
+    const VkQueue queue      = getDeviceQueue(vk, *device, queueFamilyIndex, 0);
+    vk::Allocator &allocator = device.getAllocator();
 
     std::string longName(64 * 1024 + 1, 'x');
 

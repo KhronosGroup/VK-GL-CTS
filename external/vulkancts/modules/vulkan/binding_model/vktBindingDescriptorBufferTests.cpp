@@ -169,7 +169,7 @@ VkStridedDeviceAddressRegionKHR makeStridedDeviceAddressRegion(const DeviceInter
     return makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, buffer, 0), sizeFixed, sizeFixed);
 }
 
-VkDeviceAddress getAccelerationStructureDeviceAddress(DeviceDriver &deviceDriver, VkDevice device,
+VkDeviceAddress getAccelerationStructureDeviceAddress(const DeviceInterface &deviceDriver, VkDevice device,
                                                       VkAccelerationStructureKHR accelerationStructure)
 {
     const VkAccelerationStructureDeviceAddressInfoKHR addressInfo = {
@@ -2621,7 +2621,7 @@ public:
     MovePtr<Allocation> allocate(const VkMemoryRequirements &memReqs, const MemoryRequirement requirement,
                                  const void *pNext = nullptr) const
     {
-        return allocateExtended(m_context.getInstanceInterface(), *m_deviceInterface, m_context.getPhysicalDevice(),
+        return allocateExtended(m_device.getInstanceDriver(), *m_deviceInterface, m_device.getPhysicalDevice(),
                                 *m_device, memReqs, requirement, pNext);
     }
 
@@ -2697,13 +2697,14 @@ protected:
     TestParams m_params;
     std::vector<SimpleBinding> m_simpleBindings;
 
-    Move<VkDevice> m_device;
-    MovePtr<DeviceDriver> m_deviceInterface;
+    const InstanceWrapper m_instance;
+
+    DeviceWrapper m_device;
+    const DeviceInterface *m_deviceInterface;
     VkQueue m_queue;
     uint32_t m_queueFamilyIndex;
     VkQueue m_sparseQueue;
     uint32_t m_sparseQueueFamilyIndex;
-    MovePtr<Allocator> m_allocatorPtr;
 
     VkPhysicalDeviceMemoryProperties m_memoryProperties;
     VkPhysicalDeviceDescriptorBufferFeaturesEXT m_descriptorBufferFeatures;
@@ -2760,13 +2761,13 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     : TestInstance(context)
     , m_params(params)
     , m_simpleBindings(simpleBindings)
+    , m_instance(context)
     , m_device()
     , m_deviceInterface()
     , m_queue()
     , m_queueFamilyIndex()
     , m_sparseQueue()
     , m_sparseQueueFamilyIndex()
-    , m_allocatorPtr(nullptr)
     , m_memoryProperties()
     , m_descriptorBufferFeatures()
     , m_descriptorBufferProperties()
@@ -2890,8 +2891,8 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
 #undef VALIDATE_PER_STAGE_LIMIT
     }
 
-    auto &inst                           = context.getInstanceInterface();
-    auto physDevice                      = context.getPhysicalDevice();
+    auto &inst                           = m_instance.getDriver();
+    auto physDevice                      = m_instance.getPhysicalDevice();
     auto queueProps                      = getPhysicalDeviceQueueFamilyProperties(inst, physDevice);
     const bool sparseCompatibilityDevice = !(m_params.resourceResidency == ResourceResidency::TRADITIONAL);
 
@@ -3074,7 +3075,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
         addToChainVulkanStructure(&nextPtr, maintenance6Features);
     }
 
-    context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+    inst.getPhysicalDeviceFeatures2(physDevice, &features2);
 
     if (m_params.variant != TestVariant::ROBUST_BUFFER_ACCESS)
     {
@@ -3171,18 +3172,16 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     createInfo.queueCreateInfoCount    = queueCiCnt;
     createInfo.pQueueCreateInfos       = queueInfos;
 
-    m_device = createCustomDevice(context.getPlatformInterface(), context.getInstance(), inst, physDevice, &createInfo);
+    m_device = m_instance.createCustomDevice(physDevice, &createInfo);
 
-    context.getDeviceInterface().getDeviceQueue(*m_device, m_queueFamilyIndex, 0, &m_queue);
+    m_deviceInterface = &m_device.getDriver();
+
+    m_deviceInterface->getDeviceQueue(*m_device, m_queueFamilyIndex, 0, &m_queue);
 
     if (sparseCompatibilityDevice)
     {
-        context.getDeviceInterface().getDeviceQueue(*m_device, m_sparseQueueFamilyIndex, 0, &m_sparseQueue);
+        m_deviceInterface->getDeviceQueue(*m_device, m_sparseQueueFamilyIndex, 0, &m_sparseQueue);
     }
-
-    m_deviceInterface =
-        newMovePtr<DeviceDriver>(context.getPlatformInterface(), context.getInstance(), *m_device,
-                                 context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 
     m_memoryProperties = vk::getPhysicalDeviceMemoryProperties(inst, physDevice);
 
@@ -3199,8 +3198,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
         VkSamplerYcbcrConversionImageFormatProperties ycbcrFormatProps = initVulkanStructure();
         VkImageFormatProperties2 imageFormatProps                      = initVulkanStructure(&ycbcrFormatProps);
 
-        VK_CHECK(m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(
-            m_context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProps));
+        VK_CHECK(inst.getPhysicalDeviceImageFormatProperties2(physDevice, &imageFormatInfo, &imageFormatProps));
 
         m_combinedImageSamplerDescriptorCount = ycbcrFormatProps.combinedImageSamplerDescriptorCount;
 
@@ -3210,8 +3208,6 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     {
         m_imageColorFormat = VK_FORMAT_R32_UINT;
     }
-
-    m_allocatorPtr = de::MovePtr<Allocator>(new SimpleAllocator(*m_deviceInterface, *m_device, m_memoryProperties));
 }
 
 VkDeviceSize DescriptorBufferTestInstance::getDescriptorSize(const Binding &binding) const
@@ -3874,12 +3870,12 @@ de::MovePtr<BufferWithMemory> DescriptorBufferTestInstance::createShaderBindingT
 
 void DescriptorBufferTestInstance::createRayTracingPipeline()
 {
-    const InstanceInterface &vki          = m_context.getInstanceInterface();
+    const InstanceInterface &vki          = m_device.getInstanceDriver();
     const DeviceInterface &vkd            = *m_deviceInterface;
     const VkDevice device                 = *m_device;
-    const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+    const VkPhysicalDevice physicalDevice = m_device.getPhysicalDevice();
     vk::BinaryCollection &collection      = m_context.getBinaryCollection();
-    Allocator &allocator                  = *m_allocatorPtr;
+    Allocator &allocator                  = m_device.getAllocator();
     const uint32_t shaderGroupHandleSize  = getShaderGroupHandleSize(vki, physicalDevice);
     const VkShaderStageFlags hitStages =
         VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
@@ -4762,7 +4758,7 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
         }
         else if (binding.descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
         {
-            Allocator &allocator        = *m_allocatorPtr;
+            Allocator &allocator        = m_device.getAllocator();
             const uint32_t expectedData = getExpectedData(m_params.hash, setIndex, binding.binding, arrayIndex);
             const float zDepth          = float(expectedData);
             const std::vector<tcu::Vec3> vertices{

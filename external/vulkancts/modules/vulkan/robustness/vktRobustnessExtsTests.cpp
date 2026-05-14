@@ -79,12 +79,7 @@ using RobustnessFeatures = uint32_t;
 template <RobustnessFeatures FEATURES>
 class SingletonDevice
 {
-    SingletonDevice(Context &context)
-        : m_context(context)
-#ifdef CTS_USES_VULKANSC
-        , m_customInstance(createCustomInstanceFromContext(context))
-#endif // CTS_USES_VULKANSC
-        , m_logicalDevice()
+    SingletonDevice(Context &context) : m_context(context), m_instance(context), m_logicalDevice()
     {
         // Note we are already checking the needed features are available in checkSupport().
         VkPhysicalDeviceExtendedDynamicStateFeaturesEXT edsFeatures                      = initVulkanStructure();
@@ -162,34 +157,13 @@ class SingletonDevice
         }
 #endif
 
-        const auto &vki           = m_context.getInstanceInterface();
-        const auto instance       = m_context.getInstance();
-        const auto physicalDevice = chooseDevice(vki, instance, context.getTestContext().getCommandLine());
-
-        vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+        m_instance.getDriver().getPhysicalDeviceFeatures2(m_instance.getPhysicalDevice(), &features2);
 
 #ifndef CTS_USES_VULKANSC
         if (FEATURES & RF_PIPELINE_ROBUSTNESS)
             features2.features.robustBufferAccess = VK_FALSE;
 #endif
-        m_logicalDevice = createRobustBufferAccessDevice(context,
-#ifdef CTS_USES_VULKANSC
-                                                         m_customInstance,
-#endif // CTS_USES_VULKANSC
-                                                         &features2);
-
-#ifndef CTS_USES_VULKANSC
-        m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance,
-                                                                    *m_logicalDevice, context.getUsedApiVersion(),
-                                                                    context.getTestContext().getCommandLine()));
-#else
-        m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
-            new DeviceDriverSC(context.getPlatformInterface(), instance, *m_logicalDevice,
-                               context.getTestContext().getCommandLine(), context.getResourceInterface(),
-                               m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(),
-                               context.getUsedApiVersion()),
-            vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
-#endif // CTS_USES_VULKANSC
+        m_logicalDevice = createRobustBufferAccessDevice(context, m_instance, &features2);
     }
 
 public:
@@ -197,19 +171,12 @@ public:
     {
     }
 
-    static VkDevice getDevice(Context &context)
+    static const DeviceWrapper &getDevice(Context &context)
     {
         if (!m_singletonDevice)
             m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
         DE_ASSERT(m_singletonDevice);
-        return m_singletonDevice->m_logicalDevice.get();
-    }
-    static const DeviceInterface &getDeviceInterface(Context &context)
-    {
-        if (!m_singletonDevice)
-            m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
-        DE_ASSERT(m_singletonDevice);
-        return *(m_singletonDevice->m_deviceDriver.get());
+        return m_singletonDevice->m_logicalDevice;
     }
 
     static void destroy()
@@ -219,15 +186,8 @@ public:
 
 private:
     const Context &m_context;
-#ifndef CTS_USES_VULKANSC
-    Move<vk::VkDevice> m_logicalDevice;
-    de::MovePtr<vk::DeviceDriver> m_deviceDriver;
-#else
-    // Construction needs to happen in this exact order to ensure proper resource destruction
-    CustomInstance m_customInstance;
-    Move<vk::VkDevice> m_logicalDevice;
-    de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> m_deviceDriver;
-#endif // CTS_USES_VULKANSC
+    InstanceWrapper m_instance;
+    DeviceWrapper m_logicalDevice;
 
     static SharedPtr<SingletonDevice<FEATURES>> m_singletonDevice;
 };
@@ -348,7 +308,7 @@ static bool formatIsR64(const VkFormat &f)
 }
 
 // Returns the appropriate singleton device for the given case.
-VkDevice getLogicalDevice(Context &ctx, const bool testRobustness2, const bool testPipelineRobustness)
+const DeviceWrapper &getLogicalDevice(Context &ctx, const bool testRobustness2, const bool testPipelineRobustness)
 {
     if (testPipelineRobustness)
     {
@@ -360,21 +320,6 @@ VkDevice getLogicalDevice(Context &ctx, const bool testRobustness2, const bool t
     if (testRobustness2)
         return Robustness2Singleton::getDevice(ctx);
     return ImageRobustnessSingleton::getDevice(ctx);
-}
-
-// Returns the appropriate singleton device driver for the given case.
-const DeviceInterface &getDeviceInterface(Context &ctx, const bool testRobustness2, const bool testPipelineRobustness)
-{
-    if (testPipelineRobustness)
-    {
-        if (testRobustness2)
-            return PipelineRobustnessRobustness2Singleton::getDeviceInterface(ctx);
-        return PipelineRobustnessImageRobustnessSingleton::getDeviceInterface(ctx);
-    }
-
-    if (testRobustness2)
-        return Robustness2Singleton::getDeviceInterface(ctx);
-    return ImageRobustnessSingleton::getDeviceInterface(ctx);
 }
 
 class Layout
@@ -2020,13 +1965,11 @@ TestInstance *RobustnessExtsTestCase::createInstance(Context &context) const
 
 tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 {
-    const VkInstance instance    = m_context.getInstance();
-    const InstanceInterface &vki = m_context.getInstanceInterface();
-    const VkDevice device = getLogicalDevice(m_context, m_data.testRobustness2, m_data.needsPipelineRobustness());
-    const vk::DeviceInterface &vk =
-        getDeviceInterface(m_context, m_data.testRobustness2, m_data.needsPipelineRobustness());
-    const VkPhysicalDevice physicalDevice = chooseDevice(vki, instance, m_context.getTestContext().getCommandLine());
-    SimpleAllocator allocator(vk, device, getPhysicalDeviceMemoryProperties(vki, physicalDevice));
+    const DeviceWrapper &device = getLogicalDevice(m_context, m_data.testRobustness2, m_data.needsPipelineRobustness());
+    const vk::InstanceInterface &vki          = device.getInstanceDriver();
+    const vk::VkPhysicalDevice physicalDevice = device.getPhysicalDevice();
+    const vk::DeviceInterface &vk             = device.getDriver();
+    vk::Allocator &allocator                  = device.getAllocator();
 
     Layout layout;
     generateLayout(layout, m_data);
@@ -3633,12 +3576,10 @@ void OutOfBoundsStrideCase::initPrograms(vk::SourceCollections &programCollectio
 
 tcu::TestStatus OutOfBoundsStrideInstance::iterate(void)
 {
-    const auto &vki           = m_context.getInstanceInterface();
-    const auto physicalDevice = m_context.getPhysicalDevice();
-    const auto &vkd           = getDeviceInterface(m_context, true, m_params.pipelineRobustness);
-    const auto device         = getLogicalDevice(m_context, true, m_params.pipelineRobustness);
-    SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(vki, physicalDevice));
-    const auto qfIndex = m_context.getUniversalQueueFamilyIndex();
+    const auto &device       = getLogicalDevice(m_context, true, m_params.pipelineRobustness);
+    const auto &vkd          = device.getDriver();
+    vk::Allocator &allocator = device.getAllocator();
+    const auto qfIndex       = m_context.getUniversalQueueFamilyIndex();
     const tcu::IVec3 fbDim(8, 8, 1);
     const auto fbExtent    = makeExtent3D(fbDim);
     const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;

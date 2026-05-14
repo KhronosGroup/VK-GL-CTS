@@ -364,9 +364,8 @@ ImageSparseResidencyInstance::ImageSparseResidencyInstance(Context &context, con
 
 tcu::TestStatus ImageSparseResidencyInstance::iterate(void)
 {
-    const auto isAlphaOnly            = isAlphaOnlyFormat(m_format);
-    const float epsilon               = 1e-5f;
-    const InstanceInterface &instance = m_context.getInstanceInterface();
+    const auto isAlphaOnly = isAlphaOnlyFormat(m_format);
+    const float epsilon    = 1e-5f;
 
     {
         // Create logical device supporting both sparse and compute queues
@@ -380,6 +379,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate(void)
     VkImageCreateInfo imageCreateInfo;
     std::vector<DeviceMemorySp> deviceMemUniquePtrVec;
 
+    const InstanceInterface &instance               = getInstanceInterface();
     const DeviceInterface &deviceInterface          = getDeviceInterface();
     const Queue &sparseQueue                        = getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
     const Queue &computeQueue                       = getQueue(VK_QUEUE_COMPUTE_BIT, 0);
@@ -1576,7 +1576,6 @@ tcu::TestStatus ImageMutableSparseTestInstance::verifyImage(const VkExtent3D ima
 
 tcu::TestStatus ImageMutableSparseTestInstance::iterate(void)
 {
-    const InstanceInterface &instance = m_context.getInstanceInterface();
 
     // Create logical device supporting sparse and compute queues
     {
@@ -1588,6 +1587,7 @@ tcu::TestStatus ImageMutableSparseTestInstance::iterate(void)
     }
 
     // Get device interface once queues are created
+    const InstanceInterface &instance      = getInstanceInterface();
     const DeviceInterface &deviceInterface = getDeviceInterface();
 
     // Create sparse image

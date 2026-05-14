@@ -156,10 +156,7 @@ struct FaultCallbackInfoTestParams
 
 tcu::TestStatus testCreateDeviceWithFaultCallbackInfo(Context &context, FaultCallbackInfoTestParams testParams)
 {
-    const CustomInstance instance(createCustomInstanceFromContext(context));
-    const InstanceDriver &instanceDriver(instance.getDriver());
-    const VkPhysicalDevice physicalDevice =
-        chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const auto instance = InstanceWrapper(context);
 
     void *pNext = nullptr;
 
@@ -226,8 +223,7 @@ tcu::TestStatus testCreateDeviceWithFaultCallbackInfo(Context &context, FaultCal
         nullptr,                              // pEnabledFeatures;
     };
 
-    Move<VkDevice> resultingDevice =
-        createCustomDevice(context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceCreateInfo);
+    auto resultingDevice = instance.createCustomDevice(&deviceCreateInfo);
 
     return tcu::TestStatus::pass("Pass");
 }

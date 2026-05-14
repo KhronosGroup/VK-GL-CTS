@@ -168,8 +168,6 @@ SparseResourceTransferQueueInstance::SparseResourceTransferQueueInstance(Context
 
 tcu::TestStatus SparseResourceTransferQueueInstance::iterate(void)
 {
-    const InstanceInterface &instance = m_context.getInstanceInterface();
-
     {
         // Create logical device supporting both sparse and compute queues
         QueueRequirementsVec queueRequirements;
@@ -178,6 +176,7 @@ tcu::TestStatus SparseResourceTransferQueueInstance::iterate(void)
         createDeviceSupportingQueues(queueRequirements);
     }
 
+    const InstanceInterface &instance      = getInstanceInterface();
     const VkPhysicalDevice physicalDevice  = getPhysicalDevice();
     const DeviceInterface &deviceInterface = getDeviceInterface();
     const Queue &transferQueue             = getQueue(VK_QUEUE_SPARSE_BINDING_BIT | VK_QUEUE_TRANSFER_BIT, 0);

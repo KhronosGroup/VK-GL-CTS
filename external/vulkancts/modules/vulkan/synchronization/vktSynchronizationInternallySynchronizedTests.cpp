@@ -29,6 +29,7 @@
 #include "vkImageUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "tcuTextureUtil.hpp"
@@ -209,8 +210,8 @@ private:
 class CaseThread : public de::Thread
 {
 public:
-    CaseThread(const TestType &testType, Context &context, wsi::Type wsiType, DeviceDriver &vk, VkDevice device,
-               uint32_t queueFamilyIndex, VkQueue queue)
+    CaseThread(const TestType &testType, Context &context, wsi::Type wsiType, const DeviceInterface &vk,
+               VkDevice device, uint32_t queueFamilyIndex, VkQueue queue)
         : de::Thread()
         , m_testType(testType)
         , m_context(context)
@@ -1406,7 +1407,7 @@ private:
     const TestType m_testType;
     Context &m_context;
     vk::wsi::Type m_wsiType;
-    DeviceDriver &m_vk;
+    const DeviceInterface &m_vk;
     VkDevice m_device;
     SimpleAllocator m_allocator;
     uint32_t m_queueFamilyIndex;
@@ -1416,11 +1417,9 @@ private:
 
 tcu::TestStatus InternallySynchronizedQueuesTestInstance::iterate(void)
 {
-    const vk::PlatformInterface &vkp      = m_context.getPlatformInterface();
-    const InstanceInterface &vki          = m_context.getInstanceInterface();
-    const VkInstance instance             = m_context.getInstance();
-    const DeviceInterface &vk             = m_context.getDeviceInterface();
-    const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+    const auto instance                   = InstanceWrapper(m_context);
+    const InstanceInterface &vki          = instance.getDriver();
+    const VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
 
     uint32_t queueFamilyCount = 1u;
     uint32_t queueCount       = 1u;
@@ -1543,12 +1542,8 @@ tcu::TestStatus InternallySynchronizedQueuesTestInstance::iterate(void)
         nullptr                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    Move<VkDevice> device =
-        createCustomDevice(m_context.getPlatformInterface(), m_context.getInstance(), m_context.getInstanceInterface(),
-                           m_context.getPhysicalDevice(), &deviceInfo);
-
-    DeviceDriver vkd(vkp, instance, *device, m_context.getUsedApiVersion(),
-                     m_context.getTestContext().getCommandLine());
+    const DeviceWrapper device = instance.createCustomDevice(physicalDevice, &deviceInfo);
+    const DeviceInterface &vkd = device.getDriver();
 
     const uint32_t queueIndex    = useSecondQueue ? 1u : 0u;
     VkDeviceQueueInfo2 queueInfo = {
@@ -1560,7 +1555,7 @@ tcu::TestStatus InternallySynchronizedQueuesTestInstance::iterate(void)
     };
 
     VkQueue queue;
-    vk.getDeviceQueue2(*device, &queueInfo, &queue);
+    vkd.getDeviceQueue2(*device, &queueInfo, &queue);
 
     std::vector<de::SharedPtr<de::Thread>> threads;
     threads.push_back(de::SharedPtr<CaseThread>(

@@ -91,9 +91,10 @@ uint32_t findQueueFamilyIndex(const InstanceInterface &vki, VkPhysicalDevice dev
 SpecialDevice::SpecialDevice(Context &ctx, VkQueueFlagBits transitionFrom, VkQueueFlagBits transitionTo,
                              VkQueueGlobalPriority priorityFrom, VkQueueGlobalPriority priorityTo, bool enableProtected,
                              bool enableSparseBinding)
-    : queueFamilyIndexFrom(m_queueFamilyIndexFrom)
+    : instance(ctx)
+    , device()
+    , queueFamilyIndexFrom(m_queueFamilyIndexFrom)
     , queueFamilyIndexTo(m_queueFamilyIndexTo)
-    , handle(m_deviceHandle)
     , queueFrom(m_queueFrom)
     , queueTo(m_queueTo)
     , createResult(m_createResult)
@@ -105,21 +106,16 @@ SpecialDevice::SpecialDevice(Context &ctx, VkQueueFlagBits transitionFrom, VkQue
     , m_transitionTo(transitionTo)
     , m_queueFamilyIndexFrom(INVALID_UINT32)
     , m_queueFamilyIndexTo(INVALID_UINT32)
-    , m_deviceHandle(VK_NULL_HANDLE)
     , m_queueFrom(VK_NULL_HANDLE)
     , m_queueTo(VK_NULL_HANDLE)
-    , m_allocator()
     , m_createResult(VK_ERROR_UNKNOWN)
     , m_createExpression(nullptr)
     , m_createFileName(nullptr)
     , m_createFileLine(INVALID_UINT32)
 {
-    const DeviceInterface &vkd                              = ctx.getDeviceInterface();
-    const InstanceInterface &vki                            = ctx.getInstanceInterface();
-    const VkInstance instance                               = ctx.getInstance();
-    const tcu::CommandLine &cmdLine                         = ctx.getTestContext().getCommandLine();
-    const VkPhysicalDevice phys                             = chooseDevice(vki, instance, cmdLine);
-    const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(vki, phys);
+    const tcu::CommandLine &cmdLine = ctx.getTestContext().getCommandLine();
+    const InstanceInterface &vki    = instance.getDriver();
+    const VkPhysicalDevice phys     = chooseDevice(vki, instance, cmdLine);
 
     VkQueueFlags flagFrom = transitionFrom;
     VkQueueFlags flagTo   = transitionTo;
@@ -186,11 +182,11 @@ SpecialDevice::SpecialDevice(Context &ctx, VkQueueFlagBits transitionFrom, VkQue
     deviceCreateInfo.ppEnabledLayerNames     = nullptr;
     deviceCreateInfo.enabledLayerCount       = 0;
 
-    m_createResult = SAVEEXPR(createUncheckedDevice(vki, phys, &deviceCreateInfo, nullptr, &m_deviceHandle),
+    m_createResult = SAVEEXPR(instance.createUncheckedDevice(phys, &deviceCreateInfo, nullptr, &device),
                               m_createExpression, m_createFileName, m_createFileLine);
-    if (VK_SUCCESS == m_createResult && VK_NULL_HANDLE != m_deviceHandle)
+    if (VK_SUCCESS == m_createResult && VK_NULL_HANDLE != *device)
     {
-        m_allocator = de::MovePtr<vk::Allocator>(new SimpleAllocator(vkd, m_deviceHandle, memoryProperties));
+        const auto &vkd = device.getDriver();
 
         if (enableProtected)
         {
@@ -200,27 +196,23 @@ SpecialDevice::SpecialDevice(Context &ctx, VkQueueFlagBits transitionFrom, VkQue
             queueInfo.queueIndex = 0;
 
             queueInfo.queueFamilyIndex = m_queueFamilyIndexFrom;
-            vkd.getDeviceQueue2(m_deviceHandle, &queueInfo, &m_queueFrom);
+            vkd.getDeviceQueue2(device, &queueInfo, &m_queueFrom);
 
             queueInfo.queueFamilyIndex = m_queueFamilyIndexTo;
-            vkd.getDeviceQueue2(m_deviceHandle, &queueInfo, &m_queueTo);
+            vkd.getDeviceQueue2(device, &queueInfo, &m_queueTo);
         }
         else
         {
-            vkd.getDeviceQueue(m_deviceHandle, m_queueFamilyIndexFrom, 0, &m_queueFrom);
-            vkd.getDeviceQueue(m_deviceHandle, m_queueFamilyIndexTo, 0, &m_queueTo);
+            vkd.getDeviceQueue(device, m_queueFamilyIndexFrom, 0, &m_queueFrom);
+            vkd.getDeviceQueue(device, m_queueFamilyIndexTo, 0, &m_queueTo);
         }
     }
 }
+
 SpecialDevice::~SpecialDevice()
 {
-    if (VK_NULL_HANDLE != m_deviceHandle)
-    {
-        m_context.getDeviceInterface().destroyDevice(m_deviceHandle, nullptr);
-        m_createResult = VK_ERROR_UNKNOWN;
-        m_deviceHandle = VK_NULL_HANDLE;
-    }
 }
+
 VkQueueFlags SpecialDevice::getColissionFlags(VkQueueFlags flags)
 {
     if (flags & VK_QUEUE_TRANSFER_BIT)

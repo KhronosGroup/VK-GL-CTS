@@ -151,8 +151,6 @@ ImageSparseBindingInstance::ImageSparseBindingInstance(Context &context, const T
 
 tcu::TestStatus ImageSparseBindingInstance::iterate(void)
 {
-    const InstanceInterface &instance = m_context.getInstanceInterface();
-
     {
         // Create logical device supporting both sparse and compute queues
         QueueRequirementsVec queueRequirements;
@@ -162,6 +160,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
         createDeviceSupportingQueues(queueRequirements, false, m_params.format == VK_FORMAT_A8_UNORM_KHR);
     }
 
+    const InstanceInterface &instance     = getInstanceInterface();
     const VkPhysicalDevice physicalDevice = getPhysicalDevice();
     VkImageCreateInfo imageSparseInfo;
     std::vector<DeviceMemorySp> deviceMemUniquePtrVec;

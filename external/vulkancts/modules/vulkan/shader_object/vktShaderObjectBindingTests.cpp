@@ -86,6 +86,8 @@ public:
     ShaderObjectBindingDrawInstance(Context &context, const BindingDrawParams &params)
         : vkt::TestInstance(context)
         , m_params(params)
+        , m_instance(context)
+        , m_device(context)
     {
     }
     virtual ~ShaderObjectBindingDrawInstance(void)
@@ -99,14 +101,11 @@ private:
                                            vk::VkShaderStageFlagBits stage, const std::string &name,
                                            const vk::VkDescriptorSetLayout *descriptorSetLayout = nullptr);
     void createDevice(void);
-    vk::VkDevice getDevice(void)
-    {
-        return (m_params.testType == DISABLED) ? m_customDevice.get() : m_context.getDevice();
-    }
     void setDynamicStates(vk::VkCommandBuffer cmdBuffer, bool tessShader);
 
     BindingDrawParams m_params;
-    vk::Move<vk::VkDevice> m_customDevice;
+    const InstanceWrapper m_instance;
+    DeviceWrapper m_device;
 };
 
 void ShaderObjectBindingDrawInstance::createDevice(void)
@@ -145,8 +144,7 @@ void ShaderObjectBindingDrawInstance::createDevice(void)
         nullptr // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_customDevice = createCustomDevice(m_context.getPlatformInterface(), m_context.getInstance(),
-                                        m_context.getInstanceInterface(), m_context.getPhysicalDevice(), &deviceInfo);
+    m_device = m_instance.createCustomDevice(&deviceInfo);
 }
 
 vk::Move<vk::VkShaderEXT> ShaderObjectBindingDrawInstance::createShader(
@@ -181,9 +179,9 @@ vk::Move<vk::VkShaderEXT> ShaderObjectBindingDrawInstance::createShader(
 
 void ShaderObjectBindingDrawInstance::setDynamicStates(vk::VkCommandBuffer cmdBuffer, bool tessShader)
 {
-    const vk::DeviceInterface &vk = m_context.getDeviceInterface();
+    const vk::DeviceInterface &vk = m_device.getDriver();
     const auto deviceExtensions   = vk::removeUnsupportedShaderObjectExtensions(
-        m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
+        m_device.getInstanceDriver(), m_device.getPhysicalDevice(), m_context.getDeviceExtensions());
 
     const vk::VkPrimitiveTopology topology =
         tessShader ? vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
@@ -205,16 +203,14 @@ void ShaderObjectBindingDrawInstance::setDynamicStates(vk::VkCommandBuffer cmdBu
 
 tcu::TestStatus ShaderObjectBindingDrawInstance::iterate(void)
 {
-    const vk::VkInstance instance = m_context.getInstance();
-    const vk::InstanceDriver instanceDriver(m_context.getPlatformInterface(), instance);
     createDevice();
-    const vk::DeviceInterface &vk   = m_context.getDeviceInterface();
-    const vk::VkDevice device       = getDevice();
+
+    const vk::DeviceInterface &vk = m_device.getDriver();
+    ;
+    const vk::VkDevice device       = *m_device;
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
-    const vk::VkQueue queue         = getDeviceQueue(m_context.getDeviceInterface(), device, queueFamilyIndex, 0u);
-    auto alloctor                   = de::MovePtr<vk::Allocator>(new vk::SimpleAllocator(
-        vk, device, getPhysicalDeviceMemoryProperties(instanceDriver, m_context.getPhysicalDevice())));
-    auto &alloc                     = *alloctor;
+    const vk::VkQueue queue         = getDeviceQueue(vk, device, queueFamilyIndex, 0u);
+    auto &alloc                     = m_device.getAllocator();
     tcu::TestLog &log               = m_context.getTestContext().getLog();
 
     const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;

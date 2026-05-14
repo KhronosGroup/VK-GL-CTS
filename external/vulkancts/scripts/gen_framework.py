@@ -2375,14 +2375,13 @@ class DeviceFeatures2Generator(CTSGenerator):
             f'    if (!context.contextSupports(vk::ApiVersion({isSC}, {versionStrA}, 0)))\n'
             f'        TCU_THROW(NotSupportedError, "Vulkan {versionStrB} is not supported");')
             self.write('\n'
-            '    const PlatformInterface&        platformInterface = context.getPlatformInterface();\n'
-            '    const CustomInstance            instance            (createCustomInstanceFromContext(context));\n'
-            '    const InstanceDriver&            instanceDriver        (instance.getDriver());\n'
-            '    const VkPhysicalDevice            physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());\n'
-            '    const uint32_t                    queueFamilyIndex = 0;\n'
-            '    const uint32_t                    queueCount = 1;\n'
-            '    const uint32_t                    queueIndex = 0;\n'
-            '    const float                        queuePriority = 1.0f;\n\n'
+            '    const InstanceWrapper instance(createCustomInstanceFromContext(context));\n'
+            '    const auto&                     instanceDriver    = instance.getDriver();\n'
+            '    const VkPhysicalDevice          physicalDevice    = instance.getPhysicalDevice();\n'
+            '    const uint32_t                  queueFamilyIndex  = 0;\n'
+            '    const uint32_t                  queueCount        = 1;\n'
+            '    const uint32_t                  queueIndex        = 0;\n'
+            '    const float                     queuePriority     = 1.0f;\n\n'
             '    const vector<VkQueueFamilyProperties> queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);\n\n'
             '    const VkDeviceQueueCreateInfo    deviceQueueCreateInfo =\n'
             '    {\n'
@@ -2414,10 +2413,11 @@ class DeviceFeatures2Generator(CTSGenerator):
             '        0, //extensionCount;\n'
             '        nullptr, //ppEnabledExtensionNames;\n'
             '        nullptr, //pEnabledFeatures;\n'
-            '    };\n\n'
-            '    const Unique<VkDevice>            device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));\n'
-            '    const DeviceDriver                deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());\n'
-            '    const VkQueue                    queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);\n\n'
+            '    };\n'
+            '\n'
+            '    const auto                        device       = instance.createCustomDevice(physicalDevice, &deviceCreateInfo);\n'
+            '    const auto&                       deviceDriver = device.getDriver();\n'
+            '    const VkQueue                     queue        = getDeviceQueue(deviceDriver, device, queueFamilyIndex, queueIndex);\n\n'
             '    VK_CHECK(deviceDriver.queueWaitIdle(queue));\n\n'
             '    return tcu::TestStatus::pass("Pass");\n'
             '}\n')
@@ -2771,21 +2771,16 @@ class DeviceFeatureTestGenerator(CTSGenerator):
             testBlock = """
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
 {{
-    const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
-    const InstanceDriver&                    instanceDriver            (instance.getDriver());
-    const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const InstanceWrapper instance(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const VkPhysicalDevice                    physicalDevice = instance.getPhysicalDevice();
     const uint32_t                            queueFamilyIndex = 0;
     const uint32_t                            queueCount = 1;
     const float                                queuePriority = 1.0f;
     const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
     const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
     int                                        numErrors = 0;
-    const tcu::CommandLine&                    commandLine = context.getTestContext().getCommandLine();
-    bool                                    isSubProcess = context.getTestContext().getCommandLine().isSubProcess();
-{6}
 
     VkPhysicalDeviceFeatures emptyDeviceFeatures;
     deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
@@ -2801,7 +2796,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
 {1}
         }};
         auto* supportedFeatures = reinterpret_cast<const {0}*>(featuresStruct);
-        checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures, {5}, context.getUsedApiVersion(), commandLine);
+        checkFeatures(instance, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures);
     }}
 
     if (numErrors > 0)
@@ -2810,9 +2805,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
     return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }}
 """
-            additionalParams = ( 'memReservationStatMax, isSubProcess' if self.targetApiName == 'vulkansc' else 'isSubProcess' )
-            additionalDefs = ( '    VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();' if self.targetApiName == 'vulkansc' else '')
-            featureItems.append(testBlock.format(struct.name, "\n".join(items), len(items), ("nullptr" if coreFeaturesPattern.match(struct.name) else "&extensionNames"), struct.name[len('VkPhysicalDevice'):], additionalParams, additionalDefs))
+            featureItems.append(testBlock.format(struct.name, "\n".join(items), len(items), ("nullptr" if coreFeaturesPattern.match(struct.name) else "&extensionNames"), struct.name[len('VkPhysicalDevice'):]))
 
             testFunctions.append("createDeviceWithUnsupportedFeaturesTest" + struct.name[len('VkPhysicalDevice'):])
 
@@ -3268,15 +3261,14 @@ class GetDeviceProcAddrGenerator(CTSGenerator):
     def generate(self):
         testBlockStart = '''tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 {
-    tcu::TestLog&                                log                        (context.getTestContext().getLog());
-    const PlatformInterface&                    platformInterface = context.getPlatformInterface();
-    const CustomInstance                        instance                (createCustomInstanceFromContext(context));
-    const InstanceDriver&                        instanceDriver = instance.getDriver();
-    const VkPhysicalDevice                        physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-    const uint32_t                                queueFamilyIndex = 0;
-    const uint32_t                                queueCount = 1;
-    const float                                    queuePriority = 1.0f;
-    const std::vector<VkQueueFamilyProperties>    queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+    tcu::TestLog&                               log                   = context.getTestContext().getLog();
+    const InstanceWrapper instance(createCustomInstanceFromContext(context, nullptr, false));
+    const auto&                                 instanceDriver        = instance.getDriver();
+    const VkPhysicalDevice                      physicalDevice        = instance.getPhysicalDevice();
+    const uint32_t                              queueFamilyIndex      = 0;
+    const uint32_t                              queueCount            = 1;
+    const float                                 queuePriority         = 1.0f;
+    const std::vector<VkQueueFamilyProperties>  queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
     const VkDeviceQueueCreateInfo            deviceQueueCreateInfo =
     {
@@ -3301,8 +3293,9 @@ class GetDeviceProcAddrGenerator(CTSGenerator):
         nullptr, //  const char* const* ppEnabledExtensionNames;
         nullptr, //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
-    const Unique<VkDevice>                    device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-    const DeviceDriver                        deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
+
+    const auto                                device       = instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
+    const auto&                               deviceDriver = device.getDriver();
 
     const std::vector<std::string> functions{'''
         testBlockEnd = '''    };
@@ -3310,7 +3303,7 @@ class GetDeviceProcAddrGenerator(CTSGenerator):
     bool fail = false;
     for (const auto& function : functions)
     {
-        if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != nullptr)
+        if (deviceDriver.getDeviceProcAddr(device, function.c_str()) != nullptr)
         {
             fail = true;
             log << tcu::TestLog::Message << "Function " << function << " is not NULL" << tcu::TestLog::EndMessage;

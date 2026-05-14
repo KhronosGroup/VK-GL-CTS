@@ -619,13 +619,12 @@ tcu::TestStatus NoQueuesTestInstance::iterate(void)
     deRandom rnd;
     deRandom_init(&rnd, 1234);
 
-    const vk::InstanceInterface &vki          = m_context.getInstanceInterface();
-    const vk::VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
-    const DeviceInterface &vk                 = m_context.getDeviceInterface();
+    const InstanceWrapper instance(m_context);
+    const vk::InstanceInterface &vki          = instance.getDriver();
+    const vk::VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
 
-    const DeviceFeatures deviceFeaturesAll(m_context.getInstanceInterface(), m_context.getUsedApiVersion(),
-                                           physicalDevice, m_context.getInstanceExtensions(),
-                                           m_context.getDeviceExtensions(), false);
+    const DeviceFeatures deviceFeaturesAll(vki, m_context.getUsedApiVersion(), physicalDevice,
+                                           m_context.getInstanceExtensions(), m_context.getDeviceExtensions(), false);
     const VkPhysicalDeviceFeatures2 deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
 
     float priority                                    = 1.0f;
@@ -665,12 +664,9 @@ tcu::TestStatus NoQueuesTestInstance::iterate(void)
                                                          extensionPtrs.empty() ? nullptr : &extensionPtrs[0],
                                                             0u};
 
-        Move<VkDevice> deviceNoQueues = createCustomDevice(m_context.getPlatformInterface(), m_context.getInstance(),
-                                                           vki, physicalDevice, &deviceCreateInfo, nullptr);
-
-        const VkDevice device = *deviceNoQueues;
-
-        SimpleAllocator allocator(vk, device, getPhysicalDeviceMemoryProperties(vki, physicalDevice));
+        const DeviceWrapper device = instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
+        const DeviceInterface &vk  = device.getDriver();
+        vk::Allocator &allocator   = device.getAllocator();
 
         uint32_t shaderGroupHandleSize    = 0;
         uint32_t shaderGroupBaseAlignment = 1;
@@ -694,8 +690,7 @@ tcu::TestStatus NoQueuesTestInstance::iterate(void)
         {
             de::MovePtr<RayTracingProperties> rayTracingPropertiesKHR;
 
-            rayTracingPropertiesKHR =
-                makeRayTracingProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+            rayTracingPropertiesKHR  = makeRayTracingProperties(vki, physicalDevice);
             shaderGroupHandleSize    = rayTracingPropertiesKHR->getShaderGroupHandleSize();
             shaderGroupBaseAlignment = rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
         }

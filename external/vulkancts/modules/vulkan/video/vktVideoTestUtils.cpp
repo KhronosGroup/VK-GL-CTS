@@ -299,7 +299,7 @@ VkDevice VideoBaseTestInstance::getDeviceSupportingQueue(const VkQueueFlags queu
     return m_videoDevice.getDeviceSupportingQueue(queueFlagsRequired, videoCodecOperationFlags, videoDeviceFlags);
 }
 
-const DeviceDriver &VideoBaseTestInstance::getDeviceDriver(void)
+const DeviceInterface &VideoBaseTestInstance::getDeviceDriver(void)
 {
     return m_videoDevice.getDeviceDriver();
 }

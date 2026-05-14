@@ -120,25 +120,24 @@ struct Environment
 {
     const PlatformInterface &vkp;
     const InstanceInterface &vki;
-    VkInstance instance;
+    const InstanceWrapper &instance;
     VkPhysicalDevice physicalDevice;
     const DeviceInterface &vkd;
-    VkDevice device;
+    const DeviceWrapper &device;
     uint32_t queueFamilyIndex;
     const BinaryCollection &programBinaries;
     const uint32_t usedApiVersion;
     const tcu::CommandLine &commandLine;
     const CallbackRecorder *recorder;
 
-    Environment(const PlatformInterface &vkp_, const InstanceInterface &vki_, VkInstance instance_,
-                VkPhysicalDevice physicalDevice_, const DeviceInterface &vkd_, VkDevice device_,
+    Environment(const PlatformInterface &vkp_, const InstanceWrapper &instance_, const DeviceWrapper &device_,
                 uint32_t queueFamilyIndex_, const BinaryCollection &programBinaries_, const uint32_t usedApiVersion_,
                 const tcu::CommandLine &commandLine_, const CallbackRecorder *recorder_)
         : vkp(vkp_)
-        , vki(vki_)
+        , vki(instance_.getDriver())
         , instance(instance_)
-        , physicalDevice(physicalDevice_)
-        , vkd(vkd_)
+        , physicalDevice(device_.getPhysicalDevice())
+        , vkd(device_.getDriver())
         , device(device_)
         , queueFamilyIndex(queueFamilyIndex_)
         , programBinaries(programBinaries_)
@@ -162,10 +161,11 @@ struct Dependency
     }
 };
 
-static Move<VkDevice> createDeviceWithMemoryReport(const PlatformInterface &vkp, VkInstance instance,
-                                                   const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                                   uint32_t queueFamilyIndex, const CallbackRecorder *recorder)
+static CustomDevice createDeviceWithMemoryReport(const InstanceWrapper &instance, VkPhysicalDevice physicalDevice,
+                                                 uint32_t queueFamilyIndex, const CallbackRecorder *recorder)
 {
+    const auto &vki = instance.getDriver();
+
     const uint32_t queueCount                                                      = 1;
     const float queuePriority                                                      = 1.0f;
     const char *const enabledExtensions[]                                          = {"VK_EXT_device_memory_report"};
@@ -205,7 +205,7 @@ static Move<VkDevice> createDeviceWithMemoryReport(const PlatformInterface &vkp,
         &enabledFeatures.features,             // const VkPhysicalDeviceFeatures*        pEnabledFeatures
     };
 
-    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceCreateInfo);
+    return instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
 }
 
 struct Device
@@ -226,10 +226,9 @@ struct Device
         }
     };
 
-    static Move<VkDevice> create(const Environment &env, const Resources &, const Parameters &)
+    static DeviceWrapper create(const Environment &env, const Resources &, const Parameters &)
     {
-        return createDeviceWithMemoryReport(env.vkp, env.instance, env.vki, env.physicalDevice, env.queueFamilyIndex,
-                                            env.recorder);
+        return createDeviceWithMemoryReport(env.instance, env.physicalDevice, env.queueFamilyIndex, env.recorder);
     }
 };
 
@@ -1659,11 +1658,11 @@ tcu::TestCaseGroup *createObjectTestsGroup(tcu::TestContext &testCtx, const char
     return group.release();
 }
 
-static bool validateCallbackRecords(Context &context, const CallbackRecorder &recorder)
+static bool validateCallbackRecords(Context &context, const InstanceWrapper &instance, const CallbackRecorder &recorder)
 {
     tcu::TestLog &log                                       = context.getTestContext().getLog();
-    const VkPhysicalDevice physicalDevice                   = context.getPhysicalDevice();
-    const InstanceInterface &vki                            = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice                   = instance.getPhysicalDevice();
+    const InstanceInterface &vki                            = instance.getDriver();
     const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(vki, physicalDevice);
     std::set<std::pair<uint64_t, uint64_t>> memoryObjectSet;
 
@@ -1721,15 +1720,15 @@ static bool validateCallbackRecords(Context &context, const CallbackRecorder &re
 
 struct EnvClone
 {
-    Unique<VkDevice> device;
+    DeviceWrapper device;
     DeviceDriver vkd;
     Environment env;
 
     EnvClone(const Environment &parent)
         : device(Device::create(parent, Device::Resources(parent, Device::Parameters()), Device::Parameters()))
         , vkd(parent.vkp, parent.instance, *device, parent.usedApiVersion, parent.commandLine)
-        , env(parent.vkp, parent.vki, parent.instance, parent.physicalDevice, vkd, *device, parent.queueFamilyIndex,
-              parent.programBinaries, parent.usedApiVersion, parent.commandLine, nullptr)
+        , env(parent.vkp, parent.instance, device, parent.queueFamilyIndex, parent.programBinaries,
+              parent.usedApiVersion, parent.commandLine, nullptr)
     {
     }
 };
@@ -1738,24 +1737,25 @@ template <typename Object>
 tcu::TestStatus createDestroyObjectTest(Context &context, typename Object::Parameters params)
 {
     CallbackRecorder recorder;
-    const Environment env(context.getPlatformInterface(), context.getInstanceInterface(), context.getInstance(),
-                          context.getPhysicalDevice(), context.getDeviceInterface(), context.getDevice(),
-                          context.getUniversalQueueFamilyIndex(), context.getBinaryCollection(),
-                          context.getUsedApiVersion(), context.getTestContext().getCommandLine(), &recorder);
+    const InstanceWrapper instance(context);
+    const DeviceWrapper device(context);
+    const Environment env(context.getPlatformInterface(), instance, device, context.getUniversalQueueFamilyIndex(),
+                          context.getBinaryCollection(), context.getUsedApiVersion(),
+                          context.getTestContext().getCommandLine(), &recorder);
 
     if (std::is_same<Object, Device>::value)
     {
         const typename Object::Resources res(env, params);
-        Unique<typename Object::Type> obj(Object::create(env, res, params));
+        auto obj(Object::create(env, res, params));
     }
     else
     {
         const EnvClone envWithCustomDevice(env);
         const typename Object::Resources res(envWithCustomDevice.env, params);
-        Unique<typename Object::Type> obj(Object::create(envWithCustomDevice.env, res, params));
+        auto obj(Object::create(envWithCustomDevice.env, res, params));
     }
 
-    if (!validateCallbackRecords(context, recorder))
+    if (!validateCallbackRecords(context, instance, recorder))
     {
         return tcu::TestStatus::fail("Invalid device memory report callback");
     }
@@ -1766,15 +1766,12 @@ tcu::TestStatus createDestroyObjectTest(Context &context, typename Object::Param
 tcu::TestStatus vkDeviceMemoryAllocateAndFreeTest(Context &context)
 {
     CallbackRecorder recorder;
-    const PlatformInterface &vkp          = context.getPlatformInterface();
-    const VkInstance instance             = context.getInstance();
-    const InstanceInterface &vki          = context.getInstanceInterface();
-    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const InstanceWrapper instance(context);
+    const InstanceInterface &vki          = instance.getDriver();
+    const VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
     const uint32_t queueFamilyIndex       = context.getUniversalQueueFamilyIndex();
-    const Unique<VkDevice> device(
-        createDeviceWithMemoryReport(vkp, instance, vki, physicalDevice, queueFamilyIndex, &recorder));
-    const DeviceDriver vkd(vkp, instance, *device, context.getUsedApiVersion(),
-                           context.getTestContext().getCommandLine());
+    const DeviceWrapper device(createDeviceWithMemoryReport(instance, physicalDevice, queueFamilyIndex, &recorder));
+    const DeviceInterface &vkd(device.getDriver());
     const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(vki, physicalDevice);
     const VkDeviceSize testSize                             = 1024;
     const uint32_t testTypeIndex                            = 0;
@@ -1902,11 +1899,10 @@ static std::vector<std::string> getInstanceExtensions(const uint32_t instanceVer
     return instanceExtensions;
 }
 
-static Move<VkDevice> createExternalMemoryDevice(const PlatformInterface &vkp, VkInstance instance,
-                                                 const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                                 uint32_t apiVersion, uint32_t queueFamilyIndex,
-                                                 VkExternalMemoryHandleTypeFlagBits externalMemoryType,
-                                                 const CallbackRecorder *recorder)
+static CustomDevice createExternalMemoryDevice(const InstanceWrapper &instance, VkPhysicalDevice physicalDevice,
+                                               uint32_t apiVersion, uint32_t queueFamilyIndex,
+                                               VkExternalMemoryHandleTypeFlagBits externalMemoryType,
+                                               const CallbackRecorder *recorder)
 {
     const uint32_t queueCount                   = 1;
     const float queuePriority                   = 1.0f;
@@ -1986,7 +1982,7 @@ static Move<VkDevice> createExternalMemoryDevice(const PlatformInterface &vkp, V
         nullptr,                              // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceCreateInfo);
+    return instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
 }
 
 static void checkBufferSupport(const InstanceInterface &vki, VkPhysicalDevice device, VkBufferUsageFlags usage,
@@ -2018,17 +2014,14 @@ tcu::TestStatus testImportAndUnimportExternalMemory(Context &context,
                                                     VkExternalMemoryHandleTypeFlagBits externalMemoryType)
 {
     CallbackRecorder recorder;
-    const PlatformInterface &vkp(context.getPlatformInterface());
-    const CustomInstance instance(
+    const InstanceWrapper instance(
         createCustomInstanceWithExtensions(context, getInstanceExtensions(context.getUsedApiVersion())));
-    const InstanceDriver &vki(instance.getDriver());
-    const VkPhysicalDevice physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
+    const InstanceInterface &vki(instance.getDriver());
+    const VkPhysicalDevice physicalDevice(instance.getPhysicalDevice());
     const uint32_t queueFamilyIndex(context.getUniversalQueueFamilyIndex());
-    const Unique<VkDevice> device(createExternalMemoryDevice(vkp, instance, vki, physicalDevice,
-                                                             context.getUsedApiVersion(), queueFamilyIndex,
-                                                             externalMemoryType, &recorder));
-    const DeviceDriver vkd(vkp, instance, *device, context.getUsedApiVersion(),
-                           context.getTestContext().getCommandLine());
+    const DeviceWrapper device(createExternalMemoryDevice(instance, physicalDevice, context.getUsedApiVersion(),
+                                                          queueFamilyIndex, externalMemoryType, &recorder));
+    const DeviceInterface &vkd(device.getDriver());
     const VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     const VkDeviceSize bufferSize  = 1024;
 

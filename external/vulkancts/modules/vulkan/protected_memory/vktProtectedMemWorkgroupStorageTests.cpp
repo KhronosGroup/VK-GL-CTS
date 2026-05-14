@@ -199,7 +199,7 @@ tcu::TestStatus WorkgroupStorageTestInstance::iterate(void)
     const vk::VkQueue queue         = ctx.getQueue();
     const uint32_t queueFamilyIndex = ctx.getQueueFamilyIndex();
     const vk::VkPhysicalDeviceProperties properties =
-        vk::getPhysicalDeviceProperties(ctx.getInstanceDriver(), ctx.getPhysicalDevice());
+        vk::getPhysicalDeviceProperties(ctx.getInstanceInterface(), ctx.getPhysicalDevice());
 
     vk::Unique<vk::VkCommandPool> cmdPool(makeCommandPool(vk, device, PROTECTION_ENABLED, queueFamilyIndex));
 

@@ -119,10 +119,10 @@ CustomInstance createTestInstance(Context &context)
     return createCustomInstanceWithExtensions(context, extensions);
 }
 
-vk::Move<vk::VkDevice> createTestDevice(const Context &context, const vk::PlatformInterface &vkp,
-                                        vk::VkInstance instance, const vk::InstanceInterface &vki,
-                                        const vk::VkPhysicalDevice physicalDevice)
+static CustomDevice createTestDevice(const Context &context, const InstanceWrapper &instance,
+                                     const vk::VkPhysicalDevice physicalDevice)
 {
+    const auto &vki      = instance.getDriver();
     const float priority = 0.0f;
     const std::vector<vk::VkQueueFamilyProperties> queueFamilyProperties =
         vk::getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
@@ -208,7 +208,7 @@ vk::Move<vk::VkDevice> createTestDevice(const Context &context, const vk::Platfo
                                                    extensions.empty() ? nullptr : &extensions[0],
                                                    0u};
 
-        return vkt::createCustomDevice(vkp, instance, vki, physicalDevice, &createInfo);
+        return instance.createCustomDevice(physicalDevice, &createInfo);
     }
     catch (const vk::Error &error)
     {
@@ -223,11 +223,11 @@ vk::Move<vk::VkDevice> createTestDevice(const Context &context, const vk::Platfo
 class InstanceAndDevice
 {
     InstanceAndDevice(Context &context)
-        : m_instance(createTestInstance(context))
+        : m_customInstance(createTestInstance(context))
+        , m_instance(m_customInstance)
         , m_vki(m_instance.getDriver())
-        , m_physicalDevice(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
-        , m_logicalDevice(
-              createTestDevice(context, context.getPlatformInterface(), m_instance, m_vki, m_physicalDevice))
+        , m_physicalDevice(m_instance.getPhysicalDevice())
+        , m_logicalDevice(createTestDevice(context, m_instance, m_physicalDevice))
     {
     }
 
@@ -246,12 +246,12 @@ public:
 
         return m_instanceB->m_instance;
     }
-    static const vk::InstanceDriver &getDriverA()
+    static const vk::InstanceInterface &getDriverA()
     {
         DE_ASSERT(m_instanceA);
         return m_instanceA->m_instance.getDriver();
     }
-    static const vk::InstanceDriver &getDriverB()
+    static const vk::InstanceInterface &getDriverB()
     {
         DE_ASSERT(m_instanceB);
         return m_instanceB->m_instance.getDriver();
@@ -266,12 +266,12 @@ public:
         DE_ASSERT(m_instanceB);
         return m_instanceB->m_physicalDevice;
     }
-    static const Unique<vk::VkDevice> &getDeviceA()
+    static const DeviceWrapper &getDeviceA()
     {
         DE_ASSERT(m_instanceA);
         return m_instanceA->m_logicalDevice;
     }
-    static const Unique<vk::VkDevice> &getDeviceB()
+    static const DeviceWrapper &getDeviceB()
     {
         DE_ASSERT(m_instanceB);
         return m_instanceB->m_logicalDevice;
@@ -279,12 +279,12 @@ public:
     static void collectMessagesA()
     {
         DE_ASSERT(m_instanceA);
-        m_instanceA->m_instance.collectMessages();
+        m_instanceA->m_customInstance.collectMessages();
     }
     static void collectMessagesB()
     {
         DE_ASSERT(m_instanceB);
-        m_instanceB->m_instance.collectMessages();
+        m_instanceB->m_customInstance.collectMessages();
     }
     static void destroy()
     {
@@ -293,10 +293,11 @@ public:
     }
 
 private:
-    CustomInstance m_instance;
-    const vk::InstanceDriver &m_vki;
+    CustomInstance m_customInstance;
+    const InstanceWrapper m_instance;
+    const vk::InstanceInterface &m_vki;
     const vk::VkPhysicalDevice m_physicalDevice;
-    const Unique<vk::VkDevice> m_logicalDevice;
+    const DeviceWrapper m_logicalDevice;
 
     static SharedPtr<InstanceAndDevice> m_instanceA;
     static SharedPtr<InstanceAndDevice> m_instanceB;
@@ -658,20 +659,20 @@ private:
     const bool m_getMemReq2Supported;
 
     const vk::VkInstance m_instanceA;
-    const vk::InstanceDriver &m_vkiA;
+    const vk::InstanceInterface &m_vkiA;
     const vk::VkPhysicalDevice m_physicalDeviceA;
     const std::vector<vk::VkQueueFamilyProperties> m_queueFamiliesA;
     const std::vector<uint32_t> m_queueFamilyIndicesA;
-    const vk::Unique<vk::VkDevice> &m_deviceA;
-    const vk::DeviceDriver m_vkdA;
+    const DeviceWrapper &m_deviceA;
+    const vk::DeviceInterface &m_vkdA;
 
     const vk::VkInstance m_instanceB;
-    const vk::InstanceDriver &m_vkiB;
+    const vk::InstanceInterface &m_vkiB;
     const vk::VkPhysicalDevice m_physicalDeviceB;
     const std::vector<vk::VkQueueFamilyProperties> m_queueFamiliesB;
     const std::vector<uint32_t> m_queueFamilyIndicesB;
-    const vk::Unique<vk::VkDevice> &m_deviceB;
-    const vk::DeviceDriver m_vkdB;
+    const DeviceWrapper &m_deviceB;
+    const vk::DeviceInterface &m_vkdB;
 
     const vk::VkExternalSemaphoreHandleTypeFlagBits m_semaphoreHandleType;
     const vk::VkExternalMemoryHandleTypeFlagBits m_memoryHandleType;
@@ -696,8 +697,7 @@ SharingTestInstance::SharingTestInstance(Context &context, TestConfig config)
     , m_queueFamiliesA(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiA, m_physicalDeviceA))
     , m_queueFamilyIndicesA(getFamilyIndices(m_queueFamiliesA))
     , m_deviceA(InstanceAndDevice::getDeviceA())
-    , m_vkdA(context.getPlatformInterface(), m_instanceA, *m_deviceA, context.getUsedApiVersion(),
-             context.getTestContext().getCommandLine())
+    , m_vkdA(m_deviceA.getDriver())
 
     , m_instanceB(InstanceAndDevice::getInstanceB(context))
     , m_vkiB(InstanceAndDevice::getDriverB())
@@ -705,8 +705,7 @@ SharingTestInstance::SharingTestInstance(Context &context, TestConfig config)
     , m_queueFamiliesB(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiB, m_physicalDeviceB))
     , m_queueFamilyIndicesB(getFamilyIndices(m_queueFamiliesB))
     , m_deviceB(InstanceAndDevice::getDeviceB())
-    , m_vkdB(context.getPlatformInterface(), m_instanceB, *m_deviceB, context.getUsedApiVersion(),
-             context.getTestContext().getCommandLine())
+    , m_vkdB(m_deviceB.getDriver())
 
     , m_semaphoreHandleType(m_config.semaphoreHandleType)
     , m_memoryHandleType(m_config.memoryHandleType)

@@ -34,6 +34,7 @@
 #include "vkPlatform.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkRef.hpp"
 
 #include "tcuCommandLine.hpp"
@@ -102,11 +103,13 @@ protected:
     const VkDevice m_device;
 };
 
-Move<VkDevice> createTestDevice(const Context &context)
+static CustomDevice createTestDevice(const Context &context, const InstanceWrapper &instance)
 {
-    const float priority = 0.0f;
+    const vk::InstanceInterface &vki      = instance.getDriver();
+    const VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
+    const float priority                  = 0.0f;
     const std::vector<VkQueueFamilyProperties> queueFamilyProperties =
-        getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+        getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
     std::vector<uint32_t> queueFamilyIndices(queueFamilyProperties.size(), 0xFFFFFFFFu);
     std::vector<const char *> extensions;
 
@@ -180,8 +183,7 @@ Move<VkDevice> createTestDevice(const Context &context)
                                                extensions.empty() ? nullptr : &extensions[0],
                                                0u};
 
-        return createCustomDevice(context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
-                                  context.getPhysicalDevice(), &createInfo);
+        return instance.createCustomDevice(physicalDevice, &createInfo);
     }
     catch (const vk::Error &error)
     {
@@ -195,16 +197,22 @@ Move<VkDevice> createTestDevice(const Context &context)
 // Class to wrap a singleton instance and device
 class SingletonDevice
 {
-    SingletonDevice(const Context &context) : m_logicalDevice(createTestDevice(context))
+    SingletonDevice(Context &context) : m_instance(context), m_logicalDevice(createTestDevice(context, m_instance))
     {
     }
 
 public:
-    static const Unique<vk::VkDevice> &getDevice(const Context &context)
+    static const InstanceWrapper &getInstance(Context &context)
     {
         if (!m_singletonDevice)
             m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
 
+        DE_ASSERT(m_singletonDevice);
+        return m_singletonDevice->m_instance;
+    }
+
+    static const DeviceWrapper &getDevice()
+    {
         DE_ASSERT(m_singletonDevice);
         return m_singletonDevice->m_logicalDevice;
     }
@@ -215,7 +223,8 @@ public:
     }
 
 private:
-    const Unique<vk::VkDevice> m_logicalDevice;
+    const InstanceWrapper m_instance;
+    const DeviceWrapper m_logicalDevice;
 
     static SharedPtr<SingletonDevice> m_singletonDevice;
 };
@@ -501,22 +510,25 @@ public:
     {
         // We're using 2 devices to make sure we have 2 queues even on
         // implementations that only have a single queue.
+        const auto &vkiA = m_context.getInstanceInterface();
+        const auto &vkiB = SingletonDevice::getInstance(m_context).getDriver();
         const bool isTimelineSemaphore(m_semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR);
         const VkDevice &deviceA = m_context.getDevice();
-        const Unique<VkDevice> &deviceB(SingletonDevice::getDevice(m_context));
+        const DeviceWrapper &deviceB(SingletonDevice::getDevice());
         const DeviceInterface &vkA = m_context.getDeviceInterface();
-        const DeviceDriver vkB(m_context.getPlatformInterface(), m_context.getInstance(), *deviceB,
-                               m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine());
-        UniquePtr<SimpleAllocator> allocatorA(new SimpleAllocator(
-            vkA, deviceA,
-            vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice())));
-        UniquePtr<SimpleAllocator> allocatorB(new SimpleAllocator(
-            vkB, *deviceB,
-            vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice())));
+        const DeviceInterface &vkB(deviceB.getDriver());
+        const VkPhysicalDevice physicalDeviceA = m_context.getPhysicalDevice();
+        const VkPhysicalDevice physicalDeviceB = deviceB.getPhysicalDevice();
+        UniquePtr<SimpleAllocator> allocatorA(
+            new SimpleAllocator(vkA, deviceA, vk::getPhysicalDeviceMemoryProperties(vkiA, physicalDeviceA)));
+        UniquePtr<SimpleAllocator> allocatorB(
+            new SimpleAllocator(vkB, *deviceB, vk::getPhysicalDeviceMemoryProperties(vkiB, physicalDeviceB)));
         UniquePtr<OperationContext> operationContextA(
-            new OperationContext(m_context, m_type, vkA, deviceA, *allocatorA, m_pipelineCacheData));
+            new OperationContext(m_context, m_type, vkiA, vkA, physicalDeviceA, deviceA, *allocatorA,
+                                 m_context.getBinaryCollection(), m_pipelineCacheData));
         UniquePtr<OperationContext> operationContextB(
-            new OperationContext(m_context, m_type, vkB, *deviceB, *allocatorB, m_pipelineCacheData));
+            new OperationContext(m_context, m_type, vkiB, vkB, physicalDeviceB, *deviceB, *allocatorB,
+                                 m_context.getBinaryCollection(), m_pipelineCacheData));
         const uint32_t universalQueueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
         const VkQueue queueA                     = m_context.getUniversalQueue();
         const VkQueue queueB = getDeviceQueue(vkB, *deviceB, m_context.getUniversalQueueFamilyIndex(), 0);
@@ -1142,21 +1154,17 @@ public:
         , m_readOpSupport(readOpSupport)
         , m_resourceDesc(resourceDesc)
         , m_semaphoreType(semaphoreType)
-        , m_device(SingletonDevice::getDevice(context))
-        , m_deviceInterface(context.getPlatformInterface(), context.getInstance(), *m_device,
-                            context.getUsedApiVersion(), context.getTestContext().getCommandLine())
-        , m_allocator(new SimpleAllocator(
-              m_deviceInterface, *m_device,
-              getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice())))
-        , m_operationContext(
-              new OperationContext(context, type, m_deviceInterface, *m_device, *m_allocator, pipelineCacheData))
+        , m_instance(SingletonDevice::getInstance(context))
+        , m_device(SingletonDevice::getDevice())
+        , m_operationContext(new OperationContext(context, type, m_device.getDriver(), *m_device,
+                                                  m_device.getAllocator(), pipelineCacheData))
         , m_queueA(nullptr)
         , m_queueB(nullptr)
         , m_rng(1234)
 
     {
-        const auto &vki                  = context.getInstanceInterface();
-        const auto queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(vki, context.getPhysicalDevice());
+        const auto queueFamilyProperties =
+            getPhysicalDeviceQueueFamilyProperties(m_instance.getDriver(), m_device.getPhysicalDevice());
 
         auto isQueueValid = [&queueFamilyProperties](uint32_t familyIdx, VkQueueFlags requiredFlags)
         {
@@ -1172,7 +1180,7 @@ public:
         {
             if (isQueueValid(familyIdx, writeOpQueueFlags))
             {
-                m_queueA            = getDeviceQueue(m_deviceInterface, *m_device, familyIdx, 0);
+                m_queueA            = getDeviceQueue(m_device.getDriver(), *m_device, familyIdx, 0);
                 m_queueFamilyIndexA = familyIdx;
                 break;
             }
@@ -1189,7 +1197,7 @@ public:
             {
                 for (uint32_t queueIdx = 0; queueIdx < queueFamilyProperties[familyIdx].queueCount; queueIdx++)
                 {
-                    VkQueue queue = getDeviceQueue(m_deviceInterface, *m_device, familyIdx, queueIdx);
+                    VkQueue queue = getDeviceQueue(m_device.getDriver(), *m_device, familyIdx, queueIdx);
 
                     if (queue == m_queueA)
                         continue;
@@ -1211,7 +1219,7 @@ public:
     {
         const bool isTimelineSemaphore = (m_semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR);
         const VkDevice &device         = *m_device;
-        const DeviceInterface &vk      = m_deviceInterface;
+        const DeviceInterface &vk      = m_device.getDriver();
         Unique<VkFence> fence(createFence(vk, device));
         const Unique<VkCommandPool> cmdPoolA(
             createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_queueFamilyIndexA));
@@ -1458,9 +1466,8 @@ private:
     SharedPtr<OperationSupport> m_readOpSupport;
     const ResourceDescription &m_resourceDesc;
     VkSemaphoreType m_semaphoreType;
-    const Unique<VkDevice> &m_device;
-    const DeviceDriver m_deviceInterface;
-    UniquePtr<SimpleAllocator> m_allocator;
+    const InstanceWrapper &m_instance;
+    const DeviceWrapper &m_device;
     UniquePtr<OperationContext> m_operationContext;
     VkQueue m_queueA;
     VkQueue m_queueB;

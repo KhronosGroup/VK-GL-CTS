@@ -234,7 +234,8 @@ VkDeviceSize getResourceDescriptorStride(const VkPhysicalDeviceDescriptorHeapPro
     return de::max(getBufferDescriptorStride(properties), getImageDescriptorStride(properties));
 }
 
-std::unique_ptr<Buffer> createBufferAndMemory(const vk::DeviceInterface &vkd, Context &context,
+std::unique_ptr<Buffer> createBufferAndMemory(const vk::InstanceInterface &vki, VkPhysicalDevice physicalDevice,
+                                              const vk::DeviceInterface &vkd,
                                               const VkPhysicalDeviceMemoryProperties &memoryProperties, VkDevice device,
                                               VkDeviceSize size, VkBufferUsageFlags2KHR usage)
 {
@@ -261,8 +262,7 @@ std::unique_ptr<Buffer> createBufferAndMemory(const vk::DeviceInterface &vkd, Co
     VkMemoryAllocateFlagsInfo allocFlagsInfo = initVulkanStructure();
     allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
 
-    auto memory = allocateExtended(context.getInstanceInterface(), vkd, context.getPhysicalDevice(), device,
-                                   bufferMemReqs, memReqs, &allocFlagsInfo);
+    auto memory = allocateExtended(vki, vkd, physicalDevice, device, bufferMemReqs, memReqs, &allocFlagsInfo);
     vkd.bindBufferMemory(device, *handle, memory->getMemory(), memory->getOffset());
 
     VkDeviceAddress address = 0;
@@ -280,7 +280,8 @@ std::unique_ptr<Buffer> createBufferAndMemory(const vk::DeviceInterface &vkd, Co
     return result;
 }
 
-std::unique_ptr<Image> createImageAndMemory(const vk::DeviceInterface &vkd, Context &context,
+std::unique_ptr<Image> createImageAndMemory(const vk::InstanceInterface &vki, VkPhysicalDevice physicalDevice,
+                                            const vk::DeviceInterface &vkd,
                                             const VkPhysicalDeviceMemoryProperties &memoryProperties, VkDevice device,
                                             const VkImageCreateInfo &createInfo)
 {
@@ -300,8 +301,7 @@ std::unique_ptr<Image> createImageAndMemory(const vk::DeviceInterface &vkd, Cont
         allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
     }
 
-    auto memory = allocateExtended(context.getInstanceInterface(), vkd, context.getPhysicalDevice(), device,
-                                   imageMemReqs, memReqs, &allocFlagsInfo);
+    auto memory = allocateExtended(vki, vkd, physicalDevice, device, imageMemReqs, memReqs, &allocFlagsInfo);
 
     vkd.bindImageMemory(device, *handle, memory->getMemory(), memory->getOffset());
 
@@ -324,22 +324,21 @@ protected:
 
     std::unique_ptr<Buffer> createBufferAndMemory(VkDeviceSize size, VkBufferUsageFlags2KHR usage)
     {
-        return vkt::BindingModel::createBufferAndMemory(*m_deviceInterface, m_context, m_memoryProperties, *m_device,
-                                                        size, usage);
+        return vkt::BindingModel::createBufferAndMemory(m_instance.getDriver(), m_physDevice, m_device.getDriver(),
+                                                        m_memoryProperties, *m_device, size, usage);
     }
 
     std::unique_ptr<Image> createImageAndMemory(const VkImageCreateInfo &createInfo)
     {
-        return vkt::BindingModel::createImageAndMemory(*m_deviceInterface, m_context, m_memoryProperties, *m_device,
-                                                       createInfo);
+        return vkt::BindingModel::createImageAndMemory(m_instance.getDriver(), m_physDevice, m_device.getDriver(),
+                                                       m_memoryProperties, *m_device, createInfo);
     }
 
+    const InstanceWrapper m_instance;
     VkPhysicalDevice m_physDevice{};
-    Move<VkDevice> m_device;
-    MovePtr<DeviceDriver> m_deviceInterface;
+    DeviceWrapper m_device;
     std::vector<VkQueue> m_queues;
     uint32_t m_queueFamilyIndex{};
-    MovePtr<Allocator> m_allocatorPtr;
     VkPhysicalDeviceMemoryProperties m_memoryProperties{};
     VkPhysicalDeviceDescriptorHeapPropertiesEXT m_descriptorHeapProperties{};
 };
@@ -475,10 +474,9 @@ private:
 
     TestParamsReservedHeap m_params{};
 
+    const InstanceWrapper m_instance;
     VkPhysicalDevice m_physDevice{};
-    Move<VkDevice> m_device;
-    MovePtr<DeviceDriver> m_deviceInterface;
-    MovePtr<Allocator> m_allocatorPtr;
+    DeviceWrapper m_device;
     VkPhysicalDeviceMemoryProperties m_memoryProperties{};
     VkPhysicalDeviceDescriptorHeapPropertiesEXT m_descriptorHeapProperties{};
 
@@ -1009,7 +1007,8 @@ void DescriptorHeapTestCaseYcbcr::initPrograms(vk::SourceCollections &programCol
 
 tcu::TestStatus DescriptorHeapTestInstanceYcbcr::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vki = m_instance.getDriver();
+    const auto &vkd = m_device.getDriver();
 
     const VkFormat format = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
 
@@ -1022,8 +1021,7 @@ tcu::TestStatus DescriptorHeapTestInstanceYcbcr::iterate()
     imageFormatInfo.tiling                           = VK_IMAGE_TILING_OPTIMAL;
     imageFormatInfo.usage                            = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-    VK_CHECK(m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(
-        m_context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProps));
+    VK_CHECK(vki.getPhysicalDeviceImageFormatProperties2(m_physDevice, &imageFormatInfo, &imageFormatProps));
     const uint32_t combinedImageSamplerDescriptorCount = ycbcrFormatProps.combinedImageSamplerDescriptorCount;
 
     const uint32_t resourceStride = static_cast<uint32_t>(getResourceDescriptorStride(m_descriptorHeapProperties));
@@ -1156,7 +1154,7 @@ tcu::TestStatus DescriptorHeapTestInstanceYcbcr::iterate()
     samplerCreateInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 
-    const auto computeModule = createShaderModule(*m_deviceInterface, *m_device, getShaderBinary("compute"));
+    const auto computeModule = createShaderModule(vkd, *m_device, getShaderBinary("compute"));
 
     VkPipelineCreateFlags2CreateInfoKHR pipelineCreateFlags2CreateInfo = initVulkanStructure();
     pipelineCreateFlags2CreateInfo.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
@@ -1336,7 +1334,7 @@ void DescriptorHeapTestCaseDifferentMappingsPerShader::initPrograms(vk::SourceCo
 
 tcu::TestStatus DescriptorHeapTestInstanceDifferentMappingsPerShader::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     VkDescriptorSetAndBindingMappingEXT vertexMapping = initVulkanStructure();
     vertexMapping.descriptorSet                       = 0;
@@ -1415,8 +1413,8 @@ tcu::TestStatus DescriptorHeapTestInstanceDifferentMappingsPerShader::iterate()
     VkPipelineCreateFlags2CreateInfoKHR pipelineCreateFlags2CreateInfo = initVulkanStructure();
     pipelineCreateFlags2CreateInfo.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
 
-    auto vertexModule   = createShaderModule(*m_deviceInterface, *m_device, getShaderBinary("vertex"));
-    auto fragmentModule = createShaderModule(*m_deviceInterface, *m_device, getShaderBinary("fragment"));
+    auto vertexModule   = createShaderModule(vkd, *m_device, getShaderBinary("vertex"));
+    auto fragmentModule = createShaderModule(vkd, *m_device, getShaderBinary("fragment"));
 
     std::array<VkPipelineShaderStageCreateInfo, 2> stages = {
         initVulkanStructure(),
@@ -1623,7 +1621,7 @@ void DescriptorHeapTestCaseGPL::initPrograms(vk::SourceCollections &programColle
 
 tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     DE_ASSERT(m_params.enableGraphicsPipelineLibrary != m_params.enableShaderObject);
     DE_ASSERT(m_params.enableGraphicsPipelineLibrary || m_params.enableShaderObject);
@@ -1707,8 +1705,8 @@ tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
     VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, static_cast<uint32_t>(imageDescriptorInfos.size()),
                                              imageDescriptorInfos.data(), imageDescriptorRanges.data()));
 
-    const auto vertexModule   = createShaderModule(*m_deviceInterface, *m_device, getShaderBinary("vertex"));
-    const auto fragmentModule = createShaderModule(*m_deviceInterface, *m_device, getShaderBinary("fragment"));
+    const auto vertexModule   = createShaderModule(vkd, *m_device, getShaderBinary("vertex"));
+    const auto fragmentModule = createShaderModule(vkd, *m_device, getShaderBinary("fragment"));
 
     std::array<VkDescriptorSetAndBindingMappingEXT, 3> vertexMappings{};
     vertexMappings[0]                                      = initVulkanStructure();
@@ -2251,7 +2249,7 @@ tcu::TestStatus DescriptorHeapTestInstanceSwitchHeaps::iterate()
 
 void DescriptorHeapTestInstanceSwitchHeaps::setup()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const int numResourceHeaps = 3;
     const int numSamplerHeaps  = 1;
@@ -2377,7 +2375,7 @@ void DescriptorHeapTestInstanceSwitchHeaps::setup()
 
 tcu::TestStatus DescriptorHeapTestInstanceSwitchHeaps::check()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     if (m_cmdBuf)
     {
@@ -2428,7 +2426,7 @@ tcu::TestStatus DescriptorHeapTestInstanceSwitchHeaps::check()
 
 void DescriptorHeapTestInstanceSwitchHeaps::nextCommandBuffer()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     if (m_cmdBuf)
     {
@@ -2458,7 +2456,7 @@ void DescriptorHeapTestInstanceSwitchHeaps::bindDefaultHeaps()
 
 void DescriptorHeapTestInstanceSwitchHeaps::bindResourceHeap(int heap)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     VkBindHeapInfoEXT bindHeapInfo   = initVulkanStructure();
     bindHeapInfo.heapRange.address   = m_resourceHeaps[heap]->address;
@@ -2474,7 +2472,7 @@ void DescriptorHeapTestInstanceSwitchHeaps::bindResourceHeap(int heap)
 
 // void DescriptorHeapTestInstanceSwitchHeaps::bindSamplerHeap(int heap)
 // {
-//     const auto &vkd = *m_deviceInterface;
+//     const auto &vkd = m_device.getDriver();
 //
 //     VkBindHeapInfoEXT bindHeapInfo = initVulkanStructure();
 //     bindHeapInfo.heapRange.address = m_samplerHeaps[heap]->address;
@@ -2487,7 +2485,7 @@ void DescriptorHeapTestInstanceSwitchHeaps::bindResourceHeap(int heap)
 void DescriptorHeapTestInstanceSwitchHeaps::writeBufferDescriptor(int heap, int heapIndex, int buffer, int offset,
                                                                   int size)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     VkHostAddressRangeEXT descriptor{};
     descriptor.address =
@@ -2514,7 +2512,7 @@ void DescriptorHeapTestInstanceSwitchHeaps::writeBufferDescriptor(int heap, int 
 void DescriptorHeapTestInstanceSwitchHeaps::writeTexelDescriptor(int heap, int heapIndex, int buffer, int offset,
                                                                  int size)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     VkHostAddressRangeEXT descriptor{};
     descriptor.address =
@@ -2542,7 +2540,7 @@ void DescriptorHeapTestInstanceSwitchHeaps::writeTexelDescriptor(int heap, int h
 void DescriptorHeapTestInstanceSwitchHeaps::fillStorageBuffer(uint32_t dstHeapIndex, uint32_t value, uint32_t size,
                                                               bool useShader)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const auto &dstTracking = m_resourceHeapDescriptorTracking[m_currentResourceHeap][dstHeapIndex];
 
@@ -2620,7 +2618,7 @@ void DescriptorHeapTestInstanceSwitchHeaps::fillStorageBuffer(uint32_t dstHeapIn
 void DescriptorHeapTestInstanceSwitchHeaps::copyStorageBuffer(uint32_t dstHeapIndex, uint32_t srcHeapIndex,
                                                               uint32_t size, bool useShader)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const auto &dstTracking = m_resourceHeapDescriptorTracking[m_currentResourceHeap][dstHeapIndex];
     const auto &srcTracking = m_resourceHeapDescriptorTracking[m_currentResourceHeap][srcHeapIndex];
@@ -2716,7 +2714,7 @@ void DescriptorHeapTestInstanceSwitchHeaps::copyStorageBuffer(uint32_t dstHeapIn
 
 void DescriptorHeapTestInstanceSwitchHeaps::fillTexelBuffer(uint32_t dstHeapIndex, uint32_t value, uint32_t size)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const auto &dstTracking = m_resourceHeapDescriptorTracking[m_currentResourceHeap][dstHeapIndex];
 
@@ -2784,7 +2782,7 @@ std::unique_ptr<DescriptorHeapTestInstanceSwitchHeaps::Pipeline> DescriptorHeapT
     const char *name, const std::vector<VkDescriptorSetAndBindingMappingEXT> &mappings,
     const std::vector<VkDescriptorSetLayoutBinding> &bindings)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const auto shaderModule = createShaderModule(vkd, *m_device, getShaderBinary(name));
 
@@ -2834,7 +2832,7 @@ std::unique_ptr<DescriptorHeapTestInstanceSwitchHeaps::Pipeline> DescriptorHeapT
 
 VkDescriptorSet DescriptorHeapTestInstanceSwitchHeaps::allocateDefaultDescriptor(VkDescriptorSetLayout setLayout)
 {
-    const auto &vkd                             = *m_deviceInterface;
+    const auto &vkd                             = m_device.getDriver();
     std::vector<VkDescriptorPoolSize> poolSizes = {
         makeDescriptorPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2),
         makeDescriptorPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 2),
@@ -2868,7 +2866,7 @@ VkDescriptorBufferInfo DescriptorHeapTestInstanceSwitchHeaps::createInlineUnifor
 VkBufferView DescriptorHeapTestInstanceSwitchHeaps::makeTexelBuffer(VkBuffer buffer, VkDeviceSize offset,
                                                                     VkDeviceSize range)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
     return *m_helperBufferViews.emplace_back(makeBufferView(vkd, *m_device, buffer, VK_FORMAT_R32_UINT, offset, range));
 }
 
@@ -2924,7 +2922,7 @@ void main() {
 
 tcu::TestStatus DescriptorHeapTestInstanceConcurrentHeapSet::iterate()
 {
-    const auto &vk                           = *m_deviceInterface;
+    const auto &vk                           = m_device.getDriver();
     const uint32_t bufferSize                = 256;
     const VkDeviceSize bufferMemorySize      = bufferSize * sizeof(int32_t);
     const VkDeviceSize imageDescriptorStride = getImageDescriptorStride(m_descriptorHeapProperties);
@@ -3256,7 +3254,7 @@ void main() {
 
 tcu::TestStatus DescriptorHeapTestInstanceStateInvalidation::iterate()
 {
-    const auto &vk = *m_deviceInterface;
+    const auto &vk = m_device.getDriver();
 
     const uint32_t bufferSize         = 256;
     const uint32_t descriptorSetCount = 16;
@@ -3431,7 +3429,7 @@ tcu::TestStatus DescriptorHeapTestInstanceStateInvalidation::iterate()
 void DescriptorHeapTestInstanceStateInvalidation::recordLegacyWrite(VkCommandBuffer cmdBuffer, uint32_t offset,
                                                                     uint32_t value)
 {
-    const auto &vk                         = *m_deviceInterface;
+    const auto &vk                         = m_device.getDriver();
     const std::array<uint32_t, 2> pushData = {offset, value};
 
     vk.cmdPushConstants(cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushData), &pushData);
@@ -3446,7 +3444,7 @@ void DescriptorHeapTestInstanceStateInvalidation::recordLegacyWrite(VkCommandBuf
 void DescriptorHeapTestInstanceStateInvalidation::recordHeapWrite(VkCommandBuffer cmdBuffer, uint32_t offset,
                                                                   uint32_t value)
 {
-    const auto &vk                         = *m_deviceInterface;
+    const auto &vk                         = m_device.getDriver();
     const std::array<uint32_t, 2> pushData = {offset, value};
 
     VkPushDataInfoEXT pushDataInfo = initVulkanStructure();
@@ -3518,7 +3516,7 @@ void main()
 
 tcu::TestStatus DescriptorHeapTestInstanceWriteAfterRecord::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     // Create a uint32_t-sized Vulkan buffer for the output
     const VkDeviceSize bufferSize = sizeof(uint32_t);
@@ -3626,9 +3624,10 @@ tcu::TestStatus DescriptorHeapTestInstanceWriteAfterRecord::iterate()
 
 DescriptorHeapTestInstanceBase::DescriptorHeapTestInstanceBase(Context &context, const TestParams &params)
     : TestInstance(context)
+    , m_instance(context)
 {
-    auto &inst      = context.getInstanceInterface();
-    auto physDevice = context.getPhysicalDevice();
+    auto &inst      = m_instance.getDriver();
+    auto physDevice = m_instance.getPhysicalDevice();
     auto queueProps = getPhysicalDeviceQueueFamilyProperties(inst, physDevice);
 
     m_queueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -3923,24 +3922,17 @@ DescriptorHeapTestInstanceBase::DescriptorHeapTestInstanceBase(Context &context,
     createInfo.queueCreateInfoCount    = 1;
     createInfo.pQueueCreateInfos       = &queueInfo;
 
-    m_device = createCustomDevice(context.getPlatformInterface(), context.getInstance(), inst, physDevice, &createInfo);
+    m_device = m_instance.createCustomDevice(physDevice, &createInfo);
 
-    m_memoryProperties = vk::getPhysicalDeviceMemoryProperties(inst, physDevice);
     m_descriptorHeapProperties =
         *findStructure<VkPhysicalDeviceDescriptorHeapPropertiesEXT>(&context.getDeviceProperties2());
-
-    m_deviceInterface = de::MovePtr<DeviceDriver>(
-        new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion(),
-                         context.getTestContext().getCommandLine()));
 
     for (uint32_t index = 0; index < params.queueCount; ++index)
     {
         VkQueue queue = VK_NULL_HANDLE;
-        m_deviceInterface->getDeviceQueue(*m_device, m_queueFamilyIndex, index, &queue);
+        m_device.getDriver().getDeviceQueue(*m_device, m_queueFamilyIndex, index, &queue);
         m_queues.push_back(queue);
     }
-
-    m_allocatorPtr = de::MovePtr<Allocator>(new SimpleAllocator(*m_deviceInterface, *m_device, m_memoryProperties));
 
     m_physDevice = physDevice;
 }
@@ -4243,7 +4235,7 @@ void DescriptorHeapTestCaseBasic::initQueuePrograms(vk::SourceCollections &progr
     }
 }
 
-VkDeviceAddress getAccelerationStructureDeviceAddress(DeviceDriver &deviceDriver, VkDevice device,
+VkDeviceAddress getAccelerationStructureDeviceAddress(const DeviceInterface &deviceDriver, VkDevice device,
                                                       VkAccelerationStructureKHR accelerationStructure)
 {
     VkAccelerationStructureDeviceAddressInfoKHR addressInfo = initVulkanStructure();
@@ -4284,8 +4276,8 @@ VkSamplerCreateInfo makeDefaultSamplerCreateInfo()
 
 tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
 {
-    const auto &vk  = *m_deviceInterface;
-    const auto &vki = m_context.getInstanceInterface();
+    const auto &vki = m_instance.getDriver();
+    const auto &vk  = m_device.getDriver();
 
     const VkPhysicalDeviceProperties physDevProps = getPhysicalDeviceProperties(vki, m_physDevice);
 
@@ -4343,7 +4335,7 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
     Move<VkCommandPool> cmdPool = makeCommandPool(vk, *m_device, m_queueFamilyIndex);
     std::vector<Move<VkCommandBuffer>> cmdBuffers;
 
-    auto createDescriptorHeap = [this, &vk](VkDeviceSize heapSize, uint32_t queueIndex)
+    auto createDescriptorHeap = [this, &vk, &vki](VkDeviceSize heapSize, uint32_t queueIndex)
     {
         std::unique_ptr<Buffer> descriptorHeap = std::make_unique<Buffer>();
         std::unique_ptr<Buffer> unprotectedBuffer;
@@ -4384,8 +4376,8 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
         if (!m_params.enableSparseHeap)
             allocatePNext = &allocFlagsInfo;
 
-        descriptorHeap->memory = allocateExtended(m_context.getInstanceInterface(), vk, m_context.getPhysicalDevice(),
-                                                  *m_device, bufferMemReqs, memReqs, allocatePNext);
+        descriptorHeap->memory =
+            allocateExtended(vki, vk, m_physDevice, *m_device, bufferMemReqs, memReqs, allocatePNext);
 
         if (m_params.enableSparseHeap || m_params.enableProtectedHeap)
         {
@@ -4923,7 +4915,7 @@ void DescriptorHeapTestInstanceBasic::setupDescriptors(VkCommandBuffer cmdBuf, c
                                                        char *samplerDescriptorHeapHostPtr, de::Random &rnd,
                                                        std::vector<int32_t> &expectedResult)
 {
-    const auto &vk                          = *m_deviceInterface;
+    const auto &vk                          = m_device.getDriver();
     const auto indirectAddressBufferHostPtr = m_deferredIndirectAddressBuffer.data();
 
     const int heapIndex = binding.heapIndex < 0 ? binding.firstBinding : binding.heapIndex;
@@ -5450,17 +5442,15 @@ void DescriptorHeapTestInstanceBasic::setupDescriptors(VkCommandBuffer cmdBuf, c
             auto &rtBlas = m_rtBlases.emplace_back(de::SharedPtr(makeBottomLevelAccelerationStructure().release()));
             rtBlas->setCreateFlags(createFlags);
             rtBlas->setGeometryData(vertices, true);
-            rtBlas->create(*m_deviceInterface, *m_device, *m_allocatorPtr, bufferProps, 0, 0, 0, 0, nullptr,
-                           memoryReqs);
+            rtBlas->create(vk, *m_device, m_device.getAllocator(), bufferProps, 0, 0, 0, 0, nullptr, memoryReqs);
 
             auto &rtTlas = m_rtTlases.emplace_back(MovePtr(makeTopLevelAccelerationStructure().release()));
             rtTlas->addInstance(rtBlas);
             rtTlas->setCreateFlags(createFlags);
-            rtTlas->create(*m_deviceInterface, *m_device, *m_allocatorPtr, bufferProps, 0, 0, 0, 0, nullptr,
-                           memoryReqs);
+            rtTlas->create(vk, *m_device, m_device.getAllocator(), bufferProps, 0, 0, 0, 0, nullptr, memoryReqs);
 
             uint64_t accelerationStructureAddress =
-                getAccelerationStructureDeviceAddress(*m_deviceInterface, *m_device, *rtTlas->getPtr());
+                getAccelerationStructureDeviceAddress(vk, *m_device, *rtTlas->getPtr());
 
             if (binding.nullDescriptor)
             {
@@ -5524,8 +5514,8 @@ void DescriptorHeapTestInstanceBasic::setupDescriptors(VkCommandBuffer cmdBuf, c
                 }
             }
 
-            rtBlas->build(*m_deviceInterface, *m_device, cmdBuf);
-            rtTlas->build(*m_deviceInterface, *m_device, cmdBuf);
+            rtBlas->build(vk, *m_device, cmdBuf);
+            rtTlas->build(vk, *m_device, cmdBuf);
             break;
         }
         default:
@@ -5560,7 +5550,7 @@ VkPipeline DescriptorHeapTestInstanceBasic::initComputePipeline(
     const std::vector<VkDescriptorSetAndBindingMappingEXT> &mappings, uint32_t queueIndex)
 {
     auto &shaderBinary      = getShaderBinary("compute" + std::to_string(queueIndex));
-    const auto shaderModule = createShaderModule(*m_deviceInterface, *m_device, shaderBinary);
+    const auto shaderModule = createShaderModule(m_device.getDriver(), *m_device, shaderBinary);
 
     VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
     mappingInfo.mappingCount                                  = static_cast<uint32_t>(mappings.size());
@@ -5586,7 +5576,7 @@ VkPipeline DescriptorHeapTestInstanceBasic::initComputePipeline(
     pipelineCreateInfo.basePipelineIndex           = 0;
 
     return *m_stagingPipelines.emplace_back(
-        createComputePipeline(*m_deviceInterface, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo));
+        createComputePipeline(m_device.getDriver(), *m_device, VK_NULL_HANDLE, &pipelineCreateInfo));
 }
 
 VkRenderPass DescriptorHeapTestInstanceBasic::initRenderPass()
@@ -5644,7 +5634,7 @@ VkRenderPass DescriptorHeapTestInstanceBasic::initRenderPass()
         renderPassCreateInfo.pDependencies          = dependencies.data();
 
         return *m_stagingRenderPasses.emplace_back(
-            createRenderPass(*m_deviceInterface, *m_device, &renderPassCreateInfo));
+            createRenderPass(m_device.getDriver(), *m_device, &renderPassCreateInfo));
     }
     else
     {
@@ -5662,7 +5652,7 @@ VkRenderPass DescriptorHeapTestInstanceBasic::initRenderPass()
         renderPassCreateInfo.pSubpasses             = &subpass;
 
         return *m_stagingRenderPasses.emplace_back(
-            createRenderPass(*m_deviceInterface, *m_device, &renderPassCreateInfo));
+            createRenderPass(m_device.getDriver(), *m_device, &renderPassCreateInfo));
     }
 }
 
@@ -5672,8 +5662,8 @@ VkPipeline DescriptorHeapTestInstanceBasic::initGraphicsPipeline(
     auto &vertBinary = getShaderBinary("vertex" + std::to_string(queueIndex));
     auto &fragBinary = getShaderBinary("fragment" + std::to_string(queueIndex));
 
-    const auto vertModule = createShaderModule(*m_deviceInterface, *m_device, vertBinary);
-    const auto fragModule = createShaderModule(*m_deviceInterface, *m_device, fragBinary);
+    const auto vertModule = createShaderModule(m_device.getDriver(), *m_device, vertBinary);
+    const auto fragModule = createShaderModule(m_device.getDriver(), *m_device, fragBinary);
 
     VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
     mappingInfo.mappingCount                                  = static_cast<uint32_t>(mappings.size());
@@ -5762,7 +5752,7 @@ VkPipeline DescriptorHeapTestInstanceBasic::initGraphicsPipeline(
     createInfo.basePipelineHandle           = VK_NULL_HANDLE;
     createInfo.basePipelineIndex            = 0;
     return *m_stagingPipelines.emplace_back(
-        createGraphicsPipeline(*m_deviceInterface, *m_device, VK_NULL_HANDLE, &createInfo));
+        createGraphicsPipeline(m_device.getDriver(), *m_device, VK_NULL_HANDLE, &createInfo));
 }
 
 uint32_t getShaderGroupHandleSize(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice)
@@ -5787,12 +5777,12 @@ VkPipeline DescriptorHeapTestInstanceBasic::initRayTracingPipeline(
     const std::vector<VkDescriptorSetAndBindingMappingEXT> &mappings, uint32_t queueIndex)
 {
     // Code taken from vktBindingDescriptorBufferTests.cpp
-    const InstanceInterface &vki          = m_context.getInstanceInterface();
-    const DeviceInterface &vkd            = *m_deviceInterface;
+    const InstanceInterface &vki          = m_instance.getDriver();
+    const DeviceInterface &vkd            = m_device.getDriver();
     const VkDevice device                 = *m_device;
-    const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+    const VkPhysicalDevice physicalDevice = m_physDevice;
     vk::BinaryCollection &collection      = m_context.getBinaryCollection();
-    Allocator &allocator                  = *m_allocatorPtr;
+    Allocator &allocator                  = m_device.getAllocator();
     const VkShaderStageFlags hitStages =
         VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
 
@@ -5916,7 +5906,7 @@ std::pair<VkImage, VkImageView> DescriptorHeapTestInstanceBasic::initPrePassRend
     imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
     imageViewCreateInfo.subresourceRange.layerCount     = 1;
     VkImageView prePassImageView =
-        *m_stagingImageViews.emplace_back(createImageView(*m_deviceInterface, *m_device, &imageViewCreateInfo));
+        *m_stagingImageViews.emplace_back(createImageView(m_device.getDriver(), *m_device, &imageViewCreateInfo));
 
     return {prePassImage, prePassImageView};
 }
@@ -5948,7 +5938,7 @@ std::pair<VkImage, VkImageView> DescriptorHeapTestInstanceBasic::initRenderTarge
     imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
     imageViewCreateInfo.subresourceRange.layerCount     = 1;
     VkImageView renderTargetImageView =
-        *m_stagingImageViews.emplace_back(createImageView(*m_deviceInterface, *m_device, &imageViewCreateInfo));
+        *m_stagingImageViews.emplace_back(createImageView(m_device.getDriver(), *m_device, &imageViewCreateInfo));
 
     return {renderTargetImage, renderTargetImageView};
 }
@@ -5976,7 +5966,7 @@ VkFramebuffer DescriptorHeapTestInstanceBasic::initFramebuffer(VkRenderPass rend
     framebufferCreateInfo.height                  = 1;
     framebufferCreateInfo.layers                  = 1;
     return *m_stagingFramebuffers.emplace_back(
-        createFramebuffer(*m_deviceInterface, *m_device, &framebufferCreateInfo));
+        createFramebuffer(m_device.getDriver(), *m_device, &framebufferCreateInfo));
 }
 
 void DescriptorHeapTestInstanceBasic::addRayTracingShader(
@@ -5989,7 +5979,7 @@ void DescriptorHeapTestInstanceBasic::addRayTracingShader(
     mappingInfo.mappingCount = static_cast<uint32_t>(mappings.size());
     mappingInfo.pMappings    = mappings.data();
 
-    rayTracingPipeline->addShader(stage, createShaderModule(*m_deviceInterface, *m_device, getShaderBinary(name), 0),
+    rayTracingPipeline->addShader(stage, createShaderModule(m_device.getDriver(), *m_device, getShaderBinary(name), 0),
                                   group, nullptr, 0, &mappingInfo);
 }
 
@@ -6095,7 +6085,7 @@ VkImageViewCreateInfo DescriptorHeapTestInstanceBasic::createTestImageViewInfo(i
     transfer2sampleDependencyInfo.imageMemoryBarrierCount = 1;
     transfer2sampleDependencyInfo.pImageMemoryBarriers    = &transfer2sampleImageMemoryBarrier;
 
-    auto &vk = *m_deviceInterface;
+    auto &vk = m_device.getDriver();
     vk.cmdPipelineBarrier2(cmdBuf, &undefined2transferDependencyInfo);
     vk.cmdCopyBufferToImage(cmdBuf, *stagingBuffer->buffer, *image->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                             &region);
@@ -6120,8 +6110,8 @@ VkImageViewCreateInfo DescriptorHeapTestInstanceBasic::createTestImageViewInfo(i
 
 tcu::TestStatus DescriptorHeapTestInstanceInvariance::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
-    auto &vki       = m_context.getInstanceInterface();
+    const auto &vki = m_instance.getDriver();
+    const auto &vkd = m_device.getDriver();
 
     de::Random rnd(m_params.seed);
     for (int i = 0; i < 4; ++i)
@@ -6190,8 +6180,8 @@ tcu::TestStatus DescriptorHeapTestInstanceInvariance::iterate()
 
 VkResult DescriptorHeapTestInstanceInvariance::createInvarianceResources(bool capture, bool replay)
 {
-    auto &vki = m_context.getInstanceInterface();
-    auto &vkd = *m_deviceInterface;
+    auto &vki = m_instance.getDriver();
+    auto &vkd = m_device.getDriver();
 
     VkMemoryOpaqueCaptureAddressAllocateInfo opaqueCaptureAddressAllocateInfo = initVulkanStructure();
     VkMemoryAllocateFlagsInfo allocFlagsInfo                                  = initVulkanStructure();
@@ -6318,9 +6308,8 @@ VkResult DescriptorHeapTestInstanceInvariance::createInvarianceResources(bool ca
 
         auto bufferMemReqs = getBufferMemoryRequirements(vkd, *m_device, *m_buffer->buffer);
 
-        VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
-        VkPhysicalDeviceMemoryProperties memoryProperties =
-            vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), physicalDevice);
+        VkPhysicalDevice physicalDevice                   = m_physDevice;
+        VkPhysicalDeviceMemoryProperties memoryProperties = vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice);
         auto memReqs = (capture || replay) ? MemoryRequirement::DeviceAddressCaptureReplay : MemoryRequirement::Any;
         uint32_t compatMask = bufferMemReqs.memoryTypeBits & getCompatibleMemoryTypes(memoryProperties, memReqs);
         DE_ASSERT(compatMask != 0);
@@ -6328,8 +6317,8 @@ VkResult DescriptorHeapTestInstanceInvariance::createInvarianceResources(bool ca
 
         allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
 
-        m_buffer->memory = allocateExtended(m_context.getInstanceInterface(), vkd, physicalDevice, *m_device,
-                                            bufferMemReqs, memReqs, &allocFlagsInfo);
+        m_buffer->memory = allocateExtended(m_instance.getDriver(), vkd, physicalDevice, *m_device, bufferMemReqs,
+                                            memReqs, &allocFlagsInfo);
         vkd.bindBufferMemory(*m_device, *m_buffer->buffer, m_buffer->memory->getMemory(),
                              m_buffer->memory->getOffset());
         m_buffer->address = getBufferDeviceAddress(vkd, *m_device, *m_buffer->buffer, 0);
@@ -6369,14 +6358,14 @@ VkResult DescriptorHeapTestInstanceInvariance::createInvarianceResources(bool ca
         m_rtBlas = de::SharedPtr(makeBottomLevelAccelerationStructure().release());
         m_rtBlas->setCreateFlags(createFlags);
         m_rtBlas->setGeometryData(vertices, true);
-        m_rtBlas->create(*m_deviceInterface, *m_device, *m_allocatorPtr, bufferProps, 0, captureBlasAddress, 0, 0,
-                         nullptr, memoryReqs);
+        m_rtBlas->create(vkd, *m_device, m_device.getAllocator(), bufferProps, 0, captureBlasAddress, 0, 0, nullptr,
+                         memoryReqs);
 
         m_rtTlas = makeTopLevelAccelerationStructure();
         m_rtTlas->addInstance(m_rtBlas);
         m_rtTlas->setCreateFlags(createFlags);
-        m_rtTlas->create(*m_deviceInterface, *m_device, *m_allocatorPtr, bufferProps, 0, captureTlasAddress, 0, 0,
-                         nullptr, memoryReqs);
+        m_rtTlas->create(vkd, *m_device, m_device.getAllocator(), bufferProps, 0, captureTlasAddress, 0, 0, nullptr,
+                         memoryReqs);
 
         if (capture)
         {
@@ -6400,7 +6389,7 @@ VkResult DescriptorHeapTestInstanceInvariance::createInvarianceResources(bool ca
 
 VkResult DescriptorHeapTestInstanceInvariance::writeInvarianceDescriptor(std::vector<char> &descriptorData)
 {
-    auto &vk = *m_deviceInterface;
+    auto &vk = m_device.getDriver();
 
     VkHostAddressRangeEXT hostAddressRange{};
     hostAddressRange.address = descriptorData.data();
@@ -6508,9 +6497,8 @@ VkResult DescriptorHeapTestInstanceInvariance::writeInvarianceDescriptor(std::ve
         VkDeviceAddressRangeEXT deviceAddressRange{};
         if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
         {
-            deviceAddressRange.address =
-                getAccelerationStructureDeviceAddress(*m_deviceInterface, *m_device, *m_rtTlas->getPtr());
-            deviceAddressRange.size = 0;
+            deviceAddressRange.address = getAccelerationStructureDeviceAddress(vk, *m_device, *m_rtTlas->getPtr());
+            deviceAddressRange.size    = 0;
         }
         else
         {
@@ -6551,10 +6539,11 @@ DescriptorHeapTestInstanceReservedHeap::DescriptorHeapTestInstanceReservedHeap(C
                                                                                const TestParamsReservedHeap &params)
     : TestInstance(context)
     , m_params{params}
+    , m_instance(context)
     , m_rnd(params.seed)
 {
-    auto &inst      = context.getInstanceInterface();
-    auto physDevice = context.getPhysicalDevice();
+    auto &inst      = m_instance.getDriver();
+    auto physDevice = m_instance.getPhysicalDevice();
     auto queueProps = getPhysicalDeviceQueueFamilyProperties(inst, physDevice);
 
     for (uint32_t i = 0; i < queueProps.size(); ++i)
@@ -6626,27 +6615,21 @@ DescriptorHeapTestInstanceReservedHeap::DescriptorHeapTestInstanceReservedHeap(C
     createInfo.queueCreateInfoCount    = static_cast<uint32_t>(queueInfos.size());
     createInfo.pQueueCreateInfos       = queueInfos.data();
 
-    m_device = createCustomDevice(context.getPlatformInterface(), context.getInstance(), inst, physDevice, &createInfo);
+    m_device = m_instance.createCustomDevice(physDevice, &createInfo);
 
     m_memoryProperties = vk::getPhysicalDeviceMemoryProperties(inst, physDevice);
     m_descriptorHeapProperties =
         *findStructure<VkPhysicalDeviceDescriptorHeapPropertiesEXT>(&context.getDeviceProperties2());
-
-    m_deviceInterface = de::MovePtr<DeviceDriver>(
-        new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion(),
-                         context.getTestContext().getCommandLine()));
 
     for (size_t i = 0; i < m_queueFamilies.size(); ++i)
     {
         for (uint32_t j = 0; j < m_queueCounts[i]; ++j)
         {
             VkQueue queue = VK_NULL_HANDLE;
-            m_deviceInterface->getDeviceQueue(*m_device, m_queueFamilies[i], j, &queue);
+            m_device.getDriver().getDeviceQueue(*m_device, m_queueFamilies[i], j, &queue);
             m_queues.push_back(queue);
         }
     }
-
-    m_allocatorPtr = de::MovePtr<Allocator>(new SimpleAllocator(*m_deviceInterface, *m_device, m_memoryProperties));
 
     m_physDevice = physDevice;
 }
@@ -6661,7 +6644,8 @@ tcu::TestStatus DescriptorHeapTestInstanceReservedHeap::iterate()
         return tcu::TestStatus::pass("Heap reserved ranges are zero");
     }
 
-    const DeviceInterface &vk = *m_deviceInterface;
+    const InstanceInterface &vki = m_instance.getDriver();
+    const DeviceInterface &vk    = m_device.getDriver();
 
     auto shaderModule = createShaderModule(vk, *m_device, m_context.getBinaryCollection().get("atomic_counter"));
 
@@ -6710,7 +6694,7 @@ tcu::TestStatus DescriptorHeapTestInstanceReservedHeap::iterate()
 
     const VkDeviceSize atomicCounterBufferSize = m_queues.size() * sizeof(uint32_t);
     auto atomicCounterBuffer =
-        createBufferAndMemory(vk, m_context, m_memoryProperties, *m_device, atomicCounterBufferSize,
+        createBufferAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, atomicCounterBufferSize,
                               VK_BUFFER_USAGE_2_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT);
     deMemset(atomicCounterBuffer->memory->getHostPtr(), 0, static_cast<size_t>(atomicCounterBufferSize));
 
@@ -6731,13 +6715,13 @@ tcu::TestStatus DescriptorHeapTestInstanceReservedHeap::iterate()
     dstImageCreateInfo.pQueueFamilyIndices   = m_queueFamilies.data();
     dstImageCreateInfo.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    m_dstImage = createImageAndMemory(vk, m_context, m_memoryProperties, *m_device, dstImageCreateInfo);
+    m_dstImage = createImageAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, dstImageCreateInfo);
 
     const VkDeviceSize dstBufferSize = VkDeviceSize{imageExtent * imageExtent} * m_queues.size() * sizeof(uint8_t);
-    auto dstBuffer = createBufferAndMemory(vk, m_context, m_memoryProperties, *m_device, dstBufferSize,
+    auto dstBuffer = createBufferAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, dstBufferSize,
                                            VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR);
     m_srcBuffer =
-        createBufferAndMemory(vk, m_context, m_memoryProperties, *m_device, dstBufferSize,
+        createBufferAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, dstBufferSize,
                               VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT_KHR | VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR);
     m_expectedResult.resize(static_cast<size_t>(dstBufferSize));
 
@@ -6746,7 +6730,7 @@ tcu::TestStatus DescriptorHeapTestInstanceReservedHeap::iterate()
     const VkDeviceSize resourceHeapSize =
         userResourceHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
     auto resourceDescriptorHeapBuffer = createBufferAndMemory(
-        vk, m_context, m_memoryProperties, *m_device, resourceHeapSize,
+        vki, m_physDevice, vk, m_memoryProperties, *m_device, resourceHeapSize,
         VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR | VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT);
 
     m_resourceDescriptorHeap                     = initVulkanStructure();
@@ -6760,7 +6744,7 @@ tcu::TestStatus DescriptorHeapTestInstanceReservedHeap::iterate()
     const VkDeviceSize samplerDescriptorHeapBufferSize =
         dummySamplerDescriptorsSize + m_descriptorHeapProperties.minSamplerHeapReservedRange;
     auto samplerDescriptorHeapBuffer = createBufferAndMemory(
-        vk, m_context, m_memoryProperties, *m_device, samplerDescriptorHeapBufferSize,
+        vki, m_physDevice, vk, m_memoryProperties, *m_device, samplerDescriptorHeapBufferSize,
         VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR | VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT);
 
     m_samplerDescriptorHeap                     = initVulkanStructure();
@@ -6809,9 +6793,9 @@ tcu::TestStatus DescriptorHeapTestInstanceReservedHeap::iterate()
         colorImageCreateInfo.queueFamilyIndexCount = static_cast<uint32_t>(m_queueFamilies.size());
         colorImageCreateInfo.pQueueFamilyIndices   = m_queueFamilies.data();
         colorImageCreateInfo.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
-        m_colorImage = createImageAndMemory(vk, m_context, m_memoryProperties, *m_device, colorImageCreateInfo);
+        m_colorImage = createImageAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, colorImageCreateInfo);
 
-        colorBuffer = createBufferAndMemory(vk, m_context, m_memoryProperties, *m_device, 256,
+        colorBuffer = createBufferAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, 256,
                                             VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT_KHR);
 
         uint8_t *const colorBufferPtr = reinterpret_cast<uint8_t *>(colorBuffer->memory->getHostPtr());
@@ -7121,7 +7105,8 @@ tcu::TestStatus DescriptorHeapTestInstanceReservedHeap::iterate()
 void DescriptorHeapTestInstanceReservedHeap::recordQueueCommandBuffer(VkCommandBuffer cmdBuf, uint32_t globalQueueIndex,
                                                                       uint32_t queueFamily)
 {
-    const auto &vk = *m_deviceInterface;
+    const auto &vki = m_instance.getDriver();
+    const auto &vk  = m_device.getDriver();
 
     const uint32_t area = m_params.imageExtent * m_params.imageExtent;
 
@@ -7264,7 +7249,7 @@ void DescriptorHeapTestInstanceReservedHeap::recordQueueCommandBuffer(VkCommandB
         stagingImageCreateInfo.pQueueFamilyIndices   = nullptr;
         stagingImageCreateInfo.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
         auto &interImage                             = m_stagingImages.emplace_back(
-            createImageAndMemory(vk, m_context, m_memoryProperties, *m_device, stagingImageCreateInfo));
+            createImageAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, stagingImageCreateInfo));
 
         std::vector<uint8_t> contents(area);
         for (uint8_t &texel : contents)
@@ -7274,9 +7259,9 @@ void DescriptorHeapTestInstanceReservedHeap::recordQueueCommandBuffer(VkCommandB
 
         const auto usageBits = VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR | VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT_KHR;
         auto &srcBuffer      = m_stagingBuffers.emplace_back(
-            createBufferAndMemory(vk, m_context, m_memoryProperties, *m_device, area, usageBits));
+            createBufferAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, area, usageBits));
         auto &interBuffer = m_stagingBuffers.emplace_back(
-            createBufferAndMemory(vk, m_context, m_memoryProperties, *m_device, area, usageBits));
+            createBufferAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, area, usageBits));
 
         deMemcpy(srcBuffer->memory->getHostPtr(), contents.data(), contents.size());
         deMemcpy(&m_expectedResult[area * globalQueueIndex], contents.data(), contents.size());
@@ -8153,8 +8138,8 @@ void DescriptorHeapTestCaseSpirv::initPrograms(vk::SourceCollections &programCol
 
 tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
 {
-    const auto &vkd                 = *m_deviceInterface;
-    auto &vki                       = m_context.getInstanceInterface();
+    const auto &vki                 = m_instance.getDriver();
+    const auto &vkd                 = m_device.getDriver();
     const VkDevice device           = *m_device;
     const uint32_t queueFamilyIndex = m_queueFamilyIndex;
     const VkQueue queue             = m_queues[0];
@@ -8284,7 +8269,7 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
                               VK_BUFFER_USAGE_2_TRANSFER_DST_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
     deMemset(outputBuffer->memory->getHostPtr(), 0, static_cast<size_t>(outputBufferSize));
 
-    auto computeModule = createShaderModule(*m_deviceInterface, device, getShaderBinary("compute"));
+    auto computeModule = createShaderModule(vkd, device, getShaderBinary("compute"));
 
     auto cmdPool      = makeCommandPool(vkd, device, queueFamilyIndex);
     auto cmdBufferPtr = allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -8823,7 +8808,7 @@ tcu::TestStatus DescriptorHeapTestInstanceResourceMasking::iterate()
         VK_SPIRV_RESOURCE_TYPE_READ_WRITE_STORAGE_BUFFER_BIT_EXT,
     };
 
-    const auto &vkd                 = *m_deviceInterface;
+    const auto &vkd                 = m_device.getDriver();
     const VkDevice device           = *m_device;
     const uint32_t queueFamilyIndex = m_queueFamilyIndex;
     const VkQueue queue             = m_queues[0];
@@ -8921,8 +8906,7 @@ tcu::TestStatus DescriptorHeapTestInstanceResourceMasking::iterate()
         imageView.subresourceRange.layerCount     = 1;
     }
 
-    const VkPhysicalDeviceProperties physDevProps =
-        getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_physDevice);
+    const VkPhysicalDeviceProperties physDevProps = getPhysicalDeviceProperties(m_instance.getDriver(), m_physDevice);
 
     const VkDeviceSize uniformBufferSize =
         alignUp(VkDeviceSize{sizeof(int32_t)}, physDevProps.limits.minUniformBufferOffsetAlignment);
@@ -8997,7 +8981,7 @@ tcu::TestStatus DescriptorHeapTestInstanceResourceMasking::iterate()
     VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, numResourceDescriptors, resources.data(),
                                              descriptorHostRanges.data()));
 
-    auto computeModule = createShaderModule(*m_deviceInterface, device, getShaderBinary("compute"));
+    auto computeModule = createShaderModule(m_device.getDriver(), device, getShaderBinary("compute"));
 
     VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
     mappingInfo.mappingCount                                  = static_cast<uint32_t>(mappings.size());
@@ -9195,7 +9179,7 @@ tcu::TestStatus DescriptorHeapTestInstanceNullImageQueries::iterate()
         int32_t nullLevels;
     };
 
-    const auto &vkd                 = *m_deviceInterface;
+    const auto &vkd                 = m_device.getDriver();
     const VkDevice device           = *m_device;
     const uint32_t queueFamilyIndex = m_queueFamilyIndex;
     const VkQueue queue             = m_queues[0];
@@ -9208,8 +9192,7 @@ tcu::TestStatus DescriptorHeapTestInstanceNullImageQueries::iterate()
 
     const VkDeviceSize imageStride = getImageDescriptorStride(m_descriptorHeapProperties);
 
-    const VkPhysicalDeviceProperties physDevProps =
-        getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_physDevice);
+    const VkPhysicalDeviceProperties physDevProps = getPhysicalDeviceProperties(m_instance.getDriver(), m_physDevice);
 
     const VkDeviceSize outputBufferSize =
         alignUp(VkDeviceSize{sizeof(OutputData)}, physDevProps.limits.minStorageBufferOffsetAlignment);
@@ -9348,7 +9331,7 @@ tcu::TestStatus DescriptorHeapTestInstanceNullImageQueries::iterate()
     heapBindInfo.reservedRangeOffset = userHeapSize;
     heapBindInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
 
-    auto computeModule = createShaderModule(*m_deviceInterface, device, getShaderBinary("compute"));
+    auto computeModule = createShaderModule(vkd, device, getShaderBinary("compute"));
 
     VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
     mappingInfo.mappingCount                                  = static_cast<uint32_t>(mappings.size());
@@ -9702,7 +9685,7 @@ layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
 
 tcu::TestStatus DescriptorHeapTestInstanceGraphics::iterate()
 {
-    auto &vkd = *m_deviceInterface;
+    auto &vkd = m_device.getDriver();
 
     const VkDeviceSize bufferDescriptorStride = getBufferDescriptorStride(m_descriptorHeapProperties);
     const VkDeviceSize resourceHeapAlignment  = m_descriptorHeapProperties.resourceHeapAlignment;
@@ -9720,8 +9703,7 @@ tcu::TestStatus DescriptorHeapTestInstanceGraphics::iterate()
     auto samplerHeap = createBufferAndMemory(samplerHeapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
                                                                   VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
 
-    const VkPhysicalDeviceProperties physDevProps =
-        getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_physDevice);
+    const VkPhysicalDeviceProperties physDevProps = getPhysicalDeviceProperties(m_instance.getDriver(), m_physDevice);
 
     de::Random rng(m_params.seed);
 
@@ -10214,10 +10196,9 @@ void main()
 
 tcu::TestStatus DescriptorHeapTestInstanceGraphicsAndCompute::iterate()
 {
-    auto &vkd = *m_deviceInterface;
+    auto &vkd = m_device.getDriver();
 
-    const VkPhysicalDeviceProperties physDevProps =
-        getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_physDevice);
+    const VkPhysicalDeviceProperties physDevProps = getPhysicalDeviceProperties(m_instance.getDriver(), m_physDevice);
 
     const VkDeviceSize bufferDescriptorSize  = m_descriptorHeapProperties.bufferDescriptorSize;
     const VkDeviceSize bufferDescriptorAlign = m_descriptorHeapProperties.bufferDescriptorAlignment;
@@ -10311,7 +10292,7 @@ tcu::TestStatus DescriptorHeapTestInstanceGraphicsAndCompute::iterate()
     VkPipelineCreateFlags2CreateInfoKHR pipelineCreateFlags2CreateInfo = initVulkanStructure();
     pipelineCreateFlags2CreateInfo.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
 
-    auto vertexModule = createShaderModule(*m_deviceInterface, *m_device, getShaderBinary("vertex"));
+    auto vertexModule = createShaderModule(vkd, *m_device, getShaderBinary("vertex"));
 
     VkPipelineShaderStageCreateInfo vertexStage = initVulkanStructure();
     vertexStage.stage                           = VK_SHADER_STAGE_VERTEX_BIT;
@@ -10470,7 +10451,7 @@ void main()
 
 tcu::TestStatus DescriptorHeapTestInstanceDifferentMappingsSameShader::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     auto bufferA = createBufferAndMemory(sizeof(uint32_t), VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT_KHR |
                                                                VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
@@ -10627,10 +10608,9 @@ void DescriptorHeapTestCaseNonUniformMappings::initPrograms(vk::SourceCollection
 
 tcu::TestStatus DescriptorHeapTestInstanceNonUniformMappings::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
-    const VkPhysicalDeviceProperties physDevProps =
-        getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_physDevice);
+    const VkPhysicalDeviceProperties physDevProps = getPhysicalDeviceProperties(m_instance.getDriver(), m_physDevice);
 
     const uint32_t workgroupSize              = 8;
     const VkDeviceSize bufferDescriptorStride = getBufferDescriptorStride(m_descriptorHeapProperties);
@@ -10850,7 +10830,7 @@ tcu::TestStatus DescriptorHeapTestInstanceMSAAImageRead::iterate()
 {
     // Write 4 samples to an MSAA image and read them back in a compute shader via a descriptor heap.
 
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const uint32_t sampleCount = 4;
 
@@ -11258,7 +11238,7 @@ void main()
 
 tcu::TestStatus DescriptorHeapTestInstanceResourceHeapAccess::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const size_t numBuffers       = 16;
     const VkDeviceSize bufferSize = sizeof(uint32_t);
@@ -11498,7 +11478,7 @@ void main()
 
 tcu::TestStatus DescriptorHeapTestInstanceSamplerHeapAccess::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const VkDeviceSize bufferSize = 4 * sizeof(float);
     const size_t numSamplers      = 3;
@@ -11877,7 +11857,7 @@ void DescriptorHeapTestInstanceSecondary::copyDescriptor(VkCommandBuffer command
     if (m_params.testType == SecondaryCopyType::NONE)
         return;
 
-    const auto &vkd                   = *m_deviceInterface;
+    const auto &vkd                   = m_device.getDriver();
     const VkDeviceSize resourceStride = getImageDescriptorStride(m_descriptorHeapProperties);
     const VkDeviceSize samplerStride  = getSamplerDescriptorStride(m_descriptorHeapProperties);
 
@@ -11982,7 +11962,7 @@ void DescriptorHeapTestInstanceSecondary::copyDescriptor(VkCommandBuffer command
 
 tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const VkFormat imageFormat          = VK_FORMAT_R8G8B8A8_UNORM;
     const VkDeviceSize bufferStride     = getBufferDescriptorStride(m_descriptorHeapProperties);
@@ -12684,7 +12664,7 @@ void main()
 
 Move<VkShaderEXT> DescriptorHeapTestInstanceShaderObjectInvariance::compileShader(VkBorderColor borderColor)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const auto &spirvBinary = getShaderBinary("compute");
 
@@ -12742,7 +12722,7 @@ Move<VkShaderEXT> DescriptorHeapTestInstanceShaderObjectInvariance::compileShade
 
 Move<VkShaderEXT> DescriptorHeapTestInstanceShaderObjectInvariance::restoreShader(const std::vector<char> &binaryData)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     VkShaderCreateInfoEXT shaderCreateInfo = initVulkanStructure();
     shaderCreateInfo.flags                 = VK_SHADER_CREATE_DESCRIPTOR_HEAP_BIT_EXT;
@@ -12758,7 +12738,7 @@ Move<VkShaderEXT> DescriptorHeapTestInstanceShaderObjectInvariance::restoreShade
 
 std::vector<char> DescriptorHeapTestInstanceShaderObjectInvariance::getBinary(VkShaderEXT shader)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     size_t dataSize = 0;
     VK_CHECK(vkd.getShaderBinaryDataEXT(*m_device, shader, &dataSize, nullptr));
@@ -12771,7 +12751,7 @@ std::vector<char> DescriptorHeapTestInstanceShaderObjectInvariance::getBinary(Vk
 
 tcu::UVec4 DescriptorHeapTestInstanceShaderObjectInvariance::runShader(VkShaderEXT shader)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     auto buffer = createBufferAndMemory(4 * sizeof(uint32_t), VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT |
                                                                   VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
@@ -13094,7 +13074,7 @@ void main() {
 
 tcu::TestStatus DescriptorHeapTestInstancePushDataAccess::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const uint32_t pushDataElements =
         static_cast<uint32_t>(m_descriptorHeapProperties.maxPushDataSize / sizeof(uint32_t));
@@ -13317,7 +13297,7 @@ void main()
 
 tcu::TestStatus DescriptorHeapTestInstanceNonUniformAccess::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const uint32_t descriptorCount = 64;
 
@@ -13358,8 +13338,7 @@ tcu::TestStatus DescriptorHeapTestInstanceNonUniformAccess::iterate()
     std::vector<std::unique_ptr<Buffer>> buffers;
     std::vector<std::unique_ptr<Image>> images;
 
-    const VkPhysicalDeviceProperties physDevProps =
-        getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_physDevice);
+    const VkPhysicalDeviceProperties physDevProps = getPhysicalDeviceProperties(m_instance.getDriver(), m_physDevice);
     const VkDeviceSize bufferSize =
         alignUp(alignUp(VkDeviceSize{sizeof(uint32_t)}, physDevProps.limits.minUniformBufferOffsetAlignment),
                 physDevProps.limits.minStorageBufferOffsetAlignment);
@@ -13637,7 +13616,7 @@ private:
 
 tcu::TestStatus DescriptorHeapTestInstanceZeroStride::iterate()
 {
-    const auto &vkd       = *m_deviceInterface;
+    const auto &vkd       = m_device.getDriver();
     const VkDevice device = *m_device;
     const VkQueue queue   = m_queues[0];
     tcu::TestLog &log     = m_context.getTestContext().getLog();

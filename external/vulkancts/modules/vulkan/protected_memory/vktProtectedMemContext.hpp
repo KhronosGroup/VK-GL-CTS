@@ -51,19 +51,15 @@ public:
 
     const vk::DeviceInterface &getDeviceInterface(void) const
     {
-        return m_deviceDriver;
+        return m_device.getDriver();
     }
     vk::VkDevice getDevice(void) const
     {
         return *m_device;
     }
-    const vk::DeviceDriver &getDeviceDriver(void) const
-    {
-        return m_deviceDriver;
-    }
     vk::VkPhysicalDevice getPhysicalDevice(void) const
     {
-        return m_phyDevice;
+        return m_device.getPhysicalDevice();
     }
     vk::VkQueue getQueue(void) const
     {
@@ -84,12 +80,12 @@ public:
     }
     vk::Allocator &getDefaultAllocator(void) const
     {
-        return *m_allocator;
+        return m_device.getAllocator();
     }
 
-    const vk::InstanceDriver &getInstanceDriver(void) const
+    const vk::InstanceInterface &getInstanceInterface(void) const
     {
-        return m_vki;
+        return m_device.getInstanceDriver();
     }
     vk::VkInstance getInstance(void) const
     {
@@ -101,25 +97,12 @@ public:
     }
 
 private:
-    vk::Allocator *createAllocator(void)
-    {
-        const vk::VkPhysicalDeviceMemoryProperties memoryProperties =
-            vk::getPhysicalDeviceMemoryProperties(m_vki, m_phyDevice);
-
-        // \todo [2015-07-24 jarkko] support allocator selection/configuration from command line (or compile time)
-        return new vk::SimpleAllocator(getDeviceInterface(), getDevice(), memoryProperties);
-    }
-
     Context &m_context;
     const vk::PlatformInterface &m_interface;
-    CustomInstance m_instance;
-    const vk::InstanceDriver &m_vki;
-    vk::VkPhysicalDevice m_phyDevice;
+    const InstanceWrapper m_instance;
     const vk::Move<vk::VkSurfaceKHR> m_surface;
     uint32_t m_queueFamilyIndex;
-    vk::Move<vk::VkDevice> m_device;
-    vk::DeviceDriver m_deviceDriver;
-    const de::UniquePtr<vk::Allocator> m_allocator;
+    const DeviceWrapper m_device;
     vk::VkQueue m_queue;
 };
 

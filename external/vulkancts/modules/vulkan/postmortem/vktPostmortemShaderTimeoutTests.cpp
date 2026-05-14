@@ -121,10 +121,10 @@ void ShaderTimeoutCase::initPrograms(vk::SourceCollections &programCollection) c
 tcu::TestStatus ShaderTimeoutInstance::iterate(void)
 {
     const VkDevice device           = *m_logicalDevice;
-    const DeviceInterface &vk       = m_deviceDriver;
+    const DeviceInterface &vk       = m_logicalDevice.getDriver();
     const VkQueue queue             = m_queue;
     const uint32_t queueFamilyIndex = m_queueFamilyIndex;
-    Allocator &allocator            = m_allocator;
+    Allocator &allocator            = m_logicalDevice.getAllocator();
 
     const int workSize                    = 1024;
     const VkDeviceSize storageSizeInBytes = sizeof(uint32_t) * workSize;

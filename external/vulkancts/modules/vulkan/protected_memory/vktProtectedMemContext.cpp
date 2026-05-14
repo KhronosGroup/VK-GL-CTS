@@ -33,19 +33,10 @@ ProtectedContext::ProtectedContext(Context &ctx, const std::vector<std::string> 
     : m_context(ctx)
     , m_interface(m_context.getPlatformInterface())
     , m_instance(makeProtectedMemInstance(m_context, instanceExtensions))
-    , m_vki(m_instance.getDriver())
-    , m_phyDevice(vk::chooseDevice(m_vki, m_instance, m_context.getTestContext().getCommandLine()))
-    , m_queueFamilyIndex(chooseProtectedMemQueueFamilyIndex(m_vki, m_phyDevice))
-    , m_device(makeProtectedMemDevice(m_interface, m_instance, m_vki, m_phyDevice, m_queueFamilyIndex,
-                                      ctx.getUsedApiVersion(), deviceExtensions,
-#ifdef CTS_USES_VULKANSC
-                                      ctx.getResourceInterface(),
-#endif // CTS_USES_VULKANSC
-                                      ctx.getTestContext().getCommandLine()))
-    , m_deviceDriver(m_context.getPlatformInterface(), m_instance, *m_device, m_context.getUsedApiVersion(),
-                     m_context.getTestContext().getCommandLine())
-    , m_allocator(createAllocator())
-    , m_queue(getProtectedQueue(m_deviceDriver, *m_device, m_queueFamilyIndex, 0))
+    , m_queueFamilyIndex(chooseProtectedMemQueueFamilyIndex(m_instance.getDriver(), m_instance.getPhysicalDevice()))
+    , m_device(makeProtectedMemDevice(m_instance, m_instance.getPhysicalDevice(), m_queueFamilyIndex,
+                                      ctx.getUsedApiVersion(), deviceExtensions))
+    , m_queue(getProtectedQueue(m_device.getDriver(), *m_device, m_queueFamilyIndex, 0))
 {
 }
 
@@ -55,21 +46,13 @@ ProtectedContext::ProtectedContext(Context &ctx, vk::wsi::Type wsiType, vk::wsi:
     : m_context(ctx)
     , m_interface(m_context.getPlatformInterface())
     , m_instance(makeProtectedMemInstance(m_context, instanceExtensions))
-    , m_vki(m_instance.getDriver())
-    , m_phyDevice(vk::chooseDevice(m_vki, m_instance, m_context.getTestContext().getCommandLine()))
-    , m_surface(vk::wsi::createSurface(m_vki, m_instance, wsiType, display, window,
+    , m_surface(vk::wsi::createSurface(m_instance.getDriver(), m_instance, wsiType, display, window,
                                        m_context.getTestContext().getCommandLine()))
-    , m_queueFamilyIndex(chooseProtectedMemQueueFamilyIndex(m_vki, m_phyDevice, *m_surface))
-    , m_device(makeProtectedMemDevice(m_interface, m_instance, m_vki, m_phyDevice, m_queueFamilyIndex,
-                                      ctx.getUsedApiVersion(), deviceExtensions,
-#ifdef CTS_USES_VULKANSC
-                                      ctx.getResourceInterface(),
-#endif // CTS_USES_VULKANSC
-                                      ctx.getTestContext().getCommandLine()))
-    , m_deviceDriver(m_interface, m_instance, *m_device, m_context.getUsedApiVersion(),
-                     m_context.getTestContext().getCommandLine())
-    , m_allocator(createAllocator())
-    , m_queue(getProtectedQueue(m_deviceDriver, *m_device, m_queueFamilyIndex, 0))
+    , m_queueFamilyIndex(
+          chooseProtectedMemQueueFamilyIndex(m_instance.getDriver(), m_instance.getPhysicalDevice(), *m_surface))
+    , m_device(makeProtectedMemDevice(m_instance, m_instance.getPhysicalDevice(), m_queueFamilyIndex,
+                                      ctx.getUsedApiVersion(), deviceExtensions))
+    , m_queue(getProtectedQueue(m_device.getDriver(), *m_device, m_queueFamilyIndex, 0))
 {
 }
 

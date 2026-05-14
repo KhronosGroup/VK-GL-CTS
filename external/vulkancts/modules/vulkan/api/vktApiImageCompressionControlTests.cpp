@@ -485,8 +485,8 @@ CustomInstance createInstanceWithWsi(Context &context, Type wsiType, const vecto
 struct InstanceHelper
 {
     const vector<VkExtensionProperties> supportedExtensions;
-    CustomInstance instance;
-    const InstanceDriver &vki;
+    const InstanceWrapper instance;
+    const InstanceInterface &vki;
 
     InstanceHelper(Context &context, Type wsiType, const VkAllocationCallbacks *pAllocator = nullptr)
         : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
@@ -504,10 +504,10 @@ struct InstanceHelper
     }
 };
 
-Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVersion, VkInstance instance,
-                                   const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                   const Extensions &supportedExtensions, const vector<string> &additionalExtensions,
-                                   uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator = nullptr)
+static CustomDevice createDeviceWithWsi(uint32_t apiVersion, const InstanceWrapper &instance,
+                                        VkPhysicalDevice physicalDevice, const Extensions &supportedExtensions,
+                                        const vector<string> &additionalExtensions, uint32_t queueFamilyIndex,
+                                        const VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[]           = {1.0f};
     const VkDeviceQueueCreateInfo queueInfo = {
@@ -554,36 +554,35 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
                                              extensionsChar.data(),                        // ppEnabledExtensionNames
                                              &features};
 
-    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return instance.createCustomDevice(physicalDevice, &deviceParams, pAllocator);
 }
 
 struct DeviceHelper
 {
     const VkPhysicalDevice physicalDevice;
     const uint32_t queueFamilyIndex;
-    const Unique<VkDevice> device;
-    const DeviceDriver vkd;
+    const DeviceWrapper device;
+    const DeviceInterface &vkd;
     const VkQueue queue;
 
-    DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance,
-                 const vector<VkSurfaceKHR> &surface, const vector<string> &additionalExtensions = vector<string>(),
-                 const VkAllocationCallbacks *pAllocator = nullptr)
-        : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
-        , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
-        , device(createDeviceWithWsi(context.getPlatformInterface(), context.getUsedApiVersion(), instance, vki,
-                                     physicalDevice, enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr),
+    DeviceHelper(Context &context, const InstanceHelper &instanceHelper, const vector<VkSurfaceKHR> &surface,
+                 const vector<string> &additionalExtensions = vector<string>(),
+                 const VkAllocationCallbacks *pAllocator    = nullptr)
+        : physicalDevice(instanceHelper.instance.getPhysicalDevice())
+        , queueFamilyIndex(chooseQueueFamilyIndex(instanceHelper.vki, physicalDevice, surface))
+        , device(createDeviceWithWsi(context.getUsedApiVersion(), instanceHelper.instance, physicalDevice,
+                                     enumerateDeviceExtensionProperties(instanceHelper.vki, physicalDevice, nullptr),
                                      additionalExtensions, queueFamilyIndex, pAllocator))
-        , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
-              context.getTestContext().getCommandLine())
+        , vkd(device.getDriver())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
     {
     }
 
     // Single-surface shortcut.
-    DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
+    DeviceHelper(Context &context, const InstanceHelper &instanceHelper, VkSurfaceKHR surface,
                  const vector<string> &additionalExtensions = vector<string>(),
                  const VkAllocationCallbacks *pAllocator    = nullptr)
-        : DeviceHelper(context, vki, instance, vector<VkSurfaceKHR>(1u, surface), additionalExtensions, pAllocator)
+        : DeviceHelper(context, instanceHelper, vector<VkSurfaceKHR>(1u, surface), additionalExtensions, pAllocator)
     {
     }
 };
@@ -614,7 +613,7 @@ static tcu::TestStatus swapchainCreateTest(Context &context, TestParams testPara
                                                          native.getDisplay(), native.getWindow(),
                                                          context.getTestContext().getCommandLine()));
 
-        const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, vector<string>());
+        const DeviceHelper devHelper(context, instHelper, *surface, vector<string>());
 
         VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = initVulkanStructure();
         VkSurfaceCapabilities2KHR caps              = initVulkanStructure();
@@ -692,15 +691,15 @@ static tcu::TestStatus swapchainCreateTest(Context &context, TestParams testPara
             swapchainInfo.pNext = &testParams.control;
 
             Move<VkSwapchainKHR> swapchain =
-                createWsiSwapchain(testParams.wsiType, devHelper.vkd, devHelper.device.get(), &swapchainInfo);
+                createWsiSwapchain(testParams.wsiType, devHelper.vkd, devHelper.device, &swapchainInfo);
 
             uint32_t imageCount = 0;
-            devHelper.vkd.getSwapchainImagesKHR(devHelper.device.get(), swapchain.get(), &imageCount, nullptr);
+            devHelper.vkd.getSwapchainImagesKHR(devHelper.device, swapchain.get(), &imageCount, nullptr);
             vector<VkImage> images(imageCount);
-            devHelper.vkd.getSwapchainImagesKHR(devHelper.device.get(), swapchain.get(), &imageCount, images.data());
+            devHelper.vkd.getSwapchainImagesKHR(devHelper.device, swapchain.get(), &imageCount, images.data());
 
-            validate(instHelper.vki, devHelper.vkd, results, devHelper.physicalDevice, devHelper.device.get(),
-                     testParams, images[0]);
+            validate(instHelper.vki, devHelper.vkd, results, devHelper.physicalDevice, devHelper.device, testParams,
+                     images[0]);
         }
 
         delete[] compressionProps;

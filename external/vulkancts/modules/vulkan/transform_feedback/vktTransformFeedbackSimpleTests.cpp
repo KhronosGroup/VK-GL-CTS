@@ -33,6 +33,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkDeviceUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deRandom.hpp"
@@ -273,10 +274,9 @@ public:
 
     NoShaderTessellationAndGeometryPointSizeDeviceHelper(Context &context)
     {
-        const auto &vkp           = context.getPlatformInterface();
-        const auto &vki           = context.getInstanceInterface();
-        const auto instance       = context.getInstance();
-        const auto physicalDevice = context.getPhysicalDevice();
+        const auto instance       = InstanceWrapper(context);
+        const auto &vki           = instance.getDriver();
+        const auto physicalDevice = instance.getPhysicalDevice();
 
         m_queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
@@ -328,12 +328,9 @@ public:
         };
 
         // Create custom device and related objects
-        m_device = createCustomDevice(vkp, instance, vki, physicalDevice, &createInfo);
-        m_vkd.reset(new DeviceDriver(vkp, instance, *m_device, context.getUsedApiVersion(),
-                                     context.getTestContext().getCommandLine()));
-        m_queue = getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
-        m_allocator.reset(
-            new SimpleAllocator(*m_vkd, *m_device, getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
+        m_device        = instance.createCustomDevice(physicalDevice, &createInfo);
+        const auto &vkd = m_device.getDriver();
+        m_queue         = getDeviceQueue(vkd, *m_device, m_queueFamilyIndex, 0u);
     }
 
     virtual ~NoShaderTessellationAndGeometryPointSizeDeviceHelper()
@@ -342,11 +339,11 @@ public:
 
     const vk::DeviceInterface &getDeviceInterface(void) const override
     {
-        return *m_vkd;
+        return m_device.getDriver();
     }
     vk::VkDevice getDevice(void) const override
     {
-        return m_device.get();
+        return m_device;
     }
     uint32_t getQueueFamilyIndex(void) const override
     {
@@ -358,15 +355,13 @@ public:
     }
     vk::Allocator &getAllocator(void) const override
     {
-        return *m_allocator;
+        return m_device.getAllocator();
     }
 
 protected:
-    vk::Move<vk::VkDevice> m_device;
-    std::unique_ptr<vk::DeviceDriver> m_vkd;
+    DeviceWrapper m_device;
     uint32_t m_queueFamilyIndex;
     vk::VkQueue m_queue;
-    std::unique_ptr<vk::SimpleAllocator> m_allocator;
 };
 
 std::unique_ptr<DeviceHelper> g_noShaderTessellationAndGeometryPointSizeHelper;

@@ -264,6 +264,7 @@ public:
 
 protected:
     mutable std::mutex functionMutex;
+    VkDevice m_device;
     bool m_normalMode;
 
     de::SharedPtr<vk::ResourceInterface> m_resourceInterface;
@@ -284,39 +285,8 @@ protected:
     VkDeviceSize m_commandPoolMinimumSize;
 };
 
-class DeinitDeviceDeleter : public Deleter<DeviceDriverSC>
-{
-public:
-    DeinitDeviceDeleter(ResourceInterface *resourceInterface, const VkDevice &device)
-        : m_resourceInterface(resourceInterface)
-        , m_device(device)
-    {
-    }
-    DeinitDeviceDeleter(void) : m_resourceInterface(nullptr), m_device(VK_NULL_HANDLE)
-    {
-    }
-
-    void operator()(DeviceDriverSC *obj) const
-    {
-        if (m_resourceInterface != nullptr)
-            m_resourceInterface->deinitDevice(m_device);
-        delete obj;
-    }
-
-private:
-    ResourceInterface *m_resourceInterface;
-    VkDevice m_device;
-};
-
 #endif // CTS_USES_VULKANSC
 #define THROW_NOT_SUPPORTED_COMPUTE_ONLY() TCU_THROW(NotSupportedError, "Not compute-only")
-
-// Single device driver pointer type which will differ in SC and non-SC mode helping clearing the code
-#ifndef CTS_USES_VULKANSC
-typedef de::MovePtr<DeviceDriver> DeviceDriverPtr;
-#else
-typedef de::MovePtr<DeviceDriverSC, vk::DeinitDeviceDeleter> DeviceDriverPtr;
-#endif // CTS_USES_VULKANSC
 
 // Defined in vkWsiPlatform.hpp
 namespace wsi

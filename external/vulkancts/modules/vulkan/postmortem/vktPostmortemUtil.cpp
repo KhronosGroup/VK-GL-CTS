@@ -34,7 +34,6 @@
 #include "vkTypeUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "tcuCommandLine.hpp"
-#include "vktCustomInstancesDevices.hpp"
 
 #include "vktPostmortemUtil.hpp"
 
@@ -47,7 +46,7 @@ namespace postmortem
 namespace
 {
 
-Move<VkDevice> createPostmortemDevice(Context &context)
+static CustomDevice createPostmortemDevice(Context &context, const InstanceWrapper &instance)
 {
     const float queuePriority = 1.0f;
 
@@ -74,20 +73,16 @@ Move<VkDevice> createPostmortemDevice(Context &context)
         nullptr                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    return createCustomDevice(context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
-                              context.getPhysicalDevice(), &deviceParams);
+    return instance.createCustomDevice(&deviceParams);
 }
 } // namespace
 
 PostmortemTestInstance::PostmortemTestInstance(Context &context)
     : TestInstance(context)
-    , m_logicalDevice(createPostmortemDevice(context))
-    , m_deviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice,
-                     context.getUsedApiVersion(), context.getTestContext().getCommandLine())
+    , m_instance(context)
+    , m_logicalDevice(createPostmortemDevice(context, m_instance))
     , m_queueFamilyIndex(0)
-    , m_queue(getDeviceQueue(m_deviceDriver, *m_logicalDevice, m_queueFamilyIndex, 0))
-    , m_allocator(m_deviceDriver, *m_logicalDevice,
-                  getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()))
+    , m_queue(getDeviceQueue(m_logicalDevice.getDriver(), *m_logicalDevice, m_queueFamilyIndex, 0))
 {
 }
 

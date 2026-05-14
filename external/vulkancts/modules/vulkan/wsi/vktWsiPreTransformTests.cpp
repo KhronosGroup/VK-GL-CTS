@@ -79,8 +79,8 @@ void checkAllSupported(const Extensions &supportedExtensions, const vector<strin
     }
 }
 
-CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, Type wsiType,
-                                     const vector<string> extraExtensions)
+static CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, Type wsiType,
+                                            const vector<string> extraExtensions)
 {
     vector<string> extensions = extraExtensions;
 
@@ -94,10 +94,10 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     return vkt::createCustomInstanceWithExtensions(context, extensions, nullptr);
 }
 
-Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVersion, VkInstance instance,
-                                   const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                   const Extensions &supportedExtensions, const vector<string> &additionalExtensions,
-                                   const vector<uint32_t> &queueFamilyIndices)
+static CustomDevice createDeviceWithWsi(uint32_t apiVersion, const InstanceWrapper &instance,
+                                        VkPhysicalDevice physicalDevice, const Extensions &supportedExtensions,
+                                        const vector<string> &additionalExtensions,
+                                        const vector<uint32_t> &queueFamilyIndices)
 {
     const float queuePriorities[] = {1.0f};
     vector<VkDeviceQueueCreateInfo> queueInfos;
@@ -152,14 +152,14 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
                                              extensionsChar.data(),                        // ppEnabledExtensionNames
                                              &features};
 
-    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams);
+    return instance.createCustomDevice(physicalDevice, &deviceParams);
 }
 
 struct InstanceHelper
 {
     const vector<VkExtensionProperties> supportedExtensions;
-    const CustomInstance instance;
-    const InstanceDriver &vki;
+    const InstanceWrapper instance;
+    const InstanceInterface &vki;
 
     InstanceHelper(Context &context, Type wsiType)
         : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
@@ -180,19 +180,18 @@ struct DeviceHelper
 {
     const VkPhysicalDevice physicalDevice;
     const uint32_t queueFamilyIndex;
-    const Unique<VkDevice> device;
-    const DeviceDriver vkd;
+    const DeviceWrapper device;
+    const DeviceInterface &vkd;
     const VkQueue queue;
 
-    DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
+    DeviceHelper(Context &context, const InstanceHelper &instanceHelper, VkSurfaceKHR surface,
                  const vector<string> &additionalExtensions = vector<string>())
-        : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
-        , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
-        , device(createDeviceWithWsi(context.getPlatformInterface(), context.getUsedApiVersion(), instance, vki,
-                                     physicalDevice, enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr),
+        : physicalDevice(instanceHelper.instance.getPhysicalDevice())
+        , queueFamilyIndex(chooseQueueFamilyIndex(instanceHelper.vki, physicalDevice, surface))
+        , device(createDeviceWithWsi(context.getUsedApiVersion(), instanceHelper.instance, physicalDevice,
+                                     enumerateDeviceExtensionProperties(instanceHelper.vki, physicalDevice, nullptr),
                                      additionalExtensions, vector<uint32_t>{queueFamilyIndex}))
-        , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
-              context.getTestContext().getCommandLine())
+        , vkd(device.getDriver())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
     {
     }
@@ -350,7 +349,7 @@ tcu::TestStatus basicRenderTest(Context &context, TestParams params)
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, params.wsiType,
                                                      native.getDisplay(), native.getWindow(),
                                                      context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+    const DeviceHelper devHelper(context, instHelper, *surface);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
     SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));

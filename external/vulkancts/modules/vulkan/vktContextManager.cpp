@@ -1017,6 +1017,12 @@ Move<VkDevice> ContextManager::createDevice(const DevCaps &caps, DevCaps::Runtim
 #else
 Move<VkDevice> ContextManager::createDevice(const DevCaps &caps, DevCaps::RuntimeData &data) const
 {
+    const PlatformInterface &vkp                           = getPlatformInterface();
+    de::SharedPtr<vk::ResourceInterface> resourceInterface = getResourceInterface();
+    const InstanceInterface &vki                           = getInstanceInterface();
+    const VkPhysicalDevice physicalDevice                  = getPhysicalDevice();
+    const VkInstance instance                              = getInstanceHandle();
+
     // queues block
     std::vector<float> queuePriorities;
     std::vector<VkDeviceQueueCreateInfo> queueInfos;
@@ -1049,8 +1055,7 @@ Move<VkDevice> ContextManager::createDevice(const DevCaps &caps, DevCaps::Runtim
 
     print(caps.m_testContext.getLog(), deviceParams);
 
-    return createCustomDevice(getPlatformInterface(), getInstanceHandle(), getInstanceInterface(), getPhysicalDevice(),
-                              &deviceParams, nullptr);
+    return vk::createDevice(vkp, instance, vki, physicalDevice, &deviceParams);
 }
 #endif // CTS_USES_VULKANSC
 

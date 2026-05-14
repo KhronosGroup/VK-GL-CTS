@@ -128,16 +128,11 @@ class DeviceHelper
 {
 public:
     DeviceHelper(Context &context)
-        : m_instance()
-        , m_physicalDevice(VK_NULL_HANDLE)
+        : m_instance(context)
         , m_device()
-        , m_vkd()
         , m_queueFamilyIndex(context.getUniversalQueueFamilyIndex())
         , m_queue(VK_NULL_HANDLE)
-        , m_allocator()
     {
-        m_instance = createCustomInstanceWithExtensions(context, context.getInstanceExtensions());
-
         const float queuePriority = 1.0f;
 
         // Create a universal queue that supports graphics and compute
@@ -193,11 +188,9 @@ public:
 
         addFeatures(&fragmentDensityMapFeatures);
 
-        const auto &vki     = m_instance.getDriver();
-        const auto &cmdLine = context.getTestContext().getCommandLine();
-        m_physicalDevice    = chooseDevice(vki, m_instance, cmdLine);
+        const auto &vki = m_instance.getDriver();
 
-        vki.getPhysicalDeviceFeatures2(m_physicalDevice, &features2);
+        vki.getPhysicalDeviceFeatures2(m_instance.getPhysicalDevice(), &features2);
         features2.features.robustBufferAccess = VK_FALSE;
 
         const VkDeviceCreateInfo deviceCreateInfo{
@@ -213,33 +206,14 @@ public:
             nullptr,                              //pEnabledFeatures;
         };
 
-        const auto &vkp = context.getPlatformInterface();
+        m_device = m_instance.createCustomDevice(&deviceCreateInfo);
 
-        m_device = createCustomDevice(vkp, m_instance, vki, m_physicalDevice, &deviceCreateInfo);
-
-        m_vkd.reset(new DeviceDriver(vkp, m_instance, *m_device, context.getUsedApiVersion(), cmdLine));
-        m_vkd->getDeviceQueue(*m_device, m_queueFamilyIndex, 0u, &m_queue);
-
-        VkPhysicalDeviceMemoryProperties memoryProperties;
-        vki.getPhysicalDeviceMemoryProperties(m_physicalDevice, &memoryProperties);
-        m_allocator.reset(new SimpleAllocator(*m_vkd, *m_device, memoryProperties));
+        m_device.getDriver().getDeviceQueue(*m_device, m_queueFamilyIndex, 0u, &m_queue);
     }
 
-    const InstanceInterface &getInstanceInterface() const
-    {
-        return m_instance.getDriver();
-    }
-    VkInstance getInstance() const
-    {
-        return m_instance;
-    }
-    VkPhysicalDevice getPhysicalDevice() const
-    {
-        return m_physicalDevice;
-    }
     const DeviceInterface &getDeviceInterface() const
     {
-        return *m_vkd;
+        return m_device.getDriver();
     }
     VkDevice getDevice() const
     {
@@ -255,17 +229,14 @@ public:
     }
     Allocator &getAllocator() const
     {
-        return *m_allocator;
+        return m_device.getAllocator();
     }
 
 protected:
-    CustomInstance m_instance;
-    VkPhysicalDevice m_physicalDevice;
-    Move<VkDevice> m_device;
-    std::unique_ptr<DeviceDriver> m_vkd;
+    const InstanceWrapper m_instance;
+    DeviceWrapper m_device;
     uint32_t m_queueFamilyIndex;
     VkQueue m_queue;
-    std::unique_ptr<SimpleAllocator> m_allocator;
 };
 
 // With non-null context, creates and gets the device. With null context, destroys it.

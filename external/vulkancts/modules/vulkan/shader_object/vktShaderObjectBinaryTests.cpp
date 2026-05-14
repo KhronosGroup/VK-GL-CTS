@@ -269,15 +269,11 @@ private:
 
 tcu::TestStatus ShaderObjectBinaryQueryInstance::iterate(void)
 {
-    const auto &vkp               = m_context.getPlatformInterface();
-    const vk::VkInstance instance = m_context.getInstance();
-    const vk::InstanceDriver instanceDriver(m_context.getPlatformInterface(), instance);
-    const vk::VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
-    const vk::DeviceInterface &vk             = m_context.getDeviceInterface();
-    const vk::VkDevice device                 = m_context.getDevice();
-    const uint32_t queueFamilyIndex           = m_context.getUniversalQueueFamilyIndex();
-    const bool tessellationSupported          = m_context.getDeviceFeatures().tessellationShader;
-    const bool geometrySupported              = m_context.getDeviceFeatures().geometryShader;
+    const vk::DeviceInterface &vk    = m_context.getDeviceInterface();
+    const vk::VkDevice device        = m_context.getDevice();
+    const uint32_t queueFamilyIndex  = m_context.getUniversalQueueFamilyIndex();
+    const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;
+    const bool geometrySupported     = m_context.getDeviceFeatures().geometryShader;
 
     const vk::Unique<vk::VkDescriptorSetLayout> descriptorSetLayout(
         vk::DescriptorSetLayoutBuilder()
@@ -365,8 +361,8 @@ tcu::TestStatus ShaderObjectBinaryQueryInstance::iterate(void)
                 nullptr,                                  // pEnabledFeatures;
             };
 
-            vk::Move<vk::VkDevice> otherDevice =
-                createCustomDevice(vkp, instance, instanceDriver, physicalDevice, &deviceCreateInfo);
+            InstanceWrapper instance(m_context);
+            DeviceWrapper otherDevice = instance.createCustomDevice(&deviceCreateInfo);
 
             const vk::Unique<vk::VkDescriptorSetLayout> otherDescriptorSetLayout(
                 vk::DescriptorSetLayoutBuilder()
@@ -633,14 +629,10 @@ const void *findPNext(const void *pNext, vk::VkStructureType sType)
 
 tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
 {
-    const auto &vkp               = m_context.getPlatformInterface();
-    const vk::VkInstance instance = m_context.getInstance();
-    const vk::InstanceDriver instanceDriver(m_context.getPlatformInterface(), instance);
-    const vk::VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
-    const vk::DeviceInterface &vk             = m_context.getDeviceInterface();
-    const vk::VkDevice device                 = m_context.getDevice();
-    const uint32_t queueFamilyIndex           = m_context.getUniversalQueueFamilyIndex();
-    const auto &binaries                      = m_context.getBinaryCollection();
+    const vk::DeviceInterface &vk   = m_context.getDeviceInterface();
+    const vk::VkDevice device       = m_context.getDevice();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const auto &binaries            = m_context.getBinaryCollection();
 
     const vk::VkPhysicalDeviceFeatures features = m_context.getDeviceFeatures();
 
@@ -735,8 +727,8 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
         testFeatures.features.tessellationShader = features.tessellationShader;
         testFeatures.features.geometryShader     = features.geometryShader;
 
-        vk::Move<vk::VkDevice> otherDevice =
-            createCustomDevice(vkp, instance, instanceDriver, physicalDevice, &deviceCreateInfo);
+        InstanceWrapper instance(m_context);
+        DeviceWrapper otherDevice = instance.createCustomDevice(&deviceCreateInfo);
 
         const vk::Unique<vk::VkDescriptorSetLayout> otherDescriptorSetLayout(
             vk::DescriptorSetLayoutBuilder()
