@@ -75,8 +75,8 @@ const char*	getLineRasterizationModeName							(VkLineRasterizationMode value);
 const char*	getLogicOpName											(VkLogicOp value);
 const char*	getMicromapTypeEXTName									(VkMicromapTypeEXT value);
 const char*	getObjectTypeName										(VkObjectType value);
-const char*	getOpacityMicromapFormatEXTName							(VkOpacityMicromapFormatEXT value);
-const char*	getOpacityMicromapSpecialIndexEXTName					(VkOpacityMicromapSpecialIndexEXT value);
+const char*	getOpacityMicromapFormatKHRName							(VkOpacityMicromapFormatKHR value);
+const char*	getOpacityMicromapSpecialIndexKHRName					(VkOpacityMicromapSpecialIndexKHR value);
 const char*	getOutOfBandQueueTypeNVName								(VkOutOfBandQueueTypeNV value);
 const char*	getPerformanceConfigurationTypeINTELName				(VkPerformanceConfigurationTypeINTEL value);
 const char*	getPerformanceCounterScopeKHRName						(VkPerformanceCounterScopeKHR value);
@@ -248,8 +248,8 @@ inline tcu::Format::Enum<VkLineRasterizationMode>							getLineRasterizationMode
 inline tcu::Format::Enum<VkLogicOp>											getLogicOpStr											(VkLogicOp value)											{ return tcu::Format::Enum<VkLogicOp>(getLogicOpName, value);																				}
 inline tcu::Format::Enum<VkMicromapTypeEXT>									getMicromapTypeEXTStr									(VkMicromapTypeEXT value)									{ return tcu::Format::Enum<VkMicromapTypeEXT>(getMicromapTypeEXTName, value);																}
 inline tcu::Format::Enum<VkObjectType>										getObjectTypeStr										(VkObjectType value)										{ return tcu::Format::Enum<VkObjectType>(getObjectTypeName, value);																			}
-inline tcu::Format::Enum<VkOpacityMicromapFormatEXT>						getOpacityMicromapFormatEXTStr							(VkOpacityMicromapFormatEXT value)							{ return tcu::Format::Enum<VkOpacityMicromapFormatEXT>(getOpacityMicromapFormatEXTName, value);												}
-inline tcu::Format::Enum<VkOpacityMicromapSpecialIndexEXT>					getOpacityMicromapSpecialIndexEXTStr					(VkOpacityMicromapSpecialIndexEXT value)					{ return tcu::Format::Enum<VkOpacityMicromapSpecialIndexEXT>(getOpacityMicromapSpecialIndexEXTName, value);									}
+inline tcu::Format::Enum<VkOpacityMicromapFormatKHR>						getOpacityMicromapFormatKHRStr							(VkOpacityMicromapFormatKHR value)							{ return tcu::Format::Enum<VkOpacityMicromapFormatKHR>(getOpacityMicromapFormatKHRName, value);												}
+inline tcu::Format::Enum<VkOpacityMicromapSpecialIndexKHR>					getOpacityMicromapSpecialIndexKHRStr					(VkOpacityMicromapSpecialIndexKHR value)					{ return tcu::Format::Enum<VkOpacityMicromapSpecialIndexKHR>(getOpacityMicromapSpecialIndexKHRName, value);									}
 inline tcu::Format::Enum<VkOutOfBandQueueTypeNV>							getOutOfBandQueueTypeNVStr								(VkOutOfBandQueueTypeNV value)								{ return tcu::Format::Enum<VkOutOfBandQueueTypeNV>(getOutOfBandQueueTypeNVName, value);														}
 inline tcu::Format::Enum<VkPerformanceConfigurationTypeINTEL>				getPerformanceConfigurationTypeINTELStr					(VkPerformanceConfigurationTypeINTEL value)					{ return tcu::Format::Enum<VkPerformanceConfigurationTypeINTEL>(getPerformanceConfigurationTypeINTELName, value);							}
 inline tcu::Format::Enum<VkPerformanceCounterScopeKHR>						getPerformanceCounterScopeKHRStr						(VkPerformanceCounterScopeKHR value)						{ return tcu::Format::Enum<VkPerformanceCounterScopeKHR>(getPerformanceCounterScopeKHRName, value);											}
@@ -384,8 +384,8 @@ inline std::ostream&	operator<<	(std::ostream& s, VkLineRasterizationMode value)
 inline std::ostream&	operator<<	(std::ostream& s, VkLogicOp value)											{ return s << getLogicOpStr(value);											}
 inline std::ostream&	operator<<	(std::ostream& s, VkMicromapTypeEXT value)									{ return s << getMicromapTypeEXTStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkObjectType value)										{ return s << getObjectTypeStr(value);										}
-inline std::ostream&	operator<<	(std::ostream& s, VkOpacityMicromapFormatEXT value)							{ return s << getOpacityMicromapFormatEXTStr(value);						}
-inline std::ostream&	operator<<	(std::ostream& s, VkOpacityMicromapSpecialIndexEXT value)					{ return s << getOpacityMicromapSpecialIndexEXTStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkOpacityMicromapFormatKHR value)							{ return s << getOpacityMicromapFormatKHRStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkOpacityMicromapSpecialIndexKHR value)					{ return s << getOpacityMicromapSpecialIndexKHRStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkOutOfBandQueueTypeNV value)								{ return s << getOutOfBandQueueTypeNVStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceConfigurationTypeINTEL value)				{ return s << getPerformanceConfigurationTypeINTELStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterScopeKHR value)						{ return s << getPerformanceCounterScopeKHRStr(value);						}
@@ -1033,7 +1033,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkMetalSurfaceCreateInfoEXT& va
 std::ostream&	operator<<	(std::ostream& s, const VkMicromapBuildInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMicromapBuildSizesInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMicromapCreateInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkMicromapTriangleEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMicromapTriangleKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMicromapUsageEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMicromapVersionInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMultiDrawIndexedInfoEXT& value);
@@ -1149,6 +1149,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalFormatR
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalImageFormatInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemoryHostPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalSemaphoreInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalTensorInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFaultFeaturesEXT& value);

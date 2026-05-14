@@ -59,6 +59,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_AMD_gpa_interface")
+	{
+		return;
+	}
 	if (extName == "VK_AMD_gpu_shader_half_float")
 	{
 		return;
@@ -391,6 +395,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_external_semaphore_drm_syncobj")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_filter_cubic")
 	{
 		return;
@@ -700,6 +708,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_EXT_shader_replicated_composites")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_shader_split_barrier")
 	{
 		return;
 	}
@@ -1188,6 +1200,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_KHR_multiview")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_opacity_micromap")
 	{
 		return;
 	}
@@ -1849,6 +1865,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_elapsed_timer_query")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_filter_cubic_clamp")
 	{
 		return;
@@ -1866,6 +1886,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_QCOM_image_processing2")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_image_processing3")
 	{
 		return;
 	}
@@ -1894,6 +1918,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_QCOM_rotated_copy_commands")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_shader_multiple_wait_queues")
 	{
 		return;
 	}
@@ -2013,6 +2041,22 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	}
 	if (extName == "VK_AMD_gcn_shader")
 	{
+		return;
+	}
+	if (extName == "VK_AMD_gpa_interface")
+	{
+		functions.push_back("vkCreateGpaSessionAMD");
+		functions.push_back("vkDestroyGpaSessionAMD");
+		functions.push_back("vkSetGpaDeviceClockModeAMD");
+		functions.push_back("vkGetGpaDeviceClockInfoAMD");
+		functions.push_back("vkCmdBeginGpaSessionAMD");
+		functions.push_back("vkCmdEndGpaSessionAMD");
+		functions.push_back("vkCmdBeginGpaSampleAMD");
+		functions.push_back("vkCmdEndGpaSampleAMD");
+		functions.push_back("vkGetGpaSessionStatusAMD");
+		functions.push_back("vkGetGpaSessionResultsAMD");
+		functions.push_back("vkResetGpaSessionAMD");
+		functions.push_back("vkCmdCopyGpaSessionResultsAMD");
 		return;
 	}
 	if (extName == "VK_AMD_gpu_shader_half_float")
@@ -2525,6 +2569,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkGetMemoryMetalHandlePropertiesEXT");
 		return;
 	}
+	if (extName == "VK_EXT_external_semaphore_drm_syncobj")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_filter_cubic")
 	{
 		return;
@@ -2988,6 +3036,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_EXT_shader_replicated_composites")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_shader_split_barrier")
 	{
 		return;
 	}
@@ -3637,6 +3689,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_KHR_multiview")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_opacity_micromap")
 	{
 		return;
 	}
@@ -4411,6 +4467,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_elapsed_timer_query")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_filter_cubic_clamp")
 	{
 		return;
@@ -4428,6 +4488,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_QCOM_image_processing2")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_image_processing3")
 	{
 		return;
 	}
@@ -4457,6 +4521,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_QCOM_rotated_copy_commands")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_shader_multiple_wait_queues")
 	{
 		return;
 	}
@@ -4704,6 +4772,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_depth_clamp_zero_one",
 	"VK_KHR_robustness2",
 	"VK_KHR_present_mode_fifo_latest_ready",
+	"VK_KHR_opacity_micromap",
 	"VK_KHR_maintenance10",
 	"VK_KHR_maintenance11",
 	"VK_NV_glsl_shader",
@@ -4754,6 +4823,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_ANDROID_external_memory_android_hardware_buffer",
 	"VK_EXT_sampler_filter_minmax",
 	"VK_AMD_gpu_shader_int16",
+	"VK_AMD_gpa_interface",
 	"VK_AMDX_shader_enqueue",
 	"VK_EXT_descriptor_heap",
 	"VK_AMD_mixed_attachment_samples",
@@ -4777,6 +4847,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_filter_cubic",
 	"VK_QCOM_render_pass_shader_resolve",
 	"VK_QCOM_cooperative_matrix_conversion",
+	"VK_QCOM_elapsed_timer_query",
 	"VK_EXT_global_priority",
 	"VK_EXT_external_memory_host",
 	"VK_AMD_buffer_marker",
@@ -4845,6 +4916,9 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_device_diagnostics_config",
 	"VK_QCOM_render_pass_store_ops",
 	"VK_QCOM_queue_perf_hint",
+	"VK_QCOM_image_processing3",
+	"VK_QCOM_shader_multiple_wait_queues",
+	"VK_EXT_shader_split_barrier",
 	"VK_NV_cuda_kernel_launch",
 	"VK_QCOM_tile_shading",
 	"VK_NV_low_latency",
@@ -4990,6 +5064,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_VALVE_shader_mixed_float_dot_product",
 	"VK_SEC_throttle_hint",
 	"VK_ARM_data_graph_neural_accelerator_statistics",
+	"VK_EXT_external_semaphore_drm_syncobj",
 	"VK_EXT_primitive_restart_index",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",

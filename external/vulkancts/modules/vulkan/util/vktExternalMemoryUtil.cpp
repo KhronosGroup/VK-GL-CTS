@@ -403,6 +403,9 @@ const char *externalSemaphoreTypeToName(vk::VkExternalSemaphoreHandleTypeFlagBit
     case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA:
         return "zircon_event";
 
+    case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_DRM_SYNCOBJ_BIT_EXT:
+        return "drm_syncobj";
+
     default:
         DE_FATAL("Unknown external semaphore type");
         return nullptr;
@@ -497,6 +500,9 @@ bool isSupportedPermanence(vk::VkExternalSemaphoreHandleTypeFlagBits type, Perma
     case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA:
         return permanence == PERMANENCE_PERMANENT || permanence == PERMANENCE_TEMPORARY;
 
+    case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_DRM_SYNCOBJ_BIT_EXT:
+        return permanence == PERMANENCE_PERMANENT;
+
     default:
         DE_FATAL("Unknown external semaphore type");
         return false;
@@ -518,6 +524,9 @@ Transference getHandelTypeTransferences(vk::VkExternalSemaphoreHandleTypeFlagBit
         return TRANSFERENCE_COPY;
 
     case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA:
+        return TRANSFERENCE_REFERENCE;
+
+    case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_DRM_SYNCOBJ_BIT_EXT:
         return TRANSFERENCE_REFERENCE;
 
     default:
@@ -830,7 +839,8 @@ void getSemaphoreNative(const vk::DeviceInterface &vkd, vk::VkDevice device, vk:
                         vk::VkExternalSemaphoreHandleTypeFlagBits externalType, NativeHandle &nativeHandle)
 {
     if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT ||
-        externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)
+        externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT ||
+        externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_DRM_SYNCOBJ_BIT_EXT)
     {
         const vk::VkSemaphoreGetFdInfoKHR info = {vk::VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR, nullptr,
 
@@ -891,7 +901,8 @@ void importSemaphore(const vk::DeviceInterface &vkd, const vk::VkDevice device, 
                      vk::VkSemaphoreImportFlags flags)
 {
     if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT ||
-        externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)
+        externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT ||
+        externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_DRM_SYNCOBJ_BIT_EXT)
     {
         const vk::VkImportSemaphoreFdInfoKHR importInfo = {vk::VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR,
                                                            nullptr,
