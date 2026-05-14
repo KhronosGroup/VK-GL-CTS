@@ -8563,8 +8563,9 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
                         std::string(toString(COMPOSITE_DATA_TYPE_CASES[i])) + "_to_" + toString(dataType);
 
                     std::map<std::string, std::string> specMap;
-                    specMap["copyOp"]        = COPY_OPERATION_CASES[j].pCopyOp;
-                    specMap["alignment"]     = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+                    specMap["copyOp"] = COPY_OPERATION_CASES[j].pCopyOp;
+                    specMap["alignment"] =
+                        std::to_string(getSizeInBytes(getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i])));
                     specMap["baseType"]      = toString(getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
                     specMap["otherType"]     = toString(dataType);
                     specMap["baseDecl"]      = getDeclaration(getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
