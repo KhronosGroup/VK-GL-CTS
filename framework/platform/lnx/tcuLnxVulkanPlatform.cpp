@@ -337,9 +337,13 @@ public:
                                                          deviceDrmProperties.primaryMinor);
 
         if (!drmNode)
+        {
+            libDrm.freeDevices(drmDevices, numDrmDevices);
             TCU_THROW(NotSupportedError, "No DRM node.");
+        }
 
         m_fdPtr = libDrm.openFd(drmNode).move();
+        libDrm.freeDevices(drmDevices, numDrmDevices);
         if (!m_fdPtr)
             TCU_THROW(NotSupportedError, "Could not open DRM.");
         int fd = *m_fdPtr;

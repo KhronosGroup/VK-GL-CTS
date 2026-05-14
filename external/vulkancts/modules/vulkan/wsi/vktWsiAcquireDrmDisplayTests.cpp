@@ -224,9 +224,14 @@ LibDrm::FdPtr AcquireDrmDisplayTestInstance::getDrmFdPtr(void)
                                                        deviceDrmProperties.primaryMinor);
 
     if (!drmNode)
+    {
+        m_libDrm.freeDevices(drmDevices, numDrmDevices);
         TCU_THROW(NotSupportedError, "No DRM node.");
+    }
 
-    return m_libDrm.openFd(drmNode);
+    const std::string drmNodeStr(drmNode);
+    m_libDrm.freeDevices(drmDevices, numDrmDevices);
+    return m_libDrm.openFd(drmNodeStr.c_str());
 }
 
 /*--------------------------------------------------------------------*//*!
