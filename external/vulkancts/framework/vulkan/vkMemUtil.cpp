@@ -234,6 +234,41 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryAllocateInfo &allocI
     return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr, static_cast<size_t>(offset)));
 }
 
+namespace
+{
+
+std::unique_ptr<VkMemoryAllocateFlagsInfo> getMemoryAllocateFlagsInfo(MemoryRequirement requirement)
+{
+    VkMemoryAllocateFlags flags = 0u;
+
+    if (requirement & MemoryRequirement::DeviceAddress)
+        flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+
+    if (requirement & MemoryRequirement::DeviceAddressCaptureReplay)
+        flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+
+#ifndef CTS_USES_VULKANSC
+    if (requirement & MemoryRequirement::ZeroInitialize)
+        flags |= VK_MEMORY_ALLOCATE_ZERO_INITIALIZE_BIT_EXT;
+#endif // CTS_USES_VULKANSC
+
+    std::unique_ptr<VkMemoryAllocateFlagsInfo> flagsInfo;
+
+    if (flags)
+    {
+        flagsInfo.reset(new VkMemoryAllocateFlagsInfo{
+            VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO, // VkStructureType       sType
+            nullptr,                                      // const void*           pNext
+            flags,                                        // VkMemoryAllocateFlags flags
+            0u,                                           // uint32_t              deviceMask
+        });
+    }
+
+    return flagsInfo;
+}
+
+} // namespace
+
 MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReqs, MemoryRequirement requirement,
                                               const tcu::Maybe<HostIntent> &hostIntent,
                                               uint64_t memoryOpaqueCaptureAddr)
@@ -258,12 +293,7 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
         memoryTypeNdx,                          // uint32_t memoryTypeIndex;
     };
 
-    VkMemoryAllocateFlagsInfo allocFlagsInfo = {
-        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO, //    VkStructureType            sType
-        nullptr,                                      //    const void*                pNext
-        0,                                            //    VkMemoryAllocateFlags    flags
-        0,                                            //    uint32_t                deviceMask
-    };
+    auto allocFlagsInfo = getMemoryAllocateFlagsInfo(requirement);
 
     VkMemoryOpaqueCaptureAddressAllocateInfo captureInfo = {
         VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO, // VkStructureType sType
@@ -271,24 +301,11 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
         memoryOpaqueCaptureAddr,                                       // uint64_t        opaqueCaptureAddress
     };
 
-    if (requirement & MemoryRequirement::DeviceAddress)
-        allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+    if (memoryOpaqueCaptureAddr && allocFlagsInfo)
+        allocFlagsInfo->pNext = &captureInfo;
 
-    if (requirement & MemoryRequirement::DeviceAddressCaptureReplay)
-    {
-        allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
-
-        if (memoryOpaqueCaptureAddr)
-            allocFlagsInfo.pNext = &captureInfo;
-    }
-
-#ifndef CTS_USES_VULKANSC
-    if (requirement & MemoryRequirement::ZeroInitialize)
-        allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_ZERO_INITIALIZE_BIT_EXT;
-#endif // CTS_USES_VULKANSC
-
-    if (allocFlagsInfo.flags)
-        allocInfo.pNext = &allocFlagsInfo;
+    if (allocFlagsInfo)
+        allocInfo.pNext = allocFlagsInfo.get();
 
     Move<VkDeviceMemory> mem = allocateMemory(m_vk, m_device, &allocInfo);
     MovePtr<HostPtr> hostPtr;
@@ -361,13 +378,17 @@ de::MovePtr<Allocation> allocateDedicated(const InstanceInterface &vki, const De
                                           const VkPhysicalDevice &physDevice, const VkDevice device,
                                           const VkBuffer buffer, MemoryRequirement requirement)
 {
-    const VkMemoryRequirements memoryRequirements               = getBufferMemoryRequirements(vkd, device, buffer);
-    const VkMemoryDedicatedAllocateInfo dedicatedAllocationInfo = {
+    const VkMemoryRequirements memoryRequirements         = getBufferMemoryRequirements(vkd, device, buffer);
+    VkMemoryDedicatedAllocateInfo dedicatedAllocationInfo = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType        sType
         nullptr,                                          // const void*            pNext
         VK_NULL_HANDLE,                                   // VkImage                image
         buffer                                            // VkBuffer                buffer
     };
+
+    const auto flagsInfo = getMemoryAllocateFlagsInfo(requirement);
+    if (flagsInfo)
+        dedicatedAllocationInfo.pNext = flagsInfo.get();
 
     return allocateExtended(vki, vkd, physDevice, device, memoryRequirements, requirement, &dedicatedAllocationInfo);
 }
@@ -376,13 +397,17 @@ de::MovePtr<Allocation> allocateDedicated(const InstanceInterface &vki, const De
                                           const VkPhysicalDevice &physDevice, const VkDevice device,
                                           const VkImage image, MemoryRequirement requirement)
 {
-    const VkMemoryRequirements memoryRequirements               = getImageMemoryRequirements(vkd, device, image);
-    const VkMemoryDedicatedAllocateInfo dedicatedAllocationInfo = {
+    const VkMemoryRequirements memoryRequirements         = getImageMemoryRequirements(vkd, device, image);
+    VkMemoryDedicatedAllocateInfo dedicatedAllocationInfo = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType        sType
         nullptr,                                          // const void*            pNext
         image,                                            // VkImage                image
         VK_NULL_HANDLE                                    // VkBuffer                buffer
     };
+
+    const auto flagsInfo = getMemoryAllocateFlagsInfo(requirement);
+    if (flagsInfo)
+        dedicatedAllocationInfo.pNext = flagsInfo.get();
 
     return allocateExtended(vki, vkd, physDevice, device, memoryRequirements, requirement, &dedicatedAllocationInfo);
 }

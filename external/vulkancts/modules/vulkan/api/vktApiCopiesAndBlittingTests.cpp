@@ -16873,19 +16873,24 @@ CopyMemoryToImageIndirect::CopyMemoryToImageIndirect(Context &context, TestParam
 
     // Create source buffer
     {
+        const auto sourceBufferUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                                                                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+
         const VkBufferCreateInfo sourceBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
             nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_bufferSize,                         // VkDeviceSize size;
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags usage;
+            sourceBufferUsage,                    // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
             (const uint32_t *)nullptr,            // const uint32_t* pQueueFamilyIndices;
         };
 
+        const auto sourceBufferMemReqs = (MemoryRequirement::DeviceAddress | MemoryRequirement::HostVisible);
+
         m_source            = createBuffer(vk, m_device, &sourceBufferParams);
-        m_sourceBufferAlloc = allocateBuffer(vki, vk, vkPhysDevice, m_device, *m_source, MemoryRequirement::HostVisible,
+        m_sourceBufferAlloc = allocateBuffer(vki, vk, vkPhysDevice, m_device, *m_source, sourceBufferMemReqs,
                                              *m_allocator, m_params.allocationKind);
         VK_CHECK(vk.bindBufferMemory(m_device, *m_source, m_sourceBufferAlloc->getMemory(),
                                      m_sourceBufferAlloc->getOffset()));
@@ -17151,9 +17156,11 @@ tcu::TestStatus CopyMemoryToImageIndirect::iterate(void)
     };
 
     const VkDeviceSize indirectBufferSize = de::max(m_params.regions.size(), (size_t)1) * sizeof(IndirectImageParams);
-    const BufferWithMemory indirectBuffer(
-        vk, vkDevice, memAlloc, makeBufferCreateInfo(indirectBufferSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT),
-        MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    const auto indirectBufferUsage        = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                                                                     VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+    const BufferWithMemory indirectBuffer(vk, vkDevice, memAlloc,
+                                          makeBufferCreateInfo(indirectBufferSize, indirectBufferUsage),
+                                          MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
 
     // indirectBuffer Address
     VkBufferDeviceAddressInfo indirectBufferAddressInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr,
