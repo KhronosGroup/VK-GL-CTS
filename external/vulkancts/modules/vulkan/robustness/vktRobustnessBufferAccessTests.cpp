@@ -459,7 +459,12 @@ void RobustBufferAccessTest::genBufferShaderAccess(ShaderType shaderType, VkForm
                             "    int outIndex;\n"
                             "};\n\n";
 
-        switch (shaderType)
+        const bool is64BitIntegerFormat =
+            (bufferFormat == vk::VK_FORMAT_R64_UINT || bufferFormat == vk::VK_FORMAT_R64_SINT);
+        const ShaderType effectiveShaderType =
+            (is64BitIntegerFormat && shaderType == SHADER_TYPE_VECTOR_COPY) ? SHADER_TYPE_SCALAR_COPY : shaderType;
+
+        switch (effectiveShaderType)
         {
         case SHADER_TYPE_MATRIX_COPY:
             // Shader type not supported for integer types.
