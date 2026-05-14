@@ -2764,14 +2764,14 @@ tcu::TestStatus PushConstantLifetimeTestInstance::iterate(void)
         bool inProperLayout = false;
         for (size_t ndx = 0; ndx < m_cmdList.size(); ndx++)
         {
-            const VkPushConstantRange pushConstantRange{m_pushConstantRange[m_cmdList[ndx].rangeNdx].range.shaderStage,
-                                                        m_pushConstantRange[m_cmdList[ndx].rangeNdx].range.offset,
-                                                        m_pushConstantRange[m_cmdList[ndx].rangeNdx].range.size};
-
             switch (m_cmdList[ndx].cType)
             {
             case CMD_PUSH_CONSTANT:
             {
+                const VkPushConstantRange pushConstantRange{
+                    m_pushConstantRange[m_cmdList[ndx].rangeNdx].range.shaderStage,
+                    m_pushConstantRange[m_cmdList[ndx].rangeNdx].range.offset,
+                    m_pushConstantRange[m_cmdList[ndx].rangeNdx].range.size};
                 vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout[m_cmdList[ndx].rangeNdx],
                                     pushConstantRange.stageFlags, pushConstantRange.offset, pushConstantRange.size,
                                     &value);
