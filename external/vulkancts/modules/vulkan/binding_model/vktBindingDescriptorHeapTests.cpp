@@ -9637,8 +9637,9 @@ tcu::TestStatus DescriptorHeapTestInstanceGraphics::iterate()
 
     const VkDeviceSize bufferDescriptorStride = getBufferDescriptorStride(m_descriptorHeapProperties);
     const VkDeviceSize resourceHeapAlignment  = m_descriptorHeapProperties.resourceHeapAlignment;
-    const VkDeviceSize userHeapSize           = alignUp(12 * bufferDescriptorStride, resourceHeapAlignment);
-    const VkDeviceSize heapSize               = userHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
+    const VkDeviceSize userHeapSize =
+        alignUp((m_params.useVectors ? 17 : 12) * bufferDescriptorStride, resourceHeapAlignment);
+    const VkDeviceSize heapSize = userHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
 
     auto heap               = createBufferAndMemory(heapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
                                                                   VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
