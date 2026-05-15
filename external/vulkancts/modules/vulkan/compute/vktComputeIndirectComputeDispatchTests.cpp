@@ -26,7 +26,6 @@
 
 #include "vktComputeIndirectComputeDispatchTests.hpp"
 #include "vktComputeTestsUtil.hpp"
-#include "vktCustomInstancesDevices.hpp"
 #include "vkSafetyCriticalUtil.hpp"
 
 #include <string>
@@ -61,7 +60,6 @@
 #include "deArrayUtil.hpp"
 
 #include "gluShaderUtil.hpp"
-#include "tcuCommandLine.hpp"
 
 #include <set>
 
@@ -69,141 +67,6 @@ namespace vkt::compute
 {
 namespace
 {
-std::vector<std::string> removeCoreExtensions(const std::vector<std::string> &supportedExtensions,
-                                              const std::vector<const char *> &coreExtensions)
-{
-    std::vector<std::string> nonCoreExtensions;
-    std::set<std::string> excludedExtensions(coreExtensions.begin(), coreExtensions.end());
-
-    for (const auto &supportedExtension : supportedExtensions)
-    {
-        if (!de::contains(excludedExtensions, supportedExtension))
-            nonCoreExtensions.push_back(supportedExtension);
-    }
-
-    return nonCoreExtensions;
-}
-
-// Creates a device that has a queue for compute capabilities without graphics.
-vk::Move<vk::VkDevice> createCustomDevice(Context &context,
-#ifdef CTS_USES_VULKANSC
-                                          const vkt::CustomInstance &customInstance,
-#endif // CTS_USES_VULKANSC
-                                          uint32_t &queueFamilyIndex)
-{
-#ifdef CTS_USES_VULKANSC
-    const vk::InstanceInterface &instanceDriver = customInstance.getDriver();
-    const vk::VkPhysicalDevice physicalDevice =
-        chooseDevice(instanceDriver, customInstance, context.getTestContext().getCommandLine());
-#else
-    const vk::InstanceInterface &instanceDriver = context.getInstanceInterface();
-    const vk::VkPhysicalDevice physicalDevice   = context.getPhysicalDevice();
-#endif // CTS_USES_VULKANSC
-
-    const std::vector<vk::VkQueueFamilyProperties> queueFamilies =
-        getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
-
-    queueFamilyIndex = 0;
-    for (const auto &queueFamily : queueFamilies)
-    {
-        if (queueFamily.queueFlags & vk::VK_QUEUE_COMPUTE_BIT &&
-            !(queueFamily.queueFlags & vk::VK_QUEUE_GRAPHICS_BIT) &&
-            queueFamilyIndex != context.getUniversalQueueFamilyIndex())
-            break;
-        else
-            queueFamilyIndex++;
-    }
-
-    // One queue family without a graphics bit should be found, since this is checked in checkSupport.
-    DE_ASSERT(queueFamilyIndex < queueFamilies.size());
-
-    const float queuePriority                                  = 1.0f;
-    const vk::VkDeviceQueueCreateInfo deviceQueueCreateInfos[] = {
-        {
-            vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                        // const void* pNext;
-            (vk::VkDeviceQueueCreateFlags)0u,               // VkDeviceQueueCreateFlags flags;
-            context.getUniversalQueueFamilyIndex(),         // uint32_t queueFamilyIndex;
-            1u,                                             // uint32_t queueCount;
-            &queuePriority,                                 // const float* pQueuePriorities;
-        },
-        {
-            vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                        // const void* pNext;
-            (vk::VkDeviceQueueCreateFlags)0u,               // VkDeviceQueueCreateFlags flags;
-            queueFamilyIndex,                               // uint32_t queueFamilyIndex;
-            1u,                                             // uint32_t queueCount;
-            &queuePriority,                                 // const float* pQueuePriorities;
-        }};
-
-    // context.getDeviceExtensions() returns supported device extension including extensions that have been promoted to
-    // Vulkan core. The core extensions must be removed from the list.
-    std::vector<const char *> coreExtensions;
-    vk::getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-    std::vector<std::string> nonCoreExtensions(removeCoreExtensions(context.getDeviceExtensions(), coreExtensions));
-
-    std::vector<const char *> extensionNames;
-    extensionNames.reserve(nonCoreExtensions.size());
-    for (const std::string &extension : nonCoreExtensions)
-        extensionNames.push_back(extension.c_str());
-
-    const auto &deviceFeatures2 = context.getDeviceFeatures2();
-
-    const void *pNext = &deviceFeatures2;
-#ifdef CTS_USES_VULKANSC
-    VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
-                                                                 context.getResourceInterface()->getStatMax() :
-                                                                 resetDeviceObjectReservationCreateInfo();
-    memReservationInfo.pNext                               = pNext;
-    pNext                                                  = &memReservationInfo;
-
-    VkPipelineCacheCreateInfo pcCI;
-    std::vector<VkPipelinePoolSize> poolSizes;
-    if (context.getTestContext().getCommandLine().isSubProcess())
-    {
-        if (context.getResourceInterface()->getCacheDataSize() > 0)
-        {
-            pcCI = {
-                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                nullptr,                                      // const void* pNext;
-                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
-                context.getResourceInterface()->getCacheData()            // const void* pInitialData;
-            };
-            memReservationInfo.pipelineCacheCreateInfoCount = 1;
-            memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-        }
-        poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
-        if (!poolSizes.empty())
-        {
-            memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-            memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-        }
-    }
-#endif // CTS_USES_VULKANSC
-
-    const vk::VkDeviceCreateInfo deviceCreateInfo = {
-        vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,     // VkStructureType sType;
-        pNext,                                        // const void* pNext;
-        (vk::VkDeviceCreateFlags)0u,                  // VkDeviceCreateFlags flags;
-        DE_LENGTH_OF_ARRAY(deviceQueueCreateInfos),   // uint32_t queueCreateInfoCount;
-        deviceQueueCreateInfos,                       // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
-        0u,                                           // uint32_t enabledLayerCount;
-        nullptr,                                      // const char* const* ppEnabledLayerNames;
-        static_cast<uint32_t>(extensionNames.size()), // uint32_t enabledExtensionCount;
-        extensionNames.data(),                        // const char* const* ppEnabledExtensionNames;
-        nullptr,                                      // const VkPhysicalDeviceFeatures* pEnabledFeatures;
-    };
-
-    return vkt::createCustomDevice(context.getPlatformInterface(),
-#ifdef CTS_USES_VULKANSC
-                                   customInstance,
-#else
-                                   context.getInstance(),
-#endif
-                                   instanceDriver, physicalDevice, &deviceCreateInfo);
-}
 
 enum
 {
@@ -243,13 +106,11 @@ typedef std::vector<DispatchCommand> DispatchCommandsVec;
 struct TestParams
 {
     TestParams(const char *name_, const uintptr_t bufferSize_, const tcu::UVec3 workGroupSize_,
-               const DispatchCommandsVec &dispatchCommands_, const bool computeQueueOnly_ = false,
-               const bool useDeviceAddressCommands_ = false)
+               const DispatchCommandsVec &dispatchCommands_, const bool useDeviceAddressCommands_ = false)
         : name(name_)
         , bufferSize(bufferSize_)
         , workGroupSize(workGroupSize_)
         , dispatchCommands(dispatchCommands_)
-        , computeOnlyQueue(computeQueueOnly_)
         , useDeviceAddressCommands(useDeviceAddressCommands_)
     {
         // If one of the work group counts is zero, all of them must be and vice versa. This is because on some tests
@@ -289,11 +150,10 @@ struct TestParams
     const uintptr_t bufferSize;
     const tcu::UVec3 workGroupSize;
     const DispatchCommandsVec dispatchCommands;
-    const bool computeOnlyQueue;
     const bool useDeviceAddressCommands;
 };
 
-class IndirectDispatchInstanceBufferUpload : public vkt::TestInstance
+class IndirectDispatchInstanceBufferUpload : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     IndirectDispatchInstanceBufferUpload(Context &context, const std::string &name, const TestParams &testParams,
@@ -301,7 +161,7 @@ public:
 
     virtual ~IndirectDispatchInstanceBufferUpload(void) = default;
 
-    virtual tcu::TestStatus iterate(void);
+    virtual tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 protected:
     virtual void fillIndirectBufferData(const vk::VkCommandBuffer commandBuffer, const vk::DeviceInterface &vkdi,
@@ -314,21 +174,8 @@ protected:
     const std::string m_name;
 
     vk::VkDevice m_device;
-#ifdef CTS_USES_VULKANSC
-    const CustomInstance m_customInstance;
-#endif // CTS_USES_VULKANSC
-    vk::Move<vk::VkDevice> m_customDevice;
-#ifndef CTS_USES_VULKANSC
-    de::MovePtr<vk::DeviceDriver> m_deviceDriver;
-#else
-    de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter> m_deviceDriver;
-#endif // CTS_USES_VULKANSC
-
-    vk::VkQueue m_queue;
-    uint32_t m_queueFamilyIndex;
 
     const TestParams m_params;
-    de::MovePtr<vk::Allocator> m_allocator;
 
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 
@@ -340,15 +187,10 @@ private:
 IndirectDispatchInstanceBufferUpload::IndirectDispatchInstanceBufferUpload(
     Context &context, const std::string &name, const TestParams &testParams,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
-    : vkt::TestInstance(context)
+    : vkt::MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
     , m_context(context)
     , m_name(name)
     , m_device(context.getDevice())
-#ifdef CTS_USES_VULKANSC
-    , m_customInstance(createCustomInstanceFromContext(context))
-#endif // CTS_USES_VULKANSC
-    , m_queue(context.getUniversalQueue())
-    , m_queueFamilyIndex(context.getUniversalQueueFamilyIndex())
     , m_params(testParams)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
@@ -379,14 +221,12 @@ void IndirectDispatchInstanceBufferUpload::fillIndirectBufferData(const vk::VkCo
     vk::flushAlloc(vkdi, m_device, alloc);
 }
 
-tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate(void)
+tcu::TestStatus IndirectDispatchInstanceBufferUpload::queuePass(const vkt::QueueData &queueData)
 {
-#ifdef CTS_USES_VULKANSC
-    const vk::InstanceInterface &vki = m_customInstance.getDriver();
-#else
     const vk::InstanceInterface &vki = m_context.getInstanceInterface();
-#endif // CTS_USES_VULKANSC
-    tcu::TestContext &testCtx = m_context.getTestContext();
+    tcu::TestContext &testCtx        = m_context.getTestContext();
+    const vk::DeviceInterface &vkdi  = m_context.getDeviceInterface();
+    vk::Allocator &allocator         = m_context.getDefaultAllocator();
 
     testCtx.getLog() << tcu::TestLog::Message << "GL_DISPATCH_INDIRECT_BUFFER size = " << m_params.bufferSize
                      << tcu::TestLog::EndMessage;
@@ -403,42 +243,6 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate(void)
                              << tcu::TestLog::EndMessage;
         }
     }
-
-    if (m_params.computeOnlyQueue)
-    {
-        // m_queueFamilyIndex will be updated in createCustomDevice() to match the requested queue type.
-        m_customDevice = createCustomDevice(m_context,
-#ifdef CTS_USES_VULKANSC
-                                            m_customInstance,
-#endif
-                                            m_queueFamilyIndex);
-        m_device = m_customDevice.get();
-#ifndef CTS_USES_VULKANSC
-        m_deviceDriver = de::MovePtr<vk::DeviceDriver>(
-            new vk::DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), m_device,
-                                 m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
-#else
-        m_deviceDriver = de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>(
-            new vk::DeviceDriverSC(m_context.getPlatformInterface(), m_customInstance, m_device,
-                                   m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(),
-                                   m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(),
-                                   m_context.getUsedApiVersion()),
-            vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), m_device));
-#endif // CTS_USES_VULKANSC
-    }
-#ifndef CTS_USES_VULKANSC
-    const vk::DeviceInterface &vkdi = m_context.getDeviceInterface();
-#else
-    const vk::DeviceInterface &vkdi =
-        (m_params.computeOnlyQueue && m_deviceDriver) ? *m_deviceDriver : m_context.getDeviceInterface();
-#endif // CTS_USES_VULKANSC
-    if (m_params.computeOnlyQueue)
-    {
-        m_queue     = getDeviceQueue(vkdi, m_device, m_queueFamilyIndex, 0u);
-        m_allocator = de::MovePtr<vk::Allocator>(new vk::SimpleAllocator(
-            vkdi, m_device, vk::getPhysicalDeviceMemoryProperties(vki, m_context.getPhysicalDevice())));
-    }
-    vk::Allocator &allocator = m_allocator.get() ? *m_allocator : m_context.getDefaultAllocator();
 
     // Create result buffer
     const vk::VkDeviceSize resultBlockSize =
@@ -490,7 +294,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate(void)
         vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0ull, resultBufferSize);
 
     // Create command buffer
-    const vk::Unique<vk::VkCommandPool> cmdPool(makeCommandPool(vkdi, m_device, m_queueFamilyIndex));
+    const vk::Unique<vk::VkCommandPool> cmdPool(makeCommandPool(vkdi, m_device, queueData.familyIndex));
     const vk::Unique<vk::VkCommandBuffer> cmdBuffer(
         allocateCommandBuffer(vkdi, m_device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
@@ -576,7 +380,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate(void)
     endCommandBuffer(vkdi, *cmdBuffer);
 
     // Wait for command buffer execution finish
-    submitCommandsAndWait(vkdi, m_device, m_queue, *cmdBuffer);
+    submitCommandsAndWait(vkdi, m_device, queueData.handle, *cmdBuffer);
 
     // Check if result buffer contains valid values
     if (verifyResultBuffer(resultBuffer, vkdi, resultBlockSize))
@@ -692,26 +496,6 @@ TestInstance *IndirectDispatchCaseBufferUpload::createInstance(Context &context)
 
 void IndirectDispatchCaseBufferUpload::checkSupport(Context &context) const
 {
-    // Find at least one queue family that supports compute queue but does NOT support graphics queue.
-    if (m_params.computeOnlyQueue)
-    {
-        bool foundQueue = false;
-        const std::vector<vk::VkQueueFamilyProperties> queueFamilies =
-            getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
-
-        for (const auto &queueFamily : queueFamilies)
-        {
-            if (queueFamily.queueFlags & vk::VK_QUEUE_COMPUTE_BIT &&
-                !(queueFamily.queueFlags & vk::VK_QUEUE_GRAPHICS_BIT))
-            {
-                foundQueue = true;
-                break;
-            }
-        }
-        if (!foundQueue)
-            TCU_THROW(NotSupportedError, "No queue family found that only supports compute queue.");
-    }
-
     if (m_params.useDeviceAddressCommands)
         context.requireDeviceFunctionality("VK_KHR_device_address_commands");
 
@@ -763,6 +547,9 @@ void IndirectDispatchInstanceBufferGenerate::fillIndirectBufferData(const vk::Vk
     // Create compute pipeline
     m_pipelineLayout  = makePipelineLayout(vkdi, m_device, *m_descriptorSetLayout);
     m_computePipeline = makeComputePipeline(vkdi, m_device, *m_pipelineLayout, *genIndirectBufferDataShader);
+
+    // Release old descriptor set before replacing the pool
+    m_descriptorSet = vk::Move<vk::VkDescriptorSet>();
 
     // Create descriptor pool
     m_descriptorPool = vk::DescriptorPoolBuilder()
@@ -920,25 +707,17 @@ tcu::TestCaseGroup *createIndirectComputeDispatchTests(
     for (uint32_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_dispatchCases); ndx++)
     {
         const TestParams &caseParams = s_dispatchCases[ndx];
-        std::string computeName      = std::string(caseParams.name) + std::string("_compute_only_queue");
-        TestParams computeOnlyParams(computeName.c_str(), caseParams.bufferSize, caseParams.workGroupSize,
-                                     caseParams.dispatchCommands, true);
 
         groupBufferUpload->addChild(
             new IndirectDispatchCaseBufferUpload(testCtx, caseParams, computePipelineConstructionType));
-        groupBufferUpload->addChild(
-            new IndirectDispatchCaseBufferUpload(testCtx, computeOnlyParams, computePipelineConstructionType));
 
         groupBufferGenerate->addChild(
             new IndirectDispatchCaseBufferGenerate(testCtx, caseParams, computePipelineConstructionType));
-        groupBufferGenerate->addChild(
-            new IndirectDispatchCaseBufferGenerate(testCtx, computeOnlyParams, computePipelineConstructionType));
 
 #ifndef CTS_USES_VULKANSC
-        computeName              = std::string(caseParams.name) + std::string("_device_address");
-        bool useComputeOnlyQueue = ((ndx % 4) == 0);
+        std::string computeName = std::string(caseParams.name) + std::string("_device_address");
         TestParams addressCommandsCaseDesc(computeName.c_str(), caseParams.bufferSize, caseParams.workGroupSize,
-                                           caseParams.dispatchCommands, useComputeOnlyQueue, true);
+                                           caseParams.dispatchCommands, true);
 
         // limit number of tests repeated for device_address_commands - skip every other case
         // in upload_buffer group but run previously skiped cases in gen_in_compute group;
