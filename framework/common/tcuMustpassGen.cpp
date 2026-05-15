@@ -326,18 +326,25 @@ bool routeSplitGroup(const Config &cfg, const std::string &caseName, std::string
     if (parts.size() < 3)
         return false;
 
-    std::string groupName = replaceUnderscores(parts[1]);
+    // Pick the deepest splitPattern that matches caseName, so a deeper entry
+    // like "dEQP-VK.pipeline.monolithic" subdivides into per-subgroup files
+    // instead of collapsing back into one with the shallower match.
+    size_t bestDepth = 0;
     for (const std::string &splitPattern : cfg.splitGroups)
     {
         const std::vector<std::string> splitParts = splitDots(splitPattern);
-        if (splitParts.size() <= 1)
+        const size_t depth                        = splitParts.size();
+        if (depth <= 1 || depth <= bestDepth || parts.size() <= depth)
             continue;
         const std::string prefix = splitPattern + ".";
         if (caseName.size() >= prefix.size() && std::equal(prefix.begin(), prefix.end(), caseName.begin()))
-        {
-            groupName += "/";
-            groupName += replaceUnderscores(parts[2]);
-        }
+            bestDepth = depth;
+    }
+    std::string groupName = replaceUnderscores(parts[1]);
+    for (size_t i = 2; i <= bestDepth; ++i)
+    {
+        groupName += "/";
+        groupName += replaceUnderscores(parts[i]);
     }
     const std::string fileName = groupName + ".txt";
     subFileRelPathOut          = cfg.groupSubDir + "/" + fileName;

@@ -1,0 +1,7 @@
+dEQP-VK.pipeline.shader_object_unlinked_spirv.misc.array_of_structs_interface
+dEQP-VK.pipeline.shader_object_unlinked_spirv.misc.color_write_mask_none
+dEQP-VK.pipeline.shader_object_unlinked_spirv.misc.descriptor_bind_test_backwards
+dEQP-VK.pipeline.shader_object_unlinked_spirv.misc.descriptor_bind_test_backwards_holes
+dEQP-VK.pipeline.shader_object_unlinked_spirv.misc.descriptor_bind_test_holes
+dEQP-VK.pipeline.shader_object_unlinked_spirv.misc.implicit_primitive_id
+dEQP-VK.pipeline.shader_object_unlinked_spirv.misc.implicit_primitive_id_with_tessellation
