@@ -123,6 +123,9 @@ set(DEQP_VK_VKSC_CUSTOM_INSTANCES_DEVICES_UTIL_SRCS
 
 add_library(deqp-vk-custom-instances-devices-util STATIC ${DEQP_VK_VKSC_CUSTOM_INSTANCES_DEVICES_UTIL_SRCS})
 target_link_libraries(deqp-vk-custom-instances-devices-util tcutil vkutil)
+if (NOT DEQP_DISABLE_VK_VIDEO_TESTS)
+	target_compile_definitions(deqp-vk-custom-instances-devices-util PRIVATE DE_BUILD_VIDEO)
+endif()
 
 add_library(deqp-vksc-custom-instances-devices-util STATIC ${DEQP_VK_VKSC_CUSTOM_INSTANCES_DEVICES_UTIL_SRCS})
 target_link_libraries(deqp-vksc-custom-instances-devices-util PUBLIC deqp-vksc-util tcutil vkscutil)
