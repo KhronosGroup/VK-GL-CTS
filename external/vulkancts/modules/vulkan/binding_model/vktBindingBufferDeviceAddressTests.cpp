@@ -2337,7 +2337,7 @@ void BufferDeviceAddressMiscTestCase::initPrograms(SourceCollections &programCol
             "\n"
             "layout(std430, buffer_reference) buffer T1 {\n"
             "    int a;\n"
-            "} block_buffer;\n"
+            "};\n"
             "\n"
             "struct Foo {\n"
             "    T1 b;\n"
