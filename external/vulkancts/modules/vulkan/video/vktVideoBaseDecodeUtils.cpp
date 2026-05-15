@@ -3457,8 +3457,21 @@ VkResult VkParserVideoPictureParameters::CreateParametersObject(
     VkVideoDecodeAV1SessionParametersCreateInfoKHR av1SessionParametersCreateInfo{};
     av1SessionParametersCreateInfo.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_SESSION_PARAMETERS_CREATE_INFO_KHR;
 
+    // VUID-VkVideoSessionParametersCreateInfoKHR-videoSessionParametersTemplate-04855
+    // requires the template to have been created against the same
+    // VkVideoSessionKHR we are creating against. Across a resolution change
+    // the parser-side ref-counted template chain spans sessions, so a
+    // template created against the previous session is unusable as a
+    // Vulkan template here. The Vulkan template is optional - any SPS/PPS
+    // we drop by skipping it will be lazily re-queued from
+    // pPicParams->pStd{Vps,Sps,Pps} in
+    // VideoBaseDecoder::ApplyPictureParameters() before the picture is
+    // decoded.
+    const bool templateMatchesSession = pTemplatePictureParameters &&
+                                        (pTemplatePictureParameters->m_sessionParameters != VK_NULL_HANDLE) &&
+                                        (pTemplatePictureParameters->m_videoSession.Get() == videoSession.Get());
     createInfo.videoSessionParametersTemplate =
-        pTemplatePictureParameters ? VkVideoSessionParametersKHR(*pTemplatePictureParameters) : VK_NULL_HANDLE;
+        templateMatchesSession ? VkVideoSessionParametersKHR(*pTemplatePictureParameters) : VK_NULL_HANDLE;
 
     StdVideoPictureParametersSet::StdType updateType = pStdVideoPictureParametersSet->GetStdType();
     switch (updateType)
@@ -3528,7 +3541,13 @@ VkResult VkParserVideoPictureParameters::CreateParametersObject(
     TCU_CHECK_AND_THROW(TestError, result == VK_SUCCESS, "Could not create video session parameters");
     m_videoSession = videoSession;
 
-    if (pTemplatePictureParameters)
+    // Only inherit the IDs-used bitsets when we actually used the
+    // template (i.e. it was on the same session). Otherwise the new
+    // VkVideoSessionParametersKHR is fresh; claiming SPS/PPS IDs it does
+    // not have would defeat the lazy-queue path in ApplyPictureParameters
+    // which uses HasVpsId/HasSpsId/HasPpsId to decide whether to re-add
+    // a parameter set from pPicParams.
+    if (templateMatchesSession)
     {
         m_vpsIdsUsed    = pTemplatePictureParameters->m_vpsIdsUsed;
         m_spsIdsUsed    = pTemplatePictureParameters->m_spsIdsUsed;
