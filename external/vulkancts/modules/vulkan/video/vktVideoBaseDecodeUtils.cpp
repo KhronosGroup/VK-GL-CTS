@@ -583,10 +583,13 @@ void VideoBaseDecoder::StartVideoSequence(const VkParserDetectedVideoFormat *pVi
         // after creating a new video session, we need codec reset.
         m_resetDecoder = true;
 
-        if (m_currentPictureParameters)
-        {
-            m_currentPictureParameters->FlushPictureParametersQueue(m_videoSession);
-        }
+        // NOTE: do NOT flush the parser-side parameter queue here. BeginSequence
+        // (which calls into this function) only sets up resources; the Vulkan
+        // VkVideoSessionParametersKHR is realized lazily in
+        // ApplyPictureParameters() per decoded frame, against whichever
+        // m_videoSession is current at that point. Flushing here would
+        // prematurely bind queued SPS/PPS to a session that may not be the
+        // one used at vkCmdBeginVideoCodingKHR time.
 
         VkImageUsageFlags outImageUsage = (VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
         VkImageUsageFlags dpbImageUsage = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR;
@@ -2009,33 +2012,124 @@ void VideoBaseDecoder::ApplyPictureParameters(de::MovePtr<CachedDecodeParameters
     if ((m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR) ||
         (m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR))
     {
+        // In inline-session-parameters mode the VPS/SPS/PPS travel directly
+        // with each vkCmdBeginVideoCodingKHR via
+        // VkVideoDecode{H264,H265}InlineSessionParametersInfoKHR, and the
+        // VkVideoSessionParametersKHR handle is forced to VK_NULL_HANDLE in
+        // RecordCommandBuffer(). Nothing to realize here; just set null and
+        // skip the lookups.
+        if (m_useInlineSessionParams)
+        {
+            cachedParameters->decodeBeginInfo.videoSessionParameters = VK_NULL_HANDLE;
+            return;
+        }
+
         bool valid = pPicParams->pStdPps->GetClientObject(currentVkPictureParameters);
         TCU_CHECK_AND_THROW(InternalError, currentVkPictureParameters && valid,
                             "Invalid video session parameters (H.26x PPS client object)");
+        DE_UNREF(valid);
         pOwnerPictureParameters =
             VkParserVideoPictureParameters::VideoPictureParametersFromBase(currentVkPictureParameters);
         TCU_CHECK_AND_THROW(InternalError, pOwnerPictureParameters, "Owner picture parameters must be valid (H.26x)");
+
+        // First, realize anything already queued by the parser against the
+        // currently bound m_videoSession. This handles the resolution-change
+        // case where the new SPS/PPS arrived in UpdatePictureParameters()
+        // before BeginSequence() recreated m_videoSession; the queue is
+        // still pending at this point and gets bound to the *new* session
+        // here, which is exactly what VUID-04857 requires.
         int32_t ret = pOwnerPictureParameters->FlushPictureParametersQueue(m_videoSession);
         TCU_CHECK_AND_THROW(InternalError, ret >= 0, "Failed to flush picture parameters queue (H.26x)");
         DE_UNREF(ret);
-        bool isSps    = false;
-        int32_t spsId = pPicParams->pStdPps->GetSpsId(isSps);
-        TCU_CHECK_AND_THROW(InternalError, !isSps, "Expected SPS id from PPS query");
-        TCU_CHECK_AND_THROW(InternalError, spsId >= 0, "Invalid SPS id");
-        TCU_CHECK_AND_THROW(InternalError, pOwnerPictureParameters->HasSpsId(spsId), "SPS id not found");
-        bool isPps    = false;
-        int32_t ppsId = pPicParams->pStdPps->GetPpsId(isPps);
-        TCU_CHECK_AND_THROW(InternalError, isPps, "Expected PPS id");
-        TCU_CHECK_AND_THROW(InternalError, ppsId >= 0, "Invalid PPS id");
-        TCU_CHECK_AND_THROW(InternalError, pOwnerPictureParameters->HasPpsId(ppsId), "PPS id not found");
-        DE_UNREF(valid);
+
+        // Then make sure the VPS/SPS/PPS this picture references are
+        // actually present in the now-realized VkVideoSessionParametersKHR.
+        // The parser may have stopped resending them (e.g. an early-arrived
+        // SPS was applied to a previous Vulkan parameter object that is
+        // now obsolete). In that case lazily queue them from the per-frame
+        // pPicParams pointers, which the parser keeps valid for the
+        // lifetime of this decode call.
+        bool isH265           = (m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR);
+        bool needAnotherFlush = false;
+
+        // The per-frame pPicParams->pStd{Vps,Sps,Pps} pointers are owned by
+        // the parser as VkVideoRefCountBase-derived objects. Wrap them into
+        // VkSharedBaseObj (which adds a reference) before queueing so the
+        // queue and the AddPictureParametersToQueue signature are happy.
+        auto wrap = [](const StdVideoPictureParametersSet *raw)
+        { return VkSharedBaseObj<StdVideoPictureParametersSet>(const_cast<StdVideoPictureParametersSet *>(raw)); };
+
+        if (isH265 && pPicParams->pStdVps)
+        {
+            bool isVps    = false;
+            int32_t vpsId = pPicParams->pStdVps->GetVpsId(isVps);
+            TCU_CHECK_AND_THROW(InternalError, isVps && vpsId >= 0, "Invalid VPS id from H.265 VPS set");
+            if (!pOwnerPictureParameters->HasVpsId(vpsId))
+            {
+                VkSharedBaseObj<StdVideoPictureParametersSet> shared = wrap(pPicParams->pStdVps);
+                pOwnerPictureParameters->AddPictureParametersToQueue(shared);
+                needAnotherFlush = true;
+            }
+        }
+
+        if (pPicParams->pStdSps)
+        {
+            bool isSpsTypeSet = false;
+            int32_t spsId     = pPicParams->pStdSps->GetSpsId(isSpsTypeSet);
+            TCU_CHECK_AND_THROW(InternalError, isSpsTypeSet && spsId >= 0, "Invalid SPS id from SPS set");
+            if (!pOwnerPictureParameters->HasSpsId(spsId))
+            {
+                VkSharedBaseObj<StdVideoPictureParametersSet> shared = wrap(pPicParams->pStdSps);
+                pOwnerPictureParameters->AddPictureParametersToQueue(shared);
+                needAnotherFlush = true;
+            }
+        }
+        else
+        {
+            // We have only the PPS to identify the referenced SPS. Verify
+            // it is already present; if not, we cannot lazily reconstruct
+            // it (we do not have the raw SPS data here).
+            bool isSpsTypeSet = false;
+            int32_t spsId     = pPicParams->pStdPps->GetSpsId(isSpsTypeSet);
+            TCU_CHECK_AND_THROW(InternalError, !isSpsTypeSet, "Expected SPS id from PPS query");
+            TCU_CHECK_AND_THROW(InternalError, spsId >= 0, "Invalid SPS id");
+            TCU_CHECK_AND_THROW(InternalError, pOwnerPictureParameters->HasSpsId(spsId),
+                                "SPS id referenced by PPS not found in session parameters");
+        }
+
+        {
+            bool isPpsTypeSet = false;
+            int32_t ppsId     = pPicParams->pStdPps->GetPpsId(isPpsTypeSet);
+            TCU_CHECK_AND_THROW(InternalError, isPpsTypeSet && ppsId >= 0, "Invalid PPS id from PPS set");
+            if (!pOwnerPictureParameters->HasPpsId(ppsId))
+            {
+                VkSharedBaseObj<StdVideoPictureParametersSet> shared = wrap(pPicParams->pStdPps);
+                pOwnerPictureParameters->AddPictureParametersToQueue(shared);
+                needAnotherFlush = true;
+            }
+        }
+
+        if (needAnotherFlush)
+        {
+            ret = pOwnerPictureParameters->FlushPictureParametersQueue(m_videoSession);
+            TCU_CHECK_AND_THROW(InternalError, ret >= 0, "Failed to lazy-flush picture parameters queue (H.26x)");
+            DE_UNREF(ret);
+        }
+
         cachedParameters->decodeBeginInfo.videoSessionParameters = *pOwnerPictureParameters;
     }
     else if (m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR)
     {
+        if (m_useInlineSessionParams)
+        {
+            cachedParameters->decodeBeginInfo.videoSessionParameters = VK_NULL_HANDLE;
+            return;
+        }
+
         bool valid = pPicParams->pStdSps->GetClientObject(currentVkPictureParameters);
         TCU_CHECK_AND_THROW(InternalError, currentVkPictureParameters && valid,
                             "Invalid video session parameters (AV1 SPS client object)");
+        DE_UNREF(valid);
         pOwnerPictureParameters =
             VkParserVideoPictureParameters::VideoPictureParametersFromBase(currentVkPictureParameters);
         TCU_CHECK_AND_THROW(InternalError, pOwnerPictureParameters, "Owner picture parameters must be valid (AV1)");
@@ -2068,32 +2162,61 @@ void VideoBaseDecoder::AddInlineSessionParameters(de::MovePtr<CachedDecodeParame
                                                   union InlineSessionParameters &inlineSessionParams,
                                                   const void *currentNext)
 {
+    // In inline-session-parameters mode we feed the codec parameter sets
+    // straight into vkCmdBeginVideoCodingKHR / vkCmdDecodeVideoKHR via the
+    // pNext chain instead of via a VkVideoSessionParametersKHR object.
+    //
+    // The pointers must reflect the parameter sets that the *current* frame
+    // actually references. Prefer the per-frame parser pointers
+    // (pPicParams->pStd{Vps,Sps,Pps}); they are guaranteed to be fresh and
+    // owned by the parser for the lifetime of this decode call. Fall back
+    // to currentPictureParameterObject->currentStdPictureParameters only if
+    // the parser did not resend a particular set for this picture (e.g. a
+    // mid-stream picture that re-uses the previously-signalled SPS/PPS).
+    //
+    // Reading from the per-frame pointers is essential when full deferral
+    // of VkVideoSessionParametersKHR realization is in effect, because in
+    // that mode the cached currentStdPictureParameters are not refreshed
+    // through UpdateParametersObject() before each decode (we deliberately
+    // skip the Vulkan flush in ApplyPictureParameters() for inline mode).
+    // Without this fallback the inline pStdSPS/pStdPPS could be NULL or
+    // stale, triggering VUID-vkCmdDecodeVideoKHR-None-10400.
+    auto *pPicParams = &cachedParameters->pictureParams;
+    auto &cached     = cachedParameters->currentPictureParameterObject->currentStdPictureParameters;
+
     if ((m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR))
     {
-        inlineSessionParams.h264.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_INLINE_SESSION_PARAMETERS_INFO_KHR;
-        inlineSessionParams.h264.pNext = currentNext;
-        inlineSessionParams.h264.pStdSPS =
-            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.h264Sps;
-        inlineSessionParams.h264.pStdPPS =
-            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.h264Pps;
+        const StdVideoH264SequenceParameterSet *sps =
+            pPicParams->pStdSps ? pPicParams->pStdSps->GetStdH264Sps() : nullptr;
+        const StdVideoH264PictureParameterSet *pps =
+            pPicParams->pStdPps ? pPicParams->pStdPps->GetStdH264Pps() : nullptr;
+
+        inlineSessionParams.h264.sType   = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_INLINE_SESSION_PARAMETERS_INFO_KHR;
+        inlineSessionParams.h264.pNext   = currentNext;
+        inlineSessionParams.h264.pStdSPS = sps ? sps : cached.h264Sps;
+        inlineSessionParams.h264.pStdPPS = pps ? pps : cached.h264Pps;
     }
     else if ((m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR))
     {
-        inlineSessionParams.h265.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_INLINE_SESSION_PARAMETERS_INFO_KHR;
-        inlineSessionParams.h265.pNext = currentNext;
-        inlineSessionParams.h265.pStdVPS =
-            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.h265Vps;
-        inlineSessionParams.h265.pStdSPS =
-            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.h265Sps;
-        inlineSessionParams.h265.pStdPPS =
-            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.h265Pps;
+        const StdVideoH265VideoParameterSet *vps = pPicParams->pStdVps ? pPicParams->pStdVps->GetStdH265Vps() : nullptr;
+        const StdVideoH265SequenceParameterSet *sps =
+            pPicParams->pStdSps ? pPicParams->pStdSps->GetStdH265Sps() : nullptr;
+        const StdVideoH265PictureParameterSet *pps =
+            pPicParams->pStdPps ? pPicParams->pStdPps->GetStdH265Pps() : nullptr;
+
+        inlineSessionParams.h265.sType   = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_INLINE_SESSION_PARAMETERS_INFO_KHR;
+        inlineSessionParams.h265.pNext   = currentNext;
+        inlineSessionParams.h265.pStdVPS = vps ? vps : cached.h265Vps;
+        inlineSessionParams.h265.pStdSPS = sps ? sps : cached.h265Sps;
+        inlineSessionParams.h265.pStdPPS = pps ? pps : cached.h265Pps;
     }
     else if ((m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR))
     {
+        const StdVideoAV1SequenceHeader *seqHdr = pPicParams->pStdSps ? pPicParams->pStdSps->GetStdAV1Sps() : nullptr;
+
         inlineSessionParams.av1.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_INLINE_SESSION_PARAMETERS_INFO_KHR;
         inlineSessionParams.av1.pNext = cachedParameters->pictureParams.decodeFrameInfo.pNext;
-        inlineSessionParams.av1.pStdSequenceHeader =
-            cachedParameters->currentPictureParameterObject->currentStdPictureParameters.av1SequenceHeader;
+        inlineSessionParams.av1.pStdSequenceHeader = seqHdr ? seqHdr : cached.av1SequenceHeader;
     }
 }
 
@@ -3743,32 +3866,37 @@ VkResult VkParserVideoPictureParameters::AddPictureParameters(
         &currentVideoPictureParameters /* reference to member field of decoder */)
 {
     TCU_CHECK_AND_THROW(InternalError, stdPictureParametersSet, "Standard picture parameters set must be valid");
+    DE_UNREF(videoSession);
 
-    if (currentVideoPictureParameters)
-    {
-        currentVideoPictureParameters->FlushPictureParametersQueue(videoSession);
-    }
+    // Fully defer realization of the parser's parameter set into a
+    // VkVideoSessionParametersKHR. This callback runs inside the parser
+    // before BeginSequence(), so the session that is current here may be
+    // about to be destroyed (resolution change in particular). Realizing
+    // the parameter set now would bind it to the wrong VkVideoSessionKHR
+    // and later trigger
+    // VUID-VkVideoBeginCodingInfoKHR-videoSessionParameters-04857.
+    //
+    // Instead we only:
+    //   1. Extend the parser-side ref-counted hierarchy
+    //      (VkParserVideoPictureParameters chain) so subsequent updates
+    //      keep using the right template, and
+    //   2. Queue the std parameter set.
+    //
+    // Actual VkVideoSessionParametersKHR create/update happens lazily in
+    // VideoBaseDecoder::ApplyPictureParameters(), which is the only place
+    // that records vkCmdBeginVideoCodingKHR and therefore the only place
+    // that needs the Vulkan parameter object to be in sync with the
+    // currently bound session.
 
-    VkResult result;
+    VkResult result = VK_SUCCESS;
     if (CheckStdObjectBeforeUpdate(stdPictureParametersSet, currentVideoPictureParameters))
     {
         result = VkParserVideoPictureParameters::Create(deviceContext, currentVideoPictureParameters,
                                                         currentVideoPictureParameters);
+        TCU_CHECK_AND_THROW(TestError, result == VK_SUCCESS, "Failed to create picture parameters object");
     }
 
-    // When a video session exists, immediately create/update the
-    // VkVideoSessionParametersKHR object so that the parameters are
-    // bound to the correct session. Only queue when no session exists
-    // yet (parameters will be flushed when the session is created).
-    if (videoSession)
-    {
-        result = currentVideoPictureParameters->HandleNewPictureParametersSet(videoSession, stdPictureParametersSet);
-    }
-    else
-    {
-        result = currentVideoPictureParameters->AddPictureParametersToQueue(stdPictureParametersSet);
-    }
-
+    result = currentVideoPictureParameters->AddPictureParametersToQueue(stdPictureParametersSet);
     return result;
 }
 
