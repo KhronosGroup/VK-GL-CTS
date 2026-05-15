@@ -136,6 +136,10 @@ struct Config
     // exactly the order the split-group index needs.  No sort required.
     std::unordered_map<std::string, OutputSink> outputs;
     std::vector<std::string> outputOrder;
+
+    Config()                     = default;
+    Config(Config &&)            = default;
+    Config &operator=(Config &&) = default;
 };
 
 struct Spec
