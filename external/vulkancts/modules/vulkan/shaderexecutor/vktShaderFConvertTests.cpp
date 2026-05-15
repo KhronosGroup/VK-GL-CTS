@@ -484,42 +484,66 @@ bool validConversion(const T1 &orig, const T2 &result, bool sat)
 {
     DE_UNREF(sat);
 
-    std::vector<T2> acceptedResults;
-    if constexpr (std::is_same_v<T1, tcu::FloatMXINT8>)
+    constexpr bool t1IsInt = std::is_same_v<T1, int32_t> || std::is_same_v<T1, uint32_t>;
+    constexpr bool t2IsInt = std::is_same_v<T2, int32_t> || std::is_same_v<T2, uint32_t>;
+    constexpr bool t1IsMx  = std::is_same_v<T1, tcu::FloatMXINT8>;
+    constexpr bool t2IsMx  = std::is_same_v<T2, tcu::FloatMXINT8>;
+
+    if constexpr (t1IsMx)
     {
         // 0x80 has undefined conversion result
         if (orig.bits() == 0x80)
             return true;
         return validConversion(tcu::Float32(orig.asFloat()), result, sat);
     }
-    else if constexpr (std::is_same_v<T2, tcu::FloatMXINT8>)
+    else if constexpr (t2IsMx)
     {
         // converting to FloatMXINT8 is not supported
         DE_ASSERT(false);
     }
-    else if constexpr (std::is_same_v<T1, int32_t> || std::is_same_v<T1, uint32_t>)
+    // Conversion of NaN value to an (u)int is implementation-defined; accept any result.
+    else if constexpr (t2IsInt && !t1IsInt)
     {
-        acceptedResults = {T2::convert(tcu::Float64(double(orig)), tcu::ROUND_DOWNWARD),
-                           T2::convert(tcu::Float64(double(orig)), tcu::ROUND_UPWARD)};
-    }
-    else if constexpr (std::is_same_v<T2, int32_t> || std::is_same_v<T2, uint32_t>)
-    {
-        // conversion of NaN value to an (u)int is implementation - defined
         if (orig.isNaN())
             return true;
-
-        auto dOrigin    = orig.asDouble();
-        acceptedResults = {(T2)dOrigin};
-
-        const auto minValue = std::numeric_limits<T2>::min();
-        const auto maxValue = std::numeric_limits<T2>::max();
-        if (dOrigin < double(minValue))
-            acceptedResults.push_back(minValue);
-        else if (dOrigin > double(maxValue))
-            acceptedResults.push_back(maxValue);
     }
-    else
-        acceptedResults = {T2::convert(orig, tcu::ROUND_DOWNWARD), T2::convert(orig, tcu::ROUND_UPWARD)};
+
+    // Build the set of acceptable conversions in a single expression so the vector is
+    // initialized once via its initializer-list constructor (no default-construct +
+    // assign-from-initializer-list). Two-phase init triggers gcc 16's -Wnonnull
+    // analysis inside libstdc++'s vector::_M_assign_aux on the empty-source branch
+    // even though that branch isn't reachable at runtime.
+    const std::vector<T2> acceptedResults = [&]() -> std::vector<T2>
+    {
+        if constexpr (t1IsMx || t2IsMx)
+        {
+            return {};
+        }
+        else if constexpr (t1IsInt)
+        {
+            return {T2::convert(tcu::Float64(double(orig)), tcu::ROUND_DOWNWARD),
+                    T2::convert(tcu::Float64(double(orig)), tcu::ROUND_UPWARD)};
+        }
+        else if constexpr (t2IsInt)
+        {
+            // Convert before the range checks, as the original code did: for an out-of-range
+            // value the cast is undefined behaviour, and inside the checks the optimizer may
+            // fold it to the clamped value (clang 22 does), dropping the host's own result.
+            const auto dOrigin   = orig.asDouble();
+            const auto converted = static_cast<T2>(dOrigin);
+            const auto minValue  = std::numeric_limits<T2>::min();
+            const auto maxValue  = std::numeric_limits<T2>::max();
+            if (dOrigin < double(minValue))
+                return {converted, minValue};
+            if (dOrigin > double(maxValue))
+                return {converted, maxValue};
+            return {converted};
+        }
+        else
+        {
+            return {T2::convert(orig, tcu::ROUND_DOWNWARD), T2::convert(orig, tcu::ROUND_UPWARD)};
+        }
+    }();
 
     bool valid = false;
     for (const auto &validResult : acceptedResults)

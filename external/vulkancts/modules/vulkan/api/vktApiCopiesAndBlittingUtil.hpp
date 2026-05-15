@@ -268,7 +268,7 @@ struct TestParams
     {
         BufferParams buffer;
         ImageParms image;
-    } src, dst;
+    } src{}, dst{};
 
     std::vector<CopyRegion> regions;
 
