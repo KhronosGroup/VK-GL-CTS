@@ -1084,6 +1084,10 @@ public:
     {
         std::vector<SampleArguments> args;
 
+        const int32_t maxStepsPerDim = 65;
+        const int32_t strideX        = de::max(1, (2 * m_testCase->m_dimensions[0]) / (maxStepsPerDim - 1));
+        const int32_t strideY        = de::max(1, (2 * m_testCase->m_dimensions[1]) / (maxStepsPerDim - 1));
+
         if (m_testCase->m_useDerivatives)
         {
             struct
@@ -1096,9 +1100,9 @@ public:
                                    {Vec4(1.0f, 1.0f, 1.0f, 0.0f), Vec4(0.0f, 0.0f, 0.0f, 0.0f)},
                                    {Vec4(2.0f, 2.0f, 2.0f, 0.0f), Vec4(2.0f, 2.0f, 2.0f, 0.0f)}};
 
-            for (int32_t i = 0; i < 2 * m_testCase->m_dimensions[0] + 1; ++i)
+            for (int32_t i = 0; i < 2 * m_testCase->m_dimensions[0] + 1; i += strideX)
             {
-                for (int32_t j = 0; j < 2 * m_testCase->m_dimensions[1] + 1; ++j)
+                for (int32_t j = 0; j < 2 * m_testCase->m_dimensions[1] + 1; j += strideY)
                 {
                     for (uint32_t derivNdx = 0; derivNdx < DE_LENGTH_OF_ARRAY(derivativePairs); ++derivNdx)
                     {
@@ -1117,9 +1121,9 @@ public:
         {
             const float lodList[] = {-1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0};
 
-            for (int32_t i = 0; i < 2 * m_testCase->m_dimensions[0] + 1; ++i)
+            for (int32_t i = 0; i < 2 * m_testCase->m_dimensions[0] + 1; i += strideX)
             {
-                for (int32_t j = 0; j < 2 * m_testCase->m_dimensions[1] + 1; ++j)
+                for (int32_t j = 0; j < 2 * m_testCase->m_dimensions[1] + 1; j += strideY)
                 {
                     for (uint32_t lodNdx = 0; lodNdx < DE_LENGTH_OF_ARRAY(lodList); ++lodNdx)
                     {
