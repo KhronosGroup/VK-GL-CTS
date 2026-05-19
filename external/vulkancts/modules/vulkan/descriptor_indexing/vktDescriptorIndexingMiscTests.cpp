@@ -361,7 +361,7 @@ TestStatus CommonNonUniformDescriptorIndexTestInstance::iterate(void)
     {
         std::vector<uint8_t> randomData(static_cast<uint32_t>(outBuffSizeBytes), 0xFF);
         const auto &outBufferAlloc = outBuffer.getAllocation();
-        deMemcpy(outBufferAlloc.getHostPtr(), &randomData, static_cast<uint32_t>(outBuffSizeBytes));
+        deMemcpy(outBufferAlloc.getHostPtr(), randomData.data(), static_cast<uint32_t>(outBuffSizeBytes));
         flushAlloc(vkd, device, outBufferAlloc);
     }
 
