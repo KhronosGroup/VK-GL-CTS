@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineLegacyAttrTests.hpp"
+#include "vktTestGroupUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
@@ -135,10 +136,15 @@ using BindingParamsVec = std::vector<BindingParams>;
 struct LegacyVertexAttributesParams
 {
     const PipelineConstructionType constructionType;
+    bool useDeviceAddressCommands;
+    bool setStrideWithDAC;
     BindingParamsVec bindings;
 
-    LegacyVertexAttributesParams(PipelineConstructionType constructionType_, BindingParamsVec bindings_)
+    LegacyVertexAttributesParams(PipelineConstructionType constructionType_, bool useDeviceAddressCommands_,
+                                 bool setStrideWithDAC_, BindingParamsVec bindings_)
         : constructionType(constructionType_)
+        , useDeviceAddressCommands(useDeviceAddressCommands_)
+        , setStrideWithDAC(setStrideWithDAC_)
         , bindings()
     {
         bindings.swap(bindings_);
@@ -353,6 +359,9 @@ void LegacyVertexAttributesCase::checkSupport(Context &context) const
     if (m_params.useScalarLayout())
         context.requireDeviceFunctionality("VK_EXT_scalar_block_layout");
 
+    if (m_params.useDeviceAddressCommands)
+        context.requireDeviceFunctionality("VK_KHR_device_address_commands");
+
     // Format feature support.
     for (const auto &binding : m_params.bindings)
     {
@@ -414,6 +423,9 @@ void LegacyVertexAttributesCase::initPrograms(SourceCollections &dst) const
 
 tcu::TestStatus LegacyVertexAttributesInstance::iterate(void)
 {
+    if (m_params.setStrideWithDAC)
+        DE_ASSERT(m_params.useDeviceAddressCommands);
+
     const auto &ctx        = m_context.getContextCommonData();
     const int pixelCount   = 16;
     const auto pixelCountU = static_cast<uint32_t>(pixelCount);
@@ -455,16 +467,44 @@ tcu::TestStatus LegacyVertexAttributesInstance::iterate(void)
     using BufferWithMemoryPtr = std::unique_ptr<BufferWithMemory>;
     using BufferWithMemoryVec = std::vector<BufferWithMemoryPtr>;
 
+    const auto totalVertexBindings = m_params.bindings.size() + 1; // Extra binding for the positions.
+
     BufferWithMemoryVec vertexBuffers;
-    vertexBuffers.reserve(m_params.bindings.size() + 1); // Extra buffer for the positions.
+    vertexBuffers.reserve(totalVertexBindings);
+
+#ifndef CTS_USES_VULKANSC
+    std::vector<VkStridedDeviceAddressRangeKHR> vertexBufferRanges;
+
+    if (m_params.useDeviceAddressCommands)
+        vertexBufferRanges.reserve(totalVertexBindings);
+#endif // CTS_USES_VULKANSC
+
+    auto vbUsage                       = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    VkMemoryAllocateFlags vbAllocFlags = 0u;
+
+    if (m_params.useDeviceAddressCommands)
+    {
+        vbUsage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+        vbAllocFlags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+    }
 
     // Positions.
     {
         const auto vbSize = static_cast<VkDeviceSize>(de::dataSize(vertices));
-        const auto vbInfo = makeBufferCreateInfo(vbSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        const auto vbInfo = makeBufferCreateInfo(vbSize, vbUsage);
 
         vertexBuffers.emplace_back(
-            new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, vbInfo, MemoryRequirement::HostVisible));
+            new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, vbInfo, HostIntent::W, true, vbAllocFlags));
+
+#ifndef CTS_USES_VULKANSC
+        if (m_params.useDeviceAddressCommands)
+        {
+            const auto address = getBufferDeviceAddress(ctx.vkd, ctx.device, vertexBuffers.back()->get());
+            const auto size    = vbSize;
+            const auto stride  = static_cast<VkDeviceSize>(m_params.setStrideWithDAC ? DE_SIZEOF32(tcu::Vec4) : 0u);
+            vertexBufferRanges.push_back(VkStridedDeviceAddressRangeKHR{address, size, stride});
+        }
+#endif // CTS_USES_VULKANSC
 
         const auto vbAlloc = vertexBuffers.back()->getAllocation();
         void *vbData       = vbAlloc.getHostPtr();
@@ -473,31 +513,39 @@ tcu::TestStatus LegacyVertexAttributesInstance::iterate(void)
         flushAlloc(ctx.vkd, ctx.device, vbAlloc);
     }
 
-    // Extra data. We use a dedicated allocator for these buffers in order to apply the memory offset. Note we lie about the
-    // noncoherent atom size since we want to apply the offset exactly and the non-coheret atom size is irrelevant in this case:
-    // we'll flush the whole allocation.
+    // Extra data. We use a dedicated allocator for these buffers in order to apply the memory offset.
+    const auto &properties = getPhysicalDeviceProperties(ctx.vki, ctx.physicalDevice);
     for (size_t i = 0; i < m_params.bindings.size(); ++i)
     {
         const auto &binding   = m_params.bindings.at(i);
         const auto &inputData = byteInputs.at(i);
 
-        SimpleAllocator offsetAllocator(
-            ctx.vkd, ctx.device, getPhysicalDeviceMemoryProperties(ctx.vki, ctx.physicalDevice),
-            tcu::just(SimpleAllocator::OffsetParams{VkDeviceSize{1u}, VkDeviceSize{binding.memoryOffset}}));
+        SimpleAllocator offsetAllocator(ctx.vkd, ctx.device,
+                                        getPhysicalDeviceMemoryProperties(ctx.vki, ctx.physicalDevice),
+                                        tcu::just(SimpleAllocator::OffsetParams{properties.limits.nonCoherentAtomSize,
+                                                                                VkDeviceSize{binding.memoryOffset}}));
 
         const auto vbSize = static_cast<VkDeviceSize>(de::dataSize(inputData));
-        const auto vbInfo = makeBufferCreateInfo(vbSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        const auto vbInfo = makeBufferCreateInfo(vbSize, vbUsage);
 
         vertexBuffers.emplace_back(
-            new BufferWithMemory(ctx.vkd, ctx.device, offsetAllocator, vbInfo, MemoryRequirement::HostVisible));
+            new BufferWithMemory(ctx.vkd, ctx.device, offsetAllocator, vbInfo, HostIntent::W, true, vbAllocFlags));
+
+#ifndef CTS_USES_VULKANSC
+        if (m_params.useDeviceAddressCommands)
+        {
+            const auto address = getBufferDeviceAddress(ctx.vkd, ctx.device, vertexBuffers.back()->get());
+            const auto size    = vbSize;
+            const auto stride  = static_cast<VkDeviceSize>(m_params.setStrideWithDAC ? binding.bindingStride : 0u);
+            vertexBufferRanges.push_back(VkStridedDeviceAddressRangeKHR{address, size, stride});
+        }
+#endif // CTS_USES_VULKANSC
 
         const auto vbAlloc = vertexBuffers.back()->getAllocation();
         void *vbData       = vbAlloc.getHostPtr();
 
         deMemcpy(vbData, de::dataOrNull(inputData), de::dataSize(inputData));
-        // We can't use flushAlloc() here because the offset may not be a multiple of the non-coherent atom size.
-        // Just flush the whole allocation.
-        flushMappedMemoryRange(ctx.vkd, ctx.device, vbAlloc.getMemory(), 0, VK_WHOLE_SIZE);
+        flushAlloc(ctx.vkd, ctx.device, vbAlloc);
     }
 
     // Data buffer for verification.
@@ -599,12 +647,14 @@ tcu::TestStatus LegacyVertexAttributesInstance::iterate(void)
     bindingDescriptions.reserve(vertexBuffers.size());
 
     {
+        const auto stride = (m_params.setStrideWithDAC ? 0u : DE_SIZEOF32(tcu::Vec4));
+
         // Positions binding.
         bindingDescriptions.emplace_back(VkVertexInputBindingDescription2EXT{
             VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT, // VkStructureType sType;
             nullptr,                                                  // void* pNext;
             0u,                                                       // uint32_t binding;
-            static_cast<uint32_t>(sizeof(tcu::Vec4)),                 // uint32_t stride;
+            stride,                                                   // uint32_t stride;
             VK_VERTEX_INPUT_RATE_VERTEX,                              // VkVertexInputRate inputRate;
             0u,                                                       // uint32_t divisor;
         });
@@ -613,13 +663,14 @@ tcu::TestStatus LegacyVertexAttributesInstance::iterate(void)
     for (size_t i = 0; i < m_params.bindings.size(); ++i)
     {
         const auto &binding = m_params.bindings.at(i);
+        const auto stride   = (m_params.setStrideWithDAC ? 0u : binding.bindingStride);
 
         // Extra data bindings.
         bindingDescriptions.emplace_back(VkVertexInputBindingDescription2EXT{
             VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT, // VkStructureType sType;
             nullptr,                                                  // void* pNext;
             static_cast<uint32_t>(i + 1),                             // uint32_t binding;
-            binding.bindingStride,                                    // uint32_t stride;
+            stride,                                                   // uint32_t stride;
             VK_VERTEX_INPUT_RATE_VERTEX,                              // VkVertexInputRate inputRate;
             0u,                                                       // uint32_t divisor;
         });
@@ -655,20 +706,53 @@ tcu::TestStatus LegacyVertexAttributesInstance::iterate(void)
     };
 
     std::vector<VkBuffer> rawVertexBuffers;
+    std::vector<VkDeviceSize> rawVertexBufferOffsets;
+
     rawVertexBuffers.reserve(vertexBuffers.size());
     std::transform(begin(vertexBuffers), end(vertexBuffers), std::back_inserter(rawVertexBuffers),
                    [](const BufferWithMemoryPtr &buffer) { return buffer->get(); });
 
-    std::vector<VkDeviceSize> rawVertexBufferOffsets(rawVertexBuffers.size(), static_cast<VkDeviceSize>(0));
+    rawVertexBufferOffsets.resize(rawVertexBuffers.size(), static_cast<VkDeviceSize>(0));
+
+    const auto recordSetVertexInput = [&]()
+    {
+        ctx.vkd.cmdSetVertexInputEXT(cmdBuffer, de::sizeU32(bindingDescriptions), de::dataOrNull(bindingDescriptions),
+                                     de::sizeU32(attributeDescriptions), de::dataOrNull(attributeDescriptions));
+    };
 
     beginCommandBuffer(ctx.vkd, cmdBuffer);
     renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), clearColor);
     DE_ASSERT(rawVertexBuffers.size() == rawVertexBufferOffsets.size());
-    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, de::sizeU32(rawVertexBuffers), de::dataOrNull(rawVertexBuffers),
-                                 de::dataOrNull(rawVertexBufferOffsets));
+    if (!m_params.useDeviceAddressCommands)
+    {
+        ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, de::sizeU32(rawVertexBuffers), de::dataOrNull(rawVertexBuffers),
+                                     de::dataOrNull(rawVertexBufferOffsets));
+    }
+    if (m_params.setStrideWithDAC)
+        recordSetVertexInput(); // Record vertex input state first. The stride will be set after this command.
+#ifndef CTS_USES_VULKANSC
+    if (m_params.useDeviceAddressCommands)
+    {
+        std::vector<VkBindVertexBuffer3InfoKHR> bindingInfos;
+        bindingInfos.reserve(vertexBuffers.size());
+
+        const auto cmdFlags = static_cast<VkAddressCommandFlagsKHR>(VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR);
+        for (const auto &vbRange : vertexBufferRanges)
+        {
+            bindingInfos.emplace_back(VkBindVertexBuffer3InfoKHR{
+                VK_STRUCTURE_TYPE_BIND_VERTEX_BUFFER_3_INFO_KHR,
+                nullptr,
+                makeVkBool(m_params.setStrideWithDAC), // Set stride with DAC or not.
+                vbRange,
+                cmdFlags,
+            });
+        }
+        ctx.vkd.cmdBindVertexBuffers3KHR(cmdBuffer, 0u, de::sizeU32(bindingInfos), de::dataOrNull(bindingInfos));
+    }
+#endif // CTS_USES_VULKANSC
+    if (!m_params.setStrideWithDAC)
+        recordSetVertexInput(); // Record vertex input state last so it overwrites the stride.
     ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
-    ctx.vkd.cmdSetVertexInputEXT(cmdBuffer, de::sizeU32(bindingDescriptions), de::dataOrNull(bindingDescriptions),
-                                 de::sizeU32(attributeDescriptions), de::dataOrNull(attributeDescriptions));
     pipeline.bind(cmdBuffer);
     ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
     renderPass.end(ctx.vkd, cmdBuffer);
@@ -828,16 +912,119 @@ bool checkAny(const tcu::IVec4 values, int channelCount, const std::function<boo
     return false;
 }
 
-} // namespace
+using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-void createLegacyVertexAttributesTests(tcu::TestCaseGroup *group, PipelineConstructionType constructionType)
+bool lessThan32Bits(int width)
 {
-    auto &testContext = group->getTestContext();
+    return (width < 32 /*bits*/);
+}
 
-    using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
-    GroupPtr singleGroup(new tcu::TestCaseGroup(testContext, "single_binding"));
-    GroupPtr multiGroup(new tcu::TestCaseGroup(testContext, "multi_binding"));
+void populateSingleBindingFormatGroup(tcu::TestCaseGroup *formatGroup, PipelineConstructionType constructionType,
+                                      VkFormat format)
+{
+    auto &testCtx = formatGroup->getTestContext();
 
+    const struct
+    {
+        ShaderFormat shaderFormat;
+        const char *desc;
+    } shaderFormats[] = {
+        {ShaderFormat::SIGNED_INT, "shader_int"},
+        {ShaderFormat::UNSIGNED_INT, "shader_uint"},
+        {ShaderFormat::FLOAT, "shader_float"},
+    };
+
+    const auto tcuFormat      = mapVkFormat(format);
+    const int formatSize      = tcu::getPixelSize(tcuFormat);
+    const auto fmtClass       = tcu::getTextureChannelClass(tcuFormat.type);
+    const auto vertexBitWidth = tcu::getTextureFormatBitDepth(tcuFormat);
+    const auto channelCount   = tcu::getNumUsedChannels(tcuFormat.order);
+
+    const std::set<uint32_t> strides{
+        0u,
+        1u,
+        static_cast<uint32_t>(formatSize),
+        static_cast<uint32_t>(formatSize + formatSize - 1),
+    };
+
+    for (const uint32_t stride : strides)
+        for (const auto shaderFormat : shaderFormats)
+        {
+            const bool isFloatFormat   = (fmtClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT ||
+                                        fmtClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT ||
+                                        fmtClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT);
+            const bool isIntegerFormat = !isFloatFormat;
+
+            // Float-like formats do not need to be reinterpreted as both signed and unsigned integers in the shader, one of
+            // them is enough.
+            if (isFloatFormat)
+            {
+                const auto fmtId  = static_cast<int>(format);
+                const auto fmtMod = fmtId % 2;
+
+                if (fmtMod == 0 && shaderFormat.shaderFormat == ShaderFormat::SIGNED_INT)
+                    continue;
+
+                if (fmtMod == 1 && shaderFormat.shaderFormat == ShaderFormat::UNSIGNED_INT)
+                    continue;
+            }
+
+            if (isIntegerFormat && shaderFormat.shaderFormat == ShaderFormat::FLOAT)
+            {
+                // Integer formats with less than 4 bytes in any channel should not go through the shader as floats because,
+                // when the values are expanded to 32-bits, the upper byte(s) will be zeros and, if they're to be interpreted as
+                // floats, it's likely the mantissa is nonzero and the exponent zero, so it doesn't pass the denorm check we
+                // run in genInputData. Note for 24-bit channels this wouldn't always be true but it's true for half the values,
+                // which would make it unlikely that we could generate 16 inputs without wasting a lot of time.
+                bool skip = checkAny(vertexBitWidth, channelCount, lessThan32Bits);
+                if (skip)
+                    continue;
+            }
+
+            for (const auto attributeOffset : {0u, 1u})
+                for (const auto memoryOffset : {0u, 1u})
+                {
+                    if (attributeOffset != 0u || memoryOffset != 0u)
+                    {
+                        // Skip tests that do not produce unaligned access despite attempting to use attributeOffset and memoryOffset.
+                        bool aligned =
+                            !checkAny(vertexBitWidth, channelCount, [](int width) { return width > 8 /*bits*/; });
+                        if (aligned)
+                            continue;
+                    }
+
+                    const auto shortName = getFormatSimpleName(format);
+                    const auto aoSuffix =
+                        ((attributeOffset > 0u) ? std::string("_attribute_offset_") + std::to_string(attributeOffset) :
+                                                  "");
+                    const auto moSuffix =
+                        ((memoryOffset > 0u) ? std::string("_memory_offset_") + std::to_string(memoryOffset) : "");
+
+                    // Single binding.
+                    const BindingParams bindingParams{format, shaderFormat.shaderFormat, stride, attributeOffset,
+                                                      memoryOffset};
+
+                    for (const bool useDAC : {false, true})
+                        for (const bool setStrideWithDAC : {false, true})
+                        {
+                            if (setStrideWithDAC && !useDAC)
+                                continue;
+
+                            const LegacyVertexAttributesParams params{constructionType, useDAC, setStrideWithDAC,
+                                                                      BindingParamsVec(1u, bindingParams)};
+
+                            const auto dacSuffix       = (useDAC ? "_dac" : "");
+                            const auto dacStrideSuffix = (setStrideWithDAC ? "_with_stride" : "");
+                            const auto testName = shaderFormat.desc + std::string("_stride_") + std::to_string(stride) +
+                                                  aoSuffix + moSuffix + dacSuffix + dacStrideSuffix;
+                            formatGroup->addChild(new LegacyVertexAttributesCase(testCtx, testName, params));
+                        }
+                }
+        }
+}
+
+void populateSingleBindingGroup(tcu::TestCaseGroup *singleGroup, PipelineConstructionType constructionType)
+{
     const VkFormat formatsToTest[] = {
         // Formats with mandatory vertex input support.
         VK_FORMAT_R8_UNORM,
@@ -898,176 +1085,114 @@ void createLegacyVertexAttributesTests(tcu::TestCaseGroup *group, PipelineConstr
         VK_FORMAT_R16G16B16_SFLOAT,
     };
 
-    const struct
-    {
-        ShaderFormat shaderFormat;
-        const char *desc;
-    } shaderFormats[] = {
-        {ShaderFormat::SIGNED_INT, "shader_int"},
-        {ShaderFormat::UNSIGNED_INT, "shader_uint"},
-        {ShaderFormat::FLOAT, "shader_float"},
-    };
-
-    const auto lessThan32Bits = [](int width) { return width < 32 /*bits*/; };
-
-    // Single binding tests.
     for (const auto &format : formatsToTest)
     {
-        const auto tcuFormat      = mapVkFormat(format);
-        const int formatSize      = tcu::getPixelSize(tcuFormat);
-        const auto fmtClass       = tcu::getTextureChannelClass(tcuFormat.type);
-        const auto vertexBitWidth = tcu::getTextureFormatBitDepth(tcuFormat);
-        const auto channelCount   = tcu::getNumUsedChannels(tcuFormat.order);
-
-        const std::set<uint32_t> strides{
-            0u,
-            1u,
-            static_cast<uint32_t>(formatSize),
-            static_cast<uint32_t>(formatSize + formatSize - 1),
-        };
-
-        for (const uint32_t stride : strides)
-            for (const auto shaderFormat : shaderFormats)
-            {
-                const bool isFloatFormat   = (fmtClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT ||
-                                            fmtClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT ||
-                                            fmtClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT);
-                const bool isIntegerFormat = !isFloatFormat;
-
-                // Float-like formats do not need to be reinterpreted as both signed and unsigned integers in the shader, one of
-                // them is enough.
-                if (isFloatFormat)
-                {
-                    const auto fmtId  = static_cast<int>(format);
-                    const auto fmtMod = fmtId % 2;
-
-                    if (fmtMod == 0 && shaderFormat.shaderFormat == ShaderFormat::SIGNED_INT)
-                        continue;
-
-                    if (fmtMod == 1 && shaderFormat.shaderFormat == ShaderFormat::UNSIGNED_INT)
-                        continue;
-                }
-
-                if (isIntegerFormat && shaderFormat.shaderFormat == ShaderFormat::FLOAT)
-                {
-                    // Integer formats with less than 4 bytes in any channel should not go through the shader as floats because,
-                    // when the values are expanded to 32-bits, the upper byte(s) will be zeros and, if they're to be interpreted as
-                    // floats, it's likely the mantissa is nonzero and the exponent zero, so it doesn't pass the denorm check we
-                    // run in genInputData. Note for 24-bit channels this wouldn't always be true but it's true for half the values,
-                    // which would make it unlikely that we could generate 16 inputs without wasting a lot of time.
-                    bool skip = checkAny(vertexBitWidth, channelCount, lessThan32Bits);
-                    if (skip)
-                        continue;
-                }
-
-                for (const auto attributeOffset : {0u, 1u})
-                    for (const auto memoryOffset : {0u, 1u})
-                    {
-                        if (attributeOffset != 0u || memoryOffset != 0u)
-                        {
-                            // Skip tests that do not produce unaligned access despite attempting to use attributeOffset and memoryOffset.
-                            bool aligned =
-                                !checkAny(vertexBitWidth, channelCount, [](int width) { return width > 8 /*bits*/; });
-                            if (aligned)
-                                continue;
-                        }
-
-                        const auto shortName = getFormatSimpleName(format);
-                        const auto aoSuffix  = ((attributeOffset > 0u) ?
-                                                    std::string("_attribute_offset_") + std::to_string(attributeOffset) :
-                                                    "");
-                        const auto moSuffix =
-                            ((memoryOffset > 0u) ? std::string("_memory_offset_") + std::to_string(memoryOffset) : "");
-                        const auto testName = shortName + "_" + shaderFormat.desc + "_stride_" +
-                                              std::to_string(stride) + aoSuffix + moSuffix;
-
-                        // Single binding.
-                        const BindingParams bindingParams{format, shaderFormat.shaderFormat, stride, attributeOffset,
-                                                          memoryOffset};
-
-                        const LegacyVertexAttributesParams params{constructionType,
-                                                                  BindingParamsVec(1u, bindingParams)};
-                        singleGroup->addChild(new LegacyVertexAttributesCase(testContext, testName, params));
-                    }
-            }
+        const auto groupName = getFormatSimpleName(format);
+        addTestGroup(singleGroup, groupName, populateSingleBindingFormatGroup, constructionType, format);
     }
+}
 
-    // Tests using multiple bindings.
-    {
-        // We don't want many of these tests so the selected formats are a mix of components, numeric formats and bitwidth.
-        const std::vector<VkFormat> formatTuples[] = {
-            {VK_FORMAT_R8_UNORM, VK_FORMAT_R16G16_UINT, VK_FORMAT_R32G32B32A32_SINT},
-            {VK_FORMAT_R32_SFLOAT, VK_FORMAT_R16G16B16_SNORM, VK_FORMAT_R8G8_UINT},
-            {VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_R16_SINT, VK_FORMAT_R8G8_UNORM},
-        };
+using FormatListPtr = std::shared_ptr<std::vector<VkFormat>>;
 
-        for (const auto &tuple : formatTuples)
-        {
-            for (const bool singleByteStride : {false, true})
-                for (const auto attributeOffset : {0u, 1u})
-                    for (const auto memoryOffset : {0u, 1u})
+void populateMultipleBindingsFormatGroup(tcu::TestCaseGroup *formatGroup, PipelineConstructionType constructionType,
+                                         FormatListPtr tuple)
+{
+    auto &testCtx = formatGroup->getTestContext();
+
+    for (const bool singleByteStride : {false, true})
+        for (const auto attributeOffset : {0u, 1u})
+            for (const auto memoryOffset : {0u, 1u})
+            {
+                BindingParamsVec bindingParams;
+                for (const auto format : *tuple)
+                {
+                    const auto tcuFormat      = mapVkFormat(format);
+                    const int formatSize      = tcu::getPixelSize(tcuFormat);
+                    const auto fmtClass       = tcu::getTextureChannelClass(tcuFormat.type);
+                    const auto vertexBitWidth = tcu::getTextureFormatBitDepth(tcuFormat);
+                    const auto channelCount   = tcu::getNumUsedChannels(tcuFormat.order);
+
+                    ShaderFormat shaderFormat = ShaderFormat::INVALID;
+                    const bool isFloatFormat  = (fmtClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT ||
+                                                fmtClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT ||
+                                                fmtClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT);
+
+                    if (isFloatFormat)
                     {
-                        BindingParamsVec bindingParams;
-                        for (const auto format : tuple)
-                        {
-                            const auto tcuFormat      = mapVkFormat(format);
-                            const int formatSize      = tcu::getPixelSize(tcuFormat);
-                            const auto fmtClass       = tcu::getTextureChannelClass(tcuFormat.type);
-                            const auto vertexBitWidth = tcu::getTextureFormatBitDepth(tcuFormat);
-                            const auto channelCount   = tcu::getNumUsedChannels(tcuFormat.order);
+                        // Use a signed or unsigned format in the shader.
+                        const auto fmtId  = static_cast<int>(format);
+                        const auto fmtMod = fmtId % 2;
+                        const std::vector<ShaderFormat> options{ShaderFormat::SIGNED_INT, ShaderFormat::UNSIGNED_INT};
 
-                            ShaderFormat shaderFormat = ShaderFormat::INVALID;
-                            const bool isFloatFormat  = (fmtClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT ||
-                                                        fmtClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT ||
-                                                        fmtClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT);
+                        shaderFormat = options.at(fmtMod);
+                    }
+                    else
+                    {
+                        // For integer formats use floats if possible in the shader, or the alternative signed/unsigned
+                        // variant if not.
+                        const bool signedClass = (fmtClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER);
+                        const ShaderFormat integerAlternative =
+                            (signedClass ? ShaderFormat::UNSIGNED_INT : ShaderFormat::SIGNED_INT);
+                        const bool hasSmallChannels = checkAny(vertexBitWidth, channelCount, lessThan32Bits);
 
-                            if (isFloatFormat)
-                            {
-                                // Use a signed or unsigned format in the shader.
-                                const auto fmtId  = static_cast<int>(format);
-                                const auto fmtMod = fmtId % 2;
-                                const std::vector<ShaderFormat> options{ShaderFormat::SIGNED_INT,
-                                                                        ShaderFormat::UNSIGNED_INT};
+                        shaderFormat = (hasSmallChannels ? integerAlternative : ShaderFormat::FLOAT);
+                    }
 
-                                shaderFormat = options.at(fmtMod);
-                            }
-                            else
-                            {
-                                // For integer formats use floats if possible in the shader, or the alternative signed/unsigned
-                                // variant if not.
-                                const bool signedClass = (fmtClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER);
-                                const ShaderFormat integerAlternative =
-                                    (signedClass ? ShaderFormat::UNSIGNED_INT : ShaderFormat::SIGNED_INT);
-                                const bool hasSmallChannels = checkAny(vertexBitWidth, channelCount, lessThan32Bits);
+                    DE_ASSERT(shaderFormat != ShaderFormat::INVALID);
 
-                                shaderFormat = (hasSmallChannels ? integerAlternative : ShaderFormat::FLOAT);
-                            }
+                    const auto stride = (singleByteStride ? 1u : static_cast<uint32_t>(formatSize));
 
-                            DE_ASSERT(shaderFormat != ShaderFormat::INVALID);
+                    bindingParams.emplace_back(format, shaderFormat, stride, attributeOffset, memoryOffset);
+                }
 
-                            const auto stride = (singleByteStride ? 1u : static_cast<uint32_t>(formatSize));
+                for (const bool useDAC : {false, true})
+                    for (const bool setStrideWithDAC : {false, true})
+                    {
+                        if (setStrideWithDAC && !useDAC)
+                            continue;
 
-                            bindingParams.emplace_back(format, shaderFormat, stride, attributeOffset, memoryOffset);
-                        }
+                        const LegacyVertexAttributesParams testParams(constructionType, useDAC, setStrideWithDAC,
+                                                                      bindingParams);
 
-                        const LegacyVertexAttributesParams testParams(constructionType, bindingParams);
-
-                        const auto shortName    = getFormatShortName(tuple);
-                        const auto strideSuffix = (singleByteStride ? "_stride_1_byte" : "_stride_normal");
+                        const auto strideSuffix = (singleByteStride ? "stride_1_byte" : "stride_normal");
                         const auto aoSuffix     = ((attributeOffset > 0u) ?
                                                        std::string("_attribute_offset_") + std::to_string(attributeOffset) :
                                                        "");
                         const auto moSuffix =
                             ((memoryOffset > 0u) ? std::string("_memory_offset_") + std::to_string(memoryOffset) : "");
-                        const auto testName = shortName + strideSuffix + aoSuffix + moSuffix;
+                        const auto dacSuffix       = (useDAC ? "_dac" : "");
+                        const auto dacStrideSuffix = (setStrideWithDAC ? "_with_stride" : "");
+                        const auto testName        = strideSuffix + aoSuffix + moSuffix + dacSuffix + dacStrideSuffix;
 
-                        multiGroup->addChild(new LegacyVertexAttributesCase(testContext, testName, testParams));
+                        formatGroup->addChild(new LegacyVertexAttributesCase(testCtx, testName, testParams));
                     }
-        }
-    }
+            }
+}
 
-    group->addChild(singleGroup.release());
-    group->addChild(multiGroup.release());
+void populateMultipleBindingsGroup(tcu::TestCaseGroup *multiGroup, PipelineConstructionType constructionType)
+{
+    // We don't want many of these tests so the selected formats are a mix of components, numeric formats and bitwidth.
+    const FormatListPtr formatTuples[] = {
+        FormatListPtr(
+            new std::vector<VkFormat>{VK_FORMAT_R8_UNORM, VK_FORMAT_R16G16_UINT, VK_FORMAT_R32G32B32A32_SINT}),
+        FormatListPtr(new std::vector<VkFormat>{VK_FORMAT_R32_SFLOAT, VK_FORMAT_R16G16B16_SNORM, VK_FORMAT_R8G8_UINT}),
+        FormatListPtr(
+            new std::vector<VkFormat>{VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_R16_SINT, VK_FORMAT_R8G8_UNORM}),
+    };
+
+    for (const auto &tuple : formatTuples)
+    {
+        const auto groupName = getFormatShortName(*tuple);
+        addTestGroup(multiGroup, groupName, populateMultipleBindingsFormatGroup, constructionType, tuple);
+    }
+}
+
+} // namespace
+
+void createLegacyVertexAttributesTests(tcu::TestCaseGroup *group, PipelineConstructionType constructionType)
+{
+    addTestGroup(group, "single_binding", populateSingleBindingGroup, constructionType);
+    addTestGroup(group, "multi_binding", populateMultipleBindingsGroup, constructionType);
 }
 
 } // namespace pipeline
