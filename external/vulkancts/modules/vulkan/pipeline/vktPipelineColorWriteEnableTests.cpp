@@ -1640,6 +1640,7 @@ TestStatus ColorWriteEnable2Instance::iterate(void)
     endCommandBuffer(m_vkd, *cmdBuff);
     submitCommandsAndWait(m_vkd, m_device, queue, *cmdBuff);
 
+    tcu::TestStatus finalStatus = tcu::TestStatus::pass("");
     for (uint32_t i = 0; i < attachmentCount; ++i)
         for (uint32_t a = 0; a < (i + 1); ++a)
         {
@@ -1649,10 +1650,10 @@ TestStatus ColorWriteEnable2Instance::iterate(void)
             tcu::TestStatus status =
                 verifyAttachment(a, (i + 1), colorBuffer->getAccess(), writeEnables, background, blendComp);
             if (status.isFail())
-                return status;
+                finalStatus = status;
         }
 
-    return TestStatus::pass("");
+    return finalStatus;
 }
 
 } // unnamed namespace
