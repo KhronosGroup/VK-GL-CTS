@@ -1753,7 +1753,10 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 #endif // CTS_USES_VULKANSC
         if (m_params->useImagelessFramebuffer)
         {
+#ifndef CTS_USES_VULKANSC
+            // Imageless framebuffers are core in Vulkan SC 1.0 and does not exist as an extension
             enabledExtensions.push_back("VK_KHR_imageless_framebuffer");
+#endif // CTS_USES_VULKANSC
             ifbFeatures.pNext = pNext;
             pNext             = &ifbFeatures;
         }
