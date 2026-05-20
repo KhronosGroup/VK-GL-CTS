@@ -1878,6 +1878,11 @@ tcu::TestCaseGroup *createUseAfterXferGroup(tcu::TestContext &testCtx, bool indi
                                                     if (multiSample && !imageToImage)
                                                         continue;
 
+                                                    // Multisample image-to-image copies of depth/stencil need a graphics queue.
+                                                    if (multiSample && imageToImage && isDS &&
+                                                        queueSelection != QueueSelectionOptions::Universal)
+                                                        continue;
+
                                                     // clang-format off
                                                     AfterUsageParams params{
                                                         testFormat,
