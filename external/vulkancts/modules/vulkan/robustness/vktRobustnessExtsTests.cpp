@@ -49,6 +49,7 @@
 #include "tcuTestCase.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuFloat.hpp"
 
 #include <string>
 #include <sstream>
@@ -95,6 +96,9 @@ class SingletonDevice
         VkPhysicalDevicePipelineRobustnessFeaturesEXT pipelineRobustnessFeatures       = initVulkanStructure();
         VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT gplFeatures                 = initVulkanStructure();
         VkPhysicalDeviceShader64BitIndexingFeaturesEXT shader64BitIndexingFeatures     = initVulkanStructure();
+        VkPhysicalDeviceShaderLongVectorFeaturesEXT shaderLongVectorFeatures           = initVulkanStructure();
+        VkPhysicalDeviceShaderFloat16Int8Features shaderFloat16Int8Features            = initVulkanStructure();
+        VkPhysicalDevice16BitStorageFeatures sixteenBitStorageFeatures                 = initVulkanStructure();
 #endif // CTS_USES_VULKANSC
         VkPhysicalDeviceFeatures2 features2 = initVulkanStructure();
 
@@ -126,6 +130,18 @@ class SingletonDevice
 
         if (context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
             addFeatures(&bufferDeviceAddressFeatures);
+
+#ifndef CTS_USES_VULKANSC
+        // Optional features for long-vector tests.
+        if (context.isDeviceFunctionalitySupported("VK_EXT_shader_long_vector"))
+            addFeatures(&shaderLongVectorFeatures);
+
+        if (context.isDeviceFunctionalitySupported("VK_KHR_shader_float16_int8"))
+            addFeatures(&shaderFloat16Int8Features);
+
+        if (context.isDeviceFunctionalitySupported("VK_KHR_16bit_storage"))
+            addFeatures(&sixteenBitStorageFeatures);
+#endif // CTS_USES_VULKANSC
 
         if (FEATURES & RF_IMG_ROBUSTNESS)
         {
@@ -246,6 +262,48 @@ VkFlags getAllPipelineStages(tcu::TestContext &testCtx)
     return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 }
 
+// Scalar element type for GL_EXT_long_vector cases. NONE = legacy <=vec4 path.
+enum LongVectorScalar
+{
+    LV_SCALAR_NONE = 0,
+    LV_SCALAR_F32,
+    LV_SCALAR_I32,
+    LV_SCALAR_U32,
+    LV_SCALAR_F16,
+};
+
+static uint32_t longVectorScalarSizeBytes(LongVectorScalar s)
+{
+    switch (s)
+    {
+    case LV_SCALAR_F16:
+        return 2;
+    case LV_SCALAR_F32:
+    case LV_SCALAR_I32:
+    case LV_SCALAR_U32:
+        return 4;
+    default:
+        return 0;
+    }
+}
+
+static const char *longVectorScalarGlslType(LongVectorScalar s)
+{
+    switch (s)
+    {
+    case LV_SCALAR_F32:
+        return "float";
+    case LV_SCALAR_I32:
+        return "int";
+    case LV_SCALAR_U32:
+        return "uint";
+    case LV_SCALAR_F16:
+        return "float16_t";
+    default:
+        return "";
+    }
+}
+
 struct CaseDef
 {
     VkFormat format;
@@ -268,6 +326,14 @@ struct CaseDef
     bool readOnly;
     bool uses64BitIndexing;
     bool useComputeQueue;
+    // 0 = legacy path; otherwise vector<longVectorScalar, longVectorComponents> SSBO/UBO.
+    uint32_t longVectorComponents;
+    LongVectorScalar longVectorScalar;
+
+    bool isLongVector() const
+    {
+        return longVectorComponents != 0;
+    }
 
     bool needsScalarBlockLayout() const
     {
@@ -670,6 +736,39 @@ void RobustnessExtsTestCase::checkSupport(Context &context) const
     if (m_data.useComputeQueue && (context.getComputeQueueFamilyIndex() == -1))
         TCU_THROW(NotSupportedError, "Exclusive compute queue not supported.");
 
+#ifndef CTS_USES_VULKANSC
+    if (m_data.isLongVector())
+    {
+        context.requireDeviceFunctionality("VK_EXT_shader_long_vector");
+        context.requireDeviceFunctionality("VK_EXT_scalar_block_layout");
+
+        if (!context.getShaderLongVectorFeaturesEXT().longVector)
+            TCU_THROW(NotSupportedError, "longVector feature not supported");
+
+        if (m_data.longVectorComponents > context.getShaderLongVectorPropertiesEXT().maxVectorComponents)
+            TCU_THROW(NotSupportedError, "longVectorComponents exceeds maxVectorComponents");
+
+        if (m_data.longVectorScalar == LV_SCALAR_F16)
+        {
+            context.requireDeviceFunctionality("VK_KHR_shader_float16_int8");
+            context.requireDeviceFunctionality("VK_KHR_16bit_storage");
+
+            if (!context.getShaderFloat16Int8Features().shaderFloat16)
+                TCU_THROW(NotSupportedError, "shaderFloat16 feature not supported");
+
+            const auto &storage16 = context.get16BitStorageFeatures();
+            const bool isUBO      = (m_data.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+                                m_data.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
+
+            if (isUBO && !storage16.uniformAndStorageBuffer16BitAccess)
+                TCU_THROW(NotSupportedError, "uniformAndStorageBuffer16BitAccess feature not supported");
+
+            if (!isUBO && !storage16.storageBuffer16BitAccess)
+                TCU_THROW(NotSupportedError, "storageBuffer16BitAccess feature not supported");
+        }
+    }
+#endif // CTS_USES_VULKANSC
+
     if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ||
         m_data.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
     {
@@ -705,6 +804,40 @@ void generateLayout(Layout &layout, const CaseDef &caseDef)
 
     if (caseDef.nullDescriptor)
         return;
+
+    if (caseDef.isLongVector())
+    {
+        // Pack-of-N elements; round bufferLen down so OOB indices land on whole vectors.
+        const uint32_t scalarBytes  = longVectorScalarSizeBytes(caseDef.longVectorScalar);
+        const uint32_t elementBytes = caseDef.longVectorComponents * scalarBytes;
+        const uint32_t alignedLen =
+            (elementBytes == 0) ? 0u : static_cast<uint32_t>(caseDef.bufferLen) / elementBytes * elementBytes;
+        layout.refData.resize(alignedLen);
+        const uint32_t numScalars = (scalarBytes == 0) ? 0u : alignedLen / scalarBytes;
+        for (uint32_t i = 0; i < numScalars; ++i)
+        {
+            switch (caseDef.longVectorScalar)
+            {
+            case LV_SCALAR_F32:
+                reinterpret_cast<float *>(layout.refData.data())[i] = 2.0f * static_cast<float>(i) + 3.0f;
+                break;
+            case LV_SCALAR_I32:
+                reinterpret_cast<int32_t *>(layout.refData.data())[i] = static_cast<int32_t>(2 * i + 3);
+                break;
+            case LV_SCALAR_U32:
+                reinterpret_cast<uint32_t *>(layout.refData.data())[i] = 2u * i + 3u;
+                break;
+            case LV_SCALAR_F16:
+                reinterpret_cast<uint16_t *>(layout.refData.data())[i] =
+                    tcu::Float16(2.0f * static_cast<float>(i) + 3.0f).bits();
+                break;
+            default:
+                DE_ASSERT(false);
+                break;
+            }
+        }
+        return;
+    }
 
     if (caseDef.bufferLen == 0)
     {
@@ -1012,12 +1145,228 @@ string genCoordNorm(const CaseDef &caseDef, string c, int numCoords, int numNorm
     return coord;
 }
 
+// GL_EXT_long_vector test shader: wide loads (SSBO/UBO) and, for RW SSBO, wide stores.
+// Writes 1 per pixel on pass, 0 on fail. Verified by iterate()'s existing readback.
+static void initLongVectorPrograms(SourceCollections &programCollection, const CaseDef &caseDef, const Layout &layout)
+{
+    DE_ASSERT(caseDef.isLongVector());
+
+    const bool isUBO     = (caseDef.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+                        caseDef.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
+    const bool isSSBO    = (caseDef.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+                         caseDef.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC);
+    const bool emitStore = isSSBO && !caseDef.readOnly;
+    DE_ASSERT(isUBO || isSSBO);
+
+    const uint32_t N            = caseDef.longVectorComponents;
+    const uint32_t scalarBytes  = longVectorScalarSizeBytes(caseDef.longVectorScalar);
+    const uint32_t elementBytes = N * scalarBytes;
+    const uint32_t inboundElems =
+        (elementBytes == 0) ? 0u : static_cast<uint32_t>(layout.refData.size()) / elementBytes;
+    const uint32_t numScalars = inboundElems * N;
+    const char *scalarGlsl    = longVectorScalarGlslType(caseDef.longVectorScalar);
+    const std::string vecGlsl = std::string("vector<") + scalarGlsl + ", " + de::toString(N) + ">";
+
+    // Exactly representable in f16 and distinct from any refData value (2*i+3).
+    const int storeSentinel = 7777;
+
+    std::stringstream src;
+    src << "#version 460 core\n"
+           "#extension GL_EXT_long_vector : enable\n"
+           "#extension GL_EXT_scalar_block_layout : enable\n"
+           "#extension GL_EXT_control_flow_attributes : enable\n"
+           "#extension GL_EXT_nonuniform_qualifier : enable\n";
+
+    if (caseDef.longVectorScalar == LV_SCALAR_F16)
+    {
+        src << "#extension GL_EXT_shader_explicit_arithmetic_types_float16 : enable\n"
+               "#extension GL_EXT_shader_16bit_storage : enable\n";
+    }
+
+    if (caseDef.stage == STAGE_RAYGEN)
+        src << "#extension GL_EXT_ray_tracing : require\n";
+
+    // Output: matches the VK_FORMAT_R32_UINT picked in createLongVectorTests().
+    src << "layout(r32ui, set = 0, binding = 0) uniform uimage2D image0_0;\n";
+
+    if (isUBO)
+    {
+        const uint32_t uboElems = (elementBytes == 0) ? 1u : (1024u / N);
+        src << "layout(scalar, set = 0, binding = 1) uniform UBO_t { " << vecGlsl << " val[" << uboElems
+            << "]; } ubo0_1;\n";
+    }
+    else
+    {
+        const char *roQual = caseDef.readOnly ? "readonly " : "";
+        src << "layout(scalar, set = 0, binding = 1) " << roQual << "buffer SSBO_t { " << vecGlsl
+            << " val[]; } ssbo0_1;\n";
+    }
+
+    src << scalarGlsl << " refData[" << de::max(numScalars, 1u) << "] = " << scalarGlsl << "[](";
+    if (numScalars == 0)
+        src << scalarGlsl << "(0)";
+    else
+    {
+        for (uint32_t i = 0; i < numScalars; ++i)
+        {
+            if (i)
+                src << ", ";
+            if (caseDef.longVectorScalar == LV_SCALAR_F32)
+                src << scalarGlsl << "(" << (2.0 * static_cast<double>(i) + 3.0) << ")";
+            else if (caseDef.longVectorScalar == LV_SCALAR_F16)
+                src << scalarGlsl << "(" << (2.0 * static_cast<double>(i) + 3.0) << ")";
+            else
+                src << scalarGlsl << "(" << (2u * i + 3u) << ")";
+        }
+    }
+    src << ");\n";
+
+    // Cover all in-bounds elements plus a 10-element OOB window on each side.
+    const uint32_t loopLow  = 10;
+    const uint32_t loopHigh = inboundElems + 10u;
+    src << "const int N            = " << N << ";\n"
+        << "const int INBOUND      = " << inboundElems << ";\n"
+        << "const int LOOP_LOW     = -" << loopLow << ";\n"
+        << "const int LOOP_HIGH    = " << loopHigh << ";\n";
+
+    src << "const " << scalarGlsl << " STORE_VAL = " << scalarGlsl << "(" << storeSentinel << ");\n";
+
+    src << "void main()\n"
+           "{\n"
+           "    uint accum = 0u;\n"
+           "    "
+        << vecGlsl
+        << " v;\n"
+           "    "
+        << scalarGlsl << " expected;\n";
+
+    // if/else (not ternary) so OOB iterations don't emit a static OOB OpAccessChain on refData.
+    src << "    [[" << (caseDef.unroll ? "unroll" : "dont_unroll")
+        << "]]\n"
+           "    for (int c = LOOP_LOW; c <= LOOP_HIGH; ++c) {\n"
+           "        bool inb = (c >= 0 && c < INBOUND);\n"
+        << "        v = " << (isUBO ? "ubo0_1" : "ssbo0_1")
+        << ".val[c];\n"
+           "        [[unroll]] for (int i = 0; i < N; ++i) {\n"
+           "            if (inb) {\n"
+           "                expected = refData[c * N + i];\n"
+           "            } else {\n"
+        << "                expected = " << scalarGlsl
+        << "(0);\n"
+           "            }\n"
+           "            if (v[i] != expected) accum += 1u;\n"
+           "        }\n"
+           "    }\n";
+
+    if (emitStore)
+    {
+        // OOB stores must be discarded by robustness2; in-bounds data unchanged.
+        src << "    [[" << (caseDef.unroll ? "unroll" : "dont_unroll")
+            << "]]\n"
+               "    for (int c = LOOP_LOW; c <= LOOP_HIGH; ++c) {\n"
+               "        bool oob = (c < 0 || c >= INBOUND);\n"
+               "        if (oob) {\n"
+            << "            ssbo0_1.val[c] = " << vecGlsl
+            << "(STORE_VAL);\n"
+               "        }\n"
+               "    }\n"
+               "    memoryBarrierBuffer();\n";
+
+        src << "    [[" << (caseDef.unroll ? "unroll" : "dont_unroll")
+            << "]]\n"
+               "    for (int c = LOOP_LOW; c <= LOOP_HIGH; ++c) {\n"
+               "        bool inb = (c >= 0 && c < INBOUND);\n"
+            << "        v = ssbo0_1.val[c];\n"
+               "        [[unroll]] for (int i = 0; i < N; ++i) {\n"
+               "            if (inb) {\n"
+               "                expected = refData[c * N + i];\n"
+               "            } else {\n"
+            << "                expected = " << scalarGlsl
+            << "(0);\n"
+               "            }\n"
+               "            if (v[i] != expected) accum += 1u;\n"
+               "        }\n"
+               "    }\n";
+    }
+
+    src << "    uvec4 color = (accum != 0u) ? uvec4(0, 0, 0, 1) : uvec4(1, 0, 0, 1);\n";
+
+    switch (caseDef.stage)
+    {
+    case STAGE_COMPUTE:
+        src << "    imageStore(image0_0, ivec2(gl_GlobalInvocationID.xy), color);\n"
+               "}\n";
+        break;
+    case STAGE_VERTEX:
+        src << "    imageStore(image0_0, ivec2(gl_VertexIndex % " << DIM << ", gl_VertexIndex / " << DIM
+            << "), color);\n"
+               "    gl_PointSize = 1.0f;\n"
+               "    gl_Position  = vec4(0.0f, 0.0f, 0.0f, 1.0f);\n"
+               "}\n";
+        break;
+    case STAGE_FRAGMENT:
+        src << "    imageStore(image0_0, ivec2(gl_FragCoord.x, gl_FragCoord.y), color);\n"
+               "}\n";
+        break;
+    case STAGE_RAYGEN:
+        src << "    imageStore(image0_0, ivec2(gl_LaunchIDEXT.xy), color);\n"
+               "}\n";
+        break;
+    }
+
+    const vk::ShaderBuildOptions buildOpts(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3,
+                                           vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
+
+    switch (caseDef.stage)
+    {
+    case STAGE_COMPUTE:
+    {
+        // Dispatch is DIM x DIM, one invocation per output pixel.
+        std::string body = src.str();
+        const std::string mainTag("void main()\n");
+        const auto pos = body.find(mainTag);
+        DE_ASSERT(pos != std::string::npos);
+        body.insert(pos, "layout(local_size_x = 1, local_size_y = 1) in;\n");
+        programCollection.glslSources.add("test") << glu::ComputeSource(body) << buildOpts;
+        break;
+    }
+    case STAGE_VERTEX:
+        programCollection.glslSources.add("test") << glu::VertexSource(src.str()) << buildOpts;
+        break;
+    case STAGE_FRAGMENT:
+    {
+        std::stringstream vss;
+        vss << "#version 450 core\n"
+               "void main()\n"
+               "{\n"
+               "    gl_Position = vec4(2.0*float(gl_VertexIndex&2) - 1.0, "
+               "4.0*(gl_VertexIndex&1)-1.0, 1.0 - 2.0*float(gl_VertexIndex&1), 1);\n"
+               "}\n";
+        programCollection.glslSources.add("vert") << glu::VertexSource(vss.str()) << buildOpts;
+        programCollection.glslSources.add("test") << glu::FragmentSource(src.str()) << buildOpts;
+        break;
+    }
+    case STAGE_RAYGEN:
+        programCollection.glslSources.add("test")
+            << glu::RaygenSource(src.str())
+            << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4,
+                                      vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS, true);
+        break;
+    }
+}
+
 void RobustnessExtsTestCase::initPrograms(SourceCollections &programCollection) const
 {
     VkFormat format = m_data.format;
 
     Layout layout;
     generateLayout(layout, m_data);
+
+    if (m_data.isLongVector())
+    {
+        initLongVectorPrograms(programCollection, m_data, layout);
+        return;
+    }
 
     if (layout.layoutBindings.size() > 1 &&
         layout.layoutBindings[1].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
@@ -4249,6 +4598,178 @@ static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipeli
     }
 }
 
+// GL_EXT_long_vector load+store cases. Atomics covered separately.
+// Output VkFormat is fixed to R32_UINT so iterate()'s default readback works.
+static void createLongVectorTests(tcu::TestCaseGroup *group, bool pipelineRobustness)
+{
+    tcu::TestContext &testCtx = group->getTestContext();
+
+    struct ScalarCase
+    {
+        LongVectorScalar scalar;
+        const char *name;
+    };
+    const ScalarCase scalarCases[] = {
+        {LV_SCALAR_F32, "f32"},
+        {LV_SCALAR_I32, "i32"},
+        {LV_SCALAR_U32, "u32"},
+        {LV_SCALAR_F16, "f16"},
+    };
+
+    struct WidthCase
+    {
+        uint32_t components;
+        const char *name;
+    };
+    // Mix of power-of-two and prime widths above the legacy <=4 ceiling.
+    // Cases exceeding maxVectorComponents are skipped at runtime in checkSupport().
+    const WidthCase widthCases[] = {
+        {5, "w5"}, {7, "w7"}, {8, "w8"}, {11, "w11"}, {13, "w13"}, {16, "w16"},
+    };
+
+    struct DescCase
+    {
+        VkDescriptorType desc;
+        const char *name;
+        bool isUBO;
+    };
+    const DescCase descCases[] = {
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, "ssbo", false},
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, "ssbo_dyn", false},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, "ubo", true},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, "ubo_dyn", true},
+    };
+
+    struct LenCase
+    {
+        uint32_t bufferLen;
+        const char *name;
+    };
+    const LenCase lenCases[] = {
+        {32, "len_32"},
+        {256, "len_256"},
+        {260, "len_260"},
+    };
+
+    struct StageCase
+    {
+        Stage stage;
+        const char *name;
+    };
+    const StageCase stageCases[] = {
+        {STAGE_COMPUTE, "comp"},
+    };
+
+    struct ROCase
+    {
+        bool readOnly;
+        const char *name;
+    };
+    const ROCase roCases[] = {
+        {false, "readwrite"},
+        {true, "readonly"},
+    };
+
+    struct UnrollCase
+    {
+        bool unroll;
+        const char *name;
+    };
+    const UnrollCase unrollCases[] = {
+        {true, "unroll"},
+        {false, "dont_unroll"},
+    };
+
+    for (const auto &scalarCase : scalarCases)
+    {
+        de::MovePtr<tcu::TestCaseGroup> scalarGroup(new tcu::TestCaseGroup(testCtx, scalarCase.name));
+
+        for (const auto &widthCase : widthCases)
+        {
+            de::MovePtr<tcu::TestCaseGroup> widthGroup(new tcu::TestCaseGroup(testCtx, widthCase.name));
+
+            for (const auto &descCase : descCases)
+            {
+                de::MovePtr<tcu::TestCaseGroup> descGroup(new tcu::TestCaseGroup(testCtx, descCase.name));
+
+                for (const auto &lenCase : lenCases)
+                {
+                    de::MovePtr<tcu::TestCaseGroup> lenGroup(new tcu::TestCaseGroup(testCtx, lenCase.name));
+
+                    for (const auto &stageCase : stageCases)
+                    {
+                        de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stageCase.name));
+
+                        for (const auto &unrollCase : unrollCases)
+                        {
+                            de::MovePtr<tcu::TestCaseGroup> unrollGroup(
+                                new tcu::TestCaseGroup(testCtx, unrollCase.name));
+
+                            for (const auto &roCase : roCases)
+                            {
+                                // UBOs are inherently read-only; emit a single variant.
+                                if (descCase.isUBO && !roCase.readOnly)
+                                    continue;
+
+                                if (pipelineRobustness && stageCase.stage != STAGE_COMPUTE)
+                                    continue;
+
+                                // Need room for at least one in-bounds element (else range == 0).
+                                const uint32_t scalarBytes  = longVectorScalarSizeBytes(scalarCase.scalar);
+                                const uint32_t elementBytes = widthCase.components * scalarBytes;
+                                if (elementBytes == 0 || lenCase.bufferLen < elementBytes)
+                                    continue;
+
+                                CaseDef c                = {};
+                                c.format                 = VK_FORMAT_R32_UINT;
+                                c.stage                  = stageCase.stage;
+                                c.allShaderStages        = getAllShaderStages(testCtx);
+                                c.allPipelineStages      = getAllPipelineStages(testCtx);
+                                c.descriptorType         = static_cast<int>(descCase.desc);
+                                c.viewType               = VK_IMAGE_VIEW_TYPE_1D;
+                                c.samples                = VK_SAMPLE_COUNT_1_BIT;
+                                c.bufferLen              = static_cast<int>(lenCase.bufferLen);
+                                c.unroll                 = unrollCase.unroll;
+                                c.vol                    = false;
+                                c.nullDescriptor         = false;
+                                c.useTemplate            = false;
+                                c.formatQualifier        = false;
+                                c.pushDescriptor         = false;
+                                c.testRobustness2        = true;
+                                c.pipelineRobustnessCase = pipelineRobustness ?
+                                                               PipelineRobustnessCase::ENABLED_MONOLITHIC :
+                                                               PipelineRobustnessCase::DISABLED;
+                                c.imageDim[0]            = 1;
+                                c.imageDim[1]            = 1;
+                                c.imageDim[2]            = 1;
+                                c.readOnly               = roCase.readOnly;
+                                c.uses64BitIndexing      = false;
+                                c.useComputeQueue        = false;
+                                c.longVectorComponents   = widthCase.components;
+                                c.longVectorScalar       = scalarCase.scalar;
+
+                                unrollGroup->addChild(new RobustnessExtsTestCase(testCtx, roCase.name, c));
+                            }
+
+                            stageGroup->addChild(unrollGroup.release());
+                        }
+
+                        lenGroup->addChild(stageGroup.release());
+                    }
+
+                    descGroup->addChild(lenGroup.release());
+                }
+
+                widthGroup->addChild(descGroup.release());
+            }
+
+            scalarGroup->addChild(widthGroup.release());
+        }
+
+        group->addChild(scalarGroup.release());
+    }
+}
+
 static void createRobustness2Tests(tcu::TestCaseGroup *group)
 {
     createTests(group, /*robustness2=*/true, /*pipelineRobustness=*/false, /*uses64BitIndexing=*/false);
@@ -4259,6 +4780,10 @@ static void createRobustness2Tests(tcu::TestCaseGroup *group)
     createTests(shader64BitIndexingGroup, /*robustness2=*/true, /*pipelineRobustness=*/false,
                 /*uses64BitIndexing=*/true);
     group->addChild(shader64BitIndexingGroup);
+
+    tcu::TestCaseGroup *longVectorGroup = new tcu::TestCaseGroup(testCtx, "long_vector");
+    createLongVectorTests(longVectorGroup, /*pipelineRobustness=*/false);
+    group->addChild(longVectorGroup);
 #endif
 }
 
@@ -4275,6 +4800,10 @@ static void createPipelineRobustnessTests(tcu::TestCaseGroup *group)
     tcu::TestCaseGroup *robustness2Group = new tcu::TestCaseGroup(testCtx, "robustness2");
 
     createTests(robustness2Group, /*robustness2=*/true, /*pipelineRobustness=*/true, /*uses64BitIndexing=*/false);
+
+    tcu::TestCaseGroup *robustness2LongVectorGroup = new tcu::TestCaseGroup(testCtx, "long_vector");
+    createLongVectorTests(robustness2LongVectorGroup, /*pipelineRobustness=*/true);
+    robustness2Group->addChild(robustness2LongVectorGroup);
 
     group->addChild(robustness2Group);
 
