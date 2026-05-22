@@ -11124,6 +11124,7 @@ dEQP-VK.ray_query.acceleration_structures.operations.sparse_binding_structures.v
 dEQP-VK.ray_query.acceleration_structures.operations.sparse_binding_structures.vertex_shader.serialization.gpu_built.bottom_acceleration_structure.triangles
 dEQP-VK.ray_query.acceleration_structures.operations.sparse_binding_structures.vertex_shader.serialization.gpu_built.top_acceleration_structure.aabbs
 dEQP-VK.ray_query.acceleration_structures.operations.sparse_binding_structures.vertex_shader.serialization.gpu_built.top_acceleration_structure.triangles
+dEQP-VK.ray_query.misc.dynamic_indexing_inbounds
 dEQP-VK.ray_query.misc.dynamic_indexing_use_first
 dEQP-VK.ray_query.misc.ray_per_inv_0_all
 dEQP-VK.ray_query.misc.ray_per_inv_0_single_first

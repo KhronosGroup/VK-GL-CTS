@@ -69,15 +69,16 @@ void checkRayQuerySupport(Context &context)
 struct DynamicIndexingParams
 {
     bool useFirst = false; // Make the code using the queries come before the code that initializes them.
+    bool useSpirv = false; // Use a SPIR-V shader. This allows us to test OpInBoundsAccessChain with arrays of queries.
 
     uint32_t getLocalSizeX() const
     {
-        return (useFirst ? 2u : 48u);
+        return (useFirst ? 4u : 48u);
     }
 
     uint32_t getNumQueries() const
     {
-        return (useFirst ? 2u : 48u);
+        return (useFirst ? 4u : 48u);
     }
 };
 
@@ -89,6 +90,8 @@ public:
     {
     }
 
+    void initProgramsGLSL(vk::SourceCollections &programCollection) const;
+    void initProgramsSPV(vk::SourceCollections &programCollection) const;
     virtual void initPrograms(vk::SourceCollections &programCollection) const override;
     virtual void checkSupport(Context &context) const override;
     virtual TestInstance *createInstance(Context &context) const override;
@@ -126,6 +129,136 @@ DynamicIndexingCase::DynamicIndexingCase(tcu::TestContext &testCtx, const std::s
 }
 
 void DynamicIndexingCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    if (m_params.useSpirv)
+        initProgramsSPV(programCollection);
+    else
+        initProgramsGLSL(programCollection);
+}
+
+void DynamicIndexingCase::initProgramsSPV(vk::SourceCollections &programCollection) const
+{
+    DE_ASSERT(!m_params.useFirst);
+
+    // Equivalent to the GLSL shader, obtained from the same equivalent test but with a manual change. See below.
+    std::ostringstream comp;
+    comp << "; SPIR-V\n"
+         << "; Version: 1.4\n"
+         << "; Generator: Khronos Glslang Reference Front End; 11\n"
+         << "; Bound: 105\n"
+         << "; Schema: 0\n"
+         << "OpCapability Shader\n"
+         << "OpCapability RayQueryKHR\n"
+         << "OpExtension \"SPV_KHR_ray_query\"\n"
+         << "%1 = OpExtInstImport \"GLSL.std.450\"\n"
+         << "OpMemoryModel Logical GLSL450\n"
+         << "OpEntryPoint GLCompute %4 \"main\" %14 %19 %58 %64 %87\n"
+         << "OpExecutionMode %4 LocalSize " << m_params.getLocalSizeX() << " 1 1\n"
+         << "OpMemberDecorate %10 0 Offset 0\n"
+         << "OpMemberDecorate %10 1 Offset 4\n"
+         << "OpDecorate %11 ArrayStride 8\n"
+         << "OpDecorate %12 Block\n"
+         << "OpMemberDecorate %12 0 Offset 0\n"
+         << "OpDecorate %14 Binding 1\n"
+         << "OpDecorate %14 DescriptorSet 0\n"
+         << "OpDecorate %19 BuiltIn LocalInvocationId\n"
+         << "OpDecorate %64 Binding 0\n"
+         << "OpDecorate %64 DescriptorSet 0\n"
+         << "OpDecorate %84 ArrayStride 4\n"
+         << "OpDecorate %85 Block\n"
+         << "OpMemberDecorate %85 0 Offset 0\n"
+         << "OpDecorate %87 Binding 2\n"
+         << "OpDecorate %87 DescriptorSet 0\n"
+         << "OpDecorate %93 BuiltIn WorkgroupSize\n"
+         << "%2 = OpTypeVoid\n"
+         << "%3 = OpTypeFunction %2\n"
+         << "%6 = OpTypeInt 32 0\n"
+         << "%10 = OpTypeStruct %6 %6\n"
+         << "%11 = OpTypeRuntimeArray %10\n"
+         << "%12 = OpTypeStruct %11\n"
+         << "%13 = OpTypePointer StorageBuffer %12\n"
+         << "%14 = OpVariable %13 StorageBuffer\n"
+         << "%15 = OpTypeInt 32 1\n"
+         << "%16 = OpConstant %15 0\n"
+         << "%17 = OpTypeVector %6 3\n"
+         << "%18 = OpTypePointer Input %17\n"
+         << "%19 = OpVariable %18 Input\n"
+         << "%20 = OpConstant %6 0\n"
+         << "%21 = OpTypePointer Input %6\n"
+         << "%24 = OpTypePointer StorageBuffer %10\n"
+         << "%37 = OpConstant %6 " << m_params.getNumQueries() << "\n"
+         << "%38 = OpTypeBool\n"
+         << "%40 = OpTypeFloat 32\n"
+         << "%41 = OpTypeVector %40 3\n"
+         << "%50 = OpConstant %40 0\n"
+         << "%51 = OpConstantComposite %41 %50 %50 %50\n"
+         << "%52 = OpConstant %40 5\n"
+         << "%53 = OpConstantComposite %41 %52 %52 %50\n"
+         << "%55 = OpTypeRayQueryKHR\n"
+         << "%56 = OpTypeArray %55 %37\n"
+         << "%57 = OpTypePointer Private %56\n"
+         << "%58 = OpVariable %57 Private\n"
+         << "%60 = OpTypePointer Private %55\n"
+         << "%62 = OpTypeAccelerationStructureKHR\n"
+         << "%63 = OpTypePointer UniformConstant %62\n"
+         << "%64 = OpVariable %63 UniformConstant\n"
+         << "%66 = OpConstant %6 255\n"
+         << "%68 = OpConstant %40 0.100000001\n"
+         << "%69 = OpConstant %40 1\n"
+         << "%70 = OpConstantComposite %41 %50 %50 %69\n"
+         << "%71 = OpConstant %40 10\n"
+         << "%73 = OpConstant %15 1\n"
+         << "%84 = OpTypeRuntimeArray %6\n"
+         << "%85 = OpTypeStruct %84\n"
+         << "%86 = OpTypePointer StorageBuffer %85\n"
+         << "%87 = OpVariable %86 StorageBuffer\n"
+         << "%90 = OpConstant %6 1\n"
+         << "%91 = OpTypePointer StorageBuffer %6\n"
+         << "%93 = OpConstantComposite %17 %37 %90 %90\n"
+         << "%4 = OpFunction %2 None %3\n"
+         << "%5 = OpLabel\n"
+         << "%22 = OpAccessChain %21 %19 %20\n"
+         << "%23 = OpLoad %6 %22\n"
+         << "%25 = OpAccessChain %24 %14 %16 %23\n"
+         << "%101 = OpAccessChain %91 %25 %20\n"
+         << "%102 = OpLoad %6 %101\n"
+         << "%103 = OpAccessChain %91 %25 %90\n"
+         << "%104 = OpLoad %6 %103\n"
+         << "OpBranch %30\n"
+         << "%30 = OpLabel\n"
+         << "%98 = OpPhi %15 %16 %5 %74 %31\n"
+         << "%36 = OpBitcast %6 %98\n"
+         << "%39 = OpULessThan %38 %36 %37\n"
+         << "OpLoopMerge %32 %31 None\n"
+         << "OpBranchConditional %39 %31 %32\n"
+         << "%31 = OpLabel\n"
+         << "%49 = OpIEqual %38 %36 %102\n"
+         << "%54 = OpSelect %41 %49 %51 %53\n"
+         << "%61 = OpInBoundsAccessChain %60 %58 %98\n" // <-- Changed to OpInBoundsAccessChain here!
+         << "%65 = OpLoad %62 %64\n"
+         << "OpRayQueryInitializeKHR %61 %65 %20 %66 %54 %68 %70 %71\n"
+         << "%74 = OpIAdd %15 %98 %73\n"
+         << "OpBranch %30\n"
+         << "%32 = OpLabel\n"
+         << "OpBranch %75\n"
+         << "%75 = OpLabel\n"
+         << "%82 = OpInBoundsAccessChain %60 %58 %104\n" // <-- Changed to OpInBoundsAccessChain here!
+         << "%83 = OpRayQueryProceedKHR %38 %82\n"
+         << "OpLoopMerge %77 %76 None\n"
+         << "OpBranchConditional %83 %76 %77\n"
+         << "%76 = OpLabel\n"
+         << "%92 = OpAccessChain %91 %87 %16 %23\n"
+         << "OpStore %92 %90\n"
+         << "OpBranch %75\n"
+         << "%77 = OpLabel\n"
+         << "OpReturn\n"
+         << "OpFunctionEnd\n";
+
+    const SpirVAsmBuildOptions buildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_4, true);
+    programCollection.spirvAsmSources.add("comp") << comp.str() << buildOptions;
+}
+
+void DynamicIndexingCase::initProgramsGLSL(vk::SourceCollections &programCollection) const
 {
     const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
 
@@ -2216,6 +2349,10 @@ tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx)
 
         params.useFirst = true;
         group->addChild(new DynamicIndexingCase(testCtx, "dynamic_indexing_use_first", params));
+
+        params.useFirst = false;
+        params.useSpirv = true;
+        group->addChild(new DynamicIndexingCase(testCtx, "dynamic_indexing_inbounds", params));
     }
 
     addFunctionCaseWithPrograms(group.get(), "reuse_scratch_buffer", checkRayQuerySupport,
