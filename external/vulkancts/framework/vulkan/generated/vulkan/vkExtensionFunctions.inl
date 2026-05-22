@@ -1616,6 +1616,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		functions.push_back("vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV");
 		return;
 	}
+	if (extName == "VK_NV_cooperative_matrix_decode_vector")
+	{
+		return;
+	}
 	if (extName == "VK_NV_cooperative_vector")
 	{
 		functions.push_back("vkGetPhysicalDeviceCooperativeVectorPropertiesNV");
@@ -4150,6 +4154,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_NV_cooperative_matrix_decode_vector")
+	{
+		return;
+	}
 	if (extName == "VK_NV_cooperative_vector")
 	{
 		functions.push_back("vkConvertCooperativeVectorMatrixNV");
@@ -5057,6 +5065,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_SEC_throttle_hint",
 	"VK_ARM_data_graph_neural_accelerator_statistics",
 	"VK_EXT_primitive_restart_index",
+	"VK_NV_cooperative_matrix_decode_vector",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_KHR_ray_query",

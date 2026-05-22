@@ -3934,6 +3934,18 @@ bool check_VK_NV_cooperative_matrix2(const tcu::UVec2& v, const ExtPropVect& vIE
 	return isSupported(vDEP, "VK_KHR_cooperative_matrix");
 }
 
+bool check_VK_NV_cooperative_matrix_decode_vector(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_NV_cooperative_matrix_decode_vector"))
+		return true;
+
+	// depends attribute in xml: VK_NV_cooperative_matrix2
+	return isSupported(vDEP, "VK_NV_cooperative_matrix2");
+}
+
 bool check_VK_NV_cooperative_vector(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -5044,6 +5056,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_NV_compute_shader_derivatives",						&check_VK_NV_compute_shader_derivatives),
 	std::make_pair("VK_NV_cooperative_matrix",								&check_VK_NV_cooperative_matrix),
 	std::make_pair("VK_NV_cooperative_matrix2",								&check_VK_NV_cooperative_matrix2),
+	std::make_pair("VK_NV_cooperative_matrix_decode_vector",				&check_VK_NV_cooperative_matrix_decode_vector),
 	std::make_pair("VK_NV_cooperative_vector",								&check_VK_NV_cooperative_vector),
 	std::make_pair("VK_NV_copy_memory_indirect",							&check_VK_NV_copy_memory_indirect),
 	std::make_pair("VK_NV_corner_sampled_image",							&check_VK_NV_corner_sampled_image),
@@ -5499,6 +5512,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_compute_shader_derivatives"),
 	std::make_tuple(1, 0, "VK_NV_cooperative_matrix"),
 	std::make_tuple(1, 0, "VK_NV_cooperative_matrix2"),
+	std::make_tuple(1, 0, "VK_NV_cooperative_matrix_decode_vector"),
 	std::make_tuple(1, 0, "VK_NV_cooperative_vector"),
 	std::make_tuple(1, 0, "VK_NV_copy_memory_indirect"),
 	std::make_tuple(1, 0, "VK_NV_corner_sampled_image"),
