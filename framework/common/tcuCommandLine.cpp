@@ -852,6 +852,10 @@ static void parseGroupFile(CaseTreeNode *root, std::istream &inGroupList, const 
 
     while (std::getline(namesStream, fileName))
     {
+        trimString(fileName);
+        if (fileName.empty() || fileName.front() == '#') // Ignore empty lines and comments.
+            continue;
+
         de::FilePath groupPath(fileName);
         de::UniquePtr<Resource> groupResource(archive.getResource(groupPath.normalize().getPath()));
         const int groupBufferSize(groupResource->getSize());
@@ -884,10 +888,15 @@ static CaseTreeNode *parseCaseList(std::istream &in, const tcu::Archive &archive
             bool readGroupFile = false;
             if (path)
             {
-                // read the first line and make sure it doesn't contain '\r'
+                // read the first non-empty non-comment line and make sure it doesn't contain '\r'
                 std::string line;
-                std::getline(in, line);
-                line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+                while (std::getline(in, line))
+                {
+                    line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+                    trimString(line);
+                    if (!(line.empty() || line.front() == '#')) // Ignore empty lines and comments.
+                        break;
+                }
 
                 const std::string ending = ".txt";
                 readGroupFile =
