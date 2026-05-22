@@ -104,9 +104,10 @@ VkImageType viewTypeToImageType(VkImageViewType type)
     }
 }
 
-vk::VkImageUsageFlags textureUsageFlags(void)
+vk::VkImageUsageFlags textureUsageFlags(bool storageImg)
 {
-    return (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto mainUse = (storageImg ? VK_IMAGE_USAGE_STORAGE_BIT : VK_IMAGE_USAGE_SAMPLED_BIT);
+    return (mainUse | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 }
 
 vk::VkImageCreateFlags textureCreateFlags(vk::VkImageViewType viewType,
@@ -1074,7 +1075,7 @@ bool ShaderRenderCaseInstance::isMultiSampling(void) const
 
 void ShaderRenderCaseInstance::uploadImage(const tcu::TextureFormat &texFormat, const TextureData &textureData,
                                            const tcu::Sampler &refSampler, uint32_t mipLevels, uint32_t arrayLayers,
-                                           VkImage destImage)
+                                           VkImage destImage, bool storageImage)
 {
     const VkDevice vkDevice         = getDevice();
     const DeviceInterface &vk       = getDeviceInterface();
@@ -1167,18 +1168,19 @@ void ShaderRenderCaseInstance::uploadImage(const tcu::TextureFormat &texFormat, 
 
     flushAlloc(vk, vkDevice, *bufferAlloc);
 
+    const auto destLayout = (storageImage ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
     if (m_externalCommandPool.get() != nullptr)
         copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, nullptr, aspectMask,
-                          mipLevels, arrayLayers, destImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT,
-                          &(m_externalCommandPool.get()->get()));
+                          mipLevels, arrayLayers, destImage, destLayout, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                          VK_ACCESS_SHADER_READ_BIT, &(m_externalCommandPool.get()->get()));
     else
         copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, nullptr, aspectMask,
-                          mipLevels, arrayLayers, destImage);
+                          mipLevels, arrayLayers, destImage, destLayout);
 }
 
 void ShaderRenderCaseInstance::clearImage(const tcu::Sampler &refSampler, uint32_t mipLevels, uint32_t arrayLayers,
-                                          VkImage destImage)
+                                          VkImage destImage, bool storageImage)
 {
     const VkDevice vkDevice         = m_context.getDevice();
     const DeviceInterface &vk       = m_context.getDeviceInterface();
@@ -1227,12 +1229,13 @@ void ShaderRenderCaseInstance::clearImage(const tcu::Sampler &refSampler, uint32
                                                       arrayLayers // uint32_t arraySize;
                                                   }};
 
+    const auto newLayout = (storageImage ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     const VkImageMemoryBarrier postImageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
                                                    nullptr,                                // const void* pNext;
                                                    VK_ACCESS_TRANSFER_WRITE_BIT,         // VkAccessFlags srcAccessMask;
                                                    VK_ACCESS_SHADER_READ_BIT,            // VkAccessFlags dstAccessMask;
                                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // VkImageLayout oldLayout;
-                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout newLayout;
+                                                   newLayout,                            // VkImageLayout newLayout;
                                                    VK_QUEUE_FAMILY_IGNORED, // uint32_t srcQueueFamilyIndex;
                                                    VK_QUEUE_FAMILY_IGNORED, // uint32_t dstQueueFamilyIndex;
                                                    destImage,               // VkImage image;
@@ -1456,7 +1459,7 @@ void ShaderRenderCaseInstance::uploadSparseImage(const tcu::TextureFormat &texFo
 }
 #endif // CTS_USES_VULKANSC
 
-void ShaderRenderCaseInstance::useSampler(uint32_t bindingLocation, uint32_t textureId)
+void ShaderRenderCaseInstance::useSampler(uint32_t bindingLocation, uint32_t textureId, bool storageImg)
 {
     DE_ASSERT(textureId < m_textures.size());
 
@@ -1649,7 +1652,7 @@ void ShaderRenderCaseInstance::useSampler(uint32_t bindingLocation, uint32_t tex
     }
 
     createSamplerUniform(bindingLocation, textureType, textureBinding.getParameters().initialization, texFormat,
-                         texSize, textureData, refSampler, mipLevels, arrayLayers, textureParams);
+                         texSize, textureData, refSampler, mipLevels, arrayLayers, textureParams, storageImg);
 }
 
 void ShaderRenderCaseInstance::setPushConstantRanges(const uint32_t rangeCount,
@@ -1671,7 +1674,7 @@ void ShaderRenderCaseInstance::createSamplerUniform(uint32_t bindingLocation, Te
                                                     const tcu::TextureFormat &texFormat, const tcu::UVec3 texSize,
                                                     const TextureData &textureData, const tcu::Sampler &refSampler,
                                                     uint32_t mipLevels, uint32_t arrayLayers,
-                                                    TextureBinding::Parameters textureParams)
+                                                    TextureBinding::Parameters textureParams, bool useStorageImg)
 {
     const VkDevice vkDevice         = getDevice();
     const DeviceInterface &vk       = getDeviceInterface();
@@ -1699,7 +1702,7 @@ void ShaderRenderCaseInstance::createSamplerUniform(uint32_t bindingLocation, Te
     const VkSharingMode sharingMode =
         (queueFamilyIndex != sparseFamilyIndex) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
     const VkFormat format                     = mapTextureFormat(texFormat);
-    const VkImageUsageFlags imageUsageFlags   = textureUsageFlags();
+    const VkImageUsageFlags imageUsageFlags   = textureUsageFlags(useStorageImg);
     const VkImageCreateFlags imageCreateFlags = textureCreateFlags(imageViewType, m_imageBackingMode);
 
     const uint32_t queueIndexCount = (queueFamilyIndex != sparseFamilyIndex) ? 2 : 1;
@@ -1774,23 +1777,29 @@ void ShaderRenderCaseInstance::createSamplerUniform(uint32_t bindingLocation, Te
         else
         {
             // Upload texture data
-            uploadImage(texFormat, textureData, refSampler, mipLevels, arrayLayers, *vkTexture);
+            uploadImage(texFormat, textureData, refSampler, mipLevels, arrayLayers, *vkTexture, useStorageImg);
         }
         break;
     }
     case TextureBinding::INIT_CLEAR:
-        clearImage(refSampler, mipLevels, arrayLayers, *vkTexture);
+        clearImage(refSampler, mipLevels, arrayLayers, *vkTexture, useStorageImg);
         break;
     default:
         DE_FATAL("Impossible");
     }
 
     // Create sampler
-    const auto &minMaxLod = textureParams.minMaxLod;
-    const VkSamplerCreateInfo samplerParams =
-        (minMaxLod ? mapSampler(refSampler, texFormat, minMaxLod.get().minLod, minMaxLod.get().maxLod) :
-                     mapSampler(refSampler, texFormat));
-    Move<VkSampler> sampler                 = createSampler(vk, vkDevice, &samplerParams);
+    Move<VkSampler> sampler;
+    if (!useStorageImg)
+    {
+        const auto &minMaxLod = textureParams.minMaxLod;
+        const VkSamplerCreateInfo samplerParams =
+            (minMaxLod ? mapSampler(refSampler, texFormat, minMaxLod.get().minLod, minMaxLod.get().maxLod) :
+                         mapSampler(refSampler, texFormat));
+        sampler = createSampler(vk, vkDevice, &samplerParams);
+    }
+
+    // Image view
     const uint32_t baseMipLevel             = textureParams.baseMipLevel;
     const vk::VkComponentMapping components = textureParams.componentMapping;
     const VkImageViewCreateInfo viewParams  = {
@@ -1812,14 +1821,19 @@ void ShaderRenderCaseInstance::createSamplerUniform(uint32_t bindingLocation, Te
 
     Move<VkImageView> imageView = createImageView(vk, vkDevice, &viewParams);
 
+    const auto imgLayout = (useStorageImg ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
     const vk::VkDescriptorImageInfo descriptor = {
-        sampler.get(),                            // VkSampler sampler;
-        imageView.get(),                          // VkImageView imageView;
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout imageLayout;
+        sampler.get(),   // VkSampler sampler;
+        imageView.get(), // VkImageView imageView;
+        imgLayout,       // VkImageLayout imageLayout;
     };
 
+    const auto descriptorType =
+        (useStorageImg ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
     de::MovePtr<SamplerUniform> uniform(new SamplerUniform());
-    uniform->type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    uniform->type       = descriptorType;
     uniform->descriptor = descriptor;
     uniform->location   = bindingLocation;
     uniform->image      = VkImageSp(new vk::Unique<VkImage>(vkTexture));
@@ -1827,9 +1841,8 @@ void ShaderRenderCaseInstance::createSamplerUniform(uint32_t bindingLocation, Te
     uniform->sampler    = VkSamplerSp(new vk::Unique<VkSampler>(sampler));
     uniform->alloc      = AllocationSp(allocation.release());
 
-    m_descriptorSetLayoutBuilder->addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                                          vk::VK_SHADER_STAGE_ALL, nullptr);
-    m_descriptorPoolBuilder->addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    m_descriptorSetLayoutBuilder->addSingleSamplerBinding(descriptorType, vk::VK_SHADER_STAGE_ALL, nullptr);
+    m_descriptorPoolBuilder->addType(descriptorType);
 
     m_uniformInfos.push_back(UniformInfoSp(new de::UniquePtr<UniformInfo>(uniform)));
 }
@@ -2196,7 +2209,8 @@ void ShaderRenderCaseInstance::render(uint32_t numVertices, uint32_t numIndices,
                                                               DescriptorSetUpdateBuilder::Location::binding(location),
                                                               uniformInfo->type, &bufferInfo->descriptor);
                 }
-                else if (uniformInfo->type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+                else if (uniformInfo->type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+                         uniformInfo->type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
                 {
                     const SamplerUniform *samplerInfo = dynamic_cast<const SamplerUniform *>(uniformInfo);
 

@@ -558,7 +558,7 @@ public:
     void addUniform(uint32_t bindingLocation, vk::VkDescriptorType descriptorType, const T &data);
     void addUniform(uint32_t bindingLocation, vk::VkDescriptorType descriptorType, size_t dataSize, const void *data);
     void useUniform(uint32_t bindingLocation, BaseUniformType type);
-    void useSampler(uint32_t bindingLocation, uint32_t textureId);
+    void useSampler(uint32_t bindingLocation, uint32_t textureId, bool storageImg = false);
 
     static const tcu::Vec4 getDefaultConstCoords(void)
     {
@@ -621,9 +621,11 @@ private:
     typedef std::vector<TextureLayerData> TextureData;
 
     void uploadImage(const tcu::TextureFormat &texFormat, const TextureData &textureData,
-                     const tcu::Sampler &refSampler, uint32_t mipLevels, uint32_t arrayLayers, vk::VkImage destImage);
+                     const tcu::Sampler &refSampler, uint32_t mipLevels, uint32_t arrayLayers, vk::VkImage destImage,
+                     bool storageImage);
 
-    void clearImage(const tcu::Sampler &refSampler, uint32_t mipLevels, uint32_t arrayLayers, vk::VkImage destImage);
+    void clearImage(const tcu::Sampler &refSampler, uint32_t mipLevels, uint32_t arrayLayers, vk::VkImage destImage,
+                    bool storageImage);
 
     void checkSparseSupport(const vk::VkImageCreateInfo &imageInfo) const;
 #ifndef CTS_USES_VULKANSC
@@ -635,7 +637,8 @@ private:
     void createSamplerUniform(uint32_t bindingLocation, TextureBinding::Type textureType,
                               TextureBinding::Init textureInit, const tcu::TextureFormat &texFormat,
                               const tcu::UVec3 texSize, const TextureData &textureData, const tcu::Sampler &refSampler,
-                              uint32_t mipLevels, uint32_t arrayLayers, TextureBinding::Parameters textureParams);
+                              uint32_t mipLevels, uint32_t arrayLayers, TextureBinding::Parameters textureParams,
+                              bool useStorageImg = false);
 
     void setupUniformData(uint32_t bindingLocation, size_t size, const void *dataPtr);
 
@@ -751,7 +754,7 @@ void ShaderRenderCaseInstance::addUniform(uint32_t bindingLocation, vk::VkDescri
 
 vk::VkImageViewType textureTypeToImageViewType(TextureBinding::Type type);
 vk::VkImageType viewTypeToImageType(vk::VkImageViewType type);
-vk::VkImageUsageFlags textureUsageFlags(void);
+vk::VkImageUsageFlags textureUsageFlags(bool storageImg = false);
 vk::VkImageCreateFlags textureCreateFlags(vk::VkImageViewType viewType,
                                           ShaderRenderCaseInstance::ImageBackingMode backingMode);
 
