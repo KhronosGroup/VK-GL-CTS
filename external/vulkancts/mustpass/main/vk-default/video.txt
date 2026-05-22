@@ -37,6 +37,10 @@ dEQP-VK.video.decode.av1.allintrabc_8_separated_dpb_general_layout
 dEQP-VK.video.decode.av1.allintrabc_8_separated_dpb_video_layout
 dEQP-VK.video.decode.av1.argon_filmgrain_10_test1019_layered_dpb_general_layout
 dEQP-VK.video.decode.av1.argon_filmgrain_10_test1019_layered_dpb_video_layout
+dEQP-VK.video.decode.av1.argon_filmgrain_10_test1019_sb_tile_units_layered_dpb_general_layout
+dEQP-VK.video.decode.av1.argon_filmgrain_10_test1019_sb_tile_units_layered_dpb_video_layout
+dEQP-VK.video.decode.av1.argon_filmgrain_10_test1019_sb_tile_units_separated_dpb_general_layout
+dEQP-VK.video.decode.av1.argon_filmgrain_10_test1019_sb_tile_units_separated_dpb_video_layout
 dEQP-VK.video.decode.av1.argon_filmgrain_10_test1019_separated_dpb_general_layout
 dEQP-VK.video.decode.av1.argon_filmgrain_10_test1019_separated_dpb_video_layout
 dEQP-VK.video.decode.av1.basic_10_layered_dpb_general_layout
@@ -117,6 +121,10 @@ dEQP-VK.video.decode.av1.superres_8_separated_dpb_general_layout
 dEQP-VK.video.decode.av1.superres_8_separated_dpb_video_layout
 dEQP-VK.video.decode.av1.svcl1t2_8_layered_dpb_general_layout
 dEQP-VK.video.decode.av1.svcl1t2_8_layered_dpb_video_layout
+dEQP-VK.video.decode.av1.svcl1t2_8_sb_tile_units_layered_dpb_general_layout
+dEQP-VK.video.decode.av1.svcl1t2_8_sb_tile_units_layered_dpb_video_layout
+dEQP-VK.video.decode.av1.svcl1t2_8_sb_tile_units_separated_dpb_general_layout
+dEQP-VK.video.decode.av1.svcl1t2_8_sb_tile_units_separated_dpb_video_layout
 dEQP-VK.video.decode.av1.svcl1t2_8_separated_dpb_general_layout
 dEQP-VK.video.decode.av1.svcl1t2_8_separated_dpb_video_layout
 dEQP-VK.video.decode.h264.420_8bit_high_176x144_30frames_layered_dpb_general_layout

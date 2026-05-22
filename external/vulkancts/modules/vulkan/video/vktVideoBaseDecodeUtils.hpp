@@ -845,6 +845,7 @@ public:
         bool alwaysRecreateDPB{};
         bool intraOnlyDecodingNoSetupRef{};
         bool forceDisableFilmGrain{false};
+        bool forceSbTileUnits{false};
         bool useGeneralLayout{false};
         VkSharedBaseObj<VulkanVideoFrameBuffer> framebuffer;
     };
@@ -977,6 +978,7 @@ public:
     VkSharedBaseObj<VkParserVideoPictureParameters> m_currentPictureParameters{};
 
     bool m_forceDisableFilmGrain{false};
+    bool m_forceSbTileUnits{false};
     bool m_queryResultWithStatus{false};
     bool m_useInlineQueries{false};
     bool m_useInlineSessionParams{false};

@@ -422,6 +422,7 @@ VideoBaseDecoder::VideoBaseDecoder(Parameters &&params)
     , m_decodeFramesData(params.context->getDeviceDriver(), params.context->device,
                          params.context->decodeQueueFamilyIdx())
     , m_forceDisableFilmGrain(params.forceDisableFilmGrain)
+    , m_forceSbTileUnits(params.forceSbTileUnits)
     , m_queryResultWithStatus(params.queryDecodeStatus)
     , m_useInlineQueries(params.useInlineQueries)
     , m_useInlineSessionParams(params.useInlineSessionParams)
@@ -1191,10 +1192,22 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
 
         p->tileInfo.pWidthInSbsMinus1  = &p->width_in_sbs_minus_1[0];
         p->tileInfo.pHeightInSbsMinus1 = &p->height_in_sbs_minus_1[0];
-        p->tileInfo.pMiColStarts       = &p->MiColStarts[0];
-        p->tileInfo.pMiRowStarts       = &p->MiRowStarts[0];
-        pStd->pTileInfo                = &p->tileInfo;
 
+        if (m_forceSbTileUnits)
+        {
+            const StdVideoAV1SequenceHeader *seq = p->pStdSps->GetStdAV1Sps();
+            const uint32_t sbShift               = seq->flags.use_128x128_superblock ? 5u : 4u;
+
+            for (uint32_t i = 0; i < p->tileInfo.TileCols; ++i)
+                p->MiColStarts[i] = static_cast<uint16_t>(p->MiColStarts[i] >> sbShift);
+            for (uint32_t i = 0; i < p->tileInfo.TileRows; ++i)
+                p->MiRowStarts[i] = static_cast<uint16_t>(p->MiRowStarts[i] >> sbShift);
+        }
+
+        p->tileInfo.pMiColStarts = &p->MiColStarts[0];
+        p->tileInfo.pMiRowStarts = &p->MiRowStarts[0];
+
+        pStd->pTileInfo     = &p->tileInfo;
         pStd->pQuantization = &p->quantization;
         pStd->pSegmentation = &p->segmentation;
         pStd->pLoopFilter   = &p->loopFilter;
