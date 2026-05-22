@@ -1046,6 +1046,7 @@ cc_defaults {
         "framework/platform/android/tcuAndroidPlatform.cpp",
         "framework/platform/android/tcuAndroidPlatformCapabilityQueryJNI.cpp",
         "framework/platform/android/tcuAndroidRenderActivity.cpp",
+        "framework/platform/android/tcuAndroidSurfaceJNI.cpp",
         "framework/platform/android/tcuAndroidTestActivity.cpp",
         "framework/platform/android/tcuAndroidUtil.cpp",
         "framework/platform/android/tcuAndroidWindow.cpp",

@@ -2131,6 +2131,7 @@ cc_library_static {
         "framework/platform/android/tcuAndroidNativeActivity.cpp",
         "framework/platform/android/tcuAndroidPlatform.cpp",
         "framework/platform/android/tcuAndroidRenderActivity.cpp",
+        "framework/platform/android/tcuAndroidSurfaceJNI.cpp",
         "framework/platform/android/tcuAndroidTestActivity.cpp",
         "framework/platform/android/tcuAndroidUtil.cpp",
         "framework/platform/android/tcuAndroidWindow.cpp",
