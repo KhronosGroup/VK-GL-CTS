@@ -3386,6 +3386,7 @@ std::string createShaderVariables(BASE_TEST_CASE testCase)
 
             /* Constants */
             "%c_uint32_0      = OpConstant %uint32      0\n"
+            "%c_uint32_1      = OpConstant %uint32      1\n"
             "%c_uint32_16     = OpConstant %uint32      16\n"
             "%c_uint32_64     = OpConstant %uint32      64\n"
 
@@ -3394,7 +3395,7 @@ std::string createShaderVariables(BASE_TEST_CASE testCase)
             "%data            = OpTypeStruct %${baseType} %${baseType} %${baseType} %${baseType}\n"
 
             /* Arrays */
-            "%array_of_blocks  = OpTypeArray %block_data %c_uint32_16\n"
+            "%array_of_blocks  = OpTypeArray %block_data %c_uint32_1\n"
             "%array            = OpTypeArray %data       %c_uint32_16\n"
 
             /* Structs */
@@ -12187,6 +12188,11 @@ struct CooperativeMatrixInteractionTestParams
     DATA_TYPE dataType;
     DATA_TYPE sameSizeDataType;
     MEMORY_MODEL_TYPE memModel;
+
+    uint32_t getWorkGroupSizeX() const
+    {
+        return 32u;
+    }
 };
 
 class CooperativeMatrixInteractionTestInstance : public TestInstance
@@ -12297,8 +12303,9 @@ tcu::TestStatus CooperativeMatrixInteractionTestInstance::iterate(void)
     BinaryCollection &binaries = m_context.getBinaryCollection();
     const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, binaries.get("compute")));
 
-    const Unique<VkPipeline> computePipeline(
-        makeComputePipeline(vk, device, *pipelineLayout, 0u, nullptr, *shaderModule, 0u, &specializationInfo));
+    const Unique<VkPipeline> computePipeline(makeComputePipeline(vk, device, *pipelineLayout, 0u, nullptr,
+                                                                 *shaderModule, 0u, &specializationInfo, VK_NULL_HANDLE,
+                                                                 m_params.getWorkGroupSizeX()));
 
     // Commands
     const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueNdx));
@@ -12383,11 +12390,25 @@ void CooperativeMatrixInteractionTestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError,
                   std::string("Cooperative matrix not supported for requested params: matrix_type=") +
                       toString(m_params.matType) + ", data_type=" + toString(dataType));
+
+    context.requireDeviceFunctionality("VK_EXT_subgroup_size_control");
+
+    const auto &sscProperties = context.getSubgroupSizeControlProperties();
+
+    const auto wgSizeX = m_params.getWorkGroupSizeX();
+    if (sscProperties.minSubgroupSize > wgSizeX || wgSizeX > sscProperties.maxSubgroupSize)
+        TCU_THROW(NotSupportedError, std::to_string(wgSizeX) + " not in [minSubgroupSize maxSubgroupSize]");
+
+    if ((sscProperties.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT) == 0u)
+        TCU_THROW(NotSupportedError, "requiredSubgroupSizeStages does not include compute");
 }
 
 void CooperativeMatrixInteractionTestCase::initPrograms(vk::SourceCollections &programCollection) const
 {
-    tcu::StringTemplate shaderHeader(createShaderHeader(getShaderInterfaces(m_params.testCase), "32 1 1"));
+    const auto wgSizeX   = m_params.getWorkGroupSizeX();
+    const auto wgSizeStr = std::to_string(wgSizeX) + " 1 1";
+
+    tcu::StringTemplate shaderHeader(createShaderHeader(getShaderInterfaces(m_params.testCase), wgSizeStr.c_str()));
     tcu::StringTemplate shaderAnnotations(createShaderAnnotations(m_params.testCase));
     tcu::StringTemplate shaderVariables(createShaderVariables(m_params.testCase));
     tcu::StringTemplate shaderFunctions(createShaderMain(m_params.testCase));
