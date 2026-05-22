@@ -258,6 +258,14 @@ if (NOT DE_OS_IS_WIN32 AND NOT DE_OS_IS_UNIX)
 	set (DEQP_DISABLE_VK_VIDEO_TESTS ON)
 endif ()
 
+# Central carrier for the DE_BUILD_VIDEO compile definition. Targets that compile
+# video-aware sources link this INTERFACE library instead of guarding the
+# definition themselves, so the flag cannot drift onto the wrong target.
+add_library(deqp-vk-video-config INTERFACE)
+if (NOT DEQP_DISABLE_VK_VIDEO_TESTS)
+	target_compile_definitions(deqp-vk-video-config INTERFACE DE_BUILD_VIDEO)
+endif ()
+
 if (DE_COMPILER_IS_MSC)
 	# Don't nag about std::copy for example
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_SCL_SECURE_NO_WARNINGS")

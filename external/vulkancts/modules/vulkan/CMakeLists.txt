@@ -122,18 +122,10 @@ set(DEQP_VK_VKSC_CUSTOM_INSTANCES_DEVICES_UTIL_SRCS
 	)
 
 add_library(deqp-vk-custom-instances-devices-util STATIC ${DEQP_VK_VKSC_CUSTOM_INSTANCES_DEVICES_UTIL_SRCS})
-target_link_libraries(deqp-vk-custom-instances-devices-util tcutil vkutil)
-if (NOT DEQP_DISABLE_VK_VIDEO_TESTS)
-	target_compile_definitions(deqp-vk-custom-instances-devices-util PRIVATE DE_BUILD_VIDEO)
-endif()
+target_link_libraries(deqp-vk-custom-instances-devices-util tcutil vkutil deqp-vk-video-config)
 
 add_library(deqp-vksc-custom-instances-devices-util STATIC ${DEQP_VK_VKSC_CUSTOM_INSTANCES_DEVICES_UTIL_SRCS})
 target_link_libraries(deqp-vksc-custom-instances-devices-util PUBLIC deqp-vksc-util tcutil vkscutil)
-
-if (NOT DEQP_DISABLE_VK_VIDEO_TESTS)
-    target_compile_definitions(deqp-vk-custom-instances-devices-util PRIVATE DE_BUILD_VIDEO)
-    target_compile_definitions(deqp-vksc-custom-instances-devices-util PRIVATE DE_BUILD_VIDEO)
-endif()
 
 set(DEQP_VK_SRCS
 	vktTestCaseDefs.hpp
@@ -274,10 +266,6 @@ endif ()
 PCH(DEQP_VK_SRCS pch.cpp)
 
 add_deqp_module(deqp-vk "${DEQP_VK_SRCS}" "${DEQP_VK_LIBS}" "tcutil-platform" vktTestPackageEntry.cpp )
-
-if (NOT DEQP_DISABLE_VK_VIDEO_TESTS)
-	target_compile_definitions(deqp-vk-package PRIVATE DE_BUILD_VIDEO)
-endif()
 
 add_deqp_module_skip_android(deqp-vksc "${DEQP_VK_SRCS}" "${DEQP_VKSC_LIBS}" "tcutil-sc-platform" vktTestPackageEntrySC.cpp)
 
