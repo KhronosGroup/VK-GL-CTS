@@ -24,10 +24,7 @@
 #include "vktApiCopiesAndBlittingUtil.hpp"
 #include "vktApiBlittingTests.hpp"
 
-namespace vkt
-{
-
-namespace api
+namespace vkt::api
 {
 
 namespace
@@ -301,31 +298,18 @@ BlittingImages::BlittingImages(Context &context, TestParams params)
 
     // Create source image
     {
-#ifndef CTS_USES_VULKANSC
+        m_source = createImage(vk, m_device, &sourceImageParams);
+
         if (!params.useSparseBinding)
         {
-#endif
-            m_source           = createImage(vk, m_device, &sourceImageParams);
             m_sourceImageAlloc = allocateImage(vki, vk, vkPhysDevice, m_device, *m_source, MemoryRequirement::Any,
                                                *m_allocator, m_params.allocationKind, 0u);
             VK_CHECK(vk.bindImageMemory(m_device, *m_source, m_sourceImageAlloc->getMemory(),
                                         m_sourceImageAlloc->getOffset()));
-#ifndef CTS_USES_VULKANSC
         }
+#ifndef CTS_USES_VULKANSC
         else
         {
-            VkImageFormatProperties imageFormatProperties;
-            if (vki.getPhysicalDeviceImageFormatProperties(vkPhysDevice, sourceImageParams.format,
-                                                           sourceImageParams.imageType, sourceImageParams.tiling,
-                                                           sourceImageParams.usage, sourceImageParams.flags,
-                                                           &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-            {
-                TCU_THROW(NotSupportedError, "Image format not supported");
-            }
-
-            m_source = createImage(
-                vk, m_device,
-                &sourceImageParams); //de::MovePtr<SparseImage>(new SparseImage(vk, vk, vkPhysDevice, vki, sourceImageParams, m_queue, *m_allocator, mapVkFormat(sourceImageParams.format)));
             m_sparseSemaphore = createSemaphore(vk, m_device);
             allocateAndBindSparseImage(vk, m_device, vkPhysDevice, vki, sourceImageParams, m_sparseSemaphore.get(),
                                        context.getSparseQueue(), *m_allocator, m_sparseAllocations,
@@ -1288,6 +1272,8 @@ public:
 
     virtual void checkSupport(Context &context) const
     {
+        const InstanceInterface &vki      = context.getInstanceInterface();
+        const VkPhysicalDevice physDevice = context.getPhysicalDevice();
 
 #ifndef CTS_USES_VULKANSC
         if (m_params.src.image.format == VK_FORMAT_A8_UNORM_KHR ||
@@ -1298,20 +1284,22 @@ public:
 
         if (isAstc3DFormat(m_params.src.image.format) || isAstc3DFormat(m_params.dst.image.format))
             context.requireDeviceFunctionality("VK_EXT_texture_compression_astc_3d");
+
+        if (m_params.useSparseBinding)
+            checkSparseBindingSupport(context, m_params.src.image);
+
 #endif // CTS_USES_VULKANSC
 
         VkImageFormatProperties properties;
-        if (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
-                context.getPhysicalDevice(), m_params.src.image.format, m_params.src.image.imageType,
-                m_params.src.image.tiling, VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0,
-                &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+        if (vki.getPhysicalDeviceImageFormatProperties(
+                physDevice, m_params.src.image.format, m_params.src.image.imageType, m_params.src.image.tiling,
+                VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0, &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
         {
             TCU_THROW(NotSupportedError, "Source format not supported");
         }
-        if (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
-                context.getPhysicalDevice(), m_params.dst.image.format, m_params.dst.image.imageType,
-                m_params.dst.image.tiling, VK_IMAGE_USAGE_TRANSFER_DST_BIT, 0,
-                &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+        if (vki.getPhysicalDeviceImageFormatProperties(
+                physDevice, m_params.dst.image.format, m_params.dst.image.imageType, m_params.dst.image.tiling,
+                VK_IMAGE_USAGE_TRANSFER_DST_BIT, 0, &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
         {
             TCU_THROW(NotSupportedError, "Destination format not supported");
         }
@@ -1319,8 +1307,7 @@ public:
         checkExtensionSupport(context, m_params.extensionFlags);
 
         VkFormatProperties srcFormatProperties;
-        context.getInstanceInterface().getPhysicalDeviceFormatProperties(
-            context.getPhysicalDevice(), m_params.src.image.format, &srcFormatProperties);
+        vki.getPhysicalDeviceFormatProperties(physDevice, m_params.src.image.format, &srcFormatProperties);
         VkFormatFeatureFlags srcFormatFeatures = m_params.src.image.tiling == VK_IMAGE_TILING_LINEAR ?
                                                      srcFormatProperties.linearTilingFeatures :
                                                      srcFormatProperties.optimalTilingFeatures;
@@ -1330,8 +1317,7 @@ public:
         }
 
         VkFormatProperties dstFormatProperties;
-        context.getInstanceInterface().getPhysicalDeviceFormatProperties(
-            context.getPhysicalDevice(), m_params.dst.image.format, &dstFormatProperties);
+        vki.getPhysicalDeviceFormatProperties(physDevice, m_params.dst.image.format, &dstFormatProperties);
         VkFormatFeatureFlags dstFormatFeatures = m_params.dst.image.tiling == VK_IMAGE_TILING_LINEAR ?
                                                      dstFormatProperties.linearTilingFeatures :
                                                      dstFormatProperties.optimalTilingFeatures;
@@ -1417,32 +1403,20 @@ BlittingMipmaps::BlittingMipmaps(Context &context, TestParams params)
             VK_IMAGE_LAYOUT_UNDEFINED,                                         // VkImageLayout initialLayout;
         };
 
-#ifndef CTS_USES_VULKANSC
         if (!params.useSparseBinding)
         {
-#endif
             m_source           = createImage(vk, m_device, &sourceImageParams);
             m_sourceImageAlloc = allocateImage(vki, vk, vkPhysDevice, m_device, *m_source, MemoryRequirement::Any,
                                                *m_allocator, m_params.allocationKind, 0u);
             VK_CHECK(vk.bindImageMemory(m_device, *m_source, m_sourceImageAlloc->getMemory(),
                                         m_sourceImageAlloc->getOffset()));
-#ifndef CTS_USES_VULKANSC
         }
+#ifndef CTS_USES_VULKANSC
         else
         {
             sourceImageParams.flags |=
                 (vk::VK_IMAGE_CREATE_SPARSE_BINDING_BIT | vk::VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
-            vk::VkImageFormatProperties imageFormatProperties;
-            if (vki.getPhysicalDeviceImageFormatProperties(vkPhysDevice, sourceImageParams.format,
-                                                           sourceImageParams.imageType, sourceImageParams.tiling,
-                                                           sourceImageParams.usage, sourceImageParams.flags,
-                                                           &imageFormatProperties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-            {
-                TCU_THROW(NotSupportedError, "Image format not supported");
-            }
-            m_source = createImage(
-                vk, m_device,
-                &sourceImageParams); //de::MovePtr<SparseImage>(new SparseImage(vk, vk, vkPhysDevice, vki, sourceImageParams, m_queue, *m_allocator, mapVkFormat(sourceImageParams.format)));
+            m_source          = createImage(vk, m_device, &sourceImageParams);
             m_sparseSemaphore = createSemaphore(vk, m_device);
             allocateAndBindSparseImage(vk, m_device, vkPhysDevice, vki, sourceImageParams, m_sparseSemaphore.get(),
                                        context.getSparseQueue(), *m_allocator, m_sparseAllocations,
@@ -2139,9 +2113,9 @@ public:
         const VkPhysicalDevice vkPhysDevice = context.getPhysicalDevice();
         {
             VkImageFormatProperties properties;
-            if (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
-                    context.getPhysicalDevice(), m_params.src.image.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
-                    VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0, &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+            if (vki.getPhysicalDeviceImageFormatProperties(vkPhysDevice, m_params.src.image.format, VK_IMAGE_TYPE_2D,
+                                                           VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0,
+                                                           &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
             {
                 TCU_THROW(NotSupportedError, "Format not supported");
             }
@@ -2155,9 +2129,9 @@ public:
 
         {
             VkImageFormatProperties properties;
-            if (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
-                    context.getPhysicalDevice(), m_params.dst.image.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
-                    VK_IMAGE_USAGE_TRANSFER_DST_BIT, 0, &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+            if (vki.getPhysicalDeviceImageFormatProperties(vkPhysDevice, m_params.dst.image.format, VK_IMAGE_TYPE_2D,
+                                                           VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT, 0,
+                                                           &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
             {
                 TCU_THROW(NotSupportedError, "Format not supported");
             }
@@ -2202,6 +2176,11 @@ public:
                 TCU_THROW(NotSupportedError, "Source format feature sampled image filter cubic not supported");
             }
         }
+
+#ifndef CTS_USES_VULKANSC
+        if (m_params.useSparseBinding)
+            checkSparseBindingSupport(context, m_params.src.image);
+#endif
     }
 
 private:
@@ -4138,5 +4117,4 @@ void addBlittingImageTests(tcu::TestCaseGroup *group, AllocationKind allocationK
     addTestGroup(group, "all_formats", addBlittingImageAllFormatsTests, allocationKind, extensionFlags);
 }
 
-} // namespace api
-} // namespace vkt
+} // namespace vkt::api

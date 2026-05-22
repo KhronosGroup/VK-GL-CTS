@@ -690,11 +690,7 @@ struct DeviceGroup
             , queueFamilyIndex(~0u)
         {
             {
-                const vector<VkPhysicalDeviceGroupProperties> devGroupProperties =
-                    enumeratePhysicalDeviceGroups(vki, *instance.object);
-
-                if (devGroupProperties.size() <= (size_t)params.deviceGroupIndex)
-                    TCU_THROW(NotSupportedError, "Device Group not found");
+                const auto devGroupProperties = enumeratePhysicalDeviceGroups(vki, *instance.object);
 
                 physicalDeviceCount = devGroupProperties[params.deviceGroupIndex].physicalDeviceCount;
                 physicalDevices.resize(physicalDeviceCount);
@@ -2645,9 +2641,6 @@ static uint64_t HandleToInt(T *t)
 template <typename Object>
 tcu::TestStatus createPrivateDataTest(Context &context, typename Object::Parameters params)
 {
-    if (!context.getPrivateDataFeatures().privateData)
-        TCU_THROW(NotSupportedError, "privateData not supported");
-
     for (int d = 0; d < SingletonDevice::NUM_DEVICES; ++d)
     {
         const InstanceWrapper &instance = SingletonDevice::getInstance(context, d);
@@ -3401,6 +3394,31 @@ void checkEventSupport(Context &context, const Event::Parameters)
 #endif // CTS_USES_VULKANSC
 }
 
+void checkDeviceGroupSupport(Context &context, const DeviceGroup::Parameters params)
+{
+    context.requireInstanceFunctionality("VK_KHR_device_group_creation");
+
+    const auto &vki               = context.getInstanceInterface();
+    const auto devGroupProperties = enumeratePhysicalDeviceGroups(vki, context.getInstance());
+
+    if (devGroupProperties.size() <= (size_t)params.deviceGroupIndex)
+        TCU_THROW(NotSupportedError, "Device Group not found");
+}
+
+template <typename Object>
+void checkPrivateDataSupport(Context &context, typename Object::Parameters params)
+{
+    if (!context.getPrivateDataFeatures().privateData)
+        TCU_THROW(NotSupportedError, "privateData not supported");
+
+    DE_UNREF(params);
+
+    if constexpr (std::is_same_v<Object, ImageView>)
+        checkImageCubeArraySupport(context, params);
+    if constexpr (std::is_same_v<Object, Event>)
+        checkEventSupport(context, params);
+}
+
 void checkPipelineCacheControlSupport(Context &context, const MergedPipelineCache::Parameters)
 {
 #ifndef CTS_USES_VULKANSC
@@ -3634,7 +3652,7 @@ tcu::TestCaseGroup *createObjectManagementTests(tcu::TestContext &testCtx)
     const CaseDescriptions s_createSingleGroup = {
         CASE_DESC(createSingleTest<Instance>, s_instanceCases, nullptr),
         CASE_DESC(createSingleTest<Device>, s_deviceCases, checkGetPhysicalDevicePropertiesExtension),
-        CASE_DESC(createSingleTest<DeviceGroup>, s_deviceGroupCases, nullptr),
+        CASE_DESC(createSingleTest<DeviceGroup>, s_deviceGroupCases, checkDeviceGroupSupport),
         CASE_DESC(createSingleTest<DeviceMemory>, s_deviceMemCases, nullptr),
         CASE_DESC(createSingleTest<Buffer>, s_bufferCases, nullptr),
         CASE_DESC(createSingleTest<BufferView>, s_bufferViewCases, nullptr),
@@ -3666,7 +3684,7 @@ tcu::TestCaseGroup *createObjectManagementTests(tcu::TestContext &testCtx)
         CASE_DESC(createMultipleUniqueResourcesTest<Instance>, s_instanceCases, nullptr),
 #ifndef CTS_USES_VULKANSC
         CASE_DESC(createMultipleUniqueResourcesTest<Device>, s_deviceCases, nullptr),
-        CASE_DESC(createMultipleUniqueResourcesTest<DeviceGroup>, s_deviceGroupCases, nullptr),
+        CASE_DESC(createMultipleUniqueResourcesTest<DeviceGroup>, s_deviceGroupCases, checkDeviceGroupSupport),
 #else
         EMPTY_CASE_DESC(Device),
         EMPTY_CASE_DESC(DeviceGroup),
@@ -3703,7 +3721,7 @@ tcu::TestCaseGroup *createObjectManagementTests(tcu::TestContext &testCtx)
         EMPTY_CASE_DESC(Instance), // No resources used
 #ifndef CTS_USES_VULKANSC
         CASE_DESC(createMultipleSharedResourcesTest<Device>, s_deviceCases, nullptr),
-        CASE_DESC(createMultipleSharedResourcesTest<DeviceGroup>, s_deviceGroupCases, nullptr),
+        CASE_DESC(createMultipleSharedResourcesTest<DeviceGroup>, s_deviceGroupCases, checkDeviceGroupSupport),
 #else
         EMPTY_CASE_DESC(Device),
         EMPTY_CASE_DESC(DeviceGroup),
@@ -3741,7 +3759,7 @@ tcu::TestCaseGroup *createObjectManagementTests(tcu::TestContext &testCtx)
     const CaseDescriptions s_createMaxConcurrentGroup = {
         CASE_DESC(createMaxConcurrentTest<Instance>, s_instanceCases, nullptr),
         CASE_DESC(createMaxConcurrentTest<Device>, s_deviceCases, nullptr),
-        CASE_DESC(createMaxConcurrentTest<DeviceGroup>, s_deviceGroupCases, nullptr),
+        CASE_DESC(createMaxConcurrentTest<DeviceGroup>, s_deviceGroupCases, checkDeviceGroupSupport),
         CASE_DESC(createMaxConcurrentTest<DeviceMemory>, s_deviceMemCases, nullptr),
         CASE_DESC(createMaxConcurrentTest<Buffer>, s_bufferCases, nullptr),
         CASE_DESC(createMaxConcurrentTest<BufferView>, s_bufferViewCases, nullptr),
@@ -3808,7 +3826,7 @@ tcu::TestCaseGroup *createObjectManagementTests(tcu::TestContext &testCtx)
     const CaseDescriptions s_multithreadedCreatePerThreadResourcesGroup = {
         CASE_DESC(multithreadedCreatePerThreadResourcesTest<Instance>, s_instanceCases, nullptr),
         CASE_DESC(multithreadedCreatePerThreadResourcesTest<Device>, s_deviceCases, nullptr),
-        CASE_DESC(multithreadedCreatePerThreadResourcesTest<DeviceGroup>, s_deviceGroupCases, nullptr),
+        CASE_DESC(multithreadedCreatePerThreadResourcesTest<DeviceGroup>, s_deviceGroupCases, checkDeviceGroupSupport),
         CASE_DESC(multithreadedCreatePerThreadResourcesTest<DeviceMemory>, s_deviceMemCases, nullptr),
         CASE_DESC(multithreadedCreatePerThreadResourcesTest<Buffer>, s_bufferCases, nullptr),
         CASE_DESC(multithreadedCreatePerThreadResourcesTest<BufferView>, s_bufferViewCases, nullptr),
@@ -3843,7 +3861,7 @@ tcu::TestCaseGroup *createObjectManagementTests(tcu::TestContext &testCtx)
         EMPTY_CASE_DESC(Instance),
 #ifndef CTS_USES_VULKANSC
         CASE_DESC(multithreadedCreateSharedResourcesTest<Device>, s_deviceCases, nullptr),
-        CASE_DESC(multithreadedCreateSharedResourcesTest<DeviceGroup>, s_deviceGroupCases, nullptr),
+        CASE_DESC(multithreadedCreateSharedResourcesTest<DeviceGroup>, s_deviceGroupCases, checkDeviceGroupSupport),
 #else
         EMPTY_CASE_DESC(Device),
         EMPTY_CASE_DESC(DeviceGroup),
@@ -3883,7 +3901,7 @@ tcu::TestCaseGroup *createObjectManagementTests(tcu::TestContext &testCtx)
     const CaseDescriptions s_createSingleAllocCallbacksGroup = {
         CASE_DESC(createSingleAllocCallbacksTest<Instance>, s_instanceCases, nullptr),
         CASE_DESC(createSingleAllocCallbacksTest<Device>, s_deviceCases, nullptr),
-        CASE_DESC(createSingleAllocCallbacksTest<DeviceGroup>, s_deviceGroupCases, nullptr),
+        CASE_DESC(createSingleAllocCallbacksTest<DeviceGroup>, s_deviceGroupCases, checkDeviceGroupSupport),
         CASE_DESC(createSingleAllocCallbacksTest<DeviceMemory>, s_deviceMemCases, nullptr),
         CASE_DESC(createSingleAllocCallbacksTest<Buffer>, s_bufferCases, nullptr),
         CASE_DESC(createSingleAllocCallbacksTest<BufferView>, s_bufferViewCases, nullptr),
@@ -3919,7 +3937,7 @@ tcu::TestCaseGroup *createObjectManagementTests(tcu::TestContext &testCtx)
     const CaseDescriptions s_allocCallbackFailGroup = {
         CASE_DESC(allocCallbackFailTest<Instance>, s_instanceCases, nullptr),
         CASE_DESC(allocCallbackFailTest<Device>, s_deviceCases, nullptr),
-        CASE_DESC(allocCallbackFailTest<DeviceGroup>, s_deviceGroupCases, nullptr),
+        CASE_DESC(allocCallbackFailTest<DeviceGroup>, s_deviceGroupCases, checkDeviceGroupSupport),
         CASE_DESC(allocCallbackFailTest<DeviceMemory>, s_deviceMemCases, nullptr),
         CASE_DESC(allocCallbackFailTest<Buffer>, s_bufferCases, nullptr),
         CASE_DESC(allocCallbackFailTest<BufferView>, s_bufferViewCases, nullptr),
@@ -3991,29 +4009,34 @@ tcu::TestCaseGroup *createObjectManagementTests(tcu::TestContext &testCtx)
         EMPTY_CASE_DESC(Instance),    // Does not make sense
         EMPTY_CASE_DESC(Device),      // Device is tested in each object test
         EMPTY_CASE_DESC(DeviceGroup), // Device is tested in each object test
-        CASE_DESC(createPrivateDataTest<DeviceMemory>, s_deviceMemCases, nullptr),
-        CASE_DESC(createPrivateDataTest<Buffer>, s_bufferCases, nullptr),
-        CASE_DESC(createPrivateDataTest<BufferView>, s_bufferViewCases, nullptr),
-        CASE_DESC(createPrivateDataTest<Image>, s_imageCases, nullptr),
-        CASE_DESC(createPrivateDataTest<ImageView>, s_imageViewCases, checkImageCubeArraySupport),
-        CASE_DESC(createPrivateDataTest<Semaphore>, s_semaphoreCases, nullptr),
-        CASE_DESC(createPrivateDataTest<Event>, s_eventCases, checkEventSupport),
-        CASE_DESC(createPrivateDataTest<Fence>, s_fenceCases, nullptr),
-        CASE_DESC(createPrivateDataTest<QueryPool>, s_queryPoolCases, nullptr),
-        CASE_DESC(createPrivateDataTest<ShaderModule>, s_shaderModuleCases, nullptr),
-        CASE_DESC(createPrivateDataTest<PipelineCache>, s_pipelineCacheCases, nullptr),
+        CASE_DESC(createPrivateDataTest<DeviceMemory>, s_deviceMemCases, checkPrivateDataSupport<DeviceMemory>),
+        CASE_DESC(createPrivateDataTest<Buffer>, s_bufferCases, checkPrivateDataSupport<Buffer>),
+        CASE_DESC(createPrivateDataTest<BufferView>, s_bufferViewCases, checkPrivateDataSupport<BufferView>),
+        CASE_DESC(createPrivateDataTest<Image>, s_imageCases, checkPrivateDataSupport<Image>),
+        CASE_DESC(createPrivateDataTest<ImageView>, s_imageViewCases, checkPrivateDataSupport<ImageView>),
+        CASE_DESC(createPrivateDataTest<Semaphore>, s_semaphoreCases, checkPrivateDataSupport<Semaphore>),
+        CASE_DESC(createPrivateDataTest<Event>, s_eventCases, checkPrivateDataSupport<Event>),
+        CASE_DESC(createPrivateDataTest<Fence>, s_fenceCases, checkPrivateDataSupport<Fence>),
+        CASE_DESC(createPrivateDataTest<QueryPool>, s_queryPoolCases, checkPrivateDataSupport<QueryPool>),
+        CASE_DESC(createPrivateDataTest<ShaderModule>, s_shaderModuleCases, checkPrivateDataSupport<ShaderModule>),
+        CASE_DESC(createPrivateDataTest<PipelineCache>, s_pipelineCacheCases, checkPrivateDataSupport<PipelineCache>),
         EMPTY_CASE_DESC(MergedPipelineCache),
-        CASE_DESC(createPrivateDataTest<PipelineLayout>, s_pipelineLayoutCases, nullptr),
-        CASE_DESC(createPrivateDataTest<RenderPass>, s_renderPassCases, nullptr),
-        CASE_DESC(createPrivateDataTest<GraphicsPipeline>, s_graphicsPipelineCases, nullptr),
-        CASE_DESC(createPrivateDataTest<ComputePipeline>, s_computePipelineCases, nullptr),
-        CASE_DESC(createPrivateDataTest<DescriptorSetLayout>, s_descriptorSetLayoutCases, nullptr),
-        CASE_DESC(createPrivateDataTest<Sampler>, s_samplerCases, nullptr),
-        CASE_DESC(createPrivateDataTest<DescriptorPool>, s_descriptorPoolCases, nullptr),
-        CASE_DESC(createPrivateDataTest<DescriptorSet>, s_descriptorSetCases, nullptr),
-        CASE_DESC(createPrivateDataTest<Framebuffer>, s_framebufferCases, nullptr),
-        CASE_DESC(createPrivateDataTest<CommandPool>, s_commandPoolCases, nullptr),
-        CASE_DESC(createPrivateDataTest<CommandBuffer>, s_commandBufferCases, nullptr),
+        CASE_DESC(createPrivateDataTest<PipelineLayout>, s_pipelineLayoutCases,
+                  checkPrivateDataSupport<PipelineLayout>),
+        CASE_DESC(createPrivateDataTest<RenderPass>, s_renderPassCases, checkPrivateDataSupport<RenderPass>),
+        CASE_DESC(createPrivateDataTest<GraphicsPipeline>, s_graphicsPipelineCases,
+                  checkPrivateDataSupport<GraphicsPipeline>),
+        CASE_DESC(createPrivateDataTest<ComputePipeline>, s_computePipelineCases,
+                  checkPrivateDataSupport<ComputePipeline>),
+        CASE_DESC(createPrivateDataTest<DescriptorSetLayout>, s_descriptorSetLayoutCases,
+                  checkPrivateDataSupport<DescriptorSetLayout>),
+        CASE_DESC(createPrivateDataTest<Sampler>, s_samplerCases, checkPrivateDataSupport<Sampler>),
+        CASE_DESC(createPrivateDataTest<DescriptorPool>, s_descriptorPoolCases,
+                  checkPrivateDataSupport<DescriptorPool>),
+        CASE_DESC(createPrivateDataTest<DescriptorSet>, s_descriptorSetCases, checkPrivateDataSupport<DescriptorSet>),
+        CASE_DESC(createPrivateDataTest<Framebuffer>, s_framebufferCases, checkPrivateDataSupport<Framebuffer>),
+        CASE_DESC(createPrivateDataTest<CommandPool>, s_commandPoolCases, checkPrivateDataSupport<CommandPool>),
+        CASE_DESC(createPrivateDataTest<CommandBuffer>, s_commandBufferCases, checkPrivateDataSupport<CommandBuffer>),
     };
     // Multiple objects with private data
     objectMgmtTests->addChild(

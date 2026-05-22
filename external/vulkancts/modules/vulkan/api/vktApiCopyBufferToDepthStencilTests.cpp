@@ -106,55 +106,6 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context &context, TestParams 
     const bool hasStencil               = tcu::hasStencilComponent(mapVkFormat(m_params.dst.image.format).order);
     const bool useIndirectCopy          = m_params.extensionFlags & INDIRECT_COPY;
 
-    if (!isSupportedDepthStencilFormat(vki, vkPhysDevice, testParams.dst.image.format))
-    {
-        TCU_THROW(NotSupportedError, "Image format not supported.");
-    }
-
-#ifndef CTS_USES_VULKANSC
-    if (useIndirectCopy)
-    {
-        const auto &copyMemoryIndirectFeatures = m_context.getCopyMemoryIndirectFeatures();
-        if (!copyMemoryIndirectFeatures.indirectMemoryToImageCopy)
-            TCU_THROW(NotSupportedError, "Indirect memory copy to image feature not supported");
-
-        VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR copyMemoryIndirectProperties = {};
-        copyMemoryIndirectProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_KHR;
-        VkPhysicalDeviceProperties2 deviceProperties = {};
-        deviceProperties.sType                       = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-        deviceProperties.pNext                       = &copyMemoryIndirectProperties;
-        vki.getPhysicalDeviceProperties2(vkPhysDevice, &deviceProperties);
-
-        switch (m_params.queueSelection)
-        {
-        case QueueSelectionOptions::Universal:
-        {
-            if (!(copyMemoryIndirectProperties.supportedQueues & VK_QUEUE_GRAPHICS_BIT))
-            {
-                TCU_THROW(NotSupportedError, "Graphics queue not supported!");
-            }
-            break;
-        }
-        case QueueSelectionOptions::TransferOnly:
-        {
-            if (!(copyMemoryIndirectProperties.supportedQueues & VK_QUEUE_TRANSFER_BIT))
-            {
-                TCU_THROW(NotSupportedError, "Transfer queue not supported!");
-            }
-            break;
-        }
-        case QueueSelectionOptions::ComputeOnly:
-        {
-            if (!(copyMemoryIndirectProperties.supportedQueues & VK_QUEUE_COMPUTE_BIT))
-            {
-                TCU_THROW(NotSupportedError, "Compute queue not supported!");
-            }
-            break;
-        }
-        }
-    }
-#endif
-
     if (hasDepth)
     {
         glw::GLuint texelSize = m_textureFormat.getPixelSize();
@@ -238,14 +189,6 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context &context, TestParams 
         {
             destinationImageParams.flags |=
                 (vk::VK_IMAGE_CREATE_SPARSE_BINDING_BIT | vk::VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
-            vk::VkImageFormatProperties imageFormatProperties;
-            if (vki.getPhysicalDeviceImageFormatProperties(
-                    vkPhysDevice, destinationImageParams.format, destinationImageParams.imageType,
-                    destinationImageParams.tiling, destinationImageParams.usage, destinationImageParams.flags,
-                    &imageFormatProperties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-            {
-                TCU_THROW(NotSupportedError, "Image format not supported");
-            }
             m_destination     = createImage(vk, m_device, &destinationImageParams);
             m_sparseSemaphore = createSemaphore(vk, m_device);
             allocateAndBindSparseImage(vk, m_device, vkPhysDevice, vki, destinationImageParams, m_sparseSemaphore.get(),
@@ -635,6 +578,12 @@ public:
         checkExtensionSupport(context, m_params.extensionFlags);
         context.requireDeviceFunctionality("VK_KHR_format_feature_flags2");
 
+        const InstanceInterface &vki        = context.getInstanceInterface();
+        const VkPhysicalDevice vkPhysDevice = context.getPhysicalDevice();
+
+        if (!isSupportedDepthStencilFormat(vki, vkPhysDevice, m_params.dst.image.format))
+            TCU_THROW(NotSupportedError, "Image format not supported.");
+
 #ifndef CTS_USES_VULKANSC
         if (m_params.queueSelection != QueueSelectionOptions::Universal)
         {
@@ -643,8 +592,7 @@ public:
             vk::VkFormatProperties2 formatProperties{};
             formatProperties.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
             formatProperties.pNext = &formatProperties3;
-            context.getInstanceInterface().getPhysicalDeviceFormatProperties2(
-                context.getPhysicalDevice(), m_params.dst.image.format, &formatProperties);
+            vki.getPhysicalDeviceFormatProperties2(vkPhysDevice, m_params.dst.image.format, &formatProperties);
 
             VkImageAspectFlags requiredAspects = 0U;
             for (auto const &region : m_params.regions)
@@ -710,6 +658,9 @@ public:
         }
         if (m_params.extensionFlags & INDIRECT_COPY)
         {
+            if (!context.getCopyMemoryIndirectFeatures().indirectMemoryToImageCopy)
+                TCU_THROW(NotSupportedError, "Indirect memory copy to image feature not supported");
+
             VkFormatProperties3 formatProps3;
             formatProps3.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
             formatProps3.pNext = nullptr;
@@ -717,8 +668,7 @@ public:
             VkFormatProperties2 formatProps2;
             formatProps2.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
             formatProps2.pNext = &formatProps3;
-            context.getInstanceInterface().getPhysicalDeviceFormatProperties2(context.getPhysicalDevice(),
-                                                                              m_params.dst.image.format, &formatProps2);
+            vki.getPhysicalDeviceFormatProperties2(vkPhysDevice, m_params.dst.image.format, &formatProps2);
 
             if (m_params.dst.image.tiling == VK_IMAGE_TILING_OPTIMAL)
             {
@@ -730,7 +680,28 @@ public:
                 if (!(formatProps3.linearTilingFeatures & VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR))
                     TCU_THROW(NotSupportedError, "Format feature is not supported on this format");
             }
+
+            const auto supportedQueues = context.getCopyMemoryIndirectProperties().supportedQueues;
+            switch (m_params.queueSelection)
+            {
+            case QueueSelectionOptions::Universal:
+                if (!(supportedQueues & VK_QUEUE_GRAPHICS_BIT))
+                    TCU_THROW(NotSupportedError, "Graphics queue not supported!");
+                break;
+
+            case QueueSelectionOptions::TransferOnly:
+                if (!(supportedQueues & VK_QUEUE_TRANSFER_BIT))
+                    TCU_THROW(NotSupportedError, "Transfer queue not supported!");
+                break;
+
+            case QueueSelectionOptions::ComputeOnly:
+                if (!(supportedQueues & VK_QUEUE_COMPUTE_BIT))
+                    TCU_THROW(NotSupportedError, "Compute queue not supported!");
+                break;
+            }
         }
+        if (m_params.useSparseBinding)
+            checkSparseBindingSupport(context, m_params.dst.image);
 #endif // CTS_USES_VULKANSC
     }
 

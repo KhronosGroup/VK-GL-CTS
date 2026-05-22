@@ -814,15 +814,15 @@ public:
     {
     }
 
-    virtual ~BufferViewTestCase(void)
-    {
-    }
+    virtual ~BufferViewTestCase(void) = default;
+
     virtual void initPrograms(SourceCollections &programCollection) const override;
 
     virtual void checkSupport(Context &context) const override
     {
-        if (m_bufferViewTestInfo.bufferAllocationKind == ALLOCATION_KIND_DEDICATED)
-            BufferDedicatedAllocation().checkSupport(context);
+        if ((m_bufferViewTestInfo.bufferAllocationKind == ALLOCATION_KIND_DEDICATED) ||
+            (m_bufferViewTestInfo.imageAllocationKind == ALLOCATION_KIND_DEDICATED))
+            context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
     }
 
     virtual TestInstance *createInstance(Context &context) const override

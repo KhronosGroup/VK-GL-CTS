@@ -23,12 +23,8 @@
 
 #include "vktApiCopyBufferToImageTests.hpp"
 
-namespace vkt
+namespace vkt::api
 {
-
-namespace api
-{
-
 namespace
 {
 
@@ -124,14 +120,6 @@ CopyBufferToImage::CopyBufferToImage(Context &context, TestParams testParams)
         {
             destinationImageParams.flags |=
                 (vk::VK_IMAGE_CREATE_SPARSE_BINDING_BIT | vk::VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
-            vk::VkImageFormatProperties imageFormatProperties;
-            if (vki.getPhysicalDeviceImageFormatProperties(
-                    vkPhysDevice, destinationImageParams.format, destinationImageParams.imageType,
-                    destinationImageParams.tiling, destinationImageParams.usage, destinationImageParams.flags,
-                    &imageFormatProperties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-            {
-                TCU_THROW(NotSupportedError, "Image format not supported");
-            }
             m_destination     = createImage(vk, m_device, &destinationImageParams);
             m_sparseSemaphore = createSemaphore(vk, m_device);
             allocateAndBindSparseImage(vk, m_device, vkPhysDevice, vki, destinationImageParams, m_sparseSemaphore.get(),
@@ -302,9 +290,14 @@ public:
         VkImageFormatProperties formatProperties;
         const auto ctx        = context.getContextCommonData();
         const auto imageUsage = (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-        const auto res        = ctx.vki.getPhysicalDeviceImageFormatProperties(
+
+        VkImageCreateFlags flags = getCreateFlags(m_params.dst.image);
+        if (m_params.useSparseBinding)
+            flags |= (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
+
+        const auto res = ctx.vki.getPhysicalDeviceImageFormatProperties(
             ctx.physicalDevice, m_params.dst.image.format, m_params.dst.image.imageType, m_params.dst.image.tiling,
-            imageUsage, getCreateFlags(m_params.dst.image), &formatProperties);
+            imageUsage, flags, &formatProperties);
 
         if (res != VK_SUCCESS)
         {
@@ -1150,5 +1143,4 @@ void addCopyBufferToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr tes
     addTestGroup(group, "2d_images", add2dBufferToImageTests, testGroupParams);
 }
 
-} // namespace api
-} // namespace vkt
+} // namespace vkt::api

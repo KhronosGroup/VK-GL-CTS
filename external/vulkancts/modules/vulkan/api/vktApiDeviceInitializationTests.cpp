@@ -29,10 +29,7 @@
 #include "vkPlatform.hpp"
 #include "vkStrUtil.hpp"
 #include "vkRef.hpp"
-#include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
-#include "vkMemUtil.hpp"
-#include "vkDeviceUtil.hpp"
 #include "vkApiVersion.hpp"
 #include "vkAllocationCallbackUtil.hpp"
 #include "vkDeviceFeatures.hpp"
@@ -48,7 +45,6 @@
 #include <limits>
 #include <numeric>
 #include <vector>
-#include <set>
 
 namespace vkt
 {
@@ -1614,9 +1610,6 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest(Context &context)
 
 tcu::TestStatus createDeviceQueue2Test(Context &context)
 {
-    if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
-        TCU_THROW(NotSupportedError, "Vulkan 1.1 is not supported");
-
     const InstanceWrapper instance(createCustomInstanceFromContext(context));
     const auto &instanceDriver(instance.getDriver());
     const VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
@@ -1625,20 +1618,9 @@ tcu::TestStatus createDeviceQueue2Test(Context &context)
     const uint32_t queueIndex             = 0;
     const float queuePriority             = 1.0f;
 
-    VkPhysicalDeviceProtectedMemoryFeatures protectedMemoryFeature = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES, // VkStructureType sType;
-        nullptr,                                                     // void* pNext;
-        VK_FALSE                                                     // VkBool32 protectedMemory;
-    };
-
-    VkPhysicalDeviceFeatures2 features2;
-    deMemset(&features2, 0, sizeof(features2));
-    features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    features2.pNext = &protectedMemoryFeature;
-
+    VkPhysicalDeviceProtectedMemoryFeatures protectedMemoryFeature = initVulkanStructure();
+    VkPhysicalDeviceFeatures2 features2                            = initVulkanStructure(&protectedMemoryFeature);
     instanceDriver.getPhysicalDeviceFeatures2(physicalDevice, &features2);
-    if (protectedMemoryFeature.protectedMemory == VK_FALSE)
-        TCU_THROW(NotSupportedError, "Protected memory feature is not supported");
 
     const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
@@ -1710,22 +1692,7 @@ void checkProtectedMemorySupport(Context &context)
     if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
         TCU_THROW(NotSupportedError, "Vulkan 1.1 is not supported");
 
-    const InstanceInterface &instanceDriver = context.getInstanceInterface();
-    const VkPhysicalDevice physicalDevice   = context.getPhysicalDevice();
-
-    VkPhysicalDeviceProtectedMemoryFeatures protectedMemoryFeature = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES, // VkStructureType sType;
-        nullptr,                                                     // void* pNext;
-        VK_FALSE                                                     // VkBool32 protectedMemory;
-    };
-
-    VkPhysicalDeviceFeatures2 features2;
-    deMemset(&features2, 0, sizeof(features2));
-    features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    features2.pNext = &protectedMemoryFeature;
-
-    instanceDriver.getPhysicalDeviceFeatures2(physicalDevice, &features2);
-    if (protectedMemoryFeature.protectedMemory == VK_FALSE)
+    if (context.getProtectedMemoryFeatures().protectedMemory == VK_FALSE)
         TCU_THROW(NotSupportedError, "Protected memory feature is not supported");
 }
 
@@ -2695,7 +2662,7 @@ tcu::TestCaseGroup *createDeviceInitializationTests(tcu::TestContext &testCtx)
         deviceInitializationTests->addChild(subgroup.release());
     }
     addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_queue2",
-                                 createDeviceQueue2Test);
+                                 checkProtectedMemorySupport, createDeviceQueue2Test);
 #ifndef CTS_USES_VULKANSC
     // Removed because in main process this test does not really create any instance nor device and functions creating it always return VK_SUCCESS
     addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(),

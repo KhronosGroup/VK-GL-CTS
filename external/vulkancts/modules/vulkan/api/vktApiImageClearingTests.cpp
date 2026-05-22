@@ -51,10 +51,7 @@
 #include <sstream>
 #include <numeric>
 
-namespace vkt
-{
-
-namespace api
+namespace vkt::api
 {
 
 using namespace vk;
@@ -499,6 +496,42 @@ struct TestParams
     bool generalLayout = false;
 };
 
+VkImageCreateFlags getImageCreateFlags(const TestParams &params)
+{
+    VkImageCreateFlags imageCreateFlags = 0u;
+    if (params.isCube)
+        imageCreateFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    if (params.create2DArrayCompatible)
+        imageCreateFlags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
+    return imageCreateFlags;
+}
+
+bool getIsAttachmentFormat(Context &context, const TestParams &params)
+{
+    const vk::InstanceInterface &vki      = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const VkFormatProperties props = vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, params.imageFormat);
+    const VkFormatFeatureFlags features =
+        params.imageTiling == VK_IMAGE_TILING_OPTIMAL ? props.optimalTilingFeatures : props.linearTilingFeatures;
+
+    return (features &
+            (vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) != 0;
+}
+
+VkImageUsageFlags getImageUsageFlags(VkFormat format, bool isAttachmentFormat)
+{
+    VkImageUsageFlags commonFlags = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+    if (isAttachmentFormat)
+    {
+        if (isDepthStencilFormat(format))
+            return commonFlags | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+        return commonFlags | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    }
+    return commonFlags;
+}
+
 template <typename T>
 class ImageClearingTestCase : public vkt::TestCase
 {
@@ -514,33 +547,7 @@ public:
         return new T(context, m_params);
     }
 
-    void checkSupport(Context &context) const override
-    {
-        const vk::InstanceInterface &vki = context.getInstanceInterface();
-
-#ifndef CTS_USES_VULKANSC
-        if (m_params.imageFormat == VK_FORMAT_A8_UNORM_KHR ||
-            m_params.imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
-            context.requireDeviceFunctionality("VK_KHR_maintenance5");
-#endif // CTS_USES_VULKANSC
-
-        if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
-            context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
-
-        if (m_params.separateDepthStencilLayoutMode != SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE)
-            context.requireDeviceFunctionality("VK_KHR_separate_depth_stencil_layouts");
-
-        {
-            const VkFormatProperties props =
-                vk::getPhysicalDeviceFormatProperties(vki, context.getPhysicalDevice(), m_params.imageFormat);
-            const VkFormatFeatureFlags features = m_params.imageTiling == VK_IMAGE_TILING_OPTIMAL ?
-                                                      props.optimalTilingFeatures :
-                                                      props.linearTilingFeatures;
-
-            if ((features & (vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_DST_BIT)) == 0)
-                TCU_THROW(NotSupportedError, "Format not supported for transfer");
-        }
-    }
+    void checkSupport(Context &context) const override;
 
 private:
     TestParams m_params;
@@ -591,13 +598,11 @@ protected:
     VkImageViewType getCorrespondingImageViewType(VkImageType imageType, ViewType viewType) const;
     VkImageUsageFlags getImageUsageFlags(VkFormat format) const;
     VkImageAspectFlags getImageAspectFlags(VkFormat format) const;
-    bool getIsAttachmentFormat(VkFormat format, VkImageTiling tiling) const;
     bool getIs3DFormat(VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage,
                        VkImageCreateFlags flags) const;
     bool getIsStencilFormat(VkFormat format) const;
     bool getIsDepthFormat(VkFormat format) const;
     VkImageFormatProperties getImageFormatProperties(void) const;
-    VkImageCreateFlags getImageCreateFlags(void) const;
     ViewType getViewType(uint32_t imageLayerCount) const;
     de::MovePtr<Allocation> allocateAndBindImageMemory(VkImage image) const;
     de::MovePtr<Allocation> allocateAndBindBufferMemory(VkBuffer buffer) const;
@@ -645,7 +650,7 @@ ImageClearingTestInstance::ImageClearingTestInstance(Context &context, const Tes
     , m_queue(context.getUniversalQueue())
     , m_queueFamilyIndex(context.getUniversalQueueFamilyIndex())
     , m_allocator(context.getDefaultAllocator())
-    , m_isAttachmentFormat(getIsAttachmentFormat(params.imageFormat, params.imageTiling))
+    , m_isAttachmentFormat(getIsAttachmentFormat(context, params))
     , m_imageUsageFlags(getImageUsageFlags(params.imageFormat))
     , m_imageAspectFlags(getImageAspectFlags(params.imageFormat))
     , m_imageFormatProperties(getImageFormatProperties())
@@ -771,45 +776,16 @@ bool ImageClearingTestInstance::getIs3DFormat(VkFormat format, VkImageType type,
     return props.maxExtent.depth > 1u;
 }
 
-bool ImageClearingTestInstance::getIsAttachmentFormat(VkFormat format, VkImageTiling tiling) const
-{
-    const VkFormatProperties props =
-        vk::getPhysicalDeviceFormatProperties(m_vki, m_context.getPhysicalDevice(), format);
-    const VkFormatFeatureFlags features =
-        tiling == VK_IMAGE_TILING_OPTIMAL ? props.optimalTilingFeatures : props.linearTilingFeatures;
-
-    return (features &
-            (vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) != 0;
-}
-
 bool ImageClearingTestInstance::getIsStencilFormat(VkFormat format) const
 {
     const TextureFormat tcuFormat = mapVkFormat(format);
-
-    if (tcuFormat.order == TextureFormat::S || tcuFormat.order == TextureFormat::DS)
-        return true;
-
-    return false;
+    return (tcuFormat.order == TextureFormat::S || tcuFormat.order == TextureFormat::DS);
 }
 
 bool ImageClearingTestInstance::getIsDepthFormat(VkFormat format) const
 {
     const TextureFormat tcuFormat = mapVkFormat(format);
-
-    if (tcuFormat.order == TextureFormat::D || tcuFormat.order == TextureFormat::DS)
-        return true;
-
-    return false;
-}
-
-VkImageCreateFlags ImageClearingTestInstance::getImageCreateFlags(void) const
-{
-    VkImageCreateFlags imageCreateFlags = 0u;
-    if (m_params.isCube)
-        imageCreateFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-    if (m_params.create2DArrayCompatible)
-        imageCreateFlags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
-    return imageCreateFlags;
+    return (tcuFormat.order == TextureFormat::D || tcuFormat.order == TextureFormat::DS);
 }
 
 VkImageFormatProperties ImageClearingTestInstance::getImageFormatProperties(void) const
@@ -817,12 +793,12 @@ VkImageFormatProperties ImageClearingTestInstance::getImageFormatProperties(void
     VkImageFormatProperties properties;
     const VkResult result = m_vki.getPhysicalDeviceImageFormatProperties(
         m_context.getPhysicalDevice(), m_params.imageFormat, m_params.imageType, m_params.imageTiling,
-        m_imageUsageFlags, getImageCreateFlags(), &properties);
+        m_imageUsageFlags, getImageCreateFlags(m_params), &properties);
 
-    if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
-        TCU_THROW(NotSupportedError, "Format not supported");
-    else
-        return properties;
+    DE_ASSERT(result != VK_ERROR_FORMAT_NOT_SUPPORTED);
+    DE_UNREF(result);
+
+    return properties;
 }
 
 de::MovePtr<Allocation> ImageClearingTestInstance::allocateAndBindImageMemory(VkImage image) const
@@ -857,16 +833,10 @@ Move<VkImage> ImageClearingTestInstance::createImage(VkImageType imageType, VkFo
                                                      VkExtent3D extent, uint32_t arrayLayerCount,
                                                      VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount) const
 {
-    if (arrayLayerCount > m_imageFormatProperties.maxArrayLayers)
-        TCU_THROW(NotSupportedError, "Device does not support enough image array layers");
-
-    if ((sampleCount & m_imageFormatProperties.sampleCounts) == 0)
-        TCU_THROW(NotSupportedError, "Device does not support sample count under test");
-
-    const VkImageCreateInfo imageCreateInfo = {
+    const VkImageCreateInfo imageCreateInfo{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
         nullptr,                             // const void* pNext;
-        getImageCreateFlags(),               // VkImageCreateFlags flags;
+        getImageCreateFlags(m_params),       // VkImageCreateFlags flags;
         imageType,                           // VkImageType imageType;
         format,                              // VkFormat format;
         extent,                              // VkExtent3D extent;
@@ -1015,10 +985,6 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass(VkFormat format, 
     }
     else
     {
-        // Make sure VK_KHR_create_renderpass2 is supported. Due to InstanceFactory1 being used and the render pass being created in
-        // the instance constructor and not every time, this is the best moment to check.
-        m_context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
-
         VkImageLayout initialLayout                         = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         VkImageLayout finalLayout                           = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         VkAttachmentDescriptionStencilLayout stencilLayouts = {
@@ -1988,8 +1954,6 @@ public:
         : ImageClearingTestInstance(context, testParams)
         , m_clearType(clearType)
     {
-        if (!m_isAttachmentFormat)
-            TCU_THROW(NotSupportedError, "Format not renderable");
     }
 
     TestStatus iterate(void)
@@ -2116,6 +2080,62 @@ public:
     {
     }
 };
+
+template <typename T>
+void ImageClearingTestCase<T>::checkSupport(Context &context) const
+{
+    const vk::InstanceInterface &vki      = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
+#ifndef CTS_USES_VULKANSC
+    if (m_params.imageFormat == VK_FORMAT_A8_UNORM_KHR || m_params.imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+        context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
+    if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
+        context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
+
+    if (m_params.separateDepthStencilLayoutMode != SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE)
+        context.requireDeviceFunctionality("VK_KHR_separate_depth_stencil_layouts");
+
+    {
+        const VkFormatProperties props =
+            vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, m_params.imageFormat);
+        const VkFormatFeatureFlags features =
+            m_params.imageTiling == VK_IMAGE_TILING_OPTIMAL ? props.optimalTilingFeatures : props.linearTilingFeatures;
+
+        if ((features & (vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_DST_BIT)) == 0)
+            TCU_THROW(NotSupportedError, "Format not supported for transfer");
+    }
+
+    const VkImageCreateFlags imageCreateFlags = getImageCreateFlags(m_params);
+    const auto isAttachmentFormat             = getIsAttachmentFormat(context, m_params);
+    const auto imageUsageFlags                = getImageUsageFlags(m_params.imageFormat, isAttachmentFormat);
+
+    VkImageFormatProperties properties;
+    const VkResult result = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, m_params.imageFormat,
+                                                                       m_params.imageType, m_params.imageTiling,
+                                                                       imageUsageFlags, imageCreateFlags, &properties);
+
+    if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+        TCU_THROW(NotSupportedError, "Format not supported");
+
+    if (m_params.imageLayerCount > properties.maxArrayLayers)
+        TCU_THROW(NotSupportedError, "Device does not support enough image array layers");
+
+    if ((m_params.imageSampleCount & properties.sampleCounts) == 0)
+        TCU_THROW(NotSupportedError, "Device does not support sample count under test");
+
+    const bool is3DFormat = properties.maxExtent.depth > 1u;
+    if (!is3DFormat && isAttachmentFormat)
+        context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+
+    if constexpr (std::is_base_of_v<ClearAttachmentTestInstance, T>)
+    {
+        if (!isAttachmentFormat)
+            TCU_THROW(NotSupportedError, "Format not renderable");
+    }
+}
 
 VkClearValue makeClearColorValue(VkFormat format, float r, float g, float b, float a)
 {
@@ -3214,5 +3234,4 @@ TestCaseGroup *createImageClearingTests(TestContext &testCtx)
     return imageClearingTests.release();
 }
 
-} // namespace api
-} // namespace vkt
+} // namespace vkt::api

@@ -117,17 +117,7 @@ CopyImageToImage::CopyImageToImage(Context &context, TestParams params)
         {
             sourceImageParams.flags |=
                 (vk::VK_IMAGE_CREATE_SPARSE_BINDING_BIT | vk::VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
-            vk::VkImageFormatProperties imageFormatProperties;
-            if (vki.getPhysicalDeviceImageFormatProperties(vkPhysDevice, sourceImageParams.format,
-                                                           sourceImageParams.imageType, sourceImageParams.tiling,
-                                                           sourceImageParams.usage, sourceImageParams.flags,
-                                                           &imageFormatProperties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-            {
-                TCU_THROW(NotSupportedError, "Image format not supported");
-            }
-            m_source = createImage(
-                vk, m_device,
-                &sourceImageParams); //de::MovePtr<SparseImage>(new SparseImage(vk, vk, vkPhysDevice, vki, sourceImageParams, m_queue, *m_allocator, mapVkFormat(sourceImageParams.format)));
+            m_source          = createImage(vk, m_device, &sourceImageParams);
             m_sparseSemaphore = createSemaphore(vk, m_device);
             allocateAndBindSparseImage(vk, m_device, vkPhysDevice, vki, sourceImageParams, m_sparseSemaphore.get(),
                                        context.getSparseQueue(), *m_allocator, m_sparseAllocations,
@@ -541,6 +531,7 @@ public:
             m_params.src.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR ||
             m_params.dst.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
             context.requireDeviceFunctionality("VK_KHR_maintenance5");
+
 #endif // CTS_USES_VULKANSC
 
         checkExtensionSupport(context, m_params.extensionFlags);
@@ -694,17 +685,7 @@ CopyImageToImageMipmap::CopyImageToImageMipmap(Context &context, TestParams para
         {
             sourceImageParams.flags |=
                 (vk::VK_IMAGE_CREATE_SPARSE_BINDING_BIT | vk::VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
-            vk::VkImageFormatProperties imageFormatProperties;
-            if (vki.getPhysicalDeviceImageFormatProperties(vkPhysDevice, sourceImageParams.format,
-                                                           sourceImageParams.imageType, sourceImageParams.tiling,
-                                                           sourceImageParams.usage, sourceImageParams.flags,
-                                                           &imageFormatProperties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-            {
-                TCU_THROW(NotSupportedError, "Image format not supported");
-            }
-            m_source = createImage(
-                vk, m_device,
-                &sourceImageParams); //de::MovePtr<SparseImage>(new SparseImage(vk, vk, vkPhysDevice, vki, sourceImageParams, m_queue, *m_allocator, mapVkFormat(sourceImageParams.format)));
+            m_source          = createImage(vk, m_device, &sourceImageParams);
             m_sparseSemaphore = createSemaphore(vk, m_device);
             allocateAndBindSparseImage(vk, m_device, vkPhysDevice, vki, sourceImageParams, m_sparseSemaphore.get(),
                                        context.getSparseQueue(), *m_allocator, m_sparseAllocations,
@@ -1143,6 +1124,11 @@ public:
         if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
             for (const auto &res : {m_params.src, m_params.dst})
                 checkTransferQueueGranularity(context, res.image.extent, res.image.imageType);
+
+#ifndef CTS_USES_VULKANSC
+        if (m_params.useSparseBinding)
+            checkSparseBindingSupport(context, m_params.src.image);
+#endif
     }
 
 private:

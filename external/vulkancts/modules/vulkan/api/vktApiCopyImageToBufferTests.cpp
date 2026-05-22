@@ -127,17 +127,7 @@ CopyImageToBuffer::CopyImageToBuffer(Context &context, TestParams testParams)
         {
             sourceImageParams.flags |=
                 (vk::VK_IMAGE_CREATE_SPARSE_BINDING_BIT | vk::VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
-            vk::VkImageFormatProperties imageFormatProperties;
-            if (vki.getPhysicalDeviceImageFormatProperties(vkPhysDevice, sourceImageParams.format,
-                                                           sourceImageParams.imageType, sourceImageParams.tiling,
-                                                           sourceImageParams.usage, sourceImageParams.flags,
-                                                           &imageFormatProperties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-            {
-                TCU_THROW(NotSupportedError, "Image format not supported");
-            }
-            m_source = createImage(
-                vk, m_device,
-                &sourceImageParams); //de::MovePtr<SparseImage>(new SparseImage(vk, vk, vkPhysDevice, vki, sourceImageParams, m_queue, *m_allocator, mapVkFormat(sourceImageParams.format)));
+            m_source          = createImage(vk, m_device, &sourceImageParams);
             m_sparseSemaphore = createSemaphore(vk, m_device);
             allocateAndBindSparseImage(vk, m_device, vkPhysDevice, vki, sourceImageParams, m_sparseSemaphore.get(),
                                        context.getSparseQueue(), *m_allocator, m_sparseAllocations,
@@ -403,6 +393,9 @@ public:
                                               m_params.src.image.imageType);
             }
         }
+
+        if (m_params.useSparseBinding)
+            checkSparseBindingSupport(context, m_params.src.image);
     }
 
 private:

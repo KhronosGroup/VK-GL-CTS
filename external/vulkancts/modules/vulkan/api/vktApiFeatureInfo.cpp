@@ -593,6 +593,11 @@ void checkApiVersionSupport(Context &context)
                                          std::to_string(MINOR) + " required to run test");
 }
 
+void checkMemoryBudgetSupport(Context &context)
+{
+    context.requireDeviceFunctionality("VK_EXT_memory_budget");
+}
+
 typedef struct FeatureLimitTableItem_
 {
     const VkBool32 *cond;
@@ -1842,10 +1847,7 @@ tcu::TestStatus validateLimitsExtFragmentDensityMap(Context &context)
 
 void checkSupportNvRayTracing(Context &context)
 {
-    const std::string &requiredDeviceExtension = "VK_NV_ray_tracing";
-
-    if (!context.isDeviceFunctionalitySupported(requiredDeviceExtension))
-        TCU_THROW(NotSupportedError, requiredDeviceExtension + " is not supported");
+    context.requireDeviceFunctionality("VK_NV_ray_tracing");
 }
 
 tcu::TestStatus validateLimitsNvRayTracing(Context &context)
@@ -3586,9 +3588,6 @@ tcu::TestStatus deviceMemoryBudgetProperties(Context &context)
 {
     TestLog &log = context.getTestContext().getLog();
     uint8_t buffer[sizeof(VkPhysicalDeviceMemoryBudgetPropertiesEXT) + GUARD_SIZE];
-
-    if (!context.isDeviceFunctionalitySupported("VK_EXT_memory_budget"))
-        TCU_THROW(NotSupportedError, "VK_EXT_memory_budget is not supported");
 
     VkPhysicalDeviceMemoryBudgetPropertiesEXT *budgetProps =
         reinterpret_cast<VkPhysicalDeviceMemoryBudgetPropertiesEXT *>(buffer);
@@ -8969,7 +8968,7 @@ void createFeatureInfoDeviceTests(tcu::TestCaseGroup *testGroup)
     addFunctionCase(testGroup, "device_extension_dependencies", validateDeviceExtensionDependencies);
 #endif
     addFunctionCase(testGroup, "device_no_khx_extensions", testNoKhxExtensions);
-    addFunctionCase(testGroup, "device_memory_budget", deviceMemoryBudgetProperties);
+    addFunctionCase(testGroup, "device_memory_budget", checkMemoryBudgetSupport, deviceMemoryBudgetProperties);
     addFunctionCase(testGroup, "device_mandatory_features", deviceMandatoryFeatures);
 }
 

@@ -241,14 +241,7 @@ ResolveImageToImage::ResolveImageToImage(Context &context, TestParams params, co
         {
             destinationImageParams.flags |=
                 (vk::VK_IMAGE_CREATE_SPARSE_BINDING_BIT | vk::VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
-            vk::VkImageFormatProperties imageFormatProperties;
-            if (vki.getPhysicalDeviceImageFormatProperties(
-                    vkPhysDevice, destinationImageParams.format, destinationImageParams.imageType,
-                    destinationImageParams.tiling, destinationImageParams.usage, destinationImageParams.flags,
-                    &imageFormatProperties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-            {
-                TCU_THROW(NotSupportedError, "Image format not supported");
-            }
+
             m_destination     = createImage(vk, m_device, &destinationImageParams);
             m_sparseSemaphore = createSemaphore(vk, m_device);
             allocateAndBindSparseImage(vk, m_device, vkPhysDevice, vki, destinationImageParams, m_sparseSemaphore.get(),
@@ -1649,6 +1642,9 @@ public:
             if (context.getTransferQueueFamilyIndex() == -1)
                 TCU_THROW(NotSupportedError, "No queue family found that only supports transfer queue.");
         }
+
+        if (m_params.useSparseBinding)
+            checkSparseBindingSupport(context, m_params.dst.image);
     }
 
 private:
