@@ -2466,7 +2466,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
                 const auto result = vki.getPhysicalDeviceImageFormatProperties(
                     physicalDevice, imgCreateInfo.format, imgCreateInfo.imageType, imgCreateInfo.tiling,
-                    imgCreateInfo.flags, 0u, &formatProperties);
+                    imgCreateInfo.usage, imgCreateInfo.flags, &formatProperties);
 
                 if (result != VK_SUCCESS)
                 {
