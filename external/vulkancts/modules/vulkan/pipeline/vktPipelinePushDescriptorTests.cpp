@@ -1116,8 +1116,8 @@ tcu::TestStatus PushDescriptorIncrementalUpdatesComputeTestInstance::iterate(voi
     m_vkd.cmdDispatch(*cmdBuffer, bufferSize, 1, 1);
 
     VkMemoryBarrier memoryBarrier = initVulkanStructure();
-    memoryBarrier.srcAccessMask   = VK_ACCESS_SHADER_WRITE_BIT;
-    memoryBarrier.dstAccessMask   = VK_ACCESS_SHADER_WRITE_BIT;
+    memoryBarrier.srcAccessMask   = (VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
+    memoryBarrier.dstAccessMask   = (VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
 
     m_vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u,
                              1u, &memoryBarrier, 0u, nullptr, 0u, nullptr);
