@@ -1070,7 +1070,8 @@ public:
 };
 
 shared_ptr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext, const VkVideoCoreProfile *profile,
-                                                size_t framesToCheck, bool resolutionChange);
+                                                size_t framesToCheck, bool resolutionChange,
+                                                bool useGeneralLayout = false);
 de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImageFromContext(DeviceContext &deviceContext,
                                                                         VkImageLayout layout,
                                                                         const DecodedFrame *frame);

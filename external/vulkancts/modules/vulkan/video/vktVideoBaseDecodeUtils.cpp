@@ -3764,7 +3764,7 @@ int32_t VkParserVideoPictureParameters::Release()
 }
 
 shared_ptr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext, const VkVideoCoreProfile *profile,
-                                                size_t framesToCheck, bool resolutionChange)
+                                                size_t framesToCheck, bool resolutionChange, bool useGeneralLayout)
 {
     VkVideoCapabilitiesKHR videoCapabilities;
     VkVideoDecodeCapabilitiesKHR videoDecodeCapabilities;
@@ -3792,6 +3792,7 @@ shared_ptr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext, co
     params.outOfOrderDecoding = false;
     params.alwaysRecreateDPB  = resolutionChange;
     params.layeredDpb         = !separateReferenceImages;
+    params.useGeneralLayout   = useGeneralLayout;
 
     return std::make_shared<VideoBaseDecoder>(std::move(params));
 }
