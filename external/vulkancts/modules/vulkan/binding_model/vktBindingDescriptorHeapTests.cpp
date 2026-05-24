@@ -928,6 +928,15 @@ tcu::TestStatus testLimits(Context &context)
                   "bufferDescriptorSize");
     }
 
+    const auto physDevProps2 = context.getDeviceProperties2();
+    if (properties.maxPushDataSize < physDevProps2.properties.limits.maxPushConstantsSize)
+    {
+        std::string message = "maxPushDataSize (" + std::to_string(properties.maxPushDataSize) +
+                              ") is less than maxPushConstantsSize (" +
+                              std::to_string(physDevProps2.properties.limits.maxPushConstantsSize) + ")";
+        TCU_THROW(TestError, message);
+    }
+
     return tcu::TestStatus::pass("Pass");
 }
 
