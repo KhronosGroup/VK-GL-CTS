@@ -149,9 +149,10 @@ struct TestParamsBasic : TestParams
     bool embeddedSamplers{};
     bool bindSamplerHeap = true;
     bool inputAttachments{};
-    bool scaledMappingStrides      = true;
-    int32_t overrideResourceStride = -1;
-    int32_t overrideSamplerStride  = -1;
+    bool scaledMappingStrides         = true;
+    bool untypedAccelerationStructure = false;
+    int32_t overrideResourceStride    = -1;
+    int32_t overrideSamplerStride     = -1;
 };
 
 struct TestParamsGPL : TestParams
@@ -4421,6 +4422,11 @@ void DescriptorHeapTestCaseBasic::initQueuePrograms(vk::SourceCollections &progr
         str << "#extension GL_EXT_ray_tracing : require\n";
     }
 
+    if (m_params.untypedAccelerationStructure)
+    {
+        str << "#extension GL_EXT_descriptor_heap : require\n";
+    }
+
     if (m_params.stage == VK_SHADER_STAGE_COMPUTE_BIT)
     {
         str << "layout(local_size_x = " << m_params.dimension << ") in;\n";
@@ -4463,6 +4469,12 @@ void DescriptorHeapTestCaseBasic::initQueuePrograms(vk::SourceCollections &progr
     {
         if (binding.queue != static_cast<int>(queueIndex))
         {
+            continue;
+        }
+        if (m_params.untypedAccelerationStructure &&
+            binding.descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+        {
+            str << "layout(descriptor_heap) uniform accelerationStructureEXT desc" << uid << "[];\n";
             continue;
         }
         if (binding.arrayed)
@@ -4576,6 +4588,11 @@ void DescriptorHeapTestCaseBasic::initQueuePrograms(vk::SourceCollections &progr
         if (binding.arrayed)
         {
             indexing = "[nonuniformEXT(swizzler[invocationId])]";
+        }
+        else if (m_params.untypedAccelerationStructure)
+        {
+            DE_ASSERT(binding.mapping.source == VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT);
+            indexing = "[" + std::to_string(binding.mapping.sourceData.constantOffset.heapOffset) + "]";
         }
 
         switch (binding.descriptorType)
@@ -5045,6 +5062,11 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
         std::vector<VkDescriptorSetAndBindingMappingEXT> mappings;
         for (const ShaderBinding &binding : bindings)
         {
+            if (binding.descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR &&
+                m_params.untypedAccelerationStructure)
+            {
+                continue;
+            }
             mappings.push_back(binding.mapping);
         }
 
@@ -5993,9 +6015,18 @@ void DescriptorHeapTestInstanceBasic::setupDescriptors(VkCommandBuffer cmdBuf, c
             }
             else
             {
-                auto &descriptor   = m_deferredResourceHostDescriptors.emplace_back();
-                descriptor.address = resourceDescriptorHeapHostPtr + bindingIndex * resourceStride;
-                descriptor.size    = resourceStride;
+                auto &descriptor = m_deferredResourceHostDescriptors.emplace_back();
+                if (m_params.untypedAccelerationStructure)
+                {
+                    descriptor.address = resourceDescriptorHeapHostPtr +
+                                         bindingIndex * alignUp(m_descriptorHeapProperties.bufferDescriptorSize,
+                                                                m_descriptorHeapProperties.bufferDescriptorAlignment);
+                }
+                else
+                {
+                    descriptor.address = resourceDescriptorHeapHostPtr + bindingIndex * resourceStride;
+                }
+                descriptor.size = resourceStride;
 
                 auto &bufferDescriptorInfo   = m_stagingDeviceAddressRanges.emplace_back();
                 bufferDescriptorInfo.address = accelerationStructureAddress;
@@ -15377,6 +15408,16 @@ void populateBasicTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
                 params.seed = stageGroupHash ^ deStringHash(testName.c_str());
 
                 stageGroup->addChild(new DescriptorHeapTestCaseBasic(testCtx, testName, params));
+
+                if (stage == VK_SHADER_STAGE_RAYGEN_BIT_KHR &&
+                    descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+                {
+                    params.untypedAccelerationStructure                  = true;
+                    binding.firstBinding                                 = 16;
+                    binding.mapping.sourceData.constantOffset.heapOffset = binding.firstBinding;
+                    testName += "_untyped";
+                    stageGroup->addChild(new DescriptorHeapTestCaseBasic(testCtx, testName, params));
+                }
             }
         }
         basicGroup->addChild(stageGroup.release());
