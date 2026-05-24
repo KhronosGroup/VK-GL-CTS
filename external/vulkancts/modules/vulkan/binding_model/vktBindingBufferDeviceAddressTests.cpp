@@ -2217,10 +2217,18 @@ void FragmentStoreTestCase::checkSupport(Context &context) const
     context.requireDeviceCoreFeature(vkt::DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
 }
 
+enum class MiscTestType
+{
+    COPY_STRUCT = 0,
+    MULTIPLE_ACCESS_CHAIN,
+};
+
 class BufferDeviceAddressMiscTestInstance : public TestInstance
 {
 public:
-    BufferDeviceAddressMiscTestInstance(Context &context) : vkt::TestInstance(context)
+    BufferDeviceAddressMiscTestInstance(Context &context, const MiscTestType testType)
+        : vkt::TestInstance(context)
+        , m_testType(testType)
     {
     }
     ~BufferDeviceAddressMiscTestInstance(void)
@@ -2229,6 +2237,8 @@ public:
 
 private:
     tcu::TestStatus iterate(void);
+
+    const MiscTestType m_testType;
 };
 
 tcu::TestStatus BufferDeviceAddressMiscTestInstance::iterate(void)
@@ -2248,9 +2258,14 @@ tcu::TestStatus BufferDeviceAddressMiscTestInstance::iterate(void)
                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, 0u),
         MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
 
-    BufferWithMemory storageBuffer(vk, device, allocator,
-                                   makeBufferCreateInfo(nullptr, bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 0u),
-                                   MemoryRequirement::HostVisible);
+    const vk::VkDescriptorType descriptorType = (m_testType == MiscTestType::COPY_STRUCT) ?
+                                                    vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER :
+                                                    vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    BufferWithMemory storageBuffer(
+        vk, device, allocator,
+        makeBufferCreateInfo(nullptr, bufferSize,
+                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 0u),
+        MemoryRequirement::HostVisible);
 
     VkBufferDeviceAddressInfo bufferDeviceAddressInfo = {
         VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType    sType;
@@ -2263,16 +2278,32 @@ tcu::TestStatus BufferDeviceAddressMiscTestInstance::iterate(void)
     uint8_t *storageBufferPtr = reinterpret_cast<uint8_t *>(storageBuffer.getAllocation().getHostPtr());
     deMemset(storageBufferPtr, 0, bufferSize);
     deMemcpy(storageBufferPtr + sizeof(uint32_t) * 2, &address, sizeof(VkDeviceAddress));
+
+    uint32_t offset = 0;
+    if (m_testType == MiscTestType::COPY_STRUCT)
+    {
+        offset = sizeof(uint32_t) * 2;
+    }
+    VkDeviceAddress *addressPtr = reinterpret_cast<VkDeviceAddress *>(storageBufferPtr + offset);
+    *addressPtr                 = address;
+
     flushAlloc(vk, device, storageBuffer.getAllocation());
+
+    if (m_testType == MiscTestType::MULTIPLE_ACCESS_CHAIN)
+    {
+        uint32_t *a = reinterpret_cast<uint32_t *>(buffer.getAllocation().getHostPtr());
+        a[1]        = 17;
+        a[15]       = 37;
+    }
 
     const Unique<VkShaderModule> shaderModule(
         createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0));
 
     DescriptorPoolBuilder poolBuilder;
-    poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    poolBuilder.addType(descriptorType);
 
     DescriptorSetLayoutBuilder descriptorBuilder;
-    descriptorBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
+    descriptorBuilder.addSingleBinding(descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT);
 
     const auto descriptorSetLayout(descriptorBuilder.build(vk, device));
     const auto descriptorPool = poolBuilder.build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
@@ -2288,8 +2319,8 @@ tcu::TestStatus BufferDeviceAddressMiscTestInstance::iterate(void)
     bufferInfo.range  = VK_WHOLE_SIZE;
 
     vk::DescriptorSetUpdateBuilder updateBuilder;
-    updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
-                              vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo);
+    updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType,
+                              &bufferInfo);
     updateBuilder.update(vk, device);
 
     beginCommandBuffer(vk, *cmdBuffer);
@@ -2302,10 +2333,21 @@ tcu::TestStatus BufferDeviceAddressMiscTestInstance::iterate(void)
 
     invalidateAlloc(vk, device, buffer.getAllocation());
 
-    int *a                  = reinterpret_cast<int *>(buffer.getAllocation().getHostPtr());
-    const int expectedValue = 2;
-    if (*a != expectedValue)
-        TCU_FAIL("Unexpected result");
+    if (m_testType == MiscTestType::COPY_STRUCT)
+    {
+        int *result             = reinterpret_cast<int *>(buffer.getAllocation().getHostPtr());
+        const int expectedValue = 2;
+        if (*result != expectedValue)
+            if (*result != 2)
+                TCU_FAIL("Unexpected result");
+    }
+    else
+    {
+        uint32_t *result        = reinterpret_cast<uint32_t *>(buffer.getAllocation().getHostPtr());
+        const uint32_t expected = 17 * 37;
+        if (*result != expected)
+            TCU_FAIL("Unexpected result");
+    }
 
     return tcu::TestStatus::pass("Pass");
 }
@@ -2313,7 +2355,9 @@ tcu::TestStatus BufferDeviceAddressMiscTestInstance::iterate(void)
 class BufferDeviceAddressMiscTestCase : public TestCase
 {
 public:
-    BufferDeviceAddressMiscTestCase(tcu::TestContext &context, const char *name) : vkt::TestCase(context, name)
+    BufferDeviceAddressMiscTestCase(tcu::TestContext &context, const char *name, MiscTestType testType)
+        : vkt::TestCase(context, name)
+        , m_testType(testType)
     {
     }
     ~BufferDeviceAddressMiscTestCase(void)
@@ -2322,39 +2366,112 @@ public:
     virtual void initPrograms(SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const
     {
-        return new BufferDeviceAddressMiscTestInstance(context);
+        return new BufferDeviceAddressMiscTestInstance(context, m_testType);
     }
     virtual void checkSupport(Context &context) const;
+
+private:
+    const MiscTestType m_testType;
 };
 
 void BufferDeviceAddressMiscTestCase::initPrograms(SourceCollections &programCollection) const
 {
-    std::stringstream comp;
-    comp << "#version 450\n"
-            "#extension GL_EXT_buffer_reference : require\n"
-            "\n"
-            "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-            "\n"
-            "layout(std430, buffer_reference) buffer T1 {\n"
-            "    int a;\n"
-            "};\n"
-            "\n"
-            "struct Foo {\n"
-            "    T1 b;\n"
-            "};\n"
-            "\n"
-            "layout(set = 0, binding = 0, std430) buffer storage_buffer {\n"
-            "    uint index;\n"
-            "    // offset 4..7 is std430 padding\n"
-            "    Foo f[];  // each item is 8 bytes: one buffer reference\n"
-            "} foo;\n"
-            "\n"
-            "void main() {\n"
-            "    Foo new_foo = foo.f[foo.index];\n"
-            "    new_foo.b.a = 2;\n"
-            "}\n";
+    if (m_testType == MiscTestType::COPY_STRUCT)
+    {
+        std::stringstream comp;
+        comp << "#version 450\n"
+                "#extension GL_EXT_buffer_reference : require\n"
+                "\n"
+                "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+                "\n"
+                "layout(std430, buffer_reference) buffer T1 {\n"
+                "    int a;\n"
+                "};\n"
+                "\n"
+                "struct Foo {\n"
+                "    T1 b;\n"
+                "};\n"
+                "\n"
+                "layout(set = 0, binding = 0, std430) buffer storage_buffer {\n"
+                "    uint index;\n"
+                "    // offset 4..7 is std430 padding\n"
+                "    Foo f[];  // each item is 8 bytes: one buffer reference\n"
+                "} foo;\n"
+                "\n"
+                "void main() {\n"
+                "    Foo new_foo = foo.f[foo.index];\n"
+                "    new_foo.b.a = 2;\n"
+                "}\n";
 
-    programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+        programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+    }
+    else if (m_testType == MiscTestType::MULTIPLE_ACCESS_CHAIN)
+    {
+        const char *spv_shader_source = R"(
+               OpCapability PhysicalStorageBufferAddresses
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+               OpExtension "SPV_KHR_physical_storage_buffer"
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint GLCompute %main "main" %globalParams
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %_ptr_PhysicalStorageBuffer_Data_natural ArrayStride 68
+               OpDecorate %GlobalParams_std140 Block
+               OpMemberDecorate %GlobalParams_std140 0 Offset 0
+               OpDecorate %globalParams Binding 0
+               OpDecorate %globalParams DescriptorSet 0
+               OpDecorate %_ptr_PhysicalStorageBuffer__Array_natural_uint16 ArrayStride 64
+               OpDecorate %_arr_uint_int_16 ArrayStride 4
+               OpDecorate %_ptr_PhysicalStorageBuffer__arr_uint_int_16 ArrayStride 64
+               OpDecorate %_ptr_PhysicalStorageBuffer_uint ArrayStride 4
+               OpMemberDecorate %_Array_natural_uint16 0 Offset 0
+               OpMemberDecorate %Data_natural 0 Offset 0
+               OpMemberDecorate %Data_natural 1 Offset 4
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+         %12 = OpTypeFunction %void
+%_ptr_Function_uint = OpTypePointer Function %uint
+     %uint_0 = OpConstant %uint 0
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_Data_natural PhysicalStorageBuffer
+%GlobalParams_std140 = OpTypeStruct %_ptr_PhysicalStorageBuffer_Data_natural
+%_ptr_Uniform_GlobalParams_std140 = OpTypePointer Uniform %GlobalParams_std140
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_Uniform_42 = OpTypePointer Uniform %_ptr_PhysicalStorageBuffer_Data_natural
+      %int_1 = OpConstant %int 1
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer__Array_natural_uint16 PhysicalStorageBuffer
+     %int_16 = OpConstant %int 16
+%_arr_uint_int_16 = OpTypeArray %uint %int_16
+%_ptr_PhysicalStorageBuffer__arr_uint_int_16 = OpTypePointer PhysicalStorageBuffer %_arr_uint_int_16
+%_ptr_PhysicalStorageBuffer_uint = OpTypePointer PhysicalStorageBuffer %uint
+     %int_14 = OpConstant %int 14
+%_Array_natural_uint16 = OpTypeStruct %_arr_uint_int_16
+%Data_natural = OpTypeStruct %uint %_Array_natural_uint16
+%_ptr_PhysicalStorageBuffer_Data_natural = OpTypePointer PhysicalStorageBuffer %Data_natural
+%_ptr_PhysicalStorageBuffer__Array_natural_uint16 = OpTypePointer PhysicalStorageBuffer %_Array_natural_uint16
+%globalParams = OpVariable %_ptr_Uniform_GlobalParams_std140 Uniform
+       %main = OpFunction %void None %12
+         %13 = OpLabel
+         %15 = OpVariable %_ptr_Function_uint Function
+         %48 = OpInBoundsAccessChain %_ptr_Uniform_42 %globalParams %int_0
+         %49 = OpLoad %_ptr_PhysicalStorageBuffer_Data_natural %48
+         %53 = OpInBoundsAccessChain %_ptr_PhysicalStorageBuffer__Array_natural_uint16 %49 %int_1
+         %57 = OpInBoundsAccessChain %_ptr_PhysicalStorageBuffer__arr_uint_int_16 %53 %int_0
+         %59 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %57 %int_0
+         %60 = OpLoad %uint %59 Aligned 4
+         %61 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %57 %int_14
+         %63 = OpLoad %uint %61 Aligned 4
+        %a_0 = OpIMul %uint %60 %63
+               OpStore %15 %a_0
+         %68 = OpInBoundsAccessChain %_ptr_PhysicalStorageBuffer_uint %49 %int_0
+               OpStore %68 %a_0 Aligned 4
+               OpReturn
+               OpFunctionEnd
+        )";
+
+        const SpirVAsmBuildOptions spvOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_5);
+        programCollection.spirvAsmSources.add("comp") << spv_shader_source << spvOptions;
+    }
 }
 
 void BufferDeviceAddressMiscTestCase::checkSupport(Context &context) const
@@ -2529,7 +2646,9 @@ tcu::TestCaseGroup *createBufferDeviceAddressTests(tcu::TestContext &testCtx)
     group->addChild(memoryModelGroup.release());
     de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
     {
-        miscGroup->addChild(new BufferDeviceAddressMiscTestCase(testCtx, "copy_struct"));
+        miscGroup->addChild(new BufferDeviceAddressMiscTestCase(testCtx, "copy_struct", MiscTestType::COPY_STRUCT));
+        miscGroup->addChild(
+            new BufferDeviceAddressMiscTestCase(testCtx, "multiple_access_chain", MiscTestType::MULTIPLE_ACCESS_CHAIN));
     }
     group->addChild(miscGroup.release());
     return group.release();
