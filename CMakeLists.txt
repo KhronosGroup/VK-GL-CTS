@@ -271,6 +271,15 @@ if (DE_COMPILER_IS_MSC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_SCL_SECURE_NO_WARNINGS")
 endif ()
 
+if (DE_COMPILER_IS_GCC)
+	# Should reduce memory usage by the GCC linker, which sometimes gets killed with -9
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-keep-memory")
+
+	# GCC does not support FENV_ACCESS, but -frounding-math disables some optimizations that hurt us.
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frounding-math")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -frounding-math")
+endif ()
+
 if (DEQP_LOG_NODE_SOURCE)
 	if ((DE_OS_IS_UNIX))
 		add_definitions(-DDEQP_LOG_NODE_SOURCE=1)
@@ -433,11 +442,6 @@ add_subdirectory(external/vulkancts/framework/vulkan ${MAYBE_EXCLUDE_FROM_ALL})
 
 if (DE_COMPILER_IS_MSC)
 	add_compile_options(/bigobj) # Required by glsBuiltinPrecisionTests.cpp
-endif ()
-
-if (DE_COMPILER_IS_GCC)
-	# Should reduce memory usage by the GCC linker, which sometimes gets killed with -9
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-keep-memory")
 endif ()
 
 add_subdirectory(modules ${MAYBE_EXCLUDE_FROM_ALL})
