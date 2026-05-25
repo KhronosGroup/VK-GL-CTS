@@ -29,6 +29,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "tcuStringTemplate.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -65,16 +66,15 @@ class OpSelectDifferentStridesCase : public TestCase
 {
     const Params m_params;
 
-    static inline const char *spvasm = R"spirv(
+    static inline const std::string spvasm = R"spirv(
                OpCapability Shader
                OpCapability Int64
                OpCapability VariablePointers
                OpCapability VariablePointersStorageBuffer
                OpCapability PhysicalStorageBufferAddresses
                OpExtension "SPV_KHR_variable_pointers"
-               OpExtension "SPV_KHR_physical_storage_buffer"
-               OpExtension "SPV_EXT_physical_storage_buffer"
-               ;OpExtension "SPV_EXT_scalar_block_layout"
+               OpExtension "${SPV_*_physical_storage_buffer}"
+               ; OpExtension "SPV_EXT_scalar_block_layout"
           %1 = OpExtInstImport "GLSL.std.450"
                ; OpMemoryModel Logical GLSL450
                OpMemoryModel PhysicalStorageBuffer64 GLSL450
@@ -195,7 +195,7 @@ class OpSelectDifferentStridesCase : public TestCase
          %313 = OpCompositeConstruct %v3uint %23 %18 %16
          ; final storing
          OpStore %310 %312 Aligned 16
-         OpStore %311 %313 Aligned 16
+         OpStore %311 %313 Aligned 4
                OpReturn
                OpFunctionEnd
     )spirv";
@@ -231,9 +231,8 @@ void OpSelectDifferentStridesCase::initDeviceCapabilities(DevCaps &caps)
             trowNotSupported("bufferDeviceAddress");
         if (!caps.addFeature(&VkPhysicalDeviceScalarBlockLayoutFeaturesEXT::scalarBlockLayout))
             trowNotSupported("scalarBlockLayout");
-        if (!(caps.addExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, false) ||
-              caps.addExtension(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, false)))
-            trowNotSupported(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+        if (!(caps.addExtension(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, false)))
+            trowNotSupported(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
     }
     else
     {
@@ -241,9 +240,8 @@ void OpSelectDifferentStridesCase::initDeviceCapabilities(DevCaps &caps)
             trowNotSupported("bufferDeviceAddress");
         if (!caps.addFeature(&VkPhysicalDeviceVulkan12Features::scalarBlockLayout))
             trowNotSupported("scalarBlockLayout");
-        if (!(caps.addExtension(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, false) ||
-              caps.addExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, false)))
-            trowNotSupported(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+        if (!(caps.addExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, false)))
+            trowNotSupported(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
     }
 
     if (!caps.addFeature(&VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT::mutableDescriptorType))
@@ -270,7 +268,17 @@ void OpSelectDifferentStridesCase::initPrograms(SourceCollections &programCollec
     SpirVAsmBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4);
     SpirvValidatorOptions validatorOptions = buildOptions.getSpirvValidatorOptions();
     validatorOptions.blockLayout           = SpirvValidatorOptions::BlockLayoutRules::kScalarBlockLayout;
-    programCollection.spirvAsmSources.add("compute") << spvasm << (buildOptions << validatorOptions);
+    buildOptions << validatorOptions;
+
+    const char *var = "SPV_*_physical_storage_buffer";
+    const char *ext = "SPV_EXT_physical_storage_buffer";
+    const char *khr = "SPV_KHR_physical_storage_buffer";
+    const std::map<std::string, std::string> ext_map{{var, ext}};
+    const std::map<std::string, std::string> khr_map{{var, khr}};
+    programCollection.spirvAsmSources.add("compute_ext")
+        << tcu::StringTemplate(spvasm).specialize(ext_map) << buildOptions;
+    programCollection.spirvAsmSources.add("compute_khr")
+        << tcu::StringTemplate(spvasm).specialize(khr_map) << buildOptions;
 }
 
 Move<VkShaderModule> OpSelectDifferentStridesCase::createShader(const DeviceInterface &deviceInterface, VkDevice device,
@@ -357,8 +365,11 @@ tcu::TestStatus OpSelectDifferentStridesInstance::iterate()
     Move<VkPipelineLayout> plFoo      = makePipelineLayout(di, device, *dsFooLayout, &pcRange);
     Move<VkPipelineLayout> plBar      = makePipelineLayout(di, device, *dsBarLayout, &pcRange);
 
+    const char *moduleName = "compute_khr";
+    if (m_context.getUsedApiVersion() < VK_API_VERSION_1_2)
+        moduleName = "compute_ext";
     Move<VkShaderModule> compShaderModule =
-        OpSelectDifferentStridesCase::createShader(di, device, m_context.getBinaryCollection().get("compute"));
+        OpSelectDifferentStridesCase::createShader(di, device, m_context.getBinaryCollection().get(moduleName));
 
     Move<VkPipeline> pipelineFoo = makeComputePipeline(di, device, *plFoo, *compShaderModule);
     Move<VkPipeline> pipelineBar = makeComputePipeline(di, device, *plBar, *compShaderModule);
