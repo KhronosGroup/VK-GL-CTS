@@ -138,6 +138,8 @@ static bool isFeatureSupported(const vkt::Context &ctx, const std::string &featu
         return ctx.getIndexTypeUint8Features().indexTypeUint8;
     if (feature == "RayTracingPipelineFeaturesKHR.rayTracingPipeline")
         return ctx.getRayTracingPipelineFeatures().rayTracingPipeline;
+    if (feature == "RayQueryFeaturesKHR.rayQuery")
+        return ctx.getRayQueryFeatures().rayQuery;
     if (feature == "AccelerationStructureFeaturesKHR.accelerationStructure")
         return ctx.getAccelerationStructureFeatures().accelerationStructure;
     if (feature == "BufferDeviceAddressFeatures.bufferDeviceAddress")

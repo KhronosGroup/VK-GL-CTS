@@ -1,0 +1,115 @@
+#!amber
+
+# Ray query stress test with workgroup barrier and serialized Proceed() per subgroup lane.
+# Uses compute shader with WG size 1024. Each invocation initializes a ray query against
+# a non-opaque triangle, synchronizes via barrier(), then serializes Proceed() across
+
+DEVICE_EXTENSION VK_KHR_acceleration_structure
+DEVICE_EXTENSION VK_KHR_ray_query
+DEVICE_EXTENSION VK_KHR_buffer_device_address
+DEVICE_EXTENSION VK_KHR_spirv_1_4
+DEVICE_FEATURE   AccelerationStructureFeaturesKHR.accelerationStructure
+DEVICE_FEATURE   RayQueryFeaturesKHR.rayQuery
+DEVICE_FEATURE   BufferDeviceAddressFeatures.bufferDeviceAddress
+
+SHADER compute ray_query_shader GLSL TARGET_ENV spv1.4
+#version 460 core
+#extension GL_EXT_ray_query : require
+#extension GL_KHR_shader_subgroup_basic : require
+
+layout(local_size_x = 1024) in;
+
+layout(set = 0, binding = 0) uniform accelerationStructureEXT topLevelAS;
+layout(set = 0, binding = 1) buffer OutputBuffer {
+    uint results[];
+};
+layout(set = 0, binding = 2) buffer DelayBuffer {
+    uint delayData[];
+};
+
+void main() {
+    uint gid = gl_GlobalInvocationID.x;
+
+    // Set up ray that is guaranteed to hit exactly one non-opaque triangle.
+    vec3 origin = vec3(0.0, 0.0, -2.0);
+    vec3 direction = vec3(0.0, 0.0, 1.0);
+    float tMin = 0.001;
+    float tMax = 100.0;
+
+    rayQueryEXT rq;
+    rayQueryInitializeEXT(rq, topLevelAS, gl_RayFlagsNoneEXT, 0xFF,
+                          origin, tMin, direction, tMax);
+
+    // Workgroup barrier - all invocations have initialized their ray query.
+    barrier();
+
+    // Serialize Proceed() across subgroup lanes.
+    for (uint curLane = 0; curLane < 32; ++curLane) {
+        if (gl_SubgroupInvocationID == curLane) {
+            rayQueryProceedEXT(rq);
+        }
+        if (curLane == 0) {
+            // Delay to allow other waves of the WG to issue the first Proceed() call.
+            // Uses buffer accesses in a loop to prevent compiler optimization.
+            uint dummy = 0;
+            for (uint i = 0; i < 256; i++) {
+                dummy += delayData[i % 64];
+            }
+            // Prevent the loop from being optimized away.
+            if (dummy == 0xDEADBEEF) {
+                results[gid] = dummy;
+            }
+        }
+    }
+
+    // Accept the candidate hit (non-opaque triangle requires explicit confirmation).
+    rayQueryConfirmIntersectionEXT(rq);
+
+    // Store result depending on the committed hit.
+    if (rayQueryGetIntersectionTypeEXT(rq, true) ==
+        gl_RayQueryCommittedIntersectionTriangleEXT) {
+        results[gid] = 1;
+    } else {
+        results[gid] = 0;
+    }
+}
+END
+
+# Triangle geometry - single non-opaque triangle centered at origin, facing -Z.
+ACCELERATION_STRUCTURE BOTTOM_LEVEL triangle_blas
+  GEOMETRY TRIANGLES
+    0.0 -1.0 0.0
+    -1.0 1.0 0.0
+    1.0 1.0 0.0
+  END
+END
+
+# Top level AS with FORCE_NO_OPAQUE to ensure the triangle is non-opaque,
+# requiring explicit AcceptHit (confirmIntersection) in the ray query.
+ACCELERATION_STRUCTURE TOP_LEVEL triangle_tlas
+  BOTTOM_LEVEL_INSTANCE triangle_blas
+    FLAGS FORCE_NO_OPAQUE
+  END
+END
+
+# Output buffer: 1024 uints, one per invocation.
+BUFFER out_buf DATA_TYPE uint32 SIZE 1024 FILL 0
+
+# Delay buffer: 64 uints with arbitrary data for delay loop reads.
+BUFFER delay_buf DATA_TYPE uint32 SIZE 64 FILL 7
+
+PIPELINE compute ray_query_pipeline
+  ATTACH ray_query_shader
+  BIND ACCELERATION_STRUCTURE triangle_tlas DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER out_buf AS storage DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER delay_buf AS storage DESCRIPTOR_SET 0 BINDING 2
+END
+
+# Dispatch 1 workgroup of 1024 invocations.
+RUN ray_query_pipeline 1 1 1
+
+# Every invocation should have hit the triangle and written 1.
+EXPECT out_buf IDX 0 EQ 1
+EXPECT out_buf IDX 4 EQ 1
+EXPECT out_buf IDX 2044 EQ 1
+EXPECT out_buf IDX 4092 EQ 1
