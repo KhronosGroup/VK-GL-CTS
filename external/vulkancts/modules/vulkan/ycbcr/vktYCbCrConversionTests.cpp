@@ -163,7 +163,10 @@ struct TestConfig
 
                vk::VkSamplerYcbcrRange colorRange_, vk::VkSamplerYcbcrModelConversion colorModel_,
                vk::VkComponentMapping componentMapping_, const UVec2 srcSize_, const UVec2 dstSize_,
-               uint32_t samplerBinding_)
+               uint32_t samplerBinding_,
+
+               ExecutorDescriptorMode descriptorType_ = ExecutorDescriptorMode::DESCRIPTOR_SET,
+               uint32_t descriptorHeapMappingSource_  = 0)
         : shaderType(shaderType_)
         , format(format_)
         , imageTiling(imageTiling_)
@@ -183,6 +186,9 @@ struct TestConfig
         , srcSize(srcSize_)
         , dstSize(dstSize_)
         , samplerBinding(samplerBinding_)
+
+        , descriptorType(descriptorType_)
+        , descriptorHeapMappingSource(descriptorHeapMappingSource_)
     {
     }
 
@@ -205,6 +211,9 @@ struct TestConfig
     const UVec2 srcSize;
     const UVec2 dstSize;
     uint32_t samplerBinding;
+
+    ExecutorDescriptorMode descriptorType;
+    uint32_t descriptorHeapMappingSource;
 };
 
 vk::Move<vk::VkDescriptorSetLayout> createDescriptorSetLayout(
@@ -275,24 +284,138 @@ vk::Move<vk::VkDescriptorSet> createDescriptorSet(
     return descriptorSet;
 }
 
-vk::Move<vk::VkSampler> createSampler(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkFilter textureFilter,
-                                      vk::VkSamplerAddressMode addressModeU, vk::VkSamplerAddressMode addressModeV,
-                                      vk::VkSamplerYcbcrConversion conversion)
+#ifndef CTS_USES_VULKANSC
+struct DescriptorHeapResources
 {
-#if !defined(FAKE_COLOR_CONVERSION)
-    const vk::VkSamplerYcbcrConversionInfo samplerConversionInfo = {vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
-                                                                    nullptr, conversion};
-#else
-    DE_UNREF(conversion);
-#endif
-    const vk::VkSamplerCreateInfo createInfo = {
-        vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-#if !defined(FAKE_COLOR_CONVERSION)
-        &samplerConversionInfo,
-#else
-        nullptr,
+    std::vector<vk::VkImageDescriptorInfoEXT> imageDescriptors{};
+    std::vector<vk::VkDescriptorSetAndBindingMappingEXT> mappings{};
+    std::vector<DescriptorData::ResourceDescriptor> resourceDescriptors{};
+};
+
+vk::VkDeviceSize alignUp(vk::VkDeviceSize value, vk::VkDeviceSize alignment)
+{
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+
+void createDescriptorHeapResources(Context &context, DescriptorHeapResources &descriptorHeapResources,
+                                   const std::vector<vk::VkImageViewCreateInfo> &imageViewCreateInfos,
+                                   const std::vector<vk::VkSamplerCreateInfo> &samplerCreateInfos,
+                                   uint32_t samplerBinding, uint32_t combinedSamplerDescriptorCount,
+                                   vk::VkDescriptorMappingSourceEXT mappingSource)
+{
+    DE_ASSERT(imageViewCreateInfos.size() == samplerCreateInfos.size());
+
+    const auto heapProps = context.getDescriptorHeapPropertiesEXT();
+    const vk::VkDeviceSize imageDescriptorStride =
+        alignUp(heapProps.imageDescriptorSize, heapProps.imageDescriptorAlignment);
+    const vk::VkDeviceSize combinedImageDescriptorSize = combinedSamplerDescriptorCount * imageDescriptorStride;
+    const uint32_t mappingStride = static_cast<uint32_t>(combinedSamplerDescriptorCount * imageDescriptorStride);
+
+    descriptorHeapResources.imageDescriptors.resize(imageViewCreateInfos.size());
+    descriptorHeapResources.resourceDescriptors.reserve(imageViewCreateInfos.size());
+    descriptorHeapResources.mappings.reserve(samplerCreateInfos.size());
+
+    de::Random random(static_cast<uint32_t>(mappingSource));
+    DE_ASSERT(samplerCreateInfos.size() == 1);
+
+    const uint32_t samplerNdx         = 0u;
+    const uint32_t constantHeapOffset = (random.getUint32() % 32u) * mappingStride;
+    const uint32_t pushOffset         = (random.getUint32() % 32u) * 8u;
+    const uint32_t addressOffset      = (random.getUint32() % 1024u) * 4u;
+    const uint32_t indirectIndex      = random.getUint32() % 16u;
+    uint32_t heapOffset               = constantHeapOffset;
+    if (mappingSource != vk::VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT)
+        heapOffset += indirectIndex * mappingStride;
+
+    vk::VkImageDescriptorInfoEXT &imageDescriptor = descriptorHeapResources.imageDescriptors[samplerNdx];
+    imageDescriptor                               = vk::initVulkanStructure();
+    imageDescriptor.pView                         = &imageViewCreateInfos[samplerNdx];
+    imageDescriptor.layout                        = vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    DescriptorData::ResourceDescriptor resourceDescriptor{};
+    resourceDescriptor.descriptorInfo             = vk::initVulkanStructure();
+    resourceDescriptor.descriptorInfo.type        = vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    resourceDescriptor.descriptorInfo.data.pImage = &imageDescriptor;
+    resourceDescriptor.heapOffset                 = heapOffset;
+    resourceDescriptor.indirectIndex              = indirectIndex;
+    resourceDescriptor.size                       = combinedImageDescriptorSize;
+    descriptorHeapResources.resourceDescriptors.push_back(resourceDescriptor);
+
+    vk::VkDescriptorSetAndBindingMappingEXT mapping = vk::initVulkanStructure();
+    mapping.descriptorSet                           = (uint32_t)EXTRA_RESOURCES_DESCRIPTOR_SET_INDEX;
+    mapping.firstBinding                            = samplerBinding;
+    mapping.bindingCount                            = 1u;
+    mapping.resourceMask                            = vk::VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    mapping.source                                  = mappingSource;
+
+    if (mappingSource == vk::VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT)
+    {
+        vk::VkDescriptorMappingSourceConstantOffsetEXT &source = mapping.sourceData.constantOffset;
+        source.heapOffset                                      = constantHeapOffset;
+        source.heapArrayStride                                 = 0u;
+        source.pEmbeddedSampler                                = &samplerCreateInfos[samplerNdx];
+        source.samplerHeapOffset                               = 0u;
+        source.samplerHeapArrayStride                          = 0u;
+    }
+    else if (mappingSource == vk::VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_PUSH_INDEX_EXT)
+    {
+        vk::VkDescriptorMappingSourcePushIndexEXT &source = mapping.sourceData.pushIndex;
+        source.heapOffset                                 = constantHeapOffset;
+        source.pushOffset                                 = pushOffset;
+        source.heapIndexStride                            = mappingStride;
+        source.heapArrayStride                            = mappingStride;
+        source.pEmbeddedSampler                           = &samplerCreateInfos[samplerNdx];
+        source.useCombinedImageSamplerIndex               = VK_FALSE;
+        source.samplerHeapOffset                          = 0u;
+        source.samplerPushOffset                          = 0u;
+        source.samplerHeapIndexStride                     = 0u;
+        source.samplerHeapArrayStride                     = 0u;
+    }
+    else if (mappingSource == vk::VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_EXT)
+    {
+        vk::VkDescriptorMappingSourceIndirectIndexEXT &source = mapping.sourceData.indirectIndex;
+        source.heapOffset                                     = constantHeapOffset;
+        source.pushOffset                                     = pushOffset;
+        source.addressOffset                                  = addressOffset;
+        source.heapIndexStride                                = mappingStride;
+        source.heapArrayStride                                = mappingStride;
+        source.pEmbeddedSampler                               = &samplerCreateInfos[samplerNdx];
+        source.useCombinedImageSamplerIndex                   = VK_FALSE;
+        source.samplerHeapOffset                              = 0u;
+        source.samplerPushOffset                              = 0u;
+        source.samplerAddressOffset                           = 0u;
+        source.samplerHeapIndexStride                         = 0u;
+        source.samplerHeapArrayStride                         = 0u;
+    }
+    else if (mappingSource == vk::VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_ARRAY_EXT)
+    {
+        vk::VkDescriptorMappingSourceIndirectIndexArrayEXT &source = mapping.sourceData.indirectIndexArray;
+        source.heapOffset                                          = constantHeapOffset;
+        source.pushOffset                                          = pushOffset;
+        source.addressOffset                                       = addressOffset;
+        source.heapIndexStride                                     = mappingStride;
+        source.pEmbeddedSampler                                    = &samplerCreateInfos[samplerNdx];
+        source.useCombinedImageSamplerIndex                        = VK_FALSE;
+        source.samplerHeapOffset                                   = 0u;
+        source.samplerPushOffset                                   = 0u;
+        source.samplerAddressOffset                                = 0u;
+        source.samplerHeapIndexStride                              = 0u;
+    }
+    else
+    {
+        TCU_THROW(InternalError, "Unsupported descriptor heap mapping source");
+    }
+
+    descriptorHeapResources.mappings.push_back(mapping);
+}
 #endif
 
+vk::VkSamplerCreateInfo makeSamplerCreateInfo(vk::VkFilter textureFilter, vk::VkSamplerAddressMode addressModeU,
+                                              vk::VkSamplerAddressMode addressModeV, const void *pNext)
+{
+    const vk::VkSamplerCreateInfo createInfo = {
+        vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        pNext,
         0u,
         textureFilter,
         textureFilter,
@@ -310,8 +433,7 @@ vk::Move<vk::VkSampler> createSampler(const vk::DeviceInterface &vkd, vk::VkDevi
         vk::VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
         VK_FALSE,
     };
-
-    return createSampler(vkd, device, &createInfo);
+    return createInfo;
 }
 
 vk::Move<vk::VkImage> createImage(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkFormat format,
@@ -339,39 +461,29 @@ vk::Move<vk::VkImage> createImage(const vk::DeviceInterface &vkd, vk::VkDevice d
     return vk::createImage(vkd, device, &createInfo);
 }
 
-vk::Move<vk::VkImageView> createImageView(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkImage image,
-                                          vk::VkFormat format, vk::VkSamplerYcbcrConversion conversion)
+const vk::VkComponentMapping getImageViewComponentMapping(vk::VkFormat format)
 {
     // Both mappings should be equivalent: alternate between the two for different formats.
     const vk::VkComponentMapping mappingA = {vk::VK_COMPONENT_SWIZZLE_IDENTITY, vk::VK_COMPONENT_SWIZZLE_IDENTITY,
                                              vk::VK_COMPONENT_SWIZZLE_IDENTITY, vk::VK_COMPONENT_SWIZZLE_IDENTITY};
     const vk::VkComponentMapping mappingB = {vk::VK_COMPONENT_SWIZZLE_R, vk::VK_COMPONENT_SWIZZLE_G,
                                              vk::VK_COMPONENT_SWIZZLE_B, vk::VK_COMPONENT_SWIZZLE_A};
-    const vk::VkComponentMapping &mapping = ((static_cast<int>(format) % 2 == 0) ? mappingA : mappingB);
+    return ((static_cast<int>(format) % 2 == 0) ? mappingA : mappingB);
+}
 
-#if !defined(FAKE_COLOR_CONVERSION)
-    const vk::VkSamplerYcbcrConversionInfo conversionInfo = {vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
-                                                             nullptr, conversion};
-#else
-    DE_UNREF(conversion);
-#endif
+vk::VkImageViewCreateInfo makeImageViewCreateInfo(vk::VkImage image, vk::VkFormat format, const void *pNext)
+{
     const vk::VkImageViewCreateInfo viewInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-#if defined(FAKE_COLOR_CONVERSION)
-        nullptr,
-#else
-        &conversionInfo,
-#endif
+        pNext,
         (vk::VkImageViewCreateFlags)0,
-
         image,
         vk::VK_IMAGE_VIEW_TYPE_2D,
         format,
-        mapping,
+        getImageViewComponentMapping(format),
         {vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u},
     };
-
-    return vk::createImageView(vkd, device, &viewInfo);
+    return viewInfo;
 }
 
 vk::Move<vk::VkSamplerYcbcrConversion> createConversion(
@@ -402,21 +514,37 @@ void evalShader(Context &context, glu::ShaderType shaderType, const MultiPlaneIm
                 const std::vector<vk::VkSamplerYcbcrModelConversion> &colorModels, vk::VkSamplerYcbcrRange colorRange,
                 vk::VkChromaLocation xChromaOffset, vk::VkChromaLocation yChromaOffset, vk::VkFilter chromaFilter,
                 const vk::VkComponentMapping &componentMapping, bool explicitReconstruction, const vector<Vec2> &sts,
-                uint32_t samplerBinding, vector<vector<Vec4>> &results)
+                uint32_t samplerBinding, ExecutorDescriptorMode descriptorType, uint32_t descriptorHeapMappingSource,
+                vector<vector<Vec4>> &results)
 {
+#if defined(CTS_USES_VULKANSC)
+    DE_UNREF(descriptorHeapMappingSource);
+#endif
+
     const vk::InstanceInterface &vk(context.getInstanceInterface());
     const vk::DeviceInterface &vkd(context.getDeviceInterface());
     const vk::VkDevice device(context.getDevice());
     std::vector<de::SharedPtr<vk::Unique<vk::VkSamplerYcbcrConversion>>> conversions;
+    std::vector<vk::VkSamplerYcbcrConversionInfo> conversionInfos;
+    std::vector<vk::VkSamplerCreateInfo> samplerCreateInfos;
     std::vector<de::SharedPtr<vk::Unique<vk::VkSampler>>> samplers;
 #if !defined(FAKE_COLOR_CONVERSION)
+    conversions.reserve(colorModels.size());
     for (int i = 0; i < (int)colorModels.size(); i++)
     {
         conversions.push_back(
             makeSharedPtr(createConversion(vkd, device, format, colorModels[i], colorRange, xChromaOffset,
                                            yChromaOffset, chromaFilter, componentMapping, explicitReconstruction)));
-        samplers.push_back(makeSharedPtr(
-            createSampler(vkd, device, textureFilter, addressModeU, addressModeV, conversions[i]->get())));
+    }
+
+    conversionInfos.resize(colorModels.size());
+    samplerCreateInfos.resize(colorModels.size());
+    samplers.reserve(colorModels.size());
+    for (int i = 0; i < (int)colorModels.size(); i++)
+    {
+        conversionInfos[i]    = {vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO, nullptr, conversions[i]->get()};
+        samplerCreateInfos[i] = makeSamplerCreateInfo(textureFilter, addressModeU, addressModeV, &conversionInfos[i]);
+        samplers.push_back(makeSharedPtr(vk::createSampler(vkd, device, &samplerCreateInfos[i])));
     }
 #else
     DE_UNREF(colorRange);
@@ -425,8 +553,8 @@ void evalShader(Context &context, glu::ShaderType shaderType, const MultiPlaneIm
     DE_UNREF(chromaFilter);
     DE_UNREF(explicitReconstruction);
     DE_UNREF(componentMapping);
-    samplers.push_back(makeSharedPtr(
-        createSampler(vkd, device, textureFilter, addressModeU, addressModeV, (vk::VkSamplerYcbcrConversion)0u)));
+    samplerCreateInfos.push_back(makeSamplerCreateInfo(textureFilter, addressModeU, addressModeV, nullptr));
+    samplers.push_back(makeSharedPtr(vk::createSampler(vkd, device, &samplerCreateInfos.back())));
 #endif
     const vk::Unique<vk::VkImage> image(createImage(vkd, device, format, size, disjoint, imageTiling));
     const vk::MemoryRequirement memoryRequirement(
@@ -435,13 +563,18 @@ void evalShader(Context &context, glu::ShaderType shaderType, const MultiPlaneIm
                                                         (vk::VkImageCreateFlagBits)0u);
     const vector<AllocationSp> imageMemory(allocateAndBindImageMemory(vkd, device, context.getDefaultAllocator(),
                                                                       *image, format, createFlags, memoryRequirement));
+    std::vector<vk::VkImageViewCreateInfo> imageViewCreateInfos;
     std::vector<de::SharedPtr<vk::Unique<vk::VkImageView>>> imageViews;
 #if defined(FAKE_COLOR_CONVERSION)
-    imageViews.push_back(makeSharedPtr(createImageView(vkd, device, *image, format, (vk::VkSamplerYcbcrConversion)0)));
+    imageViewCreateInfos.push_back(makeImageViewCreateInfo(*image, format, nullptr));
+    imageViews.push_back(makeSharedPtr(vk::createImageView(vkd, device, &imageViewCreateInfos.back())));
 #else
+    imageViewCreateInfos.resize(colorModels.size());
+    imageViews.reserve(colorModels.size());
     for (int i = 0; i < (int)colorModels.size(); i++)
     {
-        imageViews.push_back(makeSharedPtr(createImageView(vkd, device, *image, format, conversions[i]->get())));
+        imageViewCreateInfos[i] = makeImageViewCreateInfo(*image, format, &conversionInfos[i]);
+        imageViews.push_back(makeSharedPtr(vk::createImageView(vkd, device, &imageViewCreateInfos[i])));
     }
 #endif
 
@@ -471,15 +604,35 @@ void evalShader(Context &context, glu::ShaderType shaderType, const MultiPlaneIm
         combinedSamplerDescriptorCount = samplerYcbcrConversionImage.combinedImageSamplerDescriptorCount;
     }
 
-    const vk::Unique<vk::VkDescriptorSetLayout> layout(
-        createDescriptorSetLayout(vkd, device, samplers, samplerBinding));
-    const vk::Unique<vk::VkDescriptorPool> descriptorPool(
-        createDescriptorPool(vkd, device, samplers, combinedSamplerDescriptorCount));
-    const vk::Unique<vk::VkDescriptorSet> descriptorSet(
-        createDescriptorSet(vkd, device, *descriptorPool, *layout, samplers, imageViews, samplerBinding));
+    vk::Move<vk::VkDescriptorSetLayout> layout;
+    vk::Move<vk::VkDescriptorPool> descriptorPool;
+    vk::Move<vk::VkDescriptorSet> descriptorSet;
+#ifndef CTS_USES_VULKANSC
+    DescriptorHeapResources descriptorHeapResources;
+#endif
+
+    if (descriptorType == ExecutorDescriptorMode::DESCRIPTOR_SET)
+    {
+        layout         = createDescriptorSetLayout(vkd, device, samplers, samplerBinding);
+        descriptorPool = createDescriptorPool(vkd, device, samplers, combinedSamplerDescriptorCount);
+        descriptorSet =
+            createDescriptorSet(vkd, device, *descriptorPool, *layout, samplers, imageViews, samplerBinding);
+    }
+#ifndef CTS_USES_VULKANSC
+    else if (descriptorType == ExecutorDescriptorMode::DESCRIPTOR_HEAP)
+    {
+        createDescriptorHeapResources(context, descriptorHeapResources, imageViewCreateInfos, samplerCreateInfos,
+                                      samplerBinding, combinedSamplerDescriptorCount,
+                                      static_cast<vk::VkDescriptorMappingSourceEXT>(descriptorHeapMappingSource));
+    }
+#endif
+    else
+        TCU_THROW(InternalError, "Unsupported descriptor mode");
 
     const ShaderSpec spec(createShaderSpec(samplerBinding, colorModels));
-    const de::UniquePtr<ShaderExecutor> executor(createExecutor(context, shaderType, spec, *layout));
+    const vk::VkDescriptorSetLayout extraResourcesLayout =
+        (descriptorType == ExecutorDescriptorMode::DESCRIPTOR_SET) ? *layout : VK_NULL_HANDLE;
+    const de::UniquePtr<ShaderExecutor> executor(createExecutor(context, shaderType, spec, extraResourcesLayout));
 
     if (imageTiling == vk::VK_IMAGE_TILING_OPTIMAL)
         uploadImage(vkd, device, context.getUniversalQueueFamilyIndex(), context.getDefaultAllocator(), *image,
@@ -497,7 +650,17 @@ void evalShader(Context &context, glu::ShaderType shaderType, const MultiPlaneIm
         for (int i = 0; i < (int)results.size(); i++)
             outputs.push_back((void *)results[i].data());
 
-        executor->execute((int)sts.size(), inputs, outputs.data(), *descriptorSet);
+        if (descriptorType == ExecutorDescriptorMode::DESCRIPTOR_HEAP)
+        {
+#ifndef CTS_USES_VULKANSC
+            executor->executeHeap((int)sts.size(), inputs, outputs.data(), descriptorHeapResources.mappings,
+                                  descriptorHeapResources.resourceDescriptors, {});
+#endif
+        }
+        else
+        {
+            executor->execute((int)sts.size(), inputs, outputs.data(), *descriptorSet);
+        }
     }
 }
 
@@ -587,6 +750,9 @@ void checkSupport(Context &context, const TestConfig config)
 
     if (!context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion"))
         TCU_THROW(NotSupportedError, "Extension VK_KHR_sampler_ycbcr_conversion not supported");
+
+    if (config.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_HEAP)
+        context.requireDeviceFunctionality("VK_EXT_descriptor_heap");
 
     {
         const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures features = context.getSamplerYcbcrConversionFeatures();
@@ -880,7 +1046,8 @@ tcu::TestStatus textureConversionTest(Context &context, const TestConfig config)
         evalShader(context, config.shaderType, src, srcSize, config.format, config.imageTiling, config.disjoint,
                    config.textureFilter, config.addressModeU, config.addressModeV, colorModels, config.colorRange,
                    config.xChromaOffset, config.yChromaOffset, config.chromaFilter, config.componentMapping,
-                   config.explicitReconstruction, sts, config.samplerBinding, results);
+                   config.explicitReconstruction, sts, config.samplerBinding, config.descriptorType,
+                   config.descriptorHeapMappingSource, results);
 
         {
             std::vector<tcu::TextureLevel> minImages;
@@ -1278,6 +1445,25 @@ const vk::VkComponentMapping &getIdentitySwizzle(void)
     return mapping;
 }
 
+#ifndef CTS_USES_VULKANSC
+
+// Alternate descriptor heap mapping source.
+uint32_t getDescriptorHeapMappingSource(void)
+{
+    static size_t alternate                                        = 0u;
+    static const vk::VkDescriptorMappingSourceEXT mappingSources[] = {
+        vk::VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT,
+        vk::VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_PUSH_INDEX_EXT,
+        vk::VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_EXT,
+        vk::VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_ARRAY_EXT,
+    };
+
+    const vk::VkDescriptorMappingSourceEXT mappingSource = mappingSources[alternate];
+    alternate                                            = (alternate + 1u) % DE_LENGTH_OF_ARRAY(mappingSources);
+    return static_cast<uint32_t>(mappingSource);
+}
+#endif
+
 struct YCbCrConversionTestBuilder
 {
     const std::vector<vk::VkFormat> noChromaSubsampledFormats{
@@ -1418,6 +1604,22 @@ struct YCbCrConversionTestBuilder
                                     colorModelGroup.get(),
                                     std::string(textureFilterName) + "_" + tilingName + samplerBindingName,
                                     checkSupport, createTestShaders, textureConversionTest, config);
+
+#ifndef CTS_USES_VULKANSC
+                                const TestConfig descriptorHeapConfig(
+                                    glu::SHADERTYPE_FRAGMENT, format, tiling, textureFilter,
+                                    vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                                    vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, textureFilter, chromaLocation,
+                                    chromaLocation, false, false, colorRange, colorModel, config.componentMapping,
+                                    srcSize, dstSize, samplerBinding, ExecutorDescriptorMode::DESCRIPTOR_HEAP,
+                                    getDescriptorHeapMappingSource());
+
+                                addFunctionCaseWithPrograms(colorModelGroup.get(),
+                                                            std::string(textureFilterName) + "_" + tilingName +
+                                                                samplerBindingName + "_descriptor_heap",
+                                                            checkSupport, createTestShaders, textureConversionTest,
+                                                            descriptorHeapConfig);
+#endif
                             }
                         }
                     }
@@ -1593,6 +1795,23 @@ struct YCbCrConversionTestBuilder
                                             string(colorModelName) + "_" + colorRangeName + "_" + tilingName + "_" +
                                                 xChromaOffsetName + samplerBindingName,
                                             checkSupport, createTestShaders, textureConversionTest, config);
+
+#ifndef CTS_USES_VULKANSC
+                                        const TestConfig descriptorHeapConfig(
+                                            glu::SHADERTYPE_FRAGMENT, format, tiling, vk::VK_FILTER_NEAREST,
+                                            vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                                            vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_FILTER_NEAREST,
+                                            xChromaOffset, yChromaOffset, false, false, colorRange, colorModel,
+                                            config.componentMapping, srcSize, dstSize, samplerBinding,
+                                            ExecutorDescriptorMode::DESCRIPTOR_HEAP, getDescriptorHeapMappingSource());
+
+                                        addFunctionCaseWithPrograms(conversionGroup.get(),
+                                                                    string(colorModelName) + "_" + colorRangeName +
+                                                                        "_" + tilingName + "_" + xChromaOffsetName +
+                                                                        samplerBindingName + "_descriptor_heap",
+                                                                    checkSupport, createTestShaders,
+                                                                    textureConversionTest, descriptorHeapConfig);
+#endif
                                     }
                                 }
                             }
@@ -1850,6 +2069,22 @@ struct YCbCrConversionTestBuilder
                                                                     chromaOffsetName + samplerBindingName,
                                                                 checkSupport, createTestShaders, textureConversionTest,
                                                                 config);
+
+#ifndef CTS_USES_VULKANSC
+                                    const TestConfig descriptorHeapConfig(
+                                        glu::SHADERTYPE_FRAGMENT, format, tiling, vk::VK_FILTER_NEAREST,
+                                        vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                                        vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_FILTER_NEAREST, chromaOffset,
+                                        chromaOffset, false, false, colorRange, colorModel, config.componentMapping,
+                                        srcSize, dstSize, samplerBinding, ExecutorDescriptorMode::DESCRIPTOR_HEAP,
+                                        getDescriptorHeapMappingSource());
+
+                                    addFunctionCaseWithPrograms(
+                                        conversionGroup.get(),
+                                        std::string(colorModelName) + "_" + tilingName + "_" + chromaOffsetName +
+                                            samplerBindingName + "_descriptor_heap",
+                                        checkSupport, createTestShaders, textureConversionTest, descriptorHeapConfig);
+#endif
                                 }
                             }
                         }

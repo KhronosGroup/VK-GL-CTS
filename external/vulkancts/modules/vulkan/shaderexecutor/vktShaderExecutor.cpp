@@ -627,7 +627,8 @@ public:
                         VkDescriptorSetLayout extraResourcesLayout);
     virtual ~FragmentOutExecutor(void);
 
-    void executeCommon(int numValues, const void *const *inputs, void *const *outputs, DescriptorData descriptorData);
+    void executeCommon(int numValues, const void *const *inputs, void *const *outputs,
+                       const DescriptorData &descriptorData);
     virtual void execute(int numValues, const void *const *inputs, void *const *outputs,
                          VkDescriptorSet extraResources);
 
@@ -967,7 +968,7 @@ static Move<VkDescriptorSet> allocateSingleDescriptorSet(const DeviceInterface &
 }
 
 void FragmentOutExecutor::executeCommon(int numValues, const void *const *inputs, void *const *outputs,
-                                        DescriptorData descriptorData)
+                                        const DescriptorData &descriptorData)
 {
     const VkDevice vkDevice         = m_context.getDevice();
     const DeviceInterface &vk       = m_context.getDeviceInterface();
@@ -1026,6 +1027,9 @@ void FragmentOutExecutor::executeCommon(int numValues, const void *const *inputs
     VkDeviceSize samplerHeapAppSize     = 0;
     VkDeviceSize resourceHeapTotalSize  = 0;
     VkDeviceSize samplerHeapTotalSize   = 0;
+    Move<VkBuffer> indirectIndexBuffer;
+    de::MovePtr<Allocation> indirectIndexBufferAlloc;
+    VkDeviceAddress indirectIndexBufferAddress = 0;
 
     auto alignUp = [](VkDeviceSize value, VkDeviceSize alignment)
     { return (value + alignment - 1) & ~(alignment - 1); };
@@ -1135,6 +1139,65 @@ void FragmentOutExecutor::executeCommon(int numValues, const void *const *inputs
 
         flushAlloc(vk, vkDevice, *resourceAlloc);
         flushAlloc(vk, vkDevice, *samplerAlloc);
+
+        VkDeviceSize indexBufferSize = 0;
+        for (const auto &mapping : descriptorData.mappings)
+        {
+            if (mapping.source == VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_EXT)
+            {
+                indexBufferSize =
+                    de::max(indexBufferSize, static_cast<VkDeviceSize>(mapping.sourceData.indirectIndex.addressOffset +
+                                                                       sizeof(uint32_t)));
+            }
+            else if (mapping.source == VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_ARRAY_EXT)
+            {
+                indexBufferSize = de::max(
+                    indexBufferSize,
+                    static_cast<VkDeviceSize>(mapping.sourceData.indirectIndexArray.addressOffset + sizeof(uint32_t)));
+            }
+        }
+
+        if (indexBufferSize > 0u)
+        {
+            const VkBufferCreateInfo indirectIndexBufferCreateInfo =
+                makeBufferCreateInfo(indexBufferSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+
+            indirectIndexBuffer      = createBuffer(vk, vkDevice, &indirectIndexBufferCreateInfo);
+            indirectIndexBufferAlloc = m_context.getDefaultAllocator().allocate(
+                getBufferMemoryRequirements(vk, vkDevice, *indirectIndexBuffer),
+                MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+            VK_CHECK(vk.bindBufferMemory(vkDevice, *indirectIndexBuffer, indirectIndexBufferAlloc->getMemory(),
+                                         indirectIndexBufferAlloc->getOffset()));
+            indirectIndexBufferAddress = getBufferDeviceAddress(vk, vkDevice, *indirectIndexBuffer);
+
+            uint8_t *indirectIndexBufferPtr = reinterpret_cast<uint8_t *>(indirectIndexBufferAlloc->getHostPtr());
+            deMemset(indirectIndexBufferPtr, 0, static_cast<size_t>(indexBufferSize));
+
+            for (size_t mappingNdx = 0; mappingNdx < descriptorData.mappings.size(); ++mappingNdx)
+            {
+                const auto &mapping = descriptorData.mappings[mappingNdx];
+
+                uint32_t addressOffset = 0;
+                if (mapping.source == VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_EXT)
+                {
+                    addressOffset = mapping.sourceData.indirectIndex.addressOffset;
+                }
+                else if (mapping.source == VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_ARRAY_EXT)
+                {
+                    DE_ASSERT(mapping.bindingCount == 1); // Currently implemented for only a single binding
+                    addressOffset = mapping.sourceData.indirectIndexArray.addressOffset;
+                }
+                else
+                {
+                    continue;
+                }
+
+                const auto &resource = descriptorData.resourceDescriptors[mappingNdx];
+                deMemcpy(indirectIndexBufferPtr + addressOffset, &resource.indirectIndex, sizeof(uint32_t));
+            }
+
+            flushAlloc(vk, vkDevice, *indirectIndexBufferAlloc);
+        }
     }
 #endif
 
@@ -1536,6 +1599,39 @@ void FragmentOutExecutor::executeCommon(int numValues, const void *const *inputs
             samplerHeapInfo.reservedRangeOffset = samplerHeapAppSize;
             samplerHeapInfo.reservedRangeSize   = samplerHeapTotalSize - samplerHeapAppSize;
             vk.cmdBindSamplerHeapEXT(*cmdBuffer, &samplerHeapInfo);
+
+            for (size_t mappingNdx = 0; mappingNdx < descriptorData.mappings.size(); ++mappingNdx)
+            {
+                const auto &mapping = descriptorData.mappings[mappingNdx];
+
+                VkPushDataInfoEXT pushDataInfo = initVulkanStructure();
+                if (mapping.source == VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_PUSH_INDEX_EXT)
+                {
+                    const auto &sourceData = mapping.sourceData.pushIndex;
+                    const auto &resource   = descriptorData.resourceDescriptors[mappingNdx];
+
+                    pushDataInfo.offset       = sourceData.pushOffset;
+                    pushDataInfo.data.size    = sizeof(uint32_t);
+                    pushDataInfo.data.address = &resource.indirectIndex;
+                }
+                else if (mapping.source == VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_EXT)
+                {
+                    pushDataInfo.offset       = mapping.sourceData.indirectIndex.pushOffset;
+                    pushDataInfo.data.size    = sizeof(indirectIndexBufferAddress);
+                    pushDataInfo.data.address = &indirectIndexBufferAddress;
+                }
+                else if (mapping.source == VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_ARRAY_EXT)
+                {
+                    pushDataInfo.offset       = mapping.sourceData.indirectIndexArray.pushOffset;
+                    pushDataInfo.data.size    = sizeof(indirectIndexBufferAddress);
+                    pushDataInfo.data.address = &indirectIndexBufferAddress;
+                }
+                else
+                {
+                    continue;
+                }
+                vk.cmdPushDataEXT(*cmdBuffer, &pushDataInfo);
+            }
         }
 #endif
 

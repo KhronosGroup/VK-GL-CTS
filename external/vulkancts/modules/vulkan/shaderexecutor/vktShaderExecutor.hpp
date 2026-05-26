@@ -133,6 +133,7 @@ struct DescriptorData
     {
         vk::VkResourceDescriptorInfoEXT descriptorInfo;
         vk::VkDeviceSize heapOffset;
+        vk::VkDeviceSize indirectIndex;
         vk::VkDeviceSize size;
     };
     struct SamplerDescriptor
