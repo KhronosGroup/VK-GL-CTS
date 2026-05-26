@@ -160,6 +160,19 @@ void FragmentShadingRateCombined::deinit(void)
     // Retrieve GLES entry points.
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
+    // Reset fragment shading rate state
+    if (m_is_fragment_shading_rate_supported)
+    {
+        gl.shadingRateEXT(GL_SHADING_RATE_1X1_PIXELS_EXT);
+        gl.shadingRateCombinerOpsEXT(GL_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_EXT,
+                                     GL_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_EXT);
+    }
+
+    if (m_is_fragment_shading_rate_attachment_supported)
+    {
+        gl.framebufferShadingRateEXT(GL_FRAMEBUFFER, GL_SHADING_RATE_ATTACHMENT_EXT, 0, 0, 1, 1, 1);
+    }
+
     // Reset GLES state
     gl.bindTexture(GL_TEXTURE_2D, 0);
     gl.bindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
@@ -168,14 +181,10 @@ void FragmentShadingRateCombined::deinit(void)
     gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 
     gl.deleteTextures(1, &m_to_id);
+    gl.deleteTextures(1, &m_sr_to_id);
     gl.deleteFramebuffers(1, &m_fbo_id);
     gl.deleteVertexArrays(1, &m_vao_id);
     gl.deleteBuffers(1, &m_vbo_id);
-
-    if (m_tcParam.useShadingRateAttachment)
-    {
-        gl.deleteTextures(1, &m_sr_to_id);
-    }
 
     delete m_renderProgram;
     delete m_computeProgram;
@@ -497,7 +506,7 @@ tcu::TestNode::IterateResult FragmentShadingRateCombined::iterate(void)
     gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Error bind buffer object to program");
 
-    gl.uniform1i(gl.getUniformLocation(m_renderProgram->getProgram(), "colorTex"), 0);
+    gl.uniform1i(gl.getUniformLocation(m_computeProgram->getProgram(), "colorTex"), 0);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Error bind set colorTex uniform value");
 
     glw::GLenum textureTarget = GL_TEXTURE_2D;
@@ -682,7 +691,7 @@ uint32_t FragmentShadingRateCombined::simulate(uint32_t drawID, uint32_t primID,
         m_tcParam.useShadingRatePrimitive ? fsrutils::packShadingRate(translatePrimIDToShadingRate(primID)) : 0;
     const uint32_t rate2 =
         m_tcParam.useShadingRateAttachment ?
-            fsrutils::packShadingRate(translateCoordsToShadingRate(x / m_srTexelWidth, y / m_srTexelWidth)) :
+            fsrutils::packShadingRate(translateCoordsToShadingRate(x / m_srTexelWidth, y / m_srTexelHeight)) :
             0;
 
     uint32_t &cachedRate = m_simulationCache[(rate2 * kShadingRateCount + rate1) * kShadingRateCount + rate0];

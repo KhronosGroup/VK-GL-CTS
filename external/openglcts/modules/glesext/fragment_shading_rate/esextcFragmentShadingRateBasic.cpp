@@ -53,6 +53,10 @@ FragmentShadingRateBasic::FragmentShadingRateBasic(Context &context, const ExtPa
                                                    const char *description)
     : TestCaseBase(context, extParams, name, description)
     , m_program(nullptr)
+    , m_to_id(0)
+    , m_fbo_id(0)
+    , m_vao_id(0)
+    , m_vbo_id(0)
 {
 }
 
@@ -73,6 +77,19 @@ void FragmentShadingRateBasic::deinit(void)
 {
     // Retrieve GLES entry points.
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+
+    // Reset fragment shading rate state
+    if (m_is_fragment_shading_rate_supported)
+    {
+        gl.shadingRateEXT(GL_SHADING_RATE_1X1_PIXELS_EXT);
+        gl.shadingRateCombinerOpsEXT(GL_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_EXT,
+                                     GL_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_EXT);
+    }
+
+    if (m_is_fragment_shading_rate_attachment_supported)
+    {
+        gl.framebufferShadingRateEXT(GL_FRAMEBUFFER, GL_SHADING_RATE_ATTACHMENT_EXT, 0, 0, 1, 1, 1);
+    }
 
     // Reset GLES state
     gl.bindTexture(GL_TEXTURE_2D, 0);
