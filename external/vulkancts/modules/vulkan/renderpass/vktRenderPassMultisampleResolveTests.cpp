@@ -40,6 +40,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBuilderUtil.hpp"
 
 #include "tcuFloat.hpp"
 #include "tcuImageCompare.hpp"
@@ -3069,6 +3070,684 @@ void checkSupport(Context &context, TestConfigType config)
     }
 }
 
+void initMsaaToggleCullingPrograms(SourceCollections &dst)
+{
+    // 1. Triangle Draw Vertex Shader
+    dst.glslSources.add("draw-vert") << glu::VertexSource(
+        "#version 450\n"
+        "layout(location = 0) out vec3 outColor;\n"
+        "const vec3 positions[6] = vec3[6](\n"
+        "    vec3(-0.75,  0.5,  0.5), vec3(-0.50, -0.5,  0.5), vec3(-0.25,  0.5,  0.5),\n" // Left Triangle
+        "    vec3( 0.25,  0.5,  0.5), vec3( 0.50, -0.5,  0.5), vec3( 0.75,  0.5,  0.5)\n"  // Right Triangle
+        ");\n"
+        "const vec3 colors[6] = vec3[6](\n"
+        "    vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), vec3(0.0, 1.0, 0.0),\n"
+        "    vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0)\n"
+        ");\n"
+        "void main() {\n"
+        "    outColor = colors[gl_VertexIndex];\n"
+        "    gl_Position = vec4(positions[gl_VertexIndex], 1.0);\n"
+        "}\n");
+
+    // 2. Triangle Draw Fragment Shader
+    dst.glslSources.add("draw-frag") << glu::FragmentSource("#version 450\n"
+                                                            "layout(location = 0) in vec3 inColor;\n"
+                                                            "layout(location = 0) out vec4 outColor;\n"
+                                                            "void main() {\n"
+                                                            "    outColor = vec4(inColor, 1.0);\n"
+                                                            "}\n");
+
+    // 3. Comparison Vertex Shader
+    // Note: We restrict the comparison to the left half of the screen.
+    // The goal is to verify that the 4x MSAA resolve (Subpass 0) is not corrupted by
+    // the execution of the 1x MSAA subpass (Subpass 1). The 1x output is intentionally
+    // left unverified.
+    dst.glslSources.add("compare-vert") << glu::VertexSource(
+        "#version 450\n"
+        "void main() {\n"
+        "    const vec3 positions[3] = vec3[3](\n"
+        "        vec3(-0.75,  0.5,  0.5), vec3(-0.50, -0.5,  0.5), vec3(-0.25,  0.5,  0.5)\n"
+        "    );\n"
+        "    gl_Position = vec4(positions[gl_VertexIndex], 1.0);\n"
+        "}\n");
+
+    // 4. Comparison Fragment Shader
+    dst.glslSources.add("compare-frag") << glu::FragmentSource(
+        "#version 450\n"
+        "layout(location = 0) out vec4 outColor;\n"
+        "layout(set = 0, binding = 0) uniform sampler2D texRtvB;\n"
+        "layout(set = 0, binding = 1) uniform sampler2D texRtvA;\n"
+        "void main() {\n"
+        "    vec4 colorB = texelFetch(texRtvB, ivec2(gl_FragCoord.xy), 0);\n"
+        "    vec4 colorA = texelFetch(texRtvA, ivec2(gl_FragCoord.xy), 0);\n"
+        "    float dist = distance(colorA.rgb, colorB.rgb);\n"
+        "    vec3 clearColor = vec3(0.02, 0.02, 0.05);\n"
+        "    if (distance(colorA.rgb, clearColor) < 0.02 && distance(colorB.rgb, clearColor) < 0.02) {\n"
+        "        discard;\n"
+        "    }\n"
+        "    if (dist > 0.10) {\n"
+        "        outColor = vec4(1.0, 0.0, 0.0, 1.0); // Red Fail\n"
+        "    } else {\n"
+        "        outColor = vec4(0.0, 1.0, 0.0, 1.0); // Green Pass\n"
+        "    }\n"
+        "}\n");
+}
+
+template <typename RPT>
+RenderPassWrapper createMsaaToggleRenderPassA(PipelineConstructionType pipelineConstructionType,
+                                              const DeviceInterface &vk, VkDevice device)
+{
+    typedef typename RPT::AttDesc AttDesc;
+    typedef typename RPT::AttRef AttRef;
+    typedef typename RPT::SubpassDesc SubpassDesc;
+    typedef typename RPT::SubpassDep SubpassDep;
+    typedef typename RPT::RenderPassCreateInfo RenderPassCreateInfo;
+
+    const AttDesc attA[2] = {
+        AttDesc(nullptr, 0u, VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR,
+                VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+        AttDesc(nullptr, 0u, VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR,
+                VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)};
+
+    const AttRef subpass0ColorRef(nullptr, 0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                  static_cast<VkImageAspectFlags>(0));
+    const AttRef subpass0ResolveRef(nullptr, 1u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                    static_cast<VkImageAspectFlags>(0));
+
+    const SubpassDesc subpassA(nullptr, 0u, VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, 0u, nullptr, 1u, &subpass0ColorRef,
+                               &subpass0ResolveRef, nullptr, 0u, nullptr);
+
+    const SubpassDep depA[2] = {
+        SubpassDep(nullptr, VK_SUBPASS_EXTERNAL, 0u, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, 0u, 0),
+        SubpassDep(nullptr, 0u, VK_SUBPASS_EXTERNAL, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                   VK_ACCESS_SHADER_READ_BIT, 0u, 0)};
+
+    const RenderPassCreateInfo rpInfoA(nullptr, 0u, 2u, attA, 1u, &subpassA, 2u, depA, 0u, nullptr);
+
+    return RenderPassWrapper(pipelineConstructionType, vk, device, &rpInfoA);
+}
+
+template <typename RPT>
+RenderPassWrapper createMsaaToggleRenderPassB(PipelineConstructionType pipelineConstructionType,
+                                              const DeviceInterface &vk, VkDevice device)
+{
+    typedef typename RPT::AttDesc AttDesc;
+    typedef typename RPT::AttRef AttRef;
+    typedef typename RPT::SubpassDesc SubpassDesc;
+    typedef typename RPT::SubpassDep SubpassDep;
+    typedef typename RPT::RenderPassCreateInfo RenderPassCreateInfo;
+
+    const AttDesc attB[2] = {
+        AttDesc(nullptr, 0u, VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR,
+                VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+        AttDesc(nullptr, 0u, VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR,
+                VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)};
+
+    const AttRef subpass0ColorRefB(nullptr, 0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                   static_cast<VkImageAspectFlags>(0));
+    const AttRef subpass0ResolveRefB(nullptr, 1u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                     static_cast<VkImageAspectFlags>(0));
+    const AttRef subpass1ColorRefB(nullptr, 1u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                   static_cast<VkImageAspectFlags>(0));
+
+    const SubpassDesc subpassesB[2] = {SubpassDesc(nullptr, 0u, VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, 0u, nullptr, 1u,
+                                                   &subpass0ColorRefB, &subpass0ResolveRefB, nullptr, 0u, nullptr),
+                                       SubpassDesc(nullptr, 0u, VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, 0u, nullptr, 1u,
+                                                   &subpass1ColorRefB, nullptr, nullptr, 0u, nullptr)};
+
+    const SubpassDep depB[3] = {
+        SubpassDep(nullptr, VK_SUBPASS_EXTERNAL, 0u, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                   VK_DEPENDENCY_BY_REGION_BIT, 0),
+        SubpassDep(nullptr, 0u, 1u, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                   VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+                   VK_DEPENDENCY_BY_REGION_BIT, 0),
+        SubpassDep(nullptr, 1u, VK_SUBPASS_EXTERNAL, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                   VK_ACCESS_SHADER_READ_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0)};
+
+    const RenderPassCreateInfo rpInfoB(nullptr, 0u, 2u, attB, 2u, subpassesB, 3u, depB, 0u, nullptr);
+
+    return RenderPassWrapper(pipelineConstructionType, vk, device, &rpInfoB);
+}
+
+template <typename RPT>
+RenderPassWrapper createMsaaToggleRenderPassCompare(PipelineConstructionType pipelineConstructionType,
+                                                    const DeviceInterface &vk, VkDevice device)
+{
+    typedef typename RPT::AttDesc AttDesc;
+    typedef typename RPT::AttRef AttRef;
+    typedef typename RPT::SubpassDesc SubpassDesc;
+    typedef typename RPT::SubpassDep SubpassDep;
+    typedef typename RPT::RenderPassCreateInfo RenderPassCreateInfo;
+
+    const AttDesc attC[1] = {AttDesc(nullptr, 0u, VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_1_BIT,
+                                     VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
+                                     VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                                     VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)};
+
+    const AttRef subpass0ColorRefC(nullptr, 0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                   static_cast<VkImageAspectFlags>(0));
+
+    const SubpassDesc subpassC(nullptr, 0u, VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, 0u, nullptr, 1u, &subpass0ColorRefC,
+                               nullptr, nullptr, 0u, nullptr);
+
+    const SubpassDep depC[2] = {
+        SubpassDep(nullptr, VK_SUBPASS_EXTERNAL, 0u, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, 0u, 0),
+        SubpassDep(nullptr, 0u, VK_SUBPASS_EXTERNAL, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                   VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, 0u, 0, 0)};
+
+    const RenderPassCreateInfo rpInfoC(nullptr, 0u, 1u, attC, 1u, &subpassC, 2u, depC, 0u, nullptr);
+
+    return RenderPassWrapper(pipelineConstructionType, vk, device, &rpInfoC);
+}
+
+inline RenderPassWrapper createRenderPassReference(RenderingType renderingType,
+                                                   PipelineConstructionType pipelineConstructionType,
+                                                   const DeviceInterface &vk, VkDevice device)
+{
+    switch (renderingType)
+    {
+    case RENDERING_TYPE_RENDERPASS_LEGACY:
+        return createMsaaToggleRenderPassA<RenderPass1Trait>(pipelineConstructionType, vk, device);
+    case RENDERING_TYPE_RENDERPASS2:
+        return createMsaaToggleRenderPassA<RenderPass2Trait>(pipelineConstructionType, vk, device);
+    default:
+        TCU_THROW(InternalError, "Unsupported rendering type");
+    }
+}
+
+inline RenderPassWrapper createRenderPassTest(RenderingType renderingType,
+                                              PipelineConstructionType pipelineConstructionType,
+                                              const DeviceInterface &vk, VkDevice device)
+{
+    switch (renderingType)
+    {
+    case RENDERING_TYPE_RENDERPASS_LEGACY:
+        return createMsaaToggleRenderPassB<RenderPass1Trait>(pipelineConstructionType, vk, device);
+    case RENDERING_TYPE_RENDERPASS2:
+        return createMsaaToggleRenderPassB<RenderPass2Trait>(pipelineConstructionType, vk, device);
+    default:
+        TCU_THROW(InternalError, "Unsupported rendering type");
+    }
+}
+
+inline RenderPassWrapper createRenderPassCompare(RenderingType renderingType,
+                                                 PipelineConstructionType pipelineConstructionType,
+                                                 const DeviceInterface &vk, VkDevice device)
+{
+    switch (renderingType)
+    {
+    case RENDERING_TYPE_RENDERPASS_LEGACY:
+        return createMsaaToggleRenderPassCompare<RenderPass1Trait>(pipelineConstructionType, vk, device);
+    case RENDERING_TYPE_RENDERPASS2:
+        return createMsaaToggleRenderPassCompare<RenderPass2Trait>(pipelineConstructionType, vk, device);
+    default:
+        TCU_THROW(InternalError, "Unsupported rendering type");
+    }
+}
+
+class MsaaMixedSampleCountTestInstance : public TestInstance
+{
+public:
+    MsaaMixedSampleCountTestInstance(Context &context, const SharedGroupParams groupParams)
+        : TestInstance(context)
+        , m_groupParams(groupParams)
+    {
+    }
+
+    virtual ~MsaaMixedSampleCountTestInstance(void) = default;
+
+    virtual tcu::TestStatus iterate(void)
+    {
+        const DeviceInterface &vk             = m_context.getDeviceInterface();
+        const InstanceInterface &vki          = m_context.getInstanceInterface();
+        const VkDevice device                 = m_context.getDevice();
+        const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+        Allocator &memAlloc                   = m_context.getDefaultAllocator();
+        const uint32_t queueFamilyIndex       = m_context.getUniversalQueueFamilyIndex();
+        const VkQueue queue                   = m_context.getUniversalQueue();
+        const auto &deviceExtensions          = m_context.getDeviceExtensions();
+
+        const uint32_t renderWidth  = 256u;
+        const uint32_t renderHeight = 256u;
+
+        const tcu::IVec3 renderSize(renderWidth, renderHeight, 1);
+        const VkExtent3D imageExtent = makeExtent3D(renderSize);
+
+        // 1. Create Images & Memory using frameworks
+        VkImageCreateInfo msaaImgInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                                         nullptr,
+                                         0u,
+                                         VK_IMAGE_TYPE_2D,
+                                         VK_FORMAT_R8G8B8A8_UNORM,
+                                         imageExtent,
+                                         1u, // mipLevels
+                                         1u, // arrayLayers
+                                         VK_SAMPLE_COUNT_4_BIT,
+                                         VK_IMAGE_TILING_OPTIMAL,
+                                         VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                                         VK_SHARING_MODE_EXCLUSIVE,
+                                         0u,
+                                         nullptr,
+                                         VK_IMAGE_LAYOUT_UNDEFINED};
+
+        ImageWithMemory verify_msaa_image(vk, device, memAlloc, msaaImgInfo, MemoryRequirement::Any);
+
+        VkImageCreateInfo imgInfo = msaaImgInfo;
+        imgInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+
+        imgInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+        ImageWithMemory verify_image_ref(vk, device, memAlloc, imgInfo, MemoryRequirement::Any);
+
+        imgInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+        ImageWithMemory verify_image_test(vk, device, memAlloc, imgInfo, MemoryRequirement::Any);
+
+        imgInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        ImageWithMemory verify_image_compare(vk, device, memAlloc, imgInfo, MemoryRequirement::Any);
+
+        // 2. Create Image Views
+        VkImageViewCreateInfo viewInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                                          nullptr,
+                                          0u,
+                                          *verify_msaa_image,
+                                          VK_IMAGE_VIEW_TYPE_2D,
+                                          VK_FORMAT_R8G8B8A8_UNORM,
+                                          makeComponentMappingRGBA(),
+                                          {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
+
+        Unique<VkImageView> verify_msaa_image_view(createImageView(vk, device, &viewInfo));
+
+        viewInfo.image = *verify_image_ref;
+        Unique<VkImageView> verify_image_view_ref(createImageView(vk, device, &viewInfo));
+
+        viewInfo.image = *verify_image_test;
+        Unique<VkImageView> verify_image_view_test(createImageView(vk, device, &viewInfo));
+
+        viewInfo.image = *verify_image_compare;
+        Unique<VkImageView> verify_image_view_compare(createImageView(vk, device, &viewInfo));
+
+        // 3. Create CPU Staging Buffer using frameworks
+        VkBufferCreateInfo bufInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+                                      nullptr,
+                                      0u,
+                                      renderWidth * renderHeight * 4u, // RGBA8
+                                      VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                      VK_SHARING_MODE_EXCLUSIVE,
+                                      0u,
+                                      nullptr};
+
+        BufferWithMemory verify_buffer_compare(vk, device, memAlloc, bufInfo, MemoryRequirement::HostVisible);
+
+        // 4. Create Render Pass Reference using RenderPassTrait templates
+        RenderPassWrapper renderPassReference = createRenderPassReference(
+            m_groupParams->renderingType, m_groupParams->pipelineConstructionType, vk, device);
+
+        std::vector<VkImageView> attachmentsReference = {*verify_msaa_image_view, *verify_image_view_ref};
+        VkFramebufferCreateInfo fbInfoReference       = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                                                         nullptr,
+                                                         0u,
+                                                         *renderPassReference,
+                                                         static_cast<uint32_t>(attachmentsReference.size()),
+                                                         attachmentsReference.data(),
+                                                         renderWidth,
+                                                         renderHeight,
+                                                         1u};
+        std::vector<VkImage> imagesReference          = {*verify_msaa_image, *verify_image_ref};
+        renderPassReference.createFramebuffer(vk, device, &fbInfoReference, imagesReference);
+
+        // 5. Create Render Pass Test using RenderPassTrait templates
+        RenderPassWrapper renderPassTest =
+            createRenderPassTest(m_groupParams->renderingType, m_groupParams->pipelineConstructionType, vk, device);
+
+        std::vector<VkImageView> attachmentsTest = {*verify_msaa_image_view, *verify_image_view_test};
+        VkFramebufferCreateInfo fbInfoTest       = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                                                    nullptr,
+                                                    0u,
+                                                    *renderPassTest,
+                                                    static_cast<uint32_t>(attachmentsTest.size()),
+                                                    attachmentsTest.data(),
+                                                    renderWidth,
+                                                    renderHeight,
+                                                    1u};
+        std::vector<VkImage> imagesTest          = {*verify_msaa_image, *verify_image_test};
+        renderPassTest.createFramebuffer(vk, device, &fbInfoTest, imagesTest);
+
+        // 5b. Create Render Pass Compare (RenderPass B2)
+        RenderPassWrapper renderPassCompare =
+            createRenderPassCompare(m_groupParams->renderingType, m_groupParams->pipelineConstructionType, vk, device);
+
+        std::vector<VkImageView> attachmentsCompare = {*verify_image_view_compare};
+        VkFramebufferCreateInfo fbInfoCompare       = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                                                       nullptr,
+                                                       0u,
+                                                       *renderPassCompare,
+                                                       static_cast<uint32_t>(attachmentsCompare.size()),
+                                                       attachmentsCompare.data(),
+                                                       renderWidth,
+                                                       renderHeight,
+                                                       1u};
+        std::vector<VkImage> imagesCompare          = {*verify_image_compare};
+        renderPassCompare.createFramebuffer(vk, device, &fbInfoCompare, imagesCompare);
+
+        // 6. Create Sampler
+        VkSamplerCreateInfo samplerInfo = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+                                           nullptr,
+                                           0u,
+                                           VK_FILTER_NEAREST,
+                                           VK_FILTER_NEAREST,
+                                           VK_SAMPLER_MIPMAP_MODE_NEAREST,
+                                           VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                                           VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                                           VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                                           0.0f,
+                                           VK_FALSE,
+                                           1.0f,
+                                           VK_FALSE,
+                                           VK_COMPARE_OP_ALWAYS,
+                                           0.0f,
+                                           0.0f,
+                                           VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
+                                           VK_FALSE};
+
+        Unique<VkSampler> sampler(createSampler(vk, device, &samplerInfo));
+
+        // 7. Create Descriptors using frameworks
+        Move<VkDescriptorSetLayout> descriptorSetLayoutCompare =
+            DescriptorSetLayoutBuilder()
+                .addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+                .addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+                .build(vk, device);
+
+        Move<VkDescriptorPool> descriptorPool =
+            DescriptorPoolBuilder()
+                .addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2u)
+                .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+        Move<VkDescriptorSet> descriptorSetCompare =
+            makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayoutCompare);
+
+        VkDescriptorImageInfo rtvTestInfo =
+            makeDescriptorImageInfo(*sampler, *verify_image_view_test, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        VkDescriptorImageInfo rtvRefInfo =
+            makeDescriptorImageInfo(*sampler, *verify_image_view_ref, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        DescriptorSetUpdateBuilder()
+            .writeSingle(*descriptorSetCompare, DescriptorSetUpdateBuilder::Location::binding(0u),
+                         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &rtvTestInfo)
+            .writeSingle(*descriptorSetCompare, DescriptorSetUpdateBuilder::Location::binding(1u),
+                         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &rtvRefInfo)
+            .update(vk, device);
+
+        // 8. Create Shaders
+        const auto &binaries(m_context.getBinaryCollection());
+        const ShaderWrapper drawVertModule(vk, device, binaries.get("draw-vert"));
+        const ShaderWrapper drawFragModule(vk, device, binaries.get("draw-frag"));
+        const ShaderWrapper compareVertModule(vk, device, binaries.get("compare-vert"));
+        const ShaderWrapper compareFragModule(vk, device, binaries.get("compare-frag"));
+
+        // 9. Create Pipeline Layouts
+        PipelineLayoutWrapper pipelineLayoutDraw(m_groupParams->pipelineConstructionType, vk, device);
+        PipelineLayoutWrapper pipelineLayoutCompare(m_groupParams->pipelineConstructionType, vk, device,
+                                                    *descriptorSetLayoutCompare);
+
+        // 10. Create Pipelines using GraphicsPipelineWrapper
+        VkPipelineMultisampleStateCreateInfo msState4x = {VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+                                                          nullptr,
+                                                          0u,
+                                                          VK_SAMPLE_COUNT_4_BIT,
+                                                          VK_FALSE,
+                                                          0.0f,
+                                                          nullptr,
+                                                          VK_FALSE,
+                                                          VK_FALSE};
+
+        VkPipelineMultisampleStateCreateInfo msState1x = {VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+                                                          nullptr,
+                                                          0u,
+                                                          VK_SAMPLE_COUNT_1_BIT,
+                                                          VK_FALSE,
+                                                          0.0f,
+                                                          nullptr,
+                                                          VK_FALSE,
+                                                          VK_FALSE};
+
+        const float fWidth       = static_cast<float>(renderWidth);
+        const float fHeight      = static_cast<float>(renderHeight);
+        const uint32_t halfWidth = renderWidth / 2u;
+
+        // MSAA Pipeline for RP Reference (Subpass 0, samples = 4x) - Scissor clipped to Left Half
+        GraphicsPipelineWrapper pipelineMsaaRef(vki, vk, physicalDevice, device, deviceExtensions,
+                                                m_groupParams->pipelineConstructionType);
+        pipelineMsaaRef.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .setDefaultRasterizationState()
+            .setDefaultColorBlendState()
+            .setDefaultDepthStencilState()
+            .setupVertexInputState()
+            .setupPreRasterizationShaderState({makeViewport(0.0f, 0.0f, fWidth, fHeight, 0.0f, 1.0f)},
+                                              {makeRect2D(0, 0, halfWidth, renderHeight)}, pipelineLayoutDraw,
+                                              *renderPassReference, 0u, drawVertModule)
+            .setupFragmentShaderState(pipelineLayoutDraw, *renderPassReference, 0u, drawFragModule, nullptr, &msState4x)
+            .setupFragmentOutputState(*renderPassReference, 0u, nullptr, &msState4x)
+            .setMonolithicPipelineLayout(pipelineLayoutDraw)
+            .buildPipeline();
+
+        // MSAA Pipeline for RP Test (Subpass 0, samples = 4x) - Scissor clipped to Left Half
+        GraphicsPipelineWrapper pipelineMsaaTestSub0(vki, vk, physicalDevice, device, deviceExtensions,
+                                                     m_groupParams->pipelineConstructionType);
+        pipelineMsaaTestSub0.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .setDefaultRasterizationState()
+            .setDefaultColorBlendState()
+            .setDefaultDepthStencilState()
+            .setupVertexInputState()
+            .setupPreRasterizationShaderState({makeViewport(0.0f, 0.0f, fWidth, fHeight, 0.0f, 1.0f)},
+                                              {makeRect2D(0, 0, halfWidth, renderHeight)}, pipelineLayoutDraw,
+                                              *renderPassTest, 0u, drawVertModule)
+            .setupFragmentShaderState(pipelineLayoutDraw, *renderPassTest, 0u, drawFragModule, nullptr, &msState4x)
+            .setupFragmentOutputState(*renderPassTest, 0u, nullptr, &msState4x)
+            .setMonolithicPipelineLayout(pipelineLayoutDraw)
+            .buildPipeline();
+
+        // 1x Pipeline for RP Test (Subpass 1, samples = 1x) - Scissor clipped to Right Half
+        GraphicsPipelineWrapper pipelineNoMsaaTestSub1(vki, vk, physicalDevice, device, deviceExtensions,
+                                                       m_groupParams->pipelineConstructionType);
+        pipelineNoMsaaTestSub1.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .setDefaultRasterizationState()
+            .setDefaultColorBlendState()
+            .setDefaultDepthStencilState()
+            .setupVertexInputState()
+            .setupPreRasterizationShaderState({makeViewport(0.0f, 0.0f, fWidth, fHeight, 0.0f, 1.0f)},
+                                              {makeRect2D(halfWidth, 0, halfWidth, renderHeight)}, pipelineLayoutDraw,
+                                              *renderPassTest, 1u, drawVertModule)
+            .setupFragmentShaderState(pipelineLayoutDraw, *renderPassTest, 1u, drawFragModule, nullptr, &msState1x)
+            .setupFragmentOutputState(*renderPassTest, 1u, nullptr, &msState1x)
+            .setMonolithicPipelineLayout(pipelineLayoutDraw)
+            .buildPipeline();
+
+        // Compare Pipeline for RP Test (Subpass 2, samples = 1x) - Scissor set to Full Width
+        GraphicsPipelineWrapper pipelineCompare(vki, vk, physicalDevice, device, deviceExtensions,
+                                                m_groupParams->pipelineConstructionType);
+        pipelineCompare.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .setDefaultRasterizationState()
+            .setDefaultColorBlendState()
+            .setDefaultDepthStencilState()
+            .setupVertexInputState()
+            .setupPreRasterizationShaderState({makeViewport(0.0f, 0.0f, fWidth, fHeight, 0.0f, 1.0f)},
+                                              {makeRect2D(0, 0, renderWidth, renderHeight)}, pipelineLayoutCompare,
+                                              *renderPassCompare, 0u, compareVertModule)
+            .setupFragmentShaderState(pipelineLayoutCompare, *renderPassCompare, 0u, compareFragModule, nullptr,
+                                      &msState1x)
+            .setupFragmentOutputState(*renderPassCompare, 0u, nullptr, &msState1x)
+            .setMonolithicPipelineLayout(pipelineLayoutCompare)
+            .buildPipeline();
+
+        // 11. Record and Submit CB 1 (cmdReference) and Wait
+        CommandPoolWithBuffer cmdReference(vk, device, queueFamilyIndex);
+        const auto cmdBufferReference = *cmdReference.cmdBuffer;
+
+        const VkClearValue clearValueReference[2] = {makeClearValueColorF32(0.02f, 0.02f, 0.05f, 1.0f),
+                                                     makeClearValueColorF32(0.02f, 0.02f, 0.05f, 1.0f)};
+
+        beginCommandBuffer(vk, cmdBufferReference);
+        renderPassReference.begin(vk, cmdBufferReference, makeRect2D(renderWidth, renderHeight), 2u,
+                                  clearValueReference);
+
+        pipelineMsaaRef.bind(cmdBufferReference);
+        vk.cmdDraw(cmdBufferReference, 3u, 1u, 0u, 0u); // Draw left triangle
+
+        renderPassReference.end(vk, cmdBufferReference);
+        endCommandBuffer(vk, cmdBufferReference);
+
+        const Unique<VkFence> fenceCBReference(createFence(vk, device));
+        const VkSubmitInfo submitInfoReference = {VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 0u,     nullptr, nullptr, 1u,
+                                                  &cmdBufferReference,           0u,      nullptr};
+
+        VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoReference, *fenceCBReference));
+        VK_CHECK(vk.waitForFences(device, 1u, &fenceCBReference.get(), VK_TRUE, ~0ull));
+
+        // 12. Record and Submit CB 2 (cmdTestCompare) and Wait
+        CommandPoolWithBuffer cmdTestCompare(vk, device, queueFamilyIndex);
+        const auto cmdBufferTestCompare = *cmdTestCompare.cmdBuffer;
+
+        const VkClearValue clearValueTest[2] = {makeClearValueColorF32(0.02f, 0.02f, 0.05f, 1.0f),
+                                                makeClearValueColorF32(0.02f, 0.02f, 0.05f, 1.0f)};
+
+        beginCommandBuffer(vk, cmdBufferTestCompare);
+        renderPassTest.begin(vk, cmdBufferTestCompare, makeRect2D(renderWidth, renderHeight), 2u, clearValueTest);
+
+        // Subpass 0 (4x MSAA left side)
+        pipelineMsaaTestSub0.bind(cmdBufferTestCompare);
+        vk.cmdDraw(cmdBufferTestCompare, 3u, 1u, 0u, 0u);
+
+        // Subpass 1 (1x MSAA right side)
+        renderPassTest.nextSubpass(vk, cmdBufferTestCompare, VK_SUBPASS_CONTENTS_INLINE);
+        pipelineNoMsaaTestSub1.bind(cmdBufferTestCompare);
+        vk.cmdDraw(cmdBufferTestCompare, 3u, 1u, 3u, 0u);
+
+        renderPassTest.end(vk, cmdBufferTestCompare);
+
+        // Begin Render Pass Compare (RenderPass B2 - Comparison Pass)
+        const VkClearValue clearValueCompare[1] = {makeClearValueColorF32(0.02f, 0.02f, 0.05f, 1.0f)};
+        renderPassCompare.begin(vk, cmdBufferTestCompare, makeRect2D(renderWidth, renderHeight), 1u, clearValueCompare);
+
+        pipelineCompare.bind(cmdBufferTestCompare);
+        vk.cmdBindDescriptorSets(cmdBufferTestCompare, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayoutCompare.get(), 0u,
+                                 1u, &descriptorSetCompare.get(), 0u, nullptr);
+        vk.cmdDraw(cmdBufferTestCompare, 3u, 1u, 0u, 0u);
+
+        renderPassCompare.end(vk, cmdBufferTestCompare);
+
+        // Copy target comparison image RTV C to staging buffer
+        copyImageToBuffer(vk, cmdBufferTestCompare, *verify_image_compare, *verify_buffer_compare,
+                          tcu::IVec2(renderWidth, renderHeight), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u, VK_IMAGE_ASPECT_COLOR_BIT,
+                          VK_IMAGE_ASPECT_COLOR_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+        endCommandBuffer(vk, cmdBufferTestCompare);
+
+        const Unique<VkFence> fenceCBTestCompare(createFence(vk, device));
+        const VkSubmitInfo submitInfoTestCompare = {
+            VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 0u, nullptr, nullptr, 1u, &cmdBufferTestCompare, 0u, nullptr};
+
+        VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoTestCompare, *fenceCBTestCompare));
+        VK_CHECK(vk.waitForFences(device, 1u, &fenceCBTestCompare.get(), VK_TRUE, ~0ull));
+
+        // 13. Programmatic Verification Scan on CPU
+        invalidateAlloc(vk, device, verify_buffer_compare.getAllocation());
+
+        uint8_t *mappedData = static_cast<uint8_t *>(verify_buffer_compare.getAllocation().getHostPtr()) +
+                              verify_buffer_compare.getAllocation().getOffset();
+        bool foundAny = false;
+
+        // Use robust threshold ranges (>150 and <100) instead of exact color equality (==255 or ==0)
+        // to accommodate permitted hardware rounding tolerances, float-to-integer quantization differences,
+        // or driver-level dithering across different GPU architectures.
+        auto isGreenEnough = [](const uint8_t *p) { return p[1] > 150 && p[0] < 100 && p[2] < 100; };
+        auto isRedEnough   = [](const uint8_t *p) { return p[0] > 150 && p[1] < 100 && p[2] < 100; };
+
+        for (uint32_t y = 0u; y < renderHeight; y++)
+        {
+            for (uint32_t x = 0u; x < renderWidth; x++)
+            {
+                uint32_t offset = (y * renderWidth + x) * 4u;
+                uint8_t *pixel  = mappedData + offset;
+
+                if (isRedEnough(pixel))
+                {
+                    std::string msg = "Resolved tile mismatch detected at pixel (" + de::toString(x) + ", " +
+                                      de::toString(y) + ")! RTV B color does not match RTV A reference.";
+                    return tcu::TestStatus::fail(msg);
+                }
+                else if (isGreenEnough(pixel))
+                {
+                    foundAny = true;
+                }
+            }
+        }
+
+        if (!foundAny)
+        {
+            return tcu::TestStatus::fail(
+                "Staging buffer contains only background clear color (Triangles failed to render).");
+        }
+
+        return tcu::TestStatus::pass("Pass (Dynamic MSAA resolve is compliant).");
+    }
+
+private:
+    const SharedGroupParams m_groupParams;
+};
+
+class MsaaMixedSampleCountTest : public TestCase
+{
+public:
+    MsaaMixedSampleCountTest(tcu::TestContext &testCtx, const std::string &name, const SharedGroupParams groupParams)
+        : TestCase(testCtx, name)
+        , m_groupParams(groupParams)
+    {
+    }
+
+    virtual ~MsaaMixedSampleCountTest(void) = default;
+
+    virtual void initPrograms(SourceCollections &programCollection) const
+    {
+        initMsaaToggleCullingPrograms(programCollection);
+    }
+
+    virtual void checkSupport(Context &context) const
+    {
+        checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                              m_groupParams->pipelineConstructionType);
+        if (m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+            TCU_THROW(NotSupportedError, "Dynamic rendering is not supported in this test");
+
+        // Check format properties to verify 4x MSAA is supported for optimal tiling color attachments
+        VkImageFormatProperties properties;
+        const VkResult result = context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
+            context.getPhysicalDevice(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT, 0u, &properties);
+        if (result == VK_ERROR_FORMAT_NOT_SUPPORTED || (properties.sampleCounts & VK_SAMPLE_COUNT_4_BIT) == 0)
+            TCU_THROW(NotSupportedError,
+                      "Format R8G8B8A8_UNORM does not support 4x MSAA optimal tiling transient color attachments");
+    }
+
+    virtual TestInstance *createInstance(Context &context) const
+    {
+        return new MsaaMixedSampleCountTestInstance(context, m_groupParams);
+    }
+
+private:
+    const SharedGroupParams m_groupParams;
+};
+
 std::string formatToName(VkFormat format)
 {
     const std::string formatStr = de::toString(format);
@@ -3260,7 +3939,14 @@ void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)
 tcu::TestCaseGroup *createRenderPassMultisampleResolveTests(tcu::TestContext &testCtx,
                                                             const renderpass::SharedGroupParams groupParams)
 {
-    return createTestGroup(testCtx, "multisample_resolve", initTests, groupParams);
+    de::MovePtr<tcu::TestCaseGroup> testGroup(createTestGroup(testCtx, "multisample_resolve", initTests, groupParams));
+    if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+    {
+        de::MovePtr<tcu::TestCaseGroup> mixedSampleGroup(new tcu::TestCaseGroup(testCtx, "mixed_sample_count"));
+        mixedSampleGroup->addChild(new MsaaMixedSampleCountTest(testCtx, "mixed_sample_count_subpasses", groupParams));
+        testGroup->addChild(mixedSampleGroup.release());
+    }
+    return testGroup.release();
 }
 
 } // namespace vkt
