@@ -122,6 +122,16 @@ enum ImageBackingMode
     IMAGE_BACKING_MODE_SPARSE
 };
 
+enum FullyCoveredVariant
+{
+    FULLY_COVERED_VARIANT_NONE = 0,
+    FULLY_COVERED_VARIANT_OVERESTIMATE,
+    FULLY_COVERED_VARIANT_OVERESTIMATE_EXTRA_SIZE,
+    FULLY_COVERED_VARIANT_OVERESTIMATE_SUBPIXEL,
+    FULLY_COVERED_VARIANT_OVERESTIMATE_RATE_2x1,
+    FULLY_COVERED_VARIANT_OVERESTIMATE_RATE_1x2,
+};
+
 struct MultisampleTestParams
 {
     PipelineConstructionType pipelineConstructionType;
@@ -352,7 +362,9 @@ public:
                                    const VkConservativeRasterizationModeEXT conservativeRasterizationMode,
                                    const bool enableMinSampleShading, const float minSampleShading,
                                    const bool enableSampleMask, const VkSampleMask sampleMask,
-                                   const bool enablePostDepthCoverage, const bool useFragmentShadingRate);
+                                   const bool enablePostDepthCoverage, const bool useFragmentShadingRate,
+                                   const FullyCoveredVariant fullyCoveredVariant = FULLY_COVERED_VARIANT_NONE,
+                                   const VkExtent2D fragmentArea                 = {2u, 2u});
 
     ~SampleMaskWithConservativeTest(void)
     {
@@ -373,6 +385,8 @@ private:
     const bool m_enablePostDepthCoverage;
     const RenderType m_renderType;
     const bool m_useFragmentShadingRate;
+    const FullyCoveredVariant m_fullyCoveredVariant;
+    const VkExtent2D m_fragmentArea;
 };
 #ifndef CTS_USES_VULKANSC
 class SampleMaskWithDepthTestTest : public vkt::TestCase
@@ -444,7 +458,7 @@ public:
                         const VkPipelineColorBlendAttachmentState &blendState,
                         const VkPipelineRasterizationConservativeStateCreateInfoEXT &conservativeStateCreateInfo,
                         const RenderType renderType, const ImageBackingMode backingMode,
-                        const float depthClearValue = 1.0f);
+                        const float depthClearValue = 1.0f, const VkExtent2D fragmentArea = {2u, 2u});
 
     virtual ~MultisampleRenderer(void) = default;
 
@@ -523,6 +537,7 @@ protected:
     ImageBackingMode m_backingMode;
     const float m_depthClearValue;
     const bool m_useFragmentShadingRate;
+    const VkExtent2D m_fragmentArea{2u, 2u};
 };
 
 class RasterizationSamplesInstance : public vkt::TestInstance
@@ -761,8 +776,9 @@ public:
                                        const bool enableMinSampleShading, const float minSampleShading,
                                        const bool enableSampleMask, const VkSampleMask sampleMask,
                                        const VkConservativeRasterizationModeEXT conservativeRasterizationMode,
-                                       const bool enablePostDepthCoverage, const bool enableFullyCoveredEXT,
-                                       const RenderType renderType, const bool useFragmentShadingRate);
+                                       const bool enablePostDepthCoverage,
+                                       const FullyCoveredVariant fullyCoveredVariant, const RenderType renderType,
+                                       const bool useFragmentShadingRate, const VkExtent2D fragmentArea = {2u, 2u});
     ~SampleMaskWithConservativeInstance(void)
     {
     }
@@ -774,7 +790,7 @@ protected:
                                                              const bool enableMinSampleShading,
                                                              const float minSampleShading, const bool enableSampleMask);
     VkPipelineRasterizationConservativeStateCreateInfoEXT getRasterizationConservativeStateCreateInfo(
-        const VkConservativeRasterizationModeEXT conservativeRasterizationMode);
+        const VkConservativeRasterizationModeEXT conservativeRasterizationMode, const float extraOverestimationSize);
     std::vector<Vertex4RGBA> generateVertices(void);
     tcu::TestStatus verifyImage(const std::vector<tcu::TextureLevel> &sampleShadedImages,
                                 const tcu::ConstPixelBufferAccess &result);
@@ -782,7 +798,8 @@ protected:
     const PipelineConstructionType m_pipelineConstructionType;
     const VkSampleCountFlagBits m_rasterizationSamples;
     const bool m_enablePostDepthCoverage;
-    const bool m_enableFullyCoveredEXT;
+    const FullyCoveredVariant m_fullyCoveredVariant;
+    const VkExtent2D m_fragmentArea;
     const VkFormat m_colorFormat;
     const VkFormat m_depthStencilFormat;
     const tcu::IVec2 m_renderSize;
@@ -1102,7 +1119,8 @@ bool isSparseSampleSupported(const VkPhysicalDeviceFeatures &features, const VkS
 }
 #endif
 
-bool checkFragmentShadingRateRequirements(Context &context, uint32_t sampleCount)
+bool checkFragmentShadingRateRequirements(Context &context, uint32_t sampleCount,
+                                          const vk::VkExtent2D fragmentSize = {2u, 2u})
 {
     const auto &vki           = context.getInstanceInterface();
     const auto physicalDevice = context.getPhysicalDevice();
@@ -1124,7 +1142,8 @@ bool checkFragmentShadingRateRequirements(Context &context, uint32_t sampleCount
 
     for (const auto &rate : supportedFragmentShadingRates)
     {
-        if ((rate.fragmentSize.width == 2u) && (rate.fragmentSize.height == 2u) && (rate.sampleCounts & sampleCount))
+        if ((rate.fragmentSize.width == fragmentSize.width) && (rate.fragmentSize.height == fragmentSize.height) &&
+            (rate.sampleCounts & sampleCount))
             return true;
     }
 
@@ -2093,7 +2112,8 @@ SampleMaskWithConservativeTest::SampleMaskWithConservativeTest(
     const VkSampleCountFlagBits rasterizationSamples,
     const VkConservativeRasterizationModeEXT conservativeRasterizationMode, const bool enableMinSampleShading,
     const float minSampleShading, const bool enableSampleMask, const VkSampleMask sampleMask,
-    const bool enablePostDepthCoverage, const bool useFragmentShadingRate)
+    const bool enablePostDepthCoverage, const bool useFragmentShadingRate,
+    const FullyCoveredVariant fullyCoveredVariant, const VkExtent2D fragmentArea)
     : vkt::TestCase(testContext, name)
     , m_pipelineConstructionType(pipelineConstructionType)
     , m_rasterizationSamples(rasterizationSamples)
@@ -2105,6 +2125,8 @@ SampleMaskWithConservativeTest::SampleMaskWithConservativeTest(
     , m_enablePostDepthCoverage(enablePostDepthCoverage)
     , m_renderType(RENDER_TYPE_RESOLVE)
     , m_useFragmentShadingRate(useFragmentShadingRate)
+    , m_fullyCoveredVariant(fullyCoveredVariant)
+    , m_fragmentArea(fragmentArea)
 {
 }
 
@@ -2113,7 +2135,8 @@ void SampleMaskWithConservativeTest::checkSupport(Context &context) const
     if (!context.getDeviceProperties().limits.standardSampleLocations)
         TCU_THROW(NotSupportedError, "standardSampleLocations required");
 
-    if (m_useFragmentShadingRate && !checkFragmentShadingRateRequirements(context, m_rasterizationSamples))
+    if (m_useFragmentShadingRate &&
+        !checkFragmentShadingRateRequirements(context, m_rasterizationSamples, m_fragmentArea))
         TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 
     if (m_useFragmentShadingRate &&
@@ -2164,10 +2187,17 @@ void SampleMaskWithConservativeTest::checkSupport(Context &context) const
     else
         TCU_THROW(InternalError, "Non-conservative mode tests are not supported by this class");
 
-    if (!conservativeRasterizationProperties.fullyCoveredFragmentShaderInputVariable)
-    {
+    const bool shaderUsesFullyCovered =
+        (m_fullyCoveredVariant != FULLY_COVERED_VARIANT_NONE) ||
+        (m_conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT &&
+         !m_enableMinSampleShading);
+
+    if (shaderUsesFullyCovered && !conservativeRasterizationProperties.fullyCoveredFragmentShaderInputVariable)
         TCU_THROW(NotSupportedError, "FullyCoveredEXT input variable is not supported");
-    }
+
+    if (m_fullyCoveredVariant == FULLY_COVERED_VARIANT_OVERESTIMATE_EXTRA_SIZE &&
+        conservativeRasterizationProperties.maxExtraPrimitiveOverestimationSize == 0.0f)
+        TCU_THROW(NotSupportedError, "maxExtraPrimitiveOverestimationSize is zero");
 
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_pipelineConstructionType);
@@ -2196,12 +2226,16 @@ void SampleMaskWithConservativeTest::initPrograms(SourceCollections &programColl
                                           "    vtxColor = color;\n"
                                           "}\n";
 
+        const bool shaderUsesFullyCovered =
+            (m_fullyCoveredVariant != FULLY_COVERED_VARIANT_NONE) ||
+            (m_conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT &&
+             !m_enableMinSampleShading);
+
         std::ostringstream fragmentSource;
         fragmentSource << "#version 440\n"
                        << (m_enablePostDepthCoverage ? "#extension GL_ARB_post_depth_coverage : require\n" : "")
-                       << (m_conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT ?
-                               "#extension GL_NV_conservative_raster_underestimation : enable\n" :
-                               "")
+                       << (shaderUsesFullyCovered ? "#extension GL_NV_conservative_raster_underestimation : enable\n" :
+                                                    "")
                        << "layout(early_fragment_tests) in;\n"
                        << (m_enablePostDepthCoverage ? "layout(post_depth_coverage) in;\n" : "")
                        << "layout(location = 0) in vec4 vtxColor;\n"
@@ -2211,18 +2245,19 @@ void SampleMaskWithConservativeTest::initPrograms(SourceCollections &programColl
         if (m_enableMinSampleShading)
         {
             fragmentSource << "    const int coveredSamples = bitCount(gl_SampleMaskIn[0]);\n"
-                              "    fragColor = vtxColor * (1.0 / "
+                              "    vec4 color = vtxColor * (1.0 / "
                            << (int32_t)m_rasterizationSamples << " * coveredSamples);\n";
-        }
-        else if (m_conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT)
-        {
-            fragmentSource << "    fragColor = gl_FragFullyCoveredNV ? vtxColor : vec4(0.0f);\n";
         }
         else
         {
-            fragmentSource << "    fragColor = vtxColor;\n";
+            fragmentSource << "    vec4 color = vtxColor;\n";
         }
-        fragmentSource << "}\n";
+        if (shaderUsesFullyCovered)
+        {
+            fragmentSource << "    if (!gl_FragFullyCoveredNV) color = vec4(0.0f);\n";
+        }
+        fragmentSource << "    fragColor = color;\n"
+                          "}\n";
 
         programCollection.glslSources.add("color_vert") << glu::VertexSource(vertexSource);
         programCollection.glslSources.add("color_frag") << glu::FragmentSource(fragmentSource.str());
@@ -2264,8 +2299,8 @@ TestInstance *SampleMaskWithConservativeTest::createInstance(Context &context) c
 {
     return new SampleMaskWithConservativeInstance(
         context, m_pipelineConstructionType, m_rasterizationSamples, m_enableMinSampleShading, m_minSampleShading,
-        m_enableSampleMask, m_sampleMask, m_conservativeRasterizationMode, m_enablePostDepthCoverage, true,
-        m_renderType, m_useFragmentShadingRate);
+        m_enableSampleMask, m_sampleMask, m_conservativeRasterizationMode, m_enablePostDepthCoverage,
+        m_fullyCoveredVariant, m_renderType, m_useFragmentShadingRate, m_fragmentArea);
 }
 
 // SampleMaskWithDepthTestTest
@@ -3212,12 +3247,14 @@ SampleMaskWithConservativeInstance::SampleMaskWithConservativeInstance(
     const VkSampleCountFlagBits rasterizationSamples, const bool enableMinSampleShading, const float minSampleShading,
     const bool enableSampleMask, const VkSampleMask sampleMask,
     const VkConservativeRasterizationModeEXT conservativeRasterizationMode, const bool enablePostDepthCoverage,
-    const bool enableFullyCoveredEXT, const RenderType renderType, const bool useFragmentShadingRate)
+    const FullyCoveredVariant fullyCoveredVariant, const RenderType renderType, const bool useFragmentShadingRate,
+    const VkExtent2D fragmentArea)
     : vkt::TestInstance(context)
     , m_pipelineConstructionType(pipelineConstructionType)
     , m_rasterizationSamples(rasterizationSamples)
     , m_enablePostDepthCoverage(enablePostDepthCoverage)
-    , m_enableFullyCoveredEXT(enableFullyCoveredEXT)
+    , m_fullyCoveredVariant(fullyCoveredVariant)
+    , m_fragmentArea(fragmentArea)
     , m_colorFormat(VK_FORMAT_R8G8B8A8_UNORM)
     , m_depthStencilFormat(VK_FORMAT_D16_UNORM)
     , m_renderSize(tcu::IVec2(10, 10))
@@ -3236,8 +3273,11 @@ SampleMaskWithConservativeInstance::SampleMaskWithConservativeInstance(
     , m_minSampleShading(minSampleShading)
     , m_multisampleStateParams(
           getMultisampleState(rasterizationSamples, enableMinSampleShading, minSampleShading, enableSampleMask))
-    , m_rasterizationConservativeStateCreateInfo(
-          getRasterizationConservativeStateCreateInfo(conservativeRasterizationMode))
+    , m_rasterizationConservativeStateCreateInfo(getRasterizationConservativeStateCreateInfo(
+          conservativeRasterizationMode,
+          fullyCoveredVariant == FULLY_COVERED_VARIANT_OVERESTIMATE_EXTRA_SIZE ?
+              context.getConservativeRasterizationPropertiesEXT().maxExtraPrimitiveOverestimationSize :
+              0.0f))
     , m_blendState(getDefaultColorBlendAttachmentState())
     , m_renderType(renderType)
     , m_imageBackingMode(IMAGE_BACKING_MODE_REGULAR)
@@ -3255,7 +3295,7 @@ tcu::TestStatus SampleMaskWithConservativeInstance::iterate(void)
                                      m_renderSize, m_useDepth, m_useStencil, m_useConservative,
                                      m_useFragmentShadingRate, 1u, &m_topology, &m_vertices, m_multisampleStateParams,
                                      m_blendState, m_rasterizationConservativeStateCreateInfo, RENDER_TYPE_RESOLVE,
-                                     m_imageBackingMode, m_depthClearValue);
+                                     m_imageBackingMode, m_depthClearValue, m_fragmentArea);
         noSampleshadingImage = renderer.render();
     }
 
@@ -3307,14 +3347,15 @@ VkPipelineMultisampleStateCreateInfo SampleMaskWithConservativeInstance::getMult
 }
 
 VkPipelineRasterizationConservativeStateCreateInfoEXT SampleMaskWithConservativeInstance::
-    getRasterizationConservativeStateCreateInfo(const VkConservativeRasterizationModeEXT conservativeRasterizationMode)
+    getRasterizationConservativeStateCreateInfo(const VkConservativeRasterizationModeEXT conservativeRasterizationMode,
+                                                const float extraOverestimationSize)
 {
     const VkPipelineRasterizationConservativeStateCreateInfoEXT rasterizationConservativeStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT, //  VkStructureType sType;
         nullptr,                                                                     //  const void* pNext;
         (VkPipelineRasterizationConservativeStateCreateFlagsEXT)0, //  VkPipelineRasterizationConservativeStateCreateFlagsEXT flags;
         conservativeRasterizationMode, //  VkConservativeRasterizationModeEXT conservativeRasterizationMode;
-        0.0f                           //  float extraPrimitiveOverestimationSize;
+        extraOverestimationSize        //  float extraPrimitiveOverestimationSize;
     };
 
     return rasterizationConservativeStateCreateInfo;
@@ -3324,17 +3365,17 @@ std::vector<Vertex4RGBA> SampleMaskWithConservativeInstance::generateVertices(vo
 {
     std::vector<Vertex4RGBA> vertices;
 
+    if (m_fullyCoveredVariant == FULLY_COVERED_VARIANT_OVERESTIMATE_SUBPIXEL)
     {
-        const Vertex4RGBA vertexInput = {tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), m_renderColor};
-        vertices.push_back(vertexInput);
+        vertices.push_back({tcu::Vec4(-0.05f, -0.05f, 0.0f, 1.0f), m_renderColor});
+        vertices.push_back({tcu::Vec4(0.05f, -0.05f, 0.0f, 1.0f), m_renderColor});
+        vertices.push_back({tcu::Vec4(-0.05f, 0.05f, 0.0f, 1.0f), m_renderColor});
     }
+    else
     {
-        const Vertex4RGBA vertexInput = {tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), m_renderColor};
-        vertices.push_back(vertexInput);
-    }
-    {
-        const Vertex4RGBA vertexInput = {tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f), m_renderColor};
-        vertices.push_back(vertexInput);
+        vertices.push_back({tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), m_renderColor});
+        vertices.push_back({tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), m_renderColor});
+        vertices.push_back({tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f), m_renderColor});
     }
 
     return vertices;
@@ -3375,16 +3416,91 @@ tcu::TestStatus SampleMaskWithConservativeInstance::verifyImage(
 
     const tcu::Vec4 clearColor = tcu::Vec4(0.0f);
     std::vector<std::pair<int, int>> fullyCoveredPixelsCoordinateSet;
+    std::vector<std::pair<int, int>> borderlinePixelSet;
+
+    DE_ASSERT(m_fullyCoveredVariant == FULLY_COVERED_VARIANT_NONE || !m_enableMinSampleShading);
 
     // Generating set of pixel coordinate values covered by the triangle
-    if (m_conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT)
+    if (m_fullyCoveredVariant == FULLY_COVERED_VARIANT_OVERESTIMATE ||
+        m_fullyCoveredVariant == FULLY_COVERED_VARIANT_OVERESTIMATE_EXTRA_SIZE ||
+        m_fullyCoveredVariant == FULLY_COVERED_VARIANT_OVERESTIMATE_RATE_2x1 ||
+        m_fullyCoveredVariant == FULLY_COVERED_VARIANT_OVERESTIMATE_RATE_1x2)
+    {
+        // Shrink inner set by ceil(extraPrimitiveOverestimationSize) along the diagonal edge
+        const int diagMargin =
+            static_cast<int>(std::ceil(m_rasterizationConservativeStateCreateInfo.extraPrimitiveOverestimationSize));
+
+        if (m_useFragmentShadingRate)
+        {
+            const int fw = static_cast<int>(m_fragmentArea.width);
+            const int fh = static_cast<int>(m_fragmentArea.height);
+
+            DE_ASSERT((fw == 2 && fh == 2) || (fw == 2 && fh == 1) || (fw == 1 && fh == 2));
+
+            // A depth boundary column i == width / 2 can only fall inside a block when the block is more
+            // than one column wide, so only those blocks need to respect postDepthCoverage
+            const bool allowPartialBlockCoverage = (fw == 1) || !m_enablePostDepthCoverage;
+
+            auto blockFullyCovered = [&](int bx, int by, int margin)
+            {
+                for (int i = bx; i < bx + fw; i++)
+                    for (int j = by; j < by + fh; j++)
+                        if (i + j >= width - 2 - margin)
+                            return false;
+                return true;
+            };
+
+            for (int bx = 0; bx + fw <= width; bx += fw)
+                for (int by = 0; by + fh <= height; by += fh)
+                {
+                    // Blocks that cross the diagonal even without margin are outside the primitive
+                    if (!blockFullyCovered(bx, by, 0))
+                        continue;
+
+                    // Blocks on x==0 || y==0 borders or within diagMargin of the diagonal edge
+                    // are ambiguous for FullyCoveredEXT
+                    if (bx == 0 || by == 0 || !blockFullyCovered(bx, by, diagMargin))
+                    {
+                        for (int i = bx; i < bx + fw; i++)
+                            for (int j = by; j < by + fh; j++)
+                                borderlinePixelSet.push_back(std::make_pair(i, j));
+                        continue;
+                    }
+
+                    // A block crossing the depth boundary may or may not emit the render color on its
+                    // depth passing columns, so treat those as borderline rather than guaranteed covered
+                    const bool crossesDepthBoundary = (!allowPartialBlockCoverage && bx + fw > width / 2);
+
+                    for (int i = bx; i < bx + fw && i < width / 2; i++)
+                        for (int j = by; j < by + fh; j++)
+                            (crossesDepthBoundary ? borderlinePixelSet : fullyCoveredPixelsCoordinateSet)
+                                .push_back(std::make_pair(i, j));
+                }
+        }
+        else
+        {
+            for (int i = 0; i < width; i++)
+                for (int j = 0; j < height; j++)
+                    if (i < width / 2 && i + j < width - 2 - diagMargin)
+                    {
+                        // Pixels on x==0 || y==0 borders are ambiguous for FullyCoveredEXT
+                        if (i == 0 || j == 0)
+                            borderlinePixelSet.push_back(std::make_pair(i, j));
+                        else
+                            fullyCoveredPixelsCoordinateSet.push_back(std::make_pair(i, j));
+                    }
+        }
+    }
+    else if (m_fullyCoveredVariant == FULLY_COVERED_VARIANT_OVERESTIMATE_SUBPIXEL)
+    {
+    }
+    else if (m_conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT)
     {
         for (int i = 0; i < width; i++)
         {
             for (int j = 0; j < height; j++)
             {
-                // Rasterization will cover half of the triangle plus 1 pixel edge due to the overeestimation
-                if (i < 5 && i + j < 11)
+                if (i < width / 2 && i + j < width + 1)
                     fullyCoveredPixelsCoordinateSet.push_back(std::make_pair(i, j));
             }
         }
@@ -3393,9 +3509,6 @@ tcu::TestStatus SampleMaskWithConservativeInstance::verifyImage(
     {
         if (m_useFragmentShadingRate && !m_enableMinSampleShading)
         {
-            // When m_enableMinSampleShading is not enabled shader uses gl_FragFullyCoveredNV.
-            // Additionaly when FSR coverage is enabled the tests uses a pipeline FSR rate of { 2,2 }
-            // and as a result rasterization will cover only four pixels due to the underestimation.
             for (int i = 2; i < 4; i++)
                 for (int j = 2; j < 4; j++)
                     fullyCoveredPixelsCoordinateSet.push_back(std::make_pair(i, j));
@@ -3406,17 +3519,67 @@ tcu::TestStatus SampleMaskWithConservativeInstance::verifyImage(
             {
                 for (int j = 1; j < height; j++)
                 {
-                    // Rasterization will cover half of the triangle minus 1 pixel edge due to the underestimation
-                    if (i < 5 && i + j < 8)
+                    if (i < width / 2 && i + j < width - 2)
                         fullyCoveredPixelsCoordinateSet.push_back(std::make_pair(i, j));
                 }
             }
         }
     }
 
+    // Software rendered visualization of the expected coverage
+    {
+        tcu::TextureLevel expectedLevel(result.getFormat(), width, height);
+        tcu::PixelBufferAccess expectedAccess = expectedLevel.getAccess();
+
+        for (int y = 0; y < height; ++y)
+            for (int x = 0; x < width; ++x)
+                expectedAccess.setPixel(clearColor, x, y);
+
+        for (const auto &coord : fullyCoveredPixelsCoordinateSet)
+            expectedAccess.setPixel(m_renderColor, coord.first, coord.second);
+
+        const tcu::Vec4 borderlineColor(1.0f, 1.0f, 0.0f, 1.0f);
+        for (const auto &coord : borderlinePixelSet)
+            expectedAccess.setPixel(borderlineColor, coord.first, coord.second);
+
+        log << tcu::TestLog::ImageSet("ExpectedCoverage", "Expected coverage")
+            << tcu::TestLog::Image("Expected", "Expected", expectedAccess) << tcu::TestLog::EndImageSet;
+    }
+
     for (int x = 0; x < width; ++x)
         for (int y = 0; y < height; ++y)
         {
+            if (std::find(borderlinePixelSet.begin(), borderlinePixelSet.end(), std::make_pair(x, y)) !=
+                borderlinePixelSet.end())
+            {
+                const tcu::Vec4 borderlinePixel = result.getPixel(x, y);
+
+                // A borderline pixel coverage when the sample mask is applied
+                tcu::Vec4 coveredColor = m_renderColor;
+                float coveredThreshold = 0.0f;
+                if (m_enableSampleMask && m_sampleMask[0] == 0xAAAAAAAA)
+                {
+                    coveredColor     = tcu::Vec4(0.0f, 0.5f, 0.0f, 0.5f);
+                    coveredThreshold = 0.02f;
+                }
+                else if (m_enableSampleMask && m_sampleMask[0] == 0x00000000)
+                    coveredColor = clearColor;
+
+                bool matchesCovered = true;
+                for (uint32_t componentNdx = 0u; componentNdx < m_renderColor.SIZE; ++componentNdx)
+                    if (std::abs(borderlinePixel[componentNdx] - coveredColor[componentNdx]) > coveredThreshold)
+                        matchesCovered = false;
+
+                if (!matchesCovered && borderlinePixel != clearColor)
+                {
+                    log << tcu::TestLog::Message << "Borderline x: " << x << " y: " << y
+                        << " Result: " << borderlinePixel << " expected either " << coveredColor << " (+/- "
+                        << coveredThreshold << ") or " << clearColor << tcu::TestLog::EndMessage;
+                    pass = false;
+                }
+                continue;
+            }
+
             const tcu::Vec4 resultPixel = result.getPixel(x, y);
 
             if (std::find(fullyCoveredPixelsCoordinateSet.begin(), fullyCoveredPixelsCoordinateSet.end(),
@@ -3522,15 +3685,13 @@ tcu::TestStatus SampleMaskWithConservativeInstance::verifyImage(
             }
         }
 
+    log << tcu::TestLog::ImageSet("LayerContent", "Layer content") << tcu::TestLog::Image("Layer", "Layer", result)
+        << tcu::TestLog::EndImageSet;
+
     if (pass)
         return tcu::TestStatus::pass("Passed");
     else
-    {
-        log << tcu::TestLog::ImageSet("LayerContent", "Layer content") << tcu::TestLog::Image("Layer", "Layer", result)
-            << tcu::TestLog::EndImageSet;
-
         return tcu::TestStatus::fail("Failed");
-    }
 }
 
 // SampleMaskWithDepthTestInstance
@@ -4100,7 +4261,8 @@ MultisampleRenderer::MultisampleRenderer(
     const VkPipelineMultisampleStateCreateInfo &multisampleStateParams,
     const VkPipelineColorBlendAttachmentState &blendState,
     const VkPipelineRasterizationConservativeStateCreateInfoEXT &conservativeStateCreateInfo,
-    const RenderType renderType, const ImageBackingMode backingMode, const float depthClearValue)
+    const RenderType renderType, const ImageBackingMode backingMode, const float depthClearValue,
+    const VkExtent2D fragmentArea)
     : m_context(context)
     , m_pipelineConstructionType(pipelineConstructionType)
     , m_bindSemaphore(createSemaphore(context.getDeviceInterface(), context.getDevice()))
@@ -4117,6 +4279,7 @@ MultisampleRenderer::MultisampleRenderer(
     , m_backingMode(backingMode)
     , m_depthClearValue(depthClearValue)
     , m_useFragmentShadingRate(useFragmentShadingRate)
+    , m_fragmentArea(fragmentArea)
 {
     initialize(context, numTopologies, pTopology, pVertices);
 }
@@ -4846,7 +5009,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
         VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR, // VkStructureType sType;
             nullptr,                                                                // const void* pNext;
-            {2, 2},                                                                 // VkExtent2D fragmentSize;
+            m_fragmentArea,                                                         // VkExtent2D fragmentSize;
             {VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,
              VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR}, // VkFragmentShadingRateCombinerOpKHR combinerOps[2];
         };
@@ -7829,6 +7992,26 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
             vk::VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT,
             vk::VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT};
 
+        struct FullyCoveredConfig
+        {
+            const char *suffix;
+            FullyCoveredVariant variant;
+            VkExtent2D fragmentArea;
+        };
+
+        const FullyCoveredConfig overestimateFullyCoveredConfigs[] = {
+            {"", FULLY_COVERED_VARIANT_NONE, {2u, 2u}},
+            {"_fully_covered", FULLY_COVERED_VARIANT_OVERESTIMATE, {2u, 2u}},
+            {"_fully_covered_extra_overestimate", FULLY_COVERED_VARIANT_OVERESTIMATE_EXTRA_SIZE, {2u, 2u}},
+            {"_fully_covered_subpixel", FULLY_COVERED_VARIANT_OVERESTIMATE_SUBPIXEL, {2u, 2u}},
+            {"_fully_covered_rate2x1", FULLY_COVERED_VARIANT_OVERESTIMATE_RATE_2x1, {2u, 1u}},
+            {"_fully_covered_rate1x2", FULLY_COVERED_VARIANT_OVERESTIMATE_RATE_1x2, {1u, 2u}},
+        };
+
+        const FullyCoveredConfig underestimateFullyCoveredConfigs[] = {
+            {"", FULLY_COVERED_VARIANT_NONE, {2u, 2u}},
+        };
+
         // Conservative rendering
         TestCaseGroupPtr conservativeGroup(new tcu::TestCaseGroup(testCtx, "conservative_with_full_coverage"));
 
@@ -7836,6 +8019,15 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
         {
             const char *modeName = (modeNdx == 0 ? "overestimate" : "underestimate");
             TestCaseGroupPtr modesGroup(new tcu::TestCaseGroup(testCtx, modeName));
+
+            const FullyCoveredConfig *fcConfigs =
+                (rasterizationMode[modeNdx] == vk::VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT) ?
+                    overestimateFullyCoveredConfigs :
+                    underestimateFullyCoveredConfigs;
+            const size_t fcConfigsCount =
+                (rasterizationMode[modeNdx] == vk::VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT) ?
+                    DE_LENGTH_OF_ARRAY(overestimateFullyCoveredConfigs) :
+                    DE_LENGTH_OF_ARRAY(underestimateFullyCoveredConfigs);
 
             for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(standardSamplesSet); ++samplesNdx)
             {
@@ -7845,11 +8037,27 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
                 {
                     const TestConfig &testConfig = testConfigs[configNdx];
 
-                    modesGroup->addChild(new SampleMaskWithConservativeTest(
-                        testCtx, caseName + testConfig.name, pipelineConstructionType, standardSamplesSet[samplesNdx],
-                        rasterizationMode[modeNdx], testConfig.enableMinSampleShading, testConfig.minSampleShading,
-                        testConfig.enableSampleMask, testConfig.sampleMask, testConfig.enablePostDepthCoverage,
-                        useFragmentShadingRate));
+                    for (size_t fcNdx = 0; fcNdx < fcConfigsCount; ++fcNdx)
+                    {
+                        const FullyCoveredConfig &fcConfig = fcConfigs[fcNdx];
+
+                        // Exercise FullyCoveredEXT fragments areas only on non square shading rate variants
+                        const bool fsrOnly = (fcConfig.fragmentArea.width != fcConfig.fragmentArea.height);
+                        if (fsrOnly && !useFragmentShadingRate)
+                            continue;
+
+                        // FullyCoveredEXT is read as false in the non conservative per sample pass
+                        // so it cannot be combined with minSampleShading verification
+                        if (fcConfig.variant != FULLY_COVERED_VARIANT_NONE && testConfig.enableMinSampleShading)
+                            continue;
+
+                        modesGroup->addChild(new SampleMaskWithConservativeTest(
+                            testCtx, caseName + testConfig.name + fcConfig.suffix, pipelineConstructionType,
+                            standardSamplesSet[samplesNdx], rasterizationMode[modeNdx],
+                            testConfig.enableMinSampleShading, testConfig.minSampleShading, testConfig.enableSampleMask,
+                            testConfig.sampleMask, testConfig.enablePostDepthCoverage, useFragmentShadingRate,
+                            fcConfig.variant, fcConfig.fragmentArea));
+                    }
                 }
             }
 
