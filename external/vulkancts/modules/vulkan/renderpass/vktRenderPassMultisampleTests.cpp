@@ -1099,8 +1099,12 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance(Context &co
                              m_srcImageUsage, m_width, m_height, m_separateStencilUsage, config.extendedFlags))
     , m_srcImageMemory(createImageMemory(context.getDeviceInterface(), context.getDevice(),
                                          context.getDefaultAllocator(), *m_srcImage))
-    , m_srcImageView(createImageAttachmentView(context.getDeviceInterface(), context.getDevice(), *m_srcImage,
-                                               m_srcFormat, m_srcImageAspect))
+    // VUID-VkFramebufferCreateInfo-pAttachments-00879
+    , m_srcImageView(createImageAttachmentView(
+          context.getDeviceInterface(), context.getDevice(), *m_srcImage, m_srcFormat,
+          m_separateStencilUsage == TEST_DEPTH   ? (VkImageAspectFlags)VK_IMAGE_ASPECT_DEPTH_BIT :
+          m_separateStencilUsage == TEST_STENCIL ? (VkImageAspectFlags)VK_IMAGE_ASPECT_STENCIL_BIT :
+                                                   m_srcImageAspect))
     , m_srcPrimaryInputImageView(createSrcPrimaryInputImageView(context.getDeviceInterface(), context.getDevice(),
                                                                 *m_srcImage, m_srcFormat, m_srcImageAspect,
                                                                 m_separateStencilUsage))

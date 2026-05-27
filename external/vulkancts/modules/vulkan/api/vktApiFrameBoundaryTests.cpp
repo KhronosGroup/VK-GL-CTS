@@ -95,7 +95,8 @@ void recordCommands(Context &context, VkCommandBuffer cmdBuffer, VkImage image)
 {
     const DeviceInterface &vk = context.getDeviceInterface();
 
-    beginCommandBuffer(vk, cmdBuffer);
+    // UNASSIGNED-DrawState-CommandBufferSingleSubmitViolation
+    beginCommandBuffer(vk, cmdBuffer, 0u);
 
     const VkImageMemoryBarrier imageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType
