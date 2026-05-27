@@ -666,7 +666,6 @@ void AstcSampleCase::initPrograms(vk::SourceCollections &programCollection) cons
 
 struct MemoryBarrierTestParameters
 {
-    VkShaderStageFlagBits stage;
     bool writeFirst;
     VkAccessFlags2 readAccess;
     VkAccessFlags2 writeAccess;
@@ -913,99 +912,45 @@ tcu::TestStatus MemoryBarrierTestInstance::iterate(void)
 #ifndef CTS_USES_VULKANSC
     {
         auto memoryBarrier2 = makeMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                                                 m_parameters.stage == VK_SHADER_STAGE_FRAGMENT_BIT ?
-                                                     VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT :
-                                                     VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                                                 VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                                                  m_parameters.readAccess | m_parameters.writeAccess);
         VkDependencyInfo dependencyInfo   = vk::initVulkanStructure();
         dependencyInfo.memoryBarrierCount = 1u;
         dependencyInfo.pMemoryBarriers    = &memoryBarrier2;
         vk.cmdPipelineBarrier2(*cmdBuffer, &dependencyInfo);
 
-        if (m_parameters.stage == VK_SHADER_STAGE_FRAGMENT_BIT)
-        {
-            vk::beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, scissors[0]);
-            vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                     &*descriptorSet, 0u, nullptr);
-        }
-        else
-        {
-            vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                     &*descriptorSet, 0u, nullptr);
-        }
+        vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &*descriptorSet,
+                                 0u, nullptr);
     }
     {
-        VkMemoryBarrier2 memoryBarrier2;
-        if (m_parameters.stage == VK_SHADER_STAGE_FRAGMENT_BIT)
-        {
-            if (m_parameters.writeFirst)
-                vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *writeGraphicsPipeline);
-            else
-                vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *readGraphicsPipeline);
-
-            vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
-
-            memoryBarrier2 = makeMemoryBarrier2(VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, m_parameters.writeAccess,
-                                                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, m_parameters.readAccess);
-        }
+        if (m_parameters.writeFirst)
+            vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *writeComputePipeline);
         else
-        {
-            if (m_parameters.writeFirst)
-                vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *writeComputePipeline);
-            else
-                vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *readComputePipeline);
+            vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *readComputePipeline);
 
-            vk.cmdDispatch(*cmdBuffer, imageExtent.width, imageExtent.height, 1u);
+        vk.cmdDispatch(*cmdBuffer, imageExtent.width, imageExtent.height, 1u);
 
-            memoryBarrier2 = makeMemoryBarrier2(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, m_parameters.writeAccess,
-                                                VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, m_parameters.readAccess);
-        }
+        VkMemoryBarrier2 memoryBarrier2 =
+            makeMemoryBarrier2(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, m_parameters.writeAccess,
+                               VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, m_parameters.readAccess);
 
         VkDependencyInfo dependencyInfo   = vk::initVulkanStructure();
         dependencyInfo.memoryBarrierCount = 1u;
         dependencyInfo.pMemoryBarriers    = &memoryBarrier2;
-        dependencyInfo.dependencyFlags    = m_parameters.stage == VK_SHADER_STAGE_FRAGMENT_BIT ?
-                                                (VkDependencyFlags)VK_DEPENDENCY_BY_REGION_BIT :
-                                                (VkDependencyFlags)0u;
+        dependencyInfo.dependencyFlags    = 0u;
         vk.cmdPipelineBarrier2(*cmdBuffer, &dependencyInfo);
 
-        if (m_parameters.stage == VK_SHADER_STAGE_FRAGMENT_BIT)
-        {
-            if (m_parameters.writeFirst)
-                vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *readGraphicsPipeline);
-            else
-                vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *writeGraphicsPipeline);
-
-            vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
-        }
+        if (m_parameters.writeFirst)
+            vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *readComputePipeline);
         else
-        {
-            if (m_parameters.writeFirst)
-                vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *readComputePipeline);
-            else
-                vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *writeComputePipeline);
+            vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *writeComputePipeline);
 
-            vk.cmdDispatch(*cmdBuffer, imageExtent.width, imageExtent.height, 1u);
-        }
+        vk.cmdDispatch(*cmdBuffer, imageExtent.width, imageExtent.height, 1u);
     }
     {
-        if (m_parameters.stage == VK_SHADER_STAGE_FRAGMENT_BIT)
-            endRenderPass(vk, *cmdBuffer);
-
-        VkMemoryBarrier2 memoryBarrier2;
-        if (m_parameters.stage == VK_SHADER_STAGE_FRAGMENT_BIT)
-        {
-            memoryBarrier2 = makeMemoryBarrier2(
-                VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-                VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, VK_ACCESS_2_TRANSFER_READ_BIT);
-        }
-        else
-        {
-            memoryBarrier2 = makeMemoryBarrier2(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                                                m_parameters.writeAccess | m_parameters.readAccess,
-                                                VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, VK_ACCESS_2_TRANSFER_READ_BIT);
-        }
+        VkMemoryBarrier2 memoryBarrier2 = makeMemoryBarrier2(
+            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, m_parameters.writeAccess | m_parameters.readAccess,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, VK_ACCESS_2_TRANSFER_READ_BIT);
 
         VkDependencyInfo dependencyInfo   = initVulkanStructure();
         dependencyInfo.memoryBarrierCount = 1u;
@@ -1014,10 +959,6 @@ tcu::TestStatus MemoryBarrierTestInstance::iterate(void)
 
         const VkBufferImageCopy copyRegion = makeBufferImageCopy(imageExtent, subresourceLayers);
         vk.cmdCopyImageToBuffer(*cmdBuffer, *image, VK_IMAGE_LAYOUT_GENERAL, **imageCopyBuffer, 1u, &copyRegion);
-        if (m_parameters.stage == VK_SHADER_STAGE_FRAGMENT_BIT)
-        {
-            vk.cmdCopyImageToBuffer(*cmdBuffer, *fbImage, VK_IMAGE_LAYOUT_GENERAL, **readOutputBuffer, 1u, &copyRegion);
-        }
     }
 #endif
     endCommandBuffer(vk, *cmdBuffer);
@@ -2331,15 +2272,6 @@ tcu::TestCaseGroup *createImageGeneralLayoutTests(tcu::TestContext &testCtx)
     miscTests->addChild(astcSampleTests.release());
 
 #ifndef CTS_USES_VULKANSC
-    struct StageTest
-    {
-        VkShaderStageFlagBits stage;
-        const char *name;
-    } stageTests[]{
-        {VK_SHADER_STAGE_COMPUTE_BIT, "compute"},
-        {VK_SHADER_STAGE_FRAGMENT_BIT, "fragment"},
-    };
-
     struct AccessTest
     {
         VkAccessFlags2 readAccess;
@@ -2352,27 +2284,21 @@ tcu::TestCaseGroup *createImageGeneralLayoutTests(tcu::TestContext &testCtx)
     };
 
     de::MovePtr<tcu::TestCaseGroup> memoryBarriersTests(new tcu::TestCaseGroup(testCtx, "memory_barrier"));
-    for (const auto &stageTest : stageTests)
+    for (uint32_t readWriteNdx = 0; readWriteNdx < 2; ++readWriteNdx)
     {
-        de::MovePtr<tcu::TestCaseGroup> stageTestsGroup(new tcu::TestCaseGroup(testCtx, stageTest.name));
-        for (uint32_t readWriteNdx = 0; readWriteNdx < 2; ++readWriteNdx)
+        const bool writeFirst = readWriteNdx == 0;
+        de::MovePtr<tcu::TestCaseGroup> readWriteTestsGroup(
+            new tcu::TestCaseGroup(testCtx, writeFirst ? "write_read" : "read_write"));
+        for (const auto accessTest : accessTests)
         {
-            const bool writeFirst = readWriteNdx == 0;
-            de::MovePtr<tcu::TestCaseGroup> readWriteTestsGroup(
-                new tcu::TestCaseGroup(testCtx, writeFirst ? "write_read" : "read_write"));
-            for (const auto accessTest : accessTests)
-            {
-                MemoryBarrierTestParameters params;
-                params.stage       = stageTest.stage;
-                params.writeFirst  = writeFirst;
-                params.readAccess  = accessTest.readAccess;
-                params.writeAccess = accessTest.writeAccess;
+            MemoryBarrierTestParameters params;
+            params.writeFirst  = writeFirst;
+            params.readAccess  = accessTest.readAccess;
+            params.writeAccess = accessTest.writeAccess;
 
-                readWriteTestsGroup->addChild(new MemoryBarrierCase(testCtx, accessTest.name, params));
-            }
-            stageTestsGroup->addChild(readWriteTestsGroup.release());
+            readWriteTestsGroup->addChild(new MemoryBarrierCase(testCtx, accessTest.name, params));
         }
-        memoryBarriersTests->addChild(stageTestsGroup.release());
+        memoryBarriersTests->addChild(readWriteTestsGroup.release());
     }
     miscTests->addChild(memoryBarriersTests.release());
 #endif
