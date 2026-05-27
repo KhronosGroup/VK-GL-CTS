@@ -1021,6 +1021,7 @@ tcu::TestStatus ShaderComponentDecoratedIterfaceMatchingTestInstance::iterate(vo
                                     +1.0f, -1.0f, 0.0f, 0.0f, +1.0f, +1.0f, 0.0f, 0.0f, -1.0f, +1.0f, 0.0f, 0.0f};
         DE_ASSERT((vertices.size() / 4) == vertexCount);
         deMemcpy(vertexBuffer.getAllocation().getHostPtr(), vertices.data(), vertices.size() * sizeof(float));
+        flushAlloc(vkd, device, vertexBuffer.getAllocation());
     }
 
     const VkBufferUsageFlags resultBufferUsage =
@@ -1042,7 +1043,7 @@ tcu::TestStatus ShaderComponentDecoratedIterfaceMatchingTestInstance::iterate(vo
     endCommandBuffer(vkd, *cmdBuffer);
     submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 
-    //invalidateAlloc(vkd, device, resultBuffer.getAllocation());
+    invalidateAlloc(vkd, device, resultBuffer.getAllocation());
 
     std::string resultText;
     const uint8_t *bufferPtr = static_cast<uint8_t *>(resultBuffer.getAllocation().getHostPtr());
