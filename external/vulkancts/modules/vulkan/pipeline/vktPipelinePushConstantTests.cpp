@@ -2423,7 +2423,17 @@ void PushConstantLifetimeTestInstance::init(void)
     }
 
     // Create render pass
-    m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, m_colorFormat);
+    const auto attDesc = makeAttachmentDescription(
+        0u, m_colorFormat, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    const auto attRef      = makeAttachmentReference(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    const auto subpassDesc = makeSubpassDescription(0u, VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, nullptr, 1u, &attRef,
+                                                    nullptr, nullptr, 0u, nullptr);
+    const VkRenderPassCreateInfo rpCreateInfo{
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, nullptr, 0u, 1u, &attDesc, 1u, &subpassDesc, 0u, nullptr,
+    };
+    m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &rpCreateInfo);
 
     // Create framebuffer
     {
@@ -2693,6 +2703,7 @@ tcu::TestStatus PushConstantLifetimeTestInstance::iterate(void)
 
         beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
+        bool inProperLayout = false;
         for (size_t ndx = 0; ndx < m_cmdList.size(); ndx++)
         {
             const VkPushConstantRange pushConstantRange{m_pushConstantRange[m_cmdList[ndx].rangeNdx].range.shaderStage,
@@ -2727,12 +2738,20 @@ tcu::TestStatus PushConstantLifetimeTestInstance::iterate(void)
             {
                 const VkDeviceSize bufferOffset = 0;
 
+                const auto srcAccessMask =
+                    static_cast<VkAccessFlags>(inProperLayout ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : 0);
+                const auto oldLayout =
+                    (inProperLayout ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED);
+                const auto srcStage = static_cast<VkPipelineStageFlags>(
+                    inProperLayout ? VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+                const auto dstStage = static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
                 const VkImageMemoryBarrier prePassBarrier = {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType sType;
                     nullptr,                                    // const void* pNext;
-                    0,                                          // VkAccessFlags srcAccessMask;
+                    srcAccessMask,                              // VkAccessFlags srcAccessMask;
                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,       // VkAccessFlags dstAccessMask;
-                    VK_IMAGE_LAYOUT_UNDEFINED,                  // VkImageLayout oldLayout;
+                    oldLayout,                                  // VkImageLayout oldLayout;
                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,   // VkImageLayout newLayout;
                     VK_QUEUE_FAMILY_IGNORED,                    // uint32_t srcQueueFamilyIndex;
                     VK_QUEUE_FAMILY_IGNORED,                    // uint32_t dstQueueFamilyIndex;
@@ -2740,9 +2759,9 @@ tcu::TestStatus PushConstantLifetimeTestInstance::iterate(void)
                     {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u} // VkImageSubresourceRange subresourceRange;
                 };
 
-                vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                      VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1,
-                                      &prePassBarrier);
+                vk.cmdPipelineBarrier(*m_cmdBuffer, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &prePassBarrier);
+
+                inProperLayout = true;
 
                 m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
                                    attachmentClearValue);
