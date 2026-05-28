@@ -143,6 +143,7 @@ struct TestParamsBasic : TestParams
     std::vector<ShaderBinding> bindings;
     std::vector<std::pair<uint32_t, uint32_t>> pushData;
     bool embeddedSamplers{};
+    bool bindSamplerHeap = true;
     bool inputAttachments{};
     bool scaledMappingStrides      = true;
     int32_t overrideResourceStride = -1;
@@ -4490,7 +4491,10 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
         beginCommandBuffer(vk, cmdBuf);
 
         vk.cmdBindResourceHeapEXT(cmdBuf, &resourceHeap);
-        vk.cmdBindSamplerHeapEXT(cmdBuf, &samplerHeap);
+        if (m_params.bindSamplerHeap)
+        {
+            vk.cmdBindSamplerHeapEXT(cmdBuf, &samplerHeap);
+        }
 
         if (m_params.enableSparseHeap || m_params.enableProtectedHeap)
         {
@@ -14436,6 +14440,7 @@ void populateCombinedImageSamplerTests(tcu::TestCaseGroup *topGroup, uint32_t ba
                 params.dimension                                 = isArrayed ? 4 : 1;
                 params.seed                                      = embeddedGroupHash ^ deStringHash(testName);
                 params.embeddedSamplers                          = useEmbedded;
+                params.bindSamplerHeap                           = !useEmbedded;
 
                 de::Random rng(~params.seed);
 
