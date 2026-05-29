@@ -22,6 +22,7 @@
  * \brief Descriptor heap (extension) tests
  *//*--------------------------------------------------------------------*/
 
+#include <algorithm>
 #include <array>
 #include <cstring>
 #include <numeric>
@@ -4004,13 +4005,18 @@ void DescriptorHeapTestCaseBasic::initQueuePrograms(vk::SourceCollections &progr
                "}\n";
     }
 
-    int uid = 0;
+    int uid                = 0;
+    bool hasArrayedBinding = false;
 
     for (const auto &binding : m_params.bindings)
     {
         if (binding.queue != static_cast<int>(queueIndex))
         {
             continue;
+        }
+        if (binding.arrayed)
+        {
+            hasArrayedBinding = true;
         }
 
         str << "layout(set = " << binding.descriptorSet << ", binding = " << binding.firstBinding;
@@ -4074,6 +4080,8 @@ void DescriptorHeapTestCaseBasic::initQueuePrograms(vk::SourceCollections &progr
     if (m_params.stage == VK_SHADER_STAGE_FRAGMENT_BIT)
     {
         str << "layout(location = 0) out int result;\n";
+        if (hasArrayedBinding)
+            str << "layout(set = 0, binding = 0) readonly buffer Swizzler { int swizzler[]; };\n";
     }
     else
     {
@@ -4092,6 +4100,10 @@ void DescriptorHeapTestCaseBasic::initQueuePrograms(vk::SourceCollections &progr
     if (m_params.stage == VK_SHADER_STAGE_COMPUTE_BIT)
     {
         str << "int invocationId = int(gl_LocalInvocationID.x);\n";
+    }
+    if (m_params.stage == VK_SHADER_STAGE_FRAGMENT_BIT && hasArrayedBinding)
+    {
+        str << "int invocationId = int(gl_FragCoord.x);\n";
     }
     if (m_params.stage == VK_SHADER_STAGE_RAYGEN_BIT_KHR)
     {
@@ -14134,6 +14146,10 @@ void populateBindingMappingTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed
         const char *mappingSourceName = getMappingSourceTestName(mappingSource);
         MovePtr<tcu::TestCaseGroup> mappingSourceGroup(new tcu::TestCaseGroup(testCtx, mappingSourceName));
 
+        MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(testCtx, "compute"));
+        MovePtr<tcu::TestCaseGroup> fragmentGroup(new tcu::TestCaseGroup(testCtx, "fragment"));
+        MovePtr<tcu::TestCaseGroup> raygenGroup(new tcu::TestCaseGroup(testCtx, "raygen"));
+
         const uint32_t mappingSourceGroupHash = bindingMappingGroupHash ^ deStringHash(mappingSourceName);
 
         for (const VkDescriptorType descriptorType : descriptorTypes)
@@ -14184,6 +14200,8 @@ void populateBindingMappingTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed
             binding.mapping.resourceMask  = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
 
             binding.heapIndex = rng.getInt(8, kMaxDescriptor - params.dimension);
+
+            bool shaderRecordMapping = false;
 
             switch (mappingSource)
             {
@@ -14237,7 +14255,7 @@ void populateBindingMappingTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed
                 binding.mapping.sourceData.shaderRecordIndex.heapArrayStride    = 1;
                 params.enableRayTracing                                         = true;
                 params.enableAccelerationStructures                             = true;
-                params.stage                                                    = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+                shaderRecordMapping                                             = true;
                 break;
             case VK_DESCRIPTOR_MAPPING_SOURCE_SHADER_RECORD_DATA_EXT:
                 binding.mapping.bindingCount                      = 1;
@@ -14246,7 +14264,7 @@ void populateBindingMappingTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed
                 params.dimension                                  = 1;
                 params.enableRayTracing                           = true;
                 params.enableAccelerationStructures               = true;
-                params.stage                                      = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+                shaderRecordMapping                               = true;
                 break;
             case VK_DESCRIPTOR_MAPPING_SOURCE_SHADER_RECORD_ADDRESS_EXT:
                 binding.mapping.bindingCount                         = 1;
@@ -14255,7 +14273,7 @@ void populateBindingMappingTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed
                 params.dimension                                     = 1;
                 params.enableRayTracing                              = true;
                 params.enableAccelerationStructures                  = true;
-                params.stage                                         = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+                shaderRecordMapping                                  = true;
                 break;
             case VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_ARRAY_EXT:
                 binding.mapping.sourceData.indirectIndexArray.heapOffset      = 2;
@@ -14316,8 +14334,31 @@ void populateBindingMappingTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed
                 break;
             }
 
-            mappingSourceGroup->addChild(new DescriptorHeapTestCaseBasic(testCtx, testName, params));
+            if (!shaderRecordMapping)
+            {
+                computeGroup->addChild(new DescriptorHeapTestCaseBasic(testCtx, testName, params));
+            }
+
+            params.dimension                      = 1;
+            params.enableFragmentStoresAndAtomics = isStorageDescriptorType(descriptorType);
+            params.queue                          = VK_QUEUE_GRAPHICS_BIT;
+            params.stage                          = VK_SHADER_STAGE_FRAGMENT_BIT;
+            if (!shaderRecordMapping)
+            {
+                fragmentGroup->addChild(new DescriptorHeapTestCaseBasic(testCtx, testName, params));
+            }
+
+            params.queue                          = VK_QUEUE_COMPUTE_BIT;
+            params.stage                          = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+            params.enableRayTracing               = true;
+            params.enableAccelerationStructures   = true;
+            params.enableRayQuery                 = false;
+            params.enableFragmentStoresAndAtomics = false;
+            raygenGroup->addChild(new DescriptorHeapTestCaseBasic(testCtx, testName, params));
         }
+        mappingSourceGroup->addChild(computeGroup.release());
+        mappingSourceGroup->addChild(fragmentGroup.release());
+        mappingSourceGroup->addChild(raygenGroup.release());
 
         bindingMappingGroup->addChild(mappingSourceGroup.release());
     }
