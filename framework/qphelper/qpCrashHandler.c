@@ -33,7 +33,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-#if (DE_OS == DE_OS_UNIX)
+#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_OHOS)
 #include <unistd.h>
 #include <errno.h>
 #include <inttypes.h>

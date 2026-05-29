@@ -60,7 +60,7 @@ elseif (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 
 endif ()
 
-if (DE_OS_IS_UNIX OR DE_OS_IS_QNX)
+if (DE_OS_IS_UNIX OR DE_OS_IS_QNX OR DE_OS_IS_OHOS)
 	add_definitions(-D_XOPEN_SOURCE=600)
 endif ()
 

@@ -1,0 +1,6 @@
+@echo off
+echo Removing old dEQP Ondevice Package...
+hdc %* uninstall com.OpenHarmony.app.test
+
+echo Installing dEQP Ondevice Package...
+hdc %* install -r dEQP.hap
