@@ -611,6 +611,7 @@ dEQP-VK.binding_model.descriptor_heap.null_descriptor.raygen.storage_texel_buffe
 dEQP-VK.binding_model.descriptor_heap.null_descriptor.raygen.uniform_buffer
 dEQP-VK.binding_model.descriptor_heap.null_descriptor.raygen.uniform_texel_buffer
 dEQP-VK.binding_model.descriptor_heap.null_image_queries.null_image_queries
+dEQP-VK.binding_model.descriptor_heap.offset_id.implicit_zero_index
 dEQP-VK.binding_model.descriptor_heap.push_data.compute
 dEQP-VK.binding_model.descriptor_heap.push_data.fragment
 dEQP-VK.binding_model.descriptor_heap.push_data.raygen

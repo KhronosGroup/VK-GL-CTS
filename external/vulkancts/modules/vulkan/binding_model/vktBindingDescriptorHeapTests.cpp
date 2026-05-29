@@ -12605,6 +12605,204 @@ void main() {
     }
 }
 
+class DescriptorHeapTestInstanceOffsetId final : public DescriptorHeapTestInstanceBase
+{
+public:
+    explicit DescriptorHeapTestInstanceOffsetId(Context &context, const TestParams &params)
+        : DescriptorHeapTestInstanceBase(context, params)
+        , m_params{params}
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    TestParams m_params;
+};
+
+tcu::TestStatus DescriptorHeapTestInstanceOffsetId::iterate()
+{
+    const auto &vkd = m_device.getDriver();
+
+    const uint32_t descriptorCount    = 2u;
+    const VkDeviceSize resourceStride = m_descriptorHeapProperties.bufferDescriptorSize;
+    const VkDeviceSize resourceHeapUserSize =
+        alignUp(resourceStride * descriptorCount, m_descriptorHeapProperties.resourceHeapAlignment);
+    const VkDeviceSize resourceHeapSize =
+        resourceHeapUserSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    auto resourceHeap = createBufferAndMemory(resourceHeapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
+                                                                    VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+    const VkDeviceSize storageBufferSize = 64u;
+    auto buffer0 = createBufferAndMemory(storageBufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT_KHR |
+                                                                VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+    auto buffer1 = createBufferAndMemory(storageBufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT_KHR |
+                                                                VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+    char *resourceHeapHostPtr = static_cast<char *>(resourceHeap->memory->getHostPtr());
+    memset(buffer0->memory->getHostPtr(), 0, static_cast<size_t>(storageBufferSize));
+    memset(buffer1->memory->getHostPtr(), 0, static_cast<size_t>(storageBufferSize));
+
+    VkDeviceAddressRangeEXT addressRanges[2];
+    addressRanges[0].address = buffer0->address;
+    addressRanges[0].size    = storageBufferSize;
+    addressRanges[1].address = buffer1->address;
+    addressRanges[1].size    = storageBufferSize;
+
+    VkResourceDescriptorInfoEXT resourceInfos[2];
+    resourceInfos[0]                    = initVulkanStructure();
+    resourceInfos[0].type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    resourceInfos[0].data.pAddressRange = &addressRanges[0];
+    resourceInfos[1]                    = initVulkanStructure();
+    resourceInfos[1].type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    resourceInfos[1].data.pAddressRange = &addressRanges[1];
+
+    VkHostAddressRangeEXT hostRanges[2];
+    hostRanges[0].address = resourceHeapHostPtr;
+    hostRanges[0].size    = static_cast<size_t>(resourceStride);
+    hostRanges[1].address = resourceHeapHostPtr + resourceStride;
+    hostRanges[1].size    = static_cast<size_t>(resourceStride);
+    VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 2u, resourceInfos, hostRanges));
+    flushAlloc(vkd, *m_device, *resourceHeap->memory);
+
+    auto computeModule = createShaderModule(vkd, *m_device, getShaderBinary("compute"));
+
+    VkPipelineCreateFlags2CreateInfoKHR pipelineFlags = initVulkanStructure();
+    pipelineFlags.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+    VkComputePipelineCreateInfo pipelineCreateInfo = initVulkanStructure(&pipelineFlags);
+    pipelineCreateInfo.stage                       = initVulkanStructure();
+    pipelineCreateInfo.stage.stage                 = VK_SHADER_STAGE_COMPUTE_BIT;
+    pipelineCreateInfo.stage.module                = *computeModule;
+    pipelineCreateInfo.stage.pName                 = "main";
+
+    auto pipeline = createComputePipeline(vkd, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+    VkBindHeapInfoEXT bindHeapInfo   = initVulkanStructure();
+    bindHeapInfo.heapRange.address   = resourceHeap->address;
+    bindHeapInfo.heapRange.size      = resourceHeapSize;
+    bindHeapInfo.reservedRangeOffset = resourceHeapUserSize;
+    bindHeapInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    VkMemoryBarrier2 memoryBarrier = initVulkanStructure();
+    memoryBarrier.srcStageMask     = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    memoryBarrier.srcAccessMask    = VK_ACCESS_2_SHADER_WRITE_BIT;
+    memoryBarrier.dstStageMask     = VK_PIPELINE_STAGE_2_HOST_BIT;
+    memoryBarrier.dstAccessMask    = VK_ACCESS_2_HOST_READ_BIT;
+
+    VkDependencyInfo dependencyInfo   = initVulkanStructure();
+    dependencyInfo.memoryBarrierCount = 1u;
+    dependencyInfo.pMemoryBarriers    = &memoryBarrier;
+
+    auto commandPool  = makeCommandPool(vkd, *m_device, m_queueFamilyIndex);
+    auto cmdBufferPtr = allocateCommandBuffer(vkd, *m_device, commandPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    auto cmdBuffer    = cmdBufferPtr.get();
+
+    beginCommandBuffer(vkd, cmdBuffer);
+    vkd.cmdBindResourceHeapEXT(cmdBuffer, &bindHeapInfo);
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+    vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+    vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+    endCommandBuffer(vkd, cmdBuffer);
+
+    submitCommandsAndWait(vkd, *m_device, m_queues.front(), cmdBuffer);
+
+    invalidateAlloc(vkd, *m_device, *buffer0->memory);
+    invalidateAlloc(vkd, *m_device, *buffer1->memory);
+    uint32_t *result0 = static_cast<uint32_t *>(buffer0->memory->getHostPtr());
+    uint32_t *result1 = static_cast<uint32_t *>(buffer1->memory->getHostPtr());
+
+    if (*result0 != 42u || *result1 != 0u)
+    {
+        std::stringstream msg;
+        msg << "Expected buffer0[0] = 42 and buffer1[0] = 0, but got buffer0[0] = " << *result0
+            << " and buffer1[0] = " << *result1;
+        return tcu::TestStatus::fail(msg.str());
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class DescriptorHeapTestCaseOffsetId final : public DescriptorHeapTestCaseBase
+{
+public:
+    explicit DescriptorHeapTestCaseOffsetId(tcu::TestContext &testCtx, const std::string &name,
+                                            const TestParams &params)
+        : DescriptorHeapTestCaseBase(testCtx, name, params)
+        , m_params{params}
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceOffsetId(context, m_params);
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+private:
+    TestParams m_params;
+};
+
+void DescriptorHeapTestCaseOffsetId::initPrograms(vk::SourceCollections &programCollection) const
+{
+    // layout(storage_buffer) SSBO {
+    //     uint a;
+    //     uint b;
+    // };
+    // layout(offset = buffer_size) heap {
+    //     SSBO runtime_buffer[];
+    // } heap_layout;
+    //
+    // *(uint*)heap_layout.runtime_buffer = 42;
+    char const *comp = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %resource_heap
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpMemberDecorate %SSBO 1 Offset 4
+               OpDecorate %heap_layout Block
+               OpMemberDecorateIdEXT %heap_layout 0 OffsetIdEXT %buf_size
+               OpDecorateId %runtime_buffer ArrayStrideIdEXT %buf_size
+               OpMemberDecorate %SSBO 2 Offset 8
+       %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+      %int_2 = OpConstant %int 2
+    %uint_42 = OpConstant %uint 42
+%_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
+        %SSBO = OpTypeStruct %uint %uint %uint
+%_ptr_StorageBuffer = OpTypeUntypedPointerKHR StorageBuffer
+%type_buffer = OpTypeBufferEXT StorageBuffer
+   %buf_size = OpConstantSizeOfEXT %int %type_buffer
+%runtime_buffer = OpTypeRuntimeArray %type_buffer
+ %heap_layout = OpTypeStruct %runtime_buffer
+       %main = OpFunction %void None %void_fn
+          %5 = OpLabel
+%heap_index_0 = OpUntypedAccessChainKHR %_ptr_UniformConstant %heap_layout %resource_heap
+  %buf_ptr_0 = OpBufferPointerEXT %_ptr_StorageBuffer %heap_index_0
+   %member_0 = OpUntypedAccessChainKHR %_ptr_StorageBuffer %SSBO %buf_ptr_0 %int_0
+               OpStore %member_0 %uint_42
+               OpReturn
+               OpFunctionEnd
+    )";
+
+    vk::SpirVAsmBuildOptions options(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_6);
+    programCollection.spirvAsmSources.add("compute") << comp << options;
+}
+
 class DescriptorHeapTestInstanceShaderObjectInvariance final : public DescriptorHeapTestInstanceBase
 {
 public:
@@ -15702,6 +15900,20 @@ void populateSecondaryCommandBufferTests(tcu::TestCaseGroup *topGroup, uint32_t 
     topGroup->addChild(group.release());
 }
 
+void populateOffsetIdTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
+{
+    tcu::TestContext &testCtx = topGroup->getTestContext();
+    MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "offset_id"));
+
+    {
+        TestParams params{};
+        params.seed = baseSeed ^ deStringHash("offset_id");
+        group->addChild(new DescriptorHeapTestCaseOffsetId(testCtx, "implicit_zero_index", params));
+    }
+
+    topGroup->addChild(group.release());
+}
+
 void populateShaderObjectInvariance(tcu::TestCaseGroup *topGroup)
 {
     tcu::TestContext &testCtx = topGroup->getTestContext();
@@ -16299,6 +16511,7 @@ void populateDescriptorHeapTests(tcu::TestCaseGroup *topGroup)
     populateUnalignedTests(topGroup, baseSeed);
     populateSecondaryCommandBufferTests(topGroup, baseSeed);
     populateZeroStrideTests(topGroup, baseSeed);
+    populateOffsetIdTests(topGroup, baseSeed);
 }
 
 } // namespace
