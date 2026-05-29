@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktRayQueryTests.hpp"
+#include "vktRayQueryAmberTests.hpp"
 #include "vktRayQueryBuiltinTests.hpp"
 #include "vktRayQueryTraversalControlTests.hpp"
 #include "vktRayQueryAccelerationStructuresTests.hpp"
@@ -50,6 +51,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
 {
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
+    group->addChild(createAmberTests(testCtx));
     group->addChild(createBuiltinTests(testCtx));
     group->addChild(createTraversalControlTests(testCtx));
     group->addChild(createAccelerationStructuresTests(testCtx));
