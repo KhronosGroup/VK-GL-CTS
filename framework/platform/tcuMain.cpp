@@ -81,7 +81,7 @@ int main(int argc, char **argv)
             if (!app->iterate())
             {
                 if (cmdLine.getRunMode() == tcu::RUNMODE_EXECUTE &&
-                    (!app->getResult().isComplete || app->getResult().numFailed))
+                    (!app->getResult().isComplete || app->getResult().numFailed) && !cmdLine.isNoProgramFailEnabled())
                 {
                     exitStatus = EXIT_FAILURE;
                 }

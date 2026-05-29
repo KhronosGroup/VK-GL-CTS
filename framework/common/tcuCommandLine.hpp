@@ -180,6 +180,9 @@ public:
     //! Is quiet mode active?
     bool quietMode(void) const;
 
+    //! Is no program fail mode active?
+    bool isNoProgramFailEnabled(void) const;
+
     //! Get log file name (--deqp-log-filename)
     const char *getLogFileName(void) const;
 
