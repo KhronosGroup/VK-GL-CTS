@@ -34,6 +34,7 @@ namespace image
 {
 
 tcu::TestCaseGroup *createImageStoreTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createImageStoreSRGBNoConversionTests(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createImageLoadStoreTests(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createImageFormatReinterpretTests(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createImageExtendOperandsTests(tcu::TestContext &testCtx);
