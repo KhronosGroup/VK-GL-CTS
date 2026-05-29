@@ -27,25 +27,20 @@
 #include "vktCustomInstancesDevices.hpp"
 
 #include "vktTestCase.hpp"
-#include "vkBuilderUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkDeviceUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkPrograms.hpp"
-#include "vkPlatform.hpp"
 #include "vkMemUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkBarrierUtil.hpp"
 
-#include "tcuTestLog.hpp"
-#include "tcuResource.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuTextureUtil.hpp"
-#include "tcuRGBA.hpp"
 
 #include "deRandom.hpp"
 #include "deMath.h"
@@ -55,7 +50,7 @@
 #endif
 
 #include <algorithm>
-#include <bitset>
+#include <map>
 #include <string_view>
 
 namespace vkt
@@ -91,6 +86,7 @@ enum TestType
     TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY,
     TEST_TYPE_POINT_SIZE,
     TEST_TYPE_MULTISAMPLE,
+    TEST_TYPE_MULTISAMPLE_RESOLVE,
     TEST_TYPE_QUERIES,
     TEST_TYPE_NON_PRECISE_QUERIES,
     TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY,
@@ -157,18 +153,19 @@ vk::Move<vk::VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDev
                                           const bool useGeneralLayout,
                                           const VkSampleCountFlagBits samples  = VK_SAMPLE_COUNT_1_BIT,
                                           const VkAttachmentLoadOp colorLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                                          const VkFormat dsFormat              = VK_FORMAT_UNDEFINED)
+                                          const VkFormat dsFormat              = VK_FORMAT_UNDEFINED,
+                                          bool useResolveAttachment            = false)
 {
     switch (renderingType)
     {
     case RENDERING_TYPE_RENDERPASS_LEGACY:
         return MultiView::makeRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1,
                                          SubpassDependency1, RenderPassCreateInfo1>(
-            vk, device, colorFormat, viewMasks, samples, colorLoadOp, dsFormat, useGeneralLayout);
+            vk, device, colorFormat, viewMasks, samples, colorLoadOp, dsFormat, useGeneralLayout, useResolveAttachment);
     case RENDERING_TYPE_RENDERPASS2:
         return MultiView::makeRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2,
                                          SubpassDependency2, RenderPassCreateInfo2>(
-            vk, device, colorFormat, viewMasks, samples, colorLoadOp, dsFormat, useGeneralLayout);
+            vk, device, colorFormat, viewMasks, samples, colorLoadOp, dsFormat, useGeneralLayout, useResolveAttachment);
     default:
         TCU_THROW(InternalError, "Impossible");
     }
@@ -343,10 +340,11 @@ protected:
     typedef de::SharedPtr<Unique<VkShaderModule>> ShaderModuleSP;
 
     virtual tcu::TestStatus iterate(void);
-    virtual void beforeRenderPass(void);
+    virtual void beforeRenderPass(VkImage resolveImage = VK_NULL_HANDLE);
     virtual void afterRenderPass(void);
 #ifndef CTS_USES_VULKANSC
-    virtual void addRenderingSubpassDependencyIfRequired(uint32_t currentSubpassNdx);
+    virtual void addRenderingSubpassDependencyIfRequired(uint32_t currentSubpassNdx,
+                                                         VkImage resolveImage = VK_NULL_HANDLE);
 #endif // CTS_USES_VULKANSC
     virtual void bindResources(void)
     {
@@ -508,7 +506,7 @@ tcu::TestStatus MultiViewRenderTestInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
-void MultiViewRenderTestInstance::beforeRenderPass(void)
+void MultiViewRenderTestInstance::beforeRenderPass(VkImage resolveImage)
 {
     if (!m_colorAttachment)
         return;
@@ -533,6 +531,14 @@ void MultiViewRenderTestInstance::beforeRenderPass(void)
                  VK_ACCESS_TRANSFER_WRITE_BIT,
                  (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
                  VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+    if (resolveImage != VK_NULL_HANDLE)
+    {
+        imageBarrier(m_device, *m_cmdBuffer, resolveImage, subresourceRange, VK_IMAGE_LAYOUT_UNDEFINED,
+                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 0,
+                     (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+                     VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+    }
 }
 
 void MultiViewRenderTestInstance::afterRenderPass(void)
@@ -555,7 +561,8 @@ void MultiViewRenderTestInstance::afterRenderPass(void)
 }
 
 #ifndef CTS_USES_VULKANSC
-void MultiViewRenderTestInstance::addRenderingSubpassDependencyIfRequired(uint32_t currentSubpassNdx)
+void MultiViewRenderTestInstance::addRenderingSubpassDependencyIfRequired(uint32_t currentSubpassNdx,
+                                                                          VkImage resolveImage)
 {
     if (!m_colorAttachment)
         return;
@@ -590,6 +597,15 @@ void MultiViewRenderTestInstance::addRenderingSubpassDependencyIfRequired(uint32
                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                      VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+        if (resolveImage != VK_NULL_HANDLE)
+        {
+            imageBarrier(m_device, *m_cmdBuffer, resolveImage, subresourceRange,
+                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                         VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+        }
     }
 }
 #endif // CTS_USES_VULKANSC
@@ -884,6 +900,7 @@ void MultiViewRenderTestInstance::madeShaderModule(map<VkShaderStageFlagBits, Sh
     case TEST_TYPE_INPUT_ATTACHMENTS:
     case TEST_TYPE_POINT_SIZE:
     case TEST_TYPE_MULTISAMPLE:
+    case TEST_TYPE_MULTISAMPLE_RESOLVE:
     case TEST_TYPE_QUERIES:
     case TEST_TYPE_NON_PRECISE_QUERIES:
     case TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY:
@@ -1044,7 +1061,9 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline(
     };
 
     const VkSampleCountFlagBits sampleCountFlagBits =
-        (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex) ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
+        (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex || TEST_TYPE_MULTISAMPLE_RESOLVE == m_parameters.viewIndex) ?
+            VK_SAMPLE_COUNT_4_BIT :
+            VK_SAMPLE_COUNT_1_BIT;
     const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
         nullptr,                                                  // const void* pNext;
@@ -1259,22 +1278,57 @@ bool MultiViewRenderTestInstance::checkImage(tcu::ConstPixelBufferAccess &render
     const auto verifFormat                            = getVerificationFormat();
     const auto tcuVerifFormat                         = mapVkFormat(verifFormat);
     const MovePtr<tcu::Texture2DArray> referenceFrame = imageData();
-    const bool result = tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result",
-                                                   "Image comparison result", referenceFrame->getLevel(0),
-                                                   renderedFrame, tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR);
+    bool success                                      = true;
 
-    if (!result)
+    if (m_parameters.viewIndex == TEST_TYPE_MULTISAMPLE_RESOLVE)
+    {
+        // Do not check layers which have not been resolved by any subpass.
+        uint32_t allViews = 0u;
+        for (const auto viewMask : m_parameters.viewMasks)
+            allViews |= viewMask;
+
+        for (uint32_t layerNdx = 0u; layerNdx < m_parameters.extent.depth; ++layerNdx)
+        {
+            if ((allViews & (1u << layerNdx)) == 0u)
+                continue;
+
+            tcu::ConstPixelBufferAccess ref(tcuVerifFormat, m_parameters.extent.width, m_parameters.extent.height, 1u,
+                                            referenceFrame->getLevel(0).getPixelPtr(0, 0, layerNdx));
+            tcu::ConstPixelBufferAccess res(tcuVerifFormat, m_parameters.extent.width, m_parameters.extent.height, 1u,
+                                            renderedFrame.getPixelPtr(0, 0, layerNdx));
+
+            const auto setName = "Layer" + std::to_string(layerNdx);
+            const bool layerOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(), setName.c_str(), "",
+                                                            ref, res, tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR);
+
+            if (!layerOk)
+                success = false;
+        }
+    }
+    else
+    {
+        success = tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result",
+                                             referenceFrame->getLevel(0), renderedFrame, tcu::Vec4(0.01f),
+                                             tcu::COMPARE_LOG_ON_ERROR);
+    }
+
+    if (!success && m_parameters.viewIndex != TEST_TYPE_MULTISAMPLE_RESOLVE)
+    {
+        // Log layer by layer if not done before.
         for (uint32_t layerNdx = 0u; layerNdx < m_parameters.extent.depth; layerNdx++)
         {
             tcu::ConstPixelBufferAccess ref(tcuVerifFormat, m_parameters.extent.width, m_parameters.extent.height, 1u,
                                             referenceFrame->getLevel(0).getPixelPtr(0, 0, layerNdx));
-            tcu::ConstPixelBufferAccess dst(tcuVerifFormat, m_parameters.extent.width, m_parameters.extent.height, 1u,
+            tcu::ConstPixelBufferAccess res(tcuVerifFormat, m_parameters.extent.width, m_parameters.extent.height, 1u,
                                             renderedFrame.getPixelPtr(0, 0, layerNdx));
-            tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result", ref,
-                                       dst, tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR);
-        }
 
-    return result;
+            const auto setName = "Layer" + std::to_string(layerNdx);
+            tcu::floatThresholdCompare(m_context.getTestContext().getLog(), setName.c_str(), "", ref, res,
+                                       tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR);
+        }
+    }
+
+    return success;
 }
 
 const tcu::Vec4 MultiViewRenderTestInstance::getQuarterRefColor(const uint32_t quarterNdx, const int colorNdx,
@@ -1331,6 +1385,7 @@ const tcu::Vec4 MultiViewRenderTestInstance::getQuarterRefColor(const uint32_t q
 
     case TEST_TYPE_POINT_SIZE:
     case TEST_TYPE_MULTISAMPLE:
+    case TEST_TYPE_MULTISAMPLE_RESOLVE:
         if (background)
             return tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
         else
@@ -1637,7 +1692,8 @@ MovePtr<tcu::Texture2DArray> MultiViewRenderTestInstance::imageData(void) const
                                  pointSize, layerNdx, subpassQuarterNdx);
                 }
 
-                if (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex)
+                if (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex ||
+                    TEST_TYPE_MULTISAMPLE_RESOLVE == m_parameters.viewIndex)
                 {
                     const uint32_t vertexPerPrimitive = 3u;
                     const uint32_t unusedQuarterNdx   = 0u;
@@ -1676,7 +1732,7 @@ public:
 
 protected:
     tcu::TestStatus iterate(void) override;
-    void beforeRenderPass(void) override;
+    void beforeRenderPass(VkImage resolveImage = VK_NULL_HANDLE) override;
     void bindResources(void) override;
     void setImageData(VkImage image);
     de::SharedPtr<ImageAttachment> m_inputAttachment;
@@ -1752,8 +1808,11 @@ tcu::TestStatus MultiViewAttachmentsTestInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
-void MultiViewAttachmentsTestInstance::beforeRenderPass(void)
+void MultiViewAttachmentsTestInstance::beforeRenderPass(VkImage resolveImage)
 {
+    DE_ASSERT(resolveImage == VK_NULL_HANDLE);
+    DE_UNREF(resolveImage); // For release builds.
+
     const VkDescriptorPoolSize poolSize = {vk::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1u};
 
     const VkDescriptorPoolCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
@@ -2634,10 +2693,10 @@ void MultiViewPointSizeTestInstance::draw(const uint32_t subpassCount, VkRenderP
     submitCommandsAndWait(m_device, m_logicalDevice, m_queue, *m_cmdBuffer);
 }
 
-class MultiViewMultsampleTestInstance : public MultiViewRenderTestInstance
+class MultiViewMultisampleTestInstance : public MultiViewRenderTestInstance
 {
 public:
-    MultiViewMultsampleTestInstance(Context &context, const TestParameters &parameters);
+    MultiViewMultisampleTestInstance(Context &context, const TestParameters &parameters);
 
 protected:
     tcu::TestStatus iterate(void);
@@ -2651,7 +2710,7 @@ private:
     de::SharedPtr<ImageAttachment> m_resolveAttachment;
 };
 
-MultiViewMultsampleTestInstance::MultiViewMultsampleTestInstance(Context &context, const TestParameters &parameters)
+MultiViewMultisampleTestInstance::MultiViewMultisampleTestInstance(Context &context, const TestParameters &parameters)
     : MultiViewRenderTestInstance(context, parameters)
 {
     // Color attachment
@@ -2659,19 +2718,28 @@ MultiViewMultsampleTestInstance::MultiViewMultsampleTestInstance(Context &contex
         m_logicalDevice, m_device, m_allocator, m_parameters.extent, m_parameters.colorFormat, VK_SAMPLE_COUNT_1_BIT));
 }
 
-tcu::TestStatus MultiViewMultsampleTestInstance::iterate(void)
+tcu::TestStatus MultiViewMultisampleTestInstance::iterate(void)
 {
-    const uint32_t subpassCount = static_cast<uint32_t>(m_parameters.viewMasks.size());
+    const uint32_t subpassCount     = static_cast<uint32_t>(m_parameters.viewMasks.size());
+    const bool useResolveAttachment = (m_parameters.viewIndex == TEST_TYPE_MULTISAMPLE_RESOLVE);
     Move<VkRenderPass> renderPass;
     Move<VkFramebuffer> frameBuffer;
 
     // FrameBuffer & renderPass
     if (m_parameters.renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
     {
-        renderPass  = makeRenderPass(m_device, m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks,
-                                     m_parameters.renderingType, m_parameters.useGeneralLayout, VK_SAMPLE_COUNT_4_BIT);
-        frameBuffer = makeFramebuffer(m_device, m_logicalDevice, *renderPass, m_colorAttachment->getImageView(),
-                                      m_parameters.extent.width, m_parameters.extent.height);
+        renderPass = makeRenderPass(m_device, m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks,
+                                    m_parameters.renderingType, m_parameters.useGeneralLayout, VK_SAMPLE_COUNT_4_BIT,
+                                    VK_ATTACHMENT_LOAD_OP_CLEAR, VK_FORMAT_UNDEFINED, useResolveAttachment);
+
+        std::vector<VkImageView> fbViews;
+        fbViews.reserve(2u);
+        fbViews.push_back(m_colorAttachment->getImageView());
+        if (useResolveAttachment)
+            fbViews.push_back(m_resolveAttachment->getImageView());
+
+        frameBuffer = makeFramebuffer(m_device, m_logicalDevice, *renderPass, de::sizeU32(fbViews),
+                                      de::dataOrNull(fbViews), m_parameters.extent.width, m_parameters.extent.height);
     }
 
     // pipelineLayout
@@ -2715,7 +2783,7 @@ tcu::TestStatus MultiViewMultsampleTestInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
-void MultiViewMultsampleTestInstance::createVertexData(void)
+void MultiViewMultisampleTestInstance::createVertexData(void)
 {
     tcu::Vec4 color = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -2740,9 +2808,10 @@ void MultiViewMultsampleTestInstance::createVertexData(void)
     appendVertex(tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f), color);
 }
 
-void MultiViewMultsampleTestInstance::draw(const uint32_t subpassCount, VkRenderPass renderPass,
-                                           VkFramebuffer frameBuffer, vector<PipelineSp> &pipelines)
+void MultiViewMultisampleTestInstance::draw(const uint32_t subpassCount, VkRenderPass renderPass,
+                                            VkFramebuffer frameBuffer, vector<PipelineSp> &pipelines)
 {
+    const bool useResolveAttachment                 = (m_parameters.viewIndex == TEST_TYPE_MULTISAMPLE_RESOLVE);
     const VkRect2D renderArea                       = {{0, 0}, {m_parameters.extent.width, m_parameters.extent.height}};
     const VkClearValue renderPassClearValue         = makeClearValueColor(tcu::Vec4(0.0f));
     const VkBuffer vertexBuffers[]                  = {*m_vertexCoordBuffer, *m_vertexColorBuffer};
@@ -2765,7 +2834,7 @@ void MultiViewMultsampleTestInstance::draw(const uint32_t subpassCount, VkRender
 
     beginCommandBuffer(m_device, *m_cmdBuffer);
 
-    beforeRenderPass();
+    beforeRenderPass(useResolveAttachment ? m_resolveAttachment->getImage() : VK_NULL_HANDLE);
 
     if (!m_useDynamicRendering)
     {
@@ -2792,12 +2861,15 @@ void MultiViewMultsampleTestInstance::draw(const uint32_t subpassCount, VkRender
 #ifndef CTS_USES_VULKANSC
         if (m_useDynamicRendering)
         {
-            addRenderingSubpassDependencyIfRequired(subpassNdx);
+            const auto resolveImage     = (useResolveAttachment ? m_resolveAttachment->getImage() : VK_NULL_HANDLE);
+            const auto resolveImageView = (useResolveAttachment ? m_resolveAttachment->getImageView() : VK_NULL_HANDLE);
+
+            addRenderingSubpassDependencyIfRequired(subpassNdx, resolveImage);
 
             beginRendering(m_device, *m_cmdBuffer, m_colorAttachment->getImageView(), renderArea, renderPassClearValue,
                            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                            (subpassNdx ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_CLEAR), 0u,
-                           m_parameters.extent.depth, m_parameters.viewMasks[subpassNdx]);
+                           m_parameters.extent.depth, m_parameters.viewMasks[subpassNdx], resolveImageView);
         }
 #endif // CTS_USES_VULKANSC
 
@@ -2819,14 +2891,17 @@ void MultiViewMultsampleTestInstance::draw(const uint32_t subpassCount, VkRender
 
     afterRenderPass();
 
-    m_device.cmdResolveImage(*m_cmdBuffer, m_colorAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL,
-                             m_resolveAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL, 1u, &imageResolveRegion);
+    if (!useResolveAttachment)
+    {
+        m_device.cmdResolveImage(*m_cmdBuffer, m_colorAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL,
+                                 m_resolveAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL, 1u, &imageResolveRegion);
+    }
 
     VK_CHECK(m_device.endCommandBuffer(*m_cmdBuffer));
     submitCommandsAndWait(m_device, m_logicalDevice, m_queue, *m_cmdBuffer);
 }
 
-void MultiViewMultsampleTestInstance::afterRenderPass(void)
+void MultiViewMultisampleTestInstance::afterRenderPass(void)
 {
     const VkImageSubresourceRange subresourceRange = {
         VK_IMAGE_ASPECT_COLOR_BIT, //  VkImageAspectFlags aspectMask;
@@ -2841,8 +2916,13 @@ void MultiViewMultsampleTestInstance::afterRenderPass(void)
                  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-    imageBarrier(m_device, *m_cmdBuffer, m_resolveAttachment->getImage(), subresourceRange, VK_IMAGE_LAYOUT_UNDEFINED,
-                 VK_IMAGE_LAYOUT_GENERAL, 0u, VK_ACCESS_TRANSFER_WRITE_BIT,
+    const bool useResolveAttachment = (m_parameters.viewIndex == TEST_TYPE_MULTISAMPLE_RESOLVE);
+    const auto initialResolveLayout =
+        (useResolveAttachment ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED);
+    const auto srcAccess = static_cast<VkAccessFlags>(useResolveAttachment ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : 0);
+
+    imageBarrier(m_device, *m_cmdBuffer, m_resolveAttachment->getImage(), subresourceRange, initialResolveLayout,
+                 VK_IMAGE_LAYOUT_GENERAL, srcAccess, VK_ACCESS_TRANSFER_WRITE_BIT,
                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 }
 
@@ -3510,10 +3590,11 @@ protected:
 
     void draw(const uint32_t subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer,
               vector<PipelineSp> &pipelines) override;
-    void beforeRenderPass(void) override;
+    void beforeRenderPass(VkImage resolveImage = VK_NULL_HANDLE) override;
     void afterRenderPass(void) override;
 #ifndef CTS_USES_VULKANSC
-    void addRenderingSubpassDependencyIfRequired(uint32_t currentSubpassNdx) override;
+    void addRenderingSubpassDependencyIfRequired(uint32_t currentSubpassNdx,
+                                                 VkImage resolveImage = VK_NULL_HANDLE) override;
 #endif // CTS_USES_VULKANSC
     vector<VkImageView> makeAttachmentsVector(void);
     MovePtr<tcu::Texture2DArray> imageData(void) const override;
@@ -4047,9 +4128,10 @@ void MultiViewDepthStencilTestInstance::draw(const uint32_t subpassCount, VkRend
     submitCommandsAndWait(m_device, m_logicalDevice, m_queue, *m_cmdBuffer);
 }
 
-void MultiViewDepthStencilTestInstance::beforeRenderPass(void)
+void MultiViewDepthStencilTestInstance::beforeRenderPass(VkImage resolveImage)
 {
-    MultiViewRenderTestInstance::beforeRenderPass();
+    DE_ASSERT(resolveImage == VK_NULL_HANDLE);
+    MultiViewRenderTestInstance::beforeRenderPass(resolveImage);
 
     const VkImageSubresourceRange subresourceRange = {
         VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, //VkImageAspectFlags aspectMask;
@@ -4089,9 +4171,11 @@ void MultiViewDepthStencilTestInstance::beforeRenderPass(void)
 }
 
 #ifndef CTS_USES_VULKANSC
-void MultiViewDepthStencilTestInstance::addRenderingSubpassDependencyIfRequired(uint32_t currentSubpassNdx)
+void MultiViewDepthStencilTestInstance::addRenderingSubpassDependencyIfRequired(uint32_t currentSubpassNdx,
+                                                                                VkImage resolveImage)
 {
-    MultiViewRenderTestInstance::addRenderingSubpassDependencyIfRequired(currentSubpassNdx);
+    DE_ASSERT(resolveImage == VK_NULL_HANDLE);
+    MultiViewRenderTestInstance::addRenderingSubpassDependencyIfRequired(currentSubpassNdx, resolveImage);
 
     // Get the combined view mask since the last pipeline barrier.
     uint32_t viewMask = 0;
@@ -4464,8 +4548,8 @@ private:
         if (m_parameters.isPointSize())
             return new MultiViewPointSizeTestInstance(context, m_parameters);
 
-        if (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex)
-            return new MultiViewMultsampleTestInstance(context, m_parameters);
+        if (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex || TEST_TYPE_MULTISAMPLE_RESOLVE == m_parameters.viewIndex)
+            return new MultiViewMultisampleTestInstance(context, m_parameters);
 
         if (isQueryTestType(m_parameters.viewIndex))
             return new MultiViewQueriesTestInstance(context, m_parameters);
@@ -4914,37 +4998,38 @@ static std::vector<uint32_t> tripleDepthStencilMasks(std::vector<uint32_t> &base
 
 void multiViewRenderCreateTests(tcu::TestCaseGroup *group)
 {
-    const uint32_t testCaseCount            = 7u;
-    const string shaderName[TEST_TYPE_LAST] = {
-        "masks",
-        "vertex_shader",
-        "fragment_shader",
-        "geometry_shader",
-        "tessellation_shader",
-        "input_attachments",
-        "input_attachments_geometry",
-        "instanced",
-        "input_instance",
-        "draw_indirect",
-        "draw_indirect_indexed",
-        "draw_indexed",
-        "clear_attachments",
-        "secondary_cmd_buffer",
-        "secondary_cmd_buffer_geometry",
-        "point_size",
-        "multisample",
-        "queries",
-        "non_precise_queries",
-        "non_precise_queries_with_availability",
-        "readback_implicit_clear",
-        "readback_explicit_clear",
-        "depth",
-        "depth_without_fragment_shader",
-        "depth_different_ranges",
-        "stencil",
-        "view_mask_iteration",
-        "nested_cmd_buffer",
+    const std::map<TestType, string> testTypeNames{
+        std::make_pair(TEST_TYPE_VIEW_MASK, "masks"),
+        std::make_pair(TEST_TYPE_VIEW_INDEX_IN_VERTEX, "vertex_shader"),
+        std::make_pair(TEST_TYPE_VIEW_INDEX_IN_FRAGMENT, "fragment_shader"),
+        std::make_pair(TEST_TYPE_VIEW_INDEX_IN_GEOMETRY, "geometry_shader"),
+        std::make_pair(TEST_TYPE_VIEW_INDEX_IN_TESELLATION, "tessellation_shader"),
+        std::make_pair(TEST_TYPE_INPUT_ATTACHMENTS, "input_attachments"),
+        std::make_pair(TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY, "input_attachments_geometry"),
+        std::make_pair(TEST_TYPE_INSTANCED_RENDERING, "instanced"),
+        std::make_pair(TEST_TYPE_INPUT_RATE_INSTANCE, "input_instance"),
+        std::make_pair(TEST_TYPE_DRAW_INDIRECT, "draw_indirect"),
+        std::make_pair(TEST_TYPE_DRAW_INDIRECT_INDEXED, "draw_indirect_indexed"),
+        std::make_pair(TEST_TYPE_DRAW_INDEXED, "draw_indexed"),
+        std::make_pair(TEST_TYPE_CLEAR_ATTACHMENTS, "clear_attachments"),
+        std::make_pair(TEST_TYPE_SECONDARY_CMD_BUFFER, "secondary_cmd_buffer"),
+        std::make_pair(TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY, "secondary_cmd_buffer_geometry"),
+        std::make_pair(TEST_TYPE_POINT_SIZE, "point_size"),
+        std::make_pair(TEST_TYPE_MULTISAMPLE, "multisample"),
+        std::make_pair(TEST_TYPE_MULTISAMPLE_RESOLVE, "multisample_resolve"),
+        std::make_pair(TEST_TYPE_QUERIES, "queries"),
+        std::make_pair(TEST_TYPE_NON_PRECISE_QUERIES, "non_precise_queries"),
+        std::make_pair(TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY, "non_precise_queries_with_availability"),
+        std::make_pair(TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR, "readback_implicit_clear"),
+        std::make_pair(TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR, "readback_explicit_clear"),
+        std::make_pair(TEST_TYPE_DEPTH, "depth"),
+        std::make_pair(TEST_TYPE_DEPTH_WITHOUT_FRAGMENT_SHADER, "depth_without_fragment_shader"),
+        std::make_pair(TEST_TYPE_DEPTH_DIFFERENT_RANGES, "depth_different_ranges"),
+        std::make_pair(TEST_TYPE_STENCIL, "stencil"),
+        std::make_pair(TEST_TYPE_VIEW_MASK_ITERATION, "view_mask_iteration"),
+        std::make_pair(TEST_TYPE_NESTED_CMD_BUFFER, "nested_cmd_buffer"),
     };
+    const uint32_t testCaseCount             = 7u;
     const VkExtent3D extent3D[testCaseCount] = {
         {16u, 16u, 4u}, {64u, 64u, 8u}, {128u, 128u, 4u}, {32u, 32u, 5u},
         {64u, 64u, 6u}, {32u, 32u, 4u}, {16u, 16u, 10u},
@@ -5020,13 +5105,18 @@ void multiViewRenderCreateTests(tcu::TestCaseGroup *group)
 
         for (int testTypeNdx = TEST_TYPE_VIEW_MASK; testTypeNdx < TEST_TYPE_LAST; ++testTypeNdx)
         {
-            MovePtr<tcu::TestCaseGroup> groupShader(new tcu::TestCaseGroup(testCtx, shaderName[testTypeNdx].c_str()));
+            const auto testTypeName = testTypeNames.find(static_cast<TestType>(testTypeNdx));
+            DE_ASSERT(testTypeName != testTypeNames.end());
+
+            MovePtr<tcu::TestCaseGroup> groupShader(new tcu::TestCaseGroup(testCtx, testTypeName->second.c_str()));
             const TestType testType = static_cast<TestType>(testTypeNdx);
             const VkSampleCountFlagBits sampleCountFlags =
-                (testType == TEST_TYPE_MULTISAMPLE) ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
+                (testType == TEST_TYPE_MULTISAMPLE || testType == TEST_TYPE_MULTISAMPLE_RESOLVE) ?
+                    VK_SAMPLE_COUNT_4_BIT :
+                    VK_SAMPLE_COUNT_1_BIT;
             VkFormat colorFormat;
 
-            if (testType == TEST_TYPE_MULTISAMPLE)
+            if (testType == TEST_TYPE_MULTISAMPLE || testType == TEST_TYPE_MULTISAMPLE_RESOLVE)
                 colorFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
             else if (testType == TEST_TYPE_VIEW_MASK_ITERATION)
                 colorFormat = VK_FORMAT_R8G8B8A8_UINT;
@@ -5147,6 +5237,7 @@ void multiViewRenderCreateTests(tcu::TestCaseGroup *group)
             case TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY:
             case TEST_TYPE_POINT_SIZE:
             case TEST_TYPE_MULTISAMPLE:
+            case TEST_TYPE_MULTISAMPLE_RESOLVE:
             case TEST_TYPE_QUERIES:
             case TEST_TYPE_NON_PRECISE_QUERIES:
             case TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY:

@@ -466,6 +466,7 @@
 			<d>0xd8300010</d>
 			<d>0xd8310000</d>
 			<d>0xd8310010</d>
+			<d>0xac740001</d>
 		</device_list>
 		<t>dEQP-VK.glsl.texture_functions.texturegradoffset.mirrored_repeat.isampler2darray_fragment</t>
 		<t>dEQP-VK.glsl.texture_functions.texturegradoffset.mirrored_repeat.isampler2darray_vertex</t>
@@ -1002,6 +1003,7 @@
 			<d>0xb8a31020</d>
 			<d>0xc8700008</d>
 			<d>0xc8710008</d>
+			<d>0xac740001</d>
 		</device_list>
 		<t>dEQP-VK.glsl.loops.special.do_while_dynamic_iterations.dowhile_trap_vertex</t>
 	</waiver>

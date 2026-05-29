@@ -266,12 +266,12 @@ protected:
             for (int y = 0; y < GRID_SIZE + 1; ++y)
             {
                 // Calculate normalized coordinates
-                float normx = (((float)x) / GRID_SIZE);
-                float normy = (((float)y) / GRID_SIZE);
+                float normx = (((float)x) / (float)(GRID_SIZE));
+                float normy = (((float)y) / (float)(GRID_SIZE));
 
                 // Pseudo-random grid vertex coordinate with scale & bias
-                grid[x][y].x = normx * 2.f - 1.f + deFloatSin(normx * DE_PI * 13.f) * 0.3f / GRID_SIZE;
-                grid[x][y].y = normy * 2.f - 1.f + deFloatSin(normy * DE_PI * 13.f) * 0.3f / GRID_SIZE;
+                grid[x][y].x = normx * 2.f - 1.f + deFloatSin(normx * DE_PI * 13.f) * 0.3f / (float)(GRID_SIZE);
+                grid[x][y].y = normy * 2.f - 1.f + deFloatSin(normy * DE_PI * 13.f) * 0.3f / (float)(GRID_SIZE);
             }
 
         Triangle list[TRIANGLE_COUNT];

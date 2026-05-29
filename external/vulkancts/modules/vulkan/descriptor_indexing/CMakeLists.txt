@@ -9,6 +9,8 @@ set(DEQP_VK_DESCRIPTOR_INDEXING_SRCS
 	vktDescriptorSetsIndexingTests.cpp
 	vktDescriptorSetsIndexingTests.hpp
 	vktDescriptorSetsIndexingTestsUtils.cpp
+	vktDescriptorIndexingMiscTests.hpp
+	vktDescriptorIndexingMiscTests.cpp
 )
 
 add_library(deqp-vk-descriptor-indexing STATIC ${DEQP_VK_DESCRIPTOR_INDEXING_SRCS})

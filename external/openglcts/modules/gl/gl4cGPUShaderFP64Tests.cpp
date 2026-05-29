@@ -4256,7 +4256,6 @@ void GPUShaderFP64Test2::prepareUniformTypes()
 void GPUShaderFP64Test2::prepareUniformVerification(shaderStage shader_stage, const uniformTypeDetails &uniform_type,
                                                     std::string &out_source_code) const
 {
-    glw::GLuint element_ordinal  = 1;
     const glw::GLuint n_columns  = uniform_type.m_n_columns;
     const glw::GLuint n_rows     = uniform_type.m_n_rows;
     const glw::GLuint n_elements = n_columns * n_rows;
@@ -4284,7 +4283,7 @@ void GPUShaderFP64Test2::prepareUniformVerification(shaderStage shader_stage, co
               "        if ("
            << uniform_type.m_type_name << "(";
 
-    for (glw::GLuint element = 0; element < n_elements; ++element, ++element_ordinal)
+    for (glw::GLuint element = 0; element < n_elements; ++element)
     {
         stream << "i * (" << n_elements << ") + " << element + 1;
 

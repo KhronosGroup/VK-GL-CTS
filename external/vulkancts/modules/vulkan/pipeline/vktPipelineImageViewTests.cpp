@@ -55,7 +55,8 @@ class ImageViewTest : public vkt::TestCase
 public:
     ImageViewTest(tcu::TestContext &testContext, const char *name, PipelineConstructionType pipelineConstructionType,
                   VkImageViewType imageViewType, VkFormat imageFormat, float samplerLod,
-                  const VkComponentMapping &componentMapping, const VkImageSubresourceRange &subresourceRange);
+                  const VkComponentMapping &componentMapping, const VkImageSubresourceRange &subresourceRange,
+                  bool useCompute);
     virtual ~ImageViewTest(void)
     {
     }
@@ -82,12 +83,13 @@ private:
     float m_samplerLod;
     VkComponentMapping m_componentMapping;
     VkImageSubresourceRange m_subresourceRange;
+    bool m_useCompute;
 };
 
 ImageViewTest::ImageViewTest(tcu::TestContext &testContext, const char *name,
                              PipelineConstructionType pipelineConstructionType, VkImageViewType imageViewType,
                              VkFormat imageFormat, float samplerLod, const VkComponentMapping &componentMapping,
-                             const VkImageSubresourceRange &subresourceRange)
+                             const VkImageSubresourceRange &subresourceRange, bool useCompute)
 
     : vkt::TestCase(testContext, name)
     , m_pipelineConstructionType(pipelineConstructionType)
@@ -96,6 +98,7 @@ ImageViewTest::ImageViewTest(tcu::TestContext &testContext, const char *name,
     , m_samplerLod(samplerLod)
     , m_componentMapping(componentMapping)
     , m_subresourceRange(subresourceRange)
+    , m_useCompute(useCompute)
 {
 }
 
@@ -129,9 +132,10 @@ ImageSamplingInstanceParams ImageViewTest::getImageSamplingInstanceParams(
         false                                                                     // VkBool32 unnormalizedCoordinates;
     };
 
-    return ImageSamplingInstanceParams(m_pipelineConstructionType, renderSize, imageViewType, imageFormat, imageSize,
-                                       arraySize, componentMapping, subresourceRange, samplerParams, samplerLod,
-                                       vertices);
+    return ImageSamplingInstanceParams(
+        m_pipelineConstructionType, renderSize, imageViewType, imageFormat, imageSize, arraySize, componentMapping,
+        subresourceRange, samplerParams, samplerLod, vertices, false, vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+        ALLOCATION_KIND_SUBALLOCATED, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 0u, m_useCompute);
 }
 
 void ImageViewTest::checkSupport(Context &context) const
@@ -141,8 +145,16 @@ void ImageViewTest::checkSupport(Context &context) const
         checkSupportAstcFormat(context, mapVkCompressedFormat(m_imageFormat));
 #endif // CTS_USES_VULKANSC
 
-    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
-                                          m_pipelineConstructionType);
+    if (m_useCompute)
+    {
+        checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                      graphicsToComputeConstructionType(m_pipelineConstructionType));
+    }
+    else // graphics pipeline
+    {
+        checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                              m_pipelineConstructionType);
+    }
 
 #ifndef CTS_USES_VULKANSC
     if (m_imageFormat == VK_FORMAT_A8_UNORM_KHR || m_imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
@@ -166,8 +178,6 @@ tcu::Vec4 ImageViewTest::swizzle(tcu::Vec4 inputData, VkComponentMapping compone
 
 void ImageViewTest::initPrograms(SourceCollections &sourceCollections) const
 {
-    std::ostringstream vertexSrc;
-    std::ostringstream fragmentSrc;
     const char *texCoordSwizzle     = nullptr;
     const tcu::TextureFormat format = (isCompressedFormat(m_imageFormat)) ?
                                           tcu::getUncompressedFormat(mapVkCompressedFormat(m_imageFormat)) :
@@ -203,39 +213,99 @@ void ImageViewTest::initPrograms(SourceCollections &sourceCollections) const
         break;
     }
 
-    vertexSrc << "#version 440\n"
-              << "layout(location = 0) in vec4 position;\n"
-              << "layout(location = 1) in vec4 texCoords;\n"
-              << "layout(location = 0) out highp vec4 vtxTexCoords;\n"
-              << "out gl_PerVertex {\n"
-              << "    vec4 gl_Position;\n"
-              << "};\n"
-              << "void main (void)\n"
-              << "{\n"
-              << "    gl_Position = position;\n"
-              << "    vtxTexCoords = texCoords;\n"
-              << "}\n";
+    if (m_useCompute)
+    {
+        std::ostringstream compSrc;
+        uint32_t storageBindingIndex = 1u;
 
-    fragmentSrc << "#version 440\n"
+        compSrc << "#version 440\n"
+                << "layout(local_size_x = 1, local_size_y = 1) in;\n"
                 << "layout(set = 0, binding = 0) uniform highp " << getGlslSamplerType(format, m_imageViewType)
                 << " texSampler;\n"
-                << "layout(location = 0) in highp vec4 vtxTexCoords;\n"
-                << "layout(location = 0) out highp vec4 fragColor;\n"
+                << "layout(set = 0, binding = " << storageBindingIndex
+                << ", rgba8) uniform writeonly highp image2D outImage;\n"
+                << "struct Vertex {\n"
+                << "    vec4 position;\n"
+                << "    vec4 texCoord;\n"
+                << "};\n"
+                << "layout(std430, set = 0, binding = " << (storageBindingIndex + 1) << ") readonly buffer Vertices {\n"
+                << "    Vertex v[];\n"
+                << "};\n"
+
+                << "vec4 interpolateTexCoord(vec2 ndc) {\n"
+                << "    for (int i = 0; i < v.length(); i += 3) {\n"
+                << "        vec2 p0 = v[i].position.xy;\n"
+                << "        vec2 p1 = v[i+1].position.xy;\n"
+                << "        vec2 p2 = v[i+2].position.xy;\n"
+                << "        float area = (p1.x - p0.x) * (p2.y - p0.y) - (p1.y - p0.y) * (p2.x - p0.x);\n"
+                << "        if (abs(area) < 1e-5) continue;\n"
+                << "        float l0 = ((p2.x - p1.x) * (ndc.y - p1.y) - (p2.y - p1.y) * (ndc.x - p1.x)) / area;\n"
+                << "        float l1 = ((p0.x - p2.x) * (ndc.y - p2.y) - (p0.y - p2.y) * (ndc.x - p2.x)) / area;\n"
+                << "        float l2 = 1.0 - l0 - l1;\n"
+                << "        if (l0 >= -1e-5 && l1 >= -1e-5 && l2 >= -1e-5) {\n"
+                << "            return v[i].texCoord * l0 + v[i+1].texCoord * l1 + v[i+2].texCoord * l2;\n"
+                << "        }\n"
+                << "    }\n"
+                << "    return v[0].texCoord;\n"
+                << "}\n"
+
                 << "void main (void)\n"
                 << "{\n"
-                << "    fragColor = ";
+                << "    vec2 pixelCenter = vec2(gl_GlobalInvocationID.xy) + vec2(0.5);\n"
+                << "    vec2 ndc = (pixelCenter / vec2(gl_NumWorkGroups.xy)) * 2.0 - 1.0;\n"
+                << "    vec4 vtxTexCoords = interpolateTexCoord(ndc);\n"
+                << "    vec4 color;\n";
 
-    if (m_samplerLod > 0.0f)
-        fragmentSrc << "textureLod(texSampler, vtxTexCoords." << texCoordSwizzle << ", " << std::fixed << m_samplerLod
-                    << ")";
-    else
-        fragmentSrc << "texture(texSampler, vtxTexCoords." << texCoordSwizzle << ")" << std::fixed;
+        if (m_samplerLod > 0.0f)
+            compSrc << "    color = textureLod(texSampler, vtxTexCoords." << texCoordSwizzle << ", " << std::fixed
+                    << m_samplerLod << ");\n";
+        else
+            compSrc << "    color = texture(texSampler, vtxTexCoords." << texCoordSwizzle << ");\n";
 
-    fragmentSrc << " * vec4" << std::scientific << swizzledScale << " + vec4" << swizzledBias << ";\n"
+        compSrc << "    color = color * vec4" << std::scientific << swizzledScale << " + vec4" << swizzledBias << ";\n"
+                << "    imageStore(outImage, ivec2(gl_GlobalInvocationID.xy), color);\n"
                 << "}\n";
 
-    sourceCollections.glslSources.add("tex_vert") << glu::VertexSource(vertexSrc.str());
-    sourceCollections.glslSources.add("tex_frag") << glu::FragmentSource(fragmentSrc.str());
+        sourceCollections.glslSources.add("tex_comp") << glu::ComputeSource(compSrc.str());
+    }
+    else // graphics pipeline
+    {
+        std::ostringstream vertexSrc;
+        vertexSrc << "#version 440\n"
+                  << "layout(location = 0) in vec4 position;\n"
+                  << "layout(location = 1) in vec4 texCoords;\n"
+                  << "layout(location = 0) out highp vec4 vtxTexCoords;\n"
+                  << "out gl_PerVertex {\n"
+                  << "    vec4 gl_Position;\n"
+                  << "};\n"
+                  << "void main (void)\n"
+                  << "{\n"
+                  << "    gl_Position = position;\n"
+                  << "    vtxTexCoords = texCoords;\n"
+                  << "}\n";
+
+        std::ostringstream fragmentSrc;
+        fragmentSrc << "#version 440\n"
+                    << "layout(set = 0, binding = 0) uniform highp " << getGlslSamplerType(format, m_imageViewType)
+                    << " texSampler;\n"
+                    << "layout(location = 0) in highp vec4 vtxTexCoords;\n"
+                    << "layout(location = 0) out highp vec4 fragColor;\n"
+                    << "void main (void)\n"
+                    << "{\n"
+                    << "    fragColor = ";
+
+        if (m_samplerLod > 0.0f)
+            fragmentSrc << "textureLod(texSampler, vtxTexCoords." << texCoordSwizzle << ", " << std::fixed
+                        << m_samplerLod << ")";
+        else
+            fragmentSrc << "texture(texSampler, vtxTexCoords." << texCoordSwizzle << ")" << std::fixed;
+
+        fragmentSrc << " * vec4" << std::scientific << swizzledScale << " + vec4" << swizzledBias << ";\n"
+                    << "}\n";
+
+        sourceCollections.glslSources.add("tex_vert") << glu::VertexSource(vertexSrc.str());
+        sourceCollections.glslSources.add("tex_frag") << glu::FragmentSource(fragmentSrc.str());
+    }
 }
 
 TestInstance *ImageViewTest::createInstance(Context &context) const
@@ -371,16 +441,20 @@ static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestCont
 
     de::MovePtr<tcu::TestCaseGroup> rangeTests(new tcu::TestCaseGroup(testCtx, "subresource_range"));
 
-#define ADD_SUBRESOURCE_RANGE_TESTS(TEST_CASES)                                                              \
-    do                                                                                                       \
-    {                                                                                                        \
-        for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(TEST_CASES); configNdx++)                     \
-        {                                                                                                    \
-            const TestCaseConfig config = (TEST_CASES)[configNdx];                                           \
-            rangeTests->addChild(new ImageViewTest(testCtx, config.name, pipelineConstructionType, viewType, \
-                                                   imageFormat, config.samplerLod, componentMapping,         \
-                                                   config.subresourceRange));                                \
-        }                                                                                                    \
+#define ADD_SUBRESOURCE_RANGE_TESTS(TEST_CASES)                                                                      \
+    do                                                                                                               \
+    {                                                                                                                \
+        for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(TEST_CASES); configNdx++)                             \
+        {                                                                                                            \
+            const TestCaseConfig config = (TEST_CASES)[configNdx];                                                   \
+            rangeTests->addChild(new ImageViewTest(testCtx, config.name, pipelineConstructionType, viewType,         \
+                                                   imageFormat, config.samplerLod, componentMapping,                 \
+                                                   config.subresourceRange, false));                                 \
+            std::string computeName = std::string(config.name) + "_compute";                                         \
+            rangeTests->addChild(new ImageViewTest(testCtx, computeName.c_str(), pipelineConstructionType, viewType, \
+                                                   imageFormat, config.samplerLod, componentMapping,                 \
+                                                   config.subresourceRange, true));                                  \
+        }                                                                                                            \
     } while (false)
 
     if (viewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY || viewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY)
@@ -668,9 +742,14 @@ static de::MovePtr<tcu::TestCaseGroup> createComponentSwizzleTests(tcu::TestCont
 
     for (size_t mappingNdx = 0; mappingNdx < componentMappings.size(); mappingNdx++)
     {
-        swizzleTests->addChild(new ImageViewTest(
-            testCtx, getComponentMappingCaseName(componentMappings[mappingNdx]).c_str(), pipelineConstructionType,
-            viewType, imageFormat, 0.0f, componentMappings[mappingNdx], subresourceRange));
+        std::string baseName = getComponentMappingCaseName(componentMappings[mappingNdx]);
+        swizzleTests->addChild(new ImageViewTest(testCtx, baseName.c_str(), pipelineConstructionType, viewType,
+                                                 imageFormat, 0.0f, componentMappings[mappingNdx], subresourceRange,
+                                                 false));
+
+        swizzleTests->addChild(new ImageViewTest(testCtx, (baseName + "_compute").c_str(), pipelineConstructionType,
+                                                 viewType, imageFormat, 0.0f, componentMappings[mappingNdx],
+                                                 subresourceRange, true));
     }
 
     return swizzleTests;

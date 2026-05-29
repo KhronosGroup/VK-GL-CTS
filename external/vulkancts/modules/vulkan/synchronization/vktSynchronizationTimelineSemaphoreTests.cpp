@@ -28,7 +28,6 @@
 #include "vktSynchronizationOperationResources.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktSynchronizationUtil.hpp"
-#include "vktExternalMemoryUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
 #include "vkBarrierUtil.hpp"
 
@@ -58,9 +57,7 @@
 #include <algorithm>
 #include <sstream>
 
-namespace vkt
-{
-namespace synchronization
+namespace vkt::synchronization
 {
 namespace
 {
@@ -1099,6 +1096,9 @@ public:
         context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
         if (m_type == SynchronizationType::SYNCHRONIZATION2)
             context.requireDeviceFunctionality("VK_KHR_synchronization2");
+
+        m_writeOp->checkSupport(context);
+        m_readOp->checkSupport(context);
     }
 
     void initPrograms(SourceCollections &programCollection) const override
@@ -1387,9 +1387,7 @@ Move<VkDevice> createTestDevice(Context &context, const VkInstance &instance, co
         queueCreateInfo.pQueuePriorities = &(*queuePriorities.back().get())[0];
     }
 
-    const auto validation = context.getTestContext().getCommandLine().isValidationEnabled();
-
-    return createCustomDevice(validation, context.getPlatformInterface(), instance, vki, physicalDevice, &deviceInfo);
+    return createCustomDevice(context.getPlatformInterface(), instance, vki, physicalDevice, &deviceInfo);
 }
 
 // Class to wrap a singleton instance and device
@@ -1763,6 +1761,12 @@ public:
         , m_readOp(makeOperationSupport(readOp, resourceDesc).release())
         , m_pipelineCacheData(pipelineCacheData)
     {
+        for (auto copyOp : s_copyOps)
+        {
+            if (isResourceSupported(copyOp, m_resourceDesc))
+                m_copyOpVec.push_back(
+                    de::SharedPtr<OperationSupport>(makeOperationSupport(copyOp, m_resourceDesc).release()));
+        }
     }
 
     void checkSupport(Context &context) const override
@@ -1770,6 +1774,12 @@ public:
         context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
         if (m_type == SynchronizationType::SYNCHRONIZATION2)
             context.requireDeviceFunctionality("VK_KHR_synchronization2");
+
+        m_writeOp->checkSupport(context);
+        m_readOp->checkSupport(context);
+
+        for (auto &copyOp : m_copyOpVec)
+            copyOp->checkSupport(context);
     }
 
     void initPrograms(SourceCollections &programCollection) const override
@@ -1777,11 +1787,8 @@ public:
         m_writeOp->initPrograms(programCollection);
         m_readOp->initPrograms(programCollection);
 
-        for (uint32_t copyOpNdx = 0; copyOpNdx < DE_LENGTH_OF_ARRAY(s_copyOps); copyOpNdx++)
-        {
-            if (isResourceSupported(s_copyOps[copyOpNdx], m_resourceDesc))
-                makeOperationSupport(s_copyOps[copyOpNdx], m_resourceDesc)->initPrograms(programCollection);
-        }
+        for (auto copyOp : m_copyOpVec)
+            copyOp->initPrograms(programCollection);
     }
 
     TestInstance *createInstance(Context &context) const override
@@ -1795,6 +1802,7 @@ private:
     const ResourceDescription m_resourceDesc;
     const SharedPtr<OperationSupport> m_writeOp;
     const SharedPtr<OperationSupport> m_readOp;
+    std::vector<SharedPtr<OperationSupport>> m_copyOpVec;
     PipelineCacheData &m_pipelineCacheData;
 };
 
@@ -1894,6 +1902,7 @@ public:
     void deinit(void)
     {
         cleanupGroup();
+        tcu::TestCaseGroup::deinit();
     }
 
 private:
@@ -2084,9 +2093,7 @@ public:
         }
     }
 
-    ~OneToNTestInstance()
-    {
-    }
+    ~OneToNTestInstance() = default;
 
     void recordBarrier(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, const QueueTimelineIteration &inIter,
                        const QueueTimelineIteration &outIter, const Resource &resource, bool originalLayout)
@@ -2300,6 +2307,12 @@ public:
         , m_readOp(makeOperationSupport(readOp, resourceDesc).release())
         , m_pipelineCacheData(pipelineCacheData)
     {
+        for (auto copyOp : s_copyOps)
+        {
+            if (isResourceSupported(copyOp, m_resourceDesc))
+                m_copyOpVec.push_back(
+                    de::SharedPtr<OperationSupport>(makeOperationSupport(copyOp, m_resourceDesc).release()));
+        }
     }
 
     void checkSupport(Context &context) const override
@@ -2307,6 +2320,12 @@ public:
         context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
         if (m_type == SynchronizationType::SYNCHRONIZATION2)
             context.requireDeviceFunctionality("VK_KHR_synchronization2");
+
+        m_writeOp->checkSupport(context);
+        m_readOp->checkSupport(context);
+
+        for (auto &copyOp : m_copyOpVec)
+            copyOp->checkSupport(context);
     }
 
     void initPrograms(SourceCollections &programCollection) const override
@@ -2314,11 +2333,8 @@ public:
         m_writeOp->initPrograms(programCollection);
         m_readOp->initPrograms(programCollection);
 
-        for (uint32_t copyOpNdx = 0; copyOpNdx < DE_LENGTH_OF_ARRAY(s_copyOps); copyOpNdx++)
-        {
-            if (isResourceSupported(s_copyOps[copyOpNdx], m_resourceDesc))
-                makeOperationSupport(s_copyOps[copyOpNdx], m_resourceDesc)->initPrograms(programCollection);
-        }
+        for (auto &copyOp : m_copyOpVec)
+            copyOp->initPrograms(programCollection);
     }
 
     TestInstance *createInstance(Context &context) const override
@@ -2331,6 +2347,7 @@ private:
     const ResourceDescription m_resourceDesc;
     const SharedPtr<OperationSupport> m_writeOp;
     const SharedPtr<OperationSupport> m_readOp;
+    std::vector<SharedPtr<OperationSupport>> m_copyOpVec;
     PipelineCacheData &m_pipelineCacheData;
 };
 
@@ -2429,6 +2446,7 @@ public:
     void deinit(void)
     {
         cleanupGroup();
+        tcu::TestCaseGroup::deinit();
     }
 
 private:
@@ -2951,5 +2969,4 @@ tcu::TestCaseGroup *createSynchronization2TimelineSemaphoreTests(tcu::TestContex
     return basicTests.release();
 }
 
-} // namespace synchronization
-} // namespace vkt
+} // namespace vkt::synchronization

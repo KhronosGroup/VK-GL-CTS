@@ -33,9 +33,7 @@
 #include "vkResourceInterface.hpp"
 #include <string>
 
-namespace vkt
-{
-namespace synchronization
+namespace vkt::synchronization
 {
 
 enum OperationName
@@ -285,9 +283,7 @@ public:
     Operation(const bool specializedAccess) : m_specializedAccess(specializedAccess)
     {
     }
-    virtual ~Operation(void)
-    {
-    }
+    virtual ~Operation(void) = default;
 
     virtual void recordCommands(const vk::VkCommandBuffer cmdBuffer) = 0; // commands that carry out this operation
     virtual SyncInfo getInSyncInfo(void) const  = 0; // data required to properly synchronize this operation
@@ -314,13 +310,14 @@ public:
     OperationSupport(const bool specializedAccess) : m_specializedAccess(specializedAccess)
     {
     }
-    virtual ~OperationSupport(void)
-    {
-    }
+    virtual ~OperationSupport(void) = default;
 
     virtual uint32_t getInResourceUsageFlags(void) const                          = 0;
     virtual uint32_t getOutResourceUsageFlags(void) const                         = 0;
     virtual vk::VkQueueFlags getQueueFlags(const OperationContext &context) const = 0;
+    virtual void checkSupport(Context &) const
+    {
+    }
     virtual void initPrograms(vk::SourceCollections &) const
     {
     } //!< empty by default
@@ -350,7 +347,6 @@ std::string getOperationName(const OperationName opName);
 bool isStageSupported(const vk::VkShaderStageFlagBits stage, const vk::VkQueueFlags queueFlags);
 bool opCanRunOnCompute(OperationName opName);
 
-} // namespace synchronization
-} // namespace vkt
+} // namespace vkt::synchronization
 
 #endif // _VKTSYNCHRONIZATIONOPERATION_HPP

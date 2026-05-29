@@ -2092,14 +2092,15 @@ const ExprP<Void> &voidP(void)
  * function parameter. Currently the maximum supported number of parameters is
  * four.
  *//*--------------------------------------------------------------------*/
-template <typename T0 = Void, typename T1 = Void, typename T2 = Void, typename T3 = Void>
-struct Tuple4
+template <typename T0 = Void, typename T1 = Void, typename T2 = Void, typename T3 = Void, typename T4 = Void>
+struct Tuple5
 {
-    explicit Tuple4(const T0 e0 = T0(), const T1 e1 = T1(), const T2 e2 = T2(), const T3 e3 = T3())
+    explicit Tuple5(const T0 e0 = T0(), const T1 e1 = T1(), const T2 e2 = T2(), const T3 e3 = T3(), const T4 e4 = T4())
         : a(e0)
         , b(e1)
         , c(e2)
         , d(e3)
+        , e(e4)
     {
     }
 
@@ -2107,6 +2108,7 @@ struct Tuple4
     T1 b;
     T2 c;
     T3 d;
+    T4 e;
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -2118,7 +2120,8 @@ struct Tuple4
  * of a bunch of parameter types and a return type.
  *
  *//*--------------------------------------------------------------------*/
-template <typename R, typename P0 = Void, typename P1 = Void, typename P2 = Void, typename P3 = Void>
+template <typename R, typename P0 = Void, typename P1 = Void, typename P2 = Void, typename P3 = Void,
+          typename P4 = Void>
 struct Signature
 {
     typedef R Ret;
@@ -2126,15 +2129,17 @@ struct Signature
     typedef P1 Arg1;
     typedef P2 Arg2;
     typedef P3 Arg3;
+    typedef P4 Arg4;
     typedef typename Traits<Ret>::IVal IRet;
     typedef typename Traits<Arg0>::IVal IArg0;
     typedef typename Traits<Arg1>::IVal IArg1;
     typedef typename Traits<Arg2>::IVal IArg2;
     typedef typename Traits<Arg3>::IVal IArg3;
+    typedef typename Traits<Arg4>::IVal IArg4;
 
-    typedef Tuple4<const Arg0 &, const Arg1 &, const Arg2 &, const Arg3 &> Args;
-    typedef Tuple4<const IArg0 &, const IArg1 &, const IArg2 &, const IArg3 &> IArgs;
-    typedef Tuple4<ExprP<Arg0>, ExprP<Arg1>, ExprP<Arg2>, ExprP<Arg3>> ArgExprs;
+    typedef Tuple5<const Arg0 &, const Arg1 &, const Arg2 &, const Arg3 &, const Arg4 &> Args;
+    typedef Tuple5<const IArg0 &, const IArg1 &, const IArg2 &, const IArg3 &, const IArg4 &> IArgs;
+    typedef Tuple5<ExprP<Arg0>, ExprP<Arg1>, ExprP<Arg2>, ExprP<Arg3>, ExprP<Arg4>> ArgExprs;
 
     typedef Void Ret1;
     typedef typename Traits<Void>::IVal IRet1;
@@ -2144,8 +2149,9 @@ struct Signature
         RESULT_COUNT = 1
     };
 };
-template <typename R0, typename R1, typename P0 = Void, typename P1 = Void, typename P2 = Void, typename P3 = Void>
-struct Signature2 : public Signature<R0, P0, P1, P2, P3>
+template <typename R0, typename R1, typename P0 = Void, typename P1 = Void, typename P2 = Void, typename P3 = Void,
+          typename P4 = Void>
+struct Signature2 : public Signature<R0, P0, P1, P2, P3, P4>
 {
     typedef R1 Ret1;
     typedef typename Traits<Ret1>::IVal IRet1;
@@ -2217,7 +2223,7 @@ protected:
     virtual void doGetUsedFuncs(FuncSet &dst) const   = 0;
 };
 
-typedef Tuple4<string, string, string, string> ParamNames;
+typedef Tuple5<string, string, string, string> ParamNames;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Function objects.
@@ -2240,12 +2246,14 @@ public:
     typedef typename Sig::Arg1 Arg1;
     typedef typename Sig::Arg2 Arg2;
     typedef typename Sig::Arg3 Arg3;
+    typedef typename Sig::Arg4 Arg4;
     typedef typename Sig::IRet IRet;
     typedef typename SigResult1<Sig_>::IRet1 IRet1;
     typedef typename Sig::IArg0 IArg0;
     typedef typename Sig::IArg1 IArg1;
     typedef typename Sig::IArg2 IArg2;
     typedef typename Sig::IArg3 IArg3;
+    typedef typename Sig::IArg4 IArg4;
     typedef typename Sig::Args Args;
     typedef typename Sig::IArgs IArgs;
     typedef typename Sig::ArgExprs ArgExprs;
@@ -2268,15 +2276,15 @@ public:
     }
 
     ApplyResult apply(const EvalContext &ctx, const IArg0 &arg0 = IArg0(), const IArg1 &arg1 = IArg1(),
-                      const IArg2 &arg2 = IArg2(), const IArg3 &arg3 = IArg3()) const
+                      const IArg2 &arg2 = IArg2(), const IArg3 &arg3 = IArg3(), const IArg4 &arg4 = IArg4()) const
     {
-        return this->applyArgs(ctx, IArgs(arg0, arg1, arg2, arg3));
+        return this->applyArgs(ctx, IArgs(arg0, arg1, arg2, arg3, arg4));
     }
 
     ApplyResult fail(const EvalContext &ctx, const IArg0 &arg0 = IArg0(), const IArg1 &arg1 = IArg1(),
-                     const IArg2 &arg2 = IArg2(), const IArg3 &arg3 = IArg3()) const
+                     const IArg2 &arg2 = IArg2(), const IArg3 &arg3 = IArg3(), const IArg4 &arg4 = IArg4()) const
     {
-        return this->doFail(ctx, IArgs(arg0, arg1, arg2, arg3));
+        return this->doFail(ctx, IArgs(arg0, arg1, arg2, arg3, arg4));
     }
 
     ApplyResult applyArgs(const EvalContext &ctx, const IArgs &args) const
@@ -2339,15 +2347,16 @@ public:
     typedef typename Sig::Arg1 Arg1;
     typedef typename Sig::Arg2 Arg2;
     typedef typename Sig::Arg3 Arg3;
+    typedef typename Sig::Arg4 Arg4;
     typedef typename Expr<Ret>::Val Val;
     typedef typename Expr<Ret>::IVal IVal;
     typedef Func<Sig> ApplyFunc;
     typedef typename ApplyFunc::ArgExprs ArgExprs;
 
     Apply(const ApplyFunc &func, const ExprP<Arg0> &arg0 = voidP(), const ExprP<Arg1> &arg1 = voidP(),
-          const ExprP<Arg2> &arg2 = voidP(), const ExprP<Arg3> &arg3 = voidP())
+          const ExprP<Arg2> &arg2 = voidP(), const ExprP<Arg3> &arg3 = voidP(), const ExprP<Arg4> &arg4 = voidP())
         : m_func(func)
-        , m_args(arg0, arg1, arg2, arg3)
+        , m_args(arg0, arg1, arg2, arg3, arg4)
     {
     }
 
@@ -2363,13 +2372,14 @@ protected:
         args.push_back(m_args.b.get());
         args.push_back(m_args.c.get());
         args.push_back(m_args.d.get());
+        args.push_back(m_args.e.get());
         m_func.print(os, args);
     }
 
     IVal doEvaluate(const EvalContext &ctx) const
     {
         return m_func.apply(ctx, m_args.a->evaluate(ctx), m_args.b->evaluate(ctx), m_args.c->evaluate(ctx),
-                            m_args.d->evaluate(ctx));
+                            m_args.d->evaluate(ctx), m_args.e->evaluate(ctx));
     }
 
     void doGetUsedFuncs(FuncSet &dst) const
@@ -2379,6 +2389,7 @@ protected:
         m_args.b->getUsedFuncs(dst);
         m_args.c->getUsedFuncs(dst);
         m_args.d->getUsedFuncs(dst);
+        m_args.e->getUsedFuncs(dst);
     }
 
     const ApplyFunc &m_func;
@@ -2427,9 +2438,10 @@ template <typename Sig>
 ExprP<typename Sig::Ret> createApply(const Func<Sig> &func, const ExprP<typename Sig::Arg0> &arg0 = voidP(),
                                      const ExprP<typename Sig::Arg1> &arg1 = voidP(),
                                      const ExprP<typename Sig::Arg2> &arg2 = voidP(),
-                                     const ExprP<typename Sig::Arg3> &arg3 = voidP())
+                                     const ExprP<typename Sig::Arg3> &arg3 = voidP(),
+                                     const ExprP<typename Sig::Arg4> &arg4 = voidP())
 {
-    return exprP(new Apply<Sig>(func, arg0, arg1, arg2, arg3));
+    return exprP(new Apply<Sig>(func, arg0, arg1, arg2, arg3, arg4));
 }
 
 template <typename Sig>
@@ -2443,9 +2455,10 @@ ExprP<typename Sig::Ret> Func<Sig>::operator()(const ExprP<typename Sig::Arg0> &
 
 template <typename F>
 ExprP<typename F::Ret> app(const ExprP<typename F::Arg0> &arg0 = voidP(), const ExprP<typename F::Arg1> &arg1 = voidP(),
-                           const ExprP<typename F::Arg2> &arg2 = voidP(), const ExprP<typename F::Arg3> &arg3 = voidP())
+                           const ExprP<typename F::Arg2> &arg2 = voidP(), const ExprP<typename F::Arg3> &arg3 = voidP(),
+                           const ExprP<typename F::Arg4> &arg4 = voidP())
 {
-    return createApply(instance<F>(), arg0, arg1, arg2, arg3);
+    return createApply(instance<F>(), arg0, arg1, arg2, arg3, arg4);
 }
 
 template <typename F>
@@ -3709,6 +3722,13 @@ ExprP<double> log(const ExprP<double> &x)
         return app<CLASS>(arg0, arg1, arg2, arg3);                                                               \
     }
 
+#define DEFINE_CONSTRUCTOR5(CLASS, TRET, NAME, T0, T1, T2, T3, T4)                                               \
+    ExprP<TRET> NAME(const ExprP<T0> &arg0, const ExprP<T1> &arg1, const ExprP<T2> &arg2, const ExprP<T3> &arg3, \
+                     const ExprP<T4> &arg4)                                                                      \
+    {                                                                                                            \
+        return app<CLASS>(arg0, arg1, arg2, arg3, arg4);                                                         \
+    }
+
 typedef InverseSqrt<Signature<deFloat16, deFloat16>> InverseSqrt16Bit;
 typedef InverseSqrt<Signature<float, float>> InverseSqrt32Bit;
 typedef InverseSqrt<Signature<double, double>> InverseSqrt64Bit;
@@ -4213,6 +4233,25 @@ protected:
     }
 };
 
+template <typename T>
+class GenVec<T, 5> : public PrimitiveFunc<Signature<Vector<T, 5>, T, T, T, T, T>>
+{
+public:
+    typedef typename GenVec::IRet IRet;
+    typedef typename GenVec::IArgs IArgs;
+
+    string getName(void) const
+    {
+        return vecName<T, 5>();
+    }
+
+protected:
+    IRet doApply(const EvalContext &, const IArgs &iargs) const
+    {
+        return IRet(iargs.a, iargs.b, iargs.c, iargs.d, iargs.e);
+    }
+};
+
 template <typename T, int Rows, int Columns>
 class GenMat;
 
@@ -4488,6 +4527,15 @@ struct GenXType<T, 4>
     }
 };
 
+template <typename T>
+struct GenXType<T, 5>
+{
+    static ExprP<Vector<T, 5>> genXType(const ExprP<T> &x)
+    {
+        return app<GenVec<T, 5>>(x, x, x, x, x);
+    }
+};
+
 //! Returns an expression of vector of size `Size` (or scalar if Size == 1),
 //! with each element initialized with the expression `x`.
 template <typename T, int Size>
@@ -4522,6 +4570,9 @@ DEFINE_CONSTRUCTOR4(FloatVec4_16bit, Vec4_16Bit, vec4, deFloat16, deFloat16, deF
 
 typedef GenVec<double, 4> DoubleVec4;
 DEFINE_CONSTRUCTOR4(DoubleVec4, Vec4_64Bit, vec4, double, double, double, double)
+
+typedef GenVec<float, 5> FloatVec5;
+DEFINE_CONSTRUCTOR5(FloatVec5, Vec5, vec5, float, float, float, float, float)
 
 template <class T>
 const ExprP<T> getConstZero(void);
@@ -6356,6 +6407,9 @@ protected:
 
         switch (Size - 1)
         {
+        case 4:
+            access.template set<5>(m_func.apply(ctx, iargs.a[4], iargs.b[4], iargs.c[4], iargs.d[4]));
+            // Fallthrough
         case 3:
             access.template set<4>(m_func.apply(ctx, iargs.a[3], iargs.b[3], iargs.c[3], iargs.d[3]));
             // Fallthrough
@@ -6380,6 +6434,9 @@ protected:
 
         switch (Size - 1)
         {
+        case 4:
+            access.template set<5>(m_func.fail(ctx, iargs.a[4], iargs.b[4], iargs.c[4], iargs.d[4]));
+            // Fallthrough
         case 3:
             access.template set<4>(m_func.fail(ctx, iargs.a[3], iargs.b[3], iargs.c[3], iargs.d[3]));
             // Fallthrough
@@ -6469,11 +6526,12 @@ template <typename Sig>
 struct GenFuncs
 {
     GenFuncs(const Func<Sig> &func_, const GenFunc<Sig, 2> &func2_, const GenFunc<Sig, 3> &func3_,
-             const GenFunc<Sig, 4> &func4_)
+             const GenFunc<Sig, 4> &func4_, const GenFunc<Sig, 5> &func5_)
         : func(func_)
         , func2(func2_)
         , func3(func3_)
         , func4(func4_)
+        , func5(func5_)
     {
     }
 
@@ -6481,13 +6539,14 @@ struct GenFuncs
     const GenFunc<Sig, 2> &func2;
     const GenFunc<Sig, 3> &func3;
     const GenFunc<Sig, 4> &func4;
+    const GenFunc<Sig, 5> &func5;
 };
 
 template <typename F>
 GenFuncs<typename F::Sig> makeVectorizedFuncs(void)
 {
     return GenFuncs<typename F::Sig>(instance<F>(), instance<VectorizedFunc<F, 2>>(), instance<VectorizedFunc<F, 3>>(),
-                                     instance<VectorizedFunc<F, 4>>());
+                                     instance<VectorizedFunc<F, 4>>(), instance<VectorizedFunc<F, 5>>());
 }
 
 template <typename T, int Size>
@@ -7178,13 +7237,14 @@ struct CaseContext
     bool isFloat64b;
 };
 
-template <typename In0_ = Void, typename In1_ = Void, typename In2_ = Void, typename In3_ = Void>
+template <typename In0_ = Void, typename In1_ = Void, typename In2_ = Void, typename In3_ = Void, typename In4_ = Void>
 struct InTypes
 {
     typedef In0_ In0;
     typedef In1_ In1;
     typedef In2_ In2;
     typedef In3_ In3;
+    typedef In4_ In4;
 };
 
 template <typename In>
@@ -7194,7 +7254,8 @@ int numInputs(void)
             !isTypeValid<typename In::In1>() ? 1 :
             !isTypeValid<typename In::In2>() ? 2 :
             !isTypeValid<typename In::In3>() ? 3 :
-                                               4);
+            !isTypeValid<typename In::In4>() ? 4 :
+                                               5);
 }
 
 template <typename Out0_, typename Out1_ = Void>
@@ -7645,7 +7706,7 @@ protected:
         m_spec.packFloat16Bit = context.isPackFloat16b;
     }
 
-    virtual void initPrograms(vk::SourceCollections &programCollection) const
+    virtual void initPrograms(vk::SourceCollections &programCollection) const override
     {
         generateSources(m_ctx.shaderType, m_spec, programCollection);
     }
@@ -7654,6 +7715,8 @@ protected:
     {
         return m_ctx.floatFormat;
     }
+
+    void checkSupport(Context &context) const override;
 
     typedef std::valarray<std::reference_wrapper<const StatementP>> StatementArray;
     template <typename In, typename Out>
@@ -7669,6 +7732,17 @@ protected:
     const string m_extension;
     ShaderSpec m_spec;
 };
+
+void PrecisionCase::checkSupport(Context &context) const
+{
+    DE_UNREF(context);
+#ifndef CTS_USES_VULKANSC
+    if (strstr(getName(), "vec5") != 0 && !context.getShaderLongVectorFeaturesEXT().longVector)
+    {
+        TCU_THROW(NotSupportedError, "longVector not supported");
+    }
+#endif
+}
 
 template <typename In, typename Out>
 void PrecisionCase::testStatement(const Variables<In, Out> &variables, const StatementArray &stmts,
@@ -7715,6 +7789,8 @@ void PrecisionCase::testStatement(const Variables<In, Out> &variables, const Sta
 
     if (inputs16Bit || m_spec.packFloat16Bit)
         m_spec.globalDeclarations += "#extension GL_EXT_shader_explicit_arithmetic_types: require\n";
+
+    m_spec.globalDeclarations += "#extension GL_EXT_long_vector : enable\n";
 
     m_spec.outputs.resize(outCount);
 
@@ -7808,11 +7884,11 @@ struct InputLess<Matrix<T, Rows, Cols>>
 };
 
 template <typename In>
-struct InTuple : public Tuple4<typename In::In0, typename In::In1, typename In::In2, typename In::In3>
+struct InTuple : public Tuple5<typename In::In0, typename In::In1, typename In::In2, typename In::In3, typename In::In4>
 {
     InTuple(const typename In::In0 &in0, const typename In::In1 &in1, const typename In::In2 &in2,
             const typename In::In3 &in3)
-        : Tuple4<typename In::In0, typename In::In1, typename In::In2, typename In::In3>(in0, in1, in2, in3)
+        : Tuple5<typename In::In0, typename In::In1, typename In::In2, typename In::In3>(in0, in1, in2, in3)
     {
     }
 };
@@ -8114,7 +8190,10 @@ public:
             createFuncCase(ctx, "vec3", m_funcs.func3, SamplingsMakerType::template makeVectorized<3>(), m_modularOp));
         group->addChild(
             createFuncCase(ctx, "vec4", m_funcs.func4, SamplingsMakerType::template makeVectorized<4>(), m_modularOp));
-
+#ifndef CTS_USES_VULKANSC
+        group->addChild(
+            createFuncCase(ctx, "vec5", m_funcs.func5, SamplingsMakerType::template makeVectorized<5>(), m_modularOp));
+#endif
         return MovePtr<TestNode>(group);
     }
 
@@ -8145,7 +8224,9 @@ public:
         group->addChild(createFuncCase(ctx, "vec2", instance<GenF<2, T>>(), SamplingsMaker<Void>()));
         group->addChild(createFuncCase(ctx, "vec3", instance<GenF<3, T>>(), SamplingsMaker<Void>()));
         group->addChild(createFuncCase(ctx, "vec4", instance<GenF<4, T>>(), SamplingsMaker<Void>()));
-
+#ifndef CTS_USES_VULKANSC
+        group->addChild(createFuncCase(ctx, "vec5", instance<GenF<5, T>>(), SamplingsMaker<Void>()));
+#endif
         return MovePtr<TestNode>(group);
     }
 

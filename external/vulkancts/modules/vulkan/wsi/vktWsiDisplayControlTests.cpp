@@ -99,7 +99,6 @@ Move<VkDevice> createTestDevice(const Context &context, const PlatformInterface 
 {
     const float queuePriorities[] = {1.0f};
     bool displayAvailable         = true;
-    bool validationEnabled        = context.getTestContext().getCommandLine().isValidationEnabled();
     const vk::Platform &platform  = context.getTestContext().getPlatform().getVulkanPlatform();
 
     const VkDeviceQueueCreateInfo queueInfos[] = {{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
@@ -141,7 +140,7 @@ Move<VkDevice> createTestDevice(const Context &context, const PlatformInterface 
     if (!displayAvailable)
         TCU_THROW(NotSupportedError, "Display is unavailable as windowing system has access");
 
-    return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 VkDisplayKHR getDisplayAndDisplayPlane(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
@@ -715,8 +714,8 @@ void SwapchainCounterTestInstance::render(void)
 
     // Acquire next image
     uint32_t imageIndex;
-    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, kAcquireImageTimeout, currentAcquireSemaphore,
-                                       VK_NULL_HANDLE, &imageIndex));
+    VK_CHECK_WSI(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, kAcquireImageTimeout, currentAcquireSemaphore,
+                                           VK_NULL_HANDLE, &imageIndex));
 
     // Create command buffer
     commandBuffer = createCommandBuffer(m_vkd, *m_device, *m_commandPool, *m_renderPass, m_swapchainImages[imageIndex],

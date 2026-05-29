@@ -577,6 +577,15 @@ class CreateLongRunningSyncTest : public SyncTest
 
         GLU_EXPECT_NO_ERROR(m_gl.getError(), "Buffer Creation Failed");
 
+        // Check if the extension is actually advertised by the driver
+        const char *extensions = reinterpret_cast<const char *>(m_gl.getString(GL_EXTENSIONS));
+        if (!extensions || strstr(extensions, "GL_EXT_buffer_storage") == nullptr)
+        {
+            log << TestLog::Message << "GL_EXT_buffer_storage not supported" << TestLog::EndMessage;
+            m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "GL_EXT_buffer_storage not supported");
+            return false;
+        }
+
         func = reinterpret_cast<decltype(glw::Functions::bufferStorage)>(egl.getProcAddress("glBufferStorageEXT"));
         if (!func)
         {

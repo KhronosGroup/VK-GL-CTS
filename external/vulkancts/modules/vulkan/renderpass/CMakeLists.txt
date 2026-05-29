@@ -69,6 +69,8 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktRenderPassNestedCommandBuffersTests.hpp
 	vktRenderPassCustomResolveTests.cpp
 	vktRenderPassCustomResolveTests.hpp
+	vktDynamicRenderingMultiviewClearTests.cpp
+	vktDynamicRenderingMultiviewClearTests.hpp
 	)
 
 PCH(DEQP_VK_RENDER_PASS_SRCS ../pch.cpp)

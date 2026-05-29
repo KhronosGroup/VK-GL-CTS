@@ -145,19 +145,16 @@ struct TestConfig
     vk::VkComponentMapping componentMapping;
 };
 
-void checkSupport(Context &context, const TestConfig)
+void checkSupport(Context &context, const TestConfig config)
 {
-    checkProtectedQueueSupport(context);
-}
+    checkProtectedContextSupport(context, true);
 
-void validateFormatSupport(ProtectedContext &context, TestConfig &config)
-{
     tcu::TestLog &log(context.getTestContext().getLog());
 
     try
     {
         const vk::VkFormatProperties properties(vk::getPhysicalDeviceFormatProperties(
-            context.getInstanceDriver(), context.getPhysicalDevice(), config.format));
+            context.getInstanceInterface(), context.getPhysicalDevice(), config.format));
         const vk::VkFormatFeatureFlags features(config.imageTiling == vk::VK_IMAGE_TILING_OPTIMAL ?
                                                     properties.optimalTilingFeatures :
                                                     properties.linearTilingFeatures);
@@ -206,9 +203,6 @@ void validateFormatSupport(ProtectedContext &context, TestConfig &config)
         if (ycbcr::isYChromaSubsampled(config.format) && (config.yChromaOffset == vk::VK_CHROMA_LOCATION_MIDPOINT) &&
             ((features & vk::VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT) == 0))
             TCU_THROW(NotSupportedError, "Format doesn't support midpoint chroma samples");
-
-        if ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT) != 0)
-            config.explicitReconstruction = true;
 
         log << tcu::TestLog::Message << "FormatFeatures: " << vk::getFormatFeatureFlagsStr(features)
             << tcu::TestLog::EndMessage;
@@ -1099,11 +1093,8 @@ void generateYCbCrImage(ProtectedContext &ctx, const TestConfig &config, const t
 
 tcu::TestStatus conversionTest(Context &context, TestConfig config)
 {
-    std::vector<std::string> requiredDevExt;
-    requiredDevExt.push_back("VK_KHR_sampler_ycbcr_conversion");
-    requiredDevExt.push_back("VK_KHR_get_memory_requirements2");
-    requiredDevExt.push_back("VK_KHR_bind_memory2");
-    requiredDevExt.push_back("VK_KHR_maintenance1");
+    std::vector<std::string> requiredDevExt{"VK_KHR_sampler_ycbcr_conversion", "VK_KHR_get_memory_requirements2",
+                                            "VK_KHR_bind_memory2", "VK_KHR_maintenance1"};
 
     const tcu::UVec2 size(ycbcr::isXChromaSubsampled(config.format) ? 12 : 7,
                           ycbcr::isYChromaSubsampled(config.format) ? 8 : 13);
@@ -1115,7 +1106,14 @@ tcu::TestStatus conversionTest(Context &context, TestConfig config)
 
     tcu::TestLog &log(context.getTestContext().getLog());
 
-    validateFormatSupport(ctx, config);
+    const vk::VkFormatProperties properties(
+        vk::getPhysicalDeviceFormatProperties(ctx.getInstanceDriver(), ctx.getPhysicalDevice(), config.format));
+    const vk::VkFormatFeatureFlags features(config.imageTiling == vk::VK_IMAGE_TILING_OPTIMAL ?
+                                                properties.optimalTilingFeatures :
+                                                properties.linearTilingFeatures);
+    if ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT) != 0)
+        config.explicitReconstruction = true;
+
     logTestCaseInfo(log, config);
 
     const vk::VkImageCreateFlagBits ycbcrImageFlags =

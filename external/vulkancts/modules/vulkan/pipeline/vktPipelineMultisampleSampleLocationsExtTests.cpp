@@ -2408,14 +2408,13 @@ public:
             if (numActualColorsLeft != numExpectedColorsLeft || numActualColorsRight != numExpectedColorsRight)
             {
                 std::ostringstream msg;
-                msg << "Expected " << numExpectedColorsLeft << " unique colors, but got " << numActualColorsLeft;
-
-                if (numActualColorsLeft != numActualColorsRight)
-                    msg << " and " << numActualColorsRight;
+                msg << "Unique colors in each side of the image (left, right): Expected (" << numExpectedColorsLeft
+                    << ", " << numExpectedColorsRight << ") and got (" << numActualColorsLeft << ", "
+                    << numActualColorsRight << ")";
 
                 m_context.getTestContext().getLog() << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
 
-                TCU_FAIL("Resolved image has incorrect pixels");
+                TCU_FAIL("Resolved image has incorrect unique color counts; check log for details --");
             }
 
             if (hasLeftSideImage)

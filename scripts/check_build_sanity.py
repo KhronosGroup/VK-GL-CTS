@@ -214,8 +214,8 @@ EARLY_SPECIAL_RECIPES = [
             RunScript(os.path.join("scripts", "opengl", "gen_all.py")),
             RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework.py"), lambda env: [] + (["--verbose"] if env.verbose else [])),
             RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework_c.py"), lambda env: [] + (["--verbose"] if env.verbose else [])),
-            RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework.py"), lambda env: ["--api", "SC"] + (["--verbose"] if env.verbose else [])),
-            RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework_c.py"), lambda env: ["--api", "SC"] + (["--verbose"] if env.verbose else [])),
+            RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework.py"), lambda env: ["--api", "vulkansc"] + (["--verbose"] if env.verbose else [])),
+            RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework_c.py"), lambda env: ["--api", "vulkansc"] + (["--verbose"] if env.verbose else [])),
             RunScript(os.path.join("scripts", "gen_android_bp.py")),
             RunScript(os.path.join("scripts", "gen_khronos_cts_bp.py"))
         ]),
@@ -224,17 +224,20 @@ EARLY_SPECIAL_RECIPES = [
 LATE_SPECIAL_RECIPES = [
     ('android-mustpass', [
             RunScript(os.path.join("scripts", "build_android_mustpass.py"),
-                      lambda env: ["--build-dir", os.path.join(env.tmpDir, "android-mustpass")] + (["--verbose"] if env.verbose else [])),
+                      lambda env: ["--build-type", "Release",
+                                    "--build-dir", os.path.join(env.tmpDir, "android-mustpass")] + (["--verbose"] if env.verbose else [])),
         ]),
     ('vulkan-mustpass', [
             RunScript(os.path.join("external", "vulkancts", "scripts", "build_mustpass.py"),
-                      lambda env: ["--build-dir", os.path.join(env.tmpDir, "vulkan-mustpass")] + (["--verbose"] if env.verbose else [])),
+                      lambda env: ["--build-type", "Release",
+                                    "--build-dir", os.path.join(env.tmpDir, "vulkan-mustpass")] + (["--verbose"] if env.verbose else [])),
         ]),
     ('spirv-binaries', [
             RunScript(os.path.join("external", "vulkancts", "scripts", "build_spirv_binaries.py"),
                       lambda env: ["--build-type", "Release",
                                     "--build-dir", os.path.join(env.tmpDir, "spirv-binaries"),
-                                    "--dst-path", os.path.join(env.tmpDir, "spirv-binaries")] + (["--verbose"] if env.verbose else [])),
+                                    "--dst-path", os.path.join(env.tmpDir, "spirv-binaries"),
+                                    "-p", "8", "-f", "32"] + (["--verbose"] if env.verbose else [])),
         ]),
     ('amber-verify', [
             RunScript(os.path.join("external", "vulkancts", "scripts", "amber_verify.py"),
@@ -308,6 +311,10 @@ def parseArgs ():
                         dest="applyPostExternalDependencyCleanup",
                         action="store_true",
                         help="skip external dependency clean up")
+    parser.add_argument("--clean-mustpass",
+                        dest="cleanMustpass",
+                        action="store_true",
+                        help="Wipe generated mustpass output (keeping hand-maintained inputs) before any recipe runs. Intended for the maintainer workflow that prunes obsolete files; not for CI.")
     parser.add_argument("-v", "--verbose",
                         dest="verbose",
                         action="store_true",
@@ -327,6 +334,9 @@ if __name__ == "__main__":
                     print(name)
                     break
     else:
+        if args.cleanMustpass:
+            RunScript(os.path.join("scripts", "clean_generated_mustpass.py")).run(env)
+
         selectedRecipes = getAllRecipe(RECIPES) if args.recipes == "all" \
                         else getRecipesByName(RECIPES, args.recipes)
 

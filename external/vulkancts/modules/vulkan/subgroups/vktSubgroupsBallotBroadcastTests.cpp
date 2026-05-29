@@ -33,6 +33,8 @@ using namespace tcu;
 using namespace std;
 using namespace vk;
 using namespace vkt;
+using namespace glu;
+using vkt::subgroups::VecType;
 
 namespace
 {
@@ -48,7 +50,7 @@ struct CaseDefinition
 {
     OpType opType;
     VkShaderStageFlags shaderStage;
-    VkFormat format;
+    VecType vecType;
     de::SharedPtr<bool> geometryPointSizeSupported;
     bool extShaderSubGroupBallotTests;
     bool subgroupSizeControl;
@@ -93,7 +95,7 @@ string getExtHeader(const CaseDefinition &caseDef)
                                                    "#extension GL_KHR_shader_subgroup_basic: enable\n"
                                                    "#extension GL_ARB_gpu_shader_int64: enable\n" :
                                                    "#extension GL_KHR_shader_subgroup_ballot: enable\n") +
-           subgroups::getAdditionalExtensionForFormat(caseDef.format);
+           subgroups::getAdditionalExtensionForFormat(caseDef.vecType);
 }
 
 string getTestSrc(const CaseDefinition &caseDef)
@@ -103,7 +105,7 @@ string getTestSrc(const CaseDefinition &caseDef)
     string broadcastFirst;
     string mask;
     int max;
-    const string fmt = subgroups::getFormatNameForGLSL(caseDef.format);
+    const string fmt = subgroups::getFormatNameForGLSL(caseDef.vecType);
 
     if (caseDef.extShaderSubGroupBallotTests)
     {
@@ -233,7 +235,7 @@ void initFrameBufferPrograms(SourceCollections &programCollection, CaseDefinitio
     const string testSrc   = getTestSrc(caseDef);
     const string helperStr = getHelperFunctionARB(caseDef);
 
-    subgroups::initStdFrameBufferPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format,
+    subgroups::initStdFrameBufferPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.vecType,
                                           *caseDef.geometryPointSizeSupported, extHeader, testSrc, helperStr);
 }
 
@@ -255,7 +257,7 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
     const string testSrc   = getTestSrc(caseDef);
     const string helperStr = getHelperFunctionARB(caseDef);
 
-    subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format,
+    subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.vecType,
                                *caseDef.geometryPointSizeSupported, extHeader, testSrc, helperStr);
 }
 
@@ -267,7 +269,7 @@ void supportedCheck(Context &context, CaseDefinition caseDef)
     if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BALLOT_BIT))
         TCU_THROW(NotSupportedError, "Device does not support subgroup ballot operations");
 
-    if (!subgroups::isFormatSupportedForDevice(context, caseDef.format))
+    if (!subgroups::isFormatSupportedForDevice(context, caseDef.vecType))
         TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
 
     if (caseDef.requires16BitUniformBuffer)
@@ -350,7 +352,7 @@ TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
     const subgroups::SSBOData inputData = {
         subgroups::SSBOData::InitializeNonZero, //  InputDataInitializeType initializeType;
         subgroups::SSBOData::LayoutStd140,      //  InputDataLayoutType layout;
-        caseDef.format,                         //  vk::VkFormat format;
+        caseDef.vecType,                        //  VecType vectype
         numElements,                            //  vk::VkDeviceSize numElements;
         subgroups::SSBOData::BindingUBO,        //  BindingType bindingType;
     };
@@ -391,7 +393,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         const subgroups::SSBOData inputData = {
             subgroups::SSBOData::InitializeNonZero, //  InputDataInitializeType initializeType;
             subgroups::SSBOData::LayoutStd430,      //  InputDataLayoutType layout;
-            caseDef.format,                         //  vk::VkFormat format;
+            caseDef.vecType,                        //  VecType vectype
             numElements,                            //  vk::VkDeviceSize numElements;
         };
 
@@ -419,7 +421,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         const subgroups::SSBOData inputData = {
             subgroups::SSBOData::InitializeNonZero, //  InputDataInitializeType initializeType;
             subgroups::SSBOData::LayoutStd430,      //  InputDataLayoutType layout;
-            caseDef.format,                         //  vk::VkFormat format;
+            caseDef.vecType,                        //  VecType vectype
             numElements,                            //  vk::VkDeviceSize numElements;
             subgroups::SSBOData::BindingSSBO,       //  bool isImage;
             4u,                                     //  uint32_t binding;
@@ -436,7 +438,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         const subgroups::SSBOData inputData = {
             subgroups::SSBOData::InitializeNonZero, //  InputDataInitializeType initializeType;
             subgroups::SSBOData::LayoutStd430,      //  InputDataLayoutType layout;
-            caseDef.format,                         //  vk::VkFormat format;
+            caseDef.vecType,                        //  VecType vectype
             numElements,                            //  vk::VkDeviceSize numElements;
             subgroups::SSBOData::BindingSSBO,       //  bool isImage;
             6u,                                     //  uint32_t binding;
@@ -488,21 +490,22 @@ TestCaseGroup *createSubgroupsBallotBroadcastTests(TestContext &testCtx)
     const bool boolValues[] = {false, true};
 
     {
-        const vector<VkFormat> formats = subgroups::getAllFormats();
+        const vector<VecType> formats = subgroups::getAllFormats();
 
         for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
         {
-            const VkFormat format = formats[formatIndex];
+            const VecType format = formats[formatIndex];
             // Vector, boolean and double types are not supported by functions defined in VK_EXT_shader_subgroup_ballot.
             const bool formatTypeIsSupportedARB =
-                format == VK_FORMAT_R32_SINT || format == VK_FORMAT_R32_UINT || format == VK_FORMAT_R32_SFLOAT;
+                (format.components == 1) &&
+                (format.type == TYPE_INT || format.type == TYPE_UINT || format.type == TYPE_FLOAT);
             const bool needs8BitUBOStorage  = isFormat8bitTy(format);
             const bool needs16BitUBOStorage = isFormat16BitTy(format);
 
             for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
             {
                 const OpType opType = static_cast<OpType>(opTypeIndex);
-                const string name   = getOpTypeCaseName(opType) + "_" + subgroups::getFormatNameForGLSL(format);
+                const string name   = getOpTypeCaseName(opType) + "_" + subgroups::getFormatNameForTest(format);
 
                 for (size_t extNdx = 0; extNdx < DE_LENGTH_OF_ARRAY(boolValues); ++extNdx)
                 {
@@ -644,12 +647,12 @@ TestCaseGroup *createSubgroupsBallotBroadcastTests(TestContext &testCtx)
 
 #ifndef CTS_USES_VULKANSC
     {
-        const vector<VkFormat> formats = subgroups::getAllRayTracingFormats();
+        const vector<VecType> formats = subgroups::getAllRayTracingFormats();
 
         for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
         {
-            const VkFormat format   = formats[formatIndex];
-            const string formatName = subgroups::getFormatNameForGLSL(format);
+            const VecType format    = formats[formatIndex];
+            const string formatName = subgroups::getFormatNameForTest(format);
 
             for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
             {

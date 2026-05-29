@@ -57,6 +57,7 @@
 #include "vktRenderPassCustomResolveTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktRenderPassMultiviewPerViewTests.hpp"
+#include "vktDynamicRenderingMultiviewClearTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -8535,6 +8536,7 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
             renderingTests->addChild(createDynamicRenderingLocalReadMaint10Tests(testCtx));
             renderingTests->addChild(createRenderPassCustomResolveTests(testCtx, groupParams));
             renderingTests->addChild(createRenderPassMultiviewPerViewTests(testCtx, groupParams));
+            renderingTests->addChild(createDynamicRenderingMultiviewClearTests(testCtx));
         }
         else if (!groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
         {

@@ -218,6 +218,9 @@ public:
 
     static void checkSupport(Context &ctx, TestParams params)
     {
+        ctx.requireDeviceFunctionality("VK_ARM_data_graph");
+        ctx.requireDeviceFunctionality("VK_ARM_tensors");
+
         const auto &vki           = ctx.getInstanceInterface();
         const auto physicalDevice = ctx.getPhysicalDevice();
 

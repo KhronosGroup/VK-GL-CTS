@@ -333,7 +333,8 @@ public:
     virtual void initPrograms(vk::SourceCollections &programCollection) const;
     virtual void checkSupport(Context &context) const
     {
-        checkProtectedQueueSupport(context);
+        checkProtectedContextSupport(context, false, m_params.pipelineProtectedAccess);
+
         if (m_params.useMaintenance5)
             context.requireDeviceFunctionality("VK_KHR_maintenance5");
     }

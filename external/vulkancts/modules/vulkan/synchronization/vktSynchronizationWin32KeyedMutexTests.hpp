@@ -27,14 +27,11 @@
 
 #include "tcuTestCase.hpp"
 
-namespace vkt
-{
-namespace synchronization
+namespace vkt::synchronization
 {
 
 tcu::TestCaseGroup *createWin32KeyedMutexTest(tcu::TestContext &testCtx);
 
-} // namespace synchronization
-} // namespace vkt
+} // namespace vkt::synchronization
 
 #endif // _VKTSYNCHRONIZATIONWIN32KEYEDMUTEXTESTS_HPP

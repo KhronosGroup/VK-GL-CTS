@@ -1,0 +1,3 @@
+dEQP-VK.pipeline.shader_object_unlinked_spirv.dynamic_control_points.change_output
+dEQP-VK.pipeline.shader_object_unlinked_spirv.dynamic_control_points.change_output_winding
+dEQP-VK.pipeline.shader_object_unlinked_spirv.dynamic_control_points.change_winding

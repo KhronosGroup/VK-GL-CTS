@@ -31,6 +31,7 @@
 #include "vktNonRobustBufferAccessTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktRobustness1VertexAccessTests.hpp"
+#include "vktRobustnessOOBAccessTests.hpp"
 
 namespace vkt
 {
@@ -90,8 +91,10 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
 #ifndef CTS_USES_VULKANSC
     robustnessTests->addChild(createPipelineRobustnessBufferAccessTests(testCtx));
     robustnessTests->addChild(createCmdBindIndexBuffer2Tests(testCtx));
+    robustnessTests->addChild(createDescriptorHeapBufferAccessTests(testCtx));
 #endif
     robustnessTests->addChild(createRobustness1VertexAccessTests(testCtx));
+    robustnessTests->addChild(createOOBAccessTests(testCtx));
 
     return robustnessTests.release();
 }

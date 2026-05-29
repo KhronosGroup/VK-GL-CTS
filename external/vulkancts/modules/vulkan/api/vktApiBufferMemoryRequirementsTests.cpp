@@ -793,7 +793,6 @@ void *BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfileListInfoK
 
 static Move<VkDevice> createProtectedDevice(const Context &context)
 {
-    auto &cmdLine             = context.getTestContext().getCommandLine();
     const float queuePriority = 1.0f;
 
     VkPhysicalDeviceProtectedMemoryFeatures protectedMemoryFeatures;
@@ -821,8 +820,8 @@ static Move<VkDevice> createProtectedDevice(const Context &context)
         nullptr,                              // const char* const* ppEnabledExtensionNames;
         nullptr                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
-    return createCustomDevice(cmdLine.isValidationEnabled(), context.getPlatformInterface(), context.getInstance(),
-                              context.getInstanceInterface(), context.getPhysicalDevice(), &deviceInfo);
+    return createCustomDevice(context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
+                              context.getPhysicalDevice(), &deviceInfo);
 }
 
 TestStatus BufferMemoryRequirementsInstance::iterate(void)

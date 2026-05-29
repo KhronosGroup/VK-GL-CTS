@@ -135,7 +135,7 @@ public:
 #extension GL_ARM_tensors : require
 #extension GL_EXT_shader_explicit_arithmetic_types : require
 
-layout(set=0, binding=1) uniform tensorARM<int32_t, 2> tensor;
+layout(set=0, binding=1) uniform readonly tensorARM<int32_t, 2> tensor;
 
 layout (constant_id = 0) const uint32_t imageShapeWidth  = 0;
 layout (constant_id = 1) const uint32_t imageShapeHeight = 0;
@@ -161,7 +161,7 @@ void main() {
 
 layout(location = 0) out vec4 outColor;
 
-layout(set=0, binding=0) uniform tensorARM<uint8_t, 3> tensor;
+layout(set=0, binding=0) uniform readonly tensorARM<uint8_t, 3> tensor;
 
 void main() {
     const uint coord_x = uint(gl_FragCoord.x);

@@ -11438,10 +11438,6 @@ dEQP-VK.pipeline.pipeline_library.blend.dynamic_dual_disable.att_count_8
 dEQP-VK.pipeline.pipeline_library.blend.dynamic_dual_disable.att_count_8_plus_1
 dEQP-VK.pipeline.pipeline_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_0_alpha_blend
 dEQP-VK.pipeline.pipeline_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_0_no_blend
-dEQP-VK.pipeline.pipeline_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_a_alpha_blend
-dEQP-VK.pipeline.pipeline_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_a_no_blend
-dEQP-VK.pipeline.pipeline_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_rgb_alpha_blend
-dEQP-VK.pipeline.pipeline_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_rgb_no_blend
 dEQP-VK.pipeline.pipeline_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_rgba_alpha_blend
 dEQP-VK.pipeline.pipeline_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_rgba_no_blend
 dEQP-VK.pipeline.pipeline_library.blend.format.a1r5g5b5_unorm_pack16.states.color_1mca_1mca_rsub_alpha_o_1mdc_sub-color_sc_dc_add_alpha_1mcc_ca_add-color_sc_da_rsub_alpha_sa_ca_min-color_o_1msc_max_alpha_ca_1msc_max
@@ -36700,6 +36696,7 @@ dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.destroy_resources_
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.destroy_resources_before_link_samplers_3
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.null_descriptor_set_in_monolithic_pipeline
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.null_rendering_create_info
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.null_rendering_create_info_ptr
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.transform_feedback_with_fast_link
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.unusual_multisample_state
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.view_index_from_device_index_in_all_stages
@@ -36714,6 +36711,12 @@ dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.view_index_from_de
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.view_index_from_device_index_in_pre_rasterization_link_time_opt
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.view_index_from_device_index_in_pre_rasterization_mesh_shading
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.view_index_from_device_index_in_pre_rasterization_mesh_shading_link_time_opt
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.primary_rebind.eso_unlinked_spriv
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.primary_rebind.fast_lib
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.primary_rebind.monolithic
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.primary_rebind.optimized_lib
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.view_mask.fast
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.view_mask.optimized
 dEQP-VK.pipeline.pipeline_library.graphics_library.optimize.0_00_11_11
 dEQP-VK.pipeline.pipeline_library.graphics_library.optimize.0_01_11_1
 dEQP-VK.pipeline.pipeline_library.graphics_library.optimize.0_1111
@@ -46500,10 +46503,14 @@ dEQP-VK.pipeline.pipeline_library.push_constant.graphics_pipeline.overlap_5_shad
 dEQP-VK.pipeline.pipeline_library.push_constant.graphics_pipeline.overwrite
 dEQP-VK.pipeline.pipeline_library.push_constant.graphics_pipeline.range_size_128
 dEQP-VK.pipeline.pipeline_library.push_constant.graphics_pipeline.range_size_128_command2
+dEQP-VK.pipeline.pipeline_library.push_constant.graphics_pipeline.range_size_128_longvec
+dEQP-VK.pipeline.pipeline_library.push_constant.graphics_pipeline.range_size_128_longvec_command2
 dEQP-VK.pipeline.pipeline_library.push_constant.graphics_pipeline.range_size_16
 dEQP-VK.pipeline.pipeline_library.push_constant.graphics_pipeline.range_size_16_command2
 dEQP-VK.pipeline.pipeline_library.push_constant.graphics_pipeline.range_size_256
 dEQP-VK.pipeline.pipeline_library.push_constant.graphics_pipeline.range_size_256_command2
+dEQP-VK.pipeline.pipeline_library.push_constant.graphics_pipeline.range_size_256_longvec
+dEQP-VK.pipeline.pipeline_library.push_constant.graphics_pipeline.range_size_256_longvec_command2
 dEQP-VK.pipeline.pipeline_library.push_constant.graphics_pipeline.range_size_4
 dEQP-VK.pipeline.pipeline_library.push_constant.graphics_pipeline.range_size_4_command2
 dEQP-VK.pipeline.pipeline_library.push_constant.graphics_pipeline.range_size_max

@@ -135,18 +135,25 @@ public:
         return m_imageResource;
     }
 
+    const VkImageSubresourceRange &GetImageSubresourceRange() const
+    {
+        return m_imageSubresourceRange;
+    }
+
 private:
     std::atomic<int32_t> m_refCount;
     DeviceContext &m_vkDevCtx;
     VkSharedBaseObj<VkImageResource> m_imageResource;
     VkImageView m_imageView;
+    VkImageSubresourceRange m_imageSubresourceRange;
 
     VkImageResourceView(DeviceContext &vkDevCtx, VkSharedBaseObj<VkImageResource> &imageResource, VkImageView imageView,
-                        VkImageSubresourceRange & /*imageSubresourceRange*/)
+                        VkImageSubresourceRange &imageSubresourceRange)
         : m_refCount(0)
         , m_vkDevCtx(vkDevCtx)
         , m_imageResource(imageResource)
         , m_imageView(imageView)
+        , m_imageSubresourceRange(imageSubresourceRange)
     {
     }
 
@@ -180,6 +187,29 @@ struct DecodedFrame
     // For debugging
     int32_t decodeOrder;
     int32_t displayOrder;
+
+    DecodedFrame()
+        : pictureIndex{-1}
+        , imageLayerIndex{0}
+        , displayWidth{0}
+        , displayHeight{0}
+        , decodedImageView{nullptr}
+        , outputImageView{nullptr}
+        , frameCompleteFence{VK_NULL_HANDLE}
+        , frameConsumerDoneFence{VK_NULL_HANDLE}
+        , frameCompleteSemaphore{VK_NULL_HANDLE}
+        , frameConsumerDoneSemaphore{VK_NULL_HANDLE}
+        , queryPool{VK_NULL_HANDLE}
+        , startQueryId{0}
+        , numQueries{0}
+        , submittedVideoQueueIndex{0}
+        , timestamp{0}
+        , hasConsummerSignalFence{0}
+        , hasConsummerSignalSemaphore{0}
+        , decodeOrder{0}
+        , displayOrder{0}
+    {
+    }
 
     void Reset()
     {
@@ -261,6 +291,7 @@ public:
         VkImage image;
         VkFormat imageFormat;
         VkImageLayout currentImageLayout;
+        uint32_t baseArrayLayer;
     };
 
     virtual int32_t InitImagePool(const VkVideoProfileInfoKHR *pDecodeProfile, uint32_t numImages,

@@ -366,8 +366,7 @@ tcu::TestStatus ShaderObjectBinaryQueryInstance::iterate(void)
             };
 
             vk::Move<vk::VkDevice> otherDevice =
-                createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance,
-                                   instanceDriver, physicalDevice, &deviceCreateInfo);
+                createCustomDevice(vkp, instance, instanceDriver, physicalDevice, &deviceCreateInfo);
 
             const vk::Unique<vk::VkDescriptorSetLayout> otherDescriptorSetLayout(
                 vk::DescriptorSetLayoutBuilder()
@@ -737,8 +736,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
         testFeatures.features.geometryShader     = features.geometryShader;
 
         vk::Move<vk::VkDevice> otherDevice =
-            createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance,
-                               instanceDriver, physicalDevice, &deviceCreateInfo);
+            createCustomDevice(vkp, instance, instanceDriver, physicalDevice, &deviceCreateInfo);
 
         const vk::Unique<vk::VkDescriptorSetLayout> otherDescriptorSetLayout(
             vk::DescriptorSetLayoutBuilder()

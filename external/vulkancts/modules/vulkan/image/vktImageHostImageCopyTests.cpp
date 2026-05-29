@@ -494,16 +494,19 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
         {
             createInfo.flags |= (vk::VK_IMAGE_CREATE_SPARSE_BINDING_BIT | vk::VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
             // VUID-VkImageCreateInfo-tiling-04121
-            createInfo.tiling  = vk::VK_IMAGE_TILING_OPTIMAL;
+            createInfo.tiling = vk::VK_IMAGE_TILING_OPTIMAL;
+            const auto waitType =
+                ((m_parameters.action == MEMORY_TO_IMAGE) ? SparseImage::WaitType::SEMAPHORE_AND_FENCE :
+                                                            SparseImage::WaitType::SEMAPHORE);
             sparseSampledImage = de::MovePtr<SparseImage>(new SparseImage(vk, device, physicalDevice, vki, createInfo,
                                                                           m_context.getSparseQueue(), alloc,
-                                                                          mapVkFormat(createInfo.format)));
+                                                                          mapVkFormat(createInfo.format), waitType));
             sampledImage       = **sparseSampledImage;
             if (m_parameters.action == MEMCPY)
             {
                 sparseSampledImageCopy = de::MovePtr<SparseImage>(
                     new SparseImage(vk, device, physicalDevice, vki, createInfo, m_context.getSparseQueue(), alloc,
-                                    mapVkFormat(createInfo.format)));
+                                    mapVkFormat(createInfo.format), SparseImage::WaitType::SEMAPHORE_AND_FENCE));
                 sampledImageCopy = **sparseSampledImageCopy;
             }
         }
@@ -758,6 +761,9 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
     // Load sampled image
     if (m_parameters.action == MEMORY_TO_IMAGE)
     {
+        if (sparseSampledImage && sparseSampledImage->getFence() != VK_NULL_HANDLE)
+            waitForFence(vk, device, sparseSampledImage->getFence());
+
         transitionImageLayout(&cmdBuffer, sampledImage, sampledImageUsage, vk::VK_IMAGE_LAYOUT_UNDEFINED,
                               m_parameters.dstLayout, sampledSubresourceRange);
         commandsLog << "vkTransitionImageLayoutEXT() image " << sampledImage << " to layout "
@@ -905,6 +911,9 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
         commandsLog << "vkCopyImageToMemoryEXT() with image " << sampledImage << ", xOffset (" << region.imageOffset.x
                     << "), yOffset (" << region.imageOffset.y << "), width (" << mipImageSize.width << "), height ("
                     << mipImageSize.height << ")\n";
+
+        if (sparseSampledImageCopy && sparseSampledImageCopy->getFence() != VK_NULL_HANDLE)
+            waitForFence(vk, device, sparseSampledImageCopy->getFence());
 
         transitionImageLayout(&cmdBuffer, sampledImageCopy, sampledImageUsage, vk::VK_IMAGE_LAYOUT_UNDEFINED,
                               m_parameters.dstLayout, sampledSubresourceRange);
@@ -1402,7 +1411,8 @@ class PreinitializedTestInstance : public vkt::TestInstance
 public:
     PreinitializedTestInstance(vkt::Context &context, const vk::VkFormat format, vk::VkImageLayout srcLayout,
                                vk::VkImageLayout dstLayout, vk::VkExtent3D size, uint32_t arrayLayers,
-                               bool imageToImageCopy, bool memcpy, vk::VkImageTiling tiling, uint32_t offset)
+                               bool imageToImageCopy, bool memcpy, vk::VkImageTiling tiling, uint32_t offset,
+                               bool captureReplay)
         : vkt::TestInstance(context)
         , m_format(format)
         , m_srcLayout(srcLayout)
@@ -1413,6 +1423,7 @@ public:
         , m_memcpy(memcpy)
         , m_tiling(tiling)
         , m_offset(offset)
+        , m_captureReplay(captureReplay)
     {
     }
 
@@ -1428,6 +1439,7 @@ private:
     const bool m_memcpy;
     const vk::VkImageTiling m_tiling;
     const uint32_t m_offset;
+    const bool m_captureReplay;
 };
 
 static VkImageUsageFlags GetUsage(VkImageLayout srcLayout, VkImageLayout dstLayout)
@@ -1520,11 +1532,14 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
 
     const VkImageUsageFlags usage = GetUsage(m_srcLayout, m_dstLayout);
 
+    VkImageCreateFlags imageCreateFlags =
+        m_captureReplay ? vk::VK_IMAGE_CREATE_DESCRIPTOR_HEAP_CAPTURE_REPLAY_BIT_EXT : 0;
+
     vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
         m_tiling == vk::VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT ? &drmCreateInfo : nullptr,
         // const void*                pNext
-        0u,                        // VkImageCreateFlags        flags
+        imageCreateFlags,          // VkImageCreateFlags        flags
         imageType,                 // VkImageType                imageType
         m_format,                  // VkFormat                    format
         m_size,                    // VkExtent3D                extent
@@ -1540,11 +1555,18 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
         vk::VK_IMAGE_LAYOUT_PREINITIALIZED // VkImageLayout            initialLayout
     };
 
+    vk::MemoryRequirement imageMemoryRequirement =
+        m_captureReplay ? (vk::MemoryRequirement::HostVisible | vk::MemoryRequirement::DeviceAddress |
+                           vk::MemoryRequirement::DeviceAddressCaptureReplay) :
+                          vk::MemoryRequirement::HostVisible;
     de::MovePtr<ImageWithMemory> image = de::MovePtr<ImageWithMemory>(
-        new ImageWithMemory(vk, device, *allocatorWithOffset, createInfo, vk::MemoryRequirement::HostVisible));
+        new ImageWithMemory(vk, device, *allocatorWithOffset, createInfo, imageMemoryRequirement));
 
+    vk::MemoryRequirement copyImageMemoryRequirement =
+        m_captureReplay ? (vk::MemoryRequirement::DeviceAddress | vk::MemoryRequirement::DeviceAddressCaptureReplay) :
+                          vk::MemoryRequirement::Any;
     de::MovePtr<ImageWithMemory> copyImage = de::MovePtr<ImageWithMemory>(
-        new ImageWithMemory(vk, device, *allocatorWithOffset, createInfo, vk::MemoryRequirement::Any));
+        new ImageWithMemory(vk, device, *allocatorWithOffset, createInfo, copyImageMemoryRequirement));
     const vk::VkImage endImage                 = m_imageToImageCopy ? **copyImage : **image;
     de::MovePtr<BufferWithMemory> outputBuffer = de::MovePtr<BufferWithMemory>(
         new BufferWithMemory(vk, device, alloc, makeBufferCreateInfo(bufferSize, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT),
@@ -1723,7 +1745,7 @@ public:
     PreinitializedTestCase(tcu::TestContext &context, const char *name, const vk::VkFormat format,
                            vk::VkImageLayout srcLayout, vk::VkImageLayout dstLayout, vk::VkExtent3D size,
                            uint32_t arrayLayers, bool imageToImageCopy, bool memcpy, vk::VkImageTiling tiling,
-                           uint32_t offset)
+                           uint32_t offset, bool captureReplay)
         : TestCase(context, name)
         , m_format(format)
         , m_srcLayout(srcLayout)
@@ -1734,6 +1756,7 @@ public:
         , m_memcpy(memcpy)
         , m_tiling(tiling)
         , m_offset(offset)
+        , m_captureReplay(captureReplay)
     {
     }
 
@@ -1742,7 +1765,7 @@ private:
     vkt::TestInstance *createInstance(vkt::Context &context) const
     {
         return new PreinitializedTestInstance(context, m_format, m_srcLayout, m_dstLayout, m_size, m_arrayLayers,
-                                              m_imageToImageCopy, m_memcpy, m_tiling, m_offset);
+                                              m_imageToImageCopy, m_memcpy, m_tiling, m_offset, m_captureReplay);
     }
 
     const vk::VkFormat m_format;
@@ -1754,6 +1777,7 @@ private:
     const bool m_memcpy;
     const vk::VkImageTiling m_tiling;
     const uint32_t m_offset;
+    const bool m_captureReplay;
 };
 
 void PreinitializedTestCase::checkSupport(vkt::Context &context) const
@@ -1792,6 +1816,9 @@ void PreinitializedTestCase::checkSupport(vkt::Context &context) const
     if (m_srcLayout == vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT ||
         m_dstLayout == vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT)
         context.requireDeviceFunctionality("VK_EXT_attachment_feedback_loop_layout");
+
+    if (m_captureReplay)
+        context.requireDeviceFunctionality("VK_EXT_descriptor_heap");
 
     vk::VkPhysicalDeviceHostImageCopyFeaturesEXT hostImageCopyFeatures = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_FEATURES_EXT, // VkStructureType                    sType
@@ -4847,7 +4874,7 @@ void testGenerator(tcu::TestCaseGroup *group)
                                 offsetGroup->addChild(new PreinitializedTestCase(
                                     testCtx, formatName.c_str(), format.format, srcLayout.layout, dstLayout.layout,
                                     size.size, size.layerCount, imageToImage.imageToImageCopy, imageToImage.memcpy,
-                                    tiling.tiling, offset.offset));
+                                    tiling.tiling, offset.offset, false));
                             }
                             sizeGroup->addChild(offsetGroup.release());
                         }
@@ -4861,6 +4888,14 @@ void testGenerator(tcu::TestCaseGroup *group)
         }
         group->addChild(tilingGroup.release());
     }
+
+    de::MovePtr<tcu::TestCaseGroup> captureReplayGroup(new tcu::TestCaseGroup(testCtx, "capture_replay"));
+    {
+        captureReplayGroup->addChild(new PreinitializedTestCase(
+            testCtx, "heap", vk::VK_FORMAT_R8G8B8A8_UNORM, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_IMAGE_LAYOUT_GENERAL,
+            {32, 32, 1}, 1u, true, false, vk::VK_IMAGE_TILING_OPTIMAL, 0u, true));
+    }
+    group->addChild(captureReplayGroup.release());
 
     de::MovePtr<tcu::TestCaseGroup> propertiesGroup(new tcu::TestCaseGroup(testCtx, "properties"));
     propertiesGroup->addChild(new PropertiesTestCase(testCtx, "properties"));

@@ -36,3 +36,6 @@ dEQP-GLES31.functional.ubo.random.all_per_block_buffers.41
 
 # Bug 122608943 shader generated is ridiculously large.
 dEQP-GLES31.functional.ssbo.layout.random.all_shared_buffer.48
+
+# b/353150529: This test is failing on several drivers and was disabled as a result: https://gitlab.freedesktop.org/mesa/mesa/-/issues/10733
+dEQP-GLES31.functional.texture.border_clamp.range_clamp.linear_float_color

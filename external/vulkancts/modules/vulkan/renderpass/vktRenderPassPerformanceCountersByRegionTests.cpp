@@ -215,15 +215,6 @@ de::MovePtr<Allocation> createBufferMemory(const DeviceInterface &vkd, VkDevice 
     return allocation;
 }
 
-VkDeviceAddress getBufferDeviceAddress(const DeviceInterface &vkd, VkDevice device, VkBuffer buffer)
-{
-    VkBufferDeviceAddressInfo bufferDeviceAddressInfo = {};
-    bufferDeviceAddressInfo.sType                     = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR;
-    bufferDeviceAddressInfo.pNext                     = nullptr;
-    bufferDeviceAddressInfo.buffer                    = buffer;
-    return vkd.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
-}
-
 template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep,
           typename RenderPassCreateInfo>
 Move<VkRenderPass> createRenderPass(const DeviceInterface &vkd, VkDevice device, VkFormat format,
@@ -509,17 +500,6 @@ Move<VkDevice> createCustomDevice(Context &context, const SharedGroupParams grou
         &features2.features,                            // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    const bool validationEnabled = context.getTestContext().getCommandLine().isValidationEnabled();
-
-    vector<const char *> enabledLayers;
-
-    if (createInfo.enabledLayerCount == 0u && validationEnabled)
-    {
-        enabledLayers                  = getValidationLayers(vki, physicalDevice);
-        createInfo.enabledLayerCount   = static_cast<uint32_t>(enabledLayers.size());
-        createInfo.ppEnabledLayerNames = (enabledLayers.empty() ? nullptr : enabledLayers.data());
-    }
-
     Move<VkDevice> device = createDevice(vkp, instance, vki, physicalDevice, &createInfo, nullptr);
 
     return device;
@@ -725,7 +705,9 @@ void PerformanceCountersByRegionContainer::createRenderPipeline(const BinaryColl
 {
     ShaderWrapper vertexShaderModule(m_deviceDriver, *m_device, binaryCollection.get("vert"), 0u);
     ShaderWrapper fragmentShaderModule(m_deviceDriver, *m_device, binaryCollection.get("frag"), 0u);
-    ShaderWrapper geometryShaderModule(m_deviceDriver, *m_device, binaryCollection.get("geom"), 0u);
+    ShaderWrapper geometryShaderModule(m_layerCount == 1 ?
+                                           ShaderWrapper() :
+                                           ShaderWrapper(m_deviceDriver, *m_device, binaryCollection.get("geom"), 0u));
 
     // Disable blending
     const VkPipelineColorBlendAttachmentState attachmentBlendState = {

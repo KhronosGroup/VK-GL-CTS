@@ -1072,6 +1072,7 @@ public:
     virtual void setDeferredOperation(const bool deferredOperation, const uint32_t workerThreadCount = 0u) = 0;
     virtual void setUseArrayOfPointers(const bool useArrayOfPointers)                                      = 0;
     virtual void setUseMaintenance5(const bool useMaintenance5)                                            = 0;
+    virtual void setUseDeviceAddressCommands(const bool useDeviceAddressCommands)                          = 0;
     virtual void setIndirectBuildParameters(const VkBuffer indirectBuffer, const VkDeviceSize indirectBufferOffset,
                                             const uint32_t indirectBufferStride)                           = 0;
     virtual VkBuildAccelerationStructureFlagsKHR getBuildFlags() const                                     = 0;
@@ -1280,6 +1281,7 @@ public:
                                             const uint32_t indirectBufferStride)                           = 0;
     virtual void setUsePPGeometries(const bool usePPGeometries)                                            = 0;
     virtual void setTryCachedMemory(const bool tryCachedMemory)                                            = 0;
+    virtual void setUseDeviceAddressCommands(const bool useDeviceAddressCommands)                          = 0;
     virtual void setMaxMotionInstances(const uint32_t maxMotionInstances)                                  = 0;
     virtual VkBuildAccelerationStructureFlagsKHR getBuildFlags() const                                     = 0;
     VkAccelerationStructureBuildSizesInfoKHR getStructureBuildSizes() const;

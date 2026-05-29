@@ -849,8 +849,7 @@ Move<VkDevice> DeviceObjectReservationInstance::createTestDevice(VkDeviceCreateI
     // perform any non pipeline operations - create 2 semaphores
     objectInfo.semaphoreRequestCount = 2u;
 
-    return createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                              m_context.getPlatformInterface(), instance, instance.getDriver(), physicalDevice,
+    return createCustomDevice(m_context.getPlatformInterface(), instance, instance.getDriver(), physicalDevice,
                               &deviceCreateInfo);
 }
 
@@ -891,8 +890,7 @@ public:
         objectInfo.deviceMemoryRequestCount = 2;
         objectInfo.pNext                    = &secondObjectInfo;
 
-        return createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                  m_context.getPlatformInterface(), instance, instance.getDriver(), physicalDevice,
+        return createCustomDevice(m_context.getPlatformInterface(), instance, instance.getDriver(), physicalDevice,
                                   &deviceCreateInfo);
     }
 
@@ -977,8 +975,7 @@ public:
             TCU_THROW(InternalError, "Unsupported max value");
         }
 
-        return createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                  m_context.getPlatformInterface(), instance, instance.getDriver(), physicalDevice,
+        return createCustomDevice(m_context.getPlatformInterface(), instance, instance.getDriver(), physicalDevice,
                                   &deviceCreateInfo);
     }
 
@@ -1323,8 +1320,7 @@ public:
         objectInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
         objectInfo.pPipelinePoolSizes    = poolSizes.empty() ? nullptr : poolSizes.data();
 
-        return createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                  m_context.getPlatformInterface(), instance, instance.getDriver(), physicalDevice,
+        return createCustomDevice(m_context.getPlatformInterface(), instance, instance.getDriver(), physicalDevice,
                                   &deviceCreateInfo);
     }
 
@@ -1784,8 +1780,7 @@ public:
         objectInfo.subpassDescriptionRequestCount    = 1u;
         objectInfo.attachmentDescriptionRequestCount = 1u;
 
-        return createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                  m_context.getPlatformInterface(), instance, instance.getDriver(), physicalDevice,
+        return createCustomDevice(m_context.getPlatformInterface(), instance, instance.getDriver(), physicalDevice,
                                   &deviceCreateInfo);
     }
 

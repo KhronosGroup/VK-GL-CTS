@@ -23,41 +23,27 @@
 
 #include "vktSynchronizationImplicitTests.hpp"
 #include "vktSynchronizationOperation.hpp"
-#include "vktSynchronizationOperationTestData.hpp"
 #include "vktSynchronizationOperationResources.hpp"
-#include "vktTestCaseUtil.hpp"
 #include "vktSynchronizationUtil.hpp"
-#include "vktExternalMemoryUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
 #include "vkBarrierUtil.hpp"
 
 #include "vkDefs.hpp"
-#include "vkPlatform.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
-#include "vkImageUtil.hpp"
 #include "vkRef.hpp"
-#include "vkTypeUtil.hpp"
-
-#include "tcuTestLog.hpp"
-#include "tcuCommandLine.hpp"
 
 #include "deRandom.hpp"
-#include "deThread.hpp"
 #include "deUniquePtr.hpp"
 
 #include <cstdint>
 #include <limits>
-#include <set>
 
-namespace vkt
-{
-namespace synchronization
+namespace vkt::synchronization
 {
 namespace
 {
 using namespace vk;
-using namespace vkt::ExternalMemoryUtil;
 using de::MovePtr;
 using de::SharedPtr;
 using de::UniquePtr;
@@ -182,7 +168,6 @@ public:
         , m_semaphoreType(semaphoreType)
         , m_operationContext(new OperationContext(context, type, pipelineCacheData))
         , m_rng(1024)
-
     {
     }
 
@@ -628,6 +613,9 @@ public:
             TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
         if (m_type == SynchronizationType::SYNCHRONIZATION2)
             context.requireDeviceFunctionality("VK_KHR_synchronization2");
+
+        m_writeOpSupport->checkSupport(context);
+        m_readOpSupport->checkSupport(context);
     }
 
     TestInstance *createInstance(Context &context) const
@@ -779,5 +767,4 @@ tcu::TestCaseGroup *createImplicitSyncTests(tcu::TestContext &testCtx, Synchroni
     return implicitSyncTests.release();
 }
 
-} // namespace synchronization
-} // namespace vkt
+} // namespace vkt::synchronization

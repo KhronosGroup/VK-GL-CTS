@@ -39,6 +39,7 @@
 #include "vkRayTracingUtil.hpp"
 #include "vkFormatLists.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
 #include "tcuCommandLine.hpp"
@@ -1345,6 +1346,7 @@ enum class MiscTestMode
     SHADER_MODULE_CREATE_INFO_RT,
     SHADER_MODULE_CREATE_INFO_RT_LIB,
     NULL_RENDERING_CREATE_INFO,
+    NULL_RENDERING_CREATE_INFO_PTR,
     BAD_RENDERING_CREATE_INFO,
     COMMON_FRAG_LIBRARY,
     VIEW_INDEX_FROM_DEVICE_INDEX,
@@ -3237,18 +3239,16 @@ tcu::TestStatus UnusualRenderingCreateInfoInstance::iterate(void)
     const auto vertModule = createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
     const auto fragModule = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
 
+    // We will use a null, null-filled or badly filled rendering info structure except for the frag out library.
     VkPipelineRenderingCreateInfo unusualRenderingInfo = initVulkanStructure();
-
-    // We will use a null-filled pipeline rendering info structure
-    // for all substates except the fragment output state
-    if (m_mode == MiscTestMode::NULL_RENDERING_CREATE_INFO)
-        unusualRenderingInfo.colorAttachmentCount = 0;
-    else // MiscTestMode::BAD_RENDERING_CREATE_INFO
+    if (m_mode == MiscTestMode::BAD_RENDERING_CREATE_INFO)
     {
         // use bad VkPipelineRenderingCreateInfo when it is not required
         unusualRenderingInfo.colorAttachmentCount    = 2;
         unusualRenderingInfo.pColorAttachmentFormats = reinterpret_cast<VkFormat *>(0xdeadbeef);
     }
+    const auto preFragOutRenderingInfoPtr =
+        (m_mode == MiscTestMode::NULL_RENDERING_CREATE_INFO_PTR ? nullptr : &unusualRenderingInfo);
 
     VkPipelineRenderingCreateInfo finalRenderingInfo = initVulkanStructure();
     finalRenderingInfo.colorAttachmentCount          = 1u;
@@ -3344,7 +3344,7 @@ tcu::TestStatus UnusualRenderingCreateInfoInstance::iterate(void)
     // Pre-rasterization shader state library.
     {
         VkGraphicsPipelineLibraryCreateInfoEXT preRasterShaderLibInfo =
-            initVulkanStructure(&unusualRenderingInfo); // What we're testing.
+            initVulkanStructure(preFragOutRenderingInfoPtr); // What we're testing.
         preRasterShaderLibInfo.flags |= VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT;
 
         VkGraphicsPipelineCreateInfo preRasterShaderPipelineInfo = initVulkanStructure(&preRasterShaderLibInfo);
@@ -3363,7 +3363,7 @@ tcu::TestStatus UnusualRenderingCreateInfoInstance::iterate(void)
     // Fragment shader stage library.
     {
         VkGraphicsPipelineLibraryCreateInfoEXT fragShaderLibInfo =
-            initVulkanStructure(&unusualRenderingInfo); // What we're testing.
+            initVulkanStructure(preFragOutRenderingInfoPtr); // What we're testing.
         fragShaderLibInfo.flags |= VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT;
 
         VkGraphicsPipelineCreateInfo fragShaderPipelineInfo = initVulkanStructure(&fragShaderLibInfo);
@@ -3502,7 +3502,8 @@ tcu::TestStatus CreateViewIndexFromDeviceIndexInstance::iterate()
     const auto viewCount   = 3u;
     const auto imageSize   = 8u;
     const auto colorFormat = VK_FORMAT_R8G8B8A8_UINT;
-    const auto extent      = makeExtent3D(imageSize, imageSize, 1u);
+    const tcu::UVec3 tcuExtent(imageSize, imageSize, 1u);
+    const auto extent = makeExtent3D(tcuExtent);
 
     VkPipelineCreateFlags basePipelineFlags = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
     if (modeParams.useLinkTimeOptimization)
@@ -3555,9 +3556,6 @@ tcu::TestStatus CreateViewIndexFromDeviceIndexInstance::iterate()
                                                 colorFormat, imageSubresourceRange);
 
     const auto &multiviewFeatures(m_context.getMultiviewFeatures());
-    const auto srl(makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, viewCount));
-    const auto copyRegion(makeBufferImageCopy(extent, srl));
-    const auto beforeCopyBarrier(makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT));
     const auto clearValue(makeClearValueColor(tcu::Vec4(0.0f)));
 
     const auto pipelineLayout(makePipelineLayout(vk, device));
@@ -3615,9 +3613,9 @@ tcu::TestStatus CreateViewIndexFromDeviceIndexInstance::iterate()
     multiviewInfo.pCorrelationMasks               = &correlationMask;
 
     auto renderPass = makeRenderPass(
-        vk, device, colorFormat, VK_FORMAT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 0, &multiviewInfo);
+        vk, device, colorFormat, VK_FORMAT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_CLEAR,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 0, &multiviewInfo);
 
     const auto framebufferCreateInfo = makeFramebufferCreateInfo(*renderPass, 1u, &*imageView, imageSize, imageSize);
     auto framebuffer                 = createFramebuffer(vk, device, &framebufferCreateInfo);
@@ -3685,11 +3683,9 @@ tcu::TestStatus CreateViewIndexFromDeviceIndexInstance::iterate()
 
     endRenderPass(vk, *cmdBuffer);
 
-    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 1,
-                          &beforeCopyBarrier, 0, 0, 0, 0);
-
-    vk.cmdCopyImageToBuffer(*cmdBuffer, imageWithBuffer.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                            imageWithBuffer.getBuffer(), 1u, &copyRegion);
+    copyImageToBuffer(vk, *cmdBuffer, imageWithBuffer.getImage(), imageWithBuffer.getBuffer(),
+                      tcuExtent.asInt().swizzle(0, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, viewCount);
 
     endCommandBuffer(vk, *cmdBuffer);
     const VkQueue queue = getDeviceQueue(vk, device, queueFamilyIndex, 0);
@@ -3867,8 +3863,7 @@ bool CreateViewIndexFromDeviceIndexInstance::createDeviceGroup(void)
         nullptr,                              // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_deviceGroupLogicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                                    m_context.getPlatformInterface(), m_deviceGroupInstance, instance,
+    m_deviceGroupLogicalDevice = createCustomDevice(m_context.getPlatformInterface(), m_deviceGroupInstance, instance,
                                                     deviceGroupInfo.pPhysicalDevices[physicalDeviceIndex], &deviceInfo);
 
     m_deviceGroupVk = de::MovePtr<DeviceDriver>(
@@ -4425,7 +4420,8 @@ void PipelineLibraryMiscTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_pipeline_library");
 
     if ((m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO) ||
-        (m_testParams.mode == MiscTestMode::BAD_RENDERING_CREATE_INFO))
+        (m_testParams.mode == MiscTestMode::BAD_RENDERING_CREATE_INFO) ||
+        m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO_PTR)
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
     if (m_testParams.mode == MiscTestMode::COMMON_FRAG_LIBRARY)
@@ -4659,7 +4655,8 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections &programCollect
         programCollection.glslSources.add("rgen") << glu::RaygenSource(rgen.str()) << buildOptions;
     }
     else if ((m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO) ||
-             (m_testParams.mode == MiscTestMode::BAD_RENDERING_CREATE_INFO))
+             (m_testParams.mode == MiscTestMode::BAD_RENDERING_CREATE_INFO) ||
+             (m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO_PTR))
     {
         std::ostringstream vert;
         vert << "#version 460\n"
@@ -4809,9 +4806,11 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections &programCollect
                              "  const float x = -1.0 + 4.0 * ((idx & 2)>>1);\n"
                              "  const float y = -1.0 + 4.0 * (idx % 2);\n"
                              "  gl_MeshVerticesEXT[idx].gl_Position = vec4(x, y, 0.0, 1.0);\n"
-                             "  gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
-                             "  mViewIndex[idx] = uvec4(0);\n"
-                             "  mViewIndex[idx].x = gl_ViewIndex;\n"
+                             "  if (idx == 0) {\n"
+                             "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
+                             "    mViewIndex[0] = uvec4(0);\n"
+                             "    mViewIndex[0].x = gl_ViewIndex;\n"
+                             "  }\n"
                              "}\n");
             programCollection.glslSources.add("mesh") << glu::MeshSource(mesh) << buildOptions;
 
@@ -5028,7 +5027,8 @@ TestInstance *PipelineLibraryMiscTestCase::createInstance(Context &context) cons
         return new PipelineLibraryShaderModuleInfoRTInstance(context, true /*withLibrary*/);
 
     if ((m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO) ||
-        (m_testParams.mode == MiscTestMode::BAD_RENDERING_CREATE_INFO))
+        (m_testParams.mode == MiscTestMode::BAD_RENDERING_CREATE_INFO) ||
+        (m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO_PTR))
         return new UnusualRenderingCreateInfoInstance(context, m_testParams.mode);
 
     if (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX)
@@ -5659,6 +5659,588 @@ tcu::TestStatus AlwaysNullSetLayoutInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+// This is a test that...
+// * Binds a VS/FS in a primary command buffer, draws.
+// * Executes a secondary, the secondary draws with technically different FS state.
+// * Binds the initial VS/FS again in the primary, draws again.
+void PrimaryRebindCheckSupport(Context &context, PipelineConstructionType constructionType)
+{
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, constructionType);
+    context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+    // By making the color write mask dynamic, we enable using the same pipeline in the primary and secondary, but some
+    // implementations will have to write a different frag shader epilogue for this, and may be confused about the
+    // rebind using the same state despite the secondary command buffer.
+    const auto &eds3Features = context.getExtendedDynamicState3FeaturesEXT();
+    if (!eds3Features.extendedDynamicState3ColorWriteMask)
+        TCU_THROW(NotSupportedError, "extendedDynamicState3ColorWriteMask not supported");
+}
+
+void PrimaryRebindInitPrograms(vk::SourceCollections &dst, PipelineConstructionType)
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "void main(void) {\n"
+         << "    const float x = float((gl_VertexIndex >> 1) & 1) * 2.0 - 1.0;\n"
+         << "    const float y = float((gl_VertexIndex >> 0) & 1) * 2.0 - 1.0;\n"
+         << "    gl_Position = vec4(x, y, 0.0, 1.0);\n"
+         << "}\n";
+    dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream fragSecondary;
+    fragSecondary << "#version 460\n"
+                  << "layout (location=0) out vec4 outColor0;\n"
+                  << "layout (location=1) out vec4 outColor1;\n"
+                  << "layout (push_constant) uniform PCBlock { vec4 color; } pc;\n"
+                  << "void main(void) {\n"
+                  << "    outColor0 = pc.color;\n"
+                  << "    outColor1 = pc.color;\n"
+                  << "}\n";
+    dst.glslSources.add("frag") << glu::FragmentSource(fragSecondary.str());
+}
+
+tcu::TestStatus PrimaryRebindRun(Context &context, PipelineConstructionType constructionType)
+{
+    const tcu::IVec3 extent(1, 1, 1);
+    const auto extentVk    = makeExtent3D(extent);
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto colorUsage =
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto imageType   = VK_IMAGE_TYPE_2D;
+    const auto sampleCount = VK_SAMPLE_COUNT_1_BIT;
+
+    const auto ctx = context.getContextCommonData();
+    ImageWithBuffer primaryImage0(ctx.vkd, ctx.device, ctx.allocator, extentVk, colorFormat, colorUsage, imageType);
+    ImageWithBuffer primaryImage1(ctx.vkd, ctx.device, ctx.allocator, extentVk, colorFormat, colorUsage, imageType);
+    ImageWithBuffer secondaryImage0(ctx.vkd, ctx.device, ctx.allocator, extentVk, colorFormat, colorUsage, imageType);
+    ImageWithBuffer secondaryImage1(ctx.vkd, ctx.device, ctx.allocator, extentVk, colorFormat, colorUsage, imageType);
+
+    const auto &binaries = context.getBinaryCollection();
+    ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
+    ShaderWrapper fragShader(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructureConst();
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+
+    const auto pcSize   = DE_SIZEOF32(tcu::Vec4);
+    const auto pcStages = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
+
+    PipelineLayoutWrapper pipelineLayout(constructionType, ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
+
+    // Render pass with two attachments.
+    const auto attLayout  = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    const auto genAttDesc = makeAttachmentDescription(0u, colorFormat, sampleCount, VK_ATTACHMENT_LOAD_OP_LOAD,
+                                                      VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                                      VK_ATTACHMENT_STORE_OP_DONT_CARE, attLayout, attLayout);
+
+    // Secondary RP with two attachments.
+    const std::vector<VkAttachmentDescription> attDescs(2u, genAttDesc);
+    std::vector<VkAttachmentReference> attRefs;
+    attRefs.reserve(attDescs.size());
+    for (size_t i = 0u; i < attDescs.size(); ++i)
+        attRefs.push_back(makeAttachmentReference(static_cast<uint32_t>(i), attLayout));
+
+    const VkSubpassDescription subpassDesc = {
+        0u,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        0u,
+        nullptr,
+        de::sizeU32(attRefs),
+        de::dataOrNull(attRefs),
+        nullptr,
+        nullptr,
+        0u,
+        nullptr,
+    };
+
+    const VkRenderPassCreateInfo renderPassInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(attDescs),
+        de::dataOrNull(attDescs),
+        1u,
+        &subpassDesc,
+        0u,
+        nullptr,
+    };
+
+    RenderPassWrapper primaryRP(ctx.vkd, ctx.device, &renderPassInfo, true /*dynamic rendering*/);
+    RenderPassWrapper secondaryRP = primaryRP.clone();
+
+    const std::vector<VkImage> priFBImages{primaryImage0.getImage(), primaryImage1.getImage()};
+    const std::vector<VkImageView> priFBViews{primaryImage0.getImageView(), primaryImage1.getImageView()};
+    primaryRP.createFramebuffer(ctx.vkd, ctx.device, de::sizeU32(attDescs), de::dataOrNull(priFBImages),
+                                de::dataOrNull(priFBViews), extentVk.width, extentVk.height, extentVk.depth);
+
+    const std::vector<VkImage> secFBImages{secondaryImage0.getImage(), secondaryImage1.getImage()};
+    const std::vector<VkImageView> secFBViews{secondaryImage0.getImageView(), secondaryImage1.getImageView()};
+    secondaryRP.createFramebuffer(ctx.vkd, ctx.device, de::sizeU32(attDescs), de::dataOrNull(secFBImages),
+                                  de::dataOrNull(secFBViews), extentVk.width, extentVk.height, extentVk.depth);
+
+    const std::vector<VkFormat> colorFormats(attDescs.size(), colorFormat);
+
+    VkPipelineRenderingCreateInfo pipelineRenderingInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(colorFormats),
+        de::dataOrNull(colorFormats),
+        VK_FORMAT_UNDEFINED,
+        VK_FORMAT_UNDEFINED,
+    };
+
+    VkPipelineColorBlendAttachmentState attBlend;
+    memset(&attBlend, 0, sizeof(attBlend));
+
+    const std::vector<VkPipelineColorBlendAttachmentState> attBlends(attRefs.size(), attBlend);
+
+    const VkPipelineColorBlendStateCreateInfo colorBlendState = {
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_FALSE,
+        VK_LOGIC_OP_CLEAR,
+        de::sizeU32(attBlends),
+        de::dataOrNull(attBlends),
+        {0.0f, 0.0f, 0.0f, 0.0f},
+    };
+
+    const std::vector<VkDynamicState> dynamicStates{
+        VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT,
+    };
+
+    const VkPipelineDynamicStateCreateInfo dynamicStateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
+    GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(),
+                                     constructionType);
+    pipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDynamicState(&dynamicStateInfo)
+        .setupVertexInputState(&vertexInputState)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, primaryRP.get(), 0u, vertShader, nullptr,
+                                          ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), nullptr, nullptr,
+                                          &pipelineRenderingInfo)
+        .setupFragmentShaderState(pipelineLayout, primaryRP.get(), 0u, fragShader)
+        .setupFragmentOutputState(primaryRP.get(), 0u, &colorBlendState)
+        .buildPipeline();
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto primaryCmd = *cmd.cmdBuffer;
+    const auto secondaryCmdPtr =
+        allocateCommandBuffer(ctx.vkd, ctx.device, *cmd.cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+    const auto secondaryCmd = *secondaryCmdPtr;
+
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    const auto clearColorVk = makeClearValueColor(clearColor);
+    const tcu::Vec4 magenta(1.0f, 0.0f, 1.0f, 1.0f);
+    const tcu::Vec4 blue(1.0f, 0.0f, 1.0f, 1.0f);
+    const tcu::Vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+
+    const std::vector<VkImage> allImages{
+        primaryImage0.getImage(),
+        primaryImage1.getImage(),
+        secondaryImage0.getImage(),
+        secondaryImage1.getImage(),
+    };
+
+    const auto srr = makeDefaultImageSubresourceRange();
+
+    // Helper to set write masks
+    const auto setDrawState = [&](VkCommandBuffer cmdBuffer, bool writeFirst, bool writeSecond, const tcu::Vec4 &color)
+    {
+        std::vector<VkColorComponentFlags> writeMasks;
+        writeMasks.reserve(2u);
+        for (const bool write : {writeFirst, writeSecond})
+            writeMasks.push_back(write ? 0xFu : 0u);
+        ctx.vkd.cmdSetColorWriteMaskEXT(cmdBuffer, 0u, de::sizeU32(writeMasks), de::dataOrNull(writeMasks));
+        ctx.vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pcStages, 0u, pcSize, &color);
+    };
+
+    beginSecondaryCommandBuffer(ctx.vkd, secondaryCmd);
+    secondaryRP.begin(ctx.vkd, secondaryCmd, scissors.front());
+    pipeline.bind(secondaryCmd);
+    setDrawState(secondaryCmd, false, false, blue); // Do not write to any attachment, blue.
+    ctx.vkd.cmdDraw(secondaryCmd, 4u, 1u, 0u, 0u);
+    secondaryRP.end(ctx.vkd, secondaryCmd);
+    endCommandBuffer(ctx.vkd, secondaryCmd);
+
+    beginCommandBuffer(ctx.vkd, primaryCmd);
+    {
+        // Clear all images and prepare them for the render passes.
+        std::vector<VkImageMemoryBarrier> preClear;
+        preClear.reserve(allImages.size());
+
+        for (const auto img : allImages)
+            preClear.push_back(makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, img, srr));
+
+        cmdPipelineImageMemoryBarrier(ctx.vkd, primaryCmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                      VK_PIPELINE_STAGE_TRANSFER_BIT, de::dataOrNull(preClear), preClear.size());
+
+        for (const auto img : allImages)
+            ctx.vkd.cmdClearColorImage(primaryCmd, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorVk.color, 1u,
+                                       &srr);
+
+        std::vector<VkImageMemoryBarrier> postClear;
+        postClear.reserve(allImages.size());
+
+        const auto postSrcAccess = static_cast<VkAccessFlags>(VK_ACCESS_TRANSFER_WRITE_BIT);
+        const auto postDstAccess =
+            static_cast<VkAccessFlags>(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+        const auto postSrcStage = static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_TRANSFER_BIT);
+        const auto postDstStage = static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+        for (const auto img : allImages)
+            postClear.push_back(makeImageMemoryBarrier(postSrcAccess, postDstAccess,
+                                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, attLayout, img, srr));
+
+        cmdPipelineImageMemoryBarrier(ctx.vkd, primaryCmd, postSrcStage, postDstStage, de::dataOrNull(postClear),
+                                      postClear.size());
+    }
+    primaryRP.begin(ctx.vkd, primaryCmd, scissors.front(), clearColor);
+    pipeline.bind(primaryCmd);
+    setDrawState(primaryCmd, true, false, magenta); // Write to the first attachment only, magenta.
+    ctx.vkd.cmdDraw(primaryCmd, 4u, 1u, 0u, 0u);
+    primaryRP.end(ctx.vkd, primaryCmd);
+    ctx.vkd.cmdExecuteCommands(primaryCmd, 1u, &secondaryCmd);
+    primaryRP.begin(ctx.vkd, primaryCmd, scissors.front(), clearColor);
+    pipeline.bind(primaryCmd);
+    setDrawState(primaryCmd, true, false, white); // Write to the first attachment only, white.
+    ctx.vkd.cmdDraw(primaryCmd, 4u, 1u, 0u, 0u);
+    primaryRP.end(ctx.vkd, primaryCmd);
+    {
+        const auto copyExtent = extent.swizzle(0, 1);
+        copyImageToBuffer(ctx.vkd, primaryCmd, primaryImage0.getImage(), primaryImage0.getBuffer(), copyExtent);
+        copyImageToBuffer(ctx.vkd, primaryCmd, primaryImage1.getImage(), primaryImage1.getBuffer(), copyExtent);
+        copyImageToBuffer(ctx.vkd, primaryCmd, secondaryImage0.getImage(), secondaryImage0.getBuffer(), copyExtent);
+        copyImageToBuffer(ctx.vkd, primaryCmd, secondaryImage1.getImage(), secondaryImage1.getBuffer(), copyExtent);
+    }
+    endCommandBuffer(ctx.vkd, primaryCmd);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, primaryCmd);
+
+    struct Verification
+    {
+        const ImageWithBuffer *image;
+        const char *imageName;
+        tcu::Vec4 expectedColor;
+    };
+
+    // Matches the fragment shaders.
+    const std::vector<Verification> verifications{
+        {&primaryImage0, "Primary Image 0", white},
+        {&primaryImage1, "Primary Image 1", clearColor},
+        {&secondaryImage0, "Secondary Image 0", clearColor},
+        {&secondaryImage1, "Secondary Image 1", clearColor},
+    };
+
+    const auto tcuFormat = mapVkFormat(colorFormat);
+    const tcu::Vec4 threshold(0.0f);
+    auto &log = context.getTestContext().getLog();
+    bool fail = false;
+
+    for (const auto &verif : verifications)
+    {
+        tcu::TextureLevel refLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+        tcu::PixelBufferAccess reference = refLevel.getAccess();
+        tcu::clear(reference, verif.expectedColor);
+
+        auto &alloc = verif.image->getBufferAllocation();
+        invalidateAlloc(ctx.vkd, ctx.device, alloc);
+        tcu::ConstPixelBufferAccess result(tcuFormat, extent, alloc.getHostPtr());
+
+        if (!tcu::floatThresholdCompare(log, verif.imageName, "", reference, result, threshold, COMPARE_LOG_ON_ERROR))
+            fail = true;
+    }
+
+    if (fail)
+        TCU_FAIL("Unexpected results in some output buffers; check log for details");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void viewMaskSupportCheck(Context &context, bool)
+{
+    context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
+    context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+    context.requireDeviceFunctionality("VK_KHR_multiview");
+}
+
+void viewMaskInitPrograms(vk::SourceCollections &dst, bool)
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "#extension GL_EXT_multiview : require\n"
+         << "layout (location=0) out float red;\n"
+         << "void main() {\n"
+         << "    const float x = float((gl_VertexIndex >> 1) & 1) * 2.0 - 1.0;\n"
+         << "    const float y = float((gl_VertexIndex >> 0) & 1) * 2.0 - 1.0;\n"
+         << "    gl_Position = vec4(x, y, 0.0, 1.0);\n"
+         << "    gl_PointSize = 1.0;\n"
+         << "    red = float(gl_ViewIndex);\n"
+         << "}\n";
+    dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "#extension GL_EXT_multiview : require\n"
+         << "layout (location=0) in float red;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main(void) {\n"
+         << "    const float green = float(gl_ViewIndex);\n"
+         << "    outColor = vec4(red, green, 1.0, 1.0);\n"
+         << "}\n";
+    dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus viewMaskRun(Context &context, bool optimized)
+{
+    const auto ctx = context.getContextCommonData();
+    const tcu::IVec3 extent(1, 1, 2);
+    const auto extentVk    = makeExtent3D(extent);
+    const auto extent2D    = makeExtent3D(extentVk.width, extentVk.height, 1u);
+    const auto layerCount  = extentVk.depth;
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto colorUsage  = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto colorSRR    = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, layerCount);
+    const auto imageType   = VK_IMAGE_TYPE_2D;
+
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extent2D, colorFormat, colorUsage, imageType,
+                                colorSRR, layerCount);
+
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device);
+
+    const auto &binaries  = context.getBinaryCollection();
+    const auto vertShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+    const auto fragShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const auto vertShaderStage = makePipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, *vertShader);
+    const auto fragShaderStage = makePipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, *fragShader);
+
+    Move<VkPipeline> vertexInputLib;
+    Move<VkPipeline> preRasterLib;
+    Move<VkPipeline> fragShaderLib;
+    Move<VkPipeline> fragOutLib;
+    Move<VkPipeline> finalPipeline;
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+    const VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = {
+        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+        VK_FALSE,
+    };
+
+    const auto viewport = makeViewport(extent);
+    const auto scissor  = makeRect2D(extent);
+
+    const VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, nullptr, 0u, 1u, &viewport, 1u, &scissor,
+    };
+
+    const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_FALSE,
+        VK_FALSE,
+        VK_POLYGON_MODE_FILL,
+        VK_CULL_MODE_NONE,
+        VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        VK_FALSE,
+        0.0f,
+        0.0f,
+        0.0f,
+        1.0f,
+    };
+
+    const VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = initVulkanStructure();
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
+    memset(&colorBlendAttachmentState, 0, sizeof(colorBlendAttachmentState));
+    colorBlendAttachmentState.colorWriteMask = ALL_COLOR_COMPONENTS;
+
+    const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_FALSE,
+        VK_LOGIC_OP_CLEAR,
+        1u,
+        &colorBlendAttachmentState,
+        {0.0f, 0.0f, 0.0f, 0.0f},
+    };
+
+    VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = initVulkanStructure();
+    multisampleStateCreateInfo.rasterizationSamples                 = VK_SAMPLE_COUNT_1_BIT;
+
+    const auto makePipelineRenderingCreateInfo = [&](uint32_t viewMask, bool formatInfo)
+    {
+        const VkPipelineRenderingCreateInfo info = {
+            VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+            nullptr,
+            viewMask,
+            (formatInfo ? 1u : 0u),
+            (formatInfo ? &colorFormat : nullptr),
+            VK_FORMAT_UNDEFINED,
+            VK_FORMAT_UNDEFINED,
+        };
+        return info;
+    };
+
+    const auto goodViewMask = 0x3u;
+    const auto badViewMask  = 0x1u;
+
+    const auto preRasterRenderingCreateInfo  = makePipelineRenderingCreateInfo(goodViewMask, false);
+    const auto fragShaderRenderingCreateInfo = makePipelineRenderingCreateInfo(goodViewMask, false);
+    const auto fragOutRenderingCreateInfo    = makePipelineRenderingCreateInfo(badViewMask, true);
+
+    auto gplVertexInputInfo =
+        makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT);
+    auto gplPreRasterInfo =
+        makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
+    auto gplFragShaderInfo =
+        makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT);
+    auto gplFragOutInfo =
+        makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT);
+
+    VkPipelineCreateFlags libCreationFlags = 0u;
+    libCreationFlags |= VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+    if (optimized)
+        libCreationFlags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
+
+    VkGraphicsPipelineCreateInfo vertexInputLibInfo = initVulkanStructure();
+    vertexInputLibInfo.flags                        = libCreationFlags;
+    vertexInputLibInfo.pVertexInputState            = &vertexInputState;
+    vertexInputLibInfo.pInputAssemblyState          = &inputAssemblyState;
+    vertexInputLibInfo.pNext                        = &gplVertexInputInfo;
+
+    VkGraphicsPipelineCreateInfo preRasterLibInfo = initVulkanStructure();
+    preRasterLibInfo.flags                        = libCreationFlags;
+    preRasterLibInfo.stageCount                   = 1u;
+    preRasterLibInfo.pStages                      = &vertShaderStage;
+    preRasterLibInfo.layout                       = *pipelineLayout;
+    preRasterLibInfo.pViewportState               = &viewportStateCreateInfo;
+    preRasterLibInfo.pRasterizationState          = &rasterizationStateCreateInfo;
+    gplPreRasterInfo.pNext                        = &preRasterRenderingCreateInfo;
+    preRasterLibInfo.pNext                        = &gplPreRasterInfo;
+
+    VkGraphicsPipelineCreateInfo fragShaderLibInfo = initVulkanStructure();
+    fragShaderLibInfo.flags                        = libCreationFlags;
+    fragShaderLibInfo.stageCount                   = 1u;
+    fragShaderLibInfo.pStages                      = &fragShaderStage;
+    fragShaderLibInfo.layout                       = *pipelineLayout;
+    fragShaderLibInfo.pDepthStencilState           = &depthStencilCreateInfo;
+    gplFragShaderInfo.pNext                        = &fragShaderRenderingCreateInfo;
+    fragShaderLibInfo.pNext                        = &gplFragShaderInfo;
+
+    VkGraphicsPipelineCreateInfo fragOutLibInfo = initVulkanStructure();
+    fragOutLibInfo.flags                        = libCreationFlags;
+    fragOutLibInfo.pColorBlendState             = &colorBlendStateCreateInfo;
+    fragOutLibInfo.pMultisampleState            = &multisampleStateCreateInfo;
+    gplFragOutInfo.pNext                        = &fragOutRenderingCreateInfo;
+    fragOutLibInfo.pNext                        = &gplFragOutInfo;
+
+    vertexInputLib = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &vertexInputLibInfo);
+    preRasterLib   = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &preRasterLibInfo);
+    fragShaderLib  = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &fragShaderLibInfo);
+    fragOutLib     = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &fragOutLibInfo);
+
+    const std::vector<VkPipeline> libraries{
+        *vertexInputLib,
+        *preRasterLib,
+        *fragShaderLib,
+        *fragOutLib,
+    };
+    const VkPipelineLibraryCreateInfoKHR libraryCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,
+        nullptr,
+        de::sizeU32(libraries),
+        de::dataOrNull(libraries),
+    };
+    VkGraphicsPipelineCreateInfo finalPipelineInfo = initVulkanStructure();
+    finalPipelineInfo.pNext                        = &libraryCreateInfo;
+    finalPipelineInfo.layout                       = *pipelineLayout;
+    if (optimized)
+        finalPipelineInfo.flags |= VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT;
+
+    finalPipeline = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &finalPipelineInfo);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    // Does not match any set by the fragment shader.
+    const auto clearValue = makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    {
+        const auto dstAccess = (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+        const auto barrier =
+            makeImageMemoryBarrier(0u, dstAccess, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                   colorBuffer.getImage(), colorSRR);
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, 0u, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, &barrier);
+    }
+    beginRendering(ctx.vkd, cmdBuffer, colorBuffer.getImageView(), scissor, clearValue,
+                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR, 0u, layerCount, goodViewMask);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *finalPipeline);
+    ctx.vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+    endRendering(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1),
+                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, layerCount);
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    auto bufferAlloc = colorBuffer.getBufferAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, bufferAlloc);
+
+    const auto tcuFormat = mapVkFormat(colorFormat);
+    tcu::ConstPixelBufferAccess result(tcuFormat, extent, bufferAlloc.getHostPtr());
+
+    tcu::TextureLevel referenceLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess reference = referenceLevel.getAccess();
+
+    const std::vector<tcu::Vec4> refColors{
+        tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f),
+        tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f),
+    };
+    DE_ASSERT(refColors.size() == static_cast<size_t>(extent.z()));
+
+    const tcu::Vec4 threshold(0.0f);
+    auto &log = context.getTestContext().getLog();
+    bool fail = false;
+
+    for (int z = 0; z < extent.z(); ++z)
+    {
+        const auto resLayer = tcu::getSubregion(result, 0, 0, z, extent.x(), extent.y(), 1);
+        const auto refLayer = tcu::getSubregion(reference, 0, 0, z, extent.x(), extent.y(), 1);
+        const auto imgName  = "Layer" + std::to_string(z);
+
+        tcu::clear(refLayer, refColors.at(z));
+
+        if (!tcu::floatThresholdCompare(log, imgName.c_str(), "", refLayer, resLayer, threshold,
+                                        tcu::COMPARE_LOG_ON_ERROR))
+            fail = true;
+    }
+
+    if (fail)
+        TCU_FAIL("Unexpected output in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createPipelineLibraryTests(tcu::TestContext &testCtx)
@@ -5715,6 +6297,8 @@ tcu::TestCaseGroup *createPipelineLibraryTests(tcu::TestContext &testCtx)
                                             {MiscTestMode::BIND_NULL_DESCRIPTOR_SET_IN_MONOLITHIC_PIPELINE}));
         otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "null_rendering_create_info",
                                                              {MiscTestMode::NULL_RENDERING_CREATE_INFO}));
+        otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "null_rendering_create_info_ptr",
+                                                             {MiscTestMode::NULL_RENDERING_CREATE_INFO_PTR}));
         otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "bad_rendering_create_info",
                                                              {MiscTestMode::BAD_RENDERING_CREATE_INFO}));
         otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "common_frag_pipeline_library",
@@ -5835,6 +6419,42 @@ tcu::TestCaseGroup *createPipelineLibraryTests(tcu::TestContext &testCtx)
                 }
 
         miscTests->addChild(anslGroup.release());
+    }
+
+    // Test cases for rebinding pipelines in the primary after executing things in the secondary.
+    {
+        de::MovePtr<tcu::TestCaseGroup> primRebindGroup(new tcu::TestCaseGroup(testCtx, "primary_rebind"));
+
+        struct
+        {
+            PipelineConstructionType constructionType;
+            const char *name;
+        } ConstructionTypeCases[] = {
+            {PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC, "monolithic"},
+            {PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY, "fast_lib"},
+            {PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY, "optimized_lib"},
+            {PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV, "eso_unlinked_spriv"},
+        };
+
+        for (const auto &constructionCase : ConstructionTypeCases)
+        {
+            addFunctionCaseWithPrograms(primRebindGroup.get(), constructionCase.name, PrimaryRebindCheckSupport,
+                                        PrimaryRebindInitPrograms, PrimaryRebindRun, constructionCase.constructionType);
+        }
+
+        miscTests->addChild(primRebindGroup.release());
+    }
+
+    // Test case to check if viewMask is needed the fragment output library.
+    {
+        de::MovePtr<tcu::TestCaseGroup> viewMaskGroup(new tcu::TestCaseGroup(testCtx, "view_mask"));
+        for (const bool optimized : {false, true})
+        {
+            const auto testName = (optimized ? "optimized" : "fast");
+            addFunctionCaseWithPrograms(viewMaskGroup.get(), testName, viewMaskSupportCheck, viewMaskInitPrograms,
+                                        viewMaskRun, optimized);
+        }
+        miscTests->addChild(viewMaskGroup.release());
     }
 
     group->addChild(miscTests.release());

@@ -18,6 +18,7 @@ auto fBufferDeviceAddressFeaturesEXT                    = m_context.getBufferDev
 auto fClusterCullingShaderFeaturesHUAWEI                = m_context.getClusterCullingShaderFeaturesHUAWEI();
 auto fCoherentMemoryFeaturesAMD                         = m_context.getCoherentMemoryFeaturesAMD();
 auto fColorWriteEnableFeaturesEXT                       = m_context.getColorWriteEnableFeaturesEXT();
+auto fCommandBufferInheritanceFeaturesNV                = m_context.getCommandBufferInheritanceFeaturesNV();
 auto fComputeShaderDerivativesFeatures                  = m_context.getComputeShaderDerivativesFeatures();
 auto fConditionalRenderingFeaturesEXT                   = m_context.getConditionalRenderingFeaturesEXT();
 auto fCooperativeMatrix2FeaturesNV                      = m_context.getCooperativeMatrix2FeaturesNV();
@@ -37,7 +38,9 @@ auto fDepthClipControlFeaturesEXT                       = m_context.getDepthClip
 auto fDepthClipEnableFeaturesEXT                        = m_context.getDepthClipEnableFeaturesEXT();
 auto fDescriptorBufferFeaturesEXT                       = m_context.getDescriptorBufferFeaturesEXT();
 auto fDescriptorBufferTensorFeaturesARM                 = m_context.getDescriptorBufferTensorFeaturesARM();
+auto fDescriptorHeapFeaturesEXT                         = m_context.getDescriptorHeapFeaturesEXT();
 auto fDescriptorIndexingFeatures                        = m_context.getDescriptorIndexingFeatures();
+auto fDeviceAddressCommandsFeatures                     = m_context.getDeviceAddressCommandsFeatures();
 auto fDeviceGeneratedCommandsComputeFeaturesNV          = m_context.getDeviceGeneratedCommandsComputeFeaturesNV();
 auto fDeviceGeneratedCommandsFeaturesEXT                = m_context.getDeviceGeneratedCommandsFeaturesEXT();
 auto fDeviceGeneratedCommandsFeatures                   = m_context.getDeviceGeneratedCommandsFeatures();
@@ -76,6 +79,7 @@ auto fImagelessFramebufferFeatures                      = m_context.getImageless
 auto fIndexTypeUint8Features                            = m_context.getIndexTypeUint8Features();
 auto fInheritedViewportScissorFeatures                  = m_context.getInheritedViewportScissorFeatures();
 auto fInlineUniformBlockFeatures                        = m_context.getInlineUniformBlockFeatures();
+auto fInternallySynchronizedQueuesFeatures              = m_context.getInternallySynchronizedQueuesFeatures();
 auto fInvocationMaskFeaturesHUAWEI                      = m_context.getInvocationMaskFeaturesHUAWEI();
 auto fLegacyDitheringFeaturesEXT                        = m_context.getLegacyDitheringFeaturesEXT();
 auto fLegacyVertexAttributesFeaturesEXT                 = m_context.getLegacyVertexAttributesFeaturesEXT();
@@ -124,6 +128,7 @@ auto fPrimitivesGeneratedQueryFeaturesEXT               = m_context.getPrimitive
 auto fPrivateDataFeatures                               = m_context.getPrivateDataFeatures();
 auto fProtectedMemoryFeatures                           = m_context.getProtectedMemoryFeatures();
 auto fProvokingVertexFeaturesEXT                        = m_context.getProvokingVertexFeaturesEXT();
+auto fPushConstantBankFeaturesNV                        = m_context.getPushConstantBankFeaturesNV();
 auto fRGBA10X6FormatsFeaturesEXT                        = m_context.getRGBA10X6FormatsFeaturesEXT();
 auto fRasterizationOrderAttachmentAccessFeaturesEXT     = m_context.getRasterizationOrderAttachmentAccessFeaturesEXT();
 auto fRawAccessChainsFeaturesNV                         = m_context.getRawAccessChainsFeaturesNV();
@@ -216,6 +221,7 @@ std::vector<void *> pNextFeatures = {
 	&fClusterCullingShaderFeaturesHUAWEI,
 	&fCoherentMemoryFeaturesAMD,
 	&fColorWriteEnableFeaturesEXT,
+	&fCommandBufferInheritanceFeaturesNV,
 	&fComputeShaderDerivativesFeatures,
 	&fConditionalRenderingFeaturesEXT,
 	&fCooperativeMatrix2FeaturesNV,
@@ -235,7 +241,9 @@ std::vector<void *> pNextFeatures = {
 	&fDepthClipEnableFeaturesEXT,
 	&fDescriptorBufferFeaturesEXT,
 	&fDescriptorBufferTensorFeaturesARM,
+	&fDescriptorHeapFeaturesEXT,
 	&fDescriptorIndexingFeatures,
+	&fDeviceAddressCommandsFeatures,
 	&fDeviceGeneratedCommandsComputeFeaturesNV,
 	&fDeviceGeneratedCommandsFeaturesEXT,
 	&fDeviceGeneratedCommandsFeatures,
@@ -274,6 +282,7 @@ std::vector<void *> pNextFeatures = {
 	&fIndexTypeUint8Features,
 	&fInheritedViewportScissorFeatures,
 	&fInlineUniformBlockFeatures,
+	&fInternallySynchronizedQueuesFeatures,
 	&fInvocationMaskFeaturesHUAWEI,
 	&fLegacyDitheringFeaturesEXT,
 	&fLegacyVertexAttributesFeaturesEXT,
@@ -322,6 +331,7 @@ std::vector<void *> pNextFeatures = {
 	&fPrivateDataFeatures,
 	&fProtectedMemoryFeatures,
 	&fProvokingVertexFeaturesEXT,
+	&fPushConstantBankFeaturesNV,
 	&fRGBA10X6FormatsFeaturesEXT,
 	&fRasterizationOrderAttachmentAccessFeaturesEXT,
 	&fRawAccessChainsFeaturesNV,

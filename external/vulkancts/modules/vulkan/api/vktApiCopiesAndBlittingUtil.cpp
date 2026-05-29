@@ -22,6 +22,8 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktApiCopiesAndBlittingUtil.hpp"
+#include "vkFormatLists.hpp"
+#include "deSTLUtil.hpp"
 
 namespace vkt
 {
@@ -31,7 +33,7 @@ namespace api
 
 VkImageCopy2KHR convertvkImageCopyTovkImageCopy2KHR(VkImageCopy imageCopy)
 {
-    const VkImageCopy2KHR imageCopy2 = {
+    return {
         VK_STRUCTURE_TYPE_IMAGE_COPY_2_KHR, // VkStructureType sType;
         nullptr,                            // const void* pNext;
         imageCopy.srcSubresource,           // VkImageSubresourceLayers srcSubresource;
@@ -40,23 +42,22 @@ VkImageCopy2KHR convertvkImageCopyTovkImageCopy2KHR(VkImageCopy imageCopy)
         imageCopy.dstOffset,                // VkOffset3D dstOffset;
         imageCopy.extent                    // VkExtent3D extent;
     };
-    return imageCopy2;
 }
+
 VkBufferCopy2KHR convertvkBufferCopyTovkBufferCopy2KHR(VkBufferCopy bufferCopy)
 {
-    const VkBufferCopy2KHR bufferCopy2 = {
+    return {
         VK_STRUCTURE_TYPE_BUFFER_COPY_2_KHR, // VkStructureType sType;
         nullptr,                             // const void* pNext;
         bufferCopy.srcOffset,                // VkDeviceSize srcOffset;
         bufferCopy.dstOffset,                // VkDeviceSize dstOffset;
         bufferCopy.size,                     // VkDeviceSize size;
     };
-    return bufferCopy2;
 }
 
 VkBufferImageCopy2KHR convertvkBufferImageCopyTovkBufferImageCopy2KHR(VkBufferImageCopy bufferImageCopy)
 {
-    const VkBufferImageCopy2KHR bufferImageCopy2 = {
+    return {
         VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR, // VkStructureType sType;
         nullptr,                                   // const void* pNext;
         bufferImageCopy.bufferOffset,              // VkDeviceSize bufferOffset;
@@ -66,14 +67,31 @@ VkBufferImageCopy2KHR convertvkBufferImageCopyTovkBufferImageCopy2KHR(VkBufferIm
         bufferImageCopy.imageOffset,               // VkOffset3D imageOffset;
         bufferImageCopy.imageExtent                // VkExtent3D imageExtent;
     };
-    return bufferImageCopy2;
 }
 
 #ifndef CTS_USES_VULKANSC
+VkDeviceMemoryImageCopyKHR convertvkBufferImageCopyTovkDeviceMemoryImageCopyKHR(VkBufferImageCopy bufferImageCopy,
+                                                                                VkDeviceAddress address,
+                                                                                VkDeviceSize size,
+                                                                                VkImageLayout imageLayout,
+                                                                                VkAddressCommandFlagsKHR addressFlags)
+{
+    return {VK_STRUCTURE_TYPE_DEVICE_MEMORY_IMAGE_COPY_KHR,
+            nullptr,
+            {address + bufferImageCopy.bufferOffset, size},
+            addressFlags,
+            bufferImageCopy.bufferRowLength,
+            bufferImageCopy.bufferImageHeight,
+            bufferImageCopy.imageSubresource,
+            imageLayout,
+            bufferImageCopy.imageOffset,
+            bufferImageCopy.imageExtent};
+}
+
 VkCopyMemoryToImageIndirectCommandKHR convertvkBufferImageCopyTovkMemoryImageCopyKHR(VkDeviceAddress srcBufferAddress,
                                                                                      VkBufferImageCopy bufferImageCopy)
 {
-    const VkCopyMemoryToImageIndirectCommandKHR memoryImageCopy = {
+    return {
         srcBufferAddress + bufferImageCopy.bufferOffset, // VkDeviceAddress srcAddress;
         bufferImageCopy.bufferRowLength,                 // uint32_t bufferRowLength;
         bufferImageCopy.bufferImageHeight,               // uint32_t bufferImageHeight;
@@ -81,7 +99,6 @@ VkCopyMemoryToImageIndirectCommandKHR convertvkBufferImageCopyTovkMemoryImageCop
         bufferImageCopy.imageOffset,                     // VkOffset3D imageOffset;
         bufferImageCopy.imageExtent                      // VkExtent3D imageExtent;
     };
-    return memoryImageCopy;
 }
 #endif
 
@@ -236,34 +253,19 @@ de::MovePtr<Allocation> allocateImage(const InstanceInterface &vki, const Device
 void checkExtensionSupport(Context &context, uint32_t flags)
 {
     if (flags & COPY_COMMANDS_2)
-    {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_copy_commands2"))
-            TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
-    }
+        context.requireDeviceFunctionality("VK_KHR_copy_commands2");
 
     if (flags & SEPARATE_DEPTH_STENCIL_LAYOUT)
-    {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_separate_depth_stencil_layouts"))
-            TCU_THROW(NotSupportedError, "VK_KHR_separate_depth_stencil_layouts is not supported");
-    }
+        context.requireDeviceFunctionality("VK_KHR_separate_depth_stencil_layouts");
 
     if (flags & MAINTENANCE_1)
-    {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance1"))
-            TCU_THROW(NotSupportedError, "VK_KHR_maintenance1 is not supported");
-    }
+        context.requireDeviceFunctionality("VK_KHR_maintenance1");
 
     if (flags & MAINTENANCE_5)
-    {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance5"))
-            TCU_THROW(NotSupportedError, "VK_KHR_maintenance5 is not supported");
-    }
+        context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
     if (flags & INDIRECT_COPY)
-    {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_copy_memory_indirect"))
-            TCU_THROW(NotSupportedError, "VK_KHR_copy_memory_indirect is not supported");
-    }
+        context.requireDeviceFunctionality("VK_KHR_copy_memory_indirect");
 
     if (flags & SPARSE_BINDING)
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
@@ -273,6 +275,9 @@ void checkExtensionSupport(Context &context, uint32_t flags)
 
     if (flags & MAINTENANCE_10)
         context.requireDeviceFunctionality("VK_KHR_maintenance10");
+
+    if (flags & DEVICE_ADDRESS_COMMANDS)
+        context.requireDeviceFunctionality("VK_KHR_device_address_commands");
 }
 
 uint32_t getArraySize(const ImageParms &parms)
@@ -372,6 +377,90 @@ void checkTransferQueueGranularity(Context &context, const VkExtent3D &extent, V
         break;
     default:
         DE_ASSERT(false && "Unexpected image type");
+    }
+}
+
+void checkTransferQueueGranularity(const Context &context, const VkImageCreateInfo &imgInfo,
+                                   const VkBufferImageCopy &region)
+{
+    const auto queueIndex = context.getTransferQueueFamilyIndex();
+    if (queueIndex == -1)
+        TCU_THROW(NotSupportedError, "No queue family found that only supports transfer queue.");
+
+    const auto ctx = context.getContextCommonData();
+
+    const auto queueProps = getPhysicalDeviceQueueFamilyProperties(ctx.vki, ctx.physicalDevice);
+    DE_ASSERT(queueProps.size() > static_cast<size_t>(queueIndex));
+    const auto &granularity   = queueProps[queueIndex].minImageTransferGranularity;
+    const auto intGranularity = tcu::UVec3(granularity.width, granularity.height, granularity.depth).asInt();
+
+    const bool isZero    = (granularity.width == 0u && granularity.height == 0u && granularity.depth == 0u);
+    const auto mipExtent = mipLevelExtents(imgInfo.extent, region.imageSubresource.mipLevel);
+
+    if (isZero)
+    {
+        if (region.imageOffset.x != 0 || region.imageOffset.y != 0 || region.imageOffset.z != 0)
+            TCU_THROW(NotSupportedError, "Transfer granularity is zero and offset is not");
+
+        if (region.imageExtent.width < mipExtent.width || region.imageExtent.height < mipExtent.height ||
+            region.imageExtent.depth < mipExtent.depth)
+            TCU_THROW(NotSupportedError, "Transfer granularity is zero and extent does not match the subresource");
+    }
+    else
+    {
+        if (region.imageOffset.x % intGranularity.x() != 0)
+        {
+            std::ostringstream msg;
+            msg << "Offset X (" << region.imageOffset.x << ") not a multiple of the granularity width ("
+                << intGranularity.x() << ")";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
+
+        if (imgInfo.imageType > VK_IMAGE_TYPE_1D && region.imageOffset.y % intGranularity.y() != 0)
+        {
+            std::ostringstream msg;
+            msg << "Offset Y (" << region.imageOffset.y << ") not a multiple of the granularity height ("
+                << intGranularity.y() << ")";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
+
+        if (imgInfo.imageType > VK_IMAGE_TYPE_2D && region.imageOffset.z % intGranularity.z() != 0)
+        {
+            std::ostringstream msg;
+            msg << "Offset Z (" << region.imageOffset.z << ") not a multiple of the granularity depth ("
+                << intGranularity.z() << ")";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
+
+        if (region.imageExtent.width % granularity.width != 0u &&
+            region.imageOffset.x + region.imageExtent.width < mipExtent.width)
+        {
+            std::ostringstream msg;
+            msg << "Transfer extent width (" << region.imageExtent.width << ") and offset X (" << region.imageOffset.x
+                << ") not valid for granularity width (" << granularity.width << ") and mip extent width ("
+                << mipExtent.width << ")";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
+
+        if (imgInfo.imageType > VK_IMAGE_TYPE_1D && region.imageExtent.height % granularity.height != 0u &&
+            region.imageOffset.y + region.imageExtent.height < mipExtent.height)
+        {
+            std::ostringstream msg;
+            msg << "Transfer extent height (" << region.imageExtent.height << ") and offset Y (" << region.imageOffset.y
+                << ") not valid for granularity height (" << granularity.height << ") and mip extent height ("
+                << mipExtent.height << ")";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
+
+        if (imgInfo.imageType > VK_IMAGE_TYPE_3D && region.imageExtent.depth % granularity.depth != 0u &&
+            region.imageOffset.z + region.imageExtent.depth < mipExtent.depth)
+        {
+            std::ostringstream msg;
+            msg << "Transfer extent depth (" << region.imageExtent.depth << ") and offset Z (" << region.imageOffset.z
+                << ") not valid for granularity depth (" << granularity.depth << ") and mip extent depth ("
+                << mipExtent.depth << ")";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
     }
 }
 
@@ -1017,7 +1106,7 @@ CopiesAndBlittingTestInstance::CopiesAndBlittingTestInstance(Context &context, T
 }
 
 void CopiesAndBlittingTestInstance::generateBuffer(tcu::PixelBufferAccess buffer, int width, int height, int depth,
-                                                   FillMode mode)
+                                                   FillMode mode) const
 {
     const tcu::TextureChannelClass channelClass = tcu::getTextureChannelClass(buffer.getFormat().type);
     tcu::Vec4 maxValue(1.0f);
@@ -1064,6 +1153,7 @@ void CopiesAndBlittingTestInstance::generateBuffer(tcu::PixelBufferAccess buffer
     const tcu::Vec4 blueColor(0.0, 0.0, maxValue.z(), maxValue.w());
     const tcu::Vec4 whiteColor(maxValue.x(), maxValue.y(), maxValue.z(), maxValue.w());
     const tcu::Vec4 blackColor(0.0f, 0.0f, 0.0f, 0.0f);
+    const auto pixelSize(tcu::getPixelSize(buffer.getFormat()));
 
     for (int z = 0; z < depth; ++z)
         for (int y = 0; y < height; ++y)
@@ -1106,11 +1196,33 @@ void CopiesAndBlittingTestInstance::generateBuffer(tcu::PixelBufferAccess buffer
 
                 case FILL_MODE_RANDOM_GRAY:
                 {
-                    // generate random gray color but multiply it by 0.95 to not generate
-                    // value that can be interpreted as NaNs when copied to float formats
-                    tcu::Vec4 randomGrayColor(randomGen.getFloat() * 0.95f);
-                    randomGrayColor.w() = maxValue.w();
-                    buffer.setPixel(randomGrayColor, x, y, z);
+                    if (de::contains(formats::signedAndUnsignedFloatFormats, m_params.src.image.format) ||
+                        de::contains(formats::signedAndUnsignedFloatFormats, m_params.dst.image.format))
+                    {
+                        // generate color from predefined set of values to avoid generating
+                        // value that can be interpreted as NaNs when copied to float formats
+                        const uint8_t validBytes[]{0b10001000, 0b10101010};
+                        const uint8_t validCount = std::size(validBytes);
+
+                        // use single random number to select color and alpha
+                        uint32_t selectedCombination = randomGen.getUint32() % (2 * validCount);
+                        uint8_t color                = validBytes[selectedCombination % validCount];
+                        uint8_t alpha                = validBytes[selectedCombination / validCount];
+
+                        // select bit shift for color to generate more shades of gray
+                        color >>= (randomGen.getUint32() % 7);
+
+                        // assign value to processed pixel in buffer
+                        auto *pixelPtr = reinterpret_cast<uint8_t *>(buffer.getPixelPtr(x, y, z));
+                        std::memset(pixelPtr, color, pixelSize - 1);
+                        pixelPtr[pixelSize - 1] = alpha;
+                    }
+                    else
+                    {
+                        tcu::Vec4 randomGrayColor(randomGen.getFloat());
+                        randomGrayColor.w() = maxValue.w();
+                        buffer.setPixel(randomGrayColor, x, y, z);
+                    }
                     break;
                 }
 

@@ -58,6 +58,8 @@ set(DEQP_VK_VIDEO_SRCS_TARGET_INDEPENDENT
 	vktVideoEncodeTests.cpp
 	vktVideoEncodeTests.hpp
 	vktVideoEncodeTestsAV1.cpp
+	vktVideoProfilesValidationTests.cpp
+	vktVideoProfilesValidationTests.hpp
 	vktVideoTestUtils.cpp
 	vktVideoTestUtils.hpp
 	vktVideoTests.cpp

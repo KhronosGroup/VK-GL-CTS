@@ -495,8 +495,14 @@ void SpvAsmComputeShaderCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "Request physical storage buffer feature not supported");
 
 #ifndef CTS_USES_VULKANSC
+
     if (m_shaderSpec.uses64BitIndexing && !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
         TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
+
+    if (m_shaderSpec.usesLongVector && !context.getShaderLongVectorFeaturesEXT().longVector)
+    {
+        TCU_THROW(NotSupportedError, "longVector not supported");
+    }
 #endif
 }
 

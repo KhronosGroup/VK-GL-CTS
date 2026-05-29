@@ -5,7 +5,6 @@
  * Copyright (c) 2015 Google Inc.
  * Copyright (c) 2023 LunarG, Inc.
  * Copyright (c) 2023 Nintendo
- * Copyright (c) 2024-2025 Arm Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,16 +64,7 @@ using namespace vk;
 namespace
 {
 
-vector<string> getExtensionNames(const vector<VkExtensionProperties> &extensions)
-{
-    std::vector<string> extensionNames;
-    extensionNames.reserve(extensions.size());
-    std::transform(begin(extensions), end(extensions), std::back_inserter(extensionNames),
-                   [](const VkExtensionProperties &extProperties) { return std::string(extProperties.extensionName); });
-    return extensionNames;
-}
-
-vector<string> filterExtensions(const vector<string> &extensionNames)
+vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
 {
     vector<string> enabledExtensions;
     bool khrBufferDeviceAddress = false;
@@ -119,7 +109,10 @@ vector<string> filterExtensions(const vector<string> &extensionNames)
         "VK_NV_linear_color_attachment",
         "VK_NV_cooperative_matrix2",
         "VK_NV_cooperative_vector",
+        "VK_NV_low_latency2",
         "VK_QCOM_fragment_density_map_offset",
+        "VK_NV_command_buffer_inheritance",
+        "VK_NV_push_constant_bank",
         "VK_QCOM_image_processing",
         "VK_ARM_performance_counters_by_region",
         "VK_IMG_format_pvrtc",
@@ -129,28 +122,28 @@ vector<string> filterExtensions(const vector<string> &extensionNames)
 
     const char *exclusions[] = {"VK_EXT_device_address_binding_report", "VK_EXT_device_memory_report"};
 
-    for (size_t extNdx = 0; extNdx < extensionNames.size(); extNdx++)
+    for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
     {
-        if (strcmp(extensionNames[extNdx].c_str(), "VK_KHR_buffer_device_address") == 0)
+        if (strcmp(extensions[extNdx].extensionName, "VK_KHR_buffer_device_address") == 0)
         {
             khrBufferDeviceAddress = true;
             break;
         }
     }
 
-    for (size_t extNdx = 0; extNdx < extensionNames.size(); extNdx++)
+    for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
     {
-        const auto &extName = extensionNames[extNdx];
+        const auto &extName = extensions[extNdx].extensionName;
 
         excludeExtension = false;
 
         // VK_EXT_buffer_device_address is deprecated and must not be enabled if VK_KHR_buffer_device_address is enabled
-        if (khrBufferDeviceAddress && strcmp(extName.c_str(), "VK_EXT_buffer_device_address") == 0)
+        if (khrBufferDeviceAddress && strcmp(extName, "VK_EXT_buffer_device_address") == 0)
             continue;
 
         for (int exclusionsNdx = 0; exclusionsNdx < DE_LENGTH_OF_ARRAY(exclusions); exclusionsNdx++)
         {
-            if (strcmp(extName.c_str(), exclusions[exclusionsNdx]) == 0)
+            if (strcmp(extName, exclusions[exclusionsNdx]) == 0)
             {
                 excludeExtension = true;
                 break;
@@ -162,7 +155,7 @@ vector<string> filterExtensions(const vector<string> &extensionNames)
 
         for (int extGroupNdx = 0; extGroupNdx < DE_LENGTH_OF_ARRAY(extensionGroups); extGroupNdx++)
         {
-            if (deStringBeginsWith(extName.c_str(), extensionGroups[extGroupNdx]))
+            if (deStringBeginsWith(extName, extensionGroups[extGroupNdx]))
                 enabledExtensions.push_back(extName);
         }
     }
@@ -346,10 +339,9 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
                                    de::SharedPtr<vk::ResourceInterface> resourceInterface)
 {
     VkDeviceQueueCreateInfo queueInfo[4];
-    VkDeviceCreateInfo deviceInfo;
-    vector<const char *> enabledLayers;
-    const float queuePriority = 1.0f;
-    uint32_t numQueues        = 1;
+    VkDeviceCreateInfo deviceInfo = initVulkanStructure();
+    const float queuePriority     = 1.0f;
+    uint32_t numQueues            = 1;
 
     deMemset(&queueInfo, 0, sizeof(queueInfo));
 
@@ -393,23 +385,12 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
         numQueues++;
     }
 
-    if (cmdLine.isValidationEnabled())
-    {
-        enabledLayers = vkt::getValidationLayers(vki, physicalDevice);
-        if (enabledLayers.empty())
-            TCU_THROW(NotSupportedError, "No validation layers found");
-    }
-
-    deMemset(&deviceInfo, 0, sizeof(deviceInfo));
     // VK_KHR_get_physical_device_properties2 is used if enabledFeatures.pNext != 0
-    deviceInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     deviceInfo.pNext                   = enabledFeatures.pNext ? &enabledFeatures : nullptr;
     deviceInfo.queueCreateInfoCount    = numQueues;
     deviceInfo.pQueueCreateInfos       = queueInfo;
     deviceInfo.enabledExtensionCount   = de::sizeU32(usedExtensions);
     deviceInfo.ppEnabledExtensionNames = de::dataOrNull(usedExtensions);
-    deviceInfo.enabledLayerCount       = de::sizeU32(enabledLayers);
-    deviceInfo.ppEnabledLayerNames     = de::dataOrNull(enabledLayers);
     deviceInfo.pEnabledFeatures        = enabledFeatures.pNext ? nullptr : &enabledFeatures.features;
 
 #ifdef CTS_USES_VULKANSC
@@ -480,6 +461,7 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
     }
 
 #else
+    DE_UNREF(cmdLine);
     DE_UNREF(resourceInterface);
 #endif // CTS_USES_VULKANSC
 
@@ -807,30 +789,39 @@ vector<const char *> removeCoreExtensions(const uint32_t apiVersion, const vecto
 
 } // namespace
 
-InstCaps::InstCaps(const PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine, const std::string &id_)
+InstCaps::InstCaps(const PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine, const std::string &id_,
+                   vkt::TestCase *testCase, const InstCaps *hint, bool dontCreateDefaultDeviceFlag)
 #ifndef CTS_USES_VULKANSC
     : maximumFrameworkVulkanVersion(VK_API_MAX_FRAMEWORK_VERSION)
 #else
     : maximumFrameworkVulkanVersion(VKSC_API_MAX_FRAMEWORK_VERSION)
 #endif // CTS_USES_VULKANSC
-    , availableInstanceVersion(getTargetInstanceVersion(vkPlatform))
+    , availableInstanceVersion(hint ? hint->availableInstanceVersion : getTargetInstanceVersion(vkPlatform))
     , usedInstanceVersion(
-          sanitizeApiVersion(minVulkanAPIVersion(availableInstanceVersion, maximumFrameworkVulkanVersion)))
-    , deviceVersions(determineDeviceVersions(vkPlatform, usedInstanceVersion, commandLine))
-    , usedApiVersion(sanitizeApiVersion(minVulkanAPIVersion(usedInstanceVersion, deviceVersions.first)))
-    , coreExtensions(addCoreInstanceExtensions(
-          filterExtensions(getExtensionNames(enumerateInstanceExtensionProperties(vkPlatform, nullptr))),
-          usedApiVersion))
+          hint ? hint->usedInstanceVersion :
+                 sanitizeApiVersion(minVulkanAPIVersion(availableInstanceVersion, maximumFrameworkVulkanVersion)))
+    , deviceVersions(hint ? hint->deviceVersions :
+                            determineDeviceVersions(vkPlatform, usedInstanceVersion, commandLine))
+    , usedApiVersion(hint ? hint->usedApiVersion :
+                            sanitizeApiVersion(minVulkanAPIVersion(usedInstanceVersion, deviceVersions.first)))
+    , coreExtensions(
+          hint ? hint->coreExtensions :
+                 addCoreInstanceExtensions(filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, nullptr)),
+                                           usedApiVersion))
     , id(id_)
     , m_extensions()
+    , m_destroyAllDevices({false, false})
+    , m_dontCreateDefaultDevice(dontCreateDefaultDeviceFlag)
+    , m_shouldRemoveInstanceOnTestExit(false)
+    , m_testCase(testCase)
 {
 }
 
 // "Define the ContextManager constructor, placed here as a workaround for an older Fedora version
 // where the compiler fails to locate function implementations unless they reside in the same file.
 ContextManager::ContextManager(const PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine,
-                               [[maybe_unused]] de::SharedPtr<vk::ResourceInterface> resourceInterface,
-                               int maxCustomDevices, const InstCaps &icaps, ContextManager::Det_)
+                               de::SharedPtr<vk::ResourceInterface> resourceInterface, int maxCustomDevices,
+                               const InstCaps &icaps, ContextManager::Det_)
     : m_maximumFrameworkVulkanVersion(icaps.maximumFrameworkVulkanVersion)
     , m_platformInterface(vkPlatform)
     , m_commandLine(commandLine)
@@ -861,12 +852,13 @@ ContextManager::ContextManager(const PlatformInterface &vkPlatform, const tcu::C
                                                                 *m_instance) :
                                 DebugReportCallbackPtr())
 #endif
-    , m_physicalDevice(chooseDevice(*m_instanceInterface, *m_instance, m_commandLine))
+    , m_physicalDevice(icaps.selectDevice(*m_instanceInterface, *m_instance, commandLine,
+                                          chooseDevice(*m_instanceInterface, *m_instance, m_commandLine)))
     , m_deviceVersion(getPhysicalDeviceProperties(*m_instanceInterface, m_physicalDevice).apiVersion)
     , m_maxCustomDevices(maxCustomDevices)
-    , m_deviceExtensions(addCoreDeviceExtensions(filterExtensions(getExtensionNames(enumerateDeviceExtensionProperties(
-                                                     *m_instanceInterface, m_physicalDevice, nullptr))),
-                                                 m_usedApiVersion))
+    , m_deviceExtensions(addCoreDeviceExtensions(
+          filterExtensions(enumerateDeviceExtensionProperties(*m_instanceInterface, m_physicalDevice, nullptr)),
+          m_usedApiVersion))
     , m_creationExtensions(removeCoreExtensions(m_usedApiVersion, m_deviceExtensions))
     , m_deviceFeaturesPtr(new DeviceFeatures(*m_instanceInterface, m_usedApiVersion, m_physicalDevice,
                                              m_instanceExtensions, m_deviceExtensions))
@@ -874,6 +866,10 @@ ContextManager::ContextManager(const PlatformInterface &vkPlatform, const tcu::C
                                                  m_instanceExtensions, m_deviceExtensions))
     , m_deviceFeaturesAndProperties(new DevFeaturesAndProperties(*m_deviceFeaturesPtr, *m_devicePropertiesPtr))
     , m_contexts()
+    , m_customManagers()
+    , m_destroyAllDevices(icaps.getDestroyAllDevices())
+    , m_dontCreateDefaultDevice(icaps.dontCreateDefaultDevice())
+    , m_shouldBeRemovedOnTestExit(icaps.shouldRemoveInstanceOnTestExit())
     , id(icaps.id)
 {
     m_contexts.reserve(m_maxCustomDevices + 1);
@@ -1905,6 +1901,11 @@ void TestCase::initInstanceCapabilities(InstCaps &caps)
     TCU_THROW(EnforceDefaultInstance,
               "Default implementation of TestCase::initInstanceCapabilities()."
               "If the test provides getInstanceCapabilities() then it must provide initInstanceCapabilities() as well");
+}
+
+VkPhysicalDevice TestCase::selectPhysicalDevice(const InstanceInterface &, VkInstance, const tcu::CommandLine &)
+{
+    return VK_NULL_HANDLE;
 }
 
 void TestCase::setContextManager(de::SharedPtr<const ContextManager> cm)

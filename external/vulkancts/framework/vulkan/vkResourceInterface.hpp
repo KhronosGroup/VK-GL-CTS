@@ -33,8 +33,8 @@
 #include <map>
 #ifdef CTS_USES_VULKANSC
 #include "vksClient.hpp"
+#include "vksJson.hpp"
 #include "tcuMaybe.hpp"
-//    #include "vksStructsVKSC.hpp"
 #endif // CTS_USES_VULKANSC
 
 namespace vk
@@ -130,8 +130,9 @@ public:
     std::size_t getCacheDataSize() const;
     const uint8_t *getCacheData() const;
     VkPipelineCache getPipelineCache(VkDevice device) const;
-    virtual void resetObjects()        = 0;
-    virtual void resetPipelineCaches() = 0;
+    virtual void resetObjects()                                               = 0;
+    virtual void resetPipelineCaches()                                        = 0;
+    virtual bool resetPipelineCache(VkDevice device, bool onlyIfInSubprocess) = 0;
 #endif // CTS_USES_VULKANSC
 
 protected:
@@ -156,10 +157,31 @@ protected:
     mutable std::map<VkDevice, std::string> m_deviceFeatures;
     mutable std::map<VkDevice, std::vector<std::string>> m_deviceExtensions;
 
-    std::map<VkDevice, de::SharedPtr<Move<VkPipelineCache>>> m_pipelineCache;
+    // There may be multiple DeviceDriverSC objects initialized with the same actual VkDevice
+    // handle in some test cases, therefore we need to track the number of times a pipeline cache
+    // has been registered with the VkDevice to avoid double-adding and then erasure to result
+    // in missing pipeline cache data for the device.
+    // Note that this would not be necessary if the pipeline cache would be maintained by the
+    // object owning it (e.g. the DeviceDriverSC object iself) or if the pipeline cache map
+    // would be indexed with the object owning it (i.e. the DeviceDriverSC object), or if the
+    // test cases wouldn't create multiple instances of DeviceDriver[SC] objects for the same
+    // VkDevice unnecessarily, which is a practice that is somewhat recent.
+    struct DevicePipelineCacheInfo
+    {
+        de::SharedPtr<Move<VkPipelineCache>> pipelineCache;
+        uint32_t refCount{0};
+    };
+
+    std::map<VkDevice, DevicePipelineCacheInfo> m_devicePipelineCaches;
 
     mutable std::mutex m_mutex;
+    // NOTE: m_resourceCounter is used to drive parent process handle generation
+    //       m_uniqueObjIdCounter behaves similarly, drives pipeline cache handle uniqueness,
+    //       but unlike m_resourceCounter is used in the subprocess too.
+    //       A new variable is introduced for clarity, not to conflate the same variable
+    //       being used for two different, yet similar purposes.
     mutable uint64_t m_resourceCounter;
+    mutable uint64_t m_uniqueObjIdCounter;
     mutable VkDeviceObjectReservationCreateInfo m_statCurrent;
     mutable VkDeviceObjectReservationCreateInfo m_statMax;
 
@@ -286,6 +308,7 @@ public:
                                  VkPhysicalDevice physicalDevice, uint32_t queueIndex) override;
     void resetObjects() override;
     void resetPipelineCaches() override;
+    bool resetPipelineCache(VkDevice device, bool onlyIfInSubprocess) override;
 #endif // CTS_USES_VULKANSC
 
 protected:
@@ -299,6 +322,11 @@ protected:
     std::map<VkDevice, CreateShaderModuleFunc> m_createShaderModuleFunc;
     std::map<VkDevice, CreateGraphicsPipelinesFunc> m_createGraphicsPipelinesFunc;
     std::map<VkDevice, CreateComputePipelinesFunc> m_createComputePipelinesFunc;
+
+private:
+#ifdef CTS_USES_VULKANSC
+    vksc_server::json::Context m_jsonContext;
+#endif
 };
 
 #ifdef CTS_USES_VULKANSC

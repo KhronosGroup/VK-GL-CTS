@@ -87,8 +87,7 @@ Move<VkDevice> createPostmortemDevice(Context &context)
         nullptr                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                              context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
+    return createCustomDevice(context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
                               context.getPhysicalDevice(), &deviceParams);
 }
 

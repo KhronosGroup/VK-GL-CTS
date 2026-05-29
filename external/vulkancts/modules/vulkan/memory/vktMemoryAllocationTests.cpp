@@ -186,9 +186,6 @@ void BaseAllocateTestInstance::createTestDevice(bool enable_descriptor_buffer)
 
     void *pNext = nullptr;
 
-    if (usePageable && !m_context.isDeviceFunctionalitySupported("VK_EXT_pageable_device_local_memory"))
-        TCU_THROW(NotSupportedError, "VK_EXT_pageable_device_local_memory is not supported");
-
 #ifndef CTS_USES_VULKANSC
     VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT pageableDeviceLocalMemoryFeature = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT, // VkStructureType                    sType
@@ -278,8 +275,7 @@ void BaseAllocateTestInstance::createTestDevice(bool enable_descriptor_buffer)
     };
 
     m_logicalDevice =
-        createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                           m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
+        createCustomDevice(m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
 #ifndef CTS_USES_VULKANSC
     m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance,
                                                                 *m_logicalDevice, m_context.getUsedApiVersion(),
@@ -307,8 +303,6 @@ void BaseAllocateTestInstance::createDeviceGroup(void)
         enumeratePhysicalDeviceGroups(instanceDriver, instance);
     m_numPhysDevices          = devGroupProperties[devGroupIdx].physicalDeviceCount;
     m_subsetAllocationAllowed = devGroupProperties[devGroupIdx].subsetAllocation;
-    if (m_numPhysDevices < 2)
-        TCU_THROW(NotSupportedError, "Device group allocation tests not supported with 1 physical device");
     std::vector<const char *> deviceExtensions;
 
     if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_device_group"))
@@ -354,8 +348,7 @@ void BaseAllocateTestInstance::createDeviceGroup(void)
         &deviceFeatures,                                           // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_logicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                         m_context.getPlatformInterface(), instance, instanceDriver,
+    m_logicalDevice = createCustomDevice(m_context.getPlatformInterface(), instance, instanceDriver,
                                          deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
 #ifndef CTS_USES_VULKANSC
     m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance,
@@ -486,6 +479,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
                 log << TestLog::Message << "Memory type: " << memoryType << TestLog::EndMessage;
                 log << TestLog::Message << "Memory heap: " << memoryHeap << TestLog::EndMessage;
 
+                // note this check can't be moved to checkSupport as it requires buffer creation
                 if (roundedUpAllocationSize * m_config.memoryAllocationCount > memoryHeap.size)
                     TCU_THROW(NotSupportedError, "Memory heap doesn't have enough memory.");
 
@@ -632,8 +626,8 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
 
     if (m_memoryTypeIndex < m_memoryProperties.memoryTypeCount)
         return tcu::TestStatus::incomplete();
-    else
-        return tcu::TestStatus(m_result.getResult(), m_result.getMessage());
+
+    return tcu::TestStatus(m_result.getResult(), m_result.getMessage());
 }
 
 #ifndef CTS_USES_VULKANSC
@@ -1012,6 +1006,22 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate(void)
 }
 #endif // CTS_USES_VULKANSC
 
+template <typename ConfigType>
+void commonCheckSupport(Context &context, ConfigType config)
+{
+    const InstanceInterface &vki = context.getInstanceInterface();
+    const VkInstance instance    = context.getInstance();
+    const auto &cmdLine          = context.getTestContext().getCommandLine();
+    const uint32_t devGroupIdx   = cmdLine.getVKDeviceGroupId() - 1;
+    auto devGroupProperties      = enumeratePhysicalDeviceGroups(vki, instance);
+
+    if ((config.allocationMode == ALLOCATION_MODE_DEVICE_GROUP) &&
+        (devGroupProperties[devGroupIdx].physicalDeviceCount < 2))
+        TCU_THROW(NotSupportedError, "Device group allocation tests not supported with 1 physical device");
+    else if (config.allocationMode == ALLOCATION_MODE_PAGEABLE)
+        context.requireDeviceFunctionality("VK_EXT_pageable_device_local_memory");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createAllocationTestsCommon(tcu::TestContext &testCtx, AllocationMode allocationMode)
@@ -1099,8 +1109,10 @@ tcu::TestCaseGroup *createAllocationTestsCommon(tcu::TestContext &testCtx, Alloc
                     else
                         config.memoryAllocationCount = allocationCount;
 
-                    orderGroup->addChild(new InstanceFactory1<AllocateFreeTestInstance, TestConfig>(
-                        testCtx, "count_" + de::toString(config.memoryAllocationCount), config));
+                    orderGroup->addChild(new InstanceFactory1WithSupport<AllocateFreeTestInstance, TestConfig,
+                                                                         FunctionSupport1<TestConfig>>(
+                        testCtx, "count_" + de::toString(config.memoryAllocationCount), config,
+                        typename FunctionSupport1<TestConfig>::Args(commonCheckSupport, config)));
                 }
 
                 sizeGroup->addChild(orderGroup.release());
@@ -1150,8 +1162,10 @@ tcu::TestCaseGroup *createAllocationTestsCommon(tcu::TestContext &testCtx, Alloc
                     else
                         config.memoryAllocationCount = allocationCount;
 
-                    orderGroup->addChild(new InstanceFactory1<AllocateFreeTestInstance, TestConfig>(
-                        testCtx, "count_" + de::toString(config.memoryAllocationCount), config));
+                    orderGroup->addChild(new InstanceFactory1WithSupport<AllocateFreeTestInstance, TestConfig,
+                                                                         FunctionSupport1<TestConfig>>(
+                        testCtx, "count_" + de::toString(config.memoryAllocationCount), config,
+                        typename FunctionSupport1<TestConfig>::Args(commonCheckSupport, config)));
                 }
 
                 percentGroup->addChild(orderGroup.release());
@@ -1173,8 +1187,10 @@ tcu::TestCaseGroup *createAllocationTestsCommon(tcu::TestContext &testCtx, Alloc
         {
             TestConfigRandom config(deInt32Hash(caseNdx ^ 32480), allocationMode);
             // Random case
-            randomGroup->addChild(new InstanceFactory1<RandomAllocFreeTestInstance, TestConfigRandom>(
-                testCtx, de::toString(caseNdx), config));
+            randomGroup->addChild(new InstanceFactory1WithSupport<RandomAllocFreeTestInstance, TestConfigRandom,
+                                                                  FunctionSupport1<TestConfigRandom>>(
+                testCtx, de::toString(caseNdx), config,
+                typename FunctionSupport1<TestConfigRandom>::Args(commonCheckSupport, config)));
         }
 
         group->addChild(randomGroup.release());

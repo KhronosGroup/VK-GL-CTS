@@ -7064,6 +7064,11 @@ void InteractionStorageBuffers1<API>::test_shader_compilation(
 {
     const glcts::test_var_type *var_types_set = InteractionStorageBuffers1_var_types_set_es;
 
+    if (this->limit_active_shader_storage_block_number(tested_shader_type, 1) == tcu::TestNode::STOP)
+    {
+        return;
+    }
+
     if (API::USE_DOUBLE)
     {
         var_types_set = InteractionStorageBuffers1_var_types_set_gl;
@@ -7114,6 +7119,11 @@ void InteractionStorageBuffers2<API>::test_shader_compilation(
 {
     const glw::Functions &gl                  = this->context_id.getRenderContext().getFunctions();
     const glcts::test_var_type *var_types_set = InteractionStorageBuffers2_var_types_set_es;
+
+    if (this->limit_active_shader_storage_block_number(tested_shader_type, 1) == tcu::TestNode::STOP)
+    {
+        return;
+    }
 
     if (API::USE_DOUBLE)
     {
@@ -7399,6 +7409,11 @@ void InteractionStorageBuffers3<API>::test_shader_compilation(
                                                             "double[2](7.1, 8.1))));\n"};
     const glcts::test_var_type *var_types_set     = InteractionStorageBuffers3_var_types_set_es;
 
+    if (this->limit_active_shader_storage_block_number(tested_shader_type, 1) == tcu::TestNode::STOP)
+    {
+        return;
+    }
+
     if (API::USE_DOUBLE)
     {
         var_types_set = InteractionStorageBuffers3_var_types_set_gl;
@@ -7504,7 +7519,10 @@ void InteractionInterfaceArrays1<API>::test_shader_compilation(
 
         DEFAULT_MAIN_ENDING(tested_shader_type, source);
 
-        this->limit_active_shader_storage_block_number(tested_shader_type, 4);
+        if (this->limit_active_shader_storage_block_number(tested_shader_type, 4) == tcu::TestNode::STOP)
+        {
+            return;
+        }
         EXECUTE_SHADER_TEST(API::ALLOW_A_OF_A_ON_INTERFACE_BLOCKS, tested_shader_type, source);
     }
 }

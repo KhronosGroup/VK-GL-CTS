@@ -22,7 +22,6 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 {
     tcu::TestLog&                                log                        (context.getTestContext().getLog());
     const PlatformInterface&                    platformInterface = context.getPlatformInterface();
-    const auto                                    validationEnabled = context.getTestContext().getCommandLine().isValidationEnabled();
     const CustomInstance                        instance                (createCustomInstanceFromContext(context));
     const InstanceDriver&                        instanceDriver = instance.getDriver();
     const VkPhysicalDevice                        physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
@@ -54,7 +53,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
         nullptr, //  const char* const* ppEnabledExtensionNames;
         nullptr, //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
-    const Unique<VkDevice>                    device            (createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+    const Unique<VkDevice>                    device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
     const DeviceDriver                        deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 
     const std::vector<std::string> functions{

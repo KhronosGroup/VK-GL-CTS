@@ -92,7 +92,7 @@ public:
     }
     virtual void checkSupport(Context &context) const
     {
-        checkProtectedQueueSupport(context);
+        checkProtectedContextSupport(context);
     }
 
 private:

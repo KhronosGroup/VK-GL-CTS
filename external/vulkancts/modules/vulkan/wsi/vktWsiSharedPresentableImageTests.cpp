@@ -95,6 +95,10 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
+    // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
+    if (wsiType == vk::wsi::TYPE_DIRECT_DRM)
+        extensions.push_back("VK_EXT_direct_mode_display");
+
     checkAllSupported(supportedExtensions, extensions);
 
     return vkt::createCustomInstanceWithExtensions(context, extensions);
@@ -110,7 +114,7 @@ vk::VkPhysicalDeviceFeatures getDeviceNullFeatures(void)
 vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkInstance instance,
                                            const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
                                            const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
-                                           bool requiresSharedPresentableImage, bool validationEnabled,
+                                           bool requiresSharedPresentableImage,
                                            const vk::VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[]                  = {1.0f};
@@ -137,7 +141,7 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
             TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
     }
 
-    return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 de::MovePtr<vk::wsi::Display> createDisplay(const vk::Platform &platform, const Extensions &supportedExtensions,
@@ -614,8 +618,7 @@ SharedPresentableImageTestInstance::SharedPresentableImageTestInstance(Context &
     , m_queueFamilyIndex(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
     , m_deviceExtensions(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
     , m_device(createDeviceWithWsi(m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex,
-                                   testConfig.useSharedPresentableImage,
-                                   context.getTestContext().getCommandLine().isValidationEnabled()))
+                                   testConfig.useSharedPresentableImage))
     , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
@@ -693,8 +696,8 @@ void SharedPresentableImageTestInstance::initSwapchainResources(void)
     vk::Move<vk::VkSemaphore> semaphore(createSemaphore(m_vkd, *m_device));
     uint32_t imageIndex = 42; // initialize to junk value
 
-    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, kAcquireImageTimeout, *semaphore, VK_NULL_HANDLE,
-                                       &imageIndex));
+    VK_CHECK_WSI(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, kAcquireImageTimeout, *semaphore, VK_NULL_HANDLE,
+                                           &imageIndex));
     TCU_CHECK(imageIndex == 0);
 
     // Transition to IMAGE_LAYOUT_SHARED_PRESENT_KHR

@@ -6,6 +6,7 @@
 #
 # Copyright (c) 2015 Google Inc.
 # Copyright (c) 2025 ARM Ltd.
+# Copyright (c) 2026 RasterGrid Kft.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,8 +43,8 @@ from khr_util.format import indentLines, combineLines
 
 VULKAN_XML_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "xml")
 SCRIPTS_SRC_DIR = os.path.join(os.path.dirname(__file__), "src")
-DEFAULT_OUTPUT_DIR = { "" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkan"),
-                       "SC" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
+DEFAULT_OUTPUT_DIR = { "vulkan" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkan"),
+                       "vulkansc" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
 
 vulkanObjectPath = os.path.join(VULKAN_XML_DIR, "..", "scripts")
 sys.path.insert(0, vulkanObjectPath)
@@ -76,6 +77,7 @@ VK_EXT_depth_clamp_zero_one
 VK_EXT_depth_clip_control
 VK_EXT_depth_clip_enable
 VK_EXT_descriptor_buffer
+VK_EXT_descriptor_heap
 VK_EXT_device_address_binding_report
 VK_EXT_device_fault
 VK_EXT_device_generated_commands
@@ -163,6 +165,7 @@ VK_KHR_cooperative_matrix
 VK_KHR_copy_memory_indirect
 VK_KHR_deferred_host_operations
 VK_KHR_depth_clamp_zero_one
+VK_KHR_device_address_commands
 VK_KHR_display
 VK_KHR_display_swapchain
 VK_KHR_external_fence_fd
@@ -176,6 +179,7 @@ VK_KHR_fragment_shading_rate
 VK_KHR_get_display_properties2
 VK_KHR_get_surface_capabilities2
 VK_KHR_incremental_present
+VK_KHR_internally_synchronized_queues
 VK_KHR_maintenance7
 VK_KHR_maintenance8
 VK_KHR_maintenance9
@@ -251,7 +255,9 @@ VK_FUCHSIA_external_semaphore
 VK_GOOGLE_display_timing
 VK_HUAWEI_cluster_culling_shader
 VK_HUAWEI_invocation_mask
+VK_INTEL_performance_query
 VK_NV_clip_space_w_scaling
+VK_NV_command_buffer_inheritance
 VK_NV_cooperative_matrix
 VK_NV_cooperative_matrix2
 VK_NV_cooperative_vector
@@ -268,7 +274,9 @@ VK_NV_fragment_shading_rate_enums
 VK_NV_framebuffer_mixed_samples
 VK_NV_inherited_viewport_scissor
 VK_NV_linear_color_attachment
+VK_NV_low_latency2
 VK_NV_mesh_shader
+VK_NV_push_constant_bank
 VK_NV_raw_access_chains
 VK_NV_ray_tracing
 VK_NV_ray_tracing_linear_swept_spheres
@@ -627,7 +635,7 @@ class ConformanceItemLists:
         self.structsIncludingVideo = self.structs + self.filterToSupportedByCTS(vkObject.videoStd.structs)
         self.structsIncludingVideo = sorted(self.structsIncludingVideo, key=lambda item: item.name)
 
-    # <vulkan_object_issue_workaround>
+    # <vulkan_sc_workaround>
     # some functions and structures for Vulkan SC use names from regular Vulkan e.g.
     # vkCmdBindVertexBuffers2 is provided instead of non promoted vkCmdBindVertexBuffers2EXT
     def scPostProcess(self):
@@ -712,7 +720,7 @@ class ConformanceItemLists:
         for s in self.structs:
             if s.name in khrStructs:
                 s.alias = s.name + 'KHR'
-    # </vulkan_object_issue_workaround>
+    # </vulkan_sc_workaround>
 
     def filterToSupportedByCTS(self, items):
         # generate framework enums/structs/commands only for items that are tested by CTS;
@@ -772,7 +780,7 @@ class BasicTypesGenerator(CTSGenerator):
             # we need registry object in this generator, we cant operate on vulkan_object alone
             assert(self.registry)
             yield "// Defines"
-            for line in self.genDefinesSrc("" if self.targetApiName == "vulkan" else "SC"):
+            for line in self.genDefinesSrc(self.targetApiName):
                 yield line
             yield "\n"
 
@@ -786,19 +794,23 @@ class BasicTypesGenerator(CTSGenerator):
                 # append VkStructureType field required by vulkan_json_data.hpp
                 st.fields.append(EnumField(name = "VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV",
                                          aliases=[],
+                                         parent='VkStructureType',
                                          protect=None,
                                          negative=False,
                                          value = 1000314008,
                                          valueStr = "1000314008",
-                                         extensions=[]))
+                                         extensions=[],
+                                         extending=True))
                 # append VkStructureType field required by cts for SC
                 st.fields.append(EnumField(name = "VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO",
                                          aliases=[],
+                                         parent='VkStructureType',
                                          protect=None,
                                          negative=False,
                                          value = 16,
                                          valueStr = "16",
-                                         extensions=[]))
+                                         extensions=[],
+                                         extending=True))
 
             # <vulkan_object_issue_workaround>
             # add missing VK_STD_VIDEO_AV1_COLOR_PRIMARIES_BT_UNSPECIFIED alias
@@ -904,7 +916,7 @@ class BasicTypesGenerator(CTSGenerator):
         yield "enum %s" % enum.name
         yield "{"
         lines = []
-        fields = sorted(enum.fields, key=lambda item: item.value)
+        fields = sorted(enum.fields, key=lambda item: (item.value is None, item.value if item.value is not None else 0))
         for ed in fields:
             if ed.valueStr is not None:
                 lines.append(f"\t{ed.name}\t= {ed.valueStr},")
@@ -956,7 +968,8 @@ class BasicTypesGenerator(CTSGenerator):
 
     def genDefinesSrc (self, apiName):
         def genLines ():
-            apiVariant = 1 if apiName == "SC" else 0
+            apiVariant = 1 if apiName == "vulkansc" else 0
+            apiSuffix = "SC" if apiName == "vulkansc" else ""
             yield f"#define VK_API_VERSION_1_0\t(static_cast<uint32_t>\t(VK_MAKE_API_VERSION(0, 1, 0, 0)))"
             for v in self.vk.versions.values():
                 major, minor = v.name[-3:].split('_')
@@ -973,7 +986,7 @@ class BasicTypesGenerator(CTSGenerator):
                 defineType = DEFINITIONS.get(c.name, c.type)
                 yield f"#define {c.name}\t(static_cast<{c.type}>\t({c.valueStr}))"
             logging.debug("Found max framework version for API '%s': %s" % (self.targetApiName, maxApiVersion))
-            yield f"#define VK{apiName}_API_MAX_FRAMEWORK_VERSION\tVK{apiName}_API_VERSION_{maxApiVersion}"
+            yield f"#define VK{apiSuffix}_API_MAX_FRAMEWORK_VERSION\tVK{apiSuffix}_API_VERSION_{maxApiVersion}"
         for line in indentLines(genLines()):
             yield line
 
@@ -1003,12 +1016,16 @@ class StructTypesGenerator(CTSGenerator):
             result += " : " + str(member.bitFieldWidth)
         return result
 
-    # function that prints single structure definition
+    # function that prints single structure definition and its aliases
     def genCompositeTypeSrc (self, type):
         structLines = "%s %s\n{\n" % ("union" if type.union else "struct", type.name)
         for line in indentLines(['\t'+self.memberAsString(m)+';' for m in type.members]):
             structLines += line + '\n'
-        return structLines + "};\n"
+        structLines += "};\n"
+        # write all alias typedefs, as subsequent structures may use alias (eg. VkDeviceAddressRangeEXT)
+        for alias in sorted(type.aliases):
+            structLines += f"typedef {type.name} {alias};\n"
+        return structLines
 
     # function that prints all structure definitions and alias typedefs
     def genVulkanStructs(self):
@@ -1017,6 +1034,11 @@ class StructTypesGenerator(CTSGenerator):
         allStructureNamesList = [s.name for s in self.cts.structsIncludingVideo]
         savedStructureNamesList = []
         delayedStructureObjectsList = []
+
+        # add aliases to list of all structure names
+        for s in self.cts.structsIncludingVideo:
+            for a in s.aliases or []:
+                allStructureNamesList.append(a)
 
         # helper function that checks if all structure members were already saved
         def canStructBeSaved(compositeObject):
@@ -1030,6 +1052,14 @@ class StructTypesGenerator(CTSGenerator):
                     return False
             return True
 
+        # when structure is saved add it to savedStructureNamesList together with its aliases
+        def markStructAsSaved(ct):
+            nonlocal savedStructureNamesList
+            if ct.name in savedStructureNamesList:
+                return
+            savedStructureNamesList.append(ct.name)
+            savedStructureNamesList += ct.aliases or []
+
         # iterate over all composite types
         lastDelayedComposite = None
         for ct in self.cts.structsIncludingVideo:
@@ -1041,12 +1071,12 @@ class StructTypesGenerator(CTSGenerator):
                     delayedButSaved.append(dct)
             lastDelayedComposite = None
             for dsct in delayedButSaved:
-                savedStructureNamesList.append(dsct.name)
+                markStructAsSaved(dsct)
                 delayedStructureObjectsList.remove(dsct)
             # check if current structure can be saved
             if canStructBeSaved(ct):
                 yield self.genCompositeTypeSrc(ct)
-                savedStructureNamesList.append(ct.name)
+                markStructAsSaved(ct)
             else:
                 delayedStructureObjectsList.append(ct)
                 # memorize structure that was delayed in last iteration to
@@ -1057,7 +1087,7 @@ class StructTypesGenerator(CTSGenerator):
             for dct in delayedStructureObjectsList:
                 if canStructBeSaved(dct):
                     yield self.genCompositeTypeSrc(dct)
-                    savedStructureNamesList.append(dct.name)
+                    markStructAsSaved(dct)
                     delayedStructureObjectsList.remove(dct)
                     break
 
@@ -1907,8 +1937,8 @@ class SupportedExtensionsGenerator(CTSGenerator):
         for version in map:
             self.write("    if (coreVersion >= " + str(version) + ")")
             self.write("    {")
-            for extension in sorted(map[version], key=lambda e: e.name):
-                self.write('        dst.push_back("' + extension.name + '");')
+            for extension in sorted(map[version]):
+                self.write('        dst.push_back("' + extension + '");')
             self.write("    }")
         if not map:
             self.write("    DE_UNREF(coreVersion);")
@@ -1933,16 +1963,76 @@ class SupportedExtensionsGenerator(CTSGenerator):
                 continue
             if ext.instance:
                 list = instanceMap.get(currVersion)
-                instanceMap[currVersion] = list + [ext] if list else [ext]
+                instanceMap[currVersion] = list + [ext.name] if list else [ext.name]
             else:
                 list = deviceMap.get(currVersion)
-                deviceMap[currVersion] = list + [ext] if list else [ext]
+                deviceMap[currVersion] = list + [ext.name] if list else [ext.name]
+
+        if isSC:
+            # Handle implicitly supported extensions that were promoted in core Vulkan 1.1 and 1.2
+            # therefore are always supported in Vulkan SC
+            # NOTE: This is just a workaround for the general deficiencies of the current state of
+            # the generator scripts and the CTS framework itself
+            instanceMap['VKSC_API_VERSION_1_0'] = [
+                # From Vulkan 1.1
+                'VK_KHR_device_group_creation',
+                'VK_KHR_external_fence_capabilities',
+                'VK_KHR_external_memory_capabilities',
+                'VK_KHR_external_semaphore_capabilities',
+                'VK_KHR_get_physical_device_properties2',
+            ]
+            deviceMap['VKSC_API_VERSION_1_0'] = [
+                # From Vulkan 1.1
+                'VK_KHR_16bit_storage',
+                'VK_KHR_bind_memory2',
+                'VK_KHR_dedicated_allocation',
+                'VK_KHR_descriptor_update_template',
+                'VK_KHR_device_group',
+                'VK_KHR_external_fence',
+                'VK_KHR_external_memory',
+                'VK_KHR_external_semaphore',
+                'VK_KHR_get_memory_requirements2',
+                'VK_KHR_maintenance1',
+                'VK_KHR_maintenance2',
+                'VK_KHR_maintenance3',
+                'VK_KHR_multiview',
+                'VK_KHR_relaxed_block_layout',
+                'VK_KHR_sampler_ycbcr_conversion',
+                'VK_KHR_shader_draw_parameters',
+                'VK_KHR_storage_buffer_storage_class',
+                'VK_KHR_variable_pointers',
+                # From Vulkan 1.2
+                'VK_EXT_descriptor_indexing',
+                'VK_EXT_host_query_reset',
+                'VK_EXT_sampler_filter_minmax',
+                'VK_EXT_scalar_block_layout',
+                'VK_EXT_separate_stencil_usage',
+                'VK_EXT_shader_viewport_index_layer',
+                'VK_KHR_8bit_storage',
+                'VK_KHR_buffer_device_address',
+                'VK_KHR_create_renderpass2',
+                'VK_KHR_depth_stencil_resolve',
+                'VK_KHR_draw_indirect_count',
+                'VK_KHR_driver_properties',
+                'VK_KHR_image_format_list',
+                'VK_KHR_imageless_framebuffer',
+                'VK_KHR_sampler_mirror_clamp_to_edge',
+                'VK_KHR_separate_depth_stencil_layouts',
+                'VK_KHR_shader_atomic_int64',
+                'VK_KHR_shader_float16_int8',
+                'VK_KHR_shader_float_controls',
+                'VK_KHR_shader_subgroup_extended_types',
+                'VK_KHR_spirv_1_4',
+                'VK_KHR_timeline_semaphore',
+                'VK_KHR_uniform_buffer_standard_layout',
+                'VK_KHR_vulkan_memory_model',
+            ]
 
         self.write(INL_HEADER)
         self.write("")
-        self.write("\nvoid getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>&%s)\n{" % (" dst" if len(deviceMap) != 0 or isSC else ""))
+        self.write("\nvoid getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>& dst)\n{")
         self.writeExtensionsForVersions(deviceMap)
-        self.write("}\n\nvoid getCoreInstanceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>&%s)\n{" % (" dst" if len(instanceMap) != 0 or isSC else ""))
+        self.write("}\n\nvoid getCoreInstanceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>& dst)\n{")
         self.writeExtensionsForVersions(instanceMap)
         self.write("}\n")
 
@@ -2278,7 +2368,7 @@ class DeviceFeatures2Generator(CTSGenerator):
             '        nullptr, //ppEnabledExtensionNames;\n'
             '        nullptr, //pEnabledFeatures;\n'
             '    };\n\n'
-            '    const Unique<VkDevice>            device            (createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));\n'
+            '    const Unique<VkDevice>            device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));\n'
             '    const DeviceDriver                deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());\n'
             '    const VkQueue                    queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);\n\n'
             '    VK_CHECK(deviceDriver.queueWaitIdle(queue));\n\n'
@@ -2420,6 +2510,24 @@ class FeaturesOrPropertiesGenericGenerator(CTSGenerator):
                     if ext.promotedTo == ext2.name:
                         ext = ext2
                 nameString = ext.nameString
+
+            if self.targetApiName == 'vulkansc':
+                # We need to work around the fact that the vk.xml has the vulkansc API tag enabled
+                # also for Vulkan 1.3+ due to spec tooling limitations
+                if struct.version is not None:
+                    if struct.version.name != 'VK_VERSION_1_0' and struct.version.name != 'VK_VERSION_1_1' and struct.version.name != 'VK_VERSION_1_2':
+                        # This would be marked as core, but as it's a Vulkan 1.3+ struct which is not part of Vulkan SC
+                        # we have to check instead whether there is an equivalent extension in Vulkan SC
+                        if struct.extensions:
+                            nameString = self.vk.extensions[struct.extensions[0]].nameString
+                        else:
+                            # If this is a Vulkan 1.3+ core struct that is not present in Vulkan SC as an extension
+                            # then this should not even have to be included in the core, but as the CTS depends on
+                            # the existence of these interfaces we have no better choice but to somehow mark this
+                            # feature/property struct such that it will not match any extension string or the
+                            # special "core_features"/"core_properties" values
+                            nameString = f'"unsupported_{structGroupLow}"'
+
             descDefinitions.append(f"template<> {structGroupSingular}Desc make{structGroupSingular}Desc<{struct.name}>(void) " \
                                    f"{{ return {structGroupSingular}Desc{{{struct.sType}, {nameString}}}; }}")
             pnext = next((m for m in struct.members if m.name == "pNext"), None)
@@ -2435,8 +2543,23 @@ class FeaturesOrPropertiesGenericGenerator(CTSGenerator):
             for bcs in blobData.componentStructs:
                 if bcs.version is None:
                     continue
+
+                apiVersion = bcs.version.nameApi
+                if self.targetApiName == 'vulkansc':
+                    # The CTS Framework uses the API version numbers baked into this table verbatim,
+                    # without the ability to understand relationship between Vulkan and Vulkan SC
+                    # API versions, therefore we have to handle API version relationships here
+                    if apiVersion == 'VK_API_VERSION_1_0' or apiVersion == 'VK_API_VERSION_1_1' or apiVersion == 'VK_API_VERSION_1_2':
+                        # Everything up to Vulkan 1.2 is included in Vulkan SC 1.0
+                        apiVersion = 'VKSC_API_VERSION_1_0'
+                    else:
+                        # Everything newer is not supported in Vulkan SC
+                        # Note that normally we would not have to hit this but the vk.xml has the vulkansc API tag
+                        # enabled also for Vulkan 1.3+ due to spec tooling limitations
+                        continue
+
                 tabs = "\t" * int((88 - len(bcs.sType)) / 4)
-                blobCheckerMap += f'\t{{ {bcs.sType},{tabs}{bcs.version.nameApi} }},\n'
+                blobCheckerMap += f'\t{{ {bcs.sType},{tabs}{apiVersion} }},\n'
         blobCheckerMap += "};\n\n"
         blobChecker = f"uint32_t getBlob{self.structGroup}Version (VkStructureType sType)\n{{\n" \
                        "\tauto it = sTypeBlobMap.find(sType);\n" \
@@ -3100,7 +3223,6 @@ class GetDeviceProcAddrGenerator(CTSGenerator):
 {
     tcu::TestLog&                                log                        (context.getTestContext().getLog());
     const PlatformInterface&                    platformInterface = context.getPlatformInterface();
-    const auto                                    validationEnabled = context.getTestContext().getCommandLine().isValidationEnabled();
     const CustomInstance                        instance                (createCustomInstanceFromContext(context));
     const InstanceDriver&                        instanceDriver = instance.getDriver();
     const VkPhysicalDevice                        physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
@@ -3132,7 +3254,7 @@ class GetDeviceProcAddrGenerator(CTSGenerator):
         nullptr, //  const char* const* ppEnabledExtensionNames;
         nullptr, //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
-    const Unique<VkDevice>                    device            (createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+    const Unique<VkDevice>                    device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
     const DeviceDriver                        deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 
     const std::vector<std::string> functions{'''
@@ -3445,6 +3567,7 @@ class FormatListsGenerator(CTSGenerator):
             if f.className.endswith("-bit"):
                 bitClassesDict[int(f.className.split('-')[0])] = f.className
 
+        astc3dFormatsCheckFun = lambda f: f.compressed is not None and len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1
         for bitValue, bitClass in bitClassesDict.items():
             arraySubName = bitClass.replace('-b','B')
             def compatibleFormatsCheckFun(f):
@@ -3455,7 +3578,7 @@ class FormatListsGenerator(CTSGenerator):
                     return True
                 if bitValue >= 64:
                     # skip ASTC 3d formats
-                    if f.compressed is not None and len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1:
+                    if astc3dFormatsCheckFun(f):
                         return False
                     # add selected compressed formats to 64-bit+ formats
                     return f.compressed is not None and f.blockSize == (bitValue / 8)
@@ -3483,6 +3606,11 @@ class FormatListsGenerator(CTSGenerator):
             return False
         self.writeList(f'compatibleFormatsFloats', compatibleFormatsFloatsCheckFun)
 
+        suFloatVariants = ['SFLOAT', 'UFLOAT']
+        def suFloatFormatsCheckFun(f):
+            return any(sub in f.name for sub in suFloatVariants)
+        self.writeList(f'signedAndUnsignedFloatFormats', suFloatFormatsCheckFun)
+
         def compressedFormatsFloatsCheckFun(f):
             if f.compressed is not None and any(sub in f.name for sub in floatVariants):
                 # skip formats added by VK_EXT_texture_compression_astc_hdr to
@@ -3491,7 +3619,7 @@ class FormatListsGenerator(CTSGenerator):
                 if 'ASTC' in f.name and 'SFLOAT' in f.name:
                     return False
                 # skip ASTC 3d formats
-                if len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1:
+                if astc3dFormatsCheckFun(f):
                     return False
                 # skip vendor extension formats
                 return not self.isPartOfVendorExtension(f.name)
@@ -3503,10 +3631,15 @@ class FormatListsGenerator(CTSGenerator):
 
         def compressedFormatsSrgbCheckFun(f):
             # skip ASTC 3d formats
-            if f.compressed is not None and len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1:
+            if astc3dFormatsCheckFun(f):
                 return False
             return not self.isPartOfVendorExtension(f.name) and f.compressed is not None and 'SRGB' in f.name
         self.writeList(f'compressedFormatsSrgb', compressedFormatsSrgbCheckFun)
+
+        astcHDRFormatsCheckFun = lambda f: 'ASTC' in f.name and 'SFLOAT' in f.name and not astc3dFormatsCheckFun(f)
+        self.writeList(f'astcHDRFormats', astcHDRFormatsCheckFun)
+
+        self.writeList(f'astc3dFormats', astc3dFormatsCheckFun)
 
         stencilFormatsCheckFun = lambda f: 'S8' in f.className
         self.writeList(f'stencilFormats', stencilFormatsCheckFun)
@@ -3704,7 +3837,8 @@ def parseCmdLineArgs():
     parser.add_argument("-a",
                         "--api",
                         dest="api",
-                        default="",
+                        default="vulkan",
+                        choices=["vulkan", "vulkansc"],
                         help="Choose between Vulkan and Vulkan SC")
     parser.add_argument("-o",
                         "--outdir",
@@ -3720,11 +3854,11 @@ def parseCmdLineArgs():
 if __name__ == "__main__":
     args = parseCmdLineArgs()
     initializeLogger(args.verbose)
-    isSC = (args.api=='SC')
+    isSC = (args.api=='vulkansc')
 
     # if argument was specified it is interpreted as a path to which .inl files will be written
     SetOutputDirectory(DEFAULT_OUTPUT_DIR[args.api] if args.outdir == '' else args.outdir)
-    SetTargetApiName('vulkansc' if isSC else 'vulkan')
+    SetTargetApiName(args.api)
     SetMergedApiNames(None)
 
     # parameters used by some of generators

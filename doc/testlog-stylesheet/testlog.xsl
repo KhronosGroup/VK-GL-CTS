@@ -92,11 +92,27 @@
 
 	<xsl:template match="Image">
 		<div class="Image">
-			<xsl:value-of select="@Description"/><br/>
+			<!-- Name or fallback -->
+			<xsl:choose>
+				<xsl:when test="normalize-space(@Name) != ''">
+					<xsl:value-of select="@Name"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:text>Unnamed Image</xsl:text>
+				</xsl:otherwise>
+			</xsl:choose>
+
+			<!-- Optional Description -->
+			<xsl:if test="normalize-space(@Description) != ''">
+				<xsl:text> (</xsl:text>
+				<xsl:value-of select="@Description"/>
+				<xsl:text>)</xsl:text>
+			</xsl:if>
+
+			<br/>
 			<img src="data:image/png;base64,{.}"/>
 		</div>
 	</xsl:template>
-
 	<xsl:template match="CompileInfo">
 		<div class="CompileInfo">
 			<h3 class="{@CompileStatus}"><xsl:value-of select="@Description"/></h3>

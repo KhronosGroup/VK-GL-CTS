@@ -1914,6 +1914,9 @@ bool BaseLineTestInstance::compareAndVerify(std::vector<LineSceneSpec::SceneLine
     tcu::IVec4 colorBits = tcu::getTextureFormatBitDepth(getTextureFormat());
     bool strict          = m_primitiveStrictness == PRIMITIVESTRICTNESS_STRICT;
 
+    if (m_primitiveStrictness == PRIMITIVESTRICTNESS_IGNORE)
+        strict = m_context.getDeviceProperties().limits.strictLines;
+
     args.numSamples   = m_multisampling ? 1 : 0;
     args.subpixelBits = m_subpixelBits;
     args.redBits      = colorBits[0];
@@ -6076,7 +6079,7 @@ public:
 
 private:
     virtual const VkPipelineColorBlendStateCreateInfo *getColorBlendStateCreateInfo(void) const;
-    int getRenderSize(FillRuleCaseType type) const;
+    static int getRenderSize(FillRuleCaseType type);
     int getNumIterations(FillRuleCaseType type) const;
     void generateTriangles(int iteration, std::vector<tcu::Vec4> &outData) const;
 
@@ -6204,7 +6207,7 @@ tcu::TestStatus FillRuleTestInstance::iterate(void)
         return tcu::TestStatus::incomplete();
 }
 
-int FillRuleTestInstance::getRenderSize(FillRuleCaseType type) const
+int FillRuleTestInstance::getRenderSize(FillRuleCaseType type)
 {
     if (type == FILLRULECASE_CLIPPED_FULL || type == FILLRULECASE_CLIPPED_PARTIAL)
         return RESOLUTION_POT / 4;

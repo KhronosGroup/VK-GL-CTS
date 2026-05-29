@@ -60599,6 +60599,14 @@ dEQP-VKSC.ycbcr.query.size_lod.vertex.r12x4_unorm_pack16
 dEQP-VKSC.ycbcr.query.size_lod.vertex.r12x4g12x4_unorm_2pack16
 dEQP-VKSC.ycbcr.query.size_lod.vertex.r12x4g12x4b12x4a12x4_unorm_4pack16
 dEQP-VKSC.ycbcr.query.size_lod.vertex.r8g8b8a8_unorm
+dEQP-VKSC.ycbcr.single_plane_copy.linear.linear.g8b8g8r8_422_to_r8g8b8a8
+dEQP-VKSC.ycbcr.single_plane_copy.linear.linear.r8g8b8a8_to_g8b8g8r8_422
+dEQP-VKSC.ycbcr.single_plane_copy.linear.optimal.g8b8g8r8_422_to_r8g8b8a8
+dEQP-VKSC.ycbcr.single_plane_copy.linear.optimal.r8g8b8a8_to_g8b8g8r8_422
+dEQP-VKSC.ycbcr.single_plane_copy.optimal.linear.g8b8g8r8_422_to_r8g8b8a8
+dEQP-VKSC.ycbcr.single_plane_copy.optimal.linear.r8g8b8a8_to_g8b8g8r8_422
+dEQP-VKSC.ycbcr.single_plane_copy.optimal.optimal.g8b8g8r8_422_to_r8g8b8a8
+dEQP-VKSC.ycbcr.single_plane_copy.optimal.optimal.r8g8b8a8_to_g8b8g8r8_422
 dEQP-VKSC.ycbcr.storage_image_write.b10x6g10x6r10x6g10x6_422_unorm_4pack16.1024_128_1.disjoint
 dEQP-VKSC.ycbcr.storage_image_write.b10x6g10x6r10x6g10x6_422_unorm_4pack16.1024_128_1.joint
 dEQP-VKSC.ycbcr.storage_image_write.b10x6g10x6r10x6g10x6_422_unorm_4pack16.512_512_1.disjoint

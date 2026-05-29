@@ -43,6 +43,8 @@
 
 #include "vktTestCaseUtil.hpp"
 
+#include <memory>
+
 namespace vkt
 {
 namespace sr
@@ -370,14 +372,21 @@ public:
     virtual void initPrograms(vk::SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
 
+    void setEvaluator(const ShaderEvaluator *evaluator)
+    {
+        m_evaluator.reset(evaluator);
+    }
+
 protected:
     std::string m_vertShaderSource;
     std::string m_fragShaderSource;
+    std::string m_compShaderSource;
     de::MovePtr<vk::ShaderBuildOptions> m_vertShaderBuildOptions;
     de::MovePtr<vk::ShaderBuildOptions> m_fragShaderBuildOptions;
+    de::MovePtr<vk::ShaderBuildOptions> m_compShaderBuildOptions;
 
     const bool m_isVertexCase;
-    const de::UniquePtr<const ShaderEvaluator> m_evaluator;
+    std::unique_ptr<const ShaderEvaluator> m_evaluator;
     const de::UniquePtr<const UniformSetup> m_uniformSetup;
     const AttributeSetupFunc m_attribFunc;
 };
@@ -536,7 +545,7 @@ public:
                              const UniformSetup &uniformSetup, const AttributeSetupFunc attribFunc,
                              const ImageBackingMode imageBackingMode = IMAGE_BACKING_MODE_REGULAR,
                              const uint32_t gridSize                 = static_cast<uint32_t>(GRID_SIZE_DEFAULTS),
-                             const bool fuzzyCompare                 = true);
+                             const bool fuzzyCompare = true, const bool useCompute = false);
 
     virtual ~ShaderRenderCaseInstance(void);
     virtual tcu::TestStatus iterate(void);
@@ -562,7 +571,8 @@ protected:
     ShaderRenderCaseInstance(Context &context, const bool isVertexCase, const ShaderEvaluator *evaluator,
                              const UniformSetup *uniformSetup, const AttributeSetupFunc attribFunc,
                              const ImageBackingMode imageBackingMode = IMAGE_BACKING_MODE_REGULAR,
-                             const uint32_t gridSize                 = static_cast<uint32_t>(GRID_SIZE_DEFAULTS));
+                             const uint32_t gridSize                 = static_cast<uint32_t>(GRID_SIZE_DEFAULTS),
+                             const bool useCompute                   = false);
 
     virtual void setup(void);
     virtual void setupUniforms(const tcu::Vec4 &constCoords);
@@ -599,8 +609,10 @@ protected:
 
     std::string m_vertexShaderName;
     std::string m_fragmentShaderName;
+    std::string m_computeShaderName;
     tcu::UVec2 m_renderSize;
     vk::VkFormat m_colorFormat;
+    bool m_useCompute;
 
     de::SharedPtr<vk::Unique<vk::VkCommandPool>> m_externalCommandPool;
 
@@ -720,9 +732,11 @@ private:
 protected:
     vk::VkDevice getDevice(void) const;
     uint32_t getUniversalQueueFamilyIndex(void) const;
+    uint32_t getComputeQueueFamilyIndex(void) const;
     uint32_t getSparseQueueFamilyIndex(void) const;
     const vk::DeviceInterface &getDeviceInterface(void) const;
     vk::VkQueue getUniversalQueue(void) const;
+    vk::VkQueue getComputeQueue(void) const;
     vk::VkQueue getSparseQueue(void) const;
     vk::VkPhysicalDevice getPhysicalDevice(void) const;
     const vk::InstanceInterface &getInstanceInterface(void) const;

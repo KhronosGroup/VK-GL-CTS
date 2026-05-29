@@ -110,6 +110,10 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
+    // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
+    if (wsiType == TYPE_DIRECT_DRM)
+        extensions.push_back("VK_EXT_direct_mode_display");
+
     // VK_EXT_swapchain_colorspace adds new surface formats. Driver can enumerate
     // the formats regardless of whether VK_EXT_swapchain_colorspace was enabled,
     // but using them without enabling the extension is not allowed. Thus we have
@@ -138,7 +142,7 @@ VkPhysicalDeviceFeatures getDeviceFeaturesForWsi(void)
 Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVersion, VkInstance instance,
                                    const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
                                    const Extensions &supportedExtensions, const vector<string> &additionalExtensions,
-                                   const vector<uint32_t> &queueFamilyIndices, bool validationEnabled,
+                                   const vector<uint32_t> &queueFamilyIndices,
                                    const VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[] = {1.0f};
@@ -225,7 +229,7 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
                                              extensionsChar.data(),                        // ppEnabledExtensionNames
                                              nullptr};
 
-    return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 struct InstanceHelper
@@ -284,7 +288,7 @@ struct DeviceHelper
                                      additionalExtensions,
                                      requestSecondQueue ? vector<uint32_t>{queueFamilyIndex, secondQueueFamilyIndex} :
                                                           vector<uint32_t>{queueFamilyIndex},
-                                     context.getTestContext().getCommandLine().isValidationEnabled(), pAllocator))
+                                     pAllocator))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
@@ -317,8 +321,7 @@ struct MultiQueueDeviceHelper
         , queueFamilyIndices(getCompatibleQueueFamilyIndices(vki, physicalDevice, surface))
         , device(createDeviceWithWsi(context.getPlatformInterface(), context.getUsedApiVersion(), instance, vki,
                                      physicalDevice, enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr),
-                                     additionalExtensions, queueFamilyIndices,
-                                     context.getTestContext().getCommandLine().isValidationEnabled(), pAllocator))
+                                     additionalExtensions, queueFamilyIndices, pAllocator))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
     {
@@ -690,6 +693,23 @@ tcu::TestStatus createSwapchainTest(Context &context, TestParameters params)
                 catch (const OutOfMemoryError &e)
                 {
                     log << TestLog::Message << subcase.str() << "vkCreateSwapchainKHR with maxImageExtent encountered "
+                        << e.getError() << TestLog::EndMessage;
+                }
+            }
+            else if (params.dimension == TEST_DIMENSION_MIN_IMAGE_COUNT &&
+                     curParams.minImageCount > capabilities.minImageCount)
+            {
+                try
+                {
+                    const Unique<VkSwapchainKHR> swapchain(
+                        createWsiSwapchain(params.wsiType, devHelper.vkd, *devHelper.device, &curParams));
+
+                    log << TestLog::Message << subcase.str() << "Creating swapchain succeeded" << TestLog::EndMessage;
+                }
+                catch (const OutOfMemoryError &e)
+                {
+                    log << TestLog::Message << subcase.str()
+                        << "vkCreateSwapchainKHR with minImageCount=" << capabilities.minImageCount << " encountered "
                         << e.getError() << TestLog::EndMessage;
                 }
             }
@@ -1354,9 +1374,9 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, ImageSwapchainCre
         formats[0].format,      // format
         {
             // extent
-            desiredSize.x(), //   width
-            desiredSize.y(), //   height
-            1u               //   depth
+            swapchainInfo.imageExtent.width,  // width
+            swapchainInfo.imageExtent.height, // height
+            1u                                // depth
         },
         1u,                                  // mipLevels
         1u,                                  // arrayLayers
@@ -1808,9 +1828,10 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
     const uint32_t deviceIdx   = context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
     const vector<VkPhysicalDeviceGroupProperties> deviceGroupProps =
         enumeratePhysicalDeviceGroups(instHelper.vki, instHelper.instance);
-    uint32_t physicalDevicesInGroupCount           = deviceGroupProps[devGroupIdx].physicalDeviceCount;
-    const VkPhysicalDevice *physicalDevicesInGroup = deviceGroupProps[devGroupIdx].physicalDevices;
-    uint32_t queueFamilyIndex = chooseQueueFamilyIndex(instHelper.vki, physicalDevicesInGroup[deviceIdx], *surface);
+    const std::vector<VkPhysicalDevice> physicalDevicesInGroup(deviceGroupProps[devGroupIdx].physicalDevices,
+                                                               deviceGroupProps[devGroupIdx].physicalDevices +
+                                                                   deviceGroupProps[devGroupIdx].physicalDeviceCount);
+    const uint32_t queueFamilyIndex = chooseQueueFamilyIndex(instHelper.vki, physicalDevicesInGroup, *surface);
     const std::vector<VkQueueFamilyProperties> queueProps =
         getPhysicalDeviceQueueFamilyProperties(instHelper.vki, physicalDevicesInGroup[deviceIdx]);
     const float queuePriority     = 1.0f;
@@ -1821,8 +1842,8 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
     const VkDeviceGroupDeviceCreateInfo groupDeviceInfo = {
         VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR, // stype
         nullptr,                                               // pNext
-        physicalDevicesInGroupCount,                           // physicalDeviceCount
-        physicalDevicesInGroup                                 // physicalDevices
+        uint32_t(physicalDevicesInGroup.size()),               // physicalDeviceCount
+        &physicalDevicesInGroup[0]                             // physicalDevices
     };
     const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // type
@@ -1846,8 +1867,7 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
         nullptr,                              // pEnabledFeatures
     };
 
-    Move<VkDevice> groupDevice = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                                                    context.getPlatformInterface(), instHelper.instance, instHelper.vki,
+    Move<VkDevice> groupDevice = createCustomDevice(context.getPlatformInterface(), instHelper.instance, instHelper.vki,
                                                     physicalDevicesInGroup[deviceIdx], &deviceCreateInfo);
     const DeviceDriver vkd(context.getPlatformInterface(), instHelper.instance, *groupDevice,
                            context.getUsedApiVersion(), context.getTestContext().getCommandLine());
@@ -1931,12 +1951,12 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
 
                 // render triangle using one or two subdevices when available
                 renderer.recordDeviceGroupFrame(commandBuffer, firstDeviceID, secondDeviceID,
-                                                physicalDevicesInGroupCount, imageNdx, frameNdx);
+                                                uint32_t(physicalDevicesInGroup.size()), imageNdx, frameNdx);
 
                 // submit queue
                 uint32_t deviceMask = (1 << firstDeviceID);
                 std::vector<uint32_t> deviceIndices(1, firstDeviceID);
-                if (physicalDevicesInGroupCount > 1)
+                if (physicalDevicesInGroup.size() > 1)
                 {
                     deviceMask |= (1 << secondDeviceID);
                     deviceIndices.push_back(secondDeviceID);
@@ -2023,9 +2043,10 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
     const uint32_t deviceIdx   = context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
     const vector<VkPhysicalDeviceGroupProperties> deviceGroupProps =
         enumeratePhysicalDeviceGroups(instHelper.vki, instHelper.instance);
-    uint32_t physicalDevicesInGroupCount           = deviceGroupProps[devGroupIdx].physicalDeviceCount;
-    const VkPhysicalDevice *physicalDevicesInGroup = deviceGroupProps[devGroupIdx].physicalDevices;
-    uint32_t queueFamilyIndex = chooseQueueFamilyIndex(instHelper.vki, physicalDevicesInGroup[deviceIdx], *surface);
+    const std::vector<VkPhysicalDevice> physicalDevicesInGroup(deviceGroupProps[devGroupIdx].physicalDevices,
+                                                               deviceGroupProps[devGroupIdx].physicalDevices +
+                                                                   deviceGroupProps[devGroupIdx].physicalDeviceCount);
+    const uint32_t queueFamilyIndex = chooseQueueFamilyIndex(instHelper.vki, physicalDevicesInGroup, *surface);
     const std::vector<VkQueueFamilyProperties> queueProps =
         getPhysicalDeviceQueueFamilyProperties(instHelper.vki, physicalDevicesInGroup[deviceIdx]);
     const float queuePriority      = 1.0f;
@@ -2033,15 +2054,15 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
     const uint32_t secondDeviceID  = 1;
     const uint32_t deviceIndices[] = {firstDeviceID, secondDeviceID};
 
-    if (physicalDevicesInGroupCount < 2)
+    if (physicalDevicesInGroup.size() < 2)
         TCU_THROW(NotSupportedError, "Test requires more than 1 device in device group");
 
     // create a device group
     const VkDeviceGroupDeviceCreateInfo groupDeviceInfo = {
         VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR, // stype
         nullptr,                                               // pNext
-        physicalDevicesInGroupCount,                           // physicalDeviceCount
-        physicalDevicesInGroup                                 // physicalDevices
+        uint32_t(physicalDevicesInGroup.size()),               // physicalDeviceCount
+        &physicalDevicesInGroup[0]                             // physicalDevices
     };
     const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // type
@@ -2065,8 +2086,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
         nullptr,                              // pEnabledFeatures
     };
 
-    Move<VkDevice> groupDevice = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                                                    context.getPlatformInterface(), instHelper.instance, instHelper.vki,
+    Move<VkDevice> groupDevice = createCustomDevice(context.getPlatformInterface(), instHelper.instance, instHelper.vki,
                                                     physicalDevicesInGroup[deviceIdx], &deviceCreateInfo);
     const DeviceDriver vkd(context.getPlatformInterface(), instHelper.instance, *groupDevice,
                            context.getUsedApiVersion(), context.getTestContext().getCommandLine());
@@ -2288,7 +2308,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
 
                 // render triangle using one or two subdevices when available
                 renderer.recordDeviceGroupFrame(commandBuffer, firstDeviceID, secondDeviceID,
-                                                physicalDevicesInGroupCount, imageNdx, frameNdx);
+                                                uint32_t(physicalDevicesInGroup.size()), imageNdx, frameNdx);
 
                 // submit queue
                 uint32_t deviceMask                                 = (1 << firstDeviceID) | (1 << secondDeviceID);

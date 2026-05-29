@@ -55,7 +55,7 @@ public:
     ImageTest(tcu::TestContext &testContext, const char *name, AllocationKind allocationKind,
               PipelineConstructionType pipelineConstructionType, VkDescriptorType samplingType,
               VkImageViewType imageViewType, VkFormat imageFormat, const tcu::IVec3 &imageSize, int imageCount,
-              int arraySize, bool pipelineProtectedFlag);
+              int arraySize, bool pipelineProtectedFlag, bool useCompute = false);
 
     ImageSamplingInstanceParams getImageSamplingInstanceParams(AllocationKind allocationKind,
                                                                VkDescriptorType samplingType,
@@ -84,12 +84,13 @@ private:
     int m_imageCount;
     int m_arraySize;
     bool m_pipelineProtectedFlag;
+    bool m_useCompute;
 };
 
 ImageTest::ImageTest(tcu::TestContext &testContext, const char *name, AllocationKind allocationKind,
                      PipelineConstructionType pipelineConstructionType, VkDescriptorType samplingType,
                      VkImageViewType imageViewType, VkFormat imageFormat, const tcu::IVec3 &imageSize, int imageCount,
-                     int arraySize, bool pipelineProtectedFlag)
+                     int arraySize, bool pipelineProtectedFlag, bool useCompute)
 
     : vkt::TestCase(testContext, name)
     , m_allocationKind(allocationKind)
@@ -101,6 +102,7 @@ ImageTest::ImageTest(tcu::TestContext &testContext, const char *name, Allocation
     , m_imageCount(imageCount)
     , m_arraySize(arraySize)
     , m_pipelineProtectedFlag(pipelineProtectedFlag)
+    , m_useCompute(useCompute)
 {
 }
 
@@ -118,8 +120,16 @@ void ImageTest::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_maintenance5");
 #endif // CTS_USES_VULKANSC
 
-    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
-                                          m_pipelineConstructionType);
+    if (m_useCompute)
+    {
+        checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                      graphicsToComputeConstructionType(m_pipelineConstructionType));
+    }
+    else // graphics pipeline
+    {
+        checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                              m_pipelineConstructionType);
+    }
     checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_allocationKind, m_samplingType,
                                                                               m_imageViewType, m_imageFormat,
                                                                               m_imageSize, m_imageCount, m_arraySize));
@@ -201,13 +211,11 @@ ImageSamplingInstanceParams ImageTest::getImageSamplingInstanceParams(Allocation
     return ImageSamplingInstanceParams(m_pipelineConstructionType, renderSize, imageViewType, imageFormat, imageSize,
                                        arraySize, componentMapping, subresourceRange, samplerParams, 0.0f, vertices,
                                        separateStencilUsage, samplingType, imageCount, allocationKind,
-                                       vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, pipelineFlags);
+                                       vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, pipelineFlags, m_useCompute);
 }
 
 void ImageTest::initPrograms(SourceCollections &sourceCollections) const
 {
-    std::ostringstream vertexSrc;
-    std::ostringstream fragmentSrc;
     const char *texCoordSwizzle     = nullptr;
     const tcu::TextureFormat format = (isCompressedFormat(m_imageFormat)) ?
                                           tcu::getUncompressedFormat(mapVkCompressedFormat(m_imageFormat)) :
@@ -240,51 +248,139 @@ void ImageTest::initPrograms(SourceCollections &sourceCollections) const
         break;
     }
 
-    vertexSrc << "#version 440\n"
-              << "layout(location = 0) in vec4 position;\n"
-              << "layout(location = 1) in vec4 texCoords;\n"
-              << "layout(location = 0) out highp vec4 vtxTexCoords;\n"
-              << "out gl_PerVertex {\n"
-              << "    vec4 gl_Position;\n"
-              << "};\n"
-              << "void main (void)\n"
-              << "{\n"
-              << "    gl_Position = position;\n"
-              << "    vtxTexCoords = texCoords;\n"
-              << "}\n";
-
-    fragmentSrc << "#version 440\n";
-    switch (m_samplingType)
+    if (m_useCompute)
     {
-    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-        fragmentSrc << "layout(set = 0, binding = 0) uniform highp sampler texSampler;\n"
+        std::ostringstream compSrc;
+        uint32_t storageBindingIndex = (m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ? 2u : 1u;
+
+        compSrc << "#version 440\n"
+                << "layout(local_size_x = 1, local_size_y = 1) in;\n";
+
+        switch (m_samplingType)
+        {
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            compSrc << "layout(set = 0, binding = 0) uniform highp sampler texSampler;\n"
                     << "layout(set = 0, binding = 1) uniform highp " << getGlslTextureType(format, m_imageViewType)
                     << " " << getGlslTextureDecl(m_imageCount) << ";\n";
-        break;
-    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-    default:
-        fragmentSrc << "layout(set = 0, binding = 0) uniform highp " << getGlslSamplerType(format, m_imageViewType)
+            break;
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+        default:
+            compSrc << "layout(set = 0, binding = 0) uniform highp " << getGlslSamplerType(format, m_imageViewType)
                     << " " << getGlslSamplerDecl(m_imageCount) << ";\n";
-    }
-    fragmentSrc << "layout(location = 0) in highp vec4 vtxTexCoords;\n"
-                << "layout(location = 0) out highp vec4 " << getGlslFragColorDecl(m_imageCount) << ";\n"
-                << "void main (void)\n"
-                << "{\n";
-    if (m_imageCount > 1)
-        fragmentSrc << "    for (uint i = 0; i < " << m_imageCount << "; ++i)\n"
-                    << "        fragColors[i] = (texture("
-                    << getGlslSampler(format, m_imageViewType, m_samplingType, m_imageCount) << ", vtxTexCoords."
-                    << texCoordSwizzle << std::scientific << ") * vec4" << lookupScale << ") + vec4" << lookupBias
-                    << "; \n";
-    else
-        fragmentSrc << "    fragColor = (texture("
-                    << getGlslSampler(format, m_imageViewType, m_samplingType, m_imageCount) << ", vtxTexCoords."
-                    << texCoordSwizzle << std::scientific << ") * vec4" << lookupScale << ") + vec4" << lookupBias
-                    << "; \n";
-    fragmentSrc << "}\n";
+            break;
+        }
 
-    sourceCollections.glslSources.add("tex_vert") << glu::VertexSource(vertexSrc.str());
-    sourceCollections.glslSources.add("tex_frag") << glu::FragmentSource(fragmentSrc.str());
+        // Output storage images
+        compSrc << "layout(set = 0, binding = " << storageBindingIndex
+                << ", rgba8) uniform writeonly highp image2D outImages[" << m_imageCount << "];\n";
+
+        // Vertex data buffer
+        compSrc << "struct Vertex {\n"
+                << "    vec4 position;\n"
+                << "    vec4 texCoord;\n"
+                << "};\n"
+                << "layout(std430, set = 0, binding = " << (storageBindingIndex + 1) << ") readonly buffer Vertices {\n"
+                << "    Vertex v[];\n"
+                << "};\n";
+
+        // Barycentric interpolation matching the graphics rasterizer (slow O(N) interpolation but should be enough)
+        compSrc << "vec4 interpolateTexCoord(vec2 ndc) {\n"
+                << "    for (int i = 0; i < v.length(); i += 3) {\n"
+                << "        vec2 p0 = v[i].position.xy;\n"
+                << "        vec2 p1 = v[i+1].position.xy;\n"
+                << "        vec2 p2 = v[i+2].position.xy;\n"
+                << "        float area = (p1.x - p0.x) * (p2.y - p0.y) - (p1.y - p0.y) * (p2.x - p0.x);\n"
+                << "        if (abs(area) < 1e-5) continue;\n" // Ignore degenerate triangles
+                << "        float l0 = ((p2.x - p1.x) * (ndc.y - p1.y) - (p2.y - p1.y) * (ndc.x - p1.x)) / area;\n"
+                << "        float l1 = ((p0.x - p2.x) * (ndc.y - p2.y) - (p0.y - p2.y) * (ndc.x - p2.x)) / area;\n"
+                << "        float l2 = 1.0 - l0 - l1;\n"
+                << "        if (l0 >= -1e-5 && l1 >= -1e-5 && l2 >= -1e-5) {\n"
+                << "            return v[i].texCoord * l0 + v[i+1].texCoord * l1 + v[i+2].texCoord * l2;\n"
+                << "        }\n"
+                << "    }\n"
+                << "    return v[0].texCoord;\n" // Fallback (shouldn't hit under normal rasterization)
+                << "}\n";
+
+        compSrc << "void main (void)\n"
+                << "{\n"
+                // Simulate Rasterization Pixel Centers mapped to NDC space (-1.0 to 1.0)
+                << "    vec2 pixelCenter = vec2(gl_GlobalInvocationID.xy) + vec2(0.5);\n"
+                << "    vec2 ndc = (pixelCenter / vec2(gl_NumWorkGroups.xy)) * 2.0 - 1.0;\n"
+                << "    vec4 vtxTexCoords = interpolateTexCoord(ndc);\n";
+
+        if (m_imageCount > 1)
+        {
+            compSrc << "    for (uint i = 0; i < " << m_imageCount << "; ++i) {\n"
+                    << "        vec4 color = (texture("
+                    << getGlslSampler(format, m_imageViewType, m_samplingType, m_imageCount) << ", vtxTexCoords."
+                    << texCoordSwizzle << std::scientific << ") * vec4" << lookupScale << ") + vec4" << lookupBias
+                    << ";\n"
+                    << "        imageStore(outImages[i], ivec2(gl_GlobalInvocationID.xy), color);\n"
+                    << "    }\n";
+        }
+        else
+        {
+            compSrc << "    vec4 color = (texture("
+                    << getGlslSampler(format, m_imageViewType, m_samplingType, m_imageCount) << ", vtxTexCoords."
+                    << texCoordSwizzle << std::scientific << ") * vec4" << lookupScale << ") + vec4" << lookupBias
+                    << ";\n"
+                    << "    imageStore(outImages[0], ivec2(gl_GlobalInvocationID.xy), color);\n";
+        }
+        compSrc << "}\n";
+
+        sourceCollections.glslSources.add("tex_comp") << glu::ComputeSource(compSrc.str());
+    }
+    else // graphics shader
+    {
+        std::ostringstream vertexSrc;
+        std::ostringstream fragmentSrc;
+
+        vertexSrc << "#version 440\n"
+                  << "layout(location = 0) in vec4 position;\n"
+                  << "layout(location = 1) in vec4 texCoords;\n"
+                  << "layout(location = 0) out highp vec4 vtxTexCoords;\n"
+                  << "out gl_PerVertex {\n"
+                  << "    vec4 gl_Position;\n"
+                  << "};\n"
+                  << "void main (void)\n"
+                  << "{\n"
+                  << "    gl_Position = position;\n"
+                  << "    vtxTexCoords = texCoords;\n"
+                  << "}\n";
+
+        fragmentSrc << "#version 440\n";
+        switch (m_samplingType)
+        {
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            fragmentSrc << "layout(set = 0, binding = 0) uniform highp sampler texSampler;\n"
+                        << "layout(set = 0, binding = 1) uniform highp " << getGlslTextureType(format, m_imageViewType)
+                        << " " << getGlslTextureDecl(m_imageCount) << ";\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+        default:
+            fragmentSrc << "layout(set = 0, binding = 0) uniform highp " << getGlslSamplerType(format, m_imageViewType)
+                        << " " << getGlslSamplerDecl(m_imageCount) << ";\n";
+        }
+        fragmentSrc << "layout(location = 0) in highp vec4 vtxTexCoords;\n"
+                    << "layout(location = 0) out highp vec4 " << getGlslFragColorDecl(m_imageCount) << ";\n"
+                    << "void main (void)\n"
+                    << "{\n";
+        if (m_imageCount > 1)
+            fragmentSrc << "    for (uint i = 0; i < " << m_imageCount << "; ++i)\n"
+                        << "        fragColors[i] = (texture("
+                        << getGlslSampler(format, m_imageViewType, m_samplingType, m_imageCount) << ", vtxTexCoords."
+                        << texCoordSwizzle << std::scientific << ") * vec4" << lookupScale << ") + vec4" << lookupBias
+                        << "; \n";
+        else
+            fragmentSrc << "    fragColor = (texture("
+                        << getGlslSampler(format, m_imageViewType, m_samplingType, m_imageCount) << ", vtxTexCoords."
+                        << texCoordSwizzle << std::scientific << ") * vec4" << lookupScale << ") + vec4" << lookupBias
+                        << "; \n";
+        fragmentSrc << "}\n";
+
+        sourceCollections.glslSources.add("tex_vert") << glu::VertexSource(vertexSrc.str());
+        sourceCollections.glslSources.add("tex_frag") << glu::FragmentSource(fragmentSrc.str());
+    }
 }
 
 TestInstance *ImageTest::createInstance(Context &context) const
@@ -623,13 +719,21 @@ de::MovePtr<tcu::TestCaseGroup> createImageSizeTests(tcu::TestContext &testCtx, 
         {
             for (size_t arraySizeNdx = 0; arraySizeNdx < arraySizes.size(); arraySizeNdx++)
             {
-                imageSizeTests->addChild(new ImageTest(
-                    testCtx,
-                    getSizeName(imageViewType, imageSizes[sizeNdx], arraySizes[arraySizeNdx],
-                                pipelineProtectedFlag[flagNdx])
-                        .c_str(),
-                    allocationKind, pipelineConstructionType, samplingType, imageViewType, imageFormat,
-                    imageSizes[sizeNdx], imageCount, arraySizes[arraySizeNdx], pipelineProtectedFlag[flagNdx]));
+                std::string baseName = getSizeName(imageViewType, imageSizes[sizeNdx], arraySizes[arraySizeNdx],
+                                                   pipelineProtectedFlag[flagNdx]);
+
+                // Graphics pipeline test case
+                imageSizeTests->addChild(new ImageTest(testCtx, baseName.c_str(), allocationKind,
+                                                       pipelineConstructionType, samplingType, imageViewType,
+                                                       imageFormat, imageSizes[sizeNdx], imageCount,
+                                                       arraySizes[arraySizeNdx], pipelineProtectedFlag[flagNdx]));
+
+                // Compute pipeline test case
+                std::string computeName = baseName + "_compute";
+                imageSizeTests->addChild(new ImageTest(testCtx, computeName.c_str(), allocationKind,
+                                                       pipelineConstructionType, samplingType, imageViewType,
+                                                       imageFormat, imageSizes[sizeNdx], imageCount,
+                                                       arraySizes[arraySizeNdx], pipelineProtectedFlag[flagNdx], true));
             }
         }
     }

@@ -817,9 +817,15 @@ public:
     virtual ~BufferViewTestCase(void)
     {
     }
-    virtual void initPrograms(SourceCollections &programCollection) const;
+    virtual void initPrograms(SourceCollections &programCollection) const override;
 
-    virtual TestInstance *createInstance(Context &context) const
+    virtual void checkSupport(Context &context) const override
+    {
+        if (m_bufferViewTestInfo.bufferAllocationKind == ALLOCATION_KIND_DEDICATED)
+            BufferDedicatedAllocation().checkSupport(context);
+    }
+
+    virtual TestInstance *createInstance(Context &context) const override
     {
         return new BufferViewTestInstance(context, m_bufferViewTestInfo);
     }

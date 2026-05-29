@@ -4689,13 +4689,13 @@ void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo &testCas
     csSpec.extensions.push_back("VK_KHR_shader_float_controls");
 }
 
-void getGraphicsShaderCode(vk::SourceCollections &dst, InstanceContext context)
+void getGraphicsShaderCode(vk::SourceCollections &dst, InstanceContextPtr context)
 {
     // this function is used only by GraphicsTestGroupBuilder but it couldn't
     // be implemented as a method because of how addFunctionCaseWithPrograms
     // was implemented
 
-    SpirvVersion targetSpirvVersion = context.resources.spirvVersion;
+    SpirvVersion targetSpirvVersion = context->resources.spirvVersion;
     const uint32_t vulkanVersion    = dst.usedVulkanVersion;
 
     static const string vertexTemplate =
@@ -4878,9 +4878,9 @@ void getGraphicsShaderCode(vk::SourceCollections &dst, InstanceContext context)
         "OpReturn\n"
         "OpFunctionEnd\n";
 
-    dst.spirvAsmSources.add("vert", nullptr) << StringTemplate(vertexTemplate).specialize(context.testCodeFragments)
+    dst.spirvAsmSources.add("vert", nullptr) << StringTemplate(vertexTemplate).specialize(context->testCodeFragments)
                                              << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-    dst.spirvAsmSources.add("frag", nullptr) << StringTemplate(fragmentTemplate).specialize(context.testCodeFragments)
+    dst.spirvAsmSources.add("frag", nullptr) << StringTemplate(fragmentTemplate).specialize(context->testCodeFragments)
                                              << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
 }
 
@@ -4903,7 +4903,7 @@ public:
     void createSettingsTests(TestCaseGroup *parentGroup) override;
 
 protected:
-    InstanceContext createInstanceContext(const OperationTestCaseInfo &testCaseInfo) const;
+    InstanceContextPtr createInstanceContext(const OperationTestCaseInfo &testCaseInfo) const;
 
 private:
     TestCasesBuilder m_testCaseBuilder;
@@ -4941,11 +4941,11 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup *parentGroup, 
         OperationTestCaseInfo testCaseInfo = {variableType, argumentsFromInput, VK_SHADER_STAGE_VERTEX_BIT,
                                               m_testCaseBuilder.getOperation(testCase.operationId), testCase};
 
-        InstanceContext ctxVertex = createInstanceContext(testCaseInfo);
-        string testName           = replace(testCase.baseName, "op", testCaseInfo.operation.name);
+        InstanceContextPtr ctxVertex = createInstanceContext(testCaseInfo);
+        string testName              = replace(testCase.baseName, "op", testCaseInfo.operation.name);
 
-        addFunctionCaseWithPrograms<InstanceContext>(group, testName + "_vert", defaultCheckSupport,
-                                                     getGraphicsShaderCode, runAndVerifyDefaultPipeline, ctxVertex);
+        addFunctionCaseWithPrograms<InstanceContextPtr>(group, testName + "_vert", defaultCheckSupport,
+                                                        getGraphicsShaderCode, runAndVerifyDefaultPipeline, ctxVertex);
     }
 
     // create test cases for fragment stage
@@ -4961,11 +4961,12 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup *parentGroup, 
         OperationTestCaseInfo testCaseInfo = {variableType, argumentsFromInput, VK_SHADER_STAGE_FRAGMENT_BIT,
                                               m_testCaseBuilder.getOperation(testCase.operationId), testCase};
 
-        InstanceContext ctxFragment = createInstanceContext(testCaseInfo);
-        string testName             = replace(testCase.baseName, "op", testCaseInfo.operation.name);
+        InstanceContextPtr ctxFragment = createInstanceContext(testCaseInfo);
+        string testName                = replace(testCase.baseName, "op", testCaseInfo.operation.name);
 
-        addFunctionCaseWithPrograms<InstanceContext>(group, testName + "_frag", defaultCheckSupport,
-                                                     getGraphicsShaderCode, runAndVerifyDefaultPipeline, ctxFragment);
+        addFunctionCaseWithPrograms<InstanceContextPtr>(group, testName + "_frag", defaultCheckSupport,
+                                                        getGraphicsShaderCode, runAndVerifyDefaultPipeline,
+                                                        ctxFragment);
     }
 }
 
@@ -4976,7 +4977,7 @@ void GraphicsTestGroupBuilder::createSettingsTests(TestCaseGroup *parentGroup)
     // WG decided that testing settings only for compute stage is sufficient
 }
 
-InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationTestCaseInfo &testCaseInfo) const
+InstanceContextPtr GraphicsTestGroupBuilder::createInstanceContext(const OperationTestCaseInfo &testCaseInfo) const
 {
     // LUT storing functions used to verify test results
     const VerifyIOFunc checkFloatsLUT[] = {checkFloats<Float16, deFloat16>, checkFloats<Float32, float>,
@@ -5362,9 +5363,11 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
     if (requiresFloatControlsExtension)
         extensions.push_back("VK_KHR_shader_float_controls");
 
-    InstanceContext ctx(defaultColors, defaultColors, specializations, noSpecConstants, noPushConstants, resources,
-                        noInterfaces, extensions, vulkanFeatures, testedStage);
+    InstanceContextUniquePtr ctxPtr(new InstanceContext(defaultColors, defaultColors, specializations, noSpecConstants,
+                                                        noPushConstants, resources, noInterfaces, extensions,
+                                                        vulkanFeatures, testedStage));
 
+    auto &ctx = *ctxPtr;
     ctx.moduleMap["vert"].emplace_back("main", VK_SHADER_STAGE_VERTEX_BIT);
     ctx.moduleMap["frag"].emplace_back("main", VK_SHADER_STAGE_FRAGMENT_BIT);
 
@@ -5372,7 +5375,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
     ctx.failResult     = QP_TEST_RESULT_FAIL;
     ctx.failMessageTemplate = "Output doesn't match with expected";
 
-    return ctx;
+    return ctxPtr;
 }
 
 } // namespace

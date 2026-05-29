@@ -260,7 +260,8 @@ void NoQueuesTestCase::checkSupport(Context &context) const
     if (isTessStage(m_data.stage) && !features.tessellationShader)
         TCU_THROW(NotSupportedError, "Tessellation shaders not supported");
 
-    if ((isTessStage(m_data.stage) || m_data.stage == Stage::STAGE_VERTEX) && !features.vertexPipelineStoresAndAtomics)
+    if ((isTessStage(m_data.stage) || isGeomStage(m_data.stage) || m_data.stage == Stage::STAGE_VERTEX) &&
+        !features.vertexPipelineStoresAndAtomics)
         TCU_THROW(NotSupportedError, "SSBO writes not supported in vertex pipeline");
 
     if (m_data.stage == Stage::STAGE_FRAGMENT && !features.fragmentStoresAndAtomics)
@@ -664,9 +665,8 @@ tcu::TestStatus NoQueuesTestInstance::iterate(void)
                                                          extensionPtrs.empty() ? nullptr : &extensionPtrs[0],
                                                             0u};
 
-        Move<VkDevice> deviceNoQueues = createCustomDevice(
-            m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(),
-            m_context.getInstance(), vki, physicalDevice, &deviceCreateInfo, nullptr);
+        Move<VkDevice> deviceNoQueues = createCustomDevice(m_context.getPlatformInterface(), m_context.getInstance(),
+                                                           vki, physicalDevice, &deviceCreateInfo, nullptr);
 
         const VkDevice device = *deviceNoQueues;
 

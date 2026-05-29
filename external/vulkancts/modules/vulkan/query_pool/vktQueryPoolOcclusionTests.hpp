@@ -35,7 +35,7 @@ class QueryPoolOcclusionTests : public tcu::TestCaseGroup
 {
 public:
     QueryPoolOcclusionTests(tcu::TestContext &testCtx);
-    ~QueryPoolOcclusionTests(void);
+    ~QueryPoolOcclusionTests(void) = default;
     void init(void);
 
 private:

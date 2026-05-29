@@ -4233,6 +4233,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
                 pointerToCreateInfo->flags |= VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT;
         }
         else
+#endif // CTS_USES_VULKANSC
         {
             // note: there might be other structures in the chain already
             void *firstStructInChain = static_cast<void *>(pointerToCreateInfo);
@@ -4247,6 +4248,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
             addToChain(&firstStructInChain, pNext);
         }
 
+#ifndef CTS_USES_VULKANSC
         if (m_internalData->pipelineFlags2)
         {
             void *firstStructInChain = static_cast<void *>(pointerToCreateInfo);

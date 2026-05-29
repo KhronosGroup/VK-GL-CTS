@@ -26,7 +26,6 @@
 
 #include "tcuDefs.hpp"
 #include "vkDefs.hpp"
-#include "vkDefs.hpp"
 #include "vkPlatform.hpp"
 #include "vkMemUtil.hpp"
 #include "vkRef.hpp"
@@ -77,7 +76,8 @@ void getLookupScaleBias(vk::VkFormat format, tcu::Vec4 &lookupScale, tcu::Vec4 &
 de::MovePtr<tcu::TextureLevel> readColorAttachment(
     const vk::DeviceInterface &vk, vk::VkDevice device, vk::VkQueue queue, uint32_t queueFamilyIndex,
     vk::Allocator &allocator, vk::VkImage image, vk::VkFormat format, const tcu::UVec2 &renderSize,
-    vk::VkImageLayout oldLayout = vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    vk::VkImageLayout oldLayout = vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    vk::VkAccessFlags oldAccess = vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
 
 /*--------------------------------------------------------------------*//*!
  * Gets a tcu::TextureLevel initialized with data from a VK depth

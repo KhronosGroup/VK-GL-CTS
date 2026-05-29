@@ -182,11 +182,11 @@ static VkResult createDisplaySurface(const InstanceInterface &vki, VkInstance in
 
         supportedDisplays.resize(supportedDisplayCount);
         VK_CHECK_SUPPORTED(
-            vki.getDisplayPlaneSupportedDisplaysKHR(physDevice, i, &supportedDisplayCount, &supportedDisplays[0]));
+            vki.getDisplayPlaneSupportedDisplaysKHR(physDevice, i, &supportedDisplayCount, supportedDisplays.data()));
 
         for (uint32_t j = 0; j < supportedDisplayCount; ++j)
         {
-            if (display == supportedDisplays[i])
+            if (display == supportedDisplays[j])
             {
                 planeIndex = i;
                 planeFound = true;
@@ -563,6 +563,30 @@ uint32_t chooseQueueFamilyIndex(const vk::InstanceInterface &vki, vk::VkPhysical
 
     if (indices.empty())
         TCU_THROW(NotSupportedError, "Device does not support presentation to the given surfaces");
+
+    return indices[0];
+}
+
+uint32_t chooseQueueFamilyIndex(const InstanceInterface &vki, const std::vector<VkPhysicalDevice> &physicalDevices,
+                                VkSurfaceKHR surface)
+{
+    DE_ASSERT(!physicalDevices.empty());
+
+    auto indices = getSortedSupportedQueueFamilyIndices(vki, physicalDevices[0], surface);
+
+    for (auto &physicalDevice : physicalDevices)
+    {
+        auto newIndices = getSortedSupportedQueueFamilyIndices(vki, physicalDevice, surface);
+
+        // Set intersection and overwrite.
+        decltype(indices) intersection;
+        std::set_intersection(begin(indices), end(indices), begin(newIndices), end(newIndices),
+                              std::back_inserter(intersection));
+        indices = std::move(intersection);
+
+        if (indices.empty())
+            TCU_THROW(NotSupportedError, "Device group does not support presentation to the given surface");
+    }
 
     return indices[0];
 }

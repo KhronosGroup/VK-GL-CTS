@@ -49,6 +49,7 @@
 #include <vector>
 #include <algorithm>
 #include <iterator>
+#include <map>
 
 namespace vkt
 {
@@ -379,6 +380,81 @@ tcu::TestStatus listModifiersCase(Context &context, VkFormat format)
                   de::toString(format) + " does not support any DRM modifiers for the requested image features");
 
     return tcu::TestStatus::pass("OK");
+}
+
+tcu::TestStatus listModifiersConsistency(Context &context, VkFormat format)
+{
+    const auto ctx = context.getContextCommonData();
+
+    const auto drmFormatModifiers =
+        getDrmFormatModifiers<VkDrmFormatModifierPropertiesListEXT, VkDrmFormatModifierPropertiesEXT,
+                              VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>(ctx.vki, ctx.physicalDevice,
+                                                                                         format);
+    const auto drmFormatModifiers2 =
+        getDrmFormatModifiers<VkDrmFormatModifierPropertiesList2EXT, VkDrmFormatModifierProperties2EXT,
+                              VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT>(ctx.vki, ctx.physicalDevice,
+                                                                                           format);
+
+    if (drmFormatModifiers.size() > drmFormatModifiers2.size())
+        TCU_FAIL(
+            "More modifiers in VkDrmFormatModifierPropertiesListEXT than in VkDrmFormatModifierPropertiesList2EXT");
+
+    // We want to be flexible regarding order, so we index data by DRM format modifier.
+    std::map<uint64_t, const VkDrmFormatModifierPropertiesEXT *> drmFormatModifiersMap;
+    for (const auto &drmFormatModifier : drmFormatModifiers)
+        drmFormatModifiersMap[drmFormatModifier.drmFormatModifier] = &drmFormatModifier;
+
+    std::map<uint64_t, const VkDrmFormatModifierProperties2EXT *> drmFormatModifiersMap2;
+    for (const auto &drmFormatModifier2 : drmFormatModifiers2)
+        drmFormatModifiersMap2[drmFormatModifier2.drmFormatModifier] = &drmFormatModifier2;
+
+    auto &log = context.getTestContext().getLog();
+    bool fail = false;
+
+    for (const auto &keyValue : drmFormatModifiersMap)
+    {
+        const auto modifier = keyValue.second->drmFormatModifier;
+        const auto itr      = drmFormatModifiersMap2.find(modifier);
+
+        if (itr == drmFormatModifiersMap2.end())
+        {
+            std::ostringstream msg;
+            msg << "Modifier " << modifier << " not present in VkDrmFormatModifierPropertiesList2EXT";
+            log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+            fail = true;
+            continue;
+        }
+
+        if (keyValue.second->drmFormatModifierPlaneCount != itr->second->drmFormatModifierPlaneCount)
+        {
+            std::ostringstream msg;
+            msg << "Modifier " << modifier
+                << " has mismatching plane counts: " << keyValue.second->drmFormatModifierPlaneCount << " vs "
+                << itr->second->drmFormatModifierPlaneCount;
+            log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+            fail = true;
+        }
+
+        const auto features1 = static_cast<VkFormatFeatureFlags2>(keyValue.second->drmFormatModifierTilingFeatures);
+        const auto features2 = (itr->second->drmFormatModifierTilingFeatures & static_cast<VkFlags64>(0x7FFFFFFFu));
+        const auto commonFeatures = (features1 & features2);
+
+        // features2 may have more bits, but all the bits in features1 would need to be in features2, and all the bits
+        // in the LSBs of features2 need to be in features1.
+        if (commonFeatures != features1 || commonFeatures != features2)
+        {
+            std::ostringstream msg;
+            msg << "Modifier " << modifier << " has a format features flag mismatch: " << std::hex << "0x" << features1
+                << " vs 0x" << features2;
+            log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+            fail = true;
+        }
+    }
+
+    if (fail)
+        TCU_FAIL("Inconsistent DRM format modifier lists detected; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
 }
 
 Move<VkImage> createImageNoModifiers(const DeviceInterface &vkd, const VkDevice device,
@@ -1547,6 +1623,17 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
 
         drmFormatModifiersGroup->addChild(group.release());
         drmFormatModifiersGroup->addChild(group2.release());
+    }
+
+    {
+        // Check consistency between both lists.
+        de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "list_modifiers_consistency"));
+
+        for (const auto format : formats::basicColorFormats)
+            addFunctionCase(group.get(), getFormatCaseName(format), checkModifiersList2Supported,
+                            listModifiersConsistency, format);
+
+        drmFormatModifiersGroup->addChild(group.release());
     }
 
     {

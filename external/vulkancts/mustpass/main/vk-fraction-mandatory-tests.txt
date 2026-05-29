@@ -1,5 +1,6 @@
 dEQP-VK.info.build
 dEQP-VK.info.device
+dEQP-VK.info.device_extension_dependencies
 dEQP-VK.info.device_extensions
 dEQP-VK.info.device_features
 dEQP-VK.info.device_group_peer_memory_features
@@ -10,6 +11,7 @@ dEQP-VK.info.device_memory_properties
 dEQP-VK.info.device_no_khx_extensions
 dEQP-VK.info.device_properties
 dEQP-VK.info.device_queue_family_properties
+dEQP-VK.info.instance_extension_dependencies
 dEQP-VK.info.instance_extension_device_functions
 dEQP-VK.info.instance_extensions
 dEQP-VK.info.instance_layers

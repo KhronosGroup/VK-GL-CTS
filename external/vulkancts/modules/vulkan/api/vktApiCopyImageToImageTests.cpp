@@ -1489,6 +1489,11 @@ void addImageToImageAllFormatsColorSrcFormatTests(tcu::TestCaseGroup *group, Cop
         if (!isSupportedByFramework(dstFormat) && !isCompressedFormat(dstFormat))
             continue;
 
+        // skip astc hdr varians, they would be added as a consequence of changes in isCompressedFormat;
+        // if combnation with those formats is desired then this check should be removed
+        if (isAstcHdrFormat(dstFormat))
+            continue;
+
 #ifndef CTS_USES_VULKANSC
         if ((testParams.params.dst.image.imageType != VK_IMAGE_TYPE_3D ||
              testParams.params.src.image.imageType != VK_IMAGE_TYPE_3D) &&
@@ -1625,6 +1630,11 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
 
+                // skip astc hdr varians, they would be added as a consequence of changes in isCompressedFormat;
+                // if combnation with those formats is desired then this check should be removed
+                if (isAstcHdrFormat(params.src.image.format))
+                    continue;
+
 #ifndef CTS_USES_VULKANSC
                 if (isAstc3DFormat(params.src.image.format))
                     continue;
@@ -1683,10 +1693,17 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
                 params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
+
+                // skip astc hdr varians, they would be added as a consequence of changes in isCompressedFormat;
+                // if combnation with those formats is desired then this check should be removed
+                if (isAstcHdrFormat(params.src.image.format))
+                    continue;
+
 #ifndef CTS_USES_VULKANSC
                 if (isAstc3DFormat(params.src.image.format))
                     continue;
 #endif // CTS_USES_VULKANSC
+
                 CopyColorTestParams testParams;
                 testParams.params            = params;
                 testParams.compatibleFormats = nullptr;
@@ -1743,10 +1760,17 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
                 params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
+
+                // skip astc hdr varians, they would be added as a consequence of changes in isCompressedFormat;
+                // if combnation with those formats is desired then this check should be removed
+                if (isAstcHdrFormat(params.src.image.format))
+                    continue;
+
 #ifndef CTS_USES_VULKANSC
                 if (isAstc3DFormat(params.src.image.format))
                     continue;
 #endif // CTS_USES_VULKANSC
+
                 CopyColorTestParams testParams;
                 testParams.params            = params;
                 testParams.compatibleFormats = nullptr;
@@ -1800,10 +1824,17 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
                 params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
+
+                // skip astc hdr varians, they would be added as a consequence of changes in isCompressedFormat;
+                // if combnation with those formats is desired then this check should be removed
+                if (isAstcHdrFormat(params.src.image.format))
+                    continue;
+
 #ifndef CTS_USES_VULKANSC
                 if (isAstc3DFormat(params.src.image.format))
                     continue;
 #endif // CTS_USES_VULKANSC
+
                 CopyColorTestParams testParams{params, &formatArray};
                 const std::string testName = getFormatCaseName(params.src.image.format);
                 addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
@@ -1853,6 +1884,12 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
                 params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
+
+                // skip astc hdr varians, they would be added as a consequence of changes in isCompressedFormat;
+                // if combnation with those formats is desired then this check should be removed
+                if (isAstcHdrFormat(params.src.image.format))
+                    continue;
+
 #ifndef CTS_USES_VULKANSC
                 if (isAstc3DFormat(params.src.image.format))
                     continue;
@@ -1907,10 +1944,17 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
                 params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
+
+                // skip astc hdr varians, they would be added as a consequence of changes in isCompressedFormat;
+                // if combnation with those formats is desired then this check should be removed
+                if (isAstcHdrFormat(params.src.image.format))
+                    continue;
+
 #ifndef CTS_USES_VULKANSC
                 if (isAstc3DFormat(params.src.image.format))
                     continue;
 #endif // CTS_USES_VULKANSC
+
                 CopyColorTestParams testParams{params, &formatArray};
                 const std::string testName = getFormatCaseName(params.src.image.format);
                 addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
@@ -1963,6 +2007,11 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
             {
                 params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
+                    continue;
+
+                // skip astc hdr varians, they would be added as a consequence of changes in isCompressedFormat;
+                // if combnation with those formats is desired then this check should be removed
+                if (isAstcHdrFormat(params.src.image.format))
                     continue;
 
                 CopyColorTestParams testParams{params, nullptr};
@@ -2019,6 +2068,11 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
 
+                // skip astc hdr varians, they would be added as a consequence of changes in isCompressedFormat;
+                // if combnation with those formats is desired then this check should be removed
+                if (isAstcHdrFormat(params.src.image.format))
+                    continue;
+
                 CopyColorTestParams testParams{params, nullptr};
                 const std::string testName = getFormatCaseName(params.src.image.format);
                 addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
@@ -2067,6 +2121,11 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
             {
                 params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
+                    continue;
+
+                // skip astc hdr varians, they would be added as a consequence of changes in isCompressedFormat;
+                // if combnation with those formats is desired then this check should be removed
+                if (isAstcHdrFormat(params.src.image.format))
                     continue;
 
                 CopyColorTestParams testParams{params, nullptr};

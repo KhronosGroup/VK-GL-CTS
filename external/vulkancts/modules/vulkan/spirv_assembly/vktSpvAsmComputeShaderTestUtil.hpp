@@ -699,6 +699,7 @@ struct ComputeShaderSpec
     // The last numArrayInputs inputs are considered an array binding.
     size_t numArrayInputs;
     bool uses64BitIndexing;
+    bool usesLongVector;
 
     ComputeShaderSpec(void)
         : entryPoint("main")
@@ -714,6 +715,7 @@ struct ComputeShaderSpec
         , graphicsFeaturesRequired(false)
         , numArrayInputs(0)
         , uses64BitIndexing(false)
+        , usesLongVector(false)
     {
     }
 };

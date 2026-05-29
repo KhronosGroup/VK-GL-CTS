@@ -3443,6 +3443,15 @@ tcu::TestNode::IterateResult MapPersistentDrawTest::iterate()
 
     const Functions &gl = m_context.getRenderContext().getFunctions();
 
+    GLint max_atomic_buffers;
+    gl.getIntegerv(GL_MAX_GEOMETRY_ATOMIC_COUNTER_BUFFERS, &max_atomic_buffers);
+    // this test requires 2 GS atomic counters
+    if (max_atomic_buffers < 2)
+    {
+        m_context.getTestContext().setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Unsupported");
+        return tcu::TestNode::STOP;
+    }
+
     bool test_result = true;
 
     /* Prepare data */

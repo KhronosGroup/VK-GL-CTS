@@ -52,14 +52,18 @@ Image::Image(void) : m_allocations(), m_image()
 #ifndef CTS_USES_VULKANSC
 SparseImage::SparseImage(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkPhysicalDevice physicalDevice,
                          const vk::InstanceInterface &vki, const vk::VkImageCreateInfo &createInfo,
-                         const vk::VkQueue sparseQueue, vk::Allocator &allocator, const tcu::TextureFormat &format)
+                         const vk::VkQueue sparseQueue, vk::Allocator &allocator, const tcu::TextureFormat &format,
+                         WaitType waitType)
     : Image()
     , m_semaphore()
+    , m_fence()
 {
     m_image     = createImage(vkd, device, &createInfo);
     m_semaphore = createSemaphore(vkd, device);
+    if (waitType == WaitType::SEMAPHORE_AND_FENCE)
+        m_fence = createFence(vkd, device);
     allocateAndBindSparseImage(vkd, device, physicalDevice, vki, createInfo, m_semaphore.get(), sparseQueue, allocator,
-                               m_allocations, format, m_image.get());
+                               m_allocations, format, m_image.get(), *m_fence);
 }
 #endif // CTS_USES_VULKANSC
 

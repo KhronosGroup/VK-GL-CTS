@@ -245,8 +245,7 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 
 	VkPhysicalDeviceVulkan11Features vkVulkan11Features = initVulkanStructure();
 	VkPhysicalDeviceVulkan12Features vkVulkan12Features = initVulkanStructure(&vkVulkan11Features);
-	VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR vkDynamicRenderingLocalReadFeaturesKHR = initVulkanStructure(&vkVulkan12Features);
-	VkPhysicalDeviceShaderQuadControlFeaturesKHR vkShaderQuadControlFeaturesKHR = initVulkanStructure(&vkDynamicRenderingLocalReadFeaturesKHR);
+	VkPhysicalDeviceShaderQuadControlFeaturesKHR vkShaderQuadControlFeaturesKHR = initVulkanStructure(&vkVulkan12Features);
 	VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR vkShaderMaximalReconvergenceFeaturesKHR = initVulkanStructure(&vkShaderQuadControlFeaturesKHR);
 	VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR vkShaderSubgroupUniformControlFlowFeaturesKHR = initVulkanStructure(&vkShaderMaximalReconvergenceFeaturesKHR);
 	VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR vkShaderSubgroupRotateFeaturesKHR = initVulkanStructure(&vkShaderSubgroupUniformControlFlowFeaturesKHR);
@@ -255,7 +254,8 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 	VkPhysicalDeviceLineRasterizationFeaturesKHR vkLineRasterizationFeaturesKHR = initVulkanStructure(&vkShaderExpectAssumeFeaturesKHR);
 	VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR vkVertexAttributeDivisorFeaturesKHR = initVulkanStructure(&vkLineRasterizationFeaturesKHR);
 	VkPhysicalDeviceIndexTypeUint8FeaturesKHR vkIndexTypeUint8FeaturesKHR = initVulkanStructure(&vkVertexAttributeDivisorFeaturesKHR);
-	VkPhysicalDeviceMaintenance5FeaturesKHR vkMaintenance5FeaturesKHR = initVulkanStructure(&vkIndexTypeUint8FeaturesKHR);
+	VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR vkDynamicRenderingLocalReadFeaturesKHR = initVulkanStructure(&vkIndexTypeUint8FeaturesKHR);
+	VkPhysicalDeviceMaintenance5FeaturesKHR vkMaintenance5FeaturesKHR = initVulkanStructure(&vkDynamicRenderingLocalReadFeaturesKHR);
 
 	VkPhysicalDeviceFeatures2 vkFeatures2 = initVulkanStructure(&vkMaintenance5FeaturesKHR);
 	auto& vkFeatures = vkFeatures2.features;
@@ -288,9 +288,6 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 
 
 		// vulkanextensionrequirements_roadmap2024
-		ROADMAP_FEATURE_ITEM(vkDynamicRenderingLocalReadFeaturesKHR, dynamicRenderingLocalRead),
-
-
 		ROADMAP_FEATURE_ITEM(vkShaderQuadControlFeaturesKHR, shaderQuadControl),
 
 
@@ -300,6 +297,7 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 		ROADMAP_FEATURE_ITEM(vkShaderSubgroupUniformControlFlowFeaturesKHR, shaderSubgroupUniformControlFlow),
 
 
+		// vulkanextensionrequirements_roadmap2024_only
 		ROADMAP_FEATURE_ITEM(vkShaderSubgroupRotateFeaturesKHR, shaderSubgroupRotate),
 
 
@@ -321,6 +319,9 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 
 
 		ROADMAP_FEATURE_ITEM(vkIndexTypeUint8FeaturesKHR, indexTypeUint8),
+
+
+		ROADMAP_FEATURE_ITEM(vkDynamicRenderingLocalReadFeaturesKHR, dynamicRenderingLocalRead),
 
 
 		ROADMAP_FEATURE_ITEM(vkMaintenance5FeaturesKHR, maintenance5),
@@ -351,19 +352,15 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 	    oneOrMoreChecksFailed |= !validateLimit(testedProperty, log);
 
 	std::vector<std::string> extensionList {
-		"VK_KHR_dynamic_rendering_local_read",
-		"VK_KHR_load_store_op_none",
-		"VK_KHR_shader_quad_control",
-		"VK_KHR_shader_maximal_reconvergence",
-		"VK_KHR_shader_subgroup_uniform_control_flow",
+		"VK_KHR_dynamic_rendering",
 		"VK_KHR_shader_subgroup_rotate",
 		"VK_KHR_shader_float_controls2",
 		"VK_KHR_shader_expect_assume",
 		"VK_KHR_line_rasterization",
 		"VK_KHR_vertex_attribute_divisor",
 		"VK_KHR_index_type_uint8",
-		"VK_KHR_map_memory2",
 		"VK_KHR_maintenance5",
+		"VK_KHR_dynamic_rendering_local_read",
 		"VK_KHR_push_descriptor"
 	};
 	const auto deviceExtensions = enumerateDeviceExtensionProperties(vki, pd, nullptr);
@@ -391,7 +388,12 @@ tcu::TestStatus validate_roadmap_2026(Context& context)
 	const auto &vki = context.getInstanceInterface();
 	TestLog& log = context.getTestContext().getLog();
 
-	VkPhysicalDeviceVulkan14Features vkVulkan14Features = initVulkanStructure();
+	VkPhysicalDeviceVulkan11Features vkVulkan11Features = initVulkanStructure();
+	VkPhysicalDeviceVulkan12Features vkVulkan12Features = initVulkanStructure(&vkVulkan11Features);
+	VkPhysicalDeviceShaderQuadControlFeaturesKHR vkShaderQuadControlFeaturesKHR = initVulkanStructure(&vkVulkan12Features);
+	VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR vkShaderMaximalReconvergenceFeaturesKHR = initVulkanStructure(&vkShaderQuadControlFeaturesKHR);
+	VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR vkShaderSubgroupUniformControlFlowFeaturesKHR = initVulkanStructure(&vkShaderMaximalReconvergenceFeaturesKHR);
+	VkPhysicalDeviceVulkan14Features vkVulkan14Features = initVulkanStructure(&vkShaderSubgroupUniformControlFlowFeaturesKHR);
 	VkPhysicalDeviceRobustness2FeaturesKHR vkRobustness2FeaturesKHR = initVulkanStructure(&vkVulkan14Features);
 	VkPhysicalDevicePipelineBinaryFeaturesKHR vkPipelineBinaryFeaturesKHR = initVulkanStructure(&vkRobustness2FeaturesKHR);
 	VkPhysicalDeviceFragmentShadingRateFeaturesKHR vkFragmentShadingRateFeaturesKHR = initVulkanStructure(&vkPipelineBinaryFeaturesKHR);
@@ -415,14 +417,55 @@ tcu::TestStatus validate_roadmap_2026(Context& context)
 	vki.getPhysicalDeviceFeatures2(pd, &vkFeatures2);
 	DE_UNREF(vkFeatures);
 
+	VkPhysicalDeviceVulkan12Properties vkVulkan12Properties = initVulkanStructure();
 
-	VkPhysicalDeviceProperties2 vkProperties2 = initVulkanStructure();
+	VkPhysicalDeviceProperties2 vkProperties2 = initVulkanStructure(&vkVulkan12Properties);
 	auto& vkProperties = vkProperties2.properties;
 	vki.getPhysicalDeviceProperties2(pd, &vkProperties2);
 	DE_UNREF(vkProperties);
 
 	const std::vector<FeatureEntry> featureTable {
+		// vulkan10requirements_roadmap2024
+		ROADMAP_FEATURE_ITEM(vkFeatures, multiDrawIndirect),
+		ROADMAP_FEATURE_ITEM(vkFeatures, shaderInt16),
+		ROADMAP_FEATURE_ITEM(vkFeatures, shaderImageGatherExtended),
+
+
+		// vulkan11requirements_roadmap2024
+		ROADMAP_FEATURE_ITEM(vkVulkan11Features, shaderDrawParameters),
+		ROADMAP_FEATURE_ITEM(vkVulkan11Features, storageBuffer16BitAccess),
+
+
+		// vulkan12requirements_roadmap2024
+		ROADMAP_FEATURE_ITEM(vkVulkan12Features, shaderInt8),
+		ROADMAP_FEATURE_ITEM(vkVulkan12Features, shaderFloat16),
+		ROADMAP_FEATURE_ITEM(vkVulkan12Features, storageBuffer8BitAccess),
+
+
+		// vulkanextensionrequirements_roadmap2024
+		ROADMAP_FEATURE_ITEM(vkShaderQuadControlFeaturesKHR, shaderQuadControl),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderMaximalReconvergenceFeaturesKHR, shaderMaximalReconvergence),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderSubgroupUniformControlFlowFeaturesKHR, shaderSubgroupUniformControlFlow),
+
+
 		// vulkan14requirements_roadmap2026
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, shaderSubgroupRotate),
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, shaderExpectAssume),
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, shaderFloatControls2),
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, rectangularLines),
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, bresenhamLines),
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, smoothLines),
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, stippledRectangularLines),
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, stippledBresenhamLines),
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, stippledSmoothLines),
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, vertexAttributeInstanceRateDivisor),
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, indexTypeUint8),
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, dynamicRenderingLocalRead),
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, maintenance5),
 		ROADMAP_FEATURE_ITEM(vkVulkan14Features, hostImageCopy),
 		ROADMAP_FEATURE_ITEM(vkVulkan14Features, pushDescriptor),
 
@@ -492,6 +535,17 @@ tcu::TestStatus validate_roadmap_2026(Context& context)
 	}
 
 	const std::vector<FeatureLimitTableItem> propertyTable {
+		// vulkan10requirements_roadmap2024
+		{ PN(checkAlways), PN(vkProperties.limits.timestampComputeAndGraphics), LIM_MIN_UINT32(true) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxColorAttachments), LIM_MIN_UINT32(8) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxBoundDescriptorSets), LIM_MIN_UINT32(7) },
+
+
+		// vulkan12requirements_roadmap2024
+		{ PN(checkAlways), PN(vkVulkan12Properties.shaderRoundingModeRTEFloat16), LIM_MIN_UINT32(true) },
+		{ PN(checkAlways), PN(vkVulkan12Properties.shaderRoundingModeRTEFloat32), LIM_MIN_UINT32(true) },
+
+
 		// vulkan10requirements_roadmap2026
 		{ PN(checkAlways), PN(vkProperties.limits.maxPerStageDescriptorUniformBuffers), LIM_MIN_UINT32(200) },
 		{ PN(checkAlways), PN(vkProperties.limits.maxPerStageDescriptorStorageBuffers), LIM_MIN_UINT32(200) },
@@ -519,6 +573,16 @@ tcu::TestStatus validate_roadmap_2026(Context& context)
 	    oneOrMoreChecksFailed |= !validateLimit(testedProperty, log);
 
 	std::vector<std::string> extensionList {
+		"VK_KHR_dynamic_rendering",
+		"VK_KHR_shader_subgroup_rotate",
+		"VK_KHR_shader_float_controls2",
+		"VK_KHR_shader_expect_assume",
+		"VK_KHR_line_rasterization",
+		"VK_KHR_vertex_attribute_divisor",
+		"VK_KHR_index_type_uint8",
+		"VK_KHR_maintenance5",
+		"VK_KHR_dynamic_rendering_local_read",
+		"VK_KHR_push_descriptor",
 		"VK_KHR_robustness2",
 		"VK_KHR_pipeline_binary",
 		"VK_KHR_fragment_shading_rate",
@@ -560,6 +624,6 @@ tcu::TestStatus validate_roadmap_2026(Context& context)
 
 static const std::vector<ProfileEntry> profileEntries {
 	{ "roadmap_2022", checkApiVersionSupport<1, 3>, validate_roadmap_2022 },
-	{ "roadmap_2024", checkApiVersionSupport<1, 3>, validate_roadmap_2024 },
+	{ "roadmap_2024", checkApiVersionSupport<1, 2>, validate_roadmap_2024 },
 	{ "roadmap_2026", checkApiVersionSupport<1, 4>, validate_roadmap_2026 },
 };

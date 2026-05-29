@@ -65,6 +65,7 @@ dEQP-VKSC.protected_memory.buffer.copy.float_buffer.primary.static.test_3
 dEQP-VKSC.protected_memory.buffer.copy.float_buffer.primary.static.test_4
 dEQP-VKSC.protected_memory.buffer.copy.float_buffer.primary.static.test_5
 dEQP-VKSC.protected_memory.buffer.copy.float_buffer.primary.static.test_6
+dEQP-VKSC.protected_memory.buffer.copy.float_buffer.primary.static.test_device_address
 dEQP-VKSC.protected_memory.buffer.copy.float_buffer.secondary.random.test_1
 dEQP-VKSC.protected_memory.buffer.copy.float_buffer.secondary.random.test_10
 dEQP-VKSC.protected_memory.buffer.copy.float_buffer.secondary.random.test_2
@@ -193,6 +194,7 @@ dEQP-VKSC.protected_memory.buffer.fill.float_buffer.primary.static.test_3
 dEQP-VKSC.protected_memory.buffer.fill.float_buffer.primary.static.test_4
 dEQP-VKSC.protected_memory.buffer.fill.float_buffer.primary.static.test_5
 dEQP-VKSC.protected_memory.buffer.fill.float_buffer.primary.static.test_6
+dEQP-VKSC.protected_memory.buffer.fill.float_buffer.primary.static.test_device_address
 dEQP-VKSC.protected_memory.buffer.fill.float_buffer.secondary.random.test_1
 dEQP-VKSC.protected_memory.buffer.fill.float_buffer.secondary.random.test_10
 dEQP-VKSC.protected_memory.buffer.fill.float_buffer.secondary.random.test_2
@@ -289,6 +291,7 @@ dEQP-VKSC.protected_memory.buffer.update.float_buffer.primary.static.test_3
 dEQP-VKSC.protected_memory.buffer.update.float_buffer.primary.static.test_4
 dEQP-VKSC.protected_memory.buffer.update.float_buffer.primary.static.test_5
 dEQP-VKSC.protected_memory.buffer.update.float_buffer.primary.static.test_6
+dEQP-VKSC.protected_memory.buffer.update.float_buffer.primary.static.test_device_address
 dEQP-VKSC.protected_memory.buffer.update.float_buffer.secondary.random.test_1
 dEQP-VKSC.protected_memory.buffer.update.float_buffer.secondary.random.test_10
 dEQP-VKSC.protected_memory.buffer.update.float_buffer.secondary.random.test_2

@@ -120,7 +120,7 @@ public:
     virtual void initPrograms(vk::SourceCollections &programCollection) const;
     virtual void checkSupport(Context &context) const
     {
-        checkProtectedQueueSupport(context);
+        checkProtectedContextSupport(context);
     }
 
 private:

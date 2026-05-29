@@ -24,6 +24,7 @@
 
 #include "vktMeshShaderPropertyTestsEXT.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestCaseUtil.hpp"
 #include "vktMeshShaderUtil.hpp"
 
 #include "vkBufferWithMemory.hpp"
@@ -2341,6 +2342,88 @@ tcu::TestStatus MaxMeshOutputSizeInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+void limitsCheckSupport(Context &context)
+{
+    checkTaskMeshShaderSupportEXT(context, false, true);
+}
+
+tcu::TestStatus limitsRun(Context &context)
+{
+    const auto &features = context.getMeshShaderFeaturesEXT();
+    const auto &props    = context.getMeshShaderPropertiesEXT();
+
+    bool fail = false;
+    auto &log = context.getTestContext().getLog();
+
+    const auto checkLimit = [&](const char *name, uint32_t value, uint32_t minVal = 0u,
+                                uint32_t maxVal = std::numeric_limits<uint32_t>::max())
+    {
+        if (value < minVal)
+        {
+            std::ostringstream msg;
+            msg << "Property " << name << " has value " << value << " below the minimum of " << minVal;
+            log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+            fail = true;
+        }
+
+        if (value > maxVal)
+        {
+            std::ostringstream msg;
+            msg << "Property " << name << " has value " << value << " above the maximum of " << maxVal;
+            log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+            fail = true;
+        }
+    };
+
+#define CHECK_LIMITS_MIN(VALUE, MIN_VAL) checkLimit(#VALUE, props.VALUE, MIN_VAL)
+#define CHECK_LIMITS_MAX(VALUE, MAX_VAL) checkLimit(#VALUE, props.VALUE, 0u, MAX_VAL)
+
+    if (features.taskShader)
+    {
+        CHECK_LIMITS_MIN(maxTaskWorkGroupTotalCount, (1u << 22));
+        CHECK_LIMITS_MIN(maxTaskWorkGroupCount[0], 65535u);
+        CHECK_LIMITS_MIN(maxTaskWorkGroupCount[1], 65535u);
+        CHECK_LIMITS_MIN(maxTaskWorkGroupCount[2], 65535u);
+        CHECK_LIMITS_MIN(maxTaskWorkGroupInvocations, 128u);
+        CHECK_LIMITS_MIN(maxTaskWorkGroupSize[0], 128u);
+        CHECK_LIMITS_MIN(maxTaskWorkGroupSize[1], 128u);
+        CHECK_LIMITS_MIN(maxTaskWorkGroupSize[2], 128u);
+        CHECK_LIMITS_MIN(maxTaskPayloadSize, 16384u);
+        CHECK_LIMITS_MIN(maxTaskSharedMemorySize, 32768u);
+        CHECK_LIMITS_MIN(maxTaskPayloadAndSharedMemorySize, 32768u);
+    }
+
+    if (features.meshShader)
+    {
+        CHECK_LIMITS_MIN(maxMeshWorkGroupTotalCount, (1u << 22));
+        CHECK_LIMITS_MIN(maxMeshWorkGroupCount[0], 65535u);
+        CHECK_LIMITS_MIN(maxMeshWorkGroupCount[1], 65535u);
+        CHECK_LIMITS_MIN(maxMeshWorkGroupCount[2], 65535u);
+        CHECK_LIMITS_MIN(maxMeshWorkGroupInvocations, 128u);
+        CHECK_LIMITS_MIN(maxMeshWorkGroupSize[0], 128u);
+        CHECK_LIMITS_MIN(maxMeshWorkGroupSize[1], 128u);
+        CHECK_LIMITS_MIN(maxMeshWorkGroupSize[2], 128u);
+        CHECK_LIMITS_MIN(maxMeshSharedMemorySize, 28672u);
+        CHECK_LIMITS_MIN(maxMeshPayloadAndSharedMemorySize, 28672u);
+        CHECK_LIMITS_MIN(maxMeshOutputMemorySize, 32768u);
+        CHECK_LIMITS_MIN(maxMeshPayloadAndOutputMemorySize, 48128u);
+        CHECK_LIMITS_MIN(maxMeshOutputComponents, 128u);
+        CHECK_LIMITS_MIN(maxMeshOutputVertices, 256u);
+        CHECK_LIMITS_MIN(maxMeshOutputPrimitives, 256u);
+        CHECK_LIMITS_MIN(maxMeshOutputLayers, 8u);
+
+        CHECK_LIMITS_MAX(meshOutputPerVertexGranularity, 32u);
+        CHECK_LIMITS_MAX(meshOutputPerPrimitiveGranularity, 32u);
+    }
+
+    if (fail)
+        TCU_FAIL("Some properties failed the limits test; check log for details --");
+    return tcu::TestStatus::pass("Pass");
+
+#undef CHECK_LIMITS_MIN
+#undef CHECK_LIMITS_MAX
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createMeshShaderPropertyTestsEXT(tcu::TestContext &testCtx)
@@ -2349,6 +2432,8 @@ tcu::TestCaseGroup *createMeshShaderPropertyTestsEXT(tcu::TestContext &testCtx)
 
     // Tests checking mesh shading properties
     GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "properties"));
+
+    addFunctionCase(mainGroup.get(), "limits", limitsCheckSupport, limitsRun);
 
     const struct
     {

@@ -181,6 +181,10 @@ CustomInstance createInstanceWithWsi(Context &context, Type wsiType, const vecto
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
+    // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
+    if (wsiType == TYPE_DIRECT_DRM)
+        extensions.push_back("VK_EXT_direct_mode_display");
+
     vector<string> instanceExtensions;
     for (const auto &ext : extensions)
     {
@@ -900,6 +904,11 @@ tcu::TestStatus querySurfacePresentModes2Test(Context &context, Type wsiType)
 
     for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)
     {
+        const std::vector<VkExtensionProperties> deviceNdxExtensions(
+            enumerateDeviceExtensionProperties(instHelper.vki, physicalDevices[deviceNdx], nullptr));
+        if (!isExtensionStructSupported(deviceNdxExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))
+            continue;
+
         if (isSupportedByAnyQueue(instHelper.vki, physicalDevices[deviceNdx], *surface))
         {
             const VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
@@ -1363,8 +1372,7 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest(Context &context, Ty
     };
 
     Move<VkDevice> deviceGroup =
-        createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                           context.getPlatformInterface(), instHelper.instance, instHelper.vki,
+        createCustomDevice(context.getPlatformInterface(), instHelper.instance, instHelper.vki,
                            deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
     const DeviceDriver vk(context.getPlatformInterface(), instHelper.instance, *deviceGroup,
                           context.getUsedApiVersion(), context.getTestContext().getCommandLine());
@@ -1478,8 +1486,7 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest(Context &context, Type wsiT
     };
 
     Move<VkDevice> deviceGroup =
-        createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                           context.getPlatformInterface(), instHelper.instance, instHelper.vki,
+        createCustomDevice(context.getPlatformInterface(), instHelper.instance, instHelper.vki,
                            deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
     const DeviceDriver vk(context.getPlatformInterface(), instHelper.instance, *deviceGroup,
                           context.getUsedApiVersion(), context.getTestContext().getCommandLine());

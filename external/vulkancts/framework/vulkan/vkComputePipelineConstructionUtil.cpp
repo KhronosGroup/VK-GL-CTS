@@ -62,7 +62,9 @@ ComputePipelineWrapper::ComputePipelineWrapper(const DeviceInterface &vk, VkDevi
     , m_programBinary(nullptr)
     , m_specializationInfo{}
     , m_pipelineCreateFlags((VkPipelineCreateFlags)0u)
+#ifndef CTS_USES_VULKANSC
     , m_pipelineCreateFlags2((VkPipelineCreateFlags2)0u)
+#endif
     , m_pipelineCreatePNext(nullptr)
     , m_subgroupSize(0)
 {
@@ -75,7 +77,9 @@ ComputePipelineWrapper::ComputePipelineWrapper(const DeviceInterface &vk, VkDevi
     , m_programBinary(&programBinary)
     , m_specializationInfo{}
     , m_pipelineCreateFlags((VkPipelineCreateFlags)0u)
+#ifndef CTS_USES_VULKANSC
     , m_pipelineCreateFlags2((VkPipelineCreateFlags2)0u)
+#endif
     , m_pipelineCreatePNext(nullptr)
     , m_subgroupSize(0)
 {
@@ -87,7 +91,9 @@ ComputePipelineWrapper::ComputePipelineWrapper(const ComputePipelineWrapper &rhs
     , m_descriptorSetLayouts(rhs.m_descriptorSetLayouts)
     , m_specializationInfo(rhs.m_specializationInfo)
     , m_pipelineCreateFlags(rhs.m_pipelineCreateFlags)
+#ifndef CTS_USES_VULKANSC
     , m_pipelineCreateFlags2(rhs.m_pipelineCreateFlags2)
+#endif
     , m_pipelineCreatePNext(rhs.m_pipelineCreatePNext)
     , m_subgroupSize(rhs.m_subgroupSize)
 {
@@ -103,7 +109,9 @@ ComputePipelineWrapper::ComputePipelineWrapper(ComputePipelineWrapper &&rhs) noe
     , m_descriptorSetLayouts(rhs.m_descriptorSetLayouts)
     , m_specializationInfo(rhs.m_specializationInfo)
     , m_pipelineCreateFlags(rhs.m_pipelineCreateFlags)
+#ifndef CTS_USES_VULKANSC
     , m_pipelineCreateFlags2(rhs.m_pipelineCreateFlags2)
+#endif
     , m_pipelineCreatePNext(rhs.m_pipelineCreatePNext)
     , m_subgroupSize(rhs.m_subgroupSize)
 {
@@ -120,8 +128,10 @@ ComputePipelineWrapper &ComputePipelineWrapper::operator=(const ComputePipelineW
     m_descriptorSetLayouts = rhs.m_descriptorSetLayouts;
     m_specializationInfo   = rhs.m_specializationInfo;
     m_pipelineCreateFlags  = rhs.m_pipelineCreateFlags;
+#ifndef CTS_USES_VULKANSC
     m_pipelineCreateFlags2 = rhs.m_pipelineCreateFlags2;
-    m_pipelineCreatePNext  = rhs.m_pipelineCreatePNext;
+#endif
+    m_pipelineCreatePNext = rhs.m_pipelineCreatePNext;
     DE_ASSERT(rhs.m_pipeline.get() == VK_NULL_HANDLE);
 #ifndef CTS_USES_VULKANSC
     DE_ASSERT(rhs.m_shader.get() == VK_NULL_HANDLE);
@@ -137,14 +147,21 @@ ComputePipelineWrapper &ComputePipelineWrapper::operator=(ComputePipelineWrapper
     m_descriptorSetLayouts = std::move(rhs.m_descriptorSetLayouts);
     m_specializationInfo   = rhs.m_specializationInfo;
     m_pipelineCreateFlags  = rhs.m_pipelineCreateFlags;
+#ifndef CTS_USES_VULKANSC
     m_pipelineCreateFlags2 = rhs.m_pipelineCreateFlags2;
-    m_pipelineCreatePNext  = rhs.m_pipelineCreatePNext;
+#endif
+    m_pipelineCreatePNext = rhs.m_pipelineCreatePNext;
     DE_ASSERT(rhs.m_pipeline.get() == VK_NULL_HANDLE);
 #ifndef CTS_USES_VULKANSC
     DE_ASSERT(rhs.m_shader.get() == VK_NULL_HANDLE);
 #endif
     m_subgroupSize = rhs.m_subgroupSize;
     return *this;
+}
+
+void ComputePipelineWrapper::setProgramBinary(const ProgramBinary &programBinary)
+{
+    m_programBinary = &programBinary;
 }
 
 void ComputePipelineWrapper::setDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout)
@@ -168,10 +185,12 @@ void ComputePipelineWrapper::setPipelineCreateFlags(VkPipelineCreateFlags pipeli
     m_pipelineCreateFlags = pipelineCreateFlags;
 }
 
+#ifndef CTS_USES_VULKANSC
 void ComputePipelineWrapper::setPipelineCreateFlags2(VkPipelineCreateFlags2 pipelineCreateFlags2)
 {
     m_pipelineCreateFlags2 = pipelineCreateFlags2;
 }
+#endif
 
 void ComputePipelineWrapper::setPipelineCreatePNext(void *pipelineCreatePNext)
 {
@@ -188,7 +207,7 @@ void ComputePipelineWrapper::addPushConstantRange(const VkPushConstantRange &ran
     m_pushConstantRanges.push_back(range);
 }
 
-void ComputePipelineWrapper::buildPipeline(void)
+void ComputePipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache)
 {
     const auto &vk     = m_internalData->vk;
     const auto &device = m_internalData->device;
@@ -215,7 +234,7 @@ void ComputePipelineWrapper::buildPipeline(void)
 #endif
 
         m_pipeline = vk::makeComputePipeline(vk, device, *m_pipelineLayout, m_pipelineCreateFlags, pNext, *shaderModule,
-                                             0u, specializationInfo, VK_NULL_HANDLE, m_subgroupSize);
+                                             0u, specializationInfo, pipelineCache, m_subgroupSize);
     }
     else
     {
@@ -272,7 +291,7 @@ void ComputePipelineWrapper::buildPipeline(void)
     }
 }
 
-void ComputePipelineWrapper::bind(VkCommandBuffer commandBuffer)
+void ComputePipelineWrapper::bind(VkCommandBuffer commandBuffer) const
 {
     if (m_internalData->pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_PIPELINE)
     {

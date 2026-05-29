@@ -57,6 +57,8 @@ using namespace vk;
 
 static constexpr VkFormat kColorFormat    = VK_FORMAT_R8G8B8A8_UINT;
 static constexpr VkFormat kBadColorFormat = VK_FORMAT_R32G32B32A32_UINT;
+static constexpr VkFormat kColorFormatExtraRenderAtts =
+    VK_FORMAT_R8G8B8A8_UNORM; // color format for extra render attachments
 
 std::vector<VkFormat> getDSFormatList(void)
 {
@@ -102,6 +104,7 @@ struct TestParams
     static constexpr uint32_t kMaxFramebufferAttachments =
         2u * kMaxFragAttachments;                          // Slightly arbitrary, based on the previous number.
     static constexpr uint32_t kExtraPipelineAttCount = 4u; // Used when largePipeAttCount is true.
+    static constexpr uint32_t kExtraRenderAttCount   = 4u; // Used when largeRenderAttCount is true.
 
     const uint32_t
         pipeFBAttachmentCount; // Number of attachments specified in the pipeline and framebuffer (VUID-vkCmdDraw-colorAttachmentCount-06179).
@@ -128,12 +131,15 @@ struct TestParams
     const bool wrongFormatWithNullViews; // Use the wrong format value if the image view handle is VK_NULL_HANDLE.
     const bool
         largePipeAttCount; // Ignore VUID-vkCmdDraw-colorAttachmentCount-06179 and make VkPipelineRenderingCreateInfo::colorAttachmentCount larger than VkRenderingInfo::colorAttachmentCount.
+    const bool
+        largeRenderAttCount; // make VkRenderingInfo::colorAttachmentCount larger than VkPipelineRenderingCreateInfo::colorAttachmentCount.
+    const bool extraAttIsUnused;
 
     TestParams(uint32_t pipeFBAttachmentCount_, uint32_t fragAttachmentCount_, uint32_t layerCount_,
                uint32_t layerMask_, bool multiView_, uint32_t formatMask_, uint32_t framebufferMask_,
                bool depthPresent_, bool depthDefined_, bool depthValidHandle_, bool stencilPresent_,
                bool stencilDefined_, bool stencilValidHandle_, bool useSecondaries_, bool wrongFormatWithNullViews_,
-               bool largePipeAttCount_)
+               bool largePipeAttCount_, bool largeRenderAttCount_ = false, bool extraAttIsUnused_ = false)
         : pipeFBAttachmentCount(pipeFBAttachmentCount_)
         , fragAttachmentCount(fragAttachmentCount_)
         , layerCount(layerCount_)
@@ -150,6 +156,8 @@ struct TestParams
         , useSecondaries(useSecondaries_)
         , wrongFormatWithNullViews(wrongFormatWithNullViews_)
         , largePipeAttCount(largePipeAttCount_)
+        , largeRenderAttCount(largeRenderAttCount_)
+        , extraAttIsUnused(extraAttIsUnused_)
     {
         DE_ASSERT(fragAttachmentCount <= kMaxFragAttachments);
         DE_ASSERT(pipeFBAttachmentCount <= kMaxFramebufferAttachments);
@@ -188,6 +196,8 @@ public:
                  << getDefined(depthDefined) << "_" << getValid(depthValidHandle) << "_stencil_"
                  << getPresent(stencilPresent) << "_" << getDefined(stencilDefined) << "_"
                  << getValid(stencilValidHandle) << (multiView ? "_multiview" : "")
+                 << (largePipeAttCount ? (extraAttIsUnused ? "_extra_undef" : "") : "")
+                 << (largeRenderAttCount ? (extraAttIsUnused ? "_extra_null" : "") : "")
             //<< (wrongFormatWithNullViews ? "_bad_formats" : "")
             ;
         return testName.str();
@@ -258,7 +268,7 @@ public:
 
     std::vector<VkRenderingAttachmentInfo> getRenderingAttachmentInfos(const std::vector<VkImageView> &imageViews) const
     {
-        DE_ASSERT(imageViews.size() == static_cast<size_t>(pipeFBAttachmentCount));
+        DE_ASSERT(imageViews.size() >= static_cast<size_t>(pipeFBAttachmentCount));
 
         std::bitset<kMaxFramebufferAttachments> mask(static_cast<unsigned long long>(framebufferMask));
         const auto clearValue = getClearValue();
@@ -350,6 +360,7 @@ public:
         : vkt::TestCase(testCtx, name)
         , m_params(params)
     {
+        DE_ASSERT((!m_params.largeRenderAttCount) || (m_params.largeRenderAttCount && (m_params.layerCount == 1u)));
     }
     TestInstance *createInstance(Context &context) const override
     {
@@ -434,6 +445,15 @@ void DynamicUnusedAttachmentsCase::initPrograms(vk::SourceCollections &programCo
             frag << "layout (location=" << i << ") out uvec4 color" << i << ";\n";
     }
 
+    if (m_params.largeRenderAttCount)
+    {
+        for (uint32_t i = m_params.fragAttachmentCount;
+             i < (m_params.fragAttachmentCount + TestParams::kExtraRenderAttCount); ++i)
+        {
+            frag << "layout (location=" << i << ") out vec4 color" << i << ";\n";
+        }
+    }
+
     const char *layerIndexExpr;
 
     if (m_params.multiView)
@@ -450,6 +470,15 @@ void DynamicUnusedAttachmentsCase::initPrograms(vk::SourceCollections &programCo
     {
         if (fragAttachmentUsed.at(i))
             frag << "    color" << i << " = uvec4(layerIndex, 255, " << i << ", 255);\n";
+    }
+
+    if (m_params.largeRenderAttCount)
+    {
+        for (uint32_t i = m_params.fragAttachmentCount;
+             i < (m_params.fragAttachmentCount + TestParams::kExtraRenderAttCount); ++i)
+        {
+            frag << "    color" << i << " = uvec4(1.0f, 1.0f, " << static_cast<float>(i) / 255.0f << "f , 1.0f);\n";
+        }
     }
 
     frag << "}\n";
@@ -481,6 +510,13 @@ void DynamicUnusedAttachmentsCase::checkSupport(Context &context) const
         // In practice, many implementations limit these to maxFragmentOutputAttachments, so we check the limit here.
         const auto pipelineAttCount = m_params.pipeFBAttachmentCount + TestParams::kExtraPipelineAttCount;
         if (pipelineAttCount > properties.limits.maxFragmentOutputAttachments)
+            TCU_THROW(NotSupportedError, "Unsupported number of extra attachments");
+    }
+
+    if (m_params.largeRenderAttCount)
+    {
+        const auto renderAttCount = m_params.fragAttachmentCount + TestParams::kExtraRenderAttCount;
+        if (renderAttCount > properties.limits.maxFragmentOutputAttachments)
             TCU_THROW(NotSupportedError, "Unsupported number of extra attachments");
     }
 
@@ -522,6 +558,17 @@ tcu::TestStatus DynamicUnusedAttachmentsInstance::iterate(void)
     for (uint32_t i = 0; i < m_params.pipeFBAttachmentCount; ++i)
         colorImages[i].reset(new ImageWithBuffer(ctx.vkd, ctx.device, ctx.allocator, fbExtent, kColorFormat, colorUsage,
                                                  VK_IMAGE_TYPE_2D, colorSRR, m_params.layerCount));
+
+    if (m_params.largeRenderAttCount)
+    {
+        // Make VkRenderingInfo::colorAttachmentCount larger than VkPipelineRenderingCreateInfo::colorAttachmentCount
+        const uint32_t largerAttCount = de::sizeU32(colorImages) + TestParams::kExtraRenderAttCount;
+        colorImages.reserve(largerAttCount);
+        for (uint32_t i = 0; i < TestParams::kExtraRenderAttCount; ++i)
+            colorImages.push_back(static_cast<ImageWithBufferPtr>(
+                new ImageWithBuffer(ctx.vkd, ctx.device, ctx.allocator, fbExtent, kColorFormatExtraRenderAtts,
+                                    colorUsage, VK_IMAGE_TYPE_2D, colorSRR, m_params.layerCount)));
+    }
 
     VkFormat dsFormat = VK_FORMAT_UNDEFINED;
     std::unique_ptr<ImageWithMemory> dsImage;
@@ -622,7 +669,44 @@ tcu::TestStatus DynamicUnusedAttachmentsInstance::iterate(void)
     std::transform(begin(colorImages), end(colorImages), std::back_inserter(rawColorViews),
                    [](const ImageWithBufferPtr &ib) { return (ib.get() ? ib->getImageView() : VK_NULL_HANDLE); });
 
-    const auto renderingAttInfos = m_params.getRenderingAttachmentInfos(rawColorViews);
+    auto renderingAttInfos = m_params.getRenderingAttachmentInfos(rawColorViews);
+
+    std::vector<VkFormat> colorImagesFormats(m_params.pipeFBAttachmentCount);
+
+    if (m_params.largeRenderAttCount)
+    {
+        // Mask not considered for extra attachments
+        const auto clearValue = m_params.getClearValue();
+        std::vector<VkRenderingAttachmentInfo> infos;
+
+        for (uint32_t attIdx = 0u; attIdx < TestParams::kExtraRenderAttCount; ++attIdx)
+        {
+            const auto imgViewIdx = attIdx + m_params.pipeFBAttachmentCount;
+            const auto imgView    = (m_params.extraAttIsUnused ? VK_NULL_HANDLE : rawColorViews.at(imgViewIdx));
+
+            renderingAttInfos.push_back(VkRenderingAttachmentInfo{
+                VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType sType;
+                nullptr,                                     // const void* pNext;
+                imgView,                                     // VkImageView imageView;
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,    // VkImageLayout imageLayout;
+                VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits resolveMode;
+                VK_NULL_HANDLE,                              // VkImageView resolveImageView;
+                VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout resolveImageLayout;
+                VK_ATTACHMENT_LOAD_OP_LOAD,                  // VkAttachmentLoadOp loadOp;
+                VK_ATTACHMENT_STORE_OP_STORE,                // VkAttachmentStoreOp storeOp;
+                clearValue,                                  // VkClearValue clearValue;
+            });
+        }
+
+        const uint32_t largerAttCount = m_params.pipeFBAttachmentCount + TestParams::kExtraRenderAttCount;
+
+        for (uint32_t attIdx = 0u; attIdx < m_params.pipeFBAttachmentCount; attIdx++)
+            colorImagesFormats[attIdx] =
+                (renderingAttInfos[attIdx].imageView == VK_NULL_HANDLE) ? VK_FORMAT_UNDEFINED : kColorFormat;
+
+        colorImagesFormats.resize(largerAttCount,
+                                  m_params.extraAttIsUnused ? VK_FORMAT_UNDEFINED : kColorFormatExtraRenderAtts);
+    }
 
     using RenderingAttachmentInfoPtr = std::unique_ptr<VkRenderingAttachmentInfo>;
     RenderingAttachmentInfoPtr depthAttachmentPtr;
@@ -661,7 +745,7 @@ tcu::TestStatus DynamicUnusedAttachmentsInstance::iterate(void)
         // Make VkPipelineRenderingCreateInfo::colorAttachmentCount larger than VkRenderingInfo::colorAttachmentCount
         colorPipelineFormats.reserve(colorPipelineFormats.size() + TestParams::kExtraPipelineAttCount);
         for (uint32_t i = 0u; i < TestParams::kExtraPipelineAttCount; ++i)
-            colorPipelineFormats.push_back(kBadColorFormat);
+            colorPipelineFormats.push_back(m_params.extraAttIsUnused ? VK_FORMAT_UNDEFINED : kBadColorFormat);
     }
 
     const VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {
@@ -800,7 +884,8 @@ tcu::TestStatus DynamicUnusedAttachmentsInstance::iterate(void)
     {
         // The inheritance info and framebuffer attachments must match (null handle -> undefined format, non-null handle -> valid format).
         // The pipeline rendering info will later be able to selectively disable an attachment.
-        const auto inheritanceColorFormats  = m_params.getInheritanceFormatVector(kColorFormat);
+        const auto inheritanceColorFormats =
+            m_params.largeRenderAttCount ? colorImagesFormats : m_params.getInheritanceFormatVector(kColorFormat);
         const auto inheritanceDepthFormat   = m_params.getInheritanceDepthFormat(dsFormat);
         const auto inheritanceStencilFormat = m_params.getInheritanceStencilFormat(dsFormat);
 
@@ -917,7 +1002,7 @@ tcu::TestStatus DynamicUnusedAttachmentsInstance::iterate(void)
     submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
 
     // Invalidate all allocations.
-    for (uint32_t i = 0; i < m_params.pipeFBAttachmentCount; ++i)
+    for (uint32_t i = 0; i < de::sizeU32(colorImages); ++i)
         invalidateAlloc(ctx.vkd, ctx.device, colorImages.at(i)->getBufferAllocation());
     if (dsNeeded)
     {
@@ -926,11 +1011,13 @@ tcu::TestStatus DynamicUnusedAttachmentsInstance::iterate(void)
     }
 
     // Verify all layers in all images.
-    const auto colorTcuFormat = mapVkFormat(kColorFormat);
-    const auto colorPixelSize = tcu::getPixelSize(colorTcuFormat);
-    const auto colorLayerSize = static_cast<size_t>(fbDim.x() * fbDim.y() * fbDim.z() * colorPixelSize);
+    const auto colorTcuFormat      = mapVkFormat(kColorFormat);
+    const auto colorTcuFormatExtra = mapVkFormat(kColorFormatExtraRenderAtts);
+    const auto colorPixelSize      = tcu::getPixelSize(colorTcuFormat);
+    const auto colorLayerSize      = static_cast<size_t>(fbDim.x() * fbDim.y() * fbDim.z() * colorPixelSize);
 
-    const tcu::UVec4 threshold(0u, 0u, 0u, 0u); // We expect exact results.
+    const tcu::UVec4 ithreshold(0u, 0u, 0u, 0u); // We expect exact results.
+    const tcu::Vec4 fthreshold(0.0f, 0.0f, 0.0f, 0.0f);
     auto &log    = m_context.getTestContext().getLog();
     bool failure = false;
 
@@ -939,28 +1026,52 @@ tcu::TestStatus DynamicUnusedAttachmentsInstance::iterate(void)
         const auto &colorImg = colorImages.at(colorImgIdx);
         const auto dataPtr   = reinterpret_cast<const char *>(colorImg->getBufferAllocation().getHostPtr());
         const bool imgWritten =
-            (colorImgIdx < colorPipelineFormats.size() && colorPipelineFormats.at(colorImgIdx) != VK_FORMAT_UNDEFINED &&
+            (((colorImgIdx < colorPipelineFormats.size() &&
+               colorPipelineFormats.at(colorImgIdx) != VK_FORMAT_UNDEFINED)) &&
              colorImgIdx < renderingAttInfos.size() && renderingAttInfos.at(colorImgIdx).imageView != VK_NULL_HANDLE);
 
         for (uint32_t layerIdx = 0u; layerIdx < m_params.layerCount; ++layerIdx)
         {
             const bool layerWritten = imgWritten && ((m_params.layerMask & (1 << layerIdx)) != 0u);
-            const auto layerDataPtr = dataPtr + colorLayerSize * layerIdx;
-            const tcu::ConstPixelBufferAccess layerAccess(colorTcuFormat, fbDim, layerDataPtr);
-            const tcu::UVec4 expectedColor =
-                (layerWritten ?
-                     tcu::UVec4(layerIdx, 255u, static_cast<uint32_t>(colorImgIdx), 255u) // Needs to match frag shader.
-                     :
-                     tcu::UVec4(0u, 0u, 0u, 0u));
             const std::string logImgName =
                 "ColorAttachment" + std::to_string(colorImgIdx) + "-Layer" + std::to_string(layerIdx);
-            tcu::TextureLevel refLevel(colorTcuFormat, fbDim.x(), fbDim.y(), fbDim.z());
-            tcu::PixelBufferAccess refAccess = refLevel.getAccess();
 
-            tcu::clear(refAccess, expectedColor);
-            if (!tcu::intThresholdCompare(log, logImgName.c_str(), "", refAccess, layerAccess, threshold,
-                                          tcu::COMPARE_LOG_ON_ERROR))
-                failure = true;
+            if (colorImgIdx >= m_params.pipeFBAttachmentCount) // largeRenderAttCount
+            {
+                const auto layerDataPtr = dataPtr;
+                const tcu::ConstPixelBufferAccess layerAccess(colorTcuFormatExtra, fbDim, layerDataPtr);
+                const tcu::Vec4 expectedColor =
+                    (layerWritten ? tcu::Vec4(1.0f, 1.0f, static_cast<float>(colorImgIdx) / 255.0f,
+                                              1.0f) // Needs to match frag shader.
+                                    :
+                                    tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f));
+
+                tcu::TextureLevel refLevel(colorTcuFormatExtra, fbDim.x(), fbDim.y(), fbDim.z());
+                tcu::PixelBufferAccess refAccess = refLevel.getAccess();
+
+                tcu::clear(refAccess, expectedColor);
+                if (!tcu::floatThresholdCompare(log, logImgName.c_str(), "", refAccess, layerAccess, fthreshold,
+                                                tcu::COMPARE_LOG_ON_ERROR))
+                    failure = true;
+            }
+            else
+            {
+                const auto layerDataPtr = dataPtr + colorLayerSize * layerIdx;
+                const tcu::ConstPixelBufferAccess layerAccess(colorTcuFormat, fbDim, layerDataPtr);
+                const tcu::UVec4 expectedColor =
+                    (layerWritten ? tcu::UVec4(layerIdx, 255u, static_cast<uint32_t>(colorImgIdx),
+                                               255u) // Needs to match frag shader.
+                                    :
+                                    tcu::UVec4(0u, 0u, 0u, 0u));
+
+                tcu::TextureLevel refLevel(colorTcuFormat, fbDim.x(), fbDim.y(), fbDim.z());
+                tcu::PixelBufferAccess refAccess = refLevel.getAccess();
+
+                tcu::clear(refAccess, expectedColor);
+                if (!tcu::intThresholdCompare(log, logImgName.c_str(), "", refAccess, layerAccess, ithreshold,
+                                              tcu::COMPARE_LOG_ON_ERROR))
+                    failure = true;
+            }
         }
     }
 
@@ -1491,6 +1602,8 @@ tcu::TestCaseGroup *createDynamicRenderingUnusedAttachmentsTests(tcu::TestContex
     GroupPtr dsGroup(new tcu::TestCaseGroup(testCtx, "depth_stencil"));
     GroupPtr badFmtGrp(new tcu::TestCaseGroup(testCtx, "bad_formats"));
     GroupPtr moreAttGrp(new tcu::TestCaseGroup(testCtx, "extra_att"));
+    GroupPtr exPipeAttGrp(new tcu::TestCaseGroup(testCtx, "extra_pipe_att"));
+    GroupPtr exRenderAttGrp(new tcu::TestCaseGroup(testCtx, "extra_render_att"));
 
     const uint32_t attachmentCounts[] = {
         1u,
@@ -1620,19 +1733,59 @@ tcu::TestCaseGroup *createDynamicRenderingUnusedAttachmentsTests(tcu::TestContex
 
     // Extra attachments tests.
     {
-        for (const auto &attCount : attachmentCounts)
-            for (const auto &formatMask : masksToTest)
-                for (const auto &handleMask : masksToTest)
-                {
-                    if (handleMask == 0xFFFFFFFFu || formatMask == handleMask)
-                        continue;
+        {
+            for (const auto &attCount : attachmentCounts)
+                for (const auto &formatMask : masksToTest)
+                    for (const auto &handleMask : masksToTest)
+                    {
+                        if (handleMask == 0xFFFFFFFFu || formatMask == handleMask)
+                            continue;
 
-                    const TestParams params(attCount, attCount, 1u, 1u, false, formatMask, handleMask, false, false,
-                                            false, false, false, false, useSecondaries, false, true);
-                    moreAttGrp->addChild(new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), params));
-                }
+                        const TestParams params(attCount, attCount, 1u, 1u, false, formatMask, handleMask, false, false,
+                                                false, false, false, false, useSecondaries, false, true);
+                        moreAttGrp->addChild(new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), params));
+                    }
+        }
+
+        group->addChild(moreAttGrp.release());
+
+        {
+            const bool extraAttIsUnused = true;
+
+            for (const auto &attCount : attachmentCounts)
+                for (const auto &formatMask : masksToTest)
+                    for (const auto &handleMask : masksToTest)
+                    {
+                        if (formatMask == handleMask)
+                            continue;
+
+                        const TestParams params(attCount, attCount, 1u, 1u, false, formatMask, handleMask, false, false,
+                                                false, false, false, false, useSecondaries, false, true, false,
+                                                extraAttIsUnused);
+                        exPipeAttGrp->addChild(new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), params));
+                    }
+        }
+
+        group->addChild(exPipeAttGrp.release());
+
+        {
+            for (const auto &attCount : attachmentCounts)
+                for (const auto &formatMask : masksToTest)
+                    for (const auto &handleMask : masksToTest)
+                    {
+                        for (const auto extraAttIsUnused : {false, true})
+                        {
+                            const TestParams params(attCount, attCount, 1u, 1u, false, formatMask, handleMask, false,
+                                                    false, false, false, false, false, useSecondaries, false, false,
+                                                    true, extraAttIsUnused);
+                            exRenderAttGrp->addChild(
+                                new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), params));
+                        }
+                    }
+        }
+
+        group->addChild(exRenderAttGrp.release());
     }
-    group->addChild(moreAttGrp.release());
 
     // Misc tests.
     {

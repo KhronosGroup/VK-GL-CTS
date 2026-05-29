@@ -26,7 +26,6 @@
 #include "tcuCommandLine.hpp"
 #include "vktVideoTestUtils.hpp"
 #include "vktVideoEncodeTests.hpp"
-#include "vktVideoTestUtils.hpp"
 #include "vktTestCase.hpp"
 
 #ifdef DE_BUILD_VIDEO
@@ -43,7 +42,6 @@
 #include "tcuTexture.hpp"
 #include "tcuVector.hpp"
 #include "tcuPixelFormat.hpp"
-#include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
 
 #include "vkDefs.hpp"
@@ -63,10 +61,6 @@
 #include <string>
 #include <algorithm>
 #include <cmath>
-
-#ifndef VK_MAX_NUM_IMAGE_PLANES_KHR
-#define VK_MAX_NUM_IMAGE_PLANES_KHR 4
-#endif
 
 namespace vkt
 {
@@ -1543,8 +1537,8 @@ void fillBuffer(const DeviceInterface &vk, const VkDevice device, Allocation &bu
         flushSize                              //  VkDeviceSize size;
     };
 
-    T *hostPtr = static_cast<T *>(bufferAlloc.getHostPtr());
-    memcpy(hostPtr + dataOffset, data.data(), data.size() * sizeof(T));
+    uint8_t *bytePtr = static_cast<uint8_t *>(bufferAlloc.getHostPtr());
+    memcpy(bytePtr + dataOffset, data.data(), data.size() * sizeof(T));
 
     VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &memRange));
 }
@@ -2124,7 +2118,7 @@ void VideoEncodeTestInstance::queryAndValidateCapabilities()
     m_H265QuantizationMapCapabilities = getVideoEncodeH265QuantizationMapCapabilities();
 
     // Get codec capabilities
-    const bool quantizationMapEnabled = m_useDeltaMap | m_useEmphasisMap;
+    const bool quantizationMapEnabled = m_useDeltaMap || m_useEmphasisMap;
     m_videoH264CapabilitiesExtension =
         getVideoCapabilitiesExtensionH264E(quantizationMapEnabled ? m_H264QuantizationMapCapabilities.get() : nullptr);
     m_videoH265CapabilitiesExtension =
@@ -2290,7 +2284,7 @@ void VideoEncodeTestInstance::setupQuantizationMapResources(void)
     if (!m_useDeltaMap && !m_useEmphasisMap)
         return;
 
-    VkFormat quantizationImageFormat      = VK_FORMAT_R8_SNORM;
+    VkFormat quantizationImageFormat      = VK_FORMAT_UNDEFINED;
     VkImageTiling quantizationImageTiling = VK_IMAGE_TILING_OPTIMAL;
 
     // Query quantization map capabilities
@@ -2361,14 +2355,14 @@ void VideoEncodeTestInstance::setupQuantizationMapResources(void)
         quantizationImageFormat, m_quantizationMapExtent, 0, &m_encodeQueueFamilyIndex, quantizationMapImageUsage,
         m_videoEncodeProfileList.get(), 1U, VK_IMAGE_LAYOUT_UNDEFINED, quantizationImageTiling);
 
-    const vector<uint32_t> transaferQueueFamilyIndices(1u, m_transferQueueFamilyIndex);
+    const vector<uint32_t> transferQueueFamilyIndices(1u, m_transferQueueFamilyIndex);
 
     const VkBufferUsageFlags quantizationMapBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     const VkDeviceSize quantizationMapBufferSize =
         getBufferSize(quantizationImageFormat, m_quantizationMapExtent.width, m_quantizationMapExtent.height);
 
     const VkBufferCreateInfo quantizationMapBufferCreateInfo = makeBufferCreateInfo(
-        quantizationMapBufferSize, quantizationMapBufferUsageFlags, transaferQueueFamilyIndices, 0, nullptr);
+        quantizationMapBufferSize, quantizationMapBufferUsageFlags, transferQueueFamilyIndices, 0, nullptr);
 
     BufferWithMemory quantizationMapBuffer(*m_videoDeviceDriver, m_videoEncodeDevice, getAllocator(),
                                            quantizationMapBufferCreateInfo,
@@ -2377,7 +2371,7 @@ void VideoEncodeTestInstance::setupQuantizationMapResources(void)
     Allocation &quantizationMapBufferAlloc = quantizationMapBuffer.getAllocation();
     void *quantizationMapBufferHostPtr     = quantizationMapBufferAlloc.getHostPtr();
 
-    // Calculate QP values for each image sides, the type of values is based on the quantization map format and adnotated by the index
+    // Calculate QP values for each image sides, the type of values is based on the quantization map format and annotated by the index
     auto calculateMapValues = [this](auto idx, QuantizationMap mapType) -> auto
     {
         using T          = decltype(idx);
@@ -3488,7 +3482,7 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
 
             if ((m_useDeltaMap || m_useEmphasisMap) && NALIdx == 1)
             {
-                // When testing quantization map, the PSNR of the secont image is expected to be low
+                // When testing quantization map, the PSNR of the second image is expected to be low
                 break;
             }
             if (psnr > criticalPsnrThreshold)
@@ -3815,7 +3809,7 @@ uint32_t VideoEncodeTestInstance::calculateTotalFramesFromClipData(const std::ve
     size_t frameSize = width * height * 3 / 2; // Y: width*height, U/V: width*height/4 each
     DE_ASSERT(frameSize > 0);
     // Calculate the maximum number of complete frames in the clip
-    size_t maxFrames = static_cast<uint32_t>(clip.size() / frameSize);
+    size_t maxFrames = clip.size() / frameSize;
     DE_ASSERT(maxFrames <= UINT32_MAX);
 
     return static_cast<uint32_t>(maxFrames);
@@ -3965,7 +3959,7 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
         TCU_THROW(InternalError, "Unknown TestType");
     }
 
-    if (m_testDefinition->usesGeneralLayout() == VK_IMAGE_LAYOUT_GENERAL)
+    if (m_testDefinition->usesGeneralLayout())
     {
         context.requireDeviceFunctionality("VK_KHR_unified_image_layouts");
         if (!context.getUnifiedImageLayoutsFeatures().unifiedImageLayoutsVideo)

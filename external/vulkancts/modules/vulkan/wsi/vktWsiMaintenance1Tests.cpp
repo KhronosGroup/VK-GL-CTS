@@ -123,6 +123,10 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
+    // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
+    if (wsiType == TYPE_DIRECT_DRM)
+        extensions.push_back("VK_EXT_direct_mode_display");
+
     if (!vk::isCoreInstanceExtension(version, "VK_KHR_get_physical_device_properties2"))
         extensions.push_back("VK_KHR_get_physical_device_properties2");
 
@@ -172,11 +176,10 @@ VkPhysicalDeviceFeatures getDeviceFeaturesForWsi(void)
     return features;
 }
 
-Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance instance, const InstanceInterface &vki,
+Move<VkDevice> createDeviceWithWsi(Context &context, VkInstance instance, const InstanceInterface &vki,
                                    VkPhysicalDevice physicalDevice, const Extensions &supportedExtensions,
                                    const uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator,
-                                   bool requireSwapchainMaintenance1, bool requireDeviceGroup, bool validationEnabled,
-                                   bool preferExt)
+                                   bool requireSwapchainMaintenance1, bool bindImageMemory, bool preferExt)
 {
     const float queuePriorities[]              = {1.0f};
     const VkDeviceQueueCreateInfo queueInfos[] = {{
@@ -197,9 +200,13 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance 
                                       RequiredExtension("VK_KHR_swapchain_maintenance1"), preferExt);
         extensions.push_back(useExt ? "VK_EXT_swapchain_maintenance1" : "VK_KHR_swapchain_maintenance1");
     }
-    if (requireDeviceGroup)
+    if (bindImageMemory)
     {
         extensions.push_back("VK_KHR_device_group");
+        if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
+        {
+            extensions.push_back("VK_KHR_bind_memory2");
+        }
     }
     if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_present_mode_fifo_latest_ready")))
     {
@@ -252,7 +259,7 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance 
         nullptr,
     };
 
-    return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return createCustomDevice(context.getPlatformInterface(), instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 struct InstanceHelper
@@ -280,14 +287,13 @@ struct DeviceHelper
     const VkQueue queue;
 
     DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
-                 bool requireSwapchainMaintenance1, bool requireDeviceGroup, bool preferExt,
+                 bool requireSwapchainMaintenance1, bool bindImageMemory, bool preferExt,
                  const VkAllocationCallbacks *pAllocator = nullptr)
         : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
-        , device(createDeviceWithWsi(context.getPlatformInterface(), instance, vki, physicalDevice,
+        , device(createDeviceWithWsi(context, instance, vki, physicalDevice,
                                      enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr), queueFamilyIndex,
-                                     pAllocator, requireSwapchainMaintenance1, requireDeviceGroup,
-                                     context.getTestContext().getCommandLine().isValidationEnabled(), preferExt))
+                                     pAllocator, requireSwapchainMaintenance1, bindImageMemory, preferExt))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
@@ -965,8 +971,8 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
 
                 if (!isSharedPresentMode[j] || i == 0)
                 {
-                    VK_CHECK(vkd.acquireNextImageKHR(device, *swapchains[j], kAcquireImageTimeout, acquireSem.back(),
-                                                     VK_NULL_HANDLE, &imageIndex[j]));
+                    VK_CHECK_WSI(vkd.acquireNextImageKHR(device, *swapchains[j], kAcquireImageTimeout,
+                                                         acquireSem.back(), VK_NULL_HANDLE, &imageIndex[j]));
                 }
                 else
                 {
@@ -1810,8 +1816,8 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
 
             if (!isSharedPresentMode || i == 0)
             {
-                VK_CHECK(vkd.acquireNextImageKHR(device, *swapchain, kAcquireImageTimeout, acquireSem, VK_NULL_HANDLE,
-                                                 &imageIndex));
+                VK_CHECK_WSI(vkd.acquireNextImageKHR(device, *swapchain, kAcquireImageTimeout, acquireSem,
+                                                     VK_NULL_HANDLE, &imageIndex));
             }
             else
             {
@@ -2299,7 +2305,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                                                  presentIndex == 0 ? acquireSem : VK_NULL_HANDLE, **acquireFences[0],
                                                  &acquiredIndices[0]);
 
-                if (result == VK_SUCCESS)
+                if (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR)
                 {
                     VK_CHECK(vkd.waitForFences(device, 1u, &**acquireFences[0], VK_TRUE, kMaxFenceWaitTimeout));
                     VK_CHECK(vkd.resetFences(device, 1u, &**acquireFences[0]));
@@ -2327,7 +2333,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                 result = vkd.acquireNextImageKHR(device, *swapchain, kAcquireImageTimeout,
                                                  presentIndex == 0 ? acquireSem : VK_NULL_HANDLE, **acquireFences[0],
                                                  &acquiredIndices[0]);
-                if (result == VK_SUCCESS)
+                if (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR)
                 {
                     VK_CHECK(vkd.waitForFences(device, 1u, &**acquireFences[0], VK_TRUE, kMaxFenceWaitTimeout));
                     VK_CHECK(vkd.resetFences(device, 1u, &**acquireFences[0]));

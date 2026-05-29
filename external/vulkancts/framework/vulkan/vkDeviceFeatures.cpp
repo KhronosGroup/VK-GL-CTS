@@ -279,7 +279,7 @@ bool DeviceFeatures::verifyFeatureAddCriteria(const FeatureStructCreationData &i
     const auto &featureName = item.name;
 
     // check if this is core feature
-    bool isFeatureAvailable = (featureName == "core_feature");
+    bool isFeatureAvailable = (featureName == DECL_CORE_FEATURES_NAME);
 
     // check if this feature is available on current device
     if (!isFeatureAvailable)

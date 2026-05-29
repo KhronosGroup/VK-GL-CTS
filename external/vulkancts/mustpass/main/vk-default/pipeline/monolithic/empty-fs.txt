@@ -1,0 +1,8 @@
+dEQP-VK.pipeline.monolithic.empty_fs.geom_empty_fs
+dEQP-VK.pipeline.monolithic.empty_fs.geom_no_fs
+dEQP-VK.pipeline.monolithic.empty_fs.masked_samples
+dEQP-VK.pipeline.monolithic.empty_fs.primitive_discard
+dEQP-VK.pipeline.monolithic.empty_fs.tess_empty_fs
+dEQP-VK.pipeline.monolithic.empty_fs.tess_no_fs
+dEQP-VK.pipeline.monolithic.empty_fs.vert_empty_fs
+dEQP-VK.pipeline.monolithic.empty_fs.vert_no_fs

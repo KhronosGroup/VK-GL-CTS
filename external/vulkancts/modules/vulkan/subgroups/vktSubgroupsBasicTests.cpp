@@ -35,6 +35,8 @@ using namespace tcu;
 using namespace std;
 using namespace vk;
 using namespace vkt;
+using namespace glu;
+using vkt::subgroups::VecType;
 
 namespace
 {
@@ -1779,7 +1781,7 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
     if (isComp || isMesh)
         initComputeOrMeshPrograms(programCollection, caseDef, extHeader, testSrc, buildOptions);
     else
-        subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, VK_FORMAT_R32_UINT,
+        subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, VecType(TYPE_UINT, 1),
                                    pointSizeSupport, extHeader, testSrc, "", headDeclarations, true);
 }
 
@@ -1847,13 +1849,13 @@ TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
     const uint32_t inputDatasCount = OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? 3u : 2u;
     vector<subgroups::SSBOData> inputDatas(inputDatasCount);
 
-    inputDatas[0].format         = VK_FORMAT_R32_UINT;
+    inputDatas[0].vecType        = VecType(TYPE_UINT, 1);
     inputDatas[0].layout         = subgroups::SSBOData::LayoutStd140;
     inputDatas[0].numElements    = SHADER_BUFFER_SIZE / 4ull;
     inputDatas[0].initializeType = subgroups::SSBOData::InitializeNonZero;
     inputDatas[0].bindingType    = subgroups::SSBOData::BindingUBO;
 
-    inputDatas[1].format         = VK_FORMAT_R32_UINT;
+    inputDatas[1].vecType        = VecType(TYPE_UINT, 1);
     inputDatas[1].layout         = subgroups::SSBOData::LayoutStd140;
     inputDatas[1].numElements    = 1ull;
     inputDatas[1].initializeType = subgroups::SSBOData::InitializeNonZero;
@@ -1861,7 +1863,7 @@ TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
 
     if (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType)
     {
-        inputDatas[2].format         = VK_FORMAT_R32_UINT;
+        inputDatas[2].vecType        = VecType(TYPE_UINT, 1);
         inputDatas[2].layout         = subgroups::SSBOData::LayoutPacked;
         inputDatas[2].numElements    = SHADER_BUFFER_SIZE;
         inputDatas[2].initializeType = subgroups::SSBOData::InitializeNone;
@@ -1977,19 +1979,19 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 {
                     subgroups::SSBOData::InitializeNone, //  InputDataInitializeType initializeType;
                     subgroups::SSBOData::LayoutStd430,   //  InputDataLayoutType layout;
-                    VK_FORMAT_R32_UINT,                  //  vk::VkFormat format;
+                    VecType(TYPE_UINT, 1),               //  VecType vecType;
                     SHADER_BUFFER_SIZE,                  //  vk::VkDeviceSize numElements;
                 },
                 {
                     subgroups::SSBOData::InitializeNonZero, //  InputDataInitializeType initializeType;
                     subgroups::SSBOData::LayoutStd430,      //  InputDataLayoutType layout;
-                    VK_FORMAT_R32_UINT,                     //  vk::VkFormat format;
+                    VecType(TYPE_UINT, 1),                  //  VecType vecType;
                     1,                                      //  vk::VkDeviceSize numElements;
                 },
                 {
                     subgroups::SSBOData::InitializeNone, //  InputDataInitializeType initializeType;
                     subgroups::SSBOData::LayoutPacked,   //  InputDataLayoutType layout;
-                    VK_FORMAT_R32_UINT,                  //  vk::VkFormat format;
+                    VecType(TYPE_UINT, 1),               //  VecType vecType;
                     SHADER_BUFFER_SIZE,                  //  vk::VkDeviceSize numElements;
                     subgroups::SSBOData::BindingImage,   //  bool isImage;
                 },
@@ -2059,7 +2061,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 inputData[ndx] = {
                     subgroups::SSBOData::InitializeZero, //  InputDataInitializeType initializeType;
                     subgroups::SSBOData::LayoutStd430,   //  InputDataLayoutType layout;
-                    VK_FORMAT_R32_UINT,                  //  vk::VkFormat format;
+                    VecType(TYPE_UINT, 1),               //  VecType vecType;
                     1,                                   //  vk::VkDeviceSize numElements;
                     subgroups::SSBOData::BindingSSBO,    //  bool isImage;
                     4 + ndx,                             //  uint32_t binding;
@@ -2079,28 +2081,28 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
             {
                 const uint32_t index = ndx * 4;
 
-                inputDatas[index].format         = VK_FORMAT_R32_UINT;
+                inputDatas[index].vecType        = VecType(TYPE_UINT, 1);
                 inputDatas[index].layout         = subgroups::SSBOData::LayoutStd430;
                 inputDatas[index].numElements    = SHADER_BUFFER_SIZE;
                 inputDatas[index].initializeType = subgroups::SSBOData::InitializeNonZero;
                 inputDatas[index].binding        = index + 4u;
                 inputDatas[index].stages         = stagesBits[ndx];
 
-                inputDatas[index + 1].format         = VK_FORMAT_R32_UINT;
+                inputDatas[index + 1].vecType        = VecType(TYPE_UINT, 1);
                 inputDatas[index + 1].layout         = subgroups::SSBOData::LayoutStd430;
                 inputDatas[index + 1].numElements    = 1;
                 inputDatas[index + 1].initializeType = subgroups::SSBOData::InitializeZero;
                 inputDatas[index + 1].binding        = index + 5u;
                 inputDatas[index + 1].stages         = stagesBits[ndx];
 
-                inputDatas[index + 2].format         = VK_FORMAT_R32_UINT;
+                inputDatas[index + 2].vecType        = VecType(TYPE_UINT, 1);
                 inputDatas[index + 2].layout         = subgroups::SSBOData::LayoutStd430;
                 inputDatas[index + 2].numElements    = 1;
                 inputDatas[index + 2].initializeType = subgroups::SSBOData::InitializeNonZero;
                 inputDatas[index + 2].binding        = index + 6u;
                 inputDatas[index + 2].stages         = stagesBits[ndx];
 
-                inputDatas[index + 3].format         = VK_FORMAT_R32_UINT;
+                inputDatas[index + 3].vecType        = VecType(TYPE_UINT, 1);
                 inputDatas[index + 3].layout         = subgroups::SSBOData::LayoutStd430;
                 inputDatas[index + 3].numElements    = SHADER_BUFFER_SIZE;
                 inputDatas[index + 3].initializeType = subgroups::SSBOData::InitializeNone;
@@ -2130,7 +2132,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
 
             for (uint32_t ndx = 0; ndx < inputDataCount; ++ndx)
             {
-                inputData[ndx].format         = VK_FORMAT_R32_UINT;
+                inputData[ndx].vecType        = VecType(TYPE_UINT, 1);
                 inputData[ndx].layout         = subgroups::SSBOData::LayoutStd430;
                 inputData[ndx].numElements    = 1;
                 inputData[ndx].initializeType = subgroups::SSBOData::InitializeZero;
@@ -2153,7 +2155,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
 
                 for (uint32_t perStageNdx = 0; perStageNdx < datasPerStage; ++perStageNdx)
                 {
-                    inputDatas[index + perStageNdx].format      = VK_FORMAT_R32_UINT;
+                    inputDatas[index + perStageNdx].vecType     = VecType(TYPE_UINT, 1);
                     inputDatas[index + perStageNdx].layout      = subgroups::SSBOData::LayoutStd430;
                     inputDatas[index + perStageNdx].stages      = stagesBits[ndx];
                     inputDatas[index + perStageNdx].bindingType = subgroups::SSBOData::BindingSSBO;

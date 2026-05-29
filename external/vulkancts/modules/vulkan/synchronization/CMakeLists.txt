@@ -48,6 +48,8 @@ set(DEQP_VK_SYNCHRONIZATION_SRCS
     vktGlobalPriorityQueueUtils.hpp
 	vktSynchronizationImplicitTests.cpp
 	vktSynchronizationImplicitTests.hpp
+	vktSynchronizationInternallySynchronizedTests.cpp
+	vktSynchronizationInternallySynchronizedTests.hpp
 	)
 
 PCH(DEQP_VK_SYNCHRONIZATION_SRCS ../pch.cpp)

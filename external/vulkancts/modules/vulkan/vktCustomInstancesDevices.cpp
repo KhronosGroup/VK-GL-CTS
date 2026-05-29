@@ -532,21 +532,13 @@ vk::VkResult createUncheckedInstance(Context &context, const vk::VkInstanceCreat
     return result;
 }
 
-vk::Move<vk::VkDevice> createCustomDevice(bool validationEnabled, const vk::PlatformInterface &vkp,
-                                          vk::VkInstance instance, const vk::InstanceInterface &vki,
-                                          vk::VkPhysicalDevice physicalDevice,
+vk::Move<vk::VkDevice> createCustomDevice(const vk::PlatformInterface &vkp, vk::VkInstance instance,
+                                          const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
                                           const vk::VkDeviceCreateInfo *pCreateInfo,
                                           const vk::VkAllocationCallbacks *pAllocator)
 {
     vector<const char *> enabledLayers;
     vk::VkDeviceCreateInfo createInfo = *pCreateInfo;
-
-    if (createInfo.enabledLayerCount == 0u && validationEnabled)
-    {
-        enabledLayers                  = getValidationLayers(vki, physicalDevice);
-        createInfo.enabledLayerCount   = static_cast<uint32_t>(enabledLayers.size());
-        createInfo.ppEnabledLayerNames = (enabledLayers.empty() ? nullptr : enabledLayers.data());
-    }
 
 #ifdef CTS_USES_VULKANSC
     // Add fault callback if there isn't one already.
@@ -569,19 +561,12 @@ vk::Move<vk::VkDevice> createCustomDevice(bool validationEnabled, const vk::Plat
     return createDevice(vkp, instance, vki, physicalDevice, &createInfo, pAllocator);
 }
 
-vk::VkResult createUncheckedDevice(bool validationEnabled, const vk::InstanceInterface &vki,
-                                   vk::VkPhysicalDevice physicalDevice, const vk::VkDeviceCreateInfo *pCreateInfo,
+vk::VkResult createUncheckedDevice(const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
+                                   const vk::VkDeviceCreateInfo *pCreateInfo,
                                    const vk::VkAllocationCallbacks *pAllocator, vk::VkDevice *pDevice)
 {
     vector<const char *> enabledLayers;
     vk::VkDeviceCreateInfo createInfo = *pCreateInfo;
-
-    if (createInfo.enabledLayerCount == 0u && validationEnabled)
-    {
-        enabledLayers                  = getValidationLayers(vki, physicalDevice);
-        createInfo.enabledLayerCount   = static_cast<uint32_t>(enabledLayers.size());
-        createInfo.ppEnabledLayerNames = (enabledLayers.empty() ? nullptr : enabledLayers.data());
-    }
 
 #ifdef CTS_USES_VULKANSC
     // Add fault callback if there isn't one already.
@@ -842,7 +827,6 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
     const vk::VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
     const vk::VkInstance instance             = m_context.getInstance();
     const uint32_t apiVersion                 = m_context.getUsedApiVersion();
-    const bool validationEnabled              = m_context.getTestContext().getCommandLine().isValidationEnabled();
     const bool queryWithStatusForDecodeSupport =
         (videoDeviceFlags & VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_DECODE_SUPPORT) != 0;
     const bool queryWithStatusForEncodeSupport =
@@ -852,6 +836,7 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
     const bool requireVP9Decode    = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_DECODE_VP9) != 0; // requireVP9Decode
     const bool requireQuantizationMap     = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_QUANTIZATION_MAP) != 0;
     const bool requireIntraRefresh        = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_INTRA_REFRESH) != 0;
+    const bool requireUnifiedImageLayouts = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_UNIFIED_IMAGE_LAYOUTS) != 0;
     const bool requireYCBCRorNotSupported = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_YCBCR_OR_NOT_SUPPORTED) != 0;
     const bool requireSync2orNotSupported = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED) != 0;
     const bool requireTimelineSemOrNotSupported =
@@ -999,6 +984,10 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
         if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_video_encode_intra_refresh"))
             deviceExtensions.push_back("VK_KHR_video_encode_intra_refresh");
 
+    if (requireUnifiedImageLayouts)
+        if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_unified_image_layouts"))
+            deviceExtensions.push_back("VK_KHR_unified_image_layouts");
+
     if (requireTimelineSemOrNotSupported)
         if (m_context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
             deviceExtensions.push_back("VK_KHR_timeline_semaphore");
@@ -1044,6 +1033,13 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
         false, //  VkBool32 videoEncodeIntraRefresh;
     };
 
+    vk::VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR unifiedImageLayoutsFeatures = {
+        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFIED_IMAGE_LAYOUTS_FEATURES_KHR, //  VkStructureType sType;
+        nullptr,                                                                  //  void* pNext;
+        false,                                                                    //  VkBool32 unifiedImageLayouts;
+        false,                                                                    //  VkBool32 unifiedImageLayoutsVideo;
+    };
+
     vk::VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, // VkStructureType sType;
         nullptr,                                                           // void* pNext;
@@ -1077,6 +1073,9 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
     if (requireIntraRefresh)
         appendStructurePtrToVulkanChain((const void **)&features2.pNext, &intraRefreshFeatures);
 
+    if (requireUnifiedImageLayouts)
+        appendStructurePtrToVulkanChain((const void **)&features2.pNext, &unifiedImageLayoutsFeatures);
+
     if (requireTimelineSemOrNotSupported)
         if (m_context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
             appendStructurePtrToVulkanChain((const void **)&features2.pNext, &timelineSemaphoreFeatures);
@@ -1104,6 +1103,12 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
     if (requireIntraRefresh && intraRefreshFeatures.videoEncodeIntraRefresh == false)
         TCU_THROW(NotSupportedError, "videoEncodeIntraRefresh feature is required");
 
+    if (requireUnifiedImageLayouts && unifiedImageLayoutsFeatures.unifiedImageLayoutsVideo == false)
+        TCU_THROW(NotSupportedError, "unifiedImageLayoutsVideo feature is required");
+
+    if (requireUnifiedImageLayouts && unifiedImageLayoutsFeatures.unifiedImageLayouts == false)
+        TCU_THROW(NotSupportedError, "unifiedImageLayouts feature is required");
+
     features2.features.robustBufferAccess = false;
 
     const vk::VkDeviceCreateInfo deviceCreateInfo = {
@@ -1119,7 +1124,7 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
         nullptr,                                  //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_logicalDevice = createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceCreateInfo);
+    m_logicalDevice = createCustomDevice(vkp, instance, vki, physicalDevice, &deviceCreateInfo);
     m_deviceDriver  = de::MovePtr<vk::DeviceDriver>(
         new vk::DeviceDriver(vkp, instance, *m_logicalDevice, apiVersion, m_context.getTestContext().getCommandLine()));
     m_allocator           = de::MovePtr<vk::Allocator>(new vk::SimpleAllocator(

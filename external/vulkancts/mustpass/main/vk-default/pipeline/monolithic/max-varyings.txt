@@ -1,0 +1,6 @@
+dEQP-VK.pipeline.monolithic.max_varyings.test_fragment_io_between_geometry_fragment
+dEQP-VK.pipeline.monolithic.max_varyings.test_fragment_io_between_tess_eval_fragment
+dEQP-VK.pipeline.monolithic.max_varyings.test_fragment_io_between_vertex_fragment
+dEQP-VK.pipeline.monolithic.max_varyings.test_geometry_io_between_geometry_fragment
+dEQP-VK.pipeline.monolithic.max_varyings.test_tess_eval_io_between_tess_eval_fragment
+dEQP-VK.pipeline.monolithic.max_varyings.test_vertex_io_between_vertex_fragment

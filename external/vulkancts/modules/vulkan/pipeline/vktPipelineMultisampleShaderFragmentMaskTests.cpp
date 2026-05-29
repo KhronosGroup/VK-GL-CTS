@@ -242,8 +242,7 @@ class SingletonDevice
         createInfo.ppEnabledExtensionNames = de::dataOrNull(creationExtensions);
         createInfo.pEnabledFeatures        = nullptr;
 
-        m_logicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), vkp,
-                                             instance, vki, physicalDevice, &createInfo, nullptr);
+        m_logicalDevice = createCustomDevice(vkp, instance, vki, physicalDevice, &createInfo, nullptr);
 
         m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(
             vkp, instance, *m_logicalDevice, m_context.getUsedApiVersion(), context.getTestContext().getCommandLine()));

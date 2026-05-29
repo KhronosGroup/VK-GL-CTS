@@ -588,6 +588,7 @@ dEQP-VK.image.host_image_copy.array.r8g8b8a8_unorm.optimal.6_0_0.32x32_16x16x1_c
 dEQP-VK.image.host_image_copy.array.r8g8b8a8_unorm.optimal.6_0_0.32x32_16x16x1_remaining_layers
 dEQP-VK.image.host_image_copy.array.r8g8b8a8_unorm.optimal.6_0_0.53x61x1
 dEQP-VK.image.host_image_copy.array.r8g8b8a8_unorm.optimal.6_0_0.53x61x1_remaining_layers
+dEQP-VK.image.host_image_copy.capture_replay.heap
 dEQP-VK.image.host_image_copy.depth_stencil.d16_unorm
 dEQP-VK.image.host_image_copy.depth_stencil.d16_unorm_s8_uint
 dEQP-VK.image.host_image_copy.depth_stencil.d24_unorm_s8_uint

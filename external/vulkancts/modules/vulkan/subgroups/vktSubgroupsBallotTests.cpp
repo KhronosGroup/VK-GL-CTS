@@ -33,6 +33,8 @@ using namespace tcu;
 using namespace std;
 using namespace vk;
 using namespace vkt;
+using namespace glu;
+using vkt::subgroups::VecType;
 
 namespace
 {
@@ -821,7 +823,7 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
                                                                          subgroups::getSharedMemoryBallotHelper();
     const bool pointSizeSupport = *caseDef.geometryPointSizeSupported;
 
-    subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, VK_FORMAT_R32_UINT,
+    subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, VecType(TYPE_UINT, 1),
                                pointSizeSupport, extHeader, testSrc, testHelper);
 }
 
@@ -891,7 +893,7 @@ TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
     const subgroups::SSBOData inputData = {
         subgroups::SSBOData::InitializeNonZero, //  InputDataInitializeType initializeType;
         subgroups::SSBOData::LayoutStd140,      //  InputDataLayoutType layout;
-        VK_FORMAT_R32_UINT,                     //  vk::VkFormat format;
+        VecType(TYPE_UINT, 1),                  //  VecType vecType;
         subgroups::maxSupportedSubgroupSize(),  //  vk::VkDeviceSize numElements;
         subgroups::SSBOData::BindingUBO,        //  BindingType bindingType;
     };
@@ -932,7 +934,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         const subgroups::SSBOData inputData       = {
             subgroups::SSBOData::InitializeNonZero, //  InputDataInitializeType initializeType;
             subgroups::SSBOData::LayoutStd430,      //  InputDataLayoutType layout;
-            VK_FORMAT_R32_UINT,                     //  vk::VkFormat format;
+            VecType(TYPE_UINT, 1),                  //  VecType vecType;
             subgroups::maxSupportedSubgroupSize(),  //  vk::VkDeviceSize numElements;
         };
 
@@ -977,7 +979,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         const subgroups::SSBOData inputData = {
             subgroups::SSBOData::InitializeNonZero, //  InputDataInitializeType initializeType;
             subgroups::SSBOData::LayoutStd430,      //  InputDataLayoutType layout;
-            VK_FORMAT_R32_UINT,                     //  vk::VkFormat format;
+            VecType(TYPE_UINT, 1),                  //  VecType vecType;
             subgroups::maxSupportedSubgroupSize(),  //  vk::VkDeviceSize numElements;
             subgroups::SSBOData::BindingSSBO,       //  bool isImage;
             4u,                                     //  uint32_t binding;
@@ -994,7 +996,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         const subgroups::SSBOData inputData = {
             subgroups::SSBOData::InitializeNonZero, //  InputDataInitializeType initializeType;
             subgroups::SSBOData::LayoutStd430,      //  InputDataLayoutType layout;
-            VK_FORMAT_R32_UINT,                     //  vk::VkFormat format;
+            VecType(TYPE_UINT, 1),                  //  VecType vecType;
             subgroups::maxSupportedSubgroupSize(),  //  vk::VkDeviceSize numElements;
             subgroups::SSBOData::BindingSSBO,       //  bool isImage;
             6u,                                     //  uint32_t binding;

@@ -1,0 +1,18 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceDescriptorHeapFeaturesEXT": [
+            {
+                "features": [
+                    "descriptorHeap"
+                ],
+                "requirements": [
+                    "VK_KHR_buffer_device_address"
+                ]
+            }
+        ]
+    }
+}

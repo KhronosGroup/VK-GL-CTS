@@ -825,6 +825,11 @@ public:
         if (hasOption(DecoderOption::UseInlineSessionParams) || hasOption(DecoderOption::ResetCodecNoSessionParams))
             flags |= VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_MAINTENANCE_2;
 
+        // VK_IMAGE_LAYOUT_GENERAL requires unifiedImageLayoutsVideo for video operations.
+        // See VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR in the Vulkan spec.
+        if (usesGeneralLayout())
+            flags |= VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_UNIFIED_IMAGE_LAYOUTS;
+
         return flags;
     }
 
@@ -906,6 +911,7 @@ static std::shared_ptr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext
     params.intraOnlyDecodingNoSetupRef       = test.hasOption(DecoderOption::IntraOnlyDecodingNoSetupRef);
     params.pictureParameterUpdateTriggerHack = test.getParamaterUpdateHackRequirement();
     params.forceDisableFilmGrain             = forceDisableFilmGrain;
+    params.useGeneralLayout                  = test.usesGeneralLayout();
 
     return std::make_shared<VideoBaseDecoder>(std::move(params));
 }
@@ -1916,7 +1922,7 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
         TCU_FAIL("Unsupported codec type");
     }
 
-    if (m_testDefinition->usesGeneralLayout() == VK_IMAGE_LAYOUT_GENERAL)
+    if (m_testDefinition->usesGeneralLayout())
     {
         context.requireDeviceFunctionality("VK_KHR_unified_image_layouts");
         if (!context.getUnifiedImageLayoutsFeatures().unifiedImageLayoutsVideo)
@@ -1955,7 +1961,7 @@ void InterleavingDecodeTestCase::checkSupport(Context &context) const
         TCU_THROW(InternalError, "Unknown interleaving test type");
     }
 
-    if (m_testDefinitions[0]->usesGeneralLayout() == VK_IMAGE_LAYOUT_GENERAL)
+    if (m_testDefinitions[0]->usesGeneralLayout())
     {
         context.requireDeviceFunctionality("VK_KHR_unified_image_layouts");
         if (!context.getUnifiedImageLayoutsFeatures().unifiedImageLayoutsVideo)

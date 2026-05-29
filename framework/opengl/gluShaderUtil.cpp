@@ -146,6 +146,7 @@ const char *getDataTypeName(DataType dataType)
         "vec2",
         "vec3",
         "vec4",
+        "vector<float, 5>",
         "mat2",
         "mat2x3",
         "mat2x4",
@@ -159,6 +160,7 @@ const char *getDataTypeName(DataType dataType)
         "dvec2",
         "dvec3",
         "dvec4",
+        "vector<double, 5>",
         "dmat2",
         "dmat2x3",
         "dmat2x4",
@@ -172,14 +174,17 @@ const char *getDataTypeName(DataType dataType)
         "ivec2",
         "ivec3",
         "ivec4",
+        "vector<int, 5>",
         "uint",
         "uvec2",
         "uvec3",
         "uvec4",
+        "vector<uint, 5>",
         "bool",
         "bvec2",
         "bvec3",
         "bvec4",
+        "vector<bool, 5>",
         "sampler1D",
         "sampler2D",
         "samplerCube",
@@ -239,22 +244,37 @@ const char *getDataTypeName(DataType dataType)
         "u8vec2",
         "u8vec3",
         "u8vec4",
+        "vector<uint8_t, 5>",
         "int8_t",
         "i8vec2",
         "i8vec3",
         "i8vec4",
+        "vector<int8_t, 5>",
         "uint16_t",
         "u16vec2",
         "u16vec3",
         "u16vec4",
+        "vector<uint16_t, 5>",
         "int16_t",
         "i16vec2",
         "i16vec3",
         "i16vec4",
+        "vector<int16_t, 5>",
+        "uint64_t",
+        "u64vec2",
+        "u64vec3",
+        "u64vec4",
+        "vector<uint64_t, 5>",
+        "int64_t",
+        "i64vec2",
+        "i64vec3",
+        "i64vec4",
+        "vector<int64_t, 5>",
         "float16_t",
         "f16vec2",
         "f16vec3",
         "f16vec4",
+        "vector<float16_t, 5>",
         "f16mat2",
         "f16mat2x3",
         "f16mat2x4",
@@ -279,6 +299,7 @@ int getDataTypeScalarSize(DataType dataType)
         2,  // vec2
         3,  // vec3
         4,  // vec4
+        5,  // vec5
         4,  // mat2
         6,  // mat2x3
         8,  // mat2x4
@@ -292,6 +313,7 @@ int getDataTypeScalarSize(DataType dataType)
         2,  // dvec2
         3,  // dvec3
         4,  // dvec4
+        5,  // dvec5
         4,  // dmat2
         6,  // dmat2x3
         8,  // dmat2x4
@@ -305,14 +327,17 @@ int getDataTypeScalarSize(DataType dataType)
         2,  // ivec2
         3,  // ivec3
         4,  // ivec4
+        5,  // ivec5
         1,  // uint
         2,  // uvec2
         3,  // uvec3
         4,  // uvec4
+        5,  // uvec5
         1,  // bool
         2,  // bvec2
         3,  // bvec3
         4,  // bvec4
+        5,  // bvec5
         1,  // sampler1D
         1,  // sampler2D
         1,  // samplerCube
@@ -372,22 +397,37 @@ int getDataTypeScalarSize(DataType dataType)
         2,  // u8vec2
         3,  // u8vec3
         4,  // u8vec4
+        5,  // u8vec5
         1,  // int8_t
         2,  // i8vec2
         3,  // i8vec3
         4,  // i8vec4
+        5,  // i8vec5
         1,  // uint16_t
         2,  // u16vec2
         3,  // u16vec3
         4,  // u16vec4
+        5,  // u16vec5
         1,  // int16_t
         2,  // i16vec2
         3,  // i16vec3
         4,  // i16vec4
+        5,  // i16vec5
+        1,  // uint64_t
+        2,  // u64vec2
+        3,  // u64vec3
+        4,  // u64vec4
+        5,  // u64vec5
+        1,  // int64_t
+        2,  // i64vec2
+        3,  // i64vec3
+        4,  // i64vec4
+        5,  // i64vec5
         1,  // float16_t
         2,  // f16vec2
         3,  // f16vec3
         4,  // f16vec4
+        5,  // f16vec5
         4,  // f16mat2
         6,  // f16mat2x3
         8,  // f16mat2x4
@@ -412,6 +452,7 @@ DataType getDataTypeScalarType(DataType dataType)
         TYPE_FLOAT,                             // vec2
         TYPE_FLOAT,                             // vec3
         TYPE_FLOAT,                             // vec4
+        TYPE_FLOAT,                             // vec5
         TYPE_FLOAT,                             // mat2
         TYPE_FLOAT,                             // mat2x3
         TYPE_FLOAT,                             // mat2x4
@@ -425,6 +466,7 @@ DataType getDataTypeScalarType(DataType dataType)
         TYPE_DOUBLE,                            // dvec2
         TYPE_DOUBLE,                            // dvec3
         TYPE_DOUBLE,                            // dvec4
+        TYPE_DOUBLE,                            // dvec5
         TYPE_DOUBLE,                            // dmat2
         TYPE_DOUBLE,                            // dmat2x3
         TYPE_DOUBLE,                            // dmat2x4
@@ -438,14 +480,17 @@ DataType getDataTypeScalarType(DataType dataType)
         TYPE_INT,                               // ivec2
         TYPE_INT,                               // ivec3
         TYPE_INT,                               // ivec4
+        TYPE_INT,                               // ivec5
         TYPE_UINT,                              // uint
         TYPE_UINT,                              // uvec2
         TYPE_UINT,                              // uvec3
         TYPE_UINT,                              // uvec4
+        TYPE_UINT,                              // uvec5
         TYPE_BOOL,                              // bool
         TYPE_BOOL,                              // bvec2
         TYPE_BOOL,                              // bvec3
         TYPE_BOOL,                              // bvec4
+        TYPE_BOOL,                              // bvec5
         TYPE_SAMPLER_1D,                        // sampler1D
         TYPE_SAMPLER_2D,                        // sampler2D
         TYPE_SAMPLER_CUBE,                      // samplerCube
@@ -505,22 +550,37 @@ DataType getDataTypeScalarType(DataType dataType)
         TYPE_UINT8,                             // u8vec2
         TYPE_UINT8,                             // u8vec3
         TYPE_UINT8,                             // u8vec4
+        TYPE_UINT8,                             // u8vec5
         TYPE_INT8,                              // int8_t
         TYPE_INT8,                              // i8vec2
         TYPE_INT8,                              // i8vec3
         TYPE_INT8,                              // i8vec4
+        TYPE_INT8,                              // i8vec5
         TYPE_UINT16,                            // uint16_t
         TYPE_UINT16,                            // u16vec2
         TYPE_UINT16,                            // u16vec3
         TYPE_UINT16,                            // u16vec4
+        TYPE_UINT16,                            // u16vec5
         TYPE_INT16,                             // int16_t
         TYPE_INT16,                             // i16vec2
         TYPE_INT16,                             // i16vec3
         TYPE_INT16,                             // i16vec4
+        TYPE_INT16,                             // i16vec5
+        TYPE_UINT64,                            // uint64_t
+        TYPE_UINT64,                            // u64vec2
+        TYPE_UINT64,                            // u64vec3
+        TYPE_UINT64,                            // u64vec4
+        TYPE_UINT64,                            // u64vec5
+        TYPE_INT64,                             // int64_t
+        TYPE_INT64,                             // i64vec2
+        TYPE_INT64,                             // i64vec3
+        TYPE_INT64,                             // i64vec4
+        TYPE_INT64,                             // i64vec5
         TYPE_FLOAT16,                           // float16_t
         TYPE_FLOAT16,                           // f16vec2
         TYPE_FLOAT16,                           // f16vec3
         TYPE_FLOAT16,                           // f16vec4
+        TYPE_FLOAT16,                           // f16vec5
         TYPE_FLOAT16,                           // f16mat2
         TYPE_FLOAT16,                           // f16mat2x3
         TYPE_FLOAT16,                           // f16mat2x4
@@ -545,6 +605,7 @@ DataType getDataTypeFloat16Scalars(DataType dataType)
         TYPE_FLOAT16_VEC2,   // vec2
         TYPE_FLOAT16_VEC3,   // vec3
         TYPE_FLOAT16_VEC4,   // vec4
+        TYPE_FLOAT16_VEC5,   // vec5
         TYPE_FLOAT16_MAT2,   // mat2
         TYPE_FLOAT16_MAT2X3, // mat2x3
         TYPE_FLOAT16_MAT2X4, // mat2x4
@@ -558,6 +619,7 @@ DataType getDataTypeFloat16Scalars(DataType dataType)
         TYPE_FLOAT16_VEC2,   // dvec2
         TYPE_FLOAT16_VEC3,   // dvec3
         TYPE_FLOAT16_VEC4,   // dvec4
+        TYPE_FLOAT16_VEC5,   // dvec5
         TYPE_FLOAT16_MAT2,   // dmat2
         TYPE_FLOAT16_MAT2X3, // dmat2x3
         TYPE_FLOAT16_MAT2X4, // dmat2x4
@@ -571,14 +633,17 @@ DataType getDataTypeFloat16Scalars(DataType dataType)
         TYPE_FLOAT16_VEC2,   // ivec2
         TYPE_FLOAT16_VEC3,   // ivec3
         TYPE_FLOAT16_VEC4,   // ivec4
+        TYPE_FLOAT16_VEC5,   // ivec5
         TYPE_FLOAT16,        // uint
         TYPE_FLOAT16_VEC2,   // uvec2
         TYPE_FLOAT16_VEC3,   // uvec3
         TYPE_FLOAT16_VEC4,   // uvec4
+        TYPE_FLOAT16_VEC5,   // uvec5
         TYPE_FLOAT16,        // bool
         TYPE_FLOAT16_VEC2,   // bvec2
         TYPE_FLOAT16_VEC3,   // bvec3
         TYPE_FLOAT16_VEC4,   // bvec4
+        TYPE_FLOAT16_VEC5,   // bvec5
         TYPE_INVALID,        // sampler1D
         TYPE_INVALID,        // sampler2D
         TYPE_INVALID,        // samplerCube
@@ -638,22 +703,37 @@ DataType getDataTypeFloat16Scalars(DataType dataType)
         TYPE_FLOAT16_VEC2,   // u8vec2
         TYPE_FLOAT16_VEC3,   // u8vec3
         TYPE_FLOAT16_VEC4,   // u8vec4
+        TYPE_FLOAT16_VEC5,   // u8vec5
         TYPE_FLOAT16,        // int8_t
         TYPE_FLOAT16_VEC2,   // i8vec2
         TYPE_FLOAT16_VEC3,   // i8vec3
         TYPE_FLOAT16_VEC4,   // i8vec4
+        TYPE_FLOAT16_VEC5,   // i8vec5
         TYPE_FLOAT16,        // uint16_t
         TYPE_FLOAT16_VEC2,   // u16vec2
         TYPE_FLOAT16_VEC3,   // u16vec3
         TYPE_FLOAT16_VEC4,   // u16vec4
+        TYPE_FLOAT16_VEC5,   // u16vec5
         TYPE_FLOAT16,        // int16_t
         TYPE_FLOAT16_VEC2,   // i16vec2
         TYPE_FLOAT16_VEC3,   // i16vec3
         TYPE_FLOAT16_VEC4,   // i16vec4
+        TYPE_FLOAT16_VEC5,   // i16vec5
+        TYPE_FLOAT16,        // uint64_t
+        TYPE_FLOAT16_VEC2,   // u64vec2
+        TYPE_FLOAT16_VEC3,   // u64vec3
+        TYPE_FLOAT16_VEC4,   // u64vec4
+        TYPE_FLOAT16_VEC5,   // u64vec5
+        TYPE_FLOAT16,        // int64_t
+        TYPE_FLOAT16_VEC2,   // i64vec2
+        TYPE_FLOAT16_VEC3,   // i64vec3
+        TYPE_FLOAT16_VEC4,   // i64vec4
+        TYPE_FLOAT16_VEC5,   // i64vec5
         TYPE_FLOAT16,        // float16_t
         TYPE_FLOAT16_VEC2,   // f16vec2
         TYPE_FLOAT16_VEC3,   // f16vec3
         TYPE_FLOAT16_VEC4,   // f16vec4
+        TYPE_FLOAT16_VEC5,   // f16vec5
         TYPE_FLOAT16_MAT2,   // f16mat2
         TYPE_FLOAT16_MAT2X3, // f16mat2x3
         TYPE_FLOAT16_MAT2X4, // f16mat2x4
@@ -678,6 +758,7 @@ DataType getDataTypeFloatScalars(DataType dataType)
         TYPE_FLOAT_VEC2,   // vec2
         TYPE_FLOAT_VEC3,   // vec3
         TYPE_FLOAT_VEC4,   // vec4
+        TYPE_FLOAT_VEC5,   // vec5
         TYPE_FLOAT_MAT2,   // mat2
         TYPE_FLOAT_MAT2X3, // mat2x3
         TYPE_FLOAT_MAT2X4, // mat2x4
@@ -691,6 +772,7 @@ DataType getDataTypeFloatScalars(DataType dataType)
         TYPE_FLOAT_VEC2,   // dvec2
         TYPE_FLOAT_VEC3,   // dvec3
         TYPE_FLOAT_VEC4,   // dvec4
+        TYPE_FLOAT_VEC5,   // dvec5
         TYPE_FLOAT_MAT2,   // dmat2
         TYPE_FLOAT_MAT2X3, // dmat2x3
         TYPE_FLOAT_MAT2X4, // dmat2x4
@@ -704,14 +786,17 @@ DataType getDataTypeFloatScalars(DataType dataType)
         TYPE_FLOAT_VEC2,   // ivec2
         TYPE_FLOAT_VEC3,   // ivec3
         TYPE_FLOAT_VEC4,   // ivec4
+        TYPE_FLOAT_VEC5,   // ivec5
         TYPE_FLOAT,        // uint
         TYPE_FLOAT_VEC2,   // uvec2
         TYPE_FLOAT_VEC3,   // uvec3
         TYPE_FLOAT_VEC4,   // uvec4
+        TYPE_FLOAT_VEC5,   // uvec5
         TYPE_FLOAT,        // bool
         TYPE_FLOAT_VEC2,   // bvec2
         TYPE_FLOAT_VEC3,   // bvec3
         TYPE_FLOAT_VEC4,   // bvec4
+        TYPE_FLOAT_VEC5,   // bvec5
         TYPE_INVALID,      // sampler1D
         TYPE_INVALID,      // sampler2D
         TYPE_INVALID,      // samplerCube
@@ -771,22 +856,37 @@ DataType getDataTypeFloatScalars(DataType dataType)
         TYPE_FLOAT_VEC2,   // u8vec2
         TYPE_FLOAT_VEC3,   // u8vec3
         TYPE_FLOAT_VEC4,   // u8vec4
+        TYPE_FLOAT_VEC5,   // u8vec5
         TYPE_FLOAT,        // int8_t
         TYPE_FLOAT_VEC2,   // i8vec2
         TYPE_FLOAT_VEC3,   // i8vec3
         TYPE_FLOAT_VEC4,   // i8vec4
+        TYPE_FLOAT_VEC5,   // i8vec5
         TYPE_FLOAT,        // uint16_t
         TYPE_FLOAT_VEC2,   // u16vec2
         TYPE_FLOAT_VEC3,   // u16vec3
         TYPE_FLOAT_VEC4,   // u16vec4
+        TYPE_FLOAT_VEC5,   // u16vec5
         TYPE_FLOAT,        // int16_t
         TYPE_FLOAT_VEC2,   // i16vec2
         TYPE_FLOAT_VEC3,   // i16vec3
         TYPE_FLOAT_VEC4,   // i16vec4
+        TYPE_FLOAT_VEC5,   // i16vec5
+        TYPE_FLOAT,        // uint64_t
+        TYPE_FLOAT_VEC2,   // u64vec2
+        TYPE_FLOAT_VEC3,   // u64vec3
+        TYPE_FLOAT_VEC4,   // u64vec4
+        TYPE_FLOAT_VEC5,   // u64vec5
+        TYPE_FLOAT,        // int64_t
+        TYPE_FLOAT_VEC2,   // i64vec2
+        TYPE_FLOAT_VEC3,   // i64vec3
+        TYPE_FLOAT_VEC4,   // i64vec4
+        TYPE_FLOAT_VEC5,   // i64vec5
         TYPE_FLOAT,        // float16_t
         TYPE_FLOAT_VEC2,   // f16vec2
         TYPE_FLOAT_VEC3,   // f16vec3
         TYPE_FLOAT_VEC4,   // f16vec4
+        TYPE_FLOAT_VEC5,   // f16vec5
         TYPE_FLOAT_MAT2,   // f16mat2
         TYPE_FLOAT_MAT2X3, // f16mat2x3
         TYPE_FLOAT_MAT2X4, // f16mat2x4
@@ -811,6 +911,7 @@ DataType getDataTypeDoubleScalars(DataType dataType)
         TYPE_DOUBLE_VEC2,   // vec2
         TYPE_DOUBLE_VEC3,   // vec3
         TYPE_DOUBLE_VEC4,   // vec4
+        TYPE_DOUBLE_VEC5,   // vec5
         TYPE_DOUBLE_MAT2,   // mat2
         TYPE_DOUBLE_MAT2X3, // mat2x3
         TYPE_DOUBLE_MAT2X4, // mat2x4
@@ -824,6 +925,7 @@ DataType getDataTypeDoubleScalars(DataType dataType)
         TYPE_DOUBLE_VEC2,   // dvec2
         TYPE_DOUBLE_VEC3,   // dvec3
         TYPE_DOUBLE_VEC4,   // dvec4
+        TYPE_DOUBLE_VEC5,   // dvec5
         TYPE_DOUBLE_MAT2,   // dmat2
         TYPE_DOUBLE_MAT2X3, // dmat2x3
         TYPE_DOUBLE_MAT2X4, // dmat2x4
@@ -837,14 +939,17 @@ DataType getDataTypeDoubleScalars(DataType dataType)
         TYPE_DOUBLE_VEC2,   // ivec2
         TYPE_DOUBLE_VEC3,   // ivec3
         TYPE_DOUBLE_VEC4,   // ivec4
+        TYPE_DOUBLE_VEC5,   // ivec5
         TYPE_DOUBLE,        // uint
         TYPE_DOUBLE_VEC2,   // uvec2
         TYPE_DOUBLE_VEC3,   // uvec3
         TYPE_DOUBLE_VEC4,   // uvec4
+        TYPE_DOUBLE_VEC5,   // uvec5
         TYPE_DOUBLE,        // bool
         TYPE_DOUBLE_VEC2,   // bvec2
         TYPE_DOUBLE_VEC3,   // bvec3
         TYPE_DOUBLE_VEC4,   // bvec4
+        TYPE_DOUBLE_VEC5,   // bvec5
         TYPE_INVALID,       // sampler1D
         TYPE_INVALID,       // sampler2D
         TYPE_INVALID,       // samplerCube
@@ -904,22 +1009,37 @@ DataType getDataTypeDoubleScalars(DataType dataType)
         TYPE_DOUBLE_VEC2,   // u8vec2
         TYPE_DOUBLE_VEC3,   // u8vec3
         TYPE_DOUBLE_VEC4,   // u8vec4
+        TYPE_DOUBLE_VEC5,   // u8vec5
         TYPE_DOUBLE,        // int8_t
         TYPE_DOUBLE_VEC2,   // i8vec2
         TYPE_DOUBLE_VEC3,   // i8vec3
         TYPE_DOUBLE_VEC4,   // i8vec4
+        TYPE_DOUBLE_VEC5,   // i8vec5
         TYPE_DOUBLE,        // uint16_t
         TYPE_DOUBLE_VEC2,   // u16vec2
         TYPE_DOUBLE_VEC3,   // u16vec3
         TYPE_DOUBLE_VEC4,   // u16vec4
+        TYPE_DOUBLE_VEC5,   // u16vec5
         TYPE_DOUBLE,        // int16_t
         TYPE_DOUBLE_VEC2,   // i16vec2
         TYPE_DOUBLE_VEC3,   // i16vec3
         TYPE_DOUBLE_VEC4,   // i16vec4
+        TYPE_DOUBLE_VEC5,   // i16vec5
+        TYPE_DOUBLE,        // uint64_t
+        TYPE_DOUBLE_VEC2,   // u64vec2
+        TYPE_DOUBLE_VEC3,   // u64vec3
+        TYPE_DOUBLE_VEC4,   // u64vec4
+        TYPE_DOUBLE_VEC5,   // u64vec5
+        TYPE_DOUBLE,        // int64_t
+        TYPE_DOUBLE_VEC2,   // i64vec2
+        TYPE_DOUBLE_VEC3,   // i64vec3
+        TYPE_DOUBLE_VEC4,   // i64vec4
+        TYPE_DOUBLE_VEC5,   // i64vec5
         TYPE_DOUBLE,        // float16_t
         TYPE_DOUBLE_VEC2,   // f16vec2
         TYPE_DOUBLE_VEC3,   // f16vec3
         TYPE_DOUBLE_VEC4,   // f16vec4
+        TYPE_DOUBLE_VEC5,   // f16vec5
         TYPE_DOUBLE_MAT2,   // f16mat2
         TYPE_DOUBLE_MAT2X3, // f16mat2x3
         TYPE_DOUBLE_MAT2X4, // f16mat2x4
@@ -938,7 +1058,7 @@ DataType getDataTypeDoubleScalars(DataType dataType)
 
 DataType getDataTypeVector(DataType scalarType, int size)
 {
-    DE_ASSERT(deInRange32(size, 1, 4));
+    DE_ASSERT(deInRange32(size, 1, 5));
     switch (scalarType)
     {
     case TYPE_FLOAT:
@@ -950,6 +1070,8 @@ DataType getDataTypeVector(DataType scalarType, int size)
     case TYPE_INT8:
     case TYPE_UINT16:
     case TYPE_INT16:
+    case TYPE_UINT64:
+    case TYPE_INT64:
     case TYPE_FLOAT16:
         return (DataType)((int)scalarType + size - 1);
     default:

@@ -33,6 +33,8 @@
 #include "vktTestCase.hpp"
 #include "vksStructsVKSC.hpp"
 #include "vksCacheBuilder.hpp"
+#include "vksJson.hpp"
+#include "vkQueryUtil.hpp"
 
 namespace opt
 {
@@ -84,7 +86,6 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
             buffer << file.rdbuf();
             fileContents = buffer.str();
         }
-
         Json::Value jsonRoot;
         std::string errors;
         bool parsingSuccessful =
@@ -106,160 +107,223 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
         const Json::Value &jsonComputePipelineState  = jsonRoot["ComputePipelineState"];
         const Json::Value &jsonPipelineState =
             (pipelineType == PT_GRAPHICS_PIPELINE) ? jsonGraphicsPipelineState : jsonComputePipelineState;
+
         vksc_server::VulkanJsonPipelineDescription pipelineDescription;
-
+        auto isGfx   = [=]() { return pipelineType == PT_GRAPHICS_PIPELINE; };
+        auto gfxData = [&]() mutable -> decltype(auto)
+        { return std::get<vksc_server::GraphicsPipelineData>(pipelineDescription.pipelineData); };
+        auto compData = [&]() mutable -> decltype(auto)
+        { return std::get<vksc_server::ComputePipelineData>(pipelineDescription.pipelineData); };
+        if (isGfx())
         {
-            const Json::Value &jsonSamplerYcbcrConversions = jsonPipelineState["YcbcrSamplers"];
-            if (!jsonSamplerYcbcrConversions.isNull())
+            pipelineDescription.pipelineData = vksc_server::GraphicsPipelineData{};
+        }
+        else
+        {
+            pipelineDescription.pipelineData = vksc_server::ComputePipelineData{};
+        }
+
+        uint64_t pipelineLayoutHandle = 0u;
+        uint64_t renderPassHandle     = 0u;
+        std::map<std::string, uint64_t> stages;
+
+        const Json::Value &jsonComputePipeline = jsonPipelineState["ComputePipeline"];
+        if (!jsonComputePipeline.isNull())
+        {
+            compData().json      = std::string(fileContents.begin() + jsonComputePipeline.getOffsetStart(),
+                                               fileContents.begin() + jsonComputePipeline.getOffsetLimit());
+            pipelineLayoutHandle = jsonComputePipeline["layout"].asUInt64();
+
+            const Json::Value &jsonStage          = jsonComputePipeline["stage"];
+            stages[jsonStage["stage"].asString()] = jsonStage["module"].asUInt64();
+        }
+
+        const Json::Value &jsonGraphicsPipeline = jsonPipelineState["GraphicsPipeline"];
+        if (!jsonGraphicsPipeline.isNull())
+        {
+            gfxData().json       = std::string(fileContents.begin() + jsonGraphicsPipeline.getOffsetStart(),
+                                               fileContents.begin() + jsonGraphicsPipeline.getOffsetLimit());
+            pipelineLayoutHandle = jsonGraphicsPipeline["layout"].asUInt64();
+            renderPassHandle     = jsonGraphicsPipeline["renderPass"].asUInt64();
+
+            const Json::Value &jsonStages = jsonGraphicsPipeline["pStages"];
+            for (Json::ArrayIndex i = 0; i < jsonStages.size(); ++i)
+                stages[jsonStages[i]["stage"].asString()] = jsonStages[i]["module"].asUInt64();
+        }
+
+        const Json::Value &jsonPipelineLayout = jsonPipelineState["PipelineLayout"];
+        vksc_server::PipelineLayoutData &pipelineLayoutData =
+            isGfx() ? gfxData().pipelineLayoutData : compData().pipelineLayoutData;
+        if (!jsonPipelineLayout.isNull() && pipelineLayoutHandle != 0u)
+        {
+            pipelineLayoutData =
+                vksc_server::PipelineLayoutData{std::string(fileContents.begin() + jsonPipelineLayout.getOffsetStart(),
+                                                            fileContents.begin() + jsonPipelineLayout.getOffsetLimit()),
+                                                {},
+                                                0};
+        }
+
+        const Json::Value &jsonDescriptorSetLayouts = jsonPipelineState["DescriptorSetLayouts"];
+        if (!jsonDescriptorSetLayouts.isNull())
+        {
+            for (Json::ArrayIndex i = 0; i < jsonDescriptorSetLayouts.size(); ++i)
             {
-                for (Json::ArrayIndex i = 0; i < jsonSamplerYcbcrConversions.size(); ++i)
+                const Json::Value::Members membersNames = jsonDescriptorSetLayouts[i].getMemberNames();
+                const Json::Value &value                = jsonDescriptorSetLayouts[i][membersNames[0]];
+                uint64_t index;
+                std::istringstream(membersNames[0]) >> index;
+                pipelineLayoutData.descriptorSetLayouts.push_back(
+                    {std::string(fileContents.begin() + value.getOffsetStart(),
+                                 fileContents.begin() + value.getOffsetLimit()),
+                     {},
+                     index});
+            }
+        }
+
+        const Json::Value &jsonSamplers = jsonPipelineState["ImmutableSamplers"];
+        if (!jsonSamplers.isNull())
+        {
+            for (Json::ArrayIndex i = 0; i < jsonSamplers.size(); ++i)
+            {
+                const Json::Value::Members membersNames = jsonSamplers[i].getMemberNames();
+                const Json::Value &value                = jsonSamplers[i][membersNames[0]];
+                uint64_t index;
+                std::istringstream(membersNames[0]) >> index;
+                // Find all descriptor set layouts that have this immutable sampler
+                for (auto &dslData : pipelineLayoutData.descriptorSetLayouts)
                 {
-                    const Json::Value::Members membersNames = jsonSamplerYcbcrConversions[i].getMemberNames();
-                    const Json::Value &value                = jsonSamplerYcbcrConversions[i][membersNames[0]];
-                    uint64_t index;
-                    std::istringstream(membersNames[0]) >> index;
-                    input.samplerYcbcrConversions[vk::VkSamplerYcbcrConversion(reinterpret_cast<void *>(index))] =
-                        std::string(fileContents.begin() + value.getOffsetStart(),
-                                    fileContents.begin() + value.getOffsetLimit());
+                    vk::VkDescriptorSetLayoutCreateInfo dsCI;
+                    vksc_server::json::readJSON_VkDescriptorSetLayoutCreateInfo(context, dslData.json, dsCI);
+                    auto bindingHasThisSampler = [=](const vk::VkDescriptorSetLayoutBinding &binding)
+                    {
+                        auto first = binding.pImmutableSamplers;
+                        auto last  = binding.pImmutableSamplers + binding.descriptorCount;
+                        return first != nullptr && std::find_if(first, last,
+                                                                [=](const vk::VkSampler &sampler)
+                                                                { return sampler.getInternal() == index; }) != last;
+                    };
+                    if (std::any_of(dsCI.pBindings, dsCI.pBindings + dsCI.bindingCount, bindingHasThisSampler))
+                    {
+                        dslData.immutableSamplers.push_back(
+                            vksc_server::SamplerData{std::string(fileContents.begin() + value.getOffsetStart(),
+                                                                 fileContents.begin() + value.getOffsetLimit()),
+                                                     std::nullopt, 0});
+                    }
                 }
             }
+        }
 
-            const Json::Value &jsonSamplers = jsonPipelineState["ImmutableSamplers"];
-            if (!jsonSamplers.isNull())
+        const Json::Value &jsonSamplerYcbcrConversions = jsonPipelineState["YcbcrSamplers"];
+        if (!jsonSamplerYcbcrConversions.isNull())
+        {
+            for (Json::ArrayIndex i = 0; i < jsonSamplerYcbcrConversions.size(); ++i)
             {
-                for (Json::ArrayIndex i = 0; i < jsonSamplers.size(); ++i)
+                const Json::Value::Members membersNames = jsonSamplerYcbcrConversions[i].getMemberNames();
+                const Json::Value &value                = jsonSamplerYcbcrConversions[i][membersNames[0]];
+                uint64_t index;
+                std::istringstream(membersNames[0]) >> index;
+                // Find all samplers that use this ycbcr conversion
+                for (auto &dslData : pipelineLayoutData.descriptorSetLayouts)
                 {
-                    const Json::Value::Members membersNames = jsonSamplers[i].getMemberNames();
-                    const Json::Value &value                = jsonSamplers[i][membersNames[0]];
-                    uint64_t index;
-                    std::istringstream(membersNames[0]) >> index;
-                    input.samplers[vk::VkSampler(reinterpret_cast<void *>(index))] = std::string(
-                        fileContents.begin() + value.getOffsetStart(), fileContents.begin() + value.getOffsetLimit());
+                    for (auto &samplerData : dslData.immutableSamplers)
+                    {
+                        vk::VkSamplerCreateInfo samplerCI;
+                        vksc_server::json::readJSON_VkSamplerCreateInfo(context, samplerData.json, samplerCI);
+                        if (auto ycbcrInfo = reinterpret_cast<const vk::VkSamplerYcbcrConversionInfo *>(
+                                findStructureInChain(samplerCI.pNext, VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO));
+                            ycbcrInfo != nullptr)
+                        {
+                            samplerData.samplerYcbcrConversion =
+                                vksc_server::YcbcrData{std::string(fileContents.begin() + value.getOffsetStart(),
+                                                                   fileContents.begin() + value.getOffsetLimit()),
+                                                       index};
+                        }
+                    }
                 }
             }
+        }
 
-            const Json::Value &jsonDescriptorSetLayouts = jsonPipelineState["DescriptorSetLayouts"];
-            if (!jsonDescriptorSetLayouts.isNull())
-            {
-                for (Json::ArrayIndex i = 0; i < jsonDescriptorSetLayouts.size(); ++i)
-                {
-                    const Json::Value::Members membersNames = jsonDescriptorSetLayouts[i].getMemberNames();
-                    const Json::Value &value                = jsonDescriptorSetLayouts[i][membersNames[0]];
-                    uint64_t index;
-                    std::istringstream(membersNames[0]) >> index;
-                    input.descriptorSetLayouts[vk::VkDescriptorSetLayout(reinterpret_cast<void *>(index))] =
-                        std::string(fileContents.begin() + value.getOffsetStart(),
-                                    fileContents.begin() + value.getOffsetLimit());
-                }
-            }
-
-            uint64_t pipelineLayoutHandle = 0u;
-            uint64_t renderPassHandle     = 0u;
-            std::map<std::string, uint64_t> stages;
-
-            const Json::Value &jsonComputePipeline = jsonPipelineState["ComputePipeline"];
-            if (!jsonComputePipeline.isNull())
-            {
-                pipelineDescription.pipelineContents =
-                    std::string(fileContents.begin() + jsonComputePipeline.getOffsetStart(),
-                                fileContents.begin() + jsonComputePipeline.getOffsetLimit());
-                pipelineLayoutHandle = jsonComputePipeline["layout"].asUInt64();
-
-                const Json::Value &jsonStage          = jsonComputePipeline["stage"];
-                stages[jsonStage["stage"].asString()] = jsonStage["module"].asUInt64();
-            }
-
-            const Json::Value &jsonGraphicsPipeline = jsonPipelineState["GraphicsPipeline"];
-            if (!jsonGraphicsPipeline.isNull())
-            {
-                pipelineDescription.pipelineContents =
-                    std::string(fileContents.begin() + jsonGraphicsPipeline.getOffsetStart(),
-                                fileContents.begin() + jsonGraphicsPipeline.getOffsetLimit());
-                pipelineLayoutHandle = jsonGraphicsPipeline["layout"].asUInt64();
-                renderPassHandle     = jsonGraphicsPipeline["renderPass"].asUInt64();
-
-                const Json::Value &jsonStages = jsonGraphicsPipeline["pStages"];
-                for (Json::ArrayIndex i = 0; i < jsonStages.size(); ++i)
-                    stages[jsonStages[i]["stage"].asString()] = jsonStages[i]["module"].asUInt64();
-            }
-
-            const Json::Value &jsonPipelineLayout = jsonPipelineState["PipelineLayout"];
-            if (!jsonPipelineLayout.isNull() && pipelineLayoutHandle != 0u)
-            {
-                input.pipelineLayouts[vk::VkPipelineLayout(reinterpret_cast<void *>(pipelineLayoutHandle))] =
-                    std::string(fileContents.begin() + jsonPipelineLayout.getOffsetStart(),
-                                fileContents.begin() + jsonPipelineLayout.getOffsetLimit());
-            }
-
+        if (isGfx())
+        {
             const Json::Value &jsonRenderPass = jsonPipelineState["Renderpass"];
             if (!jsonRenderPass.isNull() && renderPassHandle != 0u)
             {
-                input.renderPasses[vk::VkRenderPass(reinterpret_cast<void *>(renderPassHandle))] =
-                    std::string(fileContents.begin() + jsonRenderPass.getOffsetStart(),
-                                fileContents.begin() + jsonRenderPass.getOffsetLimit());
+                gfxData().renderPassData =
+                    vksc_server::RenderPassData{std::string(fileContents.begin() + jsonRenderPass.getOffsetStart(),
+                                                            fileContents.begin() + jsonRenderPass.getOffsetLimit()),
+                                                renderPassHandle};
             }
 
             const Json::Value &jsonRenderPass2 = jsonPipelineState["Renderpass2"];
             if (!jsonRenderPass2.isNull() && renderPassHandle != 0u)
             {
-                input.renderPasses[vk::VkRenderPass(reinterpret_cast<void *>(renderPassHandle))] =
-                    std::string(fileContents.begin() + jsonRenderPass.getOffsetStart(),
-                                fileContents.begin() + jsonRenderPass.getOffsetLimit());
+                gfxData().renderPassData =
+                    vksc_server::RenderPassData{std::string(fileContents.begin() + jsonRenderPass2.getOffsetStart(),
+                                                            fileContents.begin() + jsonRenderPass2.getOffsetLimit()),
+                                                renderPassHandle};
             }
+        }
 
-            const Json::Value &jsonShaderFileNames = jsonPipelineState["ShaderFileNames"];
-            if (!jsonShaderFileNames.isNull())
+        const Json::Value &jsonShaderFileNames = jsonPipelineState["ShaderFileNames"];
+        if (!jsonShaderFileNames.isNull())
+        {
+            for (Json::ArrayIndex i = 0; i < jsonShaderFileNames.size(); ++i)
             {
-                for (Json::ArrayIndex i = 0; i < jsonShaderFileNames.size(); ++i)
+                std::string stageName = jsonShaderFileNames[i]["stage"].asString();
+                std::string fileName  = jsonShaderFileNames[i]["filename"].asString();
+                auto it               = stages.find(stageName);
+                if (it == end(stages))
+                    TCU_THROW(InternalError,
+                              (std::string("JSON - missing shader stage. File ") + filePath.getPath()).c_str());
+
+                de::FilePath shaderPath(path);
+                shaderPath.join(de::FilePath(fileName));
+                std::ifstream iFile(shaderPath.getPath(), std::ios::in | std::ios::binary);
+                if (!iFile)
+                    TCU_THROW(InternalError,
+                              (std::string("JSON - missing shader file ") + fileName + ". File " + filePath.getPath())
+                                  .c_str());
+
+                auto fileBegin = iFile.tellg();
+                iFile.seekg(0, std::ios::end);
+                auto fileEnd = iFile.tellg();
+                iFile.seekg(0, std::ios::beg);
+                std::size_t fileSize = static_cast<std::size_t>(fileEnd - fileBegin);
+                std::vector<uint8_t> shaderData(fileSize);
+
+                iFile.read(reinterpret_cast<char *>(shaderData.data()), fileSize);
+                if (iFile.fail())
+                    TCU_THROW(InternalError, (std::string("JSON - error reading shader file ") + fileName + ". File " +
+                                              filePath.getPath())
+                                                 .c_str());
+
+                vk::VkShaderModuleCreateInfo smCI{
+                    VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,    // VkStructureType sType;
+                    nullptr,                                        // const void* pNext;
+                    vk::VkShaderModuleCreateFlags(0u),              // VkShaderModuleCreateFlags flags;
+                    fileSize,                                       // uintptr_t codeSize;
+                    reinterpret_cast<uint32_t *>(shaderData.data()) // const uint32_t* pCode;
+                };
+
+                if (isGfx())
                 {
-                    std::string stageName = jsonShaderFileNames[i]["stage"].asString();
-                    std::string fileName  = jsonShaderFileNames[i]["filename"].asString();
-                    auto it               = stages.find(stageName);
-                    if (it == end(stages))
-                        TCU_THROW(InternalError,
-                                  (std::string("JSON - missing shader stage. File ") + filePath.getPath()).c_str());
-
-                    de::FilePath shaderPath(path);
-                    shaderPath.join(de::FilePath(fileName));
-                    std::ifstream iFile(shaderPath.getPath(), std::ios::in | std::ios::binary);
-                    if (!iFile)
-                        TCU_THROW(InternalError, (std::string("JSON - missing shader file ") + fileName + ". File " +
-                                                  filePath.getPath())
-                                                     .c_str());
-
-                    auto fileBegin = iFile.tellg();
-                    iFile.seekg(0, std::ios::end);
-                    auto fileEnd = iFile.tellg();
-                    iFile.seekg(0, std::ios::beg);
-                    std::size_t fileSize = static_cast<std::size_t>(fileEnd - fileBegin);
-                    std::vector<uint8_t> shaderData(fileSize);
-
-                    iFile.read(reinterpret_cast<char *>(shaderData.data()), fileSize);
-                    if (iFile.fail())
-                        TCU_THROW(InternalError, (std::string("JSON - error reading shader file ") + fileName +
-                                                  ". File " + filePath.getPath())
-                                                     .c_str());
-
-                    vk::VkShaderModuleCreateInfo smCI{
-                        VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,    // VkStructureType sType;
-                        nullptr,                                        // const void* pNext;
-                        vk::VkShaderModuleCreateFlags(0u),              // VkShaderModuleCreateFlags flags;
-                        fileSize,                                       // uintptr_t codeSize;
-                        reinterpret_cast<uint32_t *>(shaderData.data()) // const uint32_t* pCode;
-                    };
-
-                    input.shaderModules[vk::VkShaderModule(reinterpret_cast<void *>(it->second))] =
-                        vksc_server::json::writeJSON_VkShaderModuleCreateInfo(smCI);
+                    gfxData().shaderModuleData.push_back(vksc_server::ShaderModuleData{
+                        vksc_server::json::writeJSON_VkShaderModuleCreateInfo(context, smCI), it->second});
+                }
+                else
+                {
+                    compData().shaderModuleData = vksc_server::ShaderModuleData{
+                        vksc_server::json::writeJSON_VkShaderModuleCreateInfo(context, smCI), it->second};
                 }
             }
+        }
 
-            const Json::Value &jsonPhysicalDeviceFeatures = jsonPipelineState["PhysicalDeviceFeatures"];
-            if (!jsonPhysicalDeviceFeatures.isNull())
-            {
-                pipelineDescription.deviceFeatures =
-                    std::string(fileContents.begin() + jsonPhysicalDeviceFeatures.getOffsetStart(),
-                                fileContents.begin() + jsonPhysicalDeviceFeatures.getOffsetLimit());
-            }
+        const Json::Value &jsonPhysicalDeviceFeatures = jsonPipelineState["PhysicalDeviceFeatures"];
+        if (!jsonPhysicalDeviceFeatures.isNull())
+        {
+            pipelineDescription.deviceFeatures =
+                std::string(fileContents.begin() + jsonPhysicalDeviceFeatures.getOffsetStart(),
+                            fileContents.begin() + jsonPhysicalDeviceFeatures.getOffsetLimit());
         }
 
         const Json::Value &jsonEnabledExtensions = jsonRoot["EnabledExtensions"];

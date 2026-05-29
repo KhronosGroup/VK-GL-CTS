@@ -88,6 +88,10 @@ std::vector<std::string> getRequiredWsiExtensions(const Extensions &supportedExt
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
+    // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
+    if (wsiType == vk::wsi::TYPE_DIRECT_DRM)
+        extensions.push_back("VK_EXT_direct_mode_display");
+
     // VK_EXT_swapchain_colorspace adds new surface formats. Driver can enumerate
     // the formats regardless of whether VK_EXT_swapchain_colorspace was enabled,
     // but using them without enabling the extension is not allowed. Thus we have
@@ -883,8 +887,7 @@ tcu::TestStatus createSwapchainTest(Context &baseCtx, TestParameters params)
     std::vector<vk::VkExtensionProperties> supportedExtensions(
         enumerateInstanceExtensionProperties(baseCtx.getPlatformInterface(), nullptr));
     std::vector<std::string> instExts = getRequiredWsiExtensions(supportedExtensions, params.wsiType);
-    std::vector<std::string> devExts;
-    devExts.push_back("VK_KHR_swapchain");
+    std::vector<std::string> devExts{"VK_KHR_swapchain"};
 
     // Try to enable VK_KHR_shared_presentable_image for its respective present mode testing
     if (params.dimension == TEST_DIMENSION_PRESENT_MODE)
@@ -951,7 +954,7 @@ struct GroupParameters
 
 void checkSupport(Context &context, TestParameters)
 {
-    checkProtectedQueueSupport(context);
+    checkProtectedContextSupport(context);
 }
 
 void populateSwapchainGroup(tcu::TestCaseGroup *testGroup, GroupParameters params)
@@ -1285,8 +1288,7 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
     std::vector<vk::VkExtensionProperties> supportedExtensions(
         enumerateInstanceExtensionProperties(baseCtx.getPlatformInterface(), nullptr));
     std::vector<std::string> instExts = getRequiredWsiExtensions(supportedExtensions, wsiType);
-    std::vector<std::string> devExts;
-    devExts.push_back("VK_KHR_swapchain");
+    std::vector<std::string> devExts{"VK_KHR_swapchain"};
 
     const tcu::UVec2 desiredSize(256, 256);
     const NativeObjects native(baseCtx, supportedExtensions, wsiType, tcu::just(desiredSize));
@@ -1432,7 +1434,7 @@ void getBasicRenderPrograms(vk::SourceCollections &dst, vk::wsi::Type)
 
 void checkSupport(Context &context, vk::wsi::Type)
 {
-    checkProtectedQueueSupport(context);
+    checkProtectedContextSupport(context);
 }
 
 void populateRenderGroup(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)

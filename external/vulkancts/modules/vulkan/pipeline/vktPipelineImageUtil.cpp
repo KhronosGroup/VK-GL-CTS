@@ -78,14 +78,21 @@ bool isSupportedSamplableFormat(const InstanceInterface &instanceInterface, VkPh
 {
     if (isCompressedFormat(format))
     {
-        VkPhysicalDeviceFeatures physicalFeatures;
-        const tcu::CompressedTexFormat compressedFormat = mapVkCompressedFormat(format);
+        const tcu::CompressedTexFormat compressedFormat                              = mapVkCompressedFormat(format);
+        VkPhysicalDeviceTextureCompressionASTCHDRFeatures compressionASTCHDRFeatures = initVulkanStructure();
+        VkPhysicalDeviceFeatures2 physicalFeatures2 = initVulkanStructure(&compressionASTCHDRFeatures);
+        auto &physicalFeatures                      = physicalFeatures2.features;
 
-        instanceInterface.getPhysicalDeviceFeatures(device, &physicalFeatures);
+        instanceInterface.getPhysicalDeviceFeatures2(device, &physicalFeatures2);
 
         if (tcu::isAstcFormat(compressedFormat))
         {
-            if (!physicalFeatures.textureCompressionASTC_LDR)
+            if (tcu::isAstcHdrFormat(compressedFormat))
+            {
+                if (!compressionASTCHDRFeatures.textureCompressionASTC_HDR)
+                    return false;
+            }
+            else if (!physicalFeatures.textureCompressionASTC_LDR)
                 return false;
         }
         else if (tcu::isEtcFormat(compressedFormat))
@@ -261,7 +268,8 @@ void getLookupScaleBias(vk::VkFormat format, tcu::Vec4 &lookupScale, tcu::Vec4 &
 de::MovePtr<tcu::TextureLevel> readColorAttachment(const vk::DeviceInterface &vk, vk::VkDevice device,
                                                    vk::VkQueue queue, uint32_t queueFamilyIndex,
                                                    vk::Allocator &allocator, vk::VkImage image, vk::VkFormat format,
-                                                   const tcu::UVec2 &renderSize, vk::VkImageLayout oldLayout)
+                                                   const tcu::UVec2 &renderSize, vk::VkImageLayout oldLayout,
+                                                   vk::VkAccessFlags oldAccess)
 {
     Move<VkBuffer> buffer;
     de::MovePtr<Allocation> bufferAlloc;
@@ -299,8 +307,7 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment(const vk::DeviceInterface &vk
     fence = createFence(vk, device);
 
     beginCommandBuffer(vk, *cmdBuffer);
-    copyImageToBuffer(vk, *cmdBuffer, image, *buffer, tcu::IVec2(renderSize.x(), renderSize.y()),
-                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, oldLayout);
+    copyImageToBuffer(vk, *cmdBuffer, image, *buffer, tcu::IVec2(renderSize.x(), renderSize.y()), oldAccess, oldLayout);
     endCommandBuffer(vk, *cmdBuffer);
 
     submitCommandsAndWait(vk, device, queue, cmdBuffer.get());

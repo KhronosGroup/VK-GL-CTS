@@ -598,7 +598,6 @@ bool compareAndLogBuffer(TestLog &log, size_t size, size_t referenceSize, const 
 
 static Move<VkDevice> createProtectedMemoryDevice(const Context &context, const VkPhysicalDeviceFeatures2 &features2)
 {
-    auto &cmdLine                = context.getTestContext().getCommandLine();
     const InstanceInterface &vki = context.getInstanceInterface();
     const float queuePriority    = 1.0f;
     uint32_t queueFamilyIndex    = context.getUniversalQueueFamilyIndex();
@@ -630,8 +629,8 @@ static Move<VkDevice> createProtectedMemoryDevice(const Context &context, const 
         nullptr,                              // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    return createCustomDevice(cmdLine.isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), vki,
-                              context.getPhysicalDevice(), &deviceInfo);
+    return createCustomDevice(context.getPlatformInterface(), context.getInstance(), vki, context.getPhysicalDevice(),
+                              &deviceInfo);
 }
 
 tcu::TestStatus testMemoryMapping(Context &context, const TestConfig config)

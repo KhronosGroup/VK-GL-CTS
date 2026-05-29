@@ -3171,8 +3171,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     createInfo.queueCreateInfoCount    = queueCiCnt;
     createInfo.pQueueCreateInfos       = queueInfos;
 
-    m_device =
-        createCustomDevice(false, context.getPlatformInterface(), context.getInstance(), inst, physDevice, &createInfo);
+    m_device = createCustomDevice(context.getPlatformInterface(), context.getInstance(), inst, physDevice, &createInfo);
 
     context.getDeviceInterface().getDeviceQueue(*m_device, m_queueFamilyIndex, 0, &m_queue);
 
