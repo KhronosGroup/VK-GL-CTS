@@ -12540,10 +12540,10 @@ void DescriptorHeapTestCaseSecondary::initPrograms(vk::SourceCollections &progra
 layout(descriptor_heap) uniform texture2D heapTextures[];
 layout(descriptor_heap) uniform sampler heapSamplers[];
 layout(descriptor_heap) buffer ssbo {
-	vec4 data;
+    vec4 data;
 } heapBuffer[];
 void main() {
-	heapBuffer[0].data = texture(sampler2D(heapTextures[16], heapSamplers[29]), vec2(0.5f));
+    heapBuffer[0].data = texture(sampler2D(heapTextures[16], heapSamplers[29]), vec2(0.5f));
 }
 )";
 
@@ -15979,6 +15979,383 @@ void populateNonUniformAccessTests(tcu::TestCaseGroup *topGroup, uint32_t baseSe
     topGroup->addChild(group.release());
 }
 
+// Hit-record count, also the ray launch width, sized to span a subgroup.
+constexpr uint32_t kShaderRecordNonUniformRecordCount = 64u;
+
+struct TestParamsShaderRecordNonUniform : TestParams
+{
+    bool withCapability = false;
+};
+
+class DescriptorHeapTestInstanceShaderRecordNonUniform final : public DescriptorHeapTestInstanceBase
+{
+public:
+    explicit DescriptorHeapTestInstanceShaderRecordNonUniform(Context &context,
+                                                              const TestParamsShaderRecordNonUniform &params)
+        : DescriptorHeapTestInstanceBase(context, params)
+        , m_params{params}
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    TestParamsShaderRecordNonUniform m_params{};
+};
+
+class DescriptorHeapTestCaseShaderRecordNonUniform final : public DescriptorHeapTestCaseBase
+{
+public:
+    explicit DescriptorHeapTestCaseShaderRecordNonUniform(tcu::TestContext &testCtx, const std::string &name,
+                                                          const TestParamsShaderRecordNonUniform &params)
+        : DescriptorHeapTestCaseBase(testCtx, name, params)
+        , m_params{params}
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceShaderRecordNonUniform(context, m_params);
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+private:
+    TestParamsShaderRecordNonUniform m_params{};
+};
+
+void DescriptorHeapTestCaseShaderRecordNonUniform::initPrograms(vk::SourceCollections &programCollection) const
+{
+    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+    std::ostringstream raygen;
+    raygen << "#version 460\n"
+              "#extension GL_EXT_ray_tracing : require\n"
+              "layout(set = 0, binding = 0, std430) buffer OutputBuffer { uint result[]; };\n"
+              "layout(set = 2, binding = 0) uniform accelerationStructureEXT topAS;\n"
+              "layout(location = 0) rayPayloadEXT uint hitValue;\n"
+              "void main() {\n"
+              "    uint idx = gl_LaunchIDEXT.x;\n"
+              "    hitValue = 0xffffffffu;\n"
+              "    vec3 origin = vec3(float(idx) + 0.25, 0.25, 0.0);\n"
+              "    traceRayEXT(topAS, gl_RayFlagsOpaqueEXT, 0xFFu, 0u /*sbtRecordOffset*/, 0u /*sbtRecordStride*/,\n"
+              "                0u /*missIndex*/, origin, 0.0, vec3(0.0, 0.0, 1.0), 100.0, 0);\n"
+              "    result[idx] = hitValue;\n"
+              "}\n";
+
+    std::ostringstream closesthit;
+    closesthit << "#version 460\n"
+                  "#extension GL_EXT_ray_tracing : require\n"
+                  "#extension GL_EXT_samplerless_texture_functions : require\n";
+    if (m_params.withCapability)
+        closesthit << "#extension GL_EXT_descriptor_heap : require\n";
+    closesthit << "layout(set = 1, binding = 0) uniform utextureBuffer testDesc;\n";
+    if (m_params.withCapability)
+        closesthit << "layout(descriptor_heap) uniform utextureBuffer heapDescs[];\n";
+    closesthit << "layout(location = 0) rayPayloadInEXT uint hitValue;\n"
+                  "void main() {\n"
+                  "    hitValue = texelFetch(testDesc, 0).r;\n";
+    if (m_params.withCapability)
+    {
+        closesthit << "    hitValue += texelFetch(heapDescs[" << kShaderRecordNonUniformRecordCount << "], 0).r;\n";
+    }
+    closesthit << "}\n";
+
+    const std::string miss = "#version 460\n"
+                             "#extension GL_EXT_ray_tracing : require\n"
+                             "layout(location = 0) rayPayloadInEXT uint hitValue;\n"
+                             "void main() {}\n";
+
+    programCollection.glslSources.add("raygen") << glu::RaygenSource(raygen.str()) << buildOptions;
+    programCollection.glslSources.add("closesthit") << glu::ClosestHitSource(closesthit.str()) << buildOptions;
+    programCollection.glslSources.add("miss") << glu::MissSource(miss) << buildOptions;
+}
+
+tcu::TestStatus DescriptorHeapTestInstanceShaderRecordNonUniform::iterate()
+{
+    const auto &vki       = m_context.getInstanceInterface();
+    const auto &vkd       = *m_deviceInterface;
+    const VkDevice device = *m_device;
+    Allocator &allocator  = *m_allocatorPtr;
+
+    const uint32_t recordCount = kShaderRecordNonUniformRecordCount;
+    // One descriptor per record, plus one extra zero-valued slot backing the layout(descriptor_heap) capability read.
+    const uint32_t slotCount = recordCount + 1u;
+
+    // Lay the heap out at the type-specific image descriptor stride so the mapped read and the layout(descriptor_heap)
+    // read (which indexes by that same stride) stay consistent.
+    const VkDeviceSize descriptorSize   = m_descriptorHeapProperties.imageDescriptorSize;
+    const VkDeviceSize descriptorStride = alignUp(descriptorSize, m_descriptorHeapProperties.imageDescriptorAlignment);
+
+    const VkDeviceSize userHeapSize =
+        alignUp(slotCount * descriptorStride, m_descriptorHeapProperties.resourceHeapAlignment);
+    const VkDeviceSize heapSize = userHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    auto resourceHeap = createBufferAndMemory(heapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
+                                                            VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+    const VkDeviceSize outputBufferSize = recordCount * sizeof(uint32_t);
+    auto outputBuffer                   = createBufferAndMemory(outputBufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT |
+                                                                                      VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+    deMemset(outputBuffer->memory->getHostPtr(), 0, static_cast<size_t>(outputBufferSize));
+
+    de::Random rnd(m_params.seed);
+    std::vector<uint32_t> expectedData(recordCount);
+    std::vector<std::unique_ptr<Buffer>> buffers;
+
+    auto heapHostPtr = static_cast<char *>(resourceHeap->memory->getHostPtr());
+
+    for (uint32_t i = 0; i < slotCount; ++i)
+    {
+        const uint32_t value = (i < recordCount) ? rnd.getUint32() : 0u;
+        if (i < recordCount)
+            expectedData[i] = value;
+
+        auto &buffer = buffers.emplace_back(
+            createBufferAndMemory(sizeof(uint32_t), VK_BUFFER_USAGE_2_UNIFORM_TEXEL_BUFFER_BIT |
+                                                        VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR));
+        deMemcpy(buffer->memory->getHostPtr(), &value, sizeof(value));
+
+        VkTexelBufferDescriptorInfoEXT texelInfo = initVulkanStructure();
+        texelInfo.format                         = VK_FORMAT_R32_UINT;
+        texelInfo.addressRange.address           = buffer->address;
+        texelInfo.addressRange.size              = sizeof(uint32_t);
+
+        VkResourceDescriptorInfoEXT resourceInfo = initVulkanStructure();
+        resourceInfo.type                        = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+        resourceInfo.data.pTexelBuffer           = &texelInfo;
+
+        VkHostAddressRangeEXT hostRange{};
+        hostRange.address = heapHostPtr + i * descriptorStride;
+        hostRange.size    = static_cast<size_t>(descriptorSize);
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(device, 1, &resourceInfo, &hostRange));
+    }
+
+    // Each ray must hit a different hit record so the shared closest-hit shader resolves the same non-arrayed
+    // descriptor to a different resource (implicit non-uniformity, no nonuniformEXT anywhere). The traceRayEXT
+    // sbtRecordOffset is only a 4-bit field, so the divergence is driven through the 24-bit per-instance
+    // instanceShaderBindingTableRecordOffset instead: a unit quad in x,y in [0,1] at z = zDepth, instanced
+    // recordCount times one unit apart along x. Ray i (origin x = i + 0.25) hits only instance i, whose record
+    // offset = i selects hit record i.
+    const float zDepth = 5.0f;
+    const std::vector<tcu::Vec3> vertices{
+        tcu::Vec3(0.0f, 0.0f, zDepth), tcu::Vec3(0.0f, 1.0f, zDepth), tcu::Vec3(1.0f, 0.0f, zDepth),
+        tcu::Vec3(0.0f, 1.0f, zDepth), tcu::Vec3(1.0f, 1.0f, zDepth), tcu::Vec3(1.0f, 0.0f, zDepth),
+    };
+
+    AccelerationStructBufferProperties bufferProps;
+    de::SharedPtr<BottomLevelAccelerationStructure> blas(makeBottomLevelAccelerationStructure().release());
+    blas->setGeometryData(vertices, true);
+    blas->create(vkd, device, allocator, bufferProps, 0, 0, 0, 0, nullptr, MemoryRequirement::Any);
+
+    MovePtr<TopLevelAccelerationStructure> tlas(makeTopLevelAccelerationStructure().release());
+    tlas->setInstanceCount(recordCount);
+    for (uint32_t i = 0; i < recordCount; ++i)
+    {
+        VkTransformMatrixKHR transform = identityMatrix3x4;
+        transform.matrix[0][3]         = static_cast<float>(i);
+        tlas->addInstance(blas, transform, 0u, 0xFFu, i);
+    }
+    tlas->create(vkd, device, allocator, bufferProps, 0, 0, 0, 0, nullptr, MemoryRequirement::Any);
+
+    const VkDeviceAddress asAddress =
+        getAccelerationStructureDeviceAddress(*m_deviceInterface, device, *tlas->getPtr());
+
+    std::vector<VkDescriptorSetAndBindingMappingEXT> mappings;
+
+    VkDescriptorSetAndBindingMappingEXT outputMapping = initVulkanStructure();
+    outputMapping.descriptorSet                       = 0;
+    outputMapping.firstBinding                        = 0;
+    outputMapping.bindingCount                        = 1;
+    outputMapping.resourceMask                        = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    outputMapping.source                              = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT;
+    outputMapping.sourceData.pushAddressOffset        = 0;
+    mappings.push_back(outputMapping);
+
+    VkDescriptorSetAndBindingMappingEXT testMapping = initVulkanStructure();
+    testMapping.descriptorSet                       = 1;
+    testMapping.firstBinding                        = 0;
+    testMapping.bindingCount                        = 1;
+    testMapping.resourceMask                        = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    testMapping.source                              = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_SHADER_RECORD_INDEX_EXT;
+    testMapping.sourceData.shaderRecordIndex.heapOffset         = 0;
+    testMapping.sourceData.shaderRecordIndex.shaderRecordOffset = 0;
+    testMapping.sourceData.shaderRecordIndex.heapIndexStride    = static_cast<uint32_t>(descriptorStride);
+    testMapping.sourceData.shaderRecordIndex.heapArrayStride    = 0;
+    mappings.push_back(testMapping);
+
+    VkDescriptorSetAndBindingMappingEXT asMapping = initVulkanStructure();
+    asMapping.descriptorSet                       = 2;
+    asMapping.firstBinding                        = 0;
+    asMapping.bindingCount                        = 1;
+    asMapping.resourceMask                        = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    asMapping.source                              = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT;
+    asMapping.sourceData.pushAddressOffset        = static_cast<uint32_t>(sizeof(VkDeviceAddress));
+    mappings.push_back(asMapping);
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+    mappingInfo.mappingCount                                  = static_cast<uint32_t>(mappings.size());
+    mappingInfo.pMappings                                     = mappings.data();
+
+    const uint32_t raygenGroup = 0u;
+    const uint32_t missGroup   = 1u;
+    const uint32_t hitGroup    = 2u;
+
+    de::MovePtr<RayTracingPipeline> rtPipeline = de::newMovePtr<RayTracingPipeline>();
+    rtPipeline->setCreateFlags2(VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT);
+    rtPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, createShaderModule(vkd, device, getShaderBinary("raygen"), 0),
+                          raygenGroup, nullptr, 0, &mappingInfo);
+    rtPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, createShaderModule(vkd, device, getShaderBinary("miss"), 0),
+                          missGroup, nullptr, 0, &mappingInfo);
+    rtPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
+                          createShaderModule(vkd, device, getShaderBinary("closesthit"), 0), hitGroup, nullptr, 0,
+                          &mappingInfo);
+
+    Move<VkPipeline> pipeline = rtPipeline->createPipeline(vkd, device, VK_NULL_HANDLE);
+
+    const uint32_t handleSize = getShaderGroupHandleSize(vki, m_physDevice);
+    const uint32_t baseAlign  = getShaderGroupBaseAlignment(vki, m_physDevice);
+
+    const uint32_t recordSize   = 16u;
+    const uint32_t hitEntrySize = static_cast<uint32_t>(de::roundUp(handleSize + recordSize, handleSize));
+
+    auto raygenSBT =
+        rtPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, handleSize, baseAlign, raygenGroup, 1u);
+    auto missSBT =
+        rtPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, handleSize, baseAlign, missGroup, 1u);
+
+    // Hit SBT: recordCount records all referencing the same closest-hit group handle, each carrying its own index r
+    // as shader-record data (record r -> shader-record index r -> heap slot r).
+    const auto hitHandle = rtPipeline->getShaderGroupHandles(vkd, device, *pipeline, handleSize, hitGroup, 1u);
+    std::vector<uint8_t> hitHandles(recordCount * handleSize);
+    for (uint32_t r = 0; r < recordCount; ++r)
+        deMemcpy(hitHandles.data() + r * handleSize, hitHandle.data(), handleSize);
+
+    std::vector<std::vector<uint8_t>> recordBlobs(recordCount, std::vector<uint8_t>(recordSize, 0u));
+    std::vector<const void *> recordPtrs(recordCount);
+    for (uint32_t r = 0; r < recordCount; ++r)
+    {
+        deMemcpy(recordBlobs[r].data(), &r, sizeof(r));
+        recordPtrs[r] = recordBlobs[r].data();
+    }
+
+    auto hitSBT =
+        rtPipeline->createShaderBindingTable(vkd, device, allocator, handleSize, baseAlign, hitHandles, 0u, 0u,
+                                             MemoryRequirement::Any, 0u, 0u, recordSize, recordPtrs.data());
+
+    VkStridedDeviceAddressRegionKHR raygenRegion = makeStridedDeviceAddressRegionKHR(
+        getBufferDeviceAddress(vkd, device, raygenSBT->get(), 0), handleSize, handleSize);
+    VkStridedDeviceAddressRegionKHR missRegion = makeStridedDeviceAddressRegionKHR(
+        getBufferDeviceAddress(vkd, device, missSBT->get(), 0), handleSize, handleSize);
+    VkStridedDeviceAddressRegionKHR hitRegion = makeStridedDeviceAddressRegionKHR(
+        getBufferDeviceAddress(vkd, device, hitSBT->get(), 0), hitEntrySize, hitEntrySize * recordCount);
+    VkStridedDeviceAddressRegionKHR callableRegion{};
+
+    auto cmdPool   = makeCommandPool(vkd, device, m_queueFamilyIndex);
+    auto cmdBuffer = allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    VkBindHeapInfoEXT bindHeapInfo   = initVulkanStructure();
+    bindHeapInfo.heapRange.address   = resourceHeap->address;
+    bindHeapInfo.heapRange.size      = heapSize;
+    bindHeapInfo.reservedRangeOffset = userHeapSize;
+    bindHeapInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    beginCommandBuffer(vkd, *cmdBuffer);
+
+    vkd.cmdBindResourceHeapEXT(*cmdBuffer, &bindHeapInfo);
+
+    blas->build(vkd, device, *cmdBuffer);
+    tlas->build(vkd, device, *cmdBuffer);
+
+    {
+        VkMemoryBarrier2 asBarrier = initVulkanStructure();
+        asBarrier.srcStageMask     = VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+        asBarrier.srcAccessMask    = VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+        asBarrier.dstStageMask     = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+        asBarrier.dstAccessMask    = VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+
+        VkDependencyInfo dependencyInfo   = initVulkanStructure();
+        dependencyInfo.memoryBarrierCount = 1;
+        dependencyInfo.pMemoryBarriers    = &asBarrier;
+        vkd.cmdPipelineBarrier2(*cmdBuffer, &dependencyInfo);
+    }
+
+    {
+        VkPushDataInfoEXT pushOutput = initVulkanStructure();
+        pushOutput.offset            = 0;
+        pushOutput.data.address      = &outputBuffer->address;
+        pushOutput.data.size         = sizeof(VkDeviceAddress);
+        vkd.cmdPushDataEXT(*cmdBuffer, &pushOutput);
+
+        VkPushDataInfoEXT pushAS = initVulkanStructure();
+        pushAS.offset            = static_cast<uint32_t>(sizeof(VkDeviceAddress));
+        pushAS.data.address      = &asAddress;
+        pushAS.data.size         = sizeof(VkDeviceAddress);
+        vkd.cmdPushDataEXT(*cmdBuffer, &pushAS);
+    }
+
+    vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
+    cmdTraceRays(vkd, *cmdBuffer, &raygenRegion, &missRegion, &hitRegion, &callableRegion, recordCount, 1, 1);
+
+    {
+        VkMemoryBarrier2 outputBarrier = initVulkanStructure();
+        outputBarrier.srcStageMask     = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+        outputBarrier.srcAccessMask    = VK_ACCESS_2_SHADER_WRITE_BIT;
+        outputBarrier.dstStageMask     = VK_PIPELINE_STAGE_2_HOST_BIT;
+        outputBarrier.dstAccessMask    = VK_ACCESS_2_HOST_READ_BIT;
+
+        VkDependencyInfo dependencyInfo   = initVulkanStructure();
+        dependencyInfo.memoryBarrierCount = 1;
+        dependencyInfo.pMemoryBarriers    = &outputBarrier;
+        vkd.cmdPipelineBarrier2(*cmdBuffer, &dependencyInfo);
+    }
+
+    endCommandBuffer(vkd, *cmdBuffer);
+
+    VkSubmitInfo submitInfo       = initVulkanStructure();
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers    = &cmdBuffer.get();
+    VK_CHECK(vkd.queueSubmit(m_queues.front(), 1, &submitInfo, VK_NULL_HANDLE));
+    VK_CHECK(vkd.deviceWaitIdle(device));
+
+    auto outputData = static_cast<uint32_t *>(outputBuffer->memory->getHostPtr());
+    for (uint32_t i = 0; i < recordCount; ++i)
+    {
+        if (outputData[i] != expectedData[i])
+        {
+            std::stringstream msg;
+            msg << "At index " << i << ", expected 0x" << std::hex << expectedData[i] << " but got 0x" << outputData[i];
+            return tcu::TestStatus::fail(msg.str());
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void populateShaderRecordNonUniformTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
+{
+    tcu::TestContext &testCtx = topGroup->getTestContext();
+    MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "non_uniform_shader_record"));
+
+    for (const bool withCapability : {false, true})
+    {
+        const char *const testName = withCapability ? "with_capability" : "without_capability";
+
+        TestParamsShaderRecordNonUniform params{};
+        params.queue                        = VK_QUEUE_COMPUTE_BIT;
+        params.enableRayTracing             = true;
+        params.enableAccelerationStructures = true;
+        params.enableRuntimeDescriptorArray = withCapability;
+        params.withCapability               = withCapability;
+        params.seed                         = baseSeed ^ deStringHash(testName);
+
+        group->addChild(new DescriptorHeapTestCaseShaderRecordNonUniform(testCtx, testName, params));
+    }
+
+    topGroup->addChild(group.release());
+}
+
 void populateSpecialHeapTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
 {
     tcu::TestContext &testCtx = topGroup->getTestContext();
@@ -16506,6 +16883,7 @@ void populateDescriptorHeapTests(tcu::TestCaseGroup *topGroup)
     populateShaderObjectInvariance(topGroup);
     populatePushDataAccessTests(topGroup, baseSeed);
     populateNonUniformAccessTests(topGroup, baseSeed);
+    populateShaderRecordNonUniformTests(topGroup, baseSeed);
     populateSpecialHeapTests(topGroup, baseSeed);
     populateNonPackedTests(topGroup, baseSeed);
     populateUnalignedTests(topGroup, baseSeed);

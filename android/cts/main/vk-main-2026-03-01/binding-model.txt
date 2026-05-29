@@ -589,6 +589,8 @@ dEQP-VK.binding_model.descriptor_heap.non_uniform_access.storage_texel_buffer
 dEQP-VK.binding_model.descriptor_heap.non_uniform_access.uniform_buffer
 dEQP-VK.binding_model.descriptor_heap.non_uniform_access.uniform_texel_buffer
 dEQP-VK.binding_model.descriptor_heap.non_uniform_mappings.non_uniform_mappings
+dEQP-VK.binding_model.descriptor_heap.non_uniform_shader_record.with_capability
+dEQP-VK.binding_model.descriptor_heap.non_uniform_shader_record.without_capability
 dEQP-VK.binding_model.descriptor_heap.null_descriptor.compute.acceleration_structure
 dEQP-VK.binding_model.descriptor_heap.null_descriptor.compute.sampled_image
 dEQP-VK.binding_model.descriptor_heap.null_descriptor.compute.storage_buffer
