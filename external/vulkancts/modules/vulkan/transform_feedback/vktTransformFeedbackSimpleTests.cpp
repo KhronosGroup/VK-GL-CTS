@@ -143,6 +143,7 @@ struct TestParameters
     VkPrimitiveTopology primTopology;
     bool queryResultWithAvailability;
     bool nullCounterBuffers;
+    bool nullPtrsInEndTransformFeedback;
 
     bool isPoints(void) const
     {
@@ -1443,8 +1444,10 @@ tcu::TestStatus TransformFeedbackResumeTestInstance::iterate(void)
                 {
                     vk.cmdDraw(*cmdBuffer, numPoints, 1u, 0u, 0u);
                 }
-                cmdEndTransformFeedback(vk, *cmdBuffer, 0, 1, &*tfcBuf, &tfcBufDeviceAddress,
-                                        &tfcBufBindingOffsets[drawNdx], &tfcBufSizes[drawNdx]);
+                const bool useNull = drawNdx == 0 && m_parameters.nullPtrsInEndTransformFeedback;
+                cmdEndTransformFeedback(
+                    vk, *cmdBuffer, 0, 1, useNull ? nullptr : &*tfcBuf, useNull ? nullptr : &tfcBufDeviceAddress,
+                    useNull ? nullptr : &tfcBufBindingOffsets[drawNdx], useNull ? nullptr : &tfcBufSizes[drawNdx]);
             }
             endRenderPass(vk, *cmdBuffer);
 
@@ -6493,6 +6496,7 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
                                                  false,
                                                  VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
                                                  false,
+                                                 false,
                                                  false};
 
                     // Simple Transform Feedback test
@@ -6522,6 +6526,11 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
                         parameters.useDeviceAddressCommands = false;
                         parameters.nullCounterBuffers       = true;
                         addTransformFeedbackTestCaseVariants(group, (testName + postfixStr + "_null_counter_buffers"),
+                                                             parameters);
+
+                        parameters.nullCounterBuffers             = false;
+                        parameters.nullPtrsInEndTransformFeedback = true;
+                        addTransformFeedbackTestCaseVariants(group, (testName + postfixStr + "_null_ptrs_end_xfb"),
                                                              parameters);
                     }
                 }
