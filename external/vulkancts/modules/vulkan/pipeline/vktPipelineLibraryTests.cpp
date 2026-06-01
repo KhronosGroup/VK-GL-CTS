@@ -6318,6 +6318,7 @@ tcu::TestStatus PrimaryRebindDiffLayoutsRun(Context &context, PipelineConstructi
     pipelineB.bind(primaryCmd);
     ctx.vkd.cmdBindDescriptorSets(primaryCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayoutB.get(), 0u, 2u,
                                   rawDescSetsB, 0u, nullptr);
+    ctx.vkd.cmdSetColorWriteMaskEXT(primaryCmd, 0u, 1u, &fullWriteMask);
     ctx.vkd.cmdPushConstants(primaryCmd, pipelineLayoutB.get(), pcStages, 0u, pcSize, &blue);
     ctx.vkd.cmdDraw(primaryCmd, 4u, 1u, 0u, 0u);
     primaryRP.end(ctx.vkd, primaryCmd);
