@@ -5402,6 +5402,10 @@ dEQP-VK.memory.mapping.suballocation.sub.8095.offset_255.size_4085.subinvalidate
 dEQP-VK.memory.mapping.suballocation.sub.8095.offset_255.size_4085.subinvalidate_overlapping_map2
 dEQP-VK.memory.mapping.suballocation.sub.8095.offset_255.size_4085.subinvalidate_separate
 dEQP-VK.memory.mapping.suballocation.sub.8095.offset_255.size_4085.subinvalidate_separate_map2
+dEQP-VK.memory.opaque_and_dma.b8g8r8a8_unorm_sample
+dEQP-VK.memory.opaque_and_dma.b8g8r8a8_unorm_transfer
+dEQP-VK.memory.opaque_and_dma.r8g8b8a8_unorm_sample
+dEQP-VK.memory.opaque_and_dma.r8g8b8a8_unorm_transfer
 dEQP-VK.memory.pageable_allocation.basic.percent_1.forward.count_12
 dEQP-VK.memory.pageable_allocation.basic.percent_1.mixed.count_12
 dEQP-VK.memory.pageable_allocation.basic.percent_1.reverse.count_12

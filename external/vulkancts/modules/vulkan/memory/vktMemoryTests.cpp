@@ -30,6 +30,7 @@
 #include "vktMemoryBindingTests.hpp"
 #include "vktMemoryExternalMemoryHostTests.hpp"
 #include "vktMemoryExternalDmaHeapTests.hpp"
+#include "vktMemoryOpaqueAndDmaImageTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktMemoryMappingTests.hpp"
@@ -75,6 +76,7 @@ void createChildren(tcu::TestCaseGroup *memoryTests)
     memoryTests->addChild(createDmaHeapTests(testCtx));
     memoryTests->addChild(createMapPlacedTests(testCtx));
 #endif
+    memoryTests->addChild(createOpaqueAndDmaImageTests(testCtx));
 }
 
 } // namespace
