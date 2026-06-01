@@ -1709,6 +1709,51 @@ tcu::TestStatus ignoreQueueFamilyTypeImage(Context &context, IgnoreQueueFamilyIm
     return tcu::TestStatus::pass("Pass");
 }
 
+tcu::TestStatus externalQueueFamilyImageBarrier(Context &context, IgnoreQueueFamilyImageParams)
+{
+    const auto ctx = context.getContextCommonData();
+    const tcu::IVec3 extent(16, 16, 1);
+    const auto extentVk = makeExtent3D(extent);
+    const auto format   = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto imageUsage =
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+    ImageWithBuffer image(ctx.vkd, ctx.device, ctx.allocator, extentVk, format, imageUsage, VK_IMAGE_TYPE_2D);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    VkImageMemoryBarrier imageBarrier = initVulkanStructure();
+    imageBarrier.srcAccessMask        = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    imageBarrier.dstAccessMask        = VK_ACCESS_SHADER_READ_BIT;
+    imageBarrier.oldLayout            = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageBarrier.newLayout            = VK_IMAGE_LAYOUT_GENERAL;
+    imageBarrier.srcQueueFamilyIndex  = VK_QUEUE_FAMILY_IGNORED;
+    imageBarrier.dstQueueFamilyIndex  = VK_QUEUE_FAMILY_IGNORED;
+    imageBarrier.image                = image.getImage();
+    imageBarrier.subresourceRange     = makeDefaultImageSubresourceRange();
+
+    ctx.vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0u, nullptr, 0u,
+                               nullptr, 1u, &imageBarrier);
+
+    imageBarrier.srcAccessMask       = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+    imageBarrier.dstAccessMask       = 0u;
+    imageBarrier.oldLayout           = VK_IMAGE_LAYOUT_GENERAL;
+    imageBarrier.newLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    imageBarrier.srcQueueFamilyIndex = ctx.qfIndex;
+    imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL;
+    ctx.vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0u,
+                               0u, nullptr, 0u, nullptr, 1u, &imageBarrier);
+
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 const struct
 {
     FamilyType familyType;
@@ -1747,6 +1792,12 @@ tcu::TestCaseGroup *createSmokeTests(tcu::TestContext &textCtx)
         const IgnoreQueueFamilyImageParams params{familyTypeCase.familyType, false};
         addFunctionCaseWithPrograms(smokeTests.get(), testName.c_str(), checkQueueFamilyTypeImageSupport,
                                     initQueueFamilyTypePrograms, ignoreQueueFamilyTypeImage, params);
+    }
+
+    {
+        const IgnoreQueueFamilyImageParams params{FamilyType::EXTERNAL, false};
+        addFunctionCase(smokeTests.get(), "queue_type_image_barrier_external", checkQueueFamilyTypeImageSupport,
+                        externalQueueFamilyImageBarrier, params);
     }
 
     return smokeTests.release();
