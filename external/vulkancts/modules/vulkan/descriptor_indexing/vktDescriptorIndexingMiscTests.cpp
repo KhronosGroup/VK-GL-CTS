@@ -582,6 +582,210 @@ TestStatus CommonNonUniformDescriptorIndexTestInstance::iterate(void)
     return TestStatus::pass("Pass");
 }
 
+class MiscVariableCountTestInstance : public TestInstance
+{
+public:
+    MiscVariableCountTestInstance(Context &context) : TestInstance(context)
+    {
+    }
+    ~MiscVariableCountTestInstance(void)
+    {
+    }
+
+    TestStatus iterate(void);
+};
+
+TestStatus MiscVariableCountTestInstance::iterate(void)
+{
+    const auto &vkd             = m_context.getDeviceInterface();
+    const auto device           = m_context.getDevice();
+    const auto queue            = m_context.getUniversalQueue();
+    const auto queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    auto &allocator             = m_context.getDefaultAllocator();
+    tcu::TestLog &log           = m_context.getTestContext().getLog();
+
+    const uint32_t combinedImageSamplerCount = 8u;
+    const uint32_t allocatedDescriptorCount  = 2u;
+    const VkFormat colorFormat               = VK_FORMAT_R8G8B8A8_UNORM;
+    const uint32_t renderSize                = 16u;
+    const VkExtent3D textureExtent           = makeExtent3D(1u, 1u, 1u);
+    const VkExtent3D renderExtent            = makeExtent3D(renderSize, renderSize, 1u);
+
+    DescriptorPoolBuilder descriptorPoolBuilder;
+    descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u);
+    descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, combinedImageSamplerCount);
+    const auto descriptorPool =
+        descriptorPoolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    const VkDescriptorBindingFlags variableDescriptorBindingFlags =
+        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
+    DescriptorSetLayoutBuilder descriptorSetLayoutBuilder;
+    descriptorSetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL);
+    descriptorSetLayoutBuilder.addArrayBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, combinedImageSamplerCount,
+                                               VK_SHADER_STAGE_ALL, variableDescriptorBindingFlags);
+    const auto descriptorSetLayout = descriptorSetLayoutBuilder.build(vkd, device);
+
+    VkDescriptorSetVariableDescriptorCountAllocateInfo variableCountInfo = {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO, // VkStructureType sType;
+        nullptr,                                                                  // const void* pNext;
+        1u,                                                                       // uint32_t descriptorSetCount;
+        &allocatedDescriptorCount,                                                // const uint32_t* pDescriptorCounts;
+    };
+
+    const auto descriptorSet =
+        makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayout.get(), &variableCountInfo);
+
+    const uint8_t colorData[8] = {
+        255u, 255u, 0u, 255u, 0u, 255u, 255u, 255u,
+    };
+    const VkBufferCreateInfo textureBufferCreateInfo =
+        makeBufferCreateInfo(sizeof(colorData), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    const VkImageCreateInfo textureCreateInfo =
+        makeImageCreateInfo(VK_IMAGE_TYPE_2D, UVec2(textureExtent.width, textureExtent.height), colorFormat,
+                            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 0u, VK_IMAGE_TILING_OPTIMAL);
+    const VkImageSubresourceRange colorSubresourceRange =
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+
+    BufferWithMemory srcBuffer(vkd, device, allocator, textureBufferCreateInfo, MemoryRequirement::HostVisible);
+    deMemcpy(srcBuffer.getAllocation().getHostPtr(), colorData, sizeof(colorData));
+    flushAlloc(vkd, device, srcBuffer.getAllocation());
+
+    ImageWithMemory texture1(vkd, device, allocator, textureCreateInfo, MemoryRequirement::Any);
+    ImageWithMemory texture2(vkd, device, allocator, textureCreateInfo, MemoryRequirement::Any);
+    const auto view1 = makeImageView(vkd, device, *texture1, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange);
+    const auto view2 = makeImageView(vkd, device, *texture2, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange);
+
+    Move<VkSampler> sampler = makeSampler(vkd, device);
+
+    VkDescriptorImageInfo imageInfos[2];
+    imageInfos[0] = makeDescriptorImageInfo(*sampler, *view1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    imageInfos[1] = makeDescriptorImageInfo(*sampler, *view2, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    DescriptorSetUpdateBuilder descriptorSetUpdateBuilder;
+    descriptorSetUpdateBuilder.writeArray(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(1u),
+                                          VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2u, imageInfos);
+    descriptorSetUpdateBuilder.update(vkd, device);
+
+    ImageWithBuffer colorImage(vkd, device, allocator, renderExtent, colorFormat,
+                               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_TYPE_2D);
+    const Move<VkRenderPass> renderPass = makeRenderPass(vkd, device, colorFormat);
+    const Move<VkFramebuffer> framebuffer =
+        makeFramebuffer(vkd, device, *renderPass, colorImage.getImageView(), renderSize, renderSize);
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(renderSize, renderSize));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(renderSize, renderSize));
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+    const auto pipelineLayout(makePipelineLayout(vkd, device, *descriptorSetLayout));
+    const auto vertexModule(createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0));
+    const auto fragmentModule(createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0));
+    const auto graphicsPipeline = makeGraphicsPipeline(
+        vkd, device, *pipelineLayout, *vertexModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragmentModule,
+        *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &vertexInputState);
+
+    const auto commandPool = makeCommandPool(vkd, device, queueFamilyIndex);
+    const auto cmdBuf      = allocateCommandBuffer(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    beginCommandBuffer(vkd, *cmdBuf);
+    {
+        std::vector<VkBufferImageCopy> copyRegions1;
+        copyRegions1.push_back(makeBufferImageCopy(textureExtent, makeDefaultImageSubresourceLayers()));
+        copyBufferToImage(vkd, *cmdBuf, *srcBuffer, 4u, copyRegions1, VK_IMAGE_ASPECT_COLOR_BIT, 1u, 1u, *texture1,
+                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                          VK_ACCESS_SHADER_READ_BIT);
+
+        std::vector<VkBufferImageCopy> copyRegions2;
+        copyRegions2.push_back(makeBufferImageCopy(textureExtent, makeDefaultImageSubresourceLayers()));
+        copyRegions2.back().bufferOffset = sizeof(colorData) / 2u;
+        copyBufferToImage(vkd, *cmdBuf, *srcBuffer, sizeof(colorData), copyRegions2, VK_IMAGE_ASPECT_COLOR_BIT, 1u, 1u,
+                          *texture2, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                          VK_ACCESS_SHADER_READ_BIT);
+
+        beginRenderPass(vkd, *cmdBuf, *renderPass, *framebuffer, scissors[0], tcu::Vec4(0.0f));
+        vkd.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
+        vkd.cmdBindDescriptorSets(*cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
+                                  &descriptorSet.get(), 0u, nullptr);
+        vkd.cmdDraw(*cmdBuf, 4u, 1u, 0u, 0u);
+        endRenderPass(vkd, *cmdBuf);
+
+        copyImageToBuffer(vkd, *cmdBuf, colorImage.getImage(), colorImage.getBuffer(), IVec2(renderSize),
+                          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    }
+    endCommandBuffer(vkd, *cmdBuf);
+    submitCommandsAndWait(vkd, device, queue, *cmdBuf);
+    invalidateAlloc(vkd, device, colorImage.getBufferAllocation());
+
+    tcu::ConstPixelBufferAccess resultBuffer = tcu::ConstPixelBufferAccess(
+        vk::mapVkFormat(colorFormat), renderSize, renderSize, 1, colorImage.getBufferAllocation().getHostPtr());
+    for (uint32_t y = 0u; y < renderSize; ++y)
+    {
+        for (uint32_t x = 0u; x < renderSize; ++x)
+        {
+            const auto pixel = resultBuffer.getPixelUint(x, y);
+            if (pixel.x() != 0u || pixel.y() != 255u || pixel.z() != 0u || pixel.w() != 255u)
+            {
+                log << TestLog::Message << "Unexpected pixel at (" << x << ", " << y
+                    << "). Expected (0, 255, 0, 255), but got (" << pixel.x() << ", " << pixel.y() << ", " << pixel.z()
+                    << ", " << pixel.w() << ")" << TestLog::EndMessage;
+                return TestStatus::fail("Fail");
+            }
+        }
+    }
+
+    return TestStatus::pass("Pass");
+}
+
+class MiscVariableCountTestCase : public TestCase
+{
+public:
+    MiscVariableCountTestCase(TestContext &testCtx, const std::string &name) : TestCase(testCtx, name.c_str())
+    {
+    }
+    ~MiscVariableCountTestCase()
+    {
+    }
+    void checkSupport(Context &context) const;
+    void initPrograms(SourceCollections &programCollection) const;
+    TestInstance *createInstance(Context &context) const
+    {
+        return new MiscVariableCountTestInstance(context);
+    }
+};
+
+void MiscVariableCountTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_EXT_descriptor_indexing");
+
+    const auto &descriptorIndexingFeatures = context.getDescriptorIndexingFeatures();
+    if (!descriptorIndexingFeatures.descriptorBindingPartiallyBound)
+        TCU_THROW(NotSupportedError, "descriptorBindingPartiallyBound not supported");
+
+    if (!descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount)
+        TCU_THROW(NotSupportedError, "descriptorBindingVariableDescriptorCount not supported");
+}
+
+void MiscVariableCountTestCase::initPrograms(SourceCollections &programCollection) const
+{
+    const std::string vert = R"(#version 450
+layout(location = 0) out vec2 uv;
+void main() {
+    vec2 pos = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));
+    gl_Position = vec4(pos * 2.0f - 1.0f, 0.0f, 1.0f);
+    uv = pos;
+}
+)";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert);
+
+    const std::string frag = R"(#version 450
+layout(location = 0) in vec2 uv;
+layout(location = 0) out vec4 color;
+layout(set = 0, binding = 1) uniform sampler2D tex[8];
+void main() {
+    color = texture(tex[0], uv) * texture(tex[1], uv);
+}
+)";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag);
+}
+
 } // namespace
 
 void createDescriptorIndexingMiscTests(TestCaseGroup *mainGroup)
@@ -611,6 +815,8 @@ void createDescriptorIndexingMiscTests(TestCaseGroup *mainGroup)
             mainGroup->addChild(new CommonNonUniformDescriptorIndexTestCase(testContext, testName, params));
         }
     }
+
+    mainGroup->addChild(new MiscVariableCountTestCase(testContext, "misc_variable_count"));
 }
 
 } // namespace DescriptorIndexing
