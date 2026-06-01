@@ -90,7 +90,9 @@ namespace
 enum
 {
     REFERENCE_UNIFORM_BINDING = 0,
-    USER_UNIFORM_BINDING      = 1
+    USER_UNIFORM_BINDING      = 1,
+    INPUT_STORAGE_BINDING     = 2,
+    RESULT_STORAGE_BINDING    = 3
 };
 
 string getShaderName(ShaderType shaderType, size_t progNdx)
@@ -432,6 +434,92 @@ string specializeFragmentShader(const ShaderCaseSpecification &spec, const strin
     const string baseSrc = tmpl.specialize(params);
     const string withExt =
         injectExtensionRequirements(baseSrc, spec.programs[0].requiredExtensions, glu::SHADERTYPE_FRAGMENT);
+
+    return withExt;
+}
+
+// Specialize a shader for the compute shader test case.
+string specializeComputeShader(const ShaderCaseSpecification &spec, const string &src)
+{
+    ostringstream decl;
+    ostringstream setup;
+    ostringstream output;
+
+    DE_ASSERT(spec.caseType == glu::sl::CASETYPE_COMPUTE_ONLY);
+
+    decl << "layout(local_size_x = 1) in;\n\n";
+
+    if (!spec.values.inputs.empty())
+    {
+        decl << "layout(set = 0, binding = " << INPUT_STORAGE_BINDING << ", std430) readonly buffer InputBlock\n"
+             << "{\n";
+        for (size_t ndx = 0; ndx < spec.values.inputs.size(); ndx++)
+        {
+            const Value &val          = spec.values.inputs[ndx];
+            const char *const typeStr = getDataTypeName(val.type.getBasicType());
+
+            decl << "\t" << typeStr << " " << val.name << ";\n";
+        }
+        decl << "};\n\n";
+    }
+
+    declareReferenceBlock(decl, spec.values);
+    declareUniforms(decl, spec.values);
+
+    decl << "layout(set = 0, binding = " << RESULT_STORAGE_BINDING << ", std430) writeonly buffer ResultBlock\n"
+         << "{\n"
+         << "\tuint result;\n"
+         << "} res;\n\n";
+
+    genCompareFunctions(decl, spec.values, false);
+
+    for (size_t ndx = 0; ndx < spec.values.outputs.size(); ndx++)
+    {
+        const Value &val             = spec.values.outputs[ndx];
+        const char *const refTypeStr = getDataTypeName(val.type.getBasicType());
+
+        decl << refTypeStr << " " << val.name << ";\n";
+    }
+
+    decl << "highp vec4 dEQP_Position;\n";
+
+    {
+        bool isFirstOutput = true;
+
+        for (size_t ndx = 0; ndx < spec.values.outputs.size(); ndx++)
+        {
+            const Value &val = spec.values.outputs[ndx];
+
+            if (isFirstOutput)
+            {
+                output << "bool RES = ";
+                isFirstOutput = false;
+            }
+            else
+                output << "RES = RES && ";
+
+            if (getDataTypeScalarType(val.type.getBasicType()) == glu::TYPE_FLOAT)
+                output << "isOk(" << val.name << ", ref." << val.name << ", 0.05);\n";
+            else
+                output << "isOk(" << val.name << ", ref." << val.name << ");\n";
+        }
+
+        if (isFirstOutput)
+            output << "res.result = 1u;\n";
+        else
+            output << "res.result = RES ? 1u : 0u;\n";
+    }
+
+    map<string, string> params;
+    params.insert(pair<string, string>("DECLARATIONS", decl.str()));
+    params.insert(pair<string, string>("SETUP", setup.str()));
+    params.insert(pair<string, string>("OUTPUT", output.str()));
+    params.insert(pair<string, string>("POSITION_FRAG_COLOR", "dEQP_Position"));
+
+    StringTemplate tmpl(src);
+    const string baseSrc = tmpl.specialize(params);
+    const string withExt =
+        injectExtensionRequirements(baseSrc, spec.programs[0].requiredExtensions, glu::SHADERTYPE_VERTEX);
 
     return withExt;
 }
@@ -1224,15 +1312,18 @@ void writeValuesToMem(Context &context, const vk::Allocation &dst, const ValueBu
     flushAlloc(context.getDeviceInterface(), context.getDevice(), dst);
 }
 
-class ShaderCaseInstance : public TestInstance
+class ShaderCaseInstance : public MultiQueueRunnerTestInstance
 {
 public:
     ShaderCaseInstance(Context &context, const ShaderCaseSpecification &spec);
     ~ShaderCaseInstance(void);
 
-    TestStatus iterate(void);
+    TestStatus queuePass(const QueueData &queueData) override;
 
 private:
+    TestStatus graphicsPass(const QueueData &queueData);
+    TestStatus computePass(const QueueData &queueData);
+
     enum
     {
         RENDER_WIDTH  = 64,
@@ -1249,23 +1340,25 @@ private:
 
     const ShaderCaseSpecification &m_spec;
 
-    const Unique<vk::VkBuffer> m_posNdxBuffer;
-    const UniquePtr<vk::Allocation> m_posNdxMem;
+    // Graphics-only
+    Move<vk::VkBuffer> m_posNdxBuffer;
+    MovePtr<vk::Allocation> m_posNdxMem;
 
+    // Shared
     const ValueBufferLayout m_inputLayout;
-    const Unique<vk::VkBuffer> m_inputBuffer;   // Input values (attributes). Can be NULL if no inputs present
-    const UniquePtr<vk::Allocation> m_inputMem; // Input memory, can be NULL if no input buffer exists
+    Move<vk::VkBuffer> m_inputBuffer;   // Input values (attributes). Can be NULL if no inputs present
+    MovePtr<vk::Allocation> m_inputMem; // Input memory, can be NULL if no input buffer exists
 
     const ValueBufferLayout m_referenceLayout;
-    const Unique<vk::VkBuffer> m_referenceBuffer; // Output (reference) values. Can be NULL if no outputs present
-    const UniquePtr<vk::Allocation>
-        m_referenceMem; // Output (reference) memory, can be NULL if no reference buffer exists
+    Move<vk::VkBuffer> m_referenceBuffer;   // Output (reference) values. Can be NULL if no outputs present
+    MovePtr<vk::Allocation> m_referenceMem; // Output (reference) memory, can be NULL if no reference buffer exists
 
     const ValueBufferLayout m_uniformLayout;
-    const Unique<vk::VkBuffer> m_uniformBuffer;   // Uniform values. Can be NULL if no uniforms present
-    const UniquePtr<vk::Allocation> m_uniformMem; // Uniform memory, can be NULL if no uniform buffer exists
+    Move<vk::VkBuffer> m_uniformBuffer;   // Uniform values. Can be NULL if no uniforms present
+    MovePtr<vk::Allocation> m_uniformMem; // Uniform memory, can be NULL if no uniform buffer exists
 
-    const vk::VkFormat m_rtFormat;
+    // Graphics-only
+    vk::VkFormat m_rtFormat;
     uint32_t m_outputCount;
     Move<vk::VkImage> m_rtImage[4];
     MovePtr<vk::Allocation> m_rtMem[4];
@@ -1274,121 +1367,98 @@ private:
     Move<vk::VkBuffer> m_readImageBuffer[4];
     MovePtr<vk::Allocation> m_readImageMem[4];
 
-    const Unique<vk::VkRenderPass> m_renderPass;
+    Move<vk::VkRenderPass> m_renderPass;
     Move<vk::VkFramebuffer> m_framebuffer;
-    const PipelineProgram m_program;
-    const Unique<vk::VkDescriptorSetLayout> m_descriptorSetLayout;
-    const Unique<vk::VkPipelineLayout> m_pipelineLayout;
-    const Unique<vk::VkPipeline> m_pipeline;
+    MovePtr<PipelineProgram> m_program;
+    Move<vk::VkDescriptorSetLayout> m_descriptorSetLayout;
+    Move<vk::VkPipelineLayout> m_pipelineLayout;
+    Move<vk::VkPipeline> m_pipeline;
 
-    const Unique<vk::VkDescriptorPool> m_descriptorPool;
-    const Unique<vk::VkDescriptorSet> m_descriptorSet;
+    Move<vk::VkDescriptorPool> m_descriptorPool;
+    Move<vk::VkDescriptorSet> m_descriptorSet;
 
-    const Unique<vk::VkCommandPool> m_cmdPool;
-    const Unique<vk::VkCommandBuffer> m_cmdBuffer;
-
-    int m_subCaseNdx;
+    Move<vk::VkCommandPool> m_cmdPool;
+    Move<vk::VkCommandBuffer> m_cmdBuffer;
 };
 
 ShaderCaseInstance::ShaderCaseInstance(Context &context, const ShaderCaseSpecification &spec)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context,
+                                   spec.caseType == glu::sl::CASETYPE_COMPUTE_ONLY ? COMPUTE_QUEUE : GRAPHICS_QUEUE)
     , m_spec(spec)
-
-    , m_posNdxBuffer(createBuffer(context, (vk::VkDeviceSize)TOTAL_POS_NDX_SIZE,
-                                  vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT | vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT))
-    , m_posNdxMem(vk::bindBuffer(context.getDeviceInterface(), context.getDevice(), m_context.getDefaultAllocator(),
-                                 *m_posNdxBuffer, vk::MemoryRequirement::HostVisible))
-
     , m_inputLayout(computeStd430Layout(spec.values.inputs))
-    , m_inputBuffer(m_inputLayout.size > 0 ? createBuffer(context, (vk::VkDeviceSize)m_inputLayout.size,
-                                                          vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT) :
-                                             Move<vk::VkBuffer>())
-    , m_inputMem(m_inputLayout.size > 0 ?
-                     vk::bindBuffer(context.getDeviceInterface(), context.getDevice(), m_context.getDefaultAllocator(),
-                                    *m_inputBuffer, vk::MemoryRequirement::HostVisible) :
-                     MovePtr<vk::Allocation>())
-
     , m_referenceLayout(computeStd140Layout(spec.values.outputs))
-    , m_referenceBuffer(m_referenceLayout.size > 0 ? createBuffer(context, (vk::VkDeviceSize)m_referenceLayout.size,
-                                                                  vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) :
-                                                     Move<vk::VkBuffer>())
-    , m_referenceMem(m_referenceLayout.size > 0 ? vk::bindBuffer(context.getDeviceInterface(), context.getDevice(),
-                                                                 m_context.getDefaultAllocator(), *m_referenceBuffer,
-                                                                 vk::MemoryRequirement::HostVisible) :
-                                                  MovePtr<vk::Allocation>())
-
     , m_uniformLayout(computeStd140Layout(spec.values.uniforms))
-    , m_uniformBuffer(m_uniformLayout.size > 0 ? createBuffer(context, (vk::VkDeviceSize)m_uniformLayout.size,
-                                                              vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) :
-                                                 Move<vk::VkBuffer>())
-    , m_uniformMem(m_uniformLayout.size > 0 ? vk::bindBuffer(context.getDeviceInterface(), context.getDevice(),
-                                                             m_context.getDefaultAllocator(), *m_uniformBuffer,
-                                                             vk::MemoryRequirement::HostVisible) :
-                                              MovePtr<vk::Allocation>())
-
-    , m_rtFormat(getRenderTargetFormat(spec.outputFormat))
-    , m_outputCount(((uint32_t)m_spec.values.outputs.size() == 0 || m_spec.outputType == glu::sl::OUTPUT_RESULT) ?
-                        1 :
-                        (uint32_t)m_spec.values.outputs.size())
-    , m_rtImage()
-    , m_rtMem()
-    , m_rtView()
-
-    , m_readImageBuffer()
-    , m_readImageMem()
-
-    , m_renderPass(createRenderPass(context, m_rtFormat, m_outputCount))
-    , m_framebuffer()
-    , m_program(context, spec)
-    , m_descriptorSetLayout(createDescriptorSetLayout(context, m_program.getStages()))
-    , m_pipelineLayout(createPipelineLayout(context, *m_descriptorSetLayout))
-    , m_pipeline(createPipeline(context, spec.values.inputs, m_inputLayout, m_program, *m_renderPass, *m_pipelineLayout,
-                                tcu::UVec2(RENDER_WIDTH, RENDER_HEIGHT), m_outputCount))
-
-    , m_descriptorPool(createDescriptorPool(context))
-    , m_descriptorSet(allocateDescriptorSet(context, *m_descriptorPool, *m_descriptorSetLayout))
-
-    , m_cmdPool(createCommandPool(context))
-    , m_cmdBuffer(allocateCommandBuffer(context, *m_cmdPool))
-
-    , m_subCaseNdx(0)
+    , m_rtFormat(vk::VK_FORMAT_UNDEFINED)
+    , m_outputCount(0)
 {
-    {
-        // Initialize the resources for each color attachment needed by the shader
-        for (uint32_t outNdx = 0; outNdx < m_outputCount; outNdx++)
-        {
-            m_rtImage[outNdx] =
-                createImage2D(context, RENDER_WIDTH, RENDER_HEIGHT, m_rtFormat, vk::VK_IMAGE_TILING_OPTIMAL,
-                              vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-            m_rtMem[outNdx]  = allocateAndBindMemory(context, *m_rtImage[outNdx], vk::MemoryRequirement::Any);
-            m_rtView[outNdx] = createAttachmentView(context, *m_rtImage[outNdx], m_rtFormat);
+    if (m_spec.caseType == glu::sl::CASETYPE_COMPUTE_ONLY)
+        return;
 
-            m_readImageBuffer[outNdx] = createBuffer(
-                context,
-                (vk::VkDeviceSize)(RENDER_WIDTH * RENDER_HEIGHT * tcu::getPixelSize(vk::mapVkFormat(m_rtFormat))),
-                vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-            m_readImageMem[outNdx] =
-                vk::bindBuffer(context.getDeviceInterface(), context.getDevice(), m_context.getDefaultAllocator(),
-                               *m_readImageBuffer[outNdx], vk::MemoryRequirement::HostVisible);
-        }
-        m_framebuffer = createFramebuffer(context, *m_renderPass, m_rtView, m_outputCount, RENDER_WIDTH, RENDER_HEIGHT);
+    const vk::DeviceInterface &vkd = context.getDeviceInterface();
+    const vk::VkDevice device      = context.getDevice();
+
+    m_posNdxBuffer = createBuffer(context, (vk::VkDeviceSize)TOTAL_POS_NDX_SIZE,
+                                  vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT | vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    m_posNdxMem =
+        vk::bindBuffer(vkd, device, context.getDefaultAllocator(), *m_posNdxBuffer, vk::MemoryRequirement::HostVisible);
+
+    if (m_inputLayout.size > 0)
+    {
+        m_inputBuffer =
+            createBuffer(context, (vk::VkDeviceSize)m_inputLayout.size, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        m_inputMem = vk::bindBuffer(vkd, device, context.getDefaultAllocator(), *m_inputBuffer,
+                                    vk::MemoryRequirement::HostVisible);
     }
 
-    const vk::DeviceInterface &vkd  = context.getDeviceInterface();
-    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
-
+    if (m_referenceLayout.size > 0)
     {
-        const Vec2 s_positions[]   = {Vec2(-1.0f, -1.0f), Vec2(-1.0f, +1.0f), Vec2(+1.0f, -1.0f), Vec2(+1.0f, +1.0f)};
-        const uint16_t s_indices[] = {0, 1, 2, 1, 3, 2};
-
-        DE_STATIC_ASSERT(sizeof(s_positions) == POSITIONS_SIZE);
-        DE_STATIC_ASSERT(sizeof(s_indices) == INDICES_SIZE);
-
-        deMemcpy((uint8_t *)m_posNdxMem->getHostPtr() + POSITIONS_OFFSET, &s_positions[0], sizeof(s_positions));
-        deMemcpy((uint8_t *)m_posNdxMem->getHostPtr() + INDICES_OFFSET, &s_indices[0], sizeof(s_indices));
-
-        flushAlloc(m_context.getDeviceInterface(), context.getDevice(), *m_posNdxMem);
+        m_referenceBuffer =
+            createBuffer(context, (vk::VkDeviceSize)m_referenceLayout.size, vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+        m_referenceMem = vk::bindBuffer(vkd, device, context.getDefaultAllocator(), *m_referenceBuffer,
+                                        vk::MemoryRequirement::HostVisible);
     }
+
+    if (m_uniformLayout.size > 0)
+    {
+        m_uniformBuffer =
+            createBuffer(context, (vk::VkDeviceSize)m_uniformLayout.size, vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+        m_uniformMem = vk::bindBuffer(vkd, device, context.getDefaultAllocator(), *m_uniformBuffer,
+                                      vk::MemoryRequirement::HostVisible);
+    }
+
+    m_rtFormat    = getRenderTargetFormat(spec.outputFormat);
+    m_outputCount = ((uint32_t)m_spec.values.outputs.size() == 0 || m_spec.outputType == glu::sl::OUTPUT_RESULT) ?
+                        1 :
+                        (uint32_t)m_spec.values.outputs.size();
+
+    for (uint32_t outNdx = 0; outNdx < m_outputCount; outNdx++)
+    {
+        m_rtImage[outNdx] =
+            createImage2D(context, RENDER_WIDTH, RENDER_HEIGHT, m_rtFormat, vk::VK_IMAGE_TILING_OPTIMAL,
+                          vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+        m_rtMem[outNdx]  = allocateAndBindMemory(context, *m_rtImage[outNdx], vk::MemoryRequirement::Any);
+        m_rtView[outNdx] = createAttachmentView(context, *m_rtImage[outNdx], m_rtFormat);
+
+        m_readImageBuffer[outNdx] = createBuffer(
+            context, (vk::VkDeviceSize)(RENDER_WIDTH * RENDER_HEIGHT * tcu::getPixelSize(vk::mapVkFormat(m_rtFormat))),
+            vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+        m_readImageMem[outNdx] = vk::bindBuffer(vkd, device, context.getDefaultAllocator(), *m_readImageBuffer[outNdx],
+                                                vk::MemoryRequirement::HostVisible);
+    }
+
+    m_renderPass  = createRenderPass(context, m_rtFormat, m_outputCount);
+    m_framebuffer = createFramebuffer(context, *m_renderPass, m_rtView, m_outputCount, RENDER_WIDTH, RENDER_HEIGHT);
+    m_program     = MovePtr<PipelineProgram>(new PipelineProgram(context, spec));
+    m_descriptorSetLayout = createDescriptorSetLayout(context, m_program->getStages());
+    m_pipelineLayout      = createPipelineLayout(context, *m_descriptorSetLayout);
+    m_pipeline            = createPipeline(context, spec.values.inputs, m_inputLayout, *m_program, *m_renderPass,
+                                           *m_pipelineLayout, tcu::UVec2(RENDER_WIDTH, RENDER_HEIGHT), m_outputCount);
+
+    m_descriptorPool = createDescriptorPool(context);
+    m_descriptorSet  = allocateDescriptorSet(context, *m_descriptorPool, *m_descriptorSetLayout);
+
+    m_cmdPool   = createCommandPool(context);
+    m_cmdBuffer = allocateCommandBuffer(context, *m_cmdPool);
 
     if (!m_spec.values.uniforms.empty())
     {
@@ -1399,7 +1469,7 @@ ShaderCaseInstance::ShaderCaseInstance(Context &context, const ShaderCaseSpecifi
         vk::DescriptorSetUpdateBuilder()
             .writeSingle(*m_descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(USER_UNIFORM_BINDING),
                          vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufInfo)
-            .update(vkd, m_context.getDevice());
+            .update(vkd, device);
     }
 
     if (!m_spec.values.outputs.empty())
@@ -1411,10 +1481,23 @@ ShaderCaseInstance::ShaderCaseInstance(Context &context, const ShaderCaseSpecifi
         vk::DescriptorSetUpdateBuilder()
             .writeSingle(*m_descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(REFERENCE_UNIFORM_BINDING),
                          vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufInfo)
-            .update(vkd, m_context.getDevice());
+            .update(vkd, device);
     }
 
-    // Record command buffer
+    {
+        const Vec2 s_positions[]   = {Vec2(-1.0f, -1.0f), Vec2(-1.0f, +1.0f), Vec2(+1.0f, -1.0f), Vec2(+1.0f, +1.0f)};
+        const uint16_t s_indices[] = {0, 1, 2, 1, 3, 2};
+
+        DE_STATIC_ASSERT(sizeof(s_positions) == POSITIONS_SIZE);
+        DE_STATIC_ASSERT(sizeof(s_indices) == INDICES_SIZE);
+
+        deMemcpy((uint8_t *)m_posNdxMem->getHostPtr() + POSITIONS_OFFSET, &s_positions[0], sizeof(s_positions));
+        deMemcpy((uint8_t *)m_posNdxMem->getHostPtr() + INDICES_OFFSET, &s_indices[0], sizeof(s_indices));
+
+        flushAlloc(vkd, device, *m_posNdxMem);
+    }
+
+    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
     beginCommandBuffer(vkd, *m_cmdBuffer, 0u);
 
@@ -1604,86 +1687,270 @@ bool checkResultImageWithReference(const ConstPixelBufferAccess &result, tcu::IV
 
     return true;
 }
-TestStatus ShaderCaseInstance::iterate(void)
+TestStatus ShaderCaseInstance::queuePass(const QueueData &queueData)
+{
+    if (m_spec.caseType == glu::sl::CASETYPE_COMPUTE_ONLY)
+        return computePass(queueData);
+    else
+        return graphicsPass(queueData);
+}
+
+TestStatus ShaderCaseInstance::graphicsPass(const QueueData &queueData)
 {
     const vk::DeviceInterface &vkd = m_context.getDeviceInterface();
     const vk::VkDevice device      = m_context.getDevice();
-    const vk::VkQueue queue        = m_context.getUniversalQueue();
+    const int numSubCases          = getNumSubCases(m_spec.values);
 
-    if (!m_spec.values.inputs.empty())
-        writeValuesToMem(m_context, *m_inputMem, m_inputLayout, m_spec.values.inputs, m_subCaseNdx);
-
-    if (!m_spec.values.outputs.empty())
-        writeValuesToMem(m_context, *m_referenceMem, m_referenceLayout, m_spec.values.outputs, m_subCaseNdx);
-
-    if (!m_spec.values.uniforms.empty())
-        writeValuesToMem(m_context, *m_uniformMem, m_uniformLayout, m_spec.values.uniforms, m_subCaseNdx);
-
-    submitCommandsAndWait(vkd, device, queue, m_cmdBuffer.get());
-
-    // Result was checked in fragment shader
-    if (m_spec.outputType == glu::sl::OUTPUT_RESULT)
+    for (int subCaseNdx = 0; subCaseNdx < numSubCases; subCaseNdx++)
     {
-        const ConstPixelBufferAccess imgAccess(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8),
-                                               RENDER_WIDTH, RENDER_HEIGHT, 1, m_readImageMem[0]->getHostPtr());
+        if (!m_spec.values.inputs.empty())
+            writeValuesToMem(m_context, *m_inputMem, m_inputLayout, m_spec.values.inputs, subCaseNdx);
 
-        invalidateAlloc(vkd, device, *m_readImageMem[0]);
+        if (!m_spec.values.outputs.empty())
+            writeValuesToMem(m_context, *m_referenceMem, m_referenceLayout, m_spec.values.outputs, subCaseNdx);
 
-        if (!checkResultImage(imgAccess))
+        if (!m_spec.values.uniforms.empty())
+            writeValuesToMem(m_context, *m_uniformMem, m_uniformLayout, m_spec.values.uniforms, subCaseNdx);
+
+        submitCommandsAndWait(vkd, device, queueData.handle, m_cmdBuffer.get());
+
+        if (m_spec.outputType == glu::sl::OUTPUT_RESULT)
         {
-            TestLog &log = m_context.getTestContext().getLog();
+            const ConstPixelBufferAccess imgAccess(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8),
+                                                   RENDER_WIDTH, RENDER_HEIGHT, 1, m_readImageMem[0]->getHostPtr());
 
-            log << TestLog::Message << "ERROR: Got non-white pixels on sub-case " << m_subCaseNdx << TestLog::EndMessage
-                << TestLog::Image("Result", "Result", imgAccess);
+            invalidateAlloc(vkd, device, *m_readImageMem[0]);
 
-            dumpValues(log, m_spec.values, m_subCaseNdx);
-
-            return TestStatus::fail(string("Got invalid pixels at sub-case ") + de::toString(m_subCaseNdx));
-        }
-    }
-    // Result was written to color buffer
-    else
-    {
-        for (uint32_t outNdx = 0; outNdx < m_outputCount; outNdx++)
-        {
-            const ConstPixelBufferAccess imgAccess(vk::mapVkFormat(m_rtFormat), RENDER_WIDTH, RENDER_HEIGHT, 1,
-                                                   m_readImageMem[outNdx]->getHostPtr());
-            const DataType dataType = m_spec.values.outputs[outNdx].type.getBasicType();
-            const int numComponents = getDataTypeScalarSize(dataType);
-            tcu::IVec4 reference(0, 0, 0, 1);
-
-            for (int refNdx = 0; refNdx < numComponents; refNdx++)
-            {
-                if (isDataTypeFloatOrVec(dataType))
-                    reference[refNdx] =
-                        (int)m_spec.values.outputs[outNdx].elements[m_subCaseNdx * numComponents + refNdx].float32;
-                else if (isDataTypeIntOrIVec(dataType))
-                    reference[refNdx] =
-                        m_spec.values.outputs[outNdx].elements[m_subCaseNdx * numComponents + refNdx].int32;
-                else
-                    DE_FATAL("Unknown data type");
-            }
-
-            invalidateAlloc(vkd, device, *m_readImageMem[outNdx]);
-
-            if (!checkResultImageWithReference(imgAccess, reference))
+            if (!checkResultImage(imgAccess))
             {
                 TestLog &log = m_context.getTestContext().getLog();
 
-                log << TestLog::Message << "ERROR: Got nonmatching pixels on sub-case " << m_subCaseNdx << " output "
-                    << outNdx << TestLog::EndMessage << TestLog::Image("Result", "Result", imgAccess);
+                log << TestLog::Message << "ERROR: Got non-white pixels on sub-case " << subCaseNdx
+                    << TestLog::EndMessage << TestLog::Image("Result", "Result", imgAccess);
 
-                dumpValues(log, m_spec.values, m_subCaseNdx);
+                dumpValues(log, m_spec.values, subCaseNdx);
 
-                return TestStatus::fail(string("Got invalid pixels at sub-case ") + de::toString(m_subCaseNdx));
+                return TestStatus::fail(string("Got invalid pixels at sub-case ") + de::toString(subCaseNdx));
+            }
+        }
+        else
+        {
+            for (uint32_t outNdx = 0; outNdx < m_outputCount; outNdx++)
+            {
+                const ConstPixelBufferAccess imgAccess(vk::mapVkFormat(m_rtFormat), RENDER_WIDTH, RENDER_HEIGHT, 1,
+                                                       m_readImageMem[outNdx]->getHostPtr());
+                const DataType dataType = m_spec.values.outputs[outNdx].type.getBasicType();
+                const int numComponents = getDataTypeScalarSize(dataType);
+                tcu::IVec4 reference(0, 0, 0, 1);
+
+                for (int refNdx = 0; refNdx < numComponents; refNdx++)
+                {
+                    if (isDataTypeFloatOrVec(dataType))
+                        reference[refNdx] =
+                            (int)m_spec.values.outputs[outNdx].elements[subCaseNdx * numComponents + refNdx].float32;
+                    else if (isDataTypeIntOrIVec(dataType))
+                        reference[refNdx] =
+                            m_spec.values.outputs[outNdx].elements[subCaseNdx * numComponents + refNdx].int32;
+                    else
+                        DE_FATAL("Unknown data type");
+                }
+
+                invalidateAlloc(vkd, device, *m_readImageMem[outNdx]);
+
+                if (!checkResultImageWithReference(imgAccess, reference))
+                {
+                    TestLog &log = m_context.getTestContext().getLog();
+
+                    log << TestLog::Message << "ERROR: Got nonmatching pixels on sub-case " << subCaseNdx << " output "
+                        << outNdx << TestLog::EndMessage << TestLog::Image("Result", "Result", imgAccess);
+
+                    dumpValues(log, m_spec.values, subCaseNdx);
+
+                    return TestStatus::fail(string("Got invalid pixels at sub-case ") + de::toString(subCaseNdx));
+                }
             }
         }
     }
 
-    if (++m_subCaseNdx < getNumSubCases(m_spec.values))
-        return TestStatus::incomplete();
-    else
-        return TestStatus::pass("All sub-cases passed");
+    return TestStatus::pass("All sub-cases passed");
+}
+
+TestStatus ShaderCaseInstance::computePass(const QueueData &queueData)
+{
+    const vk::DeviceInterface &vkd = m_context.getDeviceInterface();
+    const vk::VkDevice device      = m_context.getDevice();
+    const int numSubCases          = getNumSubCases(m_spec.values);
+
+    Move<vk::VkCommandPool> cmdPool =
+        vk::createCommandPool(vkd, device, (vk::VkCommandPoolCreateFlags)0u, queueData.familyIndex);
+
+    Move<vk::VkShaderModule> computeModule =
+        vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("compute_0"), 0u);
+
+    Move<vk::VkBuffer> inputBuffer;
+    MovePtr<vk::Allocation> inputMem;
+    if (m_inputLayout.size > 0)
+    {
+        inputBuffer =
+            createBuffer(m_context, (vk::VkDeviceSize)m_inputLayout.size, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+        inputMem = vk::bindBuffer(vkd, device, m_context.getDefaultAllocator(), *inputBuffer,
+                                  vk::MemoryRequirement::HostVisible);
+    }
+
+    Move<vk::VkBuffer> referenceBuffer;
+    MovePtr<vk::Allocation> referenceMem;
+    if (m_referenceLayout.size > 0)
+    {
+        referenceBuffer =
+            createBuffer(m_context, (vk::VkDeviceSize)m_referenceLayout.size, vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+        referenceMem = vk::bindBuffer(vkd, device, m_context.getDefaultAllocator(), *referenceBuffer,
+                                      vk::MemoryRequirement::HostVisible);
+    }
+
+    Move<vk::VkBuffer> uniformBuffer;
+    MovePtr<vk::Allocation> uniformMem;
+    if (m_uniformLayout.size > 0)
+    {
+        uniformBuffer =
+            createBuffer(m_context, (vk::VkDeviceSize)m_uniformLayout.size, vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+        uniformMem = vk::bindBuffer(vkd, device, m_context.getDefaultAllocator(), *uniformBuffer,
+                                    vk::MemoryRequirement::HostVisible);
+    }
+
+    Move<vk::VkBuffer> resultBuffer =
+        createBuffer(m_context, (vk::VkDeviceSize)sizeof(uint32_t), vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    MovePtr<vk::Allocation> resultMem =
+        vk::bindBuffer(vkd, device, m_context.getDefaultAllocator(), *resultBuffer, vk::MemoryRequirement::HostVisible);
+
+    Move<vk::VkDescriptorSetLayout> dsLayout =
+        vk::DescriptorSetLayoutBuilder()
+            .addSingleBinding(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT)
+            .addSingleBinding(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT)
+            .addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT)
+            .addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vkd, device);
+
+    Move<vk::VkPipelineLayout> pipelineLayout = createPipelineLayout(m_context, *dsLayout);
+
+    const vk::VkComputePipelineCreateInfo pipelineInfo = {vk::VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+                                                          nullptr,
+                                                          0u,
+                                                          {vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                                                           nullptr, 0u, vk::VK_SHADER_STAGE_COMPUTE_BIT, *computeModule,
+                                                           "main", nullptr},
+                                                          *pipelineLayout,
+                                                          VK_NULL_HANDLE,
+                                                          0};
+    Move<vk::VkPipeline> pipeline = vk::createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineInfo);
+
+    Move<vk::VkDescriptorPool> dsPool =
+        vk::DescriptorPoolBuilder()
+            .addType(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2u)
+            .addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2u)
+            .build(vkd, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    Move<vk::VkDescriptorSet> dsSet = allocateDescriptorSet(m_context, *dsPool, *dsLayout);
+
+    {
+        vk::DescriptorSetUpdateBuilder dsUpdate;
+
+        if (m_inputLayout.size > 0)
+        {
+            const vk::VkDescriptorBufferInfo bufInfo = {*inputBuffer, 0u, (vk::VkDeviceSize)m_inputLayout.size};
+            dsUpdate.writeSingle(*dsSet, vk::DescriptorSetUpdateBuilder::Location::binding(INPUT_STORAGE_BINDING),
+                                 vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufInfo);
+        }
+
+        if (m_referenceLayout.size > 0)
+        {
+            const vk::VkDescriptorBufferInfo bufInfo = {*referenceBuffer, 0u, (vk::VkDeviceSize)m_referenceLayout.size};
+            dsUpdate.writeSingle(*dsSet, vk::DescriptorSetUpdateBuilder::Location::binding(REFERENCE_UNIFORM_BINDING),
+                                 vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufInfo);
+        }
+
+        if (m_uniformLayout.size > 0)
+        {
+            const vk::VkDescriptorBufferInfo bufInfo = {*uniformBuffer, 0u, (vk::VkDeviceSize)m_uniformLayout.size};
+            dsUpdate.writeSingle(*dsSet, vk::DescriptorSetUpdateBuilder::Location::binding(USER_UNIFORM_BINDING),
+                                 vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufInfo);
+        }
+
+        {
+            const vk::VkDescriptorBufferInfo bufInfo = {*resultBuffer, 0u, (vk::VkDeviceSize)sizeof(uint32_t)};
+            dsUpdate.writeSingle(*dsSet, vk::DescriptorSetUpdateBuilder::Location::binding(RESULT_STORAGE_BINDING),
+                                 vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufInfo);
+        }
+
+        dsUpdate.update(vkd, device);
+    }
+
+    Move<vk::VkCommandBuffer> cmdBuffer = allocateCommandBuffer(m_context, *cmdPool);
+
+    beginCommandBuffer(vkd, *cmdBuffer, 0u);
+
+    {
+        const vk::VkMemoryBarrier hostWriteBarrier = {
+            vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+            nullptr,
+            vk::VK_ACCESS_HOST_WRITE_BIT,
+            vk::VK_ACCESS_SHADER_READ_BIT | vk::VK_ACCESS_UNIFORM_READ_BIT,
+        };
+        vkd.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                               (vk::VkDependencyFlags)0, 1, &hostWriteBarrier, 0, nullptr, 0, nullptr);
+    }
+
+    vkd.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+    vkd.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &*dsSet, 0u,
+                              nullptr);
+    vkd.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
+
+    {
+        const vk::VkMemoryBarrier shaderWriteBarrier = {
+            vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+            nullptr,
+            vk::VK_ACCESS_SHADER_WRITE_BIT,
+            vk::VK_ACCESS_HOST_READ_BIT,
+        };
+        vkd.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
+                               (vk::VkDependencyFlags)0, 1, &shaderWriteBarrier, 0, nullptr, 0, nullptr);
+    }
+
+    endCommandBuffer(vkd, *cmdBuffer);
+
+    for (int subCaseNdx = 0; subCaseNdx < numSubCases; subCaseNdx++)
+    {
+        if (!m_spec.values.inputs.empty())
+            writeValuesToMem(m_context, *inputMem, m_inputLayout, m_spec.values.inputs, subCaseNdx);
+
+        if (!m_spec.values.outputs.empty())
+            writeValuesToMem(m_context, *referenceMem, m_referenceLayout, m_spec.values.outputs, subCaseNdx);
+
+        if (!m_spec.values.uniforms.empty())
+            writeValuesToMem(m_context, *uniformMem, m_uniformLayout, m_spec.values.uniforms, subCaseNdx);
+
+        deMemset(resultMem->getHostPtr(), 0, sizeof(uint32_t));
+        flushAlloc(vkd, device, *resultMem);
+
+        submitCommandsAndWait(vkd, device, queueData.handle, *cmdBuffer);
+
+        invalidateAlloc(vkd, device, *resultMem);
+        uint32_t result = 0;
+        deMemcpy(&result, resultMem->getHostPtr(), sizeof(uint32_t));
+
+        if (result != 1u)
+        {
+            TestLog &log = m_context.getTestContext().getLog();
+
+            log << TestLog::Message << "ERROR: Compute shader returned " << result << " (expected 1) on sub-case "
+                << subCaseNdx << " queue family " << queueData.familyIndex << TestLog::EndMessage;
+
+            dumpValues(log, m_spec.values, subCaseNdx);
+
+            return TestStatus::fail(string("Compute test failed at sub-case ") + de::toString(subCaseNdx));
+        }
+    }
+
+    return TestStatus::pass("All sub-cases passed");
 }
 
 class ShaderCase : public TestCase
@@ -1692,7 +1959,13 @@ public:
     ShaderCase(tcu::TestContext &testCtx, const string &name, const ShaderCaseSpecification &spec);
 
     void initPrograms(SourceCollections &programCollection) const;
+    void checkSupport(Context &context) const;
     TestInstance *createInstance(Context &context) const;
+
+    const ShaderCaseSpecification &getSpec(void) const
+    {
+        return m_spec;
+    }
 
 private:
     const ShaderCaseSpecification m_spec;
@@ -1701,6 +1974,10 @@ private:
 ShaderCase::ShaderCase(tcu::TestContext &testCtx, const string &name, const ShaderCaseSpecification &spec)
     : TestCase(testCtx, name)
     , m_spec(spec)
+{
+}
+
+void ShaderCase::checkSupport(Context &) const
 {
 }
 
@@ -1713,7 +1990,18 @@ void ShaderCase::initPrograms(SourceCollections &sourceCollection) const
     if (m_spec.expectResult != glu::sl::EXPECT_PASS)
         TCU_THROW(InternalError, "Only EXPECT_PASS is supported");
 
-    if (m_spec.caseType == glu::sl::CASETYPE_VERTEX_ONLY)
+    if (m_spec.caseType == glu::sl::CASETYPE_COMPUTE_ONLY)
+    {
+        DE_ASSERT(m_spec.programs.size() == 1 &&
+                  m_spec.programs[0].sources.sources[glu::SHADERTYPE_VERTEX].size() == 1);
+
+        const string computeSrc =
+            specializeComputeShader(m_spec, m_spec.programs[0].sources.sources[glu::SHADERTYPE_VERTEX][0]);
+
+        sourceCollection.glslSources.add("compute_0") << glu::ComputeSource(computeSrc);
+        return;
+    }
+    else if (m_spec.caseType == glu::sl::CASETYPE_VERTEX_ONLY)
     {
         DE_ASSERT(m_spec.programs.size() == 1 &&
                   m_spec.programs[0].sources.sources[glu::SHADERTYPE_VERTEX].size() == 1);
@@ -1781,6 +2069,11 @@ public:
     {
         (void)description;
         return new ShaderCase(m_testCtx, name, spec);
+    }
+
+    bool supportsComputeOnlyCase() const
+    {
+        return true;
     }
 
 private:

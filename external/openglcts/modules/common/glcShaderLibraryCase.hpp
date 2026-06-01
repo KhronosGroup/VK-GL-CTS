@@ -48,6 +48,7 @@ public:
         CASETYPE_COMPLETE = 0,  //!< Has both shaders.
         CASETYPE_VERTEX_ONLY,   //!< Has only vertex shader.
         CASETYPE_FRAGMENT_ONLY, //!< Has only fragment shader.
+        CASETYPE_COMPUTE_ONLY,  //!< Has only compute shader.
 
         CASETYPE_LAST
     };
