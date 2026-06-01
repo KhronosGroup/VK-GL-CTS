@@ -152,6 +152,16 @@ const tcu::CompressedTexture &CompressedTextureForBlit::getCompressedTexture() c
     return m_compressedTexture;
 }
 
+static VkExtent3D getBlittingImageExtent(const ImageParms &parms)
+{
+    const VkExtent3D extent = {
+        parms.extent.width,
+        (parms.imageType != VK_IMAGE_TYPE_1D) ? parms.extent.height : 1u,
+        (parms.imageType == VK_IMAGE_TYPE_3D) ? parms.extent.depth : 1u,
+    };
+    return extent;
+}
+
 // Copy from image to image with scaling.
 
 class BlittingImages : public CopiesAndBlittingTestInstanceWithSparseSemaphore
@@ -240,39 +250,39 @@ BlittingImages::BlittingImages(Context &context, TestParams params)
     const auto dstCreateFlags = getCreateFlags(m_params.dst.image);
 
     const VkImageCreateInfo sourceImageParams = {
-        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                             // const void* pNext;
-        srcCreateFlags,                      // VkImageCreateFlags flags;
-        m_params.src.image.imageType,        // VkImageType imageType;
-        m_params.src.image.format,           // VkFormat format;
-        getExtent3D(m_params.src.image),     // VkExtent3D extent;
-        1u,                                  // uint32_t mipLevels;
-        getArraySize(m_params.src.image),    // uint32_t arraySize;
-        VK_SAMPLE_COUNT_1_BIT,               // uint32_t samples;
-        m_params.src.image.tiling,           // VkImageTiling tiling;
-        imageUsage,                          // VkImageUsageFlags usage;
-        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
-        0u,                                  // uint32_t queueFamilyIndexCount;
-        nullptr,                             // const uint32_t* pQueueFamilyIndices;
-        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,        // VkStructureType sType;
+        nullptr,                                    // const void* pNext;
+        srcCreateFlags,                             // VkImageCreateFlags flags;
+        m_params.src.image.imageType,               // VkImageType imageType;
+        m_params.src.image.format,                  // VkFormat format;
+        getBlittingImageExtent(m_params.src.image), // VkExtent3D extent;
+        1u,                                         // uint32_t mipLevels;
+        getArraySize(m_params.src.image),           // uint32_t arraySize;
+        VK_SAMPLE_COUNT_1_BIT,                      // uint32_t samples;
+        m_params.src.image.tiling,                  // VkImageTiling tiling;
+        imageUsage,                                 // VkImageUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,                  // VkSharingMode sharingMode;
+        0u,                                         // uint32_t queueFamilyIndexCount;
+        nullptr,                                    // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,                  // VkImageLayout initialLayout;
     };
 
     const VkImageCreateInfo destinationImageParams = {
-        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                             // const void* pNext;
-        dstCreateFlags,                      // VkImageCreateFlags flags;
-        m_params.dst.image.imageType,        // VkImageType imageType;
-        m_params.dst.image.format,           // VkFormat format;
-        getExtent3D(m_params.dst.image),     // VkExtent3D extent;
-        1u,                                  // uint32_t mipLevels;
-        getArraySize(m_params.dst.image),    // uint32_t arraySize;
-        VK_SAMPLE_COUNT_1_BIT,               // uint32_t samples;
-        m_params.dst.image.tiling,           // VkImageTiling tiling;
-        imageUsage,                          // VkImageUsageFlags usage;
-        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
-        0u,                                  // uint32_t queueFamilyIndexCount;
-        nullptr,                             // const uint32_t* pQueueFamilyIndices;
-        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,        // VkStructureType sType;
+        nullptr,                                    // const void* pNext;
+        dstCreateFlags,                             // VkImageCreateFlags flags;
+        m_params.dst.image.imageType,               // VkImageType imageType;
+        m_params.dst.image.format,                  // VkFormat format;
+        getBlittingImageExtent(m_params.dst.image), // VkExtent3D extent;
+        1u,                                         // uint32_t mipLevels;
+        getArraySize(m_params.dst.image),           // uint32_t arraySize;
+        VK_SAMPLE_COUNT_1_BIT,                      // uint32_t samples;
+        m_params.dst.image.tiling,                  // VkImageTiling tiling;
+        imageUsage,                                 // VkImageUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,                  // VkSharingMode sharingMode;
+        0u,                                         // uint32_t queueFamilyIndexCount;
+        nullptr,                                    // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,                  // VkImageLayout initialLayout;
     };
 
     // Create source image
