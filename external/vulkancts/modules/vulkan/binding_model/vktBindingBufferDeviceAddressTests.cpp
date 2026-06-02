@@ -34,6 +34,8 @@
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
 
+#include "vktCustomInstancesDevices.hpp"
+
 #include "deDefs.h"
 #include "deRandom.hpp"
 #include "deUniquePtr.hpp"
@@ -115,6 +117,48 @@ struct CaseDef
     Layout layout;
     MemoryOffset memoryOffset;
 };
+
+static CustomDevice createBufferDeviceAddressCaptureDevice(Context &context, const InstanceWrapper &instance)
+{
+    // Any queue family will do for our purposes as we will only allocate memory and buffers on this device
+    const float queuePriority = 1.0f;
+    const VkDeviceQueueCreateInfo deviceQueueCreateInfos{
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                    // const void* pNext;
+        (VkDeviceQueueCreateFlags)0u,               // VkDeviceQueueCreateFlags flags;
+        0,                                          // uint32_t queueFamilyIndex;
+        1u,                                         // uint32_t queueCount;
+        &queuePriority,                             // const float* pQueuePriorities;
+    };
+
+    // Replicate default device extension list.
+    const auto extensionNames = context.getDeviceCreationExtensions();
+
+    // Enable BDA and BDA capture/replay
+    VkPhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures = initVulkanStructure();
+    bufferDeviceAddressFeatures.bufferDeviceAddress                         = VK_TRUE;
+    bufferDeviceAddressFeatures.bufferDeviceAddressCaptureReplay            = VK_TRUE;
+
+    // The test cases also rely on uniformBufferStandardLayout
+    VkPhysicalDeviceUniformBufferStandardLayoutFeatures uniformBufferStandardLayoutFeatures = initVulkanStructure();
+    uniformBufferStandardLayoutFeatures.uniformBufferStandardLayout                         = VK_TRUE;
+    bufferDeviceAddressFeatures.pNext = &uniformBufferStandardLayoutFeatures;
+
+    const VkDeviceCreateInfo deviceCreateInfo{
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,         // VkStructureType sType;
+        &bufferDeviceAddressFeatures,                 // const void* pNext;
+        (VkDeviceCreateFlags)0u,                      // VkDeviceCreateFlags flags;
+        1u,                                           // uint32_t queueCreateInfoCount;
+        &deviceQueueCreateInfos,                      // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
+        0u,                                           // uint32_t enabledLayerCount;
+        nullptr,                                      // const char* const* ppEnabledLayerNames;
+        static_cast<uint32_t>(extensionNames.size()), // uint32_t enabledExtensionCount;
+        extensionNames.data(),                        // const char* const* ppEnabledExtensionNames;
+        nullptr,                                      // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+    };
+
+    return instance.createCustomDevice(&deviceCreateInfo);
+}
 
 class BufferAddressTestInstance : public TestInstance
 {
@@ -581,11 +625,12 @@ VkBufferCreateInfo makeBufferCreateInfo(const void *pNext, const VkDeviceSize bu
 
 tcu::TestStatus BufferAddressTestInstance::iterate(void)
 {
-    const InstanceInterface &vki       = m_context.getInstanceInterface();
-    const DeviceInterface &vk          = m_context.getDeviceInterface();
-    const VkPhysicalDevice &physDevice = m_context.getPhysicalDevice();
-    const VkDevice device              = m_context.getDevice();
-    Allocator &allocator               = m_context.getDefaultAllocator();
+    const InstanceWrapper instance(m_context);
+    DeviceWrapper device(m_context);
+    const InstanceInterface &vki       = device.getInstanceDriver();
+    const DeviceInterface &vk          = device.getDriver();
+    const VkPhysicalDevice &physDevice = device.getPhysicalDevice();
+    Allocator &allocator               = device.getAllocator();
     const bool useKHR                  = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 
     const bool isComputeOnly = m_context.getTestContext().getCommandLine().isComputeOnly();
@@ -620,7 +665,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
     }
 #endif
 
-    m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &properties);
+    vki.getPhysicalDeviceProperties2(physDevice, &properties);
 
     VkPipelineBindPoint bindPoint;
 
@@ -760,35 +805,46 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
         allocFlagsInfo.pNext = &memoryOpaqueCaptureAddressAllocateInfo;
     }
 
+    // If this is a capture/replay test, then we have to allocate the buffer and memory objects
+    // on another device and then try to recreate them on the default device with the captured addresses
+    if (m_data.bufType == BT_REPLAY)
+    {
+        device = createBufferDeviceAddressCaptureDevice(m_context, instance);
+    }
+
     for (uint32_t i = 0; i < numBuffers; ++i)
     {
-        buffers[i] = VkBufferSp(new Unique<VkBuffer>(createBuffer(vk, device, &bufferCreateInfo)));
+        // Note that the functions in this block explicitly refer to the device/instance drivers and physical device
+        // as in capture/replay test cases the original allocation may happen on another, custom device created
+        // specifically for the purposes of the BDA capture, per above
+        buffers[i] = VkBufferSp(new Unique<VkBuffer>(createBuffer(device.getDriver(), device, &bufferCreateInfo)));
 
         // query opaque capture address before binding memory
         if (useKHR && m_data.bufType == BT_REPLAY)
         {
             bufferDeviceAddressInfo.buffer = **buffers[i];
-            opaqueBufferAddrs[i]           = vk.getBufferOpaqueCaptureAddress(device, &bufferDeviceAddressInfo);
+            opaqueBufferAddrs[i] = device.getDriver().getBufferOpaqueCaptureAddress(device, &bufferDeviceAddressInfo);
         }
 
-        VkMemoryRequirements memReq = getBufferMemoryRequirements(vk, device, **buffers[i]);
+        VkMemoryRequirements memReq = getBufferMemoryRequirements(device.getDriver(), device, **buffers[i]);
         if (offsetNonZero)
         {
             memoryOffset = memReq.alignment;
             memReq.size += memoryOffset;
         }
 
-        allocations[i] = AllocationSp(
-            allocateExtended(vki, vk, physDevice, device, memReq, MemoryRequirement::HostVisible, &allocFlagsInfo));
+        allocations[i] =
+            AllocationSp(allocateExtended(device.getInstanceDriver(), device.getDriver(), device.getPhysicalDevice(),
+                                          device, memReq, MemoryRequirement::HostVisible, &allocFlagsInfo));
 
         if (useKHR && m_data.bufType == BT_REPLAY)
         {
             deviceMemoryOpaqueCaptureAddressInfo.memory = allocations[i]->getMemory();
             opaqueMemoryAddrs[i] =
-                vk.getDeviceMemoryOpaqueCaptureAddress(device, &deviceMemoryOpaqueCaptureAddressInfo);
+                device.getDriver().getDeviceMemoryOpaqueCaptureAddress(device, &deviceMemoryOpaqueCaptureAddressInfo);
         }
 
-        VK_CHECK(vk.bindBufferMemory(device, **buffers[i], allocations[i]->getMemory(), memoryOffset));
+        VK_CHECK(device.getDriver().bindBufferMemory(device, **buffers[i], allocations[i]->getMemory(), memoryOffset));
     }
 
     if (m_data.bufType == BT_REPLAY)
@@ -796,12 +852,15 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
         for (uint32_t i = 0; i < numBuffers; ++i)
         {
             bufferDeviceAddressInfo.buffer = **buffers[i];
-            gpuAddrs[i]                    = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+            gpuAddrs[i] = device.getDriver().getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
         }
         buffers.clear();
         buffers.resize(numBuffers);
         allocations.clear();
         allocations.resize(numBuffers);
+
+        // Restore the device to the original default device (effectively destroys the device used for capture)
+        device = DeviceWrapper(m_context);
 
 #ifndef CTS_USES_VULKANSC
         bufferCreateInfo.pNext = useKHR ? (void *)&bufferOpaqueCaptureAddressCreateInfo : (void *)&addressCreateInfoEXT;
@@ -1399,10 +1458,11 @@ TestInstance *CaptureReplayTestCase::createInstance(Context &context) const
 
 tcu::TestStatus CaptureReplayTestInstance::iterate(void)
 {
-    const InstanceInterface &vki       = m_context.getInstanceInterface();
-    const DeviceInterface &vk          = m_context.getDeviceInterface();
-    const VkPhysicalDevice &physDevice = m_context.getPhysicalDevice();
-    const VkDevice device              = m_context.getDevice();
+    const InstanceWrapper instance(m_context);
+    DeviceWrapper device(m_context);
+    const InstanceInterface &vki       = device.getInstanceDriver();
+    const DeviceInterface &vk          = device.getDriver();
+    const VkPhysicalDevice &physDevice = device.getPhysicalDevice();
     const bool useKHR                  = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
     de::Random rng(m_seed);
 
@@ -1474,41 +1534,48 @@ tcu::TestStatus CaptureReplayTestInstance::iterate(void)
         allocFlagsInfo.pNext = &memoryOpaqueCaptureAddressAllocateInfo;
     }
 
+    // Use a separate device for the capture than the replay
+    device = createBufferDeviceAddressCaptureDevice(m_context, instance);
+
     for (uint32_t i = 0; i < numBuffers; ++i)
     {
         bufferCreateInfo.size = bufferSizes[i];
-        buffers[i]            = VkBufferSp(new Unique<VkBuffer>(createBuffer(vk, device, &bufferCreateInfo)));
+        buffers[i] = VkBufferSp(new Unique<VkBuffer>(createBuffer(device.getDriver(), device, &bufferCreateInfo)));
 
         // query opaque capture address before binding memory
         if (useKHR)
         {
             bufferDeviceAddressInfo.buffer = **buffers[i];
-            opaqueBufferAddrs[i]           = vk.getBufferOpaqueCaptureAddress(device, &bufferDeviceAddressInfo);
+            opaqueBufferAddrs[i] = device.getDriver().getBufferOpaqueCaptureAddress(device, &bufferDeviceAddressInfo);
         }
 
-        allocations[i] = AllocationSp(allocateExtended(vki, vk, physDevice, device,
-                                                       getBufferMemoryRequirements(vk, device, **buffers[i]),
-                                                       MemoryRequirement::HostVisible, &allocFlagsInfo));
+        allocations[i] =
+            AllocationSp(allocateExtended(device.getInstanceDriver(), device.getDriver(), device.getPhysicalDevice(),
+                                          device, getBufferMemoryRequirements(device.getDriver(), device, **buffers[i]),
+                                          MemoryRequirement::HostVisible, &allocFlagsInfo));
 
         if (useKHR)
         {
             deviceMemoryOpaqueCaptureAddressInfo.memory = allocations[i]->getMemory();
             opaqueMemoryAddrs[i] =
-                vk.getDeviceMemoryOpaqueCaptureAddress(device, &deviceMemoryOpaqueCaptureAddressInfo);
+                device.getDriver().getDeviceMemoryOpaqueCaptureAddress(device, &deviceMemoryOpaqueCaptureAddressInfo);
         }
 
-        VK_CHECK(vk.bindBufferMemory(device, **buffers[i], allocations[i]->getMemory(), 0));
+        VK_CHECK(device.getDriver().bindBufferMemory(device, **buffers[i], allocations[i]->getMemory(), 0));
     }
 
     for (uint32_t i = 0; i < numBuffers; ++i)
     {
         bufferDeviceAddressInfo.buffer = **buffers[i];
-        gpuAddrs[i]                    = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+        gpuAddrs[i]                    = device.getDriver().getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
     }
     buffers.clear();
     buffers.resize(numBuffers);
     allocations.clear();
     allocations.resize(numBuffers);
+
+    // Restore the device to the original default device (effectively destroys the device used for capture)
+    device = DeviceWrapper(m_context);
 
 #ifndef CTS_USES_VULKANSC
     bufferCreateInfo.pNext = useKHR ? (void *)&bufferOpaqueCaptureAddressCreateInfo : (void *)&addressCreateInfoEXT;
