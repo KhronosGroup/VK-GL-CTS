@@ -1221,6 +1221,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_pipeline_library_group_handles")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_portability_enumeration")
 	{
 		return;
@@ -1614,10 +1618,6 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	if (extName == "VK_NV_cooperative_matrix2")
 	{
 		functions.push_back("vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV");
-		return;
-	}
-	if (extName == "VK_NV_cooperative_matrix_decode_vector")
-	{
 		return;
 	}
 	if (extName == "VK_NV_cooperative_vector")
@@ -3718,6 +3718,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_pipeline_library_group_handles")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_portability_enumeration")
 	{
 		return;
@@ -4151,10 +4155,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_NV_cooperative_matrix2")
-	{
-		return;
-	}
-	if (extName == "VK_NV_cooperative_matrix_decode_vector")
 	{
 		return;
 	}
@@ -4774,6 +4774,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_present_mode_fifo_latest_ready",
 	"VK_KHR_opacity_micromap",
 	"VK_KHR_maintenance10",
+	"VK_KHR_pipeline_library_group_handles",
 	"VK_KHR_maintenance11",
 	"VK_NV_glsl_shader",
 	"VK_EXT_depth_range_unrestricted",
@@ -5065,7 +5066,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_SEC_throttle_hint",
 	"VK_ARM_data_graph_neural_accelerator_statistics",
 	"VK_EXT_primitive_restart_index",
-	"VK_NV_cooperative_matrix_decode_vector",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_KHR_ray_query",

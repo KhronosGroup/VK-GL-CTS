@@ -1,0 +1,18 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR": [
+            {
+                "features": [
+                    "pipelineLibraryGroupHandles"
+                ],
+                "requirements": [
+                    "VK_KHR_pipeline_library_group_handles"
+                ]
+            }
+        ]
+    }
+}

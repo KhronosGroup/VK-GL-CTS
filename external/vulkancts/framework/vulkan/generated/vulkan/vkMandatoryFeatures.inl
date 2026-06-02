@@ -556,10 +556,10 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_pipeline_executable_properties"))
 		addFeatures(&physicalDevicePipelineExecutablePropertiesFeaturesKHR);
 
-	// VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT for ext [VK_EXT_pipeline_library_group_handles]
-	vk::VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT physicalDevicePipelineLibraryGroupHandlesFeaturesEXT = initVulkanStructure();
-	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_pipeline_library_group_handles"))
-		addFeatures(&physicalDevicePipelineLibraryGroupHandlesFeaturesEXT);
+	// VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR, VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT for ext [VK_KHR_pipeline_library_group_handles, VK_EXT_pipeline_library_group_handles]
+	vk::VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR physicalDevicePipelineLibraryGroupHandlesFeaturesKHR = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_pipeline_library_group_handles", "VK_EXT_pipeline_library_group_handles"))
+		addFeatures(&physicalDevicePipelineLibraryGroupHandlesFeaturesKHR);
 
 	// VkPhysicalDevicePipelinePropertiesFeaturesEXT for ext [VK_EXT_pipeline_properties]
 	vk::VkPhysicalDevicePipelinePropertiesFeaturesEXT physicalDevicePipelinePropertiesFeaturesEXT = initVulkanStructure();
@@ -1773,14 +1773,14 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("scalarBlockLayout");
 	}
 
-	// VkPhysicalDeviceSubgroupSizeControlFeaturesEXT
+	// VkPhysicalDeviceSubgroupSizeControlFeatures
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_subgroup_size_control")) )
 	{
 		if ( physicalDeviceSubgroupSizeControlFeatures.subgroupSizeControl == VK_FALSE )
 			failMesages.push_back("subgroupSizeControl");
 	}
 
-	// VkPhysicalDeviceSubgroupSizeControlFeaturesEXT
+	// VkPhysicalDeviceSubgroupSizeControlFeatures
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_subgroup_size_control")) )
 	{
 		if ( physicalDeviceSubgroupSizeControlFeatures.computeFullSubgroups == VK_FALSE )
@@ -2011,7 +2011,7 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("privateData");
 	}
 
-	// VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT
+	// VkPhysicalDevicePipelineCreationCacheControlFeatures
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_pipeline_creation_cache_control")) )
 	{
 		if ( physicalDevicePipelineCreationCacheControlFeatures.pipelineCreationCacheControl == VK_FALSE )
@@ -2462,7 +2462,7 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	// VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_pipeline_library_group_handles")) )
 	{
-		if ( physicalDevicePipelineLibraryGroupHandlesFeaturesEXT.pipelineLibraryGroupHandles == VK_FALSE )
+		if ( physicalDevicePipelineLibraryGroupHandlesFeaturesKHR.pipelineLibraryGroupHandles == VK_FALSE )
 			failMesages.push_back("pipelineLibraryGroupHandles");
 	}
 

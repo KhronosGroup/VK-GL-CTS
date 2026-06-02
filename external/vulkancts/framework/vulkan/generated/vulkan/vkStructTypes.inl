@@ -7057,12 +7057,13 @@ struct VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR
 	VkBool32		pipelineExecutableInfo;
 };
 
-struct VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT
+struct VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		pipelineLibraryGroupHandles;
 };
+typedef VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT;
 
 struct VkPhysicalDevicePipelinePropertiesFeaturesEXT
 {
@@ -12837,6 +12838,9 @@ typedef VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT VkPhysicalDeviceMutable
 
 
 typedef VkPhysicalDevicePipelineCreationCacheControlFeatures VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT;
+
+
+typedef VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT;
 
 
 typedef VkPhysicalDevicePipelineProtectedAccessFeatures VkPhysicalDevicePipelineProtectedAccessFeaturesEXT;

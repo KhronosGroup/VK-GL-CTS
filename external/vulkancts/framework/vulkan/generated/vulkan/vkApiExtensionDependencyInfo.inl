@@ -3030,6 +3030,18 @@ bool check_VK_KHR_pipeline_executable_properties(const tcu::UVec2& v, const ExtP
 	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
+bool check_VK_KHR_pipeline_library_group_handles(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_pipeline_library_group_handles"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_ray_tracing_pipeline+VK_KHR_pipeline_library
+	return (isSupported(vDEP, "VK_KHR_ray_tracing_pipeline") && isSupported(vDEP, "VK_KHR_pipeline_library"));
+}
+
 bool check_VK_KHR_portability_subset(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3932,18 +3944,6 @@ bool check_VK_NV_cooperative_matrix2(const tcu::UVec2& v, const ExtPropVect& vIE
 
 	// depends attribute in xml: VK_KHR_cooperative_matrix
 	return isSupported(vDEP, "VK_KHR_cooperative_matrix");
-}
-
-bool check_VK_NV_cooperative_matrix_decode_vector(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
-{
-	DE_UNREF(v);
-	DE_UNREF(vIEP);
-
-	if (!isSupported(vDEP, "VK_NV_cooperative_matrix_decode_vector"))
-		return true;
-
-	// depends attribute in xml: VK_NV_cooperative_matrix2
-	return isSupported(vDEP, "VK_NV_cooperative_matrix2");
 }
 
 bool check_VK_NV_cooperative_vector(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -4984,6 +4984,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_performance_query",								&check_VK_KHR_performance_query),
 	std::make_pair("VK_KHR_pipeline_binary",								&check_VK_KHR_pipeline_binary),
 	std::make_pair("VK_KHR_pipeline_executable_properties",					&check_VK_KHR_pipeline_executable_properties),
+	std::make_pair("VK_KHR_pipeline_library_group_handles",					&check_VK_KHR_pipeline_library_group_handles),
 	std::make_pair("VK_KHR_portability_subset",								&check_VK_KHR_portability_subset),
 	std::make_pair("VK_KHR_present_id",										&check_VK_KHR_present_id),
 	std::make_pair("VK_KHR_present_id2",									&check_VK_KHR_present_id2),
@@ -5056,7 +5057,6 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_NV_compute_shader_derivatives",						&check_VK_NV_compute_shader_derivatives),
 	std::make_pair("VK_NV_cooperative_matrix",								&check_VK_NV_cooperative_matrix),
 	std::make_pair("VK_NV_cooperative_matrix2",								&check_VK_NV_cooperative_matrix2),
-	std::make_pair("VK_NV_cooperative_matrix_decode_vector",				&check_VK_NV_cooperative_matrix_decode_vector),
 	std::make_pair("VK_NV_cooperative_vector",								&check_VK_NV_cooperative_vector),
 	std::make_pair("VK_NV_copy_memory_indirect",							&check_VK_NV_copy_memory_indirect),
 	std::make_pair("VK_NV_corner_sampled_image",							&check_VK_NV_corner_sampled_image),
@@ -5420,6 +5420,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_pipeline_binary"),
 	std::make_tuple(1, 0, "VK_KHR_pipeline_executable_properties"),
 	std::make_tuple(1, 0, "VK_KHR_pipeline_library"),
+	std::make_tuple(1, 0, "VK_KHR_pipeline_library_group_handles"),
 	std::make_tuple(1, 0, "VK_KHR_portability_enumeration"),
 	std::make_tuple(1, 0, "VK_KHR_portability_subset"),
 	std::make_tuple(1, 0, "VK_KHR_present_id"),
@@ -5512,7 +5513,6 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_compute_shader_derivatives"),
 	std::make_tuple(1, 0, "VK_NV_cooperative_matrix"),
 	std::make_tuple(1, 0, "VK_NV_cooperative_matrix2"),
-	std::make_tuple(1, 0, "VK_NV_cooperative_matrix_decode_vector"),
 	std::make_tuple(1, 0, "VK_NV_cooperative_vector"),
 	std::make_tuple(1, 0, "VK_NV_copy_memory_indirect"),
 	std::make_tuple(1, 0, "VK_NV_corner_sampled_image"),
