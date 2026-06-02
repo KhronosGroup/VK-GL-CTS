@@ -28,6 +28,7 @@
 #include <string>
 
 #include "vktTestCaseUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vkDefs.hpp"
 #include "vkSafetyCriticalUtil.hpp"
 #include "vkQueryUtil.hpp"
@@ -72,7 +73,7 @@ struct TestParams
     bool single;
 };
 
-void createGraphicsShaders(SourceCollections &dst, TestParams testParams)
+static void createGraphicsShaders(SourceCollections &dst, TestParams testParams)
 {
     uint32_t pipelineCount = testParams.single ? 1 : 3;
 
@@ -108,7 +109,7 @@ void createGraphicsShaders(SourceCollections &dst, TestParams testParams)
     }
 }
 
-void createComputeShaders(SourceCollections &dst, TestParams testParams)
+static void createComputeShaders(SourceCollections &dst, TestParams testParams)
 {
     uint32_t pipelineCount = testParams.single ? 1 : 3;
 
@@ -129,14 +130,46 @@ void createComputeShaders(SourceCollections &dst, TestParams testParams)
     }
 }
 
+static CustomDevice createTestDevice(Context &context, const InstanceWrapper &instance)
+{
+    const float queuePriority = 1.0f;
+    const VkDeviceQueueCreateInfo deviceQueueCreateInfos{
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                    // const void* pNext;
+        (VkDeviceQueueCreateFlags)0u,               // VkDeviceQueueCreateFlags flags;
+        context.getUniversalQueueFamilyIndex(),     // uint32_t queueFamilyIndex;
+        1u,                                         // uint32_t queueCount;
+        &queuePriority,                             // const float* pQueuePriorities;
+    };
+
+    // Replicate default device extension list.
+    const auto extensionNames = context.getDeviceCreationExtensions();
+
+    const VkDeviceCreateInfo deviceCreateInfo{
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,         // VkStructureType sType;
+        nullptr,                                      // const void* pNext;
+        (VkDeviceCreateFlags)0u,                      // VkDeviceCreateFlags flags;
+        1u,                                           // uint32_t queueCreateInfoCount;
+        &deviceQueueCreateInfos,                      // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
+        0u,                                           // uint32_t enabledLayerCount;
+        nullptr,                                      // const char* const* ppEnabledLayerNames;
+        static_cast<uint32_t>(extensionNames.size()), // uint32_t enabledExtensionCount;
+        extensionNames.data(),                        // const char* const* ppEnabledExtensionNames;
+        nullptr,                                      // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+    };
+
+    return instance.createCustomDevice(&deviceCreateInfo);
+}
+
 tcu::TestStatus testGraphicsPipelineIdentifier(Context &context, TestParams testParams)
 {
+    // Use a separate device here than the default one as otherwise pipeline identifiers across different test cases can collide
+    const InstanceWrapper instance(context);
+    const DeviceWrapper device            = createTestDevice(context, instance);
     const vk::PlatformInterface &vkp      = context.getPlatformInterface();
-    const InstanceInterface &vki          = context.getInstanceInterface();
-    const VkInstance instance             = context.getInstance();
-    const DeviceInterface &vk             = context.getDeviceInterface();
-    const VkDevice device                 = context.getDevice();
-    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const InstanceInterface &vki          = device.getInstanceDriver();
+    const DeviceInterface &vk             = device.getDriver();
+    const VkPhysicalDevice physicalDevice = device.getPhysicalDevice();
 
     uint32_t pipelineCount = testParams.single ? 1 : 3;
 
@@ -176,6 +209,15 @@ tcu::TestStatus testGraphicsPipelineIdentifier(Context &context, TestParams test
             "main",                                              // const char*                         pName;
             nullptr, // const VkSpecializationInfo*         pSpecializationInfo;
         });
+
+        // Shader modules should be VK_NULL_HANDLE in normal mode
+        if (context.getTestContext().getCommandLine().isSubProcess())
+        {
+            for (auto &shaderStageCreateInfo : shaderStageCreateInfos[i])
+            {
+                shaderStageCreateInfo.module = VK_NULL_HANDLE;
+            }
+        }
     }
 
     std::vector<VkPipelineVertexInputStateCreateInfo> vertexInputStateCreateInfo(pipelineCount);
@@ -367,10 +409,11 @@ tcu::TestStatus testGraphicsPipelineIdentifier(Context &context, TestParams test
 
 tcu::TestStatus testComputePipelineIdentifier(Context &context, TestParams testParams)
 {
+    // Use a separate device here than the default one as otherwise pipeline identifiers across different test cases can collide
+    const InstanceWrapper instance(context);
+    const DeviceWrapper device       = createTestDevice(context, instance);
     const vk::PlatformInterface &vkp = context.getPlatformInterface();
-    const VkInstance instance        = context.getInstance();
-    const DeviceInterface &vk        = context.getDeviceInterface();
-    const VkDevice device            = context.getDevice();
+    const DeviceInterface &vk        = device.getDriver();
 
     uint32_t pipelineCount = testParams.single ? 1 : 3;
 
@@ -394,6 +437,15 @@ tcu::TestStatus testComputePipelineIdentifier(Context &context, TestParams testP
             "main",                                              // const char*                         pName;
             nullptr, // const VkSpecializationInfo*         pSpecializationInfo;
         };
+    }
+
+    // Shader modules should be VK_NULL_HANDLE in normal mode
+    if (context.getTestContext().getCommandLine().isSubProcess())
+    {
+        for (auto &shaderStageCreateInfo : shaderStageCreateInfos)
+        {
+            shaderStageCreateInfo.module = VK_NULL_HANDLE;
+        }
     }
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {

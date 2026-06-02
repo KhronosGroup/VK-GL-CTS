@@ -160,23 +160,13 @@ tcu::TestStatus testCreateDeviceWithFaultCallbackInfo(Context &context, FaultCal
 
     void *pNext = nullptr;
 
-    VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
-                                                                 context.getResourceInterface()->getStatMax() :
-                                                                 resetDeviceObjectReservationCreateInfo();
-    memReservationInfo.pNext                               = pNext;
-    pNext                                                  = &memReservationInfo;
-
-    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-    sc10Features.pNext                              = pNext;
-    pNext                                           = &sc10Features;
-
     // create VkFaultCallbackInfo
-    uint32_t maxQueryFaultCount = context.getDeviceVulkanSC10Properties().maxQueryFaultCount;
+    uint32_t maxCallbackFaultCount = context.getDeviceVulkanSC10Properties().maxCallbackFaultCount;
     std::vector<VkFaultData> faults;
 
     if (testParams.allocateFaultData)
     {
-        for (uint32_t i = 0; i < maxQueryFaultCount; ++i)
+        for (uint32_t i = 0; i < maxCallbackFaultCount; ++i)
         {
             faults.push_back({
                 VK_STRUCTURE_TYPE_FAULT_DATA, // VkStructureType sType;

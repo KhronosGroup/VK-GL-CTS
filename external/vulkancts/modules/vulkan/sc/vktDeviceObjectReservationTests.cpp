@@ -97,8 +97,6 @@ enum TestRequestCounts
 enum TestPoolSizes
 {
     PST_UNDEFINED = 0,
-    PST_NONE,
-    PST_ZERO,
     PST_TOO_SMALL_SIZE,
     PST_ONE_FITS,
     PST_MULTIPLE_FIT,
@@ -764,8 +762,7 @@ public:
     tcu::TestStatus iterate(void) override;
 
     virtual CustomDevice createTestDevice(VkDeviceCreateInfo &deviceCreateInfo,
-                                          VkDeviceObjectReservationCreateInfo &objectInfo,
-                                          VkPhysicalDeviceVulkanSC10Features &sc10Features);
+                                          VkDeviceObjectReservationCreateInfo &objectInfo);
     virtual void performTest(const DeviceWrapper &device);
     virtual bool verifyTestResults(const DeviceWrapper &device);
 
@@ -812,17 +809,34 @@ tcu::TestStatus DeviceObjectReservationInstance::iterate(void)
     void *pNext = nullptr;
 
     VkDeviceObjectReservationCreateInfo objectInfo = resetDeviceObjectReservationCreateInfo();
-    objectInfo.pipelineCacheRequestCount           = 1u;
     objectInfo.pNext                               = pNext;
-    pNext                                          = &objectInfo;
 
-    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-    sc10Features.pNext                              = pNext;
-    pNext                                           = &sc10Features;
+    // Make sure to include the pipeline cache info in all cases, as there may be other tests
+    // in the batch that do use pipeline cache data even if this test case does not
+    VkPipelineCacheCreateInfo pcCI = {
+        VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                      // const void* pNext;
+        VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+            VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
+        m_context.getResourceInterface()->getCacheDataSize(),     // uintptr_t initialDataSize;
+        m_context.getResourceInterface()->getCacheData()          // const void* pInitialData;
+    };
+    if (m_context.getTestContext().getCommandLine().isSubProcess())
+    {
+        if (m_context.getResourceInterface()->getCacheDataSize() > 0)
+        {
+            objectInfo.pipelineCacheCreateInfoCount = 1;
+            objectInfo.pPipelineCacheCreateInfos    = &pcCI;
+
+            objectInfo.pipelineCacheRequestCount = 1u;
+        }
+    }
+
+    pNext = &objectInfo;
 
     deviceCreateInfo.pNext = pNext;
 
-    const DeviceWrapper device          = createTestDevice(deviceCreateInfo, objectInfo, sc10Features);
+    const DeviceWrapper device          = createTestDevice(deviceCreateInfo, objectInfo);
     const DeviceInterface &deviceDriver = device.getDriver();
 
     performTest(device);
@@ -836,11 +850,8 @@ tcu::TestStatus DeviceObjectReservationInstance::iterate(void)
 }
 
 CustomDevice DeviceObjectReservationInstance::createTestDevice(VkDeviceCreateInfo &deviceCreateInfo,
-                                                               VkDeviceObjectReservationCreateInfo &objectInfo,
-                                                               VkPhysicalDeviceVulkanSC10Features &sc10Features)
+                                                               VkDeviceObjectReservationCreateInfo &objectInfo)
 {
-    DE_UNREF(sc10Features);
-
     // perform any non pipeline operations - create 2 semaphores
     objectInfo.semaphoreRequestCount = 2u;
 
@@ -867,11 +878,9 @@ public:
         : DeviceObjectReservationInstance(context, testParams_)
     {
     }
-    CustomDevice createTestDevice(VkDeviceCreateInfo &deviceCreateInfo, VkDeviceObjectReservationCreateInfo &objectInfo,
-                                  VkPhysicalDeviceVulkanSC10Features &sc10Features) override
+    CustomDevice createTestDevice(VkDeviceCreateInfo &deviceCreateInfo,
+                                  VkDeviceObjectReservationCreateInfo &objectInfo) override
     {
-        DE_UNREF(sc10Features);
-
         VkDeviceObjectReservationCreateInfo thirdObjectInfo = resetDeviceObjectReservationCreateInfo();
         thirdObjectInfo.deviceMemoryRequestCount            = 2;
 
@@ -920,10 +929,11 @@ public:
         : DeviceObjectReservationInstance(context, testParams_)
     {
     }
-    CustomDevice createTestDevice(VkDeviceCreateInfo &deviceCreateInfo, VkDeviceObjectReservationCreateInfo &objectInfo,
-                                  VkPhysicalDeviceVulkanSC10Features &sc10Features) override
+    CustomDevice createTestDevice(VkDeviceCreateInfo &deviceCreateInfo,
+                                  VkDeviceObjectReservationCreateInfo &objectInfo) override
     {
-        DE_UNREF(sc10Features);
+        VkPhysicalDeviceFeatures2 features2 = initVulkanStructure();
+
         switch (testParams.testMaxValues)
         {
         case TMV_DESCRIPTOR_SET_LAYOUT_BINDING_LIMIT:
@@ -956,6 +966,11 @@ public:
         case TMV_MAX_PIPELINESTATISTICS_QUERIES_PER_POOL:
             objectInfo.maxPipelineStatisticsQueriesPerPool = VERIFYMAXVALUES_OBJECT_COUNT;
             objectInfo.queryPoolRequestCount               = 1u;
+
+            // Need to enable pipelineStatisticsQuery feature
+            features2.features.pipelineStatisticsQuery = VK_TRUE;
+            features2.pNext                            = const_cast<void *>(deviceCreateInfo.pNext);
+            deviceCreateInfo.pNext                     = &features2;
             break;
         case TMV_MAX_TIMESTAMP_QUERIES_PER_POOL:
             objectInfo.maxTimestampQueriesPerPool = VERIFYMAXVALUES_OBJECT_COUNT;
@@ -1096,12 +1111,12 @@ public:
         case TMV_MAX_PIPELINESTATISTICS_QUERIES_PER_POOL:
         {
             const VkQueryPoolCreateInfo queryPoolCreateInfo = {
-                VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, //  VkStructureType sType;
-                nullptr,                                  //  const void* pNext;
-                (VkQueryPoolCreateFlags)0,                //  VkQueryPoolCreateFlags flags;
-                VK_QUERY_TYPE_PIPELINE_STATISTICS,        //  VkQueryType queryType;
-                VERIFYMAXVALUES_OBJECT_COUNT,             //  uint32_t queryCount;
-                0u,                                       //  VkQueryPipelineStatisticFlags pipelineStatistics;
+                VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,            //  VkStructureType sType;
+                nullptr,                                             //  const void* pNext;
+                (VkQueryPoolCreateFlags)0,                           //  VkQueryPoolCreateFlags flags;
+                VK_QUERY_TYPE_PIPELINE_STATISTICS,                   //  VkQueryType queryType;
+                VERIFYMAXVALUES_OBJECT_COUNT,                        //  uint32_t queryCount;
+                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, //  VkQueryPipelineStatisticFlags pipelineStatistics;
             };
             queryPool = createQueryPool(vkd, device, &queryPoolCreateInfo);
             break;
@@ -1175,10 +1190,10 @@ public:
     {
     }
 
-    CustomDevice createTestDevice(VkDeviceCreateInfo &deviceCreateInfo, VkDeviceObjectReservationCreateInfo &objectInfo,
-                                  VkPhysicalDeviceVulkanSC10Features &sc10Features) override
+    CustomDevice createTestDevice(VkDeviceCreateInfo &deviceCreateInfo,
+                                  VkDeviceObjectReservationCreateInfo &objectInfo) override
     {
-        DE_UNREF(sc10Features);
+        VkPhysicalDeviceSamplerYcbcrConversionFeatures samplerYcbcrConversionFeatures = initVulkanStructure();
 
         std::vector<VkPipelinePoolSize> poolSizes;
         VkDeviceSize pipelineDefaultSize =
@@ -1212,7 +1227,8 @@ public:
             objectInfo.eventRequestCount = VERIFYMAXVALUES_OBJECT_COUNT;
             break;
         case TRC_QUERY_POOL:
-            objectInfo.queryPoolRequestCount = VERIFYMAXVALUES_OBJECT_COUNT;
+            objectInfo.maxOcclusionQueriesPerPool = 1u;
+            objectInfo.queryPoolRequestCount      = VERIFYMAXVALUES_OBJECT_COUNT;
             break;
         case TRC_BUFFER_VIEW:
             objectInfo.deviceMemoryRequestCount = 1u;
@@ -1292,6 +1308,11 @@ public:
             break;
         case TRC_SAMPLERYCBCRCONVERSION:
             objectInfo.samplerYcbcrConversionRequestCount = VERIFYMAXVALUES_OBJECT_COUNT;
+
+            // Need to enable samplerYcbcrConversion feature
+            samplerYcbcrConversionFeatures.samplerYcbcrConversion = VK_TRUE;
+            samplerYcbcrConversionFeatures.pNext                  = const_cast<void *>(deviceCreateInfo.pNext);
+            deviceCreateInfo.pNext                                = &samplerYcbcrConversionFeatures;
             break;
             //            case TRC_SURFACE:
             // objectInfo.surfaceRequestCount = VERIFYMAXVALUES_OBJECT_COUNT;
@@ -1306,8 +1327,11 @@ public:
             TCU_THROW(InternalError, "Unsupported request count");
         }
 
-        objectInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-        objectInfo.pPipelinePoolSizes    = poolSizes.empty() ? nullptr : poolSizes.data();
+        if (!poolSizes.empty())
+        {
+            objectInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
+            objectInfo.pPipelinePoolSizes    = poolSizes.empty() ? nullptr : poolSizes.data();
+        }
 
         return instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
     }
@@ -1725,36 +1749,33 @@ public:
     {
     }
 
-    CustomDevice createTestDevice(VkDeviceCreateInfo &deviceCreateInfo, VkDeviceObjectReservationCreateInfo &objectInfo,
-                                  VkPhysicalDeviceVulkanSC10Features &sc10Features) override
+    VkDeviceSize getTooSmallPipelinePoolSize() const
     {
-        DE_UNREF(sc10Features);
+        return 64u;
+    }
 
+    VkDeviceSize getPipelinePoolSize() const
+    {
+        return VkDeviceSize(m_context.getTestContext().getCommandLine().getPipelineDefaultSize());
+    }
+
+    CustomDevice createTestDevice(VkDeviceCreateInfo &deviceCreateInfo,
+                                  VkDeviceObjectReservationCreateInfo &objectInfo) override
+    {
         std::vector<VkPipelinePoolSize> poolSizes;
-
-        const VkDeviceSize psTooSmall = 64u;
-        const VkDeviceSize psForOnePipeline =
-            VkDeviceSize(m_context.getTestContext().getCommandLine().getPipelineDefaultSize());
 
         switch (testParams.testPoolSizeType)
         {
-        case PST_NONE:
-            objectInfo.graphicsPipelineRequestCount = 1u;
-            break;
-        case PST_ZERO:
-            objectInfo.graphicsPipelineRequestCount = 1u;
-            poolSizes.push_back({VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE, nullptr, 0u, 1u});
-            break;
         case PST_TOO_SMALL_SIZE:
-            poolSizes.push_back({VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE, nullptr, psTooSmall, 1u});
+            poolSizes.push_back({VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE, nullptr, getTooSmallPipelinePoolSize(), 1u});
             objectInfo.graphicsPipelineRequestCount = 1u;
             break;
         case PST_ONE_FITS:
-            poolSizes.push_back({VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE, nullptr, psForOnePipeline, 1u});
+            poolSizes.push_back({VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE, nullptr, getPipelinePoolSize(), 1u});
             objectInfo.graphicsPipelineRequestCount = 1u;
             break;
         case PST_MULTIPLE_FIT:
-            poolSizes.push_back({VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE, nullptr, psForOnePipeline, 16u});
+            poolSizes.push_back({VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE, nullptr, getPipelinePoolSize(), 16u});
             objectInfo.graphicsPipelineRequestCount = 16u;
             break;
         default:
@@ -1802,6 +1823,15 @@ public:
                 nullptr, // const VkSpecializationInfo*         pSpecializationInfo;
             }};
 
+        // Shader modules should be VK_NULL_HANDLE in normal mode
+        if (m_context.getTestContext().getCommandLine().isSubProcess())
+        {
+            for (auto &shaderStageCreateInfo : shaderStageCreateInfos)
+            {
+                shaderStageCreateInfo.module = VK_NULL_HANDLE;
+            }
+        }
+
         VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo;
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo;
         VkPipelineViewportStateCreateInfo viewPortStateCreateInfo;
@@ -1844,15 +1874,23 @@ public:
 
         if (m_context.getTestContext().getCommandLine().isSubProcess())
         {
-            pipelineID.poolEntrySize =
-                VkDeviceSize(m_context.getTestContext().getCommandLine().getPipelineDefaultSize());
+            switch (testParams.testPoolSizeType)
+            {
+            case PST_TOO_SMALL_SIZE:
+                pipelineID.poolEntrySize = getTooSmallPipelinePoolSize();
+                break;
+            case PST_ONE_FITS:
+            case PST_MULTIPLE_FIT:
+                pipelineID.poolEntrySize = getPipelinePoolSize();
+                break;
+            default:
+                TCU_THROW(InternalError, "Unsupported pool size type");
+            }
         }
 
         std::size_t pipelineCount = 0u;
         switch (testParams.testPoolSizeType)
         {
-        case PST_NONE:
-        case PST_ZERO:
         case PST_TOO_SMALL_SIZE:
         case PST_ONE_FITS:
             pipelineCount = 1u;
@@ -1862,7 +1900,7 @@ public:
             break;
         default:
             TCU_THROW(InternalError, "Unsupported pool size type");
-        };
+        }
 
         if (!m_context.getTestContext().getCommandLine().isSubProcess())
         {
@@ -1916,8 +1954,6 @@ public:
 
         switch (testParams.testPoolSizeType)
         {
-        case PST_NONE:
-        case PST_ZERO:
         case PST_TOO_SMALL_SIZE:
             return (results.back() == VK_ERROR_OUT_OF_POOL_MEMORY);
         case PST_ONE_FITS:
@@ -2043,8 +2079,6 @@ tcu::TestCaseGroup *createDeviceObjectReservationTests(tcu::TestContext &testCtx
             TestPoolSizes type;
             const char *name;
         } poolSizes[] = {
-            {PST_NONE, "none"},
-            {PST_ZERO, "zero"},
             {PST_TOO_SMALL_SIZE, "too_small_size"},
             {PST_ONE_FITS, "one_fits"},
             {PST_MULTIPLE_FIT, "multiple_fit"},
