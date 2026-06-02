@@ -3441,16 +3441,19 @@ void pushDynamicRenderingCommands(const DeviceInterface &vk, VkCommandBuffer com
         if (renderingLayout == VK_IMAGE_LAYOUT_UNDEFINED)
             renderingLayout = VK_IMAGE_LAYOUT_GENERAL;
 
-        VkImageMemoryBarrier &beforeBarrier       = imageBarriersBeforeRendering[attachmentIndex];
-        beforeBarrier.srcAccessMask               = getAllMemoryWriteFlags() | getMemoryFlagsForLayout(initialLayout);
-        beforeBarrier.dstAccessMask               = getMemoryFlagsForLayout(renderingLayout);
+        VkImageMemoryBarrier &beforeBarrier = imageBarriersBeforeRendering[attachmentIndex];
+        beforeBarrier.srcAccessMask         = getAllMemoryWriteFlags() | getMemoryFlagsForLayout(initialLayout);
+        beforeBarrier.dstAccessMask         = getMemoryFlagsForLayout(renderingLayout) |
+                                      VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                      VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
         beforeBarrier.oldLayout                   = initialLayout;
         beforeBarrier.newLayout                   = renderingLayout;
         beforeBarrier.image                       = attachmentResources[attachmentIndex]->getImage();
         beforeBarrier.subresourceRange.aspectMask = aspectMask;
 
-        VkImageMemoryBarrier &afterBarrier       = imageBarriersAfterRendering[attachmentIndex];
-        afterBarrier.srcAccessMask               = getMemoryFlagsForLayout(renderingLayout);
+        VkImageMemoryBarrier &afterBarrier = imageBarriersAfterRendering[attachmentIndex];
+        afterBarrier.srcAccessMask =
+            getMemoryFlagsForLayout(renderingLayout) | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
         afterBarrier.dstAccessMask               = getAllMemoryReadFlags() | getMemoryFlagsForLayout(finalLayout);
         afterBarrier.oldLayout                   = renderingLayout;
         afterBarrier.newLayout                   = finalLayout;
