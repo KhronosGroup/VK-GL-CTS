@@ -301,7 +301,14 @@ void RayTracingPipelineLibraryTestCase::checkSupport(Context &context) const
     context.requireDeviceFunctionality("VK_KHR_pipeline_library");
 
     if (m_data.testType != TestType::DEFAULT)
-        context.requireDeviceFunctionality("VK_EXT_pipeline_library_group_handles");
+    {
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_pipeline_library_group_handles") &&
+            !context.isDeviceFunctionalitySupported("VK_EXT_pipeline_library_group_handles"))
+        {
+            TCU_THROW(NotSupportedError, "Neither VK_KHR_pipeline_library_group_handles nor "
+                                         "VK_EXT_pipeline_library_group_handles are supported");
+        }
+    }
 
     if (m_data.useLinkTimeOptimizations)
         context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
