@@ -613,6 +613,21 @@ template<> VkStructureType getStructureType<VkDataGraphProcessingEngineCreateInf
 	return VK_STRUCTURE_TYPE_DATA_GRAPH_PROCESSING_ENGINE_CREATE_INFO_ARM;
 }
 
+template<> VkStructureType getStructureType<VkDebugMarkerMarkerInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDebugMarkerObjectNameInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDebugMarkerObjectTagInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_TAG_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkDebugReportCallbackCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;

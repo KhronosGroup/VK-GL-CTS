@@ -8819,6 +8819,43 @@ std::ostream& operator<< (std::ostream& s, const VkDataGraphProcessingEngineCrea
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkDebugMarkerMarkerInfoEXT& value)
+{
+	s << "VkDebugMarkerMarkerInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpMarkerName = " << getCharPtrStr(value.pMarkerName) << '\n';
+	s << "\tcolor = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.color), DE_ARRAY_END(value.color)) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDebugMarkerObjectNameInfoEXT& value)
+{
+	s << "VkDebugMarkerObjectNameInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tobjectType = " << value.objectType << '\n';
+	s << "\tobject = " << value.object << '\n';
+	s << "\tpObjectName = " << getCharPtrStr(value.pObjectName) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDebugMarkerObjectTagInfoEXT& value)
+{
+	s << "VkDebugMarkerObjectTagInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tobjectType = " << value.objectType << '\n';
+	s << "\tobject = " << value.object << '\n';
+	s << "\ttagName = " << value.tagName << '\n';
+	s << "\ttagSize = " << value.tagSize << '\n';
+	s << "\tpTag = " << value.pTag << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value)
 {
 	s << "VkDebugReportCallbackCreateInfoEXT = {\n";

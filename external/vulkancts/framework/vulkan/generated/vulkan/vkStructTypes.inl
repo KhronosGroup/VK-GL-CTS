@@ -2237,6 +2237,34 @@ struct VkDataGraphPipelineSessionMemoryRequirementsInfoARM
 	uint32_t								objectIndex;
 };
 
+struct VkDebugMarkerMarkerInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	const char*		pMarkerName;
+	float			color[4];
+};
+
+struct VkDebugMarkerObjectNameInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkDebugReportObjectTypeEXT	objectType;
+	uint64_t					object;
+	const char*					pObjectName;
+};
+
+struct VkDebugMarkerObjectTagInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkDebugReportObjectTypeEXT	objectType;
+	uint64_t					object;
+	uint64_t					tagName;
+	size_t						tagSize;
+	const void*					pTag;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;

@@ -1382,6 +1382,23 @@ VKAPI_ATTR void VKAPI_CALL cmdCopyTensorARM (VkCommandBuffer commandBuffer, cons
 	DE_UNREF(pCopyTensorInfo);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdDebugMarkerBeginEXT (VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pMarkerInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDebugMarkerEndEXT (VkCommandBuffer commandBuffer)
+{
+	DE_UNREF(commandBuffer);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDebugMarkerInsertEXT (VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pMarkerInfo);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdDecodeVideoKHR (VkCommandBuffer commandBuffer, const VkVideoDecodeInfoKHR* pDecodeInfo)
 {
 	DE_UNREF(commandBuffer);
@@ -3001,6 +3018,20 @@ VKAPI_ATTR VkResult VKAPI_CALL copyMicromapToMemoryEXT (VkDevice device, VkDefer
 	DE_UNREF(device);
 	DE_UNREF(deferredOperation);
 	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL debugMarkerSetObjectNameEXT (VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pNameInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL debugMarkerSetObjectTagEXT (VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pTagInfo);
 	return VK_SUCCESS;
 }
 
@@ -5361,6 +5392,9 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdCopyQueryPoolResults,									cmdCopyQueryPoolResults),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyQueryPoolResultsToMemoryKHR,						cmdCopyQueryPoolResultsToMemoryKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyTensorARM,											cmdCopyTensorARM),
+	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerBeginEXT,									cmdDebugMarkerBeginEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerEndEXT,										cmdDebugMarkerEndEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerInsertEXT,									cmdDebugMarkerInsertEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDecodeVideoKHR,											cmdDecodeVideoKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdDecompressMemoryEXT,									cmdDecompressMemoryEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDecompressMemoryIndirectCountEXT,						cmdDecompressMemoryIndirectCountEXT),
@@ -5585,6 +5619,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCreateTensorViewARM,										createTensorViewARM),
 	VK_NULL_FUNC_ENTRY(vkCreateVideoSessionKHR,										createVideoSessionKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateVideoSessionParametersKHR,							createVideoSessionParametersKHR),
+	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectNameEXT,								debugMarkerSetObjectNameEXT),
+	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectTagEXT,								debugMarkerSetObjectTagEXT),
 	VK_NULL_FUNC_ENTRY(vkDeferredOperationJoinKHR,									deferredOperationJoinKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroyAccelerationStructureKHR,							destroyAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroyAccelerationStructureNV,							destroyAccelerationStructureNV),

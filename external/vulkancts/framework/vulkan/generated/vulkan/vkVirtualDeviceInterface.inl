@@ -88,6 +88,9 @@ virtual void				cmdCopyMicromapToMemoryEXT								(VkCommandBuffer commandBuffer
 virtual void				cmdCopyQueryPoolResults									(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize stride, VkQueryResultFlags flags) const = 0;
 virtual void				cmdCopyQueryPoolResultsToMemoryKHR						(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, const VkStridedDeviceAddressRangeKHR* pDstRange, VkAddressCommandFlagsKHR dstFlags, VkQueryResultFlags queryResultFlags) const = 0;
 virtual void				cmdCopyTensorARM										(VkCommandBuffer commandBuffer, const VkCopyTensorInfoARM* pCopyTensorInfo) const = 0;
+virtual void				cmdDebugMarkerBeginEXT									(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const = 0;
+virtual void				cmdDebugMarkerEndEXT									(VkCommandBuffer commandBuffer) const = 0;
+virtual void				cmdDebugMarkerInsertEXT									(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const = 0;
 virtual void				cmdDecodeVideoKHR										(VkCommandBuffer commandBuffer, const VkVideoDecodeInfoKHR* pDecodeInfo) const = 0;
 virtual void				cmdDecompressMemoryEXT									(VkCommandBuffer commandBuffer, const VkDecompressMemoryInfoEXT* pDecompressMemoryInfoEXT) const = 0;
 virtual void				cmdDecompressMemoryIndirectCountEXT						(VkCommandBuffer commandBuffer, VkMemoryDecompressionMethodFlagsEXT decompressionMethod, VkDeviceAddress indirectCommandsAddress, VkDeviceAddress indirectCommandsCountAddress, uint32_t maxDecompressionCount, uint32_t stride) const = 0;
@@ -312,6 +315,8 @@ virtual VkResult			createTensorARM											(VkDevice device, const VkTensorCre
 virtual VkResult			createTensorViewARM										(VkDevice device, const VkTensorViewCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorViewARM* pView) const = 0;
 virtual VkResult			createVideoSessionKHR									(VkDevice device, const VkVideoSessionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionKHR* pVideoSession) const = 0;
 virtual VkResult			createVideoSessionParametersKHR							(VkDevice device, const VkVideoSessionParametersCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionParametersKHR* pVideoSessionParameters) const = 0;
+virtual VkResult			debugMarkerSetObjectNameEXT								(VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo) const = 0;
+virtual VkResult			debugMarkerSetObjectTagEXT								(VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const = 0;
 virtual VkResult			deferredOperationJoinKHR								(VkDevice device, VkDeferredOperationKHR operation) const = 0;
 virtual void				destroyAccelerationStructureKHR							(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual void				destroyAccelerationStructureNV							(VkDevice device, VkAccelerationStructureNV accelerationStructure, const VkAllocationCallbacks* pAllocator) const = 0;

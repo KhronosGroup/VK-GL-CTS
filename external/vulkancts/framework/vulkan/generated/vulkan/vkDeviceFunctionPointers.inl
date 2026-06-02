@@ -291,6 +291,11 @@ CmdBindDescriptorBufferEmbeddedSamplers2EXTFunc				cmdBindDescriptorBufferEmbedd
 CmdCopyMemoryIndirectKHRFunc								cmdCopyMemoryIndirectKHR;
 CmdCopyMemoryToImageIndirectKHRFunc							cmdCopyMemoryToImageIndirectKHR;
 CmdEndRendering2KHRFunc										cmdEndRendering2KHR;
+DebugMarkerSetObjectTagEXTFunc								debugMarkerSetObjectTagEXT;
+DebugMarkerSetObjectNameEXTFunc								debugMarkerSetObjectNameEXT;
+CmdDebugMarkerBeginEXTFunc									cmdDebugMarkerBeginEXT;
+CmdDebugMarkerEndEXTFunc									cmdDebugMarkerEndEXT;
+CmdDebugMarkerInsertEXTFunc									cmdDebugMarkerInsertEXT;
 CmdBindTransformFeedbackBuffersEXTFunc						cmdBindTransformFeedbackBuffersEXT;
 CmdBeginTransformFeedbackEXTFunc							cmdBeginTransformFeedbackEXT;
 CmdEndTransformFeedbackEXTFunc								cmdEndTransformFeedbackEXT;

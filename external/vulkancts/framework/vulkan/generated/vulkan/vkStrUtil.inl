@@ -757,6 +757,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkDataGraphPipelineSessionCreat
 std::ostream&	operator<<	(std::ostream& s, const VkDataGraphPipelineSessionMemoryRequirementsInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDataGraphPipelineShaderModuleCreateInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDataGraphProcessingEngineCreateInfoARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerMarkerInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectNameInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectTagInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugUtilsLabelEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugUtilsMessengerCallbackDataEXT& value);

@@ -71,6 +71,7 @@ VK_EXT_conditional_rendering
 VK_EXT_conservative_rasterization
 VK_EXT_custom_border_color
 VK_EXT_custom_resolve
+VK_EXT_debug_marker
 VK_EXT_depth_bias_control
 VK_EXT_depth_clamp_control
 VK_EXT_depth_clamp_zero_one

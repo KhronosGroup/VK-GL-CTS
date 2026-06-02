@@ -131,6 +131,63 @@ tcu::TestStatus testLongDebugLabelsTest(Context &context, TestParams params)
     return tcu::TestStatus::pass("Pass");
 }
 
+#ifndef CTS_USES_VULKANSC
+tcu::TestStatus testDebugMarker(Context &context, TestParams)
+{
+    const auto &vk  = context.getDeviceInterface();
+    auto device     = context.getDevice();
+    auto &allocator = context.getDefaultAllocator();
+
+    std::string longName(64 * 1024 + 1, 'x');
+
+    // create a small buffer to name/tag
+    VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    const auto bufferInfo    = makeBufferCreateInfo(256u, usage);
+    BufferWithMemory testBuffer(vk, device, allocator, bufferInfo, MemoryRequirement::HostVisible);
+
+    // set object name
+    VkDebugMarkerObjectNameInfoEXT nameInfo = initVulkanStructure();
+    nameInfo.objectType                     = static_cast<VkDebugReportObjectTypeEXT>(VK_OBJECT_TYPE_BUFFER);
+    nameInfo.object                         = (*testBuffer).getInternal();
+    nameInfo.pObjectName                    = longName.c_str();
+    vk.debugMarkerSetObjectNameEXT(device, &nameInfo);
+
+    // set object tag
+    const uint64_t tagName                = 0xCAFEBABEULL;
+    uint32_t tagData                      = 0x12345678u;
+    VkDebugMarkerObjectTagInfoEXT tagInfo = initVulkanStructure();
+    tagInfo.objectType                    = nameInfo.objectType;
+    tagInfo.object                        = nameInfo.object;
+    tagInfo.tagName                       = tagName;
+    tagInfo.tagSize                       = sizeof(tagData);
+    tagInfo.pTag                          = &tagData;
+    vk.debugMarkerSetObjectTagEXT(device, &tagInfo);
+
+    // create command pool and buffer and use marker commands
+    auto cmdPool   = makeCommandPool(vk, device, context.getUniversalQueueFamilyIndex());
+    auto cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    VkDebugMarkerMarkerInfoEXT markerInfo = initVulkanStructure();
+    markerInfo.pMarkerName                = longName.c_str();
+    markerInfo.color[0]                   = 0.0f;
+    markerInfo.color[1]                   = 1.0f;
+    markerInfo.color[2]                   = 0.0f;
+    markerInfo.color[3]                   = 1.0f;
+
+    // do a simple command between begin/insert/end
+    beginCommandBuffer(vk, *cmdBuffer);
+    vk.cmdDebugMarkerBeginEXT(*cmdBuffer, &markerInfo);
+    vk.cmdFillBuffer(*cmdBuffer, *testBuffer, 0, VK_WHOLE_SIZE, 0xDEADBEEFu);
+    vk.cmdDebugMarkerInsertEXT(*cmdBuffer, &markerInfo);
+    vk.cmdDebugMarkerEndEXT(*cmdBuffer);
+    endCommandBuffer(vk, *cmdBuffer);
+
+    submitCommandsAndWait(vk, device, context.getUniversalQueue(), *cmdBuffer);
+
+    return tcu::TestStatus::pass("Pass");
+}
+#endif // CTS_USES_VULKANSC
+
 void checkDebugUtilsSupport(Context &context, TestParams params)
 {
     context.requireInstanceFunctionality("VK_EXT_debug_utils");
@@ -138,6 +195,13 @@ void checkDebugUtilsSupport(Context &context, TestParams params)
     findQueueFamilyIndexWithCaps(context.getInstanceInterface(), context.getPhysicalDevice(), params.required,
                                  params.excluded);
 }
+
+#ifndef CTS_USES_VULKANSC
+void checkDebugMarkerSupport(Context &context, TestParams)
+{
+    context.requireDeviceFunctionality("VK_EXT_debug_marker");
+}
+#endif // CTS_USES_VULKANSC
 
 } // namespace
 
@@ -150,6 +214,10 @@ tcu::TestCaseGroup *createDebugUtilsTests(tcu::TestContext &testCtx)
     params.excluded = 0;
     addFunctionCase(debugUtilsTests.get(), "long_labels_graphics", checkDebugUtilsSupport, testLongDebugLabelsTest,
                     params);
+
+#ifndef CTS_USES_VULKANSC
+    addFunctionCase(debugUtilsTests.get(), "debug_marker_graphics", checkDebugMarkerSupport, testDebugMarker, params);
+#endif // CTS_USES_VULKANSC
 
     params.required = VK_QUEUE_TRANSFER_BIT;
     params.excluded = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;

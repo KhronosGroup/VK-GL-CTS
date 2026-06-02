@@ -1520,6 +1520,31 @@ void DeviceDriver::cmdEndRendering2KHR (VkCommandBuffer commandBuffer, const VkR
     m_vk.cmdEndRendering2KHR(commandBuffer, pRenderingEndInfo);
 }
 
+VkResult DeviceDriver::debugMarkerSetObjectTagEXT (VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const
+{
+    return m_vk.debugMarkerSetObjectTagEXT(device, pTagInfo);
+}
+
+VkResult DeviceDriver::debugMarkerSetObjectNameEXT (VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo) const
+{
+    return m_vk.debugMarkerSetObjectNameEXT(device, pNameInfo);
+}
+
+void DeviceDriver::cmdDebugMarkerBeginEXT (VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const
+{
+    m_vk.cmdDebugMarkerBeginEXT(commandBuffer, pMarkerInfo);
+}
+
+void DeviceDriver::cmdDebugMarkerEndEXT (VkCommandBuffer commandBuffer) const
+{
+    m_vk.cmdDebugMarkerEndEXT(commandBuffer);
+}
+
+void DeviceDriver::cmdDebugMarkerInsertEXT (VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const
+{
+    m_vk.cmdDebugMarkerInsertEXT(commandBuffer, pMarkerInfo);
+}
+
 void DeviceDriver::cmdBindTransformFeedbackBuffersEXT (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();

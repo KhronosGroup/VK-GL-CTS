@@ -24007,6 +24007,7 @@ dEQP-VK.api.copy_and_blit.sparse.image_to_image.simple_tests.partial_image_r32g3
 dEQP-VK.api.copy_and_blit.sparse.image_to_image.simple_tests.partial_image_r32g32b32_uint
 dEQP-VK.api.copy_and_blit.sparse.image_to_image.simple_tests.whole_image_r32g32b32_sfloat
 dEQP-VK.api.copy_and_blit.sparse.image_to_image.simple_tests.whole_image_r32g32b32_uint
+dEQP-VK.api.debug_utils.debug_marker_graphics
 dEQP-VK.api.debug_utils.long_labels_graphics
 dEQP-VK.api.debug_utils.long_labels_transfer
 dEQP-VK.api.debug_utils.long_labels_video_decode
