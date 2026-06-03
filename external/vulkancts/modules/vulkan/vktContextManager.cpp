@@ -381,24 +381,30 @@ void DevCaps::verifyFeature(vk::VkStructureType sType, bool checkRuntimeApiVersi
     // by the addition of the corresponding feature structure from the blob;
     // the reverse sequence is also detected
 
-    const std::map<uint32_t, vk::VkStructureType> apiToBlob{
-        {VK_API_VERSION_1_1, vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES},
-        {VK_API_VERSION_1_2, vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES},
+    const std::map<uint32_t, std::vector<vk::VkStructureType>> apiToBlob{
 #ifdef CTS_USES_VULKANSC
-        {VK_API_VERSION_1_0, vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES}
+        {VKSC_API_VERSION_1_0,
+         {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
+          vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+          vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES}}
 #else
-        {VK_API_VERSION_1_3, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES},
-        {VK_API_VERSION_1_4, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES},
+        {VK_API_VERSION_1_1, {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES}},
+        {VK_API_VERSION_1_2, {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES}},
+        {VK_API_VERSION_1_3, {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES}},
+        {VK_API_VERSION_1_4, {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES}},
 #endif
     };
     const uint32_t newFeatureBlobVersion = vk::DeviceFeatures::getBlobFeatureVersion(sType);
     const bool newFeatureIsBlob          = newFeatureBlobVersion == 0u;
     auto blobToApi                       = [&](vk::VkStructureType blob) -> uint32_t
     {
-        for (const std::pair<const uint32_t, vk::VkStructureType> &item : apiToBlob)
+        for (const auto &items : apiToBlob)
         {
-            if (item.second == blob)
-                return item.first;
+            for (const auto &item : items.second)
+            {
+                if (item == blob)
+                    return items.first;
+            }
         }
         return 0u;
     };
@@ -490,7 +496,10 @@ void DevCaps::verifyFeature(vk::VkStructureType sType, bool checkRuntimeApiVersi
     {
         auto blob = apiToBlob.find(newFeatureBlobVersion);
         DE_ASSERT(apiToBlob.end() != blob);
-        traverseFeatures(m_features, blob->second, blobInFeatures);
+        for (const auto &item : blob->second)
+        {
+            traverseFeatures(m_features, item, blobInFeatures);
+        }
     }
 
     if (Status::Ok != status)
