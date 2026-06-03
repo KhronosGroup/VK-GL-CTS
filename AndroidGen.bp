@@ -212,6 +212,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCGraphicsXfbTestsExt.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCPropertyTests.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCPropertyTestsExt.cpp",
+        "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCRayTracingConditionalTestsExt.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCRayTracingTestsExt.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCStatQueryTestsExt.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCTests.cpp",

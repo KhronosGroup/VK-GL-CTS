@@ -1990,10 +1990,10 @@ tcu::TestStatus RayTracingInstance::iterate(void)
 
 } // namespace
 
-tcu::TestCaseGroup *createDGCRayTracingTestsExt(tcu::TestContext &testCtx)
+tcu::TestCaseGroup *createDGCRayTracingBasicTestsExt(tcu::TestContext &testCtx)
 {
     using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
-    GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "ray_tracing", ""));
+    GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "basic", ""));
 
     for (const bool useExecutionSet : {false, true})
         for (const bool preprocess : {false, true})

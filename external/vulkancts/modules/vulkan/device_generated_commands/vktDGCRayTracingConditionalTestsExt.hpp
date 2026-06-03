@@ -1,11 +1,11 @@
-#ifndef _VKTDGCRAYTRACINGTESTSEXT_HPP
-#define _VKTDGCRAYTRACINGTESTSEXT_HPP
+#ifndef _VKTDGCRAYTRACINGCONDITIONALTESTSEXT_HPP
+#define _VKTDGCRAYTRACINGCONDITIONALTESTSEXT_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2024 The Khronos Group Inc.
- * Copyright (c) 2024 Valve Corporation.
+ * Copyright (c) 2026 The Khronos Group Inc.
+ * Copyright (c) 2026 Valve Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
  *
  *//*!
  * \file
- * \brief Device Generated Commands EXT Ray Tracing Tests
+ * \brief Device Generated Commands EXT Conditional Rendering Tests
  *//*--------------------------------------------------------------------*/
 
 #include "tcuTestCase.hpp"
@@ -30,8 +30,8 @@ namespace vkt
 {
 namespace DGC
 {
-tcu::TestCaseGroup *createDGCRayTracingBasicTestsExt(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createDGCRayTracingConditionalTestsExt(tcu::TestContext &testCtx);
 } // namespace DGC
 } // namespace vkt
 
-#endif // _VKTDGCRAYTRACINGTESTSEXT_HPP
+#endif // _VKTDGCRAYTRACINGCONDITIONALTESTSEXT_HPP

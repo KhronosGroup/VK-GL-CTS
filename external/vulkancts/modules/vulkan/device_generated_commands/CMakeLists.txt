@@ -58,6 +58,8 @@ set(DEQP_VK_DGC_SRCS
 	vktDGCGraphicsMiscTestsExt.hpp
 	vktDGCRayTracingTestsExt.cpp
 	vktDGCRayTracingTestsExt.hpp
+	vktDGCRayTracingConditionalTestsExt.cpp
+	vktDGCRayTracingConditionalTestsExt.hpp
 	vktDGCGraphicsXfbTestsExt.cpp
 	vktDGCGraphicsXfbTestsExt.hpp
 	vktDGCGraphicsTessStateTestsExt.cpp
