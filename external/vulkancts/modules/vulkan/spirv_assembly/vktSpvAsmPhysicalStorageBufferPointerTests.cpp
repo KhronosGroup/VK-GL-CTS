@@ -56,7 +56,8 @@ enum class PassMethod
 {
     PUSH_CONSTANTS,
     PUSH_CONSTANTS_FUNCTION,
-    ADDRESSES_IN_SSBO
+    ADDRESSES_IN_SSBO,
+    PTR_ACCESS_CHAIN_FROM_UBO,
 };
 
 struct TestParams
@@ -331,6 +332,21 @@ private:
     const TestParamsPtr m_params;
 };
 
+class SpvAsmPhysicalStorageBufferPtrAccessChainTestInstance : public SpvAsmPhysicalStorageBufferTestInstance
+{
+public:
+    SpvAsmPhysicalStorageBufferPtrAccessChainTestInstance(Context &ctx, const TestParamsPtr params)
+        : SpvAsmPhysicalStorageBufferTestInstance(ctx)
+        , m_params(params)
+    {
+    }
+    tcu::TestStatus iterate(void);
+    static void initPrograms(vk::SourceCollections &programCollection, const TestParamsPtr params);
+
+private:
+    const TestParamsPtr m_params;
+};
+
 class SpvAsmPhysicalStorageBufferTestCase : public TestCase
 {
 public:
@@ -371,6 +387,9 @@ TestInstance *SpvAsmPhysicalStorageBufferTestCase::createInstance(Context &ctx) 
 
     case PassMethod::ADDRESSES_IN_SSBO:
         return new SpvAsmPhysicalStorageBufferAddrsInSSBOTestInstance(ctx, m_params);
+
+    case PassMethod::PTR_ACCESS_CHAIN_FROM_UBO:
+        return new SpvAsmPhysicalStorageBufferPtrAccessChainTestInstance(ctx, m_params);
     }
 
     DE_ASSERT(false);
@@ -388,6 +407,10 @@ void SpvAsmPhysicalStorageBufferTestCase::initPrograms(vk::SourceCollections &pr
 
     case PassMethod::ADDRESSES_IN_SSBO:
         SpvAsmPhysicalStorageBufferAddrsInSSBOTestInstance::initPrograms(programCollection, m_params);
+        break;
+
+    case PassMethod::PTR_ACCESS_CHAIN_FROM_UBO:
+        SpvAsmPhysicalStorageBufferPtrAccessChainTestInstance::initPrograms(programCollection, m_params);
         break;
     }
 }
@@ -737,6 +760,117 @@ tcu::TestStatus SpvAsmPhysicalStorageBufferAddrsInSSBOTestInstance::iterate(void
     return std::equal(src.begin(), src.end(), dst.begin()) ? tcu::TestStatus::pass("") : tcu::TestStatus::fail("");
 }
 
+void SpvAsmPhysicalStorageBufferPtrAccessChainTestInstance::initPrograms(vk::SourceCollections &programCollection,
+                                                                         const TestParamsPtr)
+{
+    // struct Data {
+    //     int32_t x;
+    // }
+    // uniform Data* bda;
+    // [numthreads(1,1,1)]
+    // void main() {
+    //     bda[0].x = 42;
+    // }
+
+    const std::string comp(R"(
+            OpCapability PhysicalStorageBufferAddresses
+            OpCapability Shader
+            OpExtension "SPV_KHR_physical_storage_buffer"
+            OpMemoryModel PhysicalStorageBuffer64 GLSL450
+            OpEntryPoint GLCompute %main "main" %globalParams
+            OpExecutionMode %main LocalSize 1 1 1
+            OpDecorate %_ptr_PhysicalStorageBuffer_Data_natural ArrayStride 4
+            OpDecorate %GlobalParams_std140 Block
+            OpMemberDecorate %GlobalParams_std140 0 Offset 0
+            OpDecorate %globalParams Binding 0
+            OpDecorate %globalParams DescriptorSet 0
+            OpDecorate %_ptr_PhysicalStorageBuffer_int ArrayStride 4
+            OpMemberDecorate %Data_natural 0 Offset 0
+      %void = OpTypeVoid
+      %3 = OpTypeFunction %void
+            OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_Data_natural PhysicalStorageBuffer
+%GlobalParams_std140 = OpTypeStruct %_ptr_PhysicalStorageBuffer_Data_natural
+%_ptr_Uniform_GlobalParams_std140 = OpTypePointer Uniform %GlobalParams_std140
+      %int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%_ptr_Uniform_7 = OpTypePointer Uniform %_ptr_PhysicalStorageBuffer_Data_natural
+%_ptr_PhysicalStorageBuffer_int = OpTypePointer PhysicalStorageBuffer %int
+%int_42 = OpConstant %int 42
+%Data_natural = OpTypeStruct %int
+%_ptr_PhysicalStorageBuffer_Data_natural = OpTypePointer PhysicalStorageBuffer %Data_natural
+%globalParams = OpVariable %_ptr_Uniform_GlobalParams_std140 Uniform
+      %main = OpFunction %void None %3
+      %4 = OpLabel
+      %13 = OpAccessChain %_ptr_Uniform_7 %globalParams %int_0
+      %14 = OpLoad %_ptr_PhysicalStorageBuffer_Data_natural %13
+      %15 = OpPtrAccessChain %_ptr_PhysicalStorageBuffer_Data_natural %14 %int_0
+      %17 = OpAccessChain %_ptr_PhysicalStorageBuffer_int %15 %int_0
+            OpStore %17 %int_42 Aligned 4
+            OpReturn
+            OpFunctionEnd
+    )");
+
+    programCollection.spirvAsmSources.add("comp")
+        << comp << vk::SpirVAsmBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, true);
+}
+
+tcu::TestStatus SpvAsmPhysicalStorageBufferPtrAccessChainTestInstance::iterate(void)
+{
+    const DeviceInterface &vki      = m_context.getDeviceInterface();
+    const VkDevice dev              = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    tcu::TestLog &log               = m_context.getTestContext().getLog();
+
+    Move<VkCommandPool> cmdPool = createCommandPool(vki, dev, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+    Move<VkCommandBuffer> cmdBuffer   = allocateCommandBuffer(vki, dev, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    Move<VkShaderModule> shaderModule = createShaderModule(vki, dev, m_context.getBinaryCollection().get("comp"));
+
+    Move<VkDescriptorSetLayout> descriptorSetLayout =
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vki, dev);
+    Move<VkDescriptorPool> descriptorPool = DescriptorPoolBuilder()
+                                                .addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+                                                .build(vki, dev, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    Move<VkDescriptorSet> descriptorSet   = makeDescriptorSet(vki, dev, *descriptorPool, *descriptorSetLayout);
+    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vki, dev, 1u, &descriptorSetLayout.get());
+    Move<VkPipeline> pipeline             = makeComputePipeline(vki, dev, *pipelineLayout, *shaderModule);
+
+    ut::TypedBuffer<uint32_t> ssbo(m_context, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 1u, true);
+    ut::TypedBuffer<VkDeviceAddress> ubo(m_context, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, {ssbo.getDeviceAddress()});
+
+    ssbo.zero(true);
+    ubo.flush();
+
+    VkDescriptorBufferInfo bufferInfo = makeDescriptorBufferInfo(ubo.getBuffer(), 0, ubo.getSize());
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                     VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &bufferInfo)
+        .update(vki, dev);
+
+    beginCommandBuffer(vki, *cmdBuffer);
+    vki.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+    vki.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(),
+                              0u, nullptr);
+    vki.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
+    const VkBufferMemoryBarrier barrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
+                                                                  ssbo.getBuffer(), 0, VK_WHOLE_SIZE);
+    vki.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0, nullptr,
+                           1, &barrier, 0, nullptr);
+    endCommandBuffer(vki, *cmdBuffer);
+    submitCommandsAndWait(vki, dev, queue, *cmdBuffer);
+
+    ssbo.invalidate();
+    if (ssbo[0] != 42u)
+    {
+        log << tcu::TestLog::Message << "Expected result 42, but got " << ssbo[0] << tcu::TestLog::EndMessage;
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createPhysicalStorageBufferTestGroup(tcu::TestContext &testCtx)
@@ -749,6 +883,7 @@ tcu::TestCaseGroup *createPhysicalStorageBufferTestGroup(tcu::TestContext &testC
         {PassMethod::PUSH_CONSTANTS, "push_constants"},
         {PassMethod::PUSH_CONSTANTS_FUNCTION, "push_constants_function"},
         {PassMethod::ADDRESSES_IN_SSBO, "addrs_in_ssbo"},
+        {PassMethod::PTR_ACCESS_CHAIN_FROM_UBO, "ptr_access_chain_from_ubo"},
     };
 
     tcu::TestCaseGroup *group = new tcu::TestCaseGroup(testCtx, "physical_storage_buffer");
