@@ -65,8 +65,7 @@ struct ConditionalPreprocessParams
     bool conditionValue;
     bool inverted;
     bool executeOnCompute;
-    bool separateState;  // Use a separate command buffer for the preprocessing state.
-    bool preprocessOnly; // Only enable conditional rendering on the preprocessing step, which should be ignored.
+    bool separateState; // Use a separate command buffer for the preprocessing state.
 };
 
 inline void checkConditionalRenderingExt(Context &context)
@@ -468,12 +467,11 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
     VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
 
     // This records the initial state (pipeline, descriptors, conditional rendering) in the current cmdBuffer.
-    const auto recordInitialState = [&](bool beginCR)
+    const auto recordInitialState = [&]()
     {
         ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
         ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *normalPipeline);
-        if (beginCR)
-            beginConditionalRendering(ctx.vkd, cmdBuffer, *conditionBuffer, params.inverted);
+        beginConditionalRendering(ctx.vkd, cmdBuffer, *conditionBuffer, params.inverted);
     };
 
     // This allocates executeCmd if needed, and switches queue and cmdBuffer to it.
@@ -516,7 +514,7 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
         switchToExecCmdAndAllocIfNeeded();
         beginCommandBuffer(ctx.vkd, cmdBuffer);
         maybeRecordAcquireBarrier();
-        recordInitialState(!params.preprocessOnly);
+        recordInitialState();
     }
 
     // Switch to the preprocess command buffer and record its contents.
@@ -528,16 +526,11 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
     {
         // Record the initial state on the preprocess command buffer itself. If we don't use a separate command buffer
         // for state, we cannot be recording the conditional rendering commands on the preprocess command buffer only.
-        DE_ASSERT(!params.preprocessOnly);
-        recordInitialState(true);
-    }
-    else if (params.preprocessOnly)
-    {
-        beginConditionalRendering(ctx.vkd, cmdBuffer, *conditionBuffer, params.inverted);
+        recordInitialState();
     }
     const auto stateCmdBuffer = (params.separateState ? *executeCmd->cmdBuffer : cmdBuffer);
     ctx.vkd.cmdPreprocessGeneratedCommandsEXT(cmdBuffer, &cmdsInfo.get(), stateCmdBuffer);
-    if (!params.separateState || params.preprocessOnly)
+    if (!params.separateState)
         ctx.vkd.cmdEndConditionalRenderingEXT(cmdBuffer);
     preprocessToExecuteBarrierExt(ctx.vkd, cmdBuffer);
 
@@ -560,12 +553,11 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
     {
         beginCommandBuffer(ctx.vkd, cmdBuffer);
         maybeRecordAcquireBarrier();
-        recordInitialState(!params.preprocessOnly);
+        recordInitialState();
     }
 
     ctx.vkd.cmdExecuteGeneratedCommandsEXT(cmdBuffer, VK_TRUE, &cmdsInfo.get());
-    if (!params.preprocessOnly)
-        ctx.vkd.cmdEndConditionalRenderingEXT(cmdBuffer);
+    ctx.vkd.cmdEndConditionalRenderingEXT(cmdBuffer);
     endCommandBuffer(ctx.vkd, cmdBuffer);
     submitCommandsAndWait(ctx.vkd, ctx.device, queue, cmdBuffer);
 
@@ -574,7 +566,7 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
     invalidateAlloc(ctx.vkd, ctx.device, outputBufferAlloc);
     deMemcpy(&outputValue, outputBufferData, sizeof(outputValue));
 
-    const auto expectedValue = (((params.inverted != params.conditionValue) || params.preprocessOnly) ? pcValue : 0u);
+    const auto expectedValue = ((params.inverted != params.conditionValue) ? pcValue : 0u);
     if (outputValue != expectedValue)
     {
         std::ostringstream msg;
@@ -619,28 +611,30 @@ tcu::TestCaseGroup *createDGCComputeConditionalTestsExt(tcu::TestContext &testCt
         for (const auto inverted : {false, true})
             for (const auto execOnCompute : {false, true})
                 for (const auto separateState : {false, true})
-                    for (const auto preprocessOnly : {false, true})
-                    {
-                        // If we intend to record the conditional rendering commands on the preprocess command buffer
-                        // only, but we will not use a separate command buffer for the state, we would end up in an
-                        // illegal situation: the state command buffer indicates conditional rendering will be active,
-                        // but the execution command buffer will not use it.
-                        if (preprocessOnly && !separateState)
-                            continue;
+                {
+                    // The spec requires that vkCmdExecuteGeneratedCommandsEXT is recorded on the same queue as the
+                    // stateCommandBuffer used for vkCmdPreprocessGeneratedCommandsEXT if isPreprocessed is VK_TRUE.
+                    // If execOnCompute is true but separateState is false, the preprocessing would be done with state
+                    // from the universal queue, and the execution would happen on the compute queue.
+                    if (execOnCompute && !separateState)
+                        continue;
 
-                        const ConditionalPreprocessParams params{
-                            conditionValue, inverted, execOnCompute, separateState, preprocessOnly,
-                        };
+                    const ConditionalPreprocessParams params{
+                        conditionValue,
+                        inverted,
+                        execOnCompute,
+                        separateState,
+                    };
 
-                        const std::string testName =
-                            std::string() + (conditionValue ? "condition_true" : "condition_false") +
-                            (inverted ? "_inverted_flag" : "") + (preprocessOnly ? "_preprocess_only" : "") +
-                            (separateState ? "_separate_state" : "") + (execOnCompute ? "_exec_on_compute" : "");
+                    const std::string testName =
+                        std::string() + (conditionValue ? "condition_true" : "condition_false") +
+                        (inverted ? "_inverted_flag" : "") + (separateState ? "_separate_state" : "") +
+                        (execOnCompute ? "_exec_on_compute" : "");
 
-                        addFunctionCaseWithPrograms(preprocessGroup.get(), testName, checkConditionalPreprocessSupport,
-                                                    storePushConstantProgramPreprocessParams, conditionalPreprocessRun,
-                                                    params);
-                    }
+                    addFunctionCaseWithPrograms(preprocessGroup.get(), testName, checkConditionalPreprocessSupport,
+                                                storePushConstantProgramPreprocessParams, conditionalPreprocessRun,
+                                                params);
+                }
 
     mainGroup->addChild(generalGroup.release());
     mainGroup->addChild(preprocessGroup.release());

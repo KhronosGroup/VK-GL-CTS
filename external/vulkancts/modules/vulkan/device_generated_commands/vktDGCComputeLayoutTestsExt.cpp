@@ -776,8 +776,8 @@ tcu::TestStatus LayoutTestInstance::iterate(void)
                     setLayouts.front() = *setLayoutCopy;
                 }
 
-                // Initialize with the last one, then overwrite.
-                const std::vector<IESStageInfo> stages{IESStageInfo(m_dgcShaders.back()->get(), setLayouts)};
+                // Initialize with the first one, then overwrite.
+                const std::vector<IESStageInfo> stages{IESStageInfo(m_dgcShaders.front()->get(), setLayouts)};
                 executionSet =
                     makeExecutionSetManagerShader(ctx.vkd, ctx.device, stages, m_pcRanges, de::sizeU32(m_dgcShaders));
             }
@@ -787,8 +787,8 @@ tcu::TestStatus LayoutTestInstance::iterate(void)
         }
         else
         {
-            // Initialize with the last one, then overwrite.
-            executionSet = makeExecutionSetManagerPipeline(ctx.vkd, ctx.device, m_dgcPipelines.back()->get(),
+            // Initialize with the first one, then overwrite.
+            executionSet = makeExecutionSetManagerPipeline(ctx.vkd, ctx.device, m_dgcPipelines.front()->get(),
                                                            de::sizeU32(m_dgcPipelines));
             for (size_t i = 0u; i < m_dgcPipelines.size(); ++i)
                 executionSet->addPipeline(static_cast<uint32_t>(i), m_dgcPipelines.at(i)->get());
