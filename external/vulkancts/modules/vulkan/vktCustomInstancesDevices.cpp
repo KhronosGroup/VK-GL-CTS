@@ -1212,6 +1212,47 @@ vk::VkQueueFlags VideoDevice::getQueueFlags(const VideoCodecOperationFlags video
 #endif
 }
 
+bool VideoDevice::supportsCodecOperation(Context &context, const VideoCodecOperationFlags videoCodecOperation)
+{
+#ifndef CTS_USES_VULKANSC
+    const vk::VkQueueFlags requiredQueueFlags = getQueueFlags(videoCodecOperation);
+    if (videoCodecOperation == vk::VK_VIDEO_CODEC_OPERATION_NONE_KHR || requiredQueueFlags == 0)
+        return false;
+
+    const vk::InstanceInterface &vki   = context.getInstanceInterface();
+    const vk::VkPhysicalDevice physDev = context.getPhysicalDevice();
+
+    uint32_t count = 0;
+    vki.getPhysicalDeviceQueueFamilyProperties2(physDev, &count, nullptr);
+    if (count == 0)
+        return false;
+
+    std::vector<vk::VkQueueFamilyProperties2> queues(count);
+    std::vector<vk::VkQueueFamilyVideoPropertiesKHR> videoQueues(count);
+    for (uint32_t ndx = 0; ndx < count; ++ndx)
+    {
+        queues[ndx].sType                     = vk::VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
+        queues[ndx].pNext                     = &videoQueues[ndx];
+        videoQueues[ndx].sType                = vk::VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR;
+        videoQueues[ndx].pNext                = nullptr;
+        videoQueues[ndx].videoCodecOperations = 0;
+    }
+    vki.getPhysicalDeviceQueueFamilyProperties2(physDev, &count, queues.data());
+
+    for (uint32_t ndx = 0; ndx < count; ++ndx)
+        if ((queues[ndx].queueFamilyProperties.queueFlags & requiredQueueFlags) != 0 &&
+            (videoQueues[ndx].videoCodecOperations & videoCodecOperation) != 0)
+            return true;
+
+    return false;
+#else
+    DE_UNREF(context);
+    DE_UNREF(videoCodecOperation);
+
+    return false;
+#endif
+}
+
 bool VideoDevice::isVideoEncodeOperation(const VideoCodecOperationFlags videoCodecOperationFlags)
 {
 #ifndef CTS_USES_VULKANSC

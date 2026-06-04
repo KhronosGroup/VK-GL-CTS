@@ -1804,6 +1804,7 @@ private:
     VkQueue m_encodeQueue;
     VkQueue m_decodeQueue;
     VkQueue m_transferQueue;
+    bool m_hasDecodeSupport;
 
     // Formats
     VkFormat m_imageFormat;
@@ -1935,6 +1936,7 @@ private:
 VideoEncodeTestInstance::VideoEncodeTestInstance(Context &context, const TestDefinition *testDefinition)
     : VideoBaseTestInstance(context)
     , m_testDefinition(testDefinition)
+    , m_hasDecodeSupport(false)
 {
 }
 
@@ -2128,11 +2130,19 @@ void VideoEncodeTestInstance::setupDeviceAndQueues()
     m_dpbImageFormat = checkImageFormat(VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR, m_videoEncodeProfileList.get(),
                                         VK_FORMAT_G8_B8R8_2PLANE_420_UNORM);
 
+    m_hasDecodeSupport = VideoDevice::supportsCodecOperation(m_context, m_videoCodecDecodeOperation);
+
+    VkQueueFlags requestedQueueFlags                = VK_QUEUE_VIDEO_ENCODE_BIT_KHR | VK_QUEUE_TRANSFER_BIT;
+    VkVideoCodecOperationFlagsKHR requestedCodecOps = m_videoCodecEncodeOperation;
+    if (m_hasDecodeSupport)
+    {
+        requestedQueueFlags |= VK_QUEUE_VIDEO_DECODE_BIT_KHR;
+        requestedCodecOps |= m_videoCodecDecodeOperation;
+    }
+
     // Get video device
     const VideoDevice::VideoDeviceFlags videoDeviceFlags = m_testDefinition->requiredDeviceFlags();
-    m_videoEncodeDevice =
-        getDeviceSupportingQueue(VK_QUEUE_VIDEO_ENCODE_BIT_KHR | VK_QUEUE_VIDEO_DECODE_BIT_KHR | VK_QUEUE_TRANSFER_BIT,
-                                 m_videoCodecEncodeOperation | m_videoCodecDecodeOperation, videoDeviceFlags);
+    m_videoEncodeDevice = getDeviceSupportingQueue(requestedQueueFlags, requestedCodecOps, videoDeviceFlags);
     m_videoDeviceDriver = &getDeviceDriver();
 
     // Get non-coherent atom size for memory alignment
@@ -2140,12 +2150,21 @@ void VideoEncodeTestInstance::setupDeviceAndQueues()
 
     // Get queue family indices and queues
     m_encodeQueueFamilyIndex   = getQueueFamilyIndexEncode();
-    m_decodeQueueFamilyIndex   = getQueueFamilyIndexDecode();
     m_transferQueueFamilyIndex = getQueueFamilyIndexTransfer();
 
     m_encodeQueue   = getDeviceQueue(*m_videoDeviceDriver, m_videoEncodeDevice, m_encodeQueueFamilyIndex, 0u);
-    m_decodeQueue   = getDeviceQueue(*m_videoDeviceDriver, m_videoEncodeDevice, m_decodeQueueFamilyIndex, 0u);
     m_transferQueue = getDeviceQueue(*m_videoDeviceDriver, m_videoEncodeDevice, m_transferQueueFamilyIndex, 0u);
+
+    if (m_hasDecodeSupport)
+    {
+        m_decodeQueueFamilyIndex = getQueueFamilyIndexDecode();
+        m_decodeQueue = getDeviceQueue(*m_videoDeviceDriver, m_videoEncodeDevice, m_decodeQueueFamilyIndex, 0u);
+    }
+    else
+    {
+        m_decodeQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        m_decodeQueue            = VK_NULL_HANDLE;
+    }
 }
 
 void VideoEncodeTestInstance::queryAndValidateCapabilities()
@@ -3409,6 +3428,15 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
         saveBufferAsFile(encodeBuffer, encodeBufferSize, outputFileName);
     }
 
+    if (!m_hasDecodeSupport)
+    {
+        m_context.getTestContext().getLog()
+            << tcu::TestLog::Message
+            << "Skipping decode-back verification: device does not advertise the corresponding decode operation."
+            << tcu::TestLog::EndMessage;
+        return tcu::TestStatus::pass("Encode succeeded; decode-back verification skipped (no decode support)");
+    }
+
     // Vulkan video is not supported on android platform
     // all external libraries, helper functions and test instances has been excluded
     DeviceContext deviceContext(&m_context, &m_videoDevice, m_physicalDevice, m_videoEncodeDevice, m_decodeQueue,
@@ -3447,7 +3475,6 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
     demuxParams.framing        = ElementaryStreamFraming::H26X_BYTE_STREAM;
     auto demuxer               = Demuxer::create(std::move(demuxParams));
     VkVideoParser parser;
-    // TODO: Check for decoder extension support before attempting validation!
     createParser(demuxer->codecOperation(), basicDecoder, parser, demuxer->framing());
 
     FrameProcessor processor(std::move(demuxer), basicDecoder);

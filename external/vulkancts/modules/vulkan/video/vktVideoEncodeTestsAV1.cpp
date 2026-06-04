@@ -449,12 +449,24 @@ tcu::TestStatus VideoTestInstance::iterate(void)
 
     if (allFramesEncoded && frameNumEncoded + 1 == totalFrames)
     {
-        status = validateEncodedContent(
-            VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR, STD_VIDEO_AV1_PROFILE_MAIN, m_outputClipFilename.c_str(),
-            m_inputClipFilename.c_str(), m_definition.gop.frameCount, m_definition.frameSize.width,
-            m_definition.frameSize.height, m_expectedOutputExtent,
-            getChromaSubSampling(m_definition.subsampling.subsampling), getBitDepth(m_definition.bitDepth.depth),
-            getBitDepth(m_definition.bitDepth.depth), PSNR_THRESHOLD_LOWER_LIMIT);
+        if (VideoDevice::supportsCodecOperation(m_context, VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR))
+        {
+            status = validateEncodedContent(
+                VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR, STD_VIDEO_AV1_PROFILE_MAIN, m_outputClipFilename.c_str(),
+                m_inputClipFilename.c_str(), m_definition.gop.frameCount, m_definition.frameSize.width,
+                m_definition.frameSize.height, m_expectedOutputExtent,
+                getChromaSubSampling(m_definition.subsampling.subsampling), getBitDepth(m_definition.bitDepth.depth),
+                getBitDepth(m_definition.bitDepth.depth), PSNR_THRESHOLD_LOWER_LIMIT);
+        }
+        else
+        {
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message
+                << "Skipping decode-back verification: device does not advertise the AV1 decode operation."
+                << tcu::TestLog::EndMessage;
+            status =
+                tcu::TestStatus::pass("Encode succeeded; decode-back verification skipped (no AV1 decode support)");
+        }
     }
     m_encoder = nullptr;
 #else
