@@ -437,6 +437,7 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
         invalidateAlloc(vk, vkDevice, bufferAllocation);
         uint8_t *hostPtr = (uint8_t *)bufferAllocation.getHostPtr();
         deMemcpy(hostPtr, memoryImageCopiesKHR.data(), (uint32_t)indirectBufferSize);
+        flushAlloc(vk, vkDevice, bufferAllocation);
 
         std::vector<VkImageSubresourceLayers> imageSubresourceLayers;
         for (const auto &region : m_params.regions)
