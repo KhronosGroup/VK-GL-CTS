@@ -29,9 +29,7 @@
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
 #include "vktTestCase.hpp"
-#include "vktTestCaseUtil.hpp"
 #include "vkPipelineBinaryUtil.hpp"
-#include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkBuilderUtil.hpp"
@@ -40,7 +38,6 @@
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
-#include "vkObjUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "deUniquePtr.hpp"
 #include "deMemory.h"
@@ -561,8 +558,46 @@ GraphicsTestInstance::GraphicsTestInstance(Context &context, const TestParam *pa
     // Create render pass
     m_renderPassFramebuffer[PIPELINE_NDX_NO_BLOBS] =
         RenderPassWrapper(m_param->getPipelineConstructionType(), vk, vkDevice, m_colorFormat, m_depthFormat);
-    m_renderPassFramebuffer[PIPELINE_NDX_USE_BLOBS] =
-        RenderPassWrapper(m_param->getPipelineConstructionType(), vk, vkDevice, m_colorFormat, m_depthFormat);
+
+    // As the depth image is shared between both render passes, we need to indicate the initial layout does not need
+    // to change for it. This also helps the render pass wrapper set up proper barriers between RPs.
+    {
+        const std::vector<VkAttachmentDescription> attDescs{
+            makeAttachmentDescription(0u, m_colorFormat, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                      VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                      VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED,
+                                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+            makeAttachmentDescription(
+                0u, m_depthFormat, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
+                VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL),
+        };
+
+        const std::vector<VkAttachmentReference> attRefs{
+            makeAttachmentReference(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+            makeAttachmentReference(1u, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL),
+        };
+
+        const std::vector<VkSubpassDescription> subpasses{
+            makeSubpassDescription(0u, VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, nullptr, 1u, &attRefs.front(), nullptr,
+                                   &attRefs.back(), 0u, nullptr),
+        };
+
+        const VkRenderPassCreateInfo rpCreateInfo{
+            VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+            nullptr,
+            0u,
+            de::sizeU32(attDescs),
+            de::dataOrNull(attDescs),
+            de::sizeU32(subpasses),
+            de::dataOrNull(subpasses),
+            0u,
+            nullptr,
+        };
+
+        m_renderPassFramebuffer[PIPELINE_NDX_USE_BLOBS] =
+            RenderPassWrapper(m_param->getPipelineConstructionType(), vk, vkDevice, &rpCreateInfo);
+    }
 
     const VkComponentMapping ComponentMappingRGBA = {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G,
                                                      VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
