@@ -1172,7 +1172,7 @@ tcu::TestStatus NoStencilAttachmentInstance::iterate(void)
 
     PipelineRenderingCreateInfoWrapper pipelineRenderingCreateInfoPtr(
 #ifndef CTS_USES_VULKANSC
-        &pipelineRenderingCreateInfo
+        useDR ? &pipelineRenderingCreateInfo : nullptr
 #else
         nullptr
 #endif // CTS_USES_VULKANSC
