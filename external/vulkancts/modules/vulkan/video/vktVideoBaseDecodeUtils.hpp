@@ -763,7 +763,7 @@ struct NvVkDecodeFrameDataSlot
     VkCommandBuffer commandBuffer;
 };
 
-class VideoBaseDecoder final : public VkParserVideoDecodeClient
+class VideoBaseDecoder : public VkParserVideoDecodeClient
 {
     enum
     {
