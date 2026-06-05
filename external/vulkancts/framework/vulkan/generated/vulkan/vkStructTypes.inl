@@ -7734,6 +7734,20 @@ struct VkPhysicalDeviceShaderSMBuiltinsPropertiesNV
 	uint32_t		shaderWarpsPerSM;
 };
 
+struct VkPhysicalDeviceShaderSplitBarrierFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderSplitBarrier;
+};
+
+struct VkPhysicalDeviceShaderSplitBarrierPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		splitBarrierReservedSharedMemory;
+};
+
 struct VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures
 {
 	VkStructureType	sType;

@@ -168,6 +168,7 @@ const vk::VkPhysicalDeviceShaderQuadControlFeaturesKHR&						getShaderQuadContro
 const vk::VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR&		getShaderRelaxedExtendedInstructionFeatures			(void) const;
 const vk::VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT&			getShaderReplicatedCompositesFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderSMBuiltinsFeaturesNV&						getShaderSMBuiltinsFeatures							(void) const;
+const vk::VkPhysicalDeviceShaderSplitBarrierFeaturesEXT&					getShaderSplitBarrierFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures&				getShaderSubgroupExtendedTypesFeatures				(void) const;
 const vk::VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT&				getShaderSubgroupPartitionedFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceShaderSubgroupRotateFeatures&						getShaderSubgroupRotateFeatures						(void) const;

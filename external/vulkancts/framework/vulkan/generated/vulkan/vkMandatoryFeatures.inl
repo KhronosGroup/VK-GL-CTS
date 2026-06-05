@@ -831,6 +831,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_shader_sm_builtins"))
 		addFeatures(&physicalDeviceShaderSMBuiltinsFeaturesNV);
 
+	// VkPhysicalDeviceShaderSplitBarrierFeaturesEXT for ext [VK_EXT_shader_split_barrier]
+	vk::VkPhysicalDeviceShaderSplitBarrierFeaturesEXT physicalDeviceShaderSplitBarrierFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_split_barrier"))
+		addFeatures(&physicalDeviceShaderSplitBarrierFeaturesEXT);
+
 	// VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures, VkPhysicalDeviceShaderSubgroupExtendedTypesFeaturesKHR for ext [VK_KHR_shader_subgroup_extended_types]
 	vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures physicalDeviceShaderSubgroupExtendedTypesFeatures = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_subgroup_extended_types"))
@@ -2016,6 +2021,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDevicePipelineCreationCacheControlFeatures.pipelineCreationCacheControl == VK_FALSE )
 			failMesages.push_back("pipelineCreationCacheControl");
+	}
+
+	// VkPhysicalDeviceShaderSplitBarrierFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_split_barrier")) )
+	{
+		if ( physicalDeviceShaderSplitBarrierFeaturesEXT.shaderSplitBarrier == VK_FALSE )
+			failMesages.push_back("shaderSplitBarrier");
 	}
 
 	// VkPhysicalDeviceDescriptorBufferFeaturesEXT

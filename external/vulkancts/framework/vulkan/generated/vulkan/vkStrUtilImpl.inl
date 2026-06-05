@@ -15737,6 +15737,26 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderSMBuiltin
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderSplitBarrierFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceShaderSplitBarrierFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderSplitBarrier = " << value.shaderSplitBarrier << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderSplitBarrierPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceShaderSplitBarrierPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsplitBarrierReservedSharedMemory = " << value.splitBarrierReservedSharedMemory << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures& value)
 {
 	s << "VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures = {\n";

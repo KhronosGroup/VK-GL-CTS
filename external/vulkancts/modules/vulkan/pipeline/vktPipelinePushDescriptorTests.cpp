@@ -975,33 +975,33 @@ tcu::TestStatus PushDescriptorIncrementalUpdatesComputeTestInstance::iterate(voi
 
     VkDescriptorUpdateTemplateEntry updateEntries[2] = {
         {
-            0u,                                // uint32_t			dstBinding;
-            0u,                                // uint32_t			dstArrayElement;
-            1u,                                // uint32_t			descriptorCount;
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // VkDescriptorType	descriptorType;
-            0u,                                // size_t			offset;
-            sizeof(VkDescriptorBufferInfo)     // size_t			stride;
+            0u,                                // uint32_t dstBinding;
+            0u,                                // uint32_t dstArrayElement;
+            1u,                                // uint32_t descriptorCount;
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // VkDescriptorType descriptorType;
+            0u,                                // size_t offset;
+            sizeof(VkDescriptorBufferInfo)     // size_t stride;
         },
         {
-            1u,                                // uint32_t			dstBinding;
-            0u,                                // uint32_t			dstArrayElement;
-            1u,                                // uint32_t			descriptorCount;
-            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // VkDescriptorType	descriptorType;
-            sizeof(VkDescriptorBufferInfo),    // size_t			offset;
-            sizeof(VkDescriptorBufferInfo)     // size_t			stride;
+            1u,                                // uint32_t dstBinding;
+            0u,                                // uint32_t dstArrayElement;
+            1u,                                // uint32_t descriptorCount;
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // VkDescriptorType descriptorType;
+            sizeof(VkDescriptorBufferInfo),    // size_t offset;
+            sizeof(VkDescriptorBufferInfo)     // size_t stride;
         },
     };
     VkDescriptorUpdateTemplateCreateInfo templateCreateInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO, // VkStructureType							sType;
-        nullptr,                                                  // const void*								pNext;
-        (VkDescriptorUpdateTemplateCreateFlags)0u,                // VkDescriptorUpdateTemplateCreateFlags	flags;
-        2u,                                                       // uint32_t								    descriptorUpdateEntryCount;
-        updateEntries, // const VkDescriptorUpdateTemplateEntry*	pDescriptorUpdateEntries;
-        VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS, // VkDescriptorUpdateTemplateType			templateType;
-        *descriptorSetLayout,                                // VkDescriptorSetLayout					descriptorSetLayout;
-        VK_PIPELINE_BIND_POINT_COMPUTE,                      // VkPipelineBindPoint						pipelineBindPoint;
-        *pipelineLayout,                                     // VkPipelineLayout						    pipelineLayout;
-        0u                                                   // uint32_t								    set;
+        VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                                  // const void* pNext;
+        (VkDescriptorUpdateTemplateCreateFlags)0u,                // VkDescriptorUpdateTemplateCreateFlags flags;
+        2u,                                                       // uint32_t     descriptorUpdateEntryCount;
+        updateEntries, // const VkDescriptorUpdateTemplateEntry* pDescriptorUpdateEntries;
+        VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS, // VkDescriptorUpdateTemplateType templateType;
+        *descriptorSetLayout,                                // VkDescriptorSetLayout descriptorSetLayout;
+        VK_PIPELINE_BIND_POINT_COMPUTE,                      // VkPipelineBindPoint pipelineBindPoint;
+        *pipelineLayout,                                     // VkPipelineLayout     pipelineLayout;
+        0u                                                   // uint32_t     set;
     };
     const auto descriptorUpdateTemplate1 = createDescriptorUpdateTemplate(m_vkd, *m_device, &templateCreateInfo);
     templateCreateInfo.descriptorUpdateEntryCount = 1u;
@@ -1022,12 +1022,12 @@ tcu::TestStatus PushDescriptorIncrementalUpdatesComputeTestInstance::iterate(voi
                 ssboInfo1,
             };
             VkPushDescriptorSetWithTemplateInfo pushDescriptorSetWithTemplateInfo = {
-                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO, // VkStructureType				sType;
-                nullptr,                                                  // const void*					pNext;
-                *descriptorUpdateTemplate1, // VkDescriptorUpdateTemplate	descriptorUpdateTemplate;
-                *pipelineLayout,            // VkPipelineLayout			    layout;
-                0u,                         // uint32_t					    set;
-                data                        // const void*					pData;
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO, // VkStructureType sType;
+                nullptr,                                                  // const void* pNext;
+                *descriptorUpdateTemplate1, // VkDescriptorUpdateTemplate descriptorUpdateTemplate;
+                *pipelineLayout,            // VkPipelineLayout     layout;
+                0u,                         // uint32_t     set;
+                data                        // const void* pData;
             };
             const VkPushDescriptorSetWithTemplateInfo *templateInfoPtr = &pushDescriptorSetWithTemplateInfo;
             m_vkd.cmdPushDescriptorSetWithTemplate2(*cmdBuffer, templateInfoPtr);
@@ -1035,13 +1035,13 @@ tcu::TestStatus PushDescriptorIncrementalUpdatesComputeTestInstance::iterate(voi
         else
         {
             VkPushDescriptorSetInfo pushDescriptorSetInfo = {
-                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO, // VkStructureType				sType;
-                nullptr,                                    // const void*					pNext;
-                VK_SHADER_STAGE_COMPUTE_BIT,                // VkShaderStageFlags			stageFlags;
-                *pipelineLayout,                            // VkPipelineLayout			    layout;
-                0u,                                         // uint32_t					    set;
-                2u,                                         // uint32_t					    descriptorWriteCount;
-                descriptorWrites                            // const VkWriteDescriptorSet*	pDescriptorWrites;
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO, // VkStructureType sType;
+                nullptr,                                    // const void* pNext;
+                VK_SHADER_STAGE_COMPUTE_BIT,                // VkShaderStageFlags stageFlags;
+                *pipelineLayout,                            // VkPipelineLayout     layout;
+                0u,                                         // uint32_t     set;
+                2u,                                         // uint32_t     descriptorWriteCount;
+                descriptorWrites                            // const VkWriteDescriptorSet* pDescriptorWrites;
             };
             m_vkd.cmdPushDescriptorSet2(*cmdBuffer, &pushDescriptorSetInfo);
         }
@@ -1073,12 +1073,12 @@ tcu::TestStatus PushDescriptorIncrementalUpdatesComputeTestInstance::iterate(voi
                 ssboInfo2,
             };
             VkPushDescriptorSetWithTemplateInfo pushDescriptorSetWithTemplateInfo = {
-                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO, // VkStructureType				sType;
-                nullptr,                                                  // const void*					pNext;
-                *descriptorUpdateTemplate2, // VkDescriptorUpdateTemplate	descriptorUpdateTemplate;
-                *pipelineLayout,            // VkPipelineLayout			    layout;
-                0u,                         // uint32_t					    set;
-                data                        // const void*					pData;
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO, // VkStructureType sType;
+                nullptr,                                                  // const void* pNext;
+                *descriptorUpdateTemplate2, // VkDescriptorUpdateTemplate descriptorUpdateTemplate;
+                *pipelineLayout,            // VkPipelineLayout     layout;
+                0u,                         // uint32_t     set;
+                data                        // const void* pData;
             };
             const VkPushDescriptorSetWithTemplateInfo *templateInfoPtr = &pushDescriptorSetWithTemplateInfo;
             m_vkd.cmdPushDescriptorSetWithTemplate2(*cmdBuffer, templateInfoPtr);
@@ -1086,13 +1086,13 @@ tcu::TestStatus PushDescriptorIncrementalUpdatesComputeTestInstance::iterate(voi
         else
         {
             VkPushDescriptorSetInfo pushDescriptorSetInfo = {
-                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO, // VkStructureType				sType;
-                nullptr,                                    // const void*					pNext;
-                VK_SHADER_STAGE_COMPUTE_BIT,                // VkShaderStageFlags			stageFlags;
-                *pipelineLayout,                            // VkPipelineLayout			    layout;
-                0u,                                         // uint32_t					    set;
-                1u,                                         // uint32_t					    descriptorWriteCount;
-                &descriptorWrite2                           // const VkWriteDescriptorSet*	pDescriptorWrites;
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO, // VkStructureType sType;
+                nullptr,                                    // const void* pNext;
+                VK_SHADER_STAGE_COMPUTE_BIT,                // VkShaderStageFlags stageFlags;
+                *pipelineLayout,                            // VkPipelineLayout     layout;
+                0u,                                         // uint32_t     set;
+                1u,                                         // uint32_t     descriptorWriteCount;
+                &descriptorWrite2                           // const VkWriteDescriptorSet* pDescriptorWrites;
             };
             m_vkd.cmdPushDescriptorSet2(*cmdBuffer, &pushDescriptorSetInfo);
         }
@@ -1127,25 +1127,25 @@ tcu::TestStatus PushDescriptorIncrementalUpdatesComputeTestInstance::iterate(voi
         if (m_withTemplate)
         {
             VkPushDescriptorSetWithTemplateInfo pushDescriptorSetWithTemplateInfo = {
-                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO, // VkStructureType				sType;
-                nullptr,                                                  // const void*					pNext;
-                *descriptorUpdateTemplate3, // VkDescriptorUpdateTemplate	descriptorUpdateTemplate;
-                *pipelineLayout,            // VkPipelineLayout			    layout;
-                0u,                         // uint32_t					    set;
-                &uboInfo2                   // const void*					pData;
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO, // VkStructureType sType;
+                nullptr,                                                  // const void* pNext;
+                *descriptorUpdateTemplate3, // VkDescriptorUpdateTemplate descriptorUpdateTemplate;
+                *pipelineLayout,            // VkPipelineLayout     layout;
+                0u,                         // uint32_t     set;
+                &uboInfo2                   // const void* pData;
             };
             m_vkd.cmdPushDescriptorSetWithTemplate2(*cmdBuffer, &pushDescriptorSetWithTemplateInfo);
         }
         else
         {
             VkPushDescriptorSetInfo pushDescriptorSetInfo = {
-                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO, // VkStructureType				sType;
-                nullptr,                                    // const void*					pNext;
-                VK_SHADER_STAGE_COMPUTE_BIT,                // VkShaderStageFlags			stageFlags;
-                *pipelineLayout,                            // VkPipelineLayout			    layout;
-                0u,                                         // uint32_t					    set;
-                1u,                                         // uint32_t					    descriptorWriteCount;
-                &descriptorWrite3                           // const VkWriteDescriptorSet*	pDescriptorWrites;
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO, // VkStructureType sType;
+                nullptr,                                    // const void* pNext;
+                VK_SHADER_STAGE_COMPUTE_BIT,                // VkShaderStageFlags stageFlags;
+                *pipelineLayout,                            // VkPipelineLayout     layout;
+                0u,                                         // uint32_t     set;
+                1u,                                         // uint32_t     descriptorWriteCount;
+                &descriptorWrite3                           // const VkWriteDescriptorSet* pDescriptorWrites;
             };
             m_vkd.cmdPushDescriptorSet2(*cmdBuffer, &pushDescriptorSetInfo);
         }
