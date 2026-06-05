@@ -642,6 +642,12 @@ void get_nuniformfv(NegativeTestContext &ctx)
     ctx.expectError(GL_INVALID_OPERATION);
     ctx.endSection();
 
+    ctx.beginSection("GL_INVALID_OPERATION is generated if the buffer size required to store the requested data is "
+                     "greater than bufSize.  GL_INVALID_VALUE is also acceptable because -1 is passed to sizei.");
+    ctx.glGetnUniformfv(program.getProgram(), unif, -1, &params[0]);
+    ctx.expectError(GL_INVALID_OPERATION, GL_INVALID_VALUE);
+    ctx.endSection();
+
     ctx.glDeleteShader(shader);
     ctx.glDeleteProgram(programEmpty);
 }
@@ -735,8 +741,14 @@ void get_nuniformiv(NegativeTestContext &ctx)
 
     ctx.beginSection("GL_INVALID_OPERATION is generated if the buffer size required to store the requested data is "
                      "greater than bufSize.");
-    ctx.glGetnUniformiv(program.getProgram(), unif, -1, &params[0]);
+    ctx.glGetnUniformiv(program.getProgram(), unif, 0, &params[0]);
     ctx.expectError(GL_INVALID_OPERATION);
+    ctx.endSection();
+
+    ctx.beginSection("GL_INVALID_OPERATION is generated if the buffer size required to store the requested data is "
+                     "greater than bufSize.  GL_INVALID_VALUE is also acceptable because -1 is passed to sizei.");
+    ctx.glGetnUniformiv(program.getProgram(), unif, -1, &params[0]);
+    ctx.expectError(GL_INVALID_OPERATION, GL_INVALID_VALUE);
     ctx.endSection();
 
     ctx.glDeleteShader(shader);
@@ -832,8 +844,14 @@ void get_nuniformuiv(NegativeTestContext &ctx)
 
     ctx.beginSection("GL_INVALID_OPERATION is generated if the buffer size required to store the requested data is "
                      "greater than bufSize.");
-    ctx.glGetnUniformuiv(program.getProgram(), unif, -1, &params[0]);
+    ctx.glGetnUniformuiv(program.getProgram(), unif, 0, &params[0]);
     ctx.expectError(GL_INVALID_OPERATION);
+    ctx.endSection();
+
+    ctx.beginSection("GL_INVALID_OPERATION is generated if the buffer size required to store the requested data is "
+                     "greater than bufSize.  GL_INVALID_VALUE is also acceptable because -1 is passed to sizei.");
+    ctx.glGetnUniformuiv(program.getProgram(), unif, -1, &params[0]);
+    ctx.expectError(GL_INVALID_OPERATION, GL_INVALID_VALUE);
     ctx.endSection();
 
     ctx.glDeleteShader(shader);
