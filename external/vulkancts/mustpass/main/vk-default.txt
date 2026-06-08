@@ -98,6 +98,7 @@ vk-default/pipeline/monolithic/multisample-with-fragment-shading-rate.txt
 vk-default/pipeline/monolithic/no-position.txt
 vk-default/pipeline/monolithic/pipeline-binary.txt
 vk-default/pipeline/monolithic/pipeline-cache.txt
+vk-default/pipeline/monolithic/primitive-restart-index.txt
 vk-default/pipeline/monolithic/push-constant.txt
 vk-default/pipeline/monolithic/push-descriptor.txt
 vk-default/pipeline/monolithic/render-to-image.txt
@@ -147,6 +148,7 @@ vk-default/pipeline/shader-object-unlinked-spirv/multisample.txt
 vk-default/pipeline/shader-object-unlinked-spirv/multisample-interpolation.txt
 vk-default/pipeline/shader-object-unlinked-spirv/multisample-with-fragment-shading-rate.txt
 vk-default/pipeline/shader-object-unlinked-spirv/no-position.txt
+vk-default/pipeline/shader-object-unlinked-spirv/primitive-restart-index.txt
 vk-default/pipeline/shader-object-unlinked-spirv/push-constant.txt
 vk-default/pipeline/shader-object-unlinked-spirv/push-descriptor.txt
 vk-default/pipeline/shader-object-unlinked-spirv/render-to-image.txt

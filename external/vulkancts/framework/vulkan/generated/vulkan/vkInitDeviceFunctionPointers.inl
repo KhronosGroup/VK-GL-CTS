@@ -327,6 +327,7 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0))
     m_vk.cmdSetPrimitiveRestartEnable = (CmdSetPrimitiveRestartEnableFunc) GET_PROC_ADDR("vkCmdSetPrimitiveRestartEnable");
 if (!m_vk.cmdSetPrimitiveRestartEnable)
     m_vk.cmdSetPrimitiveRestartEnable = (CmdSetPrimitiveRestartEnableFunc) GET_PROC_ADDR("vkCmdSetPrimitiveRestartEnableEXT");
+m_vk.cmdSetPrimitiveRestartIndexEXT = (CmdSetPrimitiveRestartIndexEXTFunc) GET_PROC_ADDR("vkCmdSetPrimitiveRestartIndexEXT");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0))
     m_vk.cmdSetPrimitiveTopology = (CmdSetPrimitiveTopologyFunc) GET_PROC_ADDR("vkCmdSetPrimitiveTopology");
 if (!m_vk.cmdSetPrimitiveTopology)

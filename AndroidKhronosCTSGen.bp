@@ -1614,6 +1614,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampledRenderToSingleSampledTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineNoPositionTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineNoQueuesTests.cpp",
+        "external/vulkancts/modules/vulkan/pipeline/vktPipelinePrimitiveRestartIndexTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelinePushConstantTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelinePushDescriptorTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineReferenceRenderer.cpp",

@@ -7179,6 +7179,13 @@ struct VkPhysicalDevicePresentWaitFeaturesKHR
 	VkBool32		presentWait;
 };
 
+struct VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		primitiveRestartIndex;
+};
+
 struct VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT
 {
 	VkStructureType	sType;

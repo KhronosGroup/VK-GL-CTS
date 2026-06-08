@@ -751,11 +751,26 @@ struct VkDrawIndirectCommand
 	uint32_t	firstInstance;
 };
 
+struct VkDrmFormatModifierProperties2EXT
+{
+	uint64_t				drmFormatModifier;
+	uint32_t				drmFormatModifierPlaneCount;
+	VkFormatFeatureFlags2	drmFormatModifierTilingFeatures;
+};
+
 struct VkDrmFormatModifierPropertiesEXT
 {
 	uint64_t				drmFormatModifier;
 	uint32_t				drmFormatModifierPlaneCount;
 	VkFormatFeatureFlags	drmFormatModifierTilingFeatures;
+};
+
+struct VkDrmFormatModifierPropertiesList2EXT
+{
+	VkStructureType						sType;
+	void*								pNext;
+	uint32_t							drmFormatModifierCount;
+	VkDrmFormatModifierProperties2EXT*	pDrmFormatModifierProperties;
 };
 
 struct VkDrmFormatModifierPropertiesListEXT

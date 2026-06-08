@@ -1269,6 +1269,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentModeFifo
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentTimingFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentWait2FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentWaitFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePrivateDataFeatures& value);

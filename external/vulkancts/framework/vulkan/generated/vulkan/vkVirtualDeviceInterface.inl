@@ -212,6 +212,7 @@ virtual VkResult			cmdSetPerformanceOverrideINTEL							(VkCommandBuffer command
 virtual VkResult			cmdSetPerformanceStreamMarkerINTEL						(VkCommandBuffer commandBuffer, const VkPerformanceStreamMarkerInfoINTEL* pMarkerInfo) const = 0;
 virtual void				cmdSetPolygonModeEXT									(VkCommandBuffer commandBuffer, VkPolygonMode polygonMode) const = 0;
 virtual void				cmdSetPrimitiveRestartEnable							(VkCommandBuffer commandBuffer, VkBool32 primitiveRestartEnable) const = 0;
+virtual void				cmdSetPrimitiveRestartIndexEXT							(VkCommandBuffer commandBuffer, uint32_t primitiveRestartIndex) const = 0;
 virtual void				cmdSetPrimitiveTopology									(VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology) const = 0;
 virtual void				cmdSetProvokingVertexModeEXT							(VkCommandBuffer commandBuffer, VkProvokingVertexModeEXT provokingVertexMode) const = 0;
 virtual void				cmdSetRasterizationSamplesEXT							(VkCommandBuffer commandBuffer, VkSampleCountFlagBits rasterizationSamples) const = 0;

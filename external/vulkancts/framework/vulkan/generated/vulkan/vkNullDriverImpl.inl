@@ -2467,6 +2467,12 @@ VKAPI_ATTR void VKAPI_CALL cmdSetPrimitiveRestartEnableEXT (VkCommandBuffer comm
 	DE_UNREF(primitiveRestartEnable);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdSetPrimitiveRestartIndexEXT (VkCommandBuffer commandBuffer, uint32_t primitiveRestartIndex)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(primitiveRestartIndex);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdSetPrimitiveTopology (VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology)
 {
 	DE_UNREF(commandBuffer);
@@ -5479,6 +5485,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdSetPerformanceStreamMarkerINTEL,						cmdSetPerformanceStreamMarkerINTEL),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPolygonModeEXT,										cmdSetPolygonModeEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveRestartEnable,								cmdSetPrimitiveRestartEnable),
+	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveRestartIndexEXT,							cmdSetPrimitiveRestartIndexEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveTopology,									cmdSetPrimitiveTopology),
 	VK_NULL_FUNC_ENTRY(vkCmdSetProvokingVertexModeEXT,								cmdSetProvokingVertexModeEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetRasterizationSamplesEXT,								cmdSetRasterizationSamplesEXT),

@@ -14988,6 +14988,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePresentWaitFeat
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT& value)
+{
+	s << "VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tprimitiveRestartIndex = " << value.primitiveRestartIndex << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT& value)
 {
 	s << "VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT = {\n";

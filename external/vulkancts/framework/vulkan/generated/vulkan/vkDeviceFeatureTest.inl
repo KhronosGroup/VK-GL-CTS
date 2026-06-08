@@ -5228,6 +5228,48 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPresentWaitFeaturesKHR (C
 }
 
 
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPrimitiveRestartIndexFeaturesEXT (Context& context)
+{
+    const PlatformInterface&                vkp = context.getPlatformInterface();
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const InstanceDriver&                    instanceDriver            (instance.getDriver());
+    const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+    const tcu::CommandLine&                    commandLine = context.getTestContext().getCommandLine();
+    bool                                    isSubProcess = context.getTestContext().getCommandLine().isSubProcess();
+
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT, primitiveRestartIndex),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT*>(featuresStruct);
+        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPrimitiveTopologyListRestartFeaturesEXT (Context& context)
 {
     const PlatformInterface&                vkp = context.getPlatformInterface();
@@ -9204,6 +9246,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "present_timing_features_ext", createDeviceWithUnsupportedFeaturesTestPresentTimingFeaturesEXT);
 	addFunctionCase(testGroup, "present_wait2_features_khr", createDeviceWithUnsupportedFeaturesTestPresentWait2FeaturesKHR);
 	addFunctionCase(testGroup, "present_wait_features_khr", createDeviceWithUnsupportedFeaturesTestPresentWaitFeaturesKHR);
+	addFunctionCase(testGroup, "primitive_restart_index_features_ext", createDeviceWithUnsupportedFeaturesTestPrimitiveRestartIndexFeaturesEXT);
 	addFunctionCase(testGroup, "primitive_topology_list_restart_features_ext", createDeviceWithUnsupportedFeaturesTestPrimitiveTopologyListRestartFeaturesEXT);
 	addFunctionCase(testGroup, "primitives_generated_query_features_ext", createDeviceWithUnsupportedFeaturesTestPrimitivesGeneratedQueryFeaturesEXT);
 	addFunctionCase(testGroup, "private_data_features", createDeviceWithUnsupportedFeaturesTestPrivateDataFeatures);

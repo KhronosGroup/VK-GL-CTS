@@ -122,6 +122,7 @@ const vk::VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR&			getPresentMod
 const vk::VkPhysicalDevicePresentTimingFeaturesEXT&							getPresentTimingFeaturesEXT							(void) const;
 const vk::VkPhysicalDevicePresentWait2FeaturesKHR&							getPresentWait2Features								(void) const;
 const vk::VkPhysicalDevicePresentWaitFeaturesKHR&							getPresentWaitFeatures								(void) const;
+const vk::VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT&					getPrimitiveRestartIndexFeaturesEXT					(void) const;
 const vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&			getPrimitiveTopologyListRestartFeaturesEXT			(void) const;
 const vk::VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT&				getPrimitivesGeneratedQueryFeaturesEXT				(void) const;
 const vk::VkPhysicalDevicePrivateDataFeatures&								getPrivateDataFeatures								(void) const;

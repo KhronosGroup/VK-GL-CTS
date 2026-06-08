@@ -128,6 +128,7 @@ VK_EXT_present_mode_fifo_latest_ready
 VK_EXT_present_timing
 VK_EXT_primitive_topology_list_restart
 VK_EXT_primitives_generated_query
+VK_EXT_primitive_restart_index
 VK_EXT_provoking_vertex
 VK_EXT_rasterization_order_attachment_access
 VK_EXT_ray_tracing_invocation_reorder
@@ -720,6 +721,39 @@ class ConformanceItemLists:
         for s in self.structs:
             if s.name in khrStructs:
                 s.alias = s.name + 'KHR'
+        # add missing structs that are needed by vulkan_json_parser.hpp (to be removed when vulkan_json_parser.hpp is fixed)
+        structNames = [s.name for s in self.structs]
+        commonMemberParams = (False, None, False, None, False, False, [], False, False, None, '', None, None, [])
+        dfmp2StructName = 'VkDrmFormatModifierProperties2EXT'
+        if dfmp2StructName not in structNames:
+            members = [
+                Member('drmFormatModifier', 'uint64_t', 'uint64_t', *commonMemberParams),
+                Member('drmFormatModifierPlaneCount', 'uint32_t', 'uint32_t', *commonMemberParams),
+                Member('drmFormatModifierTilingFeatures', 'VkFormatFeatureFlags2', 'VkFormatFeatureFlags2', *commonMemberParams)
+            ]
+            self.structs.append(Struct(dfmp2StructName, [], [], None, None, members, False, False, '', False, None, None))
+        dfmpl2StructName = 'VkDrmFormatModifierPropertiesList2EXT'
+        if dfmpl2StructName not in structNames:
+            members = [
+                Member('sType', 'VkStructureType', 'VkStructureType', *commonMemberParams),
+                Member('pNext', 'void', 'void*', *commonMemberParams),
+                Member('drmFormatModifierCount', 'uint32_t', 'uint32_t', *commonMemberParams),
+                Member('pDrmFormatModifierProperties', dfmp2StructName, 'VkDrmFormatModifierProperties2EXT*', *commonMemberParams)
+            ]
+            sType = 'VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT'
+            self.structs.append(Struct(dfmpl2StructName, [], [], None, None, members, False, False, sType, False, None, None))
+            # add sType to VkStructureType enum
+            for e in self.enums:
+                if e.name == 'VkStructureType':
+                    e.fields.append(EnumField(name=sType,
+                                              aliases=[],
+                                              parent='VkStructureType',
+                                              protect=None,
+                                              negative=False,
+                                              value=1000158006,
+                                              valueStr='1000158006',
+                                              extensions=[],
+                                              extending=True))
     # </vulkan_sc_workaround>
 
     def filterToSupportedByCTS(self, items):

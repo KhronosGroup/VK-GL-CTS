@@ -2788,6 +2788,11 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePresentWaitFeaturesK
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_RESTART_INDEX_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT;
