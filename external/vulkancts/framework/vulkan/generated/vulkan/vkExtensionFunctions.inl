@@ -546,6 +546,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_multisampled_render_to_swapchain")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_mutable_descriptor_type")
 	{
 		return;
@@ -1022,6 +1026,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_extended_flags")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_external_fence")
 	{
 		return;
@@ -1463,6 +1471,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_KHR_video_encode_av1")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_video_encode_feedback2")
 	{
 		return;
 	}
@@ -2508,8 +2520,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		if (extensionIsSupported(vDEP, "VK_EXT_provoking_vertex")) {
 			functions.push_back("vkCmdSetProvokingVertexModeEXT");
 		}
-		// Dependencies: VK_EXT_line_rasterization
-		if ((extensionIsSupported(vDEP, "VK_EXT_line_rasterization") || extensionIsSupported(vDEP, "VK_EXT_line_rasterization"))) {
+		// Dependencies: VK_VERSION_1_4,VK_KHR_line_rasterization,VK_EXT_line_rasterization
+		if ((checkVersion(1, 4, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_line_rasterization") || extensionIsSupported(vDEP, "VK_EXT_line_rasterization"))) {
 			functions.push_back("vkCmdSetLineRasterizationModeEXT");
 			functions.push_back("vkCmdSetLineStippleEnableEXT");
 		}
@@ -2742,6 +2754,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_EXT_multisampled_render_to_single_sampled")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_multisampled_render_to_swapchain")
 	{
 		return;
 	}
@@ -2985,8 +3001,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		if (extensionIsSupported(vDEP, "VK_EXT_provoking_vertex")) {
 			functions.push_back("vkCmdSetProvokingVertexModeEXT");
 		}
-		// Dependencies: VK_EXT_line_rasterization
-		if ((extensionIsSupported(vDEP, "VK_EXT_line_rasterization") || extensionIsSupported(vDEP, "VK_EXT_line_rasterization"))) {
+		// Dependencies: VK_VERSION_1_4,VK_KHR_line_rasterization,VK_EXT_line_rasterization
+		if ((checkVersion(1, 4, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_line_rasterization") || extensionIsSupported(vDEP, "VK_EXT_line_rasterization"))) {
 			functions.push_back("vkCmdSetLineRasterizationModeEXT");
 			functions.push_back("vkCmdSetLineStippleEnableEXT");
 		}
@@ -3485,6 +3501,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkCmdSetRenderingAttachmentLocationsKHR");
 		functions.push_back("vkCmdSetRenderingInputAttachmentIndicesKHR");
+		return;
+	}
+	if (extName == "VK_KHR_extended_flags")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_external_fence")
@@ -3994,6 +4014,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_KHR_video_encode_av1")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_video_encode_feedback2")
 	{
 		return;
 	}
@@ -4769,12 +4793,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_shader_fma",
 	"VK_KHR_maintenance9",
 	"VK_KHR_video_maintenance2",
+	"VK_KHR_video_encode_feedback2",
 	"VK_KHR_depth_clamp_zero_one",
 	"VK_KHR_robustness2",
 	"VK_KHR_present_mode_fifo_latest_ready",
 	"VK_KHR_opacity_micromap",
 	"VK_KHR_maintenance10",
 	"VK_KHR_maintenance11",
+	"VK_KHR_extended_flags",
 	"VK_NV_glsl_shader",
 	"VK_EXT_depth_range_unrestricted",
 	"VK_IMG_filter_cubic",
@@ -5050,6 +5076,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_ARM_format_pack",
 	"VK_VALVE_fragment_density_map_layered",
 	"VK_NV_present_metering",
+	"VK_EXT_multisampled_render_to_swapchain",
 	"VK_EXT_fragment_density_map_offset",
 	"VK_EXT_zero_initialize_device_memory",
 	"VK_EXT_shader_64bit_indexing",
