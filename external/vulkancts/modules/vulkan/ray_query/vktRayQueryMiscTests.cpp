@@ -2270,6 +2270,159 @@ tcu::TestStatus RayPerInvRun(Context &context, RayPerInvParamsPtr params)
     return tcu::TestStatus::pass("Pass");
 }
 
+void initFlipFacingPrograms(vk::SourceCollections &dst)
+{
+    const vk::ShaderBuildOptions buildOptions(dst.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+    std::ostringstream comp;
+    comp << "#version 460 core\n"
+         << "#extension GL_EXT_ray_query : require\n"
+         << "layout (local_size_x=1, local_size_y=1, local_size_z=1) in;\n"
+         << "layout(set=0, binding=0) uniform accelerationStructureEXT topLevelAS;\n"
+         << "layout(set=0, binding=1) buffer OutputBuffer { uint val; } outBuffer;\n"
+         << "void main()\n"
+         << "{\n"
+         << "    const uint  cullMask  = 0xFF;\n"
+         << "    const vec3  origin    = vec3(0.0, 0.0, 0.0);\n"
+         << "    const vec3  direction = vec3(0.0, 0.0, 1.0);\n"
+         << "    const float tMin      = 1.0;\n"
+         << "    const float tMax      = 10.0;\n"
+         << "    const uint  rayFlags  = gl_RayFlagsCullBackFacingTrianglesEXT;\n"
+         << "    rayQueryEXT rq;\n"
+         << "    rayQueryInitializeEXT(rq, topLevelAS, rayFlags, cullMask, origin, tMin, direction, tMax);\n"
+         << "    outBuffer.val = 0u;\n"
+         << "    while (rayQueryProceedEXT(rq)) {\n"
+         << "        if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT) {\n"
+         << "            atomicAdd(outBuffer.val, 1u);\n"
+         << "        }\n"
+         << "    }\n"
+         << "}\n";
+    dst.glslSources.add("comp") << glu::ComputeSource(comp.str()) << buildOptions;
+}
+
+tcu::TestStatus flipFacingRun(Context &context)
+{
+    const auto ctx    = context.getContextCommonData();
+    const auto stages = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_COMPUTE_BIT);
+
+    // Command pool and buffer.
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    // Build acceleration structures.
+    auto topLevelAS    = makeTopLevelAccelerationStructure();
+    auto bottomLevelAS = makeBottomLevelAccelerationStructure();
+
+    const std::vector<float> zPos{5.0f, 6.0f};
+    std::vector<tcu::Vec3> triangles;
+    triangles.reserve(3 * zPos.size());
+    for (const float z : zPos)
+    {
+        // clang-format off
+        triangles.emplace_back(-1.0f, -1.0f, z);
+        triangles.emplace_back( 1.0f, -1.0f, z);
+        triangles.emplace_back( 0.0f,  1.0f, z);
+        // clang-format on
+    }
+
+    bottomLevelAS->addGeometry(triangles, true /*triangles*/);
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.useExternalBuffer = false;
+    bufferProps.props.residency   = ResourceResidency::TRADITIONAL;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    bottomLevelAS->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
+
+    using SharedBottomPtr = de::SharedPtr<BottomLevelAccelerationStructure>;
+    SharedBottomPtr blasSharedPtr(bottomLevelAS.release());
+
+    topLevelAS->setInstanceCount(1);
+    const auto instanceFlags =
+        static_cast<VkGeometryInstanceFlagsKHR>(VK_GEOMETRY_INSTANCE_TRIANGLE_FLIP_FACING_BIT_KHR);
+    topLevelAS->addInstance(blasSharedPtr, identityMatrix3x4, 0u, 0xFFu, 0u, instanceFlags);
+    topLevelAS->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
+
+    // Create output buffer.
+    const auto bufferSize       = static_cast<VkDeviceSize>(sizeof(uint32_t));
+    const auto bufferCreateInfo = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    BufferWithMemory buffer(ctx.vkd, ctx.device, ctx.allocator, bufferCreateInfo, HostIntent::RW);
+    {
+        auto &alloc = buffer.getAllocation();
+        memset(alloc.getHostPtr(), 0xFF, sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Descriptor set layout and pipeline layout.
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, stages);
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stages);
+
+    const auto setLayout      = setLayoutBuilder.build(ctx.vkd, ctx.device);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, setLayout.get());
+
+    // Descriptor pool and set.
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    const auto descriptorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    const auto descriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, descriptorPool.get(), setLayout.get());
+
+    // Update descriptor set.
+    {
+        const VkWriteDescriptorSetAccelerationStructureKHR accelDescInfo = {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+            nullptr,
+            1u,
+            topLevelAS.get()->getPtr(),
+        };
+
+        const auto bufferDescInfo = makeDescriptorBufferInfo(buffer.get(), 0ull, VK_WHOLE_SIZE);
+
+        DescriptorSetUpdateBuilder updateBuilder;
+        updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
+                                  VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &accelDescInfo);
+        updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(1u),
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescInfo);
+        updateBuilder.update(ctx.vkd, ctx.device);
+    }
+
+    // Shader modules.
+    const auto &binaries  = context.getBinaryCollection();
+    const auto compModule = createShaderModule(ctx.vkd, ctx.device, binaries.get("comp"));
+    const auto pipeline   = makeComputePipeline(ctx.vkd, ctx.device, *pipelineLayout, *compModule);
+
+    // Trace rays.
+    ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
+                                  &descriptorSet.get(), 0u, nullptr);
+    ctx.vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+
+    // Barrier for the output buffer.
+    const auto bufferBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+    ctx.vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_HOST_BIT, 0u,
+                               1u, &bufferBarrier, 0u, nullptr, 0u, nullptr);
+
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Read value back from the buffer.
+    uint32_t bufferValue = 0xFFu;
+    invalidateAlloc(ctx.vkd, ctx.device, buffer.getAllocation());
+    memcpy(&bufferValue, buffer.getAllocation().getHostPtr(), sizeof(bufferValue));
+
+    const auto expected = de::sizeU32(zPos);
+    if (bufferValue != expected)
+    {
+        std::ostringstream msg;
+        msg << "Unexpected value found in buffer: expected " << expected << " but found " << bufferValue;
+        TCU_FAIL(msg.str());
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 TestCaseGroup *addHelperInvocationsTests(TestContext &testCtx)
@@ -2403,6 +2556,9 @@ tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx)
                                                 RayPerInvRun, params);
                 }
     }
+
+    addFunctionCaseWithPrograms(group.get(), "preserve_flip_facing", checkRayQuerySupport, initFlipFacingPrograms,
+                                flipFacingRun);
 
     return group.release();
 }
