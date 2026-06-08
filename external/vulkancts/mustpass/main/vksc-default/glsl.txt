@@ -6256,6 +6256,11 @@ dEQP-VKSC.glsl.functions.qualifiers.out_lowp_float_fragment
 dEQP-VKSC.glsl.functions.qualifiers.out_lowp_float_vertex
 dEQP-VKSC.glsl.functions.qualifiers.out_lowp_int_fragment
 dEQP-VKSC.glsl.functions.qualifiers.out_lowp_int_vertex
+dEQP-VKSC.glsl.helper_invocation.load_after_store
+dEQP-VKSC.glsl.helper_invocation.load_after_store_derivative
+dEQP-VKSC.glsl.helper_invocation.load_after_store_divergent
+dEQP-VKSC.glsl.helper_invocation.load_after_store_function
+dEQP-VKSC.glsl.helper_invocation.load_after_store_loop
 dEQP-VKSC.glsl.helper_invocations.load_from_address
 dEQP-VKSC.glsl.helper_invocations.load_from_image
 dEQP-VKSC.glsl.helper_invocations.load_from_ssbo

@@ -64,6 +64,7 @@
 #include "vktShaderRenderBuiltinVarTests.hpp"
 #include "vktShaderRenderDerivateTests.hpp"
 #include "vktShaderRenderDiscardTests.hpp"
+#include "vktShaderRenderHelperInvocationTests.hpp"
 #include "vktShaderRenderIndexingTests.hpp"
 #include "vktShaderRenderInvarianceTests.hpp"
 #include "vktShaderRenderLimitTests.hpp"
@@ -1259,6 +1260,7 @@ void createGlslTests(tcu::TestCaseGroup *glslTests)
     // ShaderRenderCase-based tests
     glslTests->addChild(sr::createDerivateTests(testCtx));
     glslTests->addChild(sr::createDiscardTests(testCtx));
+    glslTests->addChild(sr::createHelperInvocationTests(testCtx));
 #ifndef CTS_USES_VULKANSC
     glslTests->addChild(sr::createDemoteTests(testCtx));
     glslTests->addChild(shaderexecutor::createBFloat16Tests(testCtx));

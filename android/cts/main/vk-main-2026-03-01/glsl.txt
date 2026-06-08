@@ -609,6 +609,11 @@ dEQP-VK.glsl.derivate.fwidthcoarse.linear_vec8.vec4_highp
 dEQP-VK.glsl.derivate.fwidthcoarse.linear_vec8.vec4_mediump
 dEQP-VK.glsl.derivate.fwidthfine.linear_vec8.vec4_highp
 dEQP-VK.glsl.derivate.fwidthfine.linear_vec8.vec4_mediump
+dEQP-VK.glsl.helper_invocation.load_after_store
+dEQP-VK.glsl.helper_invocation.load_after_store_derivative
+dEQP-VK.glsl.helper_invocation.load_after_store_divergent
+dEQP-VK.glsl.helper_invocation.load_after_store_function
+dEQP-VK.glsl.helper_invocation.load_after_store_loop
 dEQP-VK.glsl.helper_invocations.load_from_address
 dEQP-VK.glsl.helper_invocations.load_from_image
 dEQP-VK.glsl.helper_invocations.load_from_ssbo
