@@ -1170,13 +1170,8 @@ void ShaderRenderCaseInstance::uploadImage(const tcu::TextureFormat &texFormat, 
 
     const auto destLayout = (storageImage ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-    if (m_externalCommandPool.get() != nullptr)
-        copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, nullptr, aspectMask,
-                          mipLevels, arrayLayers, destImage, destLayout, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                          VK_ACCESS_SHADER_READ_BIT, &(m_externalCommandPool.get()->get()));
-    else
-        copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, nullptr, aspectMask,
-                          mipLevels, arrayLayers, destImage, destLayout);
+    copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, nullptr, aspectMask,
+                      mipLevels, arrayLayers, destImage, destLayout);
 }
 
 void ShaderRenderCaseInstance::clearImage(const tcu::Sampler &refSampler, uint32_t mipLevels, uint32_t arrayLayers,
@@ -1197,17 +1192,9 @@ void ShaderRenderCaseInstance::clearImage(const tcu::Sampler &refSampler, uint32
 
     // Create command pool
     VkCommandPool activeCmdPool;
-    if (m_externalCommandPool.get() == nullptr)
-    {
-        // Create local command pool
-        cmdPool       = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
-        activeCmdPool = *cmdPool;
-    }
-    else
-    {
-        // Use external command pool if available
-        activeCmdPool = m_externalCommandPool.get()->get();
-    }
+    cmdPool       = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+    activeCmdPool = *cmdPool;
+
     // Create command buffer
     cmdBuffer = allocateCommandBuffer(vk, vkDevice, activeCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -2446,18 +2433,10 @@ void ShaderRenderCaseInstance::render(uint32_t numVertices, uint32_t numIndices,
         }
     }
 
+    // Create command pool
     VkCommandPool activeCmdPool;
-    if (m_externalCommandPool.get() == nullptr)
-    {
-        // Create local command pool
-        cmdPool       = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
-        activeCmdPool = *cmdPool;
-    }
-    else
-    {
-        // Use external command pool if available
-        activeCmdPool = m_externalCommandPool.get()->get();
-    }
+    cmdPool       = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+    activeCmdPool = *cmdPool;
 
     const vk::VkAccessFlags access = m_useCompute ? VK_ACCESS_SHADER_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     const vk::VkImageLayout layout = m_useCompute ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;

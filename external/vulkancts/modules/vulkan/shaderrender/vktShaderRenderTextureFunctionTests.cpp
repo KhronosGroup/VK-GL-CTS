@@ -2795,14 +2795,6 @@ TextureSizeInstance::TextureSizeInstance(Context &context, const bool isVertexCa
 {
     deMemset(&m_testSize, 0, sizeof(TestSize));
 
-#ifdef CTS_USES_VULKANSC
-    const VkDevice vkDevice         = getDevice();
-    const DeviceInterface &vk       = getDeviceInterface();
-    const uint32_t queueFamilyIndex = getUniversalQueueFamilyIndex();
-    m_externalCommandPool           = de::SharedPtr<Unique<VkCommandPool>>(new vk::Unique<VkCommandPool>(
-        createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex)));
-#endif // CTS_USES_VULKANSC
-
     m_renderSize = tcu::UVec2(1, 1);
 }
 
@@ -3473,14 +3465,6 @@ TextureQueryLevelsInstance::TextureQueryLevelsInstance(Context &context, const b
     deMemset(&m_testSize, 0, sizeof(TestSize));
 
     m_renderSize = tcu::UVec2(1, 1);
-
-#ifdef CTS_USES_VULKANSC
-    const VkDevice vkDevice         = getDevice();
-    const DeviceInterface &vk       = getDeviceInterface();
-    const uint32_t queueFamilyIndex = getUniversalQueueFamilyIndex();
-    m_externalCommandPool           = de::SharedPtr<Unique<VkCommandPool>>(new vk::Unique<VkCommandPool>(
-        createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex)));
-#endif // CTS_USES_VULKANSC
 }
 
 TextureQueryLevelsInstance::~TextureQueryLevelsInstance(void)

@@ -614,8 +614,6 @@ protected:
     vk::VkFormat m_colorFormat;
     bool m_useCompute;
 
-    de::SharedPtr<vk::Unique<vk::VkCommandPool>> m_externalCommandPool;
-
 private:
     typedef std::vector<tcu::ConstPixelBufferAccess> TextureLayerData;
     typedef std::vector<TextureLayerData> TextureData;
