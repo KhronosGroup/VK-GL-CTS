@@ -387,7 +387,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/google/amber.git",
         "git@github.com:google/amber.git",
-        "570b339d01cc6ba37ad4f8102bab911f27a05ae2",
+        "a76118c1c79ae5615e6684bc3fa267e20c14baf2",
         "amber"),
     GitRepo(
         "https://github.com/open-source-parsers/jsoncpp.git",
