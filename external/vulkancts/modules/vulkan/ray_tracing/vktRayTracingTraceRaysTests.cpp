@@ -935,7 +935,6 @@ void TraceRaysIndirect2Case::initPrograms(SourceCollections &programCollection) 
         std::stringstream css;
         std::string comp(R"(
         #version 460 core
-        #extension GL_ARB_gpu_shader_int64: enable
         struct TraceRaysIndirectCommand
         {
             uvec2 raygenShaderRecordAddress;
