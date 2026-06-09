@@ -104,7 +104,12 @@ def execBuildPrograms (buildCfg, generator, module, dstPath, vulkanVersion, para
         while running:
             pid, status = os.wait()
             k, p = running.pop(pid)
-            rc = p.wait()  # reap the Popen object too
+            # os.wait() has already reaped the child, so calling p.wait() here
+            # would hit ChildProcessError internally and silently report 0,
+            # hiding fraction failures (e.g. shaders that fail to build). Decode
+            # the real exit code from the status returned by os.wait() instead.
+            rc = os.waitstatus_to_exitcode(status)
+            p.returncode = rc  # keep the Popen object consistent / silence its destructor
             if rc != 0:
                 failed.append((k, rc))
             if nextFraction < fractions:
