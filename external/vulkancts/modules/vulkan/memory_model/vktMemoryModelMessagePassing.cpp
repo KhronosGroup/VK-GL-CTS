@@ -2168,12 +2168,9 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
         {ST_CONTROL_BARRIER, "control_barrier"},
         // control barrier with separate memory barriers
         {ST_CONTROL_AND_MEMORY_BARRIER, "control_and_memory_barrier"},
-        // split control barrier with release/acquire
-        {ST_SPLIT_CONTROL_BARRIER, "split_control_barrier"},
-        // split control barrier with separate memory barriers
-        {ST_SPLIT_CONTROL_AND_MEMORY_BARRIER, "split_control_and_memory_barrier"},
-        // split control barrier with barrier
-        {ST_SPLIT_CONTROL_BARRIER_AND_BARRIER, "split_control_barrier_and_barrier"},
+        // VK_EXT_shader_split_barrier (split_control_barrier*) cases are disabled until glslang
+        // implements the controlBarrierArrive/controlBarrierWait built-ins; re-add them here once the
+        // pinned glslang supports GL_EXT_split_barrier.
     };
 
     TestGroupCase rmwCases[] = {

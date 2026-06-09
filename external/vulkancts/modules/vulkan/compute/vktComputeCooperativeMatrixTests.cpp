@@ -5752,12 +5752,9 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
         {TT_MATRIXMULADD_DEQUANT, "matrixmuladd_dequant"},
         // OpCooperativeMatrixMulAdd
         {TT_MATRIXMULADD_PUSH_CONSTANTS, "matrixmuladd_push"},
-        //OpCooperativeMatrixMulAdd /w split barrier
-        {TT_MATRIXMULADD_SPLITBARRIER, "matrixmuladd_split_barrier"},
-        //OpCooperativeMatrixMulAdd /w split barrier and looped subgroup work
-        {TT_MATRIXMULADD_SPLITBARRIER_LOOP, "matrixmuladd_split_barrier_loop"},
-        //OpCooperativeMatrixMulAdd /w split barrier and skewed looped subgroup work
-        {TT_MATRIXMULADD_SPLITBARRIER_SKEW, "matrixmuladd_split_barrier_skew"},
+        // VK_EXT_shader_split_barrier (matrixmuladd_split_barrier*) cases are disabled until glslang
+        // implements the controlBarrierArrive/controlBarrierWait built-ins; re-add them here once the
+        // pinned glslang supports GL_EXT_split_barrier.
         // OpConvertCooperativeMatrixNV
         {TT_CONVERT_ACC_TO_A, "convert_acc_to_a"},
         {TT_CONVERT_ACC_TO_B, "convert_acc_to_b"},
