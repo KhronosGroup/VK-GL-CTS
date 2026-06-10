@@ -1048,6 +1048,10 @@ dEQP-VKSC.spirv_assembly.instruction.compute.empty_struct.function.global_variab
 dEQP-VKSC.spirv_assembly.instruction.compute.empty_struct.function.global_variable_shared
 dEQP-VKSC.spirv_assembly.instruction.compute.empty_struct.function.local_variable
 dEQP-VKSC.spirv_assembly.instruction.compute.empty_struct.pointer_comparison.ssbo
+dEQP-VKSC.spirv_assembly.instruction.compute.expression_rearrangement.ftz_mul_add
+dEQP-VKSC.spirv_assembly.instruction.compute.expression_rearrangement.ftz_mul_add_no_contraction
+dEQP-VKSC.spirv_assembly.instruction.compute.expression_rearrangement.preserve_add
+dEQP-VKSC.spirv_assembly.instruction.compute.expression_rearrangement.preserve_add_no_contraction
 dEQP-VKSC.spirv_assembly.instruction.compute.fconvert.float16_to_float32
 dEQP-VKSC.spirv_assembly.instruction.compute.fconvert.float16_to_float32_no_storage
 dEQP-VKSC.spirv_assembly.instruction.compute.fconvert.float16_to_float64

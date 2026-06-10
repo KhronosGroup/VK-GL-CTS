@@ -142,6 +142,10 @@ dEQP-VK.spirv_assembly.instruction.compute.compute_shader_derivatives.task.deriv
 dEQP-VK.spirv_assembly.instruction.compute.compute_shader_derivatives.task.derivative_value.normal.vec4_float32.quads.4_8_1
 dEQP-VK.spirv_assembly.instruction.compute.compute_shader_derivatives.task.derivative_value.normal.vec4_float32.quads.8_4_1
 dEQP-VK.spirv_assembly.instruction.compute.compute_shader_derivatives.task.derivative_value.normal.vec4_float32.quads.8_8_1
+dEQP-VK.spirv_assembly.instruction.compute.expression_rearrangement.ftz_mul_add
+dEQP-VK.spirv_assembly.instruction.compute.expression_rearrangement.ftz_mul_add_no_contraction
+dEQP-VK.spirv_assembly.instruction.compute.expression_rearrangement.preserve_add
+dEQP-VK.spirv_assembly.instruction.compute.expression_rearrangement.preserve_add_no_contraction
 dEQP-VK.spirv_assembly.instruction.compute.indexing.input.struct.opaccesschain_s16_64bit_indexing
 dEQP-VK.spirv_assembly.instruction.compute.indexing.input.struct.opaccesschain_s32_64bit_indexing
 dEQP-VK.spirv_assembly.instruction.compute.indexing.input.struct.opaccesschain_s64_64bit_indexing

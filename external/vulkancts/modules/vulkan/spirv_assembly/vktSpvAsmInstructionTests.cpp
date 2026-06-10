@@ -2022,6 +2022,184 @@ tcu::TestCaseGroup *createNoContractionGroup(tcu::TestContext &testCtx)
     return group.release();
 }
 
+// Compare instruction for the expression rearrangement case.
+// Returns true if the output is what is expected from the test case.
+bool compareExpressionRearrangementCase(const std::vector<Resource> &, const vector<AllocationSp> &outputAllocs,
+                                        const std::vector<Resource> &expectedOutputs, TestLog &)
+{
+    if (outputAllocs.size() != 1)
+        return false;
+
+    const float *outputAsFloat = static_cast<const float *>(outputAllocs[0]->getHostPtr());
+
+    vector<uint8_t> expectedBytes;
+    expectedOutputs[0].buffer->getBytes(expectedBytes);
+
+    // first output value specifies how many result values are valid
+    const float *const expected   = reinterpret_cast<const float *>(&expectedBytes.front());
+    const uint32_t acceptedValues = 1 + (*expected > 1.9f);
+
+    for (size_t i = 0; i < expectedBytes.size() / sizeof(float); ++i)
+    {
+        float out = outputAsFloat[i];
+        if (out != expected[1] && ((acceptedValues < 2) || (out != expected[2])))
+            return false;
+    }
+
+    return true;
+}
+
+tcu::TestCaseGroup *createExpressionRearrangementGroup(tcu::TestContext &testCtx)
+{
+    de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "expression_rearrangement"));
+
+    // DenormFlushToZero and DenormPreserve execution modes do not change which rearrangements are valid.
+    // The flushing or preserving behavior of these execution modes apply after rearrangement of expressions.
+    // This rearrangement can: be prevented for particular operations by using the NoContraction decoration.
+
+    const StringTemplate shaderTemplate(
+        string(getComputeAsmShaderPreamble("OpCapability ${DENORM_MODE}\n", "OpExtension \"SPV_KHR_float_controls\"\n",
+                                           "OpExecutionMode %main ${DENORM_MODE} 32\n")) +
+
+        "OpName %main           \"main\"\n"
+        "OpName %id             \"gl_GlobalInvocationID\"\n"
+
+        "OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+        "${DECORATION}\n"
+
+        "OpDecorate %buf BufferBlock\n"
+        "OpDecorate %indata1 DescriptorSet 0\n"
+        "OpDecorate %indata1 Binding 0\n"
+        "OpDecorate %indata2 DescriptorSet 0\n"
+        "OpDecorate %indata2 Binding 1\n"
+        "OpDecorate %outdata DescriptorSet 0\n"
+        "OpDecorate %outdata Binding 2\n"
+        "OpDecorate %f32arr ArrayStride 4\n"
+        "OpMemberDecorate %buf 0 Offset 0\n"
+
+        + string(getComputeAsmCommonTypes()) +
+
+        "%buf        = OpTypeStruct %f32arr\n"
+        "%bufptr     = OpTypePointer Uniform %buf\n"
+        "%indata1    = OpVariable %bufptr Uniform\n"
+        "%indata2    = OpVariable %bufptr Uniform\n"
+        "%outdata    = OpVariable %bufptr Uniform\n"
+
+        "%id         = OpVariable %uvec3ptr Input\n"
+        "%zero       = OpConstant %i32 0\n"
+        "%c_f_m1     = OpConstant %f32 -1.\n"
+
+        "%main       = OpFunction %void None %voidf\n"
+        "%label      = OpLabel\n"
+        "%idval      = OpLoad %uvec3 %id\n"
+        "%x          = OpCompositeExtract %u32 %idval 0\n"
+        "%inloc1     = OpAccessChain %f32ptr %indata1 %zero %x\n"
+        "%inval1     = OpLoad %f32 %inloc1\n"
+        "%inloc2     = OpAccessChain %f32ptr %indata2 %zero %x\n"
+        "%inval2     = OpLoad %f32 %inloc2\n"
+
+        "${OPERATION}"
+
+        "%outloc     = OpAccessChain %f32ptr %outdata %zero %x\n"
+        "              OpStore %outloc %outval\n"
+        "              OpReturn\n"
+        "              OpFunctionEnd\n");
+
+    const string addOperation    = "%tmpval     = OpFAdd %f32 %inval1 %inval2\n"
+                                   "%outval     = OpFSub %f32 %tmpval %inval1\n";
+    const string mulAddOperation = "%tmpval     = OpFMul %f32 %inval1 %inval1\n"
+                                   "%outval     = OpFAdd %f32 %tmpval %inval2\n";
+    const string noContraction   = "OpDecorate %tmpval NoContraction\n"
+                                   "OpDecorate %outval NoContraction\n";
+    const string allowContract   = "";
+
+    enum class OperationType
+    {
+        Add = 0,
+        MulAdd,
+    };
+    const struct CaseParams
+    {
+        OperationType operation;
+        const string &decoration;
+        const char *name;
+    } cases[] = {
+        {OperationType::Add, allowContract, "preserve_add"},
+        {OperationType::Add, noContraction, "preserve_add_no_contraction"},
+        {OperationType::MulAdd, allowContract, "ftz_mul_add"},
+        {OperationType::MulAdd, noContraction, "ftz_mul_add_no_contraction"},
+    };
+
+    const int numElements = 100;
+    vector<float> addInputA(numElements, 4.0f);
+    vector<float> addInputB(numElements, std::numeric_limits<float>::denorm_min());
+    vector<float> mulAddInputA(numElements, 1.0e-20f);
+    vector<float> mulAddInputB(numElements, std::numeric_limits<float>::min());
+    vector<float> outputFloats(numElements, 0.0f);
+
+    map<string, string> specializationMap;
+    ComputeShaderSpec spec;
+    spec.extensions    = {"VK_KHR_shader_float_controls"};
+    spec.inputs        = {BufferSp(new Float32Buffer(addInputA)), BufferSp(new Float32Buffer(addInputB))};
+    spec.numWorkGroups = IVec3(numElements, 1, 1);
+    spec.verifyIO      = &compareExpressionRearrangementCase;
+
+    OperationType currentOperation = OperationType::Add;
+    auto &specFCP                  = spec.requestedVulkanFeatures.floatControlsProperties;
+
+    for (const auto &caseParams : cases)
+    {
+        if (caseParams.operation == OperationType::Add)
+        {
+            // a + b - a can be optimized by some implementations to b;
+            // 4 + denorm - 4 = could be denorm or 0 when DenormPreserve is used
+
+            specializationMap["OPERATION"]         = addOperation;
+            specializationMap["DENORM_MODE"]       = "DenormPreserve";
+            specFCP.shaderDenormFlushToZeroFloat32 = false;
+            specFCP.shaderDenormPreserveFloat32    = true;
+
+            outputFloats[1] = 0.0f;
+            outputFloats[2] = addInputB[0];
+        }
+        else //if (caseParams.operation == OperationType::MulAdd)
+        {
+            // a * a + b can be optimized by some implementations to fma(a, a, b);
+            // 1.0e-20f * 1.0e-20f is denormal and with FTZ it will be flushed to 0, but with fma it may not
+
+            specializationMap["OPERATION"]         = mulAddOperation;
+            specializationMap["DENORM_MODE"]       = "DenormFlushToZero";
+            specFCP.shaderDenormFlushToZeroFloat32 = true;
+            specFCP.shaderDenormPreserveFloat32    = false;
+
+            // switch to different inputs for fma cases
+            if (currentOperation != OperationType::MulAdd)
+            {
+                spec.inputs = {
+                    BufferSp(new Float32Buffer(mulAddInputA)),
+                    BufferSp(new Float32Buffer(mulAddInputB)),
+                };
+                currentOperation = OperationType::MulAdd;
+            }
+
+            outputFloats[1] = mulAddInputB[0];
+            outputFloats[2] = 1.18549430e-38f;
+        }
+
+        // use first output value to specify how many result values are valid
+        outputFloats[0] = 1.0f + 1.0f * (caseParams.decoration == allowContract);
+
+        specializationMap["DECORATION"] = caseParams.decoration;
+        spec.outputs                    = {BufferSp(new Float32Buffer(outputFloats))};
+        spec.assembly                   = shaderTemplate.specialize(specializationMap);
+
+        group->addChild(new SpvAsmComputeShaderCase(testCtx, caseParams.name, spec));
+    }
+
+    return group.release();
+}
+
 bool compareFRem(const std::vector<Resource> &, const vector<AllocationSp> &outputAllocs,
                  const std::vector<Resource> &expectedOutputs, TestLog &)
 {
@@ -21350,6 +21528,7 @@ static void createComputeChildren(tcu::TestCaseGroup *computeTests)
     computeTests->addChild(createOpCopyMemoryGroup(testCtx));
     computeTests->addChild(createOpCopyObjectGroup(testCtx));
     computeTests->addChild(createNoContractionGroup(testCtx));
+    computeTests->addChild(createExpressionRearrangementGroup(testCtx));
     computeTests->addChild(createOpUndefGroup(testCtx));
     computeTests->addChild(createOpUnreachableGroup(testCtx));
     computeTests->addChild(createOpQuantizeToF16Group(testCtx, false));
