@@ -110,27 +110,35 @@ void ShaderPackingFunctionCase::checkSupport(Context &context) const
 
 // ShaderPackingFunctionTestInstance
 
-class ShaderPackingFunctionTestInstance : public TestInstance
+class ShaderPackingFunctionTestInstance : public MultiQueueRunnerTestInstance
 {
 public:
     ShaderPackingFunctionTestInstance(Context &context, glu::ShaderType shaderType, const ShaderSpec &spec,
                                       const char *name)
-        : TestInstance(context)
+        : MultiQueueRunnerTestInstance(context, shaderType == glu::SHADERTYPE_COMPUTE ? COMPUTE_QUEUE : GRAPHICS_QUEUE)
         , m_testCtx(context.getTestContext())
         , m_shaderType(shaderType)
         , m_spec(spec)
         , m_name(name)
-        , m_executor(createExecutor(context, m_shaderType, m_spec))
     {
     }
-    virtual tcu::TestStatus iterate(void) = 0;
+
+    tcu::TestStatus queuePass(const QueueData &queueData) override final
+    {
+        const UserQueue userQueue(queueData.handle, queueData.familyIndex);
+        m_executor =
+            de::MovePtr<ShaderExecutor>(createExecutor(m_context, m_shaderType, m_spec, VK_NULL_HANDLE, userQueue));
+        return executeTest();
+    }
+
+    virtual tcu::TestStatus executeTest(void) = 0;
 
 protected:
     tcu::TestContext &m_testCtx;
     const glu::ShaderType m_shaderType;
     ShaderSpec m_spec;
     const char *m_name;
-    de::UniquePtr<ShaderExecutor> m_executor;
+    de::MovePtr<ShaderExecutor> m_executor;
 };
 
 // Test cases
@@ -145,7 +153,7 @@ public:
     {
     }
 
-    tcu::TestStatus iterate(void)
+    tcu::TestStatus executeTest(void)
     {
         de::Random rnd(deStringHash(m_name) ^ 0x776002);
         std::vector<tcu::Vec2> inputs;
@@ -269,7 +277,7 @@ public:
     {
     }
 
-    tcu::TestStatus iterate(void)
+    tcu::TestStatus executeTest(void)
     {
         const uint32_t maxDiff = 1; // Rounding error.
         de::Random rnd(deStringHash(m_name) ^ 0x776002);
@@ -374,7 +382,7 @@ public:
     {
     }
 
-    tcu::TestStatus iterate(void)
+    tcu::TestStatus executeTest(void)
     {
         de::Random rnd(deStringHash(m_name) ^ 0x776002);
         std::vector<tcu::Vec2> inputs;
@@ -496,7 +504,7 @@ public:
     {
     }
 
-    tcu::TestStatus iterate(void)
+    tcu::TestStatus executeTest(void)
     {
         const uint32_t maxDiff = 1; // Rounding error.
         de::Random rnd(deStringHash(m_name) ^ 0x776002);
@@ -599,7 +607,7 @@ public:
     {
     }
 
-    tcu::TestStatus iterate(void)
+    tcu::TestStatus executeTest(void)
     {
         const int maxDiff = 0; // Values can be represented exactly in mediump.
         de::Random rnd(deStringHash(m_name) ^ 0x776002);
@@ -733,7 +741,7 @@ public:
     {
     }
 
-    tcu::TestStatus iterate(void)
+    tcu::TestStatus executeTest(void)
     {
         const int minExp           = -14;
         const int maxExp           = 15;
@@ -930,7 +938,7 @@ public:
     {
     }
 
-    tcu::TestStatus iterate(void)
+    tcu::TestStatus executeTest(void)
     {
         de::Random rnd(deStringHash(m_name) ^ 0x42f2c0);
         std::vector<tcu::Vec4> inputs;
@@ -1062,7 +1070,7 @@ public:
     {
     }
 
-    tcu::TestStatus iterate(void)
+    tcu::TestStatus executeTest(void)
     {
         const uint32_t maxDiff = 1; // Rounding error.
         de::Random rnd(deStringHash(m_name) ^ 0x776002);
@@ -1177,7 +1185,7 @@ public:
     {
     }
 
-    tcu::TestStatus iterate(void)
+    tcu::TestStatus executeTest(void)
     {
         de::Random rnd(deStringHash(m_name) ^ 0x776002);
         std::vector<tcu::Vec4> inputs;
@@ -1309,7 +1317,7 @@ public:
     {
     }
 
-    tcu::TestStatus iterate(void)
+    tcu::TestStatus executeTest(void)
     {
         const uint32_t maxDiff = 1; // Rounding error.
         de::Random rnd(deStringHash(m_name) ^ 0x776002);

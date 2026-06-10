@@ -7415,34 +7415,35 @@ Result makeSamplings()
 }
 
 template <typename In, typename Out>
-class BuiltinPrecisionCaseTestInstance : public TestInstance
+class BuiltinPrecisionCaseTestInstance : public MultiQueueRunnerTestInstance
 {
 public:
     BuiltinPrecisionCaseTestInstance(Context &context, const CaseContext caseCtx, const ShaderSpec &shaderSpec,
                                      const Variables<In, Out> variables, const Samplings<In> &samplings,
                                      const StatementP stmt, bool modularOp = false)
-        : TestInstance(context)
+        : MultiQueueRunnerTestInstance(context,
+                                       caseCtx.shaderType == glu::SHADERTYPE_COMPUTE ? COMPUTE_QUEUE : GRAPHICS_QUEUE)
         , m_caseCtx(caseCtx)
+        , m_shaderSpec(shaderSpec)
         , m_variables(variables)
         , m_samplings(samplings)
         , m_stmt(stmt)
-        , m_executor(createExecutor(context, caseCtx.shaderType, shaderSpec))
         , m_modularOp(modularOp)
     {
     }
-    virtual tcu::TestStatus iterate(void);
+    virtual tcu::TestStatus queuePass(const QueueData &queueData) override;
 
 protected:
     CaseContext m_caseCtx;
+    ShaderSpec m_shaderSpec;
     Variables<In, Out> m_variables;
     const Samplings<In> &m_samplings;
     StatementP m_stmt;
-    de::UniquePtr<ShaderExecutor> m_executor;
     const bool m_modularOp;
 };
 
 template <class In, class Out>
-tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate(void)
+tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::queuePass(const QueueData &queueData)
 {
     typedef typename In::In0 In0;
     typedef typename In::In1 In1;
@@ -7452,6 +7453,10 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate(void)
     typedef typename Out::Out1 Out1;
 
     areFeaturesSupported(m_context, m_caseCtx.precisionTestFeatures);
+
+    const UserQueue userQueue(queueData.handle, queueData.familyIndex);
+    de::UniquePtr<ShaderExecutor> m_executor(
+        createExecutor(m_context, m_caseCtx.shaderType, m_shaderSpec, VK_NULL_HANDLE, userQueue));
     Inputs<In> inputs =
         generateInputs(m_samplings, m_caseCtx.floatFormat, m_caseCtx.precision, m_caseCtx.numRandoms,
                        0xdeadbeefu + m_caseCtx.testContext.getCommandLine().getBaseSeed(), m_caseCtx.inputRange);
