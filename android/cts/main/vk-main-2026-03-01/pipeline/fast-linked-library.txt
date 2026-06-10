@@ -10494,6 +10494,7 @@ dEQP-VK.pipeline.fast_linked_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_p
 dEQP-VK.pipeline.fast_linked_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_0_no_blend
 dEQP-VK.pipeline.fast_linked_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_rgba_alpha_blend
 dEQP-VK.pipeline.fast_linked_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_rgba_no_blend
+dEQP-VK.pipeline.fast_linked_library.cache.gpl_collision.identical_shaders_different_samplers
 dEQP-VK.pipeline.fast_linked_library.depth.depth_only.dynamic_rendering_postpass
 dEQP-VK.pipeline.fast_linked_library.depth.depth_only.dynamic_rendering_postpass_add_view_index
 dEQP-VK.pipeline.fast_linked_library.depth.depth_only.dynamic_rendering_prepass

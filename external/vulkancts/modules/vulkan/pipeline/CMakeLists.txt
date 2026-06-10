@@ -132,6 +132,8 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineBinaryTests.cpp
 	vktPipelineBinaryTests.hpp
+	vktPipelineCacheGplTests.cpp
+	vktPipelineCacheGplTests.hpp
 	vktPipelineBindPointTests.cpp
 	vktPipelineBindPointTests.hpp
 	vktPipelinePushDescriptorTests.cpp

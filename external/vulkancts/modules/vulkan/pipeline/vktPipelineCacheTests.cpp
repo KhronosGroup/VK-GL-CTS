@@ -25,6 +25,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineCacheTests.hpp"
+#include "vktPipelineCacheGplTests.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
@@ -2490,7 +2491,16 @@ de::MovePtr<tcu::TestCaseGroup> createPipelineBlobTestsInternal(tcu::TestContext
 tcu::TestCaseGroup *createCacheTests(tcu::TestContext &testCtx, PipelineConstructionType pipelineConstructionType)
 {
     de::MovePtr<tcu::TestCaseGroup> cacheTests(new tcu::TestCaseGroup(testCtx, "cache"));
-    return createPipelineBlobTestsInternal(testCtx, TestMode::CACHE, pipelineConstructionType, cacheTests).release();
+    de::MovePtr<tcu::TestCaseGroup> resultTests =
+        createPipelineBlobTestsInternal(testCtx, TestMode::CACHE, pipelineConstructionType, cacheTests);
+
+    if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY ||
+        pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
+    {
+        resultTests->addChild(createGplCacheCollisionTests(testCtx, pipelineConstructionType));
+    }
+
+    return resultTests.release();
 }
 
 de::MovePtr<tcu::TestCaseGroup> addPipelineBinaryBasicTests(tcu::TestContext &testCtx,
