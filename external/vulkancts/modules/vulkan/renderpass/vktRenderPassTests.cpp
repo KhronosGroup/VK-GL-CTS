@@ -877,6 +877,26 @@ void checkSupport(Context &context, TestConfig config)
 {
     for (size_t featureNdx = 0; featureNdx < config.requiredFeatures.size(); featureNdx++)
         context.requireDeviceCoreFeature(config.requiredFeatures[featureNdx]);
+
+    const InstanceInterface &instance = context.getInstanceInterface();
+    const VkPhysicalDevice physDevice = context.getPhysicalDevice();
+
+    for (const auto &attchment : config.renderPass.getAttachments())
+    {
+        if (attchment.getSamples() == VK_SAMPLE_COUNT_1_BIT)
+            continue;
+
+        const tcu::TextureFormat tcuFormat = mapVkFormat(attchment.getFormat());
+        const bool isDS                    = hasDepthComponent(tcuFormat.order) || hasStencilComponent(tcuFormat.order);
+        const VkImageUsageFlags usage =
+            isDS ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        VkImageFormatProperties imgProps;
+        const VkResult res = instance.getPhysicalDeviceImageFormatProperties(
+            physDevice, attchment.getFormat(), VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, usage, 0u, &imgProps);
+
+        if (res != VK_SUCCESS || (imgProps.sampleCounts & attchment.getSamples()) == 0u)
+            TCU_THROW(NotSupportedError, "MSAA sample count not supported for format");
+    }
 }
 
 void logRenderPassInfo(TestLog &log, const RenderPass &renderPass)
@@ -7788,8 +7808,9 @@ void addFormatTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                                           (useInputAspect ? "_use_input_aspect" : "") +
                                                           sampleCounts[i].str);
 
-                                    addFunctionCaseWithPrograms<TestConfig>(
-                                        storeOpGroup.get(), testName, createTestShaders, renderPassTest, testConfig);
+                                    addFunctionCaseWithPrograms<TestConfig>(storeOpGroup.get(), testName, checkSupport,
+                                                                            createTestShaders, renderPassTest,
+                                                                            testConfig);
                                 }
                             }
                         }
