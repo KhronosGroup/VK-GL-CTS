@@ -288,9 +288,9 @@ struct CaseDef
         /* Stub */
     }
 
-    CaseDef(const TestType &inType)
+    CaseDef(const TestType &inType, const GeometryType &inGeometryType)
         : type(inType)
-        , geometryType(GeometryType::COUNT)
+        , geometryType(inGeometryType)
         , asLayout(AccelerationStructureLayout::COUNT)
     {
         /* Stub */
@@ -11058,72 +11058,72 @@ tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx)
 
     {
         // Tests usage of various variables inside a shader record block using std430 layout
-        auto newTestCaseSTD430_1Ptr =
-            new RayTracingTestCase(testCtx, "shaderRecordSTD430_1", CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_1));
-        auto newTestCaseSTD430_2Ptr =
-            new RayTracingTestCase(testCtx, "shaderRecordSTD430_2", CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_2));
-        auto newTestCaseSTD430_3Ptr =
-            new RayTracingTestCase(testCtx, "shaderRecordSTD430_3", CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_3));
-        auto newTestCaseSTD430_4Ptr =
-            new RayTracingTestCase(testCtx, "shaderRecordSTD430_4", CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_4));
-        auto newTestCaseSTD430_5Ptr =
-            new RayTracingTestCase(testCtx, "shaderRecordSTD430_5", CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_5));
-        auto newTestCaseSTD430_6Ptr =
-            new RayTracingTestCase(testCtx, "shaderRecordSTD430_6", CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_6));
+        auto newTestCaseSTD430_1Ptr = new RayTracingTestCase(
+            testCtx, "shaderRecordSTD430_1", CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_1, GeometryType::AABB));
+        auto newTestCaseSTD430_2Ptr = new RayTracingTestCase(
+            testCtx, "shaderRecordSTD430_2", CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_2, GeometryType::AABB));
+        auto newTestCaseSTD430_3Ptr = new RayTracingTestCase(
+            testCtx, "shaderRecordSTD430_3", CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_3, GeometryType::AABB));
+        auto newTestCaseSTD430_4Ptr = new RayTracingTestCase(
+            testCtx, "shaderRecordSTD430_4", CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_4, GeometryType::AABB));
+        auto newTestCaseSTD430_5Ptr = new RayTracingTestCase(
+            testCtx, "shaderRecordSTD430_5", CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_5, GeometryType::AABB));
+        auto newTestCaseSTD430_6Ptr = new RayTracingTestCase(
+            testCtx, "shaderRecordSTD430_6", CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_6, GeometryType::AABB));
 
         // Tests usage of various variables inside a shader record block using scalar layout
-        auto newTestCaseScalar_1Ptr =
-            new RayTracingTestCase(testCtx, "shaderRecordScalar_1", CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_1));
-        auto newTestCaseScalar_2Ptr =
-            new RayTracingTestCase(testCtx, "shaderRecordScalar_2", CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_2));
-        auto newTestCaseScalar_3Ptr =
-            new RayTracingTestCase(testCtx, "shaderRecordScalar_3", CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_3));
-        auto newTestCaseScalar_4Ptr =
-            new RayTracingTestCase(testCtx, "shaderRecordScalar_4", CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_4));
-        auto newTestCaseScalar_5Ptr =
-            new RayTracingTestCase(testCtx, "shaderRecordScalar_5", CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_5));
-        auto newTestCaseScalar_6Ptr =
-            new RayTracingTestCase(testCtx, "shaderRecordScalar_6", CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_6));
+        auto newTestCaseScalar_1Ptr = new RayTracingTestCase(
+            testCtx, "shaderRecordScalar_1", CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_1, GeometryType::AABB));
+        auto newTestCaseScalar_2Ptr = new RayTracingTestCase(
+            testCtx, "shaderRecordScalar_2", CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_2, GeometryType::AABB));
+        auto newTestCaseScalar_3Ptr = new RayTracingTestCase(
+            testCtx, "shaderRecordScalar_3", CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_3, GeometryType::AABB));
+        auto newTestCaseScalar_4Ptr = new RayTracingTestCase(
+            testCtx, "shaderRecordScalar_4", CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_4, GeometryType::AABB));
+        auto newTestCaseScalar_5Ptr = new RayTracingTestCase(
+            testCtx, "shaderRecordScalar_5", CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_5, GeometryType::AABB));
+        auto newTestCaseScalar_6Ptr = new RayTracingTestCase(
+            testCtx, "shaderRecordScalar_6", CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_6, GeometryType::AABB));
 
         // Tests usage of various variables inside a shader record block using scalar layout and explicit offset qualifiers
         auto newTestCaseExplicitScalarOffset_1Ptr =
             new RayTracingTestCase(testCtx, "shaderRecordExplicitScalarOffset_1",
-                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_1));
+                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_1, GeometryType::AABB));
         auto newTestCaseExplicitScalarOffset_2Ptr =
             new RayTracingTestCase(testCtx, "shaderRecordExplicitScalarOffset_2",
-                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_2));
+                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_2, GeometryType::AABB));
         auto newTestCaseExplicitScalarOffset_3Ptr =
             new RayTracingTestCase(testCtx, "shaderRecordExplicitScalarOffset_3",
-                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_3));
+                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_3, GeometryType::AABB));
         auto newTestCaseExplicitScalarOffset_4Ptr =
             new RayTracingTestCase(testCtx, "shaderRecordExplicitScalarOffset_4",
-                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_4));
+                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_4, GeometryType::AABB));
         auto newTestCaseExplicitScalarOffset_5Ptr =
             new RayTracingTestCase(testCtx, "shaderRecordExplicitScalarOffset_5",
-                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_5));
+                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_5, GeometryType::AABB));
         auto newTestCaseExplicitScalarOffset_6Ptr =
             new RayTracingTestCase(testCtx, "shaderRecordExplicitScalarOffset_6",
-                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_6));
+                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_6, GeometryType::AABB));
 
         // Tests usage of various variables inside a shader record block using std430 layout and explicit offset qualifiers
         auto newTestCaseExplicitSTD430Offset_1Ptr =
             new RayTracingTestCase(testCtx, "shaderRecordExplicitSTD430Offset_1",
-                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_1));
+                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_1, GeometryType::AABB));
         auto newTestCaseExplicitSTD430Offset_2Ptr =
             new RayTracingTestCase(testCtx, "shaderRecordExplicitSTD430Offset_2",
-                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_2));
+                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_2, GeometryType::AABB));
         auto newTestCaseExplicitSTD430Offset_3Ptr =
             new RayTracingTestCase(testCtx, "shaderRecordExplicitSTD430Offset_3",
-                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_3));
+                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_3, GeometryType::AABB));
         auto newTestCaseExplicitSTD430Offset_4Ptr =
             new RayTracingTestCase(testCtx, "shaderRecordExplicitSTD430Offset_4",
-                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_4));
+                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_4, GeometryType::AABB));
         auto newTestCaseExplicitSTD430Offset_5Ptr =
             new RayTracingTestCase(testCtx, "shaderRecordExplicitSTD430Offset_5",
-                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_5));
+                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_5, GeometryType::AABB));
         auto newTestCaseExplicitSTD430Offset_6Ptr =
             new RayTracingTestCase(testCtx, "shaderRecordExplicitSTD430Offset_6",
-                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_6));
+                                   CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_6, GeometryType::AABB));
         miscGroupPtr->addChild(newTestCaseSTD430_1Ptr);
         miscGroupPtr->addChild(newTestCaseSTD430_2Ptr);
         miscGroupPtr->addChild(newTestCaseSTD430_3Ptr);
