@@ -31,6 +31,8 @@
 #include "vkImageUtil.hpp"
 #include "vkBarrierUtil.hpp"
 
+#include <cmath>
+
 namespace vkt
 {
 namespace BindingModel
