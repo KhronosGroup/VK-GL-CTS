@@ -32,6 +32,7 @@
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuStringTemplate.hpp"
 
 #include "vkDefs.hpp"
 #include "vkBarrierUtil.hpp"
@@ -50,6 +51,7 @@
 
 #include "rrRenderer.hpp"
 
+#include <map>
 #include <string>
 #include <vector>
 #include <utility>
@@ -2103,7 +2105,322 @@ tcu::TestStatus iterate(Context &context)
 } // namespace TessFactorBarrierBug
 #endif // CTS_USES_VULKANSC
 
+enum class UnusedPointSizeBoundary
+{
+    VERTEX_TO_TESC = 0,
+    TESC_TO_TESE,
+    TESE_TO_FRAG,
+};
+
+struct UnusedBuiltinOutputParams
+{
+    PipelineConstructionType pipelineConstructionType;
+    UnusedPointSizeBoundary boundary;
+
+    bool pointSizeFromTessStage(void) const
+    {
+        return (boundary == UnusedPointSizeBoundary::TESC_TO_TESE || boundary == UnusedPointSizeBoundary::TESE_TO_FRAG);
+    }
+};
+
+class UnusedBuiltinOutputInstance : public vkt::TestInstance
+{
+public:
+    UnusedBuiltinOutputInstance(Context &context, const UnusedBuiltinOutputParams &params)
+        : vkt::TestInstance(context)
+        , m_params(params)
+    {
+    }
+
+    virtual ~UnusedBuiltinOutputInstance(void)
+    {
+    }
+
+    tcu::TestStatus iterate(void);
+
+protected:
+    const UnusedBuiltinOutputParams m_params;
+};
+
+class UnusedBuiltinOutputCase : public vkt::TestCase
+{
+public:
+    UnusedBuiltinOutputCase(tcu::TestContext &testCtx, const std::string &name, const UnusedBuiltinOutputParams &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+
+    virtual ~UnusedBuiltinOutputCase(void)
+    {
+    }
+
+    void checkSupport(Context &context) const;
+    void initPrograms(vk::SourceCollections &programCollection) const;
+    TestInstance *createInstance(Context &context) const
+    {
+        return new UnusedBuiltinOutputInstance(context, m_params);
+    }
+
+protected:
+    const UnusedBuiltinOutputParams m_params;
+};
+
+void UnusedBuiltinOutputCase::checkSupport(Context &context) const
+{
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+
+    if (m_params.pointSizeFromTessStage() && !context.getDeviceFeatures().shaderTessellationAndGeometryPointSize)
+        TCU_THROW(NotSupportedError, "shaderTessellationAndGeometryPointSize not supported");
+
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, m_params.pipelineConstructionType);
+}
+
+void UnusedBuiltinOutputCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    const bool vsWritesPointSize  = (m_params.boundary == UnusedPointSizeBoundary::VERTEX_TO_TESC);
+    const bool tcsWritesPointSize = (m_params.boundary == UnusedPointSizeBoundary::TESC_TO_TESE);
+    const bool tesWritesPointSize = (m_params.boundary == UnusedPointSizeBoundary::TESE_TO_FRAG);
+
+    std::map<std::string, std::string> params;
+    params["VS_PS_DECL"]   = vsWritesPointSize ? "  float gl_PointSize;\n" : "";
+    params["VS_PS_WRITE"]  = vsWritesPointSize ? "    gl_PointSize = 1.0;\n" : "";
+    params["TCS_PS_DECL"]  = tcsWritesPointSize ? "  float gl_PointSize;\n" : "";
+    params["TCS_PS_WRITE"] = tcsWritesPointSize ? "    gl_out[gl_InvocationID].gl_PointSize = 1.0;\n" : "";
+    params["TES_PS_DECL"]  = tesWritesPointSize ? "  float gl_PointSize;\n" : "";
+    params["TES_PS_WRITE"] = tesWritesPointSize ? "    gl_PointSize = 1.0;\n" : "";
+
+    static const char *const vert = R"glsl(#version 460
+layout (location=0) in vec4 inPos;
+out gl_PerVertex
+{
+  vec4 gl_Position;
+${VS_PS_DECL}};
+layout (location=0, component=0) out float vsA;
+layout (location=0, component=1) out float vsB;
+layout (location=0, component=2) out vec2  vsCD;
+layout (location=1)              out vec4  vsEFGH;
+void main() {
+    gl_Position = inPos;
+${VS_PS_WRITE}    vsA    = 0.125;
+    vsB    = 0.375;
+    vsCD   = vec2(0.625, 0.875);
+    vsEFGH = vec4(0.1, 0.2, 0.3, 0.4);
+}
+)glsl";
+
+    static const char *const tesc = R"glsl(#version 460
+layout (vertices=3) out;
+in gl_PerVertex
+{
+  vec4 gl_Position;
+} gl_in[gl_MaxPatchVertices];
+out gl_PerVertex
+{
+  vec4 gl_Position;
+${TCS_PS_DECL}} gl_out[];
+layout (location=0, component=0) in  float tcInA[];
+layout (location=0, component=1) in  float tcInB[];
+layout (location=0, component=2) in  vec2  tcInCD[];
+layout (location=1)              in  vec4  tcInEFGH[];
+layout (location=0, component=0) out float tcOutA[];
+layout (location=0, component=1) out float tcOutB[];
+layout (location=0, component=2) out vec2  tcOutCD[];
+layout (location=1)              out vec4  tcOutEFGH[];
+void main() {
+    gl_TessLevelInner[0] = 1.0;
+    gl_TessLevelOuter[0] = 1.0;
+    gl_TessLevelOuter[1] = 1.0;
+    gl_TessLevelOuter[2] = 1.0;
+    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+${TCS_PS_WRITE}    tcOutA[gl_InvocationID]    = tcInA[gl_InvocationID];
+    tcOutB[gl_InvocationID]    = tcInB[gl_InvocationID];
+    tcOutCD[gl_InvocationID]   = tcInCD[gl_InvocationID];
+    tcOutEFGH[gl_InvocationID] = tcInEFGH[gl_InvocationID];
+}
+)glsl";
+
+    static const char *const tese = R"glsl(#version 460
+layout (triangles, equal_spacing, ccw) in;
+in gl_PerVertex
+{
+  vec4 gl_Position;
+} gl_in[gl_MaxPatchVertices];
+out gl_PerVertex
+{
+  vec4 gl_Position;
+${TES_PS_DECL}};
+layout (location=0, component=0) in  float teInA[];
+layout (location=0, component=1) in  float teInB[];
+layout (location=0, component=2) in  vec2  teInCD[];
+layout (location=1)              in  vec4  teInEFGH[];
+layout (location=0, component=0) out float teOutA;
+layout (location=0, component=1) out float teOutB;
+layout (location=0, component=2) out vec2  teOutCD;
+layout (location=1)              out vec4  teOutEFGH;
+void main() {
+    gl_Position = gl_TessCoord.x * gl_in[0].gl_Position
+                + gl_TessCoord.y * gl_in[1].gl_Position
+                + gl_TessCoord.z * gl_in[2].gl_Position;
+${TES_PS_WRITE}    teOutA    = teInA[0];
+    teOutB    = teInB[0];
+    teOutCD   = teInCD[0];
+    teOutEFGH = teInEFGH[0];
+}
+)glsl";
+
+    static const char *const frag = R"glsl(#version 460
+layout (location=0, component=0) in  float fsA;
+layout (location=0, component=1) in  float fsB;
+layout (location=0, component=2) in  vec2  fsCD;
+layout (location=1)              in  vec4  fsEFGH;
+layout (location=0) out vec4 outColor;
+void main() {
+    const float eps = 0.01;
+    bool ok = abs(fsA - 0.125) < eps
+           && abs(fsB - 0.375) < eps
+           && abs(fsCD.x - 0.625) < eps && abs(fsCD.y - 0.875) < eps
+           && abs(fsEFGH.x - 0.1) < eps && abs(fsEFGH.y - 0.2) < eps
+           && abs(fsEFGH.z - 0.3) < eps && abs(fsEFGH.w - 0.4) < eps;
+    outColor = ok ? vec4(0.0, 1.0, 0.0, 1.0) : vec4(1.0, 0.0, 0.0, 1.0);
+}
+)glsl";
+
+    programCollection.glslSources.add("vert") << glu::VertexSource(tcu::StringTemplate(vert).specialize(params));
+    programCollection.glslSources.add("tesc")
+        << glu::TessellationControlSource(tcu::StringTemplate(tesc).specialize(params));
+    programCollection.glslSources.add("tese")
+        << glu::TessellationEvaluationSource(tcu::StringTemplate(tese).specialize(params));
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag);
+}
+
+tcu::TestStatus UnusedBuiltinOutputInstance::iterate(void)
+{
+    const auto &ctx = m_context.getContextCommonData();
+    const tcu::IVec3 fbExtent(64, 64, 1);
+    const auto vkExtent    = makeExtent3D(fbExtent);
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto tcuFormat   = mapVkFormat(colorFormat);
+    const auto colorUsage  = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto imageType   = VK_IMAGE_TYPE_2D;
+    const auto colorSRR    = makeDefaultImageSubresourceRange();
+
+    ImageWithBuffer resultBuffer(ctx.vkd, ctx.device, ctx.allocator, vkExtent, colorFormat, colorUsage, imageType,
+                                 colorSRR);
+
+    const std::vector<tcu::Vec4> vertices{
+        tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
+        tcu::Vec4(3.0f, -1.0f, 0.0f, 1.0f),
+        tcu::Vec4(-1.0f, 3.0f, 0.0f, 1.0f),
+    };
+    const auto vertexCount        = de::sizeU32(vertices);
+    const auto patchControlPoints = vertexCount;
+
+    const auto vertexBufferSize = static_cast<VkDeviceSize>(de::dataSize(vertices));
+    const auto vertexBufferInfo = makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    BufferWithMemory vertexBuffer(ctx.vkd, ctx.device, ctx.allocator, vertexBufferInfo, MemoryRequirement::HostVisible);
+    auto &vertexBufferAlloc       = vertexBuffer.getAllocation();
+    const auto vertexBufferOffset = static_cast<VkDeviceSize>(0);
+
+    deMemcpy(vertexBufferAlloc.getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
+    flushAlloc(ctx.vkd, ctx.device, vertexBufferAlloc);
+
+    const PipelineLayoutWrapper pipelineLayout(m_params.pipelineConstructionType, ctx.vkd, ctx.device);
+
+    RenderPassWrapper renderPass(m_params.pipelineConstructionType, ctx.vkd, ctx.device, colorFormat);
+    renderPass.createFramebuffer(ctx.vkd, ctx.device, resultBuffer.getImage(), resultBuffer.getImageView(),
+                                 vkExtent.width, vkExtent.height);
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+
+    const auto &binaries = m_context.getBinaryCollection();
+    const ShaderWrapper vertModule(ctx.vkd, ctx.device, binaries.get("vert"));
+    const ShaderWrapper tescModule(ctx.vkd, ctx.device, binaries.get("tesc"));
+    const ShaderWrapper teseModule(ctx.vkd, ctx.device, binaries.get("tese"));
+    const ShaderWrapper fragModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const auto primitiveTopology = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+
+    const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                                    // const void* pNext;
+        0u,                                                         // VkPipelineRasterizationStateCreateFlags flags;
+        VK_FALSE,                                                   // VkBool32 depthClampEnable;
+        VK_FALSE,                                                   // VkBool32 rasterizerDiscardEnable;
+        VK_POLYGON_MODE_FILL,                                       // VkPolygonMode polygonMode;
+        VK_CULL_MODE_NONE,                                          // VkCullModeFlags cullMode;
+        VK_FRONT_FACE_COUNTER_CLOCKWISE,                            // VkFrontFace frontFace;
+        VK_FALSE,                                                   // VkBool32 depthBiasEnable;
+        0.0f,                                                       // float depthBiasConstantFactor;
+        0.0f,                                                       // float depthBiasClamp;
+        0.0f,                                                       // float depthBiasSlopeFactor;
+        1.0f,                                                       // float lineWidth;
+    };
+
+    GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, m_context.getDeviceExtensions(),
+                                     m_params.pipelineConstructionType);
+    pipeline.setDefaultVertexInputState(true)
+        .setDefaultTopology(primitiveTopology)
+        .setDefaultPatchControlPoints(patchControlPoints)
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDefaultColorBlendState()
+        .setupVertexInputState()
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass.get(), 0u, vertModule,
+                                          &rasterizationStateCreateInfo, tescModule, teseModule, ShaderWrapper())
+        .setupFragmentShaderState(pipelineLayout, renderPass.get(), 0u, fragModule)
+        .setupFragmentOutputState(renderPass.get(), 0u)
+        .buildPipeline();
+
+    const auto cmdPool   = makeCommandPool(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = allocateCommandBuffer(ctx.vkd, ctx.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+    beginCommandBuffer(ctx.vkd, *cmdBuffer);
+    renderPass.begin(ctx.vkd, *cmdBuffer, scissors.at(0u), clearColor);
+    ctx.vkd.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+    pipeline.bind(*cmdBuffer);
+    ctx.vkd.cmdDraw(*cmdBuffer, vertexCount, 1u, 0u, 0u);
+    renderPass.end(ctx.vkd, *cmdBuffer);
+    copyImageToBuffer(ctx.vkd, *cmdBuffer, resultBuffer.getImage(), resultBuffer.getBuffer(), fbExtent.swizzle(0, 1),
+                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+                      VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
+                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+    endCommandBuffer(ctx.vkd, *cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, *cmdBuffer);
+
+    invalidateAlloc(ctx.vkd, ctx.device, resultBuffer.getBufferAllocation());
+
+    tcu::ConstPixelBufferAccess resultAccess(tcuFormat, fbExtent, resultBuffer.getBufferAllocation().getHostPtr());
+
+    tcu::TextureLevel referenceLevel(tcuFormat, fbExtent.x(), fbExtent.y());
+    tcu::clear(referenceLevel.getAccess(), tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
+
+    auto &log             = m_context.getTestContext().getLog();
+    const float threshold = 0.005f;
+    const tcu::Vec4 thresholdVec(threshold, threshold, threshold, threshold);
+
+    if (!tcu::floatThresholdCompare(log, "Result", "", referenceLevel.getAccess(), resultAccess, thresholdVec,
+                                    tcu::COMPARE_LOG_ON_ERROR))
+        return tcu::TestStatus::fail("Color result does not match the expected all-green image");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
+
+struct
+{
+    PipelineConstructionType constructionType;
+    const char *suffix;
+} static const constructionCases[]{
+    {PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC, ""},
+    {PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY, "_fast_lib"},
+    {PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV, "_shader_objects"},
+};
 
 //! These tests correspond to dEQP-GLES31.functional.tessellation.misc_draw.*
 tcu::TestCaseGroup *createMiscDrawTests(tcu::TestContext &testCtx)
@@ -2202,16 +2519,6 @@ tcu::TestCaseGroup *createMiscDrawTests(tcu::TestContext &testCtx)
         }
 
     // Test switching tessellation parameters on the fly.
-    struct
-    {
-        PipelineConstructionType constructionType;
-        const char *suffix;
-    } constructionCases[] = {
-        {PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC, ""},
-        {PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY, "_fast_lib"},
-        {PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV, "_shader_objects"},
-    };
-
     for (const auto &constructionCase : constructionCases)
         for (const auto &geometryShader : {false, true})
         {
@@ -2328,6 +2635,35 @@ tcu::TestCaseGroup *createMiscDrawTests(tcu::TestContext &testCtx)
 #endif // CTS_USES_VULKANSC
 
     return group.release();
+}
+
+// Unused builtin (gl_PointSize) outputs across unlinked tessellation stage boundaries (#4388).
+tcu::TestCaseGroup *createUnusedBuiltinOutputTests(tcu::TestContext &testCtx)
+{
+    de::MovePtr<tcu::TestCaseGroup> unusedBuiltinGroup(new tcu::TestCaseGroup(testCtx, "unused_builtin_outputs"));
+
+    static const struct
+    {
+        UnusedPointSizeBoundary boundary;
+        const char *name;
+    } boundaryCases[] = {
+        {UnusedPointSizeBoundary::VERTEX_TO_TESC, "point_size_vertex_to_tesc"},
+        {UnusedPointSizeBoundary::TESC_TO_TESE, "point_size_tesc_to_tese"},
+        {UnusedPointSizeBoundary::TESE_TO_FRAG, "point_size_tese_to_frag"},
+    };
+
+    for (const auto &constructionCase : constructionCases)
+        for (const auto &boundaryCase : boundaryCases)
+        {
+            const UnusedBuiltinOutputParams params{
+                constructionCase.constructionType,
+                boundaryCase.boundary,
+            };
+            const std::string testName = std::string(boundaryCase.name) + constructionCase.suffix;
+            unusedBuiltinGroup->addChild(new UnusedBuiltinOutputCase(testCtx, testName, params));
+        }
+
+    return unusedBuiltinGroup.release();
 }
 
 } // namespace tessellation

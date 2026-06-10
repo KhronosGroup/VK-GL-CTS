@@ -78,6 +78,7 @@ void createChildren(tcu::TestCaseGroup *tessellationTests)
     tessellationTests->addChild(createGeometryInteractionTests(testCtx));
     tessellationTests->addChild(createTessIOTests(testCtx));
     tessellationTests->addChild(createTessellationMatrixMultiplicationTests(testCtx));
+    tessellationTests->addChild(createUnusedBuiltinOutputTests(testCtx));
 }
 
 } // namespace
