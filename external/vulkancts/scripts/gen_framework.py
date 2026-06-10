@@ -3404,6 +3404,39 @@ class ProfileTestsGenerator(CTSGenerator):
                 limitValue = limitValue[i] if limitComponentCount > 1 else limitValue
                 propertyTableItems += [f"PN({combinedStructName}.{name}{componentAccess}), {limitMacro}({limitValue})"]
 
+    def buildCapabilityCheckTables(self, capabilities, featureTableItems, propertyTableItems, extensionsList, formatsList):
+        vkpdLen = len("VkPhysicalDevice")
+        for capability in capabilities:
+            if len(capability["feature_items"]) > 0 and list(capability["feature_items"])[0]:
+                featureTableItems.append(f"\t\t// {capability['name']}");
+                for featureStructList in capability["feature_items"]:
+                    for featureStruct, featureDict in featureStructList.items():
+                        structName = featureStruct[vkpdLen:]
+                        for feature, val in featureDict.items():
+                            if val:
+                                featureTableItems.append(f"vk{structName}, {feature}")
+                        featureTableItems.append("\n")
+            if len(capability["property_items"]) > 0 and list(capability["property_items"])[0]:
+                propertyTableItems.append(f"\t\t// {capability['name']}");
+                for propertyStructList in capability["property_items"]:
+                    for propertyStruct, propertyDict in propertyStructList.items():
+                        structName = propertyStruct[vkpdLen:]
+                        for propName, propLimit in propertyDict.items():
+                            self.addPropertyEntries("vk" + structName, propName, propLimit, propertyTableItems)
+                        propertyTableItems.append("\n")
+            if capability["extensions"]:
+                extensionsList.extend(capability["extensions"])
+            if capability["formats"]:
+                formatsList.update(capability["formats"])
+
+        extensionsList[:] = list(dict.fromkeys(extensionsList))
+
+        # remove empty lines at the end
+        if len(featureTableItems) > 0:
+            featureTableItems.pop()
+        if len(propertyTableItems) > 0:
+            propertyTableItems.pop()
+
     def generate (self):
         vkpdLen = len("VkPhysicalDevice")
         profilesList = []
@@ -3415,65 +3448,81 @@ class ProfileTestsGenerator(CTSGenerator):
             capabilitiesDefinitionsDict = profilesDict["capabilities"]
 
             for profileName, profileData in reversed(profilesDict["profiles"].items()):
+                requiredCapabilities = []
+                alternativeGroups = []
                 featureStructInitList = []
                 featureStructInitNamesList = ["Features", "Features2"]
-                featureTableItems = []
                 propertyStructInitList = []
                 propertyStructInitNamesList = ["Properties", "Properties2"]
-                propertyTableItems = []
-                extensionList = []
-                formatsList = []
                 highestMajor = 1
                 highestMinor = 0
 
                 allCapabilities = profileData["capabilities"] + profileData.get("optionals", [])
                 for capability in allCapabilities:
                     capabilityList = capability if isinstance(capability, list) else [capability]
+                    parsedCapabilities = []
+
                     for capabilityName in capabilityList:
-                        capabilityDefinition = capabilitiesDefinitionsDict[capabilityName]
                         # identify highest required vulkan version
                         match = re.match(r"vulkan(\d)(\d)requirements", capabilityName)
                         if match is not None:
                             major, minor = int(match.group(1)), int (match.group(2))
                             if major*10 + minor > highestMajor * 10 + highestMinor:
                                 highestMajor, highestMinor = major, minor
+                        capabilityDefinition = capabilitiesDefinitionsDict[capabilityName]
+                        capabilityData = {
+                            "name": capabilityName,
+                            "feature_items": [],
+                            "property_items": [],
+                            "extensions": capabilityDefinition.get("extensions", []),
+                            "formats": capabilityDefinition.get("formats", []),
+                        }
                         if "features" in capabilityDefinition:
                             featureStructList = capabilityDefinition["features"]
-                            # skip adding comment for empty requirements
                             if len(featureStructList) > 0 and list(featureStructList.values())[0]:
-                                featureTableItems.append(f"\t\t// {capabilityName}");
-                                # iterate over required features
+                                capabilityData["feature_items"].append(featureStructList)
                                 for featureStruct in featureStructList:
                                     structName = featureStruct[vkpdLen:]
                                     self.constructStruct(structName, featureStructInitNamesList, featureStructInitList)
-                                    for feature in featureStructList[featureStruct]:
-                                        featureTableItems.append(f"vk{structName}, {feature}")
-                                    featureTableItems.append("\n")
                         if "properties" in capabilityDefinition:
                             propertyStructList = capabilityDefinition["properties"]
-                            # skip adding comment for empty requirements
                             if len(propertyStructList) > 0 and list(propertyStructList.values())[0]:
-                                propertyTableItems.append(f"\t\t// {capabilityName}");
+                                capabilityData["property_items"].append(propertyStructList)
                                 for propertyStruct in propertyStructList:
                                     structName = propertyStruct[vkpdLen:]
                                     self.constructStruct(structName, propertyStructInitNamesList, propertyStructInitList)
-                                    for propName, propLimit in propertyStructList[propertyStruct].items():
-                                        self.addPropertyEntries("vk" + structName, propName, propLimit, propertyTableItems)
-                                    propertyTableItems.append("\n")
-                        if "extensions" in capabilityDefinition:
-                            extensionList = [n for n in capabilityDefinition["extensions"]]
-                        if "formats" in capabilityDefinition:
-                            formatsList = capabilityDefinition["formats"]
+                        parsedCapabilities.append(capabilityData)
 
-                # remove empty lines at the end
-                featureTableItems.pop()
-                propertyTableItems.pop()
+                    if isinstance(capability, list):
+                        # JSON array entries are alternatives: any capability in the
+                        # group can satisfy this requirement.
+                        alternativeGroups.append(parsedCapabilities)
+                    else:
+                        requiredCapabilities.extend(parsedCapabilities)
+
+                featureTableItems = []
+                extensionList = []
+                propertyTableItems = []
+                formatsList = {}
+                self.buildCapabilityCheckTables(requiredCapabilities, featureTableItems, propertyTableItems, extensionList, formatsList)
 
                 # remove "VP_KHR_" from roadmap profile name
                 if "VP_KHR_" in profileName:
                     profileName = profileName[7:]
                 # lower letters for all profile names
                 profileName = profileName.lower()
+                # Keep these assertions as guards against parser breakage when
+                # the roadmap profile JSON structure changes.
+                expectedRoadmapExtensionCounts = {
+                    "roadmap_2022": 1,
+                    "roadmap_2024": 15,
+                    "roadmap_2026": 35,
+                }
+                if profileName in expectedRoadmapExtensionCounts and len(extensionList) != expectedRoadmapExtensionCounts[profileName]:
+                    raise AssertionError(
+                        f"{profileName}: expected {expectedRoadmapExtensionCounts[profileName]} required extensions, got "
+                        f"{len(extensionList)} ({extensionList})"
+                    )
 
                 # template used to get both device features and device properties
                 structGetterTemplate = "\n"\
@@ -3498,6 +3547,8 @@ class ProfileTestsGenerator(CTSGenerator):
                 stream.extend(propertyStructInitList)
                 lastPropertyStructName = '&vk' + propertyStructInitNamesList[-1] if len(propertyStructInitNamesList) > 2 else ''
                 stream.append(structGetterTemplate.format("Properties", "properties", lastPropertyStructName))
+                if len(extensionList):
+                    stream.append("\tconst auto deviceExtensions = enumerateDeviceExtensionProperties(vki, pd, nullptr);")
                 if len(featureTableItems):
                     stream.append("\tconst std::vector<FeatureEntry> featureTable {")
                     stream.extend(["\t\tROADMAP_FEATURE_ITEM(" + f + ")," if ("," in f) else f for f in featureTableItems])
@@ -3522,7 +3573,6 @@ class ProfileTestsGenerator(CTSGenerator):
                     stream.append("\tstd::vector<std::string> extensionList {")
                     stream.append('\t\t"' + '",\n\t\t"'.join(extensionList) + '"')
                     stream.append("\t};\n"
-                    "\tconst auto deviceExtensions = enumerateDeviceExtensionProperties(vki, pd, nullptr);\n"
                     "\tfor (const auto& testedExtension : extensionList)\n"
                     "\t{\n"
                     "\t    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||\n"
@@ -3532,7 +3582,7 @@ class ProfileTestsGenerator(CTSGenerator):
                     "\t        << testedExtension << \" is not supported\"\n"
                     "\t        << TestLog::EndMessage;\n"
                     "\t    oneOrMoreChecksFailed = true;\n"
-                    "\t}")
+                    "\t}\n")
                 if len(formatsList):
                     stream.append("\n\tstd::vector<FormatEntry> formatsList {")
                     for formatName, formatProperties in formatsList.items():
@@ -3561,6 +3611,53 @@ class ProfileTestsGenerator(CTSGenerator):
                     "\t\t        << TestLog::EndMessage;\n"
                     "\t\t    oneOrMoreChecksFailed = true;\n"
                     "\t\t}\n")
+
+                for groupIdx, alternativeGroup in enumerate(alternativeGroups):
+                    stream.append(f"\n\t// Alternative capability group {groupIdx}")
+                    stream.append(f"\tbool altGroup{groupIdx}Supported = false;\n")
+                    for capIdx, capability in enumerate(alternativeGroup):
+                        featureTableItemsAlt = []
+                        propertyTableItemsAlt = []
+                        extensionListAlt = []
+                        formatsListAlt = {}
+                        stream.append(f"\tbool capability{capIdx}Supported = true;\n")
+                        self.buildCapabilityCheckTables([capability], featureTableItemsAlt, propertyTableItemsAlt, extensionListAlt, formatsListAlt)
+                        if len(featureTableItemsAlt):
+                            stream.append(f"\tconst std::vector<FeatureEntry> featureTableAlt{groupIdx}_{capIdx} {{")
+                            stream.extend(["\t\tROADMAP_FEATURE_ITEM(" + f + ")," if ("," in f) else f for f in featureTableItemsAlt])
+                            stream.append("\t};\n"
+                            f"\tfor (const auto &testedFeature : featureTableAlt{groupIdx}_{capIdx})\n"
+                            "\t{\n"
+                            "\t    if (!testedFeature.fieldPtr[0])\n"
+                            "\t    {\n"
+                            f"\t        capability{capIdx}Supported = false;\n"
+                            "\t    }\n"
+                            "\t}\n\n")
+                        if len(propertyTableItemsAlt):
+                            stream.append(f"\tconst std::vector<FeatureLimitTableItem> propertyTableAlt{groupIdx}_{capIdx} {{")
+                            stream.extend(["\t\t{ PN(checkAlways), " + p + " }," if ("," in p) else p for p in propertyTableItemsAlt])
+                            stream.append("\t};\n"
+                            f"\tfor (const auto& testedProperty : propertyTableAlt{groupIdx}_{capIdx})\n"
+                            f"\t    capability{capIdx}Supported &= validateLimit(testedProperty, log);\n\n")
+                        if len(extensionListAlt):
+                            stream.append(f"\tstd::vector<std::string> extensionListAlt{groupIdx}_{capIdx} {{")
+                            stream.append('\t\t"' + '",\n\t\t"'.join(extensionListAlt) + '"')
+                            stream.append("\t};\n"
+                            f"\tfor (const auto& testedExtension : extensionListAlt{groupIdx}_{capIdx})\n"
+                            "\t{\n"
+                            "\t    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||\n"
+                            "\t        context.isInstanceFunctionalitySupported(testedExtension))\n"
+                            "\t        continue;\n"
+                            f"\t    capability{capIdx}Supported = false;\n"
+                            "\t}\n")
+                        stream.append(f"\taltGroup{groupIdx}Supported |= capability{capIdx}Supported;\n");
+                    stream.append(f"\tif (!altGroup{groupIdx}Supported)\n"
+                    "\t{\n"
+                    "\t    log << TestLog::Message\n"
+                    f"\t        << \"Alternative capability group {groupIdx} is not supported\"\n"
+                    "\t        << TestLog::EndMessage;\n"
+                    "\t    oneOrMoreChecksFailed = true;\n"
+                    "\t}\n")
 
                 stream.append("\n"
                 "\tif (oneOrMoreChecksFailed)\n"

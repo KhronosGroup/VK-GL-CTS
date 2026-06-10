@@ -30,6 +30,7 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 	vki.getPhysicalDeviceProperties2(pd, &vkProperties2);
 	DE_UNREF(vkProperties);
 
+	const auto deviceExtensions = enumerateDeviceExtensionProperties(vki, pd, nullptr);
 	const std::vector<FeatureEntry> featureTable {
 		// vulkan10requirements
 		ROADMAP_FEATURE_ITEM(vkFeatures, robustBufferAccess),
@@ -223,7 +224,6 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 	std::vector<std::string> extensionList {
 		"VK_KHR_global_priority"
 	};
-	const auto deviceExtensions = enumerateDeviceExtensionProperties(vki, pd, nullptr);
 	for (const auto& testedExtension : extensionList)
 	{
 	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
@@ -234,6 +234,7 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 	        << TestLog::EndMessage;
 	    oneOrMoreChecksFailed = true;
 	}
+
 
 	if (oneOrMoreChecksFailed)
 	    TCU_THROW(NotSupportedError, "Profile not supported");
@@ -274,6 +275,7 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 	vki.getPhysicalDeviceProperties2(pd, &vkProperties2);
 	DE_UNREF(vkProperties);
 
+	const auto deviceExtensions = enumerateDeviceExtensionProperties(vki, pd, nullptr);
 	const std::vector<FeatureEntry> featureTable {
 		// vulkan10requirements_roadmap2024
 		ROADMAP_FEATURE_ITEM(vkFeatures, multiDrawIndirect),
@@ -322,30 +324,6 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 
 
 		ROADMAP_FEATURE_ITEM(vkMaintenance5FeaturesKHR, maintenance5),
-
-
-		// vulkanextensionrequirements_roadmap2024_line0
-		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, rectangularLines),
-
-
-		// vulkanextensionrequirements_roadmap2024_line1
-		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, bresenhamLines),
-
-
-		// vulkanextensionrequirements_roadmap2024_line2
-		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, smoothLines),
-
-
-		// vulkanextensionrequirements_roadmap2024_line3
-		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, stippledRectangularLines),
-
-
-		// vulkanextensionrequirements_roadmap2024_line4
-		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, stippledBresenhamLines),
-
-
-		// vulkanextensionrequirements_roadmap2024_line5
-		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, stippledSmoothLines),
 	};
 	for (const auto &testedFeature : featureTable)
 	{
@@ -373,9 +351,22 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 	    oneOrMoreChecksFailed |= !validateLimit(testedProperty, log);
 
 	std::vector<std::string> extensionList {
-		"VK_KHR_line_rasterization"
+		"VK_KHR_load_store_op_none",
+		"VK_KHR_shader_quad_control",
+		"VK_KHR_shader_maximal_reconvergence",
+		"VK_KHR_shader_subgroup_uniform_control_flow",
+		"VK_KHR_map_memory2",
+		"VK_KHR_dynamic_rendering",
+		"VK_KHR_shader_subgroup_rotate",
+		"VK_KHR_shader_float_controls2",
+		"VK_KHR_shader_expect_assume",
+		"VK_KHR_line_rasterization",
+		"VK_KHR_vertex_attribute_divisor",
+		"VK_KHR_index_type_uint8",
+		"VK_KHR_maintenance5",
+		"VK_KHR_dynamic_rendering_local_read",
+		"VK_KHR_push_descriptor"
 	};
-	const auto deviceExtensions = enumerateDeviceExtensionProperties(vki, pd, nullptr);
 	for (const auto& testedExtension : extensionList)
 	{
 	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
@@ -386,6 +377,187 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 	        << TestLog::EndMessage;
 	    oneOrMoreChecksFailed = true;
 	}
+
+
+	// Alternative capability group 0
+	bool altGroup0Supported = false;
+
+	bool capability0Supported = true;
+
+	const std::vector<FeatureEntry> featureTableAlt0_0 {
+		// vulkanextensionrequirements_roadmap2024_line0
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, rectangularLines),
+	};
+	for (const auto &testedFeature : featureTableAlt0_0)
+	{
+	    if (!testedFeature.fieldPtr[0])
+	    {
+	        capability0Supported = false;
+	    }
+	}
+
+
+	std::vector<std::string> extensionListAlt0_0 {
+		"VK_KHR_line_rasterization"
+	};
+	for (const auto& testedExtension : extensionListAlt0_0)
+	{
+	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
+	        context.isInstanceFunctionalitySupported(testedExtension))
+	        continue;
+	    capability0Supported = false;
+	}
+
+	altGroup0Supported |= capability0Supported;
+
+	bool capability1Supported = true;
+
+	const std::vector<FeatureEntry> featureTableAlt0_1 {
+		// vulkanextensionrequirements_roadmap2024_line1
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, bresenhamLines),
+	};
+	for (const auto &testedFeature : featureTableAlt0_1)
+	{
+	    if (!testedFeature.fieldPtr[0])
+	    {
+	        capability1Supported = false;
+	    }
+	}
+
+
+	std::vector<std::string> extensionListAlt0_1 {
+		"VK_KHR_line_rasterization"
+	};
+	for (const auto& testedExtension : extensionListAlt0_1)
+	{
+	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
+	        context.isInstanceFunctionalitySupported(testedExtension))
+	        continue;
+	    capability1Supported = false;
+	}
+
+	altGroup0Supported |= capability1Supported;
+
+	bool capability2Supported = true;
+
+	const std::vector<FeatureEntry> featureTableAlt0_2 {
+		// vulkanextensionrequirements_roadmap2024_line2
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, smoothLines),
+	};
+	for (const auto &testedFeature : featureTableAlt0_2)
+	{
+	    if (!testedFeature.fieldPtr[0])
+	    {
+	        capability2Supported = false;
+	    }
+	}
+
+
+	std::vector<std::string> extensionListAlt0_2 {
+		"VK_KHR_line_rasterization"
+	};
+	for (const auto& testedExtension : extensionListAlt0_2)
+	{
+	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
+	        context.isInstanceFunctionalitySupported(testedExtension))
+	        continue;
+	    capability2Supported = false;
+	}
+
+	altGroup0Supported |= capability2Supported;
+
+	bool capability3Supported = true;
+
+	const std::vector<FeatureEntry> featureTableAlt0_3 {
+		// vulkanextensionrequirements_roadmap2024_line3
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, stippledRectangularLines),
+	};
+	for (const auto &testedFeature : featureTableAlt0_3)
+	{
+	    if (!testedFeature.fieldPtr[0])
+	    {
+	        capability3Supported = false;
+	    }
+	}
+
+
+	std::vector<std::string> extensionListAlt0_3 {
+		"VK_KHR_line_rasterization"
+	};
+	for (const auto& testedExtension : extensionListAlt0_3)
+	{
+	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
+	        context.isInstanceFunctionalitySupported(testedExtension))
+	        continue;
+	    capability3Supported = false;
+	}
+
+	altGroup0Supported |= capability3Supported;
+
+	bool capability4Supported = true;
+
+	const std::vector<FeatureEntry> featureTableAlt0_4 {
+		// vulkanextensionrequirements_roadmap2024_line4
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, stippledBresenhamLines),
+	};
+	for (const auto &testedFeature : featureTableAlt0_4)
+	{
+	    if (!testedFeature.fieldPtr[0])
+	    {
+	        capability4Supported = false;
+	    }
+	}
+
+
+	std::vector<std::string> extensionListAlt0_4 {
+		"VK_KHR_line_rasterization"
+	};
+	for (const auto& testedExtension : extensionListAlt0_4)
+	{
+	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
+	        context.isInstanceFunctionalitySupported(testedExtension))
+	        continue;
+	    capability4Supported = false;
+	}
+
+	altGroup0Supported |= capability4Supported;
+
+	bool capability5Supported = true;
+
+	const std::vector<FeatureEntry> featureTableAlt0_5 {
+		// vulkanextensionrequirements_roadmap2024_line5
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, stippledSmoothLines),
+	};
+	for (const auto &testedFeature : featureTableAlt0_5)
+	{
+	    if (!testedFeature.fieldPtr[0])
+	    {
+	        capability5Supported = false;
+	    }
+	}
+
+
+	std::vector<std::string> extensionListAlt0_5 {
+		"VK_KHR_line_rasterization"
+	};
+	for (const auto& testedExtension : extensionListAlt0_5)
+	{
+	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
+	        context.isInstanceFunctionalitySupported(testedExtension))
+	        continue;
+	    capability5Supported = false;
+	}
+
+	altGroup0Supported |= capability5Supported;
+
+	if (!altGroup0Supported)
+	{
+	    log << TestLog::Message
+	        << "Alternative capability group 0 is not supported"
+	        << TestLog::EndMessage;
+	    oneOrMoreChecksFailed = true;
+	}
+
 
 	if (oneOrMoreChecksFailed)
 	    TCU_THROW(NotSupportedError, "Profile not supported");
@@ -440,6 +612,7 @@ tcu::TestStatus validate_roadmap_2026(Context& context)
 	vki.getPhysicalDeviceProperties2(pd, &vkProperties2);
 	DE_UNREF(vkProperties);
 
+	const auto deviceExtensions = enumerateDeviceExtensionProperties(vki, pd, nullptr);
 	const std::vector<FeatureEntry> featureTable {
 		// vulkan10requirements
 		ROADMAP_FEATURE_ITEM(vkFeatures, robustBufferAccess),
@@ -566,30 +739,6 @@ tcu::TestStatus validate_roadmap_2026(Context& context)
 		ROADMAP_FEATURE_ITEM(vkVulkan14Features, maintenance5),
 		ROADMAP_FEATURE_ITEM(vkVulkan14Features, hostImageCopy),
 		ROADMAP_FEATURE_ITEM(vkVulkan14Features, pushDescriptor),
-
-
-		// vulkan14requirements_roadmap2026_line0
-		ROADMAP_FEATURE_ITEM(vkVulkan14Features, rectangularLines),
-
-
-		// vulkan14requirements_roadmap2026_line1
-		ROADMAP_FEATURE_ITEM(vkVulkan14Features, bresenhamLines),
-
-
-		// vulkan14requirements_roadmap2026_line2
-		ROADMAP_FEATURE_ITEM(vkVulkan14Features, smoothLines),
-
-
-		// vulkan14requirements_roadmap2026_line3
-		ROADMAP_FEATURE_ITEM(vkVulkan14Features, stippledRectangularLines),
-
-
-		// vulkan14requirements_roadmap2026_line4
-		ROADMAP_FEATURE_ITEM(vkVulkan14Features, stippledBresenhamLines),
-
-
-		// vulkan14requirements_roadmap2026_line5
-		ROADMAP_FEATURE_ITEM(vkVulkan14Features, stippledSmoothLines),
 
 
 		// vulkanextensionrequirements_roadmap2026
@@ -783,6 +932,11 @@ tcu::TestStatus validate_roadmap_2026(Context& context)
 	    oneOrMoreChecksFailed |= !validateLimit(testedProperty, log);
 
 	std::vector<std::string> extensionList {
+		"VK_KHR_load_store_op_none",
+		"VK_KHR_shader_quad_control",
+		"VK_KHR_shader_maximal_reconvergence",
+		"VK_KHR_shader_subgroup_uniform_control_flow",
+		"VK_KHR_map_memory2",
 		"VK_KHR_dynamic_rendering",
 		"VK_KHR_shader_subgroup_rotate",
 		"VK_KHR_shader_float_controls2",
@@ -814,7 +968,6 @@ tcu::TestStatus validate_roadmap_2026(Context& context)
 		"VK_KHR_swapchain_maintenance1",
 		"VK_KHR_cooperative_matrix"
 	};
-	const auto deviceExtensions = enumerateDeviceExtensionProperties(vki, pd, nullptr);
 	for (const auto& testedExtension : extensionList)
 	{
 	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
@@ -825,6 +978,187 @@ tcu::TestStatus validate_roadmap_2026(Context& context)
 	        << TestLog::EndMessage;
 	    oneOrMoreChecksFailed = true;
 	}
+
+
+	// Alternative capability group 0
+	bool altGroup0Supported = false;
+
+	bool capability0Supported = true;
+
+	const std::vector<FeatureEntry> featureTableAlt0_0 {
+		// vulkan14requirements_roadmap2026_line0
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, rectangularLines),
+	};
+	for (const auto &testedFeature : featureTableAlt0_0)
+	{
+	    if (!testedFeature.fieldPtr[0])
+	    {
+	        capability0Supported = false;
+	    }
+	}
+
+
+	std::vector<std::string> extensionListAlt0_0 {
+		"VK_KHR_line_rasterization"
+	};
+	for (const auto& testedExtension : extensionListAlt0_0)
+	{
+	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
+	        context.isInstanceFunctionalitySupported(testedExtension))
+	        continue;
+	    capability0Supported = false;
+	}
+
+	altGroup0Supported |= capability0Supported;
+
+	bool capability1Supported = true;
+
+	const std::vector<FeatureEntry> featureTableAlt0_1 {
+		// vulkan14requirements_roadmap2026_line1
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, bresenhamLines),
+	};
+	for (const auto &testedFeature : featureTableAlt0_1)
+	{
+	    if (!testedFeature.fieldPtr[0])
+	    {
+	        capability1Supported = false;
+	    }
+	}
+
+
+	std::vector<std::string> extensionListAlt0_1 {
+		"VK_KHR_line_rasterization"
+	};
+	for (const auto& testedExtension : extensionListAlt0_1)
+	{
+	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
+	        context.isInstanceFunctionalitySupported(testedExtension))
+	        continue;
+	    capability1Supported = false;
+	}
+
+	altGroup0Supported |= capability1Supported;
+
+	bool capability2Supported = true;
+
+	const std::vector<FeatureEntry> featureTableAlt0_2 {
+		// vulkan14requirements_roadmap2026_line2
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, smoothLines),
+	};
+	for (const auto &testedFeature : featureTableAlt0_2)
+	{
+	    if (!testedFeature.fieldPtr[0])
+	    {
+	        capability2Supported = false;
+	    }
+	}
+
+
+	std::vector<std::string> extensionListAlt0_2 {
+		"VK_KHR_line_rasterization"
+	};
+	for (const auto& testedExtension : extensionListAlt0_2)
+	{
+	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
+	        context.isInstanceFunctionalitySupported(testedExtension))
+	        continue;
+	    capability2Supported = false;
+	}
+
+	altGroup0Supported |= capability2Supported;
+
+	bool capability3Supported = true;
+
+	const std::vector<FeatureEntry> featureTableAlt0_3 {
+		// vulkan14requirements_roadmap2026_line3
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, stippledRectangularLines),
+	};
+	for (const auto &testedFeature : featureTableAlt0_3)
+	{
+	    if (!testedFeature.fieldPtr[0])
+	    {
+	        capability3Supported = false;
+	    }
+	}
+
+
+	std::vector<std::string> extensionListAlt0_3 {
+		"VK_KHR_line_rasterization"
+	};
+	for (const auto& testedExtension : extensionListAlt0_3)
+	{
+	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
+	        context.isInstanceFunctionalitySupported(testedExtension))
+	        continue;
+	    capability3Supported = false;
+	}
+
+	altGroup0Supported |= capability3Supported;
+
+	bool capability4Supported = true;
+
+	const std::vector<FeatureEntry> featureTableAlt0_4 {
+		// vulkan14requirements_roadmap2026_line4
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, stippledBresenhamLines),
+	};
+	for (const auto &testedFeature : featureTableAlt0_4)
+	{
+	    if (!testedFeature.fieldPtr[0])
+	    {
+	        capability4Supported = false;
+	    }
+	}
+
+
+	std::vector<std::string> extensionListAlt0_4 {
+		"VK_KHR_line_rasterization"
+	};
+	for (const auto& testedExtension : extensionListAlt0_4)
+	{
+	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
+	        context.isInstanceFunctionalitySupported(testedExtension))
+	        continue;
+	    capability4Supported = false;
+	}
+
+	altGroup0Supported |= capability4Supported;
+
+	bool capability5Supported = true;
+
+	const std::vector<FeatureEntry> featureTableAlt0_5 {
+		// vulkan14requirements_roadmap2026_line5
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, stippledSmoothLines),
+	};
+	for (const auto &testedFeature : featureTableAlt0_5)
+	{
+	    if (!testedFeature.fieldPtr[0])
+	    {
+	        capability5Supported = false;
+	    }
+	}
+
+
+	std::vector<std::string> extensionListAlt0_5 {
+		"VK_KHR_line_rasterization"
+	};
+	for (const auto& testedExtension : extensionListAlt0_5)
+	{
+	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
+	        context.isInstanceFunctionalitySupported(testedExtension))
+	        continue;
+	    capability5Supported = false;
+	}
+
+	altGroup0Supported |= capability5Supported;
+
+	if (!altGroup0Supported)
+	{
+	    log << TestLog::Message
+	        << "Alternative capability group 0 is not supported"
+	        << TestLog::EndMessage;
+	    oneOrMoreChecksFailed = true;
+	}
+
 
 	if (oneOrMoreChecksFailed)
 	    TCU_THROW(NotSupportedError, "Profile not supported");
