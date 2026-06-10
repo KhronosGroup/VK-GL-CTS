@@ -27,7 +27,7 @@ The following tools must be installed and present in the PATH variable:
 
 ### Win32
 
- * Visual Studio 2015 or newer (glslang uses several C++11 features)
+ * Visual Studio 2019 or newer (glslang uses several C++11 features)
 
 ### Linux
 
@@ -118,13 +118,17 @@ cmake -DDEQP_DISABLE_VK_VIDEO_TESTS=OFF <path to vulkancts>
 
 ### Windows x86-32
 
-	cmake <path to vulkancts> -G"Visual Studio 14"
+	cmake <path to vulkancts> -G "Visual Studio 17 2022" -A Win32
 	start dEQP-Core-default.sln
 
 ### Windows x86-64
 
-	cmake <path to vulkancts> -G"Visual Studio 14 Win64"
+	cmake <path to vulkancts> -G "Visual Studio 17 2022" -A x64
 	start dEQP-Core-default.sln
+
+The target architecture is selected with `-A` (`Win32` or `x64`), not with a
+`Win64` generator-name suffix. Older Visual Studio versions work with the
+matching generator name, for example `-G "Visual Studio 16 2019"`.
 
 ### Linux 32-bit Debug
 
