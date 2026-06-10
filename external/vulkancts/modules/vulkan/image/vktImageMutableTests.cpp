@@ -122,6 +122,7 @@ struct CaseDef
     enum Upload upload;
     enum Download download;
     bool isFormatListTest;
+    bool extendedFlags;
     Type wsiType;
     ResolveAttachmentTestType resolveAttachmentTestType;
     bool isLoadOpClearTest;
@@ -1217,9 +1218,20 @@ void UploadDownloadExecutor::uploadStore(Context &context)
         nullptr,                                        // const void*            pNext
         VK_IMAGE_USAGE_STORAGE_BIT,                     // VkImageUsageFlags usage;
     };
+    const void *viewUsageInfoPtr = &viewUsageCreateInfo;
+#ifndef CTS_USES_VULKANSC
+    const vk::VkImageViewUsage2CreateInfoKHR viewUsage2CreateInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_2_CREATE_INFO_KHR, // VkStructureType        sType
+        nullptr,                                              // const void*            pNext
+        VK_IMAGE_USAGE_2_STORAGE_BIT_KHR,                     // VkImageUsageFlags2KHR  usage;
+    };
+    if (m_caseDef.extendedFlags)
+        viewUsageInfoPtr = static_cast<const void *>(&viewUsage2CreateInfo);
+#endif
+
     m_uStore.imageView = makeImageView(m_vk, m_device, m_image, getImageViewType(m_caseDef.imageType),
                                        m_caseDef.viewFormat, makeColorSubresourceRange(0, m_caseDef.numLayers),
-                                       m_haveMaintenance2 ? &viewUsageCreateInfo : nullptr);
+                                       m_haveMaintenance2 ? viewUsageInfoPtr : nullptr);
 
     // Setup compute pipeline
     m_uStore.descriptorPool = DescriptorPoolBuilder()
@@ -1407,6 +1419,16 @@ void UploadDownloadExecutor::uploadDraw(Context &context)
         nullptr,                                        // const void*            pNext
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,            // VkImageUsageFlags usage;
     };
+    const void *viewUsageInfoPtr = &viewUsageCreateInfo;
+#ifndef CTS_USES_VULKANSC
+    const vk::VkImageViewUsage2CreateInfoKHR viewUsage2CreateInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_2_CREATE_INFO_KHR, // VkStructureType        sType
+        nullptr,                                              // const void*            pNext
+        VK_IMAGE_USAGE_2_COLOR_ATTACHMENT_BIT_KHR,            // VkImageUsageFlags2KHR  usage;
+    };
+    if (m_caseDef.extendedFlags)
+        viewUsageInfoPtr = static_cast<const void *>(&viewUsage2CreateInfo);
+#endif
 
     // Create multisampled attachment view
     if (m_caseDef.resolveAttachmentTestType)
@@ -1415,7 +1437,7 @@ void UploadDownloadExecutor::uploadDraw(Context &context)
         {
             Move<VkImageView> multiSampledImageView = makeImageView(
                 m_vk, m_device, m_multisampledImage, getImageViewType(m_caseDef.imageType), m_caseDef.viewFormat,
-                makeColorSubresourceRange(subpassNdx, 1), m_haveMaintenance2 ? &viewUsageCreateInfo : nullptr);
+                makeColorSubresourceRange(subpassNdx, 1), m_haveMaintenance2 ? viewUsageInfoPtr : nullptr);
 
             // Add multisampled image first in attachments as we did in the renderpass
             m_uDraw.attachmentHandles.push_back(*multiSampledImageView);
@@ -1425,9 +1447,9 @@ void UploadDownloadExecutor::uploadDraw(Context &context)
 
     for (uint32_t subpassNdx = 0; subpassNdx < m_caseDef.numLayers; ++subpassNdx)
     {
-        Move<VkImageView> imageView = makeImageView(m_vk, m_device, m_image, getImageViewType(m_caseDef.imageType),
-                                                    m_caseDef.viewFormat, makeColorSubresourceRange(subpassNdx, 1),
-                                                    m_haveMaintenance2 ? &viewUsageCreateInfo : nullptr);
+        Move<VkImageView> imageView =
+            makeImageView(m_vk, m_device, m_image, getImageViewType(m_caseDef.imageType), m_caseDef.viewFormat,
+                          makeColorSubresourceRange(subpassNdx, 1), m_haveMaintenance2 ? viewUsageInfoPtr : nullptr);
         m_uDraw.attachmentHandles.push_back(*imageView);
         m_uDraw.attachments.push_back(makeSharedPtr(imageView));
 
@@ -1503,9 +1525,19 @@ void UploadDownloadExecutor::downloadTexture(Context &context, VkBuffer buffer)
         nullptr,                                        // const void*            pNext
         VK_IMAGE_USAGE_SAMPLED_BIT,                     // VkImageUsageFlags usage;
     };
+    const void *viewUsageInfoPtr = &viewUsageCreateInfo;
+#ifndef CTS_USES_VULKANSC
+    const vk::VkImageViewUsage2CreateInfoKHR viewUsage2CreateInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_2_CREATE_INFO_KHR, // VkStructureType        sType
+        nullptr,                                              // const void*            pNext
+        VK_IMAGE_USAGE_2_SAMPLED_BIT_KHR,                     // VkImageUsageFlags2KHR  usage;
+    };
+    if (m_caseDef.extendedFlags)
+        viewUsageInfoPtr = static_cast<const void *>(&viewUsage2CreateInfo);
+#endif
     m_dTex.inImageView = makeImageView(m_vk, m_device, m_image, getImageViewType(m_caseDef.imageType),
                                        m_caseDef.viewFormat, makeColorSubresourceRange(0, m_caseDef.numLayers),
-                                       m_haveMaintenance2 ? &viewUsageCreateInfo : nullptr);
+                                       m_haveMaintenance2 ? viewUsageInfoPtr : nullptr);
     m_dTex.sampler     = makeSampler(m_vk, m_device);
 
     // Setup compute pipeline
@@ -1593,9 +1625,19 @@ void UploadDownloadExecutor::downloadLoad(Context &context, VkBuffer buffer)
         nullptr,                                        // const void*            pNext
         VK_IMAGE_USAGE_STORAGE_BIT,                     // VkImageUsageFlags usage;
     };
+    const void *viewUsageInfoPtr = &viewUsageCreateInfo;
+#ifndef CTS_USES_VULKANSC
+    const vk::VkImageViewUsage2CreateInfoKHR viewUsage2CreateInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_2_CREATE_INFO_KHR, // VkStructureType        sType
+        nullptr,                                              // const void*            pNext
+        VK_IMAGE_USAGE_2_STORAGE_BIT_KHR,                     // VkImageUsageFlags2KHR  usage;
+    };
+    if (m_caseDef.extendedFlags)
+        viewUsageInfoPtr = static_cast<const void *>(&viewUsage2CreateInfo);
+#endif
     m_dLoad.inImageView = makeImageView(m_vk, m_device, m_image, getImageViewType(m_caseDef.imageType),
                                         m_caseDef.viewFormat, makeColorSubresourceRange(0, m_caseDef.numLayers),
-                                        m_haveMaintenance2 ? &viewUsageCreateInfo : nullptr);
+                                        m_haveMaintenance2 ? viewUsageInfoPtr : nullptr);
 
     // Setup compute pipeline
     m_dLoad.descriptorPool = DescriptorPoolBuilder()
@@ -1853,6 +1895,9 @@ void checkSupport(Context &context, const CaseDef caseDef)
     if (getMaxAvailableSampleCount(context, caseDef.imageFormat, getImageType(caseDef.imageType), usage, imageFlags) ==
         VK_SAMPLE_COUNT_1_BIT)
         TCU_THROW(NotSupportedError, "Maximum available sample count is VK_SAMPLE_COUNT_1_BIT");
+
+    if (caseDef.extendedFlags)
+        context.requireDeviceFunctionality("VK_KHR_extended_flags");
 }
 
 tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
@@ -1890,6 +1935,7 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
                                 static_cast<enum Upload>(upload),
                                 static_cast<enum Download>(download),
                                 false,                                   // isFormatListTest;
+                                false,                                   // extendedFlags
                                 vk::wsi::TYPE_LAST,                      // wsiType
                                 ResolveAttachmentTestType::RA_TEST_NONE, // resolveAttachmentTestType
                                 false                                    // isLoadOpClearTest
@@ -1901,10 +1947,21 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
                             addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, checkSupport,
                                                         initPrograms, testMutable, caseDef);
 
-                            caseDef.isFormatListTest = true;
-                            caseName += "_format_list";
-                            addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, checkSupport,
+                            caseDef.isFormatListTest       = true;
+                            std::string formatListCaseName = caseName + "_format_list";
+                            addFunctionCaseWithPrograms(groupByImageViewType.get(), formatListCaseName, checkSupport,
                                                         initPrograms, testMutable, caseDef);
+
+                            if (s_formats[imageFormatNdx] == VK_FORMAT_R32G32B32A32_SFLOAT ||
+                                s_formats[imageFormatNdx] == VK_FORMAT_R8G8B8A8_UNORM ||
+                                s_formats[imageFormatNdx] == VK_FORMAT_R32_UINT)
+                            {
+                                caseDef.isFormatListTest          = false;
+                                caseDef.extendedFlags             = true;
+                                std::string extendedFlagsCaseName = caseName + "_extended_flags";
+                                addFunctionCaseWithPrograms(groupByImageViewType.get(), extendedFlagsCaseName,
+                                                            checkSupport, initPrograms, testMutable, caseDef);
+                            }
                         }
                     }
 
@@ -1920,6 +1977,7 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
                             UPLOAD_DRAW,
                             DOWNLOAD_COPY,
                             false,                                          // isFormatListTest;
+                            false,                                          // extendedFlags
                             vk::wsi::TYPE_LAST,                             // wsiType
                             ResolveAttachmentTestType::RA_TEST_ALL_MUTABLE, // resolveAttachmentTestType
                             false                                           // isLoadOpClearTest
@@ -1965,6 +2023,7 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
                             UPLOAD_DRAW,
                             DOWNLOAD_COPY,
                             false,                                   // isFormatListTest;
+                            false,                                   // extendedFlags
                             vk::wsi::TYPE_LAST,                      // wsiType
                             ResolveAttachmentTestType::RA_TEST_NONE, // resolveAttachmentTestType
                             true                                     // isLoadOpClearTest
@@ -2419,7 +2478,8 @@ tcu::TestCaseGroup *createSwapchainImageMutableTests(TestContext &testCtx)
                                     s_swapchainFormats[viewFormatNdx],
                                     static_cast<enum Upload>(upload),
                                     static_cast<enum Download>(download),
-                                    true, // isFormatListTest;
+                                    true,  // isFormatListTest;
+                                    false, // extendedFlags
                                     wsiType,
                                     ResolveAttachmentTestType::RA_TEST_NONE, // resolveAttachmentTestType
                                     false                                    // isLoadOpClearTest

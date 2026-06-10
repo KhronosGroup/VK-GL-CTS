@@ -114,7 +114,7 @@ vk::VkPhysicalDeviceFeatures getDeviceNullFeatures(void)
 vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkInstance instance,
                                            const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
                                            const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
-                                           bool requiresSharedPresentableImage,
+                                           bool requiresSharedPresentableImage, bool extendedFlags,
                                            const vk::VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[]                  = {1.0f};
@@ -122,7 +122,15 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
                                                        (vk::VkDeviceQueueCreateFlags)0, queueFamilyIndex,
                                                        DE_LENGTH_OF_ARRAY(queuePriorities), &queuePriorities[0]}};
     const vk::VkPhysicalDeviceFeatures features    = getDeviceNullFeatures();
-    const char *const extensions[]                 = {"VK_KHR_swapchain", "VK_KHR_shared_presentable_image"};
+    std::vector<std::string> enabledExtensions     = {"VK_KHR_swapchain"};
+    if (requiresSharedPresentableImage)
+        enabledExtensions.push_back("VK_KHR_shared_presentable_image");
+    if (extendedFlags)
+        enabledExtensions.push_back("VK_KHR_extended_flags");
+
+    std::vector<const char *> extensions(enabledExtensions.size());
+    for (size_t ndx = 0; ndx < enabledExtensions.size(); ++ndx)
+        extensions[ndx] = enabledExtensions[ndx].c_str();
 
     const vk::VkDeviceCreateInfo deviceParams = {vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
                                                  nullptr,
@@ -131,11 +139,11 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
                                                  &queueInfos[0],
                                                  0u,
                                                  nullptr,
-                                                 requiresSharedPresentableImage ? 2u : 1u,
-                                                 DE_ARRAY_BEGIN(extensions),
+                                                 (uint32_t)extensions.size(),
+                                                 extensions.data(),
                                                  &features};
 
-    for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(extensions); ++ndx)
+    for (size_t ndx = 0; ndx < extensions.size(); ++ndx)
     {
         if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(extensions[ndx])))
             TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
@@ -407,6 +415,7 @@ struct TestConfig
     vk::VkPresentModeKHR presentMode;
     vk::VkSurfaceTransformFlagsKHR transform;
     vk::VkCompositeAlphaFlagsKHR alpha;
+    bool extendedFlags;
 };
 
 class SharedPresentableImageTestInstance : public TestInstance
@@ -576,25 +585,36 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs(
 
 vk::VkSurfaceCapabilitiesKHR getPhysicalDeviceSurfaceCapabilities(const vk::InstanceInterface &vki,
                                                                   vk::VkPhysicalDevice physicalDevice,
-                                                                  vk::VkSurfaceKHR surface,
+                                                                  vk::VkSurfaceKHR surface, bool extendedFlags,
                                                                   vk::VkImageUsageFlags *usage)
 {
     const vk::VkPhysicalDeviceSurfaceInfo2KHR info = {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR, nullptr,
 
                                                       surface};
-    vk::VkSharedPresentSurfaceCapabilitiesKHR sharedCapabilities;
     vk::VkSurfaceCapabilities2KHR capabilities;
 
-    sharedCapabilities.sType = vk::VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR;
-    sharedCapabilities.pNext = nullptr;
-
     capabilities.sType = vk::VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
-    capabilities.pNext = &sharedCapabilities;
 
-    VK_CHECK(vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevice, &info, &capabilities));
+    if (extendedFlags)
+    {
+        vk::VkSharedPresentSurfaceCapabilities2KHR sharedCapabilities2 = vk::initVulkanStructure();
+        capabilities.pNext                                             = &sharedCapabilities2;
 
-    TCU_CHECK(sharedCapabilities.sharedPresentSupportedUsageFlags & vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-    *usage = sharedCapabilities.sharedPresentSupportedUsageFlags;
+        VK_CHECK(vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevice, &info, &capabilities));
+
+        TCU_CHECK(sharedCapabilities2.sharedPresentSupportedUsageFlags & vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+        *usage = (vk::VkImageUsageFlags)sharedCapabilities2.sharedPresentSupportedUsageFlags;
+    }
+    else
+    {
+        vk::VkSharedPresentSurfaceCapabilitiesKHR sharedCapabilities = vk::initVulkanStructure();
+        capabilities.pNext                                           = &sharedCapabilities;
+
+        VK_CHECK(vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevice, &info, &capabilities));
+
+        TCU_CHECK(sharedCapabilities.sharedPresentSupportedUsageFlags & vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+        *usage = sharedCapabilities.sharedPresentSupportedUsageFlags;
+    }
 
     return capabilities.surfaceCapabilities;
 }
@@ -618,7 +638,7 @@ SharedPresentableImageTestInstance::SharedPresentableImageTestInstance(Context &
     , m_queueFamilyIndex(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
     , m_deviceExtensions(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
     , m_device(createDeviceWithWsi(m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex,
-                                   testConfig.useSharedPresentableImage))
+                                   testConfig.useSharedPresentableImage, testConfig.extendedFlags))
     , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
@@ -629,8 +649,8 @@ SharedPresentableImageTestInstance::SharedPresentableImageTestInstance(Context &
     , m_pipelineLayout(createPipelineLayout(m_vkd, *m_device))
 
     , m_supportedUsageFlags(0u)
-    , m_surfaceProperties(
-          getPhysicalDeviceSurfaceCapabilities(m_vki, m_physicalDevice, *m_surface, &m_supportedUsageFlags))
+    , m_surfaceProperties(getPhysicalDeviceSurfaceCapabilities(m_vki, m_physicalDevice, *m_surface,
+                                                               testConfig.extendedFlags, &m_supportedUsageFlags))
     , m_surfaceFormats(vk::wsi::getPhysicalDeviceSurfaceFormats(m_vki, m_physicalDevice, *m_surface))
     , m_presentModes(vk::wsi::getPhysicalDeviceSurfacePresentModes(m_vki, m_physicalDevice, *m_surface))
 
@@ -1026,10 +1046,22 @@ void createSharedPresentableImageTests(tcu::TestCaseGroup *testGroup, vk::wsi::T
                         config.transform                 = transforms[transformNdx].transform;
                         config.alpha                     = alphas[alphaNdx].alpha;
                         config.presentMode               = presentModes[presentModeNdx].mode;
+                        config.extendedFlags             = false;
 
                         alphaGroup->addChild(
                             new vkt::InstanceFactory1<SharedPresentableImageTestInstance, TestConfig, Programs>(
                                 testGroup->getTestContext(), name, Programs(), config));
+
+                        if (scaling[scalingNdx].scaling == SCALING_NONE &&
+                            transforms[transformNdx].transform == vk::VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
+                        {
+                            config.extendedFlags = true;
+
+                            std::string extendedName = std::string(name) + "_extended_flags";
+                            alphaGroup->addChild(
+                                new vkt::InstanceFactory1<SharedPresentableImageTestInstance, TestConfig, Programs>(
+                                    testGroup->getTestContext(), extendedName.c_str(), Programs(), config));
+                        }
                     }
 
                     transformGroup->addChild(alphaGroup.release());

@@ -52,6 +52,7 @@ const vk::VkPhysicalDeviceExclusiveScissorFeaturesNV&						Context::getExclusive
 const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&					Context::getExtendedDynamicState2FeaturesEXT				(void) const { return m_device->getExtendedDynamicState2FeaturesEXT();				}
 const vk::VkPhysicalDeviceExtendedDynamicState3FeaturesEXT&					Context::getExtendedDynamicState3FeaturesEXT				(void) const { return m_device->getExtendedDynamicState3FeaturesEXT();				}
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&					Context::getExtendedDynamicStateFeaturesEXT					(void) const { return m_device->getExtendedDynamicStateFeaturesEXT();				}
+const vk::VkPhysicalDeviceExtendedFlagsFeaturesKHR&							Context::getExtendedFlagsFeatures							(void) const { return m_device->getExtendedFlagsFeatures();							}
 const vk::VkPhysicalDeviceExternalFormatResolveFeaturesANDROID&				Context::getExternalFormatResolveFeaturesANDROID			(void) const { return m_device->getExternalFormatResolveFeaturesANDROID();			}
 const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&			Context::getExternalMemoryScreenBufferFeaturesQNX			(void) const { return m_device->getExternalMemoryScreenBufferFeaturesQNX();			}
 const vk::VkPhysicalDeviceFaultFeaturesEXT&									Context::getFaultFeaturesEXT								(void) const { return m_device->getFaultFeaturesEXT();								}

@@ -3430,6 +3430,15 @@ struct VkFormatProperties3
 };
 typedef VkFormatProperties3 VkFormatProperties3KHR;
 
+struct VkFormatProperties4KHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkFormatFeatureFlags4KHR	linearTilingFeatures;
+	VkFormatFeatureFlags4KHR	optimalTilingFeatures;
+	VkFormatFeatureFlags4KHR	bufferFeatures;
+};
+
 struct VkFragmentShadingRateAttachmentInfoKHR
 {
 	VkStructureType					sType;
@@ -3686,6 +3695,13 @@ struct VkImageCompressionPropertiesEXT
 	VkImageCompressionFixedRateFlagsEXT	imageCompressionFixedRateFlags;
 };
 
+struct VkImageCreateFlags2CreateInfoKHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkImageCreateFlags2KHR	flags;
+};
+
 struct VkImageCreateInfo
 {
 	VkStructureType			sType;
@@ -3795,6 +3811,13 @@ struct VkImageSparseMemoryRequirementsInfo2
 };
 typedef VkImageSparseMemoryRequirementsInfo2 VkImageSparseMemoryRequirementsInfo2KHR;
 
+struct VkImageStencilUsage2CreateInfoKHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkImageUsageFlags2KHR	stencilUsage;
+};
+
 struct VkImageStencilUsageCreateInfo
 {
 	VkStructureType		sType;
@@ -3894,6 +3917,13 @@ struct VkImageSwapchainCreateInfoKHR
 	VkSwapchainKHR	swapchain;
 };
 
+struct VkImageUsageFlags2CreateInfoKHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkImageUsageFlags2KHR	usage;
+};
+
 struct VkImageViewASTCDecodeModeEXT
 {
 	VkStructureType	sType;
@@ -3941,6 +3971,13 @@ struct VkImageViewSlicedCreateInfoEXT
 	const void*		pNext;
 	uint32_t		sliceOffset;
 	uint32_t		sliceCount;
+};
+
+struct VkImageViewUsage2CreateInfoKHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkImageUsageFlags2KHR	usage;
 };
 
 struct VkImageViewUsageCreateInfo
@@ -5891,6 +5928,13 @@ struct VkPhysicalDeviceExtendedDynamicStateFeaturesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		extendedDynamicState;
+};
+
+struct VkPhysicalDeviceExtendedFlagsFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		extendedFlags;
 };
 
 struct VkPhysicalDeviceExternalBufferInfo
@@ -10073,6 +10117,13 @@ struct VkPipelineViewportShadingRateImageStateCreateInfoNV
 	VkBool32						shadingRateImageEnable;
 	uint32_t						viewportCount;
 	const VkShadingRatePaletteNV*	pShadingRatePalettes;
+};
+
+struct VkSharedPresentSurfaceCapabilities2KHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkImageUsageFlags2KHR	sharedPresentSupportedUsageFlags;
 };
 
 struct VkSharedPresentSurfaceCapabilitiesKHR

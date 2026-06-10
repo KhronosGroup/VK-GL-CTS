@@ -20,7 +20,6 @@ vk-main-2023-03-01/image/store.txt
 vk-main-2023-03-01/image/subresource-layout.txt
 vk-main-2023-03-01/image/swapchain-mutable.txt
 vk-main-2023-03-01/image/texel-view-compatible.txt
-vk-main-2023-03-01/imageless-framebuffer.txt
 vk-main-2023-03-01/info.txt
 vk-main-2023-03-01/memory.txt
 vk-main-2023-03-01/memory-model.txt

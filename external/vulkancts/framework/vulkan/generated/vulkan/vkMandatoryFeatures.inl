@@ -261,6 +261,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_extended_dynamic_state"))
 		addFeatures(&physicalDeviceExtendedDynamicStateFeaturesEXT);
 
+	// VkPhysicalDeviceExtendedFlagsFeaturesKHR for ext [VK_KHR_extended_flags]
+	vk::VkPhysicalDeviceExtendedFlagsFeaturesKHR physicalDeviceExtendedFlagsFeaturesKHR = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_extended_flags"))
+		addFeatures(&physicalDeviceExtendedFlagsFeaturesKHR);
+
 	// VkPhysicalDeviceExternalFormatResolveFeaturesANDROID for ext [VK_ANDROID_external_format_resolve]
 	vk::VkPhysicalDeviceExternalFormatResolveFeaturesANDROID physicalDeviceExternalFormatResolveFeaturesANDROID = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_ANDROID_external_format_resolve"))
@@ -1548,6 +1553,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceMaintenance10FeaturesKHR.maintenance10 == VK_FALSE )
 			failMesages.push_back("maintenance10");
+	}
+
+	// VkPhysicalDeviceExtendedFlagsFeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_extended_flags")) )
+	{
+		if ( physicalDeviceExtendedFlagsFeaturesKHR.extendedFlags == VK_FALSE )
+			failMesages.push_back("extendedFlags");
 	}
 
 	// VkPhysicalDeviceTransformFeedbackFeaturesEXT

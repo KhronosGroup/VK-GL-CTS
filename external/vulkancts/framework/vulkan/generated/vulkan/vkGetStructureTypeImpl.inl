@@ -1093,6 +1093,11 @@ template<> VkStructureType getStructureType<VkFormatProperties3> (void)
 	return VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
 }
 
+template<> VkStructureType getStructureType<VkFormatProperties4KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_4_KHR;
+}
+
 template<> VkStructureType getStructureType<VkFragmentShadingRateAttachmentInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR;
@@ -1248,6 +1253,11 @@ template<> VkStructureType getStructureType<VkImageCopy2> (void)
 	return VK_STRUCTURE_TYPE_IMAGE_COPY_2;
 }
 
+template<> VkStructureType getStructureType<VkImageCreateFlags2CreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_CREATE_FLAGS_2_CREATE_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkImageCreateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1318,6 +1328,11 @@ template<> VkStructureType getStructureType<VkImageSparseMemoryRequirementsInfo2
 	return VK_STRUCTURE_TYPE_IMAGE_SPARSE_MEMORY_REQUIREMENTS_INFO_2;
 }
 
+template<> VkStructureType getStructureType<VkImageStencilUsage2CreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_2_CREATE_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkImageStencilUsageCreateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO;
@@ -1336,6 +1351,11 @@ template<> VkStructureType getStructureType<VkImageSwapchainCreateInfoKHR> (void
 template<> VkStructureType getStructureType<VkImageToMemoryCopy> (void)
 {
 	return VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY;
+}
+
+template<> VkStructureType getStructureType<VkImageUsageFlags2CreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkImageViewASTCDecodeModeEXT> (void)
@@ -1366,6 +1386,11 @@ template<> VkStructureType getStructureType<VkImageViewSampleWeightCreateInfoQCO
 template<> VkStructureType getStructureType<VkImageViewSlicedCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImageViewUsage2CreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_2_CREATE_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkImageViewUsageCreateInfo> (void)
@@ -2166,6 +2191,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceExtendedDynamicState
 template<> VkStructureType getStructureType<VkPhysicalDeviceExtendedDynamicStateFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceExtendedFlagsFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_FLAGS_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceExternalBufferInfo> (void)
@@ -4131,6 +4161,11 @@ template<> VkStructureType getStructureType<VkShaderModuleCreateInfo> (void)
 template<> VkStructureType getStructureType<VkShaderModuleIdentifierEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT;
+}
+
+template<> VkStructureType getStructureType<VkSharedPresentSurfaceCapabilities2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_2_KHR;
 }
 
 template<> VkStructureType getStructureType<VkSharedPresentSurfaceCapabilitiesKHR> (void)

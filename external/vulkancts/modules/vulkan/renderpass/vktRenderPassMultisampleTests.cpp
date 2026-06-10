@@ -163,8 +163,9 @@ Move<VkImage> createImage(const DeviceInterface &vk, VkDevice device, VkImageCre
                           VkFormat format, VkExtent3D extent, uint32_t mipLevels, uint32_t arrayLayers,
                           VkSampleCountFlagBits samples, VkImageTiling tiling, VkImageUsageFlags usage,
                           VkSharingMode sharingMode, uint32_t queueFamilyCount, const uint32_t *pQueueFamilyIndices,
-                          VkImageLayout initialLayout, TestSeparateUsage separateStencilUsage)
+                          VkImageLayout initialLayout, TestSeparateUsage separateStencilUsage, bool extendedFlags)
 {
+    DE_UNREF(extendedFlags);
     VkImageUsageFlags depthUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
     VkImageUsageFlags stencilUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
     VkImageUsageFlags imageUsage(usage);
@@ -182,8 +183,18 @@ Move<VkImage> createImage(const DeviceInterface &vk, VkDevice device, VkImageCre
     const VkImageStencilUsageCreateInfo stencilUsageInfo{VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO, nullptr,
                                                          stencilUsage};
 
+    const void *usageInfoPtr = &stencilUsageInfo;
+#ifndef CTS_USES_VULKANSC
+    const VkImageStencilUsage2CreateInfoKHR stencilUsage2Info = {
+        VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_2_CREATE_INFO_KHR, nullptr, (VkImageUsageFlags2KHR)stencilUsage};
+    if (extendedFlags)
+        usageInfoPtr = &stencilUsage2Info;
+#endif
+
+    const void *pNext = separateStencilUsage ? usageInfoPtr : nullptr;
+
     const VkImageCreateInfo pCreateInfo{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                        separateStencilUsage ? &stencilUsageInfo : nullptr,
+                                        pNext,
                                         flags,
                                         imageType,
                                         format,
@@ -214,7 +225,7 @@ Move<VkImageView> createImageView(const DeviceInterface &vk, VkDevice device, Vk
 Move<VkImage> createImage(const InstanceInterface &vki, VkPhysicalDevice physicalDevice, const DeviceInterface &vkd,
                           VkDevice device, VkFormat vkFormat, VkSampleCountFlagBits sampleCountBit,
                           VkImageUsageFlags usage, uint32_t width, uint32_t height,
-                          TestSeparateUsage separateStencilUsage = (TestSeparateUsage)0u)
+                          TestSeparateUsage separateStencilUsage, bool extendedFlags)
 {
     try
     {
@@ -255,9 +266,21 @@ Move<VkImage> createImage(const InstanceInterface &vki, VkPhysicalDevice physica
                 stencilUsage                                       //    VkImageUsageFlags        stencilUsage
             };
 
+            const void *usageInfoPtr = &stencilUsageInfo;
+
+#ifndef CTS_USES_VULKANSC
+            const VkImageStencilUsage2CreateInfoKHR stencilUsage2Info = {
+                VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_2_CREATE_INFO_KHR, // VkStructureType			sType;
+                nullptr,                                                 // void*					pNext;
+                (VkImageUsageFlags2KHR)stencilUsage                      // VkImageUsageFlags2KHR	stencilUsage;
+            };
+            if (extendedFlags)
+                usageInfoPtr = &stencilUsage2Info;
+#endif
+
             const VkPhysicalDeviceImageFormatInfo2 formatInfo2 = {
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2, //    VkStructureType            sType
-                &stencilUsageInfo,                                     //    const void*                pNext
+                usageInfoPtr,                                          //    const void*                pNext
                 vkFormat,                                              //    VkFormat                format
                 imageType,                                             //    VkImageType                type
                 imageTiling,                                           //    VkImageTiling            tiling
@@ -293,7 +316,7 @@ Move<VkImage> createImage(const InstanceInterface &vki, VkPhysicalDevice physica
 
         return createImage(vkd, device, 0u, imageType, vkFormat, imageExtent, 1u, 1u, sampleCountBit, imageTiling,
                            usage, VK_SHARING_MODE_EXCLUSIVE, 0u, nullptr, VK_IMAGE_LAYOUT_UNDEFINED,
-                           separateStencilUsage);
+                           separateStencilUsage, extendedFlags);
     }
     catch (const vk::Error &error)
     {
@@ -393,28 +416,31 @@ VkSampleCountFlagBits sampleCountBitFromomSampleCount(uint32_t count)
 
 std::vector<VkImageSp> createMultisampleImages(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
                                                const DeviceInterface &vkd, VkDevice device, VkFormat format,
-                                               uint32_t sampleCount, uint32_t width, uint32_t height)
+                                               uint32_t sampleCount, uint32_t width, uint32_t height,
+                                               bool extendedFlags)
 {
     std::vector<VkImageSp> images(sampleCount);
 
     for (size_t imageNdx = 0; imageNdx < images.size(); imageNdx++)
         images[imageNdx] = safeSharedPtr(new vk::Unique<VkImage>(
             createImage(vki, physicalDevice, vkd, device, format, sampleCountBitFromomSampleCount(sampleCount),
-                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height)));
+                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, width, height, (TestSeparateUsage)0u, extendedFlags)));
 
     return images;
 }
 
 std::vector<VkImageSp> createSingleSampleImages(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
                                                 const DeviceInterface &vkd, VkDevice device, VkFormat format,
-                                                uint32_t sampleCount, uint32_t width, uint32_t height)
+                                                uint32_t sampleCount, uint32_t width, uint32_t height,
+                                                bool extendedFlags)
 {
     std::vector<VkImageSp> images(sampleCount);
 
     for (size_t imageNdx = 0; imageNdx < images.size(); imageNdx++)
-        images[imageNdx] = safeSharedPtr(new vk::Unique<VkImage>(
-            createImage(vki, physicalDevice, vkd, device, format, VK_SAMPLE_COUNT_1_BIT,
-                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, width, height)));
+        images[imageNdx] = safeSharedPtr(
+            new vk::Unique<VkImage>(createImage(vki, physicalDevice, vkd, device, format, VK_SAMPLE_COUNT_1_BIT,
+                                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                                                width, height, (TestSeparateUsage)0u, extendedFlags)));
 
     return images;
 }
@@ -883,11 +909,12 @@ Move<VkDescriptorSet> createSplitDescriptorSet(const DeviceInterface &vkd, VkDev
 struct TestConfig
 {
     TestConfig(VkFormat format_, uint32_t sampleCount_, SharedGroupParams groupParams_,
-               TestSeparateUsage separateStencilUsage_ = (TestSeparateUsage)0u)
+               TestSeparateUsage separateStencilUsage_ = (TestSeparateUsage)0u, bool extendedFlags_ = false)
         : format(format_)
         , sampleCount(sampleCount_)
         , groupParams(groupParams_)
         , separateStencilUsage(separateStencilUsage_)
+        , extendedFlags(extendedFlags_)
     {
     }
 
@@ -895,6 +922,7 @@ struct TestConfig
     uint32_t sampleCount;
     SharedGroupParams groupParams;
     TestSeparateUsage separateStencilUsage;
+    bool extendedFlags;
 };
 
 VkImageUsageFlags getSrcImageUsage(VkFormat vkFormat)
@@ -1068,7 +1096,7 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance(Context &co
     , m_srcImageUsage(getSrcImageUsage(m_srcFormat))
     , m_srcImage(createImage(context.getInstanceInterface(), context.getPhysicalDevice(), context.getDeviceInterface(),
                              context.getDevice(), m_srcFormat, sampleCountBitFromomSampleCount(m_sampleCount),
-                             m_srcImageUsage, m_width, m_height, m_separateStencilUsage))
+                             m_srcImageUsage, m_width, m_height, m_separateStencilUsage, config.extendedFlags))
     , m_srcImageMemory(createImageMemory(context.getDeviceInterface(), context.getDevice(),
                                          context.getDefaultAllocator(), *m_srcImage))
     , m_srcImageView(createImageAttachmentView(context.getDeviceInterface(), context.getDevice(), *m_srcImage,
@@ -1083,7 +1111,7 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance(Context &co
 
     , m_dstMultisampleImages(createMultisampleImages(context.getInstanceInterface(), context.getPhysicalDevice(),
                                                      context.getDeviceInterface(), context.getDevice(), m_dstFormat,
-                                                     m_sampleCount, m_width, m_height))
+                                                     m_sampleCount, m_width, m_height, config.extendedFlags))
     , m_dstMultisampleImageMemory(createImageMemory(context.getDeviceInterface(), context.getDevice(),
                                                     context.getDefaultAllocator(), m_dstMultisampleImages))
     , m_dstMultisampleImageViews(createImageAttachmentViews(context.getDeviceInterface(), context.getDevice(),
@@ -1092,7 +1120,7 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance(Context &co
 
     , m_dstSinglesampleImages(createSingleSampleImages(context.getInstanceInterface(), context.getPhysicalDevice(),
                                                        context.getDeviceInterface(), context.getDevice(), m_dstFormat,
-                                                       m_sampleCount, m_width, m_height))
+                                                       m_sampleCount, m_width, m_height, config.extendedFlags))
     , m_dstSinglesampleImageMemory(createImageMemory(context.getDeviceInterface(), context.getDevice(),
                                                      context.getDefaultAllocator(), m_dstSinglesampleImages))
     , m_dstSinglesampleImageViews(createImageAttachmentViews(context.getDeviceInterface(), context.getDevice(),
@@ -2377,6 +2405,9 @@ void checkSupport(Context &context, TestConfig config)
     if (config.format == VK_FORMAT_A8_UNORM_KHR)
         context.requireDeviceFunctionality("VK_KHR_maintenance5");
 #endif // CTS_USES_VULKANSC
+
+    if (config.extendedFlags)
+        context.requireDeviceFunctionality("VK_KHR_extended_flags");
 }
 
 std::string formatToName(VkFormat format)
@@ -2490,10 +2521,16 @@ void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)
                         testCtx, "test_depth", separateUsageDepthTestConfig,
                         typename FunctionSupport1<TestConfig>::Args(checkSupport, separateUsageDepthTestConfig)));
 
-                    const TestConfig separateUsageStencilTestConfig(format, sampleCount, groupParams, TEST_STENCIL);
+                    TestConfig separateUsageStencilTestConfig(format, sampleCount, groupParams, TEST_STENCIL);
                     sampleGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig,
                                                                           FunctionSupport1<TestConfig>, Programs>(
                         testCtx, "test_stencil", separateUsageStencilTestConfig,
+                        typename FunctionSupport1<TestConfig>::Args(checkSupport, separateUsageStencilTestConfig)));
+
+                    separateUsageStencilTestConfig.extendedFlags = true;
+                    sampleGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig,
+                                                                          FunctionSupport1<TestConfig>, Programs>(
+                        testCtx, "test_stencil_extended_flags", separateUsageStencilTestConfig,
                         typename FunctionSupport1<TestConfig>::Args(checkSupport, separateUsageStencilTestConfig)));
                 }
 

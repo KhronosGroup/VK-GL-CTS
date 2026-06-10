@@ -5238,6 +5238,16 @@ tcu::Format::Bitfield<64> getFormatFeatureFlags2Str (VkFormatFeatureFlags2 value
 }
 
 
+tcu::Format::Bitfield<64> getFormatFeatureFlags4KHRStr (VkFormatFeatureFlags4KHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
+	};
+	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
 tcu::Format::Bitfield<32> getFrameBoundaryFlagsEXTStr (VkFrameBoundaryFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5405,6 +5415,36 @@ tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
 }
 
 
+tcu::Format::Bitfield<64> getImageCreateFlags2KHRStr (VkImageCreateFlags2KHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_2D_ARRAY_COMPATIBLE_BIT_KHR,						"VK_IMAGE_CREATE_2_2D_ARRAY_COMPATIBLE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_2D_VIEW_COMPATIBLE_BIT_EXT,						"VK_IMAGE_CREATE_2_2D_VIEW_COMPATIBLE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_ALIAS_BIT_KHR,									"VK_IMAGE_CREATE_2_ALIAS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_ALIAS_SINGLE_LAYER_DESCRIPTOR_BIT_KHR,			"VK_IMAGE_CREATE_2_ALIAS_SINGLE_LAYER_DESCRIPTOR_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR,				"VK_IMAGE_CREATE_2_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_CORNER_SAMPLED_BIT_NV,							"VK_IMAGE_CREATE_2_CORNER_SAMPLED_BIT_NV"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_CUBE_COMPATIBLE_BIT_KHR,							"VK_IMAGE_CREATE_2_CUBE_COMPATIBLE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT,		"VK_IMAGE_CREATE_2_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_DISJOINT_BIT_KHR,								"VK_IMAGE_CREATE_2_DISJOINT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_EXTENDED_USAGE_BIT_KHR,							"VK_IMAGE_CREATE_2_EXTENDED_USAGE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT,				"VK_IMAGE_CREATE_2_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT,	"VK_IMAGE_CREATE_2_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_MUTABLE_FORMAT_BIT_KHR,							"VK_IMAGE_CREATE_2_MUTABLE_FORMAT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_PROTECTED_BIT_KHR,								"VK_IMAGE_CREATE_2_PROTECTED_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT,		"VK_IMAGE_CREATE_2_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_SPARSE_ALIASED_BIT_KHR,							"VK_IMAGE_CREATE_2_SPARSE_ALIASED_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_SPARSE_BINDING_BIT_KHR,							"VK_IMAGE_CREATE_2_SPARSE_BINDING_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_SPARSE_RESIDENCY_BIT_KHR,						"VK_IMAGE_CREATE_2_SPARSE_RESIDENCY_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR,				"VK_IMAGE_CREATE_2_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_SUBSAMPLED_BIT_EXT,								"VK_IMAGE_CREATE_2_SUBSAMPLED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_VIDEO_PROFILE_INDEPENDENT_BIT_KHR,				"VK_IMAGE_CREATE_2_VIDEO_PROFILE_INDEPENDENT_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
 tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5436,6 +5476,40 @@ tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR,						"VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
+tcu::Format::Bitfield<64> getImageUsageFlags2KHRStr (VkImageUsageFlags2KHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,				"VK_IMAGE_USAGE_2_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_COLOR_ATTACHMENT_BIT_KHR,						"VK_IMAGE_USAGE_2_COLOR_ATTACHMENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_DEPTH_STENCIL_ATTACHMENT_BIT_KHR,				"VK_IMAGE_USAGE_2_DEPTH_STENCIL_ATTACHMENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_FRAGMENT_DENSITY_MAP_BIT_EXT,					"VK_IMAGE_USAGE_2_FRAGMENT_DENSITY_MAP_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,		"VK_IMAGE_USAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_HOST_TRANSFER_BIT_KHR,						"VK_IMAGE_USAGE_2_HOST_TRANSFER_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_INPUT_ATTACHMENT_BIT_KHR,						"VK_IMAGE_USAGE_2_INPUT_ATTACHMENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_INVOCATION_MASK_BIT_HUAWEI,					"VK_IMAGE_USAGE_2_INVOCATION_MASK_BIT_HUAWEI"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_SAMPLED_BIT_KHR,								"VK_IMAGE_USAGE_2_SAMPLED_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_SAMPLE_BLOCK_MATCH_BIT_QCOM,					"VK_IMAGE_USAGE_2_SAMPLE_BLOCK_MATCH_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_SAMPLE_WEIGHT_BIT_QCOM,						"VK_IMAGE_USAGE_2_SAMPLE_WEIGHT_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_STORAGE_BIT_KHR,								"VK_IMAGE_USAGE_2_STORAGE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_TENSOR_ALIASING_BIT_ARM,						"VK_IMAGE_USAGE_2_TENSOR_ALIASING_BIT_ARM"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_TILE_MEMORY_BIT_QCOM,							"VK_IMAGE_USAGE_2_TILE_MEMORY_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_TRANSFER_DST_BIT_KHR,							"VK_IMAGE_USAGE_2_TRANSFER_DST_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_TRANSFER_SRC_BIT_KHR,							"VK_IMAGE_USAGE_2_TRANSFER_SRC_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_TRANSIENT_ATTACHMENT_BIT_KHR,					"VK_IMAGE_USAGE_2_TRANSIENT_ATTACHMENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_VIDEO_DECODE_DPB_BIT_KHR,						"VK_IMAGE_USAGE_2_VIDEO_DECODE_DPB_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_VIDEO_DECODE_DST_BIT_KHR,						"VK_IMAGE_USAGE_2_VIDEO_DECODE_DST_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_VIDEO_DECODE_SRC_BIT_KHR,						"VK_IMAGE_USAGE_2_VIDEO_DECODE_SRC_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_VIDEO_ENCODE_DPB_BIT_KHR,						"VK_IMAGE_USAGE_2_VIDEO_ENCODE_DPB_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_VIDEO_ENCODE_DST_BIT_KHR,						"VK_IMAGE_USAGE_2_VIDEO_ENCODE_DST_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR,			"VK_IMAGE_USAGE_2_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR,	"VK_IMAGE_USAGE_2_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_VIDEO_ENCODE_SRC_BIT_KHR,						"VK_IMAGE_USAGE_2_VIDEO_ENCODE_SRC_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
 
@@ -10327,6 +10401,18 @@ std::ostream& operator<< (std::ostream& s, const VkFormatProperties3& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkFormatProperties4KHR& value)
+{
+	s << "VkFormatProperties4KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlinearTilingFeatures = " << getFormatFeatureFlags4KHRStr(value.linearTilingFeatures) << '\n';
+	s << "\toptimalTilingFeatures = " << getFormatFeatureFlags4KHRStr(value.optimalTilingFeatures) << '\n';
+	s << "\tbufferFeatures = " << getFormatFeatureFlags4KHRStr(value.bufferFeatures) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkFragmentShadingRateAttachmentInfoKHR& value)
 {
 	s << "VkFragmentShadingRateAttachmentInfoKHR = {\n";
@@ -10801,6 +10887,16 @@ std::ostream& operator<< (std::ostream& s, const VkImageCopy2& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkImageCreateFlags2CreateInfoKHR& value)
+{
+	s << "VkImageCreateFlags2CreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getImageCreateFlags2KHRStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkImageCreateInfo& value)
 {
 	s << "VkImageCreateInfo = {\n";
@@ -11003,6 +11099,16 @@ std::ostream& operator<< (std::ostream& s, const VkImageSparseMemoryRequirements
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkImageStencilUsage2CreateInfoKHR& value)
+{
+	s << "VkImageStencilUsage2CreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstencilUsage = " << getImageUsageFlags2KHRStr(value.stencilUsage) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkImageStencilUsageCreateInfo& value)
 {
 	s << "VkImageStencilUsageCreateInfo = {\n";
@@ -11081,6 +11187,16 @@ std::ostream& operator<< (std::ostream& s, const VkImageToMemoryCopy& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkImageUsageFlags2CreateInfoKHR& value)
+{
+	s << "VkImageUsageFlags2CreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tusage = " << getImageUsageFlags2KHRStr(value.usage) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkImageViewASTCDecodeModeEXT& value)
 {
 	s << "VkImageViewASTCDecodeModeEXT = {\n";
@@ -11145,6 +11261,16 @@ std::ostream& operator<< (std::ostream& s, const VkImageViewSlicedCreateInfoEXT&
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tsliceOffset = " << value.sliceOffset << '\n';
 	s << "\tsliceCount = " << value.sliceCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageViewUsage2CreateInfoKHR& value)
+{
+	s << "VkImageViewUsage2CreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tusage = " << getImageUsageFlags2KHRStr(value.usage) << '\n';
 	s << '}';
 	return s;
 }
@@ -13383,6 +13509,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExtendedDynamic
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\textendedDynamicState = " << value.extendedDynamicState << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExtendedFlagsFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceExtendedFlagsFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\textendedFlags = " << value.extendedFlags << '\n';
 	s << '}';
 	return s;
 }
@@ -18652,6 +18788,16 @@ std::ostream& operator<< (std::ostream& s, const VkShadingRatePaletteNV& value)
 	s << "VkShadingRatePaletteNV = {\n";
 	s << "\tshadingRatePaletteEntryCount = " << value.shadingRatePaletteEntryCount << '\n';
 	s << "\tpShadingRatePaletteEntries = " << value.pShadingRatePaletteEntries << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSharedPresentSurfaceCapabilities2KHR& value)
+{
+	s << "VkSharedPresentSurfaceCapabilities2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsharedPresentSupportedUsageFlags = " << getImageUsageFlags2KHRStr(value.sharedPresentSupportedUsageFlags) << '\n';
 	s << '}';
 	return s;
 }
