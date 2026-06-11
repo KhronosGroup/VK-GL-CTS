@@ -4907,7 +4907,8 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
 
     m_deferredIndirectAddressBuffer.resize(128 * sizeof(uint64_t));
     m_indirectAddressBuffer =
-        createBufferAndMemory(m_deferredIndirectAddressBuffer.size(), VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+        createBufferAndMemory(m_deferredIndirectAddressBuffer.size(),
+                              VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
 
     de::Random rnd(m_params.seed);
 
@@ -5985,8 +5986,17 @@ void DescriptorHeapTestInstanceBasic::setupDescriptors(VkCommandBuffer cmdBuf, c
                     (binding.mapping.source == VK_DESCRIPTOR_MAPPING_SOURCE_INDIRECT_ADDRESS_EXT) ||
                     (binding.mapping.source == VK_DESCRIPTOR_MAPPING_SOURCE_SHADER_RECORD_ADDRESS_EXT))
                 {
+                    VkBufferUsageFlags2 bufferUsage = 0u;
+                    if (binding.mapping.source == VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT)
+                    {
+                        if (binding.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+                            bufferUsage |= VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT;
+                        if (binding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+                            bufferUsage |= VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT;
+                    }
+
                     const auto &bufferData = m_stagingBuffers.emplace_back(
-                        createBufferAndMemory(256, VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR));
+                        createBufferAndMemory(256, VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR | bufferUsage));
                     deMemcpy(bufferData->memory->getHostPtr(), &randomValue, sizeof(randomValue));
 
                     if (binding.mapping.source == VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT)
@@ -6112,8 +6122,8 @@ void DescriptorHeapTestInstanceBasic::setupDescriptors(VkCommandBuffer cmdBuf, c
             }
             else if (binding.mapping.source == VK_DESCRIPTOR_MAPPING_SOURCE_INDIRECT_ADDRESS_EXT)
             {
-                auto &indirectBuffer = m_stagingBuffers.emplace_back(
-                    createBufferAndMemory(256, VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR));
+                auto &indirectBuffer       = m_stagingBuffers.emplace_back(createBufferAndMemory(
+                    256, VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR));
                 auto indirectBufferHostPtr = static_cast<char *>(indirectBuffer->memory->getHostPtr()) +
                                              binding.mapping.sourceData.indirectAddress.addressOffset;
                 deMemcpy(indirectBufferHostPtr, &accelerationStructureAddress, sizeof(accelerationStructureAddress));
@@ -13509,14 +13519,14 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
         VkImageMemoryBarrier2 imageMemoryBarrier = initVulkanStructure();
         imageMemoryBarrier.srcStageMask          = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
         imageMemoryBarrier.srcAccessMask         = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-        imageMemoryBarrier.dstStageMask          = VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR;
-        imageMemoryBarrier.dstAccessMask         = VK_ACCESS_2_TRANSFER_READ_BIT_KHR;
+        imageMemoryBarrier.dstStageMask          = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        imageMemoryBarrier.dstAccessMask         = VK_ACCESS_2_TRANSFER_READ_BIT;
         imageMemoryBarrier.oldLayout             = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         imageMemoryBarrier.newLayout             = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         imageMemoryBarrier.srcQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
         imageMemoryBarrier.dstQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
         imageMemoryBarrier.image                 = *colorImage->image;
-        imageMemoryBarrier.subresourceRange      = makeDefaultImageSubresourceRange();
+        imageMemoryBarrier.subresourceRange      = imageSubresourceRange;
 
         VkDependencyInfo dependencyInfo        = initVulkanStructure();
         dependencyInfo.imageMemoryBarrierCount = 1u;
@@ -13559,7 +13569,7 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
                              << "copy buffer is in second resource heap at index " << m_copyBufferIndex << "\n"
                              << "dst heap buffer is in second resource heap at index " << m_dstCopyIndex;
                 }
-                errorMsg << "result buffer is in resouce heap at index " << m_resultBufferIndex << "\n";
+                errorMsg << "result buffer is in resource heap at index " << m_resultBufferIndex << "\n";
                 log << tcu::TestLog::Message << errorMsg.str() << tcu::TestLog::EndMessage;
 
                 std::stringstream stream;
