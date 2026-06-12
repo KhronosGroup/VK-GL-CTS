@@ -15210,14 +15210,15 @@ void populateGraphicsTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
                             testName += "_vectors";
 
                         TestParamsGraphics params{};
-                        params.queue                          = VK_QUEUE_GRAPHICS_BIT;
-                        params.enableTessellationShader       = tessellation;
-                        params.enableGeometryShader           = geometry;
-                        params.enableFragmentStoresAndAtomics = fragment;
-                        params.useFragmentShader              = fragment;
-                        params.useSecondaryCommandBuffer      = secondary;
-                        params.useVectors                     = vectors;
-                        params.seed                           = baseSeed ^ deStringHash(testName.c_str());
+                        params.queue                                = VK_QUEUE_GRAPHICS_BIT;
+                        params.enableVertexPipelineStoresAndAtomics = true;
+                        params.enableTessellationShader             = tessellation;
+                        params.enableGeometryShader                 = geometry;
+                        params.enableFragmentStoresAndAtomics       = fragment;
+                        params.useFragmentShader                    = fragment;
+                        params.useSecondaryCommandBuffer            = secondary;
+                        params.useVectors                           = vectors;
+                        params.seed                                 = baseSeed ^ deStringHash(testName.c_str());
                         graphicsGroup->addChild(new DescriptorHeapTestCaseGraphics(testCtx, testName, params));
                     }
                 }
