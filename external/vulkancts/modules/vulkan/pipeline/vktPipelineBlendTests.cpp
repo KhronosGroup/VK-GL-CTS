@@ -70,7 +70,7 @@ namespace
 void checkSupportedBlendFormat(const InstanceInterface &vki, VkPhysicalDevice physicalDevice, VkFormat format)
 {
     if (!isSupportedBlendFormat(vki, physicalDevice, format))
-        TCU_THROW(NotSupportedError, std::string(getFormatName(format)) + " does not supporte blending");
+        TCU_THROW(NotSupportedError, std::string(getFormatName(format)) + " does not support blending");
 }
 
 class BlendStateUniqueRandomIterator : public UniqueRandomIterator<VkPipelineColorBlendAttachmentState>
