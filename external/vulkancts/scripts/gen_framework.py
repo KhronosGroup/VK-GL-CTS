@@ -3868,7 +3868,7 @@ class ConformanceVersionsGenerator(CTSGenerator):
         # save array with versions
         stream = ['static const VkConformanceVersion knownConformanceVersions[]',
                   '{']
-        appendToStream(stream, matches, tuple('0'*4) if len(withdrawnBranches) == 0 else max(withdrawnBranches))
+        appendToStream(stream, matches, (0, 0, 0, 0) if len(withdrawnBranches) == 0 else max(withdrawnBranches))
         stream.append('};')
 
         OutputGenerator.beginFile(self, genOpts)
