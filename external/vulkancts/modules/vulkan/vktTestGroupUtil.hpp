@@ -65,6 +65,8 @@ private:
     const CleanupGroupFunc m_cleanupGroup;
 };
 
+// Like TestGroupHelper0, but the stored and used types are std::function objects, which makes it possible to use
+// almost any callable as the create children and cleanup group callbacks, including lambdas with non-empty captures.
 class TestGroupHelper0StdFunction : public tcu::TestCaseGroup
 {
 public:
@@ -173,7 +175,8 @@ inline tcu::TestCaseGroup *createTestGroup(tcu::TestContext &testCtx, const std:
     return new TestGroupHelper0(testCtx, name, createChildren, cleanupGroup);
 }
 
-inline tcu::TestCaseGroup *createTestGroup(
+// Like the previous template but allowing functors as callbacks.
+inline tcu::TestCaseGroup *createTestGroup2(
     tcu::TestContext &testCtx, const std::string &name, TestGroupHelper0StdFunction::CreateChildrenFunc createChildren,
     TestGroupHelper0StdFunction::CleanupGroupFunc cleanupGroup = TestGroupHelper0StdFunction::CleanupGroupFunc())
 {

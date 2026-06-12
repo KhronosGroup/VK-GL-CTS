@@ -2475,6 +2475,51 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestGlobalPriorityQueryFeatur
 }
 
 
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestGpaFeaturesAMD (Context& context)
+{
+    const PlatformInterface&                vkp = context.getPlatformInterface();
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const InstanceDriver&                    instanceDriver            (instance.getDriver());
+    const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+    const tcu::CommandLine&                    commandLine = context.getTestContext().getCommandLine();
+    bool                                    isSubProcess = context.getTestContext().getCommandLine().isSubProcess();
+
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceGpaFeaturesAMD>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceGpaFeaturesAMD, perfCounters),
+        FEATURE_ITEM (VkPhysicalDeviceGpaFeaturesAMD, streamingPerfCounters),
+        FEATURE_ITEM (VkPhysicalDeviceGpaFeaturesAMD, sqThreadTracing),
+        FEATURE_ITEM (VkPhysicalDeviceGpaFeaturesAMD, clockModes),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceGpaFeaturesAMD*>(featuresStruct);
+        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 4, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTestGraphicsPipelineLibraryFeaturesEXT (Context& context)
 {
     tcu::TestLog&                            log = context.getTestContext().getLog();
@@ -8213,6 +8258,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "fragment_shading_rate_features_khr", createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeaturesKHR);
 	addFunctionCase(testGroup, "frame_boundary_features_ext", createDeviceWithUnsupportedFeaturesTestFrameBoundaryFeaturesEXT);
 	addFunctionCase(testGroup, "global_priority_query_features", createDeviceWithUnsupportedFeaturesTestGlobalPriorityQueryFeatures);
+	addFunctionCase(testGroup, "gpa_features_amd", createDeviceWithUnsupportedFeaturesTestGpaFeaturesAMD);
 	addFunctionCase(testGroup, "graphics_pipeline_library_features_ext", createDeviceWithUnsupportedFeaturesTestGraphicsPipelineLibraryFeaturesEXT);
 	addFunctionCase(testGroup, "host_image_copy_features", createDeviceWithUnsupportedFeaturesTestHostImageCopyFeatures);
 	addFunctionCase(testGroup, "host_query_reset_features", createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures);

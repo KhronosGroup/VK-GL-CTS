@@ -65,6 +65,7 @@ const VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV&				getFragmentShadingR
 const VkPhysicalDeviceFragmentShadingRateFeaturesKHR&					getFragmentShadingRateFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceFragmentShadingRateFeaturesKHR>();				}
 const VkPhysicalDeviceFrameBoundaryFeaturesEXT&							getFrameBoundaryFeaturesEXT							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceFrameBoundaryFeaturesEXT>();						}
 const VkPhysicalDeviceGlobalPriorityQueryFeatures&						getGlobalPriorityQueryFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceGlobalPriorityQueryFeatures>();					}
+const VkPhysicalDeviceGpaFeaturesAMD&									getGpaFeaturesAMD									(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceGpaFeaturesAMD>();								}
 const VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT&				getGraphicsPipelineLibraryFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT>();			}
 const VkPhysicalDeviceHostImageCopyFeatures&							getHostImageCopyFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceHostImageCopyFeatures>();							}
 const VkPhysicalDeviceHostQueryResetFeatures&							getHostQueryResetFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceHostQueryResetFeatures>();						}

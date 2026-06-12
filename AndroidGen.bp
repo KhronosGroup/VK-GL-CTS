@@ -117,6 +117,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/api/vktApiFormatPropertiesExtendedKHRtests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiFragmentShaderOutputTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiFrameBoundaryTests.cpp",
+        "external/vulkancts/modules/vulkan/api/vktApiGPAInterfaceTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiGetDeviceProcAddrTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiGetMemoryCommitment.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiGranularityTests.cpp",

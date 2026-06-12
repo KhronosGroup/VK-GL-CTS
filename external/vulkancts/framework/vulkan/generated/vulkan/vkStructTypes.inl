@@ -3637,6 +3637,15 @@ struct VkGeometryNV
 	VkGeometryFlagsKHR	flags;
 };
 
+struct VkGpaDeviceClockModeInfoAMD
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkGpaDeviceClockModeAMD	clockMode;
+	float					memoryClockRatioToPeak;
+	float					engineClockRatioToPeak;
+};
+
 struct VkAccelerationStructureInfoNV
 {
 	VkStructureType							sType;
@@ -3648,11 +3657,14 @@ struct VkAccelerationStructureInfoNV
 	const VkGeometryNV*						pGeometries;
 };
 
-struct VkGraphicsPipelineLibraryCreateInfoEXT
+struct VkGpaDeviceGetClockInfoAMD
 {
-	VkStructureType						sType;
-	const void*							pNext;
-	VkGraphicsPipelineLibraryFlagsEXT	flags;
+	VkStructureType	sType;
+	void*			pNext;
+	float			memoryClockRatioToPeak;
+	float			engineClockRatioToPeak;
+	uint32_t		memoryClockFrequency;
+	uint32_t		engineClockFrequency;
 };
 
 struct VkAccelerationStructureCreateInfoNV
@@ -3661,6 +3673,58 @@ struct VkAccelerationStructureCreateInfoNV
 	const void*						pNext;
 	VkDeviceSize					compactedSize;
 	VkAccelerationStructureInfoNV	info;
+};
+
+struct VkGpaPerfBlockPropertiesAMD
+{
+	VkGpaPerfBlockAMD					blockType;
+	VkGpaPerfBlockPropertiesFlagsAMD	flags;
+	uint32_t							instanceCount;
+	uint32_t							maxEventID;
+	uint32_t							maxGlobalOnlyCounters;
+	uint32_t							maxGlobalSharedCounters;
+	uint32_t							maxStreamingCounters;
+};
+
+struct VkGpaPerfCounterAMD
+{
+	VkGpaPerfBlockAMD	blockType;
+	uint32_t			blockInstance;
+	uint32_t			eventID;
+};
+
+struct VkGpaSampleBeginInfoAMD
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkGpaSampleTypeAMD			sampleType;
+	VkBool32					sampleInternalOperations;
+	VkBool32					cacheFlushOnCounterCollection;
+	VkBool32					sqShaderMaskEnable;
+	VkGpaSqShaderStageFlagsAMD	sqShaderMask;
+	uint32_t					perfCounterCount;
+	const VkGpaPerfCounterAMD*	pPerfCounters;
+	uint32_t					streamingPerfTraceSampleInterval;
+	VkDeviceSize				perfCounterDeviceMemoryLimit;
+	VkBool32					sqThreadTraceEnable;
+	VkBool32					sqThreadTraceSuppressInstructionTokens;
+	VkDeviceSize				sqThreadTraceDeviceMemoryLimit;
+	VkPipelineStageFlags		timingPreSample;
+	VkPipelineStageFlags		timingPostSample;
+};
+
+struct VkGpaSessionCreateInfoAMD
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkGpaSessionAMD	secondaryCopySource;
+};
+
+struct VkGraphicsPipelineLibraryCreateInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkGraphicsPipelineLibraryFlagsEXT	flags;
 };
 
 struct VkHeadlessSurfaceCreateInfoEXT
@@ -6288,6 +6352,34 @@ struct VkPhysicalDeviceGlobalPriorityQueryFeatures
 };
 typedef VkPhysicalDeviceGlobalPriorityQueryFeatures VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT;
 typedef VkPhysicalDeviceGlobalPriorityQueryFeatures VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR;
+
+struct VkPhysicalDeviceGpaFeaturesAMD
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		perfCounters;
+	VkBool32		streamingPerfCounters;
+	VkBool32		sqThreadTracing;
+	VkBool32		clockModes;
+};
+
+struct VkPhysicalDeviceGpaProperties2AMD
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		revisionId;
+};
+
+struct VkPhysicalDeviceGpaPropertiesAMD
+{
+	VkStructureType							sType;
+	void*									pNext;
+	VkPhysicalDeviceGpaPropertiesFlagsAMD	flags;
+	VkDeviceSize							maxSqttSeBufferSize;
+	uint32_t								shaderEngineCount;
+	uint32_t								perfBlockCount;
+	VkGpaPerfBlockPropertiesAMD*			pPerfBlocks;
+};
 
 struct VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT
 {

@@ -60,6 +60,9 @@ const char*	getFragmentShadingRateTypeNVName						(VkFragmentShadingRateTypeNV v
 const char*	getFrontFaceName										(VkFrontFace value);
 const char*	getFullScreenExclusiveEXTName							(VkFullScreenExclusiveEXT value);
 const char*	getGeometryTypeKHRName									(VkGeometryTypeKHR value);
+const char*	getGpaDeviceClockModeAMDName							(VkGpaDeviceClockModeAMD value);
+const char*	getGpaPerfBlockAMDName									(VkGpaPerfBlockAMD value);
+const char*	getGpaSampleTypeAMDName									(VkGpaSampleTypeAMD value);
 const char*	getImageLayoutName										(VkImageLayout value);
 const char*	getImageTilingName										(VkImageTiling value);
 const char*	getImageTypeName										(VkImageType value);
@@ -233,6 +236,9 @@ inline tcu::Format::Enum<VkFragmentShadingRateTypeNV>						getFragmentShadingRat
 inline tcu::Format::Enum<VkFrontFace>										getFrontFaceStr											(VkFrontFace value)											{ return tcu::Format::Enum<VkFrontFace>(getFrontFaceName, value);																			}
 inline tcu::Format::Enum<VkFullScreenExclusiveEXT>							getFullScreenExclusiveEXTStr							(VkFullScreenExclusiveEXT value)							{ return tcu::Format::Enum<VkFullScreenExclusiveEXT>(getFullScreenExclusiveEXTName, value);													}
 inline tcu::Format::Enum<VkGeometryTypeKHR>									getGeometryTypeKHRStr									(VkGeometryTypeKHR value)									{ return tcu::Format::Enum<VkGeometryTypeKHR>(getGeometryTypeKHRName, value);																}
+inline tcu::Format::Enum<VkGpaDeviceClockModeAMD>							getGpaDeviceClockModeAMDStr								(VkGpaDeviceClockModeAMD value)								{ return tcu::Format::Enum<VkGpaDeviceClockModeAMD>(getGpaDeviceClockModeAMDName, value);													}
+inline tcu::Format::Enum<VkGpaPerfBlockAMD>									getGpaPerfBlockAMDStr									(VkGpaPerfBlockAMD value)									{ return tcu::Format::Enum<VkGpaPerfBlockAMD>(getGpaPerfBlockAMDName, value);																}
+inline tcu::Format::Enum<VkGpaSampleTypeAMD>								getGpaSampleTypeAMDStr									(VkGpaSampleTypeAMD value)									{ return tcu::Format::Enum<VkGpaSampleTypeAMD>(getGpaSampleTypeAMDName, value);																}
 inline tcu::Format::Enum<VkImageLayout>										getImageLayoutStr										(VkImageLayout value)										{ return tcu::Format::Enum<VkImageLayout>(getImageLayoutName, value);																		}
 inline tcu::Format::Enum<VkImageTiling>										getImageTilingStr										(VkImageTiling value)										{ return tcu::Format::Enum<VkImageTiling>(getImageTilingName, value);																		}
 inline tcu::Format::Enum<VkImageType>										getImageTypeStr											(VkImageType value)											{ return tcu::Format::Enum<VkImageType>(getImageTypeName, value);																			}
@@ -369,6 +375,9 @@ inline std::ostream&	operator<<	(std::ostream& s, VkFragmentShadingRateTypeNV va
 inline std::ostream&	operator<<	(std::ostream& s, VkFrontFace value)										{ return s << getFrontFaceStr(value);										}
 inline std::ostream&	operator<<	(std::ostream& s, VkFullScreenExclusiveEXT value)							{ return s << getFullScreenExclusiveEXTStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkGeometryTypeKHR value)									{ return s << getGeometryTypeKHRStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, VkGpaDeviceClockModeAMD value)							{ return s << getGpaDeviceClockModeAMDStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, VkGpaPerfBlockAMD value)									{ return s << getGpaPerfBlockAMDStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, VkGpaSampleTypeAMD value)									{ return s << getGpaSampleTypeAMDStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, VkImageLayout value)										{ return s << getImageLayoutStr(value);										}
 inline std::ostream&	operator<<	(std::ostream& s, VkImageTiling value)										{ return s << getImageTilingStr(value);										}
 inline std::ostream&	operator<<	(std::ostream& s, VkImageType value)										{ return s << getImageTypeStr(value);										}
@@ -500,6 +509,7 @@ tcu::Format::Bitfield<32>	getFrameBoundaryFlagsEXTStr						(VkFrameBoundaryFlags
 tcu::Format::Bitfield<32>	getFramebufferCreateFlagsStr					(VkFramebufferCreateFlags value);
 tcu::Format::Bitfield<32>	getGeometryFlagsKHRStr							(VkGeometryFlagsKHR value);
 tcu::Format::Bitfield<32>	getGeometryInstanceFlagsKHRStr					(VkGeometryInstanceFlagsKHR value);
+tcu::Format::Bitfield<32>	getGpaSqShaderStageFlagsAMDStr					(VkGpaSqShaderStageFlagsAMD value);
 tcu::Format::Bitfield<32>	getGraphicsPipelineLibraryFlagsEXTStr			(VkGraphicsPipelineLibraryFlagsEXT value);
 tcu::Format::Bitfield<32>	getHostImageCopyFlagsStr						(VkHostImageCopyFlags value);
 tcu::Format::Bitfield<32>	getImageAspectFlagsStr							(VkImageAspectFlags value);
@@ -916,6 +926,12 @@ std::ostream&	operator<<	(std::ostream& s, const VkGeometryDataNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGeometryNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGeometryTrianglesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGetLatencyMarkerInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkGpaDeviceClockModeInfoAMD& value);
+std::ostream&	operator<<	(std::ostream& s, const VkGpaDeviceGetClockInfoAMD& value);
+std::ostream&	operator<<	(std::ostream& s, const VkGpaPerfBlockPropertiesAMD& value);
+std::ostream&	operator<<	(std::ostream& s, const VkGpaPerfCounterAMD& value);
+std::ostream&	operator<<	(std::ostream& s, const VkGpaSampleBeginInfoAMD& value);
+std::ostream&	operator<<	(std::ostream& s, const VkGpaSessionCreateInfoAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGraphicsPipelineCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGraphicsPipelineLibraryCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGraphicsPipelineShaderGroupsCreateInfoNV& value);
@@ -1183,6 +1199,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShading
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShadingRatePropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFrameBoundaryFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGlobalPriorityQueryFeatures& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGpaFeaturesAMD& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGpaProperties2AMD& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGpaPropertiesAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGroupProperties& value);

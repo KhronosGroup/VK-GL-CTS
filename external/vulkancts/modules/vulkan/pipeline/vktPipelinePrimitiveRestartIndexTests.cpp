@@ -1153,19 +1153,19 @@ std::vector<DrawCall> getDrawCalls()
 tcu::TestCaseGroup *createPrimitiveRestartIndexTests(tcu::TestContext &testCtx,
                                                      PipelineConstructionType pipelineConstructionType)
 {
-    return createTestGroup(
+    return createTestGroup2(
         testCtx, "primitive_restart_index",
         [=](tcu::TestCaseGroup *mainGroup)
         {
             for (const auto topology : getTopologies())
             {
-                mainGroup->addChild(createTestGroup(
+                mainGroup->addChild(createTestGroup2(
                     mainGroup->getTestContext(), getTopologySimpleName(topology),
                     [=](tcu::TestCaseGroup *topologyGroup)
                     {
                         for (const auto indexType : getIndexTypes())
                         {
-                            topologyGroup->addChild(createTestGroup(
+                            topologyGroup->addChild(createTestGroup2(
                                 topologyGroup->getTestContext(), getIndexTypeSimpleName(indexType),
                                 [=](tcu::TestCaseGroup *indexTypeGroup)
                                 {
@@ -1201,35 +1201,35 @@ tcu::TestCaseGroup *createPrimitiveRestartIndexTests(tcu::TestContext &testCtx,
                     }));
             }
 
-            mainGroup->addChild(createTestGroup(mainGroup->getTestContext(), "secondary_cmd",
-                                                [=](tcu::TestCaseGroup *secondariesGroup)
-                                                {
-                                                    for (const auto drawCall : getDrawCalls())
-                                                    {
-                                                        for (const bool dynamicPrimRestart : {false, true})
-                                                        {
-                                                            ParamsPtr params(new Params{
-                                                                pipelineConstructionType,
-                                                                VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-                                                                VK_INDEX_TYPE_UINT16,
-                                                                RestartIndex::ONE,
-                                                                drawCall,
-                                                                dynamicPrimRestart,
-                                                                false,
-                                                                true,
-                                                            });
+            mainGroup->addChild(createTestGroup2(mainGroup->getTestContext(), "secondary_cmd",
+                                                 [=](tcu::TestCaseGroup *secondariesGroup)
+                                                 {
+                                                     for (const auto drawCall : getDrawCalls())
+                                                     {
+                                                         for (const bool dynamicPrimRestart : {false, true})
+                                                         {
+                                                             ParamsPtr params(new Params{
+                                                                 pipelineConstructionType,
+                                                                 VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+                                                                 VK_INDEX_TYPE_UINT16,
+                                                                 RestartIndex::ONE,
+                                                                 drawCall,
+                                                                 dynamicPrimRestart,
+                                                                 false,
+                                                                 true,
+                                                             });
 
-                                                            const auto testName =
-                                                                getDrawCallName(drawCall) +
-                                                                (dynamicPrimRestart ? "_dyn_prim_restart" : "");
+                                                             const auto testName =
+                                                                 getDrawCallName(drawCall) +
+                                                                 (dynamicPrimRestart ? "_dyn_prim_restart" : "");
 
-                                                            secondariesGroup->addChild(new RestartIndexCase(
-                                                                secondariesGroup->getTestContext(), testName, params));
-                                                        }
-                                                    }
-                                                }));
+                                                             secondariesGroup->addChild(new RestartIndexCase(
+                                                                 secondariesGroup->getTestContext(), testName, params));
+                                                         }
+                                                     }
+                                                 }));
 
-            mainGroup->addChild(createTestGroup(
+            mainGroup->addChild(createTestGroup2(
                 mainGroup->getTestContext(), "conditional_rendering",
                 [=](tcu::TestCaseGroup *crGroup)
                 {

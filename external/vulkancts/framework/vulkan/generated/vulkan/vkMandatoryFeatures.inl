@@ -326,6 +326,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_global_priority", "VK_EXT_global_priority_query"))
 		addFeatures(&physicalDeviceGlobalPriorityQueryFeatures);
 
+	// VkPhysicalDeviceGpaFeaturesAMD for ext [VK_AMD_gpa_interface]
+	vk::VkPhysicalDeviceGpaFeaturesAMD physicalDeviceGpaFeaturesAMD = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_AMD_gpa_interface"))
+		addFeatures(&physicalDeviceGpaFeaturesAMD);
+
 	// VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT for ext [VK_EXT_graphics_pipeline_library]
 	vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT physicalDeviceGraphicsPipelineLibraryFeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_graphics_pipeline_library"))
@@ -1602,6 +1607,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceDepthClipEnableFeaturesEXT.depthClipEnable == VK_FALSE )
 			failMesages.push_back("depthClipEnable");
+	}
+
+	// VkPhysicalDeviceGpaFeaturesAMD
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_AMD_gpa_interface")) )
+	{
+		if ( (physicalDeviceGpaFeaturesAMD.perfCounters == VK_FALSE) && (physicalDeviceGpaFeaturesAMD.streamingPerfCounters == VK_FALSE) && (physicalDeviceGpaFeaturesAMD.sqThreadTracing == VK_FALSE) && (physicalDeviceGpaFeaturesAMD.clockModes == VK_FALSE) )
+			failMesages.push_back("perfCounters or streamingPerfCounters or sqThreadTracing or clockModes");
 	}
 
 	// VkPhysicalDeviceDescriptorHeapFeaturesEXT

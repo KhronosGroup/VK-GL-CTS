@@ -36,6 +36,8 @@ const VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			getFragmentDensityMapPr
 const VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&	getFragmentShaderBarycentricProperties		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR>();		}
 const VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV&		getFragmentShadingRateEnumsProperties		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV>();		}
 const VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShadingRateProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>();			}
+const VkPhysicalDeviceGpaProperties2AMD&						getGpaProperties2AMD						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceGpaProperties2AMD>();							}
+const VkPhysicalDeviceGpaPropertiesAMD&							getGpaPropertiesAMD							(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceGpaPropertiesAMD>();							}
 const VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&		getGraphicsPipelineLibraryPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT>();		}
 const VkPhysicalDeviceHostImageCopyProperties&					getHostImageCopyProperties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceHostImageCopyProperties>();					}
 const VkPhysicalDeviceIDProperties&								getIDProperties								(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceIDProperties>();								}

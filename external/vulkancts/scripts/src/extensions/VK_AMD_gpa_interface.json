@@ -1,0 +1,21 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceGpaFeaturesAMD": [
+            {
+                "features": [
+                    "perfCounters,streamingPerfCounters,sqThreadTracing,clockModes"
+                ],
+                "requirements": [
+                    "VK_AMD_gpa_interface"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            }
+        ]
+    }
+}

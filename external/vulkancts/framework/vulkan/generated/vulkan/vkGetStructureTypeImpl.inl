@@ -1198,6 +1198,26 @@ template<> VkStructureType getStructureType<VkGetLatencyMarkerInfoNV> (void)
 	return VK_STRUCTURE_TYPE_GET_LATENCY_MARKER_INFO_NV;
 }
 
+template<> VkStructureType getStructureType<VkGpaDeviceClockModeInfoAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_GPA_DEVICE_CLOCK_MODE_INFO_AMD;
+}
+
+template<> VkStructureType getStructureType<VkGpaDeviceGetClockInfoAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_GPA_DEVICE_GET_CLOCK_INFO_AMD;
+}
+
+template<> VkStructureType getStructureType<VkGpaSampleBeginInfoAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_GPA_SAMPLE_BEGIN_INFO_AMD;
+}
+
+template<> VkStructureType getStructureType<VkGpaSessionCreateInfoAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_GPA_SESSION_CREATE_INFO_AMD;
+}
+
 template<> VkStructureType getStructureType<VkGraphicsPipelineCreateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -2351,6 +2371,21 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceFrameBoundaryFeature
 template<> VkStructureType getStructureType<VkPhysicalDeviceGlobalPriorityQueryFeatures> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceGpaFeaturesAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GPA_FEATURES_AMD;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceGpaProperties2AMD> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GPA_PROPERTIES_2_AMD;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceGpaPropertiesAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GPA_PROPERTIES_AMD;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT> (void)

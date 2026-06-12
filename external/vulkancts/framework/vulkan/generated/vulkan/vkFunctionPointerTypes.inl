@@ -545,6 +545,18 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyDebugUtilsMessengerEXTFunc)					
 typedef VKAPI_ATTR void					(VKAPI_CALL* SubmitDebugUtilsMessageEXTFunc)											(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetAndroidHardwareBufferPropertiesANDROIDFunc)								(VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryAndroidHardwareBufferANDROIDFunc)									(VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct pt::AndroidHardwareBufferPtr* pBuffer);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateGpaSessionAMDFunc)													(VkDevice device, const VkGpaSessionCreateInfoAMD* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkGpaSessionAMD* pGpaSession);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyGpaSessionAMDFunc)													(VkDevice device, VkGpaSessionAMD gpaSession, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetGpaDeviceClockModeAMDFunc)												(VkDevice device, VkGpaDeviceClockModeInfoAMD* pInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetGpaDeviceClockInfoAMDFunc)												(VkDevice device, VkGpaDeviceGetClockInfoAMD* pInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CmdBeginGpaSessionAMDFunc)													(VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CmdEndGpaSessionAMDFunc)													(VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CmdBeginGpaSampleAMDFunc)													(VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession, const VkGpaSampleBeginInfoAMD* pGpaSampleBeginInfo, uint32_t* pSampleID);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndGpaSampleAMDFunc)													(VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession, uint32_t sampleID);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetGpaSessionStatusAMDFunc)												(VkDevice device, VkGpaSessionAMD gpaSession);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetGpaSessionResultsAMDFunc)												(VkDevice device, VkGpaSessionAMD gpaSession, uint32_t sampleID, size_t* pSizeInBytes, void* pData);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ResetGpaSessionAMDFunc)													(VkDevice device, VkGpaSessionAMD gpaSession);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyGpaSessionResultsAMDFunc)											(VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WriteSamplerDescriptorsEXTFunc)											(VkDevice device, uint32_t samplerCount, const VkSamplerCreateInfo* pSamplers, const VkHostAddressRangeEXT* pDescriptors);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WriteResourceDescriptorsEXTFunc)											(VkDevice device, uint32_t resourceCount, const VkResourceDescriptorInfoEXT* pResources, const VkHostAddressRangeEXT* pDescriptors);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindSamplerHeapEXTFunc)													(VkCommandBuffer commandBuffer, const VkBindHeapInfoEXT* pBindInfo);

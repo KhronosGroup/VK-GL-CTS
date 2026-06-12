@@ -24,6 +24,7 @@ template<> const char*	getTypeName<VkDisplayModeKHR>					(void) { return "VkDisp
 template<> const char*	getTypeName<VkEvent>							(void) { return "VkEvent";							}
 template<> const char*	getTypeName<VkFence>							(void) { return "VkFence";							}
 template<> const char*	getTypeName<VkFramebuffer>						(void) { return "VkFramebuffer";					}
+template<> const char*	getTypeName<VkGpaSessionAMD>					(void) { return "VkGpaSessionAMD";					}
 template<> const char*	getTypeName<VkImage>							(void) { return "VkImage";							}
 template<> const char*	getTypeName<VkImageView>						(void) { return "VkImageView";						}
 template<> const char*	getTypeName<VkIndirectCommandsLayoutEXT>		(void) { return "VkIndirectCommandsLayoutEXT";		}
@@ -1983,6 +1984,99 @@ const char* getGeometryTypeKHRName (VkGeometryTypeKHR value)
 		case VK_GEOMETRY_TYPE_SPHERES_NV:							return "VK_GEOMETRY_TYPE_SPHERES_NV";
 		case VK_GEOMETRY_TYPE_TRIANGLES_KHR:						return "VK_GEOMETRY_TYPE_TRIANGLES_KHR";
 		default:													return nullptr;
+	}
+}
+
+
+const char* getGpaDeviceClockModeAMDName (VkGpaDeviceClockModeAMD value)
+{
+	switch (value)
+	{
+		case VK_GPA_DEVICE_CLOCK_MODE_DEFAULT_AMD:		return "VK_GPA_DEVICE_CLOCK_MODE_DEFAULT_AMD";
+		case VK_GPA_DEVICE_CLOCK_MODE_MIN_ENGINE_AMD:	return "VK_GPA_DEVICE_CLOCK_MODE_MIN_ENGINE_AMD";
+		case VK_GPA_DEVICE_CLOCK_MODE_MIN_MEMORY_AMD:	return "VK_GPA_DEVICE_CLOCK_MODE_MIN_MEMORY_AMD";
+		case VK_GPA_DEVICE_CLOCK_MODE_PEAK_AMD:			return "VK_GPA_DEVICE_CLOCK_MODE_PEAK_AMD";
+		case VK_GPA_DEVICE_CLOCK_MODE_PROFILING_AMD:	return "VK_GPA_DEVICE_CLOCK_MODE_PROFILING_AMD";
+		case VK_GPA_DEVICE_CLOCK_MODE_QUERY_AMD:		return "VK_GPA_DEVICE_CLOCK_MODE_QUERY_AMD";
+		default:										return nullptr;
+	}
+}
+
+
+const char* getGpaPerfBlockAMDName (VkGpaPerfBlockAMD value)
+{
+	switch (value)
+	{
+		case VK_GPA_PERF_BLOCK_ATC_AMD:			return "VK_GPA_PERF_BLOCK_ATC_AMD";
+		case VK_GPA_PERF_BLOCK_ATC_L2_AMD:		return "VK_GPA_PERF_BLOCK_ATC_L2_AMD";
+		case VK_GPA_PERF_BLOCK_CB_AMD:			return "VK_GPA_PERF_BLOCK_CB_AMD";
+		case VK_GPA_PERF_BLOCK_CHA_AMD:			return "VK_GPA_PERF_BLOCK_CHA_AMD";
+		case VK_GPA_PERF_BLOCK_CHCG_AMD:		return "VK_GPA_PERF_BLOCK_CHCG_AMD";
+		case VK_GPA_PERF_BLOCK_CHC_AMD:			return "VK_GPA_PERF_BLOCK_CHC_AMD";
+		case VK_GPA_PERF_BLOCK_CPC_AMD:			return "VK_GPA_PERF_BLOCK_CPC_AMD";
+		case VK_GPA_PERF_BLOCK_CPF_AMD:			return "VK_GPA_PERF_BLOCK_CPF_AMD";
+		case VK_GPA_PERF_BLOCK_CPG_AMD:			return "VK_GPA_PERF_BLOCK_CPG_AMD";
+		case VK_GPA_PERF_BLOCK_DB_AMD:			return "VK_GPA_PERF_BLOCK_DB_AMD";
+		case VK_GPA_PERF_BLOCK_DF_MALL_AMD:		return "VK_GPA_PERF_BLOCK_DF_MALL_AMD";
+		case VK_GPA_PERF_BLOCK_DMA_AMD:			return "VK_GPA_PERF_BLOCK_DMA_AMD";
+		case VK_GPA_PERF_BLOCK_EACPWD_AMD:		return "VK_GPA_PERF_BLOCK_EACPWD_AMD";
+		case VK_GPA_PERF_BLOCK_EASE_AMD:		return "VK_GPA_PERF_BLOCK_EASE_AMD";
+		case VK_GPA_PERF_BLOCK_EA_AMD:			return "VK_GPA_PERF_BLOCK_EA_AMD";
+		case VK_GPA_PERF_BLOCK_GCR_AMD:			return "VK_GPA_PERF_BLOCK_GCR_AMD";
+		case VK_GPA_PERF_BLOCK_GDS_AMD:			return "VK_GPA_PERF_BLOCK_GDS_AMD";
+		case VK_GPA_PERF_BLOCK_GE_AMD:			return "VK_GPA_PERF_BLOCK_GE_AMD";
+		case VK_GPA_PERF_BLOCK_GE_DIST_AMD:		return "VK_GPA_PERF_BLOCK_GE_DIST_AMD";
+		case VK_GPA_PERF_BLOCK_GE_SE_AMD:		return "VK_GPA_PERF_BLOCK_GE_SE_AMD";
+		case VK_GPA_PERF_BLOCK_GL1A_AMD:		return "VK_GPA_PERF_BLOCK_GL1A_AMD";
+		case VK_GPA_PERF_BLOCK_GL1CG_AMD:		return "VK_GPA_PERF_BLOCK_GL1CG_AMD";
+		case VK_GPA_PERF_BLOCK_GL1C_AMD:		return "VK_GPA_PERF_BLOCK_GL1C_AMD";
+		case VK_GPA_PERF_BLOCK_GL1XA_AMD:		return "VK_GPA_PERF_BLOCK_GL1XA_AMD";
+		case VK_GPA_PERF_BLOCK_GL1XC_AMD:		return "VK_GPA_PERF_BLOCK_GL1XC_AMD";
+		case VK_GPA_PERF_BLOCK_GL2A_AMD:		return "VK_GPA_PERF_BLOCK_GL2A_AMD";
+		case VK_GPA_PERF_BLOCK_GL2C_AMD:		return "VK_GPA_PERF_BLOCK_GL2C_AMD";
+		case VK_GPA_PERF_BLOCK_GRBM_AMD:		return "VK_GPA_PERF_BLOCK_GRBM_AMD";
+		case VK_GPA_PERF_BLOCK_GRBM_SE_AMD:		return "VK_GPA_PERF_BLOCK_GRBM_SE_AMD";
+		case VK_GPA_PERF_BLOCK_GUS_AMD:			return "VK_GPA_PERF_BLOCK_GUS_AMD";
+		case VK_GPA_PERF_BLOCK_IA_AMD:			return "VK_GPA_PERF_BLOCK_IA_AMD";
+		case VK_GPA_PERF_BLOCK_MC_AMD:			return "VK_GPA_PERF_BLOCK_MC_AMD";
+		case VK_GPA_PERF_BLOCK_MC_VM_L2_AMD:	return "VK_GPA_PERF_BLOCK_MC_VM_L2_AMD";
+		case VK_GPA_PERF_BLOCK_PA_AMD:			return "VK_GPA_PERF_BLOCK_PA_AMD";
+		case VK_GPA_PERF_BLOCK_PC_AMD:			return "VK_GPA_PERF_BLOCK_PC_AMD";
+		case VK_GPA_PERF_BLOCK_PH_AMD:			return "VK_GPA_PERF_BLOCK_PH_AMD";
+		case VK_GPA_PERF_BLOCK_RLCUSER_AMD:		return "VK_GPA_PERF_BLOCK_RLCUSER_AMD";
+		case VK_GPA_PERF_BLOCK_RLC_AMD:			return "VK_GPA_PERF_BLOCK_RLC_AMD";
+		case VK_GPA_PERF_BLOCK_RMI_AMD:			return "VK_GPA_PERF_BLOCK_RMI_AMD";
+		case VK_GPA_PERF_BLOCK_RPB_AMD:			return "VK_GPA_PERF_BLOCK_RPB_AMD";
+		case VK_GPA_PERF_BLOCK_SC_AMD:			return "VK_GPA_PERF_BLOCK_SC_AMD";
+		case VK_GPA_PERF_BLOCK_SPI_AMD:			return "VK_GPA_PERF_BLOCK_SPI_AMD";
+		case VK_GPA_PERF_BLOCK_SQ_AMD:			return "VK_GPA_PERF_BLOCK_SQ_AMD";
+		case VK_GPA_PERF_BLOCK_SQ_WGP_AMD:		return "VK_GPA_PERF_BLOCK_SQ_WGP_AMD";
+		case VK_GPA_PERF_BLOCK_SRBM_AMD:		return "VK_GPA_PERF_BLOCK_SRBM_AMD";
+		case VK_GPA_PERF_BLOCK_SX_AMD:			return "VK_GPA_PERF_BLOCK_SX_AMD";
+		case VK_GPA_PERF_BLOCK_TA_AMD:			return "VK_GPA_PERF_BLOCK_TA_AMD";
+		case VK_GPA_PERF_BLOCK_TCA_AMD:			return "VK_GPA_PERF_BLOCK_TCA_AMD";
+		case VK_GPA_PERF_BLOCK_TCC_AMD:			return "VK_GPA_PERF_BLOCK_TCC_AMD";
+		case VK_GPA_PERF_BLOCK_TCP_AMD:			return "VK_GPA_PERF_BLOCK_TCP_AMD";
+		case VK_GPA_PERF_BLOCK_TCS_AMD:			return "VK_GPA_PERF_BLOCK_TCS_AMD";
+		case VK_GPA_PERF_BLOCK_TD_AMD:			return "VK_GPA_PERF_BLOCK_TD_AMD";
+		case VK_GPA_PERF_BLOCK_UMCCH_AMD:		return "VK_GPA_PERF_BLOCK_UMCCH_AMD";
+		case VK_GPA_PERF_BLOCK_UTCL1_AMD:		return "VK_GPA_PERF_BLOCK_UTCL1_AMD";
+		case VK_GPA_PERF_BLOCK_VGT_AMD:			return "VK_GPA_PERF_BLOCK_VGT_AMD";
+		case VK_GPA_PERF_BLOCK_WD_AMD:			return "VK_GPA_PERF_BLOCK_WD_AMD";
+		case VK_GPA_PERF_BLOCK_WGS_AMD:			return "VK_GPA_PERF_BLOCK_WGS_AMD";
+		default:								return nullptr;
+	}
+}
+
+
+const char* getGpaSampleTypeAMDName (VkGpaSampleTypeAMD value)
+{
+	switch (value)
+	{
+		case VK_GPA_SAMPLE_TYPE_CUMULATIVE_AMD:	return "VK_GPA_SAMPLE_TYPE_CUMULATIVE_AMD";
+		case VK_GPA_SAMPLE_TYPE_TIMING_AMD:		return "VK_GPA_SAMPLE_TYPE_TIMING_AMD";
+		case VK_GPA_SAMPLE_TYPE_TRACE_AMD:		return "VK_GPA_SAMPLE_TYPE_TRACE_AMD";
+		default:								return nullptr;
 	}
 }
 
@@ -5290,6 +5384,22 @@ tcu::Format::Bitfield<32> getGeometryInstanceFlagsKHRStr (VkGeometryInstanceFlag
 		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR,						"VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR,		"VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_GEOMETRY_INSTANCE_TRIANGLE_FLIP_FACING_BIT_KHR,				"VK_GEOMETRY_INSTANCE_TRIANGLE_FLIP_FACING_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
+tcu::Format::Bitfield<32> getGpaSqShaderStageFlagsAMDStr (VkGpaSqShaderStageFlagsAMD value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_GPA_SQ_SHADER_STAGE_CS_BIT_AMD,	"VK_GPA_SQ_SHADER_STAGE_CS_BIT_AMD"),
+		tcu::Format::BitDesc(VK_GPA_SQ_SHADER_STAGE_ES_BIT_AMD,	"VK_GPA_SQ_SHADER_STAGE_ES_BIT_AMD"),
+		tcu::Format::BitDesc(VK_GPA_SQ_SHADER_STAGE_GS_BIT_AMD,	"VK_GPA_SQ_SHADER_STAGE_GS_BIT_AMD"),
+		tcu::Format::BitDesc(VK_GPA_SQ_SHADER_STAGE_HS_BIT_AMD,	"VK_GPA_SQ_SHADER_STAGE_HS_BIT_AMD"),
+		tcu::Format::BitDesc(VK_GPA_SQ_SHADER_STAGE_LS_BIT_AMD,	"VK_GPA_SQ_SHADER_STAGE_LS_BIT_AMD"),
+		tcu::Format::BitDesc(VK_GPA_SQ_SHADER_STAGE_PS_BIT_AMD,	"VK_GPA_SQ_SHADER_STAGE_PS_BIT_AMD"),
+		tcu::Format::BitDesc(VK_GPA_SQ_SHADER_STAGE_VS_BIT_AMD,	"VK_GPA_SQ_SHADER_STAGE_VS_BIT_AMD"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -10700,6 +10810,88 @@ std::ostream& operator<< (std::ostream& s, const VkGetLatencyMarkerInfoNV& value
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkGpaDeviceClockModeInfoAMD& value)
+{
+	s << "VkGpaDeviceClockModeInfoAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tclockMode = " << value.clockMode << '\n';
+	s << "\tmemoryClockRatioToPeak = " << value.memoryClockRatioToPeak << '\n';
+	s << "\tengineClockRatioToPeak = " << value.engineClockRatioToPeak << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkGpaDeviceGetClockInfoAMD& value)
+{
+	s << "VkGpaDeviceGetClockInfoAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryClockRatioToPeak = " << value.memoryClockRatioToPeak << '\n';
+	s << "\tengineClockRatioToPeak = " << value.engineClockRatioToPeak << '\n';
+	s << "\tmemoryClockFrequency = " << value.memoryClockFrequency << '\n';
+	s << "\tengineClockFrequency = " << value.engineClockFrequency << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkGpaPerfBlockPropertiesAMD& value)
+{
+	s << "VkGpaPerfBlockPropertiesAMD = {\n";
+	s << "\tblockType = " << value.blockType << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tinstanceCount = " << value.instanceCount << '\n';
+	s << "\tmaxEventID = " << value.maxEventID << '\n';
+	s << "\tmaxGlobalOnlyCounters = " << value.maxGlobalOnlyCounters << '\n';
+	s << "\tmaxGlobalSharedCounters = " << value.maxGlobalSharedCounters << '\n';
+	s << "\tmaxStreamingCounters = " << value.maxStreamingCounters << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkGpaPerfCounterAMD& value)
+{
+	s << "VkGpaPerfCounterAMD = {\n";
+	s << "\tblockType = " << value.blockType << '\n';
+	s << "\tblockInstance = " << value.blockInstance << '\n';
+	s << "\teventID = " << value.eventID << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkGpaSampleBeginInfoAMD& value)
+{
+	s << "VkGpaSampleBeginInfoAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsampleType = " << value.sampleType << '\n';
+	s << "\tsampleInternalOperations = " << value.sampleInternalOperations << '\n';
+	s << "\tcacheFlushOnCounterCollection = " << value.cacheFlushOnCounterCollection << '\n';
+	s << "\tsqShaderMaskEnable = " << value.sqShaderMaskEnable << '\n';
+	s << "\tsqShaderMask = " << getGpaSqShaderStageFlagsAMDStr(value.sqShaderMask) << '\n';
+	s << "\tperfCounterCount = " << value.perfCounterCount << '\n';
+	s << "\tpPerfCounters = " << value.pPerfCounters << '\n';
+	s << "\tstreamingPerfTraceSampleInterval = " << value.streamingPerfTraceSampleInterval << '\n';
+	s << "\tperfCounterDeviceMemoryLimit = " << value.perfCounterDeviceMemoryLimit << '\n';
+	s << "\tsqThreadTraceEnable = " << value.sqThreadTraceEnable << '\n';
+	s << "\tsqThreadTraceSuppressInstructionTokens = " << value.sqThreadTraceSuppressInstructionTokens << '\n';
+	s << "\tsqThreadTraceDeviceMemoryLimit = " << value.sqThreadTraceDeviceMemoryLimit << '\n';
+	s << "\ttimingPreSample = " << getPipelineStageFlagsStr(value.timingPreSample) << '\n';
+	s << "\ttimingPostSample = " << getPipelineStageFlagsStr(value.timingPostSample) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkGpaSessionCreateInfoAMD& value)
+{
+	s << "VkGpaSessionCreateInfoAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsecondaryCopySource = " << value.secondaryCopySource << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkGraphicsPipelineCreateInfo& value)
 {
 	s << "VkGraphicsPipelineCreateInfo = {\n";
@@ -13952,6 +14144,43 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceGlobalPriorityQ
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tglobalPriorityQuery = " << value.globalPriorityQuery << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceGpaFeaturesAMD& value)
+{
+	s << "VkPhysicalDeviceGpaFeaturesAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tperfCounters = " << value.perfCounters << '\n';
+	s << "\tstreamingPerfCounters = " << value.streamingPerfCounters << '\n';
+	s << "\tsqThreadTracing = " << value.sqThreadTracing << '\n';
+	s << "\tclockModes = " << value.clockModes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceGpaProperties2AMD& value)
+{
+	s << "VkPhysicalDeviceGpaProperties2AMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trevisionId = " << value.revisionId << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceGpaPropertiesAMD& value)
+{
+	s << "VkPhysicalDeviceGpaPropertiesAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tmaxSqttSeBufferSize = " << value.maxSqttSeBufferSize << '\n';
+	s << "\tshaderEngineCount = " << value.shaderEngineCount << '\n';
+	s << "\tperfBlockCount = " << value.perfBlockCount << '\n';
+	s << "\tpPerfBlocks = " << value.pPerfBlocks << '\n';
 	s << '}';
 	return s;
 }

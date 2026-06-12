@@ -127,6 +127,8 @@ set(DEQP_VK_API_SRCS
 	vktApiFragmentShaderOutputTests.hpp
 	vktApiPerformanceCountersByRegionTests.cpp
 	vktApiPerformanceCountersByRegionTests.hpp
+	vktApiGPAInterfaceTests.cpp
+	vktApiGPAInterfaceTests.hpp
 	)
 
 PCH(DEQP_VK_API_SRCS ../pch.cpp)

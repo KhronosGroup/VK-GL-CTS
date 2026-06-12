@@ -65,6 +65,7 @@ const vk::VkPhysicalDeviceFragmentShadingRateEnumsFeaturesNV&				Context::getFra
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&					Context::getFragmentShadingRateFeatures						(void) const { return m_device->getFragmentShadingRateFeatures();					}
 const vk::VkPhysicalDeviceFrameBoundaryFeaturesEXT&							Context::getFrameBoundaryFeaturesEXT						(void) const { return m_device->getFrameBoundaryFeaturesEXT();						}
 const vk::VkPhysicalDeviceGlobalPriorityQueryFeatures&						Context::getGlobalPriorityQueryFeatures						(void) const { return m_device->getGlobalPriorityQueryFeatures();					}
+const vk::VkPhysicalDeviceGpaFeaturesAMD&									Context::getGpaFeaturesAMD									(void) const { return m_device->getGpaFeaturesAMD();								}
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT&				Context::getGraphicsPipelineLibraryFeaturesEXT				(void) const { return m_device->getGraphicsPipelineLibraryFeaturesEXT();			}
 const vk::VkPhysicalDeviceHostImageCopyFeatures&							Context::getHostImageCopyFeatures							(void) const { return m_device->getHostImageCopyFeatures();							}
 const vk::VkPhysicalDeviceHostQueryResetFeatures&							Context::getHostQueryResetFeatures							(void) const { return m_device->getHostQueryResetFeatures();						}

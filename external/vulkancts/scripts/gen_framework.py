@@ -247,6 +247,7 @@ VK_KHR_xlib_surface
 VENDOR_EXTENSIONS_TESTED_BY_CTS = """
 VK_AMD_buffer_marker
 VK_AMD_device_coherent_memory
+VK_AMD_gpa_interface
 VK_AMD_shader_early_and_late_fragment_tests
 VK_AMD_texture_gather_bias_lod
 VK_ANDROID_external_format_resolve

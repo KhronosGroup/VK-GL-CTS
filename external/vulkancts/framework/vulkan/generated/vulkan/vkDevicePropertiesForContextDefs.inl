@@ -36,6 +36,8 @@ const vk::VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			Context::getFragmen
 const vk::VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&	Context::getFragmentShaderBarycentricProperties			(void) const { return m_device->getFragmentShaderBarycentricProperties();		}
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV&		Context::getFragmentShadingRateEnumsProperties			(void) const { return m_device->getFragmentShadingRateEnumsProperties();		}
 const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			Context::getFragmentShadingRateProperties				(void) const { return m_device->getFragmentShadingRateProperties();				}
+const vk::VkPhysicalDeviceGpaProperties2AMD&						Context::getGpaProperties2AMD							(void) const { return m_device->getGpaProperties2AMD();							}
+const vk::VkPhysicalDeviceGpaPropertiesAMD&							Context::getGpaPropertiesAMD							(void) const { return m_device->getGpaPropertiesAMD();							}
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&		Context::getGraphicsPipelineLibraryPropertiesEXT		(void) const { return m_device->getGraphicsPipelineLibraryPropertiesEXT();		}
 const vk::VkPhysicalDeviceHostImageCopyProperties&					Context::getHostImageCopyProperties						(void) const { return m_device->getHostImageCopyProperties();					}
 const vk::VkPhysicalDeviceIDProperties&								Context::getIDProperties								(void) const { return m_device->getIDProperties();								}

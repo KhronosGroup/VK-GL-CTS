@@ -36,6 +36,8 @@ const vk::VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			getFragmentDensityM
 const vk::VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&	getFragmentShaderBarycentricProperties		(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV&		getFragmentShadingRateEnumsProperties		(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShadingRateProperties			(void) const;
+const vk::VkPhysicalDeviceGpaProperties2AMD&						getGpaProperties2AMD						(void) const;
+const vk::VkPhysicalDeviceGpaPropertiesAMD&							getGpaPropertiesAMD							(void) const;
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&		getGraphicsPipelineLibraryPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceHostImageCopyProperties&					getHostImageCopyProperties					(void) const;
 const vk::VkPhysicalDeviceIDProperties&								getIDProperties								(void) const;

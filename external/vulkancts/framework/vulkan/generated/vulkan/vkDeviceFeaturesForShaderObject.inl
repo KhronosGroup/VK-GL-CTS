@@ -66,6 +66,7 @@ auto fFragmentShadingRateEnumsFeatures                  = m_context.getFragmentS
 auto fFragmentShadingRateFeatures                       = m_context.getFragmentShadingRateFeatures();
 auto fFrameBoundaryFeaturesEXT                          = m_context.getFrameBoundaryFeaturesEXT();
 auto fGlobalPriorityQueryFeatures                       = m_context.getGlobalPriorityQueryFeatures();
+auto fGpaFeaturesAMD                                    = m_context.getGpaFeaturesAMD();
 auto fGraphicsPipelineLibraryFeaturesEXT                = m_context.getGraphicsPipelineLibraryFeaturesEXT();
 auto fHostImageCopyFeatures                             = m_context.getHostImageCopyFeatures();
 auto fHostQueryResetFeatures                            = m_context.getHostQueryResetFeatures();
@@ -272,6 +273,7 @@ std::vector<void *> pNextFeatures = {
 	&fFragmentShadingRateFeatures,
 	&fFrameBoundaryFeaturesEXT,
 	&fGlobalPriorityQueryFeatures,
+	&fGpaFeaturesAMD,
 	&fGraphicsPipelineLibraryFeaturesEXT,
 	&fHostImageCopyFeatures,
 	&fHostQueryResetFeatures,
