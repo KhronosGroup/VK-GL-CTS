@@ -1771,10 +1771,20 @@ tcu::TestStatus presentAtTest(Context &context, PresentTimingTestConfig config)
 
             pth.sortResults();
 
-            // Check for non-zero result, starting from the end
+            // Check for non-zero result for the target time domain stage, starting from the end.
+            // Per spec, VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT values are "comparable only with
+            // other values from the same swapchain and present stage." The base timestamp used to
+            // build an absolute PresentAt target must match targetTimeDomainPresentStage.
             for (int32_t i = resultCount - 1; i >= 0; i--)
             {
-                if (pth.results[i].times.begin()->second != 0)
+                auto baseTimeIt = pth.results[i].times.end();
+
+                if (targetTimeDomainPresentStage != 0)
+                    baseTimeIt = pth.results[i].times.find(targetTimeDomainPresentStage);
+                else if (!pth.results[i].times.empty())
+                    baseTimeIt = pth.results[i].times.begin();
+
+                if (baseTimeIt != pth.results[i].times.end() && baseTimeIt->second != 0)
                 {
                     baseResult = pth.results[i];
                     break;
@@ -1822,8 +1832,13 @@ tcu::TestStatus presentAtTest(Context &context, PresentTimingTestConfig config)
                              **renderSemaphores[frame.imageIndex], frame.renderFence);
 
         if (config.presentAtMode == PresentAtMode::ABSOLUTE)
-            presentTimingInfo.targetTime = calculateTargetPresentTime(basePresentId, baseResult.times.begin()->second,
-                                                                      presentId, pth.refreshCycleDuration);
+        {
+            const uint64_t baseTime = (targetTimeDomainPresentStage != 0)
+                ? baseResult.times.at(targetTimeDomainPresentStage)
+                : baseResult.times.begin()->second;
+            presentTimingInfo.targetTime =
+                calculateTargetPresentTime(basePresentId, baseTime, presentId, pth.refreshCycleDuration);
+        }
         else
             presentTimingInfo.targetTime = pth.refreshCycleDuration * refreshCycleDurationFactor;
 
@@ -1884,7 +1899,8 @@ tcu::TestStatus presentAtTest(Context &context, PresentTimingTestConfig config)
             if (i > 0)
             {
                 const PresentResult &prevResult = pth.results[firstResultIdx + i - 1];
-                const uint64_t prevPresentTime  = prevResult.times.at(presentStage);
+                auto prevIt = prevResult.times.find(presentStage);
+                const uint64_t prevPresentTime  = (prevIt != prevResult.times.end()) ? prevIt->second : 0;
 
                 if (!config.allowOutOfOrder && prevPresentTime != 0 && actualPresentTime <= prevPresentTime)
                     TCU_FAIL("Frames presented out of order when disallowed");
