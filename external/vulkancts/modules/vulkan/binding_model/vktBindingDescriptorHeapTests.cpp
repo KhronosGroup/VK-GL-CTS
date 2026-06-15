@@ -948,6 +948,46 @@ tcu::TestStatus testLimits(Context &context)
     return tcu::TestStatus::pass("Pass");
 }
 
+tcu::TestStatus testGetDescriptorSize(Context &context)
+{
+    if (!context.isDeviceFunctionalitySupported(VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME))
+    {
+        TCU_THROW(NotSupportedError, "VK_EXT_descriptor_heap is not supported");
+    }
+
+    const auto &features = *findStructure<VkPhysicalDeviceDescriptorHeapFeaturesEXT>(&context.getDeviceFeatures2());
+
+    if (!features.descriptorHeap)
+    {
+        TCU_THROW(NotSupportedError, "descriptorHeap is not supported");
+    }
+
+    const VkDescriptorType validArray[14] = {
+        VK_DESCRIPTOR_TYPE_SAMPLER,
+        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+        VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+        VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+        VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+        VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+        VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM,
+        VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM,
+        VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+        VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV,
+        VK_DESCRIPTOR_TYPE_PARTITIONED_ACCELERATION_STRUCTURE_NV,
+        VK_DESCRIPTOR_TYPE_TENSOR_ARM,
+        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+    };
+
+    const auto &vki = context.getInstanceInterface();
+    for (const auto descriptorType : validArray)
+    {
+        vki.getPhysicalDeviceDescriptorSizeEXT(context.getPhysicalDevice(), descriptorType);
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 tcu::UVec2 getExpectedData_G8_B8R8(uint32_t seed)
 {
     // Hash the input data to achieve "randomness" of components.
@@ -14454,6 +14494,7 @@ void populateLimitsTests(tcu::TestCaseGroup *topGroup)
     tcu::TestContext &testCtx = topGroup->getTestContext();
     MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(testCtx, "limit"));
     addFunctionCase(subGroup.get(), "limits", testLimits);
+    addFunctionCase(subGroup.get(), "get_descriptor_size", testGetDescriptorSize);
     topGroup->addChild(subGroup.release());
 }
 

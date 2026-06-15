@@ -460,6 +460,7 @@ dEQP-VK.binding_model.descriptor_heap.invariance.storage_image
 dEQP-VK.binding_model.descriptor_heap.invariance.storage_texel_buffer
 dEQP-VK.binding_model.descriptor_heap.invariance.uniform_buffer
 dEQP-VK.binding_model.descriptor_heap.invariance.uniform_texel_buffer
+dEQP-VK.binding_model.descriptor_heap.limit.get_descriptor_size
 dEQP-VK.binding_model.descriptor_heap.limit.limits
 dEQP-VK.binding_model.descriptor_heap.msaa_image_read.msaa_image_read
 dEQP-VK.binding_model.descriptor_heap.non_packed.heap_with_constant_offset.acceleration_structure_stride_128
