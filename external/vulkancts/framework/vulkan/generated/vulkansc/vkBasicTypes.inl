@@ -9,6 +9,8 @@
 #define VK_API_VERSION_1_2												(static_cast<uint32_t>	(VK_MAKE_API_VERSION(0, 1, 2, 0)))
 #define VK_API_VERSION_1_3												(static_cast<uint32_t>	(VK_MAKE_API_VERSION(0, 1, 3, 0)))
 #define VK_API_VERSION_1_4												(static_cast<uint32_t>	(VK_MAKE_API_VERSION(0, 1, 4, 0)))
+#define VK_HEADER_VERSION												(21)
+#define VK_HEADER_VERSION_COMPLETE										(static_cast<uint32_t>	((VK_MAKE_API_VERSION(0, 1, 0, 21))))
 #define VKSC_API_VERSION_1_0											(static_cast<uint32_t>	(VK_MAKE_API_VERSION(1, 1, 0, 0)))
 #define VK_ATTACHMENT_UNUSED											(static_cast<uint32_t>	((~0U)))
 #define VK_COMPRESSED_TRIANGLE_FORMAT_DGF1_BYTE_ALIGNMENT_AMDX			(static_cast<uint32_t>	(128))

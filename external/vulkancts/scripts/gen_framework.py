@@ -966,6 +966,9 @@ class BasicTypesGenerator(CTSGenerator):
             for v in self.vk.versions.values():
                 major, minor = v.name[-3:].split('_')
                 yield f"#define {v.nameApi}\t(static_cast<uint32_t>\t(VK_MAKE_API_VERSION(0, {major}, {minor}, 0)))"
+            yield f"#define VK_HEADER_VERSION\t({self.vk.headerVersion})"
+            completeVersion = self.vk.headerVersionComplete.replace('.', ', ')
+            yield f"#define VK_HEADER_VERSION_COMPLETE\t(static_cast<uint32_t>\t((VK_MAKE_API_VERSION(0, {completeVersion}))))"
             # add VK_API_MAX_FRAMEWORK_VERSION
             maxApiVersion = list(self.vk.versions.keys())[-1][-3:]
             # <vulkan_object_issue_workaround>
@@ -1680,6 +1683,20 @@ class RefUtilGenerator(CTSGenerator):
         makeRefUtil = self.makeRefUtilProto if generatePrototypes else self.makeRefUtilImpl
         self.write(INL_HEADER)
         for l in makeRefUtil():
+            self.write(l)
+
+class PfnTypesGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
+
+    def gen (self):
+        sortedFunctions = sorted(self.cts.commands, key=lambda f: f.name)
+        for function in sortedFunctions:
+            yield "typedef VKAPI_ATTR %s\t(VKAPI_CALL *PFN_%s)\t(%s);" % (function.returnType, function.name, argListToStr(function.params))
+
+    def generate(self):
+        self.write(INL_HEADER)
+        for l in self.gen():
             self.write(l)
 
 class GetStructureTypeImplGenerator(CTSGenerator):
@@ -3911,6 +3928,7 @@ if __name__ == "__main__":
         GenData('vkRefUtil.inl',                              RefUtilGenerator),
         GenData('vkRefUtilImpl.inl',                          RefUtilGenerator),
 
+        GenData('vkPfnTypes.inl',                             PfnTypesGenerator),
         GenData('vkGetStructureTypeImpl.inl',                 GetStructureTypeImplGenerator),
         GenData('vkTypeUtil.inl',                             TypeUtilGenerator),
         GenData('vkNullDriverImpl.inl',                       NullDriverImplGenerator),
