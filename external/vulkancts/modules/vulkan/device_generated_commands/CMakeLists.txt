@@ -65,6 +65,8 @@ set(DEQP_VK_DGC_SRCS
 	vktDGCGraphicsTessStateRefImages.hpp
 	vktDGCGraphicsMultiviewTestsExt.cpp
 	vktDGCGraphicsMultiviewTestsExt.hpp
+	vktDGCStatQueryTestsExt.cpp
+	vktDGCStatQueryTestsExt.hpp
 	)
 
 set(DEQP_VK_DGC_LIBS

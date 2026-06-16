@@ -1402,6 +1402,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCPropertyTests.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCPropertyTestsExt.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCRayTracingTestsExt.cpp",
+        "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCStatQueryTestsExt.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCTests.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCUtil.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCUtilCommon.cpp",

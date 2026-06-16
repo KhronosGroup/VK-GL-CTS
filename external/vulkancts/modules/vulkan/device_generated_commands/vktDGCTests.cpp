@@ -53,6 +53,8 @@
 
 #include "vktDGCRayTracingTestsExt.hpp"
 
+#include "vktDGCStatQueryTestsExt.hpp"
+
 #include "deUniquePtr.hpp"
 
 namespace vkt
@@ -115,6 +117,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     extGroup->addChild(extMiscGroup.release());
     extGroup->addChild(extGraphicsGroup.release());
     extGroup->addChild(createDGCRayTracingTestsExt(testCtx));
+    extGroup->addChild(createDGCStatQueryTestsExt(testCtx));
 
     mainGroup->addChild(nvGroup.release());
     mainGroup->addChild(extGroup.release());
