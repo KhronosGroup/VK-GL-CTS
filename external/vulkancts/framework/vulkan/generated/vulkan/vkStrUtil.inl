@@ -1235,6 +1235,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMeshShaderPrope
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiDrawFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiDrawPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM& value);
@@ -1609,6 +1610,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkSurfaceProtectedCapabilitiesK
 std::ostream&	operator<<	(std::ostream& s, const VkSwapchainCalibratedTimestampInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSwapchainCounterCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSwapchainCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSwapchainFlagsSurfaceCapabilitiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSwapchainLatencyCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSwapchainPresentFenceInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSwapchainPresentModeInfoKHR& value);

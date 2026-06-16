@@ -98,6 +98,7 @@ const vk::VkPhysicalDeviceMeshShaderFeaturesEXT&							Context::getMeshShaderFea
 const vk::VkPhysicalDeviceMeshShaderFeaturesNV&								Context::getMeshShaderFeatures								(void) const { return m_device->getMeshShaderFeatures();							}
 const vk::VkPhysicalDeviceMultiDrawFeaturesEXT&								Context::getMultiDrawFeaturesEXT							(void) const { return m_device->getMultiDrawFeaturesEXT();							}
 const vk::VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT&		Context::getMultisampledRenderToSingleSampledFeaturesEXT	(void) const { return m_device->getMultisampledRenderToSingleSampledFeaturesEXT();	}
+const vk::VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT&			Context::getMultisampledRenderToSwapchainFeaturesEXT		(void) const { return m_device->getMultisampledRenderToSwapchainFeaturesEXT();		}
 const vk::VkPhysicalDeviceMultiviewFeatures&								Context::getMultiviewFeatures								(void) const { return m_device->getMultiviewFeatures();								}
 const vk::VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM&			Context::getMultiviewPerViewRenderAreasFeaturesQCOM			(void) const { return m_device->getMultiviewPerViewRenderAreasFeaturesQCOM();		}
 const vk::VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM&			Context::getMultiviewPerViewViewportsFeaturesQCOM			(void) const { return m_device->getMultiviewPerViewViewportsFeaturesQCOM();			}

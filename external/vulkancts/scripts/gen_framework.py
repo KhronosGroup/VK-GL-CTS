@@ -115,6 +115,7 @@ VK_EXT_memory_priority
 VK_EXT_mesh_shader
 VK_EXT_multi_draw
 VK_EXT_multisampled_render_to_single_sampled
+VK_EXT_multisampled_render_to_swapchain
 VK_EXT_mutable_descriptor_type
 VK_EXT_nested_command_buffer
 VK_EXT_non_seamless_cube_map

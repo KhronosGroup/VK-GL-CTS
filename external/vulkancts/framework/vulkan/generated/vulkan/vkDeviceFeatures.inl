@@ -319,6 +319,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceMeshShaderFeaturesEXT>(VkPhy
 template<> void initFeatureFromBlob<VkPhysicalDeviceMeshShaderFeaturesNV>(VkPhysicalDeviceMeshShaderFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceMultiDrawFeaturesEXT>(VkPhysicalDeviceMultiDrawFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT>(VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT>(VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM>(VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM>(VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT>(VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&, const AllFeaturesBlobs&) {}
@@ -497,6 +498,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMeshShaderFeaturesEXT>(vo
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMeshShaderFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV, VK_NV_MESH_SHADER_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMultiDrawFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT, VK_EXT_MULTI_DRAW_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT, VK_EXT_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SWAPCHAIN_FEATURES_EXT, VK_EXT_MULTISAMPLED_RENDER_TO_SWAPCHAIN_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMultiviewFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES, VK_KHR_MULTIVIEW_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM, VK_QCOM_MULTIVIEW_PER_VIEW_RENDER_AREAS_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_VIEWPORTS_FEATURES_QCOM, VK_QCOM_MULTIVIEW_PER_VIEW_VIEWPORTS_EXTENSION_NAME}; }
@@ -705,6 +707,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceMeshShaderFeaturesNV>, VK_NV_MESH_SHADER_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceMultiDrawFeaturesEXT>, VK_EXT_MULTI_DRAW_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT>, VK_EXT_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT>, VK_EXT_MULTISAMPLED_RENDER_TO_SWAPCHAIN_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceMultiviewFeatures>, VK_KHR_MULTIVIEW_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM>, VK_QCOM_MULTIVIEW_PER_VIEW_RENDER_AREAS_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM>, VK_QCOM_MULTIVIEW_PER_VIEW_VIEWPORTS_EXTENSION_NAME },

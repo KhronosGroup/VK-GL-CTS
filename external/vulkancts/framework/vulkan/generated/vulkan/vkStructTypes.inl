@@ -6893,6 +6893,13 @@ struct VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT
 	VkBool32		multisampledRenderToSingleSampled;
 };
 
+struct VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		multisampledRenderToSwapchain;
+};
+
 struct VkPhysicalDeviceMultiviewFeatures
 {
 	VkStructureType	sType;
@@ -10732,6 +10739,13 @@ struct VkSwapchainCreateInfoKHR
 	VkPresentModeKHR				presentMode;
 	VkBool32						clipped;
 	VkSwapchainKHR					oldSwapchain;
+};
+
+struct VkSwapchainFlagsSurfaceCapabilitiesEXT
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkSwapchainCreateFlagsKHR	swapchainSupportedFlags;
 };
 
 struct VkSwapchainLatencyCreateInfoNV

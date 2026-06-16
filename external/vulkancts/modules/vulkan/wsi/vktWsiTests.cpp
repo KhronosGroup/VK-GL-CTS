@@ -39,6 +39,7 @@
 #include "vktWsiMaintenance1Tests.hpp"
 #include "vktWsiPresentTimingTests.hpp"
 #include "vktWsiPreTransformTests.hpp"
+#include "vktWsiMultisampledRenderToSwapchainTests.hpp"
 
 namespace vkt
 {
@@ -77,6 +78,8 @@ void createTypeSpecificTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiTyp
     {
         addTestGroup(testGroup, "pre_transform", createPreTransformTests, wsiType);
     }
+    // VK_EXT_multisampled_render_to_swapchain
+    addTestGroup(testGroup, "multisampled_render_to_swapchain", createMultisampledRenderToSwapchainTests, wsiType);
 }
 
 void createWsiTests(tcu::TestCaseGroup *apiTests)

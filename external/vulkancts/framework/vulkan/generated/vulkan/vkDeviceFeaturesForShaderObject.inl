@@ -99,6 +99,7 @@ auto fMeshShaderFeaturesEXT                             = m_context.getMeshShade
 auto fMeshShaderFeatures                                = m_context.getMeshShaderFeatures();
 auto fMultiDrawFeaturesEXT                              = m_context.getMultiDrawFeaturesEXT();
 auto fMultisampledRenderToSingleSampledFeaturesEXT      = m_context.getMultisampledRenderToSingleSampledFeaturesEXT();
+auto fMultisampledRenderToSwapchainFeaturesEXT          = m_context.getMultisampledRenderToSwapchainFeaturesEXT();
 auto fMultiviewFeatures                                 = m_context.getMultiviewFeatures();
 auto fMultiviewPerViewRenderAreasFeaturesQCOM           = m_context.getMultiviewPerViewRenderAreasFeaturesQCOM();
 auto fMultiviewPerViewViewportsFeaturesQCOM             = m_context.getMultiviewPerViewViewportsFeaturesQCOM();
@@ -303,6 +304,7 @@ std::vector<void *> pNextFeatures = {
 	&fMeshShaderFeatures,
 	&fMultiDrawFeaturesEXT,
 	&fMultisampledRenderToSingleSampledFeaturesEXT,
+	&fMultisampledRenderToSwapchainFeaturesEXT,
 	&fMultiviewFeatures,
 	&fMultiviewPerViewRenderAreasFeaturesQCOM,
 	&fMultiviewPerViewViewportsFeaturesQCOM,

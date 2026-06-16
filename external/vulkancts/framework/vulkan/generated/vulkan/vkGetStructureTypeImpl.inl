@@ -2618,6 +2618,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMultisampledRenderTo
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SWAPCHAIN_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceMultiviewFeatures> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES;
@@ -4281,6 +4286,11 @@ template<> VkStructureType getStructureType<VkSwapchainCounterCreateInfoEXT> (vo
 template<> VkStructureType getStructureType<VkSwapchainCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSwapchainFlagsSurfaceCapabilitiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SWAPCHAIN_FLAGS_SURFACE_CAPABILITIES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkSwapchainLatencyCreateInfoNV> (void)

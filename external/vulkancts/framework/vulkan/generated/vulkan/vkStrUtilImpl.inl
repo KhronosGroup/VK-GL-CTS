@@ -14631,6 +14631,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultisampledRen
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmultisampledRenderToSwapchain = " << value.multisampledRenderToSwapchain << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultiviewFeatures& value)
 {
 	s << "VkPhysicalDeviceMultiviewFeatures = {\n";
@@ -19226,6 +19236,16 @@ std::ostream& operator<< (std::ostream& s, const VkSwapchainCreateInfoKHR& value
 	s << "\tpresentMode = " << value.presentMode << '\n';
 	s << "\tclipped = " << value.clipped << '\n';
 	s << "\toldSwapchain = " << value.oldSwapchain << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSwapchainFlagsSurfaceCapabilitiesEXT& value)
+{
+	s << "VkSwapchainFlagsSurfaceCapabilitiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tswapchainSupportedFlags = " << getSwapchainCreateFlagsKHRStr(value.swapchainSupportedFlags) << '\n';
 	s << '}';
 	return s;
 }

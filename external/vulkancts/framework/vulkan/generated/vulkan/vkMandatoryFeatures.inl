@@ -491,6 +491,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_multisampled_render_to_single_sampled"))
 		addFeatures(&physicalDeviceMultisampledRenderToSingleSampledFeaturesEXT);
 
+	// VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT for ext [VK_EXT_multisampled_render_to_swapchain]
+	vk::VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT physicalDeviceMultisampledRenderToSwapchainFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_multisampled_render_to_swapchain"))
+		addFeatures(&physicalDeviceMultisampledRenderToSwapchainFeaturesEXT);
+
 	// VkPhysicalDeviceMultiviewFeatures, VkPhysicalDeviceMultiviewFeaturesKHR for ext [VK_KHR_multiview]
 	vk::VkPhysicalDeviceMultiviewFeatures physicalDeviceMultiviewFeatures = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_multiview"))
@@ -2607,6 +2612,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceVertexAttributeRobustnessFeaturesEXT.vertexAttributeRobustness == VK_FALSE )
 			failMesages.push_back("vertexAttributeRobustness");
+	}
+
+	// VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_multisampled_render_to_swapchain")) )
+	{
+		if ( physicalDeviceMultisampledRenderToSwapchainFeaturesEXT.multisampledRenderToSwapchain == VK_FALSE )
+			failMesages.push_back("multisampledRenderToSwapchain");
 	}
 
 	// VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT

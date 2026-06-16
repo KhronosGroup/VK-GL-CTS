@@ -38,6 +38,8 @@ set(DEQP_VK_WSI_SRCS
 	vktWsiPresentTimingTests.hpp
 	vktWsiPreTransformTests.cpp
 	vktWsiPreTransformTests.hpp
+	vktWsiMultisampledRenderToSwapchainTests.cpp
+	vktWsiMultisampledRenderToSwapchainTests.hpp
 	)
 
 set(DEQP_VK_WSI_LIBS
