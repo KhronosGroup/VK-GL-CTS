@@ -27,6 +27,7 @@
 
 #include "vktDataGraphTosaUtil.hpp"
 #include <cstdint>
+#include <algorithm>
 
 namespace vkt
 {
@@ -38,6 +39,45 @@ namespace dataGraph
 class TosaReferenceImplementation
 {
 public:
+    template <typename inOutType>
+    static void arithmetic_right_shift(const tensor::StridedMemoryUtils<inOutType> &inputData,
+                                       const tensor::StridedMemoryUtils<inOutType> &shiftAmounts,
+                                       tensor::StridedMemoryUtils<inOutType> &outputData, const bool round)
+    {
+        static_assert(std::is_integral_v<inOutType>);
+        static_assert(sizeof(inOutType) == 1 || sizeof(inOutType) == 2 || sizeof(inOutType) == 4);
+
+        static constexpr int maxShift = sizeof(inOutType) * 8 - 1;
+
+        for (size_t i = 0; i < outputData.elementCount(); i++)
+        {
+            if (shiftAmounts[i] < 0 || shiftAmounts[i] > maxShift)
+            {
+                TCU_THROW(InternalError, "Invalid shift amount");
+            }
+
+            outputData[i] = static_cast<inOutType>(inputData[i] >> shiftAmounts[i]);
+
+            if (round)
+            {
+                if (shiftAmounts[i] > 0 && ((inputData[i] >> (shiftAmounts[i] - 1)) & 1) != 0)
+                {
+                    outputData[i] += 1;
+                }
+            }
+        }
+    }
+
+    template <typename inOutType>
+    static void clamp(const tensor::StridedMemoryUtils<inOutType> &inputData,
+                      tensor::StridedMemoryUtils<inOutType> &outputData, const inOutType minVal, const inOutType maxVal)
+    {
+        for (size_t i = 0; i < outputData.elementCount(); i++)
+        {
+            outputData[i] = std::clamp(inputData[i], minVal, maxVal);
+        }
+    }
+
     template <typename inOutType>
     static void add(const tensor::StridedMemoryUtils<inOutType> &inputData1,
                     const tensor::StridedMemoryUtils<inOutType> &inputData2,

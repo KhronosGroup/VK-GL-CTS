@@ -107,6 +107,7 @@ uint32_t getTensorMaxDimensionCount(const InstanceInterface &vki, const VkPhysic
 
 size_t getFormatSize(VkFormat format);
 bool formatSupportTensorFlags(Context &context, VkFormat format, VkTensorTilingARM tiling, VkFormatFeatureFlags2 flags);
+bool formatSupportImageFlags(Context &context, VkFormat format, VkImageTiling tiling, VkImageUsageFlags flags);
 bool tensorSupportsDmaBufImport(Context &context, const VkTensorDescriptionARM description);
 
 bool deviceSupportsNonPackedTensors(Context &context);

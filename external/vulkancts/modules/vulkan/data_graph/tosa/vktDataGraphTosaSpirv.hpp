@@ -35,6 +35,8 @@ namespace vkt
 namespace dataGraph
 {
 
+using namespace vk;
+
 enum spirv_rounding_mode
 {
     SINGLE_ROUND  = 1,
@@ -181,6 +183,90 @@ public:
     std::string addAttribute(TosaSpirv::format fmt, uint64_t value, std::string label = "");
 
     /**
+     * @brief Add a specialization attribute to the graph
+     *
+     * @param format  Format for the attribute
+     * @param value   Default value of the attribute
+     * @param id      Specialization constant id for the attribute
+     * @param label   Optional label for the attribute
+     *
+     * @return the id of the attribute
+     *
+     */
+    std::string addSpecializationAttribute(VkFormat fmt, uint64_t value, uint32_t id, std::string label = "");
+
+    /**
+     * @brief Add an specialization attribute tensor to the graph
+     *
+     * @param fmt     Format for the constituents of the attribute
+     * @param values  Default values of the attribute
+     * @param id      Specialization constant ids for the attribute
+     * @param label   Optional label for the attribute
+     *
+     * @return the id of the attribute tensor
+     *
+     */
+    std::string addSpecializationAttributeTensor(TosaSpirv::format fmt, const std::vector<int64_t> &values,
+                                                 const std::vector<uint32_t> &specIds, std::string label = "");
+
+    /**
+     * @brief Add an specialization attribute tensor with replicated value to the graph
+     *
+     * @param fmt     Format for the constituents of the attribute
+     * @param values  Default replicated value of the attribute
+     * @param id      Specialization constant id for the replicated value of the attribute
+     * @param label   Optional label for the attribute
+     *
+     * @return the id of the attribute tensor
+     *
+     */
+    std::string addSpecializationAttributeTensorReplicated(TosaSpirv::format fmt, const size_t valueCount,
+                                                           const int64_t value, const uint32_t specId,
+                                                           std::string label = "");
+
+    /**
+     * @brief Add an specialization attribute tensor to the graph
+     *
+     * @param fmt     Vulkan format for the constituents of the attribute
+     * @param values  Default values of the attribute
+     * @param id      Specialization constant ids for the attribute
+     * @param label   Optional label for the attribute
+     *
+     * @return the id of the attribute tensor
+     *
+     */
+    std::string addSpecializationAttributeTensor(VkFormat fmt, const std::vector<int64_t> &values,
+                                                 const std::vector<uint32_t> &specIds, std::string label = "");
+
+    /**
+     * @brief Adds a specialization constant operation to graph
+     *
+     * @param op        Operation to add
+     * @param fmt       Format of result of the operation
+     * @param operands  Operands to operation
+     * @param label     Label for the result of the operation
+     *
+     * @return the id of the op
+     *
+     */
+    std::string addSpecConstantOp(const std::string &op, const TosaSpirv::format fmt,
+                                  const std::vector<std::string> &operands, const std::string &label);
+
+    /**
+     * @brief Adds a specialization constant operation to graph
+     *
+     * @param op        Operation to add
+     * @param fmt       Vulkan format of result of the operation
+     * @param operands  Operands to operation
+     * @param label     Label for the result of the operation
+     *
+     * @return the id of the op
+     *
+     */
+    std::string addSpecConstantOp(const std::string &op, const VkFormat fmt, const std::vector<std::string> &operands,
+                                  const std::string &label);
+
+    /**
      * @brief Add an resource (input, output, constant) to the graph
      *
      * @param resInfo         The resource information
@@ -225,6 +311,9 @@ public:
      */
     void setOutput(const std::string &op, const ResourceInformation &resInfo);
 
+    void addCapability(const std::string &capability);
+    void addExtension(const std::string &extension);
+
     /**
      * @brief Based on the added tensors, constants and operators, prepare for the spirv source generation
      *
@@ -262,6 +351,7 @@ private:
         OP_GRAPH_CONSTANTS,
         POINTER_TYPES,
         OP_VARIABLES,
+        OP_SPEC_CONSTANT_OPS,
         OP_GRAPH_TYPES,
         OP_GRAPH_VARS,
         OP_GRAPH,
@@ -286,6 +376,20 @@ private:
                                         std::string label = "");
     std::string constantComposite(std::string varName, TosaSpirv::format fmt, spirvOrder spirvOrder,
                                   const int64_t *values, int64_t size, std::string label = "");
+
+    std::string spirvSpecConstant(TosaSpirv::format fmt, std::string value, std::string specid, std::string label = "");
+    std::string specConstantComposite(std::string spvType, TosaSpirv::format fmt, spirvOrder order,
+                                      const int64_t *values, size_t size, const uint32_t *const specIds,
+                                      std::string label);
+    std::string specConstantReplicatedComposite(std::string spvType, TosaSpirv::format fmt, spirvOrder order,
+                                                const int64_t value, const uint32_t specId, std::string label);
+    std::string specConstantCompositeTensor(TosaSpirv::format fmt, const int64_t *values, int64_t size,
+                                            const uint32_t *specIds, std::string label);
+    std::string specConstantReplicatedCompositeTensor(TosaSpirv::format fmt, const int64_t valueCount,
+                                                      const int64_t value, const uint32_t specId, std::string label);
+    std::string specConstantOp(const std::string &op, const std::string &fmt, const std::vector<std::string> &operands,
+                               const std::string &label);
+
     std::string typeTensor(const ResourceInformation &resInfo);
     std::string typeTensor(const TosaSpirv::format fmt, const int64_t *dims, uint32_t rank);
     std::string typeTensor(VkFormat format, const int64_t *dims, uint32_t rank);

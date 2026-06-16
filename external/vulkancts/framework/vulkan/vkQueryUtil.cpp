@@ -446,8 +446,7 @@ std::vector<VkDataGraphPipelineSessionBindPointRequirementARM> getDataGraphPipel
 
         for (const auto &bindPoint : bindPoints)
         {
-            (void)bindPoint;
-            DE_ASSERT(bindPoint.bindPoint != VK_DATA_GRAPH_PIPELINE_SESSION_BIND_POINT_TRANSIENT_ARM ||
+            TCU_CHECK(bindPoint.bindPoint != VK_DATA_GRAPH_PIPELINE_SESSION_BIND_POINT_TRANSIENT_ARM ||
                       bindPoint.numObjects == 1);
         }
 

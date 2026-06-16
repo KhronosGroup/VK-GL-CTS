@@ -43,6 +43,26 @@ namespace vkt
 namespace dataGraph
 {
 
+using namespace vk;
+
+inline std::vector<VkFormat> getVkFormats(const std::string &formatStr)
+{
+    if (formatStr == "i8")
+        return {VK_FORMAT_R8_SINT};
+    else if (formatStr == "fp32")
+        return {VK_FORMAT_R32_SFLOAT};
+    else if (formatStr == "fp16")
+        return {VK_FORMAT_R16_SFLOAT};
+    else if (formatStr == "i8i8i32")
+        return {VK_FORMAT_R8_SINT, VK_FORMAT_R32_SINT};
+    else if (formatStr == "fp32fp32fp32")
+        return {VK_FORMAT_R32_SFLOAT};
+    else if (formatStr == "fp16fp16fp16")
+        return {VK_FORMAT_R16_SFLOAT};
+
+    TCU_THROW(InternalError, "Unknown format string: " + formatStr);
+}
+
 template <VkFormat inOutFormat = VK_FORMAT_R32_SINT>
 class DataGraphTestTosaAddSub : public DataGraphTest
 {
@@ -221,13 +241,13 @@ public:
             if (id == _output1)
             {
                 TosaReferenceImplementation::add(m_inData1, m_inData2, m_outData1);
-                return verifyTensor(m_outData1, outTensorMemory);
+                return verifyTensor(outTensorMemory, m_outData1);
             }
 
             if (id == _output2)
             {
                 TosaReferenceImplementation::sub(m_inData1, m_inData2, m_outData2);
-                return verifyTensor(m_outData2, outTensorMemory);
+                return verifyTensor(outTensorMemory, m_outData2);
             }
         }
 
@@ -291,10 +311,15 @@ public:
         : DataGraphTest(context, _num_resources)
         , m_params{params}
     {
+        const TensorDimensions inDimensions =
+            params.imageAliasing ? TensorDimensions{1, 128, 256, 1} : TensorDimensions{1, 8, 16, 4};
+        const TensorDimensions outDimensions =
+            params.imageAliasing ? TensorDimensions{1, 64, 128, 1} : TensorDimensions{1, 4, 8, 4};
+
         m_resInfo.at(_input) = {
-            RESOURCE_TYPE_INPUT, {inOutFormat, params.tiling, {1, 8, 16, 4}, {}}, 0, 0, 0, nullptr, {}, ""};
+            RESOURCE_TYPE_INPUT, {inOutFormat, params.tiling, inDimensions, {}}, 0, 0, 0, nullptr, {}, ""};
         m_resInfo.at(_output) = {
-            RESOURCE_TYPE_OUTPUT, {inOutFormat, params.tiling, {1, 4, 8, 4}, {}}, 1, 0, 0, nullptr, {}, ""};
+            RESOURCE_TYPE_OUTPUT, {inOutFormat, params.tiling, outDimensions, {}}, 1, 0, 0, nullptr, {}, ""};
 
         if (params.shuffleBindings)
         {
@@ -302,14 +327,14 @@ public:
             m_resInfo.at(_output).binding = 0;
         }
 
-        if (params.strides.inputs != TENSOR_STRIDES_IMPLICIT)
+        if (params.strides.inputs == TENSOR_STRIDES_PACKED || params.strides.inputs == TENSOR_STRIDES_NOT_PACKED)
         {
             m_resInfo.at(_input).params.strides = getTensorStrides(
                 m_resInfo.at(_input).params.dimensions, vkt::tensor::getFormatSize(m_resInfo.at(_input).params.format),
                 (params.strides.inputs == TENSOR_STRIDES_NOT_PACKED) ? 3 : 1);
         }
 
-        if (params.strides.outputs != TENSOR_STRIDES_IMPLICIT)
+        if (params.strides.outputs == TENSOR_STRIDES_PACKED || params.strides.outputs == TENSOR_STRIDES_NOT_PACKED)
         {
             m_resInfo.at(_output).params.strides =
                 getTensorStrides(m_resInfo.at(_output).params.dimensions,
@@ -317,6 +342,8 @@ public:
                                  (params.strides.outputs == TENSOR_STRIDES_NOT_PACKED) ? 5 : 1);
         }
 
+        // In image aliasing tests, tensor strides are written later by ImageAliasedTensorWithMemory from the image
+        // layout. For these tests, these host-side buffers intentionally use packed strides as logical input/reference data.
         m_inData  = {m_resInfo.at(_input).params.dimensions, m_resInfo.at(_input).params.strides};
         m_outData = {m_resInfo.at(_output).params.dimensions, m_resInfo.at(_output).params.strides};
 
@@ -387,8 +414,16 @@ public:
         case _input:
         {
             m_inData.fill(options.startingValue);
-            uploadToTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, m_inData.data(),
-                           m_inData.memorySize());
+            if (m_params.imageAliasing)
+            {
+                uploadToImageAliasedTensor(m_context, vk, device, allocator, queue, queueFamilyIndex, *tensor, m_inData,
+                                           m_resInfo.at(_input).params);
+            }
+            else
+            {
+                uploadToTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, m_inData.data(),
+                               m_inData.memorySize());
+            }
         }
         break;
         case _output:
@@ -410,20 +445,25 @@ public:
         {
             const auto &r = m_resInfo.at(id);
 
-            const DeviceInterface &vk       = m_context.getDeviceInterface();
-            const VkDevice device           = m_context.getDevice();
-            const VkQueue queue             = m_context.getUniversalQueue();
-            const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
-            Allocator &allocator            = m_context.getDefaultAllocator();
-
-            tensor::StridedMemoryUtils<inOutHostType> outTensorMemory(r.params.dimensions, r.params.strides);
-            downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, outTensorMemory.data(),
-                               outTensorMemory.memorySize());
-
             /* compute reference values for graph */
             TosaReferenceImplementation::maxpool2d(m_inData, m_kernelY, m_kernelX, m_outData);
 
-            return verifyTensor(m_outData, outTensorMemory);
+            if (m_params.imageAliasing)
+            {
+                return verifyImageAliasedTensorWithShader(m_context, *tensor, m_outData, r.params);
+            }
+            else
+            {
+                const DeviceInterface &vk       = m_context.getDeviceInterface();
+                const VkDevice device           = m_context.getDevice();
+                const VkQueue queue             = m_context.getUniversalQueue();
+                const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+                Allocator &allocator            = m_context.getDefaultAllocator();
+                tensor::StridedMemoryUtils<inOutHostType> outTensorMemory(r.params.dimensions, r.params.strides);
+                downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, outTensorMemory.data(),
+                                   outTensorMemory.memorySize());
+                return verifyTensor(outTensorMemory, m_outData);
+            }
         }
         return tcu::TestStatus::pass("");
     }
@@ -626,7 +666,7 @@ public:
             TosaReferenceImplementation::maxpool2d(m_inData, m_kernelY, m_kernelX, m_transientData);
             TosaReferenceImplementation::maxpool2d(m_transientData, m_kernelY, m_kernelX, m_outData);
 
-            return verifyTensor(m_outData, outTensorMemory);
+            return verifyTensor(outTensorMemory, m_outData);
         }
         return tcu::TestStatus::pass("");
     }
@@ -695,13 +735,21 @@ public:
         : DataGraphTest(context, _num_resources)
         , m_params{params}
     {
+        const TensorDimensions inDimensions =
+            params.imageAliasing ? TensorDimensions{1, 128, 256, 1} : TensorDimensions{1, 8, 16, 4};
+        const TensorDimensions outDimensions =
+            params.imageAliasing ? TensorDimensions{1, 64, 128, 1} : TensorDimensions{1, 4, 8, 4};
+        const TensorDimensions weightsDimensions =
+            params.imageAliasing ? TensorDimensions{1, 2, 2, 1} : TensorDimensions{4, 2, 2, 4};
+        const TensorDimensions biasDimensions = params.imageAliasing ? TensorDimensions{1} : TensorDimensions{4};
+
         m_resInfo.at(_input) = {
-            RESOURCE_TYPE_INPUT, {inFormat, params.tiling, {1, 8, 16, 4}, {}}, 0, 0, 0, nullptr, {}, ""};
+            RESOURCE_TYPE_INPUT, {inFormat, params.tiling, inDimensions, {}}, 0, 0, 0, nullptr, {}, ""};
         m_resInfo.at(_output) = {
-            RESOURCE_TYPE_OUTPUT, {outFormat, params.tiling, {1, 4, 8, 4}, {}}, 1, 0, 0, nullptr, {}, ""};
+            RESOURCE_TYPE_OUTPUT, {outFormat, params.tiling, outDimensions, {}}, 1, 0, 0, nullptr, {}, ""};
         // VUID-VkDataGraphPipelineConstantARM-pNext-09917 tiling member must be VK_TENSOR_TILING_LINEAR_ARM. Hence, constants ignore the test requirements
         m_resInfo.at(_weights) = {RESOURCE_TYPE_CONSTANT,
-                                  {weightsFormat, VK_TENSOR_TILING_LINEAR_ARM, {4, 2, 2, 4}, {}},
+                                  {weightsFormat, VK_TENSOR_TILING_LINEAR_ARM, weightsDimensions, {}},
                                   0,
                                   0,
                                   0,
@@ -709,8 +757,14 @@ public:
                                   {},
                                   "weights"};
         // VUID-VkDataGraphPipelineConstantARM-pNext-09917 tiling member must be VK_TENSOR_TILING_LINEAR_ARM. Hence, constants ignore the test requirements
-        m_resInfo.at(_bias) = {
-            RESOURCE_TYPE_CONSTANT, {outFormat, VK_TENSOR_TILING_LINEAR_ARM, {4}, {}}, 0, 0, 1, nullptr, {}, "bias"};
+        m_resInfo.at(_bias) = {RESOURCE_TYPE_CONSTANT,
+                               {outFormat, VK_TENSOR_TILING_LINEAR_ARM, biasDimensions, {}},
+                               0,
+                               0,
+                               1,
+                               nullptr,
+                               {},
+                               "bias"};
 
         if (params.shuffleBindings)
         {
@@ -718,14 +772,14 @@ public:
             m_resInfo.at(_output).binding = 0;
         }
 
-        if (params.strides.inputs != TENSOR_STRIDES_IMPLICIT)
+        if (params.strides.inputs == TENSOR_STRIDES_PACKED || params.strides.inputs == TENSOR_STRIDES_NOT_PACKED)
         {
             m_resInfo.at(_input).params.strides = getTensorStrides(
                 m_resInfo.at(_input).params.dimensions, vkt::tensor::getFormatSize(m_resInfo.at(_input).params.format),
                 (params.strides.inputs == TENSOR_STRIDES_NOT_PACKED) ? 3 : 1);
         }
 
-        if (params.strides.outputs != TENSOR_STRIDES_IMPLICIT)
+        if (params.strides.outputs == TENSOR_STRIDES_PACKED || params.strides.outputs == TENSOR_STRIDES_NOT_PACKED)
         {
             m_resInfo.at(_output).params.strides =
                 getTensorStrides(m_resInfo.at(_output).params.dimensions,
@@ -733,12 +787,33 @@ public:
                                  (params.strides.outputs == TENSOR_STRIDES_NOT_PACKED) ? 5 : 1);
         }
 
-        if (params.sparseConstants)
+        switch (params.sparsity)
+        {
+        case SparsityVariation::NONE:
+            break;
+
+        case SparsityVariation::VARIATION_1:
         {
             m_resInfo.at(_weights).sparsityInfo = {{0, 3, 4}, {1, 1, 2}, {2, 1, 2}, {3, 2, 4}};
             m_resInfo.at(_bias).sparsityInfo    = {{0, 1, 4}};
+            break;
+        }
+        case SparsityVariation::VARIATION_2:
+        {
+            m_resInfo.at(_weights).sparsityInfo = {{0, 1, 2}, {1, 1, 2}, {2, 1, 2}, {3, 1, 2}};
+            m_resInfo.at(_bias).sparsityInfo    = {{0, 1, 2}};
+            break;
+        }
+        case SparsityVariation::VARIATION_3:
+        {
+            m_resInfo.at(_weights).sparsityInfo = {{0, 0, 1}, {1, 0, 1}, {2, 0, 1}, {3, 2, 4}};
+            m_resInfo.at(_bias).sparsityInfo    = {};
+            break;
+        }
         }
 
+        // In image aliasing tests, tensor strides are written later by ImageAliasedTensorWithMemory from the image
+        // layout. These host-side buffers intentionally use packed strides as logical input/reference data.
         m_inData      = {m_resInfo.at(_input).params.dimensions, m_resInfo.at(_input).params.strides};
         m_outData     = {m_resInfo.at(_output).params.dimensions, m_resInfo.at(_output).params.strides};
         m_weightsData = {m_resInfo.at(_weights).params.dimensions, m_resInfo.at(_weights).params.strides};
@@ -821,8 +896,16 @@ public:
         case _input:
         {
             m_inData.fill(static_cast<inHostType>(options.startingValue + 7));
-            uploadToTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, m_inData.data(),
-                           m_inData.memorySize());
+            if (m_params.imageAliasing)
+            {
+                uploadToImageAliasedTensor(m_context, vk, device, allocator, queue, queueFamilyIndex, *tensor, m_inData,
+                                           m_resInfo.at(_input).params);
+            }
+            else
+            {
+                uploadToTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, m_inData.data(),
+                               m_inData.memorySize());
+            }
         }
         break;
         case _output:
@@ -858,22 +941,27 @@ public:
         {
             const auto &r = m_resInfo.at(id);
 
-            const DeviceInterface &vk       = m_context.getDeviceInterface();
-            const VkDevice device           = m_context.getDevice();
-            const VkQueue queue             = m_context.getUniversalQueue();
-            const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
-            Allocator &allocator            = m_context.getDefaultAllocator();
-
-            tensor::StridedMemoryUtils<outHostType> outTensorMemory(r.params.dimensions, r.params.strides);
-            downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, outTensorMemory.data(),
-                               outTensorMemory.memorySize());
-
             /* compute reference values for graph */
             TosaReferenceImplementation::conv2d<inHostType, weightsHostType, outHostType>(
                 m_inData, m_weightsData, m_biasData, m_outData, {m_padTop, m_padBottom, m_padLeft, m_padRight},
                 {m_strideY, m_strideX}, {m_dilationY, m_dilationX}, m_inZp, m_weightsZp);
 
-            return verifyTensor(m_outData, outTensorMemory);
+            if (m_params.imageAliasing)
+            {
+                return verifyImageAliasedTensorWithShader(m_context, *tensor, m_outData, r.params);
+            }
+            else
+            {
+                const DeviceInterface &vk       = m_context.getDeviceInterface();
+                const VkDevice device           = m_context.getDevice();
+                const VkQueue queue             = m_context.getUniversalQueue();
+                const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+                Allocator &allocator            = m_context.getDefaultAllocator();
+                tensor::StridedMemoryUtils<outHostType> outTensorMemory(r.params.dimensions, r.params.strides);
+                downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, outTensorMemory.data(),
+                                   outTensorMemory.memorySize());
+                return verifyTensor(outTensorMemory, m_outData);
+            }
         }
 
         return tcu::TestStatus::pass("");
@@ -988,10 +1076,29 @@ public:
                                  (params.strides.outputs == TENSOR_STRIDES_NOT_PACKED) ? 5 : 1);
         }
 
-        if (params.sparseConstants)
+        switch (params.sparsity)
+        {
+        case SparsityVariation::NONE:
+            break;
+
+        case SparsityVariation::VARIATION_1:
         {
             m_resInfo.at(_weights).sparsityInfo = {{0, 3, 4}, {1, 1, 2}, {2, 1, 2}, {3, 2, 4}};
             m_resInfo.at(_bias).sparsityInfo    = {{0, 1, 4}};
+            break;
+        }
+        case SparsityVariation::VARIATION_2:
+        {
+            m_resInfo.at(_weights).sparsityInfo = {{0, 1, 2}, {1, 1, 2}, {2, 1, 2}, {3, 1, 2}};
+            m_resInfo.at(_bias).sparsityInfo    = {{0, 1, 2}};
+            break;
+        }
+        case SparsityVariation::VARIATION_3:
+        {
+            m_resInfo.at(_weights).sparsityInfo = {{0, 0, 1}, {1, 0, 1}, {2, 0, 1}, {3, 2, 4}};
+            m_resInfo.at(_bias).sparsityInfo    = {};
+            break;
+        }
         }
 
         m_inData         = {m_resInfo.at(_input).params.dimensions, m_resInfo.at(_input).params.strides};
@@ -1158,7 +1265,7 @@ public:
                 m_transientData2, m_weightsData, m_biasData, m_outData, {m_padTop, m_padBottom, m_padLeft, m_padRight},
                 {m_strideY, m_strideX}, {m_dilationY, m_dilationX}, m_inZp, m_weightsZp);
 
-            return verifyTensor(m_outData, outTensorMemory);
+            return verifyTensor(outTensorMemory, m_outData);
         }
 
         return tcu::TestStatus::pass("");
@@ -1199,12 +1306,833 @@ private:
     StridedMemoryUtils<inHostType> m_transientData2;
 };
 
+template <VkFormat inOutFormat = VK_FORMAT_R16_SINT>
+class DataGraphTestTosaSpecConstant : public DataGraphTest
+{
+
+private:
+    using inOutHostType = typename DataGraphTest::vkFormatInfo<inOutFormat>::hostType;
+
+    enum resourcesId
+    {
+        _input1,
+        _output1,
+        _num_resources
+    };
+
+    static constexpr inOutHostType minValue        = 20;
+    static constexpr inOutHostType maxValue        = 200;
+    static constexpr inOutHostType minValueInitial = 10;
+    static constexpr inOutHostType maxValueInitial = 100;
+
+public:
+    DataGraphTestTosaSpecConstant(Context &context, TestParams params)
+        : DataGraphTest(context, _num_resources)
+        , m_params{params}
+    {
+        m_resInfo.at(_input1) = {
+            RESOURCE_TYPE_INPUT, {inOutFormat, params.tiling, {1, 8, 16, 4}, {}}, 0, 0, 0, nullptr, {}, ""};
+        m_resInfo.at(_output1) = {
+            RESOURCE_TYPE_OUTPUT, {inOutFormat, params.tiling, {1, 8, 16, 4}, {}}, 1, 0, 0, nullptr, {}, ""};
+
+        if (params.strides.inputs != TENSOR_STRIDES_IMPLICIT)
+        {
+            m_resInfo.at(_input1).params.strides =
+                getTensorStrides(m_resInfo.at(_input1).params.dimensions,
+                                 vkt::tensor::getFormatSize(m_resInfo.at(_input1).params.format),
+                                 (params.strides.inputs == TENSOR_STRIDES_NOT_PACKED) ? 3 : 1);
+        }
+
+        if (params.strides.outputs != TENSOR_STRIDES_IMPLICIT)
+        {
+            m_resInfo.at(_output1).params.strides =
+                getTensorStrides(m_resInfo.at(_output1).params.dimensions,
+                                 vkt::tensor::getFormatSize(m_resInfo.at(_output1).params.format),
+                                 (params.strides.outputs == TENSOR_STRIDES_NOT_PACKED) ? 5 : 1);
+        }
+
+        m_inData1  = {m_resInfo.at(_input1).params.dimensions, m_resInfo.at(_input1).params.strides};
+        m_outData1 = {m_resInfo.at(_output1).params.dimensions, m_resInfo.at(_output1).params.strides};
+
+        m_resInfo.at(_input1).hostData  = m_inData1.data();
+        m_resInfo.at(_output1).hostData = m_outData1.data();
+
+        m_specializationConstants.emplace_back(SpecConstant::fromValue<inOutHostType>(0, minValue));
+        m_specializationConstants.emplace_back(SpecConstant::fromValue<inOutHostType>(1, maxValue));
+    }
+
+    ~DataGraphTestTosaSpecConstant() = default;
+
+    std::vector<uint32_t> spirvBinary() override
+    {
+        TosaSpirv dataGraphSpirv;
+
+        for (auto &r : m_resInfo)
+        {
+            r.label = dataGraphSpirv.addResource(r);
+        }
+        const std::string minVal =
+            dataGraphSpirv.addSpecializationAttribute(inOutFormat, minValueInitial, 0, "min_val");
+        const std::string maxVal =
+            dataGraphSpirv.addSpecializationAttribute(inOutFormat, maxValueInitial, 1, "max_val");
+
+        const std::string nanMode =
+            dataGraphSpirv.addAttribute(VK_FORMAT_R32_UINT, spirv_nan_mode::PROPAGATE, "nan_mode");
+
+        std::string out1 = dataGraphSpirv.addSpirvOp("CLAMP", {m_resInfo.at(_input1).label},
+                                                     m_resInfo.at(_output1).label, {minVal, maxVal, nanMode});
+
+        dataGraphSpirv.setOutput(out1, m_resInfo.at(_output1));
+
+        std::string spirvEntryPoint = dataGraphSpirv.bake();
+        std::string spirvSource     = dataGraphSpirv.source();
+
+        spvtools::SpirvTools tools{SPV_ENV_UNIVERSAL_1_6};
+        std::string spirvErrors;
+        std::vector<uint32_t> binary;
+
+        tools.SetMessageConsumer(
+            [&spirvErrors](spv_message_level_t level, const char *, const spv_position_t &position, const char *message)
+            { TosaSpirv::spirvMessageConsumer(level, position, message, spirvErrors); });
+
+        if (!tools.Assemble(spirvSource, &binary))
+        {
+            TCU_THROW(InternalError, "Shader assembly failed: " + spirvErrors);
+        }
+
+        if (!tools.Validate(binary))
+        {
+            TCU_THROW(InternalError, "Invalid shader: " + spirvErrors);
+        }
+
+        return binary;
+    }
+
+    void initData(size_t id, TensorWithMemory *tensor, InitDataOptions options) override
+    {
+        const DeviceInterface &vk       = m_context.getDeviceInterface();
+        const VkDevice device           = m_context.getDevice();
+        const VkQueue queue             = m_context.getUniversalQueue();
+        const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+        Allocator &allocator            = m_context.getDefaultAllocator();
+
+        switch (id)
+        {
+        case _input1:
+        {
+            m_inData1.fill(static_cast<inOutHostType>(options.startingValue) + static_cast<inOutHostType>(5));
+            uploadToTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, m_inData1.data(),
+                           m_inData1.memorySize());
+        }
+        break;
+        case _output1:
+        {
+            m_outData1.clear();
+            clearTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor);
+        }
+        break;
+        default:
+        {
+        }
+        break;
+        }
+    }
+
+    tcu::TestStatus verifyData(size_t id, TensorWithMemory *tensor) override
+    {
+        const DeviceInterface &vk       = m_context.getDeviceInterface();
+        const VkDevice device           = m_context.getDevice();
+        const VkQueue queue             = m_context.getUniversalQueue();
+        const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+        Allocator &allocator            = m_context.getDefaultAllocator();
+
+        if (id == _output1)
+        {
+            const auto &r = m_resInfo.at(id);
+
+            tensor::StridedMemoryUtils<inOutHostType> outTensorMemory(r.params.dimensions, r.params.strides);
+            downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, outTensorMemory.data(),
+                               outTensorMemory.memorySize());
+
+            TosaReferenceImplementation::clamp(m_inData1, m_outData1, minValue, maxValue);
+            return verifyTensor(m_outData1, outTensorMemory);
+        }
+
+        return tcu::TestStatus::pass("");
+    }
+
+    inline static const std::vector<std::string> supportedFormats = {"i16"};
+
+    static DataGraphTest *getTest(Context &testCtx, TestParams params)
+    {
+        if (params.formats == "i16")
+        {
+            return new DataGraphTestTosaSpecConstant<VK_FORMAT_R16_SINT>(testCtx, params);
+        }
+        TCU_THROW(InternalError, "Unsupported test type the data graph test");
+        return nullptr;
+    }
+
+private:
+    de::MovePtr<ProgramBinary> m_programBinary;
+    TestParams m_params;
+
+    StridedMemoryUtils<inOutHostType> m_inData1;
+    StridedMemoryUtils<inOutHostType> m_outData1;
+};
+
+template <VkFormat inOutFormat = VK_FORMAT_R16_SINT, bool shouldRound = true>
+class DataGraphTestTosaSpecConstantBool : public DataGraphTest
+{
+
+private:
+    using inOutHostType = typename DataGraphTest::vkFormatInfo<inOutFormat>::hostType;
+
+    enum resourcesId
+    {
+        _input1,
+        _input2,
+        _output1,
+        _num_resources
+    };
+
+    static constexpr inOutHostType shiftAmount = 1;
+
+public:
+    DataGraphTestTosaSpecConstantBool(Context &context, TestParams params)
+        : DataGraphTest(context, _num_resources)
+        , m_params{params}
+    {
+        m_resInfo.at(_input1) = {
+            RESOURCE_TYPE_INPUT, {inOutFormat, params.tiling, {1, 8, 16, 4}, {}}, 0, 0, 0, nullptr, {}, ""};
+        m_resInfo.at(_input2) = {
+            RESOURCE_TYPE_INPUT, {inOutFormat, params.tiling, {1, 8, 16, 4}, {}}, 1, 0, 1, nullptr, {}, ""};
+        m_resInfo.at(_output1) = {
+            RESOURCE_TYPE_OUTPUT, {inOutFormat, params.tiling, {1, 8, 16, 4}, {}}, 2, 0, 0, nullptr, {}, ""};
+
+        if (params.strides.inputs != TENSOR_STRIDES_IMPLICIT)
+        {
+            m_resInfo.at(_input1).params.strides =
+                getTensorStrides(m_resInfo.at(_input1).params.dimensions,
+                                 vkt::tensor::getFormatSize(m_resInfo.at(_input1).params.format),
+                                 (params.strides.inputs == TENSOR_STRIDES_NOT_PACKED) ? 3 : 1);
+            m_resInfo.at(_input2).params.strides =
+                getTensorStrides(m_resInfo.at(_input2).params.dimensions,
+                                 vkt::tensor::getFormatSize(m_resInfo.at(_input2).params.format),
+                                 (params.strides.inputs == TENSOR_STRIDES_NOT_PACKED) ? 3 : 1);
+        }
+
+        if (params.strides.outputs != TENSOR_STRIDES_IMPLICIT)
+        {
+            m_resInfo.at(_output1).params.strides =
+                getTensorStrides(m_resInfo.at(_output1).params.dimensions,
+                                 vkt::tensor::getFormatSize(m_resInfo.at(_output1).params.format),
+                                 (params.strides.outputs == TENSOR_STRIDES_NOT_PACKED) ? 5 : 1);
+        }
+
+        m_inData1  = {m_resInfo.at(_input1).params.dimensions, m_resInfo.at(_input1).params.strides};
+        m_inData2  = {m_resInfo.at(_input2).params.dimensions, m_resInfo.at(_input2).params.strides};
+        m_outData1 = {m_resInfo.at(_output1).params.dimensions, m_resInfo.at(_output1).params.strides};
+
+        m_resInfo.at(_input1).hostData  = m_inData1.data();
+        m_resInfo.at(_input2).hostData  = m_inData2.data();
+        m_resInfo.at(_output1).hostData = m_outData1.data();
+
+        m_specializationConstants.emplace_back(SpecConstant::fromValue<uint32_t>(0, shouldRound ? 1 : 0));
+    }
+
+    ~DataGraphTestTosaSpecConstantBool() = default;
+
+    std::vector<uint32_t> spirvBinary() override
+    {
+        TosaSpirv dataGraphSpirv;
+
+        for (auto &r : m_resInfo)
+        {
+            r.label = dataGraphSpirv.addResource(r);
+        }
+
+        const std::string round =
+            dataGraphSpirv.addSpecializationAttribute(VK_FORMAT_R8_BOOL_ARM, shouldRound ? 0 : 1, 0, "round");
+
+        std::string out1 = dataGraphSpirv.addSpirvOp("ARITHMETIC_RIGHT_SHIFT",
+                                                     {m_resInfo.at(_input1).label, m_resInfo.at(_input2).label},
+                                                     m_resInfo.at(_output1).label, {round});
+
+        dataGraphSpirv.setOutput(out1, m_resInfo.at(_output1));
+
+        std::string spirvEntryPoint = dataGraphSpirv.bake();
+        std::string spirvSource     = dataGraphSpirv.source();
+
+        spvtools::SpirvTools tools{SPV_ENV_UNIVERSAL_1_6};
+        std::string spirvErrors;
+        std::vector<uint32_t> binary;
+
+        tools.SetMessageConsumer(
+            [&spirvErrors](spv_message_level_t level, const char *, const spv_position_t &position, const char *message)
+            { TosaSpirv::spirvMessageConsumer(level, position, message, spirvErrors); });
+
+        if (!tools.Assemble(spirvSource, &binary))
+        {
+            TCU_THROW(InternalError, "Shader assembly failed: " + spirvErrors);
+        }
+
+        if (!tools.Validate(binary))
+        {
+            TCU_THROW(InternalError, "Invalid shader: " + spirvErrors);
+        }
+
+        return binary;
+    }
+
+    void initData(size_t id, TensorWithMemory *tensor, InitDataOptions options) override
+    {
+        const DeviceInterface &vk       = m_context.getDeviceInterface();
+        const VkDevice device           = m_context.getDevice();
+        const VkQueue queue             = m_context.getUniversalQueue();
+        const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+        Allocator &allocator            = m_context.getDefaultAllocator();
+
+        switch (id)
+        {
+        case _input1:
+        {
+            m_inData1.fill(static_cast<inOutHostType>(options.startingValue) + static_cast<inOutHostType>(5));
+            uploadToTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, m_inData1.data(),
+                           m_inData1.memorySize());
+        }
+        break;
+        case _input2:
+        {
+            m_inData2.fill(static_cast<inOutHostType>(options.startingValue) + static_cast<inOutHostType>(5));
+            for (size_t i = 0; i < m_inData2.elementCount(); ++i)
+            {
+                m_inData2.at(i) = shiftAmount;
+            }
+            uploadToTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, m_inData2.data(),
+                           m_inData2.memorySize());
+        }
+        break;
+        case _output1:
+        {
+            m_outData1.clear();
+            clearTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor);
+        }
+        break;
+        default:
+        {
+        }
+        break;
+        }
+    }
+
+    tcu::TestStatus verifyData(size_t id, TensorWithMemory *tensor) override
+    {
+        const DeviceInterface &vk       = m_context.getDeviceInterface();
+        const VkDevice device           = m_context.getDevice();
+        const VkQueue queue             = m_context.getUniversalQueue();
+        const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+        Allocator &allocator            = m_context.getDefaultAllocator();
+
+        if (id == _output1)
+        {
+            const auto &r = m_resInfo.at(id);
+
+            tensor::StridedMemoryUtils<inOutHostType> outTensorMemory(r.params.dimensions, r.params.strides);
+            downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, outTensorMemory.data(),
+                               outTensorMemory.memorySize());
+
+            TosaReferenceImplementation::arithmetic_right_shift(m_inData1, m_inData2, m_outData1, shouldRound);
+            return verifyTensor(m_outData1, outTensorMemory);
+        }
+
+        return tcu::TestStatus::pass("");
+    }
+
+    inline static const std::vector<std::string> supportedFormats = {"i16"};
+
+    static DataGraphTest *getTest(Context &testCtx, TestParams params)
+    {
+        if (params.formats == "i16")
+        {
+            return new DataGraphTestTosaSpecConstantBool<VK_FORMAT_R16_SINT>(testCtx, params);
+        }
+        TCU_THROW(InternalError, "Unsupported test type the data graph test");
+        return nullptr;
+    }
+
+private:
+    de::MovePtr<ProgramBinary> m_programBinary;
+    TestParams m_params;
+
+    StridedMemoryUtils<inOutHostType> m_inData1;
+    StridedMemoryUtils<inOutHostType> m_inData2;
+    StridedMemoryUtils<inOutHostType> m_outData1;
+};
+
+template <VkFormat inOutFormat = VK_FORMAT_R8_SINT, bool Replicated = false>
+class DataGraphTestTosaSpecConstantComposite : public DataGraphTest
+{
+private:
+    using inOutHostType = typename DataGraphTest::vkFormatInfo<inOutFormat>::hostType;
+
+    static constexpr int32_t m_kernelY   = 2;
+    static constexpr int32_t m_kernelX   = 2;
+    static constexpr int32_t m_strideY   = 2;
+    static constexpr int32_t m_strideX   = 2;
+    static constexpr int32_t m_padTop    = 0;
+    static constexpr int32_t m_padBottom = 0;
+    static constexpr int32_t m_padLeft   = 0;
+    static constexpr int32_t m_padRight  = 0;
+
+    static constexpr uint32_t m_specIdKernelY   = 0;
+    static constexpr uint32_t m_specIdKernelX   = 1;
+    static constexpr uint32_t m_specIdStrideY   = 2;
+    static constexpr uint32_t m_specIdStrideX   = 3;
+    static constexpr uint32_t m_specIdPadTop    = 4;
+    static constexpr uint32_t m_specIdPadBottom = 5;
+    static constexpr uint32_t m_specIdPadLeft   = 6;
+    static constexpr uint32_t m_specIdPadRight  = 7;
+
+    enum resourcesId
+    {
+        _input,
+        _output,
+        _num_resources
+    };
+
+public:
+    DataGraphTestTosaSpecConstantComposite(Context &context, TestParams params)
+        : DataGraphTest(context, _num_resources)
+        , m_params{params}
+    {
+        if (Replicated)
+        {
+            context.requireDeviceFunctionality("VK_EXT_shader_replicated_composites");
+
+            static_assert(m_kernelY == m_kernelX);
+            static_assert(m_strideY == m_strideX);
+            static_assert(m_padTop == m_padBottom && m_padTop == m_padLeft && m_padTop == m_padRight);
+        }
+
+        m_resInfo.at(_input) = {
+            RESOURCE_TYPE_INPUT, {inOutFormat, params.tiling, {1, 8, 16, 4}, {}}, 0, 0, 0, nullptr, {}, ""};
+        m_resInfo.at(_output) = {
+            RESOURCE_TYPE_OUTPUT, {inOutFormat, params.tiling, {1, 4, 8, 4}, {}}, 1, 0, 0, nullptr, {}, ""};
+
+        if (params.strides.inputs != TENSOR_STRIDES_IMPLICIT)
+        {
+            m_resInfo.at(_input).params.strides = getTensorStrides(
+                m_resInfo.at(_input).params.dimensions, vkt::tensor::getFormatSize(m_resInfo.at(_input).params.format),
+                (params.strides.inputs == TENSOR_STRIDES_NOT_PACKED) ? 3 : 1);
+        }
+
+        if (params.strides.outputs != TENSOR_STRIDES_IMPLICIT)
+        {
+            m_resInfo.at(_output).params.strides =
+                getTensorStrides(m_resInfo.at(_output).params.dimensions,
+                                 vkt::tensor::getFormatSize(m_resInfo.at(_output).params.format),
+                                 (params.strides.outputs == TENSOR_STRIDES_NOT_PACKED) ? 5 : 1);
+        }
+
+        m_inData  = {m_resInfo.at(_input).params.dimensions, m_resInfo.at(_input).params.strides};
+        m_outData = {m_resInfo.at(_output).params.dimensions, m_resInfo.at(_output).params.strides};
+
+        m_resInfo.at(_input).hostData  = m_inData.data();
+        m_resInfo.at(_output).hostData = m_outData.data();
+
+        if (!Replicated)
+        {
+            m_specializationConstants.emplace_back(SpecConstant::fromValue<int32_t>(m_specIdKernelY, m_kernelY));
+            m_specializationConstants.emplace_back(SpecConstant::fromValue<int32_t>(m_specIdKernelX, m_kernelX));
+            m_specializationConstants.emplace_back(SpecConstant::fromValue<int32_t>(m_specIdStrideY, m_strideY));
+            m_specializationConstants.emplace_back(SpecConstant::fromValue<int32_t>(m_specIdStrideX, m_strideX));
+            m_specializationConstants.emplace_back(SpecConstant::fromValue<int32_t>(m_specIdPadTop, m_padTop));
+            m_specializationConstants.emplace_back(SpecConstant::fromValue<int32_t>(m_specIdPadBottom, m_padBottom));
+            m_specializationConstants.emplace_back(SpecConstant::fromValue<int32_t>(m_specIdPadLeft, m_padLeft));
+            m_specializationConstants.emplace_back(SpecConstant::fromValue<int32_t>(m_specIdPadRight, m_padRight));
+        }
+        else
+        {
+            m_specializationConstants.emplace_back(SpecConstant::fromValue<int32_t>(m_specIdKernelY, m_kernelY));
+            m_specializationConstants.emplace_back(SpecConstant::fromValue<int32_t>(m_specIdStrideY, m_strideY));
+            m_specializationConstants.emplace_back(SpecConstant::fromValue<int32_t>(m_specIdPadTop, m_padTop));
+        }
+    }
+
+    ~DataGraphTestTosaSpecConstantComposite() = default;
+
+    std::vector<uint32_t> spirvBinary() override
+    {
+        TosaSpirv dataGraphSpirv;
+
+        if (Replicated)
+        {
+            dataGraphSpirv.addExtension("SPV_EXT_replicated_composites");
+            dataGraphSpirv.addCapability("ReplicatedCompositesEXT");
+        }
+
+        for (auto &r : m_resInfo)
+        {
+            r.label = dataGraphSpirv.addResource(r);
+        }
+
+        std::string kernel;
+        std::string stride;
+        std::string pad;
+
+        if (!Replicated)
+        {
+            std::vector<int64_t> kernels  = {42, 24};
+            std::vector<int64_t> strides  = {24, 42};
+            std::vector<int64_t> paddings = {24, 42, 24, 42};
+
+            kernel = dataGraphSpirv.addSpecializationAttributeTensor(TosaSpirv::format::i32_t, kernels,
+                                                                     {m_specIdKernelY, m_specIdKernelX}, "kernel");
+            stride = dataGraphSpirv.addSpecializationAttributeTensor(TosaSpirv::format::i32_t, strides,
+                                                                     {m_specIdStrideY, m_specIdStrideX}, "stride");
+            pad    = dataGraphSpirv.addSpecializationAttributeTensor(
+                TosaSpirv::format::i32_t, paddings,
+                {m_specIdPadTop, m_specIdPadBottom, m_specIdPadLeft, m_specIdPadRight}, "pad");
+        }
+        else
+        {
+            kernel = dataGraphSpirv.addSpecializationAttributeTensorReplicated(TosaSpirv::format::i32_t, 2, 42,
+                                                                               m_specIdKernelY, "kernel");
+            stride = dataGraphSpirv.addSpecializationAttributeTensorReplicated(TosaSpirv::format::i32_t, 2, 24,
+                                                                               m_specIdStrideY, "stride");
+            pad    = dataGraphSpirv.addSpecializationAttributeTensorReplicated(TosaSpirv::format::i32_t, 4, 42,
+                                                                               m_specIdPadTop, "pad");
+        }
+
+        const std::string nan_mode =
+            dataGraphSpirv.addAttribute(VK_FORMAT_R32_UINT, spirv_nan_mode::PROPAGATE, "nan_mode");
+
+        const std::string maxpool = dataGraphSpirv.addSpirvOp(
+            "MAX_POOL2D", {m_resInfo.at(_input).label}, m_resInfo.at(_output).label, {kernel, stride, pad, nan_mode});
+
+        dataGraphSpirv.setOutput(maxpool, m_resInfo.at(_output));
+
+        std::string spirvEntryPoint = dataGraphSpirv.bake();
+        std::string spirvSource     = dataGraphSpirv.source();
+
+        spvtools::SpirvTools tools{SPV_ENV_UNIVERSAL_1_6};
+        std::string spirvErrors;
+        std::vector<uint32_t> binary;
+
+        tools.SetMessageConsumer(
+            [&spirvErrors](spv_message_level_t level, const char *, const spv_position_t &position, const char *message)
+            { TosaSpirv::spirvMessageConsumer(level, position, message, spirvErrors); });
+
+        if (!tools.Assemble(spirvSource, &binary))
+        {
+            TCU_THROW(InternalError, "Shader assembly failed: " + spirvErrors);
+        }
+
+        if (!tools.Validate(binary))
+        {
+            TCU_THROW(InternalError, "Invalid shader: " + spirvErrors);
+        }
+
+        return binary;
+    }
+
+    void initData(size_t id, TensorWithMemory *tensor, InitDataOptions options) override
+    {
+        const DeviceInterface &vk       = m_context.getDeviceInterface();
+        const VkDevice device           = m_context.getDevice();
+        const VkQueue queue             = m_context.getUniversalQueue();
+        const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+        Allocator &allocator            = m_context.getDefaultAllocator();
+
+        switch (id)
+        {
+        case _input:
+        {
+            m_inData.fill(options.startingValue);
+            uploadToTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, m_inData.data(),
+                           m_inData.memorySize());
+        }
+        break;
+        case _output:
+        {
+            m_outData.clear();
+            clearTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor);
+        }
+        break;
+        default:
+        {
+        }
+        break;
+        }
+    }
+
+    tcu::TestStatus verifyData(size_t id, TensorWithMemory *tensor) override
+    {
+        if (id == _output)
+        {
+            const auto &r = m_resInfo.at(id);
+
+            const DeviceInterface &vk       = m_context.getDeviceInterface();
+            const VkDevice device           = m_context.getDevice();
+            const VkQueue queue             = m_context.getUniversalQueue();
+            const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+            Allocator &allocator            = m_context.getDefaultAllocator();
+
+            tensor::StridedMemoryUtils<inOutHostType> outTensorMemory(r.params.dimensions, r.params.strides);
+            downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, outTensorMemory.data(),
+                               outTensorMemory.memorySize());
+
+            /* compute reference values for graph */
+            TosaReferenceImplementation::maxpool2d(m_inData, m_kernelY, m_kernelX, m_outData);
+
+            return verifyTensor(m_outData, outTensorMemory);
+        }
+        return tcu::TestStatus::pass("");
+    }
+
+    inline static const std::vector<std::string> supportedFormats = {"i8"};
+
+    static DataGraphTest *getTest(Context &testCtx, TestParams params)
+    {
+        if (params.formats == "i8")
+        {
+            switch (params.specConstants)
+            {
+            case SpecConstantTest::COMPOSITE:
+                return new DataGraphTestTosaSpecConstantComposite<VK_FORMAT_R8_SINT>(testCtx, params);
+            case SpecConstantTest::COMPOSITE_REPLICATED:
+                return new DataGraphTestTosaSpecConstantComposite<VK_FORMAT_R8_SINT, true>(testCtx, params);
+            default:
+                break;
+            }
+        }
+        TCU_THROW(InternalError, "Unsupported test type the data graph test");
+        return nullptr;
+    }
+
+private:
+    de::MovePtr<ProgramBinary> m_programBinary;
+    TestParams m_params;
+
+    StridedMemoryUtils<inOutHostType> m_inData;
+    StridedMemoryUtils<inOutHostType> m_outData;
+};
+
+template <VkFormat inOutFormat = VK_FORMAT_R16_SINT>
+class DataGraphTestTosaSpecConstantOp : public DataGraphTest
+{
+
+private:
+    using inOutHostType = typename DataGraphTest::vkFormatInfo<inOutFormat>::hostType;
+
+    enum resourcesId
+    {
+        _input1,
+        _output1,
+        _num_resources
+    };
+
+    static constexpr inOutHostType minValue        = 20;
+    static constexpr inOutHostType maxValue        = 200;
+    static constexpr inOutHostType maxValueOffset  = 42;
+    static constexpr inOutHostType minValueInitial = 10;
+    static constexpr inOutHostType maxValueInitial = 100;
+
+public:
+    DataGraphTestTosaSpecConstantOp(Context &context, TestParams params)
+        : DataGraphTest(context, _num_resources)
+        , m_params{params}
+    {
+        m_resInfo.at(_input1) = {
+            RESOURCE_TYPE_INPUT, {inOutFormat, params.tiling, {1, 8, 16, 4}, {}}, 0, 0, 0, nullptr, {}, ""};
+        m_resInfo.at(_output1) = {
+            RESOURCE_TYPE_OUTPUT, {inOutFormat, params.tiling, {1, 8, 16, 4}, {}}, 1, 0, 0, nullptr, {}, ""};
+
+        if (params.strides.inputs != TENSOR_STRIDES_IMPLICIT)
+        {
+            m_resInfo.at(_input1).params.strides =
+                getTensorStrides(m_resInfo.at(_input1).params.dimensions,
+                                 vkt::tensor::getFormatSize(m_resInfo.at(_input1).params.format),
+                                 (params.strides.inputs == TENSOR_STRIDES_NOT_PACKED) ? 3 : 1);
+        }
+
+        if (params.strides.outputs != TENSOR_STRIDES_IMPLICIT)
+        {
+            m_resInfo.at(_output1).params.strides =
+                getTensorStrides(m_resInfo.at(_output1).params.dimensions,
+                                 vkt::tensor::getFormatSize(m_resInfo.at(_output1).params.format),
+                                 (params.strides.outputs == TENSOR_STRIDES_NOT_PACKED) ? 5 : 1);
+        }
+
+        m_inData1  = {m_resInfo.at(_input1).params.dimensions, m_resInfo.at(_input1).params.strides};
+        m_outData1 = {m_resInfo.at(_output1).params.dimensions, m_resInfo.at(_output1).params.strides};
+
+        m_resInfo.at(_input1).hostData  = m_inData1.data();
+        m_resInfo.at(_output1).hostData = m_outData1.data();
+
+        m_specializationConstants.emplace_back(SpecConstant::fromValue<inOutHostType>(0, minValue));
+        m_specializationConstants.emplace_back(SpecConstant::fromValue<inOutHostType>(1, maxValue - maxValueOffset));
+        m_specializationConstants.emplace_back(SpecConstant::fromValue<inOutHostType>(2, maxValueOffset));
+    }
+
+    ~DataGraphTestTosaSpecConstantOp() = default;
+
+    std::vector<uint32_t> spirvBinary() override
+    {
+        TosaSpirv dataGraphSpirv;
+
+        for (auto &r : m_resInfo)
+        {
+            r.label = dataGraphSpirv.addResource(r);
+        }
+        const std::string minVal =
+            dataGraphSpirv.addSpecializationAttribute(inOutFormat, minValueInitial, 0, "min_val");
+        const std::string maxVal =
+            dataGraphSpirv.addSpecializationAttribute(inOutFormat, maxValueInitial, 1, "max_val");
+        const std::string offsetVal = dataGraphSpirv.addSpecializationAttribute(inOutFormat, 24, 2, "offset_val");
+
+        const std::string nanMode =
+            dataGraphSpirv.addAttribute(VK_FORMAT_R32_UINT, spirv_nan_mode::PROPAGATE, "nan_mode");
+
+        const std::string sum = dataGraphSpirv.addSpecConstantOp("IAdd", inOutFormat, {offsetVal, maxVal}, "sum");
+
+        std::string out1 = dataGraphSpirv.addSpirvOp("CLAMP", {m_resInfo.at(_input1).label},
+                                                     m_resInfo.at(_output1).label, {minVal, sum, nanMode});
+
+        dataGraphSpirv.setOutput(out1, m_resInfo.at(_output1));
+
+        std::string spirvEntryPoint = dataGraphSpirv.bake();
+        std::string spirvSource     = dataGraphSpirv.source();
+
+        spvtools::SpirvTools tools{SPV_ENV_UNIVERSAL_1_6};
+        std::string spirvErrors;
+        std::vector<uint32_t> binary;
+
+        tools.SetMessageConsumer(
+            [&spirvErrors](spv_message_level_t level, const char *, const spv_position_t &position, const char *message)
+            { TosaSpirv::spirvMessageConsumer(level, position, message, spirvErrors); });
+
+        if (!tools.Assemble(spirvSource, &binary))
+        {
+            TCU_THROW(InternalError, "Shader assembly failed: " + spirvErrors);
+        }
+
+        if (!tools.Validate(binary))
+        {
+            TCU_THROW(InternalError, "Invalid shader: " + spirvErrors);
+        }
+
+        return binary;
+    }
+
+    void initData(size_t id, TensorWithMemory *tensor, InitDataOptions options) override
+    {
+        const DeviceInterface &vk       = m_context.getDeviceInterface();
+        const VkDevice device           = m_context.getDevice();
+        const VkQueue queue             = m_context.getUniversalQueue();
+        const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+        Allocator &allocator            = m_context.getDefaultAllocator();
+
+        switch (id)
+        {
+        case _input1:
+        {
+            m_inData1.fill(static_cast<inOutHostType>(options.startingValue) + static_cast<inOutHostType>(5));
+            uploadToTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, m_inData1.data(),
+                           m_inData1.memorySize());
+        }
+        break;
+        case _output1:
+        {
+            m_outData1.clear();
+            clearTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor);
+        }
+        break;
+        default:
+        {
+        }
+        break;
+        }
+    }
+
+    tcu::TestStatus verifyData(size_t id, TensorWithMemory *tensor) override
+    {
+        const DeviceInterface &vk       = m_context.getDeviceInterface();
+        const VkDevice device           = m_context.getDevice();
+        const VkQueue queue             = m_context.getUniversalQueue();
+        const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+        Allocator &allocator            = m_context.getDefaultAllocator();
+
+        if (id == _output1)
+        {
+            const auto &r = m_resInfo.at(id);
+
+            tensor::StridedMemoryUtils<inOutHostType> outTensorMemory(r.params.dimensions, r.params.strides);
+            downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, *tensor, outTensorMemory.data(),
+                               outTensorMemory.memorySize());
+
+            TosaReferenceImplementation::clamp(m_inData1, m_outData1, minValue, maxValue);
+            return verifyTensor(m_outData1, outTensorMemory);
+        }
+
+        return tcu::TestStatus::pass("");
+    }
+
+    inline static const std::vector<std::string> supportedFormats = {"i16"};
+
+    static DataGraphTest *getTest(Context &testCtx, TestParams params)
+    {
+        if (params.formats == "i16")
+        {
+            return new DataGraphTestTosaSpecConstantOp<VK_FORMAT_R16_SINT>(testCtx, params);
+        }
+        TCU_THROW(InternalError, "Unsupported test type the data graph test");
+        return nullptr;
+    }
+
+private:
+    de::MovePtr<ProgramBinary> m_programBinary;
+    TestParams m_params;
+
+    StridedMemoryUtils<inOutHostType> m_inData1;
+    StridedMemoryUtils<inOutHostType> m_outData1;
+};
+
 class DataGraphTestProviderTosa
 {
 public:
     static const std::vector<std::string> &getSupportedFormats(TestParams params)
     {
         static const std::vector<std::string> emptyFormats = {};
+
+        if (params.specConstants != SpecConstantTest::NONE)
+        {
+            switch (params.specConstants)
+            {
+            case SpecConstantTest::BASIC:
+                return DataGraphTestTosaSpecConstant<>::supportedFormats;
+            case SpecConstantTest::BOOL:
+                return DataGraphTestTosaSpecConstantBool<>::supportedFormats;
+            case SpecConstantTest::COMPOSITE:
+            case SpecConstantTest::COMPOSITE_REPLICATED:
+                return DataGraphTestTosaSpecConstantComposite<>::supportedFormats;
+            case SpecConstantTest::OP:
+                return DataGraphTestTosaSpecConstantOp<>::supportedFormats;
+            default:
+                break;
+            }
+        }
+
+        if (params.imageAliasing)
+        {
+            if (params.cardinalities.constants == NONE)
+                return DataGraphTestTosaMaxpool<>::supportedFormats;
+            else if (params.cardinalities.constants == MANY)
+                return DataGraphTestTosaConvolution<>::supportedFormats;
+
+            return emptyFormats;
+        }
 
         if (params.cardinalities.inputs == ONE && params.cardinalities.outputs == ONE &&
             params.cardinalities.constants == NONE && !params.sessionMemory)
@@ -1241,6 +2169,32 @@ public:
 
     static DataGraphTest *getDataGraphTest(Context &testCtx, TestParams params)
     {
+        if (params.imageAliasing)
+        {
+            if (params.cardinalities.constants == NONE)
+                return DataGraphTestTosaMaxpool<>::getTest(testCtx, params);
+            else if (params.cardinalities.constants == MANY)
+                return DataGraphTestTosaConvolution<>::getTest(testCtx, params);
+        }
+
+        if (params.specConstants != SpecConstantTest::NONE)
+        {
+            switch (params.specConstants)
+            {
+            case SpecConstantTest::BASIC:
+                return DataGraphTestTosaSpecConstant<>::getTest(testCtx, params);
+            case SpecConstantTest::BOOL:
+                return DataGraphTestTosaSpecConstantBool<>::getTest(testCtx, params);
+            case SpecConstantTest::COMPOSITE:
+            case SpecConstantTest::COMPOSITE_REPLICATED:
+                return DataGraphTestTosaSpecConstantComposite<>::getTest(testCtx, params);
+            case SpecConstantTest::OP:
+                return DataGraphTestTosaSpecConstantOp<>::getTest(testCtx, params);
+            default:
+                break;
+            }
+        }
+
         if (!params.sessionMemory && params.cardinalities.inputs == ONE && params.cardinalities.outputs == ONE &&
             params.cardinalities.constants == NONE)
         {
@@ -1271,7 +2225,7 @@ public:
             return DataGraphTestTosaAddSub<>::getTest(testCtx, params);
         }
 
-        TCU_THROW(NotSupportedError, "No format combinations available for the given test parameters");
+        TCU_THROW(NotSupportedError, "No test available for the given test parameters");
     }
 
 private:

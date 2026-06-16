@@ -46,9 +46,6 @@
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 
-using namespace vk;
-using namespace std::placeholders;
-
 namespace vkt
 {
 
@@ -57,6 +54,8 @@ namespace dataGraph
 
 namespace
 {
+
+using namespace vk;
 
 enum class queryNumCallModes
 {

@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2026 ARM Ltd.
+ * Copyright (c) 2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@
  */
 /*!
  * \file
- * \brief Data Graph Descriptor Buffer Tests
+ * \brief Data Graph Basic Tests
  */
 /*--------------------------------------------------------------------*/
 
-#include "vktDataGraphDescriptorBufferTests.hpp"
+#include "vktDataGraphExternalMemoryTests.hpp"
 
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
@@ -52,6 +52,7 @@
 #include "vktTestGroupUtil.hpp"
 
 using namespace vk;
+using namespace std::placeholders;
 
 namespace vkt
 {
@@ -62,31 +63,18 @@ namespace dataGraph
 namespace
 {
 
-void checkDescriptorBufferSupport(Context &ctx, TestParams params)
+tcu::TestStatus submitPipelineDmaBufTest(Context &m_context, TestParams m_params)
 {
-    const auto &vki           = ctx.getInstanceInterface();
-    const auto physicalDevice = ctx.getPhysicalDevice();
-
-    VkPhysicalDeviceDataGraphFeaturesARM dataGraphFeaturesProp = initVulkanStructure();
-    VkPhysicalDeviceFeatures2 featuresProp                     = initVulkanStructure(&dataGraphFeaturesProp);
-    vki.getPhysicalDeviceFeatures2(physicalDevice, &featuresProp);
-
-    if (!dataGraphFeaturesProp.dataGraphDescriptorBuffer)
-    {
-        TCU_THROW(NotSupportedError, "descriptor buffer feature for data graph not present");
-    }
-
-    TestParams::checkSupport(ctx, params);
-}
-
-tcu::TestStatus descriptorBufferTest(Context &m_context, TestParams m_params)
-{
-
+    const InstanceInterface &vki    = m_context.getInstanceInterface();
+    const VkPhysicalDevice physDev  = m_context.getPhysicalDevice();
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
     const VkQueue queue             = m_context.getUniversalQueue();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
-    Allocator &allocator            = m_context.getDefaultAllocator();
+
+    VkPhysicalDeviceMemoryProperties memoryProperties{};
+    vki.getPhysicalDeviceMemoryProperties(physDev, &memoryProperties);
+    DmaHeapAllocator dmaHeapAllocator(vk, device, memoryProperties);
 
     // getDataGraphTest cannot return nullptr as will throw an exception in case of errors
     std::unique_ptr<DataGraphTest> graphTest{DataGraphTestProvider::getDataGraphTest(m_context, "TOSA", m_params)};
@@ -107,9 +95,14 @@ tcu::TestStatus descriptorBufferTest(Context &m_context, TestParams m_params)
         if (ri.isTensor())
         {
             /* create tensor and view */
-            tr.tensor = de::MovePtr<TensorWithMemory>(new TensorWithMemory(
-                vk, device, allocator, makeTensorCreateInfo(&tr.desc), vk::MemoryRequirement::Any));
-            tr.view   = makeTensorView(vk, device, tr.tensor->get(), ri.params.format);
+            VkTensorCreateInfoARM tensorCreateInfo                 = makeTensorCreateInfo(&tr.desc);
+            VkExternalMemoryTensorCreateInfoARM externalCreateInfo = initVulkanStructure();
+            externalCreateInfo.handleTypes                         = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+            tensorCreateInfo.pNext                                 = &externalCreateInfo;
+
+            tr.tensor = de::MovePtr<TensorWithMemory>(
+                new TensorWithMemory(vk, device, dmaHeapAllocator, tensorCreateInfo, vk::MemoryRequirement::Any));
+            tr.view = makeTensorView(vk, device, tr.tensor->get(), ri.params.format);
 
             /* fill host and tensor data */
             graphTest->initData(i, &*tr.tensor);
@@ -129,18 +122,36 @@ tcu::TestStatus descriptorBufferTest(Context &m_context, TestParams m_params)
         const auto &ri = graphTest->resourceInfo(i);
         if (ri.isTensor())
         {
-            // The test assumes the descriptor buffer has descriptorSet equal to 0
-            DE_ASSERT(ri.descriptorSet == 0);
+            /* constants do not need to be in the descriptor set */
             setLayoutBuilder.addSingleIndexedBinding(VK_DESCRIPTOR_TYPE_TENSOR_ARM, VK_SHADER_STAGE_ALL, ri.binding);
         }
     }
-    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
-        setLayoutBuilder.build(vk, device, VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT));
+    const Unique<VkDescriptorSetLayout> descriptorSetLayout(setLayoutBuilder.build(vk, device));
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_TENSOR_ARM, static_cast<uint32_t>(graphTest->numTensors()));
+    const Unique<VkDescriptorPool> descriptorPool(
+        poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+    const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+    DescriptorSetUpdateBuilder updatebuilder;
+    for (size_t i = 0; i < graphTest->numResources(); i++)
+    {
+        const auto &ri = graphTest->resourceInfo(i);
+        auto &tr       = testResources.at(i);
+        if (ri.isTensor())
+        {
+            tr.writeDesc = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_TENSOR_ARM, nullptr, 1, &tr.view.get()};
+            updatebuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(ri.binding),
+                                      VK_DESCRIPTOR_TYPE_TENSOR_ARM, &tr.writeDesc);
+        }
+    }
+    updatebuilder.update(vk, device);
 
     /* Create DataGraph pipeline */
 
     DataGraphPipelineWrapper pipeline(vk, device);
-    pipeline.setPipelineCreateFlags(VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT);
     pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
     pipeline.addShaderModule(graphTest->shaderModule());
 
@@ -163,77 +174,20 @@ tcu::TestStatus descriptorBufferTest(Context &m_context, TestParams m_params)
 
     VkDataGraphPipelineSessionCreateInfoARM sessionCreateInfo = initVulkanStructure();
     sessionCreateInfo.dataGraphPipeline                       = pipeline.get();
-    const DataGraphSessionWithMemory dataGraphSession(vk, device, allocator, sessionCreateInfo,
-                                                      vk::MemoryRequirement::Any);
+    const DataGraphSessionWithMemory dataGraphSession(vk, device, dmaHeapAllocator, sessionCreateInfo,
+                                                      vk::MemoryRequirement::Any, m_params.sessionMemory);
 
     const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
     const Unique<VkCommandBuffer> cmdBuffer(
         allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-    /* Create Descriptor Buffer */
-
-    VkDeviceSize descriptorBufferSize;
-    vk.getDescriptorSetLayoutSizeEXT(device, *descriptorSetLayout, &descriptorBufferSize);
-
-    const auto descriptorBufferUsage =
-        VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-    const VkBufferCreateInfo descriptorBufferCreateInfo =
-        makeBufferCreateInfo(descriptorBufferSize, descriptorBufferUsage);
-    const MemoryRequirement bufferMemoryRequirement = MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress;
-
-    BufferWithMemory descriptorBuffer(vk, device, allocator, descriptorBufferCreateInfo, bufferMemoryRequirement);
-    auto descriptorBufferHostPtr = static_cast<char *>(descriptorBuffer.getAllocation().getHostPtr());
-
-    for (size_t i = 0; i < graphTest->numResources(); i++)
-    {
-        const auto &ri = graphTest->resourceInfo(i);
-        auto &tr       = testResources.at(i);
-
-        if (ri.isTensor())
-        {
-            VkDeviceSize offset = 0;
-            vk.getDescriptorSetLayoutBindingOffsetEXT(device, *descriptorSetLayout, ri.binding, &offset);
-
-            VkDescriptorGetTensorInfoARM tensorDescriptorInfo{};
-            tensorDescriptorInfo.sType      = VK_STRUCTURE_TYPE_DESCRIPTOR_GET_TENSOR_INFO_ARM;
-            tensorDescriptorInfo.pNext      = nullptr;
-            tensorDescriptorInfo.tensorView = tr.view.get();
-
-            VkDescriptorGetInfoEXT descriptorInfo{};
-            descriptorInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT;
-            descriptorInfo.type  = VK_DESCRIPTOR_TYPE_TENSOR_ARM;
-            descriptorInfo.pNext = &tensorDescriptorInfo;
-
-            constexpr uint32_t EXPECTED_TENSOR_DESCRIPTOR_SIZE = 64;
-            vk.getDescriptorEXT(device, &descriptorInfo, EXPECTED_TENSOR_DESCRIPTOR_SIZE,
-                                descriptorBufferHostPtr + offset);
-        }
-    }
-    flushAlloc(vk, device, descriptorBuffer.getAllocation());
-
-    /* Start recording commands */
+    // Start recording commands
 
     beginCommandBuffer(vk, cmdBuffer.get());
+
     pipeline.bind(cmdBuffer.get());
-
-    /* Bind descriptor buffer */
-
-    {
-        VkBufferDeviceAddressInfo deviceAddressInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr,
-                                                    *descriptorBuffer};
-        auto bufferDeviceAddress = vk.getBufferDeviceAddress(device, &deviceAddressInfo);
-
-        VkDescriptorBufferBindingInfoEXT descriptorBufferBindingInfo = initVulkanStructure();
-        descriptorBufferBindingInfo.address                          = bufferDeviceAddress;
-        descriptorBufferBindingInfo.usage = VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT;
-
-        vk.cmdBindDescriptorBuffersEXT(*cmdBuffer, 1, &descriptorBufferBindingInfo);
-
-        uint32_t bufferIndex = 0;
-        VkDeviceSize offset  = 0;
-        vk.cmdSetDescriptorBufferOffsetsEXT(*cmdBuffer, VK_PIPELINE_BIND_POINT_DATA_GRAPH_ARM,
-                                            pipeline.getPipelineLayout(), 0, 1, &bufferIndex, &offset);
-    }
+    vk.cmdBindDescriptorSets(cmdBuffer.get(), VK_PIPELINE_BIND_POINT_DATA_GRAPH_ARM, pipeline.getPipelineLayout(), 0u,
+                             1u, &descriptorSet.get(), 0u, nullptr);
 
     vk.cmdDispatchDataGraphARM(cmdBuffer.get(), *dataGraphSession, nullptr);
 
@@ -263,15 +217,48 @@ tcu::TestStatus descriptorBufferTest(Context &m_context, TestParams m_params)
     return tcu::TestStatus::pass("test succeeded");
 }
 
+void checkSupport(Context &ctx, TestParams params)
+{
+    TestParams::checkSupport(ctx, params);
+
+    ctx.requireDeviceFunctionality("VK_EXT_external_memory_dma_buf");
+    if (!vk::DmaHeapAllocator::isSupported())
+    {
+        TCU_THROW(NotSupportedError, "Target does not support DMA heap allocator");
+    }
+
+    std::unique_ptr<DataGraphTest> graphTest{DataGraphTestProvider::getDataGraphTest(ctx, "TOSA", params)};
+    for (size_t i = 0; i < graphTest->numResources(); i++)
+    {
+        const auto &ri = graphTest->resourceInfo(i);
+        if (ri.isTensor())
+        {
+            const VkTensorDescriptionARM tensorDescription =
+                makeTensorDescription(ri.params.tiling, ri.params.format, ri.params.dimensions, ri.params.strides,
+                                      VK_TENSOR_USAGE_DATA_GRAPH_BIT_ARM);
+
+            if (!tensor::tensorSupportsDmaBufImport(ctx, tensorDescription))
+            {
+                TCU_THROW(NotSupportedError, "Target tensor description does not support DMA BUF imported memory");
+            }
+        }
+    }
+}
+
 } // namespace
 
-void descriptorBufferTestsGroup(tcu::TestCaseGroup *group)
+void submitPipelineDmaBufTests(tcu::TestCaseGroup *group)
 {
     const auto &paramsVariations = getTestParamsVariations();
     for (const auto &params : paramsVariations)
     {
-        addFunctionCase(group, de::toString(params), checkDescriptorBufferSupport, descriptorBufferTest, params);
+        addFunctionCase(group, de::toString(params), checkSupport, submitPipelineDmaBufTest, params);
     }
+}
+
+void externalMemoryTestsGroup(tcu::TestCaseGroup *group)
+{
+    addTestGroup(group, "dma_buf", submitPipelineDmaBufTests);
 }
 
 } // namespace dataGraph

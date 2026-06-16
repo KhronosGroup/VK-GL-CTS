@@ -146,6 +146,13 @@ void DataGraphPipelineWrapper::addConstant(VkTensorDescriptionARM tensorDesc, vo
     });
 }
 
+void DataGraphPipelineWrapper::addSpecializationConstant(const uint32_t id, const std::vector<char> &data)
+{
+    const uint32_t offset = static_cast<uint32_t>(m_specialization_constant_data.size());
+    m_specialization_constant_entries.push_back({id, offset, data.size()});
+    std::copy_n(data.cbegin(), data.size(), std::back_inserter(m_specialization_constant_data));
+}
+
 void DataGraphPipelineWrapper::setDescriptorSetLayouts(uint32_t setLayoutCount,
                                                        const VkDescriptorSetLayout *descriptorSetLayouts)
 {
@@ -190,6 +197,16 @@ void DataGraphPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache
         (uint32_t)m_graph_constants.size(), // uint32_t constantCount;
         m_graph_constants.data(),           // const VkDataGraphPipelineConstantARM* pConstants;
     };
+
+    VkSpecializationInfo specializationInfo{};
+    if (!m_specialization_constant_entries.empty())
+    {
+        specializationInfo.mapEntryCount       = static_cast<uint32_t>(m_specialization_constant_entries.size());
+        specializationInfo.pMapEntries         = m_specialization_constant_entries.data();
+        specializationInfo.dataSize            = m_specialization_constant_data.size();
+        specializationInfo.pData               = m_specialization_constant_data.data();
+        m_shaderModuleInfo.pSpecializationInfo = &specializationInfo;
+    }
 
     m_pipeline = vk::makeDataGraphPipeline(vk, device, *m_pipelineLayout, m_pipelineCreateFlags, &m_shaderModuleInfo,
                                            pipelineCache, m_graph_resources.data(), (uint32_t)m_graph_resources.size());

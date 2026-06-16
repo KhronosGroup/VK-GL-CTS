@@ -256,6 +256,82 @@ std::string TosaSpirv::constantCompositeVector(TosaSpirv::format fmt, const int6
     return constantComposite(typeVector(fmt, size), fmt, COMPOSITE_CONSTANTS, values, size, label);
 }
 
+std::string TosaSpirv::spirvSpecConstant(TosaSpirv::format fmt, std::string value, std::string specId,
+                                         std::string label)
+{
+    std::string const_name = label.empty() ? std::string("SPEC_") + specId : label;
+
+    std::string opSpecId = "OpDecorate %" + const_name + " SpecId " + specId;
+    m_spirvBlocks[OP_DECORATORS].push_back(spirvDeclaration(opSpecId));
+
+    std::string const_value = "OpSpecConstant %TYPE VALUE";
+
+    /* Bool values are handled differently */
+    if (TosaSpirv::format::bool_t == fmt)
+    {
+        const_value = "OpSpecConstantVALUE %TYPE";
+        value       = ('0' == value[0]) ? "False" : "True";
+    }
+
+    replaceAll(const_value, "TYPE", typeToString(fmt));
+    replaceAll(const_value, "VALUE", value);
+    m_spirvBlocks[BASIC_CONSTANTS].push_back(spirvAssignment(const_name, const_value));
+
+    return const_name;
+}
+
+std::string TosaSpirv::specConstantComposite(std::string spvType, TosaSpirv::format fmt, spirvOrder order,
+                                             const int64_t *values, size_t size, const uint32_t *const specIds,
+                                             std::string label)
+{
+    auto to_identity = [](const std::string &value) -> const std::string & { return value; };
+    auto to_const    = [](const std::string &constituent) -> std::string { return "%" + constituent; };
+
+    std::string composite_name  = label.empty() ? (spvType + "_CONSTITUENTS") : label;
+    std::string composite_value = "OpSpecConstantComposite %" + spvType + " CONSTITUENTS";
+
+    std::vector<std::string> constituents;
+    constituents.reserve(size);
+    for (size_t i = 0; i < size; ++i)
+    {
+        constituents.emplace_back(spirvSpecConstant(fmt, std::to_string(values[i]), std::to_string(specIds[i])));
+    }
+
+    replaceAll(composite_value, "CONSTITUENTS", spirvJoin(constituents.data(), size, " ", to_const));
+    replaceAll(composite_name, "CONSTITUENTS", spirvJoin(constituents.data(), size, "_", to_identity));
+    m_spirvBlocks[order].push_back(spirvAssignment(composite_name, composite_value));
+
+    return composite_name;
+}
+
+std::string TosaSpirv::specConstantCompositeTensor(TosaSpirv::format fmt, const int64_t *values, int64_t size,
+                                                   const uint32_t *specIds, std::string label)
+{
+    return specConstantComposite(typeTensor(fmt, &size, 1UL), fmt, COMPOSITE_TENSORS, values, static_cast<size_t>(size),
+                                 specIds, label);
+}
+
+std::string TosaSpirv::specConstantReplicatedComposite(std::string spvType, TosaSpirv::format fmt, spirvOrder order,
+                                                       const int64_t value, const uint32_t specId, std::string label)
+{
+    const std::string specConst = spirvSpecConstant(fmt, std::to_string(value), std::to_string(specId));
+
+    std::string composite_name  = label.empty() ? (spvType + "_REPLICATED_" + specConst) : label;
+    std::string composite_value = "OpSpecConstantCompositeReplicateEXT %" + spvType + " %" + specConst;
+
+    m_spirvBlocks[order].push_back(spirvAssignment(composite_name, composite_value));
+
+    return composite_name;
+}
+
+std::string TosaSpirv::specConstantReplicatedCompositeTensor(TosaSpirv::format fmt, const int64_t valueCount,
+                                                             const int64_t value, const uint32_t specId,
+                                                             std::string label)
+{
+    return specConstantReplicatedComposite(typeTensor(fmt, &valueCount, 1UL), fmt, COMPOSITE_TENSORS, value, specId,
+                                           label);
+}
+
 std::string TosaSpirv::typeTensor(const ResourceInformation &resInfo)
 {
     const auto &fmt  = resInfo.params.format;
@@ -437,6 +513,8 @@ TosaSpirv::TosaSpirv()
         "; ---- Pointers for interface variables ---------------------------------------");
     m_spirvBlocks[OP_VARIABLES].push_back(
         "; ---- Interface variables (descriptors) ---------------------------------------");
+    m_spirvBlocks[OP_SPEC_CONSTANT_OPS].push_back(
+        "; ---- Specialization constant operations --------------------------------------");
     m_spirvBlocks[OP_GRAPH_TYPES].push_back(
         "; ---- Graph signature ---------------------------------------------------------");
     m_spirvBlocks[OP_GRAPH_VARS].push_back(
@@ -444,6 +522,16 @@ TosaSpirv::TosaSpirv()
 
     // Add hardcoded blocks
     m_spirvBlocks[OP_GRAPH_END].push_back(spirvDeclaration("OpGraphEndARM"));
+}
+
+void TosaSpirv::addCapability(const std::string &capability)
+{
+    m_spirvBlocks[OP_CAPABILITY].push_back(spirvDeclaration("OpCapability " + capability));
+}
+
+void TosaSpirv::addExtension(const std::string &extension)
+{
+    m_spirvBlocks[OP_EXTENSION].push_back(spirvDeclaration("OpExtension \"" + extension + "\""));
 }
 
 std::string TosaSpirv::bake(std::string entry_point)
@@ -483,6 +571,30 @@ std::string TosaSpirv::addAttribute(VkFormat fmt, uint64_t value, std::string la
     return addAttribute(tosaSpirvFormat(fmt), value, label);
 }
 
+std::string TosaSpirv::addSpecializationAttribute(VkFormat fmt, uint64_t value, uint32_t id, std::string label)
+{
+    return spirvSpecConstant(tosaSpirvFormat(fmt), std::to_string(value), std::to_string(id), label);
+}
+
+std::string TosaSpirv::addSpecializationAttributeTensor(TosaSpirv::format fmt, const std::vector<int64_t> &values,
+                                                        const std::vector<uint32_t> &specIds, std::string label)
+{
+    return specConstantCompositeTensor(fmt, values.data(), values.size(), specIds.data(), label);
+}
+
+std::string TosaSpirv::addSpecializationAttributeTensor(VkFormat fmt, const std::vector<int64_t> &values,
+                                                        const std::vector<uint32_t> &specIds, std::string label)
+{
+    return addSpecializationAttributeTensor(tosaSpirvFormat(fmt), values, specIds, label);
+}
+
+std::string TosaSpirv::addSpecializationAttributeTensorReplicated(TosaSpirv::format fmt, const size_t valueCount,
+                                                                  const int64_t value, const uint32_t specId,
+                                                                  std::string label)
+{
+    return specConstantReplicatedCompositeTensor(fmt, valueCount, value, specId, label);
+}
+
 std::string TosaSpirv::addResource(const ResourceInformation &resInfo)
 {
     if (resInfo.isInput())
@@ -506,6 +618,32 @@ std::string TosaSpirv::addResource(const ResourceInformation &resInfo)
 std::string TosaSpirv::defineTensor(VkFormat fmt, const int64_t *dims, uint32_t rank)
 {
     return typeTensor(fmt, dims, rank);
+}
+
+std::string TosaSpirv::specConstantOp(const std::string &op, const std::string &fmt,
+                                      const std::vector<std::string> &operands, const std::string &label)
+{
+    std::string result = "OpSpecConstantOp %" + fmt + " " + op;
+    for (const auto &operand : operands)
+    {
+        result += " %" + operand;
+    }
+
+    m_spirvBlocks[OP_SPEC_CONSTANT_OPS].push_back(spirvAssignment(label, result));
+
+    return label;
+}
+
+std::string TosaSpirv::addSpecConstantOp(const std::string &op, const TosaSpirv::format fmt,
+                                         const std::vector<std::string> &operands, const std::string &label)
+{
+    return specConstantOp(op, typeToString(fmt), operands, label);
+}
+
+std::string TosaSpirv::addSpecConstantOp(const std::string &op, const VkFormat fmt,
+                                         const std::vector<std::string> &operands, const std::string &label)
+{
+    return addSpecConstantOp(op, tosaSpirvFormat(fmt), operands, label);
 }
 
 std::string TosaSpirv::addSpirvOp(const std::string &op, const std::vector<std::string> &inputs,

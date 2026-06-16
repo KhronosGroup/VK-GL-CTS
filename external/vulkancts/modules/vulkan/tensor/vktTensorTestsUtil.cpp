@@ -362,6 +362,15 @@ bool formatSupportTensorFlags(Context &context, VkFormat format, VkTensorTilingA
     }
 }
 
+bool formatSupportImageFlags(Context &context, VkFormat format, VkImageTiling tiling, VkImageUsageFlags flags)
+{
+    const auto &vki               = context.getInstanceInterface();
+    const auto physicalDevice     = context.getPhysicalDevice();
+    VkImageFormatProperties props = {};
+    return VK_SUCCESS == vki.getPhysicalDeviceImageFormatProperties(physicalDevice, format, VK_IMAGE_TYPE_2D, tiling,
+                                                                    flags, 0, &props);
+}
+
 bool deviceSupportsNonPackedTensors(Context &context)
 {
     const auto &vki           = context.getInstanceInterface();

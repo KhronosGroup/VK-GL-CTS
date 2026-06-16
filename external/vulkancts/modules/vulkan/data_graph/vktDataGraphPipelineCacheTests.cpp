@@ -51,9 +51,6 @@
 
 #include <vector>
 
-using namespace vk;
-using namespace std::placeholders;
-
 namespace vkt
 {
 
@@ -62,6 +59,8 @@ namespace dataGraph
 
 namespace
 {
+
+using namespace vk;
 
 enum CacheTestPipelineMode
 {
@@ -356,7 +355,6 @@ tcu::TestStatus createPipelineSingleCallTest(Context &ctx, CacheTestParams param
     std::vector<Move<VkDescriptorPool>> descriptorPools;
     std::vector<Move<VkDescriptorSet>> descriptorSets;
     std::vector<Move<VkDescriptorSetLayout>> descriptorSetLayouts;
-    std::vector<Move<VkPipelineCache>> pipelineCaches;
     std::vector<Move<VkPipelineLayout>> pipelineLayouts;
     std::vector<Move<VkShaderModule>> shaderModules;
     std::vector<std::vector<DataGraphTestResource>> testsResources;
@@ -374,7 +372,6 @@ tcu::TestStatus createPipelineSingleCallTest(Context &ctx, CacheTestParams param
     descriptorPools.reserve(numPipelines);
     descriptorSets.reserve(numPipelines);
     descriptorSetLayouts.reserve(numPipelines);
-    pipelineCaches.reserve(numPipelines);
     pipelineLayouts.reserve(numPipelines);
     shaderModules.reserve(numPipelines);
     testsResources.reserve(numPipelines);

@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2026 ARM Ltd.
+ * Copyright (c) 2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@
  */
 /*!
  * \file
- * \brief Data Graph Descriptor Buffer Tests
+ * \brief Data Graph Specialization Constants Tests
  */
 /*--------------------------------------------------------------------*/
 
-#include "vktDataGraphDescriptorBufferTests.hpp"
+#include "vktDataGraphSpecializationConstantsTests.hpp"
 
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
@@ -52,6 +52,7 @@
 #include "vktTestGroupUtil.hpp"
 
 using namespace vk;
+using namespace std::placeholders;
 
 namespace vkt
 {
@@ -62,26 +63,8 @@ namespace dataGraph
 namespace
 {
 
-void checkDescriptorBufferSupport(Context &ctx, TestParams params)
+static tcu::TestStatus submitPipelineTest(Context &m_context, TestParams m_params)
 {
-    const auto &vki           = ctx.getInstanceInterface();
-    const auto physicalDevice = ctx.getPhysicalDevice();
-
-    VkPhysicalDeviceDataGraphFeaturesARM dataGraphFeaturesProp = initVulkanStructure();
-    VkPhysicalDeviceFeatures2 featuresProp                     = initVulkanStructure(&dataGraphFeaturesProp);
-    vki.getPhysicalDeviceFeatures2(physicalDevice, &featuresProp);
-
-    if (!dataGraphFeaturesProp.dataGraphDescriptorBuffer)
-    {
-        TCU_THROW(NotSupportedError, "descriptor buffer feature for data graph not present");
-    }
-
-    TestParams::checkSupport(ctx, params);
-}
-
-tcu::TestStatus descriptorBufferTest(Context &m_context, TestParams m_params)
-{
-
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
     const VkQueue queue             = m_context.getUniversalQueue();
@@ -129,18 +112,36 @@ tcu::TestStatus descriptorBufferTest(Context &m_context, TestParams m_params)
         const auto &ri = graphTest->resourceInfo(i);
         if (ri.isTensor())
         {
-            // The test assumes the descriptor buffer has descriptorSet equal to 0
-            DE_ASSERT(ri.descriptorSet == 0);
+            /* constants do not need to be in the descriptor set */
             setLayoutBuilder.addSingleIndexedBinding(VK_DESCRIPTOR_TYPE_TENSOR_ARM, VK_SHADER_STAGE_ALL, ri.binding);
         }
     }
-    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
-        setLayoutBuilder.build(vk, device, VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT));
+    const Unique<VkDescriptorSetLayout> descriptorSetLayout(setLayoutBuilder.build(vk, device));
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_TENSOR_ARM, static_cast<uint32_t>(graphTest->numTensors()));
+    const Unique<VkDescriptorPool> descriptorPool(
+        poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+    const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+    DescriptorSetUpdateBuilder updatebuilder;
+    for (size_t i = 0; i < graphTest->numResources(); i++)
+    {
+        const auto &ri = graphTest->resourceInfo(i);
+        auto &tr       = testResources.at(i);
+        if (ri.isTensor())
+        {
+            tr.writeDesc = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_TENSOR_ARM, nullptr, 1, &tr.view.get()};
+            updatebuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(ri.binding),
+                                      VK_DESCRIPTOR_TYPE_TENSOR_ARM, &tr.writeDesc);
+        }
+    }
+    updatebuilder.update(vk, device);
 
     /* Create DataGraph pipeline */
 
     DataGraphPipelineWrapper pipeline(vk, device);
-    pipeline.setPipelineCreateFlags(VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT);
     pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
     pipeline.addShaderModule(graphTest->shaderModule());
 
@@ -157,6 +158,12 @@ tcu::TestStatus descriptorBufferTest(Context &m_context, TestParams m_params)
             pipeline.addConstant(tr.desc, ri.hostData, ri.id, ri.sparsityInfo);
         }
     }
+
+    for (DataGraphTest::SpecConstant specConstant : graphTest->specializationConstants())
+    {
+        pipeline.addSpecializationConstant(specConstant.id, specConstant.data);
+    }
+
     pipeline.buildPipeline(VK_NULL_HANDLE);
 
     /* Create DataGraph pipeline session */
@@ -164,76 +171,19 @@ tcu::TestStatus descriptorBufferTest(Context &m_context, TestParams m_params)
     VkDataGraphPipelineSessionCreateInfoARM sessionCreateInfo = initVulkanStructure();
     sessionCreateInfo.dataGraphPipeline                       = pipeline.get();
     const DataGraphSessionWithMemory dataGraphSession(vk, device, allocator, sessionCreateInfo,
-                                                      vk::MemoryRequirement::Any);
+                                                      vk::MemoryRequirement::Any, m_params.sessionMemory);
 
     const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
     const Unique<VkCommandBuffer> cmdBuffer(
         allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-    /* Create Descriptor Buffer */
-
-    VkDeviceSize descriptorBufferSize;
-    vk.getDescriptorSetLayoutSizeEXT(device, *descriptorSetLayout, &descriptorBufferSize);
-
-    const auto descriptorBufferUsage =
-        VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-    const VkBufferCreateInfo descriptorBufferCreateInfo =
-        makeBufferCreateInfo(descriptorBufferSize, descriptorBufferUsage);
-    const MemoryRequirement bufferMemoryRequirement = MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress;
-
-    BufferWithMemory descriptorBuffer(vk, device, allocator, descriptorBufferCreateInfo, bufferMemoryRequirement);
-    auto descriptorBufferHostPtr = static_cast<char *>(descriptorBuffer.getAllocation().getHostPtr());
-
-    for (size_t i = 0; i < graphTest->numResources(); i++)
-    {
-        const auto &ri = graphTest->resourceInfo(i);
-        auto &tr       = testResources.at(i);
-
-        if (ri.isTensor())
-        {
-            VkDeviceSize offset = 0;
-            vk.getDescriptorSetLayoutBindingOffsetEXT(device, *descriptorSetLayout, ri.binding, &offset);
-
-            VkDescriptorGetTensorInfoARM tensorDescriptorInfo{};
-            tensorDescriptorInfo.sType      = VK_STRUCTURE_TYPE_DESCRIPTOR_GET_TENSOR_INFO_ARM;
-            tensorDescriptorInfo.pNext      = nullptr;
-            tensorDescriptorInfo.tensorView = tr.view.get();
-
-            VkDescriptorGetInfoEXT descriptorInfo{};
-            descriptorInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT;
-            descriptorInfo.type  = VK_DESCRIPTOR_TYPE_TENSOR_ARM;
-            descriptorInfo.pNext = &tensorDescriptorInfo;
-
-            constexpr uint32_t EXPECTED_TENSOR_DESCRIPTOR_SIZE = 64;
-            vk.getDescriptorEXT(device, &descriptorInfo, EXPECTED_TENSOR_DESCRIPTOR_SIZE,
-                                descriptorBufferHostPtr + offset);
-        }
-    }
-    flushAlloc(vk, device, descriptorBuffer.getAllocation());
-
-    /* Start recording commands */
+    // Start recording commands
 
     beginCommandBuffer(vk, cmdBuffer.get());
+
     pipeline.bind(cmdBuffer.get());
-
-    /* Bind descriptor buffer */
-
-    {
-        VkBufferDeviceAddressInfo deviceAddressInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr,
-                                                    *descriptorBuffer};
-        auto bufferDeviceAddress = vk.getBufferDeviceAddress(device, &deviceAddressInfo);
-
-        VkDescriptorBufferBindingInfoEXT descriptorBufferBindingInfo = initVulkanStructure();
-        descriptorBufferBindingInfo.address                          = bufferDeviceAddress;
-        descriptorBufferBindingInfo.usage = VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT;
-
-        vk.cmdBindDescriptorBuffersEXT(*cmdBuffer, 1, &descriptorBufferBindingInfo);
-
-        uint32_t bufferIndex = 0;
-        VkDeviceSize offset  = 0;
-        vk.cmdSetDescriptorBufferOffsetsEXT(*cmdBuffer, VK_PIPELINE_BIND_POINT_DATA_GRAPH_ARM,
-                                            pipeline.getPipelineLayout(), 0, 1, &bufferIndex, &offset);
-    }
+    vk.cmdBindDescriptorSets(cmdBuffer.get(), VK_PIPELINE_BIND_POINT_DATA_GRAPH_ARM, pipeline.getPipelineLayout(), 0u,
+                             1u, &descriptorSet.get(), 0u, nullptr);
 
     vk.cmdDispatchDataGraphARM(cmdBuffer.get(), *dataGraphSession, nullptr);
 
@@ -265,13 +215,23 @@ tcu::TestStatus descriptorBufferTest(Context &m_context, TestParams m_params)
 
 } // namespace
 
-void descriptorBufferTestsGroup(tcu::TestCaseGroup *group)
+static void submitPipelineGroup(tcu::TestCaseGroup *group)
 {
-    const auto &paramsVariations = getTestParamsVariations();
+    const auto &paramsVariations = getTestParamsVariations(
+        {"TOSA"}, {false, true}, {allResourceCardinalityCombinations}, {allStrideModesCombinations}, {false, true},
+        {VK_TENSOR_TILING_LINEAR_ARM, VK_TENSOR_TILING_OPTIMAL_ARM}, allSparsityVariations, false,
+        {{SpecConstantTest::BOOL, SpecConstantTest::COMPOSITE, SpecConstantTest::COMPOSITE_REPLICATED,
+          SpecConstantTest::OP}});
+
     for (const auto &params : paramsVariations)
     {
-        addFunctionCase(group, de::toString(params), checkDescriptorBufferSupport, descriptorBufferTest, params);
+        addFunctionCase(group, de::toString(params), TestParams::checkSupport, submitPipelineTest, params);
     }
+}
+
+void specializationConstantsTestsGroup(tcu::TestCaseGroup *group)
+{
+    addTestGroup(group, "submit_pipeline", submitPipelineGroup);
 }
 
 } // namespace dataGraph

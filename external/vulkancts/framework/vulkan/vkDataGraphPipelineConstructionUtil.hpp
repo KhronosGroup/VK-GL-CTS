@@ -31,6 +31,7 @@
 #include "vkDataGraphUtil.hpp"
 
 #include <deque>
+#include <vector>
 
 namespace vk
 {
@@ -62,6 +63,8 @@ public:
     void addConstant(VkTensorDescriptionARM tensorDesc, void *data, uint32_t id,
                      std::vector<DataGraphConstantSparsityHint> sparsityHints = {});
     void addShaderModule(Move<VkShaderModule> module);
+
+    void addSpecializationConstant(const uint32_t id, const std::vector<char> &data);
 
     VkPipelineLayout getPipelineLayout(void);
 
@@ -103,6 +106,9 @@ private:
 
     std::deque<VkTensorDescriptionARM> m_tensor_descriptions{};
     std::deque<VkDataGraphPipelineConstantTensorSemiStructuredSparsityInfoARM> m_sparsityInfo{};
+
+    std::vector<VkSpecializationMapEntry> m_specialization_constant_entries;
+    std::vector<char> m_specialization_constant_data;
 };
 
 #endif //#ifndef CTS_USES_VULKANSC

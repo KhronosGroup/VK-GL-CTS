@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2024-2025 ARM Ltd.
+ * Copyright (c) 2024-2026 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,6 @@
 /*--------------------------------------------------------------------*/
 
 #include "vktDataGraphTestProvider.hpp"
-
-#include <array>
 
 namespace vkt
 {
@@ -89,12 +87,15 @@ void DataGraphTestProvider::validate(const DataGraphTest *test, TestParams &para
             }
         }
 
-        if (params.packedInputs() != isStridePacked.at(RESOURCE_TYPE_INPUT))
+        // Skip stride validation for image aliasing as strides are determined by image layout
+        if (params.strides.inputs != TENSOR_STRIDES_IMAGE_ALIASING &&
+            params.packedInputs() != isStridePacked.at(RESOURCE_TYPE_INPUT))
         {
             TCU_THROW(InternalError, "Invalid test for params '" + de::toString(params) + "'. Wrong input strides.");
         }
 
-        if (params.packedOutputs() != isStridePacked.at(RESOURCE_TYPE_OUTPUT))
+        if (params.strides.outputs != TENSOR_STRIDES_IMAGE_ALIASING &&
+            params.packedOutputs() != isStridePacked.at(RESOURCE_TYPE_OUTPUT))
         {
             TCU_THROW(InternalError, "Invalid test for params '" + de::toString(params) + "'. Wrong output strides.");
         }
@@ -105,7 +106,7 @@ void DataGraphTestProvider::validate(const DataGraphTest *test, TestParams &para
         }
     }
 
-    if (params.sparseConstants)
+    if (params.sparsity != SparsityVariation::NONE)
     {
         bool foundSparsityInfo = false;
         for (const auto &ri : test->resourceInfos())

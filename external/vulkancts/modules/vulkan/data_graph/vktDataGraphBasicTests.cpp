@@ -343,6 +343,7 @@ tcu::TestStatus submitPipelineTest(Context &m_context, TestParams m_params)
             pipeline.addConstant(tr.desc, ri.hostData, ri.id, ri.sparsityInfo);
         }
     }
+
     pipeline.buildPipeline(VK_NULL_HANDLE);
 
     /* Create DataGraph pipeline session */
@@ -413,7 +414,9 @@ void createPipelineGroup(tcu::TestCaseGroup *group)
 
 void submitPipelineGroup(tcu::TestCaseGroup *group)
 {
-    const auto &paramsVariations = getTestParamsVariations();
+    const auto &paramsVariations = getTestParamsVariations(
+        {"TOSA"}, {false, true}, {allResourceCardinalityCombinations}, {allStrideModesCombinations}, {false, true},
+        {VK_TENSOR_TILING_LINEAR_ARM, VK_TENSOR_TILING_OPTIMAL_ARM}, allSparsityVariations);
     for (const auto &params : paramsVariations)
     {
         addFunctionCase(group, de::toString(params), TestParams::checkSupport, submitPipelineTest, params);
