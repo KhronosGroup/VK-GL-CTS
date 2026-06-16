@@ -376,7 +376,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Docs.git",
         "git@github.com:KhronosGroup/Vulkan-Docs.git",
-        "6019efe93eca7bfa7a692316d91a9465eb457d60",
+        "4abe0260bbd8e59930786eed645481808a3fe6f1",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",

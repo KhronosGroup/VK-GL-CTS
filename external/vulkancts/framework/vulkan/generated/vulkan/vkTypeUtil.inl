@@ -638,9 +638,9 @@ inline VkMemoryRequirements makeMemoryRequirements (VkDeviceSize size, VkDeviceS
 	return res;
 }
 
-inline VkMicromapTriangleEXT makeMicromapTriangleEXT (uint32_t dataOffset, uint16_t subdivisionLevel, uint16_t format)
+inline VkMicromapTriangleKHR makeMicromapTriangleKHR (uint32_t dataOffset, uint16_t subdivisionLevel, uint16_t format)
 {
-	VkMicromapTriangleEXT res;
+	VkMicromapTriangleKHR res;
 	res.dataOffset			= dataOffset;
 	res.subdivisionLevel	= subdivisionLevel;
 	res.format				= format;
