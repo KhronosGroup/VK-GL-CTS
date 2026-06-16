@@ -58,6 +58,7 @@ const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&			Context::getE
 const vk::VkPhysicalDeviceFaultFeaturesEXT&									Context::getFaultFeaturesEXT								(void) const { return m_device->getFaultFeaturesEXT();								}
 const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&					Context::getFragmentDensityMap2FeaturesEXT					(void) const { return m_device->getFragmentDensityMap2FeaturesEXT();				}
 const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&					Context::getFragmentDensityMapFeaturesEXT					(void) const { return m_device->getFragmentDensityMapFeaturesEXT();					}
+const vk::VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE&			Context::getFragmentDensityMapLayeredFeaturesVALVE			(void) const { return m_device->getFragmentDensityMapLayeredFeaturesVALVE();		}
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT&				Context::getFragmentDensityMapOffsetFeaturesEXT				(void) const { return m_device->getFragmentDensityMapOffsetFeaturesEXT();			}
 const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR&				Context::getFragmentShaderBarycentricFeatures				(void) const { return m_device->getFragmentShaderBarycentricFeatures();				}
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&				Context::getFragmentShaderInterlockFeaturesEXT				(void) const { return m_device->getFragmentShaderInterlockFeaturesEXT();			}

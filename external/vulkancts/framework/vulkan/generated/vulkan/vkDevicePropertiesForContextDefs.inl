@@ -31,6 +31,7 @@ const vk::VkPhysicalDeviceExternalFormatResolvePropertiesANDROID&	Context::getEx
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			Context::getExternalMemoryHostPropertiesEXT				(void) const { return m_device->getExternalMemoryHostPropertiesEXT();			}
 const vk::VkPhysicalDeviceFloatControlsProperties&					Context::getFloatControlsProperties						(void) const { return m_device->getFloatControlsProperties();					}
 const vk::VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&			Context::getFragmentDensityMap2PropertiesEXT			(void) const { return m_device->getFragmentDensityMap2PropertiesEXT();			}
+const vk::VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE&	Context::getFragmentDensityMapLayeredPropertiesVALVE	(void) const { return m_device->getFragmentDensityMapLayeredPropertiesVALVE();	}
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT&	Context::getFragmentDensityMapOffsetPropertiesEXT		(void) const { return m_device->getFragmentDensityMapOffsetPropertiesEXT();		}
 const vk::VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			Context::getFragmentDensityMapPropertiesEXT				(void) const { return m_device->getFragmentDensityMapPropertiesEXT();			}
 const vk::VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&	Context::getFragmentShaderBarycentricProperties			(void) const { return m_device->getFragmentShaderBarycentricProperties();		}

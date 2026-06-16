@@ -14006,6 +14006,26 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensity
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE& value)
+{
+	s << "VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfragmentDensityMapLayered = " << value.fragmentDensityMapLayered << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE& value)
+{
+	s << "VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxFragmentDensityMapLayers = " << value.maxFragmentDensityMapLayers << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT = {\n";
@@ -17444,6 +17464,16 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineExecutableStatisticVa
 	s << "\ti64 = " << value.i64 << '\n';
 	s << "\tu64 = " << value.u64 << '\n';
 	s << "\tf64 = " << value.f64 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineFragmentDensityMapLayeredCreateInfoVALVE& value)
+{
+	s << "VkPipelineFragmentDensityMapLayeredCreateInfoVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxFragmentDensityMapLayers = " << value.maxFragmentDensityMapLayers << '\n';
 	s << '}';
 	return s;
 }

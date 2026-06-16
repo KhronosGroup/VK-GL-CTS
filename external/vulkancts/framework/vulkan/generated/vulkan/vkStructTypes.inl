@@ -6232,6 +6232,20 @@ struct VkPhysicalDeviceFragmentDensityMapFeaturesEXT
 	VkBool32		fragmentDensityMapNonSubsampledImages;
 };
 
+struct VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		fragmentDensityMapLayered;
+};
+
+struct VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxFragmentDensityMapLayers;
+};
+
 struct VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT
 {
 	VkStructureType	sType;
@@ -8909,6 +8923,13 @@ struct VkPipelineExecutableStatisticKHR
 	char									description[VK_MAX_DESCRIPTION_SIZE];
 	VkPipelineExecutableStatisticFormatKHR	format;
 	VkPipelineExecutableStatisticValueKHR	value;
+};
+
+struct VkPipelineFragmentDensityMapLayeredCreateInfoVALVE
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		maxFragmentDensityMapLayers;
 };
 
 struct VkPipelineFragmentShadingRateEnumStateCreateInfoNV

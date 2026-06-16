@@ -291,6 +291,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_fragment_density_map"))
 		addFeatures(&physicalDeviceFragmentDensityMapFeaturesEXT);
 
+	// VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE for ext [VK_VALVE_fragment_density_map_layered]
+	vk::VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE physicalDeviceFragmentDensityMapLayeredFeaturesVALVE = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_VALVE_fragment_density_map_layered"))
+		addFeatures(&physicalDeviceFragmentDensityMapLayeredFeaturesVALVE);
+
 	// VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT, VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM for ext [VK_QCOM_fragment_density_map_offset, VK_EXT_fragment_density_map_offset]
 	vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT physicalDeviceFragmentDensityMapOffsetFeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_QCOM_fragment_density_map_offset", "VK_EXT_fragment_density_map_offset"))
@@ -2636,6 +2641,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceVertexAttributeRobustnessFeaturesEXT.vertexAttributeRobustness == VK_FALSE )
 			failMesages.push_back("vertexAttributeRobustness");
+	}
+
+	// VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_VALVE_fragment_density_map_layered")) )
+	{
+		if ( physicalDeviceFragmentDensityMapLayeredFeaturesVALVE.fragmentDensityMapLayered == VK_FALSE )
+			failMesages.push_back("fragmentDensityMapLayered");
 	}
 
 	// VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT

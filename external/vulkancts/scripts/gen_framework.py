@@ -296,6 +296,7 @@ VK_QCOM_image_processing
 VK_QCOM_multiview_per_view_viewports
 VK_QCOM_multiview_per_view_render_areas
 VK_QNX_external_memory_screen_buffer
+VK_VALVE_fragment_density_map_layered
 """.splitlines()
 
 INL_HEADER = """\

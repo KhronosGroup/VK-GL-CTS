@@ -59,6 +59,7 @@ auto fExternalMemoryScreenBufferFeaturesQNX             = m_context.getExternalM
 auto fFaultFeaturesEXT                                  = m_context.getFaultFeaturesEXT();
 auto fFragmentDensityMap2FeaturesEXT                    = m_context.getFragmentDensityMap2FeaturesEXT();
 auto fFragmentDensityMapFeaturesEXT                     = m_context.getFragmentDensityMapFeaturesEXT();
+auto fFragmentDensityMapLayeredFeaturesVALVE            = m_context.getFragmentDensityMapLayeredFeaturesVALVE();
 auto fFragmentDensityMapOffsetFeaturesEXT               = m_context.getFragmentDensityMapOffsetFeaturesEXT();
 auto fFragmentShaderBarycentricFeatures                 = m_context.getFragmentShaderBarycentricFeatures();
 auto fFragmentShaderInterlockFeaturesEXT                = m_context.getFragmentShaderInterlockFeaturesEXT();
@@ -266,6 +267,7 @@ std::vector<void *> pNextFeatures = {
 	&fFaultFeaturesEXT,
 	&fFragmentDensityMap2FeaturesEXT,
 	&fFragmentDensityMapFeaturesEXT,
+	&fFragmentDensityMapLayeredFeaturesVALVE,
 	&fFragmentDensityMapOffsetFeaturesEXT,
 	&fFragmentShaderBarycentricFeatures,
 	&fFragmentShaderInterlockFeaturesEXT,
