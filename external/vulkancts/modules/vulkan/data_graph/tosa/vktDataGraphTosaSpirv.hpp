@@ -5,7 +5,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2025 Arm Ltd.
+ * Copyright (c) 2025-2026 Arm Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -200,7 +200,7 @@ public:
      * @return the string id of the resInfo definition
      *
      */
-    std::string defineTensor(const VkFormat &format, const int64_t *dims, const uint32_t &rank);
+    std::string defineTensor(VkFormat format, const int64_t *dims, uint32_t rank);
 
     /**
      * @brief Add a TOSA operator to the graph
@@ -219,18 +219,11 @@ public:
     /**
      * @brief Set the output of the neural graph
      *
-     * @param output  String ID representing the output of the neural graph
+     * @param op       The string id of the operator
+     * @param resInfo  The resource information corresponding to the output
      *
      */
-    void setOutput(const std::string &output);
-
-    /**
-     * @brief Set the outputs of the neural graph
-     *
-     * @param output  Vector of string IDs representing the output of the neural graph
-     *
-     */
-    void setOutputs(const std::vector<std::string> &output);
+    void setOutput(const std::string &op, const ResourceInformation &resInfo);
 
     /**
      * @brief Based on the added tensors, constants and operators, prepare for the spirv source generation
@@ -294,18 +287,18 @@ private:
     std::string constantComposite(std::string varName, TosaSpirv::format fmt, spirvOrder spirvOrder,
                                   const int64_t *values, int64_t size, std::string label = "");
     std::string typeTensor(const ResourceInformation &resInfo);
-    std::string typeTensor(const TosaSpirv::format fmt, const int64_t *dims, const uint32_t &rank);
-    std::string typeTensor(const VkFormat &format, const int64_t *dims, const uint32_t &rank);
+    std::string typeTensor(const TosaSpirv::format fmt, const int64_t *dims, uint32_t rank);
+    std::string typeTensor(VkFormat format, const int64_t *dims, uint32_t rank);
     std::string typeTensorPointer(const ResourceInformation &resInfo);
 
     std::string spirvVariable(const ResourceInformation &resInfo);
     std::string graphInput(const ResourceInformation &resInfo);
     std::string graphConstant(const ResourceInformation &resInfo);
 
-    std::string typeGraph(const std::vector<ResourceInformation> &resInfoInputs,
-                          const std::vector<ResourceInformation> &resInfoOutputs);
-    std::string spirvGraphObject(const std::vector<ResourceInformation> &resInfoInputs,
-                                 const std::vector<ResourceInformation> &resInfoOutputs);
+    std::string typeGraph(const std::vector<ResourceInformation> &resInfoInputTensors,
+                          const std::vector<ResourceInformation> &resInfoOutputTensors);
+    std::string spirvGraphObject(const std::vector<ResourceInformation> &resInfoInputTensors,
+                                 const std::vector<ResourceInformation> &resInfoOutputTensors);
 
     std::string spirvGraphParam(const ResourceInformation &resInfo);
 
