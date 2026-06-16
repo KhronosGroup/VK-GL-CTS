@@ -33,10 +33,12 @@ from ctsbuild.build import *
 pythonExecutable = sys.executable or "python"
 
 class Environment:
-    def __init__ (self, srcDir, tmpDir, verbose):
+    def __init__ (self, srcDir, tmpDir, verbose, spirvJobs, spirvFractions):
         self.srcDir = srcDir
         self.tmpDir = tmpDir
         self.verbose = verbose
+        self.spirvJobs = spirvJobs
+        self.spirvFractions = spirvFractions
 
 class BuildTestStep:
     def getName (self):
@@ -233,11 +235,15 @@ LATE_SPECIAL_RECIPES = [
                                     "--build-dir", os.path.join(env.tmpDir, "vulkan-mustpass")] + (["--verbose"] if env.verbose else [])),
         ]),
     ('spirv-binaries', [
+            # Concurrency (-p) drives peak memory: each vk-build-programs fraction can
+            # spike RAM independently, so running too many at once OOMs the agent
+            # (std::bad_alloc, reported as exit signal 6 / SIGABRT). Tune with the
+            # --spirv-jobs / --spirv-fractions options (default 4 jobs).
             RunScript(os.path.join("external", "vulkancts", "scripts", "build_spirv_binaries.py"),
                       lambda env: ["--build-type", "Release",
                                     "--build-dir", os.path.join(env.tmpDir, "spirv-binaries"),
                                     "--dst-path", os.path.join(env.tmpDir, "spirv-binaries"),
-                                    "-p", "8", "-f", "32"] + (["--verbose"] if env.verbose else [])),
+                                    "-p", str(env.spirvJobs), "-f", str(env.spirvFractions)] + (["--verbose"] if env.verbose else [])),
         ]),
     ('amber-verify', [
             RunScript(os.path.join("external", "vulkancts", "scripts", "amber_verify.py"),
@@ -319,12 +325,22 @@ def parseArgs ():
                         dest="verbose",
                         action="store_true",
                         help="Enable verbose logging")
+    parser.add_argument("--spirv-jobs",
+                        dest="spirvJobs",
+                        type=int,
+                        default=4,
+                        help="spirv-binaries: max vk-build-programs fractions to run concurrently (peak memory scales with this)")
+    parser.add_argument("--spirv-fractions",
+                        dest="spirvFractions",
+                        type=int,
+                        default=32,
+                        help="spirv-binaries: number of disjoint fractions to split the work into")
 
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = parseArgs()
-    env = Environment(args.srcDir, args.tmpDir, args.verbose)
+    env = Environment(args.srcDir, args.tmpDir, args.verbose, args.spirvJobs, args.spirvFractions)
     initializeLogger(args.verbose)
 
     if args.dumpRecipes:
