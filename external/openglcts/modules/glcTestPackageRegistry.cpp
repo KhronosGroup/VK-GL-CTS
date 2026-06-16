@@ -180,7 +180,7 @@ static tcu::TestPackage *createSingleConfigGL45TestPackage(tcu::TestContext &tes
 }
 static tcu::TestPackage *createSingleConfigGL46TestPackage(tcu::TestContext &testCtx)
 {
-    return new glcts::SingleConfigGL45TestPackage(testCtx, "KHR-Single-GL46");
+    return new glcts::SingleConfigGL46TestPackage(testCtx, "KHR-Single-GL46");
 }
 static tcu::TestPackage *createSingleConfigES32TestPackage(tcu::TestContext &testCtx)
 {
