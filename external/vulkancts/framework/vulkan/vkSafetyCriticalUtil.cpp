@@ -138,7 +138,9 @@ VkPhysicalDeviceVulkanSC10Features createDefaultSC10Features()
     VkPhysicalDeviceVulkanSC10Features result = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES, // VkStructureType sType;
         nullptr,                                                  // void* pNext;
-        VK_FALSE                                                  // VkBool32 shaderAtomicInstructions;
+        // NOTE: We enable shaderAtomicInstructions by default as all existing Vulkan SC adopters support it
+        // and the CTS is not yet compatible with devices that do not support shaderAtomicInstructions
+        VK_TRUE // VkBool32 shaderAtomicInstructions;
     };
     return result;
 }

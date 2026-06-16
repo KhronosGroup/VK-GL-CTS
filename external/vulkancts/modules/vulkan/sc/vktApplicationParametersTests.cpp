@@ -198,11 +198,8 @@ tcu::TestStatus createDeviceTest(Context &context, TestParams testParams)
     const float queuePriority                                  = 1.0f;
     VkDeviceObjectReservationCreateInfo devObjectResCreateInfo = resetDeviceObjectReservationCreateInfo();
     bool testPassed                                            = true;
-    const VkPhysicalDeviceVulkanSC10Features sc10Features      = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES, // sType;
-        &devObjectResCreateInfo,                                  // pNext;
-        VK_FALSE                                                  // shaderAtomicInstructions;
-    };
+    VkPhysicalDeviceVulkanSC10Features sc10Features            = createDefaultSC10Features();
+    sc10Features.pNext                                         = &devObjectResCreateInfo;
 
     for (TestData testData : testDataList)
     {
