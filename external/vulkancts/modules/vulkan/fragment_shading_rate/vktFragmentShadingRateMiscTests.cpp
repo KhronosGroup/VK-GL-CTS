@@ -814,7 +814,9 @@ void initOOBShaders(vk::SourceCollections &programCollection, TestParams param)
 Move<VkDevice> getRobustDevice(Context &context, bool robustness2)
 {
     const auto &vki           = context.getInstanceInterface();
+    const auto physDev        = context.getPhysicalDevice();
     const float queuePriority = 1.0f;
+
     // Create a universal queue that supports graphics and compute
     const VkDeviceQueueCreateInfo queueParams = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType              sType;
@@ -825,18 +827,38 @@ Move<VkDevice> getRobustDevice(Context &context, bool robustness2)
         &queuePriority                              // const float*                 pQueuePriorities;
     };
 
-    VkPhysicalDeviceFeatures2 features2 = getPhysicalDeviceFeatures2(vki, context.getPhysicalDevice());
-    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features    = initVulkanStructure(&features2);
-    robustness2Features.robustImageAccess2                        = true;
-    VkPhysicalDeviceImageRobustnessFeaturesEXT robustnessFeatures = initVulkanStructure(&features2);
-    robustnessFeatures.robustImageAccess                          = true;
+    VkPhysicalDeviceFeatures2 features2 = getPhysicalDeviceFeatures2(vki, physDev);
+
+    // Choose between robustness2 and image robustness. Feature support is checked in the support check functions.
+
+    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = initVulkanStructure(&features2);
+    robustness2Features.robustImageAccess2                     = VK_TRUE;
+
+    VkPhysicalDeviceImageRobustnessFeaturesEXT imgRobustnessFeatures = initVulkanStructure(&features2);
+    imgRobustnessFeatures.robustImageAccess                          = VK_TRUE;
+
     VkPhysicalDeviceFragmentShadingRateFeaturesKHR fsrFeatures =
-        initVulkanStructure(robustness2 ? (void *)&robustness2Features : &robustnessFeatures);
-    fsrFeatures.attachmentFragmentShadingRate = true;
-    fsrFeatures.pipelineFragmentShadingRate   = true;
-    const auto &extensionPtrs                 = context.getDeviceCreationExtensions();
+        initVulkanStructure(robustness2 ? reinterpret_cast<void *>(&robustness2Features) :
+                                          reinterpret_cast<void *>(&imgRobustnessFeatures));
+
+    fsrFeatures.attachmentFragmentShadingRate = VK_TRUE;
+    fsrFeatures.pipelineFragmentShadingRate   = VK_TRUE;
+
+    const auto &extensionPtrs = context.getDeviceCreationExtensions();
 
     void *pNext = (void *)&fsrFeatures;
+
+#ifndef CTS_USES_VULKANSC
+    VkPhysicalDeviceMaintenance7FeaturesKHR m7Features = initVulkanStructure();
+    m7Features.maintenance7                            = VK_TRUE;
+
+    if (context.isDeviceFunctionalitySupported("VK_KHR_maintenance7"))
+    {
+        m7Features.pNext = pNext;
+        pNext            = &m7Features;
+    }
+#endif // CTS_USES_VULKANSC
+
 #ifdef CTS_USES_VULKANSC
     VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
                                                                  context.getResourceInterface()->getStatMax() :
@@ -890,8 +912,7 @@ Move<VkDevice> getRobustDevice(Context &context, bool robustness2)
     const auto instance = context.getInstance();
 
     return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                              context.getPlatformInterface(), instance, vki, context.getPhysicalDevice(),
-                              &deviceParams);
+                              context.getPlatformInterface(), instance, vki, physDev, &deviceParams);
 }
 
 tcu::TestStatus testOOB(Context &context, TestParams params)
