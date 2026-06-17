@@ -47,6 +47,7 @@ vk-default/image/queue-transfer.txt
 vk-default/image/sample-cubemap.txt
 vk-default/image/sample-texture.txt
 vk-default/image/store.txt
+vk-default/image/store-load-consistency.txt
 vk-default/image/subresource-layout.txt
 vk-default/image/swapchain-mutable.txt
 vk-default/image/texel-view-compatible.txt

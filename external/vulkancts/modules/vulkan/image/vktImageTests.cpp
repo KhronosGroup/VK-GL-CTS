@@ -95,6 +95,7 @@ void createChildren(tcu::TestCaseGroup *imageTests)
     imageTests->addChild(createImageDepthStencilSeparateTests(testCtx));
     imageTests->addChild(createImageNonUniformOffsetSampleTests(testCtx));
     imageTests->addChild(createImageDeviceScopeAccessTests(testCtx));
+    imageTests->addChild(createImageStoreLoadConsistencyTests(testCtx));
     imageTests->addChild(createImage2dArrayCompatibleTests(testCtx));
     imageTests->addChild(createImageGeneralLayoutTests(testCtx));
 }

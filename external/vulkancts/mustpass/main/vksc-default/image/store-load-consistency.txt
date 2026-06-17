@@ -1,0 +1,3 @@
+dEQP-VKSC.image.store_load_consistency.1d
+dEQP-VKSC.image.store_load_consistency.2d
+dEQP-VKSC.image.store_load_consistency.3d
