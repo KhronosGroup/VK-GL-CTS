@@ -103,7 +103,7 @@ struct CaseDef
     bool useSampleMaskOut;
     bool conservativeEnable;
     VkConservativeRasterizationModeEXT conservativeMode;
-    bool useDepthStencil; // == fragDepth || fragStencil
+    bool useDepthStencil;
     bool fragDepth;
     bool fragStencil;
     bool multiViewport;
@@ -121,6 +121,7 @@ struct CaseDef
     bool garbageAttachment;
     bool dsClearOp;
     uint32_t dsBaseMipLevel;
+    uint32_t dsBaseLayer;
     bool multiSubpasses;
     bool maintenance6;
     bool helperInvocation;
@@ -1381,7 +1382,7 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                 1u                                                           // uint32_t depth;
             },                                                               // VkExtent3D extent;
             m_data.dsBaseMipLevel + 1,                                       // uint32_t mipLevels;
-            m_data.numColorLayers,                                           // uint32_t arrayLayers;
+            m_data.dsBaseLayer + m_data.numColorLayers,                      // uint32_t arrayLayers;
             m_data.samples,                                                  // VkSampleCountFlagBits samples;
             VK_IMAGE_TILING_OPTIMAL,                                         // VkImageTiling tiling;
             dsUsage,                                                         // VkImageUsageFlags usage;
@@ -1410,7 +1411,7 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                 VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, // VkImageAspectFlags aspectMask;
                 m_data.dsBaseMipLevel,                                   // uint32_t baseMipLevel;
                 1u,                                                      // uint32_t levelCount;
-                0u,                                                      // uint32_t baseArrayLayer;
+                m_data.dsBaseLayer,                                      // uint32_t baseArrayLayer;
                 m_data.numColorLayers                                    // uint32_t layerCount;
             }                                                            // VkImageSubresourceRange subresourceRange;
         };
@@ -3195,7 +3196,7 @@ void FSRTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer, ImageWithMemo
     {
         VkImageSubresourceRange range =
             makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, m_data.dsBaseMipLevel,
-                                      1u, 0u, VK_REMAINING_ARRAY_LAYERS);
+                                      1u, m_data.dsBaseLayer, VK_REMAINING_ARRAY_LAYERS);
         VkImageMemoryBarrier dsBarrier = imageBarrier;
         dsBarrier.image                = dsImage->get();
         dsBarrier.newLayout            = VK_IMAGE_LAYOUT_GENERAL;
@@ -3270,7 +3271,8 @@ void FSRTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer, ImageWithMemo
 
     memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
-                               VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+                               VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                               VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
                                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
     // VUID-vkCmdPipelineBarrier-dstAccessMask-02816
     if (m_data.useAttachment())
@@ -3636,7 +3638,9 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
         MULTIPASS_FRAGSTENCIL,
         MAINTENANCE6,
         SAMPLEMASKOUT,
-        DS_BASELEVEL
+        DS_BASELEVEL,
+        DS_BASELAYER,
+        DS_BASELEVEL_BASELAYER
     };
 
     typedef struct
@@ -3759,6 +3763,8 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
 #endif
         {TestGroupCaseId::SAMPLEMASKOUT, "samplemaskout"},
         {TestGroupCaseId::DS_BASELEVEL, "ds_baselevel"},
+        {TestGroupCaseId::DS_BASELAYER, "ds_baselayer"},
+        {TestGroupCaseId::DS_BASELEVEL_BASELAYER, "ds_baselevel_baselayer"},
     };
 
     TestDynamicCase dynCases[] = {
@@ -3931,18 +3937,25 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                                                                 groupCaseId == TestGroupCaseId::FRAGSTENCIL_EARLY_LATE;
                                         bool opClear = groupCaseId == TestGroupCaseId::FRAGDEPTH_CLEAR ||
                                                        groupCaseId == TestGroupCaseId::FRAGSTENCIL_CLEAR;
-                                        uint32_t baseMipLevel =
-                                            (groupCaseId == TestGroupCaseId::FRAGDEPTH_BASELEVEL ||
-                                             groupCaseId == TestGroupCaseId::FRAGSTENCIL_BASELEVEL ||
-                                             groupCaseId == TestGroupCaseId::DS_BASELEVEL) ?
-                                                1 :
-                                                0;
+                                        uint32_t dsBaseMipLevel = 0;
+                                        if (groupCaseId == TestGroupCaseId::FRAGDEPTH_BASELEVEL ||
+                                            groupCaseId == TestGroupCaseId::FRAGSTENCIL_BASELEVEL ||
+                                            groupCaseId == TestGroupCaseId::DS_BASELEVEL ||
+                                            groupCaseId == TestGroupCaseId::DS_BASELEVEL_BASELAYER)
+                                            dsBaseMipLevel = 1;
+
+                                        uint32_t dsBaseLayer = 0;
+                                        if (groupCaseId == TestGroupCaseId::DS_BASELAYER ||
+                                            groupCaseId == TestGroupCaseId::DS_BASELEVEL_BASELAYER)
+                                            dsBaseLayer = 1;
                                         bool multiPass    = (groupCaseId == TestGroupCaseId::MULTIPASS ||
                                                           groupCaseId == TestGroupCaseId::MULTIPASS_FRAGDEPTH ||
                                                           groupCaseId == TestGroupCaseId::MULTIPASS_FRAGSTENCIL);
                                         bool maintenance6 = (groupCaseId == TestGroupCaseId::MAINTENANCE6);
                                         bool useDepthStencil =
-                                            (fragDepth || fragStencil || groupCaseId == TestGroupCaseId::DS_BASELEVEL);
+                                            (fragDepth || fragStencil || groupCaseId == TestGroupCaseId::DS_BASELEVEL ||
+                                             groupCaseId == TestGroupCaseId::DS_BASELAYER ||
+                                             groupCaseId == TestGroupCaseId::DS_BASELEVEL_BASELAYER);
                                         bool shaderWritesRate =
                                             (shdCases[shdNdx].id == TestShaderRateCaseId::SHADERRATE);
 
@@ -3989,8 +4002,8 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                                                         groupParams->useDynamicRendering))
                                             continue;
 
-                                        // Test baseLevel for DS cases with only attachment, single sample, and renderpass.
-                                        if (baseMipLevel > 0 &&
+                                        // Test baseLevel and baseLayer for DS cases with only attachment, single sample, and renderpass.
+                                        if ((dsBaseMipLevel > 0 || dsBaseLayer > 0) &&
                                             (attCases[attNdx].usage != AttachmentUsage::WITH_ATTACHMENT ||
                                              groupParams->useDynamicRendering ||
                                              sampCases[sampNdx].count > VK_SAMPLE_COUNT_1_BIT))
@@ -4041,7 +4054,8 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                                             earlyAndLateTest,    // bool earlyAndLateTest;
                                             false,               // bool garbageAttachment;
                                             opClear,             // bool dsClearOp;
-                                            baseMipLevel,        // uint32_t dsBaseMipLevel;
+                                            dsBaseMipLevel,      // uint32_t dsBaseMipLevel;
+                                            dsBaseLayer,         // uint32_t dsBaseLayer;
                                             multiPass,           // bool multiSubpasses;
                                             maintenance6,        // bool maintenance6;
                                             false,               // bool helperInvocation;
@@ -4109,6 +4123,7 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                     false,                                                // bool garbageAttachment;
                     false,                                                // bool dsClearOp;
                     0,                                                    // uint32_t dsBaseMipLevel;
+                    0,                                                    // uint32_t dsBaseLayer;
                     false,                                                // bool multiSubpasses;
                     false,                                                // bool maintenance6;
                     false,                                                // bool helperInvocation;
@@ -4154,6 +4169,7 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                     false,                                                // bool garbageAttachment;
                     false,                                                // bool dsClearOp;
                     0,                                                    // uint32_t dsBaseMipLevel;
+                    0,                                                    // bool dsBaseLayer;
                     false,                                                // bool multiSubpasses;
                     false,                                                // bool maintenance6;
                     true,                                                 // bool helperInvocation;
@@ -4201,6 +4217,7 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                     true,                                                 // bool garbageAttachment;
                     false,                                                // bool dsClearOp;
                     0,                                                    // uint32_t dsBaseMipLevel;
+                    0,                                                    // uint32_t dsBaseLayer
                     false,                                                // bool multiSubpasses;
                     false,                                                // bool maintenance6;
                     false,                                                // bool helperInvocation;
