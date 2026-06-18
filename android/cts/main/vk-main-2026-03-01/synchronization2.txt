@@ -6,6 +6,7 @@ dEQP-VK.synchronization2.basic.event.multi_submit_multi_command_buffer_device_on
 dEQP-VK.synchronization2.basic.event.none_set_reset_cq
 dEQP-VK.synchronization2.basic.event.single_submit_multi_command_buffer_cq
 dEQP-VK.synchronization2.basic.event.single_submit_multi_command_buffer_device_only_cq
+dEQP-VK.synchronization2.basic.event.vertex_stage_barrier
 dEQP-VK.synchronization2.internally_synchronized_queues.android_bind_sparse_wsi
 dEQP-VK.synchronization2.internally_synchronized_queues.android_debug_utils_wsi
 dEQP-VK.synchronization2.internally_synchronized_queues.android_device_wait_idle_wsi
