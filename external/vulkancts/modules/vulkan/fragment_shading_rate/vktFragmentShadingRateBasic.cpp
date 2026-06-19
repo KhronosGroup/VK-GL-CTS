@@ -1688,6 +1688,8 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                          srTexelHeight != minFragmentShadingRateAttachmentTexelSize.height || formatIdx != 0))
                         continue;
 
+                    m_context.getTestContext().touchWatchdog();
+
                     bool imagelessFB = modeIdx == ATTACHMENT_MODE_IMAGELESS;
 
                     uint32_t srWidth  = (m_data.framebufferDim.width + srTexelWidth - 1) / srTexelWidth;

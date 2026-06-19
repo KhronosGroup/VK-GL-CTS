@@ -540,6 +540,8 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
                                                imageSparseTransferSrcBarriers.data());
         }
 
+        m_context.getTestContext().touchWatchdog();
+
         const VkBufferCreateInfo outputBufferCreateInfo =
             makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
         const Unique<VkBuffer> outputBuffer(createBuffer(deviceInterface, getDevice(), &outputBufferCreateInfo));
@@ -575,6 +577,8 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
         const uint8_t *outputData = static_cast<const uint8_t *>(outputBufferAlloc->getHostPtr());
         bool ignoreLsb6Bits       = areLsb6BitsDontCare(imageSparseInfo.format);
         bool ignoreLsb4Bits       = areLsb4BitsDontCare(imageSparseInfo.format);
+
+        m_context.getTestContext().touchWatchdog();
 
         for (uint32_t planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
         {

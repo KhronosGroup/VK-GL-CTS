@@ -5205,6 +5205,8 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
                           &computeFinishBarrier, 0u, nullptr, 0u, nullptr);
     endCommandBuffer(vk, *cmdBuffer);
 
+    m_context.getTestContext().touchWatchdog();
+
     submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
     invalidateAlloc(vk, device, buffers[1]->getAllocation());

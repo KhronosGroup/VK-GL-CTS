@@ -3125,6 +3125,8 @@ tcu::TestStatus vkt::subgroups::allStagesRequiredSubgroupSize(
 
         for (uint32_t width = 1u; width < maxWidth; width = getNextWidth(width))
         {
+            context.getTestContext().touchWatchdog();
+
             for (uint32_t ndx = stagesCount; ndx < stagesCount + extraDatasCount; ++ndx)
             {
                 // re-init the data
@@ -3984,6 +3986,8 @@ tcu::TestStatus makeComputeOrMeshTestRequiredSubgroupSize(
 
     for (uint32_t index = 0; index < (localSizesToTestCount - 1); index++)
     {
+        context.getTestContext().touchWatchdog();
+
         // we are running one test
         totalIterations++;
 

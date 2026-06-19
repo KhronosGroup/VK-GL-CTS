@@ -754,6 +754,8 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
         computePipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
+    m_context.getTestContext().touchWatchdog();
+
     de::MovePtr<BufferWithMemory> colorOutputBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
         vk, device, alloc, makeBufferCreateInfo(outputBufferSize, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT),
         MemoryRequirement::HostVisible));
@@ -1047,6 +1049,8 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
     tcu::ConstPixelBufferAccess resultBuffer =
         tcu::ConstPixelBufferAccess(outputFormat, renderArea.extent.width, renderArea.extent.height, 1,
                                     (const void *)colorOutputBuffer->getAllocation().getHostPtr());
+
+    m_context.getTestContext().touchWatchdog();
 
     if (m_parameters.action == IMAGE_TO_MEMORY)
     {
