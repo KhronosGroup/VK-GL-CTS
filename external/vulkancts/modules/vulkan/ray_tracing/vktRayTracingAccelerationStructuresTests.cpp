@@ -6491,47 +6491,57 @@ void addOperationTestsImpl(tcu::TestCaseGroup *group, const uint32_t workerThrea
 
                     for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(bottomTestTypes); ++testTypeNdx)
                     {
-                        if ((buildTypes[buildTypeNdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
-                            (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
-                            continue;
+                        for (const bool useDAC : {false, true})
+                        {
+                            if ((buildTypes[buildTypeNdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
+                                ((accStructBufferResTypes[structResidencyNdx].res ==
+                                  ResourceResidency::SPARSE_BINDING) ||
+                                 useDAC))
+                                continue;
 
-                        TopTestType topTest =
-                            (operationTargets[operationTargetNdx].operationTarget == OT_TOP_ACCELERATION) ?
-                                TopTestType::DIFFERENT_INSTANCES :
-                                TopTestType::IDENTICAL_INSTANCES;
+                            TopTestType topTest =
+                                (operationTargets[operationTargetNdx].operationTarget == OT_TOP_ACCELERATION) ?
+                                    TopTestType::DIFFERENT_INSTANCES :
+                                    TopTestType::IDENTICAL_INSTANCES;
 
-                        TestParams testParams{
-                            buildTypes[buildTypeNdx].buildType,
-                            VK_FORMAT_R32G32B32_SFLOAT,
-                            false,
-                            false,
-                            VK_INDEX_TYPE_NONE_KHR,
-                            bottomTestTypes[testTypeNdx].testType,
-                            InstanceCullFlags::NONE,
-                            false,
-                            false,
-                            false,
-                            topTest,
-                            false,
-                            false,
-                            false,
-                            VkBuildAccelerationStructureFlagsKHR(0u),
-                            operationTargets[operationTargetNdx].operationTarget,
-                            operationTypes[operationTypeNdx].operationType,
-                            RTAS_DEFAULT_SIZE,
-                            RTAS_DEFAULT_SIZE,
-                            de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),
-                            workerThreads,
-                            EmptyAccelerationStructureCase::NOT_EMPTY,
-                            InstanceCustomIndexCase::NONE,
-                            false,
-                            false,
-                            0xFFu,
-                            UpdateCase::NONE,
-                            accStructBufferResTypes[structResidencyNdx].res,
-                        };
-                        operationTargetGroup->addChild(new RayTracingASBasicTestCase(
-                            group->getTestContext(), bottomTestTypes[testTypeNdx].name, testParams));
+                            TestParams testParams{
+                                buildTypes[buildTypeNdx].buildType,
+                                VK_FORMAT_R32G32B32_SFLOAT,
+                                false,
+                                false,
+                                VK_INDEX_TYPE_NONE_KHR,
+                                bottomTestTypes[testTypeNdx].testType,
+                                InstanceCullFlags::NONE,
+                                false,
+                                false,
+                                false,
+                                topTest,
+                                false,
+                                false,
+                                false,
+                                VkBuildAccelerationStructureFlagsKHR(0u),
+                                operationTargets[operationTargetNdx].operationTarget,
+                                operationTypes[operationTypeNdx].operationType,
+                                RTAS_DEFAULT_SIZE,
+                                RTAS_DEFAULT_SIZE,
+                                de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),
+                                workerThreads,
+                                EmptyAccelerationStructureCase::NOT_EMPTY,
+                                InstanceCustomIndexCase::NONE,
+                                useDAC,
+                                false,
+                                0xFFu,
+                                UpdateCase::NONE,
+                                accStructBufferResTypes[structResidencyNdx].res,
+                            };
+
+                            std::string testName(bottomTestTypes[testTypeNdx].name);
+                            if (useDAC)
+                                testName += "_dac";
+
+                            operationTargetGroup->addChild(
+                                new RayTracingASBasicTestCase(group->getTestContext(), testName.c_str(), testParams));
+                        }
                     }
                     buildGroup->addChild(operationTargetGroup.release());
                 }

@@ -4120,41 +4120,57 @@ void addOperationTestsImpl(tcu::TestCaseGroup *group, const uint32_t workerThrea
 
                         for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(bottomTestTypes); ++testTypeNdx)
                         {
-                            if ((buildTypes[buildTypeNdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
-                                (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
-                                continue;
+                            for (const bool useDAC : {false, true})
+                            {
+                                if (useDAC &&
+                                    shaderSourceTypes[shaderSourceNdx].shaderSourceType != SST_COMPUTE_SHADER &&
+                                    shaderSourceTypes[shaderSourceNdx].shaderSourceType != SST_FRAGMENT_SHADER)
+                                    continue;
 
-                            TopTestType topTest =
-                                (operationTargets[operationTargetNdx].operationTarget == OT_TOP_ACCELERATION) ?
-                                    TopTestType::DIFFERENT_INSTANCES :
-                                    TopTestType::IDENTICAL_INSTANCES;
+                                if ((buildTypes[buildTypeNdx].buildType ==
+                                     VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
+                                    ((accStructBufferResTypes[structResidencyNdx].res ==
+                                      ResourceResidency::SPARSE_BINDING) ||
+                                     useDAC))
+                                    continue;
 
-                            TestParams testParams{shaderSourceTypes[shaderSourceNdx].shaderSourceType,
-                                                  shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
-                                                  buildTypes[buildTypeNdx].buildType,
-                                                  VK_FORMAT_R32G32B32_SFLOAT,
-                                                  false,
-                                                  VK_INDEX_TYPE_NONE_KHR,
-                                                  bottomTestTypes[testTypeNdx].testType,
-                                                  InstanceCullFlags::NONE,
-                                                  false,
-                                                  false,
-                                                  false,
-                                                  topTest,
-                                                  false,
-                                                  false,
-                                                  false,
-                                                  false,
-                                                  VkBuildAccelerationStructureFlagsKHR(0u),
-                                                  operationTargets[operationTargetNdx].operationTarget,
-                                                  operationTypes[operationTypeNdx].operationType,
-                                                  TEST_WIDTH,
-                                                  TEST_HEIGHT,
-                                                  workerThreads,
-                                                  EmptyAccelerationStructureCase::NOT_EMPTY,
-                                                  accStructBufferResTypes[structResidencyNdx].res};
-                            operationTargetGroup->addChild(new RayQueryASBasicTestCase(
-                                group->getTestContext(), bottomTestTypes[testTypeNdx].name, testParams));
+                                TopTestType topTest =
+                                    (operationTargets[operationTargetNdx].operationTarget == OT_TOP_ACCELERATION) ?
+                                        TopTestType::DIFFERENT_INSTANCES :
+                                        TopTestType::IDENTICAL_INSTANCES;
+
+                                TestParams testParams{shaderSourceTypes[shaderSourceNdx].shaderSourceType,
+                                                      shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
+                                                      buildTypes[buildTypeNdx].buildType,
+                                                      VK_FORMAT_R32G32B32_SFLOAT,
+                                                      false,
+                                                      VK_INDEX_TYPE_NONE_KHR,
+                                                      bottomTestTypes[testTypeNdx].testType,
+                                                      InstanceCullFlags::NONE,
+                                                      false,
+                                                      false,
+                                                      false,
+                                                      topTest,
+                                                      false,
+                                                      false,
+                                                      false,
+                                                      useDAC,
+                                                      VkBuildAccelerationStructureFlagsKHR(0u),
+                                                      operationTargets[operationTargetNdx].operationTarget,
+                                                      operationTypes[operationTypeNdx].operationType,
+                                                      TEST_WIDTH,
+                                                      TEST_HEIGHT,
+                                                      workerThreads,
+                                                      EmptyAccelerationStructureCase::NOT_EMPTY,
+                                                      accStructBufferResTypes[structResidencyNdx].res};
+
+                                std::string testName(bottomTestTypes[testTypeNdx].name);
+                                if (useDAC)
+                                    testName += "_dac";
+
+                                operationTargetGroup->addChild(
+                                    new RayQueryASBasicTestCase(group->getTestContext(), testName.c_str(), testParams));
+                            }
                         }
                         buildGroup->addChild(operationTargetGroup.release());
                     }
