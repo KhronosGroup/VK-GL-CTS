@@ -15195,12 +15195,526 @@ void main() {
     programCollection.glslSources.add("compute") << glu::ComputeSource(computeShader);
 }
 
+struct TestParamsDescriptorPreciseSize : TestParams
+{
+    VkDescriptorType descriptorType;
+    bool untypedPointers = false;
+};
+
+class DescriptorHeapTestInstanceDescriptorPreciseSize final : public DescriptorHeapTestInstanceBase
+{
+public:
+    explicit DescriptorHeapTestInstanceDescriptorPreciseSize(Context &context,
+                                                             const TestParamsDescriptorPreciseSize &params)
+        : DescriptorHeapTestInstanceBase(context, params)
+        , m_params{params}
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    TestParamsDescriptorPreciseSize m_params;
+};
+
+tcu::TestStatus DescriptorHeapTestInstanceDescriptorPreciseSize::iterate()
+{
+    const auto &vki       = m_context.getInstanceInterface();
+    const auto &vkd       = m_device.getDriver();
+    const VkDevice device = *m_device;
+    const VkQueue queue   = m_queues[0];
+    tcu::TestLog &log     = m_context.getTestContext().getLog();
+
+    const uint32_t expectedValue = (de::Random(m_params.seed).getUint32() % 1024) + 1;
+
+    const VkImageSubresourceRange subresourceRange = makeDefaultImageSubresourceRange();
+
+    const bool isCombinedImageSampler   = (m_params.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    const bool needsSampledImageSampler = (m_params.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
+    const bool needsSamplerDescriptor   = (isCombinedImageSampler || needsSampledImageSampler);
+    const bool isBufferDescriptor       = (m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+                                     m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    const VkDescriptorType resourceDescriptorType =
+        isCombinedImageSampler ? VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE : m_params.descriptorType;
+
+    const VkDeviceSize descriptorSize = vki.getPhysicalDeviceDescriptorSizeEXT(m_physDevice, resourceDescriptorType);
+    const VkDeviceSize samplerDescriptorSize =
+        vki.getPhysicalDeviceDescriptorSizeEXT(m_physDevice, VK_DESCRIPTOR_TYPE_SAMPLER);
+    const VkDeviceSize descriptorAlignment =
+        (isBufferDescriptor ? m_descriptorHeapProperties.bufferDescriptorAlignment :
+                              m_descriptorHeapProperties.imageDescriptorAlignment);
+    const VkDeviceSize samplerDescriptorAlignment = m_descriptorHeapProperties.samplerDescriptorAlignment;
+    const VkDeviceSize shaderDescriptorStride =
+        (isBufferDescriptor ? getBufferDescriptorStride(m_descriptorHeapProperties) :
+                              alignUp(descriptorSize, descriptorAlignment));
+
+    const VkDeviceSize resourceReservedRangeSize = m_descriptorHeapProperties.minResourceHeapReservedRange;
+    const VkDeviceSize descriptorOffset          = alignUp(resourceReservedRangeSize, shaderDescriptorStride);
+    const VkDeviceSize heapSize                  = descriptorOffset + descriptorSize;
+    auto descriptorHeap = createBufferAndMemory(heapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
+                                                              VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+    const VkDeviceSize samplerReservedRangeSize = m_descriptorHeapProperties.minSamplerHeapReservedRange;
+    const VkDeviceSize samplerDescriptorStride  = alignUp(samplerDescriptorSize, samplerDescriptorAlignment);
+    const VkDeviceSize samplerDescriptorOffset  = samplerReservedRangeSize + samplerDescriptorStride;
+    const VkDeviceSize samplerHeapSize          = samplerDescriptorOffset + samplerDescriptorSize;
+    std::unique_ptr<Buffer> samplerHeap;
+    if (needsSamplerDescriptor)
+    {
+        samplerHeap = createBufferAndMemory(samplerHeapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
+                                                                 VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+    }
+
+    const VkDeviceSize bufferSize = sizeof(uint32_t);
+    auto resultBuffer             = createBufferAndMemory(bufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT |
+                                                                          VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+    std::unique_ptr<Buffer> buffer;
+    std::unique_ptr<Image> image;
+
+    VkDeviceAddressRangeEXT addressRange     = {};
+    VkTexelBufferDescriptorInfoEXT texelInfo = initVulkanStructure();
+    VkImageViewCreateInfo imageViewInfo      = initVulkanStructure();
+    VkImageDescriptorInfoEXT imageInfo       = initVulkanStructure();
+    VkResourceDescriptorInfoEXT resourceInfo = initVulkanStructure();
+    resourceInfo.type                        = resourceDescriptorType;
+
+    if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+        m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+    {
+        buffer               = createBufferAndMemory(bufferSize, VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT |
+                                                                     VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT |
+                                                                     VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+        uint32_t *bufferData = static_cast<uint32_t *>(buffer->memory->getHostPtr());
+        *bufferData          = expectedValue;
+        flushAlloc(vkd, device, *buffer->memory);
+
+        addressRange.address            = buffer->address;
+        addressRange.size               = bufferSize;
+        resourceInfo.data.pAddressRange = &addressRange;
+    }
+    else if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER ||
+             m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)
+    {
+        buffer               = createBufferAndMemory(bufferSize, VK_BUFFER_USAGE_2_UNIFORM_TEXEL_BUFFER_BIT |
+                                                                     VK_BUFFER_USAGE_2_STORAGE_TEXEL_BUFFER_BIT |
+                                                                     VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+        uint32_t *bufferData = static_cast<uint32_t *>(buffer->memory->getHostPtr());
+        *bufferData          = expectedValue;
+        flushAlloc(vkd, device, *buffer->memory);
+
+        texelInfo.format               = VK_FORMAT_R32_UINT;
+        texelInfo.addressRange.address = buffer->address;
+        texelInfo.addressRange.size    = bufferSize;
+        resourceInfo.data.pTexelBuffer = &texelInfo;
+    }
+    else if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
+             m_params.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+             m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+    {
+        VkImageCreateInfo imageCreateInfo = initVulkanStructure();
+        imageCreateInfo.imageType         = VK_IMAGE_TYPE_1D;
+        imageCreateInfo.format            = VK_FORMAT_R32_UINT;
+        imageCreateInfo.extent            = {1u, 1u, 1u};
+        imageCreateInfo.mipLevels         = 1u;
+        imageCreateInfo.arrayLayers       = 1u;
+        imageCreateInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+        imageCreateInfo.usage =
+            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        image = createImageAndMemory(imageCreateInfo);
+
+        imageViewInfo.image            = *image->image;
+        imageViewInfo.viewType         = VK_IMAGE_VIEW_TYPE_1D;
+        imageViewInfo.format           = VK_FORMAT_R32_UINT;
+        imageViewInfo.components       = makeComponentMappingRGBA();
+        imageViewInfo.subresourceRange = subresourceRange;
+
+        imageInfo.layout         = VK_IMAGE_LAYOUT_GENERAL;
+        imageInfo.pView          = &imageViewInfo;
+        resourceInfo.data.pImage = &imageInfo;
+    }
+
+    char *heapData = static_cast<char *>(descriptorHeap->memory->getHostPtr());
+
+    VkHostAddressRangeEXT descriptorRange{};
+    descriptorRange.address = heapData + descriptorOffset;
+    descriptorRange.size    = static_cast<size_t>(descriptorSize);
+
+    VK_CHECK(vkd.writeResourceDescriptorsEXT(device, 1u, &resourceInfo, &descriptorRange));
+    flushAlloc(vkd, device, *descriptorHeap->memory);
+
+    VkSamplerCreateInfo samplerCreateInfo = makeDefaultSamplerCreateInfo();
+    if (needsSamplerDescriptor)
+    {
+        VkHostAddressRangeEXT samplerDescriptorRange{};
+        samplerDescriptorRange.address =
+            static_cast<char *>(samplerHeap->memory->getHostPtr()) + samplerDescriptorOffset;
+        samplerDescriptorRange.size = static_cast<size_t>(samplerDescriptorSize);
+        VK_CHECK(vkd.writeSamplerDescriptorsEXT(device, 1u, &samplerCreateInfo, &samplerDescriptorRange));
+        flushAlloc(vkd, device, *samplerHeap->memory);
+    }
+
+    struct PushData
+    {
+        uint32_t index;
+        uint32_t samplerIndex;
+        VkDeviceAddress resultAddress;
+    };
+
+    VkDescriptorSetAndBindingMappingEXT mappings[3];
+    mappings[0]                                           = initVulkanStructure();
+    mappings[0].descriptorSet                             = 0u;
+    mappings[0].firstBinding                              = 0u;
+    mappings[0].bindingCount                              = 1u;
+    mappings[0].resourceMask                              = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    mappings[0].source                                    = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mappings[0].sourceData.constantOffset.heapOffset      = static_cast<uint32_t>(descriptorOffset);
+    mappings[0].sourceData.constantOffset.heapArrayStride = 0u;
+    mappings[0].sourceData.constantOffset.samplerHeapOffset      = static_cast<uint32_t>(samplerDescriptorOffset);
+    mappings[0].sourceData.constantOffset.samplerHeapArrayStride = 0u;
+    mappings[1]                                                  = initVulkanStructure();
+    mappings[1].descriptorSet                                    = 0u;
+    mappings[1].firstBinding                                     = 1u;
+    mappings[1].bindingCount                                     = 1u;
+    mappings[1].resourceMask                                     = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    mappings[1].source                                           = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT;
+    mappings[1].sourceData.pushAddressOffset                     = sizeof(uint32_t) * 2u;
+    mappings[2]                                                  = initVulkanStructure();
+    mappings[2].descriptorSet                                    = 0u;
+    mappings[2].firstBinding                                     = 2u;
+    mappings[2].bindingCount                                     = 1u;
+    mappings[2].resourceMask                                     = VK_SPIRV_RESOURCE_TYPE_SAMPLER_BIT_EXT;
+    mappings[2].source                                    = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mappings[2].sourceData.constantOffset.heapOffset      = static_cast<uint32_t>(samplerDescriptorOffset);
+    mappings[2].sourceData.constantOffset.heapArrayStride = 0u;
+
+    DE_ASSERT(descriptorOffset % shaderDescriptorStride == 0);
+    const uint32_t descriptorIndex = static_cast<uint32_t>(descriptorOffset / shaderDescriptorStride);
+    DE_ASSERT(!needsSamplerDescriptor || (samplerDescriptorOffset % samplerDescriptorStride == 0));
+    uint32_t samplerDescriptorIndex = static_cast<uint32_t>(samplerDescriptorOffset / samplerDescriptorStride);
+
+    const PushData pushData = {descriptorIndex, samplerDescriptorIndex, resultBuffer->address};
+
+    VkPushDataInfoEXT pushDataInfo = initVulkanStructure();
+    pushDataInfo.data.size         = sizeof(pushData);
+    pushDataInfo.data.address      = &pushData;
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+    if (m_params.untypedPointers)
+    {
+        mappingInfo.mappingCount = 1u;
+        mappingInfo.pMappings    = &mappings[1];
+    }
+    else
+    {
+        mappingInfo.mappingCount = needsSampledImageSampler ? 3u : 2u;
+        mappingInfo.pMappings    = mappings;
+    }
+
+    auto shaderModule = createShaderModule(vkd, device, getShaderBinary("compute"));
+
+    VkPipelineShaderStageCreateInfo shaderStageCreateInfo = initVulkanStructure(&mappingInfo);
+    shaderStageCreateInfo.stage                           = VK_SHADER_STAGE_COMPUTE_BIT;
+    shaderStageCreateInfo.module                          = *shaderModule;
+    shaderStageCreateInfo.pName                           = "main";
+
+    VkPipelineCreateFlags2CreateInfoKHR pipelineCreateFlags2CreateInfo = initVulkanStructure();
+    pipelineCreateFlags2CreateInfo.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+    VkComputePipelineCreateInfo pipelineCreateInfo = initVulkanStructure(&pipelineCreateFlags2CreateInfo);
+    pipelineCreateInfo.stage                       = shaderStageCreateInfo;
+
+    auto pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+    auto cmdPool      = makeCommandPool(vkd, device, m_queueFamilyIndex);
+    auto cmdBufferPtr = allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    auto cmdBuffer    = *cmdBufferPtr;
+
+    VkBindHeapInfoEXT bindHeapInfo   = initVulkanStructure();
+    bindHeapInfo.heapRange.address   = descriptorHeap->address;
+    bindHeapInfo.heapRange.size      = heapSize;
+    bindHeapInfo.reservedRangeOffset = 0u;
+    bindHeapInfo.reservedRangeSize   = resourceReservedRangeSize;
+
+    VkBindHeapInfoEXT samplerBindHeapInfo = initVulkanStructure();
+    if (needsSamplerDescriptor)
+    {
+        samplerBindHeapInfo.heapRange.address   = samplerHeap->address;
+        samplerBindHeapInfo.heapRange.size      = samplerHeapSize;
+        samplerBindHeapInfo.reservedRangeOffset = 0u;
+        samplerBindHeapInfo.reservedRangeSize   = samplerReservedRangeSize;
+    }
+
+    beginCommandBuffer(vkd, cmdBuffer);
+
+    VkMemoryBarrier2 outputBarrier = initVulkanStructure();
+    outputBarrier.srcStageMask     = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    outputBarrier.srcAccessMask    = VK_ACCESS_2_SHADER_WRITE_BIT;
+    outputBarrier.dstStageMask     = VK_PIPELINE_STAGE_2_HOST_BIT;
+    outputBarrier.dstAccessMask    = VK_ACCESS_2_HOST_READ_BIT;
+
+    VkDependencyInfo outputDependency   = initVulkanStructure();
+    outputDependency.memoryBarrierCount = 1u;
+    outputDependency.pMemoryBarriers    = &outputBarrier;
+
+    VkMemoryBarrier2 hostWriteBarrier = initVulkanStructure();
+    hostWriteBarrier.srcStageMask     = VK_PIPELINE_STAGE_2_HOST_BIT;
+    hostWriteBarrier.srcAccessMask    = VK_ACCESS_2_HOST_WRITE_BIT;
+    hostWriteBarrier.dstStageMask     = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    hostWriteBarrier.dstAccessMask =
+        VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_SAMPLED_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+
+    VkDependencyInfo hostWriteDependency   = initVulkanStructure();
+    hostWriteDependency.memoryBarrierCount = 1u;
+    hostWriteDependency.pMemoryBarriers    = &hostWriteBarrier;
+
+    vkd.cmdPipelineBarrier2(cmdBuffer, &hostWriteDependency);
+
+    if (image)
+    {
+        VkImageMemoryBarrier2 imageBarrier = initVulkanStructure();
+        imageBarrier.srcStageMask          = VK_PIPELINE_STAGE_2_NONE;
+        imageBarrier.srcAccessMask         = VK_ACCESS_2_NONE;
+        imageBarrier.dstStageMask          = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        imageBarrier.dstAccessMask         = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+        imageBarrier.oldLayout             = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageBarrier.newLayout             = VK_IMAGE_LAYOUT_GENERAL;
+        imageBarrier.srcQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
+        imageBarrier.dstQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
+        imageBarrier.image                 = *image->image;
+        imageBarrier.subresourceRange      = subresourceRange;
+
+        VkDependencyInfo imageDependency        = initVulkanStructure();
+        imageDependency.imageMemoryBarrierCount = 1u;
+        imageDependency.pImageMemoryBarriers    = &imageBarrier;
+        vkd.cmdPipelineBarrier2(cmdBuffer, &imageDependency);
+
+        VkClearColorValue clearValue{};
+        clearValue.uint32[0] = expectedValue;
+        vkd.cmdClearColorImage(cmdBuffer, *image->image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &subresourceRange);
+
+        imageBarrier.srcStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        imageBarrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+        imageBarrier.dstStageMask  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+        imageBarrier.dstAccessMask = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+        imageBarrier.oldLayout     = VK_IMAGE_LAYOUT_GENERAL;
+        vkd.cmdPipelineBarrier2(cmdBuffer, &imageDependency);
+    }
+
+    vkd.cmdBindResourceHeapEXT(cmdBuffer, &bindHeapInfo);
+    if (needsSamplerDescriptor)
+        vkd.cmdBindSamplerHeapEXT(cmdBuffer, &samplerBindHeapInfo);
+    vkd.cmdPushDataEXT(cmdBuffer, &pushDataInfo);
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+    vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+    vkd.cmdPipelineBarrier2(cmdBuffer, &outputDependency);
+    endCommandBuffer(vkd, cmdBuffer);
+
+    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+    invalidateAlloc(vkd, device, *resultBuffer->memory);
+
+    const uint32_t *result = static_cast<uint32_t *>(resultBuffer->memory->getHostPtr());
+    if (*result != expectedValue)
+    {
+        log << tcu::TestLog::Message << "Expected result: " << expectedValue << ", but was " << *result
+            << tcu::TestLog::EndMessage;
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class DescriptorHeapTestCaseDescriptorPreciseSize final : public DescriptorHeapTestCaseBase
+{
+public:
+    explicit DescriptorHeapTestCaseDescriptorPreciseSize(tcu::TestContext &testCtx, const std::string &name,
+                                                         const TestParamsDescriptorPreciseSize &params)
+        : DescriptorHeapTestCaseBase(testCtx, name, params)
+        , m_params{params}
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceDescriptorPreciseSize(context, m_params);
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+private:
+    TestParamsDescriptorPreciseSize m_params;
+};
+
+void DescriptorHeapTestCaseDescriptorPreciseSize::initPrograms(vk::SourceCollections &programCollection) const
+{
+    if (m_params.untypedPointers)
+    {
+        std::ostringstream computeShader;
+        computeShader << "#version 460\n"
+                      << "#extension GL_EXT_descriptor_heap : require\n"
+                      << "#extension GL_EXT_nonuniform_qualifier : require\n"
+                      << "layout(local_size_x = 1) in;\n"
+                      << "layout(push_constant) uniform PushData\n"
+                      << "{\n"
+                      << "    uint index;\n"
+                      << "    uint samplerIndex;\n"
+                      << "};\n";
+
+        switch (m_params.descriptorType)
+        {
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            computeShader << "layout(descriptor_heap) uniform utexture1D inputDescriptors[];\n"
+                             "layout(descriptor_heap) uniform sampler inputSamplers[];\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+            computeShader << "layout(descriptor_heap, r32ui) uniform readonly uimage1D inputDescriptors[];\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+            computeShader << "layout(descriptor_heap) uniform utextureBuffer inputDescriptors[];\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+            computeShader << "layout(descriptor_heap, r32ui) uniform readonly uimageBuffer inputDescriptors[];\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+            computeShader << "layout(descriptor_heap) uniform InputBuffer { uint data; } inputDescriptors[];\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+            computeShader << "layout(descriptor_heap) buffer InputBuffer { uint data; } inputDescriptors[];\n";
+            break;
+        default:
+            DE_ASSERT(0);
+            break;
+        }
+
+        computeShader << "layout(set = 0, binding = 1) buffer ResultBuffer { uint result; } resultBuffer;\n"
+                         "void main()\n"
+                         "{\n"
+                         "    uint value = ";
+
+        switch (m_params.descriptorType)
+        {
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            computeShader
+                << "textureLod(usampler1D(inputDescriptors[index], inputSamplers[samplerIndex]), 0.5f, 0.0f).r;\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+            computeShader << "imageLoad(inputDescriptors[index], int(0u)).r;\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+            computeShader << "texelFetch(inputDescriptors[index], int(0u)).r;\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+            computeShader << "imageLoad(inputDescriptors[index], int(0u)).r;\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+            computeShader << "inputDescriptors[index].data;\n";
+            break;
+        default:
+            DE_ASSERT(0);
+            break;
+        }
+
+        computeShader << "    resultBuffer.result = value;\n"
+                         "}\n";
+
+        const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+        programCollection.glslSources.add("compute") << glu::ComputeSource(computeShader.str()) << buildOptions;
+    }
+    else
+    {
+        std::ostringstream computeShader;
+        computeShader << "#version 460\n"
+                      << "layout(local_size_x = 1) in;\n";
+
+        computeShader << "layout(set = 0, binding = 0";
+        if ((m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ||
+            (m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER))
+        {
+            computeShader << ", r32ui";
+        }
+        computeShader << ") ";
+
+        switch (m_params.descriptorType)
+        {
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+            computeShader << "uniform usampler1D inputDescriptor;\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            computeShader << "uniform utexture1D inputDescriptor;\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+            computeShader << "uniform readonly uimage1D inputDescriptor;\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+            computeShader << "uniform usamplerBuffer inputDescriptor;\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+            computeShader << "uniform readonly uimageBuffer inputDescriptor;\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+            computeShader << "uniform InputBuffer { uint data; } inputDescriptor;\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+            computeShader << "buffer InputBuffer { uint data; } inputDescriptor;\n";
+            break;
+        default:
+            DE_ASSERT(0);
+            break;
+        }
+
+        if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+            computeShader << "layout(set = 0, binding = 2) uniform sampler inputSampler;\n";
+
+        computeShader << "layout(set = 0, binding = 1) buffer ResultBuffer { uint result; } resultBuffer;\n"
+                         "void main()\n"
+                         "{\n"
+                         "    uint value = ";
+
+        switch (m_params.descriptorType)
+        {
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+            computeShader << "textureLod(inputDescriptor, 0.5f, 0.0f).r;\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            computeShader << "textureLod(usampler1D(inputDescriptor, inputSampler), 0.5f, 0.0f).r;\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+            computeShader << "imageLoad(inputDescriptor, 0).r;\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+            computeShader << "texelFetch(inputDescriptor, 0).r;\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+            computeShader << "imageLoad(inputDescriptor, 0).r;\n";
+            break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+            computeShader << "inputDescriptor.data;\n";
+            break;
+        default:
+            DE_ASSERT(0);
+            break;
+        }
+
+        computeShader << "    resultBuffer.result = value;\n"
+                         "}\n";
+
+        const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+        programCollection.glslSources.add("compute") << glu::ComputeSource(computeShader.str()) << buildOptions;
+    }
+}
+
 const char *getDescriptorTypeTestName(VkDescriptorType descriptorType)
 {
     switch (descriptorType)
     {
     case VK_DESCRIPTOR_TYPE_SAMPLER:
         return "sampler";
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+        return "combined_image_sampler";
     case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
         return "sampled_image";
     case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
@@ -15217,8 +15731,6 @@ const char *getDescriptorTypeTestName(VkDescriptorType descriptorType)
         return "input_attachment";
     case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
         return "acceleration_structure";
-    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-        return "combined_image_sampler";
     default:
         DE_ASSERT(0);
         return "";
@@ -17936,6 +18448,47 @@ void populateCustomBorderColorTests(tcu::TestCaseGroup *topGroup)
     topGroup->addChild(group.release());
 }
 
+void populateDescriptorPreciseSizeTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
+{
+    tcu::TestContext &testCtx = topGroup->getTestContext();
+    MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "descriptor_precise_size"));
+
+    const VkDescriptorType descriptorTypes[] = {
+        VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+        VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,   VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+    };
+
+    for (const bool untypedPointers : {false, true})
+    {
+        const char *typeName = untypedPointers ? "untyped_pointers" : "typed_pointers";
+        MovePtr<tcu::TestCaseGroup> typeGroup(new tcu::TestCaseGroup(testCtx, typeName));
+
+        for (const auto descriptorType : descriptorTypes)
+        {
+            const char *descriptorName = getDescriptorTypeTestName(descriptorType);
+
+            TestParamsDescriptorPreciseSize params{};
+            params.queue           = VK_QUEUE_COMPUTE_BIT;
+            params.seed            = baseSeed ^ deStringHash(descriptorName);
+            params.descriptorType  = descriptorType;
+            params.untypedPointers = untypedPointers;
+            if (untypedPointers && descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)
+                params.enableShaderStorageTexelBufferArrayDynamicIndexing = true;
+            if (untypedPointers && descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+                params.enableShaderUniformTexelBufferArrayDynamicIndexing = true;
+            if (untypedPointers && descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER)
+                params.enableShaderUniformTexelBufferArrayDynamicIndexing = true;
+
+            typeGroup->addChild(new DescriptorHeapTestCaseDescriptorPreciseSize(testCtx, descriptorName, params));
+        }
+        group->addChild(typeGroup.release());
+    }
+
+    topGroup->addChild(group.release());
+}
+
 void populateDescriptorHeapTests(tcu::TestCaseGroup *topGroup)
 {
     tcu::TestContext &testCtx = topGroup->getTestContext();
@@ -17977,6 +18530,7 @@ void populateDescriptorHeapTests(tcu::TestCaseGroup *topGroup)
     populateNonPackedTests(topGroup, baseSeed);
     populateUnalignedTests(topGroup, baseSeed);
     populateSecondaryCommandBufferTests(topGroup, baseSeed);
+    populateDescriptorPreciseSizeTests(topGroup, baseSeed);
     populateZeroStrideTests(topGroup, baseSeed);
     populateOffsetIdTests(topGroup, baseSeed);
     populateSmallBufferTests(topGroup, baseSeed);
