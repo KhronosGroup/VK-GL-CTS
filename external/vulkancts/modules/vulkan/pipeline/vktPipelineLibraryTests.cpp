@@ -5916,6 +5916,24 @@ tcu::TestStatus PrimaryRebindRun(Context &context, PipelineConstructionType cons
     setDrawState(primaryCmd, true, false, magenta); // Write to the first attachment only, magenta.
     ctx.vkd.cmdDraw(primaryCmd, 4u, 1u, 0u, 0u);
     primaryRP.end(ctx.vkd, primaryCmd);
+    {
+        // Synchronize primary render pass 1 writes before render pass 3 loads and writes.
+        // Without this, the two STORE_OP_STORE operations on primaryImage0/1 are unordered
+        // (write-after-write hazard), and the LOAD_OP_LOAD in render pass 3 has no
+        // visibility guarantee for render pass 1's writes (read-after-write hazard).
+        const auto rpSrcAccess = static_cast<VkAccessFlags>(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+        const auto rpDstAccess =
+            static_cast<VkAccessFlags>(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+        const auto rpSrcStage = static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+        const auto rpDstStage = static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+        const std::vector<VkImage> priImages{primaryImage0.getImage(), primaryImage1.getImage()};
+        std::vector<VkImageMemoryBarrier> rpBarriers;
+        rpBarriers.reserve(priImages.size());
+        for (const auto img : priImages)
+            rpBarriers.push_back(makeImageMemoryBarrier(rpSrcAccess, rpDstAccess, attLayout, attLayout, img, srr));
+        cmdPipelineImageMemoryBarrier(ctx.vkd, primaryCmd, rpSrcStage, rpDstStage, de::dataOrNull(rpBarriers),
+                                      rpBarriers.size());
+    }
     ctx.vkd.cmdExecuteCommands(primaryCmd, 1u, &secondaryCmd);
     primaryRP.begin(ctx.vkd, primaryCmd, scissors.front(), clearColor);
     pipeline.bind(primaryCmd);

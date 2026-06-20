@@ -618,15 +618,17 @@ void ShaderGen<ShaderTypes::Tese>::genCode(std::ostream &str, const TestParams &
             {
                 str << inputVar << variableIdx << genArrSubscript(0) << genLocSubscript(layout) << " + " << inputVar
                     << variableIdx << genArrSubscript(1) << genLocSubscript(layout) << " + " << inputVar << variableIdx
+                    << genArrSubscript(2) << genLocSubscript(layout) << " + " << inputVar << variableIdx
                     << genArrSubscript(2) << genLocSubscript(layout);
             }
             else
             {
                 str << "var_in" << genArrSubscript(0) << '.' << inputVar << variableIdx << genLocSubscript(layout)
                     << "  +  var_in" << genArrSubscript(1) << '.' << inputVar << variableIdx << genLocSubscript(layout)
+                    << "  +  var_in" << genArrSubscript(2) << '.' << inputVar << variableIdx << genLocSubscript(layout)
                     << "  +  var_in" << genArrSubscript(2) << '.' << inputVar << variableIdx << genLocSubscript(layout);
             }
-            str << ") / " << layout.getTypeName(Types::Scalar) << "(1.5);\n";
+            str << ") / " << layout.getTypeName(Types::Scalar) << "(2);\n";
         }
     }
 
