@@ -255,10 +255,19 @@ void DiscardTestInstance::beginRenderPass(const vk::VkClearColorValue &clearColo
                             vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, nullptr, 0,
                             nullptr);
 
-    if (isFormatStencil(m_depthStencilAttachmentFormat))
+    // VUID-vkCmdDraw-None-09600
+    const auto dsAspects = vk::getImageAspectFlags(vk::mapVkFormat(m_depthStencilAttachmentFormat));
+
+    if (dsAspects == vk::VK_IMAGE_ASPECT_STENCIL_BIT)
     {
         initialTransitionStencil2DImage(m_vk, *m_cmdBuffer, m_depthStencilImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
                                         vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
+    }
+    else if ((dsAspects & vk::VK_IMAGE_ASPECT_STENCIL_BIT) != 0)
+    {
+        initialTransitionDepthStencil2DImage(m_vk, *m_cmdBuffer, m_depthStencilImage->object(),
+                                             vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+                                             vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
     }
     else
     {

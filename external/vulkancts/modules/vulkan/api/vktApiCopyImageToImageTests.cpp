@@ -546,6 +546,12 @@ public:
         const auto dstCreateFlags = getCreateFlags(m_params.dst.image);
         // Sparse is not used for the dst image.
 
+#ifndef CTS_USES_VULKANSC
+        // VUID-vkGetPhysicalDeviceImageFormatProperties-format-parameter
+        if (isAstc3DFormat(m_params.src.image.format) || isAstc3DFormat(m_params.dst.image.format))
+            context.requireDeviceFunctionality("VK_EXT_texture_compression_astc_3d");
+#endif // CTS_USES_VULKANSC
+
         if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
                  context.getPhysicalDevice(), m_params.src.image.format, m_params.src.image.imageType,
                  m_params.src.image.tiling, VK_IMAGE_USAGE_TRANSFER_SRC_BIT, srcCreateFlags,
@@ -1060,6 +1066,12 @@ public:
 
         const VkPhysicalDeviceLimits limits = context.getDeviceProperties().limits;
         VkImageFormatProperties properties;
+
+#ifndef CTS_USES_VULKANSC
+        // VUID-vkGetPhysicalDeviceImageFormatProperties-format-parameter
+        if (isAstc3DFormat(m_params.src.image.format) || isAstc3DFormat(m_params.dst.image.format))
+            context.requireDeviceFunctionality("VK_EXT_texture_compression_astc_3d");
+#endif // CTS_USES_VULKANSC
 
         if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
                  context.getPhysicalDevice(), m_params.src.image.format, m_params.src.image.imageType,

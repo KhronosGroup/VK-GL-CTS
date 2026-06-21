@@ -97,6 +97,10 @@ void ImageBlockShapesCase::checkSupport(Context &context) const
     if (!checkSparseSupportForImageType(instance, physicalDevice, m_imageType))
         TCU_THROW(NotSupportedError, "Sparse residency for image type is not supported");
 
+    // VUID-VkImageCreateInfo-format-06411
+    if (isYCbCrFormat(m_format) && m_numSamples > VK_SAMPLE_COUNT_1_BIT)
+        TCU_THROW(NotSupportedError, "YCbCr conversion formats only support a single sample");
+
     {
         const VkPhysicalDeviceFeatures features = context.getDeviceFeatures();
         bool sparseSamplesSupported             = false;

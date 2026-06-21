@@ -221,6 +221,9 @@ vk::Move<vk::VkDeviceMemory> bindImageMemory(const vk::InstanceInterface &vki, c
                                              vk::VkPhysicalDevice physicalDevice, vk::VkDevice device,
                                              vk::VkImage image, vk::VkMemoryPropertyFlags properties);
 void *mapMemory(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkDeviceMemory memory, vk::VkDeviceSize size);
+void *mapMemoryWholeRange(const vk::InstanceInterface &vki, const vk::DeviceInterface &vkd,
+                          vk::VkPhysicalDevice physicalDevice, vk::VkDevice device, vk::VkBuffer buffer,
+                          vk::VkDeviceMemory memory, vk::VkDeviceSize logicalSize);
 vk::VkDeviceSize findMaxBufferSize(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkBufferUsageFlags usage,
                                    vk::VkSharingMode sharingMode, const vector<uint32_t> &queueFamilies,
                                    vk::VkDeviceSize memorySize, uint32_t memoryTypeIndex);

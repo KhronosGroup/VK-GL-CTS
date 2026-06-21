@@ -98,6 +98,10 @@ void checkFormatSupport(Context &context, const ImageConfig &config)
 {
     const auto &instInt(context.getInstanceInterface());
 
+    // VUID-vkGetPhysicalDeviceFormatProperties-format-parameter
+    if (config.format == vk::VK_FORMAT_A1B5G5R5_UNORM_PACK16 || config.format == vk::VK_FORMAT_A8_UNORM)
+        context.requireDeviceFunctionality("VK_KHR_maintenance5");
+
     {
         const vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
             vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,            // sType;

@@ -433,7 +433,8 @@ void SubmitRenderPass::verify(VerifyContext &context, size_t commandIndex)
         submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
         {
-            void *const ptr = mapMemory(vkd, device, *memory, 4 * m_targetWidth * m_targetHeight);
+            void *const ptr = mapMemoryWholeRange(vki, vkd, physicalDevice, device, *dstBuffer, *memory,
+                                                  4 * m_targetWidth * m_targetHeight);
 
             vk::invalidateMappedMemoryRange(vkd, device, *memory, 0, VK_WHOLE_SIZE);
 

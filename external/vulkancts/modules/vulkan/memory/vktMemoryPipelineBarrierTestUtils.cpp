@@ -494,10 +494,25 @@ void *mapMemory(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkDevic
 {
     void *ptr;
 
-    VK_CHECK(vkd.mapMemory(device, memory, 0, size, 0, &ptr));
+    // VUID-VkMappedMemoryRange-size-01389
+    (void)size;
+    VK_CHECK(vkd.mapMemory(device, memory, 0, VK_WHOLE_SIZE, 0, &ptr));
 
     return ptr;
 }
+
+// VUID-VkMappedMemoryRange-size-01389
+void *mapMemoryWholeRange(const vk::InstanceInterface &vki, const vk::DeviceInterface &vkd,
+                          vk::VkPhysicalDevice physicalDevice, vk::VkDevice device, vk::VkBuffer buffer,
+                          vk::VkDeviceMemory memory, vk::VkDeviceSize logicalSize)
+{
+    const vk::VkDeviceSize nonCoherentAtomSize =
+        vk::getPhysicalDeviceProperties(vki, physicalDevice).limits.nonCoherentAtomSize;
+    const vk::VkDeviceSize allocationSize = vk::getBufferMemoryRequirements(vkd, device, buffer).size;
+
+    return mapMemory(vkd, device, memory, de::min(de::roundUp(logicalSize, nonCoherentAtomSize), allocationSize));
+}
+
 ReferenceMemory::ReferenceMemory(size_t size) : m_data(size, 0), m_defined(size / 64 + (size % 64 == 0 ? 0 : 1), 0ull)
 {
 }
@@ -1988,7 +2003,9 @@ void BufferCopyToBuffer::verify(VerifyContext &context, size_t commandIndex)
     submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
     {
-        void *const ptr = mapMemory(vkd, device, *m_memory, m_bufferSize);
+        void *const ptr = mapMemoryWholeRange(context.getContext().getInstanceInterface(), vkd,
+                                              context.getContext().getPhysicalDevice(), device, *m_dstBuffer, *m_memory,
+                                              m_bufferSize);
         bool isOk       = true;
 
         vk::invalidateMappedMemoryRange(vkd, device, *m_memory, 0, VK_WHOLE_SIZE);
@@ -2072,7 +2089,7 @@ void BufferCopyFromBuffer::prepare(PrepareContext &context)
         bindBufferMemory(vki, vkd, physicalDevice, device, *m_srcBuffer, vk::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
     {
-        void *const ptr = mapMemory(vkd, device, *m_memory, m_bufferSize);
+        void *const ptr = mapMemoryWholeRange(vki, vkd, physicalDevice, device, *m_srcBuffer, *m_memory, m_bufferSize);
         de::Random rng(m_seed);
 
         {
@@ -2323,7 +2340,8 @@ void BufferCopyToImage::verify(VerifyContext &context, size_t commandIndex)
     submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
     {
-        void *const ptr = mapMemory(vkd, device, *memory, 4 * m_imageWidth * m_imageHeight);
+        void *const ptr = mapMemoryWholeRange(vki, vkd, physicalDevice, device, *dstBuffer, *memory,
+                                              4 * m_imageWidth * m_imageHeight);
 
         invalidateMappedMemoryRange(vkd, device, *memory, 0, VK_WHOLE_SIZE);
 
@@ -2486,7 +2504,8 @@ void BufferCopyFromImage::prepare(PrepareContext &context)
         };
 
         {
-            void *const ptr = mapMemory(vkd, device, *memory, 4 * m_imageWidth * m_imageHeight);
+            void *const ptr = mapMemoryWholeRange(vki, vkd, physicalDevice, device, *srcBuffer, *memory,
+                                                  4 * m_imageWidth * m_imageHeight);
             de::Random rng(m_seed);
 
             {
@@ -2660,7 +2679,9 @@ void ImageCopyToBuffer::verify(VerifyContext &context, size_t commandIndex)
 
     reference.setUndefined(0, (size_t)m_imageMemorySize);
     {
-        void *const ptr = mapMemory(vkd, device, *m_memory, m_bufferSize);
+        void *const ptr = mapMemoryWholeRange(context.getContext().getInstanceInterface(), vkd,
+                                              context.getContext().getPhysicalDevice(), device, *m_dstBuffer, *m_memory,
+                                              m_bufferSize);
         const ConstPixelBufferAccess referenceImage(context.getReferenceImage().getAccess());
         const ConstPixelBufferAccess resultImage(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8),
                                                  m_imageWidth, m_imageHeight, 1, ptr);
@@ -2731,7 +2752,7 @@ void ImageCopyFromBuffer::prepare(PrepareContext &context)
         bindBufferMemory(vki, vkd, physicalDevice, device, *m_srcBuffer, vk::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
     {
-        void *const ptr = mapMemory(vkd, device, *m_memory, m_bufferSize);
+        void *const ptr = mapMemoryWholeRange(vki, vkd, physicalDevice, device, *m_srcBuffer, *m_memory, m_bufferSize);
         de::Random rng(m_seed);
 
         {
@@ -2933,7 +2954,8 @@ void ImageCopyFromImage::prepare(PrepareContext &context)
         };
 
         {
-            void *const ptr = mapMemory(vkd, device, *memory, 4 * m_imageWidth * m_imageHeight);
+            void *const ptr = mapMemoryWholeRange(vki, vkd, physicalDevice, device, *srcBuffer, *memory,
+                                                  4 * m_imageWidth * m_imageHeight);
             de::Random rng(m_seed);
 
             {
@@ -3228,7 +3250,8 @@ void ImageCopyToImage::verify(VerifyContext &context, size_t commandIndex)
     submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
     {
-        void *const ptr = mapMemory(vkd, device, *memory, 4 * m_imageWidth * m_imageHeight);
+        void *const ptr = mapMemoryWholeRange(vki, vkd, physicalDevice, device, *dstBuffer, *memory,
+                                              4 * m_imageWidth * m_imageHeight);
 
         vk::invalidateMappedMemoryRange(vkd, device, *memory, 0, VK_WHOLE_SIZE);
 
@@ -3410,7 +3433,8 @@ void ImageBlitFromImage::prepare(PrepareContext &context)
         };
 
         {
-            void *const ptr = mapMemory(vkd, device, *memory, 4 * m_srcImageWidth * m_srcImageHeight);
+            void *const ptr = mapMemoryWholeRange(vki, vkd, physicalDevice, device, *srcBuffer, *memory,
+                                                  4 * m_srcImageWidth * m_srcImageHeight);
             de::Random rng(m_seed);
 
             {
@@ -3752,7 +3776,8 @@ void ImageBlitToImage::verify(VerifyContext &context, size_t commandIndex)
     submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
     {
-        void *const ptr = mapMemory(vkd, device, *memory, 4 * m_dstImageWidth * m_dstImageHeight);
+        void *const ptr = mapMemoryWholeRange(vki, vkd, physicalDevice, device, *dstBuffer, *memory,
+                                              4 * m_dstImageWidth * m_dstImageHeight);
 
         vk::invalidateMappedMemoryRange(vkd, device, *memory, 0, VK_WHOLE_SIZE);
 
