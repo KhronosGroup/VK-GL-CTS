@@ -2178,7 +2178,7 @@ extern "C" {
 //#define VK_API_VERSION VK_MAKE_API_VERSION(0, 1, 0, 0) // Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 353
+#define VK_HEADER_VERSION 354
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 4, VK_HEADER_VERSION)
@@ -9489,6 +9489,7 @@ static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_TENSOR_DATA_GRAPH_BIT_
 static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR = 0x800000000000000ULL;
 static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR = 0x2000000000000ULL;
 static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR = 0x4000000000000ULL;
+static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_2D_BIT_IMG = 0x200000000000ULL;
 static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_COMPUTE_QUEUE_BIT_KHR = 0x10000000000000ULL;
 static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_TRANSFER_QUEUE_BIT_KHR = 0x20000000000000ULL;
 static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_COMPUTE_QUEUE_BIT_KHR = 0x40000000000000ULL;
@@ -27809,6 +27810,12 @@ typedef struct VkPhysicalDevicePipelineOpacityMicromapFeaturesARM {
     VkBool32           pipelineOpacityMicromap;
 } VkPhysicalDevicePipelineOpacityMicromapFeaturesARM;
 
+
+
+// VK_IMG_filter_linear_2d is a preprocessor guard. Do not pass it to API calls.
+#define VK_IMG_filter_linear_2d 1
+#define VK_IMG_FILTER_LINEAR_2D_SPEC_VERSION 1
+#define VK_IMG_FILTER_LINEAR_2D_EXTENSION_NAME "VK_IMG_filter_linear_2d"
 
 
 // VK_ARM_performance_counters_by_region is a preprocessor guard. Do not pass it to API calls.

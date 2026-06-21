@@ -2346,6 +2346,18 @@ bool check_VK_HUAWEI_subpass_shading(const tcu::UVec2& v, const ExtPropVect& vIE
 	return (((isSupported(vDEP, "VK_KHR_create_renderpass2") || isCompatible(1, 2, v)) && isSupported(vDEP, "VK_KHR_synchronization2")) || isCompatible(1, 3, v));
 }
 
+bool check_VK_IMG_filter_linear_2d(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_IMG_filter_linear_2d"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_format_feature_flags2,VK_VERSION_1_3
+	return (isSupported(vDEP, "VK_KHR_format_feature_flags2") || isCompatible(1, 3, v));
+}
+
 bool check_VK_IMG_relaxed_line_rasterization(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4967,6 +4979,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_HUAWEI_hdr_vivid",									&check_VK_HUAWEI_hdr_vivid),
 	std::make_pair("VK_HUAWEI_invocation_mask",								&check_VK_HUAWEI_invocation_mask),
 	std::make_pair("VK_HUAWEI_subpass_shading",								&check_VK_HUAWEI_subpass_shading),
+	std::make_pair("VK_IMG_filter_linear_2d",								&check_VK_IMG_filter_linear_2d),
 	std::make_pair("VK_IMG_relaxed_line_rasterization",						&check_VK_IMG_relaxed_line_rasterization),
 	std::make_pair("VK_INTEL_shader_integer_functions2",					&check_VK_INTEL_shader_integer_functions2),
 	std::make_pair("VK_KHR_16bit_storage",									&check_VK_KHR_16bit_storage),
@@ -5384,6 +5397,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_HUAWEI_invocation_mask"),
 	std::make_tuple(1, 0, "VK_HUAWEI_subpass_shading"),
 	std::make_tuple(1, 0, "VK_IMG_filter_cubic"),
+	std::make_tuple(1, 0, "VK_IMG_filter_linear_2d"),
 	std::make_tuple(1, 0, "VK_IMG_format_pvrtc"),
 	std::make_tuple(1, 0, "VK_IMG_relaxed_line_rasterization"),
 	std::make_tuple(1, 0, "VK_INTEL_performance_query"),

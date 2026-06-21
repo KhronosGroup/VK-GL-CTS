@@ -886,6 +886,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_IMG_filter_linear_2d")
+	{
+		return;
+	}
 	if (extName == "VK_IMG_format_pvrtc")
 	{
 		return;
@@ -3251,6 +3255,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_IMG_filter_linear_2d")
+	{
+		return;
+	}
 	if (extName == "VK_IMG_format_pvrtc")
 	{
 		return;
@@ -5069,6 +5077,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_HUAWEI_hdr_vivid",
 	"VK_NV_cooperative_matrix2",
 	"VK_ARM_pipeline_opacity_micromap",
+	"VK_IMG_filter_linear_2d",
 	"VK_EXT_external_memory_metal",
 	"VK_ARM_performance_counters_by_region",
 	"VK_ARM_shader_instrumentation",
