@@ -8265,6 +8265,7 @@ void createImageFormatTests(tcu::TestCaseGroup *testGroup, ImageFormatPropertyCa
                                                                 VK_CORE_IMAGE_TILING_LAST, false)));
 }
 
+#ifndef CTS_USES_VULKANSC
 void createExtendedFlagsImageFormatTests(tcu::TestCaseGroup *testGroup, ImageFormatPropertyCase::Function testFunction)
 {
     testGroup->addChild(createTestGroup(
@@ -8277,6 +8278,7 @@ void createExtendedFlagsImageFormatTests(tcu::TestCaseGroup *testGroup, ImageFor
         testGroup->getTestContext(), "3d", createImageFormatTypeTests,
         ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_3D, VK_CORE_IMAGE_TILING_LAST, true)));
 }
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus execImageUsageTest(Context &context, ImageUsagePropertyCase testCase)
 {
