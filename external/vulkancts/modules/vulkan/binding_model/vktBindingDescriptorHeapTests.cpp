@@ -12027,6 +12027,12 @@ enum class SecondaryCopyType
     RESOURCE_HEAP_SHADER_COPY,
     SAMPLER_HEAP_COMMAND_COPY,
     SAMPLER_HEAP_SHADER_COPY,
+    BIND_IN_SECONDARY,
+    REBIND_IN_SECONDARY,
+    RESOURCE_INHERITED_SAMPLER_BOUND,
+    SAMPLER_INHERITED_RESOURCE_BOUND,
+    DIFFERENT_RESOURCE_HEAP,
+    DIFFERENT_SAMPLER_HEAP,
 };
 
 struct SecondaryTestParams : TestParams
@@ -12047,6 +12053,8 @@ class DescriptorHeapTestInstanceSecondary final : public DescriptorHeapTestInsta
 
     std::unique_ptr<Buffer> m_resourceHeap;
     std::unique_ptr<Buffer> m_samplerHeap;
+    std::unique_ptr<Buffer> m_resourceHeap2;
+    std::unique_ptr<Buffer> m_samplerHeap2;
     std::unique_ptr<Buffer> m_srcCopyBuffer;
     Move<VkPipeline> m_copyPipeline;
 
@@ -12066,9 +12074,6 @@ private:
 
 void DescriptorHeapTestInstanceSecondary::copyDescriptor(VkCommandBuffer commandBuffer)
 {
-    if (m_params.testType == SecondaryCopyType::NONE)
-        return;
-
     const auto &vkd                   = m_device.getDriver();
     const VkDeviceSize resourceStride = getImageDescriptorStride(m_descriptorHeapProperties);
     const VkDeviceSize samplerStride  = getSamplerDescriptorStride(m_descriptorHeapProperties);
@@ -12118,7 +12123,8 @@ void DescriptorHeapTestInstanceSecondary::copyDescriptor(VkCommandBuffer command
         dependencyInfo.pMemoryBarriers = &postTransferBarrier;
         vkd.cmdPipelineBarrier2(commandBuffer, &dependencyInfo);
     }
-    else
+    else if (m_params.testType == SecondaryCopyType::RESOURCE_HEAP_SHADER_COPY ||
+             m_params.testType == SecondaryCopyType::SAMPLER_HEAP_SHADER_COPY)
     {
         const bool resourceCopy = m_params.testType == SecondaryCopyType::RESOURCE_HEAP_SHADER_COPY;
         const uint32_t copyStride =
@@ -12174,16 +12180,42 @@ void DescriptorHeapTestInstanceSecondary::copyDescriptor(VkCommandBuffer command
 
 tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
 {
+    auto &vki       = m_instance.getDriver();
     const auto &vkd = m_device.getDriver();
 
-    const VkFormat imageFormat          = VK_FORMAT_R8G8B8A8_UNORM;
-    const VkDeviceSize bufferStride     = getBufferDescriptorStride(m_descriptorHeapProperties);
-    const VkDeviceSize imageStride      = getImageDescriptorStride(m_descriptorHeapProperties);
-    const VkDeviceSize samplerStride    = getSamplerDescriptorStride(m_descriptorHeapProperties);
-    const float expectedColor[4]        = {0.8f, 0.4f, 0.2f, 0.6f};
+    m_memoryProperties = vk::getPhysicalDeviceMemoryProperties(vki, m_physDevice);
+
+    const VkFormat imageFormat       = VK_FORMAT_R8G8B8A8_UNORM;
+    const VkDeviceSize bufferStride  = getBufferDescriptorStride(m_descriptorHeapProperties);
+    const VkDeviceSize imageStride   = getImageDescriptorStride(m_descriptorHeapProperties);
+    const VkDeviceSize samplerStride = getSamplerDescriptorStride(m_descriptorHeapProperties);
+    const bool copyToHeap            = m_params.testType == SecondaryCopyType::RESOURCE_HEAP_COMMAND_COPY ||
+                            m_params.testType == SecondaryCopyType::RESOURCE_HEAP_SHADER_COPY ||
+                            m_params.testType == SecondaryCopyType::SAMPLER_HEAP_COMMAND_COPY ||
+                            m_params.testType == SecondaryCopyType::SAMPLER_HEAP_SHADER_COPY;
+    const bool bindInSecondary       = m_params.testType == SecondaryCopyType::BIND_IN_SECONDARY;
+    const bool rebindInSecondary     = m_params.testType == SecondaryCopyType::REBIND_IN_SECONDARY;
+    const bool differentResourceHeap = m_params.testType == SecondaryCopyType::DIFFERENT_RESOURCE_HEAP;
+    const bool differentSamplerHeap  = m_params.testType == SecondaryCopyType::DIFFERENT_SAMPLER_HEAP;
+
+    const float expectedColor[4]   = {0.8f, 0.4f, 0.2f, 0.6f};
+    const uint32_t drawCount       = (rebindInSecondary || differentResourceHeap || differentSamplerHeap) ? 2u : 1u;
+    float expectedComputeColor[4]  = {expectedColor[0], expectedColor[1], expectedColor[2], expectedColor[3]};
+    float expectedGraphicsColor[4] = {expectedColor[0], expectedColor[1], expectedColor[2], expectedColor[3]};
+    if (drawCount == 2u)
+    {
+        expectedComputeColor[0] *= 2.0f;
+        expectedComputeColor[1] *= 2.0f;
+        expectedComputeColor[2] *= 2.0f;
+        expectedComputeColor[3] *= 2.0f;
+        expectedGraphicsColor[0] = 0.0f;
+        expectedGraphicsColor[1] = 0.0f;
+        expectedGraphicsColor[2] = 0.0f;
+        expectedGraphicsColor[3] = 0.0f;
+    }
     const uint8_t expectedColorUint8[4] = {
-        static_cast<uint8_t>(expectedColor[0] * 255), static_cast<uint8_t>(expectedColor[1] * 255),
-        static_cast<uint8_t>(expectedColor[2] * 255), static_cast<uint8_t>(expectedColor[3] * 255)};
+        static_cast<uint8_t>(expectedGraphicsColor[0] * 255), static_cast<uint8_t>(expectedGraphicsColor[1] * 255),
+        static_cast<uint8_t>(expectedGraphicsColor[2] * 255), static_cast<uint8_t>(expectedGraphicsColor[3] * 255)};
     const uint32_t imageSize                            = 32u;
     const VkImageSubresourceRange imageSubresourceRange = makeDefaultImageSubresourceRange();
 
@@ -12196,16 +12228,20 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
         VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR |
         VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR | VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT_KHR;
     m_resourceHeap = createBufferAndMemory(resourceHeapSize, heapUsage);
+    if (differentResourceHeap)
+        m_resourceHeap2 = createBufferAndMemory(resourceHeapSize, heapUsage);
 
     const VkDeviceSize samplerDescriptorCount = m_samplerHeapIndex + 1u;
     const VkDeviceSize samplerUserHeapSize =
         alignUp(samplerDescriptorCount * samplerStride, m_descriptorHeapProperties.samplerHeapAlignment);
     const VkDeviceSize samplerHeapSize = samplerUserHeapSize + m_descriptorHeapProperties.minSamplerHeapReservedRange;
     m_samplerHeap                      = createBufferAndMemory(samplerHeapSize, heapUsage);
+    if (differentSamplerHeap)
+        m_samplerHeap2 = createBufferAndMemory(samplerHeapSize, heapUsage);
 
     uint8_t *srcCopyBufferPtr   = nullptr;
     VkDeviceSize copyBufferSize = 0u;
-    if (m_params.testType != SecondaryCopyType::NONE)
+    if (copyToHeap)
     {
         const bool copyResource = m_params.testType == SecondaryCopyType::RESOURCE_HEAP_COMMAND_COPY ||
                                   m_params.testType == SecondaryCopyType::RESOURCE_HEAP_SHADER_COPY;
@@ -12288,6 +12324,14 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
     sampledImageHostRange.size = static_cast<size_t>(imageStride);
     VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1, &sampledImageResourceInfo, &sampledImageHostRange));
 
+    if (differentResourceHeap)
+    {
+        uint8_t *resourceHeapHostPtr2 = static_cast<uint8_t *>(m_resourceHeap2->memory->getHostPtr());
+        sampledImageHostRange.address = resourceHeapHostPtr2 + m_imageHeapIndex * imageStride;
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1, &sampledImageResourceInfo, &sampledImageHostRange));
+        flushAlloc(vkd, *m_device, *m_resourceHeap2->memory);
+    }
+
     VkSamplerCreateInfo samplerCreateInfo     = initVulkanStructure();
     samplerCreateInfo.magFilter               = VK_FILTER_NEAREST;
     samplerCreateInfo.minFilter               = VK_FILTER_NEAREST;
@@ -12319,6 +12363,14 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
     }
     samplerHostRange.size = static_cast<size_t>(samplerStride);
     VK_CHECK(vkd.writeSamplerDescriptorsEXT(*m_device, 1u, &samplerCreateInfo, &samplerHostRange));
+
+    if (differentSamplerHeap)
+    {
+        uint8_t *samplerHeapHostPtr2 = static_cast<uint8_t *>(m_samplerHeap2->memory->getHostPtr());
+        samplerHostRange.address     = samplerHeapHostPtr2 + m_samplerHeapIndex * samplerStride;
+        VK_CHECK(vkd.writeSamplerDescriptorsEXT(*m_device, 1u, &samplerCreateInfo, &samplerHostRange));
+        flushAlloc(vkd, *m_device, *m_samplerHeap2->memory);
+    }
 
     if (m_params.testType == SecondaryCopyType::RESOURCE_HEAP_SHADER_COPY ||
         m_params.testType == SecondaryCopyType::SAMPLER_HEAP_SHADER_COPY)
@@ -12378,17 +12430,24 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
     auto secondaryCmdBuffer = secondaryCmdBufferPtr.get();
 
     VkCommandBufferInheritanceDescriptorHeapInfoEXT inheritance_heap_info = initVulkanStructure();
-    inheritance_heap_info.pResourceHeapBindInfo                           = &resourceHeapBindInfo;
-    inheritance_heap_info.pSamplerHeapBindInfo                            = &samplerHeapBindInfo;
-    VkCommandBufferInheritanceInfo inheritance_info                       = initVulkanStructure(&inheritance_heap_info);
-    VkCommandBufferBeginInfo begin_info                                   = initVulkanStructure();
-    begin_info.flags                                                      = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    begin_info.pInheritanceInfo                                           = &inheritance_info;
+    if (m_params.testType != SecondaryCopyType::SAMPLER_INHERITED_RESOURCE_BOUND && !differentResourceHeap)
+        inheritance_heap_info.pResourceHeapBindInfo = &resourceHeapBindInfo;
+    if (m_params.testType != SecondaryCopyType::RESOURCE_INHERITED_SAMPLER_BOUND && !differentSamplerHeap)
+        inheritance_heap_info.pSamplerHeapBindInfo = &samplerHeapBindInfo;
+
+    VkCommandBufferInheritanceInfo inheritance_info =
+        initVulkanStructure((bindInSecondary || rebindInSecondary) ? nullptr : &inheritance_heap_info);
+    VkCommandBufferBeginInfo begin_info = initVulkanStructure();
+    begin_info.flags                    = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    begin_info.pInheritanceInfo         = &inheritance_info;
 
     beginCommandBuffer(vkd, cmdBuffer);
 
-    vkd.cmdBindResourceHeapEXT(cmdBuffer, &resourceHeapBindInfo);
-    vkd.cmdBindSamplerHeapEXT(cmdBuffer, &samplerHeapBindInfo);
+    if (!bindInSecondary)
+    {
+        vkd.cmdBindResourceHeapEXT(cmdBuffer, &resourceHeapBindInfo);
+        vkd.cmdBindSamplerHeapEXT(cmdBuffer, &samplerHeapBindInfo);
+    }
 
     {
         VkImageMemoryBarrier2 barrier = initVulkanStructure();
@@ -12436,6 +12495,7 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
         auto outputBuffer         = createBufferAndMemory(bufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT |
                                                                           VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
         deMemset(outputBuffer->memory->getHostPtr(), 0, bufferSize);
+        flushAlloc(vkd, *m_device, *outputBuffer->memory);
 
         VkDeviceAddressRangeEXT outputBufferAddressRange{};
         outputBufferAddressRange.address                     = outputBuffer->address;
@@ -12449,6 +12509,14 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
         outputBufferHostRange.size    = static_cast<size_t>(bufferStride);
         VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1u, &outputBufferResourceInfo, &outputBufferHostRange));
         flushAlloc(vkd, *m_device, *m_resourceHeap->memory);
+        if (differentResourceHeap)
+        {
+            uint8_t *resourceHeapHostPtr2 = static_cast<uint8_t *>(m_resourceHeap2->memory->getHostPtr());
+            outputBufferHostRange.address = resourceHeapHostPtr2 + bufferStride * m_resultBufferIndex;
+            outputBufferHostRange.size    = static_cast<size_t>(bufferStride);
+            VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1u, &outputBufferResourceInfo, &outputBufferHostRange));
+            flushAlloc(vkd, *m_device, *m_resourceHeap2->memory);
+        }
 
         auto computeModule = createShaderModule(vkd, *m_device, getShaderBinary("compute"));
 
@@ -12465,6 +12533,51 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
         auto pipeline = createComputePipeline(vkd, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
 
         VK_CHECK(vkd.beginCommandBuffer(secondaryCmdBuffer, &begin_info));
+        if (bindInSecondary || rebindInSecondary)
+        {
+            vkd.cmdBindResourceHeapEXT(secondaryCmdBuffer, &resourceHeapBindInfo);
+            vkd.cmdBindSamplerHeapEXT(secondaryCmdBuffer, &samplerHeapBindInfo);
+        }
+        if (m_params.testType == SecondaryCopyType::SAMPLER_INHERITED_RESOURCE_BOUND)
+            vkd.cmdBindResourceHeapEXT(secondaryCmdBuffer, &resourceHeapBindInfo);
+        if (m_params.testType == SecondaryCopyType::RESOURCE_INHERITED_SAMPLER_BOUND)
+            vkd.cmdBindSamplerHeapEXT(secondaryCmdBuffer, &samplerHeapBindInfo);
+
+        if (differentResourceHeap)
+        {
+            VkBindHeapInfoEXT resourceHeapBindInfo2   = initVulkanStructure();
+            resourceHeapBindInfo2.heapRange.address   = m_resourceHeap2->address;
+            resourceHeapBindInfo2.heapRange.size      = resourceHeapSize;
+            resourceHeapBindInfo2.reservedRangeOffset = resourceUserHeapSize;
+            resourceHeapBindInfo2.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
+            vkd.cmdBindResourceHeapEXT(secondaryCmdBuffer, &resourceHeapBindInfo2);
+        }
+        if (differentSamplerHeap)
+        {
+            VkBindHeapInfoEXT samplerHeapBindInfo2   = initVulkanStructure();
+            samplerHeapBindInfo2.heapRange.address   = m_samplerHeap2->address;
+            samplerHeapBindInfo2.heapRange.size      = samplerHeapSize;
+            samplerHeapBindInfo2.reservedRangeOffset = samplerUserHeapSize;
+            samplerHeapBindInfo2.reservedRangeSize   = m_descriptorHeapProperties.minSamplerHeapReservedRange;
+            vkd.cmdBindSamplerHeapEXT(secondaryCmdBuffer, &samplerHeapBindInfo2);
+        }
+
+        if (rebindInSecondary || differentResourceHeap || differentSamplerHeap)
+        {
+            vkd.cmdBindPipeline(secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+            vkd.cmdDispatch(secondaryCmdBuffer, 1u, 1u, 1u);
+
+            VkMemoryBarrier2 barrier = initVulkanStructure();
+            barrier.srcStageMask     = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+            barrier.srcAccessMask    = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
+            barrier.dstStageMask     = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+            barrier.dstAccessMask    = VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
+
+            VkDependencyInfo dependencyInfo   = initVulkanStructure();
+            dependencyInfo.memoryBarrierCount = 1u;
+            dependencyInfo.pMemoryBarriers    = &barrier;
+            vkd.cmdPipelineBarrier2(secondaryCmdBuffer, &dependencyInfo);
+        }
         if (m_params.copyInSecondary)
             copyDescriptor(secondaryCmdBuffer);
         vkd.cmdBindPipeline(secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
@@ -12492,11 +12605,13 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
 
         float *result = static_cast<float *>(outputBuffer->memory->getHostPtr());
         const float e = 0.01f;
-        if (std::abs(result[0] - expectedColor[0]) > e || std::abs(result[1] - expectedColor[1]) > e ||
-            std::abs(result[2] - expectedColor[2]) > e || std::abs(result[3] - expectedColor[3]) > e)
+        if (std::abs(result[0] - expectedComputeColor[0]) > e || std::abs(result[1] - expectedComputeColor[1]) > e ||
+            std::abs(result[2] - expectedComputeColor[2]) > e || std::abs(result[3] - expectedComputeColor[3]) > e)
         {
             std::stringstream stream;
-            stream << "Expected " << tcu::Vec4(expectedColor[0], expectedColor[1], expectedColor[2], expectedColor[3])
+            stream << "Expected "
+                   << tcu::Vec4(expectedComputeColor[0], expectedComputeColor[1], expectedComputeColor[2],
+                                expectedComputeColor[3])
                    << ", but result is " << tcu::Vec4(result[0], result[1], result[2], result[3]);
             return tcu::TestStatus::fail(stream.str());
         }
@@ -12600,6 +12715,13 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
         VkPipelineColorBlendAttachmentState colorBlendAttachment{};
         colorBlendAttachment.colorWriteMask =
             VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        colorBlendAttachment.blendEnable         = VK_TRUE;
+        colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+        colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+        colorBlendAttachment.colorBlendOp        = VK_BLEND_OP_SUBTRACT;
+        colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+        colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+        colorBlendAttachment.alphaBlendOp        = VK_BLEND_OP_SUBTRACT;
 
         VkPipelineColorBlendStateCreateInfo colorBlendState = initVulkanStructure();
         colorBlendState.attachmentCount                     = 1u;
@@ -12626,6 +12748,40 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
         begin_info.flags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 
         VK_CHECK(vkd.beginCommandBuffer(secondaryCmdBuffer, &begin_info));
+        if (bindInSecondary || rebindInSecondary)
+        {
+            vkd.cmdBindResourceHeapEXT(secondaryCmdBuffer, &resourceHeapBindInfo);
+            vkd.cmdBindSamplerHeapEXT(secondaryCmdBuffer, &samplerHeapBindInfo);
+        }
+        if (m_params.testType == SecondaryCopyType::SAMPLER_INHERITED_RESOURCE_BOUND)
+            vkd.cmdBindResourceHeapEXT(secondaryCmdBuffer, &resourceHeapBindInfo);
+        if (m_params.testType == SecondaryCopyType::RESOURCE_INHERITED_SAMPLER_BOUND)
+            vkd.cmdBindSamplerHeapEXT(secondaryCmdBuffer, &samplerHeapBindInfo);
+
+        if (differentResourceHeap)
+        {
+            VkBindHeapInfoEXT resourceHeapBindInfo2   = initVulkanStructure();
+            resourceHeapBindInfo2.heapRange.address   = m_resourceHeap2->address;
+            resourceHeapBindInfo2.heapRange.size      = resourceHeapSize;
+            resourceHeapBindInfo2.reservedRangeOffset = resourceUserHeapSize;
+            resourceHeapBindInfo2.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
+            vkd.cmdBindResourceHeapEXT(secondaryCmdBuffer, &resourceHeapBindInfo2);
+        }
+        if (differentSamplerHeap)
+        {
+            VkBindHeapInfoEXT samplerHeapBindInfo2   = initVulkanStructure();
+            samplerHeapBindInfo2.heapRange.address   = m_samplerHeap2->address;
+            samplerHeapBindInfo2.heapRange.size      = samplerHeapSize;
+            samplerHeapBindInfo2.reservedRangeOffset = samplerUserHeapSize;
+            samplerHeapBindInfo2.reservedRangeSize   = m_descriptorHeapProperties.minSamplerHeapReservedRange;
+            vkd.cmdBindSamplerHeapEXT(secondaryCmdBuffer, &samplerHeapBindInfo2);
+        }
+
+        if (rebindInSecondary || differentResourceHeap || differentSamplerHeap)
+        {
+            vkd.cmdBindPipeline(secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+            vkd.cmdDraw(secondaryCmdBuffer, 4u, 1u, 0u, 0u);
+        }
         if (m_params.copyInSecondary)
             copyDescriptor(secondaryCmdBuffer);
         vkd.cmdBindPipeline(secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
@@ -12695,7 +12851,7 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
                 std::stringstream errorMsg;
                 errorMsg << "image is in resource heap at index " << m_imageHeapIndex << "\n"
                          << "sampler is in sampler heap at index " << m_samplerHeapIndex << "\n";
-                if (m_params.testType != SecondaryCopyType::NONE)
+                if (copyToHeap)
                 {
                     errorMsg << "image was copied from second resource heap at index " << m_imageHeapCopySrcIndex
                              << "\n"
@@ -12753,7 +12909,7 @@ layout(descriptor_heap) buffer ssbo {
     vec4 data;
 } heapBuffer[];
 void main() {
-    heapBuffer[0].data = texture(sampler2D(heapTextures[16], heapSamplers[29]), vec2(0.5f));
+    heapBuffer[0].data += texture(sampler2D(heapTextures[16], heapSamplers[29]), vec2(0.5f));
 }
 )";
 
@@ -16264,6 +16420,19 @@ void populateSecondaryCommandBufferTests(tcu::TestCaseGroup *topGroup, uint32_t 
         {SecondaryCopyType::SAMPLER_HEAP_SHADER_COPY, "sampler_heap_shader_copy"},
     };
 
+    struct CommandTestType
+    {
+        SecondaryCopyType type;
+        const char *name;
+    } commandTestTypes[] = {
+        {SecondaryCopyType::BIND_IN_SECONDARY, "bind_in_secondary"},
+        {SecondaryCopyType::REBIND_IN_SECONDARY, "rebind_in_secondary"},
+        {SecondaryCopyType::RESOURCE_INHERITED_SAMPLER_BOUND, "resource_inherited_sampler_bound"},
+        {SecondaryCopyType::SAMPLER_INHERITED_RESOURCE_BOUND, "sampler_inherited_resource_bound"},
+        {SecondaryCopyType::DIFFERENT_RESOURCE_HEAP, "different_resource_heap"},
+        {SecondaryCopyType::DIFFERENT_SAMPLER_HEAP, "different_sampler_heap"},
+    };
+
     for (const VkQueueFlagBits queue : {VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT})
     {
         const std::string queueName = (queue == VK_QUEUE_GRAPHICS_BIT) ? "graphics" : "compute";
@@ -16286,6 +16455,17 @@ void populateSecondaryCommandBufferTests(tcu::TestCaseGroup *topGroup, uint32_t 
                 params.copyInSecondary = copyInSecondary;
                 group->addChild(new DescriptorHeapTestCaseSecondary(testCtx, testName, params));
             }
+        }
+
+        for (const auto testType : commandTestTypes)
+        {
+            const std::string testName = queueName + "_" + testType.name;
+            SecondaryTestParams params{};
+            params.queue           = queue;
+            params.seed            = baseSeed ^ deStringHash(testName.c_str());
+            params.testType        = testType.type;
+            params.copyInSecondary = false;
+            group->addChild(new DescriptorHeapTestCaseSecondary(testCtx, testName, params));
         }
     }
 
