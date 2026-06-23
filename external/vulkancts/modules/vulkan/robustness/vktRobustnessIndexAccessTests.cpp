@@ -25,8 +25,6 @@
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vktRobustnessUtil.hpp"
-#include "vktTestCaseUtil.hpp"
-#include "vkBuilderUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
@@ -39,12 +37,11 @@
 #include "vkObjUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "tcuTestLog.hpp"
-#include "deMath.h"
 #include "tcuVectorUtil.hpp"
 #include "deUniquePtr.hpp"
 #include <algorithm>
 #include <numeric>
-#include <tuple>
+#include <limits>
 #include <vector>
 
 namespace vkt::robustness
@@ -68,6 +65,14 @@ enum OOTypes
     OO_WHOLE_SIZE
 };
 
+enum class UsedStages
+{
+    VERT_FRAG = 0,
+    VERT_GEOM_FRAG,
+    VERT_TESS_FRAG,
+    VERT_TESS_GEOM_FRAG
+};
+
 struct TestParams
 {
     TestMode mode                 = TM_DRAW_INDEXED;
@@ -75,6 +80,15 @@ struct TestParams
     uint32_t leadingCount         = 0;
     uint32_t robustnessVersion    = 2;
     bool useDeviceAddressCommands = false;
+    bool usePipelineRobustness    = false;
+    UsedStages usedStages         = UsedStages::VERT_FRAG; // used by EXT_pipeline_robustness cases
+};
+
+static const std::pair<std::string, TestMode> testModes[]{
+    {"draw_indexed", TestMode::TM_DRAW_INDEXED},
+    {"draw_indexed_indirect", TestMode::TM_DRAW_INDEXED_INDIRECT},
+    {"draw_indexed_indirect_count", TestMode::TM_DRAW_INDEXED_INDIRECT_COUNT},
+    {"draw_multi_indexed", TestMode::TM_DRAW_MULTI_INDEXED},
 };
 
 // helper function that executes cmdCopyImageToBuffer or cmdCopyImageToMemoryKHR
@@ -141,13 +155,12 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     vk::Allocator &memAlloc         = m_device.getAllocator();
 
     // this is testsed - first index in index buffer is outside of bounds
-    const uint32_t oobFirstIndex = std::numeric_limits<uint32_t>::max() - 100;
+    constexpr uint32_t oobFirstIndex = std::numeric_limits<uint32_t>::max() - 100u;
 
     const VkFormat colorFormat{VK_FORMAT_R8G8B8A8_UNORM};
     const tcu::UVec2 renderSize{16};
-    const std::vector<VkViewport> viewports{makeViewport(renderSize)};
-    const std::vector<VkRect2D> scissors{makeRect2D(renderSize)};
     VkPipelineDynamicStateCreateInfo *dynamicStatePtr = nullptr;
+    void *pNext                                       = nullptr;
 
     VkBufferUsageFlags commonUsage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     if (m_params.useDeviceAddressCommands)
@@ -218,7 +231,8 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
 
 #ifndef CTS_USES_VULKANSC
     VkDynamicState dynamicState{VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE};
-    VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = initVulkanStructure();
+    VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo        = initVulkanStructure();
+    VkPipelineRobustnessCreateInfoEXT pipelineRobustnessCreateInfo = initVulkanStructure();
 
     VkDeviceAddress vertexBufferAddress        = 0ull;
     VkDeviceAddress indexBufferAddress         = 0ull;
@@ -236,6 +250,17 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
         indirectBufferAddress      = getBufferDeviceAddress(vk, *m_device, *indirectBuffer);
         indirectCountBufferAddress = getBufferDeviceAddress(vk, *m_device, *indirectCountBuffer);
         outputBufferAddress        = getBufferDeviceAddress(vk, *m_device, *outputBuffer);
+    }
+
+    if (m_params.usePipelineRobustness)
+    {
+        pipelineRobustnessCreateInfo.storageBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DISABLED;
+        pipelineRobustnessCreateInfo.uniformBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DISABLED;
+        pipelineRobustnessCreateInfo.vertexInputs   = (m_params.robustnessVersion == 1) ?
+                                                          VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS :
+                                                          VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2;
+        pipelineRobustnessCreateInfo.images         = VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_DISABLED;
+        pNext                                       = &pipelineRobustnessCreateInfo;
     }
 #endif
 
@@ -262,21 +287,117 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     ImageWithMemory colorImage(vk, *m_device, memAlloc, imageCreateInfo, MemoryRequirement::Any);
     auto colorImageView = makeImageView(vk, *m_device, colorImage.get(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSRR);
 
-    // create shader modules, renderpass, framebuffer and pipeline
-    auto vertShaderModule = createShaderModule(vk, *m_device, m_context.getBinaryCollection().get("vert"));
-    auto fragShaderModule = createShaderModule(vk, *m_device, m_context.getBinaryCollection().get("frag"));
-    auto renderPass       = makeRenderPass(vk, *m_device, colorFormat);
-    auto pipelineLayout   = makePipelineLayout(vk, *m_device, VK_NULL_HANDLE);
+    auto renderPass  = makeRenderPass(vk, *m_device, colorFormat);
     auto framebuffer = makeFramebuffer(vk, *m_device, *renderPass, *colorImageView, renderSize.x(), renderSize.y());
-    Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
-        vk, *m_device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
-        *fragShaderModule, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0, 0, nullptr, nullptr,
-        nullptr, nullptr, nullptr, dynamicStatePtr);
 
-    Move<VkCommandPool> cmdPool =
-        createCommandPool(vk, *m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
-    vk::Move<vk::VkCommandBuffer> cmdBuffer =
-        allocateCommandBuffer(vk, *m_device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = initVulkanStructure();
+    inputAssemblyState.topology                               = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+
+    // create required shader modules
+    auto &bc              = m_context.getBinaryCollection();
+    auto vertShaderModule = createShaderModule(vk, *m_device, bc.get("vert"));
+    auto fragShaderModule = createShaderModule(vk, *m_device, bc.get("frag"));
+    Move<VkShaderModule> geomShaderModule;
+    Move<VkShaderModule> tesscShaderModule;
+    Move<VkShaderModule> tessehaderModule;
+
+    VkPipelineShaderStageCreateInfo commonShaderStage = initVulkanStructure();
+    commonShaderStage.pNext                           = pNext;
+    commonShaderStage.stage                           = VK_SHADER_STAGE_VERTEX_BIT;
+    commonShaderStage.module                          = *vertShaderModule;
+    commonShaderStage.pName                           = "main";
+
+    std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos{commonShaderStage, commonShaderStage};
+    shaderStageCreateInfos[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
+    shaderStageCreateInfos[1].module = *fragShaderModule;
+
+    if (m_params.usedStages == UsedStages::VERT_GEOM_FRAG || m_params.usedStages == UsedStages::VERT_TESS_GEOM_FRAG)
+    {
+        geomShaderModule = createShaderModule(vk, *m_device, bc.get("geom"));
+        shaderStageCreateInfos.push_back(commonShaderStage);
+        shaderStageCreateInfos.back().stage  = VK_SHADER_STAGE_GEOMETRY_BIT;
+        shaderStageCreateInfos.back().module = *geomShaderModule;
+    }
+    if (m_params.usedStages == UsedStages::VERT_TESS_FRAG || m_params.usedStages == UsedStages::VERT_TESS_GEOM_FRAG)
+    {
+        inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+
+        tesscShaderModule = createShaderModule(vk, *m_device, bc.get("tessc"));
+        shaderStageCreateInfos.push_back(commonShaderStage);
+        shaderStageCreateInfos.back().stage  = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+        shaderStageCreateInfos.back().module = *tesscShaderModule;
+
+        tessehaderModule = createShaderModule(vk, *m_device, bc.get("tesse"));
+        shaderStageCreateInfos.push_back(commonShaderStage);
+        shaderStageCreateInfos.back().stage  = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+        shaderStageCreateInfos.back().module = *tessehaderModule;
+    }
+
+    const auto viewport = makeViewport(renderSize);
+    const auto scissors = makeRect2D(renderSize);
+    auto pipelineLayout = makePipelineLayout(vk, *m_device, VK_NULL_HANDLE);
+
+    // create pipeline
+    VkPipelineViewportStateCreateInfo viewportState = initVulkanStructure();
+    viewportState.viewportCount                     = 1;
+    viewportState.pViewports                        = &viewport;
+    viewportState.scissorCount                      = 1;
+    viewportState.pScissors                         = &scissors;
+
+    const VkVertexInputBindingDescription vertexInputBinding{0u, sizeof(tcu::Vec4), VK_VERTEX_INPUT_RATE_VERTEX};
+    const VkVertexInputAttributeDescription vertexInputAttribute{0u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT, 0u};
+    VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+    vertexInputState.vertexBindingDescriptionCount        = 1u;
+    vertexInputState.pVertexBindingDescriptions           = &vertexInputBinding;
+    vertexInputState.vertexAttributeDescriptionCount      = 1u;
+    vertexInputState.pVertexAttributeDescriptions         = &vertexInputAttribute;
+
+    VkPipelineTessellationStateCreateInfo tessellationState = initVulkanStructure();
+    tessellationState.patchControlPoints                    = 1u;
+
+    VkPipelineRasterizationStateCreateInfo rasterizationState = initVulkanStructure();
+    rasterizationState.polygonMode                            = VK_POLYGON_MODE_FILL;
+    rasterizationState.lineWidth                              = 1.0f;
+
+    VkPipelineMultisampleStateCreateInfo multisampleState = initVulkanStructure();
+    multisampleState.rasterizationSamples                 = VK_SAMPLE_COUNT_1_BIT;
+    multisampleState.minSampleShading                     = 1.0f;
+
+    const VkStencilOpState stencilOpState                   = {};
+    VkPipelineDepthStencilStateCreateInfo depthStencilState = initVulkanStructure();
+    depthStencilState.depthCompareOp                        = VK_COMPARE_OP_LESS_OR_EQUAL;
+    depthStencilState.front                                 = stencilOpState;
+    depthStencilState.back                                  = stencilOpState;
+    depthStencilState.maxDepthBounds                        = 1.0f;
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {};
+    colorBlendAttachmentState.colorWriteMask                      = 0xFu;
+
+    VkPipelineColorBlendStateCreateInfo colorBlendState = initVulkanStructure();
+    colorBlendState.attachmentCount                     = 1u;
+    colorBlendState.pAttachments                        = &colorBlendAttachmentState;
+
+    VkGraphicsPipelineCreateInfo pipelineInfo = initVulkanStructure();
+    pipelineInfo.pNext                        = pNext;
+    pipelineInfo.flags                        = 0;
+    pipelineInfo.stageCount                   = static_cast<uint32_t>(shaderStageCreateInfos.size());
+    pipelineInfo.pStages                      = shaderStageCreateInfos.data();
+    pipelineInfo.pVertexInputState            = &vertexInputState;
+    pipelineInfo.pInputAssemblyState          = &inputAssemblyState;
+    pipelineInfo.pTessellationState           = &tessellationState;
+    pipelineInfo.pViewportState               = &viewportState;
+    pipelineInfo.pRasterizationState          = &rasterizationState;
+    pipelineInfo.pMultisampleState            = &multisampleState;
+    pipelineInfo.pDepthStencilState           = &depthStencilState;
+    pipelineInfo.pColorBlendState             = &colorBlendState;
+    pipelineInfo.pDynamicState                = dynamicStatePtr;
+    pipelineInfo.layout                       = *pipelineLayout;
+    pipelineInfo.renderPass                   = *renderPass;
+    pipelineInfo.basePipelineIndex            = -1;
+
+    auto graphicsPipeline = createGraphicsPipeline(vk, *m_device, VK_NULL_HANDLE, &pipelineInfo);
+    auto cmdPool = createCommandPool(vk, *m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+    auto cmdBuffer = allocateCommandBuffer(vk, *m_device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
     beginCommandBuffer(vk, *cmdBuffer);
 
@@ -494,6 +615,16 @@ void DrawIndexedTestCase::checkSupport(Context &context) const
     }
     if (m_params.useDeviceAddressCommands)
         context.requireDeviceFunctionality("VK_KHR_device_address_commands");
+
+    if (m_params.usePipelineRobustness)
+        context.requireDeviceFunctionality("VK_EXT_pipeline_robustness");
+
+    const bool useAllStages = (m_params.usedStages == UsedStages::VERT_TESS_GEOM_FRAG);
+    if (useAllStages || (m_params.usedStages == UsedStages::VERT_GEOM_FRAG))
+        context.requireDeviceCoreFeature(DeviceCoreFeature::DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
+    if (useAllStages || (m_params.usedStages == UsedStages::VERT_TESS_FRAG))
+        context.requireDeviceCoreFeature(DeviceCoreFeature::DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
 }
 
 CustomDevice DrawIndexedTestCase::createTestDevice(Context &context, const InstanceWrapper &instance) const
@@ -560,12 +691,19 @@ CustomDevice DrawIndexedTestCase::createTestDevice(Context &context, const Insta
 TestInstance *DrawIndexedTestCase::createInstance(Context &context) const
 {
     InstanceWrapper instance(context);
-    DeviceWrapper device = createTestDevice(context, instance);
+    DeviceWrapper device(context);
+
+    // when we are testing pipeline robustness we need to use default device
+    // (robustBufferAccess should not be enabled)
+    if (!m_params.usePipelineRobustness)
+        device = createTestDevice(context, instance);
+
     return new DrawIndexedInstance(context, std::move(instance), std::move(device), m_params);
 }
 
 void DrawIndexedTestCase::initPrograms(SourceCollections &sourceCollections) const
 {
+    auto &glslSources = sourceCollections.glslSources;
     std::string vertexSource("#version 450\n"
                              "layout(location = 0) in vec4 inPosition;\n"
                              "void main(void)\n"
@@ -573,7 +711,7 @@ void DrawIndexedTestCase::initPrograms(SourceCollections &sourceCollections) con
                              "\tgl_Position = inPosition;\n"
                              "\tgl_PointSize = 1.0;\n"
                              "}\n");
-    sourceCollections.glslSources.add("vert") << glu::VertexSource(vertexSource);
+    glslSources.add("vert") << glu::VertexSource(vertexSource);
 
     std::string fragmentSource("#version 450\n"
                                "precision highp float;\n"
@@ -582,8 +720,40 @@ void DrawIndexedTestCase::initPrograms(SourceCollections &sourceCollections) con
                                "{\n"
                                "\tfragColor = vec4(0.2, 1.0, 0.5, 1.0);\n"
                                "}\n");
+    glslSources.add("frag") << glu::FragmentSource(fragmentSource);
 
-    sourceCollections.glslSources.add("frag") << glu::FragmentSource(fragmentSource);
+    if ((m_params.usedStages == UsedStages::VERT_TESS_FRAG) || (m_params.usedStages == UsedStages::VERT_TESS_GEOM_FRAG))
+    {
+        const std::string tessControlSource(
+            "#version 450\n"
+            "layout(vertices = 1) out;\n"
+            "void main(void) {\n"
+            "   gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+            "   gl_TessLevelOuter[0] = 1.0;\n"
+            "   gl_TessLevelOuter[1] = 1.0;\n"
+            "   gl_TessLevelOuter[2] = 1.0;\n"
+            "}\n");
+        glslSources.add("tessc") << glu::TessellationControlSource(tessControlSource);
+
+        const std::string tessEvalSource("#version 450\n"
+                                         "layout(triangles, point_mode) in;\n"
+                                         "void main(void) {\n"
+                                         "   gl_Position = gl_in[0].gl_Position;\n"
+                                         "}\n");
+        glslSources.add("tesse") << glu::TessellationEvaluationSource(tessEvalSource);
+    }
+    if ((m_params.usedStages == UsedStages::VERT_GEOM_FRAG) || (m_params.usedStages == UsedStages::VERT_TESS_GEOM_FRAG))
+    {
+        const std::string geometrySource("#version 450\n"
+                                         "layout(points) in;\n"
+                                         "layout(points, max_vertices = 1) out;\n"
+                                         "void main(void) {\n"
+                                         "   gl_Position = gl_in[0].gl_Position;\n"
+                                         "   EmitVertex();\n"
+                                         "   EndPrimitive();\n"
+                                         "}\n");
+        glslSources.add("geom") << glu::GeometrySource(geometrySource);
+    }
 }
 
 class BindIndexBuffer2Instance : public vkt::TestInstance
@@ -1029,13 +1199,6 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
 
 tcu::TestCaseGroup *createCmdBindIndexBuffer2Tests(tcu::TestContext &testCtx)
 {
-    const std::pair<const char *, TestMode> modes[]{
-        {"draw_indexed", TestMode::TM_DRAW_INDEXED},
-        {"draw_indexed_indirect", TestMode::TM_DRAW_INDEXED_INDIRECT},
-        {"draw_indexed_indirect_count", TestMode::TM_DRAW_INDEXED_INDIRECT_COUNT},
-        {"draw_multi_indexed", TestMode::TM_DRAW_MULTI_INDEXED},
-    };
-
     const std::pair<std::string, OOTypes> OutOfTypes[]{
         {"oo_none", OOTypes::OO_NONE},
         {"oo_index", OOTypes::OO_INDEX},
@@ -1052,9 +1215,9 @@ tcu::TestCaseGroup *createCmdBindIndexBuffer2Tests(tcu::TestContext &testCtx)
     {
         de::MovePtr<tcu::TestCaseGroup> gOffset(
             new tcu::TestCaseGroup(testCtx, ("offset_" + std::to_string(offset)).c_str()));
-        for (const auto &mode : modes)
+        for (const auto &mode : testModes)
         {
-            de::MovePtr<tcu::TestCaseGroup> gMode(new tcu::TestCaseGroup(testCtx, mode.first));
+            de::MovePtr<tcu::TestCaseGroup> gMode(new tcu::TestCaseGroup(testCtx, mode.first.c_str()));
             for (const auto &ooType : OutOfTypes)
             {
                 TestParams p;
@@ -1087,15 +1250,13 @@ tcu::TestCaseGroup *createCmdBindIndexBuffer2Tests(tcu::TestContext &testCtx)
 
 tcu::TestCaseGroup *createIndexAccessTests(tcu::TestContext &testCtx)
 {
+    std::map<UsedStages, std::string> allStageCombinations{{UsedStages::VERT_FRAG, "vert_frag"},
+                                                           {UsedStages::VERT_GEOM_FRAG, "vert_geom_frag"},
+                                                           {UsedStages::VERT_TESS_FRAG, "vert_tess_frag"},
+                                                           {UsedStages::VERT_TESS_GEOM_FRAG, "vert_tess_geom_frag"}};
+
     // Test access outside of the buffer for indices
     de::MovePtr<tcu::TestCaseGroup> indexAccessTests(new tcu::TestCaseGroup(testCtx, "index_access"));
-
-    const std::pair<std::string, TestMode> testModes[]{
-        {"draw_indexed", TestMode::TM_DRAW_INDEXED},
-        {"draw_indexed_indirect", TestMode::TM_DRAW_INDEXED_INDIRECT},
-        {"draw_indexed_indirect_count", TestMode::TM_DRAW_INDEXED_INDIRECT_COUNT},
-        {"draw_multi_indexed", TestMode::TM_DRAW_MULTI_INDEXED},
-    };
 
     for (const auto &[n, mode] : testModes)
     {
@@ -1103,7 +1264,7 @@ tcu::TestCaseGroup *createIndexAccessTests(tcu::TestContext &testCtx)
         params.mode              = mode;
         params.robustnessVersion = 2;
 
-        std::string name = n + "_" + std::to_string(params.robustnessVersion);
+        std::string name = n + "_2";
         indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name, params));
 
 #ifndef CTS_USES_VULKANSC
@@ -1111,6 +1272,20 @@ tcu::TestCaseGroup *createIndexAccessTests(tcu::TestContext &testCtx)
         {
             params.useDeviceAddressCommands = true;
             indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name + "_device_address", params));
+        }
+
+        // Test EXT_pipeline_robustness with all combinations of used stages and for both robustness versions
+        params.useDeviceAddressCommands = false;
+        for (auto &[usedStages, stagesName] : allStageCombinations)
+        {
+            for (uint32_t robustnessVersion : {1, 2})
+            {
+                name = n + "_pipeline_robustness_" + std::to_string(robustnessVersion) + "_" + stagesName;
+                params.robustnessVersion     = robustnessVersion;
+                params.usedStages            = usedStages;
+                params.usePipelineRobustness = true;
+                indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name, params));
+            }
         }
 #endif // CTS_USES_VULKANSC
     }
