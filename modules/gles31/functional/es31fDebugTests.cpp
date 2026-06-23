@@ -689,6 +689,7 @@ CallbackErrorCase::IterateResult CallbackErrorCase::iterate(void)
     m_errorFunc.call(context);
 
     gl.debugMessageCallback(nullptr, nullptr);
+    gl.disable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     gl.disable(GL_DEBUG_OUTPUT);
 
     m_results.setTestContextResult(m_testCtx);
@@ -756,6 +757,7 @@ LogErrorCase::IterateResult LogErrorCase::iterate(void)
 
     m_errorFunc.call(context);
 
+    gl.disable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     gl.disable(GL_DEBUG_OUTPUT);
     m_results.setTestContextResult(m_testCtx);
 
@@ -988,6 +990,7 @@ FilterCase::IterateResult FilterCase::iterate(void)
         throw;
     }
 
+    gl.disable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     gl.disable(GL_DEBUG_OUTPUT);
     gl.debugMessageCallback(nullptr, nullptr);
     m_results.setTestContextResult(m_testCtx);
@@ -1361,11 +1364,13 @@ GroupFilterCase::IterateResult GroupFilterCase::iterate(void)
     }
     catch (...)
     {
+        gl.disable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
         gl.disable(GL_DEBUG_OUTPUT);
         gl.debugMessageCallback(nullptr, nullptr);
         throw;
     }
 
+    gl.disable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     gl.disable(GL_DEBUG_OUTPUT);
     gl.debugMessageCallback(nullptr, nullptr);
     m_results.setTestContextResult(m_testCtx);
@@ -1428,6 +1433,7 @@ GroupCase::IterateResult GroupCase::iterate(void)
                   GL_DEBUG_SEVERITY_NOTIFICATION);
 
     gl.debugMessageCallback(nullptr, nullptr);
+    gl.disable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     gl.disable(GL_DEBUG_OUTPUT);
 
     m_results.setTestContextResult(m_testCtx);
