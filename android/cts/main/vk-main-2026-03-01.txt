@@ -33,6 +33,7 @@ vk-main-2026-03-01/image-processing.txt
 vk-main-2026-03-01/imageless-framebuffer.txt
 vk-main-2026-03-01/info.txt
 vk-main-2026-03-01/memory.txt
+vk-main-2026-03-01/memory-model.txt
 vk-main-2026-03-01/mesh-shader.txt
 vk-main-2026-03-01/multiview.txt
 vk-main-2026-03-01/pipeline/fast-linked-library.txt
