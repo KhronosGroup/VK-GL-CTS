@@ -24,6 +24,7 @@
 
 #include "vktRayTracingOpacityMicromapTestsKHR.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "vkRayTracingUtil.hpp"
 #include "vkObjUtil.hpp"
@@ -74,11 +75,26 @@ struct TestParams
     bool useNullHandleForSpecialIndex;
     bool nonZeroBase;
     bool lossy; // Lossy OMM
+    bool serialize;
     uint32_t testFlagMask;
     uint32_t subdivisionLevel; // Must be 0 for useSpecialIndex
     uint32_t mode;             // Special index value if useSpecialIndex, 2 or 4 for number of states otherwise
     uint32_t seed;
 };
+
+Move<VkQueryPool> makeQueryPool(const DeviceInterface &vk, const VkDevice device, const VkQueryType queryType,
+                                uint32_t queryCount)
+{
+    const VkQueryPoolCreateInfo queryPoolCreateInfo = {
+        VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // sType
+        nullptr,                                  // pNext
+        (VkQueryPoolCreateFlags)0,                // flags
+        queryType,                                // queryType
+        queryCount,                               // queryCount
+        0u,                                       // pipelineStatistics
+    };
+    return createQueryPool(vk, device, &queryPoolCreateInfo);
+}
 
 class OpacityMicromapCase : public TestCase
 {
@@ -381,9 +397,11 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
     beginCommandBuffer(vkd, cmdBuffer);
 
     // Build acceleration structures.
-    auto topLevelAS    = makeTopLevelAccelerationStructure();
-    auto bottomLevelAS = makeBottomLevelAccelerationStructure();
-    auto micromapAS    = makeMicromapAccelerationStructure();
+    auto topLevelAS     = makeTopLevelAccelerationStructure();
+    auto bottomLevelAS  = makeBottomLevelAccelerationStructure();
+    auto micromapAS     = makeMicromapAccelerationStructure();
+    auto micromapASCopy = makeMicromapAccelerationStructure();
+    std::vector<de::SharedPtr<SerialStorage>> micromapSerialized;
 
     const auto triangleCount       = (m_params.nonZeroBase ? 2u : 1u);
     uint32_t numSubtriangles       = levelToSubtriangles(m_params.subdivisionLevel);
@@ -413,6 +431,39 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
         m_params.useSpecialIndex, m_params.mode);
     micromapAS->createAndBuild(vkd, device, cmdBuffer, alloc, 0);
 
+    if (m_params.serialize)
+    {
+        std::vector<VkDeviceSize> micromapSerializationSize(1);
+        const auto queryPoolSerialization =
+            makeQueryPool(vkd, device, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR, 1);
+
+        queryAccelerationStructureSize(vkd, device, cmdBuffer, {*micromapAS->getPtr()},
+                                       VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, *queryPoolSerialization,
+                                       VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR, 0u,
+                                       micromapSerializationSize);
+        endCommandBuffer(vkd, cmdBuffer);
+        submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+        VK_CHECK(vkd.getQueryPoolResults(device, *queryPoolSerialization, 0u, 1, sizeof(VkDeviceSize),
+                                         micromapSerializationSize.data(), sizeof(VkDeviceSize),
+                                         VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+
+        vkd.resetCommandPool(device, *cmdPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+        beginCommandBuffer(vkd, cmdBuffer);
+
+        de::SharedPtr<SerialStorage> storage(new SerialStorage(
+            vkd, device, alloc, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, micromapSerializationSize[0]));
+
+        micromapAS->serialize(vkd, device, cmdBuffer, storage.get());
+        micromapSerialized.push_back(storage);
+        endCommandBuffer(vkd, cmdBuffer);
+        submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+        vkd.resetCommandPool(device, *cmdPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+        beginCommandBuffer(vkd, cmdBuffer);
+        micromapASCopy->createAndDeserializeFrom(vkd, device, cmdBuffer, alloc, storage.get());
+    }
+
     // Attach the micromap to the geometry
     VkAccelerationStructureTrianglesOpacityMicromapKHR opacityGeometryMicromap = {
         VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_OPACITY_MICROMAP_KHR, //VkStructureType             sType;
@@ -421,8 +472,10 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
         micromapAS->getIndexBufferAddr(vkd, device), // VkDeviceAddress            indexBuffer;
         0,                                           // VkDeviceSize               indexStride;
         (m_params.nonZeroBase ? 1u : 0u),            // uint32_t                   baseTriangle;
-        (m_params.useNullHandleForSpecialIndex ? VK_NULL_HANDLE :
-                                                 *micromapAS->getPtr()), // VkAccelerationStructureKHR micromap;
+        (m_params.useNullHandleForSpecialIndex ?
+             VK_NULL_HANDLE :
+             (m_params.serialize ? *micromapASCopy->getPtr() :
+                                   *micromapAS->getPtr())), // VkAccelerationStructureKHR micromap;
     };
 
     const std::vector<tcu::Vec3> triangle = {
@@ -728,6 +781,38 @@ bool isIlliegalRayFlagsComb(uint32_t mask)
 
 constexpr uint32_t kMaxSubdivisionLevel = 15;
 
+void addSerializeTestsKHR(tcu::TestCaseGroup *group)
+{
+    uint32_t seed = 718634540u;
+
+    struct
+    {
+        uint32_t mode;
+        std::string name;
+    } modes[] = {{2, "2"}, {4, "4"}};
+
+    for (uint32_t modeNdx = 0; modeNdx < DE_LENGTH_OF_ARRAY(modes); ++modeNdx)
+    {
+        de::MovePtr<tcu::TestCaseGroup> modeGroup(
+            new tcu::TestCaseGroup(group->getTestContext(), modes[modeNdx].name.c_str()));
+
+        for (uint32_t level = 0; level <= kMaxSubdivisionLevel; level++)
+        {
+            TestParams testParams{
+                false, false, false, false, true, 0u, level, modes[modeNdx].mode, seed++,
+            };
+
+            std::stringstream css;
+            css << "level_" << level;
+            const auto testName = css.str();
+
+            modeGroup->addChild(new OpacityMicromapCase(group->getTestContext(), testName, testParams));
+        }
+
+        group->addChild(modeGroup.release());
+    }
+}
+
 tcu::TestCaseGroup *createOpacityMicromapTestsKHR(tcu::TestContext &testCtx)
 {
     // Test acceleration structures using opacity micromap with ray pipelines
@@ -778,6 +863,7 @@ tcu::TestCaseGroup *createOpacityMicromapTestsKHR(tcu::TestContext &testCtx)
                 {
                     TestParams testParams{
                         specialIndexUse[specialIndexNdx].useSpecialIndex,
+                        false,
                         false,
                         false,
                         false,
@@ -832,6 +918,7 @@ tcu::TestCaseGroup *createOpacityMicromapTestsKHR(tcu::TestContext &testCtx)
                                     false,
                                     false,
                                     lossyModes[lossyModeNdx].lossy,
+                                    false,
                                     testFlagMask,
                                     level,
                                     modes[modeNdx].mode,
@@ -863,6 +950,7 @@ tcu::TestCaseGroup *createOpacityMicromapTestsKHR(tcu::TestContext &testCtx)
                                 false,
                                 false,
                                 false,
+                                false,
                                 testFlagMask,
                                 level,
                                 modes[modeNdx].mode,
@@ -891,6 +979,8 @@ tcu::TestCaseGroup *createOpacityMicromapTestsKHR(tcu::TestContext &testCtx)
 
         group->addChild(testFlagGroup.release());
     }
+
+    addTestGroup(group.get(), "serialize", addSerializeTestsKHR);
 
     return group.release();
 }
