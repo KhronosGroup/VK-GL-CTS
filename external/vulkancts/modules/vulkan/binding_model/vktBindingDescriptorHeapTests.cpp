@@ -3935,6 +3935,8 @@ DescriptorHeapTestInstanceBase::DescriptorHeapTestInstanceBase(Context &context,
     }
 
     m_physDevice = physDevice;
+
+    m_memoryProperties = vk::getPhysicalDeviceMemoryProperties(inst, physDevice);
 }
 
 void DescriptorHeapTestCaseBasic::initPrograms(vk::SourceCollections &programCollection) const
