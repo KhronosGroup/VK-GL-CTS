@@ -1460,7 +1460,6 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DISPLAY_PRESENT_INFO_KHR:									return "VK_STRUCTURE_TYPE_DISPLAY_PRESENT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_DISPLAY_PROPERTIES_2_KHR:									return "VK_STRUCTURE_TYPE_DISPLAY_PROPERTIES_2_KHR";
 		case VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR:								return "VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR";
-		case VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT:					return "VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT";
 		case VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT:						return "VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT";
 		case VK_STRUCTURE_TYPE_EVENT_CREATE_INFO:											return "VK_STRUCTURE_TYPE_EVENT_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO:									return "VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO";
@@ -9128,27 +9127,6 @@ std::ostream& operator<< (std::ostream& s, const VkXYColorEXT& value)
 	s << "VkXYColorEXT = {\n";
 	s << "\tx = " << value.x << '\n';
 	s << "\ty = " << value.y << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkDrmFormatModifierProperties2EXT& value)
-{
-	s << "VkDrmFormatModifierProperties2EXT = {\n";
-	s << "\tdrmFormatModifier = " << value.drmFormatModifier << '\n';
-	s << "\tdrmFormatModifierPlaneCount = " << value.drmFormatModifierPlaneCount << '\n';
-	s << "\tdrmFormatModifierTilingFeatures = " << getFormatFeatureFlags2Str(value.drmFormatModifierTilingFeatures) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkDrmFormatModifierPropertiesList2EXT& value)
-{
-	s << "VkDrmFormatModifierPropertiesList2EXT = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tdrmFormatModifierCount = " << value.drmFormatModifierCount << '\n';
-	s << "\tpDrmFormatModifierProperties = " << value.pDrmFormatModifierProperties << '\n';
 	s << '}';
 	return s;
 }

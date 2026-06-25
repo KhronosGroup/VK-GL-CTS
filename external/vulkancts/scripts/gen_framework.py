@@ -712,52 +712,6 @@ class ConformanceItemLists:
         ]
         self.commands[:] = [c for c in self.commands if c.name not in incorrectCommands]
         self.commands = sorted(self.commands, key=lambda item: item.name)
-        # add aliases for structures with incorrect names
-        khrStructs = [
-            # VK_KHR_global_priority
-            'VkQueueGlobalPriority',
-            # VK_KHR_vertex_attribute_divisor
-            'VkVertexInputBindingDivisorDescription',
-            'VkPhysicalDeviceVertexAttributeDivisorFeatures'
-            'VkPhysicalDeviceVertexAttributeDivisorProperties'
-            'VkPipelineVertexInputDivisorStateCreateInfo'
-        ]
-        for s in self.structs:
-            if s.name in khrStructs:
-                s.alias = s.name + 'KHR'
-        # add missing structs that are needed by vulkan_json_parser.hpp (to be removed when vulkan_json_parser.hpp is fixed)
-        structNames = [s.name for s in self.structs]
-        commonMemberParams = (False, None, False, None, False, False, [], False, False, None, '', None, None, [])
-        dfmp2StructName = 'VkDrmFormatModifierProperties2EXT'
-        if dfmp2StructName not in structNames:
-            members = [
-                Member('drmFormatModifier', 'uint64_t', 'uint64_t', *commonMemberParams),
-                Member('drmFormatModifierPlaneCount', 'uint32_t', 'uint32_t', *commonMemberParams),
-                Member('drmFormatModifierTilingFeatures', 'VkFormatFeatureFlags2', 'VkFormatFeatureFlags2', *commonMemberParams)
-            ]
-            self.structs.append(Struct(dfmp2StructName, [], [], None, None, members, False, False, '', False, None, None))
-        dfmpl2StructName = 'VkDrmFormatModifierPropertiesList2EXT'
-        if dfmpl2StructName not in structNames:
-            members = [
-                Member('sType', 'VkStructureType', 'VkStructureType', *commonMemberParams),
-                Member('pNext', 'void', 'void*', *commonMemberParams),
-                Member('drmFormatModifierCount', 'uint32_t', 'uint32_t', *commonMemberParams),
-                Member('pDrmFormatModifierProperties', dfmp2StructName, 'VkDrmFormatModifierProperties2EXT*', *commonMemberParams)
-            ]
-            sType = 'VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT'
-            self.structs.append(Struct(dfmpl2StructName, [], [], None, None, members, False, False, sType, False, None, None))
-            # add sType to VkStructureType enum
-            for e in self.enums:
-                if e.name == 'VkStructureType':
-                    e.fields.append(EnumField(name=sType,
-                                              aliases=[],
-                                              parent='VkStructureType',
-                                              protect=None,
-                                              negative=False,
-                                              value=1000158006,
-                                              valueStr='1000158006',
-                                              extensions=[],
-                                              extending=True))
     # </vulkan_sc_workaround>
 
     def filterToSupportedByCTS(self, items):
@@ -905,11 +859,11 @@ class BasicTypesGenerator(CTSGenerator):
             sorted_extensions = sorted(self.vk.extensions.values(), key=lambda item: item.name)
             for e in sorted_extensions:
                 yield f'#define {e.nameString} "{e.name}"'
-                #yield f'#define {e.specVersion} 1'
-            # <vulkan_object_issue_workaround>
-            # there is no values for *_SPEC_VERSION
-            yield f'#define VK_KHR_VULKAN_MEMORY_MODEL_SPEC_VERSION 3'
-            # </vulkan_object_issue_workaround>
+
+            # currently cts needs spec version only for VK_KHR_vulkan_memory_model
+            memoryModelExt = self.vk.extensions.get('VK_KHR_vulkan_memory_model')
+            if memoryModelExt:
+                yield f'#define {memoryModelExt.specVersion} {memoryModelExt.specVersionValue}'
 
             # print video defines
             video_defines = sorted(self.vk.videoStd.constants.values(), key=lambda item: item.name)
@@ -2075,9 +2029,8 @@ class SupportedExtensionsGenerator(CTSGenerator):
         self.write("}\n")
 
 class ExtensionFunctionsGenerator(CTSGenerator):
-    def __init__(self, ctsLists, params):
+    def __init__(self, ctsLists, _):
         CTSGenerator.__init__(self, ctsLists)
-        self.rawVkXml = params
 
     def writeExtensionNameArrays (self):
         yield '::std::string instanceExtensionNames[] =\n{'
@@ -2102,35 +2055,29 @@ class ExtensionFunctionsGenerator(CTSGenerator):
             yield '\t(void)vIEP;\n\t(void)vDEP;'
             dg_list = ["vkGetDeviceGroupPresentCapabilitiesKHR", "vkGetDeviceGroupSurfacePresentModesKHR", "vkAcquireNextImage2KHR"]
 
-        # <vulkan_object_issue_workaround>
-        # there is no information in vulkan_object about 'require depends' for extensions
         resultData = {}
-        for rootChild in self.rawVkXml.getroot():
-            if rootChild.tag != 'extensions':
+        for command in self.vk.commands.values():
+            if getFunctionType(command) != functionType:
                 continue
-            for extensionNode in rootChild:
-                extensionName = extensionNode.get('name')
-                if extensionName not in self.vk.extensions:
+            for extName, depends in command.definingRequirements.items():
+                if extName not in self.vk.extensions.keys():
                     continue
-                for requireItem in extensionNode.findall('require'):
-                    parsedRequirements = []
-                    depends = requireItem.get("depends")
-                    funcNames = []
-                    for individualRequirement in requireItem:
-                        if individualRequirement.tag != "command":
-                            continue
-                        commandName = individualRequirement.get("name")
-                        if commandName not in self.vk.commands:
-                            continue
-                        if getFunctionType(self.vk.commands[commandName]) != functionType:
-                            continue
-                        funcNames.append(commandName)
-                    if extensionName not in resultData:
-                        resultData[extensionName] = [(depends, funcNames)]
-                    else:
-                        resultData[extensionName].append((depends, funcNames))
+                if extName not in resultData:
+                    resultData[extName] = [(depends, [command.name])]
+                else:
+                    insertNewDep = True
+                    # check if same dependency was already saved for this extension
+                    for memorizedDep, memorizedCmdList in resultData[extName]:
+                        if depends == memorizedDep:
+                            memorizedCmdList.append(command.name)
+                            insertNewDep = False
+                            break
+                    if insertNewDep:
+                        resultData[extName].append((depends, [command.name]))
+        for extName in self.vk.extensions.keys():
+            if extName not in resultData:
+                resultData[extName] = []
         resultData = dict(sorted(resultData.items()))
-        # </vulkan_object_issue_workaround>
 
         for extensionName, requirementList in resultData.items():
             yield f'\tif (extName == "{extensionName}")'
@@ -2548,13 +2495,10 @@ class FeaturesOrPropertiesGenericGenerator(CTSGenerator):
             nameString = f"DECL_CORE_{structGroupUp}_NAME"
             if struct.extensions:
                 extName = struct.extensions[0]
-                # part of code below contains workaround for bug in ShaderObject
-                # where extensions list sometimes has Extension objects in it
-                # instead of strings with extension name
-                ext = self.vk.extensions[extName] if isinstance(extName, str) else extName
+                ext = self.vk.extensions[extName]
                 if len(struct.extensions) > 1:
                     extName = struct.extensions[1]
-                    ext2 = self.vk.extensions[extName] if isinstance(extName, str) else extName
+                    ext2 = self.vk.extensions[extName]
                     if ext.promotedTo == ext2.name:
                         ext = ext2
                 nameString = ext.nameString
@@ -3972,7 +3916,7 @@ if __name__ == "__main__":
         GenData('vkNullDriverImpl.inl',                       NullDriverImplGenerator),
         GenData('vkSupportedExtensions.inl',                  SupportedExtensionsGenerator),
         GenData('vkCoreFunctionalities.inl',                  CoreFunctionalitiesGenerator),
-        GenData('vkExtensionFunctions.inl',                   ExtensionFunctionsGenerator, (rawVkXml)),
+        GenData('vkExtensionFunctions.inl',                   ExtensionFunctionsGenerator),
         GenData('vkMandatoryFeatures.inl',                    MandatoryFeaturesGenerator),
         GenData('vkInstanceExtensions.inl',                   ExtensionListGenerator),
         GenData('vkDeviceExtensions.inl',                     ExtensionListGenerator),

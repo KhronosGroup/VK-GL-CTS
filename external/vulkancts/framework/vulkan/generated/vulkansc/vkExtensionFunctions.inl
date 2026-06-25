@@ -736,11 +736,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	}
 	if (extName == "VK_NV_external_sci_sync2")
 	{
-		functions.push_back("vkCreateSemaphoreSciSyncPoolNV");
 		functions.push_back("vkGetFenceSciSyncFenceNV");
 		functions.push_back("vkGetFenceSciSyncObjNV");
 		functions.push_back("vkImportFenceSciSyncFenceNV");
 		functions.push_back("vkImportFenceSciSyncObjNV");
+		functions.push_back("vkCreateSemaphoreSciSyncPoolNV");
 		return;
 	}
 	if (extName == "VK_NV_private_vendor_info")
