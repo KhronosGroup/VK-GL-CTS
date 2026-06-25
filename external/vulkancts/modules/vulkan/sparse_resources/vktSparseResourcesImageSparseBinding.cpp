@@ -36,6 +36,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkStrUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 
@@ -205,7 +206,8 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
                     imageSparseInfo.usage, imageSparseInfo.flags,
                     &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
             {
-                TCU_THROW(NotSupportedError, "Image format does not support sparse binding operations");
+                TCU_THROW(NotSupportedError, "Image format " + getFormatSimpleName(imageSparseInfo.format) +
+                                                 " does not support sparse binding operations");
             }
 
             imageSparseInfo.mipLevels =
@@ -622,6 +624,12 @@ TestInstance *ImageSparseBindingCase::createInstance(Context &context) const
 std::vector<TestFormat> getSparseBindingTestFormats(ImageType imageType, bool addExtraFormat)
 {
     auto formats = getTestFormats(imageType);
+
+    // 256-bit (64-bit-per-component) formats are usually buffer-only, but the spec does not forbid
+    // image support; exercise sparse binding where the driver advertises it (skipped otherwise).
+    formats.push_back(TestFormat{VK_FORMAT_R64G64B64A64_UINT});
+    formats.push_back(TestFormat{VK_FORMAT_R64G64B64A64_SINT});
+
 #ifndef CTS_USES_VULKANSC
     if (addExtraFormat)
         formats.push_back(TestFormat{VK_FORMAT_A8_UNORM_KHR});

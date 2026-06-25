@@ -907,6 +907,10 @@ std::string getImageFormatID(VkFormat format)
         return "rgba16f";
     case VK_FORMAT_R32G32B32A32_SFLOAT:
         return "rgba32f";
+    case VK_FORMAT_R64G64B64A64_SINT:
+        return "rgba64i";
+    case VK_FORMAT_R64G64B64A64_UINT:
+        return "rgba64ui";
 
     case VK_FORMAT_G8B8G8R8_422_UNORM:
     case VK_FORMAT_B8G8R8G8_422_UNORM:

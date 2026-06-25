@@ -2017,6 +2017,48 @@ PlanarFormatDescription getCorePlanarFormatDescription(VkFormat format)
                                               }};
         return desc;
     }
+    case VK_FORMAT_R64G64B64A64_UINT:
+    {
+        const PlanarFormatDescription desc = {1, // planes
+                                              chanR | chanG | chanB | chanA,
+                                              1,
+                                              1,
+                                              {
+                                                  //        Size    WDiv    HDiv    planeCompatibleFormat
+                                                  {32, 1, 1, VK_FORMAT_R64G64B64A64_UINT},
+                                                  {0, 0, 0, VK_FORMAT_UNDEFINED},
+                                                  {0, 0, 0, VK_FORMAT_UNDEFINED},
+                                              },
+                                              {
+                                                  //        Plane    Type    Offs    Size    Stride
+                                                  {0, uint, 0, 64, 32},   // R
+                                                  {0, uint, 64, 64, 32},  // G
+                                                  {0, uint, 128, 64, 32}, // B
+                                                  {0, uint, 192, 64, 32}  // A
+                                              }};
+        return desc;
+    }
+    case VK_FORMAT_R64G64B64A64_SINT:
+    {
+        const PlanarFormatDescription desc = {1, // planes
+                                              chanR | chanG | chanB | chanA,
+                                              1,
+                                              1,
+                                              {
+                                                  //        Size    WDiv    HDiv    planeCompatibleFormat
+                                                  {32, 1, 1, VK_FORMAT_R64G64B64A64_SINT},
+                                                  {0, 0, 0, VK_FORMAT_UNDEFINED},
+                                                  {0, 0, 0, VK_FORMAT_UNDEFINED},
+                                              },
+                                              {
+                                                  //        Plane    Type    Offs    Size    Stride
+                                                  {0, sint, 0, 64, 32},   // R
+                                                  {0, sint, 64, 64, 32},  // G
+                                                  {0, sint, 128, 64, 32}, // B
+                                                  {0, sint, 192, 64, 32}  // A
+                                              }};
+        return desc;
+    }
 
     case VK_FORMAT_R8G8_UINT:
     {

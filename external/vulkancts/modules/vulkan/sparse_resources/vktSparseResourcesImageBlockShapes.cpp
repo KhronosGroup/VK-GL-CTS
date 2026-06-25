@@ -256,6 +256,11 @@ tcu::TestStatus ImageBlockShapesInstance::iterate(void)
                         bitsPerPixel;
         }
 
+        // Standard sparse image block shapes are defined only up to 128-bit texels; larger formats
+        // have no standardized shape, so there is nothing to validate against here.
+        if (pixelSize > 128u)
+            return tcu::TestStatus::pass("Pass (no standard block shape defined for this texel size)");
+
         if (m_imageType == IMAGE_TYPE_3D)
         {
             if (!sparseProperties.residencyStandard3DBlockShape)
