@@ -6,6 +6,7 @@ dEQP-VKSC.info.device_group_peer_memory_features
 dEQP-VKSC.info.device_layers
 dEQP-VKSC.info.device_mandatory_features
 dEQP-VKSC.info.device_memory_budget
+dEQP-VKSC.info.device_memory_budget_multi_instance
 dEQP-VKSC.info.device_memory_properties
 dEQP-VKSC.info.device_no_khx_extensions
 dEQP-VKSC.info.device_properties
