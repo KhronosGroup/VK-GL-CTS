@@ -558,14 +558,6 @@ dEQP-VK.binding_model.descriptor_heap.special_heap.sparse.storage_image
 dEQP-VK.binding_model.descriptor_heap.special_heap.sparse.storage_texel_buffer
 dEQP-VK.binding_model.descriptor_heap.special_heap.sparse.uniform_buffer
 dEQP-VK.binding_model.descriptor_heap.special_heap.sparse.uniform_texel_buffer
-dEQP-VK.binding_model.descriptor_heap.special_heap.sparse_and_protected.acceleration_structure
-dEQP-VK.binding_model.descriptor_heap.special_heap.sparse_and_protected.sampled_image
-dEQP-VK.binding_model.descriptor_heap.special_heap.sparse_and_protected.sampler
-dEQP-VK.binding_model.descriptor_heap.special_heap.sparse_and_protected.storage_buffer
-dEQP-VK.binding_model.descriptor_heap.special_heap.sparse_and_protected.storage_image
-dEQP-VK.binding_model.descriptor_heap.special_heap.sparse_and_protected.storage_texel_buffer
-dEQP-VK.binding_model.descriptor_heap.special_heap.sparse_and_protected.uniform_buffer
-dEQP-VK.binding_model.descriptor_heap.special_heap.sparse_and_protected.uniform_texel_buffer
 dEQP-VK.binding_model.descriptor_heap.spirv.array_variable_pointers
 dEQP-VK.binding_model.descriptor_heap.spirv.atomic_image_within_function
 dEQP-VK.binding_model.descriptor_heap.spirv.function_call_binding
