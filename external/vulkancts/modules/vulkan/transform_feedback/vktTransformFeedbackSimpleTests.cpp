@@ -114,6 +114,7 @@ enum TestType
     TEST_TYPE_HOLES_GEOMETRY,
     TEST_TYPE_MAX_OUTPUT_COMPONENTS,
     TEST_TYPE_SHADER_OBJECT_REBIND,
+    TEST_TYPE_DRAW_INDIRECT_COUNTER_RESUBMIT,
     TEST_TYPE_LAST
 };
 
@@ -2920,8 +2921,10 @@ tcu::TestStatus TransformFeedbackBackwardDependencyTestInstance::iterate(void)
     const std::vector<VkDeviceSize> chunkSizesList = generateSizesList(m_parameters.bufferSize, m_parameters.partCount);
     const std::vector<VkDeviceSize> chunkOffsetsList = generateOffsetsList(chunkSizesList);
 
-    const uint32_t numPoints = static_cast<uint32_t>(chunkSizesList[0] / sizeof(uint32_t));
-    const bool indirectDraw  = (m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY_INDIRECT);
+    const uint32_t numPoints     = static_cast<uint32_t>(chunkSizesList[0] / sizeof(uint32_t));
+    const bool indirectDraw      = (m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY_INDIRECT);
+    const uint32_t resubmitCount = 16u; // Number of submissions of the same command buffer
+    const bool resubmitCmdBuffer = (m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_RESUBMIT);
 
     // Color buffer.
     const tcu::IVec3 fbExtent(static_cast<int>(numPoints), 1, 1);
@@ -3049,7 +3052,10 @@ tcu::TestStatus TransformFeedbackBackwardDependencyTestInstance::iterate(void)
             indirectDeviceAddress = getBufferDeviceAddress(vk, device, **indirectBuffer);
     }
 
-    beginCommandBuffer(vk, *cmdBuffer);
+    VkCommandBufferUsageFlags cmdBufferFlags =
+        resubmitCmdBuffer ? VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT : VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    beginCommandBuffer(vk, *cmdBuffer, cmdBufferFlags);
     {
         beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, scissors.at(0u), clearColor);
         {
@@ -3117,7 +3123,17 @@ tcu::TestStatus TransformFeedbackBackwardDependencyTestInstance::iterate(void)
     }
     copyImageToBuffer(vk, *cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), fbExtent.swizzle(0, 1));
     endCommandBuffer(vk, *cmdBuffer);
-    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+    if (!resubmitCmdBuffer)
+        submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+    else
+    {
+        // Resubmit the same command buffer
+        for (uint32_t execIdx = 0u; execIdx < resubmitCount; execIdx++)
+        {
+            submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+        }
+    }
 
     verifyTransformFeedbackBuffer(deviceHelper, tfBufAllocation, m_parameters.bufferSize);
 
@@ -4555,7 +4571,8 @@ vkt::TestInstance *TransformFeedbackTestCase::createInstance(vkt::Context &conte
         return new TransformFeedbackIndirectDrawTestInstance(context, m_parameters, true, false, true);
 
     if (m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY ||
-        m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY_INDIRECT)
+        m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY_INDIRECT ||
+        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_RESUBMIT)
         return new TransformFeedbackBackwardDependencyTestInstance(context, m_parameters);
 
     if (m_parameters.testType == TEST_TYPE_QUERY_GET || m_parameters.testType == TEST_TYPE_QUERY_COPY ||
@@ -4622,7 +4639,8 @@ void TransformFeedbackTestCase::checkSupport(Context &context) const
     }
 
     if (m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY ||
-        m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY_INDIRECT)
+        m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY_INDIRECT ||
+        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_RESUBMIT)
     {
         if (!xfbProperties.transformFeedbackDraw)
             TCU_THROW(NotSupportedError, "transformFeedbackDraw not supported");
@@ -4724,7 +4742,8 @@ void TransformFeedbackTestCase::checkSupport(Context &context) const
 void TransformFeedbackTestCase::initPrograms(SourceCollections &programCollection) const
 {
     const bool backwardDependency = (m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY ||
-                                     m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY_INDIRECT);
+                                     m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY_INDIRECT ||
+                                     m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_RESUBMIT);
     const bool vertexShaderOnly =
         m_parameters.testType == TEST_TYPE_BASIC || m_parameters.testType == TEST_TYPE_RESUME ||
         (m_parameters.testType == TEST_TYPE_WINDING && m_parameters.primTopology != VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
@@ -6680,6 +6699,33 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
             parameters.useDeviceAddressCommands = true;
             addTransformFeedbackTestCaseVariants(group, (testName + "_device_address"), parameters);
         }
+    }
+
+    {
+        const auto testType         = TEST_TYPE_DRAW_INDIRECT_COUNTER_RESUBMIT;
+        const std::string &testName = "draw_indirect_counter_resubmit";
+        TestParameters parameters   = {constructionType,
+                                       testType,
+                                       512u,
+                                       2u,
+                                       0u,
+                                       0u,
+                                       0u,
+                                       STREAM_ID_0_NORMAL,
+                                       false,
+                                       false,
+                                       false,
+                                       false,
+                                       false,
+                                       false,
+                                       VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+                                       false,
+                                       false};
+
+        addTransformFeedbackTestCaseVariants(group, testName, parameters);
+
+        parameters.useDeviceAddressCommands = true;
+        addTransformFeedbackTestCaseVariants(group, (testName + "_device_address"), parameters);
     }
 
     {
