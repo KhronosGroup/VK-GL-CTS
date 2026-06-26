@@ -336,7 +336,7 @@ vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(vk::wsi::Type wsiType, 
         0u,
         nullptr,
         transform,
-        vk::VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+        vk::VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,
         vk::VK_PRESENT_MODE_FIFO_KHR,
         VK_FALSE,      // clipped
         VK_NULL_HANDLE // oldSwapchain

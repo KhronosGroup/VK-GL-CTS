@@ -388,7 +388,7 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters(VkSurfaceKHR surface, VkSur
         0u,
         nullptr,
         transform,
-        VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+        VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,
         presentMode,
         VK_FALSE,       // clipped
         VK_NULL_HANDLE, // oldSwapchain
