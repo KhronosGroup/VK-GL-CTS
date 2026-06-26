@@ -267,6 +267,8 @@ tcu::TestStatus twoCmdBuffersRun(Context &context, TwoCmdBuffersParams params)
         beginCommandBuffer(ctx.vkd, cmdBuffer);
         ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
         ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *normalPipeline);
+        const uint32_t indexValue = 0;
+        ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, stageFlags, 0u, pcSize, &indexValue);
         ctx.vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
         cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                  (VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_HOST_BIT),
