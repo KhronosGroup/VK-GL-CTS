@@ -5668,6 +5668,23 @@ void RenderPassTestCase::checkSupport(Context &context) const
     for (const auto feature : m_config.requiredFeatures)
         context.requireDeviceCoreFeature(feature);
 
+    for (const auto &attchment : renderPassInfo.getAttachments())
+    {
+        if (attchment.getSamples() == VK_SAMPLE_COUNT_1_BIT)
+            continue;
+
+        const tcu::TextureFormat tcuFormat = mapVkFormat(attchment.getFormat());
+        const bool isDS                    = hasDepthComponent(tcuFormat.order) || hasStencilComponent(tcuFormat.order);
+        const VkImageUsageFlags usage =
+            isDS ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        VkImageFormatProperties imgProps;
+        const VkResult res = vki.getPhysicalDeviceImageFormatProperties(
+            physDevice, attchment.getFormat(), VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, usage, 0u, &imgProps);
+
+        if (res != VK_SUCCESS || (imgProps.sampleCounts & attchment.getSamples()) == 0u)
+            TCU_THROW(NotSupportedError, "MSAA sample count not supported for format");
+    }
+
     if (!checkTextureFormatSupport(context))
         TCU_THROW(NotSupportedError, "Format not supported");
 

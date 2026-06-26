@@ -2034,6 +2034,57 @@ public:
 
     ~OneToNTestInstance() = default;
 
+    void recordReleaseBarrier(const DeviceInterface &vk, VkCommandBuffer cmdBuffer,
+                              const QueueTimelineIteration &inIter, const QueueTimelineIteration &outIter,
+                              const Resource &resource, bool originalLayout)
+    {
+        const SyncInfo writeSync                         = inIter.op->getOutSyncInfo();
+        const SyncInfo readSync                          = outIter.op->getInSyncInfo();
+        SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(m_type, vk, true);
+
+        // QFOT not required
+        if (inIter.queueFamilyIdx == outIter.queueFamilyIdx)
+            return;
+
+        if (resource.getType() == RESOURCE_TYPE_IMAGE)
+        {
+            DE_ASSERT(writeSync.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED);
+            DE_ASSERT(readSync.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED);
+
+            const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+                writeSync.stageMask,                        // VkPipelineStageFlags2KHR          srcStageMask
+                writeSync.accessMask,                       // VkAccessFlags2KHR                 srcAccessMask
+                VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR, // VkPipelineStageFlags2KHR      dstStageMask
+                VK_ACCESS_2_NONE,                           // VkAccessFlags2KHR             dstAccessMask
+                originalLayout ? writeSync.imageLayout :
+                                 readSync.imageLayout, // VkImageLayout                    oldLayout
+                readSync.imageLayout,                  // VkImageLayout                    newLayout
+                resource.getImage().handle,            // VkImage                            image
+                resource.getImage().subresourceRange,  // VkImageSubresourceRange            subresourceRange
+                inIter.queueFamilyIdx,                 // uint32_t                            srcQueueFamilyIndex
+                outIter.queueFamilyIdx                 // uint32_t                            destQueueFamilyIndex
+            );
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
+            synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
+        }
+        else
+        {
+            const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
+                writeSync.stageMask,                        // VkPipelineStageFlags2KHR        srcStageMask
+                writeSync.accessMask,                       // VkAccessFlags2KHR               srcAccessMask
+                VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR, // VkPipelineStageFlags2KHR      dstStageMask
+                VK_ACCESS_2_NONE,                           // VkAccessFlags2KHR             dstAccessMask
+                resource.getBuffer().handle,                // VkBuffer                            buffer
+                0,                                          // VkDeviceSize                        offset
+                VK_WHOLE_SIZE,                              // VkDeviceSize                        size
+                inIter.queueFamilyIdx,                      // uint32_t                            srcQueueFamilyIndex
+                outIter.queueFamilyIdx                      // uint32_t                            dstQueueFamilyIndex
+            );
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
+            synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
+        }
+    }
+
     void recordBarrier(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, const QueueTimelineIteration &inIter,
                        const QueueTimelineIteration &outIter, const Resource &resource, bool originalLayout)
     {
@@ -2110,7 +2161,7 @@ public:
         const VkDevice device     = *m_device;
         const Unique<VkSemaphore> semaphore(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE));
         Unique<VkCommandPool> writeCmdPool(createCommandPool(
-            vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_context.getUniversalQueueFamilyIndex()));
+            vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_writeIteration->queueFamilyIdx));
         Unique<VkCommandBuffer> writeCmdBuffer(makeCommandBuffer(vk, device, *writeCmdPool));
         std::vector<SharedPtr<Move<VkCommandPool>>> copyCmdPools;
         std::vector<SharedPtr<Move<VkCommandBuffer>>> copyPtrCmdBuffers;
@@ -2147,14 +2198,27 @@ public:
         {
             beginCommandBuffer(vk, *writeCmdBuffer);
             m_writeIteration->op->recordCommands(*writeCmdBuffer);
+            for (uint32_t copyOpIdx = 0; copyOpIdx < m_copyIterations.size(); copyOpIdx++)
+
+                // Record only one release barrier for the single buffer/image that is the source of N copy operations
+                if (copyOpIdx <= 1u)
+                    recordReleaseBarrier(vk, *writeCmdBuffer, *m_writeIteration, *m_copyIterations[copyOpIdx],
+                                         *m_writeResource, copyOpIdx == 0);
             endCommandBuffer(vk, *writeCmdBuffer);
 
             for (uint32_t copyOpIdx = 0; copyOpIdx < m_copyIterations.size(); copyOpIdx++)
             {
                 beginCommandBuffer(vk, **copyPtrCmdBuffers[copyOpIdx]);
-                recordBarrier(vk, **copyPtrCmdBuffers[copyOpIdx], *m_writeIteration, *m_copyIterations[copyOpIdx],
-                              *m_writeResource, copyOpIdx == 0);
+
+                // Record only one acquire barrier for the single buffer/image that is the source of N copy operations on the same queue
+                if (copyOpIdx <= 1u)
+                    recordBarrier(vk, **copyPtrCmdBuffers[copyOpIdx], *m_writeIteration, *m_copyIterations[copyOpIdx],
+                                  *m_writeResource, copyOpIdx == 0);
                 m_copyIterations[copyOpIdx]->op->recordCommands(**copyPtrCmdBuffers[copyOpIdx]);
+
+                // Record release barriers for the each buffer/image that is the source of N read operations
+                recordReleaseBarrier(vk, **copyPtrCmdBuffers[copyOpIdx], *m_copyIterations[copyOpIdx],
+                                     *m_readIterations[copyOpIdx], *m_copyResources[copyOpIdx], true);
                 endCommandBuffer(vk, **copyPtrCmdBuffers[copyOpIdx]);
             }
 
