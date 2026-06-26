@@ -16376,11 +16376,13 @@ void populateSpecialHeapTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
     {
         for (const bool enableProtectedHeap : {false, true})
         {
+            // Invalid due to VU 01888
+            if (enableSparseHeap && enableProtectedHeap)
+                continue;
+
             std::string specialModeName;
 
-            if (enableSparseHeap && enableProtectedHeap)
-                specialModeName = "sparse_and_protected";
-            else if (enableSparseHeap)
+            if (enableSparseHeap)
                 specialModeName = "sparse";
             else if (enableProtectedHeap)
                 specialModeName = "protected";

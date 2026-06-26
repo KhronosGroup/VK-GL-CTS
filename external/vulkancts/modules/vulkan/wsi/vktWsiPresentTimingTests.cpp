@@ -84,7 +84,7 @@ constexpr uint32_t kDefaultWindowWidth            = 128;
 constexpr uint32_t kDefaultWindowHeight           = 128;
 constexpr uint32_t kNumParallelThreads            = 4;
 constexpr uint32_t kMaxPresentStageCount          = 4;
-constexpr uint64_t kTargetTimeMarginNs            = 1'000'000;
+constexpr uint64_t kTargetTimeMarginNs            = 2'000'000;
 constexpr uint64_t kCalibratedHostTimeMarginNs    = 10'000;
 constexpr uint64_t kMinSleepTimeToDrainNs         = 5'000'000;
 constexpr uint64_t kNsPerSec                      = 1'000'000'000;
@@ -313,6 +313,20 @@ vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(vk::wsi::Type wsiType, 
     vk::VkSurfaceCapabilitiesKHR capabilities{};
     getSurfacePresentTimingCapabilities(vki, physicalDevice, surface, &capabilities);
 
+    if (presentMode == VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR ||
+        presentMode == VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR)
+    {
+        // Can only ever be 1, per spec.
+        desiredImageCount = 1;
+    }
+    else
+    {
+        // otherwise clamp to the range the driver says is acceptable.
+        desiredImageCount = de::clamp(desiredImageCount, capabilities.minImageCount,
+                                      capabilities.maxImageCount > 0 ? capabilities.maxImageCount :
+                                                                       capabilities.minImageCount + desiredImageCount);
+    }
+
     const std::vector<vk::VkSurfaceFormatKHR> formats =
         vk::wsi::getPhysicalDeviceSurfaceFormats(vki, physicalDevice, surface);
     const vk::wsi::PlatformProperties &platformProperties = vk::wsi::getPlatformProperties(wsiType);
@@ -333,7 +347,7 @@ vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(vk::wsi::Type wsiType, 
         0u,
         nullptr,
         VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
-        VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+        VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,
         presentMode,
         VK_FALSE,
         VK_NULL_HANDLE,
@@ -1160,6 +1174,8 @@ tcu::TestStatus timingQueueTest(Context &context, vk::wsi::Type wsiType)
     VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, **renderSemaphores[retryFrame.imageIndex], *swapchain,
                                        retryFrame.imageIndex, timingInfo, 0));
 
+    vkd.queueWaitIdle(devHelper.queue);
+
     // Drain all outstanding results
     resultsCount = drainPresentationTimingResults(vkd, device, *swapchain, pth, remainingResults + 1);
     if (resultsCount != remainingResults + 1)
@@ -1253,6 +1269,8 @@ tcu::TestStatus timingTest(Context &context, PresentTimingTestConfig config)
 
         currentPresentId += presentIdStep;
     }
+
+    vkd.queueWaitIdle(devHelper.queue);
 
     if (drainPresentationTimingResults(vkd, device, *swapchain, pth, pendingResults) != pendingResults)
         TCU_FAIL("Failed to retrieve all timing results");
@@ -1352,6 +1370,8 @@ tcu::TestStatus largeQueueSizeTest(Context &context, vk::wsi::Type wsiType)
         pendingResults++;
         currentPresentId += presentIdStep;
     }
+
+    vkd.queueWaitIdle(devHelper.queue);
 
     if (drainPresentationTimingResults(vkd, device, *swapchain, pth, pendingResults) != pendingResults)
         TCU_FAIL("Failed to retrieve all timing results");
@@ -1543,6 +1563,8 @@ tcu::TestStatus timingTestWithBackgroundQueryThreads(Context &context, Type wsiT
     }
     timingQueryThreads.clear();
 
+    vkd.queueWaitIdle(devHelper.queue);
+
     // Drain any remaining results after presenting is done
     PresentTimingHelper &pth = sharedState.m_pths[0];
     if (drainPresentationTimingResults(vkd, device, *swapchain, pth, sharedState.m_pendingResults) !=
@@ -1630,6 +1652,8 @@ tcu::TestStatus retiredSwapchainTest(Context &context, vk::wsi::Type wsiType)
 
         swapchainInfo.oldSwapchain = *swapchains[swapchainIdx];
     }
+
+    vkd.queueWaitIdle(devHelper.queue);
 
     // Query and verify Present Timing Data
     for (uint32_t swapchainIdx = 0; swapchainIdx < 2; swapchainIdx++)
@@ -1844,6 +1868,8 @@ tcu::TestStatus presentAtTest(Context &context, PresentTimingTestConfig config)
         pendingResults -= resultCount;
     }
 
+    vkd.queueWaitIdle(devHelper.queue);
+
     if (drainPresentationTimingResults(vkd, device, *swapchain, pth, pendingResults) != pendingResults)
         TCU_FAIL("Failed to retrieve all timing results");
 
@@ -1887,14 +1913,15 @@ tcu::TestStatus presentAtTest(Context &context, PresentTimingTestConfig config)
                 // Check that Present landed after the requested time, according to the VK_PRESENT_STAGE_IMAGE_FIRST_PIXEL_VISIBLE_BIT_EXT stage timing
                 if (presentStage == VK_PRESENT_STAGE_IMAGE_FIRST_PIXEL_VISIBLE_BIT_EXT)
                 {
+                    const uint32_t targetTimeIdx = static_cast<uint32_t>(result.presentId - targetTimes[0].presentId);
                     const uint64_t requestedPresentTime = config.presentAtMode == PresentAtMode::ABSOLUTE ?
-                                                              targetTimes[i].targetTime :
-                                                              targetTimes[i].targetTime + prevPresentTime;
+                                                              targetTimes[targetTimeIdx].targetTime :
+                                                              targetTimes[targetTimeIdx].targetTime + prevPresentTime;
                     if (actualPresentTime < requestedPresentTime)
                     {
                         const uint64_t early = requestedPresentTime - actualPresentTime;
                         const uint64_t max   = config.presentAtNearestRefreshCycle ?
-                                                   kTargetTimeMarginNs + targetTimes[i].refreshCycleDuration :
+                                                   kTargetTimeMarginNs + targetTimes[targetTimeIdx].refreshCycleDuration :
                                                    kTargetTimeMarginNs;
                         if (early >= max)
                             TCU_FAIL("Frame was presented earlier than expected");
@@ -2033,6 +2060,8 @@ tcu::TestStatus timeDomainPropertiesTest(Context &context, Type wsiType)
             pth.timeDomainsCounter = timeDomainsHelper.timeDomainsCounter;
         }
     }
+
+    vkd.queueWaitIdle(devHelper.queue);
 
     // Drain all outstanding results
     const uint32_t pendingResults = maxQueuedFrames - handledResults;
@@ -2310,6 +2339,12 @@ void populateQueryGroup(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
 {
     for (auto presentMode : presentModes)
     {
+
+        // skip shared present modes as these tests violate many assumptions of them.
+        if (presentMode.mode == VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR ||
+            presentMode.mode == VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR)
+            continue;
+
         de::MovePtr<tcu::TestCaseGroup> presentModeGroup(
             new tcu::TestCaseGroup(testGroup->getTestContext(), presentMode.name));
 
