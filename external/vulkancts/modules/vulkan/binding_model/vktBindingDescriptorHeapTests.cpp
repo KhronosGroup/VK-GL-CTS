@@ -16073,10 +16073,10 @@ void DescriptorHeapTestCaseShaderRecordNonUniform::initPrograms(vk::SourceCollec
 
 tcu::TestStatus DescriptorHeapTestInstanceShaderRecordNonUniform::iterate()
 {
-    const auto &vki       = m_context.getInstanceInterface();
-    const auto &vkd       = *m_deviceInterface;
+    const auto &vki       = m_instance.getDriver();
+    const auto &vkd       = m_device.getDriver();
     const VkDevice device = *m_device;
-    Allocator &allocator  = *m_allocatorPtr;
+    Allocator &allocator  = m_device.getAllocator();
 
     const uint32_t recordCount = kShaderRecordNonUniformRecordCount;
     // One descriptor per record, plus one extra zero-valued slot backing the layout(descriptor_heap) capability read.
@@ -16159,8 +16159,7 @@ tcu::TestStatus DescriptorHeapTestInstanceShaderRecordNonUniform::iterate()
     }
     tlas->create(vkd, device, allocator, bufferProps, 0, 0, 0, 0, nullptr, MemoryRequirement::Any);
 
-    const VkDeviceAddress asAddress =
-        getAccelerationStructureDeviceAddress(*m_deviceInterface, device, *tlas->getPtr());
+    const VkDeviceAddress asAddress = getAccelerationStructureDeviceAddress(vkd, device, *tlas->getPtr());
 
     std::vector<VkDescriptorSetAndBindingMappingEXT> mappings;
 
