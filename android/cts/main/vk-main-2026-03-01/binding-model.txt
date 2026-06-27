@@ -214,6 +214,7 @@ dEQP-VK.binding_model.descriptor_heap.basic.raygen.storage_image_view_usage2
 dEQP-VK.binding_model.descriptor_heap.basic.raygen.storage_texel_buffer
 dEQP-VK.binding_model.descriptor_heap.basic.raygen.uniform_buffer
 dEQP-VK.binding_model.descriptor_heap.basic.raygen.uniform_texel_buffer
+dEQP-VK.binding_model.descriptor_heap.binding_count.push_index
 dEQP-VK.binding_model.descriptor_heap.binding_mapping.heap_with_constant_offset.compute.acceleration_structure
 dEQP-VK.binding_model.descriptor_heap.binding_mapping.heap_with_constant_offset.compute.sampled_image
 dEQP-VK.binding_model.descriptor_heap.binding_mapping.heap_with_constant_offset.compute.sampler

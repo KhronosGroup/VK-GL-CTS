@@ -15628,6 +15628,201 @@ void DescriptorHeapTestCaseOffsetId::initPrograms(vk::SourceCollections &program
     programCollection.spirvAsmSources.add("compute") << comp << options;
 }
 
+class DescriptorHeapTestInstanceBindingCount final : public DescriptorHeapTestInstanceBase
+{
+public:
+    explicit DescriptorHeapTestInstanceBindingCount(Context &context, const TestParams &params)
+        : DescriptorHeapTestInstanceBase(context, params)
+        , m_params{params}
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    TestParams m_params;
+};
+
+tcu::TestStatus DescriptorHeapTestInstanceBindingCount::iterate()
+{
+    const auto &vkd = m_device.getDriver();
+
+    constexpr const uint32_t descriptorCount = 2u + 3u + 2u;
+    const uint32_t baseIndex                 = 3u;
+    const uint32_t totalDescriptorCount      = baseIndex + descriptorCount;
+
+    const VkDeviceSize bufferDescriptorStride = getBufferDescriptorStride(m_descriptorHeapProperties);
+    const VkDeviceSize userHeapSize =
+        alignUp(totalDescriptorCount * bufferDescriptorStride, m_descriptorHeapProperties.resourceHeapAlignment);
+    const VkDeviceSize heapSize = userHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    auto resourceHeap         = createBufferAndMemory(heapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
+                                                                    VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+    char *resourceHeapHostPtr = static_cast<char *>(resourceHeap->memory->getHostPtr());
+
+    std::unique_ptr<Buffer> buffers[descriptorCount];
+
+    for (uint32_t i = 0; i < descriptorCount; ++i)
+    {
+        const VkDeviceSize storageBufferSize = sizeof(uint32_t);
+        buffers[i] = createBufferAndMemory(storageBufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT_KHR |
+                                                                  VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+        deMemset(buffers[i]->memory->getHostPtr(), 0, static_cast<size_t>(storageBufferSize));
+        flushAlloc(vkd, *m_device, *buffers[i]->memory);
+
+        VkDeviceAddressRangeEXT addressRange;
+        addressRange.address = buffers[i]->address;
+        addressRange.size    = storageBufferSize;
+
+        VkResourceDescriptorInfoEXT resourceInfo = initVulkanStructure();
+        resourceInfo.type                        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        resourceInfo.data.pAddressRange          = &addressRange;
+
+        VkHostAddressRangeEXT hostRange;
+        hostRange.address = resourceHeapHostPtr + (baseIndex + i) * bufferDescriptorStride;
+        hostRange.size    = static_cast<size_t>(bufferDescriptorStride);
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1u, &resourceInfo, &hostRange));
+    }
+    flushAlloc(vkd, *m_device, *resourceHeap->memory);
+
+    VkDescriptorSetAndBindingMappingEXT mapping  = initVulkanStructure();
+    mapping.descriptorSet                        = 0u;
+    mapping.firstBinding                         = 0u;
+    mapping.bindingCount                         = descriptorCount;
+    mapping.resourceMask                         = VK_SPIRV_RESOURCE_TYPE_READ_WRITE_STORAGE_BUFFER_BIT_EXT;
+    mapping.source                               = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_PUSH_INDEX_EXT;
+    mapping.sourceData.pushIndex.heapOffset      = 0;
+    mapping.sourceData.pushIndex.heapArrayStride = static_cast<uint32_t>(bufferDescriptorStride);
+    mapping.sourceData.pushIndex.heapIndexStride = static_cast<uint32_t>(bufferDescriptorStride);
+    mapping.sourceData.pushIndex.pushOffset      = 0;
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+    mappingInfo.mappingCount                                  = 1u;
+    mappingInfo.pMappings                                     = &mapping;
+
+    auto computeModule = createShaderModule(vkd, *m_device, getShaderBinary("compute"));
+
+    VkPipelineCreateFlags2CreateInfoKHR pipelineCreateFlags2CreateInfo = initVulkanStructure();
+    pipelineCreateFlags2CreateInfo.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+    VkComputePipelineCreateInfo pipelineCreateInfo = initVulkanStructure(&pipelineCreateFlags2CreateInfo);
+    pipelineCreateInfo.stage                       = initVulkanStructure();
+    pipelineCreateInfo.stage.pNext                 = &mappingInfo;
+    pipelineCreateInfo.stage.stage                 = VK_SHADER_STAGE_COMPUTE_BIT;
+    pipelineCreateInfo.stage.module                = *computeModule;
+    pipelineCreateInfo.stage.pName                 = "main";
+
+    auto pipeline = createComputePipeline(vkd, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+    auto cmdPool              = makeCommandPool(vkd, *m_device, m_queueFamilyIndex);
+    auto cmdBufferPtr         = allocateCommandBuffer(vkd, *m_device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    VkCommandBuffer cmdBuffer = cmdBufferPtr.get();
+
+    VkBindHeapInfoEXT heapBindInfo   = initVulkanStructure();
+    heapBindInfo.heapRange.address   = resourceHeap->address;
+    heapBindInfo.heapRange.size      = heapSize;
+    heapBindInfo.reservedRangeOffset = userHeapSize;
+    heapBindInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    VkPushDataInfoEXT pushDataInfo = initVulkanStructure();
+    pushDataInfo.offset            = 0;
+    pushDataInfo.data.address      = &baseIndex;
+    pushDataInfo.data.size         = sizeof(uint32_t);
+
+    VkMemoryBarrier2 preDispatchBarrier = initVulkanStructure();
+    preDispatchBarrier.srcStageMask     = VK_PIPELINE_STAGE_2_HOST_BIT;
+    preDispatchBarrier.srcAccessMask    = VK_ACCESS_2_HOST_WRITE_BIT;
+    preDispatchBarrier.dstStageMask     = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    preDispatchBarrier.dstAccessMask    = VK_ACCESS_2_RESOURCE_HEAP_READ_BIT_EXT | VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+
+    VkDependencyInfo preDispatchDependency   = initVulkanStructure();
+    preDispatchDependency.memoryBarrierCount = 1u;
+    preDispatchDependency.pMemoryBarriers    = &preDispatchBarrier;
+
+    VkMemoryBarrier2 postDispatchBarrier = initVulkanStructure();
+    postDispatchBarrier.srcStageMask     = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    postDispatchBarrier.srcAccessMask    = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
+    postDispatchBarrier.dstStageMask     = VK_PIPELINE_STAGE_2_HOST_BIT;
+    postDispatchBarrier.dstAccessMask    = VK_ACCESS_2_HOST_READ_BIT;
+
+    VkDependencyInfo postDispatchDependency   = initVulkanStructure();
+    postDispatchDependency.memoryBarrierCount = 1u;
+    postDispatchDependency.pMemoryBarriers    = &postDispatchBarrier;
+
+    beginCommandBuffer(vkd, cmdBuffer);
+    vkd.cmdPipelineBarrier2(cmdBuffer, &preDispatchDependency);
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+    vkd.cmdBindResourceHeapEXT(cmdBuffer, &heapBindInfo);
+    vkd.cmdPushDataEXT(cmdBuffer, &pushDataInfo);
+    vkd.cmdDispatch(cmdBuffer, 1, 1, 1);
+    vkd.cmdPipelineBarrier2(cmdBuffer, &postDispatchDependency);
+    endCommandBuffer(vkd, cmdBuffer);
+    submitCommandsAndWait(vkd, *m_device, m_queues.front(), cmdBuffer);
+
+    for (uint32_t i = 0; i < descriptorCount; ++i)
+    {
+        invalidateAlloc(vkd, *m_device, *buffers[i]->memory);
+
+        uint32_t result              = *reinterpret_cast<uint32_t *>(buffers[i]->memory->getHostPtr());
+        const uint32_t expectedValue = i + 1u;
+
+        if (result != expectedValue)
+        {
+            std::stringstream msg;
+            msg << "Buffer " << i << " expected result " << expectedValue << ", but was " << result;
+            return tcu::TestStatus::fail(msg.str());
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class DescriptorHeapTestCaseBindingCount final : public DescriptorHeapTestCaseBase
+{
+public:
+    explicit DescriptorHeapTestCaseBindingCount(tcu::TestContext &testCtx, const std::string &name,
+                                                const TestParams &params)
+        : DescriptorHeapTestCaseBase(testCtx, name, params)
+        , m_params{params}
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceBindingCount(context, m_params);
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+private:
+    TestParams m_params;
+};
+
+void DescriptorHeapTestCaseBindingCount::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::string computeShader = R"(#version 450
+layout(local_size_x = 1) in;
+
+layout(set = 0, binding = 0) buffer X { uint data; } x[2];
+layout(set = 0, binding = 2) buffer Y { uint data; } y[3];
+layout(set = 0, binding = 5) buffer Z { uint data; } z[2];
+
+void main()
+{
+    x[0].data = 1u;
+    x[1].data = 2u;
+    y[0].data = 3u;
+    y[1].data = 4u;
+    y[2].data = 5u;
+    z[0].data = 6u;
+    z[1].data = 7u;
+}
+)";
+
+    programCollection.glslSources.add("compute") << glu::ComputeSource(computeShader);
+}
+
 class DescriptorHeapTestInstanceShaderObjectInvariance final : public DescriptorHeapTestInstanceBase
 {
 public:
@@ -19582,6 +19777,19 @@ void populateOffsetIdTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
     topGroup->addChild(group.release());
 }
 
+void populateBindingCountTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
+{
+    tcu::TestContext &testCtx = topGroup->getTestContext();
+    MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "binding_count"));
+
+    TestParams params{};
+    params.queue = VK_QUEUE_COMPUTE_BIT;
+    params.seed  = baseSeed ^ deStringHash("binding_count");
+    group->addChild(new DescriptorHeapTestCaseBindingCount(testCtx, "push_index", params));
+
+    topGroup->addChild(group.release());
+}
+
 void populateShaderObjectInvariance(tcu::TestCaseGroup *topGroup)
 {
     tcu::TestContext &testCtx = topGroup->getTestContext();
@@ -20659,6 +20867,7 @@ void populateDescriptorHeapTests(tcu::TestCaseGroup *topGroup)
     populateOffsetIdTests(topGroup, baseSeed);
     populateSmallBufferTests(topGroup, baseSeed);
     populateCustomBorderColorTests(topGroup);
+    populateBindingCountTests(topGroup, baseSeed);
 }
 
 } // namespace
