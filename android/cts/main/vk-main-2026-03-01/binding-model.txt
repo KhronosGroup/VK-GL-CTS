@@ -710,6 +710,8 @@ dEQP-VK.binding_model.descriptor_heap.special_heap.sparse.storage_texel_buffer
 dEQP-VK.binding_model.descriptor_heap.special_heap.sparse.uniform_buffer
 dEQP-VK.binding_model.descriptor_heap.special_heap.sparse.uniform_texel_buffer
 dEQP-VK.binding_model.descriptor_heap.spirv.array_variable_pointers
+dEQP-VK.binding_model.descriptor_heap.spirv.atomic_image_2d
+dEQP-VK.binding_model.descriptor_heap.spirv.atomic_image_2d_64_bit
 dEQP-VK.binding_model.descriptor_heap.spirv.atomic_image_within_function
 dEQP-VK.binding_model.descriptor_heap.spirv.function_call_binding
 dEQP-VK.binding_model.descriptor_heap.spirv.function_call_binding_forward
