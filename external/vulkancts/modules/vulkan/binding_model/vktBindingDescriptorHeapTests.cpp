@@ -90,6 +90,7 @@ struct ShaderBinding
     bool samplerIsNull                          = false; // Signal sampled images not to expect a non-zero result
     bool combinedImageSamplerHandle             = false;
     bool shiftSamplerResult                     = false;
+    bool recursiveAddress                       = false;
     VkDescriptorSetAndBindingMappingEXT mapping = initVulkanStructure();
     int heapIndex                               = -1; // <0 is firstBinding
     int queue                                   = 0;
@@ -5433,11 +5434,25 @@ void DescriptorHeapTestInstanceBasic::setupDescriptors(VkCommandBuffer cmdBuf, c
                     }
                     else if (binding.mapping.source == VK_DESCRIPTOR_MAPPING_SOURCE_INDIRECT_ADDRESS_EXT)
                     {
-                        auto &indirectBuffer = m_stagingBuffers.emplace_back(
-                            createBufferAndMemory(256, VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR));
+                        VkBufferUsageFlags2 indirectUsage =
+                            VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
+                        if (binding.recursiveAddress && binding.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+                        {
+                            indirectUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+                        }
+                        auto &indirectBuffer = m_stagingBuffers.emplace_back(createBufferAndMemory(256, indirectUsage));
                         auto indirectBufferHostPtr = static_cast<char *>(indirectBuffer->memory->getHostPtr()) +
                                                      binding.mapping.sourceData.indirectAddress.addressOffset;
-                        deMemcpy(indirectBufferHostPtr, &bufferData->address, sizeof(bufferData->address));
+                        if (binding.recursiveAddress)
+                        {
+                            DE_ASSERT(binding.mapping.sourceData.indirectAddress.addressOffset >= sizeof(randomValue));
+                            deMemcpy(indirectBuffer->memory->getHostPtr(), &randomValue, sizeof(randomValue));
+                            deMemcpy(indirectBufferHostPtr, &indirectBuffer->address, sizeof(indirectBuffer->address));
+                        }
+                        else
+                        {
+                            deMemcpy(indirectBufferHostPtr, &bufferData->address, sizeof(bufferData->address));
+                        }
 
                         VkPushDataInfoEXT pushDataInfo = initVulkanStructure();
                         pushDataInfo.offset            = binding.mapping.sourceData.indirectAddress.pushOffset;
@@ -15166,6 +15181,17 @@ void populateBindingMappingTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed
             if (!shaderRecordMapping)
             {
                 computeGroup->addChild(new DescriptorHeapTestCaseBasic(testCtx, testName, params));
+
+                if (mappingSource == VK_DESCRIPTOR_MAPPING_SOURCE_INDIRECT_ADDRESS_EXT &&
+                    (descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+                     descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER))
+                {
+                    const std::string selfAddressTestName = std::string(testName) + "_recursive";
+
+                    params.bindings[0].recursiveAddress = true;
+                    computeGroup->addChild(new DescriptorHeapTestCaseBasic(testCtx, selfAddressTestName, params));
+                    params.bindings[0].recursiveAddress = false;
+                }
             }
 
             params.dimension                      = 1;
