@@ -187,6 +187,11 @@ enum class SpirvTestType
     SizeOf,
     SizeOf64,
     UntypedStorageBuffer,
+    Untyped2dArray,
+    Untyped2dArrayStride8,
+    UntypedNestedArray,
+    UntypedNestedArrayStep,
+    UntypedNestedArrayOuter,
     UntypedArrayLength,
     SimpleStorageTexelBuffer,
     UntypedImageTexelPointer,
@@ -8269,6 +8274,281 @@ void DescriptorHeapTestCaseSpirv::initPrograms(vk::SourceCollections &programCol
                OpFunctionEnd
 )";
         break;
+    case SpirvTestType::Untyped2dArray:
+        // layout(descriptor_heap) buffer Heap { uint data; } heap[3][3];
+        // void main() {
+        //     heap[1][2].data = 42;
+        // }
+        assembly = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %resource_heap
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+               OpDecorate %Heap Block
+               OpMemberDecorate %Heap 0 Offset 0
+               OpDecorateId %in_array ArrayStrideIdEXT %buf_size
+               OpDecorateId %out_array ArrayStrideIdEXT %stride_3
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+      %uint_0 = OpConstant %uint 0
+      %uint_1 = OpConstant %uint 1
+      %uint_2 = OpConstant %uint 2
+      %uint_3 = OpConstant %uint 3
+    %uint_42 = OpConstant %uint 42
+%_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
+       %Heap = OpTypeStruct %uint
+%_ptr_StorageBuffer = OpTypeUntypedPointerKHR StorageBuffer
+   %buf_type = OpTypeBufferEXT StorageBuffer
+   %buf_size = OpConstantSizeOfEXT %uint %buf_type
+   %stride_3 = OpSpecConstantOp %int IMul %buf_size %uint_3
+ %in_array = OpTypeArray %buf_type %uint_3
+%out_array = OpTypeArray %in_array %uint_3
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %15 = OpUntypedAccessChainKHR %_ptr_UniformConstant %out_array %resource_heap %uint_1 %uint_2
+         %19 = OpBufferPointerEXT %_ptr_StorageBuffer %15
+         %20 = OpUntypedAccessChainKHR %_ptr_StorageBuffer %Heap %19 %uint_0
+               OpStore %20 %uint_42
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
+    case SpirvTestType::Untyped2dArrayStride8:
+        // layout(descriptor_heap) buffer Heap { uint data; } heap[3][3];
+        // void main() {
+        //     heap[1][2].data = 42;
+        // }
+        assembly = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %resource_heap
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+               OpDecorate %Heap Block
+               OpMemberDecorate %Heap 0 Offset 0
+               OpDecorateId %in_array ArrayStrideIdEXT %buf_size
+               OpDecorateId %out_array ArrayStrideIdEXT %stride_8
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+      %uint_0 = OpConstant %uint 0
+      %uint_1 = OpConstant %uint 1
+      %uint_2 = OpConstant %uint 2
+      %uint_3 = OpConstant %uint 3
+      %uint_8 = OpConstant %uint 8
+    %uint_42 = OpConstant %uint 42
+%_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
+       %Heap = OpTypeStruct %uint
+%_ptr_StorageBuffer = OpTypeUntypedPointerKHR StorageBuffer
+   %buf_type = OpTypeBufferEXT StorageBuffer
+   %buf_size = OpConstantSizeOfEXT %uint %buf_type
+   %stride_8 = OpSpecConstantOp %int IMul %buf_size %uint_8
+ %in_array = OpTypeArray %buf_type %uint_3
+%out_array = OpTypeArray %in_array %uint_3
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %15 = OpUntypedAccessChainKHR %_ptr_UniformConstant %out_array %resource_heap %uint_1 %uint_2
+         %19 = OpBufferPointerEXT %_ptr_StorageBuffer %15
+         %20 = OpUntypedAccessChainKHR %_ptr_StorageBuffer %Heap %19 %uint_0
+               OpStore %20 %uint_42
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
+    case SpirvTestType::UntypedNestedArray:
+        // layout(descriptor_heap) buffer Heap { uint data; } heap[2][2][2][2][2];
+        // void main() {
+        //     heap[1][1][1][1][1].data = 42;
+        // }
+        assembly = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %resource_heap
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+               OpDecorate %Heap Block
+               OpMemberDecorate %Heap 0 Offset 0
+               OpDecorateId %in1_array ArrayStrideIdEXT %buf_size
+               OpDecorateId %in2_array ArrayStrideIdEXT %stride_in2
+               OpDecorateId %in3_array ArrayStrideIdEXT %stride_in3
+               OpDecorateId %in4_array ArrayStrideIdEXT %stride_in4
+               OpDecorateId %out_array ArrayStrideIdEXT %stride_out
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+      %uint_0 = OpConstant %uint 0
+      %uint_1 = OpConstant %uint 1
+      %uint_2 = OpConstant %uint 2
+      %uint_3 = OpConstant %uint 3
+      %uint_4 = OpConstant %uint 4
+      %uint_8 = OpConstant %uint 8
+     %uint_16 = OpConstant %uint 16
+    %uint_42 = OpConstant %uint 42
+%_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
+       %Heap = OpTypeStruct %uint
+%_ptr_StorageBuffer = OpTypeUntypedPointerKHR StorageBuffer
+   %buf_type = OpTypeBufferEXT StorageBuffer
+   %buf_size = OpConstantSizeOfEXT %uint %buf_type
+   %stride_in2 = OpSpecConstantOp %int IMul %buf_size %uint_2
+   %stride_in3 = OpSpecConstantOp %int IMul %buf_size %uint_4
+   %stride_in4 = OpSpecConstantOp %int IMul %buf_size %uint_8
+   %stride_out = OpSpecConstantOp %int IMul %buf_size %uint_16
+%in1_array = OpTypeArray %buf_type %uint_2
+%in2_array = OpTypeArray %in1_array %uint_2
+%in3_array = OpTypeArray %in2_array %uint_2
+%in4_array = OpTypeArray %in3_array %uint_2
+%out_array = OpTypeArray %in4_array %uint_2
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %15 = OpUntypedAccessChainKHR %_ptr_UniformConstant %out_array %resource_heap %uint_1 %uint_1 %uint_1 %uint_1 %uint_1
+         %19 = OpBufferPointerEXT %_ptr_StorageBuffer %15
+         %20 = OpUntypedAccessChainKHR %_ptr_StorageBuffer %Heap %19 %uint_0
+               OpStore %20 %uint_42
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
+    case SpirvTestType::UntypedNestedArrayStep:
+        // layout(descriptor_heap) buffer Heap { uint data; } heap[2][2][2][2][2];
+        // void main() {
+        //     heap[1][1][1][1][1].data = 42;
+        // }
+        assembly = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %resource_heap
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+               OpDecorate %Heap Block
+               OpMemberDecorate %Heap 0 Offset 0
+               OpDecorateId %in1_array ArrayStrideIdEXT %buf_size
+               OpDecorateId %in2_array ArrayStrideIdEXT %stride_in2
+               OpDecorateId %in3_array ArrayStrideIdEXT %stride_in3
+               OpDecorateId %in4_array ArrayStrideIdEXT %stride_in4
+               OpDecorateId %out_array ArrayStrideIdEXT %stride_out
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+      %uint_0 = OpConstant %uint 0
+      %uint_1 = OpConstant %uint 1
+      %uint_2 = OpConstant %uint 2
+      %uint_3 = OpConstant %uint 3
+      %uint_4 = OpConstant %uint 4
+      %uint_8 = OpConstant %uint 8
+     %uint_16 = OpConstant %uint 16
+    %uint_42 = OpConstant %uint 42
+%_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
+       %Heap = OpTypeStruct %uint
+%_ptr_StorageBuffer = OpTypeUntypedPointerKHR StorageBuffer
+   %buf_type = OpTypeBufferEXT StorageBuffer
+   %buf_size = OpConstantSizeOfEXT %uint %buf_type
+   %stride_in2 = OpSpecConstantOp %int IMul %buf_size %uint_2
+   %stride_in3 = OpSpecConstantOp %int IMul %buf_size %uint_4
+   %stride_in4 = OpSpecConstantOp %int IMul %buf_size %uint_8
+   %stride_out = OpSpecConstantOp %int IMul %buf_size %uint_16
+%in1_array = OpTypeArray %buf_type %uint_2
+%in2_array = OpTypeArray %in1_array %uint_2
+%in3_array = OpTypeArray %in2_array %uint_2
+%in4_array = OpTypeArray %in3_array %uint_2
+%out_array = OpTypeArray %in4_array %uint_2
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+       %step1 = OpUntypedAccessChainKHR %_ptr_UniformConstant %out_array %resource_heap %uint_1
+       %step2 = OpUntypedAccessChainKHR %_ptr_UniformConstant %in4_array %step1 %uint_1
+       %step3 = OpUntypedAccessChainKHR %_ptr_UniformConstant %in3_array %step2 %uint_1 %uint_1
+         %15 = OpUntypedAccessChainKHR %_ptr_UniformConstant %in1_array %step3 %uint_1
+         %19 = OpBufferPointerEXT %_ptr_StorageBuffer %15
+         %20 = OpUntypedAccessChainKHR %_ptr_StorageBuffer %Heap %19 %uint_0
+               OpStore %20 %uint_42
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
+    case SpirvTestType::UntypedNestedArrayOuter:
+        // layout(descriptor_heap) buffer Heap { uint data; } heap[2][2][2][2][2];
+        // void main() {
+        //     heap[1][0][0][0][0].data = 42;
+        // }
+        assembly = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %resource_heap
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+               OpDecorate %Heap Block
+               OpMemberDecorate %Heap 0 Offset 0
+               OpDecorateId %in1_array ArrayStrideIdEXT %buf_size
+               OpDecorateId %in2_array ArrayStrideIdEXT %stride_in2
+               OpDecorateId %in3_array ArrayStrideIdEXT %stride_in3
+               OpDecorateId %in4_array ArrayStrideIdEXT %stride_in4
+               OpDecorateId %out_array ArrayStrideIdEXT %stride_out
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+      %uint_0 = OpConstant %uint 0
+      %uint_1 = OpConstant %uint 1
+      %uint_2 = OpConstant %uint 2
+      %uint_3 = OpConstant %uint 3
+      %uint_4 = OpConstant %uint 4
+      %uint_8 = OpConstant %uint 8
+     %uint_16 = OpConstant %uint 16
+    %uint_42 = OpConstant %uint 42
+%_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
+       %Heap = OpTypeStruct %uint
+%_ptr_StorageBuffer = OpTypeUntypedPointerKHR StorageBuffer
+   %buf_type = OpTypeBufferEXT StorageBuffer
+   %buf_size = OpConstantSizeOfEXT %uint %buf_type
+   %stride_in2 = OpSpecConstantOp %int IMul %buf_size %uint_2
+   %stride_in3 = OpSpecConstantOp %int IMul %buf_size %uint_4
+   %stride_in4 = OpSpecConstantOp %int IMul %buf_size %uint_8
+   %stride_out = OpSpecConstantOp %int IMul %buf_size %uint_16
+%in1_array = OpTypeArray %buf_type %uint_2
+%in2_array = OpTypeArray %in1_array %uint_2
+%in3_array = OpTypeArray %in2_array %uint_2
+%in4_array = OpTypeArray %in3_array %uint_2
+%out_array = OpTypeArray %in4_array %uint_2
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %15 = OpUntypedAccessChainKHR %_ptr_UniformConstant %out_array %resource_heap %uint_1
+         %19 = OpBufferPointerEXT %_ptr_StorageBuffer %15
+         %20 = OpUntypedAccessChainKHR %_ptr_StorageBuffer %Heap %19 %uint_0
+               OpStore %20 %uint_42
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
     case SpirvTestType::UntypedArrayLength:
         assembly = R"(
                OpCapability Shader
@@ -9017,6 +9297,20 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
         expectedOutput = {0, 0, 0, 0xcafe};
         heapUserSize   = 4 * storageBufferStride;
         break;
+    case SpirvTestType::Untyped2dArray:
+        expectedOutput.push_back(42);
+        heapUserSize = 9 * storageBufferStride;
+        break;
+    case SpirvTestType::Untyped2dArrayStride8:
+        expectedOutput.push_back(42);
+        heapUserSize = 19 * storageBufferStride;
+        break;
+    case SpirvTestType::UntypedNestedArray:
+    case SpirvTestType::UntypedNestedArrayStep:
+    case SpirvTestType::UntypedNestedArrayOuter:
+        expectedOutput.push_back(42);
+        heapUserSize = 32 * storageBufferStride;
+        break;
     case SpirvTestType::UntypedArrayLength:
         expectedOutput.resize(8 * 4);
         expectedOutput[0] = static_cast<uint32_t>(expectedOutput.size() / 4 - 1);
@@ -9177,6 +9471,90 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
         VkDeviceAddressRangeEXT ssboAddressRange{};
         ssboAddressRange.address = outputBuffer->address;
         ssboAddressRange.size    = de::dataSize(expectedOutput);
+
+        VkResourceDescriptorInfoEXT ssboInfo = initVulkanStructure();
+        ssboInfo.type                        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        ssboInfo.data.pAddressRange          = &ssboAddressRange;
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1, &ssboInfo, &hostAddressRange));
+        break;
+    }
+    case SpirvTestType::Untyped2dArray:
+    {
+        const uint32_t descriptorStride = static_cast<uint32_t>(storageBufferStride);
+        const uint32_t ssboOffset       = 5 * descriptorStride;
+
+        specializationMapEntries.push_back({0, 0, sizeof(uint32_t)});
+        specializationData.push_back(descriptorStride);
+
+        VkHostAddressRangeEXT hostAddressRange{};
+        hostAddressRange.address = reinterpret_cast<char *>(heapContents) + ssboOffset;
+        hostAddressRange.size    = static_cast<size_t>(storageBufferStride);
+
+        VkDeviceAddressRangeEXT ssboAddressRange{};
+        ssboAddressRange.address = outputBuffer->address;
+        ssboAddressRange.size    = outputBufferSize;
+
+        VkResourceDescriptorInfoEXT ssboInfo = initVulkanStructure();
+        ssboInfo.type                        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        ssboInfo.data.pAddressRange          = &ssboAddressRange;
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1, &ssboInfo, &hostAddressRange));
+        break;
+    }
+    case SpirvTestType::Untyped2dArrayStride8:
+    {
+        const uint32_t descriptorStride = static_cast<uint32_t>(storageBufferStride);
+        const uint32_t ssboOffset       = 10 * descriptorStride;
+
+        VkHostAddressRangeEXT hostAddressRange{};
+        hostAddressRange.address = reinterpret_cast<char *>(heapContents) + ssboOffset;
+        hostAddressRange.size    = static_cast<size_t>(storageBufferStride);
+
+        VkDeviceAddressRangeEXT ssboAddressRange{};
+        ssboAddressRange.address = outputBuffer->address;
+        ssboAddressRange.size    = outputBufferSize;
+
+        VkResourceDescriptorInfoEXT ssboInfo = initVulkanStructure();
+        ssboInfo.type                        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        ssboInfo.data.pAddressRange          = &ssboAddressRange;
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1, &ssboInfo, &hostAddressRange));
+        break;
+    }
+    case SpirvTestType::UntypedNestedArray:
+    case SpirvTestType::UntypedNestedArrayStep:
+    {
+        const uint32_t descriptorStride = static_cast<uint32_t>(storageBufferStride);
+        const uint32_t ssboOffset       = 31 * descriptorStride;
+
+        VkHostAddressRangeEXT hostAddressRange{};
+        hostAddressRange.address = reinterpret_cast<char *>(heapContents) + ssboOffset;
+        hostAddressRange.size    = static_cast<size_t>(storageBufferStride);
+
+        VkDeviceAddressRangeEXT ssboAddressRange{};
+        ssboAddressRange.address = outputBuffer->address;
+        ssboAddressRange.size    = outputBufferSize;
+
+        VkResourceDescriptorInfoEXT ssboInfo = initVulkanStructure();
+        ssboInfo.type                        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        ssboInfo.data.pAddressRange          = &ssboAddressRange;
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1, &ssboInfo, &hostAddressRange));
+        break;
+    }
+    case SpirvTestType::UntypedNestedArrayOuter:
+    {
+        const uint32_t descriptorStride = static_cast<uint32_t>(storageBufferStride);
+        const uint32_t ssboOffset       = 16 * descriptorStride;
+
+        VkHostAddressRangeEXT hostAddressRange{};
+        hostAddressRange.address = reinterpret_cast<char *>(heapContents) + ssboOffset;
+        hostAddressRange.size    = static_cast<size_t>(storageBufferStride);
+
+        VkDeviceAddressRangeEXT ssboAddressRange{};
+        ssboAddressRange.address = outputBuffer->address;
+        ssboAddressRange.size    = outputBufferSize;
 
         VkResourceDescriptorInfoEXT ssboInfo = initVulkanStructure();
         ssboInfo.type                        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -17490,6 +17868,11 @@ void populateSpirvTests(tcu::TestCaseGroup *topGroup)
         {SpirvTestType::SizeOf, "size_of"},
         {SpirvTestType::SizeOf64, "size_of_64"},
         {SpirvTestType::UntypedStorageBuffer, "untyped_storage_buffer"},
+        {SpirvTestType::Untyped2dArray, "untyped_2d_array"},
+        {SpirvTestType::Untyped2dArrayStride8, "untyped_2d_array_stride_8"},
+        {SpirvTestType::UntypedNestedArray, "untyped_nested_array"},
+        {SpirvTestType::UntypedNestedArrayStep, "untyped_nested_array_step"},
+        {SpirvTestType::UntypedNestedArrayOuter, "untyped_nested_array_outer"},
         {SpirvTestType::UntypedArrayLength, "untyped_array_length"},
         {SpirvTestType::SimpleStorageTexelBuffer, "simple_storage_texel_buffer"},
         {SpirvTestType::UntypedImageTexelPointer, "untyped_image_texel_pointer"},
