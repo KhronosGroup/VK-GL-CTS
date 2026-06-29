@@ -130,6 +130,7 @@ struct TestParams
     bool shaderImageInt64Atomics                            = false;
     bool enableSparseHeap                                   = false;
     bool enableProtectedHeap                                = false;
+    bool enableDeviceLocalHeap                              = false;
     bool enableShader64bitIndexing                          = false;
     bool enableShaderUniformTexelBufferArrayDynamicIndexing = false;
     bool enableShaderStorageTexelBufferArrayDynamicIndexing = false;
@@ -4793,7 +4794,10 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
     Move<VkCommandPool> cmdPool = makeCommandPool(vk, *m_device, m_queueFamilyIndex);
     std::vector<Move<VkCommandBuffer>> cmdBuffers;
 
-    auto createDescriptorHeap = [this, &vk, &vki](VkDeviceSize heapSize, uint32_t queueIndex)
+    const bool useStagedHeap =
+        m_params.enableSparseHeap || m_params.enableProtectedHeap || m_params.enableDeviceLocalHeap;
+
+    auto createDescriptorHeap = [this, &vk, &vki, useStagedHeap](VkDeviceSize heapSize, uint32_t queueIndex)
     {
         std::unique_ptr<Buffer> descriptorHeap = std::make_unique<Buffer>();
         std::unique_ptr<Buffer> unprotectedBuffer;
@@ -4801,7 +4805,7 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
         auto descriptorHeapUsage =
             VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
 
-        if (m_params.enableSparseHeap || m_params.enableProtectedHeap)
+        if (useStagedHeap)
             descriptorHeapUsage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
         VkBufferUsageFlags2CreateInfoKHR createInfoUsageFlags2 = initVulkanStructure();
@@ -4822,7 +4826,9 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
 
         const auto bufferMemReqs = getBufferMemoryRequirements(vk, *m_device, *descriptorHeap->buffer);
 
-        const auto memReqs    = m_params.enableSparseHeap ? MemoryRequirement::Any : MemoryRequirement::HostVisible;
+        const auto memReqs    = m_params.enableDeviceLocalHeap ?
+                                    MemoryRequirement::Local :
+                                    (m_params.enableSparseHeap ? MemoryRequirement::Any : MemoryRequirement::HostVisible);
         const auto compatMask = bufferMemReqs.memoryTypeBits & getCompatibleMemoryTypes(m_memoryProperties, memReqs);
         DE_ASSERT(compatMask != 0);
         static_cast<void>(compatMask);
@@ -4837,7 +4843,7 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
         descriptorHeap->memory =
             allocateExtended(vki, vk, m_physDevice, *m_device, bufferMemReqs, memReqs, allocatePNext);
 
-        if (m_params.enableSparseHeap || m_params.enableProtectedHeap)
+        if (useStagedHeap)
         {
             unprotectedBuffer = createBufferAndMemory(heapSize, VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT);
         }
@@ -4958,7 +4964,7 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
             vk.cmdBindSamplerHeapEXT(cmdBuf, &samplerHeap);
         }
 
-        if (m_params.enableSparseHeap || m_params.enableProtectedHeap)
+        if (useStagedHeap)
         {
             VkBufferCopy resourceBufferCopy{};
             resourceBufferCopy.dstOffset = 0;
@@ -5215,7 +5221,7 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
         void *resourceDstAddress = nullptr;
         void *samplerDstAddress  = nullptr;
 
-        if (m_params.enableSparseHeap || m_params.enableProtectedHeap)
+        if (useStagedHeap)
         {
             resourceDstAddress = unprotectedResourceHeapBuffers[queueIndex]->memory->getHostPtr();
             samplerDstAddress  = unprotectedSamplerHeapBuffers[queueIndex]->memory->getHostPtr();
@@ -15180,6 +15186,8 @@ const char *getDescriptorTypeTestName(VkDescriptorType descriptorType)
         return "input_attachment";
     case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
         return "acceleration_structure";
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+        return "combined_image_sampler";
     default:
         DE_ASSERT(0);
         return "";
@@ -15611,6 +15619,8 @@ void populateBindingMappingTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed
             params.seed      = mappingSourceGroupHash ^ deStringHash(testName);
 
             de::Random rng(~params.seed);
+
+            params.enableDeviceLocalHeap = rng.getBool();
 
             ShaderBinding &binding = params.bindings.emplace_back();
             binding.descriptorType = descriptorType;
