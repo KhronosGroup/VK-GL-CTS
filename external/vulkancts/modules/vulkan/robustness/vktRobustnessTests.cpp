@@ -92,6 +92,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     robustnessTests->addChild(createPipelineRobustnessBufferAccessTests(testCtx));
     robustnessTests->addChild(createCmdBindIndexBuffer2Tests(testCtx));
     robustnessTests->addChild(createDescriptorHeapBufferAccessTests(testCtx));
+    robustnessTests->addChild(createPipelineRobustnessHeapBufferAccessTests(testCtx));
 #endif
     robustnessTests->addChild(createRobustness1VertexAccessTests(testCtx));
     robustnessTests->addChild(createOOBAccessTests(testCtx));

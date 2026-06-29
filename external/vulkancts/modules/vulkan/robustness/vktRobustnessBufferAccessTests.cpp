@@ -2025,6 +2025,15 @@ tcu::TestCaseGroup *createDescriptorHeapBufferAccessTests(tcu::TestContext &test
 
     return bufferAccessTests.release();
 }
+
+tcu::TestCaseGroup *createPipelineRobustnessHeapBufferAccessTests(tcu::TestContext &testCtx)
+{
+    de::MovePtr<tcu::TestCaseGroup> bufferAccessTests(
+        new tcu::TestCaseGroup(testCtx, "pipeline_robustness_heap_buffer_access"));
+    addBufferAccessTests(testCtx, bufferAccessTests.get(), true, true);
+
+    return bufferAccessTests.release();
+}
 #endif
 
 } // namespace robustness
