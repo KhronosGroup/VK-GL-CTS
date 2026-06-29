@@ -274,6 +274,20 @@ const char *getArrayDeclaration(const DataType type)
     return translateTable[DE_ENUM_INDEX(type)];
 }
 
+std::string getArrayDeclaration(const DataType type, const std::string &sizeConst)
+{
+    DE_ENUM_IN_RANGE(type, DataType);
+
+    static const char *const typeTable[DE_ENUM_COUNT(DataType)] = {
+        "%float32",      // FLOAT32
+        "%vec2_float32", // VEC2_FLOAT32
+        "%vec3_float32", // VEC3_FLOAT32
+        "%vec4_float32", // VEC4_FLOAT32
+    };
+
+    return std::string("OpTypeArray ") + typeTable[DE_ENUM_INDEX(type)] + " " + sizeConst;
+}
+
 const char *getUintArrayDeclaration()
 {
     return "OpTypeArray %uint32 %c_uint32_128";
@@ -427,6 +441,11 @@ const char *getLinearNdxMul(TestType type)
 {
     return type == TestType::VERIFY_NDX ? "%multi_ndy_uint32 = OpIMul %uint32 %ndy_uint32 %c_uint32_32\n" :
                                           "%multi_ndy_uint32 = OpIMul %uint32 %ndy_uint32 %c_uint32_4\n";
+}
+
+std::string getLinearNdxMul(const std::string &wgXConst)
+{
+    return "%multi_ndy_uint32 = OpIMul %uint32 %ndy_uint32 " + wgXConst + "\n";
 }
 
 const char *getStoreNdx(tcu::UVec3 numWorkgroup)
@@ -3044,6 +3063,12 @@ void ComputeShaderDerivativeCase::initPrograms(vk::SourceCollections &programCol
     std::string extraConstantsDecl;
     std::string ndx_ndy_Calc;
 
+    std::string wgXConstName;
+    std::string arrSizeConst = "%c_arr_size";
+
+    const bool needExtraConsts = (m_params.testType == TestType::DERIVATIVE_VALUE) &&
+                                 (m_params.feature == DerivativeFeature::QUADS) && !m_params.useLocalInvocationIndex;
+
     if (m_params.useLocalInvocationIndex)
     {
         localInvVar        = "%gl_LocalInvocationIndex";
@@ -3061,12 +3086,18 @@ void ComputeShaderDerivativeCase::initPrograms(vk::SourceCollections &programCol
         localInvVar        = "%gl_LocalInvocationID";
         localInvBuiltIn    = "LocalInvocationId";
         localInvVarType    = "%vec3_uint32_input_ptr";
-        extraConstantsDecl = ""; // Empty.
+        extraConstantsDecl = (needExtraConsts ? "%c_wg_x = OpConstant %uint32 ${x}\n" : "");
         ndx_ndy_Calc = "%gl_LocalInvocationID_x = OpAccessChain %uint32_input_ptr %gl_LocalInvocationID   %c_uint32_0\n"
                        "%ndx_uint32             = OpLoad        %uint32           %gl_LocalInvocationID_x\n"
                        "%gl_LocalInvocationID_y = OpAccessChain %uint32_input_ptr %gl_LocalInvocationID   %c_uint32_1\n"
                        "%ndy_uint32             = OpLoad        %uint32           %gl_LocalInvocationID_y\n";
+        wgXConstName = "%c_wg_x";
     }
+
+    // Array size constant covers the total number of invocations in the workgroup.
+    const uint32_t totalInv = m_params.numWorkgroup.x() * m_params.numWorkgroup.y() * m_params.numWorkgroup.z();
+    extraConstantsDecl +=
+        (needExtraConsts ? ("%c_arr_size = OpConstant %uint32 " + std::to_string(totalInv) + "\n") : "");
 
     switch (m_params.shaderType)
     {
@@ -3494,13 +3525,15 @@ void ComputeShaderDerivativeCase::initPrograms(vk::SourceCollections &programCol
         specMap["capability"]       = getDerivativeCapability(m_params.feature);
         specMap["executionMode"]    = getDerivativeExecutionMode(m_params.feature);
         specMap["arrayStride"]      = std::to_string(getDataAlignedSizeInBytes(m_params.dataType));
-        specMap["arrayDeclaration"] = getArrayDeclaration(m_params.dataType);
+        specMap["arrayDeclaration"] = needExtraConsts ? getArrayDeclaration(m_params.dataType, arrSizeConst).c_str() :
+                                                        getArrayDeclaration(m_params.dataType);
         specMap["testValueCode"]    = getTestValueCode(m_params.feature, m_params.variant, m_params.dataType);
         specMap["dataType"]         = getDataType(m_params.dataType);
-        specMap["linearNdxMul"]     = getLinearNdxMul(m_params.testType);
-        specMap["testLogicCode"]    = "%dx                 = ${dxFunc}     ${dataType}       %test_value\n"
-                                      "%dy                 = ${dyFunc}     ${dataType}       %test_value\n"
-                                      "%fwidth             = ${dwidthFunc} ${dataType}       %test_value\n";
+        specMap["linearNdxMul"] =
+            needExtraConsts ? getLinearNdxMul(wgXConstName).c_str() : getLinearNdxMul(m_params.testType);
+        specMap["testLogicCode"] = "%dx                 = ${dxFunc}     ${dataType}       %test_value\n"
+                                   "%dy                 = ${dyFunc}     ${dataType}       %test_value\n"
+                                   "%fwidth             = ${dwidthFunc} ${dataType}       %test_value\n";
         specMap["storeCode"] =
             "%out_x_loc          = OpAccessChain ${dataType}_storage_buffer_ptr %out_x_var %c_uint32_0 "
             "%${storeNdx}\n"
@@ -3790,18 +3823,40 @@ tcu::TestCaseGroup *createComputeShaderDerivativesTests(tcu::TestContext &testCt
                     {
                         de::MovePtr<tcu::TestCaseGroup> quads(new tcu::TestCaseGroup(testCtx, "quads"));
 
-                        ComputeShaderDerivativeTestParams params;
-                        params.numWorkgroup = tcu::UVec3(4, 4, 1);
-                        params.testType     = TestType::DERIVATIVE_VALUE;
-                        params.shaderType   = shaderTypes[ndx];
-                        params.variant      = variants[ndy];
-                        params.dataType     = dataTypes[ndz];
-                        params.feature      = DerivativeFeature::QUADS;
+                        const tcu::UVec3 quadSizes[] = {
+                            tcu::UVec3(4, 4, 1),
+                            tcu::UVec3(4, 8, 1),
+                            tcu::UVec3(8, 4, 1),
+                            tcu::UVec3(8, 8, 1),
+                        };
 
-                        quads->addChild(new ComputeShaderDerivativeCase(testCtx, "4_4_1", params));
+                        for (const auto &wgSize : quadSizes)
+                        {
+                            std::string name = std::to_string(wgSize.x()) + "_" + std::to_string(wgSize.y()) + "_" +
+                                               std::to_string(wgSize.z());
 
-                        params.useLocalInvocationIndex = true;
-                        quads->addChild(new ComputeShaderDerivativeCase(testCtx, "4_4_1_local_inv_index", params));
+                            ComputeShaderDerivativeTestParams params;
+                            params.numWorkgroup = wgSize;
+                            params.testType     = TestType::DERIVATIVE_VALUE;
+                            params.shaderType   = shaderTypes[ndx];
+                            params.variant      = variants[ndy];
+                            params.dataType     = dataTypes[ndz];
+                            params.feature      = DerivativeFeature::QUADS;
+
+                            quads->addChild(new ComputeShaderDerivativeCase(testCtx, name.c_str(), params));
+                        }
+
+                        {
+                            ComputeShaderDerivativeTestParams params;
+                            params.numWorkgroup            = tcu::UVec3(4, 4, 1);
+                            params.testType                = TestType::DERIVATIVE_VALUE;
+                            params.shaderType              = shaderTypes[ndx];
+                            params.variant                 = variants[ndy];
+                            params.dataType                = dataTypes[ndz];
+                            params.feature                 = DerivativeFeature::QUADS;
+                            params.useLocalInvocationIndex = true;
+                            quads->addChild(new ComputeShaderDerivativeCase(testCtx, "4_4_1_local_inv_index", params));
+                        }
 
                         dataTypeGroup->addChild(quads.release());
                     }
