@@ -184,6 +184,8 @@ enum class SpirvTestType
     SimpleVariablePointers,
     ArrayVariablePointers,
     AtomicImageWithinFunction,
+    OpImageQuerySize,
+    OpImageQuerySizeNullDescriptor,
 };
 
 struct TestParamsSpirv : TestParams
@@ -8181,6 +8183,54 @@ void DescriptorHeapTestCaseSpirv::initPrograms(vk::SourceCollections &programCol
                OpFunctionEnd
 )";
         break;
+    case SpirvTestType::OpImageQuerySize:
+    case SpirvTestType::OpImageQuerySizeNullDescriptor:
+        assembly = R"(
+               OpCapability Shader
+               OpCapability ImageQuery
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %4 "main" %10 %14
+               OpExecutionMode %4 LocalSize 1 1 1
+               OpSource GLSL 450
+               OpName %4 "main"
+               OpName %8 "OutputData"
+               OpMemberName %8 0 "size"
+               OpName %10 "outputData"
+               OpName %14 "tex"
+               OpDecorate %8 Block
+               OpMemberDecorate %8 0 Offset 0
+               OpDecorate %10 Binding 1
+               OpDecorate %10 DescriptorSet 0
+               OpDecorate %14 NonWritable
+               OpDecorate %14 Binding 0
+               OpDecorate %14 DescriptorSet 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeVector %6 2
+          %8 = OpTypeStruct %7
+          %9 = OpTypePointer StorageBuffer %8
+         %10 = OpVariable %9 StorageBuffer
+         %11 = OpConstant %6 0
+         %12 = OpTypeImage %6 2D 0 0 0 2 R32i
+         %13 = OpTypePointer UniformConstant %12
+         %14 = OpVariable %13 UniformConstant
+         %17 = OpTypePointer StorageBuffer %7
+         %19 = OpTypeInt 32 0
+         %20 = OpTypeVector %19 3
+         %21 = OpConstant %19 1
+         %22 = OpConstantComposite %20 %21 %21 %21
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %15 = OpLoad %12 %14
+         %16 = OpImageQuerySize %7 %15
+         %18 = OpAccessChain %17 %10 %11
+               OpStore %18 %16
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
     default:
         DE_ASSERT(0);
         break;
@@ -8271,6 +8321,14 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
         dispatchWidth = 128;
         expectedOutput.resize(dispatchWidth, 0xcafebeef);
         heapUserSize = dispatchWidth * resourceDescriptorStride;
+        break;
+    case SpirvTestType::OpImageQuerySize:
+        expectedOutput = {64, 32};
+        heapUserSize   = 2 * resourceDescriptorStride;
+        break;
+    case SpirvTestType::OpImageQuerySizeNullDescriptor:
+        expectedOutput = {0, 0};
+        heapUserSize   = 2 * resourceDescriptorStride;
         break;
     default:
         DE_ASSERT(0);
@@ -8698,6 +8756,91 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
             vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1,
                                    &copyBarrier, 0, nullptr, 0, nullptr);
         };
+        break;
+    }
+    case SpirvTestType::OpImageQuerySize:
+    case SpirvTestType::OpImageQuerySizeNullDescriptor:
+    {
+        const bool nullDescriptor = m_params.spirvTestType == SpirvTestType::OpImageQuerySizeNullDescriptor;
+        const tcu::IVec2 imageSize(64, 32);
+
+        const uint32_t imageOffset  = 0;
+        const uint32_t bufferOffset = static_cast<uint32_t>(resourceDescriptorStride);
+
+        mappings.resize(2);
+        mappings[0]                                      = initVulkanStructure();
+        mappings[0].descriptorSet                        = 0u;
+        mappings[0].firstBinding                         = 0u;
+        mappings[0].bindingCount                         = 1u;
+        mappings[0].resourceMask                         = VK_SPIRV_RESOURCE_TYPE_READ_ONLY_IMAGE_BIT_EXT;
+        mappings[0].source                               = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+        mappings[0].sourceData.constantOffset.heapOffset = imageOffset;
+        mappings[1]                                      = initVulkanStructure();
+        mappings[1].descriptorSet                        = 0u;
+        mappings[1].firstBinding                         = 1u;
+        mappings[1].bindingCount                         = 1u;
+        mappings[1].resourceMask                         = VK_SPIRV_RESOURCE_TYPE_READ_WRITE_STORAGE_BUFFER_BIT_EXT;
+        mappings[1].source                               = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+        mappings[1].sourceData.constantOffset.heapOffset = bufferOffset;
+
+        VkImage image = VK_NULL_HANDLE;
+
+        if (!nullDescriptor)
+        {
+            VkImageCreateInfo imageCreateInfo = initVulkanStructure();
+            imageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+            imageCreateInfo.format            = VK_FORMAT_R32_SINT;
+            imageCreateInfo.extent    = {static_cast<uint32_t>(imageSize.x()), static_cast<uint32_t>(imageSize.y()), 1};
+            imageCreateInfo.mipLevels = 1;
+            imageCreateInfo.arrayLayers   = 1;
+            imageCreateInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
+            imageCreateInfo.tiling        = VK_IMAGE_TILING_OPTIMAL;
+            imageCreateInfo.usage         = VK_IMAGE_USAGE_STORAGE_BIT;
+            imageCreateInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+            imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+            image = *stagingImages.emplace_back(createImageAndMemory(imageCreateInfo))->image;
+        }
+
+        VkImageViewCreateInfo imageViewCreateInfo = initVulkanStructure();
+        imageViewCreateInfo.image                 = image;
+        imageViewCreateInfo.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+        imageViewCreateInfo.format                = VK_FORMAT_R32_SINT;
+        imageViewCreateInfo.components            = makeComponentMappingRGBA();
+        imageViewCreateInfo.subresourceRange      = makeDefaultImageSubresourceRange();
+
+        VkImageDescriptorInfoEXT imageDescriptorInfo = initVulkanStructure();
+        imageDescriptorInfo.layout                   = VK_IMAGE_LAYOUT_GENERAL;
+        imageDescriptorInfo.pView                    = &imageViewCreateInfo;
+
+        VkDeviceAddressRangeEXT outputBufferAddressRange{};
+        outputBufferAddressRange.address = outputBuffer->address;
+        outputBufferAddressRange.size    = outputBufferSize;
+
+        std::array<VkResourceDescriptorInfoEXT, 2> resources{};
+        resources[0]                    = initVulkanStructure();
+        resources[0].type               = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        resources[0].data.pImage        = nullDescriptor ? nullptr : &imageDescriptorInfo;
+        resources[1]                    = initVulkanStructure();
+        resources[1].type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        resources[1].data.pAddressRange = &outputBufferAddressRange;
+
+        std::array<VkHostAddressRangeEXT, 2> hostAddressRanges{};
+        hostAddressRanges[0].address = reinterpret_cast<char *>(heapContents) + imageOffset;
+        hostAddressRanges[0].size    = static_cast<size_t>(imageDescriptorStride);
+        hostAddressRanges[1].address = reinterpret_cast<char *>(heapContents) + bufferOffset;
+        hostAddressRanges[1].size    = static_cast<size_t>(bufferDescriptorStride);
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 2u, resources.data(), hostAddressRanges.data()));
+
+        if (!nullDescriptor)
+        {
+            auto initMemoryBarrier =
+                makeImageMemoryBarrier(0, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+                                       image, makeDefaultImageSubresourceRange());
+            vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                   0u, 0u, nullptr, 0u, nullptr, 1u, &initMemoryBarrier);
+        }
         break;
     }
     default:
@@ -15863,6 +16006,8 @@ void populateSpirvTests(tcu::TestCaseGroup *topGroup)
         {SpirvTestType::SimpleVariablePointers, "simple_variable_pointers"},
         {SpirvTestType::ArrayVariablePointers, "array_variable_pointers"},
         {SpirvTestType::AtomicImageWithinFunction, "atomic_image_within_function"},
+        {SpirvTestType::OpImageQuerySize, "op_image_query_size"},
+        {SpirvTestType::OpImageQuerySizeNullDescriptor, "op_image_query_size_null_descriptor"},
     };
     for (const auto &test : tests)
     {
@@ -15874,6 +16019,7 @@ void populateSpirvTests(tcu::TestCaseGroup *topGroup)
         params.shaderImageInt64Atomics      = params.spirvTestType == SpirvTestType::StorageTexelBufferAtomic64;
         params.enableShader64bitIndexing    = test.first == SpirvTestType::SizeOf64;
         params.enableRuntimeDescriptorArray = test.first == SpirvTestType::AtomicImageWithinFunction;
+        params.enableNullDescriptor         = test.first == SpirvTestType::OpImageQuerySizeNullDescriptor;
 
         spirvGroup->addChild(new DescriptorHeapTestCaseSpirv(testCtx, test.second, params));
     }
