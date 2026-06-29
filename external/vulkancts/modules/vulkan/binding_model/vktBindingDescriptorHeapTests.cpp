@@ -1321,6 +1321,407 @@ tcu::TestStatus DescriptorHeapTestInstanceYcbcr::iterate()
     return tcu::TestStatus::pass("Pass");
 }
 
+enum class BorderColorStress
+{
+    None = 0,
+    UnregisterBeforeRegister,
+    RegisterUnregisterTwice,
+    MaxRegisterScatterReregister,
+};
+
+struct TestParamsCustomBorderColor : TestParams
+{
+    BorderColorStress stress = BorderColorStress::None;
+};
+
+class DescriptorHeapTestInstanceCustomBorderColor final : public TestInstance
+{
+public:
+    DescriptorHeapTestInstanceCustomBorderColor(Context &context, const TestParamsCustomBorderColor &params)
+        : TestInstance(context)
+        , m_params(params)
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    uint32_t registerBorderColor(const DeviceInterface &vkd, VkDevice device, const tcu::Vec4 &color) const;
+    void runRegistrationStress(const DeviceInterface &vkd, VkDevice device) const;
+
+    TestParamsCustomBorderColor m_params;
+};
+
+class DescriptorHeapTestCaseCustomBorderColor final : public TestCase
+{
+public:
+    DescriptorHeapTestCaseCustomBorderColor(tcu::TestContext &testCtx, const std::string &name,
+                                            const TestParamsCustomBorderColor &params)
+        : TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    void checkSupport(Context &context) const override;
+    std::string getRequiredCapabilitiesId() const override;
+    void initDeviceCapabilities(DevCaps &caps) override;
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceCustomBorderColor(context, m_params);
+    }
+
+private:
+    TestParamsCustomBorderColor m_params;
+};
+
+void DescriptorHeapTestCaseCustomBorderColor::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::string source = "#version 450\n"
+                         "layout (set = 0, binding = 0) uniform sampler2D tex;\n"
+                         "layout (set = 1, binding = 0) buffer Output {\n"
+                         "  vec4 result[];\n"
+                         "};\n"
+                         "layout(local_size_x = 1) in;\n"
+                         "void main() {\n"
+                         "  result[0] = textureLod(tex, vec2(2.0, 2.0), 0.0);\n"
+                         "}\n";
+    programCollection.glslSources.add("compute") << glu::ComputeSource(source);
+}
+
+std::string DescriptorHeapTestCaseCustomBorderColor::getRequiredCapabilitiesId() const
+{
+    return "DescriptorHeapCustomBorderColor";
+}
+
+void DescriptorHeapTestCaseCustomBorderColor::initDeviceCapabilities(DevCaps &caps)
+{
+    caps.addExtension(VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME);
+    caps.addExtension(VK_KHR_SHADER_UNTYPED_POINTERS_EXTENSION_NAME);
+    caps.addExtension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+    caps.addExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+    caps.addExtension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
+
+    caps.addFeature(&VkPhysicalDeviceDescriptorHeapFeaturesEXT::descriptorHeap);
+    caps.addFeature(&VkPhysicalDeviceShaderUntypedPointersFeaturesKHR::shaderUntypedPointers);
+    caps.addFeature(&VkPhysicalDeviceMaintenance5FeaturesKHR::maintenance5);
+    caps.addFeature(&VkPhysicalDeviceCustomBorderColorFeaturesEXT::customBorderColors);
+    caps.addFeature(&VkPhysicalDeviceVulkan12Features::bufferDeviceAddress);
+}
+
+void DescriptorHeapTestCaseCustomBorderColor::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality(VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME);
+    context.requireDeviceFunctionality(VK_KHR_SHADER_UNTYPED_POINTERS_EXTENSION_NAME);
+    context.requireDeviceFunctionality(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+    context.requireDeviceFunctionality(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+    context.requireDeviceFunctionality(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
+
+    if (!context.getDescriptorHeapFeaturesEXT().descriptorHeap)
+        TCU_THROW(NotSupportedError, "descriptorHeap is not supported");
+
+    if (!context.getCustomBorderColorFeaturesEXT().customBorderColors)
+        TCU_THROW(NotSupportedError, "customBorderColors feature is not supported");
+}
+
+uint32_t DescriptorHeapTestInstanceCustomBorderColor::registerBorderColor(const DeviceInterface &vkd, VkDevice device,
+                                                                          const tcu::Vec4 &color) const
+{
+    VkSamplerCustomBorderColorCreateInfoEXT createInfo = initVulkanStructure();
+    createInfo.customBorderColor.float32[0]            = color.x();
+    createInfo.customBorderColor.float32[1]            = color.y();
+    createInfo.customBorderColor.float32[2]            = color.z();
+    createInfo.customBorderColor.float32[3]            = color.w();
+    createInfo.format                                  = VK_FORMAT_R32G32B32A32_SFLOAT;
+
+    uint32_t index = 0;
+    VK_CHECK(vkd.registerCustomBorderColorEXT(device, &createInfo, VK_FALSE, &index));
+    return index;
+}
+
+void DescriptorHeapTestInstanceCustomBorderColor::runRegistrationStress(const DeviceInterface &vkd,
+                                                                        VkDevice device) const
+{
+    de::Random rnd(m_params.seed);
+
+    const auto randomColor = [&rnd]()
+    { return tcu::Vec4(rnd.getFloat(), rnd.getFloat(), rnd.getFloat(), rnd.getFloat()); };
+
+    switch (m_params.stress)
+    {
+    case BorderColorStress::None:
+        break;
+
+    case BorderColorStress::UnregisterBeforeRegister:
+        vkd.unregisterCustomBorderColorEXT(device, 0u);
+        break;
+
+    case BorderColorStress::RegisterUnregisterTwice:
+    {
+        const uint32_t index = registerBorderColor(vkd, device, randomColor());
+        vkd.unregisterCustomBorderColorEXT(device, index);
+        vkd.unregisterCustomBorderColorEXT(device, index);
+        break;
+    }
+
+    case BorderColorStress::MaxRegisterScatterReregister:
+    {
+        const uint32_t maxColors =
+            std::min(m_context.getCustomBorderColorPropertiesEXT().maxCustomBorderColorSamplers, 4096u);
+        const uint32_t kInvalid = ~0u;
+
+        std::vector<uint32_t> indices;
+        indices.reserve(maxColors);
+        for (uint32_t i = 0; i < maxColors; ++i)
+            indices.push_back(registerBorderColor(vkd, device, randomColor()));
+
+        const uint32_t scatterCount = std::min(10u, maxColors);
+        for (uint32_t i = 0; i < scatterCount; ++i)
+        {
+            const uint32_t pos = static_cast<uint32_t>((uint64_t{i} * maxColors) / scatterCount);
+            vkd.unregisterCustomBorderColorEXT(device, indices[pos]);
+            indices[pos] = kInvalid;
+        }
+
+        for (uint32_t i = 0; i < scatterCount; ++i)
+            indices.push_back(registerBorderColor(vkd, device, randomColor()));
+
+        for (const uint32_t index : indices)
+            if (index != kInvalid)
+                vkd.unregisterCustomBorderColorEXT(device, index);
+        break;
+    }
+    }
+}
+
+tcu::TestStatus DescriptorHeapTestInstanceCustomBorderColor::iterate()
+{
+    const auto ctx              = m_context.getContextCommonData();
+    const auto &vki             = ctx.vki;
+    const auto &vkd             = ctx.vkd;
+    const auto physicalDevice   = ctx.physicalDevice;
+    const auto device           = ctx.device;
+    const auto memoryProperties = getPhysicalDeviceMemoryProperties(vki, physicalDevice);
+    const auto &dhProps         = m_context.getDescriptorHeapPropertiesEXT();
+
+    runRegistrationStress(vkd, device);
+
+    const tcu::Vec4 borderColor(0.25f, 0.5f, 0.75f, 1.0f);
+    const uint32_t borderColorIndex = registerBorderColor(vkd, device, borderColor);
+
+    const uint32_t resourceStride = static_cast<uint32_t>(getResourceDescriptorStride(dhProps));
+
+    const VkDeviceSize resourceHeapReservedOffset = VkDeviceSize{5U * resourceStride};
+    const VkDeviceSize resourceHeapSize           = resourceHeapReservedOffset + dhProps.minResourceHeapReservedRange;
+    const VkDeviceSize samplerHeapSize =
+        std::max(dhProps.samplerDescriptorSize, dhProps.minSamplerHeapReservedRangeWithEmbedded);
+
+    const auto heapFlags = VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
+
+    const auto resourceHeap =
+        createBufferAndMemory(vki, physicalDevice, vkd, memoryProperties, device, resourceHeapSize, heapFlags);
+    const auto samplerHeap =
+        createBufferAndMemory(vki, physicalDevice, vkd, memoryProperties, device, samplerHeapSize, heapFlags);
+
+    const uint32_t outputBufferSize = sizeof(tcu::Vec4);
+    const auto outputBuffer =
+        createBufferAndMemory(vki, physicalDevice, vkd, memoryProperties, device, outputBufferSize,
+                              VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+    VkBindHeapInfoEXT resourceHeapBindInfo   = initVulkanStructure();
+    resourceHeapBindInfo.heapRange.address   = resourceHeap->address;
+    resourceHeapBindInfo.heapRange.size      = resourceHeapSize;
+    resourceHeapBindInfo.reservedRangeOffset = resourceHeapReservedOffset;
+    resourceHeapBindInfo.reservedRangeSize   = dhProps.minResourceHeapReservedRange;
+
+    VkBindHeapInfoEXT samplerHeapBindInfo   = initVulkanStructure();
+    samplerHeapBindInfo.heapRange.address   = samplerHeap->address;
+    samplerHeapBindInfo.heapRange.size      = samplerHeapSize;
+    samplerHeapBindInfo.reservedRangeOffset = 0;
+    samplerHeapBindInfo.reservedRangeSize   = dhProps.minSamplerHeapReservedRangeWithEmbedded;
+
+    const VkFormat format    = VK_FORMAT_R32G32B32A32_SFLOAT;
+    const uint32_t imageSize = 2U;
+
+    VkImageCreateInfo imageCreateInfo = initVulkanStructure();
+    imageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.format            = format;
+    imageCreateInfo.extent            = {imageSize, imageSize, 1U};
+    imageCreateInfo.mipLevels         = 1U;
+    imageCreateInfo.arrayLayers       = 1U;
+    imageCreateInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.usage             = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    imageCreateInfo.sharingMode       = VK_SHARING_MODE_EXCLUSIVE;
+    imageCreateInfo.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    const auto sourceImage = createImageAndMemory(vki, physicalDevice, vkd, memoryProperties, device, imageCreateInfo);
+
+    VkImageViewCreateInfo imageViewCreateInfo = initVulkanStructure();
+    imageViewCreateInfo.image                 = *sourceImage->image;
+    imageViewCreateInfo.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+    imageViewCreateInfo.format                = format;
+    imageViewCreateInfo.components            = makeComponentMappingIdentity();
+    imageViewCreateInfo.subresourceRange      = makeDefaultImageSubresourceRange();
+
+    VkImageDescriptorInfoEXT imageDescriptorInfo = initVulkanStructure();
+    imageDescriptorInfo.pView                    = &imageViewCreateInfo;
+    imageDescriptorInfo.layout                   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    VkResourceDescriptorInfoEXT imageResourceDescriptorInfo = initVulkanStructure();
+    imageResourceDescriptorInfo.type                        = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    imageResourceDescriptorInfo.data.pImage                 = &imageDescriptorInfo;
+
+    VkHostAddressRangeEXT imageDescriptor{};
+    imageDescriptor.address = resourceHeap->memory->getHostPtr();
+    imageDescriptor.size    = resourceStride;
+    VK_CHECK(vkd.writeResourceDescriptorsEXT(device, 1, &imageResourceDescriptorInfo, &imageDescriptor));
+
+    VkDeviceAddressRangeEXT bufferDeviceAddressRange{};
+    bufferDeviceAddressRange.address = outputBuffer->address;
+    bufferDeviceAddressRange.size    = outputBufferSize;
+
+    VkResourceDescriptorInfoEXT bufferDescriptorInfo = initVulkanStructure();
+    bufferDescriptorInfo.type                        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    bufferDescriptorInfo.data.pAddressRange          = &bufferDeviceAddressRange;
+
+    VkHostAddressRangeEXT bufferDescriptor{};
+    bufferDescriptor.address = reinterpret_cast<char *>(resourceHeap->memory->getHostPtr()) + 4U * resourceStride;
+    bufferDescriptor.size    = resourceStride;
+    VK_CHECK(vkd.writeResourceDescriptorsEXT(device, 1, &bufferDescriptorInfo, &bufferDescriptor));
+
+    VkSamplerCustomBorderColorCreateInfoEXT customBorderColorCreateInfo = initVulkanStructure();
+    customBorderColorCreateInfo.customBorderColor.float32[0]            = borderColor.x();
+    customBorderColorCreateInfo.customBorderColor.float32[1]            = borderColor.y();
+    customBorderColorCreateInfo.customBorderColor.float32[2]            = borderColor.z();
+    customBorderColorCreateInfo.customBorderColor.float32[3]            = borderColor.w();
+    customBorderColorCreateInfo.format                                  = format;
+
+    VkSamplerCustomBorderColorIndexCreateInfoEXT borderColorIndexCreateInfo = initVulkanStructure();
+    borderColorIndexCreateInfo.pNext                                        = &customBorderColorCreateInfo;
+    borderColorIndexCreateInfo.index                                        = borderColorIndex;
+
+    VkSamplerCreateInfo samplerCreateInfo     = initVulkanStructure();
+    samplerCreateInfo.pNext                   = &borderColorIndexCreateInfo;
+    samplerCreateInfo.magFilter               = VK_FILTER_NEAREST;
+    samplerCreateInfo.minFilter               = VK_FILTER_NEAREST;
+    samplerCreateInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+    samplerCreateInfo.addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    samplerCreateInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    samplerCreateInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    samplerCreateInfo.maxAnisotropy           = 1.0f;
+    samplerCreateInfo.compareOp               = VK_COMPARE_OP_NEVER;
+    samplerCreateInfo.minLod                  = 0.0f;
+    samplerCreateInfo.maxLod                  = 0.0f;
+    samplerCreateInfo.borderColor             = VK_BORDER_COLOR_FLOAT_CUSTOM_EXT;
+    samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+
+    const auto computeModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("compute"));
+
+    VkPipelineCreateFlags2CreateInfoKHR pipelineCreateFlags2CreateInfo = initVulkanStructure();
+    pipelineCreateFlags2CreateInfo.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+    std::array<VkDescriptorSetAndBindingMappingEXT, 2> mappings{};
+    mappings[0]                                            = initVulkanStructure();
+    mappings[0].descriptorSet                              = 0;
+    mappings[0].firstBinding                               = 0;
+    mappings[0].bindingCount                               = 1;
+    mappings[0].resourceMask                               = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    mappings[0].source                                     = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mappings[0].sourceData.constantOffset.heapOffset       = 0U * resourceStride;
+    mappings[0].sourceData.constantOffset.heapArrayStride  = resourceStride;
+    mappings[0].sourceData.constantOffset.pEmbeddedSampler = &samplerCreateInfo;
+    mappings[0].sourceData.constantOffset.samplerHeapOffset      = 0;
+    mappings[0].sourceData.constantOffset.samplerHeapArrayStride = 0;
+
+    mappings[1]                                            = initVulkanStructure();
+    mappings[1].descriptorSet                              = 1;
+    mappings[1].firstBinding                               = 0;
+    mappings[1].bindingCount                               = 1;
+    mappings[1].resourceMask                               = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    mappings[1].source                                     = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mappings[1].sourceData.constantOffset.heapOffset       = 4U * resourceStride;
+    mappings[1].sourceData.constantOffset.heapArrayStride  = 0;
+    mappings[1].sourceData.constantOffset.pEmbeddedSampler = nullptr;
+    mappings[1].sourceData.constantOffset.samplerHeapOffset      = 0;
+    mappings[1].sourceData.constantOffset.samplerHeapArrayStride = 0;
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+    mappingInfo.mappingCount                                  = static_cast<uint32_t>(mappings.size());
+    mappingInfo.pMappings                                     = mappings.data();
+
+    VkComputePipelineCreateInfo pipelineCreateInfo = initVulkanStructure();
+    pipelineCreateInfo.pNext                       = &pipelineCreateFlags2CreateInfo;
+    pipelineCreateInfo.stage                       = initVulkanStructure();
+    pipelineCreateInfo.stage.pNext                 = &mappingInfo;
+    pipelineCreateInfo.stage.stage                 = VK_SHADER_STAGE_COMPUTE_BIT;
+    pipelineCreateInfo.stage.module                = *computeModule;
+    pipelineCreateInfo.stage.pName                 = "main";
+
+    const auto pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+    const auto cmdPool      = makeCommandPool(vkd, device, ctx.qfIndex);
+    const auto cmdBufferPtr = allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    const auto cmdBuffer    = cmdBufferPtr.get();
+
+    const auto subresourceRange = makeDefaultImageSubresourceRange();
+
+    const VkImageMemoryBarrier prepareImageBarrier =
+        makeImageMemoryBarrier(VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *sourceImage->image, subresourceRange);
+    const VkImageMemoryBarrier doneTransferBarrier = makeImageMemoryBarrier(
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, *sourceImage->image, subresourceRange);
+
+    VkClearColorValue clearColor{};
+    clearColor.float32[0] = 1.0f;
+    clearColor.float32[1] = 0.0f;
+    clearColor.float32[2] = 1.0f;
+    clearColor.float32[3] = 1.0f;
+
+    VkPushDataInfoEXT pushDataInfo = initVulkanStructure();
+    pushDataInfo.offset            = 0;
+    pushDataInfo.data.size         = sizeof(uint64_t);
+    pushDataInfo.data.address      = &outputBuffer->address;
+
+    beginCommandBuffer(vkd, cmdBuffer);
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr,
+                           0, nullptr, 1, &prepareImageBarrier);
+    vkd.cmdClearColorImage(cmdBuffer, *sourceImage->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1,
+                           &subresourceRange);
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0,
+                           nullptr, 0, nullptr, 1, &doneTransferBarrier);
+    vkd.cmdBindResourceHeapEXT(cmdBuffer, &resourceHeapBindInfo);
+    vkd.cmdBindSamplerHeapEXT(cmdBuffer, &samplerHeapBindInfo);
+    vkd.cmdPushDataEXT(cmdBuffer, &pushDataInfo);
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+    vkd.cmdDispatch(cmdBuffer, 1U, 1U, 1U);
+    endCommandBuffer(vkd, cmdBuffer);
+
+    submitCommandsAndWait(vkd, device, ctx.queue, cmdBuffer);
+
+    invalidateAlloc(vkd, device, *outputBuffer->memory);
+
+    tcu::Vec4 result{};
+    deMemcpy(&result, outputBuffer->memory->getHostPtr(), sizeof(result));
+
+    vkd.unregisterCustomBorderColorEXT(device, borderColorIndex);
+
+    const float tolerance = 0.01f;
+    for (int i = 0; i < 4; ++i)
+    {
+        if (std::abs(borderColor[i] - result[i]) > tolerance)
+        {
+            std::stringstream stream;
+            stream << "Expected custom border color " << borderColor << " but got " << result;
+            return tcu::TestStatus::fail(stream.str());
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 class DescriptorHeapTestInstanceDifferentMappingsPerShader final : public DescriptorHeapTestInstanceBase
 {
 public:
@@ -17433,6 +17834,32 @@ void populateSmallBufferTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
     topGroup->addChild(group.release());
 }
 
+void populateCustomBorderColorTests(tcu::TestCaseGroup *topGroup)
+{
+    tcu::TestContext &testCtx = topGroup->getTestContext();
+    MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "custom_border_color"));
+
+    const struct
+    {
+        BorderColorStress stress;
+        const char *name;
+    } cases[] = {
+        {BorderColorStress::None, "basic"},
+        {BorderColorStress::UnregisterBeforeRegister, "unregister_before_register"},
+        {BorderColorStress::RegisterUnregisterTwice, "register_unregister_twice"},
+        {BorderColorStress::MaxRegisterScatterReregister, "max_register_scatter_reregister"},
+    };
+
+    for (const auto &c : cases)
+    {
+        TestParamsCustomBorderColor params{};
+        params.stress = c.stress;
+        group->addChild(new DescriptorHeapTestCaseCustomBorderColor(testCtx, c.name, params));
+    }
+
+    topGroup->addChild(group.release());
+}
+
 void populateDescriptorHeapTests(tcu::TestCaseGroup *topGroup)
 {
     tcu::TestContext &testCtx = topGroup->getTestContext();
@@ -17477,6 +17904,7 @@ void populateDescriptorHeapTests(tcu::TestCaseGroup *topGroup)
     populateZeroStrideTests(topGroup, baseSeed);
     populateOffsetIdTests(topGroup, baseSeed);
     populateSmallBufferTests(topGroup, baseSeed);
+    populateCustomBorderColorTests(topGroup);
 }
 
 } // namespace
