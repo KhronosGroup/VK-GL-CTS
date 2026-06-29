@@ -440,6 +440,9 @@ protected:
 
 void RestartIndexCase::checkSupport(Context &context) const
 {
+    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                          m_params->constructionType);
+
 #ifndef AVOID_CUSTOM_RESTART_INDEX
     context.requireDeviceFunctionality("VK_EXT_primitive_restart_index");
 #endif // AVOID_CUSTOM_RESTART_INDEX
