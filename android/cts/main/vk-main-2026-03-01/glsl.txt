@@ -48,6 +48,7 @@ dEQP-VK.glsl.builtin.function.integer.bitfieldreverse.ivec5_highp_compute
 dEQP-VK.glsl.builtin.function.integer.bitfieldreverse.ivec5_mediump_compute
 dEQP-VK.glsl.builtin.function.integer.bitfieldreverse.uvec5_highp_compute
 dEQP-VK.glsl.builtin.function.integer.bitfieldreverse.uvec5_mediump_compute
+dEQP-VK.glsl.builtin.function.integer.bitwise_vector_modulo.uvec2_compute
 dEQP-VK.glsl.builtin.function.integer.findMSB.ivec5_highp_compute
 dEQP-VK.glsl.builtin.function.integer.findMSB.ivec5_mediump_compute
 dEQP-VK.glsl.builtin.function.integer.findMSB.uvec5_highp_compute

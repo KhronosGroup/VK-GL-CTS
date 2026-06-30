@@ -1340,6 +1340,7 @@ dEQP-VKSC.glsl.builtin.function.integer.bitfieldreverse.uvec4_mediump_geometry
 dEQP-VKSC.glsl.builtin.function.integer.bitfieldreverse.uvec4_mediump_tess_control
 dEQP-VKSC.glsl.builtin.function.integer.bitfieldreverse.uvec4_mediump_tess_eval
 dEQP-VKSC.glsl.builtin.function.integer.bitfieldreverse.uvec4_mediump_vertex
+dEQP-VKSC.glsl.builtin.function.integer.bitwise_vector_modulo.uvec2_compute
 dEQP-VKSC.glsl.builtin.function.integer.findMSB.int_highp_compute
 dEQP-VKSC.glsl.builtin.function.integer.findMSB.int_highp_fragment
 dEQP-VKSC.glsl.builtin.function.integer.findMSB.int_highp_geometry
