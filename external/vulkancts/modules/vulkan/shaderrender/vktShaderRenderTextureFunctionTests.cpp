@@ -2784,6 +2784,7 @@ private:
     TestSize m_testSize;
     tcu::IVec3 m_expectedSize;
     int m_iterationCounter;
+    bool m_resultPassed;
 };
 
 TextureSizeInstance::TextureSizeInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec,
@@ -2792,6 +2793,7 @@ TextureSizeInstance::TextureSizeInstance(Context &context, const bool isVertexCa
     , m_testSize()
     , m_expectedSize()
     , m_iterationCounter(0)
+    , m_resultPassed(true)
 {
     deMemset(&m_testSize, 0, sizeof(TestSize));
 
@@ -2945,20 +2947,22 @@ tcu::TestStatus TextureSizeInstance::iterate(void)
     m_iterationCounter++;
 
     if (m_iterationCounter == lastIterationIndex)
+    {
+        // Report the verdict only once every iteration has run. Returning early
+        // on the first failing iteration leaves the Vulkan SC subprocess having
+        // created fewer objects than the main process recorded, which corrupts
+        // the command pool reservation for subsequent tests in the batch.
+        if (!m_resultPassed)
+            return tcu::TestStatus::fail("Got unexpected result");
         return tcu::TestStatus::pass("Pass");
+    }
     else
     {
         // set current test size
         m_testSize = testSizes[m_iterationCounter - 1];
 
-        bool result = testTextureSize();
-#ifdef CTS_USES_VULKANSC
-        if (m_context.getTestContext().getCommandLine().isSubProcess())
-#endif // CTS_USES_VULKANSC
-        {
-            if (!result)
-                return tcu::TestStatus::fail("Got unexpected result");
-        }
+        if (!testTextureSize())
+            m_resultPassed = false;
         return tcu::TestStatus::incomplete();
     }
 }
@@ -3100,6 +3104,7 @@ private:
     unsigned m_iterationCounter;
     vector<vk::VkSampleCountFlagBits> m_iterations;
     const bool m_useStorageImg;
+    bool m_resultPassed;
 };
 
 TextureSizeMSInstance::TextureSizeMSInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec,
@@ -3108,6 +3113,7 @@ TextureSizeMSInstance::TextureSizeMSInstance(Context &context, const bool isVert
     , m_iterationCounter(0)
     , m_iterations()
     , m_useStorageImg(useStorageImg)
+    , m_resultPassed(true)
 {
     m_renderSize = tcu::UVec2(1, 1);
 
@@ -3176,16 +3182,15 @@ tcu::TestStatus TextureSizeMSInstance::iterate(void)
 
     if (m_iterationCounter++ < m_iterations.size() * DE_LENGTH_OF_ARRAY(testSizes))
     {
-        bool result = testSize(m_iterations[sampleIdx], testSizes[dimIdx]);
-#ifdef CTS_USES_VULKANSC
-        if (m_context.getTestContext().getCommandLine().isSubProcess())
-#endif // CTS_USES_VULKANSC
-        {
-            if (!result)
-                return tcu::TestStatus::fail("Got unexpected result");
-        }
+        if (!testSize(m_iterations[sampleIdx], testSizes[dimIdx]))
+            m_resultPassed = false;
         return tcu::TestStatus::incomplete();
     }
+    // Defer the verdict until every iteration has run: an early-out would leave
+    // the Vulkan SC subprocess with a different object count than the main
+    // process recorded, corrupting the command pool reservation for the batch.
+    else if (!m_resultPassed)
+        return tcu::TestStatus::fail("Got unexpected result");
     else
         return tcu::TestStatus::pass("Pass");
 }
@@ -3292,12 +3297,14 @@ private:
 
     int m_iterationCounter;
     vector<vk::VkSampleCountFlagBits> m_iterations;
+    bool m_resultPassed;
 };
 
 TextureSamplesInstance::TextureSamplesInstance(Context &context, const bool isVertexCase,
                                                const TextureSpec &textureSpec, const bool useCompute)
     : TextureQueryInstance(context, isVertexCase, textureSpec, useCompute)
     , m_iterationCounter(0)
+    , m_resultPassed(true)
 {
     m_renderSize = tcu::UVec2(1, 1);
 
@@ -3387,9 +3394,6 @@ tcu::TestStatus TextureSamplesInstance::iterate(void)
         const tcu::TextureLevel &result = getResultImage();
         tcu::IVec4 output               = result.getAccess().getPixelInt(0, 0);
 
-#ifdef CTS_USES_VULKANSC
-        if (m_context.getTestContext().getCommandLine().isSubProcess())
-#endif // CTS_USES_VULKANSC
         {
             if (output.x() == (int)m_iterations[m_iterationCounter])
             {
@@ -3401,13 +3405,20 @@ tcu::TestStatus TextureSamplesInstance::iterate(void)
                 // failure
                 log << tcu::TestLog::Message << "Result: " << output.x() << tcu::TestLog::EndMessage;
                 log << tcu::TestLog::Message << "Failed" << tcu::TestLog::EndMessage;
-                return tcu::TestStatus::fail("Got unexpected result");
+                // Do not early-out: that would leave the Vulkan SC subprocess with a
+                // different object count than the main process recorded, corrupting the
+                // command pool reservation for subsequent tests in the batch.
+                m_resultPassed = false;
             }
         }
 
         m_iterationCounter++;
         if (m_iterationCounter == (int)m_iterations.size())
+        {
+            if (!m_resultPassed)
+                return tcu::TestStatus::fail("Got unexpected result");
             return tcu::TestStatus::pass("Pass");
+        }
         else
             return tcu::TestStatus::incomplete();
     }
@@ -3453,6 +3464,7 @@ private:
     TestSize m_testSize;
     int m_levels;
     int m_iterationCounter;
+    bool m_resultPassed;
 };
 
 TextureQueryLevelsInstance::TextureQueryLevelsInstance(Context &context, const bool isVertexCase,
@@ -3461,6 +3473,7 @@ TextureQueryLevelsInstance::TextureQueryLevelsInstance(Context &context, const b
     , m_testSize()
     , m_levels(0)
     , m_iterationCounter(0)
+    , m_resultPassed(true)
 {
     deMemset(&m_testSize, 0, sizeof(TestSize));
 
@@ -3531,20 +3544,22 @@ tcu::TestStatus TextureQueryLevelsInstance::iterate(void)
     m_iterationCounter++;
 
     if (m_iterationCounter == lastIterationIndex)
+    {
+        // Report the verdict only once every iteration has run. Returning early
+        // on the first failing iteration leaves the Vulkan SC subprocess having
+        // created fewer objects than the main process recorded, which corrupts
+        // the command pool reservation for subsequent tests in the batch.
+        if (!m_resultPassed)
+            return tcu::TestStatus::fail("Got unexpected result");
         return tcu::TestStatus::pass("Pass");
+    }
     else
     {
         // set current test size
         m_testSize = testSizes[m_iterationCounter - 1];
 
-        bool result = testTextureLevels();
-#ifdef CTS_USES_VULKANSC
-        if (m_context.getTestContext().getCommandLine().isSubProcess())
-#endif // CTS_USES_VULKANSC
-        {
-            if (!result)
-                return tcu::TestStatus::fail("Got unexpected result");
-        }
+        if (!testTextureLevels())
+            m_resultPassed = false;
         return tcu::TestStatus::incomplete();
     }
 }
