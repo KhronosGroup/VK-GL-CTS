@@ -57,6 +57,10 @@ static const VkFlags ALL_RAY_TRACING_STAGES = VK_SHADER_STAGE_RAYGEN_BIT_KHR | V
 static const uint32_t RTCR_DEFAULT_SIZE = 8u;
 static const uint32_t RTCR_SHADER_COUNT = 4u;
 
+static const uint32_t OMM_SUBDIVISION_LEVEL = 1u;
+static const uint32_t OMM_BASE_TRIANGLE     = 1u;
+static const uint8_t OMM_PATTERN_4_STATE    = (1u << (2u * 0u)) | (1u << (2u * 2u));
+
 enum SBTReplayTestType
 {
     TEST_ACCELERATION_STRUCTURES,
@@ -83,7 +87,8 @@ enum ASOperationType
 enum ASBottomTestType
 {
     BTT_TRIANGLES,
-    BTT_AABBS
+    BTT_AABBS,
+    BTT_TRIANGLES_OPACITY_MICROMAP
 };
 
 enum ASTopTestType
@@ -136,7 +141,9 @@ public:
     }
 
     virtual std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> initBottomAccelerationStructures(
-        Context &context, TestParams &testParams) = 0;
+        Context &context, TestParams &testParams, const DeviceInterface &vkd, const VkDevice device,
+        const VkCommandBuffer cmdBuffer, Allocator &allocator, bool replay,
+        std::vector<AcclerationStructureOpaqueCaptureReplayAddressInfo> &micromapCaptureAddressInfo) = 0;
     virtual de::MovePtr<TopLevelAccelerationStructure> initTopAccelerationStructure(
         Context &context, TestParams &testParams,
         std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> &bottomLevelAccelerationStructures) = 0;
@@ -166,6 +173,30 @@ struct TestParams
     uint32_t height;
     de::SharedPtr<TestConfiguration> testConfiguration;
 };
+
+bool usesOpacityMicromap(const TestParams &testParams)
+{
+    return testParams.bottomType == BTT_TRIANGLES_OPACITY_MICROMAP;
+}
+
+uint32_t getOpacityMicromapSampleIndex(const uint32_t x, const uint32_t y)
+{
+    return (x + 2u * y) & 3u;
+}
+
+bool isOpacityMicromapSampleOpaque(const uint32_t x, const uint32_t y)
+{
+    const uint32_t sampleIndex = getOpacityMicromapSampleIndex(x, y);
+    return (((OMM_PATTERN_4_STATE >> (2u * sampleIndex)) & 0x3u) == 1u);
+}
+
+uint32_t getExpectedOpacityMicromapValue(const uint32_t x, const uint32_t y)
+{
+    if (((x + y) % 2u) == 0u)
+        return 1u;
+
+    return isOpacityMicromapSampleOpaque(x, y) ? 4u : 1u;
+}
 
 uint32_t getShaderGroupSize(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice)
 {
@@ -264,7 +295,9 @@ class TestShaderBindingTablesConfiguration : public TestConfiguration
 {
 public:
     std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> initBottomAccelerationStructures(
-        Context &context, TestParams &testParams) override;
+        Context &context, TestParams &testParams, const DeviceInterface &vkd, const VkDevice device,
+        const VkCommandBuffer cmdBuffer, Allocator &allocator, bool replay,
+        std::vector<AcclerationStructureOpaqueCaptureReplayAddressInfo> &micromapCaptureAddressInfo) override;
     de::MovePtr<TopLevelAccelerationStructure> initTopAccelerationStructure(
         Context &context, TestParams &testParams,
         std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> &bottomLevelAccelerationStructures) override;
@@ -288,9 +321,18 @@ protected:
 };
 
 std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> TestShaderBindingTablesConfiguration::
-    initBottomAccelerationStructures(Context &context, TestParams &testParams)
+    initBottomAccelerationStructures(
+        Context &context, TestParams &testParams, const DeviceInterface &vkd, const VkDevice device,
+        const VkCommandBuffer cmdBuffer, Allocator &allocator, bool replay,
+        std::vector<AcclerationStructureOpaqueCaptureReplayAddressInfo> &micromapCaptureAddressInfo)
 {
     DE_UNREF(context);
+    DE_UNREF(vkd);
+    DE_UNREF(device);
+    DE_UNREF(cmdBuffer);
+    DE_UNREF(allocator);
+    DE_UNREF(replay);
+    DE_UNREF(micromapCaptureAddressInfo);
     std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> result;
 
     tcu::Vec3 v0(0.0, 1.0, 0.0);
@@ -615,7 +657,9 @@ class TestAccelerationStructuresConfiguration : public TestConfiguration
 {
 public:
     std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> initBottomAccelerationStructures(
-        Context &context, TestParams &testParams) override;
+        Context &context, TestParams &testParams, const DeviceInterface &vkd, const VkDevice device,
+        const VkCommandBuffer cmdBuffer, Allocator &allocator, bool replay,
+        std::vector<AcclerationStructureOpaqueCaptureReplayAddressInfo> &micromapCaptureAddressInfo) override;
     de::MovePtr<TopLevelAccelerationStructure> initTopAccelerationStructure(
         Context &context, TestParams &testParams,
         std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> &bottomLevelAccelerationStructures) override;
@@ -639,7 +683,10 @@ protected:
 };
 
 std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> TestAccelerationStructuresConfiguration::
-    initBottomAccelerationStructures(Context &context, TestParams &testParams)
+    initBottomAccelerationStructures(
+        Context &context, TestParams &testParams, const DeviceInterface &vkd, const VkDevice device,
+        const VkCommandBuffer cmdBuffer, Allocator &allocator, bool replay,
+        std::vector<AcclerationStructureOpaqueCaptureReplayAddressInfo> &micromapCaptureAddressInfo)
 {
     DE_UNREF(context);
     std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> result;
@@ -648,33 +695,98 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> TestAccelerationStr
     tcu::Vec3 v1(0.0, 0.0, 0.0);
     tcu::Vec3 v2(1.0, 1.0, 0.0);
     tcu::Vec3 v3(1.0, 0.0, 0.0);
+    uint32_t micromapCaptureInfoNdx = 0u;
+
+    const auto addTriangleGeometry =
+        [](BottomLevelAccelerationStructure *bottomLevelAccelerationStructure, const std::vector<tcu::Vec3> &vertices)
+    {
+        de::SharedPtr<RaytracedGeometryBase> geometry =
+            makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, VK_FORMAT_R32G32B32_SFLOAT, VK_INDEX_TYPE_NONE_KHR);
+        for (const auto &vertex : vertices)
+            geometry->addVertex(vertex);
+        bottomLevelAccelerationStructure->addGeometry(geometry);
+    };
+
+    const auto addOpacityMicromapTriangleGeometries =
+        [&](BottomLevelAccelerationStructure *bottomLevelAccelerationStructure,
+            const std::vector<std::vector<tcu::Vec3>> &triangleGeometries)
+    {
+        DE_ASSERT(usesOpacityMicromap(testParams));
+        DE_ASSERT(!triangleGeometries.empty());
+        DE_ASSERT(!replay || micromapCaptureInfoNdx < micromapCaptureAddressInfo.size());
+
+        de::MovePtr<MicromapAccelerationStructure> micromapAS = makeMicromapAccelerationStructure();
+        const uint32_t triangleCount                          = OMM_BASE_TRIANGLE + 1u;
+        const uint32_t triangleMicromapBytes                  = (levelToSubtriangles(OMM_SUBDIVISION_LEVEL) + 3u) / 4u;
+        std::vector<uint8_t> opacityMicromapData(triangleCount * triangleMicromapBytes, 0u);
+        AcclerationStructureOpaqueCaptureReplayAddressInfo captureInfo{};
+
+        opacityMicromapData[OMM_BASE_TRIANGLE * triangleMicromapBytes] = OMM_PATTERN_4_STATE;
+
+        if (replay)
+            captureInfo = micromapCaptureAddressInfo[micromapCaptureInfoNdx];
+
+        micromapAS->addOpacityMicromap(opacityMicromapData, triangleCount, OMM_SUBDIVISION_LEVEL,
+                                       VK_OPACITY_MICROMAP_FORMAT_4_STATE_KHR);
+        micromapAS->setCreateFlags(VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR);
+        micromapAS->createAndBuild(vkd, device, cmdBuffer, allocator, 0u, captureInfo.captureAddr,
+                                   captureInfo.bufferOpaqueCaptureAddr, captureInfo.memoryOpaqueCaptureAddr);
+
+        if (!replay)
+        {
+            fillAcclerationStructureOpaqueCaptureAddressInfo(vkd, device, *micromapAS->getPtr(),
+                                                             micromapAS->getAccelerationStructureBuffer(),
+                                                             micromapAS->getAllocation().getMemory(), captureInfo);
+            micromapCaptureAddressInfo.push_back(captureInfo);
+        }
+        ++micromapCaptureInfoNdx;
+
+        VkAccelerationStructureTrianglesOpacityMicromapKHR opacityGeometryMicromap = {
+            VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_OPACITY_MICROMAP_KHR, // VkStructureType sType;
+            nullptr,                                                                 // void* pNext;
+            VK_INDEX_TYPE_UINT32,                                                    // VkIndexType indexType;
+            micromapAS->getIndexBufferAddr(vkd, device),                             // VkDeviceAddress indexBuffer;
+            0,                                                                       // VkDeviceSize indexStride;
+            OMM_BASE_TRIANGLE,                                                       // uint32_t baseTriangle;
+            *micromapAS->getPtr(), // VkAccelerationStructureKHR micromap;
+        };
+        de::SharedPtr<MicromapAccelerationStructure> micromapSharedPtr(micromapAS.release());
+        for (const auto &vertices : triangleGeometries)
+            bottomLevelAccelerationStructure->addGeometry(vertices, true, 0u, nullptr, nullptr,
+                                                          &opacityGeometryMicromap, micromapSharedPtr);
+    };
+
+    const auto addAABBGeometry = [](BottomLevelAccelerationStructure *bottomLevelAccelerationStructure,
+                                    const tcu::Vec3 &minCorner, const tcu::Vec3 &maxCorner)
+    {
+        de::SharedPtr<RaytracedGeometryBase> geometry =
+            makeRaytracedGeometry(VK_GEOMETRY_TYPE_AABBS_KHR, VK_FORMAT_R32G32B32_SFLOAT, VK_INDEX_TYPE_NONE_KHR);
+        geometry->addVertex(minCorner);
+        geometry->addVertex(maxCorner);
+        bottomLevelAccelerationStructure->addGeometry(geometry);
+    };
 
     if (testParams.topType == TTT_DIFFERENT_INSTANCES)
     {
         de::MovePtr<BottomLevelAccelerationStructure> bottomLevelAccelerationStructure =
             makeBottomLevelAccelerationStructure();
-        bottomLevelAccelerationStructure->setGeometryCount(1u);
-        de::SharedPtr<RaytracedGeometryBase> geometry;
-        if (testParams.bottomType == BTT_TRIANGLES)
+        bottomLevelAccelerationStructure->setGeometryCount(usesOpacityMicromap(testParams) ? 2u : 1u);
+
+        if (testParams.bottomType == BTT_AABBS)
         {
-            geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, VK_FORMAT_R32G32B32_SFLOAT,
-                                             VK_INDEX_TYPE_NONE_KHR);
-            geometry->addVertex(v0);
-            geometry->addVertex(v1);
-            geometry->addVertex(v2);
-            geometry->addVertex(v2);
-            geometry->addVertex(v1);
-            geometry->addVertex(v3);
+            addAABBGeometry(bottomLevelAccelerationStructure.get(), tcu::Vec3(0.0f, 0.0f, -0.1f),
+                            tcu::Vec3(1.0f, 1.0f, 0.1f));
         }
-        else // m_data.bottomType == BTT_AABBS
+        else if (usesOpacityMicromap(testParams))
         {
-            geometry =
-                makeRaytracedGeometry(VK_GEOMETRY_TYPE_AABBS_KHR, VK_FORMAT_R32G32B32_SFLOAT, VK_INDEX_TYPE_NONE_KHR);
-            geometry->addVertex(tcu::Vec3(0.0f, 0.0f, -0.1f));
-            geometry->addVertex(tcu::Vec3(1.0f, 1.0f, 0.1f));
+            const std::vector<std::vector<tcu::Vec3>> triangleGeometries = {{v0, v1, v2}, {v2, v1, v3}};
+            addOpacityMicromapTriangleGeometries(bottomLevelAccelerationStructure.get(), triangleGeometries);
+        }
+        else
+        {
+            addTriangleGeometry(bottomLevelAccelerationStructure.get(), {v0, v1, v2, v2, v1, v3});
         }
 
-        bottomLevelAccelerationStructure->addGeometry(geometry);
         result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
     }
     else // m_data.topTestType == TTT_IDENTICAL_INSTANCES
@@ -690,29 +802,27 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> TestAccelerationStr
 
                 de::MovePtr<BottomLevelAccelerationStructure> bottomLevelAccelerationStructure =
                     makeBottomLevelAccelerationStructure();
-                bottomLevelAccelerationStructure->setGeometryCount(1u);
+                bottomLevelAccelerationStructure->setGeometryCount(usesOpacityMicromap(testParams) ? 2u : 1u);
 
-                de::SharedPtr<RaytracedGeometryBase> geometry;
-                if (testParams.bottomType == BTT_TRIANGLES)
+                if (testParams.bottomType == BTT_AABBS)
                 {
-                    geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, VK_FORMAT_R32G32B32_SFLOAT,
-                                                     VK_INDEX_TYPE_NONE_KHR);
-                    geometry->addVertex(xyz + v0);
-                    geometry->addVertex(xyz + v1);
-                    geometry->addVertex(xyz + v2);
-                    geometry->addVertex(xyz + v2);
-                    geometry->addVertex(xyz + v1);
-                    geometry->addVertex(xyz + v3);
+                    addAABBGeometry(bottomLevelAccelerationStructure.get(), xyz + tcu::Vec3(0.0f, 0.0f, -0.1f),
+                                    xyz + tcu::Vec3(1.0f, 1.0f, 0.1f));
                 }
-                else // testParams.bottomTestType == BTT_AABBS
+                else if (usesOpacityMicromap(testParams))
                 {
-                    geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_AABBS_KHR, VK_FORMAT_R32G32B32_SFLOAT,
-                                                     VK_INDEX_TYPE_NONE_KHR);
-                    geometry->addVertex(xyz + tcu::Vec3(0.0f, 0.0f, -0.1f));
-                    geometry->addVertex(xyz + tcu::Vec3(1.0f, 1.0f, 0.1f));
+                    const std::vector<std::vector<tcu::Vec3>> triangleGeometries = {
+                        {xyz + v0, xyz + v1, xyz + v2},
+                        {xyz + v2, xyz + v1, xyz + v3},
+                    };
+                    addOpacityMicromapTriangleGeometries(bottomLevelAccelerationStructure.get(), triangleGeometries);
+                }
+                else
+                {
+                    addTriangleGeometry(bottomLevelAccelerationStructure.get(),
+                                        {xyz + v0, xyz + v1, xyz + v2, xyz + v2, xyz + v1, xyz + v3});
                 }
 
-                bottomLevelAccelerationStructure->addGeometry(geometry);
                 result.push_back(
                     de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
             }
@@ -770,8 +880,10 @@ void TestAccelerationStructuresConfiguration::initRayTracingShaders(de::MovePtr<
                                                                     const VkDevice device, TestParams &testParams,
                                                                     bool replay)
 {
-    DE_UNREF(testParams);
     DE_UNREF(replay);
+    if (usesOpacityMicromap(testParams))
+        rayTracingPipeline->setCreateFlags(VK_PIPELINE_CREATE_RAY_TRACING_OPACITY_MICROMAP_BIT_KHR);
+
     rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,
                                   createShaderModule(vkd, device, context.getBinaryCollection().get("rgen"), 0), 0);
     rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
@@ -834,12 +946,18 @@ bool TestAccelerationStructuresConfiguration::verifyImage(const std::vector<uint
     uint32_t imageSize = testParams.height * testParams.width;
     uint32_t failures  = 0;
 
-    // verify results - each test case should generate checkerboard pattern
+    // Verify results. OMM cases alternate opaque and transparent subtriangle samples in populated cells.
     for (uint32_t pos = 0; pos < imageSize; ++pos)
     {
+        const uint32_t x = pos % testParams.width;
+        const uint32_t y = pos / testParams.width;
+
         if (captureResults[pos] != replayResults[pos])
             failures++;
+        if (usesOpacityMicromap(testParams) && captureResults[pos] != getExpectedOpacityMicromapValue(x, y))
+            failures++;
     }
+
     return failures == 0;
 }
 
@@ -885,6 +1003,7 @@ protected:
 private:
     TestParams m_data;
     std::vector<AcclerationStructureOpaqueCaptureReplayAddressInfo> buildBlasCaptureAddressInfo;
+    std::vector<AcclerationStructureOpaqueCaptureReplayAddressInfo> buildMicromapCaptureAddressInfo;
     std::vector<AcclerationStructureOpaqueCaptureReplayAddressInfo> copyBlasCaptureAddressInfo;
     AcclerationStructureOpaqueCaptureReplayAddressInfo buildTlasCaptureAddressInfo;
     AcclerationStructureOpaqueCaptureReplayAddressInfo copyTLASCaptureAddressInfo;
@@ -947,6 +1066,23 @@ void RayTracingCaptureReplayTestCase::checkSupport(Context &context) const
 
     if (bufferDeviceAddressFeatures.bufferDeviceAddressCaptureReplay == false)
         TCU_THROW(NotSupportedError, "Requires bufferDeviceAddressFeatures.bufferDeviceAddressCaptureReplay");
+
+    if (usesOpacityMicromap(m_data))
+    {
+        context.requireDeviceFunctionality("VK_KHR_opacity_micromap");
+        context.requireDeviceFunctionality("VK_KHR_device_address_commands");
+
+        const VkPhysicalDeviceOpacityMicromapFeaturesKHR &opacityMicromapFeaturesKHR =
+            context.getOpacityMicromapFeatures();
+        if (opacityMicromapFeaturesKHR.micromap == false)
+            TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceOpacityMicromapFeaturesKHR.micromap");
+
+        const VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR &deviceAddressCommandsFeaturesKHR =
+            context.getDeviceAddressCommandsFeatures();
+        if (deviceAddressCommandsFeaturesKHR.deviceAddressCommands == false)
+            TCU_THROW(NotSupportedError,
+                      "Requires VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR.deviceAddressCommands");
+    }
 }
 
 void RayTracingCaptureReplayTestCase::initPrograms(SourceCollections &programCollection) const
@@ -967,9 +1103,27 @@ void RayTracingCaptureReplayTestCase::initPrograms(SourceCollections &programCol
                "void main()\n"
                "{\n"
                "  float tmin     = 0.0;\n"
-               "  float tmax     = 1.0;\n"
-               "  vec3  origin   = vec3(float(gl_LaunchIDEXT.x) + 0.5f, float(gl_LaunchIDEXT.y) + 0.5f, 0.5);\n"
-               "  vec3  direct   = vec3(0.0, 0.0, -1.0);\n"
+               "  float tmax     = 1.0;\n";
+
+        if (usesOpacityMicromap(m_data))
+        {
+            // These are the four level-1 subtriangle centroids mapped into the upper-left triangle of each cell.
+            css << "  uint sampleIndex = (gl_LaunchIDEXT.x + 2u * gl_LaunchIDEXT.y) & 3u;\n"
+                   "  vec2 sampleOffset = vec2(1.0f / 6.0f, 5.0f / 6.0f);\n"
+                   "  if (sampleIndex == 1u)\n"
+                   "    sampleOffset = vec2(1.0f / 3.0f, 2.0f / 3.0f);\n"
+                   "  else if (sampleIndex == 2u)\n"
+                   "    sampleOffset = vec2(1.0f / 6.0f, 1.0f / 3.0f);\n"
+                   "  else if (sampleIndex == 3u)\n"
+                   "    sampleOffset = vec2(2.0f / 3.0f, 5.0f / 6.0f);\n"
+                   "  vec3 origin = vec3(vec2(gl_LaunchIDEXT.xy) + sampleOffset, 0.5f);\n";
+        }
+        else
+        {
+            css << "  vec3 origin = vec3(float(gl_LaunchIDEXT.x) + 0.5f, float(gl_LaunchIDEXT.y) + 0.5f, 0.5f);\n";
+        }
+
+        css << "  vec3  direct   = vec3(0.0, 0.0, -1.0);\n"
                "  hitValue       = uvec4(0,0,0,0);\n"
                "  traceRayEXT(topLevelAS, 0, 0xFF, 0, 0, 0, origin, tmin, direct, tmax, 0);\n"
                "  imageStore(result, ivec3(gl_LaunchIDEXT.xy, uniformParams.targetLayer), hitValue);\n"
@@ -1165,8 +1319,8 @@ std::vector<uint32_t> RayTracingCaptureReplayTestInstance::runTest(bool replay)
                              m_data.operationTarget == OT_BOTTOM_ACCELERATION;
         bool bottomSerial = m_data.testType == TEST_ACCELERATION_STRUCTURES && m_data.operationType == OP_SERIALIZE &&
                             m_data.operationTarget == OT_BOTTOM_ACCELERATION;
-        bottomLevelAccelerationStructures =
-            m_data.testConfiguration->initBottomAccelerationStructures(m_context, m_data);
+        bottomLevelAccelerationStructures = m_data.testConfiguration->initBottomAccelerationStructures(
+            m_context, m_data, vkd, device, *cmdBuffer, *allocator, replay, buildMicromapCaptureAddressInfo);
         VkBuildAccelerationStructureFlagsKHR allowCompactionFlag =
             VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR;
         VkBuildAccelerationStructureFlagsKHR emptyCompactionFlag = VkBuildAccelerationStructureFlagsKHR(0);
@@ -1680,6 +1834,7 @@ void addReplayAccelerationStruturesTests(tcu::TestCaseGroup *group)
     } bottomTestTypes[] = {
         {BTT_TRIANGLES, "triangles"},
         {BTT_AABBS, "aabbs"},
+        {BTT_TRIANGLES_OPACITY_MICROMAP, "triangles_opacity_micromap"},
     };
 
     for (size_t operationTypeNdx = 0; operationTypeNdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypeNdx)
@@ -1700,6 +1855,14 @@ void addReplayAccelerationStruturesTests(tcu::TestCaseGroup *group)
 
                 for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(bottomTestTypes); ++testTypeNdx)
                 {
+                    const bool opacityMicromapTest =
+                        bottomTestTypes[testTypeNdx].testType == BTT_TRIANGLES_OPACITY_MICROMAP;
+                    if (opacityMicromapTest &&
+                        buildTypes[buildTypeNdx].buildType != VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+                    {
+                        continue;
+                    }
+
                     ASTopTestType topTest =
                         (operationTargets[operationTargetNdx].operationTarget == OT_TOP_ACCELERATION) ?
                             TTT_DIFFERENT_INSTANCES :

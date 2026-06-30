@@ -1162,22 +1162,27 @@ public:
     ~MicromapAccelerationStructure();
 
     void setBuildFlags(const VkBuildAccelerationStructureFlagsKHR buildFlags);
+    void setCreateFlags(const VkAccelerationStructureCreateFlagsKHR createFlags);
     void setUseMaintenance5(const bool useMaintenance5);
 
     const VkAccelerationStructureKHR *getPtr(void) const;
     VkAccelerationStructureBuildSizesInfoKHR getStructureBuildSizes() const;
     VkDeviceAddress getIndexBufferAddr(const DeviceInterface &vk, const VkDevice device) const;
+    VkBuffer getAccelerationStructureBuffer() const;
+    vk::Allocation &getAllocation(void) const;
 
     void createAndBuild(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                        Allocator &allocator, VkDeviceSize structureSize = 0u);
+                        Allocator &allocator, VkDeviceSize structureSize = 0u, VkDeviceAddress deviceAddress = 0u,
+                        uint64_t bufferOpaqueCaptureAddr = 0u, uint64_t memoryOpaqueCaptureAddr = 0u);
     void createAndCopyFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
                            Allocator &allocator, MicromapAccelerationStructure *accelerationStructure,
                            VkDeviceSize compactCopySize = 0u);
     void createAndDeserializeFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
                                   Allocator &allocator, SerialStorage *storage);
 
-    void create(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
-                VkDeviceSize structureSize = 0u);
+    void create(const DeviceInterface &vk, const VkDevice device, Allocator &allocator, VkDeviceSize structureSize = 0u,
+                VkDeviceAddress deviceAddress = 0u, uint64_t bufferOpaqueCaptureAddr = 0u,
+                uint64_t memoryOpaqueCaptureAddr = 0u);
     void build(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer);
     void copyFrom(const DeviceInterface &vk, const VkCommandBuffer cmdBuffer,
                   MicromapAccelerationStructure *accelerationStructure, bool compactCopy);
@@ -1191,6 +1196,7 @@ public:
 
 protected:
     VkBuildAccelerationStructureFlagsKHR m_buildFlags;
+    VkAccelerationStructureCreateFlagsKHR m_createFlags;
     VkDeviceSize m_structureSize;
     VkDeviceSize m_buildScratchSize;
     bool m_useMaintenance5;

@@ -4702,6 +4702,7 @@ de::MovePtr<TopLevelAccelerationStructure> makeTopLevelAccelerationStructure()
 
 MicromapAccelerationStructure::MicromapAccelerationStructure()
     : m_buildFlags(0u)
+    , m_createFlags(0u)
     , m_structureSize(0u)
     , m_buildScratchSize(0u)
     , m_useMaintenance5(false)
@@ -4720,6 +4721,10 @@ void MicromapAccelerationStructure::setBuildFlags(const VkBuildAccelerationStruc
 {
     m_buildFlags = buildFlags;
 }
+void MicromapAccelerationStructure::setCreateFlags(const VkAccelerationStructureCreateFlagsKHR createFlags)
+{
+    m_createFlags = createFlags;
+}
 void MicromapAccelerationStructure::setUseMaintenance5(const bool useMaintenance5)
 {
     m_useMaintenance5 = useMaintenance5;
@@ -4728,6 +4733,18 @@ void MicromapAccelerationStructure::setUseMaintenance5(const bool useMaintenance
 const VkAccelerationStructureKHR *MicromapAccelerationStructure::getPtr(void) const
 {
     return &m_accelerationStructure.get();
+}
+
+VkBuffer MicromapAccelerationStructure::getAccelerationStructureBuffer() const
+{
+    DE_ASSERT(m_accelerationStructureBuffer.get() != nullptr);
+    return m_accelerationStructureBuffer->get();
+}
+
+Allocation &MicromapAccelerationStructure::getAllocation(void) const
+{
+    DE_ASSERT(m_accelerationStructureBuffer.get() != nullptr);
+    return m_accelerationStructureBuffer->getAllocation();
 }
 
 void MicromapAccelerationStructure::addOpacityMicromap(const std::vector<uint8_t> &opacityMicromapData,
@@ -4782,9 +4799,10 @@ void updateMicromapDataBuffer(const DeviceInterface &vk, const VkDevice device,
 
 void MicromapAccelerationStructure::createAndBuild(const DeviceInterface &vk, const VkDevice device,
                                                    const VkCommandBuffer cmdBuffer, Allocator &allocator,
-                                                   VkDeviceSize structureSize)
+                                                   VkDeviceSize structureSize, VkDeviceAddress deviceAddress,
+                                                   uint64_t bufferOpaqueCaptureAddr, uint64_t memoryOpaqueCaptureAddr)
 {
-    create(vk, device, allocator, structureSize);
+    create(vk, device, allocator, structureSize, deviceAddress, bufferOpaqueCaptureAddr, memoryOpaqueCaptureAddr);
     build(vk, device, cmdBuffer);
 }
 
@@ -4821,7 +4839,8 @@ void MicromapAccelerationStructure::prepareMicromapGeometries(
 }
 
 void MicromapAccelerationStructure::create(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
-                                           VkDeviceSize structureSize)
+                                           VkDeviceSize structureSize, VkDeviceAddress deviceAddress,
+                                           uint64_t bufferOpaqueCaptureAddr, uint64_t memoryOpaqueCaptureAddr)
 {
 
     // AS may be built from geometries using vkCmdBuildAccelerationStructuresKHR / vkBuildAccelerationStructuresKHR
@@ -4869,25 +4888,48 @@ void MicromapAccelerationStructure::create(const DeviceInterface &vk, const VkDe
     VkBufferCreateInfo bufferCreateInfo =
         makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR |
                                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-
-    const MemoryRequirement memoryRequirement = MemoryRequirement::Local | MemoryRequirement::DeviceAddress;
+    VkBufferOpaqueCaptureAddressCreateInfoKHR bufferOpaqueCaptureAddrInfo = initVulkanStructure();
+    const void **pCurrentPnext                                            = &bufferCreateInfo.pNext;
+    const MemoryRequirement captureReplayReq =
+        (m_createFlags & VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR) ?
+            MemoryRequirement::DeviceAddressCaptureReplay :
+            MemoryRequirement::Any;
+    const MemoryRequirement memoryRequirement =
+        MemoryRequirement::Local | MemoryRequirement::DeviceAddress | captureReplayReq;
 
     if (m_useMaintenance5)
     {
         bufferUsageFlags2.usage = (VkBufferUsageFlagBits2KHR)bufferCreateInfo.usage;
-        bufferCreateInfo.pNext  = &bufferUsageFlags2;
+        *pCurrentPnext          = &bufferUsageFlags2;
+        pCurrentPnext           = &bufferUsageFlags2.pNext;
         bufferCreateInfo.usage  = 0;
     }
-    m_accelerationStructureBuffer =
-        de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement));
+
+    if (m_createFlags & VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR)
+    {
+        bufferCreateInfo.flags |= VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR;
+
+        if (bufferOpaqueCaptureAddr)
+        {
+            bufferOpaqueCaptureAddrInfo.opaqueCaptureAddress = bufferOpaqueCaptureAddr;
+            *pCurrentPnext                                   = &bufferOpaqueCaptureAddrInfo;
+        }
+    }
+
+    m_accelerationStructureBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+        vk, device, allocator, bufferCreateInfo, memoryRequirement, true, memoryOpaqueCaptureAddr));
+
+    bufferUsageFlags2.pNext = nullptr;
 
     VkDeviceAddressRangeKHR micromapAddress;
-    micromapAddress.address = getBufferDeviceAddress(vk, device, m_accelerationStructureBuffer->get(), 0);
-    micromapAddress.size    = m_structureSize;
+    micromapAddress.address =
+        (deviceAddress != 0u ? deviceAddress :
+                               getBufferDeviceAddress(vk, device, m_accelerationStructureBuffer->get(), 0));
+    micromapAddress.size                                                     = m_structureSize;
     VkAccelerationStructureCreateInfo2KHR accelerationStructureCreateInfoKHR = {
         VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_2_KHR, // VkStructureType                       sType;
         nullptr,                                                    // const void*                           pNext;
-        0,                                                   // VkAccelerationStructureCreateFlagsKHR createFlags;
+        m_createFlags,                                       // VkAccelerationStructureCreateFlagsKHR createFlags;
         micromapAddress,                                     // VkDeviceAddressRangeKHR               addressRange;
         VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR,              // VkAddressCommandFlagsKHR              addressFlags;
         VK_ACCELERATION_STRUCTURE_TYPE_OPACITY_MICROMAP_KHR, // VkAccelerationStructureTypeKHR        type;
