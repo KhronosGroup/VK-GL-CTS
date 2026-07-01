@@ -9,7 +9,7 @@
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -45,7 +45,7 @@ extern "C" {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -357,7 +357,7 @@ typedef struct StdVideoH264PictureParameterSet {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -434,7 +434,7 @@ typedef struct StdVideoDecodeH264ReferenceInfo {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -581,7 +581,7 @@ typedef struct StdVideoEncodeH264SliceHeader {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -1027,7 +1027,7 @@ typedef struct StdVideoH265PictureParameterSet {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -1094,7 +1094,7 @@ typedef struct StdVideoDecodeH265ReferenceInfo {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -1251,7 +1251,7 @@ typedef struct StdVideoEncodeH265ReferenceInfo {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -1645,7 +1645,7 @@ typedef struct StdVideoAV1SequenceHeader {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -1754,7 +1754,7 @@ typedef struct StdVideoDecodeAV1ReferenceInfo {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -1897,7 +1897,7 @@ typedef struct StdVideoEncodeAV1ReferenceInfo {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -2048,7 +2048,7 @@ typedef struct StdVideoVP9Segmentation {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -2116,7 +2116,7 @@ typedef struct StdVideoDecodeVP9PictureInfo {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -2178,7 +2178,7 @@ extern "C" {
 //#define VK_API_VERSION VK_MAKE_API_VERSION(0, 1, 0, 0) // Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 354
+#define VK_HEADER_VERSION 355
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 4, VK_HEADER_VERSION)
@@ -3455,6 +3455,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_VULKAN_PROPERTIES_KHR = 1000562004,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV = 1000563000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT = 1000564000,
+    VK_STRUCTURE_TYPE_TENSOR_EXPLICIT_TILING_FORMAT_PROPERTIES_ARM = 1000565000,
+    VK_STRUCTURE_TYPE_TENSOR_ROLLING_BACKING_CREATE_INFO_ARM = 1000565001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT8_FEATURES_EXT = 1000567000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV = 1000568000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CLUSTER_ACCELERATION_STRUCTURE_FEATURES_NV = 1000569000,
@@ -3595,6 +3597,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_NEURAL_STATISTICS_CREATE_INFO_ARM = 1000676000,
     VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_SESSION_NEURAL_STATISTICS_CREATE_INFO_ARM = 1000676001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DATA_GRAPH_NEURAL_ACCELERATOR_STATISTICS_FEATURES_ARM = 1000676002,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_DRM_SYNCOBJ_FEATURES_EXT = 1000677000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_RESTART_INDEX_FEATURES_EXT = 1000678000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_DECODE_VECTOR_FEATURES_NV = 1000689000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
@@ -7757,6 +7760,7 @@ typedef enum VkExternalSemaphoreHandleTypeFlagBits {
     VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT = 0x00000008,
     VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT = 0x00000010,
     VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_ZIRCON_EVENT_BIT_FUCHSIA = 0x00000080,
+    VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_DRM_SYNCOBJ_BIT_EXT = 0x00000100,
     VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_FENCE_BIT = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT,
     VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT,
     VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT,
@@ -25020,6 +25024,11 @@ VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkTensorViewARM)
 typedef enum VkTensorTilingARM {
     VK_TENSOR_TILING_OPTIMAL_ARM = 0,
     VK_TENSOR_TILING_LINEAR_ARM = 1,
+    VK_TENSOR_TILING_BRICK_16_WIDE_ARM = 1000565000,
+    VK_TENSOR_TILING_BRICK_8_WIDE_ARM = 1000565001,
+    VK_TENSOR_TILING_BRICK_4_WIDE_ARM = 1000565002,
+    VK_TENSOR_TILING_BLOCK_U_INTERLEAVED_ARM = 1000565003,
+    VK_TENSOR_TILING_BLOCK_U_INTERLEAVED_64K_ARM = 1000565004,
     VK_TENSOR_TILING_MAX_ENUM_ARM = 0x7FFFFFFF
 } VkTensorTilingARM;
 typedef VkFlags64 VkTensorCreateFlagsARM;
@@ -26949,6 +26958,29 @@ typedef struct VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT {
 
 
 
+// VK_ARM_tensor_controls is a preprocessor guard. Do not pass it to API calls.
+#define VK_ARM_tensor_controls 1
+#define VK_MAX_TENSOR_CREATE_INFO_ROLLING_BACKING_WRAP_COUNT_ARM 4U
+#define VK_ARM_TENSOR_CONTROLS_SPEC_VERSION 1
+#define VK_ARM_TENSOR_CONTROLS_EXTENSION_NAME "VK_ARM_tensor_controls"
+typedef struct VkTensorRollingBackingCreateInfoARM {
+    VkStructureType    sType;
+    const void*        pNext;
+    uint32_t           wraps[VK_MAX_TENSOR_CREATE_INFO_ROLLING_BACKING_WRAP_COUNT_ARM];
+} VkTensorRollingBackingCreateInfoARM;
+
+typedef struct VkTensorExplicitTilingFormatPropertiesARM {
+    VkStructureType          sType;
+    void*                    pNext;
+    VkFormatFeatureFlags2    brick16TilingTensorFeatures;
+    VkFormatFeatureFlags2    brick8TilingTensorFeatures;
+    VkFormatFeatureFlags2    brick4TilingTensorFeatures;
+    VkFormatFeatureFlags2    blockUTilingTensorFeatures;
+    VkFormatFeatureFlags2    blockU64kTilingTensorFeatures;
+} VkTensorExplicitTilingFormatPropertiesARM;
+
+
+
 // VK_EXT_shader_float8 is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_shader_float8 1
 #define VK_EXT_SHADER_FLOAT8_SPEC_VERSION 1
@@ -28473,6 +28505,18 @@ typedef struct VkDataGraphPipelineSessionNeuralStatisticsCreateInfoARM {
     const void*                             pNext;
     VkNeuralAcceleratorStatisticsModeARM    mode;
 } VkDataGraphPipelineSessionNeuralStatisticsCreateInfoARM;
+
+
+
+// VK_EXT_external_semaphore_drm_syncobj is a preprocessor guard. Do not pass it to API calls.
+#define VK_EXT_external_semaphore_drm_syncobj 1
+#define VK_EXT_EXTERNAL_SEMAPHORE_DRM_SYNCOBJ_SPEC_VERSION 1
+#define VK_EXT_EXTERNAL_SEMAPHORE_DRM_SYNCOBJ_EXTENSION_NAME "VK_EXT_external_semaphore_drm_syncobj"
+typedef struct VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           externalSemaphoreDrmSyncobj;
+} VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT;
 
 
 

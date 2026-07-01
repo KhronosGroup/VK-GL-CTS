@@ -56,6 +56,7 @@ auto fExtendedDynamicStateFeaturesEXT                   = m_context.getExtendedD
 auto fExtendedFlagsFeatures                             = m_context.getExtendedFlagsFeatures();
 auto fExternalFormatResolveFeaturesANDROID              = m_context.getExternalFormatResolveFeaturesANDROID();
 auto fExternalMemoryScreenBufferFeaturesQNX             = m_context.getExternalMemoryScreenBufferFeaturesQNX();
+auto fExternalSemaphoreDrmSyncobjFeaturesEXT            = m_context.getExternalSemaphoreDrmSyncobjFeaturesEXT();
 auto fFaultFeaturesEXT                                  = m_context.getFaultFeaturesEXT();
 auto fFragmentDensityMap2FeaturesEXT                    = m_context.getFragmentDensityMap2FeaturesEXT();
 auto fFragmentDensityMapFeaturesEXT                     = m_context.getFragmentDensityMapFeaturesEXT();
@@ -263,6 +264,7 @@ std::vector<void *> pNextFeatures = {
 	&fExtendedFlagsFeatures,
 	&fExternalFormatResolveFeaturesANDROID,
 	&fExternalMemoryScreenBufferFeaturesQNX,
+	&fExternalSemaphoreDrmSyncobjFeaturesEXT,
 	&fFaultFeaturesEXT,
 	&fFragmentDensityMap2FeaturesEXT,
 	&fFragmentDensityMapFeaturesEXT,

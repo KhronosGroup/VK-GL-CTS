@@ -736,6 +736,18 @@ bool check_VK_ARM_shader_instrumentation(const tcu::UVec2& v, const ExtPropVect&
 	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
+bool check_VK_ARM_tensor_controls(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_ARM_tensor_controls"))
+		return true;
+
+	// depends attribute in xml: VK_ARM_tensors
+	return isSupported(vDEP, "VK_ARM_tensors");
+}
+
 bool check_VK_ARM_tensors(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -1186,6 +1198,18 @@ bool check_VK_EXT_external_memory_metal(const tcu::UVec2& v, const ExtPropVect& 
 
 	// depends attribute in xml: VK_KHR_external_memory,VK_VERSION_1_1
 	return (isSupported(vDEP, "VK_KHR_external_memory") || isCompatible(1, 1, v));
+}
+
+bool check_VK_EXT_external_semaphore_drm_syncobj(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_external_semaphore_drm_syncobj"))
+		return true;
+
+	// depends attribute in xml: (VK_VERSION_1_2,VK_KHR_timeline_semaphore)
+	return (isCompatible(1, 2, v) || isSupported(vDEP, "VK_KHR_timeline_semaphore"));
 }
 
 bool check_VK_EXT_fragment_density_map(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -4848,6 +4872,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_ARM_shader_core_builtins",							&check_VK_ARM_shader_core_builtins),
 	std::make_pair("VK_ARM_shader_core_properties",							&check_VK_ARM_shader_core_properties),
 	std::make_pair("VK_ARM_shader_instrumentation",							&check_VK_ARM_shader_instrumentation),
+	std::make_pair("VK_ARM_tensor_controls",								&check_VK_ARM_tensor_controls),
 	std::make_pair("VK_ARM_tensors",										&check_VK_ARM_tensors),
 	std::make_pair("VK_EXT_4444_formats",									&check_VK_EXT_4444_formats),
 	std::make_pair("VK_EXT_astc_decode_mode",								&check_VK_EXT_astc_decode_mode),
@@ -4885,6 +4910,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_external_memory_dma_buf",						&check_VK_EXT_external_memory_dma_buf),
 	std::make_pair("VK_EXT_external_memory_host",							&check_VK_EXT_external_memory_host),
 	std::make_pair("VK_EXT_external_memory_metal",							&check_VK_EXT_external_memory_metal),
+	std::make_pair("VK_EXT_external_semaphore_drm_syncobj",					&check_VK_EXT_external_semaphore_drm_syncobj),
 	std::make_pair("VK_EXT_fragment_density_map",							&check_VK_EXT_fragment_density_map),
 	std::make_pair("VK_EXT_fragment_density_map2",							&check_VK_EXT_fragment_density_map2),
 	std::make_pair("VK_EXT_fragment_density_map_offset",					&check_VK_EXT_fragment_density_map_offset),
@@ -5231,6 +5257,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_ARM_shader_core_builtins"),
 	std::make_tuple(1, 1, "VK_ARM_shader_core_properties"),
 	std::make_tuple(1, 0, "VK_ARM_shader_instrumentation"),
+	std::make_tuple(1, 3, "VK_ARM_tensor_controls"),
 	std::make_tuple(1, 3, "VK_ARM_tensors"),
 	std::make_tuple(1, 0, "VK_EXT_4444_formats"),
 	std::make_tuple(1, 0, "VK_EXT_acquire_drm_display"),
@@ -5276,6 +5303,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_external_memory_dma_buf"),
 	std::make_tuple(1, 0, "VK_EXT_external_memory_host"),
 	std::make_tuple(1, 0, "VK_EXT_external_memory_metal"),
+	std::make_tuple(1, 0, "VK_EXT_external_semaphore_drm_syncobj"),
 	std::make_tuple(1, 0, "VK_EXT_filter_cubic"),
 	std::make_tuple(1, 0, "VK_EXT_fragment_density_map"),
 	std::make_tuple(1, 0, "VK_EXT_fragment_density_map2"),

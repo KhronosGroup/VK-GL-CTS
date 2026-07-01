@@ -55,6 +55,7 @@ const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&					getExtendedDynami
 const vk::VkPhysicalDeviceExtendedFlagsFeaturesKHR&							getExtendedFlagsFeatures							(void) const;
 const vk::VkPhysicalDeviceExternalFormatResolveFeaturesANDROID&				getExternalFormatResolveFeaturesANDROID				(void) const;
 const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&			getExternalMemoryScreenBufferFeaturesQNX			(void) const;
+const vk::VkPhysicalDeviceExternalSemaphoreDrmSyncobjFeaturesEXT&			getExternalSemaphoreDrmSyncobjFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceFaultFeaturesEXT&									getFaultFeaturesEXT									(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&					getFragmentDensityMap2FeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&					getFragmentDensityMapFeaturesEXT					(void) const;

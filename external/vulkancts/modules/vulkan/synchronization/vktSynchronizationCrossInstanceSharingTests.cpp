@@ -1038,10 +1038,16 @@ public:
 
         if (m_config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR ||
             m_config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR ||
-            m_config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)
+            m_config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR ||
+            m_config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_DRM_SYNCOBJ_BIT_EXT)
         {
             context.requireDeviceFunctionality("VK_KHR_external_semaphore_fd");
             context.requireDeviceFunctionality("VK_KHR_external_memory_fd");
+        }
+
+        if (m_config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_DRM_SYNCOBJ_BIT_EXT)
+        {
+            context.requireDeviceFunctionality("VK_EXT_external_semaphore_drm_syncobj");
         }
 
         if (m_config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
@@ -1207,6 +1213,8 @@ static void createTests(tcu::TestCaseGroup *group, SynchronizationType type)
         {vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT, "_fd"},
         {vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT,
          "_fence_fd"},
+        {vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_DRM_SYNCOBJ_BIT_EXT,
+         "_drm_syncobj"},
         {vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,
          vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT, "_win32_kmt"},
         {vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT, vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT,
@@ -1248,6 +1256,12 @@ static void createTests(tcu::TestCaseGroup *group, SynchronizationType type)
                         {
                             if (cases[caseNdx].semaphoreType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT &&
                                 (vk::VkSemaphoreType)semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE)
+                            {
+                                continue;
+                            }
+
+                            if (cases[caseNdx].semaphoreType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_DRM_SYNCOBJ_BIT_EXT &&
+                                (vk::VkSemaphoreType)semaphoreType != vk::VK_SEMAPHORE_TYPE_TIMELINE)
                             {
                                 continue;
                             }
