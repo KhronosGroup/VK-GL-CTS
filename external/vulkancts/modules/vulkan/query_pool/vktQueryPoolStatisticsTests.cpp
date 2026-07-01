@@ -1435,7 +1435,8 @@ public:
                           const bool hasTess_ = false, const uint32_t tessPatchSize_ = 0u,
                           const uint32_t numTessPrimitives_ = 1u, TessPrimitiveMode primMode_ = TESS_PRIM_QUADS,
                           const bool pointMode_ = false, bool useDeviceAddressCommands_ = false,
-                          const bool primitiveRestart_ = false, bool cullModeFrontAndBack_ = false)
+                          const bool primitiveRestart_ = false, bool cullModeFrontAndBack_ = false,
+                          const bool hasGeom_ = false)
             : GenericParameters{resetType_, copyType_, query64Bits_, dstOffset_, strideType_, useDeviceAddressCommands_}
             , queryStatisticFlags(queryStatisticFlags_)
             , primitiveTopology(primitiveTopology_)
@@ -1449,6 +1450,7 @@ public:
             , pointMode(pointMode_)
             , primitiveRestart(primitiveRestart_)
             , cullModeFrontAndBack(cullModeFrontAndBack_)
+            , hasGeom(hasGeom_)
         {
         }
 
@@ -1464,6 +1466,7 @@ public:
         bool pointMode;
         const bool primitiveRestart;
         bool cullModeFrontAndBack;
+        const bool hasGeom;
     };
     GraphicBasicTestInstance(vkt::Context &context, const std::vector<VertexData> &data,
                              const std::vector<uint32_t> *indexData, const ParametersGraphic &parametersGraphic,
@@ -1936,6 +1939,12 @@ void VertexShaderTestInstance::createPipeline(void)
 
     // Pipeline
     Unique<VkShaderModule> vs(createShaderModule(vk, device, m_context.getBinaryCollection().get("vertex"), 0));
+
+    Move<VkShaderModule> gs;
+
+    if (m_parametersGraphic.hasGeom)
+        gs = createShaderModule(vk, device, m_context.getBinaryCollection().get("geometry"), 0);
+
     Move<VkShaderModule> fs;
 
     if (!m_parametersGraphic.vertexOnlyPipe)
@@ -1982,6 +1991,9 @@ void VertexShaderTestInstance::createPipeline(void)
 
     PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, (VkPipelineCreateFlags)0);
     pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", VK_SHADER_STAGE_VERTEX_BIT));
+    if (m_parametersGraphic.hasGeom)
+        pipelineCreateInfo.addShader(
+            PipelineCreateInfo::PipelineShaderStage(*gs, "main", VK_SHADER_STAGE_GEOMETRY_BIT));
     if (!m_parametersGraphic.vertexOnlyPipe)
         pipelineCreateInfo.addShader(
             PipelineCreateInfo::PipelineShaderStage(*fs, "main", VK_SHADER_STAGE_FRAGMENT_BIT));
@@ -2149,7 +2161,10 @@ tcu::TestStatus VertexShaderTestInstance::checkResult(VkQueryPool queryPool)
     switch (m_parametersGraphic.queryStatisticFlags)
     {
     case VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT:
-        expectedMin = 16u;
+        expectedMin = (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY) &&
+                              (!m_parametersGraphic.primitiveRestart) && (!m_parametersGraphic.hasGeom) ?
+                          8u :
+                          16u;
         break;
     case VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT:
         expectedMin = m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST             ? 24u :
@@ -5843,7 +5858,7 @@ public:
         bool isTessGeomSI = std::is_same<Instance, TessellationGeometryShaderSecondaryInheritedTestInstance>::value;
         bool isCompSI     = std::is_same<Instance, ComputeInvocationsSecondaryInheritedTestInstance>::value;
 
-        if (isGeom || isGeomS || isGeomSI || isTessGeom || isTessGeomS || isTessGeomSI)
+        if (isGeom || isGeomS || isGeomSI || isTessGeom || isTessGeomS || isTessGeomSI || m_parametersGraphic.hasGeom)
         {
             if (!deviceFeatures.geometryShader)
                 TCU_THROW(NotSupportedError, "Geometry shader are not supported");
@@ -6097,7 +6112,9 @@ public:
         if (m_parametersGraphic.queryStatisticFlags & (VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT |
                                                        VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT |
                                                        VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT |
-                                                       VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT))
+                                                       VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT) ||
+            (m_parametersGraphic.hasGeom &&
+             (m_parametersGraphic.queryStatisticFlags & (VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT))))
         { // Geometry Shader
             const bool isTopologyPointSize = m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
             std::ostringstream source;
@@ -6715,7 +6732,7 @@ void QueryPoolStatisticsTests::init(void)
                         sixRepeats));
             }
 
-            // VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT + primitive restart
+            // VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT + primitive restart enabled/disabled
             {
                 const char *const restartTopologyStr[] = {
                     "line_strip_restart",
@@ -6727,119 +6744,150 @@ void QueryPoolStatisticsTests::init(void)
 
                 for (uint32_t topoIdx = 0; topoIdx < DE_LENGTH_OF_ARRAY(restartTopologies); topoIdx++)
                 {
-                    const std::string primaryName =
-                        prefix + copyTypeStr[copyTypeIdx] + "primary_" + restartTopologyStr[topoIdx];
-                    const std::string secondaryName =
-                        prefix + copyTypeStr[copyTypeIdx] + "secondary_" + restartTopologyStr[topoIdx];
-                    const std::string secondaryInheritedName =
-                        prefix + copyTypeStr[copyTypeIdx] + "secondary_inherited_" + restartTopologyStr[topoIdx];
-
-                    inputAssemblyVertices->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
-                        m_testCtx, primaryName,
-                        GraphicBasicTestInstance::ParametersGraphic(
-                            VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
-                            RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP, false,
-                            STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false, true),
-                        sixRepeats));
-                    inputAssemblyVertices->addChild(
-                        new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>(
-                            m_testCtx, secondaryName,
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
-                                RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP,
-                                false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false, true),
-                            sixRepeats));
-                    inputAssemblyVertices->addChild(
-                        new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>(
-                            m_testCtx, secondaryInheritedName,
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
-                                RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP,
-                                false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false, true),
-                            sixRepeats));
-
-                    inputAssemblyVerticesHostQueryReset->addChild(
-                        new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
-                            m_testCtx, primaryName,
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
-                                RESET_TYPE_HOST, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP,
-                                false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false, true),
-                            sixRepeats));
-                    inputAssemblyVerticesHostQueryReset->addChild(
-                        new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>(
-                            m_testCtx, secondaryName,
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
-                                RESET_TYPE_HOST, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP,
-                                false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false, true),
-                            sixRepeats));
-                    inputAssemblyVerticesHostQueryReset->addChild(
-                        new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>(
-                            m_testCtx, secondaryInheritedName,
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
-                                RESET_TYPE_HOST, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP,
-                                false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false, true),
-                            sixRepeats));
-
-                    inputAssemblyVerticesResetBeforeCopy->addChild(
-                        new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
-                            m_testCtx, primaryName,
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
-                                RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset,
-                                CLEAR_NOOP, false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false,
-                                true),
-                            sixRepeats));
-                    inputAssemblyVerticesResetBeforeCopy->addChild(
-                        new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>(
-                            m_testCtx, secondaryName,
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
-                                RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset,
-                                CLEAR_NOOP, false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false,
-                                true),
-                            sixRepeats));
-                    inputAssemblyVerticesResetBeforeCopy->addChild(
-                        new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>(
-                            m_testCtx, secondaryInheritedName,
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
-                                RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset,
-                                CLEAR_NOOP, false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false,
-                                true),
-                            sixRepeats));
-
-                    if (copyType[copyTypeIdx] == COPY_TYPE_CMD)
+                    for (const auto primitiveRestart : {true, false})
                     {
-                        inputAssemblyVerticesResetAfterCopy->addChild(
-                            new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
-                                m_testCtx, primaryName,
-                                GraphicBasicTestInstance::ParametersGraphic(
-                                    VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
-                                    RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset,
-                                    CLEAR_NOOP, false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false,
-                                    true),
-                                sixRepeats));
-                        inputAssemblyVerticesResetAfterCopy->addChild(
+                        // Do not duplicate VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP tests with primitive restart disabled
+                        if (!primitiveRestart && restartTopologies[topoIdx] == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+                            continue;
+
+                        const std::string primaryName = prefix + copyTypeStr[copyTypeIdx] + "primary_" +
+                                                        restartTopologyStr[topoIdx] +
+                                                        (primitiveRestart ? "" : "_disabled");
+                        const std::string secondaryName = prefix + copyTypeStr[copyTypeIdx] + "secondary_" +
+                                                          restartTopologyStr[topoIdx] +
+                                                          (primitiveRestart ? "" : "_disabled");
+                        const std::string secondaryInheritedName =
+                            prefix + copyTypeStr[copyTypeIdx] + "secondary_inherited_" + restartTopologyStr[topoIdx] +
+                            (primitiveRestart ? "" : "_disabled");
+
+                        inputAssemblyVertices->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
+                            m_testCtx, primaryName,
+                            GraphicBasicTestInstance::ParametersGraphic(
+                                VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
+                                RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP,
+                                false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false,
+                                primitiveRestart),
+                            sixRepeats));
+
+                        if (restartTopologies[topoIdx] == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY)
+                        {
+                            const auto primaryWithGeomName = primaryName + "_geom";
+                            inputAssemblyVertices->addChild(
+                                new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
+                                    m_testCtx, primaryWithGeomName,
+                                    GraphicBasicTestInstance::ParametersGraphic(
+                                        VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT,
+                                        restartTopologies[topoIdx], RESET_TYPE_NORMAL, copyType[copyTypeIdx],
+                                        query64Bits, false, dstOffset, CLEAR_NOOP, false, STRIDE_TYPE_VALID, false, 0u,
+                                        1u, TESS_PRIM_QUADS, false, false, primitiveRestart, false, true /* hasGeom */),
+                                    sixRepeats));
+                        }
+
+                        inputAssemblyVertices->addChild(
                             new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>(
                                 m_testCtx, secondaryName,
                                 GraphicBasicTestInstance::ParametersGraphic(
                                     VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
-                                    RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset,
-                                    CLEAR_NOOP, false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false,
-                                    true),
+                                    RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP,
+                                    false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false,
+                                    primitiveRestart),
                                 sixRepeats));
-                        inputAssemblyVerticesResetAfterCopy->addChild(
+                        inputAssemblyVertices->addChild(
                             new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>(
                                 m_testCtx, secondaryInheritedName,
                                 GraphicBasicTestInstance::ParametersGraphic(
                                     VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
-                                    RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset,
-                                    CLEAR_NOOP, false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false,
-                                    true),
+                                    RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP,
+                                    false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false,
+                                    primitiveRestart),
                                 sixRepeats));
+
+                        inputAssemblyVerticesHostQueryReset->addChild(
+                            new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
+                                m_testCtx, primaryName,
+                                GraphicBasicTestInstance::ParametersGraphic(
+                                    VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
+                                    RESET_TYPE_HOST, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP,
+                                    false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false,
+                                    primitiveRestart),
+                                sixRepeats));
+                        inputAssemblyVerticesHostQueryReset->addChild(
+                            new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>(
+                                m_testCtx, secondaryName,
+                                GraphicBasicTestInstance::ParametersGraphic(
+                                    VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
+                                    RESET_TYPE_HOST, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP,
+                                    false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false,
+                                    primitiveRestart),
+                                sixRepeats));
+                        inputAssemblyVerticesHostQueryReset->addChild(
+                            new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>(
+                                m_testCtx, secondaryInheritedName,
+                                GraphicBasicTestInstance::ParametersGraphic(
+                                    VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
+                                    RESET_TYPE_HOST, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP,
+                                    false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false,
+                                    primitiveRestart),
+                                sixRepeats));
+
+                        inputAssemblyVerticesResetBeforeCopy->addChild(
+                            new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
+                                m_testCtx, primaryName,
+                                GraphicBasicTestInstance::ParametersGraphic(
+                                    VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
+                                    RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset,
+                                    CLEAR_NOOP, false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false,
+                                    primitiveRestart),
+                                sixRepeats));
+                        inputAssemblyVerticesResetBeforeCopy->addChild(
+                            new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>(
+                                m_testCtx, secondaryName,
+                                GraphicBasicTestInstance::ParametersGraphic(
+                                    VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
+                                    RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset,
+                                    CLEAR_NOOP, false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false,
+                                    primitiveRestart),
+                                sixRepeats));
+                        inputAssemblyVerticesResetBeforeCopy->addChild(
+                            new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>(
+                                m_testCtx, secondaryInheritedName,
+                                GraphicBasicTestInstance::ParametersGraphic(
+                                    VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, restartTopologies[topoIdx],
+                                    RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset,
+                                    CLEAR_NOOP, false, STRIDE_TYPE_VALID, false, 0u, 1u, TESS_PRIM_QUADS, false, false,
+                                    primitiveRestart),
+                                sixRepeats));
+
+                        if (copyType[copyTypeIdx] == COPY_TYPE_CMD)
+                        {
+                            inputAssemblyVerticesResetAfterCopy->addChild(
+                                new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
+                                    m_testCtx, primaryName,
+                                    GraphicBasicTestInstance::ParametersGraphic(
+                                        VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT,
+                                        restartTopologies[topoIdx], RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
+                                        query64Bits, false, dstOffset, CLEAR_NOOP, false, STRIDE_TYPE_VALID, false, 0u,
+                                        1u, TESS_PRIM_QUADS, false, false, primitiveRestart),
+                                    sixRepeats));
+                            inputAssemblyVerticesResetAfterCopy->addChild(
+                                new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>(
+                                    m_testCtx, secondaryName,
+                                    GraphicBasicTestInstance::ParametersGraphic(
+                                        VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT,
+                                        restartTopologies[topoIdx], RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
+                                        query64Bits, false, dstOffset, CLEAR_NOOP, false, STRIDE_TYPE_VALID, false, 0u,
+                                        1u, TESS_PRIM_QUADS, false, false, primitiveRestart),
+                                    sixRepeats));
+                            inputAssemblyVerticesResetAfterCopy->addChild(
+                                new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>(
+                                    m_testCtx, secondaryInheritedName,
+                                    GraphicBasicTestInstance::ParametersGraphic(
+                                        VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT,
+                                        restartTopologies[topoIdx], RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
+                                        query64Bits, false, dstOffset, CLEAR_NOOP, false, STRIDE_TYPE_VALID, false, 0u,
+                                        1u, TESS_PRIM_QUADS, false, false, primitiveRestart),
+                                    sixRepeats));
+                        }
                     }
                 }
             }
