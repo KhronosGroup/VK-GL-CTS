@@ -63,6 +63,7 @@ void createChildren(tcu::TestCaseGroup *imageTests)
     tcu::TestContext &testCtx = imageTests->getTestContext();
 
     imageTests->addChild(createImageStoreTests(testCtx));
+    imageTests->addChild(createImageStoreSRGBNoConversionTests(testCtx));
     imageTests->addChild(createImageLoadStoreTests(testCtx));
     imageTests->addChild(createImageMultisampleLoadStoreTests(testCtx));
     imageTests->addChild(createImageMutableTests(testCtx));
