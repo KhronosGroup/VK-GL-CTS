@@ -1566,6 +1566,7 @@ dEQP-VKSC.image.atomic_operations.inc.cube_array.transfer.normal_read.normal_img
 dEQP-VKSC.image.atomic_operations.inc.cube_array.transfer.normal_read.normal_img.r64ui_end_result_linear
 dEQP-VKSC.image.atomic_operations.inc.cube_array.transfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VKSC.image.atomic_operations.inc.cube_array.transfer.normal_read.normal_img.r64ui_intermediate_values_linear
+dEQP-VKSC.image.atomic_operations.indexing.storage_texel_buffer_atomic_32bit_index
 dEQP-VKSC.image.atomic_operations.max.1d.notransfer.normal_read.normal_img.r32i_end_result
 dEQP-VKSC.image.atomic_operations.max.1d.notransfer.normal_read.normal_img.r32i_end_result_linear
 dEQP-VKSC.image.atomic_operations.max.1d.notransfer.normal_read.normal_img.r32i_intermediate_values

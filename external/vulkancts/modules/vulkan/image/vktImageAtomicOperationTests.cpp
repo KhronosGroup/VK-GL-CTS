@@ -2472,6 +2472,169 @@ TestInstance *BinaryAtomicIntermValuesCase::createInstance(Context &context) con
                                                 m_operation, m_useTransfer, m_readType, m_backingType);
 }
 
+class StorageTexelBufferAtomic32BitIndexInstance : public vkt::TestInstance
+{
+public:
+    StorageTexelBufferAtomic32BitIndexInstance(Context &context) : vkt::TestInstance(context)
+    {
+    }
+
+    virtual tcu::TestStatus iterate(void) override
+    {
+        const DeviceInterface &vk       = m_context.getDeviceInterface();
+        const VkDevice device           = m_context.getDevice();
+        const VkQueue queue             = m_context.getUniversalQueue();
+        const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+        Allocator &allocator            = m_context.getDefaultAllocator();
+
+        // Allocate Storage Texel Buffer of exactly 131072 elements to ensure index 65536 is in-bounds
+        // (131072 is 2 * 65536, providing a comfortable margin beyond the 16-bit boundary)
+        const VkDeviceSize bufferElements = 131072u;
+        const VkDeviceSize bufferSize     = bufferElements * sizeof(uint32_t);
+        const auto bufferCreateInfo       = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT |
+                                                                                 VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+        BufferWithMemory testBuffer(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible);
+
+        // Create Buffer View
+        const VkBufferViewCreateInfo viewCreateInfo = {
+            VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, // sType
+            nullptr,                                   // pNext
+            0u,                                        // flags
+            testBuffer.get(),                          // buffer
+            VK_FORMAT_R32_UINT,                        // format
+            0ull,                                      // offset
+            bufferSize                                 // range
+        };
+        const Unique<VkBufferView> testBufferView(createBufferView(vk, device, &viewCreateInfo));
+
+        // Descriptor Set Layout & Descriptor Pool
+        DescriptorSetLayoutBuilder layoutBuilder;
+        layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+        const auto descriptorSetLayout = layoutBuilder.build(vk, device);
+
+        DescriptorPoolBuilder poolBuilder;
+        poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1u);
+        const auto descriptorPool =
+            poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+        const auto descriptorSet = makeDescriptorSet(vk, device, descriptorPool.get(), descriptorSetLayout.get());
+
+        DescriptorSetUpdateBuilder updateBuilder;
+        updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
+                                  VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, &testBufferView.get());
+        updateBuilder.update(vk, device);
+
+        const PipelineLayoutWrapper pipelineLayout(PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC, vk, device,
+                                                   descriptorSetLayout.get());
+
+        const auto &binaries = m_context.getBinaryCollection();
+        const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, binaries.get("comp"), 0u));
+        const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, pipelineLayout.get(), shaderModule.get()));
+
+        CommandPoolWithBuffer cmd(vk, device, queueFamilyIndex);
+        const auto cmdBuffer = *cmd.cmdBuffer;
+
+        beginCommandBuffer(vk, cmdBuffer);
+
+        // Clear all the elements of the buffer with 0u value
+        vk.cmdFillBuffer(cmdBuffer, testBuffer.get(), 0ull, VK_WHOLE_SIZE, 0u);
+
+        // Insert Pipeline Memory Barrier from transfer write to compute shader read/write
+        const VkBufferMemoryBarrier barrierBefore = makeBufferMemoryBarrier(
+            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, testBuffer.get(),
+            0ull, VK_WHOLE_SIZE);
+        vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u,
+                              nullptr, 1u, &barrierBefore, 0u, nullptr);
+
+        vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.get());
+        vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout.get(), 0u, 1u,
+                                 &descriptorSet.get(), 0u, nullptr);
+        vk.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+
+        // Pipeline barrier from compute shader write to host read
+        const VkBufferMemoryBarrier barrierAfter = makeBufferMemoryBarrier(
+            VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, testBuffer.get(), 0ull, VK_WHOLE_SIZE);
+        vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
+                              nullptr, 1u, &barrierAfter, 0u, nullptr);
+
+        endCommandBuffer(vk, cmdBuffer);
+
+        submitCommandsAndWait(vk, device, queue, cmdBuffer);
+
+        // Invalidate host-visible buffer allocation and check values
+        invalidateAlloc(vk, device, testBuffer.getAllocation());
+        const uint32_t *resData =
+            reinterpret_cast<const uint32_t *>(static_cast<const uint8_t *>(testBuffer.getAllocation().getHostPtr()) +
+                                               testBuffer.getAllocation().getOffset());
+
+        if (resData[0] != 0u)
+        {
+            return tcu::TestStatus::fail("Atomic operation wrote to index 0 (wrapped from index 65536)!");
+        }
+        if (resData[65536] != 1u)
+        {
+            return tcu::TestStatus::fail("Atomic operation did not write successfully to index 65536!");
+        }
+
+        return tcu::TestStatus::pass("Pass");
+    }
+};
+
+class StorageTexelBufferAtomic32BitIndexCase : public vkt::TestCase
+{
+public:
+    StorageTexelBufferAtomic32BitIndexCase(tcu::TestContext &testCtx, const std::string &name)
+        : vkt::TestCase(testCtx, name)
+    {
+    }
+
+    virtual ~StorageTexelBufferAtomic32BitIndexCase(void)
+    {
+    }
+
+    virtual void initPrograms(SourceCollections &programCollection) const override
+    {
+        programCollection.glslSources.add("comp")
+            << glu::ComputeSource("#version 450\n"
+                                  "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+                                  "layout(binding = 0, r32ui) uniform uimageBuffer u_buf;\n"
+                                  "void main() {\n"
+                                  "    imageAtomicAdd(u_buf, 65536, 1u);\n"
+                                  "}\n");
+    }
+
+    virtual void checkSupport(Context &context) const override
+    {
+        const InstanceInterface &vki          = context.getInstanceInterface();
+        const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
+        const VkPhysicalDeviceProperties deviceProperties = getPhysicalDeviceProperties(vki, physicalDevice);
+        if (deviceProperties.limits.maxTexelBufferElements < 131072u)
+        {
+            TCU_THROW(NotSupportedError, "maxTexelBufferElements is less than 131072");
+        }
+
+        const VkFormatProperties properties =
+            getPhysicalDeviceFormatProperties(vki, physicalDevice, VK_FORMAT_R32_UINT);
+
+        if ((properties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT) == 0)
+        {
+            TCU_THROW(NotSupportedError,
+                      "VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT not supported for VK_FORMAT_R32_UINT");
+        }
+
+        if ((properties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT) == 0)
+        {
+            TCU_THROW(NotSupportedError,
+                      "VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT not supported for VK_FORMAT_R32_UINT");
+        }
+    }
+
+    virtual TestInstance *createInstance(Context &context) const override
+    {
+        return new StorageTexelBufferAtomic32BitIndexInstance(context);
+    }
+};
+
 } // namespace
 
 tcu::TestCaseGroup *createImageAtomicOperationTests(tcu::TestContext &testCtx)
@@ -2651,6 +2814,11 @@ tcu::TestCaseGroup *createImageAtomicOperationTests(tcu::TestContext &testCtx)
 
         imageAtomicOperationsTests->addChild(operationGroup.release());
     }
+
+    de::MovePtr<tcu::TestCaseGroup> indexingGroup(new tcu::TestCaseGroup(testCtx, "indexing"));
+    indexingGroup->addChild(
+        new StorageTexelBufferAtomic32BitIndexCase(testCtx, "storage_texel_buffer_atomic_32bit_index"));
+    imageAtomicOperationsTests->addChild(indexingGroup.release());
 
     return imageAtomicOperationsTests.release();
 }
