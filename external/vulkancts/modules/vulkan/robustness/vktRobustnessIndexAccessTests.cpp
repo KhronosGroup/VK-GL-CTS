@@ -82,6 +82,7 @@ struct TestParams
     bool useDeviceAddressCommands = false;
     bool usePipelineRobustness    = false;
     UsedStages usedStages         = UsedStages::VERT_FRAG; // used by EXT_pipeline_robustness cases
+    VkIndexType indexType         = VK_INDEX_TYPE_UINT32;
 };
 
 static const std::pair<std::string, TestMode> testModes[]{
@@ -182,24 +183,42 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     deMemcpy(vertexBuffer.getAllocation().getHostPtr(), vertices.data(), vertices.size() * sizeof(float));
     flushAlloc(vk, *m_device, vertexBuffer.getAllocation());
 
+    // prepare index data for index type variants
+    const std::vector<uint32_t> index32 = {0, 1, 2, 3, 4, 5};
+    const std::vector<uint16_t> index16 = {0, 1, 2, 3, 4, 5};
+    const std::vector<uint8_t> index8   = {0, 1, 2, 3, 4, 5};
+    const void *indexData               = index32.data();
+    size_t indexDataBytes               = index32.size() * sizeof(uint32_t);
+
+    // select index data based on index type
+    if (m_params.indexType == VK_INDEX_TYPE_UINT16)
+    {
+        indexData      = index16.data();
+        indexDataBytes = index16.size() * sizeof(uint16_t);
+    }
+    else if (m_params.indexType == VK_INDEX_TYPE_UINT8)
+    {
+        indexData      = index8.data();
+        indexDataBytes = index8.size() * sizeof(uint8_t);
+    }
+
     // create index buffer for 6 points
     // 4--0--2
     // |  |  |
     // 5--1--3
-    const std::vector<uint32_t> index = {0, 1, 2, 3, 4, 5};
-    VkDeviceSize indexBufferSize      = index.size() * sizeof(uint32_t);
+    VkDeviceSize indexBufferSize = static_cast<VkDeviceSize>(indexDataBytes);
     const auto indexBufferInfo = makeBufferCreateInfo(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | commonUsage);
     BufferWithMemory indexBuffer(vk, *m_device, memAlloc, indexBufferInfo, memReq);
-    deMemcpy(indexBuffer.getAllocation().getHostPtr(), index.data(), index.size() * sizeof(uint32_t));
+    deMemcpy(indexBuffer.getAllocation().getHostPtr(), indexData, indexDataBytes);
     flushAlloc(vk, *m_device, indexBuffer.getAllocation());
 
     // create indirect buffer
     const vk::VkDrawIndexedIndirectCommand drawIndirectCommand{
-        (uint32_t)index.size(), // indexCount
-        1u,                     // instanceCount
-        oobFirstIndex,          // firstIndex
-        0u,                     // vertexOffset
-        0u,                     // firstInstance
+        (uint32_t)index32.size(), // indexCount
+        1u,                       // instanceCount
+        oobFirstIndex,            // firstIndex
+        0u,                       // vertexOffset
+        0u,                       // firstInstance
     };
     VkDeviceSize indirectBufferSize = sizeof(drawIndirectCommand);
     const auto indirectBufferInfo =
@@ -417,11 +436,11 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     {
         const VkDeviceSize vBuffOffset = 0;
         vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer.get(), &vBuffOffset);
-        vk.cmdBindIndexBuffer(*cmdBuffer, indexBuffer.get(), 0, VK_INDEX_TYPE_UINT32);
+        vk.cmdBindIndexBuffer(*cmdBuffer, indexBuffer.get(), 0, m_params.indexType);
 
         // we will draw all points at index 0
         if (m_params.mode == TM_DRAW_INDEXED)
-            vk.cmdDrawIndexed(*cmdBuffer, (uint32_t)index.size(), 1, oobFirstIndex, 0, 0);
+            vk.cmdDrawIndexed(*cmdBuffer, (uint32_t)index32.size(), 1, oobFirstIndex, 0, 0);
         else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT)
             vk.cmdDrawIndexedIndirect(*cmdBuffer, indirectBuffer.get(), 0, 1, 0);
         else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT)
@@ -456,13 +475,13 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
 
         VkBindIndexBuffer3InfoKHR bindIndexBuffer3Info = initVulkanStructure();
         bindIndexBuffer3Info.addressRange              = {indexBufferAddress, indexBufferSize};
-        bindIndexBuffer3Info.indexType                 = VK_INDEX_TYPE_UINT32;
+        bindIndexBuffer3Info.indexType                 = m_params.indexType;
         bindIndexBuffer3Info.addressFlags              = addressFlags;
         vk.cmdBindIndexBuffer3KHR(*cmdBuffer, &bindIndexBuffer3Info);
 
         // we will draw all points at index 0
         if (m_params.mode == TM_DRAW_INDEXED)
-            vk.cmdDrawIndexed(*cmdBuffer, (uint32_t)index.size(), 1, oobFirstIndex, 0, 0);
+            vk.cmdDrawIndexed(*cmdBuffer, (uint32_t)index32.size(), 1, oobFirstIndex, 0, 0);
         else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT)
         {
             VkDrawIndirect2InfoKHR drawIndirect2Info = initVulkanStructure();
@@ -595,6 +614,7 @@ void DrawIndexedTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
     if (m_params.mode == TestMode::TM_DRAW_MULTI_INDEXED)
         context.requireDeviceFunctionality("VK_EXT_multi_draw");
+
     if (m_params.robustnessVersion == 2)
     {
         if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
@@ -625,6 +645,9 @@ void DrawIndexedTestCase::checkSupport(Context &context) const
 
     if (useAllStages || (m_params.usedStages == UsedStages::VERT_TESS_FRAG))
         context.requireDeviceCoreFeature(DeviceCoreFeature::DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+
+    if ((m_params.indexType == VK_INDEX_TYPE_UINT8) && !context.getIndexTypeUint8Features().indexTypeUint8)
+        TCU_THROW(NotSupportedError, "indexTypeUint8 not supported");
 }
 
 CustomDevice DrawIndexedTestCase::createTestDevice(Context &context, const InstanceWrapper &instance) const
@@ -659,6 +682,13 @@ CustomDevice DrawIndexedTestCase::createTestDevice(Context &context, const Insta
     {
         robustness2Features.robustBufferAccess2 = true;
         addToChainVulkanStructure(&nextPtr, robustness2Features);
+    }
+
+    VkPhysicalDeviceIndexTypeUint8Features indexTypeUint8Features = initVulkanStructure();
+    if (m_params.indexType == VK_INDEX_TYPE_UINT8)
+    {
+        indexTypeUint8Features.indexTypeUint8 = true;
+        addToChainVulkanStructure(&nextPtr, indexTypeUint8Features);
     }
 
     uint32_t apiVersion                               = context.getUsedApiVersion();
@@ -1255,6 +1285,9 @@ tcu::TestCaseGroup *createIndexAccessTests(tcu::TestContext &testCtx)
                                                            {UsedStages::VERT_TESS_FRAG, "vert_tess_frag"},
                                                            {UsedStages::VERT_TESS_GEOM_FRAG, "vert_tess_geom_frag"}};
 
+    std::map<VkIndexType, std::string> typeCombinations{{VK_INDEX_TYPE_UINT8, "uint8"},
+                                                        {VK_INDEX_TYPE_UINT16, "uint16"}};
+
     // Test access outside of the buffer for indices
     de::MovePtr<tcu::TestCaseGroup> indexAccessTests(new tcu::TestCaseGroup(testCtx, "index_access"));
 
@@ -1274,14 +1307,34 @@ tcu::TestCaseGroup *createIndexAccessTests(tcu::TestContext &testCtx)
             indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name + "_device_address", params));
         }
 
-        // Test EXT_pipeline_robustness with all combinations of used stages and for both robustness versions
-        params.useDeviceAddressCommands = false;
-        for (auto &[usedStages, stagesName] : allStageCombinations)
+        // Test oob access for 8-bit and 16-bit indices
+        params.usedStages            = UsedStages::VERT_FRAG;
+        params.usePipelineRobustness = false;
+        for (const auto &[indexType, postfix] : typeCombinations)
         {
-            for (uint32_t robustnessVersion : {1, 2})
+            name                            = n + "_2_" + postfix;
+            params.indexType                = indexType;
+            params.useDeviceAddressCommands = false;
+            indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name, params));
+
+            // Test oob access for 8-bit and 16-bit indices with device address commands
+            if (mode != TestMode::TM_DRAW_MULTI_INDEXED)
             {
-                name = n + "_pipeline_robustness_" + std::to_string(robustnessVersion) + "_" + stagesName;
-                params.robustnessVersion     = robustnessVersion;
+                params.useDeviceAddressCommands = true;
+                indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name + "_device_address", params));
+            }
+        }
+
+        params.useDeviceAddressCommands = false;
+        for (uint32_t robustnessVersion : {1, 2})
+        {
+            params.robustnessVersion = robustnessVersion;
+            std::string versionStr   = std::to_string(robustnessVersion) + "_";
+
+            // Test EXT_pipeline_robustness with all combinations of used stages and for both robustness versions
+            for (auto &[usedStages, stagesName] : allStageCombinations)
+            {
+                name                         = n + "_pipeline_robustness_" + versionStr + stagesName;
                 params.usedStages            = usedStages;
                 params.usePipelineRobustness = true;
                 indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name, params));
