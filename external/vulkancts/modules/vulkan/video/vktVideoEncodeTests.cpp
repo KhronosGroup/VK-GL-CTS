@@ -2323,6 +2323,7 @@ void VideoEncodeTestInstance::setupQuantizationMapResources(void)
 
     VkFormat quantizationImageFormat      = VK_FORMAT_UNDEFINED;
     VkImageTiling quantizationImageTiling = VK_IMAGE_TILING_OPTIMAL;
+    VkImageCreateFlags imageCreateFlags   = 0;
 
     // Query quantization map capabilities
     uint32_t videoFormatPropertiesCount = 0u;
@@ -2375,6 +2376,7 @@ void VideoEncodeTestInstance::setupQuantizationMapResources(void)
     // Pick first available quantization map format and properties
     quantizationImageFormat    = videoFormatProperties[0].format;
     quantizationImageTiling    = videoFormatProperties[0].imageTiling;
+    imageCreateFlags           = videoFormatProperties[0].imageCreateFlags;
     m_quantizationMapTexelSize = quantizationMapProperties[0].quantizationMapTexelSize;
 
     DE_ASSERT(m_quantizationMapTexelSize.width > 0 && m_quantizationMapTexelSize.height > 0);
@@ -2388,9 +2390,10 @@ void VideoEncodeTestInstance::setupQuantizationMapResources(void)
         (m_useDeltaMap ? VK_IMAGE_USAGE_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR :
                          VK_IMAGE_USAGE_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR) |
         VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    const VkImageCreateInfo quantizationMapImageCreateInfo = makeImageCreateInfo(
-        quantizationImageFormat, m_quantizationMapExtent, 0, &m_encodeQueueFamilyIndex, quantizationMapImageUsage,
-        m_videoEncodeProfileList.get(), 1U, VK_IMAGE_LAYOUT_UNDEFINED, quantizationImageTiling);
+    const VkImageCreateInfo quantizationMapImageCreateInfo =
+        makeImageCreateInfo(quantizationImageFormat, m_quantizationMapExtent, imageCreateFlags,
+                            &m_encodeQueueFamilyIndex, quantizationMapImageUsage, m_videoEncodeProfileList.get(), 1U,
+                            VK_IMAGE_LAYOUT_UNDEFINED, quantizationImageTiling);
 
     const vector<uint32_t> transferQueueFamilyIndices(1u, m_transferQueueFamilyIndex);
 
