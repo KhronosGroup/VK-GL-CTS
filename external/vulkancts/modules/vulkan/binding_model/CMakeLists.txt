@@ -40,6 +40,8 @@ set(DEQP_VK_BINDING_MODEL_SRCS
 	vktBindingDescriptorHeapTests.hpp
 	vktBindingDescriptorHeapRandomTests.cpp
 	vktBindingDescriptorHeapRandomTests.hpp
+	vktBindingImageAtomicTests.cpp
+	vktBindingImageAtomicTests.hpp
 	vktBindingStagesTests.cpp
 	vktBindingStagesTests.hpp
 	vktBindingDescriptorInlineUniformTests.cpp

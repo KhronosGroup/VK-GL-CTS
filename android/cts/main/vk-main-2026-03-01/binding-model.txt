@@ -4035,6 +4035,12 @@ dEQP-VK.binding_model.image_array_m11.r8g8b8a8_unorm.view_type_2d_array.storage_
 dEQP-VK.binding_model.image_array_m11.r8g8b8a8_unorm.view_type_2d_array.storage_img_0_store
 dEQP-VK.binding_model.image_array_m11.r8g8b8a8_unorm.view_type_2d_array.storage_img_1_load
 dEQP-VK.binding_model.image_array_m11.r8g8b8a8_unorm.view_type_2d_array.storage_img_1_store
+dEQP-VK.binding_model.image_atomic.descriptor_buffer.32bit
+dEQP-VK.binding_model.image_atomic.descriptor_buffer.64bit
+dEQP-VK.binding_model.image_atomic.descriptor_heap.32bit
+dEQP-VK.binding_model.image_atomic.descriptor_heap.64bit
+dEQP-VK.binding_model.image_atomic.descriptor_set.32bit
+dEQP-VK.binding_model.image_atomic.descriptor_set.64bit
 dEQP-VK.binding_model.push_constant_bank.basic.compute_1_banks
 dEQP-VK.binding_model.push_constant_bank.basic.compute_2_banks
 dEQP-VK.binding_model.push_constant_bank.basic.compute_4_banks

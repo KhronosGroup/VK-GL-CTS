@@ -41,6 +41,7 @@
 #include "vktBindingDescriptorInlineUniformTests.hpp"
 #include "vktBindingUnusedInvalidDescriptorTests.hpp"
 #include "vktBindingImageArrayMaintenance11Tests.hpp"
+#include "vktBindingImageAtomicTests.hpp"
 #endif // CTS_USES_VULKANSC
 
 namespace vkt
@@ -72,6 +73,7 @@ void createChildren(tcu::TestCaseGroup *group)
     group->addChild(createDescriptorInlineUniformTests(testCtx));
     group->addChild(createUnusedInvalidDescriptorTests(testCtx));
     group->addChild(createImageArrayMaintenance11Tests(testCtx));
+    group->addChild(createImageAtomicTests(testCtx));
 #endif
 
     // \todo [2015-07-30 jarkko] .change_binding.{between_renderpasses, within_pass}
