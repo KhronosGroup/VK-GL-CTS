@@ -1330,14 +1330,17 @@ tcu::TestStatus DualSourceBlendMAInstance::iteratePerArgs(const VkFormat format,
         // clang-format off
 
         auto cleanImages = [&](const VkClearValue (&colors)[ATTACHMENT_COUNT],
-                               const std::shared_ptr<BufferWithMemory> (&buffers)[ATTACHMENT_COUNT])
+                               const std::shared_ptr<BufferWithMemory> (&buffers)[ATTACHMENT_COUNT],
+                               VkPipelineStageFlags srcStageMask,
+                               VkAccessFlags srcAccessMask,
+                               VkImageLayout oldLayout)
         {
             m_vkd.cmdPipelineBarrier(cmd,
-                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT,
                 VK_DEPENDENCY_BY_REGION_BIT, 0u, nullptr, 0u, nullptr,
                 ATTACHMENT_COUNT, transformImages(0, ATTACHMENT_COUNT,
-                    VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT,
-                    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+                    srcAccessMask, VK_ACCESS_TRANSFER_WRITE_BIT,
+                    oldLayout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 
             for (uint32_t i = 0; i < ATTACHMENT_COUNT; ++i)
             {
@@ -1368,8 +1371,10 @@ tcu::TestStatus DualSourceBlendMAInstance::iteratePerArgs(const VkFormat format,
                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL));
         };
 
-        cleanImages(sourceValues, m_sourceAttachments);
-        cleanImages(clearValues, m_destAttachments);
+        cleanImages(sourceValues, m_sourceAttachments, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_ACCESS_NONE,
+                    VK_IMAGE_LAYOUT_UNDEFINED);
+        cleanImages(clearValues, m_destAttachments, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                    VK_IMAGE_LAYOUT_GENERAL);
 
         // clang-format off
     };

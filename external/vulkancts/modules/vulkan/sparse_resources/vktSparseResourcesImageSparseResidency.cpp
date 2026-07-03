@@ -764,11 +764,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate(void)
             {
                 const VkImageMemoryBarrier imageSparseLayoutChangeBarrier = makeImageMemoryBarrier(
                     0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, *imageSparse,
-                    subresourceRange,
-                    sparseQueue.queueFamilyIndex != computeQueue.queueFamilyIndex ? sparseQueue.queueFamilyIndex :
-                                                                                    VK_QUEUE_FAMILY_IGNORED,
-                    sparseQueue.queueFamilyIndex != computeQueue.queueFamilyIndex ? computeQueue.queueFamilyIndex :
-                                                                                    VK_QUEUE_FAMILY_IGNORED);
+                    subresourceRange, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED);
 
                 deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr,
@@ -1897,7 +1893,6 @@ tcu::TestStatus ImageMutableSparseTestInstance::iterate(void)
     deviceInterface.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
                                           &descriptorSet.get(), 0u, nullptr);
 
-    // Acquire barrier
     {
         const VkImageMemoryBarrier imageSparseLayoutChangeBarrier =
             makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,

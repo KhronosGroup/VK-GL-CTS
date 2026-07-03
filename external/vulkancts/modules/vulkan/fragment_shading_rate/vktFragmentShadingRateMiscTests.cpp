@@ -815,6 +815,7 @@ static CustomDevice createRobustDevice(Context &context, const InstanceWrapper &
 {
     const auto &vki           = instance.getDriver();
     const float queuePriority = 1.0f;
+
     // Create a universal queue that supports graphics and compute
     const VkDeviceQueueCreateInfo queueParams = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType              sType;
@@ -826,19 +827,78 @@ static CustomDevice createRobustDevice(Context &context, const InstanceWrapper &
     };
 
     VkPhysicalDeviceFeatures2 features2 = getPhysicalDeviceFeatures2(vki, instance.getPhysicalDevice());
-    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features    = initVulkanStructure(&features2);
-    robustness2Features.robustImageAccess2                        = true;
-    VkPhysicalDeviceImageRobustnessFeaturesEXT robustnessFeatures = initVulkanStructure(&features2);
-    robustnessFeatures.robustImageAccess                          = true;
+
+    // Choose between robustness2 and image robustness. Feature support is checked in the support check functions.
+
+    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = initVulkanStructure(&features2);
+    robustness2Features.robustImageAccess2                     = VK_TRUE;
+
+    VkPhysicalDeviceImageRobustnessFeaturesEXT imgRobustnessFeatures = initVulkanStructure(&features2);
+    imgRobustnessFeatures.robustImageAccess                          = VK_TRUE;
+
     VkPhysicalDeviceFragmentShadingRateFeaturesKHR fsrFeatures =
-        initVulkanStructure(robustness2 ? (void *)&robustness2Features : &robustnessFeatures);
-    fsrFeatures.attachmentFragmentShadingRate = true;
-    fsrFeatures.pipelineFragmentShadingRate   = true;
-    const auto &extensionPtrs                 = context.getDeviceCreationExtensions();
+        initVulkanStructure(robustness2 ? reinterpret_cast<void *>(&robustness2Features) :
+                                          reinterpret_cast<void *>(&imgRobustnessFeatures));
+
+    fsrFeatures.attachmentFragmentShadingRate = VK_TRUE;
+    fsrFeatures.pipelineFragmentShadingRate   = VK_TRUE;
+
+    const auto &extensionPtrs = context.getDeviceCreationExtensions();
+
+    void *pNext = (void *)&fsrFeatures;
+
+#ifndef CTS_USES_VULKANSC
+    VkPhysicalDeviceMaintenance7FeaturesKHR m7Features = initVulkanStructure();
+    m7Features.maintenance7                            = VK_TRUE;
+
+    if (context.isDeviceFunctionalitySupported("VK_KHR_maintenance7"))
+    {
+        m7Features.pNext = pNext;
+        pNext            = &m7Features;
+    }
+#endif // CTS_USES_VULKANSC
+
+#ifdef CTS_USES_VULKANSC
+    VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
+                                                                 context.getResourceInterface()->getStatMax() :
+                                                                 resetDeviceObjectReservationCreateInfo();
+    memReservationInfo.pNext                               = pNext;
+    pNext                                                  = &memReservationInfo;
+
+    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
+    sc10Features.pNext                              = pNext;
+    pNext                                           = &sc10Features;
+
+    VkPipelineCacheCreateInfo pcCI;
+    std::vector<VkPipelinePoolSize> poolSizes;
+    if (context.getTestContext().getCommandLine().isSubProcess())
+    {
+        if (context.getResourceInterface()->getCacheDataSize() > 0)
+        {
+            pcCI = {
+                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType              sType;
+                nullptr,                                      // const void*                  pNext;
+                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags   flags;
+                context.getResourceInterface()->getCacheDataSize(), // uintptr_t                    initialDataSize;
+                context.getResourceInterface()->getCacheData()      // const void*                  pInitialData;
+            };
+            memReservationInfo.pipelineCacheCreateInfoCount = 1;
+            memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
+        }
+
+        poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
+        if (!poolSizes.empty())
+        {
+            memReservationInfo.pipelinePoolSizeCount = static_cast<uint32_t>(poolSizes.size());
+            memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
+        }
+    }
+#endif
 
     const VkDeviceCreateInfo deviceParams = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType                  sType;
-        &fsrFeatures,                         // const void*                      pNext;
+        pNext,                                // const void*                      pNext;
         0u,                                   // VkDeviceCreateFlags              flags;
         1u,                                   // uint32_t                         queueCreateInfoCount;
         &queueParams,                         // const VkDeviceQueueCreateInfo*   pQueueCreateInfos;

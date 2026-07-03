@@ -482,6 +482,11 @@ CustomInstance createInstanceWithWsi(Context &context, Type wsiType, const vecto
 
     extensions.push_back("VK_KHR_surface");
     extensions.push_back(getExtensionName(wsiType));
+    if (isDisplaySurface(wsiType))
+    {
+        extensions.push_back("VK_KHR_display");
+        extensions.push_back("VK_EXT_direct_mode_display");
+    }
     extensions.push_back("VK_KHR_get_surface_capabilities2");
 
     vector<string> instanceExtensions;
