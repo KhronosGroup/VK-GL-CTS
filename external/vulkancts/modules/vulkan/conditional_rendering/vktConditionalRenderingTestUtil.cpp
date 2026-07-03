@@ -24,7 +24,6 @@
 
 #include "vktConditionalRenderingTestUtil.hpp"
 #include "vktDrawCreateInfoUtil.hpp"
-#include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
 

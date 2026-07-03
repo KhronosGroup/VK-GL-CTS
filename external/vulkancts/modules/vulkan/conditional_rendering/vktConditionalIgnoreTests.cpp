@@ -31,14 +31,11 @@
 #include "vktTestCaseUtil.hpp"
 #include "vkImageWithMemory.hpp"
 
-#include "vktTestCase.hpp"
-
 #include "vkDefs.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkBufferWithMemory.hpp"
-#include "vkImageWithMemory.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
@@ -51,20 +48,12 @@
 
 #include <vector>
 #include <sstream>
-#include <algorithm>
-#include <utility>
 #include <iterator>
 #include <string>
-#include <limits>
 #include <memory>
-#include <functional>
-#include <cstddef>
-#include <set>
 #include <numeric>
 
-namespace vkt
-{
-namespace conditional
+namespace vkt::conditional
 {
 namespace
 {
@@ -87,21 +76,28 @@ std::unique_ptr<BufferWithMemory> makeBufferForImage(const DeviceInterface &vkd,
     return outBuffer;
 }
 
+void commonCheckSupport(Context &context, const ConditionalData &data)
+{
+    context.requireDeviceFunctionality("VK_EXT_conditional_rendering");
+    if (data.conditionInherited && !context.getConditionalRenderingFeaturesEXT().inheritedConditionalRendering)
+        TCU_THROW(NotSupportedError, "Device does not support inherited conditional rendering");
+
+    if (data.secondaryCommandBufferNested)
+    {
+        context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
+        const auto &features = context.getNestedCommandBufferFeaturesEXT();
+        if (!features.nestedCommandBuffer)
+            TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+    }
+}
+
 class ConditionalIgnoreClearColorTestCase : public vkt::TestCase
 {
 public:
     ConditionalIgnoreClearColorTestCase(tcu::TestContext &context, const std::string &name,
                                         const ConditionalData &data);
-    void initPrograms(SourceCollections &) const override
-    {
-    }
+    void checkSupport(Context &context) const override;
     TestInstance *createInstance(Context &context) const override;
-    void checkSupport(Context &context) const override
-    {
-        context.requireDeviceFunctionality("VK_EXT_conditional_rendering");
-        if (m_data.conditionInherited && !context.getConditionalRenderingFeaturesEXT().inheritedConditionalRendering)
-            TCU_THROW(NotSupportedError, "Device does not support inherited conditional rendering");
-    }
 
 private:
     const ConditionalData m_data;
@@ -125,6 +121,11 @@ ConditionalIgnoreClearColorTestCase::ConditionalIgnoreClearColorTestCase(tcu::Te
     : vkt::TestCase(context, name)
     , m_data(data)
 {
+}
+
+void ConditionalIgnoreClearColorTestCase::checkSupport(Context &context) const
+{
+    commonCheckSupport(context, m_data);
 }
 
 TestInstance *ConditionalIgnoreClearColorTestCase::createInstance(Context &context) const
@@ -193,14 +194,6 @@ tcu::TestStatus ConditionalIgnoreClearColorTestInstance::queuePass(const QueueDa
     auto conditionalBuffer = createConditionalRenderingBuffer(m_context, m_data);
     //prepare command buffers
     const bool useSecondaryCmdBuffer = m_data.conditionInherited || m_data.conditionInSecondaryCommandBuffer;
-
-    if (m_data.secondaryCommandBufferNested)
-    {
-        m_context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
-        const auto &features = m_context.getNestedCommandBufferFeaturesEXT();
-        if (!features.nestedCommandBuffer)
-            TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
-    }
 
     VkCommandBufferInheritanceConditionalRenderingInfoEXT conditionalRenderingInheritanceInfo = initVulkanStructure();
     conditionalRenderingInheritanceInfo.conditionalRenderingEnable = m_data.conditionInherited ? VK_TRUE : VK_FALSE;
@@ -312,16 +305,8 @@ class ConditionalIgnoreClearDepthTestCase : public vkt::TestCase
 public:
     ConditionalIgnoreClearDepthTestCase(tcu::TestContext &context, const std::string &name,
                                         const ConditionalData &data);
-    void initPrograms(SourceCollections &) const override
-    {
-    }
+    void checkSupport(Context &context) const override;
     TestInstance *createInstance(Context &context) const override;
-    void checkSupport(Context &context) const override
-    {
-        context.requireDeviceFunctionality("VK_EXT_conditional_rendering");
-        if (m_data.conditionInherited && !context.getConditionalRenderingFeaturesEXT().inheritedConditionalRendering)
-            TCU_THROW(NotSupportedError, "Device does not support inherited conditional rendering");
-    }
 
 private:
     const ConditionalData m_data;
@@ -345,6 +330,11 @@ ConditionalIgnoreClearDepthTestCase::ConditionalIgnoreClearDepthTestCase(tcu::Te
     : vkt::TestCase(context, name)
     , m_data(data)
 {
+}
+
+void ConditionalIgnoreClearDepthTestCase::checkSupport(Context &context) const
+{
+    commonCheckSupport(context, m_data);
 }
 
 TestInstance *ConditionalIgnoreClearDepthTestCase::createInstance(Context &context) const
@@ -413,14 +403,6 @@ tcu::TestStatus ConditionalIgnoreClearDepthTestInstance::iterate(void)
     auto conditionalBuffer = createConditionalRenderingBuffer(m_context, m_data);
     //prepare command buffers
     const bool useSecondaryCmdBuffer = m_data.conditionInherited || m_data.conditionInSecondaryCommandBuffer;
-
-    if (m_data.secondaryCommandBufferNested)
-    {
-        m_context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
-        const auto &features = m_context.getNestedCommandBufferFeaturesEXT();
-        if (!features.nestedCommandBuffer)
-            TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
-    }
 
     VkCommandBufferInheritanceConditionalRenderingInfoEXT conditionalRenderingInheritanceInfo = initVulkanStructure();
     conditionalRenderingInheritanceInfo.conditionalRenderingEnable = m_data.conditionInherited ? VK_TRUE : VK_FALSE;
@@ -2436,5 +2418,4 @@ void ConditionalIgnoreTests::init(void)
     }
 }
 
-} // namespace conditional
-} // namespace vkt
+} // namespace vkt::conditional

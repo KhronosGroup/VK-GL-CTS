@@ -51,6 +51,7 @@ public:
         init();
     }
     virtual void delayedInit(void);
+    void checkSupport(Context &context) const;
     virtual void initPrograms(vk::SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
 
@@ -307,6 +308,12 @@ tcu::TestStatus SSBOCornerCaseInstance::iterate(void)
     return tcu::TestStatus::pass("Test did not cause a crash");
 }
 
+void CornerCase::checkSupport(Context &context) const
+{
+    if (!context.isBufferDeviceAddressSupported())
+        TCU_THROW(NotSupportedError, "Physical storage buffer pointers not supported");
+}
+
 void CornerCase::initPrograms(vk::SourceCollections &programCollection) const
 {
     DE_ASSERT(!m_computeShaderSrc.empty());
@@ -316,8 +323,6 @@ void CornerCase::initPrograms(vk::SourceCollections &programCollection) const
 
 TestInstance *CornerCase::createInstance(Context &context) const
 {
-    if (!context.isBufferDeviceAddressSupported())
-        TCU_THROW(NotSupportedError, "Physical storage buffer pointers not supported");
     return new SSBOCornerCaseInstance(context, m_testSize);
 }
 
