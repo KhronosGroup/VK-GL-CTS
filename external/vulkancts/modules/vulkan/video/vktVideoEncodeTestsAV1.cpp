@@ -365,7 +365,7 @@ VkExtent2D VideoTestCase::codedPictureAlignment = VkExtent2D({0, 0});
 
 static void buildTestName(const TestDefinition &testDef, std::string &testName);
 
-static void buildClipName(tcu::TestContext &testCtx, const TestDefinition &testDef, std::string &clipName, bool output)
+static void buildInputClipName(tcu::TestContext &testCtx, const TestDefinition &testDef, std::string &clipName)
 {
     auto &cmdLine   = testCtx.getCommandLine();
     auto archiveDir = cmdLine.getArchiveDir();
@@ -376,18 +376,16 @@ static void buildClipName(tcu::TestContext &testCtx, const TestDefinition &testD
 
     clipName += "_" + std::string(testDef.subsampling.subName);
     clipName += "_" + std::string(testDef.bitDepth.subName);
+    clipName += ".yuv";
+}
 
-    if (output)
-    {
-        clipName += "_" + std::string(testDef.gop.subName);
-        clipName += "_" + std::to_string(testDef.gop.frameCount);
-        std::string testName("");
-        buildTestName(testDef, testName);
-        clipName += "_" + testName;
-        clipName += ".ivf";
-    }
-    else
-        clipName += ".yuv";
+// Mirrors the "<width>x<height>_<bitDepth>_<subsampling>_<gop>_<frameCount>" case-group path built in
+// createVideoEncodeTestsAV1, so dump filenames match the dEQP case they belong to.
+static std::string buildClipDescriptor(const TestDefinition &testDef)
+{
+    return std::to_string(testDef.frameSize.width) + "x" + std::to_string(testDef.frameSize.height) + "_" +
+           testDef.bitDepth.subName + "_" + testDef.subsampling.subName + "_" + testDef.gop.subName + "_" +
+           std::to_string(testDef.gop.frameCount);
 }
 
 VkVideoChromaSubsamplingFlagsKHR getChromaSubSampling(enum ChromaSubsampling subSampling)
@@ -499,10 +497,13 @@ TestInstance *VideoTestCase::createInstance(Context &ctx) const
     buildEncoderParams(encoderParams);
 
     std::string inputClipName("");
-    buildClipName(getTestContext(), m_definition, inputClipName, false);
+    buildInputClipName(getTestContext(), m_definition, inputClipName);
 
-    std::string outputClipName("");
-    buildClipName(getTestContext(), m_definition, outputClipName, true);
+    std::string testName("");
+    buildTestName(m_definition, testName);
+    std::string clipDescriptor = buildClipDescriptor(m_definition) + "_" + testName;
+    std::string encodePrefix   = util::getVideoCodecPathSegment(VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR);
+    std::string outputClipName = util::getVideoDumpPath(true, clipDescriptor, encodePrefix, "ivf");
 
     args.push_back("vk-gl-cts"); //args needs the appname as a first argument
     args.push_back("-i");

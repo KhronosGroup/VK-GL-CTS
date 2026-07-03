@@ -1293,6 +1293,14 @@ namespace util
 {
 const char *getVideoCodecString(VkVideoCodecOperationFlagBitsKHR codec);
 
+// Returns the codec segment used in dEQP case paths ("video.decode.h264" etc.).
+const char *getVideoCodecPathSegment(VkVideoCodecOperationFlagBitsKHR codec);
+
+// Returns "video_dumps/<out_|in_><codecSegment>.<testName>[_<index>].<ext>", creating the folder in the
+// CWD if it is missing. output selects the "out_"/"in_" prefix; a negative index omits "_<index>".
+std::string getVideoDumpPath(bool output, const std::string &testName, const std::string &codecSegment,
+                             const std::string &ext, int index = -1);
+
 const char *getVideoChromaFormatString(VkVideoChromaSubsamplingFlagBitsKHR chromaFormat);
 
 VkVideoCodecOperationFlagsKHR getSupportedCodecs(
