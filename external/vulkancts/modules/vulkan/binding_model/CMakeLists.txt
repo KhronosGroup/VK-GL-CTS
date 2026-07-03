@@ -36,6 +36,8 @@ set(DEQP_VK_BINDING_MODEL_SRCS
 	vktBindingPushConstantBankTests.hpp
 	vktBindingDescriptorHeapTests.cpp
 	vktBindingDescriptorHeapTests.hpp
+	vktBindingDescriptorHeapRandomTests.cpp
+	vktBindingDescriptorHeapRandomTests.hpp
 	vktBindingStagesTests.cpp
 	vktBindingStagesTests.hpp
 	vktBindingDescriptorInlineUniformTests.cpp
