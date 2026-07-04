@@ -84,9 +84,13 @@ protected:
                                       bool requireCopyMemoryIndirect = false, bool requireBufferDeviceAddress = false);
 
     const Queue &getQueue(const vk::VkQueueFlags queueFlags, const uint32_t queueIndex) const;
+    const vk::InstanceInterface &getInstanceInterface(void) const
+    {
+        return m_instanceWrapper.getDriver();
+    }
     const vk::DeviceInterface &getDeviceInterface(void) const
     {
-        return *m_deviceDriver;
+        return m_logicalDevice.getDriver();
     }
     vk::VkDevice getDevice(void) const
     {
@@ -94,7 +98,7 @@ protected:
     }
     vk::Allocator &getAllocator(void)
     {
-        return *m_allocator;
+        return m_logicalDevice.getAllocator();
     }
     vk::VkPhysicalDevice getPhysicalDevice(uint32_t i = 0)
     {
@@ -106,11 +110,10 @@ private:
     bool m_forceSpecificQueue;
     uint32_t m_deviceGroupIdx;
     CustomInstance m_deviceGroupInstance;
+    InstanceWrapper m_instanceWrapper;
     std::vector<vk::VkPhysicalDevice> m_physicalDevices;
     std::map<vk::VkQueueFlags, std::vector<Queue>> m_queues;
-    de::MovePtr<vk::DeviceDriver> m_deviceDriver;
-    vk::Move<vk::VkDevice> m_logicalDevice;
-    de::MovePtr<vk::Allocator> m_allocator;
+    DeviceWrapper m_logicalDevice;
 };
 
 } // namespace sparse

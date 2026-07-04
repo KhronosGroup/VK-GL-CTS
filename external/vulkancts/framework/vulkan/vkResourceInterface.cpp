@@ -502,6 +502,26 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines(VkDevice device, VkP
             auto pit = m_devicePipelineCaches.find(device);
             if (pit != end(m_devicePipelineCaches))
             {
+                // We also need to delete the shader module handles from the create info as they are illegal per Vulkan SC
+                size_t stageInfoCount = 0;
+                for (uint32_t i = 0; i < createInfoCount; ++i)
+                {
+                    stageInfoCount += pCreateInfoCopies[i].stageCount;
+                }
+                std::vector<VkPipelineShaderStageCreateInfo> stageInfo{};
+                stageInfo.reserve(stageInfoCount);
+                for (uint32_t i = 0; i < createInfoCount; ++i)
+                {
+                    auto origStages              = pCreateInfoCopies[i].pStages;
+                    pCreateInfoCopies[i].pStages = stageInfo.data() + stageInfo.size();
+                    for (uint32_t j = 0; j < pCreateInfoCopies[i].stageCount; ++j)
+                    {
+                        VkPipelineShaderStageCreateInfo info = origStages[j];
+                        info.module                          = VK_NULL_HANDLE;
+                        stageInfo.push_back(info);
+                    }
+                }
+
                 VkPipelineCache pCache = pit->second.pipelineCache->get();
                 return it->second(device, pCache, createInfoCount, pCreateInfoCopies.data(), pAllocator, pPipelines);
             }
@@ -608,6 +628,12 @@ VkResult ResourceInterfaceStandard::createComputePipelines(VkDevice device, VkPi
             auto pit = m_devicePipelineCaches.find(device);
             if (pit != end(m_devicePipelineCaches))
             {
+                // We also need to delete the shader module handles from the create info as they are illegal per Vulkan SC
+                for (uint32_t i = 0; i < createInfoCount; ++i)
+                {
+                    pCreateInfoCopies[i].stage.module = VK_NULL_HANDLE;
+                }
+
                 VkPipelineCache pCache = pit->second.pipelineCache->get();
                 return it->second(device, pCache, createInfoCount, pCreateInfoCopies.data(), pAllocator, pPipelines);
             }

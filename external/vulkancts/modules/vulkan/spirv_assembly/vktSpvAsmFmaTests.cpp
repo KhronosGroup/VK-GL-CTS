@@ -405,6 +405,7 @@ static vector<std::array<T, 3>> getAllowedInputs(T a, T b, T c, DenormMode d)
 template <typename T>
 T roundedFMA(T a, T b, T c, deRoundingMode m)
 {
+    DE_FENV_ACCESS_ON;
     deSetRoundingMode(m);
     return std::fma(a, b, c);
 }
@@ -412,6 +413,7 @@ T roundedFMA(T a, T b, T c, deRoundingMode m)
 template <>
 deFloat16 roundedFMA(deFloat16 a, deFloat16 b, deFloat16 c, deRoundingMode m)
 {
+    DE_FENV_ACCESS_ON;
     double x = deFloat16To64(a);
     double y = deFloat16To64(b);
     double z = deFloat16To64(c);
@@ -506,9 +508,9 @@ static bool verifyResult(const std::vector<Resource> &inputs, const std::vector<
                          RoundingMode m, DenormMode d, bool szInfNan, tcu::TestLog &log)
 {
     vector<uint8_t> aBytes, bBytes, cBytes;
-    inputs[0].getBytes(aBytes);
-    inputs[1].getBytes(bBytes);
-    inputs[2].getBytes(cBytes);
+    inputs[0].buffer->getBytes(aBytes);
+    inputs[1].buffer->getBytes(bBytes);
+    inputs[2].buffer->getBytes(cBytes);
 
     const T *a = reinterpret_cast<T *>(aBytes.data());
     const T *b = reinterpret_cast<T *>(bBytes.data());

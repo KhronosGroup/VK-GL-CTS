@@ -172,11 +172,7 @@ public:
 
     const vk::DeviceInterface &getDeviceInterface(void)
     {
-        return *m_deviceDriver;
-    }
-    vk::VkInstance getInstance(void)
-    {
-        return m_deviceGroupInstance;
+        return m_logicalDevice.getDriver();
     }
     vk::VkDevice getDevice(void)
     {
@@ -191,15 +187,9 @@ private:
     uint32_t m_numPhysDevices;
     uint32_t m_numViews;
     uint32_t m_queueFamilyIndex;
-    CustomInstance m_deviceGroupInstance;
-    vk::Move<vk::VkDevice> m_logicalDevice;
+    InstanceWrapper m_deviceGroupInstance;
+    DeviceWrapper m_logicalDevice;
     std::vector<vk::VkPhysicalDevice> m_physicalDevices;
-#ifndef CTS_USES_VULKANSC
-    de::MovePtr<vk::DeviceDriver> m_deviceDriver;
-#else
-    de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> m_deviceDriver;
-#endif // CTS_USES_VULKANSC
-    de::MovePtr<Allocator> m_allocator;
 
     TestParams m_params;
 };
@@ -464,10 +454,9 @@ void NoPositionInstance::createDeviceGroup(void)
     const uint32_t devGroupIdx      = cmdLine.getVKDeviceGroupId() - 1;
     uint32_t physDeviceIdx          = cmdLine.getVKDeviceId() - 1;
     const float queuePriority       = 1.0f;
-    const auto &vki                 = m_context.getInstanceInterface();
 
     m_deviceGroupInstance = createCustomInstanceWithExtension(m_context, "VK_KHR_device_group_creation");
-    const InstanceDriver &instance(m_deviceGroupInstance.getDriver());
+    const InstanceInterface &vki(m_deviceGroupInstance.getDriver());
 
     std::vector<VkPhysicalDeviceGroupProperties> devGroupsProperties =
         enumeratePhysicalDeviceGroups(vki, m_deviceGroupInstance);
@@ -495,7 +484,7 @@ void NoPositionInstance::createDeviceGroup(void)
 
     // Prepare queue info
     const std::vector<VkQueueFamilyProperties> queueProps =
-        getPhysicalDeviceQueueFamilyProperties(instance, devGroupProperties.physicalDevices[physDeviceIdx]);
+        getPhysicalDeviceQueueFamilyProperties(vki, devGroupProperties.physicalDevices[physDeviceIdx]);
     for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
     {
         if (queueProps[queueNdx].queueFlags & VK_QUEUE_GRAPHICS_BIT)
@@ -539,48 +528,9 @@ void NoPositionInstance::createDeviceGroup(void)
     if (multiViewSupport)
         deviceExtensions.push_back("VK_KHR_multiview");
 
-    void *pNext = &deviceFeatures2;
-
-#ifdef CTS_USES_VULKANSC
-    VkDeviceObjectReservationCreateInfo memReservationInfo = cmdLine.isSubProcess() ?
-                                                                 m_context.getResourceInterface()->getStatMax() :
-                                                                 resetDeviceObjectReservationCreateInfo();
-    memReservationInfo.pNext                               = pNext;
-    pNext                                                  = &memReservationInfo;
-
-    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-    sc10Features.pNext                              = pNext;
-    pNext                                           = &sc10Features;
-    VkPipelineCacheCreateInfo pcCI;
-    std::vector<VkPipelinePoolSize> poolSizes;
-    if (m_context.getTestContext().getCommandLine().isSubProcess())
-    {
-        if (m_context.getResourceInterface()->getCacheDataSize() > 0)
-        {
-            pcCI = {
-                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                nullptr,                                      // const void* pNext;
-                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                m_context.getResourceInterface()->getCacheDataSize(),     // uintptr_t initialDataSize;
-                m_context.getResourceInterface()->getCacheData()          // const void* pInitialData;
-            };
-            memReservationInfo.pipelineCacheCreateInfoCount = 1;
-            memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-        }
-
-        poolSizes = m_context.getResourceInterface()->getPipelinePoolSizes();
-        if (!poolSizes.empty())
-        {
-            memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-            memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-        }
-    }
-#endif // CTS_USES_VULKANSC
-
     const VkDeviceCreateInfo deviceCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType sType;
-        pNext,                                // const void* pNext;
+        &deviceFeatures2,                     // const void* pNext;
         (VkDeviceCreateFlags)0,               // VkDeviceCreateFlags flags;
         1u,                                   // uint32_t queueCreateInfoCount;
         &queueInfo,                           // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
@@ -591,24 +541,8 @@ void NoPositionInstance::createDeviceGroup(void)
         nullptr,                              // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_logicalDevice = createCustomDevice(m_context.getPlatformInterface(), m_deviceGroupInstance, instance,
-                                         deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceCreateInfo);
-
-#ifndef CTS_USES_VULKANSC
-    m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_deviceGroupInstance,
-                                                                *m_logicalDevice, m_context.getUsedApiVersion(),
-                                                                m_context.getTestContext().getCommandLine()));
-#else
-    m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
-        new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), *m_logicalDevice,
-                           m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(),
-                           m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(),
-                           m_context.getUsedApiVersion()),
-        vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
-#endif // CTS_USES_VULKANSC
-
-    m_allocator = de::MovePtr<Allocator>(new SimpleAllocator(
-        *m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, m_physicalDevices[0])));
+    m_logicalDevice =
+        m_deviceGroupInstance.createCustomDevice(deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceCreateInfo);
 }
 
 // Make a render pass with one subpass per color attachment
@@ -684,13 +618,13 @@ inline VkImageSubresourceRange makeColorSubresourceRange(const int baseArrayLaye
 tcu::TestStatus NoPositionInstance::iterate(void)
 {
     const bool useDeviceGroup = m_params.useViewIndexAsDeviceIndex;
-    const auto &vki           = m_context.getInstanceInterface();
+    const auto &vki           = useDeviceGroup ? m_deviceGroupInstance.getDriver() : m_context.getInstanceInterface();
     const auto &vkd           = useDeviceGroup ? getDeviceInterface() : m_context.getDeviceInterface();
     const auto physicalDevice = useDeviceGroup ? getPhysicalDevice() : m_context.getPhysicalDevice();
     const auto device         = useDeviceGroup ? getDevice() : m_context.getDevice();
     const auto qIndex         = useDeviceGroup ? m_queueFamilyIndex : m_context.getUniversalQueueFamilyIndex();
     const auto queue          = useDeviceGroup ? getDeviceQueue(vkd, device, qIndex, 0) : m_context.getUniversalQueue();
-    auto &alloc               = useDeviceGroup ? *m_allocator : m_context.getDefaultAllocator();
+    auto &alloc               = useDeviceGroup ? m_logicalDevice.getAllocator() : m_context.getDefaultAllocator();
     const auto format         = NoPositionCase::getImageFormat();
     const auto extent         = NoPositionCase::getImageExtent();
     const auto bgColor        = NoPositionCase::getBackGroundColor();

@@ -15901,6 +15901,7 @@ dEQP-VKSC.synchronization.smoke.queue_type_ignore_image_arbitrary
 dEQP-VKSC.synchronization.smoke.queue_type_ignore_image_external
 dEQP-VKSC.synchronization.smoke.queue_type_ignore_image_foreign
 dEQP-VKSC.synchronization.smoke.queue_type_ignore_image_ignored
+dEQP-VKSC.synchronization.smoke.queue_type_image_barrier_external
 dEQP-VKSC.synchronization.smoke.timeline_semaphores
 dEQP-VKSC.synchronization.timeline_semaphore.device_host.misc.initial_value
 dEQP-VKSC.synchronization.timeline_semaphore.device_host.misc.max_difference_value

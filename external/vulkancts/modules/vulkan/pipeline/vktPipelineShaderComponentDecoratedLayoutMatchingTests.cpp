@@ -618,15 +618,17 @@ void ShaderGen<ShaderTypes::Tese>::genCode(std::ostream &str, const TestParams &
             {
                 str << inputVar << variableIdx << genArrSubscript(0) << genLocSubscript(layout) << " + " << inputVar
                     << variableIdx << genArrSubscript(1) << genLocSubscript(layout) << " + " << inputVar << variableIdx
+                    << genArrSubscript(2) << genLocSubscript(layout) << " + " << inputVar << variableIdx
                     << genArrSubscript(2) << genLocSubscript(layout);
             }
             else
             {
                 str << "var_in" << genArrSubscript(0) << '.' << inputVar << variableIdx << genLocSubscript(layout)
                     << "  +  var_in" << genArrSubscript(1) << '.' << inputVar << variableIdx << genLocSubscript(layout)
+                    << "  +  var_in" << genArrSubscript(2) << '.' << inputVar << variableIdx << genLocSubscript(layout)
                     << "  +  var_in" << genArrSubscript(2) << '.' << inputVar << variableIdx << genLocSubscript(layout);
             }
-            str << ") / " << layout.getTypeName(Types::Scalar) << "(1.5);\n";
+            str << ") / " << layout.getTypeName(Types::Scalar) << "(2);\n";
         }
     }
 
@@ -1021,6 +1023,7 @@ tcu::TestStatus ShaderComponentDecoratedIterfaceMatchingTestInstance::iterate(vo
                                     +1.0f, -1.0f, 0.0f, 0.0f, +1.0f, +1.0f, 0.0f, 0.0f, -1.0f, +1.0f, 0.0f, 0.0f};
         DE_ASSERT((vertices.size() / 4) == vertexCount);
         deMemcpy(vertexBuffer.getAllocation().getHostPtr(), vertices.data(), vertices.size() * sizeof(float));
+        flushAlloc(vkd, device, vertexBuffer.getAllocation());
     }
 
     const VkBufferUsageFlags resultBufferUsage =
@@ -1042,7 +1045,7 @@ tcu::TestStatus ShaderComponentDecoratedIterfaceMatchingTestInstance::iterate(vo
     endCommandBuffer(vkd, *cmdBuffer);
     submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 
-    //invalidateAlloc(vkd, device, resultBuffer.getAllocation());
+    invalidateAlloc(vkd, device, resultBuffer.getAllocation());
 
     std::string resultText;
     const uint8_t *bufferPtr = static_cast<uint8_t *>(resultBuffer.getAllocation().getHostPtr());

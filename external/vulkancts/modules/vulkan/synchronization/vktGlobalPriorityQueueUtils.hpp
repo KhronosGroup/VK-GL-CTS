@@ -26,6 +26,7 @@
 #include "vkDefs.hpp"
 #include "vkMemUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "deUniquePtr.hpp"
 #include "../image/vktImageTestsUtil.hpp"
 
@@ -56,9 +57,10 @@ struct SpecialDevice
     virtual ~SpecialDevice();
 
 public:
+    const InstanceWrapper instance;
+    UncheckedDevice device;
     const uint32_t &queueFamilyIndexFrom;
     const uint32_t &queueFamilyIndexTo;
-    const vk::VkDevice &handle;
     const vk::VkQueue &queueFrom;
     const vk::VkQueue &queueTo;
     const vk::VkResult &createResult;
@@ -67,7 +69,7 @@ public:
     const int32_t &createFileLine;
     vk::Allocator &getAllocator() const
     {
-        return *m_allocator;
+        return device.getAllocator();
     }
 
 protected:
@@ -76,10 +78,8 @@ protected:
     vk::VkQueueFlagBits m_transitionTo;
     uint32_t m_queueFamilyIndexFrom;
     uint32_t m_queueFamilyIndexTo;
-    vk::VkDevice m_deviceHandle;
     vk::VkQueue m_queueFrom;
     vk::VkQueue m_queueTo;
-    de::MovePtr<vk::Allocator> m_allocator;
     vk::VkResult m_createResult;
     const char *m_createExpression;
     const char *m_createFileName;

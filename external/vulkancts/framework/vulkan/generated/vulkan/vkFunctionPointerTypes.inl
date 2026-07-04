@@ -499,6 +499,11 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRendering2KHRFunc)													(V
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDebugReportCallbackEXTFunc)											(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyDebugReportCallbackEXTFunc)											(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DebugReportMessageEXTFunc)													(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* DebugMarkerSetObjectTagEXTFunc)											(VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* DebugMarkerSetObjectNameEXTFunc)											(VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDebugMarkerBeginEXTFunc)												(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDebugMarkerEndEXTFunc)													(VkCommandBuffer commandBuffer);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDebugMarkerInsertEXTFunc)												(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindTransformFeedbackBuffersEXTFunc)									(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginTransformFeedbackEXTFunc)											(VkCommandBuffer commandBuffer, uint32_t firstCounterBuffer, uint32_t counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndTransformFeedbackEXTFunc)											(VkCommandBuffer commandBuffer, uint32_t firstCounterBuffer, uint32_t counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets);
@@ -540,6 +545,18 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyDebugUtilsMessengerEXTFunc)					
 typedef VKAPI_ATTR void					(VKAPI_CALL* SubmitDebugUtilsMessageEXTFunc)											(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetAndroidHardwareBufferPropertiesANDROIDFunc)								(VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryAndroidHardwareBufferANDROIDFunc)									(VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct pt::AndroidHardwareBufferPtr* pBuffer);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateGpaSessionAMDFunc)													(VkDevice device, const VkGpaSessionCreateInfoAMD* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkGpaSessionAMD* pGpaSession);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyGpaSessionAMDFunc)													(VkDevice device, VkGpaSessionAMD gpaSession, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetGpaDeviceClockModeAMDFunc)												(VkDevice device, VkGpaDeviceClockModeInfoAMD* pInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetGpaDeviceClockInfoAMDFunc)												(VkDevice device, VkGpaDeviceGetClockInfoAMD* pInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CmdBeginGpaSessionAMDFunc)													(VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CmdEndGpaSessionAMDFunc)													(VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CmdBeginGpaSampleAMDFunc)													(VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession, const VkGpaSampleBeginInfoAMD* pGpaSampleBeginInfo, uint32_t* pSampleID);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndGpaSampleAMDFunc)													(VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession, uint32_t sampleID);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetGpaSessionStatusAMDFunc)												(VkDevice device, VkGpaSessionAMD gpaSession);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetGpaSessionResultsAMDFunc)												(VkDevice device, VkGpaSessionAMD gpaSession, uint32_t sampleID, size_t* pSizeInBytes, void* pData);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ResetGpaSessionAMDFunc)													(VkDevice device, VkGpaSessionAMD gpaSession);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyGpaSessionResultsAMDFunc)											(VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WriteSamplerDescriptorsEXTFunc)											(VkDevice device, uint32_t samplerCount, const VkSamplerCreateInfo* pSamplers, const VkHostAddressRangeEXT* pDescriptors);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* WriteResourceDescriptorsEXTFunc)											(VkDevice device, uint32_t resourceCount, const VkResourceDescriptorInfoEXT* pResources, const VkHostAddressRangeEXT* pDescriptors);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindSamplerHeapEXTFunc)													(VkCommandBuffer commandBuffer, const VkBindHeapInfoEXT* pBindInfo);
@@ -811,6 +828,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRendering2KHRFunc)													(V
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginCustomResolveEXTFunc)												(VkCommandBuffer commandBuffer, const VkBeginCustomResolveInfoEXT* pBeginCustomResolveInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateUbmSurfaceSECFunc)													(VkInstance instance, const VkUbmSurfaceCreateInfoSEC* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 typedef VKAPI_ATTR VkBool32				(VKAPI_CALL* GetPhysicalDeviceUbmPresentationSupportSECFunc)							(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, struct ubm_device* device);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetPrimitiveRestartIndexEXTFunc)										(VkCommandBuffer commandBuffer, uint32_t primitiveRestartIndex);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateAccelerationStructureKHRFunc)										(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyAccelerationStructureKHRFunc)										(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBuildAccelerationStructuresKHRFunc)										(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos);

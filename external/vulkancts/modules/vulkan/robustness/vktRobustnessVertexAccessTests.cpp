@@ -114,15 +114,9 @@ protected:
 class VertexAccessInstance : public vkt::TestInstance
 {
 public:
-    VertexAccessInstance(Context &context, Move<VkDevice> device,
-#ifndef CTS_USES_VULKANSC
-                         de::MovePtr<vk::DeviceDriver> deviceDriver,
-#else
-                         de::MovePtr<CustomInstance> customInstance,
-                         de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> deviceDriver,
-#endif // CTS_USES_VULKANSC
-                         VkFormat inputFormat, uint32_t numVertexValues, uint32_t numInstanceValues,
-                         uint32_t numVertices, uint32_t numInstances, const std::vector<uint32_t> &indices);
+    VertexAccessInstance(Context &context, InstanceWrapper &&instance, DeviceWrapper &&device, VkFormat inputFormat,
+                         uint32_t numVertexValues, uint32_t numInstanceValues, uint32_t numVertices,
+                         uint32_t numInstances, const std::vector<uint32_t> &indices);
 
     virtual ~VertexAccessInstance(void);
     virtual tcu::TestStatus iterate(void);
@@ -140,15 +134,8 @@ protected:
     virtual void initVertexIds(uint32_t *indicesPtr, size_t indexCount) = 0;
     virtual uint32_t getIndex(uint32_t vertexNum) const                 = 0;
 
-#ifndef CTS_USES_VULKANSC
-    Move<VkDevice> m_device;
-    de::MovePtr<vk::DeviceDriver> m_deviceDriver;
-#else
-    // Construction needs to happen in this exact order to ensure proper resource destruction
-    de::MovePtr<CustomInstance> m_customInstance;
-    Move<VkDevice> m_device;
-    de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> m_deviceDriver;
-#endif // CTS_USES_VULKANSC
+    const InstanceWrapper m_instance;
+    const DeviceWrapper m_device;
 
     const VkFormat m_inputFormat;
     const uint32_t m_numVertexValues;
@@ -194,14 +181,8 @@ protected:
 class DrawAccessInstance : public VertexAccessInstance
 {
 public:
-    DrawAccessInstance(Context &context, Move<VkDevice> device,
-#ifndef CTS_USES_VULKANSC
-                       de::MovePtr<vk::DeviceDriver> deviceDriver,
-#else
-                       de::MovePtr<CustomInstance> customInstance,
-                       de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> deviceDriver,
-#endif // CTS_USES_VULKANSC
-                       VkFormat inputFormat, uint32_t numVertexValues, uint32_t numInstanceValues, uint32_t numVertices,
+    DrawAccessInstance(Context &context, InstanceWrapper &&instance, DeviceWrapper &&device, VkFormat inputFormat,
+                       uint32_t numVertexValues, uint32_t numInstanceValues, uint32_t numVertices,
                        uint32_t numInstances);
 
     virtual ~DrawAccessInstance(void)
@@ -216,13 +197,7 @@ protected:
 class DrawIndexedAccessInstance : public VertexAccessInstance
 {
 public:
-    DrawIndexedAccessInstance(Context &context, Move<VkDevice> device,
-#ifndef CTS_USES_VULKANSC
-                              de::MovePtr<vk::DeviceDriver> deviceDriver,
-#else
-                              de::MovePtr<CustomInstance> customInstance,
-                              de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> deviceDriver,
-#endif // CTS_USES_VULKANSC
+    DrawIndexedAccessInstance(Context &context, InstanceWrapper &&instance, DeviceWrapper &&device,
                               VkFormat inputFormat, uint32_t numVertexValues, uint32_t numInstanceValues,
                               uint32_t numVertices, uint32_t numInstances, const std::vector<uint32_t> &indices);
 
@@ -377,14 +352,7 @@ DrawAccessTest::DrawAccessTest(tcu::TestContext &testContext, const std::string 
 
 TestInstance *DrawAccessTest::createInstance(Context &context) const
 {
-#ifndef CTS_USES_VULKANSC
-    Move<VkDevice> device = createRobustBufferAccessDevice(context);
-
-    de::MovePtr<vk::DeviceDriver> deviceDriver = de::MovePtr<DeviceDriver>(
-        new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion(),
-                         context.getTestContext().getCommandLine()));
-#else
-    de::MovePtr<CustomInstance> customInstance(new CustomInstance(createCustomInstanceFromContext(context)));
+    InstanceWrapper instance(context);
 
     vk::VkPhysicalDeviceScalarBlockLayoutFeatures sblFeatures = initVulkanStructure();
     sblFeatures.scalarBlockLayout                             = true;
@@ -397,23 +365,10 @@ TestInstance *DrawAccessTest::createInstance(Context &context) const
     if (context.getScalarBlockLayoutFeatures().scalarBlockLayout)
         enabledFeatures2 = &features2;
 
-    Move<VkDevice> device = createRobustBufferAccessDevice(context, *customInstance, enabledFeatures2);
+    DeviceWrapper device = createRobustBufferAccessDevice(context, instance, enabledFeatures2);
 
-    de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> deviceDriver =
-        de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
-            new DeviceDriverSC(context.getPlatformInterface(), *customInstance, *device,
-                               context.getTestContext().getCommandLine(), context.getResourceInterface(),
-                               context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(),
-                               context.getUsedApiVersion()),
-            vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
-#endif // CTS_USES_VULKANSC
-
-    return new DrawAccessInstance(context, device,
-#ifdef CTS_USES_VULKANSC
-                                  customInstance,
-#endif // CTS_USES_VULKANSC
-                                  deviceDriver, m_inputFormat, m_numVertexValues, m_numInstanceValues, m_numVertices,
-                                  m_numInstances);
+    return new DrawAccessInstance(context, std::move(instance), std::move(device), m_inputFormat, m_numVertexValues,
+                                  m_numInstanceValues, m_numVertices, m_numInstances);
 }
 
 // DrawIndexedAccessTest
@@ -449,14 +404,7 @@ DrawIndexedAccessTest::DrawIndexedAccessTest(tcu::TestContext &testContext, cons
 
 TestInstance *DrawIndexedAccessTest::createInstance(Context &context) const
 {
-#ifndef CTS_USES_VULKANSC
-    Move<VkDevice> device = createRobustBufferAccessDevice(context);
-
-    de::MovePtr<vk::DeviceDriver> deviceDriver = de::MovePtr<DeviceDriver>(
-        new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion(),
-                         context.getTestContext().getCommandLine()));
-#else
-    de::MovePtr<CustomInstance> customInstance(new CustomInstance(createCustomInstanceFromContext(context)));
+    InstanceWrapper instance(context);
 
     vk::VkPhysicalDeviceScalarBlockLayoutFeatures sblFeatures = initVulkanStructure();
     sblFeatures.scalarBlockLayout                             = true;
@@ -469,56 +417,34 @@ TestInstance *DrawIndexedAccessTest::createInstance(Context &context) const
     if (context.getScalarBlockLayoutFeatures().scalarBlockLayout)
         enabledFeatures2 = &features2;
 
-    Move<VkDevice> device = createRobustBufferAccessDevice(context, *customInstance, enabledFeatures2);
+    DeviceWrapper device = createRobustBufferAccessDevice(context, instance, enabledFeatures2);
 
-    de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> deviceDriver =
-        de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
-            new DeviceDriverSC(context.getPlatformInterface(), *customInstance, *device,
-                               context.getTestContext().getCommandLine(), context.getResourceInterface(),
-                               context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(),
-                               context.getUsedApiVersion()),
-            vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
-#endif // CTS_USES_VULKANSC
-
-    return new DrawIndexedAccessInstance(context, device,
-#ifdef CTS_USES_VULKANSC
-                                         customInstance,
-#endif // CTS_USES_VULKANSC
-                                         deviceDriver, m_inputFormat, m_numVertexValues, m_numInstanceValues,
-                                         m_numVertices, m_numInstances, s_indexConfigs[m_indexConfig]);
+    return new DrawIndexedAccessInstance(context, std::move(instance), std::move(device), m_inputFormat,
+                                         m_numVertexValues, m_numInstanceValues, m_numVertices, m_numInstances,
+                                         s_indexConfigs[m_indexConfig]);
 }
 
 // VertexAccessInstance
 
-VertexAccessInstance::VertexAccessInstance(Context &context, Move<VkDevice> device,
-#ifndef CTS_USES_VULKANSC
-                                           de::MovePtr<vk::DeviceDriver> deviceDriver,
-#else
-                                           de::MovePtr<CustomInstance> customInstance,
-                                           de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> deviceDriver,
-#endif // CTS_USES_VULKANSC
+VertexAccessInstance::VertexAccessInstance(Context &context, InstanceWrapper &&instance, DeviceWrapper &&device,
                                            VkFormat inputFormat, uint32_t numVertexValues, uint32_t numInstanceValues,
                                            uint32_t numVertices, uint32_t numInstances,
                                            const std::vector<uint32_t> &indices)
 
     : vkt::TestInstance(context)
-#ifdef CTS_USES_VULKANSC
-    , m_customInstance(customInstance)
-#endif // CTS_USES_VULKANSC
-    , m_device(device)
-    , m_deviceDriver(deviceDriver)
+    , m_instance(std::move(instance))
+    , m_device(std::move(device))
     , m_inputFormat(inputFormat)
     , m_numVertexValues(numVertexValues)
     , m_numInstanceValues(numInstanceValues)
     , m_numVertices(numVertices)
     , m_numInstances(numInstances)
 {
-    const DeviceInterface &vk       = *m_deviceDriver;
-    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
-    const auto &vki                 = context.getInstanceInterface();
-    const VkPhysicalDevice physicalDevice =
-        chooseDevice(vki, context.getInstance(), context.getTestContext().getCommandLine());
-    SimpleAllocator memAlloc(vk, *m_device, getPhysicalDeviceMemoryProperties(vki, physicalDevice));
+    const DeviceInterface &vk                 = m_device.getDriver();
+    const uint32_t queueFamilyIndex           = context.getUniversalQueueFamilyIndex();
+    const InstanceInterface &vki              = m_device.getInstanceDriver();
+    const vk::VkPhysicalDevice physicalDevice = m_device.getPhysicalDevice();
+    vk::Allocator &memAlloc(m_device.getAllocator());
     const uint32_t formatSizeInBytes = tcu::getPixelSize(mapVkFormat(m_inputFormat));
 
     // Check storage support
@@ -792,7 +718,7 @@ VertexAccessInstance::VertexAccessInstance(Context &context, Move<VkDevice> devi
         drawConfig.indexCount    = (uint32_t)(m_indexBufferSize / sizeof(uint32_t));
 
         m_graphicsTestEnvironment = de::MovePtr<GraphicsEnvironment>(new GraphicsEnvironment(
-            m_context, *m_deviceDriver, *m_device, *m_descriptorSetLayout, *m_descriptorSet,
+            m_context, m_device, *m_descriptorSetLayout, *m_descriptorSet,
             GraphicsEnvironment::VertexBindings(bindings, bindings + DE_LENGTH_OF_ARRAY(bindings)),
             GraphicsEnvironment::VertexAttributes(attributes, attributes + DE_LENGTH_OF_ARRAY(attributes)),
             drawConfig));
@@ -805,7 +731,7 @@ VertexAccessInstance::~VertexAccessInstance(void)
 
 tcu::TestStatus VertexAccessInstance::iterate(void)
 {
-    const DeviceInterface &vk           = *m_deviceDriver;
+    const DeviceInterface &vk           = m_device.getDriver();
     const vk::VkCommandBuffer cmdBuffer = m_graphicsTestEnvironment->getCommandBuffer();
 
     // Initialize vertex ids
@@ -860,7 +786,7 @@ tcu::TestStatus VertexAccessInstance::iterate(void)
 bool VertexAccessInstance::verifyResult(void)
 {
     std::ostringstream logMsg;
-    const DeviceInterface &vk          = *m_deviceDriver;
+    const DeviceInterface &vk          = m_device.getDriver();
     tcu::TestLog &log                  = m_context.getTestContext().getLog();
     const uint32_t numChannels         = getNumUsedChannels(mapVkFormat(m_inputFormat).order);
     const uint32_t numScalarsPerVertex = numChannels * 3; // Use 3 identical attributes
@@ -1114,20 +1040,11 @@ VkDeviceSize VertexAccessInstance::getBufferSizeInBytes(uint32_t numScalars, VkF
 
 // DrawAccessInstance
 
-DrawAccessInstance::DrawAccessInstance(Context &context, Move<VkDevice> device,
-#ifndef CTS_USES_VULKANSC
-                                       de::MovePtr<vk::DeviceDriver> deviceDriver,
-#else
-                                       de::MovePtr<CustomInstance> customInstance,
-                                       de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> deviceDriver,
-#endif // CTS_USES_VULKANSC
+DrawAccessInstance::DrawAccessInstance(Context &context, InstanceWrapper &&instance, DeviceWrapper &&device,
                                        VkFormat inputFormat, uint32_t numVertexValues, uint32_t numInstanceValues,
                                        uint32_t numVertices, uint32_t numInstances)
-    : VertexAccessInstance(context, device,
-#ifdef CTS_USES_VULKANSC
-                           customInstance,
-#endif // CTS_USES_VULKANSC
-                           deviceDriver, inputFormat, numVertexValues, numInstanceValues, numVertices, numInstances,
+    : VertexAccessInstance(context, std::move(instance), std::move(device), inputFormat, numVertexValues,
+                           numInstanceValues, numVertices, numInstances,
                            std::vector<uint32_t>()) // No index buffer
 {
 }
@@ -1145,23 +1062,13 @@ uint32_t DrawAccessInstance::getIndex(uint32_t vertexNum) const
 
 // DrawIndexedAccessInstance
 
-DrawIndexedAccessInstance::DrawIndexedAccessInstance(Context &context, Move<VkDevice> device,
-#ifndef CTS_USES_VULKANSC
-                                                     de::MovePtr<vk::DeviceDriver> deviceDriver,
-#else
-                                                     de::MovePtr<CustomInstance> customInstance,
-                                                     de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>
-                                                         deviceDriver,
-#endif // CTS_USES_VULKANSC
-                                                     VkFormat inputFormat, uint32_t numVertexValues,
-                                                     uint32_t numInstanceValues, uint32_t numVertices,
-                                                     uint32_t numInstances, const std::vector<uint32_t> &indices)
-    : VertexAccessInstance(context, device,
-#ifdef CTS_USES_VULKANSC
-                           customInstance,
-#endif // CTS_USES_VULKANSC
-                           deviceDriver, inputFormat, numVertexValues, numInstanceValues, numVertices, numInstances,
-                           indices)
+DrawIndexedAccessInstance::DrawIndexedAccessInstance(Context &context, InstanceWrapper &&instance,
+                                                     DeviceWrapper &&device, VkFormat inputFormat,
+                                                     uint32_t numVertexValues, uint32_t numInstanceValues,
+                                                     uint32_t numVertices, uint32_t numInstances,
+                                                     const std::vector<uint32_t> &indices)
+    : VertexAccessInstance(context, std::move(instance), std::move(device), inputFormat, numVertexValues,
+                           numInstanceValues, numVertices, numInstances, indices)
     , m_indices(indices)
 {
 }

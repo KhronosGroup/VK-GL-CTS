@@ -129,6 +129,12 @@ VKAPI_ATTR VkResult VKAPI_CALL createFramebuffer (VkDevice device, const VkFrame
 	VK_NULL_RETURN((*pFramebuffer = allocateNonDispHandle<Framebuffer, VkFramebuffer>(device, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createGpaSessionAMD (VkDevice device, const VkGpaSessionCreateInfoAMD* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkGpaSessionAMD* pGpaSession)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pGpaSession = allocateNonDispHandle<GpaSessionAMD, VkGpaSessionAMD>(device, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createHeadlessSurfaceEXT (VkInstance instance, const VkHeadlessSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 {
 	DE_UNREF(pAllocator);
@@ -472,6 +478,12 @@ VKAPI_ATTR void VKAPI_CALL destroyFramebuffer (VkDevice device, VkFramebuffer fr
 {
 	DE_UNREF(device);
 	freeNonDispHandle<Framebuffer, VkFramebuffer>(framebuffer, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyGpaSessionAMD (VkDevice device, VkGpaSessionAMD gpaSession, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<GpaSessionAMD, VkGpaSessionAMD>(gpaSession, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyImage (VkDevice device, VkImage image, const VkAllocationCallbacks* pAllocator)
@@ -829,6 +841,22 @@ VKAPI_ATTR void VKAPI_CALL cmdBeginDebugUtilsLabelEXT (VkCommandBuffer commandBu
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pLabelInfo);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL cmdBeginGpaSampleAMD (VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession, const VkGpaSampleBeginInfoAMD* pGpaSampleBeginInfo, uint32_t* pSampleID)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(gpaSession);
+	DE_UNREF(pGpaSampleBeginInfo);
+	DE_UNREF(pSampleID);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL cmdBeginGpaSessionAMD (VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(gpaSession);
+	return VK_SUCCESS;
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdBeginQuery (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags)
@@ -1254,6 +1282,12 @@ VKAPI_ATTR void VKAPI_CALL cmdCopyBufferToImage2KHR (VkCommandBuffer commandBuff
 	DE_UNREF(pCopyBufferToImageInfo);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdCopyGpaSessionResultsAMD (VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(gpaSession);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdCopyImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageCopy* pRegions)
 {
 	DE_UNREF(commandBuffer);
@@ -1380,6 +1414,23 @@ VKAPI_ATTR void VKAPI_CALL cmdCopyTensorARM (VkCommandBuffer commandBuffer, cons
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pCopyTensorInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDebugMarkerBeginEXT (VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pMarkerInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDebugMarkerEndEXT (VkCommandBuffer commandBuffer)
+{
+	DE_UNREF(commandBuffer);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDebugMarkerInsertEXT (VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pMarkerInfo);
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdDecodeVideoKHR (VkCommandBuffer commandBuffer, const VkVideoDecodeInfoKHR* pDecodeInfo)
@@ -1697,6 +1748,20 @@ VKAPI_ATTR void VKAPI_CALL cmdEndConditionalRenderingEXT (VkCommandBuffer comman
 VKAPI_ATTR void VKAPI_CALL cmdEndDebugUtilsLabelEXT (VkCommandBuffer commandBuffer)
 {
 	DE_UNREF(commandBuffer);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdEndGpaSampleAMD (VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession, uint32_t sampleID)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(gpaSession);
+	DE_UNREF(sampleID);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL cmdEndGpaSessionAMD (VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(gpaSession);
+	return VK_SUCCESS;
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdEndQuery (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query)
@@ -2467,6 +2532,12 @@ VKAPI_ATTR void VKAPI_CALL cmdSetPrimitiveRestartEnableEXT (VkCommandBuffer comm
 	DE_UNREF(primitiveRestartEnable);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdSetPrimitiveRestartIndexEXT (VkCommandBuffer commandBuffer, uint32_t primitiveRestartIndex)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(primitiveRestartIndex);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdSetPrimitiveTopology (VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology)
 {
 	DE_UNREF(commandBuffer);
@@ -2995,6 +3066,20 @@ VKAPI_ATTR VkResult VKAPI_CALL copyMicromapToMemoryEXT (VkDevice device, VkDefer
 	DE_UNREF(device);
 	DE_UNREF(deferredOperation);
 	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL debugMarkerSetObjectNameEXT (VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pNameInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL debugMarkerSetObjectTagEXT (VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pTagInfo);
 	return VK_SUCCESS;
 }
 
@@ -3566,6 +3651,30 @@ VKAPI_ATTR void VKAPI_CALL getGeneratedCommandsMemoryRequirementsNV (VkDevice de
 	DE_UNREF(device);
 	DE_UNREF(pInfo);
 	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getGpaDeviceClockInfoAMD (VkDevice device, VkGpaDeviceGetClockInfoAMD* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getGpaSessionResultsAMD (VkDevice device, VkGpaSessionAMD gpaSession, uint32_t sampleID, size_t* pSizeInBytes, void* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(gpaSession);
+	DE_UNREF(sampleID);
+	DE_UNREF(pSizeInBytes);
+	DE_UNREF(pData);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getGpaSessionStatusAMD (VkDevice device, VkGpaSessionAMD gpaSession)
+{
+	DE_UNREF(device);
+	DE_UNREF(gpaSession);
+	return VK_SUCCESS;
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL getImageDrmFormatModifierPropertiesEXT (VkDevice device, VkImage image, VkImageDrmFormatModifierPropertiesEXT* pProperties)
@@ -4851,6 +4960,13 @@ VKAPI_ATTR VkResult VKAPI_CALL resetFences (VkDevice device, uint32_t fenceCount
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL resetGpaSessionAMD (VkDevice device, VkGpaSessionAMD gpaSession)
+{
+	DE_UNREF(device);
+	DE_UNREF(gpaSession);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR void VKAPI_CALL resetQueryPool (VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount)
 {
 	DE_UNREF(device);
@@ -4892,6 +5008,13 @@ VKAPI_ATTR VkResult VKAPI_CALL setEvent (VkDevice device, VkEvent event)
 {
 	DE_UNREF(device);
 	DE_UNREF(event);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL setGpaDeviceClockModeAMD (VkDevice device, VkGpaDeviceClockModeInfoAMD* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
 	return VK_SUCCESS;
 }
 
@@ -5293,6 +5416,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdBeginConditionalRenderingEXT,							cmdBeginConditionalRenderingEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdBeginCustomResolveEXT,									cmdBeginCustomResolveEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdBeginDebugUtilsLabelEXT,								cmdBeginDebugUtilsLabelEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginGpaSampleAMD,										cmdBeginGpaSampleAMD),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginGpaSessionAMD,										cmdBeginGpaSessionAMD),
 	VK_NULL_FUNC_ENTRY(vkCmdBeginQuery,												cmdBeginQuery),
 	VK_NULL_FUNC_ENTRY(vkCmdBeginQueryIndexedEXT,									cmdBeginQueryIndexedEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdBeginRenderPass,										cmdBeginRenderPass),
@@ -5339,6 +5464,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdCopyBuffer2,											cmdCopyBuffer2),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyBufferToImage,										cmdCopyBufferToImage),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyBufferToImage2,										cmdCopyBufferToImage2),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyGpaSessionResultsAMD,								cmdCopyGpaSessionResultsAMD),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyImage,												cmdCopyImage),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyImage2,												cmdCopyImage2),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyImageToBuffer,										cmdCopyImageToBuffer),
@@ -5355,6 +5481,9 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdCopyQueryPoolResults,									cmdCopyQueryPoolResults),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyQueryPoolResultsToMemoryKHR,						cmdCopyQueryPoolResultsToMemoryKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyTensorARM,											cmdCopyTensorARM),
+	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerBeginEXT,									cmdDebugMarkerBeginEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerEndEXT,										cmdDebugMarkerEndEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerInsertEXT,									cmdDebugMarkerInsertEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDecodeVideoKHR,											cmdDecodeVideoKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdDecompressMemoryEXT,									cmdDecompressMemoryEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDecompressMemoryIndirectCountEXT,						cmdDecompressMemoryIndirectCountEXT),
@@ -5390,6 +5519,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdEncodeVideoKHR,											cmdEncodeVideoKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdEndConditionalRenderingEXT,								cmdEndConditionalRenderingEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdEndDebugUtilsLabelEXT,									cmdEndDebugUtilsLabelEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdEndGpaSampleAMD,										cmdEndGpaSampleAMD),
+	VK_NULL_FUNC_ENTRY(vkCmdEndGpaSessionAMD,										cmdEndGpaSessionAMD),
 	VK_NULL_FUNC_ENTRY(vkCmdEndQuery,												cmdEndQuery),
 	VK_NULL_FUNC_ENTRY(vkCmdEndQueryIndexedEXT,										cmdEndQueryIndexedEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdEndRenderPass,											cmdEndRenderPass),
@@ -5479,6 +5610,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdSetPerformanceStreamMarkerINTEL,						cmdSetPerformanceStreamMarkerINTEL),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPolygonModeEXT,										cmdSetPolygonModeEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveRestartEnable,								cmdSetPrimitiveRestartEnable),
+	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveRestartIndexEXT,							cmdSetPrimitiveRestartIndexEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveTopology,									cmdSetPrimitiveTopology),
 	VK_NULL_FUNC_ENTRY(vkCmdSetProvokingVertexModeEXT,								cmdSetProvokingVertexModeEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetRasterizationSamplesEXT,								cmdSetRasterizationSamplesEXT),
@@ -5551,6 +5683,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCreateEvent,												createEvent),
 	VK_NULL_FUNC_ENTRY(vkCreateFence,												createFence),
 	VK_NULL_FUNC_ENTRY(vkCreateFramebuffer,											createFramebuffer),
+	VK_NULL_FUNC_ENTRY(vkCreateGpaSessionAMD,										createGpaSessionAMD),
 	VK_NULL_FUNC_ENTRY(vkCreateGraphicsPipelines,									createGraphicsPipelines),
 	VK_NULL_FUNC_ENTRY(vkCreateImage,												createImage),
 	VK_NULL_FUNC_ENTRY(vkCreateImageView,											createImageView),
@@ -5578,6 +5711,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCreateTensorViewARM,										createTensorViewARM),
 	VK_NULL_FUNC_ENTRY(vkCreateVideoSessionKHR,										createVideoSessionKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateVideoSessionParametersKHR,							createVideoSessionParametersKHR),
+	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectNameEXT,								debugMarkerSetObjectNameEXT),
+	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectTagEXT,								debugMarkerSetObjectTagEXT),
 	VK_NULL_FUNC_ENTRY(vkDeferredOperationJoinKHR,									deferredOperationJoinKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroyAccelerationStructureKHR,							destroyAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroyAccelerationStructureNV,							destroyAccelerationStructureNV),
@@ -5593,6 +5728,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyEvent,												destroyEvent),
 	VK_NULL_FUNC_ENTRY(vkDestroyFence,												destroyFence),
 	VK_NULL_FUNC_ENTRY(vkDestroyFramebuffer,										destroyFramebuffer),
+	VK_NULL_FUNC_ENTRY(vkDestroyGpaSessionAMD,										destroyGpaSessionAMD),
 	VK_NULL_FUNC_ENTRY(vkDestroyImage,												destroyImage),
 	VK_NULL_FUNC_ENTRY(vkDestroyImageView,											destroyImageView),
 	VK_NULL_FUNC_ENTRY(vkDestroyIndirectCommandsLayoutEXT,							destroyIndirectCommandsLayoutEXT),
@@ -5669,6 +5805,9 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetFenceWin32HandleKHR,									getFenceWin32HandleKHR),
 	VK_NULL_FUNC_ENTRY(vkGetGeneratedCommandsMemoryRequirementsEXT,					getGeneratedCommandsMemoryRequirementsEXT),
 	VK_NULL_FUNC_ENTRY(vkGetGeneratedCommandsMemoryRequirementsNV,					getGeneratedCommandsMemoryRequirementsNV),
+	VK_NULL_FUNC_ENTRY(vkGetGpaDeviceClockInfoAMD,									getGpaDeviceClockInfoAMD),
+	VK_NULL_FUNC_ENTRY(vkGetGpaSessionResultsAMD,									getGpaSessionResultsAMD),
+	VK_NULL_FUNC_ENTRY(vkGetGpaSessionStatusAMD,									getGpaSessionStatusAMD),
 	VK_NULL_FUNC_ENTRY(vkGetImageDrmFormatModifierPropertiesEXT,					getImageDrmFormatModifierPropertiesEXT),
 	VK_NULL_FUNC_ENTRY(vkGetImageMemoryRequirements,								getImageMemoryRequirements),
 	VK_NULL_FUNC_ENTRY(vkGetImageMemoryRequirements2,								getImageMemoryRequirements2),
@@ -5764,11 +5903,13 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkResetDescriptorPool,										resetDescriptorPool),
 	VK_NULL_FUNC_ENTRY(vkResetEvent,												resetEvent),
 	VK_NULL_FUNC_ENTRY(vkResetFences,												resetFences),
+	VK_NULL_FUNC_ENTRY(vkResetGpaSessionAMD,										resetGpaSessionAMD),
 	VK_NULL_FUNC_ENTRY(vkResetQueryPool,											resetQueryPool),
 	VK_NULL_FUNC_ENTRY(vkSetDebugUtilsObjectNameEXT,								setDebugUtilsObjectNameEXT),
 	VK_NULL_FUNC_ENTRY(vkSetDebugUtilsObjectTagEXT,									setDebugUtilsObjectTagEXT),
 	VK_NULL_FUNC_ENTRY(vkSetDeviceMemoryPriorityEXT,								setDeviceMemoryPriorityEXT),
 	VK_NULL_FUNC_ENTRY(vkSetEvent,													setEvent),
+	VK_NULL_FUNC_ENTRY(vkSetGpaDeviceClockModeAMD,									setGpaDeviceClockModeAMD),
 	VK_NULL_FUNC_ENTRY(vkSetHdrMetadataEXT,											setHdrMetadataEXT),
 	VK_NULL_FUNC_ENTRY(vkSetLatencyMarkerNV,										setLatencyMarkerNV),
 	VK_NULL_FUNC_ENTRY(vkSetLatencySleepModeNV,										setLatencySleepModeNV),

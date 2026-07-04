@@ -372,6 +372,58 @@ ScreenOrientation mapScreenRotation(ScreenRotation rotation)
     }
 }
 
+static jclass loadClassWithActivityClassLoader(JNIEnv *env, jobject activity, const char *path)
+{
+    jclass activityCls = env->GetObjectClass(activity);
+    checkException(env);
+    jmethodID getClassLoader = env->GetMethodID(activityCls, "getClassLoader", "()Ljava/lang/ClassLoader;");
+    checkException(env);
+
+    jobject classLoaderObj = env->CallObjectMethod(activity, getClassLoader);
+    checkException(env);
+
+    jclass classLoaderCls = env->GetObjectClass(classLoaderObj);
+    checkException(env);
+    jmethodID loadClass = env->GetMethodID(classLoaderCls, "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
+    checkException(env);
+
+    jstring jname = env->NewStringUTF(path);
+    checkException(env);
+
+    jclass result = (jclass)env->CallObjectMethod(classLoaderObj, loadClass, jname);
+    checkException(env);
+
+    env->DeleteLocalRef(jname);
+    env->DeleteLocalRef(classLoaderCls);
+    env->DeleteLocalRef(classLoaderObj);
+    env->DeleteLocalRef(activityCls);
+
+    TCU_CHECK_INTERNAL(result);
+    return result;
+}
+
+void PixelCopy(ANativeActivity *activity, const char *path)
+{
+    const ScopedJNIEnv scopedEnv(activity->vm);
+    JNIEnv *env = scopedEnv.getEnv();
+
+    jclass cls = loadClassWithActivityClassLoader(env, activity->clazz,
+                                                  "com.drawelements.deqp.platformutil.DeqpPlatformRequestPixelCopy");
+
+    jmethodID mid = env->GetStaticMethodID(cls, "requestPixelCopyToPng", "(Landroid/app/Activity;Ljava/lang/String;)V");
+    checkException(env);
+    TCU_CHECK_INTERNAL(mid);
+
+    const LocalRef jpath(env, env->NewStringUTF(path));
+    checkException(env);
+    TCU_CHECK_INTERNAL(*jpath);
+
+    env->CallStaticVoidMethod(cls, mid, activity->clazz, *jpath);
+    checkException(env);
+
+    env->DeleteLocalRef(cls);
+}
+
 string getIntentStringExtra(ANativeActivity *activity, const char *name)
 {
     const ScopedJNIEnv env(activity->vm);

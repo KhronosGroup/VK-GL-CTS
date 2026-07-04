@@ -154,8 +154,8 @@ public:
 
         // Tests with default instance and device without extensions
         {
-            CustomInstance instance = createCustomInstanceFromContext(m_context, nullptr, false);
-            Move<VkDevice> device   = createTestDevice(m_context, instance, vector<string>());
+            const InstanceWrapper instance(createCustomInstanceFromContext(m_context, nullptr, false));
+            const DeviceWrapper device = createTestDevice(m_context, instance, vector<string>());
             GetInstanceProcAddrFunc getInstanceProcAddr =
                 reinterpret_cast<GetInstanceProcAddrFunc>(funcLibrary.getFunction("vkGetInstanceProcAddr"));
             GetDeviceProcAddrFunc getDeviceProcAddr =
@@ -249,10 +249,10 @@ public:
         // Tests with instance and device with extensions
         {
             const vector<string> supportedInstanceExtensions = getSupportedInstanceExtensions(instanceApiVersion);
-            CustomInstance instance =
-                createCustomInstanceWithExtensions(m_context, supportedInstanceExtensions, nullptr, false);
+            const InstanceWrapper instance(
+                createCustomInstanceWithExtensions(m_context, supportedInstanceExtensions, nullptr, false));
             const vector<string> supportedDeviceExtensions = getSupportedDeviceExtensions(deviceApiVersion);
-            Move<VkDevice> device = createTestDevice(m_context, instance, supportedDeviceExtensions);
+            const DeviceWrapper device = createTestDevice(m_context, instance, supportedDeviceExtensions);
             GetInstanceProcAddrFunc getInstanceProcAddr =
                 reinterpret_cast<GetInstanceProcAddrFunc>(funcLibrary.getFunction("vkGetInstanceProcAddr"));
             GetDeviceProcAddrFunc getDeviceProcAddr =
@@ -384,13 +384,12 @@ private:
         return filterMultiAuthorExtensions(supportedExtensions);
     }
 
-    Move<VkDevice> createTestDevice(const Context &context, VkInstance instance,
-                                    vector<string> extensions = vector<string>())
+    CustomDevice createTestDevice(const Context &context, const InstanceWrapper &instance,
+                                  vector<string> extensions = vector<string>())
     {
         auto &cmdLine                   = context.getTestContext().getCommandLine();
-        const PlatformInterface &vkp    = context.getPlatformInterface();
-        const InstanceInterface &vki    = context.getInstanceInterface();
-        VkPhysicalDevice physicalDevice = chooseDevice(context.getInstanceInterface(), instance, cmdLine);
+        const InstanceInterface &vki    = instance.getDriver();
+        VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
         vector<const char *> extensionPtrs;
         const float queuePriority = 1.0f;
         const uint32_t queueIndex = findQueueFamilyIndex(
@@ -407,48 +406,9 @@ private:
                                              1u,
                                              &queuePriority};
 
-        void *pNext = nullptr;
-#ifdef CTS_USES_VULKANSC
-        VkDeviceObjectReservationCreateInfo memReservationInfo =
-            context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() :
-                                                                       resetDeviceObjectReservationCreateInfo();
-        memReservationInfo.pNext = pNext;
-        pNext                    = &memReservationInfo;
-
-        VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-        sc10Features.pNext                              = pNext;
-        pNext                                           = &sc10Features;
-
-        VkPipelineCacheCreateInfo pcCI;
-        std::vector<VkPipelinePoolSize> poolSizes;
-        if (context.getTestContext().getCommandLine().isSubProcess())
-        {
-            if (context.getResourceInterface()->getCacheDataSize() > 0)
-            {
-                pcCI = {
-                    VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                    nullptr,                                      // const void* pNext;
-                    VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                        VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                    context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
-                    context.getResourceInterface()->getCacheData()            // const void* pInitialData;
-                };
-                memReservationInfo.pipelineCacheCreateInfoCount = 1;
-                memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-            }
-
-            poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
-            if (!poolSizes.empty())
-            {
-                memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-                memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-            }
-        }
-#endif // CTS_USES_VULKANSC
-
         const VkDeviceCreateInfo deviceInfo = {
             VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            pNext,
+            nullptr,
             static_cast<VkDeviceCreateFlags>(0u),
             1u,
             &queueInfo,
@@ -459,7 +419,7 @@ private:
             nullptr,
         };
 
-        return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceInfo);
+        return instance.createCustomDevice(physicalDevice, &deviceInfo);
     }
 
     void reportFail(tcu::TestLog &log, const char *const functionName, const char *const firstParamName,
@@ -626,10 +586,9 @@ public:
 
     virtual tcu::TestStatus iterate(void)
     {
-        const vk::PlatformInterface &vkp = m_context.getPlatformInterface();
-        tcu::TestLog &log                = m_context.getTestContext().getLog();
-        const auto supportedApiVersion   = m_context.getUsedApiVersion();
-        bool testPassed                  = true;
+        tcu::TestLog &log              = m_context.getTestContext().getLog();
+        const auto supportedApiVersion = m_context.getUsedApiVersion();
+        bool testPassed                = true;
 
         ApisMap functionsPerVersion;
         initApisMap(functionsPerVersion);
@@ -665,11 +624,10 @@ public:
             }
 #endif // CTS_USES_VULKANSC
 
-            // create instance for currentluy tested vulkan version
-            Move<VkInstance> customInstance(vk::createInstance(vkp, &instanceCreateInfo, nullptr));
-            std::unique_ptr<vk::InstanceDriver> instanceDriver(new InstanceDriver(vkp, *customInstance));
-            const VkPhysicalDevice physicalDevice =
-                chooseDevice(*instanceDriver, *customInstance, m_context.getTestContext().getCommandLine());
+            // create instance for currently tested vulkan version
+            const InstanceWrapper customInstance(createCustomInstanceFromInfo(m_context, &instanceCreateInfo));
+            const InstanceInterface *instanceDriver = &customInstance.getDriver();
+            const VkPhysicalDevice physicalDevice   = customInstance.getPhysicalDevice();
             const auto queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(*instanceDriver, physicalDevice);
 
             const float queuePriority                     = 1.0f;
@@ -698,10 +656,8 @@ public:
 #endif // CTS_USES_VULKANSC
 
             // create custom device
-            const Unique<VkDevice> device(
-                createCustomDevice(vkp, *customInstance, *instanceDriver, physicalDevice, &deviceCreateInfo));
-            const DeviceDriver deviceDriver(vkp, *customInstance, *device, supportedApiVersion,
-                                            m_context.getTestContext().getCommandLine());
+            const DeviceWrapper device          = customInstance.createCustomDevice(physicalDevice, &deviceCreateInfo);
+            const DeviceInterface &deviceDriver = device.getDriver();
 
             log << tcu::TestLog::Message << "Checking apiVersion(" << VK_API_VERSION_MAJOR(testedApiVersion.first)
                 << ", " << VK_API_VERSION_MINOR(testedApiVersion.first) << ")" << tcu::TestLog::EndMessage;

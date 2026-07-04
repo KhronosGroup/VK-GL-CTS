@@ -166,7 +166,6 @@ BufferSparseMemoryAliasingInstance::BufferSparseMemoryAliasingInstance(Context &
 
 tcu::TestStatus BufferSparseMemoryAliasingInstance::iterate(void)
 {
-    const InstanceInterface &instance = m_context.getInstanceInterface();
     {
         // Create logical device supporting both sparse and compute operations
         QueueRequirementsVec queueRequirements;
@@ -175,6 +174,7 @@ tcu::TestStatus BufferSparseMemoryAliasingInstance::iterate(void)
 
         createDeviceSupportingQueues(queueRequirements);
     }
+    const InstanceInterface &instance          = getInstanceInterface();
     const vk::VkPhysicalDevice &physicalDevice = getPhysicalDevice();
     const DeviceInterface &deviceInterface     = getDeviceInterface();
     const Queue &sparseQueue                   = getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);

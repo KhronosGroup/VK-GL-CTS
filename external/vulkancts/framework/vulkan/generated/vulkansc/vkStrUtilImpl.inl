@@ -384,6 +384,7 @@ const char* getDriverIdName (VkDriverId value)
 	{
 		case VK_DRIVER_ID_AMD_OPEN_SOURCE:					return "VK_DRIVER_ID_AMD_OPEN_SOURCE";
 		case VK_DRIVER_ID_AMD_PROPRIETARY:					return "VK_DRIVER_ID_AMD_PROPRIETARY";
+		case VK_DRIVER_ID_APE_SOFT:							return "VK_DRIVER_ID_APE_SOFT";
 		case VK_DRIVER_ID_ARM_PROPRIETARY:					return "VK_DRIVER_ID_ARM_PROPRIETARY";
 		case VK_DRIVER_ID_BROADCOM_PROPRIETARY:				return "VK_DRIVER_ID_BROADCOM_PROPRIETARY";
 		case VK_DRIVER_ID_COREAVI_PROPRIETARY:				return "VK_DRIVER_ID_COREAVI_PROPRIETARY";
@@ -395,6 +396,7 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_INTEL_PROPRIETARY_WINDOWS:		return "VK_DRIVER_ID_INTEL_PROPRIETARY_WINDOWS";
 		case VK_DRIVER_ID_JUICE_PROPRIETARY:				return "VK_DRIVER_ID_JUICE_PROPRIETARY";
 		case VK_DRIVER_ID_MESA_DOZEN:						return "VK_DRIVER_ID_MESA_DOZEN";
+		case VK_DRIVER_ID_MESA_GFXSTREAM:					return "VK_DRIVER_ID_MESA_GFXSTREAM";
 		case VK_DRIVER_ID_MESA_HONEYKRISP:					return "VK_DRIVER_ID_MESA_HONEYKRISP";
 		case VK_DRIVER_ID_MESA_KOSMICKRISP:					return "VK_DRIVER_ID_MESA_KOSMICKRISP";
 		case VK_DRIVER_ID_MESA_LLVMPIPE:					return "VK_DRIVER_ID_MESA_LLVMPIPE";
@@ -1458,7 +1460,6 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DISPLAY_PRESENT_INFO_KHR:									return "VK_STRUCTURE_TYPE_DISPLAY_PRESENT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_DISPLAY_PROPERTIES_2_KHR:									return "VK_STRUCTURE_TYPE_DISPLAY_PROPERTIES_2_KHR";
 		case VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR:								return "VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR";
-		case VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT:					return "VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT";
 		case VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT:						return "VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT";
 		case VK_STRUCTURE_TYPE_EVENT_CREATE_INFO:											return "VK_STRUCTURE_TYPE_EVENT_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO:									return "VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO";
@@ -1857,6 +1858,7 @@ const char* getVendorIdName (VkVendorId value)
 {
 	switch (value)
 	{
+		case VK_VENDOR_ID_APE:		return "VK_VENDOR_ID_APE";
 		case VK_VENDOR_ID_CODEPLAY:	return "VK_VENDOR_ID_CODEPLAY";
 		case VK_VENDOR_ID_KAZAN:	return "VK_VENDOR_ID_KAZAN";
 		case VK_VENDOR_ID_KHRONOS:	return "VK_VENDOR_ID_KHRONOS";
@@ -9125,27 +9127,6 @@ std::ostream& operator<< (std::ostream& s, const VkXYColorEXT& value)
 	s << "VkXYColorEXT = {\n";
 	s << "\tx = " << value.x << '\n';
 	s << "\ty = " << value.y << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkDrmFormatModifierProperties2EXT& value)
-{
-	s << "VkDrmFormatModifierProperties2EXT = {\n";
-	s << "\tdrmFormatModifier = " << value.drmFormatModifier << '\n';
-	s << "\tdrmFormatModifierPlaneCount = " << value.drmFormatModifierPlaneCount << '\n';
-	s << "\tdrmFormatModifierTilingFeatures = " << getFormatFeatureFlags2Str(value.drmFormatModifierTilingFeatures) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkDrmFormatModifierPropertiesList2EXT& value)
-{
-	s << "VkDrmFormatModifierPropertiesList2EXT = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tdrmFormatModifierCount = " << value.drmFormatModifierCount << '\n';
-	s << "\tpDrmFormatModifierProperties = " << value.pDrmFormatModifierProperties << '\n';
 	s << '}';
 	return s;
 }

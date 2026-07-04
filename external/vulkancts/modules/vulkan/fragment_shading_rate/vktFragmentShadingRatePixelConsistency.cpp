@@ -1074,12 +1074,13 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
         {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType
          nullptr,                                // const void*            pNext
          VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags        srcAccessMask
-         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,   // VkAccessFlags        dstAccessMask
-         VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout        oldLayout
-         VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout        newLayout
-         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                srcQueueFamilyIndex
-         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                dstQueueFamilyIndex
-         **cbImagePass0,                         // VkImage                image
+         (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+          VK_ACCESS_COLOR_ATTACHMENT_READ_BIT), // VkAccessFlags        dstAccessMask
+         VK_IMAGE_LAYOUT_GENERAL,               // VkImageLayout        oldLayout
+         VK_IMAGE_LAYOUT_GENERAL,               // VkImageLayout        newLayout
+         VK_QUEUE_FAMILY_IGNORED,               // uint32_t                srcQueueFamilyIndex
+         VK_QUEUE_FAMILY_IGNORED,               // uint32_t                dstQueueFamilyIndex
+         **cbImagePass0,                        // VkImage                image
          {
              VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags    aspectMask
              0u,                        // uint32_t                baseMipLevel
@@ -1090,12 +1091,13 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
         {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType
          nullptr,                                // const void*            pNext
          VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags        srcAccessMask
-         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,   // VkAccessFlags        dstAccessMask
-         VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout        oldLayout
-         VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout        newLayout
-         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                srcQueueFamilyIndex
-         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                dstQueueFamilyIndex
-         **cbImagePass1,                         // VkImage                image
+         (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+          VK_ACCESS_COLOR_ATTACHMENT_READ_BIT), // VkAccessFlags        dstAccessMask
+         VK_IMAGE_LAYOUT_GENERAL,               // VkImageLayout        oldLayout
+         VK_IMAGE_LAYOUT_GENERAL,               // VkImageLayout        newLayout
+         VK_QUEUE_FAMILY_IGNORED,               // uint32_t                srcQueueFamilyIndex
+         VK_QUEUE_FAMILY_IGNORED,               // uint32_t                dstQueueFamilyIndex
+         **cbImagePass1,                        // VkImage                image
          {
              VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags    aspectMask
              0u,                        // uint32_t                baseMipLevel

@@ -3037,10 +3037,10 @@ bool compare64BitFloat(double expected, double returned, tcu::TestLog &log)
 Move<VkBuffer> createBufferForResource(const DeviceInterface &vk, const VkDevice vkDevice, const Resource &resource,
                                        uint32_t queueFamilyIndex)
 {
-    const vk::VkDescriptorType resourceType = resource.getDescriptorType();
+    const vk::VkDescriptorType resourceType = resource.descriptorType;
 
     vector<uint8_t> resourceBytes;
-    resource.getBytes(resourceBytes);
+    resource.buffer->getBytes(resourceBytes);
 
     const VkBufferCreateInfo resourceBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                            // sType
@@ -3060,21 +3060,21 @@ Move<VkImage> createImageForResource(const DeviceInterface &vk, const VkDevice v
                                      VkFormat inputFormat, uint32_t queueFamilyIndex)
 {
     const VkImageCreateInfo resourceImageParams = {
-        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                      // VkStructureType sType;
-        nullptr,                                                  // const void* pNext;
-        0u,                                                       // VkImageCreateFlags flags;
-        VK_IMAGE_TYPE_2D,                                         // VkImageType imageType;
-        inputFormat,                                              // VkFormat format;
-        {8, 8, 1},                                                // VkExtent3D extent;
-        1u,                                                       // uint32_t mipLevels;
-        1u,                                                       // uint32_t arraySize;
-        VK_SAMPLE_COUNT_1_BIT,                                    // uint32_t samples;
-        VK_IMAGE_TILING_OPTIMAL,                                  // VkImageTiling tiling;
-        getMatchingImageUsageFlags(resource.getDescriptorType()), // VkImageUsageFlags usage;
-        VK_SHARING_MODE_EXCLUSIVE,                                // VkSharingMode sharingMode;
-        1u,                                                       // uint32_t queueFamilyCount;
-        &queueFamilyIndex,                                        // const uint32_t* pQueueFamilyIndices;
-        VK_IMAGE_LAYOUT_UNDEFINED                                 // VkImageLayout initialLayout;
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                 // VkStructureType sType;
+        nullptr,                                             // const void* pNext;
+        0u,                                                  // VkImageCreateFlags flags;
+        VK_IMAGE_TYPE_2D,                                    // VkImageType imageType;
+        inputFormat,                                         // VkFormat format;
+        {8, 8, 1},                                           // VkExtent3D extent;
+        1u,                                                  // uint32_t mipLevels;
+        1u,                                                  // uint32_t arraySize;
+        VK_SAMPLE_COUNT_1_BIT,                               // uint32_t samples;
+        VK_IMAGE_TILING_OPTIMAL,                             // VkImageTiling tiling;
+        getMatchingImageUsageFlags(resource.descriptorType), // VkImageUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,                           // VkSharingMode sharingMode;
+        1u,                                                  // uint32_t queueFamilyCount;
+        &queueFamilyIndex,                                   // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED                            // VkImageLayout initialLayout;
     };
 
     return createImage(vk, vkDevice, &resourceImageParams);
@@ -3175,10 +3175,9 @@ void defaultCheckSupport(Context &context, InstanceContextPtr instancePtr)
             for (uint32_t inputNdx = 0; inputNdx < numInResources; ++inputNdx)
             {
                 const Resource &resource = instance.resources.inputs[inputNdx];
-                auto dt                  = resource.getDescriptorType();
-                const bool hasSampler    = (dt == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
-                                        (dt == VK_DESCRIPTOR_TYPE_SAMPLER) ||
-                                        (dt == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                const bool hasSampler    = (resource.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
+                                        (resource.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER) ||
+                                        (resource.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                 if (hasSampler && tcu::hasDepthComponent(vk::mapVkFormat(instance.resources.inputFormat).order))
                 {
                     TCU_THROW(NotSupportedError,
@@ -3611,13 +3610,13 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContextPtr inst
         {
             const Resource &resource = instance.resources.inputs[inputNdx];
 
-            const bool hasImage = (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ||
-                                  (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
-                                  (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            const bool hasImage = (resource.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ||
+                                  (resource.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
+                                  (resource.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-            const bool hasSampler = (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
-                                    (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLER) ||
-                                    (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            const bool hasSampler = (resource.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
+                                    (resource.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER) ||
+                                    (resource.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
             // Resource is a buffer
             if (!hasImage && !hasSampler)
@@ -3632,7 +3631,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContextPtr inst
                 // Copy data to memory.
                 {
                     vector<uint8_t> resourceBytes;
-                    resource.getBytes(resourceBytes);
+                    resource.buffer->getBytes(resourceBytes);
 
                     deMemcpy(resourceMemory->getHostPtr(), &resourceBytes.front(), resourceBytes.size());
                     flushAlloc(vk, device, *resourceMemory);
@@ -3654,7 +3653,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContextPtr inst
                 // Copy data to memory.
                 {
                     vector<uint8_t> resourceBytes;
-                    resource.getBytes(resourceBytes);
+                    resource.buffer->getBytes(resourceBytes);
 
                     deMemcpy(resourceMemory->getHostPtr(), &resourceBytes.front(), resourceBytes.size());
                     flushAlloc(vk, device, *resourceMemory);
@@ -3678,7 +3677,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContextPtr inst
             // Prepare descriptor bindings and pool sizes for creating descriptor set layout and pool.
             const VkDescriptorSetLayoutBinding binding = {
                 inputNdx,                     // binding
-                resource.getDescriptorType(), // descriptorType
+                resource.descriptorType,      // descriptorType
                 1u,                           // descriptorCount
                 VK_SHADER_STAGE_ALL_GRAPHICS, // stageFlags
                 nullptr,                      // pImmutableSamplers
@@ -3687,8 +3686,8 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContextPtr inst
 
             // Note: the following code doesn't check and unify descriptors of the same type.
             const VkDescriptorPoolSize poolSize = {
-                resource.getDescriptorType(), // type
-                1u,                           // descriptorCount
+                resource.descriptorType, // type
+                1u,                      // descriptorCount
             };
             poolSizes.push_back(poolSize);
         }
@@ -3707,7 +3706,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContextPtr inst
                 vk.bindBufferMemory(device, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
 
             // Fill memory with all ones.
-            resource.getBytes(resourceBytes);
+            resource.buffer->getBytes(resourceBytes);
             deMemset((uint8_t *)resourceMemory->getHostPtr(), 0xff, resourceBytes.size());
             flushAlloc(vk, device, *resourceMemory);
 
@@ -3717,7 +3716,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContextPtr inst
             // Prepare descriptor bindings and pool sizes for creating descriptor set layout and pool.
             const VkDescriptorSetLayoutBinding binding = {
                 numInResources + outputNdx,   // binding
-                resource.getDescriptorType(), // descriptorType
+                resource.descriptorType,      // descriptorType
                 1u,                           // descriptorCount
                 VK_SHADER_STAGE_ALL_GRAPHICS, // stageFlags
                 nullptr,                      // pImmutableSamplers
@@ -3726,8 +3725,8 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContextPtr inst
 
             // Note: the following code doesn't check and unify descriptors of the same type.
             const VkDescriptorPoolSize poolSize = {
-                resource.getDescriptorType(), // type
-                1u,                           // descriptorCount
+                resource.descriptorType, // type
+                1u,                      // descriptorCount
             };
             poolSizes.push_back(poolSize);
         }
@@ -3778,18 +3777,18 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContextPtr inst
         {
             const Resource &resource = instance.resources.inputs[inputNdx];
 
-            const bool hasImage = (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ||
-                                  (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
-                                  (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            const bool hasImage = (resource.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ||
+                                  (resource.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
+                                  (resource.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-            const bool hasSampler = (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
-                                    (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLER) ||
-                                    (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            const bool hasSampler = (resource.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
+                                    (resource.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER) ||
+                                    (resource.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
             // Create image view and sampler
             if (hasImage || hasSampler)
             {
-                if (resource.getDescriptorType() != VK_DESCRIPTOR_TYPE_SAMPLER)
+                if (resource.descriptorType != VK_DESCRIPTOR_TYPE_SAMPLER)
                 {
                     const VkImageViewCreateInfo imgViewParams = {
                         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
@@ -3844,7 +3843,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContextPtr inst
             }
 
             // Create descriptor buffer and image infos
-            switch (resource.getDescriptorType())
+            switch (resource.descriptorType)
             {
             case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
             case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
@@ -3900,7 +3899,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContextPtr inst
                 inputNdx,                                                    // binding
                 0,                                                           // dstArrayElement
                 1u,                                                          // descriptorCount
-                instance.resources.inputs[inputNdx].getDescriptorType(),     // descriptorType
+                instance.resources.inputs[inputNdx].descriptorType,          // descriptorType
                 ((hasImage | hasSampler) ? &dImageInfos.back() : nullptr),   // pImageInfo
                 (!(hasImage | hasSampler) ? &dBufferInfos.back() : nullptr), // pBufferInfo
                 nullptr,                                                     // pTexelBufferView
@@ -3918,16 +3917,16 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContextPtr inst
             dBufferInfos.push_back(bufInfo);
 
             const VkWriteDescriptorSet writeSpec = {
-                VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,                    // sType
-                nullptr,                                                   // pNext
-                rawSet,                                                    // dstSet
-                numInResources + outputNdx,                                // binding
-                0,                                                         // dstArrayElement
-                1u,                                                        // descriptorCount
-                instance.resources.outputs[outputNdx].getDescriptorType(), // descriptorType
-                nullptr,                                                   // pImageInfo
-                &dBufferInfos.back(),                                      // pBufferInfo
-                nullptr,                                                   // pTexelBufferView
+                VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,               // sType
+                nullptr,                                              // pNext
+                rawSet,                                               // dstSet
+                numInResources + outputNdx,                           // binding
+                0,                                                    // dstArrayElement
+                1u,                                                   // descriptorCount
+                instance.resources.outputs[outputNdx].descriptorType, // descriptorType
+                nullptr,                                              // pImageInfo
+                &dBufferInfos.back(),                                 // pBufferInfo
+                nullptr,                                              // pTexelBufferView
             };
             writeSpecs.push_back(writeSpec);
         }
@@ -4728,7 +4727,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContextPtr inst
         else
         {
             vector<uint8_t> expectedBytes;
-            instance.resources.outputs[outputNdx].getBytes(expectedBytes);
+            instance.resources.outputs[outputNdx].buffer->getBytes(expectedBytes);
 
             if (deMemCmp(&expectedBytes.front(), outResourceMemories[outputNdx]->getHostPtr(), expectedBytes.size()))
             {

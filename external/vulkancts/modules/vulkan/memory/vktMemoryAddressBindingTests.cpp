@@ -149,25 +149,24 @@ struct Environment
 {
     const PlatformInterface &vkp;
     const InstanceInterface &vki;
-    VkInstance instance;
+    const InstanceWrapper &instance;
     VkPhysicalDevice physicalDevice;
     const DeviceInterface &vkd;
-    VkDevice device;
+    const DeviceWrapper &device;
     uint32_t queueFamilyIndex;
     const BinaryCollection &programBinaries;
     uint32_t usedApiVersion;
     const tcu::CommandLine &commandLine;
     const BindingCallbackRecorder *recorder;
 
-    Environment(const PlatformInterface &vkp_, const InstanceInterface &vki_, VkInstance instance_,
-                VkPhysicalDevice physicalDevice_, const DeviceInterface &vkd_, VkDevice device_,
+    Environment(const PlatformInterface &vkp_, const InstanceWrapper &instance_, const DeviceWrapper &device_,
                 uint32_t queueFamilyIndex_, const BinaryCollection &programBinaries_, uint32_t usedApiVersion_,
                 const tcu::CommandLine &commandLine_, const BindingCallbackRecorder *recorder_)
         : vkp(vkp_)
-        , vki(vki_)
+        , vki(instance_.getDriver())
         , instance(instance_)
-        , physicalDevice(physicalDevice_)
-        , vkd(vkd_)
+        , physicalDevice(device_.getPhysicalDevice())
+        , vkd(device_.getDriver())
         , device(device_)
         , queueFamilyIndex(queueFamilyIndex_)
         , programBinaries(programBinaries_)
@@ -191,10 +190,11 @@ struct Dependency
     }
 };
 
-static Move<VkDevice> createDeviceWithAdressBindingReport(const PlatformInterface &vkp, VkInstance instance,
-                                                          const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                                          uint32_t queueFamilyIndex)
+static CustomDevice createDeviceWithAddressBindingReport(const InstanceWrapper &instance,
+                                                         VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex)
 {
+    const auto &vki = instance.getDriver();
+
     const uint32_t queueCount             = 1;
     const float queuePriority             = 1.0f;
     const char *const enabledExtensions[] = {"VK_EXT_device_address_binding_report"};
@@ -229,7 +229,7 @@ static Move<VkDevice> createDeviceWithAdressBindingReport(const PlatformInterfac
         nullptr,                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceCreateInfo);
+    return instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
 }
 
 struct Device
@@ -250,10 +250,9 @@ struct Device
         }
     };
 
-    static Move<VkDevice> create(const Environment &env, const Resources &, const Parameters &)
+    static DeviceWrapper create(const Environment &env, const Resources &, const Parameters &)
     {
-        return createDeviceWithAdressBindingReport(env.vkp, env.instance, env.vki, env.physicalDevice,
-                                                   env.queueFamilyIndex);
+        return createDeviceWithAddressBindingReport(env.instance, env.physicalDevice, env.queueFamilyIndex);
     }
 };
 
@@ -1732,21 +1731,6 @@ static bool validateCallbackRecords(Context &context, const BindingCallbackRecor
     return true;
 }
 
-struct EnvClone
-{
-    Unique<VkDevice> device;
-    DeviceDriver vkd;
-    Environment env;
-
-    EnvClone(const Environment &parent)
-        : device(Device::create(parent, Device::Resources(parent, Device::Parameters()), Device::Parameters()))
-        , vkd(parent.vkp, parent.instance, *device, parent.usedApiVersion, parent.commandLine)
-        , env(parent.vkp, parent.vki, parent.instance, parent.physicalDevice, vkd, *device, parent.queueFamilyIndex,
-              parent.programBinaries, parent.usedApiVersion, parent.commandLine, nullptr)
-    {
-    }
-};
-
 static std::vector<std::string> getInstanceExtensions(const uint32_t instanceVersion)
 {
     std::vector<std::string> instanceExtensions;
@@ -1766,11 +1750,10 @@ tcu::TestStatus createDestroyObjectTest(Context &context, typename Object::Param
     BindingCallbackRecorder recorder;
     VkDebugUtilsMessengerEXT messenger;
 
-    CustomInstance customInstance =
+    const InstanceWrapper customInstance =
         createCustomInstanceWithExtensions(context, getInstanceExtensions(context.getUsedApiVersion()));
-    vk::VkPhysicalDevice physicalDevice =
-        chooseDevice(customInstance.getDriver(), customInstance, context.getTestContext().getCommandLine());
-    uint32_t queueFamilyIndex = 0;
+    vk::VkPhysicalDevice physicalDevice = customInstance.getPhysicalDevice();
+    uint32_t queueFamilyIndex           = 0;
 
     const std::vector<VkQueueFamilyProperties> queueProps =
         getPhysicalDeviceQueueFamilyProperties(customInstance.getDriver(), physicalDevice);
@@ -1797,22 +1780,15 @@ tcu::TestStatus createDestroyObjectTest(Context &context, typename Object::Param
                                                             &messenger);
 
     {
-        Move<VkDevice> device =
-            createDeviceWithAdressBindingReport(context.getPlatformInterface(), customInstance,
-                                                customInstance.getDriver(), physicalDevice, queueFamilyIndex);
-
-        de::MovePtr<DeviceDriver> deviceInterface = de::MovePtr<DeviceDriver>(
-            new DeviceDriver(context.getPlatformInterface(), customInstance, device.get(), context.getUsedApiVersion(),
-                             context.getTestContext().getCommandLine()));
-
-        const Environment env(context.getPlatformInterface(), customInstance.getDriver(), customInstance,
-                              physicalDevice, *deviceInterface.get(), device.get(), queueFamilyIndex,
+        const DeviceWrapper device =
+            createDeviceWithAddressBindingReport(customInstance, physicalDevice, queueFamilyIndex);
+        const Environment env(context.getPlatformInterface(), customInstance, device, queueFamilyIndex,
                               context.getBinaryCollection(), context.getUsedApiVersion(),
                               context.getTestContext().getCommandLine(), &recorder);
 
         {
             const typename Object::Resources res(env, params);
-            Unique<typename Object::Type> obj(Object::create(env, res, params));
+            auto obj(Object::create(env, res, params));
         }
     }
 

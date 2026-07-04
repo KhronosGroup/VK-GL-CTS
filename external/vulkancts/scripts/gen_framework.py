@@ -71,6 +71,7 @@ VK_EXT_conditional_rendering
 VK_EXT_conservative_rasterization
 VK_EXT_custom_border_color
 VK_EXT_custom_resolve
+VK_EXT_debug_marker
 VK_EXT_depth_bias_control
 VK_EXT_depth_clamp_control
 VK_EXT_depth_clamp_zero_one
@@ -115,6 +116,7 @@ VK_EXT_memory_priority
 VK_EXT_mesh_shader
 VK_EXT_multi_draw
 VK_EXT_multisampled_render_to_single_sampled
+VK_EXT_multisampled_render_to_swapchain
 VK_EXT_mutable_descriptor_type
 VK_EXT_nested_command_buffer
 VK_EXT_non_seamless_cube_map
@@ -128,6 +130,7 @@ VK_EXT_present_mode_fifo_latest_ready
 VK_EXT_present_timing
 VK_EXT_primitive_topology_list_restart
 VK_EXT_primitives_generated_query
+VK_EXT_primitive_restart_index
 VK_EXT_provoking_vertex
 VK_EXT_rasterization_order_attachment_access
 VK_EXT_ray_tracing_invocation_reorder
@@ -144,6 +147,7 @@ VK_EXT_shader_module_identifier
 VK_EXT_shader_object
 VK_EXT_shader_subgroup_partitioned
 VK_EXT_shader_replicated_composites
+VK_EXT_shader_split_barrier
 VK_EXT_shader_tile_image
 VK_EXT_shader_uniform_buffer_unsized_array
 VK_EXT_subpass_merge_feedback
@@ -167,6 +171,7 @@ VK_KHR_depth_clamp_zero_one
 VK_KHR_device_address_commands
 VK_KHR_display
 VK_KHR_display_swapchain
+VK_KHR_extended_flags
 VK_KHR_external_fence_fd
 VK_KHR_external_fence_win32
 VK_KHR_external_memory_fd
@@ -242,6 +247,7 @@ VK_KHR_xlib_surface
 VENDOR_EXTENSIONS_TESTED_BY_CTS = """
 VK_AMD_buffer_marker
 VK_AMD_device_coherent_memory
+VK_AMD_gpa_interface
 VK_AMD_shader_early_and_late_fragment_tests
 VK_AMD_texture_gather_bias_lod
 VK_ANDROID_external_format_resolve
@@ -706,44 +712,6 @@ class ConformanceItemLists:
         ]
         self.commands[:] = [c for c in self.commands if c.name not in incorrectCommands]
         self.commands = sorted(self.commands, key=lambda item: item.name)
-        # add aliases for structures with incorrect names
-        khrStructs = [
-            # VK_KHR_global_priority
-            'VkQueueGlobalPriority',
-            # VK_KHR_vertex_attribute_divisor
-            'VkVertexInputBindingDivisorDescription',
-            'VkPhysicalDeviceVertexAttributeDivisorFeatures'
-            'VkPhysicalDeviceVertexAttributeDivisorProperties'
-            'VkPipelineVertexInputDivisorStateCreateInfo'
-        ]
-        for s in self.structs:
-            if s.name in khrStructs:
-                s.alias = s.name + 'KHR'
-        # add missing structs that are needed by vulkan_json_parser.hpp (to be removed when vulkan_json_parser.hpp is fixed)
-        structNames = [s.name for s in self.structs]
-        commonMemberParams = (False, None, False, None, False, False, [], False, False, None, '', None, None, [])
-        dfmp2StructName = 'VkDrmFormatModifierProperties2EXT'
-        if dfmp2StructName not in structNames:
-            members = [
-                Member('drmFormatModifier', 'uint64_t', 'uint64_t', *commonMemberParams),
-                Member('drmFormatModifierPlaneCount', 'uint32_t', 'uint32_t', *commonMemberParams),
-                Member('drmFormatModifierTilingFeatures', 'VkFormatFeatureFlags2', 'VkFormatFeatureFlags2', *commonMemberParams)
-            ]
-            self.structs.append(Struct(dfmp2StructName, [], [], None, None, members, False, False, '', False, None, None))
-        dfmpl2StructName = 'VkDrmFormatModifierPropertiesList2EXT'
-        if dfmpl2StructName not in structNames:
-            members = [
-                Member('sType', 'VkStructureType', 'VkStructureType', *commonMemberParams),
-                Member('pNext', 'void', 'void*', *commonMemberParams),
-                Member('drmFormatModifierCount', 'uint32_t', 'uint32_t', *commonMemberParams),
-                Member('pDrmFormatModifierProperties', dfmp2StructName, 'VkDrmFormatModifierProperties2EXT*', *commonMemberParams)
-            ]
-            sType = 'VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT'
-            self.structs.append(Struct(dfmpl2StructName, [], [], None, None, members, False, False, sType, False, None, None))
-            # add sType to VkStructureType enum
-            for e in self.enums:
-                if e.name == 'VkStructureType':
-                    e.fields.append(EnumField(sType, [], 'VkStructureType', None, False, 1000158006, '1000158006', [], True))
     # </vulkan_sc_workaround>
 
     def filterToSupportedByCTS(self, items):
@@ -891,11 +859,11 @@ class BasicTypesGenerator(CTSGenerator):
             sorted_extensions = sorted(self.vk.extensions.values(), key=lambda item: item.name)
             for e in sorted_extensions:
                 yield f'#define {e.nameString} "{e.name}"'
-                #yield f'#define {e.specVersion} 1'
-            # <vulkan_object_issue_workaround>
-            # there is no values for *_SPEC_VERSION
-            yield f'#define VK_KHR_VULKAN_MEMORY_MODEL_SPEC_VERSION 3'
-            # </vulkan_object_issue_workaround>
+
+            # currently cts needs spec version only for VK_KHR_vulkan_memory_model
+            memoryModelExt = self.vk.extensions.get('VK_KHR_vulkan_memory_model')
+            if memoryModelExt:
+                yield f'#define {memoryModelExt.specVersion} {memoryModelExt.specVersionValue}'
 
             # print video defines
             video_defines = sorted(self.vk.videoStd.constants.values(), key=lambda item: item.name)
@@ -2061,9 +2029,8 @@ class SupportedExtensionsGenerator(CTSGenerator):
         self.write("}\n")
 
 class ExtensionFunctionsGenerator(CTSGenerator):
-    def __init__(self, ctsLists, params):
+    def __init__(self, ctsLists, _):
         CTSGenerator.__init__(self, ctsLists)
-        self.rawVkXml = params
 
     def writeExtensionNameArrays (self):
         yield '::std::string instanceExtensionNames[] =\n{'
@@ -2088,35 +2055,29 @@ class ExtensionFunctionsGenerator(CTSGenerator):
             yield '\t(void)vIEP;\n\t(void)vDEP;'
             dg_list = ["vkGetDeviceGroupPresentCapabilitiesKHR", "vkGetDeviceGroupSurfacePresentModesKHR", "vkAcquireNextImage2KHR"]
 
-        # <vulkan_object_issue_workaround>
-        # there is no information in vulkan_object about 'require depends' for extensions
         resultData = {}
-        for rootChild in self.rawVkXml.getroot():
-            if rootChild.tag != 'extensions':
+        for command in self.vk.commands.values():
+            if getFunctionType(command) != functionType:
                 continue
-            for extensionNode in rootChild:
-                extensionName = extensionNode.get('name')
-                if extensionName not in self.vk.extensions:
+            for extName, depends in command.definingRequirements.items():
+                if extName not in self.vk.extensions.keys():
                     continue
-                for requireItem in extensionNode.findall('require'):
-                    parsedRequirements = []
-                    depends = requireItem.get("depends")
-                    funcNames = []
-                    for individualRequirement in requireItem:
-                        if individualRequirement.tag != "command":
-                            continue
-                        commandName = individualRequirement.get("name")
-                        if commandName not in self.vk.commands:
-                            continue
-                        if getFunctionType(self.vk.commands[commandName]) != functionType:
-                            continue
-                        funcNames.append(commandName)
-                    if extensionName not in resultData:
-                        resultData[extensionName] = [(depends, funcNames)]
-                    else:
-                        resultData[extensionName].append((depends, funcNames))
+                if extName not in resultData:
+                    resultData[extName] = [(depends, [command.name])]
+                else:
+                    insertNewDep = True
+                    # check if same dependency was already saved for this extension
+                    for memorizedDep, memorizedCmdList in resultData[extName]:
+                        if depends == memorizedDep:
+                            memorizedCmdList.append(command.name)
+                            insertNewDep = False
+                            break
+                    if insertNewDep:
+                        resultData[extName].append((depends, [command.name]))
+        for extName in self.vk.extensions.keys():
+            if extName not in resultData:
+                resultData[extName] = []
         resultData = dict(sorted(resultData.items()))
-        # </vulkan_object_issue_workaround>
 
         for extensionName, requirementList in resultData.items():
             yield f'\tif (extName == "{extensionName}")'
@@ -2204,6 +2165,16 @@ class CoreFunctionalitiesGenerator(CTSGenerator):
                 if f.version.nameApi == 'VK_API_VERSION_1_4':
                     if 'vkCopy' in name or name == 'vkTransitionImageLayout':
                         continue
+
+            if self.targetApiName == 'vulkansc':
+                if apiVersion == 'VK_API_VERSION_1_0' or apiVersion == 'VK_API_VERSION_1_1' or apiVersion == 'VK_API_VERSION_1_2':
+                    # Everything up to Vulkan 1.2 is included in Vulkan SC 1.0
+                    apiVersion = 'VKSC_API_VERSION_1_0'
+                else:
+                    # Everything newer is not supported in Vulkan SC
+                    # Note that normally we would not have to hit this but the vk.xml has the vulkansc API tag
+                    # enabled also for Vulkan 1.3+ due to spec tooling limitations
+                    continue
 
             # add function to dictionary
             if apiVersion in functionNamesPerApiVersionDict:
@@ -2352,14 +2323,13 @@ class DeviceFeatures2Generator(CTSGenerator):
             f'    if (!context.contextSupports(vk::ApiVersion({isSC}, {versionStrA}, 0)))\n'
             f'        TCU_THROW(NotSupportedError, "Vulkan {versionStrB} is not supported");')
             self.write('\n'
-            '    const PlatformInterface&        platformInterface = context.getPlatformInterface();\n'
-            '    const CustomInstance            instance            (createCustomInstanceFromContext(context));\n'
-            '    const InstanceDriver&            instanceDriver        (instance.getDriver());\n'
-            '    const VkPhysicalDevice            physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());\n'
-            '    const uint32_t                    queueFamilyIndex = 0;\n'
-            '    const uint32_t                    queueCount = 1;\n'
-            '    const uint32_t                    queueIndex = 0;\n'
-            '    const float                        queuePriority = 1.0f;\n\n'
+            '    const InstanceWrapper instance(createCustomInstanceFromContext(context));\n'
+            '    const auto&                     instanceDriver    = instance.getDriver();\n'
+            '    const VkPhysicalDevice          physicalDevice    = instance.getPhysicalDevice();\n'
+            '    const uint32_t                  queueFamilyIndex  = 0;\n'
+            '    const uint32_t                  queueCount        = 1;\n'
+            '    const uint32_t                  queueIndex        = 0;\n'
+            '    const float                     queuePriority     = 1.0f;\n\n'
             '    const vector<VkQueueFamilyProperties> queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);\n\n'
             '    const VkDeviceQueueCreateInfo    deviceQueueCreateInfo =\n'
             '    {\n'
@@ -2391,10 +2361,11 @@ class DeviceFeatures2Generator(CTSGenerator):
             '        0, //extensionCount;\n'
             '        nullptr, //ppEnabledExtensionNames;\n'
             '        nullptr, //pEnabledFeatures;\n'
-            '    };\n\n'
-            '    const Unique<VkDevice>            device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));\n'
-            '    const DeviceDriver                deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());\n'
-            '    const VkQueue                    queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);\n\n'
+            '    };\n'
+            '\n'
+            '    const auto                        device       = instance.createCustomDevice(physicalDevice, &deviceCreateInfo);\n'
+            '    const auto&                       deviceDriver = device.getDriver();\n'
+            '    const VkQueue                     queue        = getDeviceQueue(deviceDriver, device, queueFamilyIndex, queueIndex);\n\n'
             '    VK_CHECK(deviceDriver.queueWaitIdle(queue));\n\n'
             '    return tcu::TestStatus::pass("Pass");\n'
             '}\n')
@@ -2524,13 +2495,10 @@ class FeaturesOrPropertiesGenericGenerator(CTSGenerator):
             nameString = f"DECL_CORE_{structGroupUp}_NAME"
             if struct.extensions:
                 extName = struct.extensions[0]
-                # part of code below contains workaround for bug in ShaderObject
-                # where extensions list sometimes has Extension objects in it
-                # instead of strings with extension name
-                ext = self.vk.extensions[extName] if isinstance(extName, str) else extName
+                ext = self.vk.extensions[extName]
                 if len(struct.extensions) > 1:
                     extName = struct.extensions[1]
-                    ext2 = self.vk.extensions[extName] if isinstance(extName, str) else extName
+                    ext2 = self.vk.extensions[extName]
                     if ext.promotedTo == ext2.name:
                         ext = ext2
                 nameString = ext.nameString
@@ -2748,21 +2716,16 @@ class DeviceFeatureTestGenerator(CTSGenerator):
             testBlock = """
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
 {{
-    const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
-    const InstanceDriver&                    instanceDriver            (instance.getDriver());
-    const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const InstanceWrapper instance(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const VkPhysicalDevice                    physicalDevice = instance.getPhysicalDevice();
     const uint32_t                            queueFamilyIndex = 0;
     const uint32_t                            queueCount = 1;
     const float                                queuePriority = 1.0f;
     const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
     const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
     int                                        numErrors = 0;
-    const tcu::CommandLine&                    commandLine = context.getTestContext().getCommandLine();
-    bool                                    isSubProcess = context.getTestContext().getCommandLine().isSubProcess();
-{6}
 
     VkPhysicalDeviceFeatures emptyDeviceFeatures;
     deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
@@ -2778,7 +2741,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
 {1}
         }};
         auto* supportedFeatures = reinterpret_cast<const {0}*>(featuresStruct);
-        checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures, {5}, context.getUsedApiVersion(), commandLine);
+        checkFeatures(instance, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures);
     }}
 
     if (numErrors > 0)
@@ -2787,9 +2750,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
     return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }}
 """
-            additionalParams = ( 'memReservationStatMax, isSubProcess' if self.targetApiName == 'vulkansc' else 'isSubProcess' )
-            additionalDefs = ( '    VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();' if self.targetApiName == 'vulkansc' else '')
-            featureItems.append(testBlock.format(struct.name, "\n".join(items), len(items), ("nullptr" if coreFeaturesPattern.match(struct.name) else "&extensionNames"), struct.name[len('VkPhysicalDevice'):], additionalParams, additionalDefs))
+            featureItems.append(testBlock.format(struct.name, "\n".join(items), len(items), ("nullptr" if coreFeaturesPattern.match(struct.name) else "&extensionNames"), struct.name[len('VkPhysicalDevice'):]))
 
             testFunctions.append("createDeviceWithUnsupportedFeaturesTest" + struct.name[len('VkPhysicalDevice'):])
 
@@ -3245,15 +3206,14 @@ class GetDeviceProcAddrGenerator(CTSGenerator):
     def generate(self):
         testBlockStart = '''tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 {
-    tcu::TestLog&                                log                        (context.getTestContext().getLog());
-    const PlatformInterface&                    platformInterface = context.getPlatformInterface();
-    const CustomInstance                        instance                (createCustomInstanceFromContext(context));
-    const InstanceDriver&                        instanceDriver = instance.getDriver();
-    const VkPhysicalDevice                        physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-    const uint32_t                                queueFamilyIndex = 0;
-    const uint32_t                                queueCount = 1;
-    const float                                    queuePriority = 1.0f;
-    const std::vector<VkQueueFamilyProperties>    queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+    tcu::TestLog&                               log                   = context.getTestContext().getLog();
+    const InstanceWrapper instance(createCustomInstanceFromContext(context, nullptr, false));
+    const auto&                                 instanceDriver        = instance.getDriver();
+    const VkPhysicalDevice                      physicalDevice        = instance.getPhysicalDevice();
+    const uint32_t                              queueFamilyIndex      = 0;
+    const uint32_t                              queueCount            = 1;
+    const float                                 queuePriority         = 1.0f;
+    const std::vector<VkQueueFamilyProperties>  queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
     const VkDeviceQueueCreateInfo            deviceQueueCreateInfo =
     {
@@ -3278,8 +3238,9 @@ class GetDeviceProcAddrGenerator(CTSGenerator):
         nullptr, //  const char* const* ppEnabledExtensionNames;
         nullptr, //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
-    const Unique<VkDevice>                    device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-    const DeviceDriver                        deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
+
+    const auto                                device       = instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
+    const auto&                               deviceDriver = device.getDriver();
 
     const std::vector<std::string> functions{'''
         testBlockEnd = '''    };
@@ -3287,7 +3248,7 @@ class GetDeviceProcAddrGenerator(CTSGenerator):
     bool fail = false;
     for (const auto& function : functions)
     {
-        if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != nullptr)
+        if (deviceDriver.getDeviceProcAddr(device, function.c_str()) != nullptr)
         {
             fail = true;
             log << tcu::TestLog::Message << "Function " << function << " is not NULL" << tcu::TestLog::EndMessage;
@@ -3618,7 +3579,7 @@ class FormatListsGenerator(CTSGenerator):
                 return False
             self.writeList(f'compatibleFormats{arraySubName}s', intCompatibleFormatsCheckFun)
 
-        floatVariants = ['UNORM', 'SNORM', 'USCALED', 'SSCALED', 'SFLOAT', 'UFLOAT']
+        floatVariants = ['UNORM', 'SNORM', 'SFLOAT', 'UFLOAT']
         def compatibleFormatsFloatsCheckFun(f):
             if any(sub in f.name for sub in floatVariants):
                 if f.compressed is None and not f.className.startswith('D'):
@@ -3804,9 +3765,10 @@ class ConformanceVersionsGenerator(CTSGenerator):
         # get list of all vulkan/vulkansc tags from git
         remote_urls = os.popen("git remote -v").read().split('\n')
         remote_url = None
-        url_regexp = r'\bgerrit\.khronos\.org\b.*\bvk-gl-cts\b'
+        url_khronos_regexp = r'\bgerrit\.khronos\.org\b.*\bvk-gl-cts\b'
+        url_github_regexp = r'\bgithub\.com\b.*\bvk-gl-cts\b'
         for line in remote_urls:
-            if re.search(url_regexp, line, re.IGNORECASE) is not None:
+            if re.search(url_khronos_regexp, line, re.IGNORECASE) is not None or re.search(url_github_regexp, line, re.IGNORECASE) is not None:
                 remote_url = line.split()[1]
                 break
         listOfTags = os.popen("git ls-remote -t %s" % (remote_url)).read()
@@ -3847,7 +3809,7 @@ class ConformanceVersionsGenerator(CTSGenerator):
         # save array with versions
         stream = ['static const VkConformanceVersion knownConformanceVersions[]',
                   '{']
-        appendToStream(stream, matches, tuple('0'*4) if len(withdrawnBranches) == 0 else max(withdrawnBranches))
+        appendToStream(stream, matches, (0, 0, 0, 0) if len(withdrawnBranches) == 0 else max(withdrawnBranches))
         stream.append('};')
 
         OutputGenerator.beginFile(self, genOpts)
@@ -3954,7 +3916,7 @@ if __name__ == "__main__":
         GenData('vkNullDriverImpl.inl',                       NullDriverImplGenerator),
         GenData('vkSupportedExtensions.inl',                  SupportedExtensionsGenerator),
         GenData('vkCoreFunctionalities.inl',                  CoreFunctionalitiesGenerator),
-        GenData('vkExtensionFunctions.inl',                   ExtensionFunctionsGenerator, (rawVkXml)),
+        GenData('vkExtensionFunctions.inl',                   ExtensionFunctionsGenerator),
         GenData('vkMandatoryFeatures.inl',                    MandatoryFeaturesGenerator),
         GenData('vkInstanceExtensions.inl',                   ExtensionListGenerator),
         GenData('vkDeviceExtensions.inl',                     ExtensionListGenerator),

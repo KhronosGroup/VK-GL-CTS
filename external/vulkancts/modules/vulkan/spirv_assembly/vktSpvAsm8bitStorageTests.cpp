@@ -156,7 +156,7 @@ bool computeCheckBuffers(const std::vector<Resource> &originalInts, const vector
                          const std::vector<Resource> & /*expectedOutputs*/, tcu::TestLog & /*log*/)
 {
     std::vector<uint8_t> result;
-    originalInts.front().getBytes(result);
+    originalInts.front().buffer->getBytes(result);
     return deMemCmp(&result[0], outputAllocs.front()->getHostPtr(), result.size()) == 0;
 }
 
@@ -658,7 +658,7 @@ bool checkStruct(const std::vector<Resource> &originalFloats, const vector<Alloc
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> originalBytes;
-        originalFloats[outputNdx].getBytes(originalBytes);
+        originalFloats[outputNdx].buffer->getBytes(originalBytes);
 
         const resultType *returned = static_cast<const resultType *>(outputAllocs[outputNdx]->getHostPtr());
         const originType *original = reinterpret_cast<const originType *>(&originalBytes.front());
@@ -681,7 +681,7 @@ bool checkUniformsArray(const std::vector<Resource> &originalFloats, const vecto
     for (uint32_t outputNdx = 0; outputNdx < static_cast<uint32_t>(outputAllocs.size()); ++outputNdx)
     {
         vector<uint8_t> originalBytes;
-        originalFloats[outputNdx].getBytes(originalBytes);
+        originalFloats[outputNdx].buffer->getBytes(originalBytes);
         const int elemntsNumber = (static_cast<int>(originalBytes.size()) / arrayStrideInBytesUniform) / compositCount;
 
         const resultType *returned = static_cast<const resultType *>(outputAllocs[outputNdx]->getHostPtr());
@@ -714,7 +714,7 @@ bool checkUniformsArrayConstNdx(const std::vector<Resource> &originalFloats, con
     for (uint32_t outputNdx = 0; outputNdx < static_cast<uint32_t>(outputAllocs.size()); ++outputNdx)
     {
         vector<uint8_t> originalBytes;
-        originalFloats[outputNdx].getBytes(originalBytes);
+        originalFloats[outputNdx].buffer->getBytes(originalBytes);
         const int elemntsNumber = (static_cast<int>(originalBytes.size()) / arrayStrideInBytesUniform) / compositCount;
 
         const resultType *returned = static_cast<const resultType *>(outputAllocs[outputNdx]->getHostPtr());

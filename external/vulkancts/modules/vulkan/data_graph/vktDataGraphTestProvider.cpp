@@ -57,7 +57,8 @@ void DataGraphTestProvider::validate(const DataGraphTest *test, TestParams &para
     // check tensor tiling
     for (const auto &ri : test->resourceInfos())
     {
-        if (params.tiling != ri.params.tiling)
+        // VUID-VkDataGraphPipelineConstantARM-pNext-09917 tiling member must be VK_TENSOR_TILING_LINEAR_ARM. Hence, constants ignore the test requirements
+        if (ri.type != RESOURCE_TYPE_CONSTANT && params.tiling != ri.params.tiling)
         {
             TCU_THROW(InternalError, "Invalid test for params '" + de::toString(params) +
                                          "'. Resources tiling differ from the requirements.");

@@ -2856,14 +2856,13 @@ tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
     if (!context.contextSupports(vk::ApiVersion(1, 1, 1, 0)))
         TCU_THROW(NotSupportedError, "Vulkan 1.1 is not supported");
 
-    const PlatformInterface&        platformInterface = context.getPlatformInterface();
-    const CustomInstance            instance            (createCustomInstanceFromContext(context));
-    const InstanceDriver&            instanceDriver        (instance.getDriver());
-    const VkPhysicalDevice            physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-    const uint32_t                    queueFamilyIndex = 0;
-    const uint32_t                    queueCount = 1;
-    const uint32_t                    queueIndex = 0;
-    const float                        queuePriority = 1.0f;
+    const InstanceWrapper instance(createCustomInstanceFromContext(context));
+    const auto&                     instanceDriver    = instance.getDriver();
+    const VkPhysicalDevice          physicalDevice    = instance.getPhysicalDevice();
+    const uint32_t                  queueFamilyIndex  = 0;
+    const uint32_t                  queueCount        = 1;
+    const uint32_t                  queueIndex        = 0;
+    const float                     queuePriority     = 1.0f;
 
     const vector<VkQueueFamilyProperties> queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
@@ -2901,9 +2900,9 @@ tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
         nullptr, //pEnabledFeatures;
     };
 
-    const Unique<VkDevice>            device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-    const DeviceDriver                deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
-    const VkQueue                    queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
+    const auto                        device       = instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
+    const auto&                       deviceDriver = device.getDriver();
+    const VkQueue                     queue        = getDeviceQueue(deviceDriver, device, queueFamilyIndex, queueIndex);
 
     VK_CHECK(deviceDriver.queueWaitIdle(queue));
 
@@ -2915,14 +2914,13 @@ tcu::TestStatus createDeviceWithPromoted12Structures (Context& context)
     if (!context.contextSupports(vk::ApiVersion(1, 1, 2, 0)))
         TCU_THROW(NotSupportedError, "Vulkan 1.2 is not supported");
 
-    const PlatformInterface&        platformInterface = context.getPlatformInterface();
-    const CustomInstance            instance            (createCustomInstanceFromContext(context));
-    const InstanceDriver&            instanceDriver        (instance.getDriver());
-    const VkPhysicalDevice            physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-    const uint32_t                    queueFamilyIndex = 0;
-    const uint32_t                    queueCount = 1;
-    const uint32_t                    queueIndex = 0;
-    const float                        queuePriority = 1.0f;
+    const InstanceWrapper instance(createCustomInstanceFromContext(context));
+    const auto&                     instanceDriver    = instance.getDriver();
+    const VkPhysicalDevice          physicalDevice    = instance.getPhysicalDevice();
+    const uint32_t                  queueFamilyIndex  = 0;
+    const uint32_t                  queueCount        = 1;
+    const uint32_t                  queueIndex        = 0;
+    const float                     queuePriority     = 1.0f;
 
     const vector<VkQueueFamilyProperties> queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
@@ -2967,9 +2965,9 @@ tcu::TestStatus createDeviceWithPromoted12Structures (Context& context)
         nullptr, //pEnabledFeatures;
     };
 
-    const Unique<VkDevice>            device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-    const DeviceDriver                deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
-    const VkQueue                    queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
+    const auto                        device       = instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
+    const auto&                       deviceDriver = device.getDriver();
+    const VkQueue                     queue        = getDeviceQueue(deviceDriver, device, queueFamilyIndex, queueIndex);
 
     VK_CHECK(deviceDriver.queueWaitIdle(queue));
 
@@ -2981,14 +2979,13 @@ tcu::TestStatus createDeviceWithPromoted13Structures (Context& context)
     if (!context.contextSupports(vk::ApiVersion(1, 1, 3, 0)))
         TCU_THROW(NotSupportedError, "Vulkan 1.3 is not supported");
 
-    const PlatformInterface&        platformInterface = context.getPlatformInterface();
-    const CustomInstance            instance            (createCustomInstanceFromContext(context));
-    const InstanceDriver&            instanceDriver        (instance.getDriver());
-    const VkPhysicalDevice            physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-    const uint32_t                    queueFamilyIndex = 0;
-    const uint32_t                    queueCount = 1;
-    const uint32_t                    queueIndex = 0;
-    const float                        queuePriority = 1.0f;
+    const InstanceWrapper instance(createCustomInstanceFromContext(context));
+    const auto&                     instanceDriver    = instance.getDriver();
+    const VkPhysicalDevice          physicalDevice    = instance.getPhysicalDevice();
+    const uint32_t                  queueFamilyIndex  = 0;
+    const uint32_t                  queueCount        = 1;
+    const uint32_t                  queueIndex        = 0;
+    const float                     queuePriority     = 1.0f;
 
     const vector<VkQueueFamilyProperties> queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
@@ -3033,9 +3030,9 @@ tcu::TestStatus createDeviceWithPromoted13Structures (Context& context)
         nullptr, //pEnabledFeatures;
     };
 
-    const Unique<VkDevice>            device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-    const DeviceDriver                deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
-    const VkQueue                    queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
+    const auto                        device       = instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
+    const auto&                       deviceDriver = device.getDriver();
+    const VkQueue                     queue        = getDeviceQueue(deviceDriver, device, queueFamilyIndex, queueIndex);
 
     VK_CHECK(deviceDriver.queueWaitIdle(queue));
 
@@ -3047,14 +3044,13 @@ tcu::TestStatus createDeviceWithPromoted14Structures (Context& context)
     if (!context.contextSupports(vk::ApiVersion(1, 1, 4, 0)))
         TCU_THROW(NotSupportedError, "Vulkan 1.4 is not supported");
 
-    const PlatformInterface&        platformInterface = context.getPlatformInterface();
-    const CustomInstance            instance            (createCustomInstanceFromContext(context));
-    const InstanceDriver&            instanceDriver        (instance.getDriver());
-    const VkPhysicalDevice            physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-    const uint32_t                    queueFamilyIndex = 0;
-    const uint32_t                    queueCount = 1;
-    const uint32_t                    queueIndex = 0;
-    const float                        queuePriority = 1.0f;
+    const InstanceWrapper instance(createCustomInstanceFromContext(context));
+    const auto&                     instanceDriver    = instance.getDriver();
+    const VkPhysicalDevice          physicalDevice    = instance.getPhysicalDevice();
+    const uint32_t                  queueFamilyIndex  = 0;
+    const uint32_t                  queueCount        = 1;
+    const uint32_t                  queueIndex        = 0;
+    const float                     queuePriority     = 1.0f;
 
     const vector<VkQueueFamilyProperties> queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
@@ -3099,9 +3095,9 @@ tcu::TestStatus createDeviceWithPromoted14Structures (Context& context)
         nullptr, //pEnabledFeatures;
     };
 
-    const Unique<VkDevice>            device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-    const DeviceDriver                deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
-    const VkQueue                    queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
+    const auto                        device       = instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
+    const auto&                       deviceDriver = device.getDriver();
+    const VkQueue                     queue        = getDeviceQueue(deviceDriver, device, queueFamilyIndex, queueIndex);
 
     VK_CHECK(deviceDriver.queueWaitIdle(queue));
 

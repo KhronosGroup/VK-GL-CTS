@@ -252,6 +252,8 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentDensityMapPropertie
 template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR>(VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV>(VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>(VkPhysicalDeviceFragmentShadingRatePropertiesKHR&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceGpaProperties2AMD>(VkPhysicalDeviceGpaProperties2AMD&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceGpaPropertiesAMD>(VkPhysicalDeviceGpaPropertiesAMD&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT>(VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceImageProcessingPropertiesQCOM>(VkPhysicalDeviceImageProcessingPropertiesQCOM&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceLayeredApiPropertiesListKHR>(VkPhysicalDeviceLayeredApiPropertiesListKHR&, const AllPropertiesBlobs&) {}
@@ -282,6 +284,7 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceShaderLongVectorPropertiesE
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT>(VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderObjectPropertiesEXT>(VkPhysicalDeviceShaderObjectPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderSMBuiltinsPropertiesNV>(VkPhysicalDeviceShaderSMBuiltinsPropertiesNV&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceShaderSplitBarrierPropertiesEXT>(VkPhysicalDeviceShaderSplitBarrierPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderTileImagePropertiesEXT>(VkPhysicalDeviceShaderTileImagePropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShadingRateImagePropertiesNV>(VkPhysicalDeviceShadingRateImagePropertiesNV&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceTensorPropertiesARM>(VkPhysicalDeviceTensorPropertiesARM&, const AllPropertiesBlobs&) {}
@@ -321,6 +324,8 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFragmentDensityMapPrope
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_PROPERTIES_KHR, VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV, VK_NV_FRAGMENT_SHADING_RATE_ENUMS_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_PROPERTIES_KHR, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceGpaProperties2AMD>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GPA_PROPERTIES_2_AMD, VK_AMD_GPA_INTERFACE_EXTENSION_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceGpaPropertiesAMD>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GPA_PROPERTIES_AMD, VK_AMD_GPA_INTERFACE_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT, VK_EXT_GRAPHICS_PIPELINE_LIBRARY_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceHostImageCopyProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES, VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceIDProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES, VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME}; }
@@ -366,6 +371,7 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderLongVectorPropert
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT, VK_EXT_SHADER_MODULE_IDENTIFIER_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderObjectPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT, VK_EXT_SHADER_OBJECT_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderSMBuiltinsPropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_PROPERTIES_NV, VK_NV_SHADER_SM_BUILTINS_EXTENSION_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderSplitBarrierPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SPLIT_BARRIER_PROPERTIES_EXT, VK_EXT_SHADER_SPLIT_BARRIER_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderTileImagePropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TILE_IMAGE_PROPERTIES_EXT, VK_EXT_SHADER_TILE_IMAGE_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShadingRateImagePropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_PROPERTIES_NV, VK_NV_SHADING_RATE_IMAGE_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSubgroupProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES, DECL_CORE_PROPERTIES_NAME}; }
@@ -413,6 +419,8 @@ static const PropertyStructCreationData propertyStructCreationArray[]
 	{ createPropertyStructWrapper<VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR>, VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV>, VK_NV_FRAGMENT_SHADING_RATE_ENUMS_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceGpaProperties2AMD>, VK_AMD_GPA_INTERFACE_EXTENSION_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceGpaPropertiesAMD>, VK_AMD_GPA_INTERFACE_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT>, VK_EXT_GRAPHICS_PIPELINE_LIBRARY_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceHostImageCopyProperties>, VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceIDProperties>, VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME },
@@ -458,6 +466,7 @@ static const PropertyStructCreationData propertyStructCreationArray[]
 	{ createPropertyStructWrapper<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT>, VK_EXT_SHADER_MODULE_IDENTIFIER_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceShaderObjectPropertiesEXT>, VK_EXT_SHADER_OBJECT_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceShaderSMBuiltinsPropertiesNV>, VK_NV_SHADER_SM_BUILTINS_EXTENSION_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceShaderSplitBarrierPropertiesEXT>, VK_EXT_SHADER_SPLIT_BARRIER_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceShaderTileImagePropertiesEXT>, VK_EXT_SHADER_TILE_IMAGE_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceShadingRateImagePropertiesNV>, VK_NV_SHADING_RATE_IMAGE_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceSubgroupProperties>, DECL_CORE_PROPERTIES_NAME },

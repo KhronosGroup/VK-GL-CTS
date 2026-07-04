@@ -68,6 +68,9 @@ public:
     void describePlatform(std::ostream &dst) const;
     vk::wsi::Display *createWsiDisplay(vk::wsi::Type wsiType) const;
     bool hasDisplay(vk::wsi::Type wsiType) const;
+    void setCustomScreenOrientation(bool enable) const;
+    void requestPixelCopy(const char *filename) const;
+    void rotateScreen(int rotation) const;
 
 private:
     NativeActivity &m_activity;

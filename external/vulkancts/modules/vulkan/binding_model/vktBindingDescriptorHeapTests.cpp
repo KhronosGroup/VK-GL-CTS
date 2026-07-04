@@ -22,6 +22,7 @@
  * \brief Descriptor heap (extension) tests
  *//*--------------------------------------------------------------------*/
 
+#include <algorithm>
 #include <array>
 #include <cstring>
 #include <numeric>
@@ -131,6 +132,7 @@ struct TestParams
     bool enableShader64bitIndexing                          = false;
     bool enableShaderUniformTexelBufferArrayDynamicIndexing = false;
     bool enableShaderStorageTexelBufferArrayDynamicIndexing = false;
+    bool enableUniformAndStorageBuffer8BitAccess            = false;
     VkQueueFlagBits queue                                   = VK_QUEUE_COMPUTE_BIT;
     uint32_t seed                                           = 0;
     uint32_t queueCount                                     = 1;
@@ -143,10 +145,16 @@ struct TestParamsBasic : TestParams
     std::vector<ShaderBinding> bindings;
     std::vector<std::pair<uint32_t, uint32_t>> pushData;
     bool embeddedSamplers{};
+    bool bindSamplerHeap = true;
     bool inputAttachments{};
     bool scaledMappingStrides      = true;
     int32_t overrideResourceStride = -1;
     int32_t overrideSamplerStride  = -1;
+};
+
+struct TestParamsGPL : TestParams
+{
+    bool unbindFragShader = false;
 };
 
 struct TestParamsWithDescriptorType : TestParams
@@ -158,6 +166,7 @@ struct TestParamsGraphics : TestParams
 {
     bool useFragmentShader         = false;
     bool useSecondaryCommandBuffer = false;
+    bool useVectors                = false;
 };
 
 enum class SpirvTestType
@@ -226,7 +235,8 @@ VkDeviceSize getResourceDescriptorStride(const VkPhysicalDeviceDescriptorHeapPro
     return de::max(getBufferDescriptorStride(properties), getImageDescriptorStride(properties));
 }
 
-std::unique_ptr<Buffer> createBufferAndMemory(const vk::DeviceInterface &vkd, Context &context,
+std::unique_ptr<Buffer> createBufferAndMemory(const vk::InstanceInterface &vki, VkPhysicalDevice physicalDevice,
+                                              const vk::DeviceInterface &vkd,
                                               const VkPhysicalDeviceMemoryProperties &memoryProperties, VkDevice device,
                                               VkDeviceSize size, VkBufferUsageFlags2KHR usage)
 {
@@ -253,8 +263,7 @@ std::unique_ptr<Buffer> createBufferAndMemory(const vk::DeviceInterface &vkd, Co
     VkMemoryAllocateFlagsInfo allocFlagsInfo = initVulkanStructure();
     allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
 
-    auto memory = allocateExtended(context.getInstanceInterface(), vkd, context.getPhysicalDevice(), device,
-                                   bufferMemReqs, memReqs, &allocFlagsInfo);
+    auto memory = allocateExtended(vki, vkd, physicalDevice, device, bufferMemReqs, memReqs, &allocFlagsInfo);
     vkd.bindBufferMemory(device, *handle, memory->getMemory(), memory->getOffset());
 
     VkDeviceAddress address = 0;
@@ -272,7 +281,8 @@ std::unique_ptr<Buffer> createBufferAndMemory(const vk::DeviceInterface &vkd, Co
     return result;
 }
 
-std::unique_ptr<Image> createImageAndMemory(const vk::DeviceInterface &vkd, Context &context,
+std::unique_ptr<Image> createImageAndMemory(const vk::InstanceInterface &vki, VkPhysicalDevice physicalDevice,
+                                            const vk::DeviceInterface &vkd,
                                             const VkPhysicalDeviceMemoryProperties &memoryProperties, VkDevice device,
                                             const VkImageCreateInfo &createInfo)
 {
@@ -292,8 +302,7 @@ std::unique_ptr<Image> createImageAndMemory(const vk::DeviceInterface &vkd, Cont
         allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
     }
 
-    auto memory = allocateExtended(context.getInstanceInterface(), vkd, context.getPhysicalDevice(), device,
-                                   imageMemReqs, memReqs, &allocFlagsInfo);
+    auto memory = allocateExtended(vki, vkd, physicalDevice, device, imageMemReqs, memReqs, &allocFlagsInfo);
 
     vkd.bindImageMemory(device, *handle, memory->getMemory(), memory->getOffset());
 
@@ -316,22 +325,21 @@ protected:
 
     std::unique_ptr<Buffer> createBufferAndMemory(VkDeviceSize size, VkBufferUsageFlags2KHR usage)
     {
-        return vkt::BindingModel::createBufferAndMemory(*m_deviceInterface, m_context, m_memoryProperties, *m_device,
-                                                        size, usage);
+        return vkt::BindingModel::createBufferAndMemory(m_instance.getDriver(), m_physDevice, m_device.getDriver(),
+                                                        m_memoryProperties, *m_device, size, usage);
     }
 
     std::unique_ptr<Image> createImageAndMemory(const VkImageCreateInfo &createInfo)
     {
-        return vkt::BindingModel::createImageAndMemory(*m_deviceInterface, m_context, m_memoryProperties, *m_device,
-                                                       createInfo);
+        return vkt::BindingModel::createImageAndMemory(m_instance.getDriver(), m_physDevice, m_device.getDriver(),
+                                                       m_memoryProperties, *m_device, createInfo);
     }
 
+    const InstanceWrapper m_instance;
     VkPhysicalDevice m_physDevice{};
-    Move<VkDevice> m_device;
-    MovePtr<DeviceDriver> m_deviceInterface;
+    DeviceWrapper m_device;
     std::vector<VkQueue> m_queues;
     uint32_t m_queueFamilyIndex{};
-    MovePtr<Allocator> m_allocatorPtr;
     VkPhysicalDeviceMemoryProperties m_memoryProperties{};
     VkPhysicalDeviceDescriptorHeapPropertiesEXT m_descriptorHeapProperties{};
 };
@@ -467,10 +475,9 @@ private:
 
     TestParamsReservedHeap m_params{};
 
+    const InstanceWrapper m_instance;
     VkPhysicalDevice m_physDevice{};
-    Move<VkDevice> m_device;
-    MovePtr<DeviceDriver> m_deviceInterface;
-    MovePtr<Allocator> m_allocatorPtr;
+    DeviceWrapper m_device;
     VkPhysicalDeviceMemoryProperties m_memoryProperties{};
     VkPhysicalDeviceDescriptorHeapPropertiesEXT m_descriptorHeapProperties{};
 
@@ -718,6 +725,13 @@ public:
                 TCU_THROW(NotSupportedError, "shaderStorageTexelBufferArrayDynamicIndexing feature is not supported");
             }
         }
+        if (m_params.enableUniformAndStorageBuffer8BitAccess)
+        {
+            if (!context.getDeviceVulkan12Features().uniformAndStorageBuffer8BitAccess)
+            {
+                TCU_THROW(NotSupportedError, "uniformAndStorageBuffer8BitAccess feature is not supported");
+            }
+        }
     }
 
 private:
@@ -922,6 +936,55 @@ tcu::TestStatus testLimits(Context &context)
                   "bufferDescriptorSize");
     }
 
+    const auto physDevProps2 = context.getDeviceProperties2();
+    if (properties.maxPushDataSize < physDevProps2.properties.limits.maxPushConstantsSize)
+    {
+        std::string message = "maxPushDataSize (" + std::to_string(properties.maxPushDataSize) +
+                              ") is less than maxPushConstantsSize (" +
+                              std::to_string(physDevProps2.properties.limits.maxPushConstantsSize) + ")";
+        TCU_THROW(TestError, message);
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus testGetDescriptorSize(Context &context)
+{
+    if (!context.isDeviceFunctionalitySupported(VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME))
+    {
+        TCU_THROW(NotSupportedError, "VK_EXT_descriptor_heap is not supported");
+    }
+
+    const auto &features = *findStructure<VkPhysicalDeviceDescriptorHeapFeaturesEXT>(&context.getDeviceFeatures2());
+
+    if (!features.descriptorHeap)
+    {
+        TCU_THROW(NotSupportedError, "descriptorHeap is not supported");
+    }
+
+    const VkDescriptorType validArray[14] = {
+        VK_DESCRIPTOR_TYPE_SAMPLER,
+        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+        VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+        VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+        VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+        VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+        VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM,
+        VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM,
+        VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+        VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV,
+        VK_DESCRIPTOR_TYPE_PARTITIONED_ACCELERATION_STRUCTURE_NV,
+        VK_DESCRIPTOR_TYPE_TENSOR_ARM,
+        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+    };
+
+    const auto &vki = context.getInstanceInterface();
+    for (const auto descriptorType : validArray)
+    {
+        vki.getPhysicalDeviceDescriptorSizeEXT(context.getPhysicalDevice(), descriptorType);
+    }
+
     return tcu::TestStatus::pass("Pass");
 }
 
@@ -992,7 +1055,8 @@ void DescriptorHeapTestCaseYcbcr::initPrograms(vk::SourceCollections &programCol
 
 tcu::TestStatus DescriptorHeapTestInstanceYcbcr::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vki = m_instance.getDriver();
+    const auto &vkd = m_device.getDriver();
 
     const VkFormat format = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
 
@@ -1005,8 +1069,7 @@ tcu::TestStatus DescriptorHeapTestInstanceYcbcr::iterate()
     imageFormatInfo.tiling                           = VK_IMAGE_TILING_OPTIMAL;
     imageFormatInfo.usage                            = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-    VK_CHECK(m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(
-        m_context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProps));
+    VK_CHECK(vki.getPhysicalDeviceImageFormatProperties2(m_physDevice, &imageFormatInfo, &imageFormatProps));
     const uint32_t combinedImageSamplerDescriptorCount = ycbcrFormatProps.combinedImageSamplerDescriptorCount;
 
     const uint32_t resourceStride = static_cast<uint32_t>(getResourceDescriptorStride(m_descriptorHeapProperties));
@@ -1139,7 +1202,7 @@ tcu::TestStatus DescriptorHeapTestInstanceYcbcr::iterate()
     samplerCreateInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 
-    const auto computeModule = createShaderModule(*m_deviceInterface, *m_device, getShaderBinary("compute"));
+    const auto computeModule = createShaderModule(vkd, *m_device, getShaderBinary("compute"));
 
     VkPipelineCreateFlags2CreateInfoKHR pipelineCreateFlags2CreateInfo = initVulkanStructure();
     pipelineCreateFlags2CreateInfo.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
@@ -1319,7 +1382,7 @@ void DescriptorHeapTestCaseDifferentMappingsPerShader::initPrograms(vk::SourceCo
 
 tcu::TestStatus DescriptorHeapTestInstanceDifferentMappingsPerShader::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     VkDescriptorSetAndBindingMappingEXT vertexMapping = initVulkanStructure();
     vertexMapping.descriptorSet                       = 0;
@@ -1398,8 +1461,8 @@ tcu::TestStatus DescriptorHeapTestInstanceDifferentMappingsPerShader::iterate()
     VkPipelineCreateFlags2CreateInfoKHR pipelineCreateFlags2CreateInfo = initVulkanStructure();
     pipelineCreateFlags2CreateInfo.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
 
-    auto vertexModule   = createShaderModule(*m_deviceInterface, *m_device, getShaderBinary("vertex"));
-    auto fragmentModule = createShaderModule(*m_deviceInterface, *m_device, getShaderBinary("fragment"));
+    auto vertexModule   = createShaderModule(vkd, *m_device, getShaderBinary("vertex"));
+    auto fragmentModule = createShaderModule(vkd, *m_device, getShaderBinary("fragment"));
 
     std::array<VkPipelineShaderStageCreateInfo, 2> stages = {
         initVulkanStructure(),
@@ -1527,7 +1590,7 @@ tcu::TestStatus DescriptorHeapTestInstanceDifferentMappingsPerShader::iterate()
 class DescriptorHeapTestInstanceGPL final : public DescriptorHeapTestInstanceBase
 {
 public:
-    explicit DescriptorHeapTestInstanceGPL(Context &context, const TestParams &params)
+    explicit DescriptorHeapTestInstanceGPL(Context &context, const TestParamsGPL &params)
         : DescriptorHeapTestInstanceBase(context, params)
         , m_params{params}
     {
@@ -1536,13 +1599,13 @@ public:
     tcu::TestStatus iterate() override;
 
 private:
-    TestParams m_params;
+    TestParamsGPL m_params;
 };
 
 class DescriptorHeapTestCaseGPL final : public DescriptorHeapTestCaseBase
 {
 public:
-    explicit DescriptorHeapTestCaseGPL(tcu::TestContext &testCtx, const std::string &name, const TestParams &params)
+    explicit DescriptorHeapTestCaseGPL(tcu::TestContext &testCtx, const std::string &name, const TestParamsGPL &params)
         : DescriptorHeapTestCaseBase(testCtx, name, params)
         , m_params{params}
     {
@@ -1556,7 +1619,7 @@ public:
     void initPrograms(vk::SourceCollections &programCollection) const override;
 
 private:
-    TestParams m_params;
+    TestParamsGPL m_params;
 };
 
 void DescriptorHeapTestCaseGPL::initPrograms(vk::SourceCollections &programCollection) const
@@ -1580,13 +1643,33 @@ void DescriptorHeapTestCaseGPL::initPrograms(vk::SourceCollections &programColle
                            "  imageStore(outputImgBuf, inIndex, inColor);\n"
                            "}\n";
 
-    programCollection.glslSources.add("vertex") << glu::VertexSource(vertex);
-    programCollection.glslSources.add("fragment") << glu::FragmentSource(fragment);
+    std::string vertexOutput     = "#version 450\n"
+                                   "layout (set = 0, binding = 6) uniform textureBuffer positionTexBuf;\n"
+                                   "layout (set = 0, binding = 7) uniform textureBuffer colorTexBuf;\n"
+                                   "layout (set = 0, binding = 8, rgba32f) uniform imageBuffer outputImgBuf;\n"
+                                   "void main() {\n"
+                                   "  gl_Position = texelFetch(positionTexBuf, gl_VertexIndex);\n"
+                                   "  imageStore(outputImgBuf, gl_VertexIndex, texelFetch(colorTexBuf, gl_VertexIndex));\n"
+                                   "}\n";
+    std::string fragmentNoOutput = "#version 450\n"
+                                   "void main() {\n"
+                                   "}\n";
+
+    if (m_params.unbindFragShader)
+    {
+        programCollection.glslSources.add("vertex") << glu::VertexSource(vertexOutput);
+        programCollection.glslSources.add("fragment") << glu::FragmentSource(fragmentNoOutput);
+    }
+    else
+    {
+        programCollection.glslSources.add("vertex") << glu::VertexSource(vertex);
+        programCollection.glslSources.add("fragment") << glu::FragmentSource(fragment);
+    }
 }
 
 tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     DE_ASSERT(m_params.enableGraphicsPipelineLibrary != m_params.enableShaderObject);
     DE_ASSERT(m_params.enableGraphicsPipelineLibrary || m_params.enableShaderObject);
@@ -1670,10 +1753,10 @@ tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
     VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, static_cast<uint32_t>(imageDescriptorInfos.size()),
                                              imageDescriptorInfos.data(), imageDescriptorRanges.data()));
 
-    const auto vertexModule   = createShaderModule(*m_deviceInterface, *m_device, getShaderBinary("vertex"));
-    const auto fragmentModule = createShaderModule(*m_deviceInterface, *m_device, getShaderBinary("fragment"));
+    const auto vertexModule   = createShaderModule(vkd, *m_device, getShaderBinary("vertex"));
+    const auto fragmentModule = createShaderModule(vkd, *m_device, getShaderBinary("fragment"));
 
-    std::array<VkDescriptorSetAndBindingMappingEXT, 2> vertexMappings{};
+    std::array<VkDescriptorSetAndBindingMappingEXT, 3> vertexMappings{};
     vertexMappings[0]                                      = initVulkanStructure();
     vertexMappings[0].descriptorSet                        = 0;
     vertexMappings[0].firstBinding                         = 6;
@@ -1688,6 +1771,13 @@ tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
     vertexMappings[1].resourceMask                         = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
     vertexMappings[1].source                               = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
     vertexMappings[1].sourceData.constantOffset.heapOffset = static_cast<int32_t>(1 * imageDescriptorStride);
+    vertexMappings[2]                                      = initVulkanStructure();
+    vertexMappings[2].descriptorSet                        = 0;
+    vertexMappings[2].firstBinding                         = 8;
+    vertexMappings[2].bindingCount                         = 1;
+    vertexMappings[2].resourceMask                         = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    vertexMappings[2].source                               = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    vertexMappings[2].sourceData.constantOffset.heapOffset = static_cast<int32_t>(2 * imageDescriptorStride);
 
     std::array<VkDescriptorSetAndBindingMappingEXT, 1> fragmentMappings{};
     fragmentMappings[0]               = initVulkanStructure();
@@ -1699,7 +1789,7 @@ tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
     fragmentMappings[0].sourceData.constantOffset.heapOffset = static_cast<int32_t>(2 * imageDescriptorStride);
 
     VkShaderDescriptorSetAndBindingMappingInfoEXT vertexMappingInfo = initVulkanStructure();
-    vertexMappingInfo.mappingCount                                  = de::sizeU32(vertexMappings);
+    vertexMappingInfo.mappingCount                                  = m_params.unbindFragShader ? 3u : 2u;
     vertexMappingInfo.pMappings                                     = vertexMappings.data();
 
     VkShaderDescriptorSetAndBindingMappingInfoEXT fragmentMappingInfo = initVulkanStructure();
@@ -1739,9 +1829,12 @@ tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
         vertexShaderCreateInfo.pPushConstantRanges    = nullptr;
         vertexShaderCreateInfo.pSpecializationInfo    = nullptr;
 
-        VkShaderCreateInfoEXT fragmentShaderCreateInfo  = initVulkanStructure();
-        fragmentShaderCreateInfo.pNext                  = &fragmentMappingInfo;
-        fragmentShaderCreateInfo.flags                  = VK_SHADER_CREATE_DESCRIPTOR_HEAP_BIT_EXT;
+        VkShaderCreateInfoEXT fragmentShaderCreateInfo = initVulkanStructure();
+        if (!m_params.unbindFragShader)
+        {
+            fragmentShaderCreateInfo.pNext = &fragmentMappingInfo;
+            fragmentShaderCreateInfo.flags = VK_SHADER_CREATE_DESCRIPTOR_HEAP_BIT_EXT;
+        }
         fragmentShaderCreateInfo.stage                  = VK_SHADER_STAGE_FRAGMENT_BIT;
         fragmentShaderCreateInfo.nextStage              = 0;
         fragmentShaderCreateInfo.codeType               = VK_SHADER_CODE_TYPE_SPIRV_EXT;
@@ -1926,6 +2019,15 @@ tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
     {
         vkd.cmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+    }
+
+    if (m_params.unbindFragShader)
+    {
+        const std::array<VkShaderEXT, 2> vertOnlyShaders = {
+            *vertexShader,
+            VK_NULL_HANDLE,
+        };
+        vkd.cmdBindShadersEXT(cmdBuffer, 2, stages.data(), vertOnlyShaders.data());
     }
 
     vkd.cmdDraw(cmdBuffer, vertexCount, 1, 0, 0);
@@ -2195,7 +2297,7 @@ tcu::TestStatus DescriptorHeapTestInstanceSwitchHeaps::iterate()
 
 void DescriptorHeapTestInstanceSwitchHeaps::setup()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const int numResourceHeaps = 3;
     const int numSamplerHeaps  = 1;
@@ -2321,7 +2423,7 @@ void DescriptorHeapTestInstanceSwitchHeaps::setup()
 
 tcu::TestStatus DescriptorHeapTestInstanceSwitchHeaps::check()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     if (m_cmdBuf)
     {
@@ -2372,7 +2474,7 @@ tcu::TestStatus DescriptorHeapTestInstanceSwitchHeaps::check()
 
 void DescriptorHeapTestInstanceSwitchHeaps::nextCommandBuffer()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     if (m_cmdBuf)
     {
@@ -2402,7 +2504,7 @@ void DescriptorHeapTestInstanceSwitchHeaps::bindDefaultHeaps()
 
 void DescriptorHeapTestInstanceSwitchHeaps::bindResourceHeap(int heap)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     VkBindHeapInfoEXT bindHeapInfo   = initVulkanStructure();
     bindHeapInfo.heapRange.address   = m_resourceHeaps[heap]->address;
@@ -2418,7 +2520,7 @@ void DescriptorHeapTestInstanceSwitchHeaps::bindResourceHeap(int heap)
 
 // void DescriptorHeapTestInstanceSwitchHeaps::bindSamplerHeap(int heap)
 // {
-//     const auto &vkd = *m_deviceInterface;
+//     const auto &vkd = m_device.getDriver();
 //
 //     VkBindHeapInfoEXT bindHeapInfo = initVulkanStructure();
 //     bindHeapInfo.heapRange.address = m_samplerHeaps[heap]->address;
@@ -2431,7 +2533,7 @@ void DescriptorHeapTestInstanceSwitchHeaps::bindResourceHeap(int heap)
 void DescriptorHeapTestInstanceSwitchHeaps::writeBufferDescriptor(int heap, int heapIndex, int buffer, int offset,
                                                                   int size)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     VkHostAddressRangeEXT descriptor{};
     descriptor.address =
@@ -2458,7 +2560,7 @@ void DescriptorHeapTestInstanceSwitchHeaps::writeBufferDescriptor(int heap, int 
 void DescriptorHeapTestInstanceSwitchHeaps::writeTexelDescriptor(int heap, int heapIndex, int buffer, int offset,
                                                                  int size)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     VkHostAddressRangeEXT descriptor{};
     descriptor.address =
@@ -2486,7 +2588,7 @@ void DescriptorHeapTestInstanceSwitchHeaps::writeTexelDescriptor(int heap, int h
 void DescriptorHeapTestInstanceSwitchHeaps::fillStorageBuffer(uint32_t dstHeapIndex, uint32_t value, uint32_t size,
                                                               bool useShader)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const auto &dstTracking = m_resourceHeapDescriptorTracking[m_currentResourceHeap][dstHeapIndex];
 
@@ -2564,7 +2666,7 @@ void DescriptorHeapTestInstanceSwitchHeaps::fillStorageBuffer(uint32_t dstHeapIn
 void DescriptorHeapTestInstanceSwitchHeaps::copyStorageBuffer(uint32_t dstHeapIndex, uint32_t srcHeapIndex,
                                                               uint32_t size, bool useShader)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const auto &dstTracking = m_resourceHeapDescriptorTracking[m_currentResourceHeap][dstHeapIndex];
     const auto &srcTracking = m_resourceHeapDescriptorTracking[m_currentResourceHeap][srcHeapIndex];
@@ -2660,7 +2762,7 @@ void DescriptorHeapTestInstanceSwitchHeaps::copyStorageBuffer(uint32_t dstHeapIn
 
 void DescriptorHeapTestInstanceSwitchHeaps::fillTexelBuffer(uint32_t dstHeapIndex, uint32_t value, uint32_t size)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const auto &dstTracking = m_resourceHeapDescriptorTracking[m_currentResourceHeap][dstHeapIndex];
 
@@ -2728,7 +2830,7 @@ std::unique_ptr<DescriptorHeapTestInstanceSwitchHeaps::Pipeline> DescriptorHeapT
     const char *name, const std::vector<VkDescriptorSetAndBindingMappingEXT> &mappings,
     const std::vector<VkDescriptorSetLayoutBinding> &bindings)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const auto shaderModule = createShaderModule(vkd, *m_device, getShaderBinary(name));
 
@@ -2778,7 +2880,7 @@ std::unique_ptr<DescriptorHeapTestInstanceSwitchHeaps::Pipeline> DescriptorHeapT
 
 VkDescriptorSet DescriptorHeapTestInstanceSwitchHeaps::allocateDefaultDescriptor(VkDescriptorSetLayout setLayout)
 {
-    const auto &vkd                             = *m_deviceInterface;
+    const auto &vkd                             = m_device.getDriver();
     std::vector<VkDescriptorPoolSize> poolSizes = {
         makeDescriptorPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2),
         makeDescriptorPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 2),
@@ -2812,7 +2914,7 @@ VkDescriptorBufferInfo DescriptorHeapTestInstanceSwitchHeaps::createInlineUnifor
 VkBufferView DescriptorHeapTestInstanceSwitchHeaps::makeTexelBuffer(VkBuffer buffer, VkDeviceSize offset,
                                                                     VkDeviceSize range)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
     return *m_helperBufferViews.emplace_back(makeBufferView(vkd, *m_device, buffer, VK_FORMAT_R32_UINT, offset, range));
 }
 
@@ -2868,7 +2970,7 @@ void main() {
 
 tcu::TestStatus DescriptorHeapTestInstanceConcurrentHeapSet::iterate()
 {
-    const auto &vk                           = *m_deviceInterface;
+    const auto &vk                           = m_device.getDriver();
     const uint32_t bufferSize                = 256;
     const VkDeviceSize bufferMemorySize      = bufferSize * sizeof(int32_t);
     const VkDeviceSize imageDescriptorStride = getImageDescriptorStride(m_descriptorHeapProperties);
@@ -3200,7 +3302,7 @@ void main() {
 
 tcu::TestStatus DescriptorHeapTestInstanceStateInvalidation::iterate()
 {
-    const auto &vk = *m_deviceInterface;
+    const auto &vk = m_device.getDriver();
 
     const uint32_t bufferSize         = 256;
     const uint32_t descriptorSetCount = 16;
@@ -3375,7 +3477,7 @@ tcu::TestStatus DescriptorHeapTestInstanceStateInvalidation::iterate()
 void DescriptorHeapTestInstanceStateInvalidation::recordLegacyWrite(VkCommandBuffer cmdBuffer, uint32_t offset,
                                                                     uint32_t value)
 {
-    const auto &vk                         = *m_deviceInterface;
+    const auto &vk                         = m_device.getDriver();
     const std::array<uint32_t, 2> pushData = {offset, value};
 
     vk.cmdPushConstants(cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushData), &pushData);
@@ -3390,7 +3492,7 @@ void DescriptorHeapTestInstanceStateInvalidation::recordLegacyWrite(VkCommandBuf
 void DescriptorHeapTestInstanceStateInvalidation::recordHeapWrite(VkCommandBuffer cmdBuffer, uint32_t offset,
                                                                   uint32_t value)
 {
-    const auto &vk                         = *m_deviceInterface;
+    const auto &vk                         = m_device.getDriver();
     const std::array<uint32_t, 2> pushData = {offset, value};
 
     VkPushDataInfoEXT pushDataInfo = initVulkanStructure();
@@ -3462,7 +3564,7 @@ void main()
 
 tcu::TestStatus DescriptorHeapTestInstanceWriteAfterRecord::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     // Create a uint32_t-sized Vulkan buffer for the output
     const VkDeviceSize bufferSize = sizeof(uint32_t);
@@ -3570,9 +3672,10 @@ tcu::TestStatus DescriptorHeapTestInstanceWriteAfterRecord::iterate()
 
 DescriptorHeapTestInstanceBase::DescriptorHeapTestInstanceBase(Context &context, const TestParams &params)
     : TestInstance(context)
+    , m_instance(context)
 {
-    auto &inst      = context.getInstanceInterface();
-    auto physDevice = context.getPhysicalDevice();
+    auto &inst      = m_instance.getDriver();
+    auto physDevice = m_instance.getPhysicalDevice();
     auto queueProps = getPhysicalDeviceQueueFamilyProperties(inst, physDevice);
 
     m_queueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -3859,6 +3962,10 @@ DescriptorHeapTestInstanceBase::DescriptorHeapTestInstanceBase(Context &context,
     {
         features12.shaderStorageTexelBufferArrayDynamicIndexing = VK_TRUE;
     }
+    if (params.enableUniformAndStorageBuffer8BitAccess)
+    {
+        features12.uniformAndStorageBuffer8BitAccess = VK_TRUE;
+    }
 
     VkDeviceCreateInfo createInfo      = initVulkanStructure(&features2);
     createInfo.pEnabledFeatures        = nullptr;
@@ -3867,26 +3974,21 @@ DescriptorHeapTestInstanceBase::DescriptorHeapTestInstanceBase(Context &context,
     createInfo.queueCreateInfoCount    = 1;
     createInfo.pQueueCreateInfos       = &queueInfo;
 
-    m_device = createCustomDevice(context.getPlatformInterface(), context.getInstance(), inst, physDevice, &createInfo);
+    m_device = m_instance.createCustomDevice(physDevice, &createInfo);
 
-    m_memoryProperties = vk::getPhysicalDeviceMemoryProperties(inst, physDevice);
     m_descriptorHeapProperties =
         *findStructure<VkPhysicalDeviceDescriptorHeapPropertiesEXT>(&context.getDeviceProperties2());
-
-    m_deviceInterface = de::MovePtr<DeviceDriver>(
-        new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion(),
-                         context.getTestContext().getCommandLine()));
 
     for (uint32_t index = 0; index < params.queueCount; ++index)
     {
         VkQueue queue = VK_NULL_HANDLE;
-        m_deviceInterface->getDeviceQueue(*m_device, m_queueFamilyIndex, index, &queue);
+        m_device.getDriver().getDeviceQueue(*m_device, m_queueFamilyIndex, index, &queue);
         m_queues.push_back(queue);
     }
 
-    m_allocatorPtr = de::MovePtr<Allocator>(new SimpleAllocator(*m_deviceInterface, *m_device, m_memoryProperties));
-
     m_physDevice = physDevice;
+
+    m_memoryProperties = vk::getPhysicalDeviceMemoryProperties(inst, physDevice);
 }
 
 void DescriptorHeapTestCaseBasic::initPrograms(vk::SourceCollections &programCollection) const
@@ -3949,13 +4051,18 @@ void DescriptorHeapTestCaseBasic::initQueuePrograms(vk::SourceCollections &progr
                "}\n";
     }
 
-    int uid = 0;
+    int uid                = 0;
+    bool hasArrayedBinding = false;
 
     for (const auto &binding : m_params.bindings)
     {
         if (binding.queue != static_cast<int>(queueIndex))
         {
             continue;
+        }
+        if (binding.arrayed)
+        {
+            hasArrayedBinding = true;
         }
 
         str << "layout(set = " << binding.descriptorSet << ", binding = " << binding.firstBinding;
@@ -4019,6 +4126,8 @@ void DescriptorHeapTestCaseBasic::initQueuePrograms(vk::SourceCollections &progr
     if (m_params.stage == VK_SHADER_STAGE_FRAGMENT_BIT)
     {
         str << "layout(location = 0) out int result;\n";
+        if (hasArrayedBinding)
+            str << "layout(set = 0, binding = 0) readonly buffer Swizzler { int swizzler[]; };\n";
     }
     else
     {
@@ -4037,6 +4146,10 @@ void DescriptorHeapTestCaseBasic::initQueuePrograms(vk::SourceCollections &progr
     if (m_params.stage == VK_SHADER_STAGE_COMPUTE_BIT)
     {
         str << "int invocationId = int(gl_LocalInvocationID.x);\n";
+    }
+    if (m_params.stage == VK_SHADER_STAGE_FRAGMENT_BIT && hasArrayedBinding)
+    {
+        str << "int invocationId = int(gl_FragCoord.x);\n";
     }
     if (m_params.stage == VK_SHADER_STAGE_RAYGEN_BIT_KHR)
     {
@@ -4176,7 +4289,7 @@ void DescriptorHeapTestCaseBasic::initQueuePrograms(vk::SourceCollections &progr
     }
 }
 
-VkDeviceAddress getAccelerationStructureDeviceAddress(DeviceDriver &deviceDriver, VkDevice device,
+VkDeviceAddress getAccelerationStructureDeviceAddress(const DeviceInterface &deviceDriver, VkDevice device,
                                                       VkAccelerationStructureKHR accelerationStructure)
 {
     VkAccelerationStructureDeviceAddressInfoKHR addressInfo = initVulkanStructure();
@@ -4217,8 +4330,8 @@ VkSamplerCreateInfo makeDefaultSamplerCreateInfo()
 
 tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
 {
-    const auto &vk  = *m_deviceInterface;
-    const auto &vki = m_context.getInstanceInterface();
+    const auto &vki = m_instance.getDriver();
+    const auto &vk  = m_device.getDriver();
 
     const VkPhysicalDeviceProperties physDevProps = getPhysicalDeviceProperties(vki, m_physDevice);
 
@@ -4276,7 +4389,7 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
     Move<VkCommandPool> cmdPool = makeCommandPool(vk, *m_device, m_queueFamilyIndex);
     std::vector<Move<VkCommandBuffer>> cmdBuffers;
 
-    auto createDescriptorHeap = [this, &vk](VkDeviceSize heapSize, uint32_t queueIndex)
+    auto createDescriptorHeap = [this, &vk, &vki](VkDeviceSize heapSize, uint32_t queueIndex)
     {
         std::unique_ptr<Buffer> descriptorHeap = std::make_unique<Buffer>();
         std::unique_ptr<Buffer> unprotectedBuffer;
@@ -4317,8 +4430,8 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
         if (!m_params.enableSparseHeap)
             allocatePNext = &allocFlagsInfo;
 
-        descriptorHeap->memory = allocateExtended(m_context.getInstanceInterface(), vk, m_context.getPhysicalDevice(),
-                                                  *m_device, bufferMemReqs, memReqs, allocatePNext);
+        descriptorHeap->memory =
+            allocateExtended(vki, vk, m_physDevice, *m_device, bufferMemReqs, memReqs, allocatePNext);
 
         if (m_params.enableSparseHeap || m_params.enableProtectedHeap)
         {
@@ -4436,7 +4549,10 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
         beginCommandBuffer(vk, cmdBuf);
 
         vk.cmdBindResourceHeapEXT(cmdBuf, &resourceHeap);
-        vk.cmdBindSamplerHeapEXT(cmdBuf, &samplerHeap);
+        if (m_params.bindSamplerHeap)
+        {
+            vk.cmdBindSamplerHeapEXT(cmdBuf, &samplerHeap);
+        }
 
         if (m_params.enableSparseHeap || m_params.enableProtectedHeap)
         {
@@ -4853,7 +4969,7 @@ void DescriptorHeapTestInstanceBasic::setupDescriptors(VkCommandBuffer cmdBuf, c
                                                        char *samplerDescriptorHeapHostPtr, de::Random &rnd,
                                                        std::vector<int32_t> &expectedResult)
 {
-    const auto &vk                          = *m_deviceInterface;
+    const auto &vk                          = m_device.getDriver();
     const auto indirectAddressBufferHostPtr = m_deferredIndirectAddressBuffer.data();
 
     const int heapIndex = binding.heapIndex < 0 ? binding.firstBinding : binding.heapIndex;
@@ -5380,17 +5496,15 @@ void DescriptorHeapTestInstanceBasic::setupDescriptors(VkCommandBuffer cmdBuf, c
             auto &rtBlas = m_rtBlases.emplace_back(de::SharedPtr(makeBottomLevelAccelerationStructure().release()));
             rtBlas->setCreateFlags(createFlags);
             rtBlas->setGeometryData(vertices, true);
-            rtBlas->create(*m_deviceInterface, *m_device, *m_allocatorPtr, bufferProps, 0, 0, 0, 0, nullptr,
-                           memoryReqs);
+            rtBlas->create(vk, *m_device, m_device.getAllocator(), bufferProps, 0, 0, 0, 0, nullptr, memoryReqs);
 
             auto &rtTlas = m_rtTlases.emplace_back(MovePtr(makeTopLevelAccelerationStructure().release()));
             rtTlas->addInstance(rtBlas);
             rtTlas->setCreateFlags(createFlags);
-            rtTlas->create(*m_deviceInterface, *m_device, *m_allocatorPtr, bufferProps, 0, 0, 0, 0, nullptr,
-                           memoryReqs);
+            rtTlas->create(vk, *m_device, m_device.getAllocator(), bufferProps, 0, 0, 0, 0, nullptr, memoryReqs);
 
             uint64_t accelerationStructureAddress =
-                getAccelerationStructureDeviceAddress(*m_deviceInterface, *m_device, *rtTlas->getPtr());
+                getAccelerationStructureDeviceAddress(vk, *m_device, *rtTlas->getPtr());
 
             if (binding.nullDescriptor)
             {
@@ -5454,8 +5568,8 @@ void DescriptorHeapTestInstanceBasic::setupDescriptors(VkCommandBuffer cmdBuf, c
                 }
             }
 
-            rtBlas->build(*m_deviceInterface, *m_device, cmdBuf);
-            rtTlas->build(*m_deviceInterface, *m_device, cmdBuf);
+            rtBlas->build(vk, *m_device, cmdBuf);
+            rtTlas->build(vk, *m_device, cmdBuf);
             break;
         }
         default:
@@ -5490,7 +5604,7 @@ VkPipeline DescriptorHeapTestInstanceBasic::initComputePipeline(
     const std::vector<VkDescriptorSetAndBindingMappingEXT> &mappings, uint32_t queueIndex)
 {
     auto &shaderBinary      = getShaderBinary("compute" + std::to_string(queueIndex));
-    const auto shaderModule = createShaderModule(*m_deviceInterface, *m_device, shaderBinary);
+    const auto shaderModule = createShaderModule(m_device.getDriver(), *m_device, shaderBinary);
 
     VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
     mappingInfo.mappingCount                                  = static_cast<uint32_t>(mappings.size());
@@ -5516,7 +5630,7 @@ VkPipeline DescriptorHeapTestInstanceBasic::initComputePipeline(
     pipelineCreateInfo.basePipelineIndex           = 0;
 
     return *m_stagingPipelines.emplace_back(
-        createComputePipeline(*m_deviceInterface, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo));
+        createComputePipeline(m_device.getDriver(), *m_device, VK_NULL_HANDLE, &pipelineCreateInfo));
 }
 
 VkRenderPass DescriptorHeapTestInstanceBasic::initRenderPass()
@@ -5574,7 +5688,7 @@ VkRenderPass DescriptorHeapTestInstanceBasic::initRenderPass()
         renderPassCreateInfo.pDependencies          = dependencies.data();
 
         return *m_stagingRenderPasses.emplace_back(
-            createRenderPass(*m_deviceInterface, *m_device, &renderPassCreateInfo));
+            createRenderPass(m_device.getDriver(), *m_device, &renderPassCreateInfo));
     }
     else
     {
@@ -5592,7 +5706,7 @@ VkRenderPass DescriptorHeapTestInstanceBasic::initRenderPass()
         renderPassCreateInfo.pSubpasses             = &subpass;
 
         return *m_stagingRenderPasses.emplace_back(
-            createRenderPass(*m_deviceInterface, *m_device, &renderPassCreateInfo));
+            createRenderPass(m_device.getDriver(), *m_device, &renderPassCreateInfo));
     }
 }
 
@@ -5602,8 +5716,8 @@ VkPipeline DescriptorHeapTestInstanceBasic::initGraphicsPipeline(
     auto &vertBinary = getShaderBinary("vertex" + std::to_string(queueIndex));
     auto &fragBinary = getShaderBinary("fragment" + std::to_string(queueIndex));
 
-    const auto vertModule = createShaderModule(*m_deviceInterface, *m_device, vertBinary);
-    const auto fragModule = createShaderModule(*m_deviceInterface, *m_device, fragBinary);
+    const auto vertModule = createShaderModule(m_device.getDriver(), *m_device, vertBinary);
+    const auto fragModule = createShaderModule(m_device.getDriver(), *m_device, fragBinary);
 
     VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
     mappingInfo.mappingCount                                  = static_cast<uint32_t>(mappings.size());
@@ -5692,7 +5806,7 @@ VkPipeline DescriptorHeapTestInstanceBasic::initGraphicsPipeline(
     createInfo.basePipelineHandle           = VK_NULL_HANDLE;
     createInfo.basePipelineIndex            = 0;
     return *m_stagingPipelines.emplace_back(
-        createGraphicsPipeline(*m_deviceInterface, *m_device, VK_NULL_HANDLE, &createInfo));
+        createGraphicsPipeline(m_device.getDriver(), *m_device, VK_NULL_HANDLE, &createInfo));
 }
 
 uint32_t getShaderGroupHandleSize(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice)
@@ -5717,12 +5831,12 @@ VkPipeline DescriptorHeapTestInstanceBasic::initRayTracingPipeline(
     const std::vector<VkDescriptorSetAndBindingMappingEXT> &mappings, uint32_t queueIndex)
 {
     // Code taken from vktBindingDescriptorBufferTests.cpp
-    const InstanceInterface &vki          = m_context.getInstanceInterface();
-    const DeviceInterface &vkd            = *m_deviceInterface;
+    const InstanceInterface &vki          = m_instance.getDriver();
+    const DeviceInterface &vkd            = m_device.getDriver();
     const VkDevice device                 = *m_device;
-    const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+    const VkPhysicalDevice physicalDevice = m_physDevice;
     vk::BinaryCollection &collection      = m_context.getBinaryCollection();
-    Allocator &allocator                  = *m_allocatorPtr;
+    Allocator &allocator                  = m_device.getAllocator();
     const VkShaderStageFlags hitStages =
         VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
 
@@ -5846,7 +5960,7 @@ std::pair<VkImage, VkImageView> DescriptorHeapTestInstanceBasic::initPrePassRend
     imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
     imageViewCreateInfo.subresourceRange.layerCount     = 1;
     VkImageView prePassImageView =
-        *m_stagingImageViews.emplace_back(createImageView(*m_deviceInterface, *m_device, &imageViewCreateInfo));
+        *m_stagingImageViews.emplace_back(createImageView(m_device.getDriver(), *m_device, &imageViewCreateInfo));
 
     return {prePassImage, prePassImageView};
 }
@@ -5878,7 +5992,7 @@ std::pair<VkImage, VkImageView> DescriptorHeapTestInstanceBasic::initRenderTarge
     imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
     imageViewCreateInfo.subresourceRange.layerCount     = 1;
     VkImageView renderTargetImageView =
-        *m_stagingImageViews.emplace_back(createImageView(*m_deviceInterface, *m_device, &imageViewCreateInfo));
+        *m_stagingImageViews.emplace_back(createImageView(m_device.getDriver(), *m_device, &imageViewCreateInfo));
 
     return {renderTargetImage, renderTargetImageView};
 }
@@ -5906,7 +6020,7 @@ VkFramebuffer DescriptorHeapTestInstanceBasic::initFramebuffer(VkRenderPass rend
     framebufferCreateInfo.height                  = 1;
     framebufferCreateInfo.layers                  = 1;
     return *m_stagingFramebuffers.emplace_back(
-        createFramebuffer(*m_deviceInterface, *m_device, &framebufferCreateInfo));
+        createFramebuffer(m_device.getDriver(), *m_device, &framebufferCreateInfo));
 }
 
 void DescriptorHeapTestInstanceBasic::addRayTracingShader(
@@ -5919,7 +6033,7 @@ void DescriptorHeapTestInstanceBasic::addRayTracingShader(
     mappingInfo.mappingCount = static_cast<uint32_t>(mappings.size());
     mappingInfo.pMappings    = mappings.data();
 
-    rayTracingPipeline->addShader(stage, createShaderModule(*m_deviceInterface, *m_device, getShaderBinary(name), 0),
+    rayTracingPipeline->addShader(stage, createShaderModule(m_device.getDriver(), *m_device, getShaderBinary(name), 0),
                                   group, nullptr, 0, &mappingInfo);
 }
 
@@ -6025,7 +6139,7 @@ VkImageViewCreateInfo DescriptorHeapTestInstanceBasic::createTestImageViewInfo(i
     transfer2sampleDependencyInfo.imageMemoryBarrierCount = 1;
     transfer2sampleDependencyInfo.pImageMemoryBarriers    = &transfer2sampleImageMemoryBarrier;
 
-    auto &vk = *m_deviceInterface;
+    auto &vk = m_device.getDriver();
     vk.cmdPipelineBarrier2(cmdBuf, &undefined2transferDependencyInfo);
     vk.cmdCopyBufferToImage(cmdBuf, *stagingBuffer->buffer, *image->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                             &region);
@@ -6050,8 +6164,8 @@ VkImageViewCreateInfo DescriptorHeapTestInstanceBasic::createTestImageViewInfo(i
 
 tcu::TestStatus DescriptorHeapTestInstanceInvariance::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
-    auto &vki       = m_context.getInstanceInterface();
+    const auto &vki = m_instance.getDriver();
+    const auto &vkd = m_device.getDriver();
 
     de::Random rnd(m_params.seed);
     for (int i = 0; i < 4; ++i)
@@ -6120,8 +6234,8 @@ tcu::TestStatus DescriptorHeapTestInstanceInvariance::iterate()
 
 VkResult DescriptorHeapTestInstanceInvariance::createInvarianceResources(bool capture, bool replay)
 {
-    auto &vki = m_context.getInstanceInterface();
-    auto &vkd = *m_deviceInterface;
+    auto &vki = m_instance.getDriver();
+    auto &vkd = m_device.getDriver();
 
     VkMemoryOpaqueCaptureAddressAllocateInfo opaqueCaptureAddressAllocateInfo = initVulkanStructure();
     VkMemoryAllocateFlagsInfo allocFlagsInfo                                  = initVulkanStructure();
@@ -6248,9 +6362,8 @@ VkResult DescriptorHeapTestInstanceInvariance::createInvarianceResources(bool ca
 
         auto bufferMemReqs = getBufferMemoryRequirements(vkd, *m_device, *m_buffer->buffer);
 
-        VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
-        VkPhysicalDeviceMemoryProperties memoryProperties =
-            vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), physicalDevice);
+        VkPhysicalDevice physicalDevice                   = m_physDevice;
+        VkPhysicalDeviceMemoryProperties memoryProperties = vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice);
         auto memReqs = (capture || replay) ? MemoryRequirement::DeviceAddressCaptureReplay : MemoryRequirement::Any;
         uint32_t compatMask = bufferMemReqs.memoryTypeBits & getCompatibleMemoryTypes(memoryProperties, memReqs);
         DE_ASSERT(compatMask != 0);
@@ -6258,8 +6371,8 @@ VkResult DescriptorHeapTestInstanceInvariance::createInvarianceResources(bool ca
 
         allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
 
-        m_buffer->memory = allocateExtended(m_context.getInstanceInterface(), vkd, physicalDevice, *m_device,
-                                            bufferMemReqs, memReqs, &allocFlagsInfo);
+        m_buffer->memory = allocateExtended(m_instance.getDriver(), vkd, physicalDevice, *m_device, bufferMemReqs,
+                                            memReqs, &allocFlagsInfo);
         vkd.bindBufferMemory(*m_device, *m_buffer->buffer, m_buffer->memory->getMemory(),
                              m_buffer->memory->getOffset());
         m_buffer->address = getBufferDeviceAddress(vkd, *m_device, *m_buffer->buffer, 0);
@@ -6299,14 +6412,14 @@ VkResult DescriptorHeapTestInstanceInvariance::createInvarianceResources(bool ca
         m_rtBlas = de::SharedPtr(makeBottomLevelAccelerationStructure().release());
         m_rtBlas->setCreateFlags(createFlags);
         m_rtBlas->setGeometryData(vertices, true);
-        m_rtBlas->create(*m_deviceInterface, *m_device, *m_allocatorPtr, bufferProps, 0, captureBlasAddress, 0, 0,
-                         nullptr, memoryReqs);
+        m_rtBlas->create(vkd, *m_device, m_device.getAllocator(), bufferProps, 0, captureBlasAddress, 0, 0, nullptr,
+                         memoryReqs);
 
         m_rtTlas = makeTopLevelAccelerationStructure();
         m_rtTlas->addInstance(m_rtBlas);
         m_rtTlas->setCreateFlags(createFlags);
-        m_rtTlas->create(*m_deviceInterface, *m_device, *m_allocatorPtr, bufferProps, 0, captureTlasAddress, 0, 0,
-                         nullptr, memoryReqs);
+        m_rtTlas->create(vkd, *m_device, m_device.getAllocator(), bufferProps, 0, captureTlasAddress, 0, 0, nullptr,
+                         memoryReqs);
 
         if (capture)
         {
@@ -6330,7 +6443,7 @@ VkResult DescriptorHeapTestInstanceInvariance::createInvarianceResources(bool ca
 
 VkResult DescriptorHeapTestInstanceInvariance::writeInvarianceDescriptor(std::vector<char> &descriptorData)
 {
-    auto &vk = *m_deviceInterface;
+    auto &vk = m_device.getDriver();
 
     VkHostAddressRangeEXT hostAddressRange{};
     hostAddressRange.address = descriptorData.data();
@@ -6438,9 +6551,8 @@ VkResult DescriptorHeapTestInstanceInvariance::writeInvarianceDescriptor(std::ve
         VkDeviceAddressRangeEXT deviceAddressRange{};
         if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
         {
-            deviceAddressRange.address =
-                getAccelerationStructureDeviceAddress(*m_deviceInterface, *m_device, *m_rtTlas->getPtr());
-            deviceAddressRange.size = 0;
+            deviceAddressRange.address = getAccelerationStructureDeviceAddress(vk, *m_device, *m_rtTlas->getPtr());
+            deviceAddressRange.size    = 0;
         }
         else
         {
@@ -6481,10 +6593,11 @@ DescriptorHeapTestInstanceReservedHeap::DescriptorHeapTestInstanceReservedHeap(C
                                                                                const TestParamsReservedHeap &params)
     : TestInstance(context)
     , m_params{params}
+    , m_instance(context)
     , m_rnd(params.seed)
 {
-    auto &inst      = context.getInstanceInterface();
-    auto physDevice = context.getPhysicalDevice();
+    auto &inst      = m_instance.getDriver();
+    auto physDevice = m_instance.getPhysicalDevice();
     auto queueProps = getPhysicalDeviceQueueFamilyProperties(inst, physDevice);
 
     for (uint32_t i = 0; i < queueProps.size(); ++i)
@@ -6556,27 +6669,21 @@ DescriptorHeapTestInstanceReservedHeap::DescriptorHeapTestInstanceReservedHeap(C
     createInfo.queueCreateInfoCount    = static_cast<uint32_t>(queueInfos.size());
     createInfo.pQueueCreateInfos       = queueInfos.data();
 
-    m_device = createCustomDevice(context.getPlatformInterface(), context.getInstance(), inst, physDevice, &createInfo);
+    m_device = m_instance.createCustomDevice(physDevice, &createInfo);
 
     m_memoryProperties = vk::getPhysicalDeviceMemoryProperties(inst, physDevice);
     m_descriptorHeapProperties =
         *findStructure<VkPhysicalDeviceDescriptorHeapPropertiesEXT>(&context.getDeviceProperties2());
-
-    m_deviceInterface = de::MovePtr<DeviceDriver>(
-        new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion(),
-                         context.getTestContext().getCommandLine()));
 
     for (size_t i = 0; i < m_queueFamilies.size(); ++i)
     {
         for (uint32_t j = 0; j < m_queueCounts[i]; ++j)
         {
             VkQueue queue = VK_NULL_HANDLE;
-            m_deviceInterface->getDeviceQueue(*m_device, m_queueFamilies[i], j, &queue);
+            m_device.getDriver().getDeviceQueue(*m_device, m_queueFamilies[i], j, &queue);
             m_queues.push_back(queue);
         }
     }
-
-    m_allocatorPtr = de::MovePtr<Allocator>(new SimpleAllocator(*m_deviceInterface, *m_device, m_memoryProperties));
 
     m_physDevice = physDevice;
 }
@@ -6591,7 +6698,8 @@ tcu::TestStatus DescriptorHeapTestInstanceReservedHeap::iterate()
         return tcu::TestStatus::pass("Heap reserved ranges are zero");
     }
 
-    const DeviceInterface &vk = *m_deviceInterface;
+    const InstanceInterface &vki = m_instance.getDriver();
+    const DeviceInterface &vk    = m_device.getDriver();
 
     auto shaderModule = createShaderModule(vk, *m_device, m_context.getBinaryCollection().get("atomic_counter"));
 
@@ -6640,7 +6748,7 @@ tcu::TestStatus DescriptorHeapTestInstanceReservedHeap::iterate()
 
     const VkDeviceSize atomicCounterBufferSize = m_queues.size() * sizeof(uint32_t);
     auto atomicCounterBuffer =
-        createBufferAndMemory(vk, m_context, m_memoryProperties, *m_device, atomicCounterBufferSize,
+        createBufferAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, atomicCounterBufferSize,
                               VK_BUFFER_USAGE_2_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT);
     deMemset(atomicCounterBuffer->memory->getHostPtr(), 0, static_cast<size_t>(atomicCounterBufferSize));
 
@@ -6661,13 +6769,13 @@ tcu::TestStatus DescriptorHeapTestInstanceReservedHeap::iterate()
     dstImageCreateInfo.pQueueFamilyIndices   = m_queueFamilies.data();
     dstImageCreateInfo.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    m_dstImage = createImageAndMemory(vk, m_context, m_memoryProperties, *m_device, dstImageCreateInfo);
+    m_dstImage = createImageAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, dstImageCreateInfo);
 
     const VkDeviceSize dstBufferSize = VkDeviceSize{imageExtent * imageExtent} * m_queues.size() * sizeof(uint8_t);
-    auto dstBuffer = createBufferAndMemory(vk, m_context, m_memoryProperties, *m_device, dstBufferSize,
+    auto dstBuffer = createBufferAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, dstBufferSize,
                                            VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR);
     m_srcBuffer =
-        createBufferAndMemory(vk, m_context, m_memoryProperties, *m_device, dstBufferSize,
+        createBufferAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, dstBufferSize,
                               VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT_KHR | VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR);
     m_expectedResult.resize(static_cast<size_t>(dstBufferSize));
 
@@ -6676,7 +6784,7 @@ tcu::TestStatus DescriptorHeapTestInstanceReservedHeap::iterate()
     const VkDeviceSize resourceHeapSize =
         userResourceHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
     auto resourceDescriptorHeapBuffer = createBufferAndMemory(
-        vk, m_context, m_memoryProperties, *m_device, resourceHeapSize,
+        vki, m_physDevice, vk, m_memoryProperties, *m_device, resourceHeapSize,
         VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR | VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT);
 
     m_resourceDescriptorHeap                     = initVulkanStructure();
@@ -6690,7 +6798,7 @@ tcu::TestStatus DescriptorHeapTestInstanceReservedHeap::iterate()
     const VkDeviceSize samplerDescriptorHeapBufferSize =
         dummySamplerDescriptorsSize + m_descriptorHeapProperties.minSamplerHeapReservedRange;
     auto samplerDescriptorHeapBuffer = createBufferAndMemory(
-        vk, m_context, m_memoryProperties, *m_device, samplerDescriptorHeapBufferSize,
+        vki, m_physDevice, vk, m_memoryProperties, *m_device, samplerDescriptorHeapBufferSize,
         VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR | VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT);
 
     m_samplerDescriptorHeap                     = initVulkanStructure();
@@ -6739,9 +6847,9 @@ tcu::TestStatus DescriptorHeapTestInstanceReservedHeap::iterate()
         colorImageCreateInfo.queueFamilyIndexCount = static_cast<uint32_t>(m_queueFamilies.size());
         colorImageCreateInfo.pQueueFamilyIndices   = m_queueFamilies.data();
         colorImageCreateInfo.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
-        m_colorImage = createImageAndMemory(vk, m_context, m_memoryProperties, *m_device, colorImageCreateInfo);
+        m_colorImage = createImageAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, colorImageCreateInfo);
 
-        colorBuffer = createBufferAndMemory(vk, m_context, m_memoryProperties, *m_device, 256,
+        colorBuffer = createBufferAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, 256,
                                             VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT_KHR);
 
         uint8_t *const colorBufferPtr = reinterpret_cast<uint8_t *>(colorBuffer->memory->getHostPtr());
@@ -7051,7 +7159,8 @@ tcu::TestStatus DescriptorHeapTestInstanceReservedHeap::iterate()
 void DescriptorHeapTestInstanceReservedHeap::recordQueueCommandBuffer(VkCommandBuffer cmdBuf, uint32_t globalQueueIndex,
                                                                       uint32_t queueFamily)
 {
-    const auto &vk = *m_deviceInterface;
+    const auto &vki = m_instance.getDriver();
+    const auto &vk  = m_device.getDriver();
 
     const uint32_t area = m_params.imageExtent * m_params.imageExtent;
 
@@ -7194,7 +7303,7 @@ void DescriptorHeapTestInstanceReservedHeap::recordQueueCommandBuffer(VkCommandB
         stagingImageCreateInfo.pQueueFamilyIndices   = nullptr;
         stagingImageCreateInfo.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
         auto &interImage                             = m_stagingImages.emplace_back(
-            createImageAndMemory(vk, m_context, m_memoryProperties, *m_device, stagingImageCreateInfo));
+            createImageAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, stagingImageCreateInfo));
 
         std::vector<uint8_t> contents(area);
         for (uint8_t &texel : contents)
@@ -7204,9 +7313,9 @@ void DescriptorHeapTestInstanceReservedHeap::recordQueueCommandBuffer(VkCommandB
 
         const auto usageBits = VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR | VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT_KHR;
         auto &srcBuffer      = m_stagingBuffers.emplace_back(
-            createBufferAndMemory(vk, m_context, m_memoryProperties, *m_device, area, usageBits));
+            createBufferAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, area, usageBits));
         auto &interBuffer = m_stagingBuffers.emplace_back(
-            createBufferAndMemory(vk, m_context, m_memoryProperties, *m_device, area, usageBits));
+            createBufferAndMemory(vki, m_physDevice, vk, m_memoryProperties, *m_device, area, usageBits));
 
         deMemcpy(srcBuffer->memory->getHostPtr(), contents.data(), contents.size());
         deMemcpy(&m_expectedResult[area * globalQueueIndex], contents.data(), contents.size());
@@ -8083,8 +8192,8 @@ void DescriptorHeapTestCaseSpirv::initPrograms(vk::SourceCollections &programCol
 
 tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
 {
-    const auto &vkd                 = *m_deviceInterface;
-    auto &vki                       = m_context.getInstanceInterface();
+    const auto &vki                 = m_instance.getDriver();
+    const auto &vkd                 = m_device.getDriver();
     const VkDevice device           = *m_device;
     const uint32_t queueFamilyIndex = m_queueFamilyIndex;
     const VkQueue queue             = m_queues[0];
@@ -8214,7 +8323,7 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
                               VK_BUFFER_USAGE_2_TRANSFER_DST_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
     deMemset(outputBuffer->memory->getHostPtr(), 0, static_cast<size_t>(outputBufferSize));
 
-    auto computeModule = createShaderModule(*m_deviceInterface, device, getShaderBinary("compute"));
+    auto computeModule = createShaderModule(vkd, device, getShaderBinary("compute"));
 
     auto cmdPool      = makeCommandPool(vkd, device, queueFamilyIndex);
     auto cmdBufferPtr = allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -8753,7 +8862,7 @@ tcu::TestStatus DescriptorHeapTestInstanceResourceMasking::iterate()
         VK_SPIRV_RESOURCE_TYPE_READ_WRITE_STORAGE_BUFFER_BIT_EXT,
     };
 
-    const auto &vkd                 = *m_deviceInterface;
+    const auto &vkd                 = m_device.getDriver();
     const VkDevice device           = *m_device;
     const uint32_t queueFamilyIndex = m_queueFamilyIndex;
     const VkQueue queue             = m_queues[0];
@@ -8851,8 +8960,7 @@ tcu::TestStatus DescriptorHeapTestInstanceResourceMasking::iterate()
         imageView.subresourceRange.layerCount     = 1;
     }
 
-    const VkPhysicalDeviceProperties physDevProps =
-        getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_physDevice);
+    const VkPhysicalDeviceProperties physDevProps = getPhysicalDeviceProperties(m_instance.getDriver(), m_physDevice);
 
     const VkDeviceSize uniformBufferSize =
         alignUp(VkDeviceSize{sizeof(int32_t)}, physDevProps.limits.minUniformBufferOffsetAlignment);
@@ -8927,7 +9035,7 @@ tcu::TestStatus DescriptorHeapTestInstanceResourceMasking::iterate()
     VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, numResourceDescriptors, resources.data(),
                                              descriptorHostRanges.data()));
 
-    auto computeModule = createShaderModule(*m_deviceInterface, device, getShaderBinary("compute"));
+    auto computeModule = createShaderModule(m_device.getDriver(), device, getShaderBinary("compute"));
 
     VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
     mappingInfo.mappingCount                                  = static_cast<uint32_t>(mappings.size());
@@ -9125,7 +9233,7 @@ tcu::TestStatus DescriptorHeapTestInstanceNullImageQueries::iterate()
         int32_t nullLevels;
     };
 
-    const auto &vkd                 = *m_deviceInterface;
+    const auto &vkd                 = m_device.getDriver();
     const VkDevice device           = *m_device;
     const uint32_t queueFamilyIndex = m_queueFamilyIndex;
     const VkQueue queue             = m_queues[0];
@@ -9138,8 +9246,7 @@ tcu::TestStatus DescriptorHeapTestInstanceNullImageQueries::iterate()
 
     const VkDeviceSize imageStride = getImageDescriptorStride(m_descriptorHeapProperties);
 
-    const VkPhysicalDeviceProperties physDevProps =
-        getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_physDevice);
+    const VkPhysicalDeviceProperties physDevProps = getPhysicalDeviceProperties(m_instance.getDriver(), m_physDevice);
 
     const VkDeviceSize outputBufferSize =
         alignUp(VkDeviceSize{sizeof(OutputData)}, physDevProps.limits.minStorageBufferOffsetAlignment);
@@ -9278,7 +9385,7 @@ tcu::TestStatus DescriptorHeapTestInstanceNullImageQueries::iterate()
     heapBindInfo.reservedRangeOffset = userHeapSize;
     heapBindInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
 
-    auto computeModule = createShaderModule(*m_deviceInterface, device, getShaderBinary("compute"));
+    auto computeModule = createShaderModule(vkd, device, getShaderBinary("compute"));
 
     VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
     mappingInfo.mappingCount                                  = static_cast<uint32_t>(mappings.size());
@@ -9406,21 +9513,36 @@ private:
 
 void DescriptorHeapTestCaseGraphics::initPrograms(vk::SourceCollections &programCollection) const
 {
-    std::string vertex = R"(#version 450
+    std::string vecDecl = "\n";
+    if (m_params.useVectors)
+        vecDecl = R"(layout(descriptor_heap) uniform UM { mat4 inputData; }  uboMat[];
+layout(descriptor_heap)  buffer OV { vec4 outputData; } ssboVec[];
+)";
+    std::string vecWriteStart = "    ssboVec[";
+    std::string vecWriteEnd   = "].outputData = uboMat[10].inputData * vec4(1, 2, 3, 4);\n";
+
+    std::ostringstream vertex;
+    vertex << R"(#version 450
 #extension GL_EXT_descriptor_heap: require
 
 layout(push_constant, std430) uniform X { uint pushData[5]; };
 layout(descriptor_heap) uniform U { uint  inputData; }  ubo[];
 layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
-
-void main()
+)";
+    vertex << vecDecl;
+    vertex << R"(void main()
 {
     gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
     ssbo[0].outputData = ubo[1].inputData ^ pushData[0];
-}
+)";
+    if (m_params.useVectors)
+        vertex << vecWriteStart << "11" << vecWriteEnd;
+    vertex << R"(}
 )";
 
-    std::string tcs = R"(#version 450
+    std::ostringstream tcs;
+    tcs <<
+        R"(#version 450
 #extension GL_EXT_descriptor_heap: require
 
 layout(vertices = 1) out;
@@ -9428,8 +9550,9 @@ layout(vertices = 1) out;
 layout(push_constant, std430) uniform X { uint pushData[5]; };
 layout(descriptor_heap) uniform U { uint  inputData; }  ubo[];
 layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
-
-void main()
+)";
+    tcs << vecDecl;
+    tcs << R"(void main()
 {
     gl_out[gl_InvocationID].gl_Position = gl_in[0].gl_Position;
     gl_TessLevelInner[0] = 1.0;
@@ -9438,10 +9561,14 @@ void main()
     gl_TessLevelOuter[2] = 1.0;
     gl_TessLevelOuter[3] = 1.0;
     ssbo[2].outputData = ubo[3].inputData ^ pushData[1];
-}
+)";
+    if (m_params.useVectors)
+        tcs << vecWriteStart << "12" << vecWriteEnd;
+    tcs << R"(}
 )";
 
-    std::string tes = R"(#version 450
+    std::ostringstream tes;
+    tes << R"(#version 450
 #extension GL_EXT_descriptor_heap: require
 
 layout(triangles, equal_spacing, cw) in;
@@ -9449,15 +9576,20 @@ layout(triangles, equal_spacing, cw) in;
 layout(push_constant, std430) uniform X { uint pushData[5]; };
 layout(descriptor_heap) uniform U { uint  inputData; }  ubo[];
 layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
-
-void main()
+)";
+    tes << vecDecl;
+    tes << R"(void main()
 {
     gl_Position = vec4(gl_TessCoord.xy, 0, 1);
     ssbo[4].outputData = ubo[5].inputData ^ pushData[2];
-}
+)";
+    if (m_params.useVectors)
+        tes << vecWriteStart << "13" << vecWriteEnd;
+    tes << R"(}
 )";
 
-    std::string geometryWithoutTess = R"(#version 450
+    std::ostringstream geometryWithoutTess;
+    geometryWithoutTess << R"(#version 450
 #extension GL_EXT_descriptor_heap: require
 
 layout(points) in;
@@ -9466,17 +9598,22 @@ layout(points, max_vertices = 1) out;
 layout(push_constant, std430) uniform X { uint pushData[5]; };
 layout(descriptor_heap) uniform U { uint  inputData; }  ubo[];
 layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
-
-void main()
+)";
+    geometryWithoutTess << vecDecl;
+    geometryWithoutTess << R"(void main()
 {
     gl_Position = gl_in[0].gl_Position;
     EmitVertex();
     EndPrimitive();
     ssbo[6].outputData = ubo[7].inputData ^ pushData[3];
-}
+)";
+    if (m_params.useVectors)
+        geometryWithoutTess << vecWriteStart << "14" << vecWriteEnd;
+    geometryWithoutTess << R"(}
 )";
 
-    std::string geometryWithTess = R"(#version 450
+    std::ostringstream geometryWithTess;
+    geometryWithTess << R"(#version 450
 #extension GL_EXT_descriptor_heap: require
 
 layout(triangles) in;
@@ -9485,30 +9622,37 @@ layout(points, max_vertices = 1) out;
 layout(push_constant, std430) uniform X { uint pushData[5]; };
 layout(descriptor_heap) uniform U { uint  inputData; }  ubo[];
 layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
-
-void main()
+)";
+    geometryWithTess << vecDecl;
+    geometryWithTess << R"(void main()
 {
     gl_Position = gl_in[0].gl_Position;
     EmitVertex();
     EndPrimitive();
     ssbo[6].outputData = ubo[7].inputData ^ pushData[3];
-}
+)";
+    if (m_params.useVectors)
+        geometryWithTess << vecWriteStart << "14" << vecWriteEnd;
+    geometryWithTess << R"(}
 )";
 
-    std::string fragment = R"(#version 450
+    std::ostringstream fragment;
+    fragment << R"(#version 450
 #extension GL_EXT_descriptor_heap: require
 
 layout(push_constant, std430) uniform X { uint pushData[5]; };
 layout(descriptor_heap) uniform U { uint  inputData; }  ubo[];
 layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
-
-void main()
+)";
+    fragment << vecDecl;
+    fragment << R"(void main()
 {
     ssbo[8].outputData = ubo[9].inputData ^ pushData[4];
 }
 )";
 
-    std::string mesh = R"(#version 460
+    std::ostringstream mesh;
+    mesh << R"(#version 460
 #extension GL_EXT_descriptor_heap: require
 #extension GL_EXT_mesh_shader: enable
 
@@ -9519,17 +9663,22 @@ layout(max_vertices = 1, max_primitives = 1) out;
 layout(push_constant, std430) uniform X { uint pushData[5]; };
 layout(descriptor_heap) uniform U { uint  inputData; }  ubo[];
 layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
-
-void main()
+)";
+    mesh << vecDecl;
+    mesh << R"(void main()
 {
     SetMeshOutputsEXT(1, 1);
     gl_MeshVerticesEXT[0].gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
     gl_PrimitivePointIndicesEXT[0] = 0;
     ssbo[2].outputData = ubo[3].inputData ^ pushData[1];
-}
+)";
+    if (m_params.useVectors)
+        mesh << vecWriteStart << "15" << vecWriteEnd;
+    mesh << R"(}
 )";
 
-    std::string task = R"(#version 460
+    std::ostringstream task;
+    task << R"(#version 460
 #extension GL_EXT_mesh_shader: enable
 #extension GL_EXT_descriptor_heap: require
 
@@ -9538,59 +9687,65 @@ layout(local_size_x = 1) in;
 layout(push_constant, std430) uniform X { uint pushData[5]; };
 layout(descriptor_heap) uniform U { uint  inputData; }  ubo[];
 layout(descriptor_heap)  buffer O { uint outputData; } ssbo[];
-
-void main() {
+)";
+    task << vecDecl;
+    task << R"(void main() {
     ssbo[0].outputData = ubo[1].inputData ^ pushData[0];
     EmitMeshTasksEXT(1, 1, 1);
-}
+)";
+    if (m_params.useVectors)
+        task << vecWriteStart << "16" << vecWriteEnd;
+    task << R"(}
 )";
 
     vk::ShaderBuildOptions options(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_6, 0);
 
     if (m_params.enableMeshShader)
     {
-        programCollection.glslSources.add("mesh") << glu::MeshSource(mesh) << options;
+        programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << options;
 
         if (m_params.enableTaskShader)
         {
-            programCollection.glslSources.add("task") << glu::TaskSource(task) << options;
+            programCollection.glslSources.add("task") << glu::TaskSource(task.str()) << options;
         }
     }
     else
     {
-        programCollection.glslSources.add("vertex") << glu::VertexSource(vertex) << options;
+        programCollection.glslSources.add("vertex") << glu::VertexSource(vertex.str()) << options;
 
         if (m_params.enableTessellationShader)
         {
-            programCollection.glslSources.add("tcs") << glu::TessellationControlSource(tcs) << options;
-            programCollection.glslSources.add("tes") << glu::TessellationEvaluationSource(tes) << options;
+            programCollection.glslSources.add("tcs") << glu::TessellationControlSource(tcs.str()) << options;
+            programCollection.glslSources.add("tes") << glu::TessellationEvaluationSource(tes.str()) << options;
         }
         if (m_params.enableGeometryShader)
         {
             if (m_params.enableTessellationShader)
             {
-                programCollection.glslSources.add("geometry") << glu::GeometrySource(geometryWithTess) << options;
+                programCollection.glslSources.add("geometry") << glu::GeometrySource(geometryWithTess.str()) << options;
             }
             else
             {
-                programCollection.glslSources.add("geometry") << glu::GeometrySource(geometryWithoutTess) << options;
+                programCollection.glslSources.add("geometry")
+                    << glu::GeometrySource(geometryWithoutTess.str()) << options;
             }
         }
     }
     if (m_params.useFragmentShader)
     {
-        programCollection.glslSources.add("fragment") << glu::FragmentSource(fragment) << options;
+        programCollection.glslSources.add("fragment") << glu::FragmentSource(fragment.str()) << options;
     }
 }
 
 tcu::TestStatus DescriptorHeapTestInstanceGraphics::iterate()
 {
-    auto &vkd = *m_deviceInterface;
+    auto &vkd = m_device.getDriver();
 
     const VkDeviceSize bufferDescriptorStride = getBufferDescriptorStride(m_descriptorHeapProperties);
     const VkDeviceSize resourceHeapAlignment  = m_descriptorHeapProperties.resourceHeapAlignment;
-    const VkDeviceSize userHeapSize           = alignUp(10 * bufferDescriptorStride, resourceHeapAlignment);
-    const VkDeviceSize heapSize               = userHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
+    const VkDeviceSize userHeapSize =
+        alignUp((m_params.useVectors ? 17 : 12) * bufferDescriptorStride, resourceHeapAlignment);
+    const VkDeviceSize heapSize = userHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
 
     auto heap               = createBufferAndMemory(heapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
                                                                   VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
@@ -9602,8 +9757,7 @@ tcu::TestStatus DescriptorHeapTestInstanceGraphics::iterate()
     auto samplerHeap = createBufferAndMemory(samplerHeapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
                                                                   VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
 
-    const VkPhysicalDeviceProperties physDevProps =
-        getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_physDevice);
+    const VkPhysicalDeviceProperties physDevProps = getPhysicalDeviceProperties(m_instance.getDriver(), m_physDevice);
 
     de::Random rng(m_params.seed);
 
@@ -9612,6 +9766,8 @@ tcu::TestStatus DescriptorHeapTestInstanceGraphics::iterate()
     std::array<VkDeviceAddressRangeEXT, 10> resourceDeviceAddressRanges{};
     std::array<VkResourceDescriptorInfoEXT, 10> resourceDescriptorInfos{};
     std::array<uint32_t, 5> expectedOutput{};
+    std::unique_ptr<Buffer> matrixBuffer;
+    std::array<std::unique_ptr<Buffer>, 6> vectorBuffers;
 
     for (size_t i = 0; i < resourceHostRanges.size(); ++i)
     {
@@ -9654,6 +9810,53 @@ tcu::TestStatus DescriptorHeapTestInstanceGraphics::iterate()
     }
     VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, de::sizeU32(buffers), resourceDescriptorInfos.data(),
                                              resourceHostRanges.data()));
+
+    if (m_params.useVectors)
+    {
+        const size_t heapIndex          = resourceHostRanges.size();
+        const uint32_t matrixBufferSize = sizeof(float) * 16;
+        matrixBuffer      = createBufferAndMemory(matrixBufferSize, VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR |
+                                                                        VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT_KHR);
+        float *matrixData = reinterpret_cast<float *>(matrixBuffer->memory->getHostPtr());
+        for (uint32_t i = 0; i < 16; ++i)
+            matrixData[i] = static_cast<float>(i);
+
+        VkDeviceAddressRangeEXT matrixAddressRange{};
+        matrixAddressRange.address = matrixBuffer->address;
+        matrixAddressRange.size    = matrixBufferSize;
+
+        VkResourceDescriptorInfoEXT matrixDescriptorInfo = initVulkanStructure();
+        matrixDescriptorInfo.type                        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        matrixDescriptorInfo.data.pAddressRange          = &matrixAddressRange;
+
+        VkHostAddressRangeEXT matrixHostRange = {};
+        matrixHostRange.address               = heapHostPtr + heapIndex * bufferDescriptorStride;
+        matrixHostRange.size                  = static_cast<size_t>(bufferDescriptorStride);
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1u, &matrixDescriptorInfo, &matrixHostRange));
+
+        const uint32_t vectorBufferSize = sizeof(float) * 4;
+        for (uint32_t i = 0; i < vectorBuffers.size(); ++i)
+        {
+            vectorBuffers[i] = createBufferAndMemory(vectorBufferSize, VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR |
+                                                                           VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT_KHR);
+            deMemset(vectorBuffers[i]->memory->getHostPtr(), 0, static_cast<size_t>(vectorBufferSize));
+
+            VkDeviceAddressRangeEXT vectorAddressRange{};
+            vectorAddressRange.address = vectorBuffers[i]->address;
+            vectorAddressRange.size    = vectorBufferSize;
+
+            VkResourceDescriptorInfoEXT vectorDescriptorInfo = initVulkanStructure();
+            vectorDescriptorInfo.type                        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            vectorDescriptorInfo.data.pAddressRange          = &vectorAddressRange;
+
+            VkHostAddressRangeEXT vectorHostRange = {};
+            vectorHostRange.address               = heapHostPtr + (heapIndex + 1 + i) * bufferDescriptorStride;
+            vectorHostRange.size                  = static_cast<size_t>(bufferDescriptorStride);
+
+            VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1u, &vectorDescriptorInfo, &vectorHostRange));
+        }
+    }
 
     std::array<uint32_t, 5> pushData{};
     for (size_t i = 0; i < pushData.size(); ++i)
@@ -9950,6 +10153,34 @@ tcu::TestStatus DescriptorHeapTestInstanceGraphics::iterate()
             return tcu::TestStatus::fail(msg.str());
         }
     }
+    if (m_params.useVectors)
+    {
+        for (uint32_t j = 0; j < 6; ++j)
+        {
+            if ((j == 1 || j == 2) && !m_params.enableTessellationShader)
+                continue;
+            if ((j == 3) && !m_params.enableGeometryShader)
+                continue;
+            if ((j == 4) && !m_params.enableMeshShader)
+                continue;
+            if ((j == 5) && !m_params.enableTaskShader)
+                continue;
+            float *vectorOutput = reinterpret_cast<float *>(vectorBuffers[j]->memory->getHostPtr());
+            for (uint32_t i = 0; i < 4; ++i)
+            {
+                float expected = static_cast<float>(i) * 10.0f + 80.0f;
+                float result   = vectorOutput[i];
+                if (de::abs(result - expected) > 0.001f)
+                {
+                    std::stringstream msg;
+                    msg << std::fixed << std::setprecision(2) << "Vector output is (" << vectorOutput[0] << ", "
+                        << vectorOutput[1] << ", " << vectorOutput[2] << ", " << vectorOutput[3] << ") but expected ("
+                        << expected << ", " << expected * 2 << ", " << expected * 3 << ", " << expected * 4 << ")";
+                    return tcu::TestStatus::fail(msg.str());
+                }
+            }
+        }
+    }
 
     return tcu::TestStatus::pass("Pass");
 }
@@ -10019,10 +10250,9 @@ void main()
 
 tcu::TestStatus DescriptorHeapTestInstanceGraphicsAndCompute::iterate()
 {
-    auto &vkd = *m_deviceInterface;
+    auto &vkd = m_device.getDriver();
 
-    const VkPhysicalDeviceProperties physDevProps =
-        getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_physDevice);
+    const VkPhysicalDeviceProperties physDevProps = getPhysicalDeviceProperties(m_instance.getDriver(), m_physDevice);
 
     const VkDeviceSize bufferDescriptorSize  = m_descriptorHeapProperties.bufferDescriptorSize;
     const VkDeviceSize bufferDescriptorAlign = m_descriptorHeapProperties.bufferDescriptorAlignment;
@@ -10116,7 +10346,7 @@ tcu::TestStatus DescriptorHeapTestInstanceGraphicsAndCompute::iterate()
     VkPipelineCreateFlags2CreateInfoKHR pipelineCreateFlags2CreateInfo = initVulkanStructure();
     pipelineCreateFlags2CreateInfo.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
 
-    auto vertexModule = createShaderModule(*m_deviceInterface, *m_device, getShaderBinary("vertex"));
+    auto vertexModule = createShaderModule(vkd, *m_device, getShaderBinary("vertex"));
 
     VkPipelineShaderStageCreateInfo vertexStage = initVulkanStructure();
     vertexStage.stage                           = VK_SHADER_STAGE_VERTEX_BIT;
@@ -10275,7 +10505,7 @@ void main()
 
 tcu::TestStatus DescriptorHeapTestInstanceDifferentMappingsSameShader::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     auto bufferA = createBufferAndMemory(sizeof(uint32_t), VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT_KHR |
                                                                VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
@@ -10432,10 +10662,9 @@ void DescriptorHeapTestCaseNonUniformMappings::initPrograms(vk::SourceCollection
 
 tcu::TestStatus DescriptorHeapTestInstanceNonUniformMappings::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
-    const VkPhysicalDeviceProperties physDevProps =
-        getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_physDevice);
+    const VkPhysicalDeviceProperties physDevProps = getPhysicalDeviceProperties(m_instance.getDriver(), m_physDevice);
 
     const uint32_t workgroupSize              = 8;
     const VkDeviceSize bufferDescriptorStride = getBufferDescriptorStride(m_descriptorHeapProperties);
@@ -10655,7 +10884,7 @@ tcu::TestStatus DescriptorHeapTestInstanceMSAAImageRead::iterate()
 {
     // Write 4 samples to an MSAA image and read them back in a compute shader via a descriptor heap.
 
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const uint32_t sampleCount = 4;
 
@@ -11063,7 +11292,7 @@ void main()
 
 tcu::TestStatus DescriptorHeapTestInstanceResourceHeapAccess::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const size_t numBuffers       = 16;
     const VkDeviceSize bufferSize = sizeof(uint32_t);
@@ -11303,7 +11532,7 @@ void main()
 
 tcu::TestStatus DescriptorHeapTestInstanceSamplerHeapAccess::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const VkDeviceSize bufferSize = 4 * sizeof(float);
     const size_t numSamplers      = 3;
@@ -11633,31 +11862,166 @@ tcu::TestStatus DescriptorHeapTestInstanceSamplerHeapAccess::iterate()
     return tcu::TestStatus::pass("Pass");
 }
 
+enum class SecondaryCopyType
+{
+    NONE,
+    RESOURCE_HEAP_COMMAND_COPY,
+    RESOURCE_HEAP_SHADER_COPY,
+    SAMPLER_HEAP_COMMAND_COPY,
+    SAMPLER_HEAP_SHADER_COPY,
+};
+
+struct SecondaryTestParams : TestParams
+{
+    SecondaryCopyType testType;
+    bool copyInSecondary;
+};
+
 class DescriptorHeapTestInstanceSecondary final : public DescriptorHeapTestInstanceBase
 {
+    const uint32_t m_imageHeapIndex          = 16u;
+    const uint32_t m_samplerHeapIndex        = 29u;
+    const uint32_t m_imageHeapCopySrcIndex   = 4u;
+    const uint32_t m_samplerHeapCopySrcIndex = 5u;
+    const uint32_t m_resultBufferIndex       = 0u;
+    const uint32_t m_copyBufferIndex         = 1u;
+    const uint32_t m_dstCopyIndex            = 2u;
+
+    std::unique_ptr<Buffer> m_resourceHeap;
+    std::unique_ptr<Buffer> m_samplerHeap;
+    std::unique_ptr<Buffer> m_srcCopyBuffer;
+    Move<VkPipeline> m_copyPipeline;
+
 public:
-    explicit DescriptorHeapTestInstanceSecondary(Context &context, const TestParams &params)
+    explicit DescriptorHeapTestInstanceSecondary(Context &context, const SecondaryTestParams &params)
         : DescriptorHeapTestInstanceBase(context, params)
         , m_params{params}
     {
     }
 
+    void copyDescriptor(VkCommandBuffer commandBuffer);
     tcu::TestStatus iterate() override;
 
 private:
-    TestParams m_params;
+    SecondaryTestParams m_params;
 };
+
+void DescriptorHeapTestInstanceSecondary::copyDescriptor(VkCommandBuffer commandBuffer)
+{
+    if (m_params.testType == SecondaryCopyType::NONE)
+        return;
+
+    const auto &vkd                   = m_device.getDriver();
+    const VkDeviceSize resourceStride = getImageDescriptorStride(m_descriptorHeapProperties);
+    const VkDeviceSize samplerStride  = getSamplerDescriptorStride(m_descriptorHeapProperties);
+
+    if (m_params.testType == SecondaryCopyType::RESOURCE_HEAP_COMMAND_COPY ||
+        m_params.testType == SecondaryCopyType::SAMPLER_HEAP_COMMAND_COPY)
+    {
+        VkMemoryBarrier2 preTransferBarrier = initVulkanStructure();
+        preTransferBarrier.srcStageMask     = VK_PIPELINE_STAGE_2_HOST_BIT;
+        preTransferBarrier.srcAccessMask    = VK_ACCESS_2_HOST_WRITE_BIT;
+        preTransferBarrier.dstStageMask     = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        preTransferBarrier.dstAccessMask    = VK_ACCESS_2_TRANSFER_READ_BIT;
+
+        VkDependencyInfo dependencyInfo   = initVulkanStructure();
+        dependencyInfo.memoryBarrierCount = 1u;
+
+        dependencyInfo.pMemoryBarriers = &preTransferBarrier;
+        vkd.cmdPipelineBarrier2(commandBuffer, &dependencyInfo);
+
+        VkBufferCopy descriptorCopy;
+        if (m_params.testType == SecondaryCopyType::RESOURCE_HEAP_COMMAND_COPY)
+        {
+            descriptorCopy.srcOffset = m_imageHeapCopySrcIndex * resourceStride;
+            descriptorCopy.dstOffset = m_imageHeapIndex * resourceStride;
+            descriptorCopy.size      = resourceStride;
+            vkd.cmdCopyBuffer(commandBuffer, *m_srcCopyBuffer->buffer, *m_resourceHeap->buffer, 1u, &descriptorCopy);
+        }
+        else
+        {
+            descriptorCopy.srcOffset = m_samplerHeapCopySrcIndex * samplerStride;
+            descriptorCopy.dstOffset = m_samplerHeapIndex * samplerStride;
+            descriptorCopy.size      = samplerStride;
+            vkd.cmdCopyBuffer(commandBuffer, *m_srcCopyBuffer->buffer, *m_samplerHeap->buffer, 1u, &descriptorCopy);
+        }
+
+        VkMemoryBarrier2 postTransferBarrier = initVulkanStructure();
+        postTransferBarrier.srcStageMask     = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        postTransferBarrier.srcAccessMask    = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+        postTransferBarrier.dstStageMask     = m_params.queue == VK_QUEUE_COMPUTE_BIT ?
+                                                   VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT :
+                                                   VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+        if (m_params.testType == SecondaryCopyType::RESOURCE_HEAP_COMMAND_COPY)
+            postTransferBarrier.dstAccessMask = VK_ACCESS_2_RESOURCE_HEAP_READ_BIT_EXT;
+        else
+            postTransferBarrier.dstAccessMask = VK_ACCESS_2_SAMPLER_HEAP_READ_BIT_EXT;
+
+        dependencyInfo.pMemoryBarriers = &postTransferBarrier;
+        vkd.cmdPipelineBarrier2(commandBuffer, &dependencyInfo);
+    }
+    else
+    {
+        const bool resourceCopy = m_params.testType == SecondaryCopyType::RESOURCE_HEAP_SHADER_COPY;
+        const uint32_t copyStride =
+            static_cast<uint32_t>(resourceCopy ? resourceStride : samplerStride) / sizeof(uint32_t);
+
+        VkMemoryBarrier2 preCopyBarrier = initVulkanStructure();
+        preCopyBarrier.srcStageMask     = VK_PIPELINE_STAGE_2_HOST_BIT;
+        preCopyBarrier.srcAccessMask    = VK_ACCESS_2_HOST_WRITE_BIT;
+        preCopyBarrier.dstStageMask     = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+        preCopyBarrier.dstAccessMask    = VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
+
+        VkDependencyInfo dependencyInfo   = initVulkanStructure();
+        dependencyInfo.memoryBarrierCount = 1u;
+
+        dependencyInfo.pMemoryBarriers = &preCopyBarrier;
+        vkd.cmdPipelineBarrier2(commandBuffer, &dependencyInfo);
+
+        vkd.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_copyPipeline);
+
+        uint32_t indices[2];
+        if (m_params.testType == SecondaryCopyType::RESOURCE_HEAP_SHADER_COPY)
+        {
+            indices[0] = m_imageHeapCopySrcIndex * copyStride;
+            indices[1] = m_imageHeapIndex * copyStride;
+        }
+        else
+        {
+            indices[0] = m_samplerHeapCopySrcIndex * copyStride;
+            indices[1] = m_samplerHeapIndex * copyStride;
+        }
+
+        VkPushDataInfoEXT pushDataInfo = initVulkanStructure();
+        pushDataInfo.offset            = 0u;
+        pushDataInfo.data.address      = indices;
+        pushDataInfo.data.size         = sizeof(uint32_t) * 2u;
+        vkd.cmdPushDataEXT(commandBuffer, &pushDataInfo);
+        vkd.cmdDispatch(commandBuffer, copyStride, 1u, 1u);
+
+        VkMemoryBarrier2 postCopyBarrier = initVulkanStructure();
+        postCopyBarrier.srcStageMask     = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+        postCopyBarrier.srcAccessMask    = VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
+        postCopyBarrier.dstStageMask = m_params.queue == VK_QUEUE_COMPUTE_BIT ? VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT :
+                                                                                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+        if (m_params.testType == SecondaryCopyType::RESOURCE_HEAP_SHADER_COPY)
+            postCopyBarrier.dstAccessMask = VK_ACCESS_2_RESOURCE_HEAP_READ_BIT_EXT;
+        else
+            postCopyBarrier.dstAccessMask = VK_ACCESS_2_SAMPLER_HEAP_READ_BIT_EXT;
+
+        dependencyInfo.pMemoryBarriers = &postCopyBarrier;
+        vkd.cmdPipelineBarrier2(commandBuffer, &dependencyInfo);
+    }
+}
 
 tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const VkFormat imageFormat          = VK_FORMAT_R8G8B8A8_UNORM;
     const VkDeviceSize bufferStride     = getBufferDescriptorStride(m_descriptorHeapProperties);
-    const VkDeviceSize resourceStride   = getImageDescriptorStride(m_descriptorHeapProperties);
+    const VkDeviceSize imageStride      = getImageDescriptorStride(m_descriptorHeapProperties);
     const VkDeviceSize samplerStride    = getSamplerDescriptorStride(m_descriptorHeapProperties);
-    const uint32_t imageHeapIndex       = 16u;
-    const uint32_t samplerHeapIndex     = 29u;
     const float expectedColor[4]        = {0.8f, 0.4f, 0.2f, 0.6f};
     const uint8_t expectedColorUint8[4] = {
         static_cast<uint8_t>(expectedColor[0] * 255), static_cast<uint8_t>(expectedColor[1] * 255),
@@ -11665,29 +12029,62 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
     const uint32_t imageSize                            = 32u;
     const VkImageSubresourceRange imageSubresourceRange = makeDefaultImageSubresourceRange();
 
-    const VkDeviceSize resourceDescriptorCount = imageHeapIndex + 1u;
+    const VkDeviceSize resourceDescriptorCount = m_imageHeapIndex + 1u;
     const VkDeviceSize resourceUserHeapSize =
-        alignUp(resourceDescriptorCount * resourceStride, m_descriptorHeapProperties.resourceHeapAlignment);
+        alignUp(resourceDescriptorCount * imageStride, m_descriptorHeapProperties.resourceHeapAlignment);
     const VkDeviceSize resourceHeapSize =
         resourceUserHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
-    auto resourceHeap = createBufferAndMemory(resourceHeapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
-                                                                    VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+    const VkBufferUsageFlags2KHR heapUsage =
+        VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR |
+        VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR | VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT_KHR;
+    m_resourceHeap = createBufferAndMemory(resourceHeapSize, heapUsage);
 
-    const VkDeviceSize samplerDescriptorCount = samplerHeapIndex + 1u;
+    const VkDeviceSize samplerDescriptorCount = m_samplerHeapIndex + 1u;
     const VkDeviceSize samplerUserHeapSize =
         alignUp(samplerDescriptorCount * samplerStride, m_descriptorHeapProperties.samplerHeapAlignment);
     const VkDeviceSize samplerHeapSize = samplerUserHeapSize + m_descriptorHeapProperties.minSamplerHeapReservedRange;
-    auto samplerHeap = createBufferAndMemory(samplerHeapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
-                                                                  VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+    m_samplerHeap                      = createBufferAndMemory(samplerHeapSize, heapUsage);
+
+    uint8_t *srcCopyBufferPtr   = nullptr;
+    VkDeviceSize copyBufferSize = 0u;
+    if (m_params.testType != SecondaryCopyType::NONE)
+    {
+        const bool copyResource = m_params.testType == SecondaryCopyType::RESOURCE_HEAP_COMMAND_COPY ||
+                                  m_params.testType == SecondaryCopyType::RESOURCE_HEAP_SHADER_COPY;
+
+        copyBufferSize  = copyResource ? imageStride * (m_imageHeapCopySrcIndex + 1) :
+                                         samplerStride * (m_samplerHeapCopySrcIndex + 1);
+        m_srcCopyBuffer = createBufferAndMemory(copyBufferSize, VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR |
+                                                                    VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT |
+                                                                    VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT);
+
+        srcCopyBufferPtr = static_cast<uint8_t *>(m_srcCopyBuffer->memory->getHostPtr());
+
+        VkDeviceAddressRangeEXT dstAddressRange;
+        if (m_params.testType == SecondaryCopyType::RESOURCE_HEAP_SHADER_COPY)
+            dstAddressRange.address = m_resourceHeap->address;
+        else
+            dstAddressRange.address = m_samplerHeap->address;
+        dstAddressRange.size = copyResource ? imageStride : samplerStride;
+
+        VkResourceDescriptorInfoEXT bufferResourceInfo = initVulkanStructure();
+        bufferResourceInfo.type                        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bufferResourceInfo.data.pAddressRange          = &dstAddressRange;
+
+        VkHostAddressRangeEXT hostRange;
+        hostRange.address = srcCopyBufferPtr;
+        hostRange.size    = static_cast<size_t>(bufferStride);
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1, &bufferResourceInfo, &hostRange));
+    }
 
     VkBindHeapInfoEXT resourceHeapBindInfo   = initVulkanStructure();
-    resourceHeapBindInfo.heapRange.address   = resourceHeap->address;
+    resourceHeapBindInfo.heapRange.address   = m_resourceHeap->address;
     resourceHeapBindInfo.heapRange.size      = resourceHeapSize;
     resourceHeapBindInfo.reservedRangeOffset = resourceUserHeapSize;
     resourceHeapBindInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
 
     VkBindHeapInfoEXT samplerHeapBindInfo   = initVulkanStructure();
-    samplerHeapBindInfo.heapRange.address   = samplerHeap->address;
+    samplerHeapBindInfo.heapRange.address   = m_samplerHeap->address;
     samplerHeapBindInfo.heapRange.size      = samplerHeapSize;
     samplerHeapBindInfo.reservedRangeOffset = samplerUserHeapSize;
     samplerHeapBindInfo.reservedRangeSize   = m_descriptorHeapProperties.minSamplerHeapReservedRange;
@@ -11718,11 +12115,19 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
     sampledImageResourceInfo.type                        = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
     sampledImageResourceInfo.data.pImage                 = &imageDescriptorInfo;
 
-    uint8_t *resourceHeapHostPtr = static_cast<uint8_t *>(resourceHeap->memory->getHostPtr());
+    uint8_t *resourceHeapHostPtr = static_cast<uint8_t *>(m_resourceHeap->memory->getHostPtr());
 
     VkHostAddressRangeEXT sampledImageHostRange{};
-    sampledImageHostRange.address = resourceHeapHostPtr + imageHeapIndex * resourceStride;
-    sampledImageHostRange.size    = static_cast<size_t>(resourceStride);
+    if (m_params.testType == SecondaryCopyType::RESOURCE_HEAP_COMMAND_COPY ||
+        m_params.testType == SecondaryCopyType::RESOURCE_HEAP_SHADER_COPY)
+    {
+        sampledImageHostRange.address = srcCopyBufferPtr + m_imageHeapCopySrcIndex * imageStride;
+    }
+    else
+    {
+        sampledImageHostRange.address = resourceHeapHostPtr + m_imageHeapIndex * imageStride;
+    }
+    sampledImageHostRange.size = static_cast<size_t>(imageStride);
     VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1, &sampledImageResourceInfo, &sampledImageHostRange));
 
     VkSamplerCreateInfo samplerCreateInfo     = initVulkanStructure();
@@ -11742,12 +12147,70 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
     samplerCreateInfo.borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
     samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 
-    uint8_t *samplerHeapHostPtr = static_cast<uint8_t *>(samplerHeap->memory->getHostPtr());
+    uint8_t *samplerHeapHostPtr = static_cast<uint8_t *>(m_samplerHeap->memory->getHostPtr());
 
     VkHostAddressRangeEXT samplerHostRange{};
-    samplerHostRange.address = samplerHeapHostPtr + samplerHeapIndex * samplerStride;
-    samplerHostRange.size    = static_cast<size_t>(samplerStride);
+    if (m_params.testType == SecondaryCopyType::SAMPLER_HEAP_COMMAND_COPY ||
+        m_params.testType == SecondaryCopyType::SAMPLER_HEAP_SHADER_COPY)
+    {
+        samplerHostRange.address = srcCopyBufferPtr + m_samplerHeapCopySrcIndex * samplerStride;
+    }
+    else
+    {
+        samplerHostRange.address = samplerHeapHostPtr + m_samplerHeapIndex * samplerStride;
+    }
+    samplerHostRange.size = static_cast<size_t>(samplerStride);
     VK_CHECK(vkd.writeSamplerDescriptorsEXT(*m_device, 1u, &samplerCreateInfo, &samplerHostRange));
+
+    if (m_params.testType == SecondaryCopyType::RESOURCE_HEAP_SHADER_COPY ||
+        m_params.testType == SecondaryCopyType::SAMPLER_HEAP_SHADER_COPY)
+    {
+        VkDeviceAddressRangeEXT addressRanges[2];
+        addressRanges[0].address = m_srcCopyBuffer->address;
+        addressRanges[0].size    = copyBufferSize;
+        if (m_params.testType == SecondaryCopyType::RESOURCE_HEAP_SHADER_COPY)
+        {
+            addressRanges[1].address = m_resourceHeap->address;
+            addressRanges[1].size    = resourceUserHeapSize;
+        }
+        else
+        {
+            addressRanges[1].address = m_samplerHeap->address;
+            addressRanges[1].size    = samplerUserHeapSize;
+        }
+
+        VkResourceDescriptorInfoEXT bufferResourceInfos[2];
+        bufferResourceInfos[0]                    = initVulkanStructure();
+        bufferResourceInfos[0].type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bufferResourceInfos[0].data.pAddressRange = &addressRanges[0];
+        bufferResourceInfos[1]                    = initVulkanStructure();
+        bufferResourceInfos[1].type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bufferResourceInfos[1].data.pAddressRange = &addressRanges[1];
+
+        VkHostAddressRangeEXT hostRanges[2];
+        hostRanges[0].address = resourceHeapHostPtr + bufferStride * m_copyBufferIndex;
+        hostRanges[0].size    = static_cast<size_t>(bufferStride);
+        hostRanges[1].address = resourceHeapHostPtr + bufferStride * m_dstCopyIndex;
+        hostRanges[1].size    = static_cast<size_t>(bufferStride);
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 2, bufferResourceInfos, hostRanges));
+
+        auto copyModule = createShaderModule(vkd, *m_device, getShaderBinary("copy"));
+
+        VkPipelineCreateFlags2CreateInfoKHR pipelineFlags = initVulkanStructure();
+        pipelineFlags.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+        VkComputePipelineCreateInfo pipelineCreateInfo = initVulkanStructure(&pipelineFlags);
+        pipelineCreateInfo.stage                       = initVulkanStructure();
+        pipelineCreateInfo.stage.stage                 = VK_SHADER_STAGE_COMPUTE_BIT;
+        pipelineCreateInfo.stage.module                = *copyModule;
+        pipelineCreateInfo.stage.pName                 = "main";
+        m_copyPipeline = createComputePipeline(vkd, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
+    }
+
+    flushAlloc(vkd, *m_device, *m_resourceHeap->memory);
+    flushAlloc(vkd, *m_device, *m_samplerHeap->memory);
+    if (srcCopyBufferPtr)
+        flushAlloc(vkd, *m_device, *m_srcCopyBuffer->memory);
 
     auto cmdPool      = makeCommandPool(vkd, *m_device, m_queueFamilyIndex);
     auto cmdBufferPtr = allocateCommandBuffer(vkd, *m_device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -11824,9 +12287,10 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
         outputBufferResourceInfo.data.pAddressRange          = &outputBufferAddressRange;
 
         VkHostAddressRangeEXT outputBufferHostRange{};
-        outputBufferHostRange.address = resourceHeapHostPtr;
+        outputBufferHostRange.address = resourceHeapHostPtr + bufferStride * m_resultBufferIndex;
         outputBufferHostRange.size    = static_cast<size_t>(bufferStride);
         VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1u, &outputBufferResourceInfo, &outputBufferHostRange));
+        flushAlloc(vkd, *m_device, *m_resourceHeap->memory);
 
         auto computeModule = createShaderModule(vkd, *m_device, getShaderBinary("compute"));
 
@@ -11843,10 +12307,14 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
         auto pipeline = createComputePipeline(vkd, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
 
         VK_CHECK(vkd.beginCommandBuffer(secondaryCmdBuffer, &begin_info));
+        if (m_params.copyInSecondary)
+            copyDescriptor(secondaryCmdBuffer);
         vkd.cmdBindPipeline(secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
         vkd.cmdDispatch(secondaryCmdBuffer, 1u, 1u, 1u);
         VK_CHECK(vkd.endCommandBuffer(secondaryCmdBuffer));
 
+        if (!m_params.copyInSecondary)
+            copyDescriptor(cmdBuffer);
         vkd.cmdExecuteCommands(cmdBuffer, 1u, &secondaryCmdBuffer);
 
         VkMemoryBarrier2 barrier = initVulkanStructure();
@@ -11908,7 +12376,7 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
         colorAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         colorAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         VkAttachmentReference colorAttachmentRef{};
         colorAttachmentRef.attachment = 0u;
@@ -12000,6 +12468,8 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
         begin_info.flags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 
         VK_CHECK(vkd.beginCommandBuffer(secondaryCmdBuffer, &begin_info));
+        if (m_params.copyInSecondary)
+            copyDescriptor(secondaryCmdBuffer);
         vkd.cmdBindPipeline(secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
         vkd.cmdDraw(secondaryCmdBuffer, 4u, 1u, 0u, 0u);
         vkd.endCommandBuffer(secondaryCmdBuffer);
@@ -12017,19 +12487,27 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
         renderPassBeginInfo.clearValueCount = 1u;
         renderPassBeginInfo.pClearValues    = &clearValue;
 
+        if (!m_params.copyInSecondary)
+            copyDescriptor(cmdBuffer);
         vkd.cmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
         vkd.cmdExecuteCommands(cmdBuffer, 1u, &secondaryCmdBuffer);
         vkd.cmdEndRenderPass(cmdBuffer);
 
-        VkMemoryBarrier2 barrier = initVulkanStructure();
-        barrier.srcStageMask     = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-        barrier.srcAccessMask    = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-        barrier.dstStageMask     = VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR;
-        barrier.dstAccessMask    = VK_ACCESS_2_TRANSFER_READ_BIT_KHR;
+        VkImageMemoryBarrier2 imageMemoryBarrier = initVulkanStructure();
+        imageMemoryBarrier.srcStageMask          = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+        imageMemoryBarrier.srcAccessMask         = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+        imageMemoryBarrier.dstStageMask          = VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR;
+        imageMemoryBarrier.dstAccessMask         = VK_ACCESS_2_TRANSFER_READ_BIT_KHR;
+        imageMemoryBarrier.oldLayout             = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        imageMemoryBarrier.newLayout             = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        imageMemoryBarrier.srcQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
+        imageMemoryBarrier.dstQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
+        imageMemoryBarrier.image                 = *colorImage->image;
+        imageMemoryBarrier.subresourceRange      = makeDefaultImageSubresourceRange();
 
-        VkDependencyInfo dependencyInfo   = initVulkanStructure();
-        dependencyInfo.memoryBarrierCount = 1u;
-        dependencyInfo.pMemoryBarriers    = &barrier;
+        VkDependencyInfo dependencyInfo        = initVulkanStructure();
+        dependencyInfo.imageMemoryBarrierCount = 1u;
+        dependencyInfo.pImageMemoryBarriers    = &imageMemoryBarrier;
         vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
 
         VkBufferImageCopy copyRegion{};
@@ -12055,6 +12533,22 @@ tcu::TestStatus DescriptorHeapTestInstanceSecondary::iterate()
             if (std::abs(r - expectedColorUint8[0]) > e || std::abs(g - expectedColorUint8[1]) > e ||
                 std::abs(b - expectedColorUint8[2]) > e || std::abs(a - expectedColorUint8[3]) > e)
             {
+                tcu::TestLog &log = m_context.getTestContext().getLog();
+                std::stringstream errorMsg;
+                errorMsg << "image is in resource heap at index " << m_imageHeapIndex << "\n"
+                         << "sampler is in sampler heap at index " << m_samplerHeapIndex << "\n";
+                if (m_params.testType != SecondaryCopyType::NONE)
+                {
+                    errorMsg << "image was copied from second resource heap at index " << m_imageHeapCopySrcIndex
+                             << "\n"
+                             << "sampler was copied from second resource heap at index " << m_samplerHeapCopySrcIndex
+                             << "\n"
+                             << "copy buffer is in second resource heap at index " << m_copyBufferIndex << "\n"
+                             << "dst heap buffer is in second resource heap at index " << m_dstCopyIndex;
+                }
+                errorMsg << "result buffer is in resouce heap at index " << m_resultBufferIndex << "\n";
+                log << tcu::TestLog::Message << errorMsg.str() << tcu::TestLog::EndMessage;
+
                 std::stringstream stream;
                 stream << "Pixel " << i << ": expected (" << (uint32_t)expectedColorUint8[0] << ", "
                        << (uint32_t)expectedColorUint8[1] << ", " << (uint32_t)expectedColorUint8[2] << ", "
@@ -12072,7 +12566,7 @@ class DescriptorHeapTestCaseSecondary final : public DescriptorHeapTestCaseBase
 {
 public:
     explicit DescriptorHeapTestCaseSecondary(tcu::TestContext &testCtx, const std::string &name,
-                                             const TestParams &params)
+                                             const SecondaryTestParams &params)
         : DescriptorHeapTestCaseBase(testCtx, name, params)
         , m_params{params}
     {
@@ -12086,7 +12580,7 @@ public:
     void initPrograms(vk::SourceCollections &programCollection) const override;
 
 private:
-    TestParams m_params;
+    SecondaryTestParams m_params;
 };
 
 void DescriptorHeapTestCaseSecondary::initPrograms(vk::SourceCollections &programCollection) const
@@ -12098,10 +12592,10 @@ void DescriptorHeapTestCaseSecondary::initPrograms(vk::SourceCollections &progra
 layout(descriptor_heap) uniform texture2D heapTextures[];
 layout(descriptor_heap) uniform sampler heapSamplers[];
 layout(descriptor_heap) buffer ssbo {
-	vec4 data;
+    vec4 data;
 } heapBuffer[];
 void main() {
-	heapBuffer[0].data = texture(sampler2D(heapTextures[16], heapSamplers[29]), vec2(0.5f));
+    heapBuffer[0].data = texture(sampler2D(heapTextures[16], heapSamplers[29]), vec2(0.5f));
 }
 )";
 
@@ -12139,6 +12633,226 @@ void main()
         programCollection.glslSources.add("vertex") << glu::VertexSource(vertexShader) << options;
         programCollection.glslSources.add("fragment") << glu::FragmentSource(fragmentShader) << options;
     }
+
+    if (m_params.testType == SecondaryCopyType::RESOURCE_HEAP_SHADER_COPY ||
+        m_params.testType == SecondaryCopyType::SAMPLER_HEAP_SHADER_COPY)
+    {
+        const char *const copyShader = R"(#version 450
+#extension GL_EXT_descriptor_heap : require
+layout(descriptor_heap, std430) buffer Buffer {
+    uint data[];
+} ssbos[];
+
+layout(push_constant) uniform PushConstants {
+    uint src;
+    uint dst;
+} pc;
+
+void main() {
+    ssbos[2].data[pc.dst + gl_GlobalInvocationID.x] = ssbos[1].data[pc.src + gl_GlobalInvocationID.x];
+})";
+
+        vk::ShaderBuildOptions options(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_6, 0);
+        programCollection.glslSources.add("copy") << glu::ComputeSource(copyShader) << options;
+    }
+}
+
+class DescriptorHeapTestInstanceOffsetId final : public DescriptorHeapTestInstanceBase
+{
+public:
+    explicit DescriptorHeapTestInstanceOffsetId(Context &context, const TestParams &params)
+        : DescriptorHeapTestInstanceBase(context, params)
+        , m_params{params}
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    TestParams m_params;
+};
+
+tcu::TestStatus DescriptorHeapTestInstanceOffsetId::iterate()
+{
+    const auto &vkd = m_device.getDriver();
+
+    const uint32_t descriptorCount    = 2u;
+    const VkDeviceSize resourceStride = m_descriptorHeapProperties.bufferDescriptorSize;
+    const VkDeviceSize resourceHeapUserSize =
+        alignUp(resourceStride * descriptorCount, m_descriptorHeapProperties.resourceHeapAlignment);
+    const VkDeviceSize resourceHeapSize =
+        resourceHeapUserSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    auto resourceHeap = createBufferAndMemory(resourceHeapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
+                                                                    VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+    const VkDeviceSize storageBufferSize = 64u;
+    auto buffer0 = createBufferAndMemory(storageBufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT_KHR |
+                                                                VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+    auto buffer1 = createBufferAndMemory(storageBufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT_KHR |
+                                                                VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+    char *resourceHeapHostPtr = static_cast<char *>(resourceHeap->memory->getHostPtr());
+    memset(buffer0->memory->getHostPtr(), 0, static_cast<size_t>(storageBufferSize));
+    memset(buffer1->memory->getHostPtr(), 0, static_cast<size_t>(storageBufferSize));
+
+    VkDeviceAddressRangeEXT addressRanges[2];
+    addressRanges[0].address = buffer0->address;
+    addressRanges[0].size    = storageBufferSize;
+    addressRanges[1].address = buffer1->address;
+    addressRanges[1].size    = storageBufferSize;
+
+    VkResourceDescriptorInfoEXT resourceInfos[2];
+    resourceInfos[0]                    = initVulkanStructure();
+    resourceInfos[0].type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    resourceInfos[0].data.pAddressRange = &addressRanges[0];
+    resourceInfos[1]                    = initVulkanStructure();
+    resourceInfos[1].type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    resourceInfos[1].data.pAddressRange = &addressRanges[1];
+
+    VkHostAddressRangeEXT hostRanges[2];
+    hostRanges[0].address = resourceHeapHostPtr;
+    hostRanges[0].size    = static_cast<size_t>(resourceStride);
+    hostRanges[1].address = resourceHeapHostPtr + resourceStride;
+    hostRanges[1].size    = static_cast<size_t>(resourceStride);
+    VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 2u, resourceInfos, hostRanges));
+    flushAlloc(vkd, *m_device, *resourceHeap->memory);
+
+    auto computeModule = createShaderModule(vkd, *m_device, getShaderBinary("compute"));
+
+    VkPipelineCreateFlags2CreateInfoKHR pipelineFlags = initVulkanStructure();
+    pipelineFlags.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+    VkComputePipelineCreateInfo pipelineCreateInfo = initVulkanStructure(&pipelineFlags);
+    pipelineCreateInfo.stage                       = initVulkanStructure();
+    pipelineCreateInfo.stage.stage                 = VK_SHADER_STAGE_COMPUTE_BIT;
+    pipelineCreateInfo.stage.module                = *computeModule;
+    pipelineCreateInfo.stage.pName                 = "main";
+
+    auto pipeline = createComputePipeline(vkd, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+    VkBindHeapInfoEXT bindHeapInfo   = initVulkanStructure();
+    bindHeapInfo.heapRange.address   = resourceHeap->address;
+    bindHeapInfo.heapRange.size      = resourceHeapSize;
+    bindHeapInfo.reservedRangeOffset = resourceHeapUserSize;
+    bindHeapInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    VkMemoryBarrier2 memoryBarrier = initVulkanStructure();
+    memoryBarrier.srcStageMask     = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    memoryBarrier.srcAccessMask    = VK_ACCESS_2_SHADER_WRITE_BIT;
+    memoryBarrier.dstStageMask     = VK_PIPELINE_STAGE_2_HOST_BIT;
+    memoryBarrier.dstAccessMask    = VK_ACCESS_2_HOST_READ_BIT;
+
+    VkDependencyInfo dependencyInfo   = initVulkanStructure();
+    dependencyInfo.memoryBarrierCount = 1u;
+    dependencyInfo.pMemoryBarriers    = &memoryBarrier;
+
+    auto commandPool  = makeCommandPool(vkd, *m_device, m_queueFamilyIndex);
+    auto cmdBufferPtr = allocateCommandBuffer(vkd, *m_device, commandPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    auto cmdBuffer    = cmdBufferPtr.get();
+
+    beginCommandBuffer(vkd, cmdBuffer);
+    vkd.cmdBindResourceHeapEXT(cmdBuffer, &bindHeapInfo);
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+    vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+    vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+    endCommandBuffer(vkd, cmdBuffer);
+
+    submitCommandsAndWait(vkd, *m_device, m_queues.front(), cmdBuffer);
+
+    invalidateAlloc(vkd, *m_device, *buffer0->memory);
+    invalidateAlloc(vkd, *m_device, *buffer1->memory);
+    uint32_t *result0 = static_cast<uint32_t *>(buffer0->memory->getHostPtr());
+    uint32_t *result1 = static_cast<uint32_t *>(buffer1->memory->getHostPtr());
+
+    if (*result0 != 42u || *result1 != 0u)
+    {
+        std::stringstream msg;
+        msg << "Expected buffer0[0] = 42 and buffer1[0] = 0, but got buffer0[0] = " << *result0
+            << " and buffer1[0] = " << *result1;
+        return tcu::TestStatus::fail(msg.str());
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class DescriptorHeapTestCaseOffsetId final : public DescriptorHeapTestCaseBase
+{
+public:
+    explicit DescriptorHeapTestCaseOffsetId(tcu::TestContext &testCtx, const std::string &name,
+                                            const TestParams &params)
+        : DescriptorHeapTestCaseBase(testCtx, name, params)
+        , m_params{params}
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceOffsetId(context, m_params);
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+private:
+    TestParams m_params;
+};
+
+void DescriptorHeapTestCaseOffsetId::initPrograms(vk::SourceCollections &programCollection) const
+{
+    // layout(storage_buffer) SSBO {
+    //     uint a;
+    //     uint b;
+    // };
+    // layout(offset = buffer_size) heap {
+    //     SSBO runtime_buffer[];
+    // } heap_layout;
+    //
+    // *(uint*)heap_layout.runtime_buffer = 42;
+    char const *comp = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %resource_heap
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpMemberDecorate %SSBO 1 Offset 4
+               OpDecorate %heap_layout Block
+               OpMemberDecorateIdEXT %heap_layout 0 OffsetIdEXT %buf_size
+               OpDecorateId %runtime_buffer ArrayStrideIdEXT %buf_size
+               OpMemberDecorate %SSBO 2 Offset 8
+       %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+      %int_2 = OpConstant %int 2
+    %uint_42 = OpConstant %uint 42
+%_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
+        %SSBO = OpTypeStruct %uint %uint %uint
+%_ptr_StorageBuffer = OpTypeUntypedPointerKHR StorageBuffer
+%type_buffer = OpTypeBufferEXT StorageBuffer
+   %buf_size = OpConstantSizeOfEXT %int %type_buffer
+%runtime_buffer = OpTypeRuntimeArray %type_buffer
+ %heap_layout = OpTypeStruct %runtime_buffer
+       %main = OpFunction %void None %void_fn
+          %5 = OpLabel
+%heap_index_0 = OpUntypedAccessChainKHR %_ptr_UniformConstant %heap_layout %resource_heap
+  %buf_ptr_0 = OpBufferPointerEXT %_ptr_StorageBuffer %heap_index_0
+   %member_0 = OpUntypedAccessChainKHR %_ptr_StorageBuffer %SSBO %buf_ptr_0 %int_0
+               OpStore %member_0 %uint_42
+               OpReturn
+               OpFunctionEnd
+    )";
+
+    vk::SpirVAsmBuildOptions options(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_6);
+    programCollection.spirvAsmSources.add("compute") << comp << options;
 }
 
 class DescriptorHeapTestInstanceShaderObjectInvariance final : public DescriptorHeapTestInstanceBase
@@ -12202,7 +12916,7 @@ void main()
 
 Move<VkShaderEXT> DescriptorHeapTestInstanceShaderObjectInvariance::compileShader(VkBorderColor borderColor)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const auto &spirvBinary = getShaderBinary("compute");
 
@@ -12260,7 +12974,7 @@ Move<VkShaderEXT> DescriptorHeapTestInstanceShaderObjectInvariance::compileShade
 
 Move<VkShaderEXT> DescriptorHeapTestInstanceShaderObjectInvariance::restoreShader(const std::vector<char> &binaryData)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     VkShaderCreateInfoEXT shaderCreateInfo = initVulkanStructure();
     shaderCreateInfo.flags                 = VK_SHADER_CREATE_DESCRIPTOR_HEAP_BIT_EXT;
@@ -12276,7 +12990,7 @@ Move<VkShaderEXT> DescriptorHeapTestInstanceShaderObjectInvariance::restoreShade
 
 std::vector<char> DescriptorHeapTestInstanceShaderObjectInvariance::getBinary(VkShaderEXT shader)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     size_t dataSize = 0;
     VK_CHECK(vkd.getShaderBinaryDataEXT(*m_device, shader, &dataSize, nullptr));
@@ -12289,7 +13003,7 @@ std::vector<char> DescriptorHeapTestInstanceShaderObjectInvariance::getBinary(Vk
 
 tcu::UVec4 DescriptorHeapTestInstanceShaderObjectInvariance::runShader(VkShaderEXT shader)
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     auto buffer = createBufferAndMemory(4 * sizeof(uint32_t), VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT |
                                                                   VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
@@ -12612,7 +13326,7 @@ void main() {
 
 tcu::TestStatus DescriptorHeapTestInstancePushDataAccess::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const uint32_t pushDataElements =
         static_cast<uint32_t>(m_descriptorHeapProperties.maxPushDataSize / sizeof(uint32_t));
@@ -12835,7 +13549,7 @@ void main()
 
 tcu::TestStatus DescriptorHeapTestInstanceNonUniformAccess::iterate()
 {
-    const auto &vkd = *m_deviceInterface;
+    const auto &vkd = m_device.getDriver();
 
     const uint32_t descriptorCount = 64;
 
@@ -12876,8 +13590,7 @@ tcu::TestStatus DescriptorHeapTestInstanceNonUniformAccess::iterate()
     std::vector<std::unique_ptr<Buffer>> buffers;
     std::vector<std::unique_ptr<Image>> images;
 
-    const VkPhysicalDeviceProperties physDevProps =
-        getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_physDevice);
+    const VkPhysicalDeviceProperties physDevProps = getPhysicalDeviceProperties(m_instance.getDriver(), m_physDevice);
     const VkDeviceSize bufferSize =
         alignUp(alignUp(VkDeviceSize{sizeof(uint32_t)}, physDevProps.limits.minUniformBufferOffsetAlignment),
                 physDevProps.limits.minStorageBufferOffsetAlignment);
@@ -13132,6 +13845,579 @@ tcu::TestStatus DescriptorHeapTestInstanceNonUniformAccess::iterate()
     return tcu::TestStatus::pass("Pass");
 }
 
+struct TestParamsZeroStride : TestParams
+{
+    VkDescriptorMappingSourceEXT mappingSource;
+    bool useImageSampler = false;
+};
+
+class DescriptorHeapTestInstanceZeroStride final : public DescriptorHeapTestInstanceBase
+{
+public:
+    explicit DescriptorHeapTestInstanceZeroStride(Context &context, const TestParamsZeroStride &params)
+        : DescriptorHeapTestInstanceBase(context, params)
+        , m_params{params}
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    TestParamsZeroStride m_params;
+};
+
+tcu::TestStatus DescriptorHeapTestInstanceZeroStride::iterate()
+{
+    const auto &vkd       = m_device.getDriver();
+    const VkDevice device = *m_device;
+    const VkQueue queue   = m_queues[0];
+    tcu::TestLog &log     = m_context.getTestContext().getLog();
+
+    const bool useImageSampler                 = m_params.useImageSampler;
+    const uint32_t pushOffset                  = sizeof(uint32_t) * 4;
+    const uint32_t addressOffset               = sizeof(uint32_t) * 17;
+    const uint32_t samplerPushOffset           = sizeof(uint32_t) * 21;
+    const uint32_t samplerAddressOffset        = sizeof(uint32_t) * 27;
+    const uint32_t descriptorCount             = 2u;
+    const VkDeviceSize bufferDescriptorStride  = getBufferDescriptorStride(m_descriptorHeapProperties);
+    const VkDeviceSize imageDescriptorStride   = getImageDescriptorStride(m_descriptorHeapProperties);
+    const VkDeviceSize samplerDescriptorStride = getSamplerDescriptorStride(m_descriptorHeapProperties);
+    const VkDeviceSize descriptorStride        = useImageSampler ? imageDescriptorStride : bufferDescriptorStride;
+
+    const VkDeviceSize userHeapSize =
+        alignUp(descriptorCount * descriptorStride, m_descriptorHeapProperties.resourceHeapAlignment);
+    const VkDeviceSize heapSize = userHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
+    const VkDeviceSize samplerUserHeapSize =
+        alignUp(samplerDescriptorStride, m_descriptorHeapProperties.samplerHeapAlignment);
+    const VkDeviceSize samplerHeapSize = samplerUserHeapSize + m_descriptorHeapProperties.minSamplerHeapReservedRange;
+    const VkDeviceSize inputBufferSize = sizeof(uint32_t);
+
+    const VkImageSubresourceRange imageSubresourceRange =
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1);
+
+    std::unique_ptr<Buffer> descriptorHeap = createBufferAndMemory(
+        heapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+    std::unique_ptr<Buffer> samplerHeap;
+    std::unique_ptr<Buffer> inputBuffer;
+    std::unique_ptr<Image> sampledImage;
+
+    const VkDeviceSize outputBufferSize = sizeof(uint32_t);
+    auto outputBuffer                   = createBufferAndMemory(outputBufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT |
+                                                                                      VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+    deMemset(outputBuffer->memory->getHostPtr(), 0, static_cast<size_t>(outputBufferSize));
+
+    const VkDeviceSize indirectBufferSize = samplerAddressOffset + sizeof(uint32_t);
+    auto indirectBuffer                   = createBufferAndMemory(
+        indirectBufferSize, VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT_KHR | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+    uint8_t *indirectData = reinterpret_cast<uint8_t *>(indirectBuffer->memory->getHostPtr());
+    deMemset(indirectData, 0, static_cast<size_t>(indirectBufferSize));
+    uint32_t *indirectValue = reinterpret_cast<uint32_t *>(indirectData + addressOffset);
+    indirectValue[0]        = 37;
+    indirectValue[1]        = 71;
+
+    if (useImageSampler)
+    {
+        samplerHeap = createBufferAndMemory(samplerHeapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
+                                                                 VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+        VkImageCreateInfo imageCreateInfo = initVulkanStructure();
+        imageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+        imageCreateInfo.format            = VK_FORMAT_R32_UINT;
+        imageCreateInfo.extent            = {1, 1, 1};
+        imageCreateInfo.mipLevels         = 1;
+        imageCreateInfo.arrayLayers       = 1;
+        imageCreateInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+        imageCreateInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
+        imageCreateInfo.usage             = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        imageCreateInfo.sharingMode       = VK_SHARING_MODE_EXCLUSIVE;
+        imageCreateInfo.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
+        sampledImage                      = createImageAndMemory(imageCreateInfo);
+
+        VkImageViewCreateInfo imageViewCreateInfo = initVulkanStructure();
+        imageViewCreateInfo.image                 = *sampledImage->image;
+        imageViewCreateInfo.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+        imageViewCreateInfo.format                = VK_FORMAT_R32_UINT;
+        imageViewCreateInfo.components            = makeComponentMappingRGBA();
+        imageViewCreateInfo.subresourceRange      = imageSubresourceRange;
+
+        VkImageDescriptorInfoEXT imageDescriptorInfo = initVulkanStructure();
+        imageDescriptorInfo.pView                    = &imageViewCreateInfo;
+        imageDescriptorInfo.layout                   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        VkDeviceAddressRangeEXT outputAddressRange{};
+        outputAddressRange.address = outputBuffer->address;
+        outputAddressRange.size    = outputBufferSize;
+
+        VkResourceDescriptorInfoEXT resourceDescriptorInfo[2];
+        resourceDescriptorInfo[0]                    = initVulkanStructure();
+        resourceDescriptorInfo[0].type               = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        resourceDescriptorInfo[0].data.pImage        = &imageDescriptorInfo;
+        resourceDescriptorInfo[1]                    = initVulkanStructure();
+        resourceDescriptorInfo[1].type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        resourceDescriptorInfo[1].data.pAddressRange = &outputAddressRange;
+
+        VkHostAddressRangeEXT resourceDescriptor[2];
+        resourceDescriptor[0].address = reinterpret_cast<char *>(descriptorHeap->memory->getHostPtr());
+        resourceDescriptor[0].size    = static_cast<size_t>(descriptorStride);
+        resourceDescriptor[1].address =
+            reinterpret_cast<char *>(descriptorHeap->memory->getHostPtr()) + descriptorStride;
+        resourceDescriptor[1].size = static_cast<size_t>(descriptorStride);
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 2, resourceDescriptorInfo, resourceDescriptor));
+
+        VkSamplerCreateInfo samplerCreateInfo = makeDefaultSamplerCreateInfo();
+        VkHostAddressRangeEXT samplerDescriptor{};
+        samplerDescriptor.address = samplerHeap->memory->getHostPtr();
+        samplerDescriptor.size    = static_cast<size_t>(getSamplerDescriptorStride(m_descriptorHeapProperties));
+        VK_CHECK(vkd.writeSamplerDescriptorsEXT(*m_device, 1, &samplerCreateInfo, &samplerDescriptor));
+    }
+    else
+    {
+        inputBuffer         = createBufferAndMemory(inputBufferSize, VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT |
+                                                                         VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+        uint32_t *inputData = reinterpret_cast<uint32_t *>(inputBuffer->memory->getHostPtr());
+        *inputData          = 1;
+
+        VkDeviceAddressRangeEXT bufferDeviceAddressRange[2];
+        bufferDeviceAddressRange[0].address = inputBuffer->address;
+        bufferDeviceAddressRange[0].size    = inputBufferSize;
+        bufferDeviceAddressRange[1].address = outputBuffer->address;
+        bufferDeviceAddressRange[1].size    = outputBufferSize;
+
+        VkResourceDescriptorInfoEXT bufferDescriptorInfo[2];
+        bufferDescriptorInfo[0]                    = initVulkanStructure();
+        bufferDescriptorInfo[0].type               = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        bufferDescriptorInfo[0].data.pAddressRange = &bufferDeviceAddressRange[0];
+        bufferDescriptorInfo[1]                    = initVulkanStructure();
+        bufferDescriptorInfo[1].type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        bufferDescriptorInfo[1].data.pAddressRange = &bufferDeviceAddressRange[1];
+
+        VkHostAddressRangeEXT bufferDescriptor[2];
+        bufferDescriptor[0].address = reinterpret_cast<char *>(descriptorHeap->memory->getHostPtr());
+        bufferDescriptor[0].size    = static_cast<size_t>(descriptorStride);
+        bufferDescriptor[1].address = reinterpret_cast<char *>(descriptorHeap->memory->getHostPtr()) + descriptorStride;
+        bufferDescriptor[1].size    = static_cast<size_t>(descriptorStride);
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 2, bufferDescriptorInfo, bufferDescriptor));
+    }
+
+    VkDescriptorSetAndBindingMappingEXT mappings[2];
+    mappings[0]                                           = initVulkanStructure();
+    mappings[0].descriptorSet                             = 0;
+    mappings[0].firstBinding                              = 0;
+    mappings[0].bindingCount                              = 64;
+    mappings[0].resourceMask                              = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    mappings[0].source                                    = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mappings[0].sourceData.constantOffset                 = {};
+    mappings[0].sourceData.constantOffset.heapOffset      = 0;
+    mappings[0].sourceData.constantOffset.heapArrayStride = 0;
+    mappings[0].sourceData.constantOffset.samplerHeapOffset      = 0;
+    mappings[0].sourceData.constantOffset.samplerHeapArrayStride = 0;
+
+    mappings[1]                                           = initVulkanStructure();
+    mappings[1].descriptorSet                             = 1;
+    mappings[1].firstBinding                              = 0;
+    mappings[1].bindingCount                              = 64;
+    mappings[1].resourceMask                              = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    mappings[1].source                                    = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mappings[1].sourceData.constantOffset                 = {};
+    mappings[1].sourceData.constantOffset.heapOffset      = static_cast<uint32_t>(descriptorStride);
+    mappings[1].sourceData.constantOffset.heapArrayStride = 0;
+    mappings[1].sourceData.constantOffset.samplerHeapOffset      = 0;
+    mappings[1].sourceData.constantOffset.samplerHeapArrayStride = 0;
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+    mappingInfo.mappingCount                                  = 2;
+    mappingInfo.pMappings                                     = mappings;
+    auto computeModule = createShaderModule(vkd, *m_device, getShaderBinary("compute"));
+
+    VkPipelineCreateFlags2CreateInfoKHR createFlags2 = initVulkanStructure();
+    createFlags2.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+    VkComputePipelineCreateInfo pipelineInfo = initVulkanStructure();
+    pipelineInfo.pNext                       = &createFlags2;
+    pipelineInfo.stage                       = initVulkanStructure();
+    pipelineInfo.stage.pNext                 = &mappingInfo;
+    pipelineInfo.stage.stage                 = VK_SHADER_STAGE_COMPUTE_BIT;
+    pipelineInfo.stage.module                = *computeModule;
+    pipelineInfo.stage.pName                 = "main";
+
+    auto pipeline = createComputePipeline(vkd, *m_device, VK_NULL_HANDLE, &pipelineInfo);
+
+    auto cmdPool   = makeCommandPool(vkd, *m_device, m_queueFamilyIndex);
+    auto cmdBuffer = allocateCommandBuffer(vkd, *m_device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    uint32_t pushData[2]           = {1, 2};
+    VkPushDataInfoEXT pushDataInfo = initVulkanStructure();
+    pushDataInfo.offset            = sizeof(uint32_t);
+    pushDataInfo.data.address      = pushData;
+    pushDataInfo.data.size         = sizeof(uint32_t) * 2;
+
+    VkBindHeapInfoEXT bindHeapInfo   = initVulkanStructure();
+    bindHeapInfo.heapRange.address   = descriptorHeap->address;
+    bindHeapInfo.heapRange.size      = heapSize;
+    bindHeapInfo.reservedRangeOffset = userHeapSize;
+    bindHeapInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    beginCommandBuffer(vkd, *cmdBuffer);
+
+    if (useImageSampler)
+    {
+        VkImageMemoryBarrier2 preBarrier = initVulkanStructure();
+        preBarrier.srcStageMask          = VK_PIPELINE_STAGE_2_NONE;
+        preBarrier.srcAccessMask         = VK_ACCESS_2_NONE;
+        preBarrier.dstStageMask          = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        preBarrier.dstAccessMask         = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+        preBarrier.oldLayout             = VK_IMAGE_LAYOUT_UNDEFINED;
+        preBarrier.newLayout             = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        preBarrier.srcQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
+        preBarrier.dstQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
+        preBarrier.image                 = *sampledImage->image;
+        preBarrier.subresourceRange      = imageSubresourceRange;
+
+        VkDependencyInfo depInfo        = initVulkanStructure();
+        depInfo.imageMemoryBarrierCount = 1;
+        depInfo.pImageMemoryBarriers    = &preBarrier;
+        vkd.cmdPipelineBarrier2(*cmdBuffer, &depInfo);
+
+        VkClearColorValue clearColor{};
+        clearColor.uint32[0] = 1;
+        vkd.cmdClearColorImage(*cmdBuffer, *sampledImage->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1,
+                               &imageSubresourceRange);
+
+        VkImageMemoryBarrier2 postBarrier = initVulkanStructure();
+        postBarrier.srcStageMask          = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        postBarrier.srcAccessMask         = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+        postBarrier.dstStageMask          = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+        postBarrier.dstAccessMask         = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
+        postBarrier.oldLayout             = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        postBarrier.newLayout             = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        postBarrier.srcQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
+        postBarrier.dstQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
+        postBarrier.image                 = *sampledImage->image;
+        postBarrier.subresourceRange      = imageSubresourceRange;
+
+        depInfo.pImageMemoryBarriers = &postBarrier;
+        vkd.cmdPipelineBarrier2(*cmdBuffer, &depInfo);
+    }
+
+    vkd.cmdPushDataEXT(*cmdBuffer, &pushDataInfo);
+    if (m_params.mappingSource == VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_PUSH_INDEX_EXT)
+    {
+        uint32_t pushIndex                  = 77;
+        VkPushDataInfoEXT indexPushDataInfo = initVulkanStructure();
+        indexPushDataInfo.offset            = pushOffset;
+        indexPushDataInfo.data.address      = &pushIndex;
+        indexPushDataInfo.data.size         = sizeof(uint32_t);
+        vkd.cmdPushDataEXT(*cmdBuffer, &indexPushDataInfo);
+
+        indexPushDataInfo.offset = samplerPushOffset;
+        vkd.cmdPushDataEXT(*cmdBuffer, &indexPushDataInfo);
+    }
+    else if (m_params.mappingSource == VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_EXT)
+    {
+        VkDeviceAddress indirectAddress       = indirectBuffer->address;
+        VkPushDataInfoEXT addressPushDataInfo = initVulkanStructure();
+        addressPushDataInfo.offset            = pushOffset;
+        addressPushDataInfo.data.address      = &indirectAddress;
+        addressPushDataInfo.data.size         = sizeof(VkDeviceAddress);
+        vkd.cmdPushDataEXT(*cmdBuffer, &addressPushDataInfo);
+
+        addressPushDataInfo.offset = samplerPushOffset;
+        vkd.cmdPushDataEXT(*cmdBuffer, &addressPushDataInfo);
+    }
+    vkd.cmdBindResourceHeapEXT(*cmdBuffer, &bindHeapInfo);
+    if (useImageSampler)
+    {
+        VkBindHeapInfoEXT samplerBindHeapInfo   = initVulkanStructure();
+        samplerBindHeapInfo.heapRange.address   = samplerHeap->address;
+        samplerBindHeapInfo.heapRange.size      = samplerHeapSize;
+        samplerBindHeapInfo.reservedRangeOffset = samplerUserHeapSize;
+        samplerBindHeapInfo.reservedRangeSize   = m_descriptorHeapProperties.minSamplerHeapReservedRange;
+        vkd.cmdBindSamplerHeapEXT(*cmdBuffer, &samplerBindHeapInfo);
+    }
+    vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+    vkd.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
+
+    endCommandBuffer(vkd, *cmdBuffer);
+    submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
+
+    invalidateAlloc(vkd, *m_device, *outputBuffer->memory);
+
+    uint32_t *outputData     = reinterpret_cast<uint32_t *>(outputBuffer->memory->getHostPtr());
+    const uint32_t arraySize = 64u; // 64 is the array size in the shader
+    uint32_t expectedResult  = pushData[1] + arraySize;
+    if (!useImageSampler)
+        expectedResult += pushData[0];
+
+    if (outputData[0] != expectedResult)
+    {
+        log << tcu::TestLog::Message << "Expected result at index 0 was " << expectedResult << " but got "
+            << outputData[0] << tcu::TestLog::EndMessage;
+        if (!useImageSampler)
+        {
+            log << tcu::TestLog::Message << "Expected result is: pushData[0] (" << pushData[0] << ") + pushData[1] ("
+                << pushData[1] << ") + arraySize (64) * ubo[0].data (1)." << tcu::TestLog::EndMessage;
+        }
+        else
+        {
+            log << tcu::TestLog::Message << "Expected result is: pushData[1] (" << pushData[1]
+                << ") + arraySize (64) * tex[0].data (1)." << tcu::TestLog::EndMessage;
+        }
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class DescriptorHeapTestCaseZeroStride final : public DescriptorHeapTestCaseBase
+{
+public:
+    explicit DescriptorHeapTestCaseZeroStride(tcu::TestContext &testCtx, const std::string &name,
+                                              const TestParamsZeroStride &params)
+        : DescriptorHeapTestCaseBase(testCtx, name, params)
+        , m_params{params}
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceZeroStride(context, m_params);
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+private:
+    TestParamsZeroStride m_params;
+};
+
+void DescriptorHeapTestCaseZeroStride::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::string comp;
+    if (m_params.useImageSampler)
+    {
+        comp = R"(#version 450
+layout(set = 0, binding = 0) uniform usampler2D tex[64];
+layout(set = 1, binding = 0) buffer Output {
+    uint result;
+} outputBuffer[64];
+
+layout(push_constant) uniform PushConstant {
+    uint value1;
+    uint value2;
+    uint value3;
+};
+
+void main(void) {
+    uint result = value3;
+    if (result == 0) {
+        result += value2;
+    }
+    for (uint i = 0; i < 64; i++) {
+        result += texture(tex[i], vec2(0.5)).r;
+    }
+    outputBuffer[63].result = result;
+}
+)";
+    }
+    else
+    {
+        comp = R"(#version 450
+layout(set = 0, binding = 0) uniform UBO {
+   uint data;
+} d[64];
+layout(set = 1, binding = 0) buffer Output {
+    uint result;
+} outputBuffer[64];
+
+layout(push_constant) uniform PushConstant {
+    uint value1;
+    uint value2;
+    uint value3;
+};
+
+void main(void) {
+    uint result = value3;
+    if (result > 0) {
+        result += value2;
+    }
+    for (uint i = 0; i < 64; i++) {
+        result += d[i].data;
+    }
+    outputBuffer[4].result = result;
+}
+)";
+    }
+    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+    programCollection.glslSources.add("compute") << glu::ComputeSource(comp) << buildOptions;
+}
+
+class DescriptorHeapTestInstanceSmallBuffers final : public DescriptorHeapTestInstanceBase
+{
+public:
+    explicit DescriptorHeapTestInstanceSmallBuffers(Context &context, const TestParams &params)
+        : DescriptorHeapTestInstanceBase(context, params)
+        , m_params{params}
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    TestParams m_params{};
+};
+
+tcu::TestStatus DescriptorHeapTestInstanceSmallBuffers::iterate()
+{
+    const auto &vk = m_device.getDriver();
+
+    const VkDeviceSize descriptorStride =
+        alignUp(m_descriptorHeapProperties.bufferDescriptorSize, m_descriptorHeapProperties.bufferDescriptorAlignment);
+    const VkDeviceSize descriptorCount = 2u;
+    const VkDeviceSize userHeapSize =
+        alignUp(descriptorCount * descriptorStride, m_descriptorHeapProperties.resourceHeapAlignment);
+    const VkDeviceSize heapSize = userHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
+    auto descriptorHeap         = createBufferAndMemory(heapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
+                                                                      VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+    auto inputBuffer  = createBufferAndMemory(1u, VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT |
+                                                      VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+    auto outputBuffer = createBufferAndMemory(1u, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT |
+                                                      VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+    const auto inputBufferPtr = reinterpret_cast<uint8_t *>(inputBuffer->memory->getHostPtr());
+    *inputBufferPtr           = 123;
+
+    VkHostAddressRangeEXT descriptorHeapRanges[2];
+    descriptorHeapRanges[0].address = descriptorHeap->memory->getHostPtr();
+    descriptorHeapRanges[0].size    = static_cast<size_t>(descriptorStride);
+    descriptorHeapRanges[1].address = reinterpret_cast<char *>(descriptorHeap->memory->getHostPtr()) + descriptorStride;
+    descriptorHeapRanges[1].size    = static_cast<size_t>(descriptorStride);
+
+    VkDeviceAddressRangeEXT bufferAddrRanges[2];
+    bufferAddrRanges[0].address = inputBuffer->address;
+    bufferAddrRanges[0].size    = 1u;
+    bufferAddrRanges[1].address = outputBuffer->address;
+    bufferAddrRanges[1].size    = 1u;
+
+    VkResourceDescriptorInfoEXT resourceInfos[2];
+    resourceInfos[0]                    = initVulkanStructure();
+    resourceInfos[0].type               = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    resourceInfos[0].data.pAddressRange = &bufferAddrRanges[0];
+    resourceInfos[1]                    = initVulkanStructure();
+    resourceInfos[1].type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    resourceInfos[1].data.pAddressRange = &bufferAddrRanges[1];
+    VK_CHECK(vk.writeResourceDescriptorsEXT(*m_device, 2, resourceInfos, descriptorHeapRanges));
+
+    VkDescriptorSetAndBindingMappingEXT mappings[2];
+    mappings[0]                                      = initVulkanStructure();
+    mappings[0].descriptorSet                        = 0;
+    mappings[0].firstBinding                         = 0;
+    mappings[0].bindingCount                         = 1;
+    mappings[0].resourceMask                         = VK_SPIRV_RESOURCE_TYPE_UNIFORM_BUFFER_BIT_EXT;
+    mappings[0].source                               = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mappings[0].sourceData.constantOffset.heapOffset = 0;
+    mappings[1]                                      = initVulkanStructure();
+    mappings[1].descriptorSet                        = 1;
+    mappings[1].firstBinding                         = 0;
+    mappings[1].bindingCount                         = 1;
+    mappings[1].resourceMask                         = VK_SPIRV_RESOURCE_TYPE_READ_WRITE_STORAGE_BUFFER_BIT_EXT;
+    mappings[1].source                               = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mappings[1].sourceData.constantOffset.heapOffset = static_cast<uint32_t>(descriptorStride);
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+    mappingInfo.mappingCount                                  = 2u;
+    mappingInfo.pMappings                                     = mappings;
+
+    auto computeModule = createShaderModule(vk, *m_device, getShaderBinary("compute"));
+
+    VkPipelineCreateFlags2CreateInfoKHR createFlags2 = initVulkanStructure();
+    createFlags2.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+    VkComputePipelineCreateInfo pipelineInfo = initVulkanStructure();
+    pipelineInfo.pNext                       = &createFlags2;
+    pipelineInfo.stage                       = initVulkanStructure();
+    pipelineInfo.stage.pNext                 = &mappingInfo;
+    pipelineInfo.stage.stage                 = VK_SHADER_STAGE_COMPUTE_BIT;
+    pipelineInfo.stage.module                = *computeModule;
+    pipelineInfo.stage.pName                 = "main";
+
+    auto pipeline = createComputePipeline(vk, *m_device, VK_NULL_HANDLE, &pipelineInfo);
+
+    auto cmdPool   = makeCommandPool(vk, *m_device, m_queueFamilyIndex);
+    auto cmdBuffer = allocateCommandBuffer(vk, *m_device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    VkBindHeapInfoEXT bindHeapInfo   = initVulkanStructure();
+    bindHeapInfo.heapRange.address   = descriptorHeap->address;
+    bindHeapInfo.heapRange.size      = heapSize;
+    bindHeapInfo.reservedRangeOffset = userHeapSize;
+    bindHeapInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    beginCommandBuffer(vk, *cmdBuffer);
+    vk.cmdBindResourceHeapEXT(*cmdBuffer, &bindHeapInfo);
+    vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+    vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, *m_device, m_queues.front(), *cmdBuffer);
+
+    invalidateAlloc(vk, *m_device, *outputBuffer->memory);
+
+    const auto outputBufferPtr = reinterpret_cast<uint8_t *>(outputBuffer->memory->getHostPtr());
+    if (*outputBufferPtr != *inputBufferPtr)
+    {
+        std::stringstream msg;
+        msg << "Expected value " << static_cast<uint32_t>(*inputBufferPtr) << " but got "
+            << static_cast<uint32_t>(*outputBufferPtr);
+        return tcu::TestStatus::fail(msg.str());
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class DescriptorHeapTestCaseSmallBuffer final : public DescriptorHeapTestCaseBase
+{
+public:
+    explicit DescriptorHeapTestCaseSmallBuffer(tcu::TestContext &testCtx, const std::string &name,
+                                               const TestParams &params)
+        : DescriptorHeapTestCaseBase(testCtx, name, params)
+        , m_params{params}
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceSmallBuffers(context, m_params);
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+private:
+    TestParams m_params{};
+};
+
+void DescriptorHeapTestCaseSmallBuffer::initPrograms(vk::SourceCollections &programCollection) const
+{
+    const std::string computeShader = R"(#version 460
+
+#extension GL_EXT_shader_8bit_storage : require
+
+layout(local_size_x = 1) in;
+
+layout(set = 0, binding = 0) uniform InBuffer {
+    uint8_t data;
+} inBuffer;
+
+layout(set = 1, binding = 0) buffer OutBuffer {
+    uint8_t data[];
+} outBuffer;
+
+void main() {
+    uint i = gl_GlobalInvocationID.x;
+    outBuffer.data[i] = inBuffer.data;
+})";
+
+    programCollection.glslSources.add("compute") << glu::ComputeSource(computeShader);
+}
+
 const char *getDescriptorTypeTestName(VkDescriptorType descriptorType)
 {
     switch (descriptorType)
@@ -13208,6 +14494,7 @@ void populateLimitsTests(tcu::TestCaseGroup *topGroup)
     tcu::TestContext &testCtx = topGroup->getTestContext();
     MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(testCtx, "limit"));
     addFunctionCase(subGroup.get(), "limits", testLimits);
+    addFunctionCase(subGroup.get(), "get_descriptor_size", testGetDescriptorSize);
     topGroup->addChild(subGroup.release());
 }
 
@@ -13545,6 +14832,10 @@ void populateBindingMappingTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed
         const char *mappingSourceName = getMappingSourceTestName(mappingSource);
         MovePtr<tcu::TestCaseGroup> mappingSourceGroup(new tcu::TestCaseGroup(testCtx, mappingSourceName));
 
+        MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(testCtx, "compute"));
+        MovePtr<tcu::TestCaseGroup> fragmentGroup(new tcu::TestCaseGroup(testCtx, "fragment"));
+        MovePtr<tcu::TestCaseGroup> raygenGroup(new tcu::TestCaseGroup(testCtx, "raygen"));
+
         const uint32_t mappingSourceGroupHash = bindingMappingGroupHash ^ deStringHash(mappingSourceName);
 
         for (const VkDescriptorType descriptorType : descriptorTypes)
@@ -13595,6 +14886,8 @@ void populateBindingMappingTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed
             binding.mapping.resourceMask  = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
 
             binding.heapIndex = rng.getInt(8, kMaxDescriptor - params.dimension);
+
+            bool shaderRecordMapping = false;
 
             switch (mappingSource)
             {
@@ -13648,7 +14941,7 @@ void populateBindingMappingTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed
                 binding.mapping.sourceData.shaderRecordIndex.heapArrayStride    = 1;
                 params.enableRayTracing                                         = true;
                 params.enableAccelerationStructures                             = true;
-                params.stage                                                    = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+                shaderRecordMapping                                             = true;
                 break;
             case VK_DESCRIPTOR_MAPPING_SOURCE_SHADER_RECORD_DATA_EXT:
                 binding.mapping.bindingCount                      = 1;
@@ -13657,7 +14950,7 @@ void populateBindingMappingTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed
                 params.dimension                                  = 1;
                 params.enableRayTracing                           = true;
                 params.enableAccelerationStructures               = true;
-                params.stage                                      = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+                shaderRecordMapping                               = true;
                 break;
             case VK_DESCRIPTOR_MAPPING_SOURCE_SHADER_RECORD_ADDRESS_EXT:
                 binding.mapping.bindingCount                         = 1;
@@ -13666,7 +14959,7 @@ void populateBindingMappingTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed
                 params.dimension                                     = 1;
                 params.enableRayTracing                              = true;
                 params.enableAccelerationStructures                  = true;
-                params.stage                                         = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+                shaderRecordMapping                                  = true;
                 break;
             case VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_ARRAY_EXT:
                 binding.mapping.sourceData.indirectIndexArray.heapOffset      = 2;
@@ -13727,8 +15020,31 @@ void populateBindingMappingTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed
                 break;
             }
 
-            mappingSourceGroup->addChild(new DescriptorHeapTestCaseBasic(testCtx, testName, params));
+            if (!shaderRecordMapping)
+            {
+                computeGroup->addChild(new DescriptorHeapTestCaseBasic(testCtx, testName, params));
+            }
+
+            params.dimension                      = 1;
+            params.enableFragmentStoresAndAtomics = isStorageDescriptorType(descriptorType);
+            params.queue                          = VK_QUEUE_GRAPHICS_BIT;
+            params.stage                          = VK_SHADER_STAGE_FRAGMENT_BIT;
+            if (!shaderRecordMapping)
+            {
+                fragmentGroup->addChild(new DescriptorHeapTestCaseBasic(testCtx, testName, params));
+            }
+
+            params.queue                          = VK_QUEUE_COMPUTE_BIT;
+            params.stage                          = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+            params.enableRayTracing               = true;
+            params.enableAccelerationStructures   = true;
+            params.enableRayQuery                 = false;
+            params.enableFragmentStoresAndAtomics = false;
+            raygenGroup->addChild(new DescriptorHeapTestCaseBasic(testCtx, testName, params));
         }
+        mappingSourceGroup->addChild(computeGroup.release());
+        mappingSourceGroup->addChild(fragmentGroup.release());
+        mappingSourceGroup->addChild(raygenGroup.release());
 
         bindingMappingGroup->addChild(mappingSourceGroup.release());
     }
@@ -13851,6 +15167,7 @@ void populateCombinedImageSamplerTests(tcu::TestCaseGroup *topGroup, uint32_t ba
                 params.dimension                                 = isArrayed ? 4 : 1;
                 params.seed                                      = embeddedGroupHash ^ deStringHash(testName);
                 params.embeddedSamplers                          = useEmbedded;
+                params.bindSamplerHeap                           = !useEmbedded;
 
                 de::Random rng(~params.seed);
 
@@ -14290,7 +15607,7 @@ void populateGraphicsPipelineLibraryTests(tcu::TestCaseGroup *topGroup, uint32_t
     MovePtr<tcu::TestCaseGroup> gplGroup(new tcu::TestCaseGroup(testCtx, "graphics_pipeline_library"));
 
     // GPL case
-    TestParams gplParams{};
+    TestParamsGPL gplParams{};
     gplParams.queue                          = VK_QUEUE_GRAPHICS_BIT;
     gplParams.enableGraphicsPipelineLibrary  = true;
     gplParams.enableFragmentStoresAndAtomics = true;
@@ -14298,7 +15615,7 @@ void populateGraphicsPipelineLibraryTests(tcu::TestCaseGroup *topGroup, uint32_t
     gplGroup->addChild(new DescriptorHeapTestCaseGPL(testCtx, "graphics_pipeline_library", gplParams));
 
     // Shader object case
-    TestParams shaderObjectParams{};
+    TestParamsGPL shaderObjectParams{};
     shaderObjectParams.queue                          = VK_QUEUE_GRAPHICS_BIT;
     shaderObjectParams.enableShaderObject             = true;
     shaderObjectParams.enableDynamicRendering         = true;
@@ -14306,6 +15623,11 @@ void populateGraphicsPipelineLibraryTests(tcu::TestCaseGroup *topGroup, uint32_t
     shaderObjectParams.seed                           = baseSeed ^ deStringHash("shader_object");
     gplGroup->addChild(new DescriptorHeapTestCaseGPL(testCtx, "shader_object", shaderObjectParams));
 
+    shaderObjectParams.seed                                 = baseSeed ^ deStringHash("shader_object_unbind_frag");
+    shaderObjectParams.unbindFragShader                     = true;
+    shaderObjectParams.enableVertexPipelineStoresAndAtomics = true;
+    shaderObjectParams.enableFragmentStoresAndAtomics       = false;
+    gplGroup->addChild(new DescriptorHeapTestCaseGPL(testCtx, "shader_object_unbind_frag", shaderObjectParams));
     topGroup->addChild(gplGroup.release());
 }
 
@@ -14597,33 +15919,40 @@ void populateGraphicsTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
             {
                 for (const bool geometry : {false, true})
                 {
-                    std::string testName = "vertex";
-                    if (tessellation)
+                    for (const bool vectors : {false, true})
                     {
-                        testName += "_tessellation";
-                    }
-                    if (geometry)
-                    {
-                        testName += "_geometry";
-                    }
-                    if (fragment)
-                    {
-                        testName += "_fragment";
-                    }
-                    if (secondary)
-                    {
-                        testName += "_secondary_cmdbuf";
-                    }
+                        std::string testName = "vertex";
+                        if (tessellation)
+                        {
+                            testName += "_tessellation";
+                        }
+                        if (geometry)
+                        {
+                            testName += "_geometry";
+                        }
+                        if (fragment)
+                        {
+                            testName += "_fragment";
+                        }
+                        if (secondary)
+                        {
+                            testName += "_secondary_cmdbuf";
+                        }
+                        if (vectors)
+                            testName += "_vectors";
 
-                    TestParamsGraphics params{};
-                    params.queue                          = VK_QUEUE_GRAPHICS_BIT;
-                    params.enableTessellationShader       = tessellation;
-                    params.enableGeometryShader           = geometry;
-                    params.enableFragmentStoresAndAtomics = fragment;
-                    params.useFragmentShader              = fragment;
-                    params.useSecondaryCommandBuffer      = secondary;
-                    params.seed                           = baseSeed ^ deStringHash(testName.c_str());
-                    graphicsGroup->addChild(new DescriptorHeapTestCaseGraphics(testCtx, testName, params));
+                        TestParamsGraphics params{};
+                        params.queue                                = VK_QUEUE_GRAPHICS_BIT;
+                        params.enableVertexPipelineStoresAndAtomics = true;
+                        params.enableTessellationShader             = tessellation;
+                        params.enableGeometryShader                 = geometry;
+                        params.enableFragmentStoresAndAtomics       = fragment;
+                        params.useFragmentShader                    = fragment;
+                        params.useSecondaryCommandBuffer            = secondary;
+                        params.useVectors                           = vectors;
+                        params.seed                                 = baseSeed ^ deStringHash(testName.c_str());
+                        graphicsGroup->addChild(new DescriptorHeapTestCaseGraphics(testCtx, testName, params));
+                    }
                 }
             }
         }
@@ -14751,14 +16080,55 @@ void populateSecondaryCommandBufferTests(tcu::TestCaseGroup *topGroup, uint32_t 
     tcu::TestContext &testCtx = topGroup->getTestContext();
     MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "secondary"));
 
+    struct TestType
+    {
+        SecondaryCopyType type;
+        const char *name;
+    } testTypes[] = {
+        {SecondaryCopyType::NONE, "none"},
+        {SecondaryCopyType::RESOURCE_HEAP_COMMAND_COPY, "resource_heap_command_copy"},
+        {SecondaryCopyType::RESOURCE_HEAP_SHADER_COPY, "resource_heap_shader_copy"},
+        {SecondaryCopyType::SAMPLER_HEAP_COMMAND_COPY, "sampler_heap_command_copy"},
+        {SecondaryCopyType::SAMPLER_HEAP_SHADER_COPY, "sampler_heap_shader_copy"},
+    };
+
     for (const VkQueueFlagBits queue : {VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT})
     {
-        const char *const testName = (queue == VK_QUEUE_GRAPHICS_BIT) ? "graphics" : "compute";
+        const std::string queueName = (queue == VK_QUEUE_GRAPHICS_BIT) ? "graphics" : "compute";
 
+        for (const auto testType : testTypes)
+        {
+            for (const bool copyInSecondary : {false, true})
+            {
+                if ((testType.type == SecondaryCopyType::NONE || queue != VK_QUEUE_COMPUTE_BIT) && copyInSecondary)
+                {
+                    continue;
+                }
+
+                const std::string testName = queueName + "_" + testType.name + (copyInSecondary ? "_in_secondary" : "");
+
+                SecondaryTestParams params{};
+                params.queue           = queue;
+                params.seed            = baseSeed ^ deStringHash(testName.c_str());
+                params.testType        = testType.type;
+                params.copyInSecondary = copyInSecondary;
+                group->addChild(new DescriptorHeapTestCaseSecondary(testCtx, testName, params));
+            }
+        }
+    }
+
+    topGroup->addChild(group.release());
+}
+
+void populateOffsetIdTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
+{
+    tcu::TestContext &testCtx = topGroup->getTestContext();
+    MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "offset_id"));
+
+    {
         TestParams params{};
-        params.queue = queue;
-        params.seed  = baseSeed ^ deStringHash(testName);
-        group->addChild(new DescriptorHeapTestCaseSecondary(testCtx, testName, params));
+        params.seed = baseSeed ^ deStringHash("offset_id");
+        group->addChild(new DescriptorHeapTestCaseOffsetId(testCtx, "implicit_zero_index", params));
     }
 
     topGroup->addChild(group.release());
@@ -14829,6 +16199,382 @@ void populateNonUniformAccessTests(tcu::TestCaseGroup *topGroup, uint32_t baseSe
     topGroup->addChild(group.release());
 }
 
+// Hit-record count, also the ray launch width, sized to span a subgroup.
+constexpr uint32_t kShaderRecordNonUniformRecordCount = 64u;
+
+struct TestParamsShaderRecordNonUniform : TestParams
+{
+    bool withCapability = false;
+};
+
+class DescriptorHeapTestInstanceShaderRecordNonUniform final : public DescriptorHeapTestInstanceBase
+{
+public:
+    explicit DescriptorHeapTestInstanceShaderRecordNonUniform(Context &context,
+                                                              const TestParamsShaderRecordNonUniform &params)
+        : DescriptorHeapTestInstanceBase(context, params)
+        , m_params{params}
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    TestParamsShaderRecordNonUniform m_params{};
+};
+
+class DescriptorHeapTestCaseShaderRecordNonUniform final : public DescriptorHeapTestCaseBase
+{
+public:
+    explicit DescriptorHeapTestCaseShaderRecordNonUniform(tcu::TestContext &testCtx, const std::string &name,
+                                                          const TestParamsShaderRecordNonUniform &params)
+        : DescriptorHeapTestCaseBase(testCtx, name, params)
+        , m_params{params}
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceShaderRecordNonUniform(context, m_params);
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+private:
+    TestParamsShaderRecordNonUniform m_params{};
+};
+
+void DescriptorHeapTestCaseShaderRecordNonUniform::initPrograms(vk::SourceCollections &programCollection) const
+{
+    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+    std::ostringstream raygen;
+    raygen << "#version 460\n"
+              "#extension GL_EXT_ray_tracing : require\n"
+              "layout(set = 0, binding = 0, std430) buffer OutputBuffer { uint result[]; };\n"
+              "layout(set = 2, binding = 0) uniform accelerationStructureEXT topAS;\n"
+              "layout(location = 0) rayPayloadEXT uint hitValue;\n"
+              "void main() {\n"
+              "    uint idx = gl_LaunchIDEXT.x;\n"
+              "    hitValue = 0xffffffffu;\n"
+              "    vec3 origin = vec3(float(idx) + 0.25, 0.25, 0.0);\n"
+              "    traceRayEXT(topAS, gl_RayFlagsOpaqueEXT, 0xFFu, 0u /*sbtRecordOffset*/, 0u /*sbtRecordStride*/,\n"
+              "                0u /*missIndex*/, origin, 0.0, vec3(0.0, 0.0, 1.0), 100.0, 0);\n"
+              "    result[idx] = hitValue;\n"
+              "}\n";
+
+    std::ostringstream closesthit;
+    closesthit << "#version 460\n"
+                  "#extension GL_EXT_ray_tracing : require\n"
+                  "#extension GL_EXT_samplerless_texture_functions : require\n";
+    if (m_params.withCapability)
+        closesthit << "#extension GL_EXT_descriptor_heap : require\n";
+    closesthit << "layout(set = 1, binding = 0) uniform utextureBuffer testDesc;\n";
+    if (m_params.withCapability)
+        closesthit << "layout(descriptor_heap) uniform utextureBuffer heapDescs[];\n";
+    closesthit << "layout(location = 0) rayPayloadInEXT uint hitValue;\n"
+                  "void main() {\n"
+                  "    hitValue = texelFetch(testDesc, 0).r;\n";
+    if (m_params.withCapability)
+    {
+        closesthit << "    hitValue += texelFetch(heapDescs[" << kShaderRecordNonUniformRecordCount << "], 0).r;\n";
+    }
+    closesthit << "}\n";
+
+    const std::string miss = "#version 460\n"
+                             "#extension GL_EXT_ray_tracing : require\n"
+                             "layout(location = 0) rayPayloadInEXT uint hitValue;\n"
+                             "void main() {}\n";
+
+    programCollection.glslSources.add("raygen") << glu::RaygenSource(raygen.str()) << buildOptions;
+    programCollection.glslSources.add("closesthit") << glu::ClosestHitSource(closesthit.str()) << buildOptions;
+    programCollection.glslSources.add("miss") << glu::MissSource(miss) << buildOptions;
+}
+
+tcu::TestStatus DescriptorHeapTestInstanceShaderRecordNonUniform::iterate()
+{
+    const auto &vki       = m_instance.getDriver();
+    const auto &vkd       = m_device.getDriver();
+    const VkDevice device = *m_device;
+    Allocator &allocator  = m_device.getAllocator();
+
+    const uint32_t recordCount = kShaderRecordNonUniformRecordCount;
+    // One descriptor per record, plus one extra zero-valued slot backing the layout(descriptor_heap) capability read.
+    const uint32_t slotCount = recordCount + 1u;
+
+    // Lay the heap out at the type-specific image descriptor stride so the mapped read and the layout(descriptor_heap)
+    // read (which indexes by that same stride) stay consistent.
+    const VkDeviceSize descriptorSize   = m_descriptorHeapProperties.imageDescriptorSize;
+    const VkDeviceSize descriptorStride = alignUp(descriptorSize, m_descriptorHeapProperties.imageDescriptorAlignment);
+
+    const VkDeviceSize userHeapSize =
+        alignUp(slotCount * descriptorStride, m_descriptorHeapProperties.resourceHeapAlignment);
+    const VkDeviceSize heapSize = userHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    auto resourceHeap = createBufferAndMemory(heapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
+                                                            VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+    const VkDeviceSize outputBufferSize = recordCount * sizeof(uint32_t);
+    auto outputBuffer                   = createBufferAndMemory(outputBufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT |
+                                                                                      VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+    deMemset(outputBuffer->memory->getHostPtr(), 0, static_cast<size_t>(outputBufferSize));
+
+    de::Random rnd(m_params.seed);
+    std::vector<uint32_t> expectedData(recordCount);
+    std::vector<std::unique_ptr<Buffer>> buffers;
+
+    auto heapHostPtr = static_cast<char *>(resourceHeap->memory->getHostPtr());
+
+    for (uint32_t i = 0; i < slotCount; ++i)
+    {
+        const uint32_t value = (i < recordCount) ? rnd.getUint32() : 0u;
+        if (i < recordCount)
+            expectedData[i] = value;
+
+        auto &buffer = buffers.emplace_back(
+            createBufferAndMemory(sizeof(uint32_t), VK_BUFFER_USAGE_2_UNIFORM_TEXEL_BUFFER_BIT |
+                                                        VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR));
+        deMemcpy(buffer->memory->getHostPtr(), &value, sizeof(value));
+
+        VkTexelBufferDescriptorInfoEXT texelInfo = initVulkanStructure();
+        texelInfo.format                         = VK_FORMAT_R32_UINT;
+        texelInfo.addressRange.address           = buffer->address;
+        texelInfo.addressRange.size              = sizeof(uint32_t);
+
+        VkResourceDescriptorInfoEXT resourceInfo = initVulkanStructure();
+        resourceInfo.type                        = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+        resourceInfo.data.pTexelBuffer           = &texelInfo;
+
+        VkHostAddressRangeEXT hostRange{};
+        hostRange.address = heapHostPtr + i * descriptorStride;
+        hostRange.size    = static_cast<size_t>(descriptorSize);
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(device, 1, &resourceInfo, &hostRange));
+    }
+
+    // Each ray must hit a different hit record so the shared closest-hit shader resolves the same non-arrayed
+    // descriptor to a different resource (implicit non-uniformity, no nonuniformEXT anywhere). The traceRayEXT
+    // sbtRecordOffset is only a 4-bit field, so the divergence is driven through the 24-bit per-instance
+    // instanceShaderBindingTableRecordOffset instead: a unit quad in x,y in [0,1] at z = zDepth, instanced
+    // recordCount times one unit apart along x. Ray i (origin x = i + 0.25) hits only instance i, whose record
+    // offset = i selects hit record i.
+    const float zDepth = 5.0f;
+    const std::vector<tcu::Vec3> vertices{
+        tcu::Vec3(0.0f, 0.0f, zDepth), tcu::Vec3(0.0f, 1.0f, zDepth), tcu::Vec3(1.0f, 0.0f, zDepth),
+        tcu::Vec3(0.0f, 1.0f, zDepth), tcu::Vec3(1.0f, 1.0f, zDepth), tcu::Vec3(1.0f, 0.0f, zDepth),
+    };
+
+    AccelerationStructBufferProperties bufferProps;
+    de::SharedPtr<BottomLevelAccelerationStructure> blas(makeBottomLevelAccelerationStructure().release());
+    blas->setGeometryData(vertices, true);
+    blas->create(vkd, device, allocator, bufferProps, 0, 0, 0, 0, nullptr, MemoryRequirement::Any);
+
+    MovePtr<TopLevelAccelerationStructure> tlas(makeTopLevelAccelerationStructure().release());
+    tlas->setInstanceCount(recordCount);
+    for (uint32_t i = 0; i < recordCount; ++i)
+    {
+        VkTransformMatrixKHR transform = identityMatrix3x4;
+        transform.matrix[0][3]         = static_cast<float>(i);
+        tlas->addInstance(blas, transform, 0u, 0xFFu, i);
+    }
+    tlas->create(vkd, device, allocator, bufferProps, 0, 0, 0, 0, nullptr, MemoryRequirement::Any);
+
+    const VkDeviceAddress asAddress = getAccelerationStructureDeviceAddress(vkd, device, *tlas->getPtr());
+
+    std::vector<VkDescriptorSetAndBindingMappingEXT> mappings;
+
+    VkDescriptorSetAndBindingMappingEXT outputMapping = initVulkanStructure();
+    outputMapping.descriptorSet                       = 0;
+    outputMapping.firstBinding                        = 0;
+    outputMapping.bindingCount                        = 1;
+    outputMapping.resourceMask                        = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    outputMapping.source                              = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT;
+    outputMapping.sourceData.pushAddressOffset        = 0;
+    mappings.push_back(outputMapping);
+
+    VkDescriptorSetAndBindingMappingEXT testMapping = initVulkanStructure();
+    testMapping.descriptorSet                       = 1;
+    testMapping.firstBinding                        = 0;
+    testMapping.bindingCount                        = 1;
+    testMapping.resourceMask                        = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    testMapping.source                              = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_SHADER_RECORD_INDEX_EXT;
+    testMapping.sourceData.shaderRecordIndex.heapOffset         = 0;
+    testMapping.sourceData.shaderRecordIndex.shaderRecordOffset = 0;
+    testMapping.sourceData.shaderRecordIndex.heapIndexStride    = static_cast<uint32_t>(descriptorStride);
+    testMapping.sourceData.shaderRecordIndex.heapArrayStride    = 0;
+    mappings.push_back(testMapping);
+
+    VkDescriptorSetAndBindingMappingEXT asMapping = initVulkanStructure();
+    asMapping.descriptorSet                       = 2;
+    asMapping.firstBinding                        = 0;
+    asMapping.bindingCount                        = 1;
+    asMapping.resourceMask                        = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    asMapping.source                              = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT;
+    asMapping.sourceData.pushAddressOffset        = static_cast<uint32_t>(sizeof(VkDeviceAddress));
+    mappings.push_back(asMapping);
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+    mappingInfo.mappingCount                                  = static_cast<uint32_t>(mappings.size());
+    mappingInfo.pMappings                                     = mappings.data();
+
+    const uint32_t raygenGroup = 0u;
+    const uint32_t missGroup   = 1u;
+    const uint32_t hitGroup    = 2u;
+
+    de::MovePtr<RayTracingPipeline> rtPipeline = de::newMovePtr<RayTracingPipeline>();
+    rtPipeline->setCreateFlags2(VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT);
+    rtPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, createShaderModule(vkd, device, getShaderBinary("raygen"), 0),
+                          raygenGroup, nullptr, 0, &mappingInfo);
+    rtPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, createShaderModule(vkd, device, getShaderBinary("miss"), 0),
+                          missGroup, nullptr, 0, &mappingInfo);
+    rtPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
+                          createShaderModule(vkd, device, getShaderBinary("closesthit"), 0), hitGroup, nullptr, 0,
+                          &mappingInfo);
+
+    Move<VkPipeline> pipeline = rtPipeline->createPipeline(vkd, device, VK_NULL_HANDLE);
+
+    const uint32_t handleSize = getShaderGroupHandleSize(vki, m_physDevice);
+    const uint32_t baseAlign  = getShaderGroupBaseAlignment(vki, m_physDevice);
+
+    const uint32_t recordSize   = 16u;
+    const uint32_t hitEntrySize = static_cast<uint32_t>(de::roundUp(handleSize + recordSize, handleSize));
+
+    auto raygenSBT =
+        rtPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, handleSize, baseAlign, raygenGroup, 1u);
+    auto missSBT =
+        rtPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, handleSize, baseAlign, missGroup, 1u);
+
+    // Hit SBT: recordCount records all referencing the same closest-hit group handle, each carrying its own index r
+    // as shader-record data (record r -> shader-record index r -> heap slot r).
+    const auto hitHandle = rtPipeline->getShaderGroupHandles(vkd, device, *pipeline, handleSize, hitGroup, 1u);
+    std::vector<uint8_t> hitHandles(recordCount * handleSize);
+    for (uint32_t r = 0; r < recordCount; ++r)
+        deMemcpy(hitHandles.data() + r * handleSize, hitHandle.data(), handleSize);
+
+    std::vector<std::vector<uint8_t>> recordBlobs(recordCount, std::vector<uint8_t>(recordSize, 0u));
+    std::vector<const void *> recordPtrs(recordCount);
+    for (uint32_t r = 0; r < recordCount; ++r)
+    {
+        deMemcpy(recordBlobs[r].data(), &r, sizeof(r));
+        recordPtrs[r] = recordBlobs[r].data();
+    }
+
+    auto hitSBT =
+        rtPipeline->createShaderBindingTable(vkd, device, allocator, handleSize, baseAlign, hitHandles, 0u, 0u,
+                                             MemoryRequirement::Any, 0u, 0u, recordSize, recordPtrs.data());
+
+    VkStridedDeviceAddressRegionKHR raygenRegion = makeStridedDeviceAddressRegionKHR(
+        getBufferDeviceAddress(vkd, device, raygenSBT->get(), 0), handleSize, handleSize);
+    VkStridedDeviceAddressRegionKHR missRegion = makeStridedDeviceAddressRegionKHR(
+        getBufferDeviceAddress(vkd, device, missSBT->get(), 0), handleSize, handleSize);
+    VkStridedDeviceAddressRegionKHR hitRegion = makeStridedDeviceAddressRegionKHR(
+        getBufferDeviceAddress(vkd, device, hitSBT->get(), 0), hitEntrySize, hitEntrySize * recordCount);
+    VkStridedDeviceAddressRegionKHR callableRegion{};
+
+    auto cmdPool   = makeCommandPool(vkd, device, m_queueFamilyIndex);
+    auto cmdBuffer = allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    VkBindHeapInfoEXT bindHeapInfo   = initVulkanStructure();
+    bindHeapInfo.heapRange.address   = resourceHeap->address;
+    bindHeapInfo.heapRange.size      = heapSize;
+    bindHeapInfo.reservedRangeOffset = userHeapSize;
+    bindHeapInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    beginCommandBuffer(vkd, *cmdBuffer);
+
+    vkd.cmdBindResourceHeapEXT(*cmdBuffer, &bindHeapInfo);
+
+    blas->build(vkd, device, *cmdBuffer);
+    tlas->build(vkd, device, *cmdBuffer);
+
+    {
+        VkMemoryBarrier2 asBarrier = initVulkanStructure();
+        asBarrier.srcStageMask     = VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+        asBarrier.srcAccessMask    = VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+        asBarrier.dstStageMask     = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+        asBarrier.dstAccessMask    = VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+
+        VkDependencyInfo dependencyInfo   = initVulkanStructure();
+        dependencyInfo.memoryBarrierCount = 1;
+        dependencyInfo.pMemoryBarriers    = &asBarrier;
+        vkd.cmdPipelineBarrier2(*cmdBuffer, &dependencyInfo);
+    }
+
+    {
+        VkPushDataInfoEXT pushOutput = initVulkanStructure();
+        pushOutput.offset            = 0;
+        pushOutput.data.address      = &outputBuffer->address;
+        pushOutput.data.size         = sizeof(VkDeviceAddress);
+        vkd.cmdPushDataEXT(*cmdBuffer, &pushOutput);
+
+        VkPushDataInfoEXT pushAS = initVulkanStructure();
+        pushAS.offset            = static_cast<uint32_t>(sizeof(VkDeviceAddress));
+        pushAS.data.address      = &asAddress;
+        pushAS.data.size         = sizeof(VkDeviceAddress);
+        vkd.cmdPushDataEXT(*cmdBuffer, &pushAS);
+    }
+
+    vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
+    cmdTraceRays(vkd, *cmdBuffer, &raygenRegion, &missRegion, &hitRegion, &callableRegion, recordCount, 1, 1);
+
+    {
+        VkMemoryBarrier2 outputBarrier = initVulkanStructure();
+        outputBarrier.srcStageMask     = VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
+        outputBarrier.srcAccessMask    = VK_ACCESS_2_SHADER_WRITE_BIT;
+        outputBarrier.dstStageMask     = VK_PIPELINE_STAGE_2_HOST_BIT;
+        outputBarrier.dstAccessMask    = VK_ACCESS_2_HOST_READ_BIT;
+
+        VkDependencyInfo dependencyInfo   = initVulkanStructure();
+        dependencyInfo.memoryBarrierCount = 1;
+        dependencyInfo.pMemoryBarriers    = &outputBarrier;
+        vkd.cmdPipelineBarrier2(*cmdBuffer, &dependencyInfo);
+    }
+
+    endCommandBuffer(vkd, *cmdBuffer);
+
+    VkSubmitInfo submitInfo       = initVulkanStructure();
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers    = &cmdBuffer.get();
+    VK_CHECK(vkd.queueSubmit(m_queues.front(), 1, &submitInfo, VK_NULL_HANDLE));
+    VK_CHECK(vkd.deviceWaitIdle(device));
+
+    auto outputData = static_cast<uint32_t *>(outputBuffer->memory->getHostPtr());
+    for (uint32_t i = 0; i < recordCount; ++i)
+    {
+        if (outputData[i] != expectedData[i])
+        {
+            std::stringstream msg;
+            msg << "At index " << i << ", expected 0x" << std::hex << expectedData[i] << " but got 0x" << outputData[i];
+            return tcu::TestStatus::fail(msg.str());
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void populateShaderRecordNonUniformTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
+{
+    tcu::TestContext &testCtx = topGroup->getTestContext();
+    MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "non_uniform_shader_record"));
+
+    for (const bool withCapability : {false, true})
+    {
+        const char *const testName = withCapability ? "with_capability" : "without_capability";
+
+        TestParamsShaderRecordNonUniform params{};
+        params.queue                        = VK_QUEUE_COMPUTE_BIT;
+        params.enableRayTracing             = true;
+        params.enableAccelerationStructures = true;
+        params.enableRuntimeDescriptorArray = withCapability;
+        params.withCapability               = withCapability;
+        params.seed                         = baseSeed ^ deStringHash(testName);
+
+        group->addChild(new DescriptorHeapTestCaseShaderRecordNonUniform(testCtx, testName, params));
+    }
+
+    topGroup->addChild(group.release());
+}
+
 void populateSpecialHeapTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
 {
     tcu::TestContext &testCtx = topGroup->getTestContext();
@@ -14850,11 +16596,13 @@ void populateSpecialHeapTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
     {
         for (const bool enableProtectedHeap : {false, true})
         {
+            // Invalid due to VU 01888
+            if (enableSparseHeap && enableProtectedHeap)
+                continue;
+
             std::string specialModeName;
 
-            if (enableSparseHeap && enableProtectedHeap)
-                specialModeName = "sparse_and_protected";
-            else if (enableSparseHeap)
+            if (enableSparseHeap)
                 specialModeName = "sparse";
             else if (enableProtectedHeap)
                 specialModeName = "protected";
@@ -15281,6 +17029,58 @@ static void populateUnalignedTests(tcu::TestCaseGroup *topGroup, uint32_t baseSe
     topGroup->addChild(unalignedGroup.release());
 }
 
+void populateZeroStrideTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
+{
+    tcu::TestContext &testCtx = topGroup->getTestContext();
+    MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "zero_stride"));
+
+    const VkDescriptorMappingSourceEXT mappingSources[] = {
+        VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT,
+        VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_PUSH_INDEX_EXT,
+        VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_INDIRECT_INDEX_EXT,
+    };
+
+    for (const auto mappingSource : mappingSources)
+    {
+        const std::string testName = "buffer_" + std::string(getMappingSourceTestName(mappingSource));
+        TestParamsZeroStride params{};
+        params.queue                                      = VK_QUEUE_COMPUTE_BIT;
+        params.seed                                       = baseSeed ^ deStringHash(testName.c_str());
+        params.enableUniformBufferArrayNonUniformIndexing = true;
+        params.enableStorageBufferArrayNonUniformIndexing = true;
+        params.mappingSource                              = mappingSource;
+        group->addChild(new DescriptorHeapTestCaseZeroStride(testCtx, testName, params));
+    }
+
+    for (const auto mappingSource : mappingSources)
+    {
+        const std::string testName = "image_sampler_" + std::string(getMappingSourceTestName(mappingSource));
+        TestParamsZeroStride params{};
+        params.queue                                      = VK_QUEUE_COMPUTE_BIT;
+        params.seed                                       = baseSeed ^ deStringHash(testName.c_str());
+        params.enableSampledImageArrayNonUniformIndexing  = true;
+        params.enableStorageBufferArrayNonUniformIndexing = true;
+        params.mappingSource                              = mappingSource;
+        params.useImageSampler                            = true;
+        group->addChild(new DescriptorHeapTestCaseZeroStride(testCtx, testName, params));
+    }
+    topGroup->addChild(group.release());
+}
+
+void populateSmallBufferTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
+{
+    tcu::TestContext &testCtx = topGroup->getTestContext();
+    MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "small_buffer"));
+
+    TestParams params{};
+    params.enableUniformAndStorageBuffer8BitAccess = true;
+    params.queue                                   = VK_QUEUE_COMPUTE_BIT;
+    params.seed                                    = baseSeed ^ deStringHash("copy");
+
+    group->addChild(new DescriptorHeapTestCaseSmallBuffer(testCtx, "copy", params));
+    topGroup->addChild(group.release());
+}
+
 void populateDescriptorHeapTests(tcu::TestCaseGroup *topGroup)
 {
     tcu::TestContext &testCtx = topGroup->getTestContext();
@@ -15317,10 +17117,14 @@ void populateDescriptorHeapTests(tcu::TestCaseGroup *topGroup)
     populateShaderObjectInvariance(topGroup);
     populatePushDataAccessTests(topGroup, baseSeed);
     populateNonUniformAccessTests(topGroup, baseSeed);
+    populateShaderRecordNonUniformTests(topGroup, baseSeed);
     populateSpecialHeapTests(topGroup, baseSeed);
     populateNonPackedTests(topGroup, baseSeed);
     populateUnalignedTests(topGroup, baseSeed);
     populateSecondaryCommandBufferTests(topGroup, baseSeed);
+    populateZeroStrideTests(topGroup, baseSeed);
+    populateOffsetIdTests(topGroup, baseSeed);
+    populateSmallBufferTests(topGroup, baseSeed);
 }
 
 } // namespace

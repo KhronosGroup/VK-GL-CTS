@@ -69,6 +69,10 @@ struct TestParameters
 
     // Test case variant on the fragment shader.
     Trigger trigger;
+
+    // Test case variant: minSampleShading overrides to 1.0f.
+    VkBool32 sampleShadingEnableValue;
+    float minSampleShadingValue;
 };
 
 /*
@@ -344,10 +348,10 @@ tcu::TestStatus SampleShadingSampleAttributeTestInstance::iterate(void)
 
     const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
 
-    // Set up a default multisample state that doesn't use sample shading and with minSampleShading set to 0.0.
+    // Set up a multisample state based on test parameters.
     VkPipelineMultisampleStateCreateInfo multisampling = initVulkanStructure();
-    multisampling.sampleShadingEnable                  = VK_FALSE;
-    multisampling.minSampleShading                     = 0.0;
+    multisampling.sampleShadingEnable                  = m_params.sampleShadingEnableValue;
+    multisampling.minSampleShading                     = m_params.minSampleShadingValue;
     multisampling.rasterizationSamples                 = sampleCount;
 
     const auto pass     = (m_params.general->useDynamicRendering ? VK_NULL_HANDLE : renderPass.get());
@@ -512,8 +516,37 @@ tcu::TestCaseGroup *createSampleAttributeTests(tcu::TestContext &testCtx, const 
 
     for (const auto &triggerCase : triggerCases)
     {
-        const TestParameters params{groupParams, triggerCase.trigger};
+        const TestParameters params{groupParams, triggerCase.trigger, VK_FALSE /* sampleShadingEnableValue */,
+                                    0.0f /* minSampleShadingValue */};
         group->addChild(new SampleShadingSampleAttributeTestCase(testCtx, triggerCase.name, params));
+
+        // Test case variant: minSampleShading overrides to 1.0f with sampleShading enabled via builtins
+        {
+            if (!groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+            {
+                const struct
+                {
+                    float minSampleShadingValue;
+                    const char *name;
+                } minSampleShadingCases[] = {
+                    {0.0f, "zero"},
+                    {0.25f, "quarter"},
+                    {0.5f, "half"},
+                };
+
+                for (const auto minSampleShadingCase : minSampleShadingCases)
+                {
+                    const TestParameters overrideTestParams{groupParams, triggerCase.trigger,
+                                                            VK_TRUE /* sampleShadingEnableValue */,
+                                                            minSampleShadingCase.minSampleShadingValue};
+                    const std::string overrideTestName = "minSampleShadingValue_" +
+                                                         std::string(minSampleShadingCase.name) + "_" +
+                                                         de::toString(triggerCase.name);
+                    group->addChild(
+                        new SampleShadingSampleAttributeTestCase(testCtx, overrideTestName, overrideTestParams));
+                }
+            }
+        }
     }
 
     return group.release();

@@ -616,23 +616,17 @@ void getQueues(const InstanceInterface &vki, VkPhysicalDevice physicalDevice, Te
 
 tcu::TestStatus basicMultiQueueCase(Context &context, TestConfig config)
 {
+    const auto instance                        = InstanceWrapper(context);
+    const InstanceInterface &instanceInterface = instance.getDriver();
+    const VkPhysicalDevice physicalDevice      = instance.getPhysicalDevice();
 #ifndef CTS_USES_VULKANSC
-    const VkInstance instance                  = context.getInstance();
-    const InstanceInterface &instanceInterface = context.getInstanceInterface();
-    const VkPhysicalDevice physicalDevice      = context.getPhysicalDevice();
-    bool usingTimelineSemaphores               = config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE;
-    bool usingSync2                            = config.type == SynchronizationType::SYNCHRONIZATION2;
+    bool usingTimelineSemaphores = config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE;
+    bool usingSync2              = config.type == SynchronizationType::SYNCHRONIZATION2;
 
     std::vector<VkQueueFamilyVideoPropertiesKHR> videoQueueFamilyProperties2;
-#else
-    const CustomInstance instance(createCustomInstanceFromContext(context));
-    const InstanceDriver &instanceDriver(instance.getDriver());
-    const VkPhysicalDevice physicalDevice =
-        chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-    const InstanceInterface &instanceInterface = instanceDriver;
 #endif // CTS_USES_VULKANSC
 
-    vk::Move<vk::VkDevice> logicalDevice;
+    DeviceWrapper logicalDevice;
     std::vector<VkQueueFamilyProperties> queueFamilyProperties;
     std::vector<VkQueueFamilyProperties2> queueFamilyProperties2;
     VkDeviceCreateInfo deviceInfo;
@@ -700,43 +694,6 @@ tcu::TestStatus basicMultiQueueCase(Context &context, TestConfig config)
     }
 
     void *pNext = &createPhysicalFeature;
-#ifdef CTS_USES_VULKANSC
-    VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
-                                                                 context.getResourceInterface()->getStatMax() :
-                                                                 resetDeviceObjectReservationCreateInfo();
-    memReservationInfo.pNext                               = pNext;
-    pNext                                                  = &memReservationInfo;
-
-    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-    sc10Features.pNext                              = pNext;
-    pNext                                           = &sc10Features;
-
-    VkPipelineCacheCreateInfo pcCI;
-    std::vector<VkPipelinePoolSize> poolSizes;
-    if (context.getTestContext().getCommandLine().isSubProcess())
-    {
-        if (context.getResourceInterface()->getCacheDataSize() > 0)
-        {
-            pcCI = {
-                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                nullptr,                                      // const void* pNext;
-                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
-                context.getResourceInterface()->getCacheData()            // const void* pInitialData;
-            };
-            memReservationInfo.pipelineCacheCreateInfoCount = 1;
-            memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-        }
-
-        poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
-        if (!poolSizes.empty())
-        {
-            memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-            memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-        }
-    }
-#endif // CTS_USES_VULKANSC
 
     deviceInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     deviceInfo.pNext                   = pNext;
@@ -748,30 +705,14 @@ tcu::TestStatus basicMultiQueueCase(Context &context, TestConfig config)
     deviceInfo.queueCreateInfoCount = (queues[FIRST].queueFamilyIndex == queues[SECOND].queueFamilyIndex) ? 1 : COUNT;
     deviceInfo.pQueueCreateInfos    = queueInfos;
 
-    logicalDevice =
-        createCustomDevice(context.getPlatformInterface(), instance, instanceInterface, physicalDevice, &deviceInfo);
+    logicalDevice             = instance.createCustomDevice(physicalDevice, &deviceInfo);
+    const DeviceInterface &vk = logicalDevice.getDriver();
 
 #ifndef CTS_USES_VULKANSC
     de::MovePtr<VideoDevice> videoDevice(
         config.videoCodecOperationFlags != 0 ?
             getVideoDevice(context, usingTimelineSemaphores, usingSync2, config.videoCodecOperationFlags) :
             nullptr);
-
-    de::MovePtr<vk::DeviceDriver> deviceDriver = de::MovePtr<DeviceDriver>(
-        new DeviceDriver(context.getPlatformInterface(), instance, *logicalDevice, context.getUsedApiVersion(),
-                         context.getTestContext().getCommandLine()));
-
-    const DeviceInterface &vk = videoDevice ? getSyncDeviceInterface(videoDevice, context) : *deviceDriver;
-
-#else
-    de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> deviceDriver =
-        de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
-            new DeviceDriverSC(context.getPlatformInterface(), instance, *logicalDevice,
-                               context.getTestContext().getCommandLine(), context.getResourceInterface(),
-                               context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(),
-                               context.getUsedApiVersion()),
-            vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *logicalDevice));
-    const DeviceInterface &vk = *deviceDriver;
 #endif // CTS_USES_VULKANSC
 
     for (uint32_t queueReqNdx = 0; queueReqNdx < COUNT; ++queueReqNdx)

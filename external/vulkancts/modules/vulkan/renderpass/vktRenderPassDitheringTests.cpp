@@ -73,12 +73,20 @@ struct Vertex4RGBA
     tcu::Vec4 color;
 };
 
-de::SharedPtr<Move<vk::VkDevice>> g_singletonDevice;
-
-VkDevice getDevice(Context &context)
+struct SingletonInstanceAndDevice
 {
-    if (g_singletonDevice)
-        return g_singletonDevice->get();
+    InstanceWrapper instance;
+    DeviceWrapper device;
+};
+
+de::SharedPtr<SingletonInstanceAndDevice> g_singletonInstanceAndDevice;
+
+const DeviceWrapper &getDevice(Context &context)
+{
+    if (g_singletonInstanceAndDevice)
+        return g_singletonInstanceAndDevice->device;
+
+    InstanceWrapper instance(context);
 
     // Create a universal queue that supports graphics and compute
     const float queuePriority = 1.0f;
@@ -105,7 +113,7 @@ VkDevice getDevice(Context &context)
     if (context.isDeviceFunctionalitySupported("VK_KHR_dynamic_rendering"))
         addFeatures(&dynamicRenderingFeatures);
 
-    context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+    instance.getDriver().getPhysicalDeviceFeatures2(instance.getPhysicalDevice(), &features2);
     features2.features.robustBufferAccess = VK_FALSE;
 
     const VkDeviceCreateInfo deviceCreateInfo{
@@ -121,11 +129,10 @@ VkDevice getDevice(Context &context)
         nullptr,                              //pEnabledFeatures;
     };
 
-    Move<VkDevice> device =
-        createCustomDevice(context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
-                           context.getPhysicalDevice(), &deviceCreateInfo);
-    g_singletonDevice = de::SharedPtr<Move<VkDevice>>(new Move<VkDevice>(device));
-    return g_singletonDevice->get();
+    DeviceWrapper device         = instance.createCustomDevice(&deviceCreateInfo);
+    g_singletonInstanceAndDevice = de::SharedPtr<SingletonInstanceAndDevice>(
+        new SingletonInstanceAndDevice{std::move(instance), std::move(device)});
+    return g_singletonInstanceAndDevice->device;
 }
 
 std::vector<Vertex4RGBA> createQuad(void)
@@ -211,7 +218,7 @@ private:
     TestParams m_testParams;
 
     // Common resources.
-    SimpleAllocator m_memAlloc;
+    vk::Allocator &m_memAlloc;
     Move<VkBuffer> m_vertexBuffer;
     de::MovePtr<Allocation> m_vertexBufferAlloc;
     Move<VkPipelineLayout> m_pipelineLayout;
@@ -356,8 +363,7 @@ TestInstance *DitheringTest::createInstance(Context &context) const
 DitheringTestInstance::DitheringTestInstance(Context &context, TestParams testParams)
     : vkt::TestInstance(context)
     , m_testParams(testParams)
-    , m_memAlloc(context.getDeviceInterface(), getDevice(context),
-                 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()))
+    , m_memAlloc(getDevice(context).getAllocator())
 {
     createCommonResources();
     createDrawResources(false); // No dithering
@@ -370,8 +376,8 @@ DitheringTestInstance::~DitheringTestInstance(void)
 
 tcu::TestStatus DitheringTestInstance::iterate(void)
 {
-    const DeviceInterface &vk       = m_context.getDeviceInterface();
-    const VkDevice vkDevice         = getDevice(m_context);
+    const auto &vkDevice            = getDevice(m_context);
+    const DeviceInterface &vk       = vkDevice.getDriver();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     const VkQueue queue             = getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
 
@@ -485,8 +491,8 @@ tcu::TestStatus DitheringTestInstance::iterate(void)
 template <typename RenderpassSubpass>
 void DitheringTestInstance::render(const VkViewport &vp, bool useDithering)
 {
-    const DeviceInterface &vk       = m_context.getDeviceInterface();
-    const VkDevice vkDevice         = getDevice(m_context);
+    const auto &vkDevice            = getDevice(m_context);
+    const DeviceInterface &vk       = vkDevice.getDriver();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     const VkQueue queue             = getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
 
@@ -662,8 +668,8 @@ void DitheringTestInstance::render(const VkViewport &vp, bool useDithering)
 
 void DitheringTestInstance::createCommonResources(void)
 {
-    const DeviceInterface &vk       = m_context.getDeviceInterface();
-    const VkDevice vkDevice         = getDevice(m_context);
+    const auto &vkDevice            = getDevice(m_context);
+    const DeviceInterface &vk       = vkDevice.getDriver();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
 
     // Shaders.
@@ -715,8 +721,8 @@ void DitheringTestInstance::createCommonResources(void)
 
 void DitheringTestInstance::createDrawResources(bool useDithering)
 {
-    const DeviceInterface &vk       = m_context.getDeviceInterface();
-    const VkDevice vkDevice         = getDevice(m_context);
+    const auto &vkDevice            = getDevice(m_context);
+    const DeviceInterface &vk       = vkDevice.getDriver();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     const VkQueue queue             = getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
 
@@ -1031,8 +1037,8 @@ template <typename AttachmentDescription, typename AttachmentReference, typename
           typename RenderPassCreateInfo>
 void DitheringTestInstance::createRenderPassFramebuffer(bool useDithering)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
-    const VkDevice vkDevice   = getDevice(m_context);
+    const auto &vkDevice      = getDevice(m_context);
+    const DeviceInterface &vk = vkDevice.getDriver();
 
     uint32_t resourceNdx               = useDithering ? m_ditheringNdx : m_noDitheringNdx;
     std::vector<VkFormat> colorFormats = m_testParams.colorFormats;
@@ -1338,7 +1344,7 @@ static void cleanupGroup(tcu::TestCaseGroup *group, const SharedGroupParams, boo
     DE_UNREF(group);
     DE_UNREF(revision2);
     // Destroy singleton objects.
-    g_singletonDevice.clear();
+    g_singletonInstanceAndDevice.clear();
 }
 
 static tcu::TestCaseGroup *createDitheringRevision1GroupTests(tcu::TestContext &testCtx,

@@ -258,9 +258,26 @@ if (NOT DE_OS_IS_WIN32 AND NOT DE_OS_IS_UNIX)
 	set (DEQP_DISABLE_VK_VIDEO_TESTS ON)
 endif ()
 
+# Central carrier for the DE_BUILD_VIDEO compile definition. Targets that compile
+# video-aware sources link this INTERFACE library instead of guarding the
+# definition themselves, so the flag cannot drift onto the wrong target.
+add_library(deqp-vk-video-config INTERFACE)
+if (NOT DEQP_DISABLE_VK_VIDEO_TESTS)
+	target_compile_definitions(deqp-vk-video-config INTERFACE DE_BUILD_VIDEO)
+endif ()
+
 if (DE_COMPILER_IS_MSC)
 	# Don't nag about std::copy for example
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_SCL_SECURE_NO_WARNINGS")
+endif ()
+
+if (DE_COMPILER_IS_GCC)
+	# Should reduce memory usage by the GCC linker, which sometimes gets killed with -9
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-keep-memory")
+
+	# GCC does not support FENV_ACCESS, but -frounding-math disables some optimizations that hurt us.
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frounding-math")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -frounding-math")
 endif ()
 
 if (DEQP_LOG_NODE_SOURCE)
@@ -425,11 +442,6 @@ add_subdirectory(external/vulkancts/framework/vulkan ${MAYBE_EXCLUDE_FROM_ALL})
 
 if (DE_COMPILER_IS_MSC)
 	add_compile_options(/bigobj) # Required by glsBuiltinPrecisionTests.cpp
-endif ()
-
-if (DE_COMPILER_IS_GCC)
-	# Should reduce memory usage by the GCC linker, which sometimes gets killed with -9
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-keep-memory")
 endif ()
 
 add_subdirectory(modules ${MAYBE_EXCLUDE_FROM_ALL})

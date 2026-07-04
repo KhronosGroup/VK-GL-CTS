@@ -63,12 +63,20 @@ namespace
 
 using namespace vk;
 
-de::SharedPtr<Move<vk::VkDevice>> g_singletonDevice;
-
-VkDevice getDevice(Context &context)
+struct SingletonInstanceAndDevice
 {
-    if (!g_singletonDevice)
+    InstanceWrapper instance;
+    DeviceWrapper device;
+};
+
+de::SharedPtr<SingletonInstanceAndDevice> g_singletonInstanceAndDevice;
+
+const DeviceWrapper &getDevice(Context &context)
+{
+    if (!g_singletonInstanceAndDevice)
     {
+        InstanceWrapper instance(context);
+
         const float queuePriority = 1.0f;
 
         // Create a universal queue that supports graphics and compute
@@ -114,7 +122,7 @@ VkDevice getDevice(Context &context)
         if (context.isDeviceFunctionalitySupported("VK_EXT_descriptor_indexing"))
             addFeatures(&descriptorIndexingFeatures);
 
-        context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+        instance.getDriver().getPhysicalDeviceFeatures2(instance.getPhysicalDevice(), &features2);
         features2.features.robustBufferAccess = VK_FALSE; // Disable robustness features.
 
         const VkDeviceCreateInfo deviceCreateInfo{
@@ -130,13 +138,13 @@ VkDevice getDevice(Context &context)
             nullptr,                              //pEnabledFeatures;
         };
 
-        Move<VkDevice> device =
-            createCustomDevice(context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
-                               context.getPhysicalDevice(), &deviceCreateInfo);
-        g_singletonDevice = de::SharedPtr<Move<VkDevice>>(new Move<VkDevice>(device));
+        DeviceWrapper device = instance.createCustomDevice(&deviceCreateInfo);
+
+        g_singletonInstanceAndDevice = de::SharedPtr<SingletonInstanceAndDevice>(
+            new SingletonInstanceAndDevice{std::move(instance), std::move(device)});
     }
 
-    return g_singletonDevice->get();
+    return g_singletonInstanceAndDevice->device;
 }
 
 uint32_t getDescriptorNumericValue(uint32_t iteration, uint32_t bindingIdx, uint32_t descriptorIdx = 0u)
@@ -2997,8 +3005,8 @@ void MutableTypesTest::checkSupport(Context &context) const
 
     // Check layout support.
     {
-        const auto &vkd       = context.getDeviceInterface();
-        const auto device     = getDevice(context);
+        const auto &device    = getDevice(context);
+        const auto &vkd       = device.getDriver();
         const auto stageFlags = m_params.getStageFlags();
 
         {
@@ -3235,16 +3243,13 @@ Move<VkFramebuffer> buildFramebuffer(const DeviceInterface &vkd, VkDevice device
 
 tcu::TestStatus MutableTypesInstance::iterate()
 {
-    const auto &vki    = m_context.getInstanceInterface();
-    const auto &vkd    = m_context.getDeviceInterface();
-    const auto device  = getDevice(m_context);
-    const auto physDev = m_context.getPhysicalDevice();
-    const auto qIndex  = m_context.getUniversalQueueFamilyIndex();
-    const auto queue   = getDeviceQueue(vkd, device, m_context.getUniversalQueueFamilyIndex(), 0);
-
-    SimpleAllocator alloc(
-        vkd, device,
-        getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+    const auto &device   = getDevice(m_context);
+    const auto &vki      = device.getInstanceDriver();
+    const auto &vkd      = device.getDriver();
+    const auto physDev   = device.getPhysicalDevice();
+    const auto qIndex    = m_context.getUniversalQueueFamilyIndex();
+    const auto queue     = getDeviceQueue(vkd, device, m_context.getUniversalQueueFamilyIndex(), 0);
+    vk::Allocator &alloc = device.getAllocator();
 
     const auto &paramSet          = m_params.descriptorSet;
     const auto numIterations      = paramSet->maxTypes();
@@ -3942,7 +3947,7 @@ static void cleanupGroup(tcu::TestCaseGroup *testGroup)
 {
     DE_UNREF(testGroup);
     // Destroy singleton objects.
-    g_singletonDevice.clear();
+    g_singletonInstanceAndDevice.clear();
 }
 
 tcu::TestCaseGroup *createDescriptorMutableTests(tcu::TestContext &testCtx)

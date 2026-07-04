@@ -200,6 +200,8 @@ protected:
 private:
     DrawParams m_data;
     Move<VkRenderPass> m_renderPass;
+    de::SharedPtr<Image> m_colorTargetImage;
+    de::SharedPtr<Image> m_multisampleTargetImage;
     Move<VkImageView> m_colorTargetView;
     Move<VkImageView> m_multisampleTargetView;
     Move<VkFramebuffer> m_framebuffer;
@@ -337,8 +339,6 @@ TestInstance *DrawTestCase::createInstance(Context &context) const
 
 tcu::TestStatus DrawTestInstance::iterate(void)
 {
-    de::SharedPtr<Image> colorTargetImage;
-    de::SharedPtr<Image> multisampleTargetImage;
     tcu::TestLog &log = m_context.getTestContext().getLog();
 
     // Run two iterations with shaders that have different interpolation decorations. Images should still match.
@@ -363,8 +363,8 @@ tcu::TestStatus DrawTestInstance::iterate(void)
         const ImageCreateInfo targetImageCreateInfo(
             VK_IMAGE_TYPE_2D, imageFormat, targetImageExtent, 1, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-        colorTargetImage = Image::createAndAlloc(vk, device, targetImageCreateInfo, m_context.getDefaultAllocator(),
-                                                 m_context.getUniversalQueueFamilyIndex());
+        m_colorTargetImage = Image::createAndAlloc(vk, device, targetImageCreateInfo, m_context.getDefaultAllocator(),
+                                                   m_context.getUniversalQueueFamilyIndex());
 
         if (useMultisampling)
         {
@@ -372,18 +372,18 @@ tcu::TestStatus DrawTestInstance::iterate(void)
                 VK_IMAGE_TYPE_2D, imageFormat, targetImageExtent, 1, 1, m_data.samples, VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
                     VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-            multisampleTargetImage =
+            m_multisampleTargetImage =
                 Image::createAndAlloc(vk, device, multisampleTargetImageCreateInfo, m_context.getDefaultAllocator(),
                                       m_context.getUniversalQueueFamilyIndex());
         }
     }
 
-    const ImageViewCreateInfo colorTargetViewInfo(colorTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, imageFormat);
+    const ImageViewCreateInfo colorTargetViewInfo(m_colorTargetImage->object(), VK_IMAGE_VIEW_TYPE_2D, imageFormat);
     m_colorTargetView = createImageView(vk, device, &colorTargetViewInfo);
 
     if (useMultisampling)
     {
-        const ImageViewCreateInfo multisamplingTargetViewInfo(multisampleTargetImage->object(),
+        const ImageViewCreateInfo multisamplingTargetViewInfo(m_multisampleTargetImage->object(),
                                                               vk::VK_IMAGE_VIEW_TYPE_2D, imageFormat);
         m_multisampleTargetView = createImageView(vk, device, &multisamplingTargetViewInfo);
     }
@@ -693,6 +693,13 @@ void DrawTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkRect2D re
 {
     const DeviceInterface &vk   = m_context.getDeviceInterface();
     const bool useMultisampling = m_data.samples != VK_SAMPLE_COUNT_1_BIT;
+
+    initialTransitionColor2DImage(vk, cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL,
+                                  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+    if (m_data.samples != VK_SAMPLE_COUNT_1_BIT)
+        initialTransitionColor2DImage(vk, cmdBuffer, m_multisampleTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL,
+                                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
     VkRenderingAttachmentInfoKHR colorAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,                       // VkStructureType sType;

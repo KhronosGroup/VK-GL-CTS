@@ -26,6 +26,8 @@ virtual void				cmdBeginConditionalRendering2EXT						(VkCommandBuffer commandBu
 virtual void				cmdBeginConditionalRenderingEXT							(VkCommandBuffer commandBuffer, const VkConditionalRenderingBeginInfoEXT* pConditionalRenderingBegin) const;
 virtual void				cmdBeginCustomResolveEXT								(VkCommandBuffer commandBuffer, const VkBeginCustomResolveInfoEXT* pBeginCustomResolveInfo) const;
 virtual void				cmdBeginDebugUtilsLabelEXT								(VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo) const;
+virtual VkResult			cmdBeginGpaSampleAMD									(VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession, const VkGpaSampleBeginInfoAMD* pGpaSampleBeginInfo, uint32_t* pSampleID) const;
+virtual VkResult			cmdBeginGpaSessionAMD									(VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession) const;
 virtual void				cmdBeginQuery											(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags) const;
 virtual void				cmdBeginQueryIndexedEXT									(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags, uint32_t index) const;
 virtual void				cmdBeginRenderPass										(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents) const;
@@ -72,6 +74,7 @@ virtual void				cmdCopyBuffer											(VkCommandBuffer commandBuffer, VkBuffer
 virtual void				cmdCopyBuffer2											(VkCommandBuffer commandBuffer, const VkCopyBufferInfo2* pCopyBufferInfo) const;
 virtual void				cmdCopyBufferToImage									(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkBufferImageCopy* pRegions) const;
 virtual void				cmdCopyBufferToImage2									(VkCommandBuffer commandBuffer, const VkCopyBufferToImageInfo2* pCopyBufferToImageInfo) const;
+virtual void				cmdCopyGpaSessionResultsAMD								(VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession) const;
 virtual void				cmdCopyImage											(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageCopy* pRegions) const;
 virtual void				cmdCopyImage2											(VkCommandBuffer commandBuffer, const VkCopyImageInfo2* pCopyImageInfo) const;
 virtual void				cmdCopyImageToBuffer									(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferImageCopy* pRegions) const;
@@ -88,6 +91,9 @@ virtual void				cmdCopyMicromapToMemoryEXT								(VkCommandBuffer commandBuffer
 virtual void				cmdCopyQueryPoolResults									(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize stride, VkQueryResultFlags flags) const;
 virtual void				cmdCopyQueryPoolResultsToMemoryKHR						(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, const VkStridedDeviceAddressRangeKHR* pDstRange, VkAddressCommandFlagsKHR dstFlags, VkQueryResultFlags queryResultFlags) const;
 virtual void				cmdCopyTensorARM										(VkCommandBuffer commandBuffer, const VkCopyTensorInfoARM* pCopyTensorInfo) const;
+virtual void				cmdDebugMarkerBeginEXT									(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const;
+virtual void				cmdDebugMarkerEndEXT									(VkCommandBuffer commandBuffer) const;
+virtual void				cmdDebugMarkerInsertEXT									(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const;
 virtual void				cmdDecodeVideoKHR										(VkCommandBuffer commandBuffer, const VkVideoDecodeInfoKHR* pDecodeInfo) const;
 virtual void				cmdDecompressMemoryEXT									(VkCommandBuffer commandBuffer, const VkDecompressMemoryInfoEXT* pDecompressMemoryInfoEXT) const;
 virtual void				cmdDecompressMemoryIndirectCountEXT						(VkCommandBuffer commandBuffer, VkMemoryDecompressionMethodFlagsEXT decompressionMethod, VkDeviceAddress indirectCommandsAddress, VkDeviceAddress indirectCommandsCountAddress, uint32_t maxDecompressionCount, uint32_t stride) const;
@@ -123,6 +129,8 @@ virtual void				cmdDrawMultiIndexedEXT									(VkCommandBuffer commandBuffer, u
 virtual void				cmdEncodeVideoKHR										(VkCommandBuffer commandBuffer, const VkVideoEncodeInfoKHR* pEncodeInfo) const;
 virtual void				cmdEndConditionalRenderingEXT							(VkCommandBuffer commandBuffer) const;
 virtual void				cmdEndDebugUtilsLabelEXT								(VkCommandBuffer commandBuffer) const;
+virtual void				cmdEndGpaSampleAMD										(VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession, uint32_t sampleID) const;
+virtual VkResult			cmdEndGpaSessionAMD										(VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession) const;
 virtual void				cmdEndQuery												(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query) const;
 virtual void				cmdEndQueryIndexedEXT									(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, uint32_t index) const;
 virtual void				cmdEndRenderPass										(VkCommandBuffer commandBuffer) const;
@@ -212,6 +220,7 @@ virtual VkResult			cmdSetPerformanceOverrideINTEL							(VkCommandBuffer command
 virtual VkResult			cmdSetPerformanceStreamMarkerINTEL						(VkCommandBuffer commandBuffer, const VkPerformanceStreamMarkerInfoINTEL* pMarkerInfo) const;
 virtual void				cmdSetPolygonModeEXT									(VkCommandBuffer commandBuffer, VkPolygonMode polygonMode) const;
 virtual void				cmdSetPrimitiveRestartEnable							(VkCommandBuffer commandBuffer, VkBool32 primitiveRestartEnable) const;
+virtual void				cmdSetPrimitiveRestartIndexEXT							(VkCommandBuffer commandBuffer, uint32_t primitiveRestartIndex) const;
 virtual void				cmdSetPrimitiveTopology									(VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology) const;
 virtual void				cmdSetProvokingVertexModeEXT							(VkCommandBuffer commandBuffer, VkProvokingVertexModeEXT provokingVertexMode) const;
 virtual void				cmdSetRasterizationSamplesEXT							(VkCommandBuffer commandBuffer, VkSampleCountFlagBits rasterizationSamples) const;
@@ -284,6 +293,7 @@ virtual VkResult			createDescriptorUpdateTemplate							(VkDevice device, const 
 virtual VkResult			createEvent												(VkDevice device, const VkEventCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkEvent* pEvent) const;
 virtual VkResult			createFence												(VkDevice device, const VkFenceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence) const;
 virtual VkResult			createFramebuffer										(VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFramebuffer* pFramebuffer) const;
+virtual VkResult			createGpaSessionAMD										(VkDevice device, const VkGpaSessionCreateInfoAMD* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkGpaSessionAMD* pGpaSession) const;
 virtual VkResult			createGraphicsPipelines									(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const;
 virtual VkResult			createImage												(VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage) const;
 virtual VkResult			createImageView											(VkDevice device, const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pView) const;
@@ -311,6 +321,8 @@ virtual VkResult			createTensorARM											(VkDevice device, const VkTensorCre
 virtual VkResult			createTensorViewARM										(VkDevice device, const VkTensorViewCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorViewARM* pView) const;
 virtual VkResult			createVideoSessionKHR									(VkDevice device, const VkVideoSessionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionKHR* pVideoSession) const;
 virtual VkResult			createVideoSessionParametersKHR							(VkDevice device, const VkVideoSessionParametersCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionParametersKHR* pVideoSessionParameters) const;
+virtual VkResult			debugMarkerSetObjectNameEXT								(VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo) const;
+virtual VkResult			debugMarkerSetObjectTagEXT								(VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const;
 virtual VkResult			deferredOperationJoinKHR								(VkDevice device, VkDeferredOperationKHR operation) const;
 virtual void				destroyAccelerationStructureKHR							(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator) const;
 virtual void				destroyAccelerationStructureNV							(VkDevice device, VkAccelerationStructureNV accelerationStructure, const VkAllocationCallbacks* pAllocator) const;
@@ -326,6 +338,7 @@ virtual void				destroyDevice											(VkDevice device, const VkAllocationCall
 virtual void				destroyEvent											(VkDevice device, VkEvent event, const VkAllocationCallbacks* pAllocator) const;
 virtual void				destroyFence											(VkDevice device, VkFence fence, const VkAllocationCallbacks* pAllocator) const;
 virtual void				destroyFramebuffer										(VkDevice device, VkFramebuffer framebuffer, const VkAllocationCallbacks* pAllocator) const;
+virtual void				destroyGpaSessionAMD									(VkDevice device, VkGpaSessionAMD gpaSession, const VkAllocationCallbacks* pAllocator) const;
 virtual void				destroyImage											(VkDevice device, VkImage image, const VkAllocationCallbacks* pAllocator) const;
 virtual void				destroyImageView										(VkDevice device, VkImageView imageView, const VkAllocationCallbacks* pAllocator) const;
 virtual void				destroyIndirectCommandsLayoutEXT						(VkDevice device, VkIndirectCommandsLayoutEXT indirectCommandsLayout, const VkAllocationCallbacks* pAllocator) const;
@@ -402,6 +415,9 @@ virtual VkResult			getFenceStatus											(VkDevice device, VkFence fence) con
 virtual VkResult			getFenceWin32HandleKHR									(VkDevice device, const VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const;
 virtual void				getGeneratedCommandsMemoryRequirementsEXT				(VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoEXT* pInfo, VkMemoryRequirements2* pMemoryRequirements) const;
 virtual void				getGeneratedCommandsMemoryRequirementsNV				(VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2* pMemoryRequirements) const;
+virtual VkResult			getGpaDeviceClockInfoAMD								(VkDevice device, VkGpaDeviceGetClockInfoAMD* pInfo) const;
+virtual VkResult			getGpaSessionResultsAMD									(VkDevice device, VkGpaSessionAMD gpaSession, uint32_t sampleID, size_t* pSizeInBytes, void* pData) const;
+virtual VkResult			getGpaSessionStatusAMD									(VkDevice device, VkGpaSessionAMD gpaSession) const;
 virtual VkResult			getImageDrmFormatModifierPropertiesEXT					(VkDevice device, VkImage image, VkImageDrmFormatModifierPropertiesEXT* pProperties) const;
 virtual void				getImageMemoryRequirements								(VkDevice device, VkImage image, VkMemoryRequirements* pMemoryRequirements) const;
 virtual void				getImageMemoryRequirements2								(VkDevice device, const VkImageMemoryRequirementsInfo2* pInfo, VkMemoryRequirements2* pMemoryRequirements) const;
@@ -497,11 +513,13 @@ virtual VkResult			resetCommandPool										(VkDevice device, VkCommandPool com
 virtual VkResult			resetDescriptorPool										(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags flags) const;
 virtual VkResult			resetEvent												(VkDevice device, VkEvent event) const;
 virtual VkResult			resetFences												(VkDevice device, uint32_t fenceCount, const VkFence* pFences) const;
+virtual VkResult			resetGpaSessionAMD										(VkDevice device, VkGpaSessionAMD gpaSession) const;
 virtual void				resetQueryPool											(VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount) const;
 virtual VkResult			setDebugUtilsObjectNameEXT								(VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo) const;
 virtual VkResult			setDebugUtilsObjectTagEXT								(VkDevice device, const VkDebugUtilsObjectTagInfoEXT* pTagInfo) const;
 virtual void				setDeviceMemoryPriorityEXT								(VkDevice device, VkDeviceMemory memory, float priority) const;
 virtual VkResult			setEvent												(VkDevice device, VkEvent event) const;
+virtual VkResult			setGpaDeviceClockModeAMD								(VkDevice device, VkGpaDeviceClockModeInfoAMD* pInfo) const;
 virtual void				setHdrMetadataEXT										(VkDevice device, uint32_t swapchainCount, const VkSwapchainKHR* pSwapchains, const VkHdrMetadataEXT* pMetadata) const;
 virtual void				setLatencyMarkerNV										(VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo) const;
 virtual VkResult			setLatencySleepModeNV									(VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo) const;

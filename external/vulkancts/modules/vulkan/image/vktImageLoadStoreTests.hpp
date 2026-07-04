@@ -28,9 +28,7 @@
 #include "deUniquePtr.hpp"
 #include "vktImageTestsUtil.hpp"
 
-namespace vkt
-{
-namespace image
+namespace vkt::image
 {
 
 tcu::TestCaseGroup *createImageStoreTests(tcu::TestContext &testCtx);
@@ -40,11 +38,11 @@ tcu::TestCaseGroup *createImageExtendOperandsTests(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createImageNontemporalOperandTests(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createImageLoadStoreLodAMDTests(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createImageDeviceScopeAccessTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createImageStoreLoadConsistencyTests(tcu::TestContext &testCtx);
 
 de::MovePtr<TestCase> createImageQualifierRestrictCase(tcu::TestContext &testCtx, const ImageType imageType,
                                                        const std::string &name);
 
-} // namespace image
-} // namespace vkt
+} // namespace vkt::image
 
 #endif // _VKTIMAGELOADSTORETESTS_HPP

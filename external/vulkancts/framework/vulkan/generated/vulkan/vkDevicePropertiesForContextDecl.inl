@@ -36,6 +36,8 @@ const vk::VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			getFragmentDensityM
 const vk::VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&	getFragmentShaderBarycentricProperties		(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV&		getFragmentShadingRateEnumsProperties		(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShadingRateProperties			(void) const;
+const vk::VkPhysicalDeviceGpaProperties2AMD&						getGpaProperties2AMD						(void) const;
+const vk::VkPhysicalDeviceGpaPropertiesAMD&							getGpaPropertiesAMD							(void) const;
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&		getGraphicsPipelineLibraryPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceHostImageCopyProperties&					getHostImageCopyProperties					(void) const;
 const vk::VkPhysicalDeviceIDProperties&								getIDProperties								(void) const;
@@ -81,6 +83,7 @@ const vk::VkPhysicalDeviceShaderLongVectorPropertiesEXT&			getShaderLongVectorPr
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		getShaderModuleIdentifierPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&				getShaderObjectPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceShaderSMBuiltinsPropertiesNV&				getShaderSMBuiltinsProperties				(void) const;
+const vk::VkPhysicalDeviceShaderSplitBarrierPropertiesEXT&			getShaderSplitBarrierPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderTileImagePropertiesEXT&				getShaderTileImagePropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceShadingRateImagePropertiesNV&				getShadingRateImageProperties				(void) const;
 const vk::VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(void) const;

@@ -63,8 +63,6 @@ public:
 tcu::TestStatus ShaderObjectApiInstance::iterate(void)
 {
     const vk::InstanceInterface &vki             = m_context.getInstanceInterface();
-    const vk::PlatformInterface &vkp             = m_context.getPlatformInterface();
-    const auto instance                          = m_context.getInstance();
     const auto physicalDevice                    = m_context.getPhysicalDevice();
     vk::VkPhysicalDeviceFeatures2 deviceFeatures = vk::initVulkanStructure();
 
@@ -99,11 +97,9 @@ tcu::TestStatus ShaderObjectApiInstance::iterate(void)
         nullptr,                                  // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    const auto device = createCustomDevice(vkp, instance, vki, physicalDevice, &deviceInfo);
-
-    de::MovePtr<vk::DeviceDriver> vkd(new vk::DeviceDriver(vkp, instance, device.get(), m_context.getUsedApiVersion(),
-                                                           m_context.getTestContext().getCommandLine()));
-    const auto &vk = *vkd.get();
+    InstanceWrapper instanceWrapper(m_context);
+    DeviceWrapper device = instanceWrapper.createCustomDevice(&deviceInfo);
+    const auto &vk       = device.getDriver();
 
     const std::vector<std::string> functions = {
         // VK_EXT_extended_dynamic_state

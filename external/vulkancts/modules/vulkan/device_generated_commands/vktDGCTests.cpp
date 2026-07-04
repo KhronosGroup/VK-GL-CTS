@@ -49,9 +49,10 @@
 #include "vktDGCGraphicsMiscTestsExt.hpp"
 #include "vktDGCGraphicsXfbTestsExt.hpp"
 #include "vktDGCGraphicsTessStateTestsExt.hpp"
-
+#include "vktDGCGraphicsMultiviewTestsExt.hpp"
 #include "vktDGCRayTracingTestsExt.hpp"
-
+#include "vktDGCRayTracingConditionalTestsExt.hpp"
+#include "vktDGCStatQueryTestsExt.hpp"
 #include "deUniquePtr.hpp"
 
 namespace vkt
@@ -77,6 +78,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     GroupPtr extComputeGroup(new tcu::TestCaseGroup(testCtx, "compute"));
     GroupPtr extMiscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
     GroupPtr extGraphicsGroup(new tcu::TestCaseGroup(testCtx, "graphics"));
+    GroupPtr extRTGroup(new tcu::TestCaseGroup(testCtx, "ray_tracing"));
 
     nvComputeGroup->addChild(createDGCComputeGetInfoTests(testCtx));
     nvComputeGroup->addChild(createDGCComputeSmokeTests(testCtx));
@@ -108,11 +110,17 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     extGraphicsGroup->addChild(createDGCGraphicsMiscTestsExt(testCtx));
     extGraphicsGroup->addChild(createDGCGraphicsXfbTestsExt(testCtx));
     extGraphicsGroup->addChild(createDGCGraphicsTessStateTestsExt(testCtx));
+    extGraphicsGroup->addChild(createDGCGraphicsMultiviewTestsExt(testCtx));
+
+    extRTGroup->addChild(createDGCRayTracingBasicTestsExt(testCtx));
+    extRTGroup->addChild(createDGCRayTracingConditionalTestsExt(testCtx));
 
     extGroup->addChild(extComputeGroup.release());
     extGroup->addChild(extMiscGroup.release());
     extGroup->addChild(extGraphicsGroup.release());
-    extGroup->addChild(createDGCRayTracingTestsExt(testCtx));
+    extGroup->addChild(createDGCStatQueryTestsExt(testCtx));
+
+    extGroup->addChild(extRTGroup.release());
 
     mainGroup->addChild(nvGroup.release());
     mainGroup->addChild(extGroup.release());

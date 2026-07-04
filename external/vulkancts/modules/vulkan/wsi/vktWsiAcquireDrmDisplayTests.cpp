@@ -122,7 +122,7 @@ AcquireDrmDisplayTestInstance::AcquireDrmDisplayTestInstance(Context &context, c
     : TestInstance(context)
     , m_instance(createInstanceWithAcquireDrmDisplay())
     , m_vki(m_instance.getDriver())
-    , m_physDevice(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+    , m_physDevice(m_instance.getPhysicalDevice())
     , m_testId(testId)
 {
     DE_UNREF(m_testId);
@@ -224,9 +224,14 @@ LibDrm::FdPtr AcquireDrmDisplayTestInstance::getDrmFdPtr(void)
                                                        deviceDrmProperties.primaryMinor);
 
     if (!drmNode)
+    {
+        m_libDrm.freeDevices(drmDevices, numDrmDevices);
         TCU_THROW(NotSupportedError, "No DRM node.");
+    }
 
-    return m_libDrm.openFd(drmNode);
+    const std::string drmNodeStr(drmNode);
+    m_libDrm.freeDevices(drmDevices, numDrmDevices);
+    return m_libDrm.openFd(drmNodeStr.c_str());
 }
 
 /*--------------------------------------------------------------------*//*!

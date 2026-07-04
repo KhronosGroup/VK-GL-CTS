@@ -40,6 +40,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBuilderUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "deMath.h"
 #include "deMemory.h"
@@ -49,6 +50,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <string>
 #include <vector>
 #include <limits>
 
@@ -2183,6 +2185,325 @@ tcu::TestStatus PrimitiveRestartMixTest::iterate()
     return tcu::TestStatus::pass("Pass");
 }
 
+struct NullStateTestParams
+{
+    PipelineConstructionType constructionType;
+    bool isRastDiscardDynamic;
+};
+
+struct PositionColor
+{
+    tcu::Vec4 position;
+    tcu::Vec4 color;
+};
+
+constexpr uint16_t kRestartMarker = std::numeric_limits<uint16_t>::max();
+
+class NullStateTestInstance : public TestInstance
+{
+public:
+    NullStateTestInstance(Context &ctx, const NullStateTestParams &params);
+    virtual ~NullStateTestInstance(void);
+    tcu::TestStatus iterate(void);
+
+private:
+    const NullStateTestParams m_params;
+};
+
+NullStateTestInstance::NullStateTestInstance(Context &ctx, const NullStateTestParams &params)
+    : TestInstance(ctx)
+    , m_params(params)
+{
+}
+
+NullStateTestInstance::~NullStateTestInstance(void)
+{
+}
+class NullStateTestCase : public TestCase
+{
+public:
+    NullStateTestCase(tcu::TestContext &ctx, const std::string &name, const NullStateTestParams &params);
+    virtual ~NullStateTestCase(void);
+    virtual void checkSupport(Context &context) const;
+    virtual void initPrograms(SourceCollections &programCollection) const;
+    virtual TestInstance *createInstance(Context &context) const;
+
+private:
+    const NullStateTestParams m_params;
+};
+
+NullStateTestCase::NullStateTestCase(tcu::TestContext &ctx, const std::string &name, const NullStateTestParams &params)
+    : TestCase(ctx, name.c_str())
+    , m_params(params)
+{
+}
+
+NullStateTestCase::~NullStateTestCase(void)
+{
+}
+
+void NullStateTestCase::checkSupport(Context &context) const
+{
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, m_params.constructionType);
+
+    context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state");
+    context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state3");
+
+    const auto &eds3Properties = context.getExtendedDynamicState3PropertiesEXT();
+    if (!eds3Properties.dynamicPrimitiveTopologyUnrestricted)
+        TCU_THROW(NotSupportedError, "dynamicPrimitiveTopologyUnrestricted not supported");
+
+    if (!context.getDeviceFeatures().vertexPipelineStoresAndAtomics)
+        TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
+}
+
+void NullStateTestCase::initPrograms(SourceCollections &programCollection) const
+{
+    std::ostringstream vert;
+    vert << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+         << "layout (location=0) in vec4 inPos;\n"
+         << "layout (location=1) in vec4 inColor;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "layout (set = 0, binding = 0) buffer ssbo {\n"
+         << "    int data[];\n"
+         << "} outData;\n"
+         << "void main (void) {\n"
+         << "    gl_Position = inPos;\n"
+         << "    outColor = inColor;\n"
+         << "    outData.data[gl_VertexIndex] = gl_VertexIndex + 1;\n"
+         << "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    frag << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+         << "layout (location=0) in vec4 inColor;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main (void) {\n"
+         << "    outColor = inColor;\n"
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+TestInstance *NullStateTestCase::createInstance(Context &context) const
+{
+    return new NullStateTestInstance(context, m_params);
+}
+
+tcu::TestStatus NullStateTestInstance::iterate(void)
+{
+    const auto ctx = m_context.getContextCommonData();
+    const tcu::IVec3 fbExtent(2, 2, 1);
+    const auto apiExtent = makeExtent3D(fbExtent);
+    const auto format    = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto imgUsage =
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+    const std::vector<PositionColor> vertices{
+        // clang-format off
+        PositionColor{tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f)},
+        PositionColor{tcu::Vec4(-1.0f,  0.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f)},
+        PositionColor{tcu::Vec4( 0.0f, -1.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f)},
+        PositionColor{tcu::Vec4( 0.0f,  0.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f)},
+        // clang-format on
+    };
+    const uint32_t numVertices = de::sizeU32(vertices);
+
+    // Vertex buffer.
+    const auto vtxBufferSize = static_cast<VkDeviceSize>(numVertices);
+    const auto vtxBufferInfo = makeBufferCreateInfo(vtxBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    BufferWithMemory vtxBuffer(ctx.vkd, ctx.device, ctx.allocator, vtxBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &alloc = vtxBuffer.getAllocation();
+        void *data  = alloc.getHostPtr();
+        memcpy(data, de::dataOrNull(vertices), numVertices);
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+    const VkDeviceSize vtxBufferOffset = 0ull;
+
+    // Index buffer.
+    const std::vector<uint16_t> indices{
+        0, 1, 2,
+        kRestartMarker // restart index = 3
+    };
+    const auto indexBufferSize = static_cast<VkDeviceSize>(de::sizeU32(indices) * sizeof(uint16_t));
+    const auto indexBufferInfo = makeBufferCreateInfo(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+    BufferWithMemory indexBuffer(ctx.vkd, ctx.device, ctx.allocator, indexBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &alloc = indexBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(indices), static_cast<size_t>(indexBufferSize));
+    }
+    const int32_t restartIndex = 3;
+
+    // Output data buffer.
+    const auto outputDataBufferSize = static_cast<VkDeviceSize>(numVertices * sizeof(int32_t));
+    const auto outputDataBufferInfo = makeBufferCreateInfo(outputDataBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    BufferWithMemory outputDataBuffer(ctx.vkd, ctx.device, ctx.allocator, outputDataBufferInfo,
+                                      MemoryRequirement::HostVisible);
+    {
+        auto &alloc = outputDataBuffer.getAllocation();
+        void *data  = alloc.getHostPtr();
+        std::vector<int32_t> randomData(numVertices, 0x7FFFFFFF);
+        memcpy(data, de::dataOrNull(randomData), static_cast<size_t>(outputDataBufferSize));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Descriptor set.
+    DescriptorSetLayoutBuilder descSetLayoutBuilder;
+    descSetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+    Move<VkDescriptorSetLayout> descSetLayout = descSetLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    DescriptorPoolBuilder descPoolBuilder;
+    descPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    Move<VkDescriptorPool> descPool =
+        descPoolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    Move<VkDescriptorSet> descSet = makeDescriptorSet(ctx.vkd, ctx.device, *descPool, *descSetLayout);
+
+    const auto descBufferInfo = makeDescriptorBufferInfo(*outputDataBuffer, 0ull, outputDataBufferSize);
+
+    DescriptorSetUpdateBuilder descSetUpdateBuilder;
+    descSetUpdateBuilder.writeSingle(*descSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descBufferInfo);
+    descSetUpdateBuilder.update(ctx.vkd, ctx.device);
+
+    // Color buffer.
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, apiExtent, format, imgUsage, VK_IMAGE_TYPE_2D);
+
+    RenderPassWrapper renderPass(m_params.constructionType, ctx.vkd, ctx.device, format);
+    renderPass.createFramebuffer(ctx.vkd, ctx.device, colorBuffer.getImage(), colorBuffer.getImageView(),
+                                 apiExtent.width, apiExtent.height);
+
+    // Vertex inputs.
+    const std::vector<VkVertexInputBindingDescription> actualBindings{
+        makeVertexInputBindingDescription(0u, DE_SIZEOF32(PositionColor), VK_VERTEX_INPUT_RATE_VERTEX),
+        makeVertexInputBindingDescription(1u, DE_SIZEOF32(tcu::Vec4), VK_VERTEX_INPUT_RATE_VERTEX),
+    };
+    const std::vector<VkVertexInputAttributeDescription> actualAttributes{
+        makeVertexInputAttributeDescription(0u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT,
+                                            static_cast<uint32_t>(offsetof(PositionColor, position))),
+        makeVertexInputAttributeDescription(1u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT,
+                                            static_cast<uint32_t>(offsetof(PositionColor, color))),
+    };
+
+    VkPipelineVertexInputStateCreateInfo staticVertexInputState = initVulkanStructure();
+    {
+        staticVertexInputState.vertexBindingDescriptionCount   = de::sizeU32(actualBindings);
+        staticVertexInputState.pVertexBindingDescriptions      = de::dataOrNull(actualBindings);
+        staticVertexInputState.vertexAttributeDescriptionCount = de::sizeU32(actualAttributes);
+        staticVertexInputState.pVertexAttributeDescriptions    = de::dataOrNull(actualAttributes);
+    }
+
+    // NULL input assembly state.
+    const VkPipelineInputAssemblyStateCreateInfo *staticInputAssemblyState = nullptr;
+
+    // Shaders.
+    const auto &binaries = m_context.getBinaryCollection();
+    const ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
+    const ShaderWrapper fragShader(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    // Dynamic state.
+    std::vector<VkDynamicState> dynamicStates(1u, VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY);
+    dynamicStates.push_back(VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE);
+
+    if (m_params.isRastDiscardDynamic)
+        dynamicStates.push_back(VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT);
+
+    const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+
+    PipelineLayoutWrapper pipelineLayout(m_params.constructionType, ctx.vkd, ctx.device, *descSetLayout);
+
+    GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, m_context.getDeviceExtensions(),
+                                     m_params.constructionType);
+    pipeline.setDefaultColorBlendState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDefaultRasterizationState()
+        .setDefaultRasterizerDiscardEnable(!m_params.isRastDiscardDynamic) // Rasterization disabled statically.
+        .setDynamicState(&dynamicStateCreateInfo)
+        .setupVertexInputState(&staticVertexInputState, staticInputAssemblyState, VK_NULL_HANDLE,
+                               PipelineCreationFeedbackCreateInfoWrapper(), PipelineBinaryInfoWrapper(),
+                               true /* useNullPtrs */)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertShader)
+        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u,
+                                  m_params.isRastDiscardDynamic ? fragShader : ShaderWrapper())
+        .setupFragmentOutputState(*renderPass)
+        .buildPipeline();
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), clearColor);
+    pipeline.bind(cmdBuffer);
+    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vtxBuffer.get(), &vtxBufferOffset);
+    ctx.vkd.cmdBindIndexBuffer(cmdBuffer, *indexBuffer, 0ull, VK_INDEX_TYPE_UINT16);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descSet, 0u,
+                                  nullptr);
+
+    // Rasterization disabled dynamically.
+    if (m_params.isRastDiscardDynamic)
+        ctx.vkd.cmdSetRasterizerDiscardEnable(cmdBuffer, VK_TRUE);
+
+    // Primitive topology set dynamically.
+    ctx.vkd.cmdSetPrimitiveTopology(cmdBuffer, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+    // Primitive restart enabled dynamically.
+    ctx.vkd.cmdSetPrimitiveRestartEnable(cmdBuffer, VK_TRUE);
+
+    // Draw.
+    ctx.vkd.cmdDrawIndexed(cmdBuffer, de::sizeU32(indices), 1u, 0u, 0, 0u);
+
+    renderPass.end(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), fbExtent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    const auto tcuFormat = mapVkFormat(format);
+    tcu::TextureLevel refLevel(tcuFormat, fbExtent.x(), fbExtent.y());
+    tcu::PixelBufferAccess refAccess = refLevel.getAccess();
+
+    tcu::clear(refAccess, clearColor);
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+
+    tcu::ConstPixelBufferAccess resAccess(tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    // Verify that output color is same as clear color.
+    const float threshold = 0.0f; // Expect exact colors.
+    const tcu::Vec4 thresholdVec(threshold, threshold, threshold, threshold);
+    auto &log = m_context.getTestContext().getLog();
+
+    if (!tcu::floatThresholdCompare(log, "Result", "", refAccess, resAccess, thresholdVec, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected results in color buffer; check log for details --");
+
+    // Verify output data is vertex index + 1.
+    const auto &outputDataBufferAllocation = outputDataBuffer.getAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, outputDataBufferAllocation);
+
+    const int32_t *outputDataBufferPtr = static_cast<int32_t *>(outputDataBufferAllocation.getHostPtr());
+
+    for (int32_t vertexIdx = 0; vertexIdx < static_cast<int32_t>(numVertices); vertexIdx++)
+    {
+        if (vertexIdx == restartIndex)
+            continue;
+
+        if (outputDataBufferPtr[vertexIdx] != (vertexIdx + 1))
+            TCU_FAIL("Unexpected results in data buffer");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests(tcu::TestContext &testCtx,
                                                             PipelineConstructionType pipelineConstructionType)
 {
@@ -2333,6 +2654,25 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests(tcu::TestContext &te
 
     return primitiveRestartTests;
 }
+
+de::MovePtr<tcu::TestCaseGroup> createMiscTests(tcu::TestContext &testCtx,
+                                                PipelineConstructionType pipelineConstructionType)
+{
+    de::MovePtr<tcu::TestCaseGroup> miscTests(new tcu::TestCaseGroup(testCtx, "misc"));
+
+    // Null input assembly state with rasterization discard enabled and dynamic primitive topology and restart
+    {
+        for (const auto isRastDiscardDynamic : {false, true})
+        {
+            const auto nullStateTestName =
+                std::string("null_state_dynamic_primitive_rast_discard") + (isRastDiscardDynamic ? "_dynamic" : "");
+            const NullStateTestParams nullStateTestParams = {pipelineConstructionType, isRastDiscardDynamic};
+            miscTests->addChild(new NullStateTestCase(testCtx, nullStateTestName, nullStateTestParams));
+        }
+    }
+
+    return miscTests;
+}
 #endif // CTS_USES_VULKANSC
 
 } // namespace
@@ -2345,6 +2685,13 @@ tcu::TestCaseGroup *createInputAssemblyTests(tcu::TestContext &testCtx,
     inputAssemblyTests->addChild(createPrimitiveTopologyTests(testCtx, pipelineConstructionType).release());
 #ifndef CTS_USES_VULKANSC
     inputAssemblyTests->addChild(createPrimitiveRestartTests(testCtx, pipelineConstructionType).release());
+
+    if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ||
+        pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY ||
+        pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV)
+    {
+        inputAssemblyTests->addChild(createMiscTests(testCtx, pipelineConstructionType).release());
+    }
 #endif // CTS_USES_VULKANSC
 
     return inputAssemblyTests.release();

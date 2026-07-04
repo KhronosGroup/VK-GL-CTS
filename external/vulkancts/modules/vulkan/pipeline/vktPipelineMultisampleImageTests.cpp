@@ -55,6 +55,7 @@
 #include <cmath>
 #include <string>
 #include <vector>
+#include <cmath>
 
 namespace vkt
 {

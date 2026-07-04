@@ -50,11 +50,8 @@ using namespace vk;
 using std::string;
 using std::vector;
 
-Move<VkDevice> createRobustBufferAccessDevice(Context &context,
-#ifdef CTS_USES_VULKANSC
-                                              const vkt::CustomInstance &customInstance,
-#endif // CTS_USES_VULKANSC
-                                              const VkPhysicalDeviceFeatures2 *enabledFeatures2)
+CustomDevice createRobustBufferAccessDevice(Context &context, const InstanceWrapper &instance,
+                                            const VkPhysicalDeviceFeatures2 *enabledFeatures2)
 {
     const float queuePriority = 1.0f;
     uint32_t queueCnt         = 1u;
@@ -89,48 +86,9 @@ Move<VkDevice> createRobustBufferAccessDevice(Context &context,
     //         they are in the extension list advertised to tests.
     const auto &extensionPtrs = context.getDeviceCreationExtensions();
 
-    void *pNext = (void *)enabledFeatures2;
-#ifdef CTS_USES_VULKANSC
-    VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
-                                                                 context.getResourceInterface()->getStatMax() :
-                                                                 resetDeviceObjectReservationCreateInfo();
-    memReservationInfo.pNext                               = pNext;
-    pNext                                                  = &memReservationInfo;
-
-    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-    sc10Features.pNext                              = pNext;
-    pNext                                           = &sc10Features;
-
-    VkPipelineCacheCreateInfo pcCI;
-    std::vector<VkPipelinePoolSize> poolSizes;
-    if (context.getTestContext().getCommandLine().isSubProcess())
-    {
-        if (context.getResourceInterface()->getCacheDataSize() > 0)
-        {
-            pcCI = {
-                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                nullptr,                                      // const void* pNext;
-                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
-                context.getResourceInterface()->getCacheData()            // const void* pInitialData;
-            };
-            memReservationInfo.pipelineCacheCreateInfoCount = 1;
-            memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-        }
-
-        poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
-        if (!poolSizes.empty())
-        {
-            memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-            memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-        }
-    }
-#endif
-
     const VkDeviceCreateInfo deviceParams = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,         // VkStructureType sType;
-        pNext,                                        // const void* pNext;
+        enabledFeatures2,                             // const void* pNext;
         0u,                                           // VkDeviceCreateFlags flags;
         queueCnt,                                     // uint32_t queueCreateInfoCount;
         queueParams,                                  // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
@@ -144,18 +102,7 @@ Move<VkDevice> createRobustBufferAccessDevice(Context &context,
     // We are creating a custom device with a potentially large amount of extensions and features enabled, using the default device
     // as a reference. Some implementations may only enable certain device extensions if some instance extensions are enabled, so in
     // this case it's important to reuse the context instance when creating the device.
-
-#ifdef CTS_USES_VULKANSC
-    vk::VkInstance instance   = customInstance;
-    const auto &vki           = customInstance.getDriver();
-    const auto physicalDevice = chooseDevice(vki, instance, context.getTestContext().getCommandLine());
-#else
-    vk::VkInstance instance   = context.getInstance();
-    const auto &vki           = context.getInstanceInterface();
-    const auto physicalDevice = context.getPhysicalDevice();
-#endif // CTS_USES_VULKANSC
-
-    return createCustomDevice(context.getPlatformInterface(), instance, vki, physicalDevice, &deviceParams);
+    return instance.createCustomDevice(&deviceParams);
 }
 
 bool areEqual(float a, float b)
@@ -307,13 +254,15 @@ void logValue(std::ostringstream &logMsg, const void *valuePtr, VkFormat valueFo
 
 // TestEnvironment
 
-TestEnvironment::TestEnvironment(Context &context, const DeviceInterface &vk, VkDevice device,
+TestEnvironment::TestEnvironment(Context &context, const DeviceWrapper &device,
                                  VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet descriptorSet)
     : m_context(context)
     , m_device(device)
     , m_descriptorSetLayout(descriptorSetLayout)
     , m_descriptorSet(descriptorSet)
 {
+    const auto &vk = device.getDriver();
+
     // Create command pool
     {
         const VkCommandPoolCreateInfo commandPoolParams = {
@@ -347,23 +296,22 @@ VkCommandBuffer TestEnvironment::getCommandBuffer(void)
 
 // GraphicsEnvironment
 
-GraphicsEnvironment::GraphicsEnvironment(Context &context, const DeviceInterface &vk, VkDevice device,
+GraphicsEnvironment::GraphicsEnvironment(Context &context, const DeviceWrapper &device,
                                          VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet descriptorSet,
                                          const VertexBindings &vertexBindings, const VertexAttributes &vertexAttributes,
                                          const DrawConfig &drawConfig, bool testPipelineRobustness,
                                          const DescriptorHeapEnvironmentParams *descriptorHeapParams)
 
-    : TestEnvironment(context, vk, device, descriptorSetLayout, descriptorSet)
+    : TestEnvironment(context, device, descriptorSetLayout, descriptorSet)
     , m_renderSize(16, 16)
     , m_colorFormat(VK_FORMAT_R8G8B8A8_UNORM)
 {
-    const auto &vki                               = context.getInstanceInterface();
-    const auto instance                           = context.getInstance();
+    const auto &vk          = device.getDriver();
+    vk::Allocator &memAlloc = device.getAllocator();
+
     const uint32_t queueFamilyIndex               = context.getUniversalQueueFamilyIndex();
     const VkComponentMapping componentMappingRGBA = {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G,
                                                      VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
-    const VkPhysicalDevice physicalDevice = chooseDevice(vki, instance, context.getTestContext().getCommandLine());
-    SimpleAllocator memAlloc(vk, m_device, getPhysicalDeviceMemoryProperties(vki, physicalDevice));
 
     // Create color image and view
     {
@@ -683,13 +631,15 @@ GraphicsEnvironment::GraphicsEnvironment(Context &context, const DeviceInterface
 
 // ComputeEnvironment
 
-ComputeEnvironment::ComputeEnvironment(Context &context, const DeviceInterface &vk, VkDevice device,
+ComputeEnvironment::ComputeEnvironment(Context &context, const DeviceWrapper &device,
                                        VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet descriptorSet,
                                        bool testPipelineRobustness,
                                        const DescriptorHeapEnvironmentParams *descriptorHeapParams)
 
-    : TestEnvironment(context, vk, device, descriptorSetLayout, descriptorSet)
+    : TestEnvironment(context, device, descriptorSetLayout, descriptorSet)
 {
+    const auto &vk = device.getDriver();
+
     // Create pipeline layout
     if (!descriptorHeapParams)
     {

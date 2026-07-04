@@ -26,6 +26,8 @@
 
 #include "deString.h"
 
+#include <algorithm>
+
 #if defined(DEQP_LOG_NODE_SOURCE)
 #include <stacktrace>
 #endif
@@ -93,24 +95,23 @@ void TestNode::addRootChild(const std::string &groupName, const CaseListFilter *
 
 void TestNode::addChild(TestNode *node)
 {
-    // Child names must be unique!
-    // \todo [petri] O(n^2) algorithm, but shouldn't really matter..
-    if (m_duplicateCheck)
-    {
-        for (int i = 0; i < (int)m_children.size(); i++)
-        {
-            if (strcmp(node->getName(), m_children[i]->getName()) == 0)
-                throw tcu::InternalError(std::string("Test case with non-unique name '") + node->getName() +
-                                         "' added to group '" + getName() + "'.");
-        }
-    }
-
     // children only in group nodes
     DE_ASSERT(getTestNodeTypeClass(m_nodeType) == NODECLASS_GROUP);
 
     // children must have the same class
     if (!m_children.empty())
         DE_ASSERT(getTestNodeTypeClass(m_children.front()->getNodeType()) == getTestNodeTypeClass(node->getNodeType()));
+
+    // Sorted insert by child name. Keeping m_children in name order makes
+    // every consumer of the tree (case-list export, hierarchy iterator,
+    // mustpass) see children in deterministic alphabetical order regardless
+    // of the order test code calls addChild().
+    auto cmp = [](const TestNode *a, const TestNode *b) { return strcmp(a->getName(), b->getName()) < 0; };
+    auto pos = std::lower_bound(m_children.begin(), m_children.end(), node, cmp);
+
+    if (m_duplicateCheck && pos != m_children.end() && strcmp((*pos)->getName(), node->getName()) == 0)
+        throw tcu::InternalError(std::string("Test case with non-unique name '") + node->getName() +
+                                 "' added to group '" + getName() + "'.");
 
 #if defined(DEQP_LOG_NODE_SOURCE)
     static const char *kHelperNames[] = {
@@ -143,7 +144,7 @@ void TestNode::addChild(TestNode *node)
         break;
     }
 #endif
-    m_children.push_back(node);
+    m_children.insert(pos, node);
 }
 
 void TestNode::init(void)

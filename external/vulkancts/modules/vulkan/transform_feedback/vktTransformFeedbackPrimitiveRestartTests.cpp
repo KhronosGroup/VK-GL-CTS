@@ -141,6 +141,7 @@ tcu::TestStatus PrimitiveRestartInstance::iterate(void)
     {
         auto &alloc = indexBuffer.getAllocation();
         memcpy(alloc.getHostPtr(), de::dataOrNull(indices), de::dataSize(indices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     // Render pass and framebuffer.
@@ -269,6 +270,7 @@ tcu::TestStatus PrimitiveRestartInstance::iterate(void)
     {
         auto &alloc = xfbBuffer.getAllocation();
         memset(alloc.getHostPtr(), 0, xfbBufferSize);
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     // Transform feedback counter buffer.
@@ -279,6 +281,7 @@ tcu::TestStatus PrimitiveRestartInstance::iterate(void)
     {
         auto &alloc = xfbCounterBuffer.getAllocation();
         memset(alloc.getHostPtr(), 0, sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     const CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);

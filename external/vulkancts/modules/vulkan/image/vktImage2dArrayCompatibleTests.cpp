@@ -48,6 +48,8 @@ struct TestParameters
     uint32_t totalLayers;
     VkImageTiling tiling;
     VkImageViewType imageViewType;
+    bool extendedCreateFlags;
+    bool extendedUsageFlags;
 };
 
 class ArrayCompatibleTestInstance : public vkt::TestInstance
@@ -123,15 +125,42 @@ tcu::TestStatus ArrayCompatibleTestInstance::iterate(void)
     const VkExtent3D copyExtent               = {extent.width, extent.height, 1u};
     const VkComponentMapping componentMapping = makeComponentMappingRGBA();
 
+    void *pNext                    = nullptr;
     VkImageCreateFlags createFlags = VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
+    VkImageUsageFlags usageFlags =
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 #ifndef CTS_USES_VULKANSC
     if (m_parameters.imageViewType == VK_IMAGE_VIEW_TYPE_2D)
         createFlags |= VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT;
+
+    VkImageCreateFlags2CreateInfoKHR createFlags2 = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_FLAGS_2_CREATE_INFO_KHR,
+        nullptr,
+        createFlags,
+    };
+    VkImageUsageFlags2CreateInfoKHR usageFlags2 = {
+        VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR,
+        nullptr,
+        usageFlags,
+    };
+
+    if (m_parameters.extendedCreateFlags)
+    {
+        createFlags2.pNext = pNext;
+        pNext              = &createFlags2;
+        createFlags        = 0;
+    }
+    if (m_parameters.extendedUsageFlags)
+    {
+        usageFlags2.pNext = pNext;
+        pNext             = &usageFlags2;
+        usageFlags        = 0;
+    }
 #endif
 
     VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType          sType
-        nullptr,                             // const void*              pNext
+        pNext,                               // const void*              pNext
         createFlags,                         // VkImageCreateFlags       flags
         VK_IMAGE_TYPE_3D,                    // VkImageType              imageType
         format,                              // VkFormat                 format
@@ -140,12 +169,11 @@ tcu::TestStatus ArrayCompatibleTestInstance::iterate(void)
         1u,                                  // uint32_t                 arrayLayers
         VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits    samples
         m_parameters.tiling,                 // VkImageTiling            tiling
-        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-            VK_IMAGE_USAGE_SAMPLED_BIT, // VkImageUsageFlags        usage
-        VK_SHARING_MODE_EXCLUSIVE,      // VkSharingMode            sharingMode
-        0,                              // uint32_t                 queueFamilyIndexCount
-        nullptr,                        // const uint32_t*          pQueueFamilyIndices
-        VK_IMAGE_LAYOUT_UNDEFINED       // VkImageLayout            initialLayout
+        usageFlags,                          // VkImageUsageFlags        usage
+        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode
+        0,                                   // uint32_t                 queueFamilyIndexCount
+        nullptr,                             // const uint32_t*          pQueueFamilyIndices
+        VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout            initialLayout
     };
 
     de::MovePtr<ImageWithMemory> image =
@@ -425,6 +453,9 @@ void ArrayCompatibleTestCase::checkSupport(vkt::Context &context) const
         if (!context.getImage2DViewOf3DFeaturesEXT().sampler2DViewOf3D)
             TCU_THROW(NotSupportedError, "sampler2DViewOf3D not supported.");
     }
+
+    if (m_parameters.extendedCreateFlags || m_parameters.extendedUsageFlags)
+        context.requireDeviceFunctionality(VK_KHR_EXTENDED_FLAGS_EXTENSION_NAME);
 #endif
 }
 
@@ -470,11 +501,18 @@ tcu::TestCaseGroup *createImage2dArrayCompatibleTests(tcu::TestContext &testCtx)
         uint32_t first;
         uint32_t second;
         uint32_t total;
+        bool extendedCreateFlags;
+        bool extendedUsageFlags;
         const char *name;
     } tests[] = {
-        {0u, 1u, 8u, "0_1_8"},
-        {3u, 7u, 16u, "3_7_16"},
-        {3u, 4u, 5u, "3_4_5"},
+        {0u, 1u, 8u, false, false, "0_1_8"},
+        {3u, 7u, 16u, false, false, "3_7_16"},
+        {3u, 4u, 5u, false, false, "3_4_5"},
+#ifndef CTS_USES_VULKANSC
+        {0u, 1u, 8u, true, false, "extended_create"},
+        {0u, 1u, 8u, false, true, "extended_usage"},
+        {0u, 1u, 8u, true, true, "extended_create_usage"},
+#endif
     };
 
     struct TilingTest
@@ -506,11 +544,13 @@ tcu::TestCaseGroup *createImage2dArrayCompatibleTests(tcu::TestContext &testCtx)
             for (const auto &imageViewType : imageViewTypeTests)
             {
                 TestParameters parameters;
-                parameters.firstLayer    = test.first;
-                parameters.secondLayer   = test.second;
-                parameters.totalLayers   = test.total;
-                parameters.tiling        = tiling.tiling;
-                parameters.imageViewType = imageViewType.imageViewType;
+                parameters.firstLayer          = test.first;
+                parameters.secondLayer         = test.second;
+                parameters.totalLayers         = test.total;
+                parameters.tiling              = tiling.tiling;
+                parameters.imageViewType       = imageViewType.imageViewType;
+                parameters.extendedCreateFlags = test.extendedCreateFlags;
+                parameters.extendedUsageFlags  = test.extendedUsageFlags;
 
                 tilingGroup->addChild(new ArrayCompatibleTestCase(testCtx, imageViewType.name, parameters));
             }

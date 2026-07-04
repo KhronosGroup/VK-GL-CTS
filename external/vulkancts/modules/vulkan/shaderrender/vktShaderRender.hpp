@@ -43,6 +43,8 @@
 
 #include "vktTestCaseUtil.hpp"
 
+#include <memory>
+
 namespace vkt
 {
 namespace sr
@@ -370,6 +372,11 @@ public:
     virtual void initPrograms(vk::SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
 
+    void setEvaluator(const ShaderEvaluator *evaluator)
+    {
+        m_evaluator.reset(evaluator);
+    }
+
 protected:
     std::string m_vertShaderSource;
     std::string m_fragShaderSource;
@@ -379,7 +386,7 @@ protected:
     de::MovePtr<vk::ShaderBuildOptions> m_compShaderBuildOptions;
 
     const bool m_isVertexCase;
-    const de::UniquePtr<const ShaderEvaluator> m_evaluator;
+    std::unique_ptr<const ShaderEvaluator> m_evaluator;
     const de::UniquePtr<const UniformSetup> m_uniformSetup;
     const AttributeSetupFunc m_attribFunc;
 };
@@ -551,7 +558,7 @@ public:
     void addUniform(uint32_t bindingLocation, vk::VkDescriptorType descriptorType, const T &data);
     void addUniform(uint32_t bindingLocation, vk::VkDescriptorType descriptorType, size_t dataSize, const void *data);
     void useUniform(uint32_t bindingLocation, BaseUniformType type);
-    void useSampler(uint32_t bindingLocation, uint32_t textureId);
+    void useSampler(uint32_t bindingLocation, uint32_t textureId, bool storageImg = false);
 
     static const tcu::Vec4 getDefaultConstCoords(void)
     {
@@ -607,16 +614,16 @@ protected:
     vk::VkFormat m_colorFormat;
     bool m_useCompute;
 
-    de::SharedPtr<vk::Unique<vk::VkCommandPool>> m_externalCommandPool;
-
 private:
     typedef std::vector<tcu::ConstPixelBufferAccess> TextureLayerData;
     typedef std::vector<TextureLayerData> TextureData;
 
     void uploadImage(const tcu::TextureFormat &texFormat, const TextureData &textureData,
-                     const tcu::Sampler &refSampler, uint32_t mipLevels, uint32_t arrayLayers, vk::VkImage destImage);
+                     const tcu::Sampler &refSampler, uint32_t mipLevels, uint32_t arrayLayers, vk::VkImage destImage,
+                     bool storageImage);
 
-    void clearImage(const tcu::Sampler &refSampler, uint32_t mipLevels, uint32_t arrayLayers, vk::VkImage destImage);
+    void clearImage(const tcu::Sampler &refSampler, uint32_t mipLevels, uint32_t arrayLayers, vk::VkImage destImage,
+                    bool storageImage);
 
     void checkSparseSupport(const vk::VkImageCreateInfo &imageInfo) const;
 #ifndef CTS_USES_VULKANSC
@@ -628,7 +635,8 @@ private:
     void createSamplerUniform(uint32_t bindingLocation, TextureBinding::Type textureType,
                               TextureBinding::Init textureInit, const tcu::TextureFormat &texFormat,
                               const tcu::UVec3 texSize, const TextureData &textureData, const tcu::Sampler &refSampler,
-                              uint32_t mipLevels, uint32_t arrayLayers, TextureBinding::Parameters textureParams);
+                              uint32_t mipLevels, uint32_t arrayLayers, TextureBinding::Parameters textureParams,
+                              bool useStorageImg = false);
 
     void setupUniformData(uint32_t bindingLocation, size_t size, const void *dataPtr);
 
@@ -744,7 +752,7 @@ void ShaderRenderCaseInstance::addUniform(uint32_t bindingLocation, vk::VkDescri
 
 vk::VkImageViewType textureTypeToImageViewType(TextureBinding::Type type);
 vk::VkImageType viewTypeToImageType(vk::VkImageViewType type);
-vk::VkImageUsageFlags textureUsageFlags(void);
+vk::VkImageUsageFlags textureUsageFlags(bool storageImg = false);
 vk::VkImageCreateFlags textureCreateFlags(vk::VkImageViewType viewType,
                                           ShaderRenderCaseInstance::ImageBackingMode backingMode);
 

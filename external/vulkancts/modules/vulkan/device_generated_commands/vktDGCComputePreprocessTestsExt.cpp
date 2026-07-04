@@ -56,6 +56,11 @@ enum class Method
     PREPROCESS_UNIVERSAL_EXECUTE_COMPUTE,
 };
 
+bool hasQueueSwitch(Method method)
+{
+    return (static_cast<int>(method) > static_cast<int>(Method::COMPUTE_QUEUE));
+}
+
 enum class StateCmdBuffer
 {
     SAME = 0,
@@ -341,7 +346,7 @@ tcu::TestStatus parallelPreprocessRun(Context &context, PreprocessParams params)
              queueInfoMap[kUniversalKey] :
              queueInfoMap[kComputeKey]);
 
-    const bool queueSwitch = (executeQueueInfo.qfIndex != preprocessQueueInfo.qfIndex);
+    const bool queueSwitch = hasQueueSwitch(params.method);
 
     // These may be used to transfer buffers from the preprocess queue to the execution queue.
     std::vector<VkBufferMemoryBarrier> ownershipBarriers;
@@ -362,7 +367,7 @@ tcu::TestStatus parallelPreprocessRun(Context &context, PreprocessParams params)
 
             if (separateState)
             {
-                separateCmdBufferPtr = allocateCommandBuffer(ctx.vkd, ctx.device, preprocessQueueInfo.cmdPool,
+                separateCmdBufferPtr = allocateCommandBuffer(ctx.vkd, ctx.device, executeQueueInfo.cmdPool,
                                                              VK_COMMAND_BUFFER_LEVEL_PRIMARY);
                 beginCommandBuffer(ctx.vkd, *separateCmdBufferPtr);
                 ctx.vkd.cmdBindDescriptorSets(*separateCmdBufferPtr, bindPoint, *pipelineLayout, 0u, 1u,
@@ -564,6 +569,12 @@ tcu::TestCaseGroup *createDGCComputePreprocessTestsExt(tcu::TestContext &testCtx
         for (const auto &countBufferCase : countBufferCases)
             for (const auto &stateCmdBufferCase : stateCmdBufferCases)
             {
+                // When the state command buffer is the same we run preprocessing on, and the preprocess and execution
+                // happens on a different queue, the state command buffer would not come from the same queue as the
+                // execution command buffer, which is forbidden by the spec.
+                if (stateCmdBufferCase.stateCmdBuffer == StateCmdBuffer::SAME && hasQueueSwitch(methodCase.method))
+                    continue;
+
                 const PreprocessParams params{methodCase.method, countBufferCase.countBuffer,
                                               stateCmdBufferCase.stateCmdBuffer};
                 const auto testName = std::string("parallel_preprocessing_") + methodCase.name +

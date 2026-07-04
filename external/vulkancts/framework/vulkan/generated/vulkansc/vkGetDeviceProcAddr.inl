@@ -20,15 +20,14 @@ using namespace vk;
 
 tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 {
-    tcu::TestLog&                                log                        (context.getTestContext().getLog());
-    const PlatformInterface&                    platformInterface = context.getPlatformInterface();
-    const CustomInstance                        instance                (createCustomInstanceFromContext(context));
-    const InstanceDriver&                        instanceDriver = instance.getDriver();
-    const VkPhysicalDevice                        physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
-    const uint32_t                                queueFamilyIndex = 0;
-    const uint32_t                                queueCount = 1;
-    const float                                    queuePriority = 1.0f;
-    const std::vector<VkQueueFamilyProperties>    queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+    tcu::TestLog&                               log                   = context.getTestContext().getLog();
+    const InstanceWrapper instance(createCustomInstanceFromContext(context, nullptr, false));
+    const auto&                                 instanceDriver        = instance.getDriver();
+    const VkPhysicalDevice                      physicalDevice        = instance.getPhysicalDevice();
+    const uint32_t                              queueFamilyIndex      = 0;
+    const uint32_t                              queueCount            = 1;
+    const float                                 queuePriority         = 1.0f;
+    const std::vector<VkQueueFamilyProperties>  queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
     const VkDeviceQueueCreateInfo            deviceQueueCreateInfo =
     {
@@ -53,8 +52,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
         nullptr, //  const char* const* ppEnabledExtensionNames;
         nullptr, //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
-    const Unique<VkDevice>                    device            (createCustomDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-    const DeviceDriver                        deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
+
+    const auto                                device       = instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
+    const auto&                               deviceDriver = device.getDriver();
 
     const std::vector<std::string> functions{
 
@@ -258,7 +258,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
     bool fail = false;
     for (const auto& function : functions)
     {
-        if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != nullptr)
+        if (deviceDriver.getDeviceProcAddr(device, function.c_str()) != nullptr)
         {
             fail = true;
             log << tcu::TestLog::Message << "Function " << function << " is not NULL" << tcu::TestLog::EndMessage;

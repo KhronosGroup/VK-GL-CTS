@@ -126,10 +126,7 @@ public:
         if (!(properties.bufferFeatures & m_testCase.features))
             TCU_THROW(NotSupportedError, "Format not supported");
         if (m_testCase.bufferAllocationKind == ALLOCATION_KIND_DEDICATED)
-        {
-            if (!ctx.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
-                TCU_THROW(NotSupportedError, "Dedicated allocation not supported");
-        }
+            ctx.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
     }
 
 private:

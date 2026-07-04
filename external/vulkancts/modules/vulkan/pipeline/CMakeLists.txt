@@ -132,6 +132,8 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineBinaryTests.cpp
 	vktPipelineBinaryTests.hpp
+	vktPipelineCacheGplTests.cpp
+	vktPipelineCacheGplTests.hpp
 	vktPipelineBindPointTests.cpp
 	vktPipelineBindPointTests.hpp
 	vktPipelinePushDescriptorTests.cpp
@@ -170,6 +172,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineDualBlendTests.hpp
 	vktPipelineShaderComponentDecoratedLayoutMatchingTests.cpp
 	vktPipelineShaderComponentDecoratedLayoutMatchingTests.hpp
+    vktPipelinePrimitiveRestartIndexTests.cpp
+    vktPipelinePrimitiveRestartIndexTests.hpp
 	)
 
 #vktPipelinePushDescriptorTests.cpp				- missing VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR

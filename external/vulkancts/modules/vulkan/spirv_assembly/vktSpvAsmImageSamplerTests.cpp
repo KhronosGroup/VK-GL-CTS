@@ -861,8 +861,8 @@ void addComputeImageSamplerTest(tcu::TestCaseGroup *group)
                         for (size_t i = 0; i < inputData.size(); i++)
                             inputData[i] = tcu::Vec4(1.0f) - inputData[i];
 
-                        spec.inputs.push_back(BufferSp(new Vec4Buffer(inputData)));
-                        spec.inputs[1].setDescriptorType(getVkDescriptorType((DescriptorType)descNdx));
+                        spec.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)),
+                                                       getVkDescriptorType((DescriptorType)descNdx)));
                     }
 
                     // Shader is expected to pass the input image data to the output buffer
@@ -1161,7 +1161,7 @@ bool verifyDepthCompareResult(const std::vector<Resource> &originalFloats,
         return false;
 
     vector<uint8_t> expectedBytes;
-    expectedOutputs[0].getBytes(expectedBytes);
+    expectedOutputs[0].buffer->getBytes(expectedBytes);
 
     const float *returnedAsFloat = static_cast<const float *>(outputAllocs[0]->getHostPtr());
     const float *expectedAsFloat = reinterpret_cast<const float *>(&expectedBytes.front());

@@ -117,14 +117,18 @@ uint32_t getTypeSize(glu::DataType dataType)
 struct TestParams
 {
     const PipelineConstructionType constructionType;
-    const glu::DataType dataType; // vec2 or vec4.
-    const uint32_t bindingOffset; // When binding vertex buffer.
-    const StrideCase strideCase;  // Pack all data or include some padding.
-    const bool useMemoryOffset;   // Apply an offset when binding memory to the buffer.
-    const bool dynamic;           // Use dynamic state or not.
+    const glu::DataType dataType;      // vec2 or vec4.
+    const uint32_t bindingOffset;      // When binding vertex buffer.
+    const StrideCase strideCase;       // Pack all data or include some padding.
+    const bool useMemoryOffset;        // Apply an offset when binding memory to the buffer.
+    const bool dynamic;                // Use dynamic state or not.
+    const int optionalAttributeOffset; // -1 = use formula for alignment;
+    const VkFormat optionalAttributeFormat;
 
     uint32_t attributeSize(void) const
     {
+        if (optionalAttributeFormat == VK_FORMAT_R8G8B8A8_SNORM)
+            return 4u;
         return getTypeSize(dataType);
     }
 
@@ -135,6 +139,9 @@ struct TestParams
 
     VkFormat attributeFormat(void) const
     {
+        if (optionalAttributeFormat != VK_FORMAT_UNDEFINED)
+            return optionalAttributeFormat;
+
         switch (dataType)
         {
         case glu::TYPE_FLOAT_VEC2:
@@ -152,6 +159,8 @@ struct TestParams
     // Given the vertex buffer binding offset, calculate the appropriate attribute offset to make them aligned.
     uint32_t attributeOffset(void) const
     {
+        if (optionalAttributeOffset >= 0)
+            return static_cast<uint32_t>(optionalAttributeOffset);
         const auto attribSize = attributeSize();
         DE_ASSERT(bindingOffset < attribSize);
         return ((attribSize - bindingOffset) % attribSize);
@@ -174,6 +183,22 @@ struct TestParams
 
 using VertexVec = std::vector<tcu::Vec2>;
 using BytesVec  = std::vector<uint8_t>;
+
+struct PackedSnorm8Vec4
+{
+    int8_t x;
+    int8_t y;
+    int8_t z;
+    int8_t w;
+};
+
+int8_t floatToSnorm8(float value)
+{
+    const auto clamped = (value < -1.0f ? -1.0f : (value > 1.0f ? 1.0f : value));
+    const auto scaled  = clamped * 127.0f;
+    const auto rounded = static_cast<int>(scaled + (scaled >= 0.0f ? 0.5f : -0.5f));
+    return static_cast<int8_t>(rounded < -127 ? -127 : (rounded > 127 ? 127 : rounded));
+}
 
 BytesVec buildVertexBufferData(const VertexVec &origVertices, const TestParams &params)
 {
@@ -201,15 +226,30 @@ BytesVec buildVertexBufferData(const VertexVec &origVertices, const TestParams &
 
     for (uint32_t vertexIdx = 0u; vertexIdx < vertexCount; ++vertexIdx)
     {
-        // Copy vertex.
-        deMemcpy(nextVertexPtr, &vertices.at(vertexIdx), srcVertexSize);
-        nextVertexPtr += srcVertexSize;
-
-        // Copy extra ZW values if needed.
-        if (needsZW)
+        if (params.attributeFormat() == VK_FORMAT_R8G8B8A8_SNORM)
         {
-            deMemcpy(nextVertexPtr, &zw, zwSize);
-            nextVertexPtr += zwSize;
+            const auto &vertex = vertices.at(vertexIdx);
+            const PackedSnorm8Vec4 packedVertex{
+                floatToSnorm8(vertex.x()),
+                floatToSnorm8(vertex.y()),
+                0,
+                127,
+            };
+            deMemcpy(nextVertexPtr, &packedVertex, sizeof(packedVertex));
+            nextVertexPtr += sizeof(packedVertex);
+        }
+        else
+        {
+            // Copy vertex.
+            deMemcpy(nextVertexPtr, &vertices.at(vertexIdx), srcVertexSize);
+            nextVertexPtr += srcVertexSize;
+
+            // Copy extra ZW values if needed.
+            if (needsZW)
+            {
+                deMemcpy(nextVertexPtr, &zw, zwSize);
+                nextVertexPtr += zwSize;
+            }
         }
 
         // Skip the padding bytes.
@@ -328,32 +368,51 @@ void InputAttributeOffsetCase::checkSupport(Context &context) const
 
 void InputAttributeOffsetCase::initPrograms(vk::SourceCollections &programCollection) const
 {
+
+    if (m_params.optionalAttributeOffset >= 0)
+    {
+        {
+            const auto posType = glu::getDataTypeName(glu::TYPE_FLOAT_VEC4); // two_binds use vec4
+            std::ostringstream vert;
+            vert << "#version 460\n"
+                 << "layout (location=0) in " << posType << " inPos0;\n"
+                 << "layout (location=1) in " << posType << " inPos1;\n"
+                 << "void main (void) {\n"
+                 << "    gl_Position = (gl_VertexIndex < 24) ? inPos0 : inPos1;\n"
+                 << "}\n";
+            programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+        }
+    }
+    else
+    {
+        {
+            const auto extraComponents =
+                ((m_params.dataType == glu::TYPE_FLOAT_VEC4) ?
+                     "" :
+                     ((m_params.isOverlapping())
+                          // Simulate that we use the .zw components in order to force the implementation to read them.
+                          ?
+                          ", floor(abs(inPos.z) / 1000.0), (floor(abs(inPos.w) / 2500.0) + 1.0)" // Should result in 0.0, 1.0.
+                          :
+                          ", 0.0, 1.0"));
+            const auto componentSelect = (m_params.isOverlapping() ? ".xy" : "");
+
+            std::ostringstream vert;
+            vert << "#version 460\n"
+                 << "layout (location=0) in "
+                 << glu::getDataTypeName(m_params.isOverlapping() ? glu::TYPE_FLOAT_VEC4 : m_params.dataType)
+                 << " inPos;\n"
+                 << "void main (void) { gl_Position = vec4(inPos" << componentSelect << extraComponents << "); }\n";
+            programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+        }
+    }
+
     {
         std::ostringstream frag;
         frag << "#version 460\n"
              << "layout (location=0) out vec4 outColor;\n"
              << "void main (void) { outColor = vec4" << getDefaultColor() << "; }\n";
         programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
-    }
-
-    {
-        const auto extraComponents =
-            ((m_params.dataType == glu::TYPE_FLOAT_VEC4) ?
-                 "" :
-                 ((m_params.isOverlapping())
-                      // Simulate that we use the .zw components in order to force the implementation to read them.
-                      ?
-                      ", floor(abs(inPos.z) / 1000.0), (floor(abs(inPos.w) / 2500.0) + 1.0)" // Should result in 0.0, 1.0.
-                      :
-                      ", 0.0, 1.0"));
-        const auto componentSelect = (m_params.isOverlapping() ? ".xy" : "");
-
-        std::ostringstream vert;
-        vert << "#version 460\n"
-             << "layout (location=0) in "
-             << glu::getDataTypeName(m_params.isOverlapping() ? glu::TYPE_FLOAT_VEC4 : m_params.dataType) << " inPos;\n"
-             << "void main (void) { gl_Position = vec4(inPos" << componentSelect << extraComponents << "); }\n";
-        programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
     }
 }
 
@@ -367,28 +426,88 @@ tcu::TestStatus InputAttributeOffsetInstance::iterate(void)
     const auto colorFormat      = VK_FORMAT_R8G8B8A8_UNORM;
     const auto colorUsage       = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-    // Vertex buffer.
-    const auto vertexBufferSize   = static_cast<VkDeviceSize>(de::dataSize(vertexBufferData));
-    const auto vertexBufferInfo   = makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    const auto vertexBuffer       = makeBuffer(ctx.vkd, ctx.device, vertexBufferInfo);
-    const auto vertexBufferOffset = static_cast<VkDeviceSize>(m_params.bindingOffset);
+    //const auto fullDataSize = de::dataSize(vertexBufferData);
+    const auto vertexCount     = de::sizeU32(vertices);
+    const auto halfVertexCount = vertexCount / 2u; // 24
+    const auto stride          = m_params.bindingStride();
+    const auto leadingSize     = m_params.bindingOffset + m_params.attributeOffset();
+    const auto firstHalfSize   = leadingSize + halfVertexCount * stride; // 24*stride
+    const auto secondHalfSize  = halfVertexCount * stride;               // 24*stride
 
-    // Allocate and bind buffer memory.
-    // If useMemoryOffset is true, we'll allocate extra memory that satisfies alignment requirements for the buffer and the attributes.
-    auto vertexBufferReqs = getBufferMemoryRequirements(ctx.vkd, ctx.device, *vertexBuffer);
-    const auto memoryOffset =
-        (m_params.useMemoryOffset ?
-             (de::lcm(vertexBufferReqs.alignment, static_cast<VkDeviceSize>(m_params.attributeSize()))) :
-             0ull);
-    vertexBufferReqs.size += memoryOffset;
-    auto vertexBufferAlloc = ctx.allocator.allocate(vertexBufferReqs, MemoryRequirement::HostVisible);
-    VK_CHECK(ctx.vkd.bindBufferMemory(ctx.device, *vertexBuffer, vertexBufferAlloc->getMemory(), memoryOffset));
+    de::MovePtr<BufferWithMemory> vertexBuffer1Ptr;
+    de::MovePtr<BufferWithMemory> vertexBuffer2Ptr;
+    Move<VkBuffer> vertexBuffer;
+    de::MovePtr<Allocation> vertexBufferAlloc;
+    VkDeviceSize vertexBufferOffset = 0u;
+    VkVertexInputBindingDescription vertexInputBinding;
+    VkVertexInputAttributeDescription vertexInputAttribute;
+    std::unique_ptr<VkPipelineVertexInputStateCreateInfo> pipelineVertexInputState;
 
-    // Copy vertices to vertex buffer.
-    const auto dstPtr =
-        reinterpret_cast<char *>(vertexBufferAlloc->getHostPtr()) + memoryOffset; // Need to add offset manually here.
-    deMemcpy(dstPtr, de::dataOrNull(vertexBufferData), de::dataSize(vertexBufferData));
-    flushAlloc(ctx.vkd, ctx.device, *vertexBufferAlloc);
+    if (m_params.optionalAttributeOffset >= 0)
+    {
+        // Buffer1: [bindingOffset][attrOffset][v0..v23]
+        // Buffer2: [24*stride padding][v24..v47]
+        const auto buffer1Size = static_cast<VkDeviceSize>(firstHalfSize);
+        const auto buffer2Size = static_cast<VkDeviceSize>(halfVertexCount * stride * 2);
+        vertexBuffer1Ptr       = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+            ctx.vkd, ctx.device, ctx.allocator, makeBufferCreateInfo(buffer1Size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
+            MemoryRequirement::HostVisible));
+        vertexBuffer2Ptr       = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+            ctx.vkd, ctx.device, ctx.allocator, makeBufferCreateInfo(buffer2Size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
+            MemoryRequirement::HostVisible));
+        {
+            auto &alloc1 = vertexBuffer1Ptr->getAllocation();
+            deMemcpy(alloc1.getHostPtr(), de::dataOrNull(vertexBufferData), firstHalfSize);
+            flushAlloc(ctx.vkd, ctx.device, alloc1);
+        }
+        {
+            auto &alloc2 = vertexBuffer2Ptr->getAllocation();
+            uint8_t *ptr = reinterpret_cast<uint8_t *>(alloc2.getHostPtr());
+            deMemset(ptr, 0, halfVertexCount * stride);
+            deMemcpy(ptr + halfVertexCount * stride, de::dataOrNull(vertexBufferData) + firstHalfSize, secondHalfSize);
+            flushAlloc(ctx.vkd, ctx.device, alloc2);
+        }
+    }
+    else
+    {
+        const auto vertexBufferSize = static_cast<VkDeviceSize>(de::dataSize(vertexBufferData));
+        const auto vertexBufferInfo = makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        vertexBuffer                = makeBuffer(ctx.vkd, ctx.device, vertexBufferInfo);
+        vertexBufferOffset          = static_cast<VkDeviceSize>(m_params.bindingOffset);
+
+        // Allocate and bind buffer memory.
+        // If useMemoryOffset is true, we'll allocate extra memory that satisfies alignment requirements for the buffer and the attributes.
+        auto vertexBufferReqs = getBufferMemoryRequirements(ctx.vkd, ctx.device, *vertexBuffer);
+        const auto memoryOffset =
+            (m_params.useMemoryOffset ?
+                 (de::lcm(vertexBufferReqs.alignment, static_cast<VkDeviceSize>(m_params.attributeSize()))) :
+                 0ull);
+        vertexBufferReqs.size += memoryOffset;
+        vertexBufferAlloc = ctx.allocator.allocate(vertexBufferReqs, MemoryRequirement::HostVisible);
+        VK_CHECK(ctx.vkd.bindBufferMemory(ctx.device, *vertexBuffer, vertexBufferAlloc->getMemory(), memoryOffset));
+
+        // Copy vertices to vertex buffer.
+        const auto dstPtr = reinterpret_cast<char *>(vertexBufferAlloc->getHostPtr()) +
+                            memoryOffset; // Need to add offset manually here.
+        deMemcpy(dstPtr, de::dataOrNull(vertexBufferData), de::dataSize(vertexBufferData));
+        flushAlloc(ctx.vkd, ctx.device, *vertexBufferAlloc);
+
+        // Vertex input values according to test parameters.
+        vertexInputBinding =
+            makeVertexInputBindingDescription(0u, m_params.bindingStride(), VK_VERTEX_INPUT_RATE_VERTEX);
+        vertexInputAttribute =
+            makeVertexInputAttributeDescription(0u, 0u, m_params.attributeFormat(), m_params.attributeOffset());
+
+        if (!m_params.dynamic)
+        {
+            pipelineVertexInputState.reset(new VkPipelineVertexInputStateCreateInfo);
+            *pipelineVertexInputState                                 = initVulkanStructure();
+            pipelineVertexInputState->vertexBindingDescriptionCount   = 1u;
+            pipelineVertexInputState->pVertexBindingDescriptions      = &vertexInputBinding;
+            pipelineVertexInputState->vertexAttributeDescriptionCount = 1u;
+            pipelineVertexInputState->pVertexAttributeDescriptions    = &vertexInputAttribute;
+        }
+    }
 
     // Color buffer.
     ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, vkExtent, colorFormat, colorUsage,
@@ -407,7 +526,6 @@ tcu::TestStatus InputAttributeOffsetInstance::iterate(void)
     std::vector<VkDynamicState> dynamicStates;
     if (m_params.dynamic)
         dynamicStates.push_back(VK_DYNAMIC_STATE_VERTEX_INPUT_EXT);
-
     const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType sType;
         nullptr,                                              // const void* pNext;
@@ -415,25 +533,6 @@ tcu::TestStatus InputAttributeOffsetInstance::iterate(void)
         de::sizeU32(dynamicStates),                           // uint32_t dynamicStateCount;
         de::dataOrNull(dynamicStates),                        // const VkDynamicState* pDynamicStates;
     };
-
-    // Vertex input values according to test parameters.
-    const auto vertexInputBinding =
-        makeVertexInputBindingDescription(0u, m_params.bindingStride(), VK_VERTEX_INPUT_RATE_VERTEX);
-    const auto vertexInputAttribute =
-        makeVertexInputAttributeDescription(0u, 0u, m_params.attributeFormat(), m_params.attributeOffset());
-
-    using VertexInputStatePtr = std::unique_ptr<VkPipelineVertexInputStateCreateInfo>;
-    VertexInputStatePtr pipelineVertexInputState;
-    if (!m_params.dynamic)
-    {
-        pipelineVertexInputState.reset(new VkPipelineVertexInputStateCreateInfo);
-        *pipelineVertexInputState                                 = initVulkanStructure();
-        pipelineVertexInputState->vertexBindingDescriptionCount   = 1u;
-        pipelineVertexInputState->pVertexBindingDescriptions      = &vertexInputBinding;
-        pipelineVertexInputState->vertexAttributeDescriptionCount = 1u;
-        pipelineVertexInputState->pVertexAttributeDescriptions    = &vertexInputAttribute;
-    }
-
     const std::vector<VkViewport> viewports(1u, makeViewport(vkExtent));
     const std::vector<VkRect2D> scissors(1u, makeRect2D(vkExtent));
 
@@ -449,7 +548,7 @@ tcu::TestStatus InputAttributeOffsetInstance::iterate(void)
         .setDefaultVertexInputState(false)
         .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
         .setDynamicState(&dynamicStateCreateInfo)
-        .setupVertexInputState(pipelineVertexInputState.get())
+        .setupVertexInputState((m_params.dynamic ? nullptr : pipelineVertexInputState.get()))
         .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertModule)
         .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
         .setupFragmentOutputState(*renderPass, 0u)
@@ -458,31 +557,69 @@ tcu::TestStatus InputAttributeOffsetInstance::iterate(void)
     CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
     const auto cmdBuffer = *cmd.cmdBuffer;
 
-    // Draw and copy image to verification buffer.
-    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    if (m_params.optionalAttributeOffset >= 0)
     {
-        renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), getClearColor());
-        pipelineWrapper.bind(cmdBuffer);
-        ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-        if (m_params.dynamic)
+        beginCommandBuffer(ctx.vkd, cmdBuffer);
         {
-            VkVertexInputBindingDescription2EXT dynamicBinding = initVulkanStructure();
-            dynamicBinding.binding                             = vertexInputBinding.binding;
-            dynamicBinding.inputRate                           = vertexInputBinding.inputRate;
-            dynamicBinding.stride                              = vertexInputBinding.stride;
-            dynamicBinding.divisor                             = 1u;
-
-            VkVertexInputAttributeDescription2EXT dynamicAttribute = initVulkanStructure();
-            dynamicAttribute.location                              = vertexInputAttribute.location;
-            dynamicAttribute.binding                               = vertexInputAttribute.binding;
-            dynamicAttribute.format                                = vertexInputAttribute.format;
-            dynamicAttribute.offset                                = vertexInputAttribute.offset;
-
-            ctx.vkd.cmdSetVertexInputEXT(cmdBuffer, 1u, &dynamicBinding, 1u, &dynamicAttribute);
+            renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), getClearColor());
+            pipelineWrapper.bind(cmdBuffer);
+            VkVertexInputBindingDescription2EXT dynamicBindings[2]     = {initVulkanStructure(), initVulkanStructure()};
+            dynamicBindings[0].binding                                 = 0u;
+            dynamicBindings[0].inputRate                               = VK_VERTEX_INPUT_RATE_VERTEX;
+            dynamicBindings[0].stride                                  = m_params.bindingStride();
+            dynamicBindings[0].divisor                                 = 1u;
+            dynamicBindings[1].binding                                 = 1u;
+            dynamicBindings[1].inputRate                               = VK_VERTEX_INPUT_RATE_VERTEX;
+            dynamicBindings[1].stride                                  = m_params.bindingStride();
+            dynamicBindings[1].divisor                                 = 1u;
+            VkVertexInputAttributeDescription2EXT dynamicAttributes[2] = {initVulkanStructure(), initVulkanStructure()};
+            dynamicAttributes[0].location                              = 0u;
+            dynamicAttributes[0].binding                               = 0u;
+            dynamicAttributes[0].format                                = m_params.attributeFormat();
+            dynamicAttributes[0].offset                                = m_params.attributeOffset();
+            dynamicAttributes[1].location                              = 1u;
+            dynamicAttributes[1].binding                               = 1u;
+            dynamicAttributes[1].format                                = m_params.attributeFormat();
+            dynamicAttributes[1].offset                                = m_params.attributeOffset();
+            ctx.vkd.cmdSetVertexInputEXT(cmdBuffer, 2u, dynamicBindings, 2u, dynamicAttributes);
+            const VkDeviceSize offset0 = static_cast<VkDeviceSize>(m_params.bindingOffset);
+            const VkDeviceSize offset1 = 0u;
+            const VkBuffer bufs[2]     = {vertexBuffer1Ptr->get(), vertexBuffer2Ptr->get()};
+            const VkDeviceSize offs[2] = {offset0, offset1};
+            ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &bufs[0], &offs[0]);
+            ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 1u, 1u, &bufs[1], &offs[1]);
+            ctx.vkd.cmdDraw(cmdBuffer, vertexCount, 1u, 0u, 0u);
+            renderPass.end(ctx.vkd, cmdBuffer);
         }
-        ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
-        renderPass.end(ctx.vkd, cmdBuffer);
     }
+    else
+    {
+        beginCommandBuffer(ctx.vkd, cmdBuffer);
+        {
+            renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), getClearColor());
+            pipelineWrapper.bind(cmdBuffer);
+            ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+            if (m_params.dynamic)
+            {
+                VkVertexInputBindingDescription2EXT dynamicBinding = initVulkanStructure();
+                dynamicBinding.binding                             = vertexInputBinding.binding;
+                dynamicBinding.inputRate                           = vertexInputBinding.inputRate;
+                dynamicBinding.stride                              = vertexInputBinding.stride;
+                dynamicBinding.divisor                             = 1u;
+
+                VkVertexInputAttributeDescription2EXT dynamicAttribute = initVulkanStructure();
+                dynamicAttribute.location                              = vertexInputAttribute.location;
+                dynamicAttribute.binding                               = vertexInputAttribute.binding;
+                dynamicAttribute.format                                = vertexInputAttribute.format;
+                dynamicAttribute.offset                                = vertexInputAttribute.offset;
+
+                ctx.vkd.cmdSetVertexInputEXT(cmdBuffer, 1u, &dynamicBinding, 1u, &dynamicAttribute);
+            }
+            ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+            renderPass.end(ctx.vkd, cmdBuffer);
+        }
+    }
+
     {
         copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(),
                           tcu::IVec2(fbExtent.x(), fbExtent.y()), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -493,12 +630,10 @@ tcu::TestStatus InputAttributeOffsetInstance::iterate(void)
     submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
     invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
 
-    // Check color buffer.
     auto &log            = m_context.getTestContext().getLog();
     const auto tcuFormat = mapVkFormat(colorFormat);
     const tcu::ConstPixelBufferAccess resultAccess(tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
     const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f);
-
     if (!tcu::floatThresholdCompare(log, "Result", "", getDefaultColor(), resultAccess, threshold,
                                     tcu::COMPARE_LOG_ON_ERROR))
         return tcu::TestStatus::fail("Unexpected color buffer contents -- check log for details");
@@ -541,7 +676,8 @@ tcu::TestCaseGroup *createInputAttributeOffsetTests(tcu::TestContext &testCtx,
                     for (const auto &dynamic : {false, true})
                     {
                         const TestParams params{
-                            pipelineConstructionType, dataType, offset, strideCase, useMemoryOffset, dynamic,
+                            pipelineConstructionType, dataType, offset, strideCase,
+                            useMemoryOffset,          dynamic,  -1,     VK_FORMAT_UNDEFINED,
                         };
                         const auto testName = (dynamic ? "dynamic" : "static");
                         memoryOffsetGrp->addChild(new InputAttributeOffsetCase(testCtx, testName, params));
@@ -557,6 +693,22 @@ tcu::TestCaseGroup *createInputAttributeOffsetTests(tcu::TestContext &testCtx,
         }
 
         mainGroup->addChild(dataTypeGrp.release());
+    }
+
+    {
+        GroupPtr TwoBindsVec4Group(new tcu::TestCaseGroup(testCtx, "two_binds_vec4"));
+        const auto rgba8Size = 4u;
+        for (uint32_t offset = 0u; offset < rgba8Size; ++offset)
+        {
+            const auto offsetGrpName = "offset_" + std::to_string(offset);
+            GroupPtr offsetGrp(new tcu::TestCaseGroup(testCtx, offsetGrpName.c_str()));
+            const TestParams params{
+                pipelineConstructionType, glu::TYPE_FLOAT_VEC4, offset, StrideCase::PACKED, false, true, 0,
+                VK_FORMAT_R8G8B8A8_SNORM}; // dynamic=true, optionalAttributeOffset=0
+            offsetGrp->addChild(new InputAttributeOffsetCase(testCtx, "dynamic", params));
+            TwoBindsVec4Group->addChild(offsetGrp.release());
+        }
+        mainGroup->addChild(TwoBindsVec4Group.release());
     }
 
     return mainGroup.release();

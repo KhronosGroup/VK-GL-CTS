@@ -814,12 +814,18 @@ public:
     {
     }
 
-    virtual ~BufferViewTestCase(void)
-    {
-    }
-    virtual void initPrograms(SourceCollections &programCollection) const;
+    virtual ~BufferViewTestCase(void) = default;
 
-    virtual TestInstance *createInstance(Context &context) const
+    virtual void initPrograms(SourceCollections &programCollection) const override;
+
+    virtual void checkSupport(Context &context) const override
+    {
+        if ((m_bufferViewTestInfo.bufferAllocationKind == ALLOCATION_KIND_DEDICATED) ||
+            (m_bufferViewTestInfo.imageAllocationKind == ALLOCATION_KIND_DEDICATED))
+            context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
+    }
+
+    virtual TestInstance *createInstance(Context &context) const override
     {
         return new BufferViewTestInstance(context, m_bufferViewTestInfo);
     }
@@ -924,8 +930,9 @@ void BufferViewAllFormatsTestInstance::checkTexelBufferSupport(Context &context,
 #ifndef CTS_USES_VULKANSC
     if (testCase.bindUsage != VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM)
     {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance5"))
-            TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance5 not supported");
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance5") &&
+            !context.isDeviceFunctionalitySupported("VK_KHR_extended_flags"))
+            TCU_THROW(NotSupportedError, "Extensions VK_KHR_maintenance5 and VK_KHR_extended_flags not supported");
     }
 #endif
 }

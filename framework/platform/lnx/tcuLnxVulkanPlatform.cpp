@@ -234,7 +234,22 @@ private:
 struct VulkanWindowHeadless : public vk::wsi::Window
 {
 public:
-    void resize(const UVec2 &)
+    void setVisible(bool visible) override
+    {
+        DE_UNREF(visible);
+    }
+
+    bool setForeground(void) override
+    {
+        return true;
+    }
+
+    void setMinimized(bool minimized) override
+    {
+        DE_UNREF(minimized);
+    }
+
+    void resize(const UVec2 &) override
     {
     }
 };
@@ -322,9 +337,13 @@ public:
                                                          deviceDrmProperties.primaryMinor);
 
         if (!drmNode)
+        {
+            libDrm.freeDevices(drmDevices, numDrmDevices);
             TCU_THROW(NotSupportedError, "No DRM node.");
+        }
 
         m_fdPtr = libDrm.openFd(drmNode).move();
+        libDrm.freeDevices(drmDevices, numDrmDevices);
         if (!m_fdPtr)
             TCU_THROW(NotSupportedError, "Could not open DRM.");
         int fd = *m_fdPtr;

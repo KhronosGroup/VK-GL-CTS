@@ -160,18 +160,17 @@ struct TestDeviceFeatures
 
 struct DeviceHelper
 {
-    Move<VkDevice> device;
-    de::MovePtr<DeviceDriver> vkd;
+    const InstanceWrapper instance;
+    DeviceWrapper device;
+    const DeviceInterface *vkd;
     uint32_t queueFamilyIndex;
     VkQueue queue;
-    de::MovePtr<SimpleAllocator> allocator;
+    vk::Allocator *allocator;
 
-    DeviceHelper(Context &context)
+    DeviceHelper(Context &context) : instance(context)
     {
-        const auto &vkp           = context.getPlatformInterface();
-        const auto &vki           = context.getInstanceInterface();
-        const auto instance       = context.getInstance();
-        const auto physicalDevice = context.getPhysicalDevice();
+        const auto &vki           = instance.getDriver();
+        const auto physicalDevice = instance.getPhysicalDevice();
         const auto queuePriority  = 1.0f;
 
         // Queue index first.
@@ -221,12 +220,10 @@ struct DeviceHelper
         };
 
         // Create custom device and related objects.
-        device    = createCustomDevice(vkp, instance, vki, physicalDevice, &createInfo);
-        vkd       = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion(),
-                                                               context.getTestContext().getCommandLine()));
+        device    = instance.createCustomDevice(physicalDevice, &createInfo);
+        vkd       = &device.getDriver();
         queue     = getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
-        allocator = de::MovePtr<SimpleAllocator>(
-            new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
+        allocator = &device.getAllocator();
     }
 };
 
@@ -394,13 +391,13 @@ TestInstance *RayTracingTestCase::createInstance(Context &context) const
 
 de::MovePtr<BufferWithMemory> RayTracingBuildTestInstance::runTest(DeviceHelper &deviceHelper)
 {
-    const InstanceInterface &vki            = m_context.getInstanceInterface();
-    const VkPhysicalDevice physicalDevice   = m_context.getPhysicalDevice();
-    const DeviceDriver &vkd                 = *deviceHelper.vkd;
+    const InstanceInterface &vki            = deviceHelper.device.getInstanceDriver();
+    const VkPhysicalDevice physicalDevice   = deviceHelper.device.getPhysicalDevice();
+    const DeviceInterface &vkd              = *deviceHelper.vkd;
     const VkDevice device                   = *deviceHelper.device;
     const uint32_t queueFamilyIndex         = deviceHelper.queueFamilyIndex;
     const VkQueue queue                     = deviceHelper.queue;
-    SimpleAllocator &allocator              = *deviceHelper.allocator;
+    vk::Allocator &allocator                = *deviceHelper.allocator;
     const VkFormat format                   = VK_FORMAT_R32_UINT;
     const uint32_t pixelCount               = m_data.width * m_data.height;
     const uint32_t shaderGroupHandleSize    = getShaderGroupSize(vki, physicalDevice);

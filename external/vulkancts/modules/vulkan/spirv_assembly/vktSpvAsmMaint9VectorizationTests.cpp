@@ -282,8 +282,12 @@ protected:
 void M9V_Case::checkSupport(Context &context) const
 {
     // We use some SPIR-V 1.6 features, so we depend on Vulkan 1.3.
+#ifndef CTS_USES_VULKANSC
     if (context.getUsedApiVersion() < VK_API_VERSION_1_3)
         TCU_THROW(NotSupportedError, "Vulkan 1.3 required");
+#else
+    TCU_THROW(NotSupportedError, "Vulkan 1.3 functionality required");
+#endif
 
     // Requires maintenance 9 for the bitwise ops.
     if (m_params.requiresMaint9())

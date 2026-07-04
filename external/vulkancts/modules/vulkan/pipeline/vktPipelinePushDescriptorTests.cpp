@@ -125,11 +125,12 @@ const char *innerCString(const string &str)
     return str.c_str();
 }
 
-Move<VkDevice> createDeviceWithPushDescriptor(const Context &context, const PlatformInterface &vkp, VkInstance instance,
-                                              const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                              const uint32_t queueFamilyIndex, const TestParams &params,
-                                              std::vector<std::string> &enabledExtensions)
+static CustomDevice createDeviceWithPushDescriptor(const Context &context, const InstanceWrapper &instance,
+                                                   VkPhysicalDevice physicalDevice, const uint32_t queueFamilyIndex,
+                                                   const TestParams &params,
+                                                   std::vector<std::string> &enabledExtensions)
 {
+    const auto &vki = instance.getDriver();
 
     const float queuePriority               = 1.0f;
     const VkDeviceQueueCreateInfo queueInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -205,7 +206,7 @@ Move<VkDevice> createDeviceWithPushDescriptor(const Context &context, const Plat
     for (const auto &enabledExt : requiredExtensions)
         enabledExtensions.push_back(enabledExt);
 
-    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, nullptr);
+    return instance.createCustomDevice(physicalDevice, &deviceParams);
 }
 
 vector<Vertex4RGBA> createQuads(uint32_t numQuads, float size)
@@ -275,15 +276,15 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const CustomInstance m_instance;
-    const InstanceDriver &m_vki;
+    const InstanceWrapper m_instance;
+    const InstanceInterface &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
     std::vector<std::string> m_deviceEnabledExtensions;
-    const Unique<VkDevice> m_device;
-    const DeviceDriver m_vkd;
+    const DeviceWrapper m_device;
+    const DeviceInterface &m_vkd;
     const VkQueue m_queue;
-    SimpleAllocator m_allocator;
+    vk::Allocator &m_allocator;
     const tcu::UVec2 m_renderSize;
     const VkFormat m_colorFormat;
     Move<VkImage> m_colorImage;
@@ -313,13 +314,13 @@ PushDescriptorBufferGraphicsTestInstance::PushDescriptorBufferGraphicsTestInstan
     , m_vkp(context.getPlatformInterface())
     , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
-    , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+    , m_physicalDevice(m_instance.getPhysicalDevice())
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
-                                              params, m_deviceEnabledExtensions))
-    , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
+    , m_device(createDeviceWithPushDescriptor(context, m_instance, m_physicalDevice, m_queueFamilyIndex, params,
+                                              m_deviceEnabledExtensions))
+    , m_vkd(m_device.getDriver())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
-    , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
+    , m_allocator(m_device.getAllocator())
     , m_renderSize(32, 32)
     , m_colorFormat(VK_FORMAT_R8G8B8A8_UNORM)
     , m_graphicsPipeline(m_vki, m_vkd, m_physicalDevice, *m_device, m_deviceEnabledExtensions,
@@ -743,15 +744,15 @@ private:
     const bool m_commands2;
 
     const PlatformInterface &m_vkp;
-    const CustomInstance m_instance;
-    const InstanceDriver &m_vki;
+    const InstanceWrapper m_instance;
+    const InstanceInterface &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
     std::vector<std::string> m_deviceEnabledExtensions;
-    const Unique<VkDevice> m_device;
-    const DeviceDriver m_vkd;
+    const DeviceWrapper m_device;
+    const DeviceInterface &m_vkd;
     const VkQueue m_queue;
-    SimpleAllocator m_allocator;
+    vk::Allocator &m_allocator;
 };
 
 PushDescriptorIncrementalUpdatesComputeTestInstance::PushDescriptorIncrementalUpdatesComputeTestInstance(
@@ -762,13 +763,13 @@ PushDescriptorIncrementalUpdatesComputeTestInstance::PushDescriptorIncrementalUp
     , m_vkp(context.getPlatformInterface())
     , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
-    , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+    , m_physicalDevice(m_instance.getPhysicalDevice())
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
-                                              params, m_deviceEnabledExtensions))
-    , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
+    , m_device(createDeviceWithPushDescriptor(context, m_instance, m_physicalDevice, m_queueFamilyIndex, params,
+                                              m_deviceEnabledExtensions))
+    , m_vkd(m_device.getDriver())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
-    , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
+    , m_allocator(m_device.getAllocator())
 {
 }
 
@@ -975,33 +976,33 @@ tcu::TestStatus PushDescriptorIncrementalUpdatesComputeTestInstance::iterate(voi
 
     VkDescriptorUpdateTemplateEntry updateEntries[2] = {
         {
-            0u,                                // uint32_t			dstBinding;
-            0u,                                // uint32_t			dstArrayElement;
-            1u,                                // uint32_t			descriptorCount;
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // VkDescriptorType	descriptorType;
-            0u,                                // size_t			offset;
-            sizeof(VkDescriptorBufferInfo)     // size_t			stride;
+            0u,                                // uint32_t dstBinding;
+            0u,                                // uint32_t dstArrayElement;
+            1u,                                // uint32_t descriptorCount;
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // VkDescriptorType descriptorType;
+            0u,                                // size_t offset;
+            sizeof(VkDescriptorBufferInfo)     // size_t stride;
         },
         {
-            1u,                                // uint32_t			dstBinding;
-            0u,                                // uint32_t			dstArrayElement;
-            1u,                                // uint32_t			descriptorCount;
-            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // VkDescriptorType	descriptorType;
-            sizeof(VkDescriptorBufferInfo),    // size_t			offset;
-            sizeof(VkDescriptorBufferInfo)     // size_t			stride;
+            1u,                                // uint32_t dstBinding;
+            0u,                                // uint32_t dstArrayElement;
+            1u,                                // uint32_t descriptorCount;
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // VkDescriptorType descriptorType;
+            sizeof(VkDescriptorBufferInfo),    // size_t offset;
+            sizeof(VkDescriptorBufferInfo)     // size_t stride;
         },
     };
     VkDescriptorUpdateTemplateCreateInfo templateCreateInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO, // VkStructureType							sType;
-        nullptr,                                                  // const void*								pNext;
-        (VkDescriptorUpdateTemplateCreateFlags)0u,                // VkDescriptorUpdateTemplateCreateFlags	flags;
-        2u,                                                       // uint32_t								    descriptorUpdateEntryCount;
-        updateEntries, // const VkDescriptorUpdateTemplateEntry*	pDescriptorUpdateEntries;
-        VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS, // VkDescriptorUpdateTemplateType			templateType;
-        *descriptorSetLayout,                                // VkDescriptorSetLayout					descriptorSetLayout;
-        VK_PIPELINE_BIND_POINT_COMPUTE,                      // VkPipelineBindPoint						pipelineBindPoint;
-        *pipelineLayout,                                     // VkPipelineLayout						    pipelineLayout;
-        0u                                                   // uint32_t								    set;
+        VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                                  // const void* pNext;
+        (VkDescriptorUpdateTemplateCreateFlags)0u,                // VkDescriptorUpdateTemplateCreateFlags flags;
+        2u,                                                       // uint32_t     descriptorUpdateEntryCount;
+        updateEntries, // const VkDescriptorUpdateTemplateEntry* pDescriptorUpdateEntries;
+        VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS, // VkDescriptorUpdateTemplateType templateType;
+        *descriptorSetLayout,                                // VkDescriptorSetLayout descriptorSetLayout;
+        VK_PIPELINE_BIND_POINT_COMPUTE,                      // VkPipelineBindPoint pipelineBindPoint;
+        *pipelineLayout,                                     // VkPipelineLayout     pipelineLayout;
+        0u                                                   // uint32_t     set;
     };
     const auto descriptorUpdateTemplate1 = createDescriptorUpdateTemplate(m_vkd, *m_device, &templateCreateInfo);
     templateCreateInfo.descriptorUpdateEntryCount = 1u;
@@ -1022,12 +1023,12 @@ tcu::TestStatus PushDescriptorIncrementalUpdatesComputeTestInstance::iterate(voi
                 ssboInfo1,
             };
             VkPushDescriptorSetWithTemplateInfo pushDescriptorSetWithTemplateInfo = {
-                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO, // VkStructureType				sType;
-                nullptr,                                                  // const void*					pNext;
-                *descriptorUpdateTemplate1, // VkDescriptorUpdateTemplate	descriptorUpdateTemplate;
-                *pipelineLayout,            // VkPipelineLayout			    layout;
-                0u,                         // uint32_t					    set;
-                data                        // const void*					pData;
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO, // VkStructureType sType;
+                nullptr,                                                  // const void* pNext;
+                *descriptorUpdateTemplate1, // VkDescriptorUpdateTemplate descriptorUpdateTemplate;
+                *pipelineLayout,            // VkPipelineLayout     layout;
+                0u,                         // uint32_t     set;
+                data                        // const void* pData;
             };
             const VkPushDescriptorSetWithTemplateInfo *templateInfoPtr = &pushDescriptorSetWithTemplateInfo;
             m_vkd.cmdPushDescriptorSetWithTemplate2(*cmdBuffer, templateInfoPtr);
@@ -1035,13 +1036,13 @@ tcu::TestStatus PushDescriptorIncrementalUpdatesComputeTestInstance::iterate(voi
         else
         {
             VkPushDescriptorSetInfo pushDescriptorSetInfo = {
-                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO, // VkStructureType				sType;
-                nullptr,                                    // const void*					pNext;
-                VK_SHADER_STAGE_COMPUTE_BIT,                // VkShaderStageFlags			stageFlags;
-                *pipelineLayout,                            // VkPipelineLayout			    layout;
-                0u,                                         // uint32_t					    set;
-                2u,                                         // uint32_t					    descriptorWriteCount;
-                descriptorWrites                            // const VkWriteDescriptorSet*	pDescriptorWrites;
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO, // VkStructureType sType;
+                nullptr,                                    // const void* pNext;
+                VK_SHADER_STAGE_COMPUTE_BIT,                // VkShaderStageFlags stageFlags;
+                *pipelineLayout,                            // VkPipelineLayout     layout;
+                0u,                                         // uint32_t     set;
+                2u,                                         // uint32_t     descriptorWriteCount;
+                descriptorWrites                            // const VkWriteDescriptorSet* pDescriptorWrites;
             };
             m_vkd.cmdPushDescriptorSet2(*cmdBuffer, &pushDescriptorSetInfo);
         }
@@ -1073,12 +1074,12 @@ tcu::TestStatus PushDescriptorIncrementalUpdatesComputeTestInstance::iterate(voi
                 ssboInfo2,
             };
             VkPushDescriptorSetWithTemplateInfo pushDescriptorSetWithTemplateInfo = {
-                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO, // VkStructureType				sType;
-                nullptr,                                                  // const void*					pNext;
-                *descriptorUpdateTemplate2, // VkDescriptorUpdateTemplate	descriptorUpdateTemplate;
-                *pipelineLayout,            // VkPipelineLayout			    layout;
-                0u,                         // uint32_t					    set;
-                data                        // const void*					pData;
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO, // VkStructureType sType;
+                nullptr,                                                  // const void* pNext;
+                *descriptorUpdateTemplate2, // VkDescriptorUpdateTemplate descriptorUpdateTemplate;
+                *pipelineLayout,            // VkPipelineLayout     layout;
+                0u,                         // uint32_t     set;
+                data                        // const void* pData;
             };
             const VkPushDescriptorSetWithTemplateInfo *templateInfoPtr = &pushDescriptorSetWithTemplateInfo;
             m_vkd.cmdPushDescriptorSetWithTemplate2(*cmdBuffer, templateInfoPtr);
@@ -1086,13 +1087,13 @@ tcu::TestStatus PushDescriptorIncrementalUpdatesComputeTestInstance::iterate(voi
         else
         {
             VkPushDescriptorSetInfo pushDescriptorSetInfo = {
-                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO, // VkStructureType				sType;
-                nullptr,                                    // const void*					pNext;
-                VK_SHADER_STAGE_COMPUTE_BIT,                // VkShaderStageFlags			stageFlags;
-                *pipelineLayout,                            // VkPipelineLayout			    layout;
-                0u,                                         // uint32_t					    set;
-                1u,                                         // uint32_t					    descriptorWriteCount;
-                &descriptorWrite2                           // const VkWriteDescriptorSet*	pDescriptorWrites;
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO, // VkStructureType sType;
+                nullptr,                                    // const void* pNext;
+                VK_SHADER_STAGE_COMPUTE_BIT,                // VkShaderStageFlags stageFlags;
+                *pipelineLayout,                            // VkPipelineLayout     layout;
+                0u,                                         // uint32_t     set;
+                1u,                                         // uint32_t     descriptorWriteCount;
+                &descriptorWrite2                           // const VkWriteDescriptorSet* pDescriptorWrites;
             };
             m_vkd.cmdPushDescriptorSet2(*cmdBuffer, &pushDescriptorSetInfo);
         }
@@ -1116,8 +1117,8 @@ tcu::TestStatus PushDescriptorIncrementalUpdatesComputeTestInstance::iterate(voi
     m_vkd.cmdDispatch(*cmdBuffer, bufferSize, 1, 1);
 
     VkMemoryBarrier memoryBarrier = initVulkanStructure();
-    memoryBarrier.srcAccessMask   = VK_ACCESS_SHADER_WRITE_BIT;
-    memoryBarrier.dstAccessMask   = VK_ACCESS_SHADER_WRITE_BIT;
+    memoryBarrier.srcAccessMask   = (VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
+    memoryBarrier.dstAccessMask   = (VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
 
     m_vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u,
                              1u, &memoryBarrier, 0u, nullptr, 0u, nullptr);
@@ -1127,25 +1128,25 @@ tcu::TestStatus PushDescriptorIncrementalUpdatesComputeTestInstance::iterate(voi
         if (m_withTemplate)
         {
             VkPushDescriptorSetWithTemplateInfo pushDescriptorSetWithTemplateInfo = {
-                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO, // VkStructureType				sType;
-                nullptr,                                                  // const void*					pNext;
-                *descriptorUpdateTemplate3, // VkDescriptorUpdateTemplate	descriptorUpdateTemplate;
-                *pipelineLayout,            // VkPipelineLayout			    layout;
-                0u,                         // uint32_t					    set;
-                &uboInfo2                   // const void*					pData;
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO, // VkStructureType sType;
+                nullptr,                                                  // const void* pNext;
+                *descriptorUpdateTemplate3, // VkDescriptorUpdateTemplate descriptorUpdateTemplate;
+                *pipelineLayout,            // VkPipelineLayout     layout;
+                0u,                         // uint32_t     set;
+                &uboInfo2                   // const void* pData;
             };
             m_vkd.cmdPushDescriptorSetWithTemplate2(*cmdBuffer, &pushDescriptorSetWithTemplateInfo);
         }
         else
         {
             VkPushDescriptorSetInfo pushDescriptorSetInfo = {
-                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO, // VkStructureType				sType;
-                nullptr,                                    // const void*					pNext;
-                VK_SHADER_STAGE_COMPUTE_BIT,                // VkShaderStageFlags			stageFlags;
-                *pipelineLayout,                            // VkPipelineLayout			    layout;
-                0u,                                         // uint32_t					    set;
-                1u,                                         // uint32_t					    descriptorWriteCount;
-                &descriptorWrite3                           // const VkWriteDescriptorSet*	pDescriptorWrites;
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO, // VkStructureType sType;
+                nullptr,                                    // const void* pNext;
+                VK_SHADER_STAGE_COMPUTE_BIT,                // VkShaderStageFlags stageFlags;
+                *pipelineLayout,                            // VkPipelineLayout     layout;
+                0u,                                         // uint32_t     set;
+                1u,                                         // uint32_t     descriptorWriteCount;
+                &descriptorWrite3                           // const VkWriteDescriptorSet* pDescriptorWrites;
             };
             m_vkd.cmdPushDescriptorSet2(*cmdBuffer, &pushDescriptorSetInfo);
         }
@@ -1257,16 +1258,16 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const CustomInstance m_instance;
-    const InstanceDriver &m_vki;
+    const InstanceWrapper m_instance;
+    const InstanceInterface &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
     std::vector<std::string> m_deviceEnabledExtensions;
-    const Unique<VkDevice> m_device;
-    const DeviceDriver m_vkd;
+    const DeviceWrapper m_device;
+    const DeviceInterface &m_vkd;
     const VkQueue m_queue;
     const VkDeviceSize m_itemSize;
-    SimpleAllocator m_allocator;
+    vk::Allocator &m_allocator;
     Move<VkShaderModule> m_computeShaderModule;
     vector<VkBufferSp> m_buffers;
     vector<AllocationSp> m_bufferAllocs;
@@ -1287,14 +1288,14 @@ PushDescriptorBufferComputeTestInstance::PushDescriptorBufferComputeTestInstance
     , m_vkp(context.getPlatformInterface())
     , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
-    , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+    , m_physicalDevice(m_instance.getPhysicalDevice())
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
-                                              params, m_deviceEnabledExtensions))
-    , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
+    , m_device(createDeviceWithPushDescriptor(context, m_instance, m_physicalDevice, m_queueFamilyIndex, params,
+                                              m_deviceEnabledExtensions))
+    , m_vkd(m_device.getDriver())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_itemSize(calcItemSize(m_vki, m_physicalDevice))
-    , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
+    , m_allocator(m_device.getAllocator())
 {
 }
 
@@ -1605,15 +1606,15 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const CustomInstance m_instance;
-    const InstanceDriver &m_vki;
+    const InstanceWrapper m_instance;
+    const InstanceInterface &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
     std::vector<std::string> m_deviceEnabledExtensions;
-    const Unique<VkDevice> m_device;
-    const DeviceDriver m_vkd;
+    const DeviceWrapper m_device;
+    const DeviceInterface &m_vkd;
     const VkQueue m_queue;
-    SimpleAllocator m_allocator;
+    vk::Allocator &m_allocator;
     const tcu::UVec2 m_renderSize;
     const tcu::UVec2 m_textureSize;
     const VkFormat m_colorFormat;
@@ -1647,13 +1648,13 @@ PushDescriptorImageGraphicsTestInstance::PushDescriptorImageGraphicsTestInstance
     , m_vkp(context.getPlatformInterface())
     , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
-    , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+    , m_physicalDevice(m_instance.getPhysicalDevice())
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
-                                              params, m_deviceEnabledExtensions))
-    , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
+    , m_device(createDeviceWithPushDescriptor(context, m_instance, m_physicalDevice, m_queueFamilyIndex, params,
+                                              m_deviceEnabledExtensions))
+    , m_vkd(m_device.getDriver())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
-    , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
+    , m_allocator(m_device.getAllocator())
     , m_renderSize(32, 32)
     , m_textureSize(32, 32)
     , m_colorFormat(VK_FORMAT_R8G8B8A8_UNORM)
@@ -2450,17 +2451,17 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const CustomInstance m_instance;
-    const InstanceDriver &m_vki;
+    const InstanceWrapper m_instance;
+    const InstanceInterface &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
     std::vector<std::string> m_deviceEnabledExtensions;
-    const Unique<VkDevice> m_device;
-    const DeviceDriver m_vkd;
+    const DeviceWrapper m_device;
+    const DeviceInterface &m_vkd;
     const VkQueue m_queue;
     const VkDeviceSize m_itemSize;
     const VkDeviceSize m_blockSize;
-    SimpleAllocator m_allocator;
+    vk::Allocator &m_allocator;
     const tcu::UVec2 m_textureSize;
     const VkFormat m_colorFormat;
     Move<VkShaderModule> m_computeShaderModule;
@@ -2486,16 +2487,16 @@ PushDescriptorImageComputeTestInstance::PushDescriptorImageComputeTestInstance(C
     , m_vkp(context.getPlatformInterface())
     , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
-    , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+    , m_physicalDevice(m_instance.getPhysicalDevice())
     , m_queueFamilyIndex(
           findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
-                                              params, m_deviceEnabledExtensions))
-    , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
+    , m_device(createDeviceWithPushDescriptor(context, m_instance, m_physicalDevice, m_queueFamilyIndex, params,
+                                              m_deviceEnabledExtensions))
+    , m_vkd(m_device.getDriver())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_itemSize(calcItemSize(m_vki, m_physicalDevice, 2u))
     , m_blockSize(kSizeofVec4 * 2u)
-    , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
+    , m_allocator(m_device.getAllocator())
     , m_textureSize(32, 32)
     , m_colorFormat(VK_FORMAT_R8G8B8A8_UNORM)
     , m_outputBufferBinding(0)
@@ -3253,15 +3254,15 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const CustomInstance m_instance;
-    const InstanceDriver &m_vki;
+    const InstanceWrapper m_instance;
+    const InstanceInterface &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
     std::vector<std::string> m_deviceEnabledExtensions;
-    const Unique<VkDevice> m_device;
-    const DeviceDriver m_vkd;
+    const DeviceWrapper m_device;
+    const DeviceInterface &m_vkd;
     const VkQueue m_queue;
-    SimpleAllocator m_allocator;
+    vk::Allocator &m_allocator;
     const tcu::UVec2 m_renderSize;
     const VkFormat m_colorFormat;
     Move<VkImage> m_colorImage;
@@ -3293,13 +3294,13 @@ PushDescriptorTexelBufferGraphicsTestInstance::PushDescriptorTexelBufferGraphics
     , m_vkp(context.getPlatformInterface())
     , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
-    , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+    , m_physicalDevice(m_instance.getPhysicalDevice())
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
-                                              params, m_deviceEnabledExtensions))
-    , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
+    , m_device(createDeviceWithPushDescriptor(context, m_instance, m_physicalDevice, m_queueFamilyIndex, params,
+                                              m_deviceEnabledExtensions))
+    , m_vkd(m_device.getDriver())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
-    , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
+    , m_allocator(m_device.getAllocator())
     , m_renderSize(32, 32)
     , m_colorFormat(VK_FORMAT_R8G8B8A8_UNORM)
     , m_bufferFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
@@ -3744,16 +3745,16 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const CustomInstance m_instance;
-    const InstanceDriver &m_vki;
+    const InstanceWrapper m_instance;
+    const InstanceInterface &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
     std::vector<std::string> m_deviceEnabledExtensions;
-    const Unique<VkDevice> m_device;
-    const DeviceDriver m_vkd;
+    const DeviceWrapper m_device;
+    const DeviceInterface &m_vkd;
     const VkQueue m_queue;
     const VkDeviceSize m_itemSize;
-    SimpleAllocator m_allocator;
+    vk::Allocator &m_allocator;
     vector<VkBufferSp> m_buffers;
     vector<AllocationSp> m_bufferAllocs;
     vector<VkBufferViewSp> m_bufferViews;
@@ -3775,14 +3776,14 @@ PushDescriptorTexelBufferComputeTestInstance::PushDescriptorTexelBufferComputeTe
     , m_vkp(context.getPlatformInterface())
     , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
-    , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+    , m_physicalDevice(m_instance.getPhysicalDevice())
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
-                                              params, m_deviceEnabledExtensions))
-    , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
+    , m_device(createDeviceWithPushDescriptor(context, m_instance, m_physicalDevice, m_queueFamilyIndex, params,
+                                              m_deviceEnabledExtensions))
+    , m_vkd(m_device.getDriver())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_itemSize(calcItemSize(m_vki, m_physicalDevice))
-    , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
+    , m_allocator(m_device.getAllocator())
     , m_bufferFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
 {
 }
@@ -4124,15 +4125,15 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const CustomInstance m_instance;
-    const InstanceDriver &m_vki;
+    const InstanceWrapper m_instance;
+    const InstanceInterface &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
     std::vector<std::string> m_deviceEnabledExtensions;
-    const Unique<VkDevice> m_device;
-    const DeviceDriver m_vkd;
+    const DeviceWrapper m_device;
+    const DeviceInterface &m_vkd;
     const VkQueue m_queue;
-    SimpleAllocator m_allocator;
+    vk::Allocator &m_allocator;
     const tcu::UVec2 m_renderSize;
     const tcu::UVec2 m_textureSize;
     const VkFormat m_colorFormat;
@@ -4163,13 +4164,13 @@ PushDescriptorInputAttachmentGraphicsTestInstance::PushDescriptorInputAttachment
     , m_vkp(context.getPlatformInterface())
     , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
-    , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+    , m_physicalDevice(m_instance.getPhysicalDevice())
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
-                                              params, m_deviceEnabledExtensions))
-    , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
+    , m_device(createDeviceWithPushDescriptor(context, m_instance, m_physicalDevice, m_queueFamilyIndex, params,
+                                              m_deviceEnabledExtensions))
+    , m_vkd(m_device.getDriver())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
-    , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
+    , m_allocator(m_device.getAllocator())
     , m_renderSize(32, 32)
     , m_textureSize(32, 32)
     , m_colorFormat(VK_FORMAT_R8G8B8A8_UNORM)

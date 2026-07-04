@@ -383,8 +383,6 @@ tcu::TestStatus zeroPoolSizeCount(Context &context)
 #ifdef CTS_USES_VULKANSC
 tcu::TestStatus noResetDescriptorPoolTest(Context &context, const ResetDescriptorPoolTestParams params)
 {
-    const DeviceInterface &vkd = context.getDeviceInterface();
-
     const uint32_t numDescriptorSetsPerIter = 100;
     const float queuePriority               = 1.0f;
 
@@ -439,11 +437,9 @@ tcu::TestStatus noResetDescriptorPoolTest(Context &context, const ResetDescripto
 
     for (uint32_t i = 0; i < params.m_numIterations; ++i)
     {
-        vkt::CustomInstance instance = vkt::createCustomInstanceFromContext(context);
-        VkPhysicalDevice physicalDevice =
-            chooseDevice(instance.getDriver(), instance, context.getTestContext().getCommandLine());
-        Move<VkDevice> device = createCustomDevice(context.getPlatformInterface(), instance, instance.getDriver(),
-                                                   physicalDevice, &deviceCreateInfo);
+        const auto instance  = InstanceWrapper(vkt::createCustomInstanceFromContext(context));
+        DeviceWrapper device = instance.createCustomDevice(&deviceCreateInfo);
+        const auto &vkd      = device.getDriver();
 
         VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
         VK_CHECK(vkd.createDescriptorPool(*device, &descriptorPoolInfo, nullptr, &descriptorPool));

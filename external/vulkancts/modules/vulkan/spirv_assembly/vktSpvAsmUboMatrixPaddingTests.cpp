@@ -249,8 +249,6 @@ void addGraphicsUboMatrixPaddingTest(tcu::TestCaseGroup *group)
 
         "                         OpFunctionEnd\n";
 
-    resources.inputs.back().setDescriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-
     vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = true;
     vulkanFeatures.coreFeatures.fragmentStoresAndAtomics       = false;
     createTestForStage(VK_SHADER_STAGE_VERTEX_BIT, "mat2x2_vert", defaultColors, defaultColors, fragments,

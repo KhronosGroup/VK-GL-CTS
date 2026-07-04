@@ -2237,6 +2237,34 @@ struct VkDataGraphPipelineSessionMemoryRequirementsInfoARM
 	uint32_t								objectIndex;
 };
 
+struct VkDebugMarkerMarkerInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	const char*		pMarkerName;
+	float			color[4];
+};
+
+struct VkDebugMarkerObjectNameInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkDebugReportObjectTypeEXT	objectType;
+	uint64_t					object;
+	const char*					pObjectName;
+};
+
+struct VkDebugMarkerObjectTagInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkDebugReportObjectTypeEXT	objectType;
+	uint64_t					object;
+	uint64_t					tagName;
+	size_t						tagSize;
+	const void*					pTag;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;
@@ -3430,6 +3458,15 @@ struct VkFormatProperties3
 };
 typedef VkFormatProperties3 VkFormatProperties3KHR;
 
+struct VkFormatProperties4KHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkFormatFeatureFlags4KHR	linearTilingFeatures;
+	VkFormatFeatureFlags4KHR	optimalTilingFeatures;
+	VkFormatFeatureFlags4KHR	bufferFeatures;
+};
+
 struct VkFragmentShadingRateAttachmentInfoKHR
 {
 	VkStructureType					sType;
@@ -3600,6 +3637,15 @@ struct VkGeometryNV
 	VkGeometryFlagsKHR	flags;
 };
 
+struct VkGpaDeviceClockModeInfoAMD
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkGpaDeviceClockModeAMD	clockMode;
+	float					memoryClockRatioToPeak;
+	float					engineClockRatioToPeak;
+};
+
 struct VkAccelerationStructureInfoNV
 {
 	VkStructureType							sType;
@@ -3611,11 +3657,14 @@ struct VkAccelerationStructureInfoNV
 	const VkGeometryNV*						pGeometries;
 };
 
-struct VkGraphicsPipelineLibraryCreateInfoEXT
+struct VkGpaDeviceGetClockInfoAMD
 {
-	VkStructureType						sType;
-	const void*							pNext;
-	VkGraphicsPipelineLibraryFlagsEXT	flags;
+	VkStructureType	sType;
+	void*			pNext;
+	float			memoryClockRatioToPeak;
+	float			engineClockRatioToPeak;
+	uint32_t		memoryClockFrequency;
+	uint32_t		engineClockFrequency;
 };
 
 struct VkAccelerationStructureCreateInfoNV
@@ -3624,6 +3673,58 @@ struct VkAccelerationStructureCreateInfoNV
 	const void*						pNext;
 	VkDeviceSize					compactedSize;
 	VkAccelerationStructureInfoNV	info;
+};
+
+struct VkGpaPerfBlockPropertiesAMD
+{
+	VkGpaPerfBlockAMD					blockType;
+	VkGpaPerfBlockPropertiesFlagsAMD	flags;
+	uint32_t							instanceCount;
+	uint32_t							maxEventID;
+	uint32_t							maxGlobalOnlyCounters;
+	uint32_t							maxGlobalSharedCounters;
+	uint32_t							maxStreamingCounters;
+};
+
+struct VkGpaPerfCounterAMD
+{
+	VkGpaPerfBlockAMD	blockType;
+	uint32_t			blockInstance;
+	uint32_t			eventID;
+};
+
+struct VkGpaSampleBeginInfoAMD
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkGpaSampleTypeAMD			sampleType;
+	VkBool32					sampleInternalOperations;
+	VkBool32					cacheFlushOnCounterCollection;
+	VkBool32					sqShaderMaskEnable;
+	VkGpaSqShaderStageFlagsAMD	sqShaderMask;
+	uint32_t					perfCounterCount;
+	const VkGpaPerfCounterAMD*	pPerfCounters;
+	uint32_t					streamingPerfTraceSampleInterval;
+	VkDeviceSize				perfCounterDeviceMemoryLimit;
+	VkBool32					sqThreadTraceEnable;
+	VkBool32					sqThreadTraceSuppressInstructionTokens;
+	VkDeviceSize				sqThreadTraceDeviceMemoryLimit;
+	VkPipelineStageFlags		timingPreSample;
+	VkPipelineStageFlags		timingPostSample;
+};
+
+struct VkGpaSessionCreateInfoAMD
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkGpaSessionAMD	secondaryCopySource;
+};
+
+struct VkGraphicsPipelineLibraryCreateInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkGraphicsPipelineLibraryFlagsEXT	flags;
 };
 
 struct VkHeadlessSurfaceCreateInfoEXT
@@ -3684,6 +3785,13 @@ struct VkImageCompressionPropertiesEXT
 	void*								pNext;
 	VkImageCompressionFlagsEXT			imageCompressionFlags;
 	VkImageCompressionFixedRateFlagsEXT	imageCompressionFixedRateFlags;
+};
+
+struct VkImageCreateFlags2CreateInfoKHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkImageCreateFlags2KHR	flags;
 };
 
 struct VkImageCreateInfo
@@ -3795,6 +3903,13 @@ struct VkImageSparseMemoryRequirementsInfo2
 };
 typedef VkImageSparseMemoryRequirementsInfo2 VkImageSparseMemoryRequirementsInfo2KHR;
 
+struct VkImageStencilUsage2CreateInfoKHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkImageUsageFlags2KHR	stencilUsage;
+};
+
 struct VkImageStencilUsageCreateInfo
 {
 	VkStructureType		sType;
@@ -3894,6 +4009,13 @@ struct VkImageSwapchainCreateInfoKHR
 	VkSwapchainKHR	swapchain;
 };
 
+struct VkImageUsageFlags2CreateInfoKHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkImageUsageFlags2KHR	usage;
+};
+
 struct VkImageViewASTCDecodeModeEXT
 {
 	VkStructureType	sType;
@@ -3941,6 +4063,13 @@ struct VkImageViewSlicedCreateInfoEXT
 	const void*		pNext;
 	uint32_t		sliceOffset;
 	uint32_t		sliceCount;
+};
+
+struct VkImageViewUsage2CreateInfoKHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkImageUsageFlags2KHR	usage;
 };
 
 struct VkImageViewUsageCreateInfo
@@ -4570,12 +4699,13 @@ struct VkMicromapCreateInfoEXT
 	VkDeviceAddress				deviceAddress;
 };
 
-struct VkMicromapTriangleEXT
+struct VkMicromapTriangleKHR
 {
 	uint32_t	dataOffset;
 	uint16_t	subdivisionLevel;
 	uint16_t	format;
 };
+typedef VkMicromapTriangleKHR VkMicromapTriangleEXT;
 
 struct VkMicromapUsageEXT
 {
@@ -5892,6 +6022,13 @@ struct VkPhysicalDeviceExtendedDynamicStateFeaturesEXT
 	VkBool32		extendedDynamicState;
 };
 
+struct VkPhysicalDeviceExtendedFlagsFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		extendedFlags;
+};
+
 struct VkPhysicalDeviceExternalBufferInfo
 {
 	VkStructureType						sType;
@@ -6215,6 +6352,34 @@ struct VkPhysicalDeviceGlobalPriorityQueryFeatures
 };
 typedef VkPhysicalDeviceGlobalPriorityQueryFeatures VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT;
 typedef VkPhysicalDeviceGlobalPriorityQueryFeatures VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR;
+
+struct VkPhysicalDeviceGpaFeaturesAMD
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		perfCounters;
+	VkBool32		streamingPerfCounters;
+	VkBool32		sqThreadTracing;
+	VkBool32		clockModes;
+};
+
+struct VkPhysicalDeviceGpaProperties2AMD
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		revisionId;
+};
+
+struct VkPhysicalDeviceGpaPropertiesAMD
+{
+	VkStructureType							sType;
+	void*									pNext;
+	VkPhysicalDeviceGpaPropertiesFlagsAMD	flags;
+	VkDeviceSize							maxSqttSeBufferSize;
+	uint32_t								shaderEngineCount;
+	uint32_t								perfBlockCount;
+	VkGpaPerfBlockPropertiesAMD*			pPerfBlocks;
+};
 
 struct VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT
 {
@@ -6892,6 +7057,13 @@ struct VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT
 	VkBool32		multisampledRenderToSingleSampled;
 };
 
+struct VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		multisampledRenderToSwapchain;
+};
+
 struct VkPhysicalDeviceMultiviewFeatures
 {
 	VkStructureType	sType;
@@ -7176,6 +7348,13 @@ struct VkPhysicalDevicePresentWaitFeaturesKHR
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		presentWait;
+};
+
+struct VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		primitiveRestartIndex;
 };
 
 struct VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT
@@ -7731,6 +7910,20 @@ struct VkPhysicalDeviceShaderSMBuiltinsPropertiesNV
 	void*			pNext;
 	uint32_t		shaderSMCount;
 	uint32_t		shaderWarpsPerSM;
+};
+
+struct VkPhysicalDeviceShaderSplitBarrierFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderSplitBarrier;
+};
+
+struct VkPhysicalDeviceShaderSplitBarrierPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		splitBarrierReservedSharedMemory;
 };
 
 struct VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures
@@ -10046,6 +10239,13 @@ struct VkPipelineViewportShadingRateImageStateCreateInfoNV
 	const VkShadingRatePaletteNV*	pShadingRatePalettes;
 };
 
+struct VkSharedPresentSurfaceCapabilities2KHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkImageUsageFlags2KHR	sharedPresentSupportedUsageFlags;
+};
+
 struct VkSharedPresentSurfaceCapabilitiesKHR
 {
 	VkStructureType		sType;
@@ -10710,6 +10910,13 @@ struct VkSwapchainCreateInfoKHR
 	VkPresentModeKHR				presentMode;
 	VkBool32						clipped;
 	VkSwapchainKHR					oldSwapchain;
+};
+
+struct VkSwapchainFlagsSurfaceCapabilitiesEXT
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkSwapchainCreateFlagsKHR	swapchainSupportedFlags;
 };
 
 struct VkSwapchainLatencyCreateInfoNV
@@ -12665,6 +12872,9 @@ typedef VkMemoryToImageCopy VkMemoryToImageCopyEXT;
 
 
 typedef VkMemoryUnmapInfo VkMemoryUnmapInfoKHR;
+
+
+typedef VkMicromapTriangleKHR VkMicromapTriangleEXT;
 
 
 typedef VkMutableDescriptorTypeCreateInfoEXT VkMutableDescriptorTypeCreateInfoVALVE;

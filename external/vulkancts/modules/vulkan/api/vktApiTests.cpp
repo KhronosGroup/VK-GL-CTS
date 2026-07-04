@@ -65,6 +65,8 @@
 #include "vktApiPhysicalDeviceFormatPropertiesMaint5Tests.hpp"
 #include "vktApiFragmentShaderOutputTests.hpp"
 #include "vktApiPerformanceCountersByRegionTests.hpp"
+#include "vktApiGPAInterfaceTests.hpp"
+#include "vktApiArrayTests.hpp"
 #endif // CTS_USES_VULKANSC
 
 namespace vkt
@@ -138,6 +140,8 @@ void createApiTests(tcu::TestCaseGroup *apiTests)
     apiTests->addChild(createExtensionDuplicatesTests(testCtx));
 #ifndef CTS_USES_VULKANSC
     apiTests->addChild(createRenderPassPerformanceCountersByRegionApiTests(testCtx));
+    apiTests->addChild(createGpaInterfaceTests(testCtx));
+    apiTests->addChild(createArrayTests(testCtx));
 #endif
 }
 

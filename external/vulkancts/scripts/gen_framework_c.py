@@ -46,7 +46,7 @@ VULKAN_H = { "vulkan" : [    os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video"
                                 os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_vp9std.h"),
                                 os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_vp9std_decode.h"),
                                 os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vulkan", "vulkan_core.h") ],
-                       "vulkansc" : [ os.path.join(os.path.dirname(__file__), "src", "vulkan_sc_core.h") ] }
+                       "vulkansc" : [ os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vulkan", "vulkan_sc_core.h") ] }
 DEFAULT_OUTPUT_DIR = { "vulkan" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkan"),
                        "vulkansc" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
 
@@ -126,6 +126,19 @@ if __name__ == "__main__":
     vkTargets = ["vulkan_core.h"]
     for target in vkTargets:
         execute([pythonExecutable, "../scripts/genvk.py", "-o", "../include/vulkan", target])
+
+    if args.api == "vulkansc":
+        scTargets = ["vulkan_sc_core.h"]
+        prev_vulkan_api = os.environ.get("VULKAN_API")
+        os.environ["VULKAN_API"] = "vulkansc"
+        try:
+            for target in scTargets:
+                execute([pythonExecutable, "../scripts/genvk.py", "-o", "../include/vulkan", target])
+        finally:
+            if prev_vulkan_api is None:
+                del os.environ["VULKAN_API"]
+            else:
+                os.environ["VULKAN_API"] = prev_vulkan_api
 
     videoDir = "../include/vk_video"
     if (not os.path.isdir(videoDir)):

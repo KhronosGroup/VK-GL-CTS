@@ -54,6 +54,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <memory>
 
 using namespace vk;
 using de::MovePtr;
@@ -858,7 +859,7 @@ public:
 
     tcu::TestStatus iterate(void)
     {
-        const InstanceInterface &instance = m_context.getInstanceInterface();
+        const InstanceInterface &instance = getInstanceInterface();
         const DeviceInterface &vk         = getDeviceInterface();
         MovePtr<SparseAllocation> sparseAllocation;
         Move<VkBuffer> sparseBuffer;
@@ -1181,7 +1182,7 @@ public:
 
     void createResources(uint32_t memoryDeviceIndex)
     {
-        const InstanceInterface &instance            = m_context.getInstanceInterface();
+        const InstanceInterface &instance            = getInstanceInterface();
         const DeviceInterface &vk                    = getDeviceInterface();
         VkBufferCreateInfo referenceBufferCreateInfo = getSparseBufferCreateInfo(m_bufferUsage);
 
@@ -2075,16 +2076,23 @@ void checkSupport(Context &context, const TestParams testParams)
 //     verify mapped memory also still contains those non-zero values.
 //     verify copied values were zeros in the non-mapped write.
 //
+enum class ResourceAccessType
+{
+    DEVICE_ADDRESS  = 0,
+    DESCRIPTOR_SET  = 1,
+    DESCRIPTOR_HEAP = 2,
+};
 class NullAddressInstance : public vkt::TestInstance
 {
 public:
     struct Params
     {
-
-        bool useLocalInvocationIndex; // This may affect the implementation/compiler.
-        bool useDescriptor;           // Instead of a buffer address for the read buffer.
-        bool mapFirst;                // Do an initial map, and unmap later.
-        bool write;                   // Check writes. If false, check reads.
+        VkDescriptorType descriptorType; // Storage buffer, uniform buffer, or storage/uniform texel buffer.
+        ResourceAccessType accessType;   // Device addresses with push constants, classic sets or heaps.
+        bool useLocalInvocationIndex;    // This may affect the implementation/compiler.
+        bool mapFirst;                   // Do an initial map, and unmap later.
+        bool write;                      // Check writes. If false, check reads.
+        bool captureReplay;              // Run the test in capture-replay mode for the sparse buffer.
 
         uint32_t getValueCount() const
         {
@@ -2102,6 +2110,16 @@ public:
         {
             return (useLocalInvocationIndex ? 1u : getValueCount());
         }
+
+        VkDescriptorType getSrcBufferDescType() const
+        {
+            return (write ? VK_DESCRIPTOR_TYPE_STORAGE_BUFFER : descriptorType);
+        }
+
+        VkDescriptorType getDstBufferDescType() const
+        {
+            return (write ? descriptorType : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        }
     };
 
     NullAddressInstance(Context &context, const Params &params) : vkt::TestInstance(context), m_params(params)
@@ -2112,6 +2130,20 @@ public:
     tcu::TestStatus iterate(void) override;
 
 protected:
+    struct ReplayParams
+    {
+        bool haveParams; // If false, we're going to capture addresses here.
+        uint64_t bufferOpaqueAddress;
+        uint64_t memoryOpaqueAddress;
+        VkDeviceAddress bufferDeviceAddress;
+
+        ReplayParams() : haveParams(false), bufferOpaqueAddress(0), memoryOpaqueAddress(0), bufferDeviceAddress(0)
+        {
+        }
+    };
+
+    tcu::TestStatus runTest(ReplayParams &replayParams);
+
     const Params m_params;
 };
 
@@ -2142,8 +2174,17 @@ void NullAddressCase::checkSupport(Context &context) const
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_BUFFER);
 
-    if (!m_params.useDescriptor)
+    if (m_params.accessType == ResourceAccessType::DEVICE_ADDRESS)
         context.requireDeviceFunctionality("VK_KHR_buffer_device_address");
+    else if (m_params.accessType == ResourceAccessType::DESCRIPTOR_HEAP)
+        context.requireDeviceFunctionality("VK_EXT_descriptor_heap");
+
+    if (m_params.captureReplay)
+    {
+        const auto &bdaFeatures = context.getBufferDeviceAddressFeatures();
+        if (!bdaFeatures.bufferDeviceAddressCaptureReplay)
+            TCU_THROW(NotSupportedError, "bufferDeviceAddressCaptureReplay not supported");
+    }
 
     const auto &sparseProperties = context.getDeviceProperties().sparseProperties;
     if (!sparseProperties.residencyNonResidentStrict)
@@ -2151,36 +2192,85 @@ void NullAddressCase::checkSupport(Context &context) const
 
     if (m_params.mapFirst)
         context.getSparseQueue(); // Throws if not supported.
+
+    if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+        context.requireDeviceFunctionality("VK_KHR_uniform_buffer_standard_layout");
 }
 
 void NullAddressCase::initPrograms(vk::SourceCollections &dst) const
 {
-    const auto wgSize     = m_params.getWorkGroupSize();
-    const auto arrayIndex = (m_params.useLocalInvocationIndex ? "gl_LocalInvocationIndex" : "gl_WorkGroupID.x");
+    const auto wgSize          = m_params.getWorkGroupSize();
+    const auto srcDescType     = m_params.getSrcBufferDescType();
+    const auto dstDescType     = m_params.getDstBufferDescType();
+    const auto valueCount      = m_params.getValueCount();
+    const auto arrayIndex      = (m_params.useLocalInvocationIndex ? "gl_LocalInvocationIndex" : "gl_WorkGroupID.x");
+    const bool isUniformBuffer = (m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    const auto srcValueCount   = (isUniformBuffer ? std::to_string(valueCount) : "");
+
+    uint32_t buildOptionFlags = 0u;
+    if (isUniformBuffer)
+        buildOptionFlags |= ShaderBuildOptions::FLAG_ALLOW_STD430_UBOS;
+
+    ShaderBuildOptions buildOptions(dst.usedVulkanVersion, SPIRV_VERSION_1_0, buildOptionFlags);
 
     std::ostringstream bufferDecls;
-    std::string srcBufferExpr;
-    std::string dstBufferExpr;
+    std::string srcValueExpr;
+    std::string dstStoreExpr;
 
-    if (m_params.useDescriptor)
+    if (m_params.accessType != ResourceAccessType::DEVICE_ADDRESS)
     {
-        bufferDecls << "layout (set=0, binding=0, std430) readonly buffer SrcBufferBlock {\n"
-                    << "    uint values[];\n"
-                    << "} srcBuffer;\n"
-                    << "\n"
-                    << "layout (set=0, binding=1, std430) writeonly buffer DstBufferBlock {\n"
-                    << "    uint values[];\n"
-                    << "} dstBuffer;\n"
-                    << "\n";
-        srcBufferExpr = "srcBuffer";
-        dstBufferExpr = "dstBuffer";
+        // For descriptor sets and heaps, we will use the classic set+binding interface.
+
+        // Source buffer.
+        if (srcDescType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || srcDescType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+        {
+            const auto srcBufferGLSLType =
+                ((srcDescType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) ? "uniform" : "readonly buffer");
+
+            bufferDecls << "layout (set=0, binding=0, std430) " << srcBufferGLSLType << " SrcBufferBlock {\n"
+                        << "    uint values[" << srcValueCount << "];\n"
+                        << "} srcBuffer;\n"
+                        << "\n";
+            srcValueExpr = "srcBuffer.values[idx]";
+        }
+        else if (srcDescType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER)
+        {
+            bufferDecls << "layout (set=0, binding=0) uniform utextureBuffer srcBuffer;\n";
+            srcValueExpr = "texelFetch(srcBuffer, int(idx)).x";
+        }
+        else if (srcDescType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)
+        {
+            bufferDecls << "layout (set=0, binding=0, r32ui) uniform uimageBuffer srcBuffer;\n";
+            srcValueExpr = "imageLoad(srcBuffer, int(idx)).x";
+        }
+        else
+            DE_ASSERT(false);
+
+        // Destination buffer.
+        if (dstDescType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+        {
+            bufferDecls << "layout (set=0, binding=1, std430) writeonly buffer DstBufferBlock {\n"
+                        << "    uint values[];\n"
+                        << "} dstBuffer;\n"
+                        << "\n";
+            dstStoreExpr = "dstBuffer.values[idx] = " + srcValueExpr;
+        }
+        else if (dstDescType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)
+        {
+            bufferDecls << "layout (set=0, binding=1, r32ui) uniform uimageBuffer dstBuffer;\n";
+            dstStoreExpr = "imageStore(dstBuffer, int(idx), ivec4(" + srcValueExpr + ", 0u, 0u, 0u))";
+        }
+        else
+            DE_ASSERT(false);
     }
     else
     {
+        DE_ASSERT(m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
         bufferDecls << "layout (buffer_reference) buffer srcBuffer;\n"
                     << "layout (buffer_reference, buffer_reference_align=4, std430) readonly buffer srcBuffer\n"
                     << "{\n"
-                    << "    uint values[];\n"
+                    << "    uint values[" << srcValueCount << "];\n"
                     << "};\n"
                     << "\n"
                     << "layout (buffer_reference) buffer dstBuffer;\n"
@@ -2195,22 +2285,23 @@ void NullAddressCase::initPrograms(vk::SourceCollections &dst) const
                     << "    uvec2 dstBufferAddress;\n"
                     << "} pc;\n"
                     << "\n";
-        srcBufferExpr = "srcBuffer(pc.srcBufferAddress)";
-        dstBufferExpr = "dstBuffer(pc.dstBufferAddress)";
+        srcValueExpr = "srcBuffer(pc.srcBufferAddress).values[idx]";
+        dstStoreExpr = "dstBuffer(pc.dstBufferAddress).values[idx] = " + srcValueExpr;
     }
 
     std::ostringstream comp;
     comp << "#version 450\n"
          << "#extension GL_EXT_buffer_reference2 : require\n"
          << "#extension GL_EXT_buffer_reference_uvec2 : require\n"
+         << "#extension GL_EXT_scalar_block_layout : require\n"
          << "layout (local_size_x=" << wgSize << ", local_size_y=1, local_size_z=1) in;\n"
          << "\n"
          << bufferDecls.str() << "void main()\n"
          << "{\n"
          << "    const uint idx = " << arrayIndex << ";\n"
-         << "    " << dstBufferExpr << ".values[idx] = " << srcBufferExpr << ".values[idx];\n"
+         << "    " << dstStoreExpr << ";\n"
          << "}\n";
-    dst.glslSources.add("comp") << glu::ComputeSource(comp.str());
+    dst.glslSources.add("comp") << glu::ComputeSource(comp.str()) << buildOptions;
 }
 
 VkDeviceAddress getBDA(const DeviceInterface &vkd, VkDevice device, VkBuffer buffer)
@@ -2261,8 +2352,28 @@ void copyMemoryToVector(const DeviceInterface &vkd, VkDevice device, std::vector
 
 tcu::TestStatus NullAddressInstance::iterate()
 {
-    const auto ctx        = m_context.getContextCommonData();
-    const auto valueCount = m_params.getValueCount();
+    ReplayParams replayParams;
+    const auto firstStatus = runTest(replayParams);
+    if (!m_params.captureReplay || firstStatus.getCode() != QP_TEST_RESULT_PASS)
+        return firstStatus;
+
+    // There is capture replay and the first run passed.
+    replayParams.haveParams = true;
+    return runTest(replayParams);
+}
+
+tcu::TestStatus NullAddressInstance::runTest(ReplayParams &replayParams)
+{
+    // Decide first if we capture, replay or none.
+    const bool capture = (m_params.captureReplay && !replayParams.haveParams);
+    const bool replay  = (m_params.captureReplay && replayParams.haveParams);
+
+    if (m_params.captureReplay)
+        DE_ASSERT(m_params.accessType != ResourceAccessType::DESCRIPTOR_SET);
+
+    const auto ctx             = m_context.getContextCommonData();
+    const auto valueCount      = m_params.getValueCount();
+    const bool isUniformBuffer = (m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 
     // Staging contents.
     std::vector<uint32_t> zeroValues(valueCount, 0u);
@@ -2271,27 +2382,40 @@ tcu::TestStatus NullAddressInstance::iterate()
     const auto bufferSize = static_cast<VkDeviceSize>(de::dataSize(zeroValues));
 
     // Regular buffer data will be copied to or from.
-    VkShaderStageFlags extraFlag = 0u;
-    if (!m_params.useDescriptor)
-        extraFlag |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
-
-    const auto regularBufferUsage = (extraFlag | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                                     VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    const auto regularBufferInfo  = vk::makeBufferCreateInfo(bufferSize, regularBufferUsage);
-    BufferWithMemory regularBuffer(ctx.vkd, ctx.device, ctx.allocator, regularBufferInfo,
-                                   MemoryRequirement::DeviceAddress);
-
-    // Staging host-visible buffer to be used with the regular one.
-    const auto stagingBufferUsage = (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    const auto stagingBufferInfo  = vk::makeBufferCreateInfo(bufferSize, stagingBufferUsage);
-    BufferWithMemory stagingBuffer(ctx.vkd, ctx.device, ctx.allocator, stagingBufferInfo, HostIntent::RW);
+    VkShaderStageFlags extraUsageFlag = 0u;
+    if (m_params.accessType != ResourceAccessType::DESCRIPTOR_SET)
+        extraUsageFlag |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
     // Sparse buffer.
-    const auto sparseBufferUsage = (extraFlag | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-    const auto sparseBufferFlags = (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT);
+    VkBufferUsageFlags sparseBufferMainUsage = 0u;
+    if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+        sparseBufferMainUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    else if (isUniformBuffer)
+        sparseBufferMainUsage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    else if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)
+        sparseBufferMainUsage |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+    else if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER)
+        sparseBufferMainUsage |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+    else
+        DE_ASSERT(false);
+
+    const auto sparseBufferUsage = (extraUsageFlag | sparseBufferMainUsage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    const auto sparseBufferExtraCreateFlag = static_cast<VkBufferCreateFlags>(
+        m_params.captureReplay ? VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT : 0);
+    const auto sparseBufferFlags =
+        (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT | sparseBufferExtraCreateFlag);
+
+    VkBufferOpaqueCaptureAddressCreateInfo bufferOpaqueCaptureAddressCreateInfo = initVulkanStructure();
+    const VkBufferOpaqueCaptureAddressCreateInfo *sparseBufferCreateInfoPNext   = nullptr;
+    if (replay)
+    {
+        bufferOpaqueCaptureAddressCreateInfo.opaqueCaptureAddress = replayParams.bufferOpaqueAddress;
+        sparseBufferCreateInfoPNext                               = &bufferOpaqueCaptureAddressCreateInfo;
+    }
+
     const VkBufferCreateInfo sparseBufferInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        nullptr,
+        sparseBufferCreateInfoPNext,
         sparseBufferFlags,
         bufferSize, // Same size.
         sparseBufferUsage,
@@ -2301,18 +2425,66 @@ tcu::TestStatus NullAddressInstance::iterate()
     };
     const auto sparseBuffer = createBuffer(ctx.vkd, ctx.device, &sparseBufferInfo);
 
+    if (capture)
+    {
+        const VkBufferDeviceAddressInfo info{
+            VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+            nullptr,
+            *sparseBuffer,
+        };
+        replayParams.bufferOpaqueAddress = ctx.vkd.getBufferOpaqueCaptureAddress(ctx.device, &info);
+    }
+
+    if (m_params.captureReplay)
+    {
+        const auto sparseBDA = getBDA(ctx.vkd, ctx.device, *sparseBuffer);
+        if (capture)
+            replayParams.bufferDeviceAddress = sparseBDA;
+        else if (replay)
+        {
+            if (sparseBDA != replayParams.bufferDeviceAddress)
+                TCU_FAIL("Sparse buffer replay device address does not match capture device address");
+        }
+    }
+
+    const auto regularBufferUsage = (extraUsageFlag | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto regularBufferInfo  = vk::makeBufferCreateInfo(bufferSize, regularBufferUsage);
+    BufferWithMemory regularBuffer(ctx.vkd, ctx.device, ctx.allocator, regularBufferInfo,
+                                   MemoryRequirement::DeviceAddress);
+
+    // Staging host-visible buffer to be used with the regular one.
+    const auto stagingBufferUsage = (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto stagingBufferInfo  = vk::makeBufferCreateInfo(bufferSize, stagingBufferUsage);
+    BufferWithMemory stagingBuffer(ctx.vkd, ctx.device, ctx.allocator, stagingBufferInfo, HostIntent::RW);
+
     // Decide which buffer will be the source and the destination in the shader, depending on test parameters.
     const auto srcBuffer = (m_params.write ? *regularBuffer : *sparseBuffer);
     const auto dstBuffer = (m_params.write ? *sparseBuffer : *regularBuffer);
 
     const auto shaderStages = VK_SHADER_STAGE_COMPUTE_BIT;
-    const auto descType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER; // If not using push constants.
+    const auto srcDescType  = m_params.getSrcBufferDescType();
+    const auto dstDescType  = m_params.getDstBufferDescType();
+
+    const auto isTexelBuffer = [](VkDescriptorType descType)
+    {
+        return (descType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER ||
+                descType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER);
+    };
+
+    Move<VkBufferView> srcBufferView;
+    Move<VkBufferView> dstBufferView;
+
+    if (isTexelBuffer(srcDescType))
+        srcBufferView = makeBufferView(ctx.vkd, ctx.device, srcBuffer, VK_FORMAT_R32_UINT, 0ull, bufferSize);
+    if (isTexelBuffer(dstDescType))
+        dstBufferView = makeBufferView(ctx.vkd, ctx.device, dstBuffer, VK_FORMAT_R32_UINT, 0ull, bufferSize);
 
     // Pipeline, passing buffer addresses as push constants, or using descriptors.
     VkDeviceAddress srcBufferAddress = 0ull;
     VkDeviceAddress dstBufferAddress = 0ull;
 
-    if (!m_params.useDescriptor)
+    if (m_params.accessType != ResourceAccessType::DESCRIPTOR_SET)
     {
         srcBufferAddress = getBDA(ctx.vkd, ctx.device, srcBuffer);
         dstBufferAddress = getBDA(ctx.vkd, ctx.device, dstBuffer);
@@ -2332,29 +2504,189 @@ tcu::TestStatus NullAddressInstance::iterate()
     };
     const auto pcSize     = DE_SIZEOF32(pcValue);
     const auto pcRange    = makePushConstantRange(shaderStages, 0u, pcSize);
-    const auto pcRangePtr = (m_params.useDescriptor ? nullptr : &pcRange);
+    const auto pcRangePtr = (m_params.accessType == ResourceAccessType::DEVICE_ADDRESS ? &pcRange : nullptr);
 
     Move<VkDescriptorSetLayout> setLayout;
+    Move<VkPipelineLayout> pipelineLayout;
+    std::unique_ptr<BufferWithMemory> heapBuffer;
+    VkDeviceAddress heapBufferAddress = 0ull;
+    VkDeviceSize heapBufferSize       = 0ull;
+    std::unique_ptr<BufferWithMemory> heapStagingBuffer;
+    VkDeviceSize heapStride = 0ull;
+    std::vector<VkDescriptorSetAndBindingMappingEXT> heapMappings;
 
-    if (m_params.useDescriptor)
+    if (m_params.accessType == ResourceAccessType::DESCRIPTOR_SET)
     {
         DescriptorSetLayoutBuilder setLayoutBuilder;
-        setLayoutBuilder.addSingleBinding(descType, shaderStages);
-        setLayoutBuilder.addSingleBinding(descType, shaderStages);
+        setLayoutBuilder.addSingleBinding(srcDescType, shaderStages);
+        setLayoutBuilder.addSingleBinding(dstDescType, shaderStages);
         setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
     }
 
-    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout, pcRangePtr);
-    const auto compModule     = createShaderModule(ctx.vkd, ctx.device, m_context.getBinaryCollection().get("comp"));
-    const auto pipeline       = makeComputePipeline(ctx.vkd, ctx.device, *pipelineLayout, *compModule);
+    if (m_params.accessType != ResourceAccessType::DESCRIPTOR_HEAP)
+        pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout, pcRangePtr);
+    else
+    {
+        const auto &heapProps       = m_context.getDescriptorHeapPropertiesEXT();
+        const auto descriptorStride = de::lcm(heapProps.bufferDescriptorSize, heapProps.bufferDescriptorAlignment);
+        heapStride                  = (heapProps.minResourceHeapReservedRange != 0 ?
+                                           de::lcm(descriptorStride, heapProps.minResourceHeapReservedRange) :
+                                           descriptorStride);
+        heapBufferSize              = heapStride * 3u; // 2 for the buffers and 1 for the reserved range at the start.
+
+        const auto heapBufferUsage =
+            static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                                            VK_BUFFER_USAGE_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+        const auto heapBufferInfo = makeBufferCreateInfo(heapBufferSize, heapBufferUsage);
+        heapBuffer.reset(
+            new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, heapBufferInfo, MemoryRequirement::DeviceAddress));
+        heapBufferAddress = getBDA(ctx.vkd, ctx.device, heapBuffer->get());
+
+        const auto heapStagingUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+        const auto heapStagingInfo  = makeBufferCreateInfo(heapBufferSize, heapStagingUsage);
+        heapStagingBuffer.reset(
+            new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, heapStagingInfo, HostIntent::W));
+        {
+            VkTexelBufferDescriptorInfoEXT texelBufferInfo = initVulkanStructure();
+            texelBufferInfo.format                         = VK_FORMAT_R32_UINT;
+
+            VkDeviceAddressRangeEXT deviceAddressRange;
+            VkHostAddressRangeEXT hostAddressRange;
+
+            VkResourceDescriptorInfoEXT srcBufferInfo = initVulkanStructure();
+            VkResourceDescriptorInfoEXT dstBufferInfo = initVulkanStructure();
+            srcBufferInfo.type                        = srcDescType;
+            dstBufferInfo.type                        = dstDescType;
+
+            std::vector<uint8_t> srcBufferDescData(static_cast<size_t>(heapStride), 0);
+            std::vector<uint8_t> dstBufferDescData(static_cast<size_t>(heapStride), 0);
+
+            if (srcDescType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER ||
+                srcDescType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER)
+            {
+                texelBufferInfo.addressRange.address = srcBufferAddress;
+                texelBufferInfo.addressRange.size    = bufferSize;
+                srcBufferInfo.data.pTexelBuffer      = &texelBufferInfo;
+            }
+            else if (srcDescType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+                     srcDescType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+            {
+                deviceAddressRange.address       = srcBufferAddress;
+                deviceAddressRange.size          = bufferSize;
+                srcBufferInfo.data.pAddressRange = &deviceAddressRange;
+            }
+            else
+                DE_ASSERT(false);
+
+            hostAddressRange.address = de::dataOrNull(srcBufferDescData);
+            hostAddressRange.size    = de::dataSize(srcBufferDescData);
+
+            ctx.vkd.writeResourceDescriptorsEXT(ctx.device, 1u, &srcBufferInfo, &hostAddressRange);
+
+            if (dstDescType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER ||
+                dstDescType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER)
+            {
+                texelBufferInfo.addressRange.address = dstBufferAddress;
+                texelBufferInfo.addressRange.size    = bufferSize;
+                dstBufferInfo.data.pTexelBuffer      = &texelBufferInfo;
+            }
+            else if (dstDescType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+                     dstDescType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+            {
+                deviceAddressRange.address       = dstBufferAddress;
+                deviceAddressRange.size          = bufferSize;
+                dstBufferInfo.data.pAddressRange = &deviceAddressRange;
+            }
+            else
+                DE_ASSERT(false);
+
+            hostAddressRange.address = de::dataOrNull(dstBufferDescData);
+            hostAddressRange.size    = de::dataSize(dstBufferDescData);
+
+            ctx.vkd.writeResourceDescriptorsEXT(ctx.device, 1u, &dstBufferInfo, &hostAddressRange);
+
+            auto &heapStagingBufferAlloc = heapStagingBuffer->getAllocation();
+            char *heapStagingBufferData  = reinterpret_cast<char *>(heapStagingBufferAlloc.getHostPtr());
+            memcpy(heapStagingBufferData + heapStride * 1u, de::dataOrNull(srcBufferDescData),
+                   de::dataSize(srcBufferDescData));
+            memcpy(heapStagingBufferData + heapStride * 2u, de::dataOrNull(dstBufferDescData),
+                   de::dataSize(dstBufferDescData));
+            flushAlloc(ctx.vkd, ctx.device, heapStagingBufferAlloc);
+        }
+    }
+
+    if (m_params.accessType == ResourceAccessType::DESCRIPTOR_HEAP)
+    {
+        VkDescriptorMappingSourceDataEXT data;
+        memset(&data, 0, sizeof(data));
+
+        const auto stride32 = static_cast<uint32_t>(heapStride);
+
+        data.constantOffset.heapOffset      = stride32;
+        data.constantOffset.heapArrayStride = stride32;
+
+        heapMappings.push_back(VkDescriptorSetAndBindingMappingEXT{
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_AND_BINDING_MAPPING_EXT,
+            nullptr,
+            0u,
+            0u,
+            1u,
+            VK_SPIRV_RESOURCE_TYPE_ALL_EXT,
+            VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT,
+            data,
+        });
+
+        heapMappings.push_back(heapMappings.back());
+        heapMappings.back().firstBinding = 1u;
+        heapMappings.back().sourceData.constantOffset.heapOffset += stride32;
+    }
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT heapMappingInfo  = initVulkanStructure();
+    const VkShaderDescriptorSetAndBindingMappingInfoEXT *pMappings = nullptr;
+
+    if (!heapMappings.empty())
+    {
+        heapMappingInfo.mappingCount = de::sizeU32(heapMappings);
+        heapMappingInfo.pMappings    = de::dataOrNull(heapMappings);
+        pMappings                    = &heapMappingInfo;
+    }
+
+    VkPipelineCreateFlags2CreateInfo pipelineFlags2{
+        VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO,
+        nullptr,
+        0u,
+    };
+    const VkPipelineCreateFlags2CreateInfo *pipelinePNext = nullptr;
+
+    if (m_params.accessType == ResourceAccessType::DESCRIPTOR_HEAP)
+    {
+        pipelineFlags2.flags |= VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+        pipelinePNext = &pipelineFlags2;
+    }
+
+    const auto compModule = createShaderModule(ctx.vkd, ctx.device, m_context.getBinaryCollection().get("comp"));
+
+    VkPipelineShaderStageCreateInfo shaderStageInfo = initVulkanStructure();
+    shaderStageInfo.stage                           = VK_SHADER_STAGE_COMPUTE_BIT;
+    shaderStageInfo.module                          = *compModule;
+    shaderStageInfo.pName                           = "main";
+    shaderStageInfo.pNext                           = pMappings;
+
+    VkComputePipelineCreateInfo pipelineCreateInfo = initVulkanStructure();
+    pipelineCreateInfo.stage                       = shaderStageInfo;
+    pipelineCreateInfo.layout                      = *pipelineLayout;
+    pipelineCreateInfo.pNext                       = pipelinePNext;
+
+    const auto pipeline = createComputePipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &pipelineCreateInfo);
 
     Move<VkDescriptorPool> descriptorPool;
     Move<VkDescriptorSet> descriptorSet;
 
-    if (m_params.useDescriptor)
+    if (m_params.accessType == ResourceAccessType::DESCRIPTOR_SET)
     {
         DescriptorPoolBuilder poolBuilder;
-        poolBuilder.addType(descType, 2u);
+        poolBuilder.addType(srcDescType);
+        poolBuilder.addType(dstDescType);
         descriptorPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
         descriptorSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
 
@@ -2363,8 +2695,14 @@ tcu::TestStatus NullAddressInstance::iterate()
 
         DescriptorSetUpdateBuilder updateBuilder;
         const auto binding = DescriptorSetUpdateBuilder::Location::binding;
-        updateBuilder.writeSingle(*descriptorSet, binding(0u), descType, &srcBufferDescInfo);
-        updateBuilder.writeSingle(*descriptorSet, binding(1u), descType, &dstBufferDescInfo);
+        if (isTexelBuffer(srcDescType))
+            updateBuilder.writeSingle(*descriptorSet, binding(0u), srcDescType, &srcBufferView.get());
+        else
+            updateBuilder.writeSingle(*descriptorSet, binding(0u), srcDescType, &srcBufferDescInfo);
+        if (isTexelBuffer(dstDescType))
+            updateBuilder.writeSingle(*descriptorSet, binding(1u), dstDescType, &dstBufferView.get());
+        else
+            updateBuilder.writeSingle(*descriptorSet, binding(1u), dstDescType, &dstBufferDescInfo);
         updateBuilder.update(ctx.vkd, ctx.device);
     }
 
@@ -2379,6 +2717,28 @@ tcu::TestStatus NullAddressInstance::iterate()
         const auto cmdBuffer    = *cmdBufferPtr;
 
         beginCommandBuffer(ctx.vkd, cmdBuffer);
+        if (m_params.accessType == ResourceAccessType::DESCRIPTOR_HEAP)
+        {
+            // Copy data to the heap buffer.
+            const auto copyRegion = makeBufferCopy(0ull, 0ull, heapBufferSize);
+            ctx.vkd.cmdCopyBuffer(cmdBuffer, heapStagingBuffer->get(), heapBuffer->get(), 1u, &copyRegion);
+
+            // Sync with further uses.
+            const auto srcStage  = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+            const auto srcAccess = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+            const auto dstStage  = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+            const auto dstAccess = VK_ACCESS_2_RESOURCE_HEAP_READ_BIT_EXT;
+
+            const VkMemoryBarrier2 barrier{
+                VK_STRUCTURE_TYPE_MEMORY_BARRIER_2, nullptr, srcStage, srcAccess, dstStage, dstAccess,
+            };
+
+            const VkDependencyInfo dependency{
+                VK_STRUCTURE_TYPE_DEPENDENCY_INFO, nullptr, 0u, 1u, &barrier, 0u, nullptr, 0u, nullptr,
+            };
+
+            ctx.vkd.cmdPipelineBarrier2(cmdBuffer, &dependency);
+        }
         {
             // Prepare source or destination buffer with non-zero contents.
             setupBuffer(ctx.vkd, ctx.device, stagingBuffer, regularBufferInit);
@@ -2392,11 +2752,26 @@ tcu::TestStatus NullAddressInstance::iterate()
         {
             const auto wgCount = m_params.getWorkGroupCount();
             ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
-            if (m_params.useDescriptor)
+            if (m_params.accessType == ResourceAccessType::DESCRIPTOR_SET)
+            {
                 ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u,
                                               nullptr);
-            else
+            }
+            else if (m_params.accessType == ResourceAccessType::DEVICE_ADDRESS)
                 ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, shaderStages, 0u, pcSize, &pcValue);
+            else if (m_params.accessType == ResourceAccessType::DESCRIPTOR_HEAP)
+            {
+                const VkBindHeapInfoEXT bindInfo{
+                    VK_STRUCTURE_TYPE_BIND_HEAP_INFO_EXT,
+                    nullptr,
+                    {heapBufferAddress, heapBufferSize},
+                    0ull,
+                    heapStride,
+                };
+                ctx.vkd.cmdBindResourceHeapEXT(cmdBuffer, &bindInfo);
+            }
+            else
+                DE_ASSERT(false);
             ctx.vkd.cmdDispatch(cmdBuffer, wgCount, 1u, 1u);
         }
         {
@@ -2422,8 +2797,32 @@ tcu::TestStatus NullAddressInstance::iterate()
     de::MovePtr<Allocation> sparseMemory;
     if (m_params.mapFirst)
     {
+        VkMemoryAllocateFlags sparseMemoryFlags = 0u;
+        uint64_t memoryOpaqueCaptureAddr        = 0ull;
+
+        if (m_params.accessType != ResourceAccessType::DESCRIPTOR_SET)
+        {
+            sparseMemoryFlags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+            if (m_params.captureReplay)
+            {
+                sparseMemoryFlags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+                if (replay)
+                    memoryOpaqueCaptureAddr = replayParams.memoryOpaqueAddress;
+            }
+        }
+
         const auto memReqs = getBufferMemoryRequirements(ctx.vkd, ctx.device, *sparseBuffer);
-        sparseMemory       = ctx.allocator.allocate(memReqs, HostIntent::RW);
+        sparseMemory = ctx.allocator.allocate(memReqs, HostIntent::RW, sparseMemoryFlags, memoryOpaqueCaptureAddr);
+
+        if (capture)
+        {
+            const VkDeviceMemoryOpaqueCaptureAddressInfo info{
+                VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO,
+                nullptr,
+                sparseMemory->getMemory(),
+            };
+            replayParams.memoryOpaqueAddress = ctx.vkd.getDeviceMemoryOpaqueCaptureAddress(ctx.device, &info);
+        }
 
         VkSparseMemoryBind memoryBind = {
             0ull, memReqs.size, VK_NULL_HANDLE, 0ull, 0u,
@@ -2768,23 +3167,60 @@ void populateTestGroup(tcu::TestCaseGroup *parentGroup)
         auto &testCtx = parentGroup->getTestContext();
         de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 
-        for (const auto useLocalInvocationIndex : {false, true})
-            for (const auto useDescriptors : {false, true})
-                for (const auto mapFirst : {false, true})
-                    for (const auto write : {false, true})
-                    {
-                        const NullAddressInstance::Params params{
-                            useLocalInvocationIndex,
-                            useDescriptors,
-                            mapFirst,
-                            write,
-                        };
-                        const auto testName = std::string("null_address_") + (write ? "write" : "read") +
-                                              (useLocalInvocationIndex ? "_local_inv_idx" : "") +
-                                              (useDescriptors ? "_descriptors" : "") + (mapFirst ? "_map_first" : "");
+        for (const auto descriptorType :
+             {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+              VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER})
+        {
+            const bool isStorageBuffer      = (descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            const bool isUniformBuffer      = (descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            const bool isUniformTexelBuffer = (descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER);
+            const bool isStorageTexelBuffer = (descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER);
+            const bool readOnlyDescriptor   = (isUniformBuffer || isUniformTexelBuffer);
 
-                        miscGroup->addChild(new NullAddressCase(testCtx, testName, params));
-                    }
+            for (const auto useLocalInvocationIndex : {false, true})
+                for (const auto accessType : {ResourceAccessType::DEVICE_ADDRESS, ResourceAccessType::DESCRIPTOR_SET,
+                                              ResourceAccessType::DESCRIPTOR_HEAP})
+                {
+                    if (!(isStorageBuffer || accessType != ResourceAccessType::DEVICE_ADDRESS))
+                        continue;
+
+                    for (const auto mapFirst : {false, true})
+                        for (const auto write : {false, true})
+                            for (const auto captureReplay : {false, true})
+                            {
+                                if (captureReplay && accessType == ResourceAccessType::DESCRIPTOR_SET)
+                                    continue;
+
+                                if (write && readOnlyDescriptor)
+                                    continue;
+
+                                const NullAddressInstance::Params params{
+                                    descriptorType, accessType, useLocalInvocationIndex,
+                                    mapFirst,       write,      captureReplay};
+
+                                std::string accessSuffix;
+                                if (accessType == ResourceAccessType::DESCRIPTOR_SET)
+                                    accessSuffix = "_descriptors";
+                                else if (accessType == ResourceAccessType::DESCRIPTOR_HEAP)
+                                    accessSuffix = "_descriptor_heap";
+
+                                std::string descTypeSuffix;
+                                if (isUniformBuffer)
+                                    descTypeSuffix = "_uniform_buffer";
+                                else if (isUniformTexelBuffer)
+                                    descTypeSuffix = "_uniform_texel_buffer";
+                                else if (isStorageTexelBuffer)
+                                    descTypeSuffix = "_storage_texel_buffer";
+
+                                const auto testName = std::string("null_address_") + (write ? "write" : "read") +
+                                                      (useLocalInvocationIndex ? "_local_inv_idx" : "") + accessSuffix +
+                                                      (mapFirst ? "_map_first" : "") + descTypeSuffix +
+                                                      (captureReplay ? "_capture_replay" : "");
+
+                                miscGroup->addChild(new NullAddressCase(testCtx, testName, params));
+                            }
+                }
+        }
 
         parentGroup->addChild(miscGroup.release());
     }

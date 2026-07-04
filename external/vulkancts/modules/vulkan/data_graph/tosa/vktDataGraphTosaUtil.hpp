@@ -697,10 +697,18 @@ public:
             RESOURCE_TYPE_INPUT, {inFormat, params.tiling, {1, 8, 16, 4}, {}}, 0, 0, 0, nullptr, {}, ""};
         m_resInfo.at(_output) = {
             RESOURCE_TYPE_OUTPUT, {outFormat, params.tiling, {1, 4, 8, 4}, {}}, 1, 0, 1, nullptr, {}, ""};
-        m_resInfo.at(_weights) = {
-            RESOURCE_TYPE_CONSTANT, {weightsFormat, params.tiling, {4, 2, 2, 4}, {}}, 0, 0, 0, nullptr, {}, "weights"};
+        // VUID-VkDataGraphPipelineConstantARM-pNext-09917 tiling member must be VK_TENSOR_TILING_LINEAR_ARM. Hence, constants ignore the test requirements
+        m_resInfo.at(_weights) = {RESOURCE_TYPE_CONSTANT,
+                                  {weightsFormat, VK_TENSOR_TILING_LINEAR_ARM, {4, 2, 2, 4}, {}},
+                                  0,
+                                  0,
+                                  0,
+                                  nullptr,
+                                  {},
+                                  "weights"};
+        // VUID-VkDataGraphPipelineConstantARM-pNext-09917 tiling member must be VK_TENSOR_TILING_LINEAR_ARM. Hence, constants ignore the test requirements
         m_resInfo.at(_bias) = {
-            RESOURCE_TYPE_CONSTANT, {outFormat, params.tiling, {4}, {}}, 0, 0, 1, nullptr, {}, "bias"};
+            RESOURCE_TYPE_CONSTANT, {outFormat, VK_TENSOR_TILING_LINEAR_ARM, {4}, {}}, 0, 0, 1, nullptr, {}, "bias"};
 
         if (params.shuffleBindings)
         {
@@ -945,9 +953,18 @@ public:
             RESOURCE_TYPE_INPUT, {inFormat, params.tiling, {1, 8, 16, 4}, {}}, 0, 0, 0, nullptr, {}, ""};
         m_resInfo.at(_output) = {
             RESOURCE_TYPE_OUTPUT, {outFormat, params.tiling, {1, 2, 4, 4}, {}}, 1, 0, 1, nullptr, {}, ""};
-        m_resInfo.at(_weights) = {
-            RESOURCE_TYPE_CONSTANT, {weightsFormat, params.tiling, {4, 2, 2, 4}, {}}, 0, 0, 0, nullptr, {}, ""};
-        m_resInfo.at(_bias) = {RESOURCE_TYPE_CONSTANT, {outFormat, params.tiling, {4}, {}}, 0, 0, 1, nullptr, {}, ""};
+        // VUID-VkDataGraphPipelineConstantARM-pNext-09917 tiling member must be VK_TENSOR_TILING_LINEAR_ARM. Hence, constants ignore the test requirements
+        m_resInfo.at(_weights) = {RESOURCE_TYPE_CONSTANT,
+                                  {weightsFormat, VK_TENSOR_TILING_LINEAR_ARM, {4, 2, 2, 4}, {}},
+                                  0,
+                                  0,
+                                  0,
+                                  nullptr,
+                                  {},
+                                  ""};
+        // VUID-VkDataGraphPipelineConstantARM-pNext-09917 tiling member must be VK_TENSOR_TILING_LINEAR_ARM. Hence, constants ignore the test requirements
+        m_resInfo.at(_bias) = {
+            RESOURCE_TYPE_CONSTANT, {outFormat, VK_TENSOR_TILING_LINEAR_ARM, {4}, {}}, 0, 0, 1, nullptr, {}, ""};
 
         if (params.shuffleBindings)
         {

@@ -126,17 +126,17 @@ void checkProtectedContextSupport(Context &context, bool useYCbCr, bool useProte
     checkProtectedQueueSupport(context);
 }
 
-uint32_t chooseProtectedMemQueueFamilyIndex(const vk::InstanceDriver &vkd, vk::VkPhysicalDevice physicalDevice,
+uint32_t chooseProtectedMemQueueFamilyIndex(const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
                                             vk::VkSurfaceKHR surface)
 {
     std::vector<vk::VkQueueFamilyProperties> properties;
     uint32_t numFamilies = 0;
 
-    vkd.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numFamilies, nullptr);
+    vki.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numFamilies, nullptr);
     DE_ASSERT(numFamilies > 0);
     properties.resize(numFamilies);
 
-    vkd.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numFamilies, properties.data());
+    vki.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numFamilies, properties.data());
 
     // Get a universal protected queue family index
     vk::VkQueueFlags requiredFlags = vk::VK_QUEUE_GRAPHICS_BIT | vk::VK_QUEUE_COMPUTE_BIT
@@ -149,7 +149,7 @@ uint32_t chooseProtectedMemQueueFamilyIndex(const vk::InstanceDriver &vkd, vk::V
         vk::VkQueueFlags flags = properties[idx].queueFlags;
 
         if (surface != VK_NULL_HANDLE &&
-            vk::wsi::getPhysicalDeviceSurfaceSupport(vkd, physicalDevice, (uint32_t)idx, surface) == VK_FALSE)
+            vk::wsi::getPhysicalDeviceSurfaceSupport(vki, physicalDevice, (uint32_t)idx, surface) == VK_FALSE)
             continue; // Skip the queue family index if it does not support the surface
 
         if ((flags & requiredFlags) == requiredFlags)
@@ -159,16 +159,12 @@ uint32_t chooseProtectedMemQueueFamilyIndex(const vk::InstanceDriver &vkd, vk::V
     TCU_THROW(NotSupportedError, "No matching universal protected queue found");
 }
 
-vk::Move<vk::VkDevice> makeProtectedMemDevice(const vk::PlatformInterface &vkp, vk::VkInstance instance,
-                                              const vk::InstanceDriver &vkd, vk::VkPhysicalDevice physicalDevice,
-                                              const uint32_t queueFamilyIndex, const uint32_t apiVersion,
-                                              const std::vector<std::string> &extraExtensions,
-#ifdef CTS_USES_VULKANSC
-                                              de::SharedPtr<vk::ResourceInterface> resourceInterface,
-#endif // CTS_USES_VULKANSC
-                                              const tcu::CommandLine &cmdLine)
+CustomDevice makeProtectedMemDevice(const InstanceWrapper &instance, vk::VkPhysicalDevice physicalDevice,
+                                    const uint32_t queueFamilyIndex, const uint32_t apiVersion,
+                                    const std::vector<std::string> &extraExtensions)
 {
-    const Extensions supportedExtensions(vk::enumerateDeviceExtensionProperties(vkd, physicalDevice, nullptr));
+    const auto &vki = instance.getDriver();
+    const Extensions supportedExtensions(vk::enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr));
     std::vector<std::string> requiredExtensions;
     std::vector<std::string> extensions = extraExtensions;
 
@@ -210,7 +206,7 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice(const vk::PlatformInterface &vkp, 
         VK_FALSE                                                         // protectedMemory
     };
     vk::VkPhysicalDeviceFeatures2 featuresExt = initVulkanStructure(&protectedFeature);
-    vkd.getPhysicalDeviceFeatures2(physicalDevice, &featuresExt);
+    vki.getPhysicalDeviceFeatures2(physicalDevice, &featuresExt);
 
     const float queuePriorities[]                  = {1.0f};
     const vk::VkDeviceQueueCreateInfo queueInfos[] = {
@@ -222,49 +218,9 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice(const vk::PlatformInterface &vkp, 
 #endif
          queueFamilyIndex, DE_LENGTH_OF_ARRAY(queuePriorities), queuePriorities}};
 
-    void *pNext = &featuresExt;
-#ifdef CTS_USES_VULKANSC
-    VkDeviceObjectReservationCreateInfo memReservationInfo =
-        cmdLine.isSubProcess() ? resourceInterface->getStatMax() : resetDeviceObjectReservationCreateInfo();
-    memReservationInfo.pNext = pNext;
-    pNext                    = &memReservationInfo;
-
-    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-    sc10Features.pNext                              = pNext;
-    pNext                                           = &sc10Features;
-
-    VkPipelineCacheCreateInfo pcCI;
-    std::vector<VkPipelinePoolSize> poolSizes;
-    if (cmdLine.isSubProcess())
-    {
-        if (resourceInterface->getCacheDataSize() > 0)
-        {
-            pcCI = {
-                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                nullptr,                                      // const void* pNext;
-                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                resourceInterface->getCacheDataSize(),                    // uintptr_t initialDataSize;
-                resourceInterface->getCacheData()                         // const void* pInitialData;
-            };
-            memReservationInfo.pipelineCacheCreateInfoCount = 1;
-            memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-        }
-
-        poolSizes = resourceInterface->getPipelinePoolSizes();
-        if (!poolSizes.empty())
-        {
-            memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-            memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-        }
-    }
-#else
-    DE_UNREF(cmdLine);
-#endif // CTS_USES_VULKANSC
-
     const vk::VkDeviceCreateInfo deviceParams = {
         vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,               // sType
-        pNext,                                                  // pNext
+        &featuresExt,                                           // pNext
         (vk::VkDeviceCreateFlags)0,                             // flags
         DE_LENGTH_OF_ARRAY(queueInfos),                         // queueCreateInfosCount
         &queueInfos[0],                                         // pQueueCreateInfos
@@ -275,7 +231,7 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice(const vk::PlatformInterface &vkp, 
         nullptr                                                 // pEnabledFeatures
     };
 
-    return createCustomDevice(vkp, instance, vkd, physicalDevice, &deviceParams, nullptr);
+    return instance.createCustomDevice(physicalDevice, &deviceParams);
 }
 
 vk::VkQueue getProtectedQueue(const vk::DeviceInterface &vk, vk::VkDevice device, const uint32_t queueFamilyIndex,

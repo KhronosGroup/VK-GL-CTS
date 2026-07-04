@@ -1,0 +1,3 @@
+dEQP-VK.pipeline.monolithic.derivative.compute.derivative_by_handle
+dEQP-VK.pipeline.monolithic.derivative.compute.derivative_by_handle_maintenance5
+dEQP-VK.pipeline.monolithic.derivative.compute.derivative_by_index

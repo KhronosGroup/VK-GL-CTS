@@ -127,7 +127,6 @@ BufferSparseRebindInstance::BufferSparseRebindInstance(Context &context, const u
 
 tcu::TestStatus BufferSparseRebindInstance::iterate(void)
 {
-    const InstanceInterface &instance = m_context.getInstanceInterface();
     {
         // Create logical device supporting both sparse and transfer operations
         QueueRequirementsVec queueRequirements;
@@ -136,6 +135,7 @@ tcu::TestStatus BufferSparseRebindInstance::iterate(void)
 
         createDeviceSupportingQueues(queueRequirements);
     }
+    const InstanceInterface &instance          = getInstanceInterface();
     const vk::VkPhysicalDevice &physicalDevice = getPhysicalDevice();
     const DeviceInterface &deviceInterface     = getDeviceInterface();
     const Queue &sparseQueue                   = getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);

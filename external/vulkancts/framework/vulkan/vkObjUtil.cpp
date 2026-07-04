@@ -699,12 +699,11 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
 
 Move<VkImageView> makeImageView(const DeviceInterface &vk, const VkDevice vkDevice, const VkImage image,
                                 const VkImageViewType imageViewType, const VkFormat format,
-                                const VkImageSubresourceRange subresourceRange,
-                                const VkImageViewUsageCreateInfo *imageUsageCreateInfo)
+                                const VkImageSubresourceRange subresourceRange, const void *pNext)
 {
     const VkImageViewCreateInfo imageViewParams = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-        imageUsageCreateInfo,                     // const void* pNext;
+        pNext,                                    // const void* pNext;
         0u,                                       // VkImageViewCreateFlags flags;
         image,                                    // VkImage image;
         imageViewType,                            // VkImageViewType viewType;

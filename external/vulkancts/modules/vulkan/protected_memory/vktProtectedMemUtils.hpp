@@ -61,17 +61,12 @@ void checkProtectedContextSupport(Context &context, bool useYCbCr = false, bool 
 
 CustomInstance makeProtectedMemInstance(vkt::Context &context,
                                         const std::vector<std::string> &extraExtensions = std::vector<std::string>());
-uint32_t chooseProtectedMemQueueFamilyIndex(const vk::InstanceDriver &vkd, vk::VkPhysicalDevice physicalDevice,
+uint32_t chooseProtectedMemQueueFamilyIndex(const vk::InstanceInterface &vkd, vk::VkPhysicalDevice physicalDevice,
                                             vk::VkSurfaceKHR surface = VK_NULL_HANDLE);
 
-vk::Move<vk::VkDevice> makeProtectedMemDevice(const vk::PlatformInterface &vkp, vk::VkInstance instance,
-                                              const vk::InstanceDriver &vkd, vk::VkPhysicalDevice physicalDevice,
-                                              const uint32_t queueFamilyIndex, const uint32_t apiVersion,
-                                              const std::vector<std::string> &extraExtensions,
-#ifdef CTS_USES_VULKANSC
-                                              de::SharedPtr<vk::ResourceInterface> resourceInterface,
-#endif // CTS_USES_VULKANSC
-                                              const tcu::CommandLine &cmdLine);
+CustomDevice makeProtectedMemDevice(const InstanceWrapper &instance, vk::VkPhysicalDevice physicalDevice,
+                                    const uint32_t queueFamilyIndex, const uint32_t apiVersion,
+                                    const std::vector<std::string> &extraExtensions);
 
 vk::VkQueue getProtectedQueue(const vk::DeviceInterface &vk, vk::VkDevice device, const uint32_t queueFamilyIndex,
                               const uint32_t queueIdx);

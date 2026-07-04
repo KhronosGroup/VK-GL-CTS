@@ -488,11 +488,16 @@ void QueryPoolDiscardTestCase::checkSupport(vkt::Context &context) const
         TCU_THROW(NotSupportedError, "occlusionQueryPrecise not supported");
     if (m_params.earlyFragmentTests)
     {
+#ifndef CTS_USES_VULKANSC
         if (!context.getMaintenance5Properties().earlyFragmentSampleMaskTestBeforeSampleCounting)
             TCU_THROW(NotSupportedError, "earlyFragmentSampleMaskTestBeforeSampleCounting not supported");
         if (m_params.isAlphaToCoverage() &&
             !context.getMaintenance5Properties().earlyFragmentMultisampleCoverageAfterSampleCounting)
             TCU_THROW(NotSupportedError, "earlyFragmentMultisampleCoverageAfterSampleCounting not supported");
+#else
+        TCU_THROW(NotSupportedError,
+                  "earlyFragmentMultisampleCoverageAfterSampleCounting is not supported in VulkanSC");
+#endif
     }
 }
 

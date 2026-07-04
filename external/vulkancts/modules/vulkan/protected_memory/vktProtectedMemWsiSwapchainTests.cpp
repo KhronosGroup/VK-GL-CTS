@@ -223,9 +223,9 @@ static vk::VkCompositeAlphaFlagBitsKHR firstSupportedCompositeAlpha(const vk::Vk
     return (vk::VkCompositeAlphaFlagBitsKHR)alphaMode;
 }
 
-using SwapchainCreationExecutor = void (*)(const vk::DeviceDriver &, vk::VkDevice, vk::wsi::Type wsiType,
+using SwapchainCreationExecutor = void (*)(const vk::DeviceInterface &, vk::VkDevice, vk::wsi::Type wsiType,
                                            const vk::VkSwapchainCreateInfoKHR &, tcu::TestLog &, uint32_t, uint32_t);
-void swapchainCreateExecutor(const vk::DeviceDriver &vk, vk::VkDevice device, vk::wsi::Type wsiType,
+void swapchainCreateExecutor(const vk::DeviceInterface &vk, vk::VkDevice device, vk::wsi::Type wsiType,
                              const vk::VkSwapchainCreateInfoKHR &createInfo, tcu::TestLog &log, uint32_t caseIndex,
                              uint32_t caseCount)
 {
@@ -243,8 +243,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                                                SwapchainCreationExecutor testExecutor)
 {
     tcu::TestLog &log                                     = context.getTestContext().getLog();
-    const vk::DeviceInterface &vki                        = context.getDeviceInterface();
-    const vk::DeviceDriver &vkd                           = context.getDeviceDriver();
+    const vk::DeviceInterface &vkd                        = context.getDeviceInterface();
     vk::VkDevice device                                   = context.getDevice();
     const vk::wsi::PlatformProperties &platformProperties = getPlatformProperties(wsiType);
     const vk::VkSurfaceTransformFlagBitsKHR defaultTransform =
@@ -315,14 +314,14 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                                                      baseParameters.queueFamilyIndexCount,
                                                      baseParameters.pQueueFamilyIndices,
                                                      vk::VK_IMAGE_LAYOUT_UNDEFINED};
-            vk::Move<vk::VkImage> image           = vk::createImage(vki, device, &imageInfo);
+            vk::Move<vk::VkImage> image           = vk::createImage(vkd, device, &imageInfo);
 
-            memoryRequirements = vk::getImageMemoryRequirements(vki, device, *image);
+            memoryRequirements = vk::getImageMemoryRequirements(vkd, device, *image);
         }
 
         // Determine the maximum memory heap space available for protected images
         vk::VkPhysicalDeviceMemoryProperties memoryProperties =
-            vk::getPhysicalDeviceMemoryProperties(context.getInstanceDriver(), context.getPhysicalDevice());
+            vk::getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice());
         vk::VkDeviceSize protectedHeapSize = 0;
         uint32_t protectedHeapMask         = 0;
 
@@ -396,7 +395,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
     case TEST_DIMENSION_IMAGE_FORMAT:
     {
         vk::VkPhysicalDeviceMemoryProperties memoryProperties =
-            vk::getPhysicalDeviceMemoryProperties(context.getInstanceDriver(), context.getPhysicalDevice());
+            vk::getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice());
         vk::VkDeviceSize protectedHeapSize = 0;
 
         for (uint32_t memType = 0; memType < memoryProperties.memoryTypeCount; memType++)
@@ -445,9 +444,9 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                     baseParameters.pQueueFamilyIndices,
                     vk::VK_IMAGE_LAYOUT_UNDEFINED};
 
-                vk::Move<vk::VkImage> image = vk::createImage(vki, device, &imageInfo);
+                vk::Move<vk::VkImage> image = vk::createImage(vkd, device, &imageInfo);
 
-                memoryRequirements = vk::getImageMemoryRequirements(vki, device, *image);
+                memoryRequirements = vk::getImageMemoryRequirements(vkd, device, *image);
             }
 
             // Check for the image size requirement based on double/triple buffering
@@ -486,7 +485,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
         };
 
         vk::VkPhysicalDeviceMemoryProperties memoryProperties =
-            vk::getPhysicalDeviceMemoryProperties(context.getInstanceDriver(), context.getPhysicalDevice());
+            vk::getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice());
         vk::VkDeviceSize protectedHeapSize = 0;
 
         for (uint32_t memType = 0; memType < memoryProperties.memoryTypeCount; memType++)
@@ -529,9 +528,9 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                                                              baseParameters.pQueueFamilyIndices,
                                                              vk::VK_IMAGE_LAYOUT_UNDEFINED};
 
-                    vk::Move<vk::VkImage> image = vk::createImage(vki, device, &imageInfo);
+                    vk::Move<vk::VkImage> image = vk::createImage(vkd, device, &imageInfo);
 
-                    memoryRequirements = vk::getImageMemoryRequirements(vki, device, *image);
+                    memoryRequirements = vk::getImageMemoryRequirements(vkd, device, *image);
                 }
 
                 // Check for the image size requirement based on double/triple buffering
@@ -585,9 +584,9 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                                                          baseParameters.pQueueFamilyIndices,
                                                          vk::VK_IMAGE_LAYOUT_UNDEFINED};
 
-                vk::Move<vk::VkImage> image = vk::createImage(vki, device, &imageInfo);
+                vk::Move<vk::VkImage> image = vk::createImage(vkd, device, &imageInfo);
 
-                memoryRequirements = vk::getImageMemoryRequirements(vki, device, *image);
+                memoryRequirements = vk::getImageMemoryRequirements(vkd, device, *image);
             }
 
             // Check for the image size requirement based on double/triple buffering
@@ -642,9 +641,9 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                                                              baseParameters.pQueueFamilyIndices,
                                                              vk::VK_IMAGE_LAYOUT_UNDEFINED};
 
-                    vk::Move<vk::VkImage> image = vk::createImage(vki, device, &imageInfo);
+                    vk::Move<vk::VkImage> image = vk::createImage(vkd, device, &imageInfo);
 
-                    memoryRequirements = vk::getImageMemoryRequirements(vki, device, *image);
+                    memoryRequirements = vk::getImageMemoryRequirements(vkd, device, *image);
                 }
 
                 // Check for the image size requirement based on double/triple buffering
@@ -692,8 +691,8 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
 
     case TEST_DIMENSION_IMAGE_USAGE:
     {
-        const vk::InstanceDriver &instanceDriver  = context.getInstanceDriver();
-        const vk::VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+        const vk::InstanceInterface &instanceDriver = context.getInstanceInterface();
+        const vk::VkPhysicalDevice physicalDevice   = context.getPhysicalDevice();
         std::vector<vk::VkSwapchainCreateInfoKHR> cases;
 
         for (uint32_t flags = 1u; flags <= capabilities.supportedUsageFlags; ++flags)
@@ -729,8 +728,8 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
 
         uint32_t additionalQueueIndex = std::numeric_limits<uint32_t>::max();
         {
-            const vk::InstanceDriver &instanceDriver  = context.getInstanceDriver();
-            const vk::VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+            const vk::InstanceInterface &instanceDriver = context.getInstanceInterface();
+            const vk::VkPhysicalDevice physicalDevice   = context.getPhysicalDevice();
             std::vector<vk::VkQueueFamilyProperties> properties;
             uint32_t numFamilies = 0;
 
@@ -868,7 +867,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                                                bool isExtensionForPresentModeEnabled,
                                                SwapchainCreationExecutor testExecutor)
 {
-    const vk::InstanceInterface &vki    = context.getInstanceDriver();
+    const vk::InstanceInterface &vki    = context.getInstanceInterface();
     vk::VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
     const vk::VkSurfaceCapabilitiesKHR capabilities =
         vk::wsi::getPhysicalDeviceSurfaceCapabilities(vki, physicalDevice, surface);
@@ -912,7 +911,7 @@ tcu::TestStatus createSwapchainTest(Context &baseCtx, TestParameters params)
     if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
     {
         // Check if swapchain can be created for protected surface
-        const vk::InstanceInterface &vki = context.getInstanceDriver();
+        const vk::InstanceInterface &vki = context.getInstanceInterface();
         vk::VkSurfaceCapabilities2KHR extCapabilities;
         vk::VkSurfaceProtectedCapabilitiesKHR extProtectedCapabilities;
         const vk::VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {
@@ -1300,7 +1299,7 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
     if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
     {
         // Check if swapchain can be created for protected surface
-        const vk::InstanceInterface &vki = context.getInstanceDriver();
+        const vk::InstanceInterface &vki = context.getInstanceInterface();
         vk::VkSurfaceCapabilities2KHR extCapabilities;
         vk::VkSurfaceProtectedCapabilitiesKHR extProtectedCapabilities;
         const vk::VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {
@@ -1321,7 +1320,7 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
     }
 
     const vk::VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(
-        wsiType, context.getInstanceDriver(), context.getPhysicalDevice(), surface, desiredSize, 2);
+        wsiType, context.getInstanceInterface(), context.getPhysicalDevice(), surface, desiredSize, 2);
     const vk::Unique<vk::VkSwapchainKHR> swapchain(createWsiSwapchain(wsiType, vkd, device, &swapchainInfo));
     const std::vector<vk::VkImage> swapchainImages = vk::wsi::getSwapchainImages(vkd, device, *swapchain);
 

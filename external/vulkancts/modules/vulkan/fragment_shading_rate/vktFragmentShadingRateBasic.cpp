@@ -288,7 +288,7 @@ bool FSRTestInstance::Force1x1() const
         !m_context.getFragmentShadingRateProperties().fragmentShadingRateWithConservativeRasterization)
         return true;
 
-    if (m_data.useDepthStencil &&
+    if ((m_data.fragDepth || m_data.fragStencil) &&
         !m_context.getFragmentShadingRateProperties().fragmentShadingRateWithShaderDepthStencilWrites)
         return true;
 
@@ -466,8 +466,9 @@ void FSRTestCase::initPrograms(SourceCollections &programCollection) const
                "   vec4 gl_Position;\n"
                "};\n"
                "void main()\n"
-               "{\n"
-               "  gl_Position = vec4(pos, 0, 1);\n"
+               "{\n";
+        vss << "  float vtxDepth = " << (!m_data.fragDepth && m_data.useDepthStencil ? "0.4" : "0.0") << ";\n";
+        vss << "  gl_Position = vec4(pos, vtxDepth, 1);\n"
                "  instanceIndex = gl_InstanceIndex;\n"
                "  readbackok = 1;\n"
                "  zero = 0;\n";
@@ -599,8 +600,10 @@ void FSRTestCase::initPrograms(SourceCollections &programCollection) const
         mss << "void main()\n"
                "{\n"
                "  SetMeshOutputsEXT(3u, 1u);\n"
-               "  const uint vertexIdx = (pc.instanceIndex * 3u + gl_LocalInvocationIndex);\n"
-               "  gl_MeshVerticesEXT[gl_LocalInvocationIndex].gl_Position = vec4(pb.vertexPositions[vertexIdx], 0, "
+               "  const uint vertexIdx = (pc.instanceIndex * 3u + gl_LocalInvocationIndex);\n";
+        mss << "  float vtxDepth = " << (!m_data.fragDepth && m_data.useDepthStencil ? "0.4" : "0.0") << ";\n";
+        mss << "  gl_MeshVerticesEXT[gl_LocalInvocationIndex].gl_Position = vec4(pb.vertexPositions[vertexIdx], "
+               "vtxDepth, "
                "1);\n"
                "  if (gl_LocalInvocationIndex == 0) {\n"
                "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
@@ -759,10 +762,10 @@ void FSRTestCase::initPrograms(SourceCollections &programCollection) const
         << " + i;\n"
            "      colorbuf.b[idx] = texelFetch(colorTex, ivec3(gl_GlobalInvocationID.xyz), i);\n";
 
-    if (m_data.fragDepth)
+    if (m_data.useDepthStencil)
         css << "      depthbuf.b[idx] = texelFetch(depthTex, ivec3(gl_GlobalInvocationID.xyz), i).x;\n";
 
-    if (m_data.fragStencil)
+    if (m_data.useDepthStencil)
         css << "      stencilbuf.b[idx] = texelFetch(stencilTex, ivec3(gl_GlobalInvocationID.xyz), i).x;\n";
 
     css << "   }\n"
@@ -784,7 +787,7 @@ void FSRTestCase::initPrograms(SourceCollections &programCollection) const
             << "void main(void)\n"
             << "{\n"
             << "    gl_Position = in_position;\n"
-            << "}\n";
+            << (!m_data.fragDepth && m_data.useDepthStencil ? "gl_Position.z = 0.4;\n" : "") << "}\n";
 
         programCollection.glslSources.add("vert_simple") << glu::VertexSource(src.str());
     }
@@ -2337,6 +2340,7 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                     };
 
                     // Enable depth/stencil writes, always passing
+                    const uint32_t stencilRef = (!m_data.fragStencil && m_data.useDepthStencil ? 2u : 0xFFu);
                     VkPipelineDepthStencilStateCreateInfo depthStencilStateParams{
                         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
                         nullptr,                                                    // const void* pNext;
@@ -2354,7 +2358,7 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                             VK_COMPARE_OP_ALWAYS,  // VkCompareOp compareOp;
                             0u,                    // uint32_t compareMask;
                             0xFFu,                 // uint32_t writeMask;
-                            0xFFu,                 // uint32_t reference;
+                            stencilRef,            // uint32_t reference;
                         },
                         // VkStencilOpState back;
                         {
@@ -2364,7 +2368,7 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                             VK_COMPARE_OP_ALWAYS,  // VkCompareOp compareOp;
                             0u,                    // uint32_t compareMask;
                             0xFFu,                 // uint32_t writeMask;
-                            0xFFu,                 // uint32_t reference;
+                            stencilRef,            // uint32_t reference;
                         },
                         0.0f, // float minDepthBounds;
                         0.0f, // float maxDepthBounds;
@@ -2602,7 +2606,8 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                                                                            0)];
                                         bool same         = deMemCmp(sample, sample0, 16) == 0;
 
-                                        if (m_data.fragDepth && !m_data.multiSubpasses)
+                                        if ((m_data.fragDepth && !m_data.multiSubpasses) ||
+                                            (!m_data.fragDepth && m_data.useDepthStencil))
                                         {
                                             float *dsample  = &depthptr[((layer * m_data.framebufferDim.height + y) *
                                                                             m_data.framebufferDim.width +
@@ -2617,7 +2622,8 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                                             same            = same && (*dsample == *dsample0);
                                         }
 
-                                        if (m_data.fragStencil && !m_data.multiSubpasses)
+                                        if ((m_data.fragStencil && !m_data.multiSubpasses) ||
+                                            (!m_data.fragStencil && m_data.useDepthStencil))
                                         {
                                             uint32_t *ssample =
                                                 &stencilptr[((layer * m_data.framebufferDim.height + y) *
@@ -2740,14 +2746,15 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                                     numTotalSamples++;
 
                                     // Check that gl_FragDepth = primID / NUM_TRIANGLES
-                                    if (m_data.fragDepth && !m_data.multiSubpasses)
+                                    if ((m_data.fragDepth && !m_data.multiSubpasses) ||
+                                        (!m_data.fragDepth && m_data.useDepthStencil))
                                     {
                                         float *dsample = &depthptr[((layer * m_data.framebufferDim.height + y) *
                                                                         m_data.framebufferDim.width +
                                                                     x) *
                                                                        m_data.samples +
                                                                    s];
-                                        float expected = (float)primID / NUM_TRIANGLES;
+                                        float expected = (m_data.fragDepth ? ((float)primID / NUM_TRIANGLES) : 0.4f);
                                         if (fabs(*dsample - expected) > 0.01)
                                         {
                                             log << tcu::TestLog::Message << std::hex << "depth write failed pixel (0x"
@@ -2759,18 +2766,20 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                                     }
 
                                     // Check that stencil value = primID
-                                    if (m_data.fragStencil && !m_data.multiSubpasses)
+                                    if ((m_data.fragStencil && !m_data.multiSubpasses) ||
+                                        (!m_data.fragStencil && m_data.useDepthStencil))
                                     {
                                         uint32_t *ssample = &stencilptr[((layer * m_data.framebufferDim.height + y) *
                                                                              m_data.framebufferDim.width +
                                                                          x) *
                                                                             m_data.samples +
                                                                         s];
-                                        if (*ssample != primID)
+                                        uint32_t expected = (m_data.fragStencil ? primID : 2u);
+                                        if (*ssample != expected)
                                         {
                                             log << tcu::TestLog::Message << std::hex << "stencil write failed pixel (0x"
                                                 << x << ",0x" << y << ",sample 0x" << s << ")=" << *ssample
-                                                << " expected " << primID << tcu::TestLog::EndMessage;
+                                                << " expected " << expected << tcu::TestLog::EndMessage;
                                             res = QP_TEST_RESULT_FAIL;
                                             continue;
                                         }
@@ -2956,7 +2965,7 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                         {
                             for (uint32_t x = 0; x < m_data.framebufferDim.width && res == QP_TEST_RESULT_PASS; ++x)
                             {
-                                if (m_data.fragDepth)
+                                if (m_data.useDepthStencil)
                                 {
                                     float *dsample = &depthptr[(y * m_data.framebufferDim.width + x)];
                                     if (*dsample != 0.4f)
@@ -2969,15 +2978,17 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                                         continue;
                                     }
                                 }
-                                if (m_data.fragStencil)
+                                if (m_data.useDepthStencil)
                                 {
-                                    uint32_t *ssample = &stencilptr[y * m_data.framebufferDim.width + x];
-                                    if (*ssample != 1)
+                                    uint32_t *ssample  = &stencilptr[y * m_data.framebufferDim.width + x];
+                                    uint32_t reference = (m_data.fragStencil ? 1u : 2u);
+                                    if (*ssample != reference)
                                     {
                                         log << tcu::TestLog::Message << std::hex
                                             << "On another subpass, stencil write failed pixel (0x" << x << ",0x" << y
                                             << ",sample 0x1"
-                                            << ")=" << *ssample << " expected 1" << tcu::TestLog::EndMessage;
+                                            << ")=" << *ssample << " expected " << reference
+                                            << tcu::TestLog::EndMessage;
                                         res = QP_TEST_RESULT_FAIL;
                                         continue;
                                     }
@@ -3593,17 +3604,99 @@ void FSRTestInstance::drawCommands(VkCommandBuffer cmdBuffer, std::vector<Graphi
 
 void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup, SharedGroupParams groupParams)
 {
-    typedef struct
+    enum class TestGroupCaseId
     {
-        uint32_t count;
-        const char *name;
-    } TestGroupCase;
+        BASIC,
+        APISAMPLEMASK,
+        SAMPLEMASKIN,
+        CONSERVATIVEUNDER,
+        CONSERVATIVEOVER,
+        FRAGDEPTH,
+        FRAGSTENCIL,
+        MULTIVIEWPORT,
+        COLORLAYERED,
+        SRLAYERED,
+        MULTIVIEW,
+        MULTIVIEWSRLAYERED,
+        MULTIVIEWCORRELATION,
+        INTERLOCK,
+        SAMPLELOCATIONS,
+        SAMPLESHADINGENABLE,
+        SAMPLESHADINGINPUT,
+        FRAGDEPTH_EARLY_LATE,
+        FRAGSTENCIL_EARLY_LATE,
+        FRAGDEPTH_CLEAR,
+        FRAGSTENCIL_CLEAR,
+        FRAGDEPTH_BASELEVEL,
+        FRAGSTENCIL_BASELEVEL,
+        MULTIPASS,
+        MULTIPASS_FRAGDEPTH,
+        MULTIPASS_FRAGSTENCIL,
+        MAINTENANCE6,
+        SAMPLEMASKOUT,
+        DS_BASELEVEL
+    };
 
     typedef struct
     {
-        VkExtent2D count;
+        TestGroupCaseId id;
         const char *name;
-    } TestGroupCase2D;
+    } TestGroupCase;
+
+    enum class TestDynamicCaseId
+    {
+        STATIC,
+        DYNAMIC
+    };
+
+    typedef struct
+    {
+        TestDynamicCaseId id;
+        const char *name;
+    } TestDynamicCase;
+
+    enum class TestShaderRateCaseId
+    {
+        NOSHADERRATE,
+        SHADERRATE
+    };
+
+    typedef struct
+    {
+        TestShaderRateCaseId id;
+        const char *name;
+    } TestShaderRateCase;
+
+    enum class TestShaderTypeCaseId
+    {
+        VERTEX,
+        GEOMETRY,
+        MESH
+    };
+
+    typedef struct
+    {
+        TestShaderTypeCaseId id;
+        const char *name;
+    } TestShaderTypeCase;
+
+    typedef struct
+    {
+        VkFragmentShadingRateCombinerOpKHR op;
+        const char *name;
+    } TestFsrCombinerOpCase;
+
+    typedef struct
+    {
+        VkExtent2D extent;
+        const char *name;
+    } TestExtentCase;
+
+    typedef struct
+    {
+        VkSampleCountFlagBits count;
+        const char *name;
+    } TestSampleCountCase;
 
     typedef struct
     {
@@ -3613,63 +3706,64 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
 
     TestGroupCase groupCases[] = {
         // basic tests
-        {0, "basic"},
+        {TestGroupCaseId::BASIC, "basic"},
         // use pSampleMask
-        {1, "apisamplemask"},
+        {TestGroupCaseId::APISAMPLEMASK, "apisamplemask"},
         // use gl_SampleMaskIn
-        {2, "samplemaskin"},
+        {TestGroupCaseId::SAMPLEMASKIN, "samplemaskin"},
         // conservative underestimation
-        {3, "conservativeunder"},
+        {TestGroupCaseId::CONSERVATIVEUNDER, "conservativeunder"},
         // conservative overestimation
-        {4, "conservativeover"},
+        {TestGroupCaseId::CONSERVATIVEOVER, "conservativeover"},
         // depth shader output
-        {5, "fragdepth"},
+        {TestGroupCaseId::FRAGDEPTH, "fragdepth"},
         // stencil shader output
-        {6, "fragstencil"},
+        {TestGroupCaseId::FRAGSTENCIL, "fragstencil"},
         // multiple viewports and gl_ViewportIndex
-        {7, "multiviewport"},
+        {TestGroupCaseId::MULTIVIEWPORT, "multiviewport"},
         // multiple layer color, single layer shading rate
-        {8, "colorlayered"},
+        {TestGroupCaseId::COLORLAYERED, "colorlayered"},
         // multiple layer color, multiple layers shading rate
-        {9, "srlayered"},
+        {TestGroupCaseId::SRLAYERED, "srlayered"},
         // multiview
-        {10, "multiview"},
+        {TestGroupCaseId::MULTIVIEW, "multiview"},
         // multiview and multilayer shading rate
-        {11, "multiviewsrlayered"},
+        {TestGroupCaseId::MULTIVIEWSRLAYERED, "multiviewsrlayered"},
         // multiview with correlation mask
-        {12, "multiviewcorrelation"},
+        {TestGroupCaseId::MULTIVIEWCORRELATION, "multiviewcorrelation"},
         // fragment shader interlock
-        {13, "interlock"},
+        {TestGroupCaseId::INTERLOCK, "interlock"},
         // custom sample locations
-        {14, "samplelocations"},
+        {TestGroupCaseId::SAMPLELOCATIONS, "samplelocations"},
         // enable sample shading in createinfo
-        {15, "sampleshadingenable"},
+        {TestGroupCaseId::SAMPLESHADINGENABLE, "sampleshadingenable"},
         // enable sample shading by using gl_SampleID
-        {16, "sampleshadinginput"},
+        {TestGroupCaseId::SAMPLESHADINGINPUT, "sampleshadinginput"},
 #ifndef CTS_USES_VULKANSC
         // depth shader output
-        {17, "fragdepth_early_late"},
+        {TestGroupCaseId::FRAGDEPTH_EARLY_LATE, "fragdepth_early_late"},
         // stencil shader output
-        {18, "fragstencil_early_late"},
+        {TestGroupCaseId::FRAGSTENCIL_EARLY_LATE, "fragstencil_early_late"},
 #endif
-        {19, "fragdepth_clear"},
-        {20, "fragstencil_clear"},
-        {21, "fragdepth_baselevel"},
-        {22, "fragstencil_baselevel"},
-        {23, "multipass"},
-        {24, "multipass_fragdepth"},
-        {25, "multipass_fragstencil"},
+        {TestGroupCaseId::FRAGDEPTH_CLEAR, "fragdepth_clear"},
+        {TestGroupCaseId::FRAGSTENCIL_CLEAR, "fragstencil_clear"},
+        {TestGroupCaseId::FRAGDEPTH_BASELEVEL, "fragdepth_baselevel"},
+        {TestGroupCaseId::FRAGSTENCIL_BASELEVEL, "fragstencil_baselevel"},
+        {TestGroupCaseId::MULTIPASS, "multipass"},
+        {TestGroupCaseId::MULTIPASS_FRAGDEPTH, "multipass_fragdepth"},
+        {TestGroupCaseId::MULTIPASS_FRAGSTENCIL, "multipass_fragstencil"},
 #ifndef CTS_USES_VULKANSC
-        {26, "maintenance6"},
+        {TestGroupCaseId::MAINTENANCE6, "maintenance6"},
 #endif
-        {27, "samplemaskout"},
+        {TestGroupCaseId::SAMPLEMASKOUT, "samplemaskout"},
+        {TestGroupCaseId::DS_BASELEVEL, "ds_baselevel"},
     };
 
-    TestGroupCase dynCases[] = {
+    TestDynamicCase dynCases[] = {
         // uses dynamic shading rate state
-        {1, "dynamic"},
+        {TestDynamicCaseId::DYNAMIC, "dynamic"},
         // uses static shading rate state
-        {0, "static"},
+        {TestDynamicCaseId::STATIC, "static"},
     };
 
     TestGroupUsageCase attCases[] = {
@@ -3683,14 +3777,14 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
         {AttachmentUsage::WITH_ATTACHMENT_WITHOUT_IMAGEVIEW, "attachment_noimageview"},
     };
 
-    TestGroupCase shdCases[] = {
+    TestShaderRateCase shdCases[] = {
         // shader doesn't write rate
-        {0, "noshaderrate"},
+        {TestShaderRateCaseId::NOSHADERRATE, "noshaderrate"},
         // shader writes rate
-        {1, "shaderrate"},
+        {TestShaderRateCaseId::SHADERRATE, "shaderrate"},
     };
 
-    TestGroupCase combCases[] = {
+    TestFsrCombinerOpCase combCases[] = {
         {VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR, "keep"},
         {VK_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_KHR, "replace"},
         {VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MIN_KHR, "min"},
@@ -3698,45 +3792,53 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
         {VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MUL_KHR, "mul"},
     };
 
-    TestGroupCase2D extentCases[] = {
+    TestExtentCase extentCases[] = {
         {{1, 1}, "1x1"}, {{4, 4}, "4x4"}, {{33, 35}, "33x35"}, {{151, 431}, "151x431"}, {{256, 256}, "256x256"},
     };
 
-    TestGroupCase sampCases[] = {
+    TestSampleCountCase sampCases[] = {
         {VK_SAMPLE_COUNT_1_BIT, "samples1"}, {VK_SAMPLE_COUNT_2_BIT, "samples2"},   {VK_SAMPLE_COUNT_4_BIT, "samples4"},
         {VK_SAMPLE_COUNT_8_BIT, "samples8"}, {VK_SAMPLE_COUNT_16_BIT, "samples16"},
     };
 
-    TestGroupCase shaderCases[] = {
+    TestShaderTypeCase shaderCases[] = {
         // vertex shader only
-        {0, "vs"},
+        {TestShaderTypeCaseId::VERTEX, "vs"},
         // vertex and geometry shader
-        {1, "gs"},
+        {TestShaderTypeCaseId::GEOMETRY, "gs"},
 #ifndef CTS_USES_VULKANSC
         // mesh shader
-        {2, "ms"},
+        {TestShaderTypeCaseId::MESH, "ms"},
 #endif // CTS_USES_VULKANSC
     };
 
     int32_t seed = 0;
 
+    // for graphics pipeline library we need to repeat only selected groups
+    const std::set<TestGroupCaseId> gplTestGroupSet{
+        TestGroupCaseId::SAMPLEMASKIN, TestGroupCaseId::CONSERVATIVEUNDER,  TestGroupCaseId::CONSERVATIVEOVER,
+        TestGroupCaseId::MULTIVIEW,    TestGroupCaseId::MULTIVIEWSRLAYERED, TestGroupCaseId::MULTIVIEWCORRELATION,
+        TestGroupCaseId::INTERLOCK,    TestGroupCaseId::SAMPLELOCATIONS,    TestGroupCaseId::SAMPLESHADINGENABLE};
+
     for (int groupNdx = 0; groupNdx < DE_LENGTH_OF_ARRAY(groupCases); groupNdx++)
     {
-        if (groupParams->useDynamicRendering && (groupNdx == 12 || groupNdx == 26))
+        const TestGroupCaseId groupCaseId = groupCases[groupNdx].id;
+        if (groupParams->useDynamicRendering &&
+            (groupCaseId == TestGroupCaseId::MULTIVIEWCORRELATION || groupCaseId == TestGroupCaseId::MAINTENANCE6))
             continue;
 
         if (groupParams->pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
         {
-            // for graphics pipeline library we need to repeat only selected groups
-            if (std::set<int>{2, 3, 4, 10, 11, 12, 13, 14, 15}.count(groupNdx) == 0)
+            if (gplTestGroupSet.count(groupCaseId) == 0)
                 continue;
         }
 
         de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, groupCases[groupNdx].name));
         for (int dynNdx = 0; dynNdx < DE_LENGTH_OF_ARRAY(dynCases); dynNdx++)
         {
+            const bool useDynamicState = (dynCases[dynNdx].id == TestDynamicCaseId::DYNAMIC);
             // reduce number of tests for dynamic rendering cases where secondary command buffer is used
-            if (groupParams->useSecondaryCmdBuffer && (dynNdx != 0))
+            if (groupParams->useSecondaryCmdBuffer && !useDynamicState)
                 continue;
 
             de::MovePtr<tcu::TestCaseGroup> dynGroup(new tcu::TestCaseGroup(testCtx, dynCases[dynNdx].name));
@@ -3785,71 +3887,95 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                                         new tcu::TestCaseGroup(testCtx, sampCases[sampNdx].name));
                                     for (int shaderNdx = 0; shaderNdx < DE_LENGTH_OF_ARRAY(shaderCases); shaderNdx++)
                                     {
+                                        const TestShaderTypeCaseId shaderTypeCaseId = shaderCases[shaderNdx].id;
                                         de::MovePtr<tcu::TestCaseGroup> shaderGroup(
                                             new tcu::TestCaseGroup(testCtx, shaderCases[shaderNdx].name));
                                         // reduce number of tests for dynamic rendering cases where secondary command buffer is used
-                                        if (groupParams->useSecondaryCmdBuffer && (shaderNdx != 0))
+                                        if (groupParams->useSecondaryCmdBuffer &&
+                                            (shaderTypeCaseId != TestShaderTypeCaseId::VERTEX))
                                             continue;
 
-                                        bool useApiSampleMask = groupNdx == 1;
-                                        bool useSampleMaskIn  = groupNdx == 2;
-                                        bool useSampleMaskOut = groupNdx == 27;
-                                        bool consRast         = groupNdx == 3 || groupNdx == 4;
-                                        bool fragDepth        = groupNdx == 5 || groupNdx == 17 || groupNdx == 19 ||
-                                                         groupNdx == 21 || groupNdx == 24;
-                                        bool fragStencil = groupNdx == 6 || groupNdx == 18 || groupNdx == 20 ||
-                                                           groupNdx == 22 || groupNdx == 25;
-                                        bool multiViewport       = groupNdx == 7;
-                                        bool colorLayered        = groupNdx == 8 || groupNdx == 9;
-                                        bool srLayered           = groupNdx == 9 || groupNdx == 11;
-                                        bool multiView           = groupNdx == 10 || groupNdx == 11 || groupNdx == 12;
-                                        bool correlationMask     = groupNdx == 12;
-                                        bool interlock           = groupNdx == 13;
-                                        bool sampleLocations     = groupNdx == 14;
-                                        bool sampleShadingEnable = groupNdx == 15;
-                                        bool sampleShadingInput  = groupNdx == 16;
-                                        bool useGeometryShader   = (shaderCases[shaderNdx].count == 1u);
-                                        bool useMeshShader       = (shaderCases[shaderNdx].count == 2u);
-                                        bool earlyAndLateTest    = groupNdx == 17 || groupNdx == 18;
-                                        bool opClear             = groupNdx == 19 || groupNdx == 20;
-                                        uint32_t baseMipLevel    = (groupNdx == 21 || groupNdx == 22) ? 1 : 0;
-                                        bool multiPass           = (groupNdx == 23 || groupNdx == 24 || groupNdx == 25);
-                                        bool maintenance6        = (groupNdx == 26);
+                                        bool useApiSampleMask = groupCaseId == TestGroupCaseId::APISAMPLEMASK;
+                                        bool useSampleMaskIn  = groupCaseId == TestGroupCaseId::SAMPLEMASKIN;
+                                        bool useSampleMaskOut = groupCaseId == TestGroupCaseId::SAMPLEMASKOUT;
+                                        bool consRast         = groupCaseId == TestGroupCaseId::CONSERVATIVEUNDER ||
+                                                        groupCaseId == TestGroupCaseId::CONSERVATIVEOVER;
+                                        bool fragDepth = groupCaseId == TestGroupCaseId::FRAGDEPTH ||
+                                                         groupCaseId == TestGroupCaseId::FRAGDEPTH_EARLY_LATE ||
+                                                         groupCaseId == TestGroupCaseId::FRAGDEPTH_CLEAR ||
+                                                         groupCaseId == TestGroupCaseId::FRAGDEPTH_BASELEVEL ||
+                                                         groupCaseId == TestGroupCaseId::MULTIPASS_FRAGDEPTH;
+                                        bool fragStencil = groupCaseId == TestGroupCaseId::FRAGSTENCIL ||
+                                                           groupCaseId == TestGroupCaseId::FRAGSTENCIL_EARLY_LATE ||
+                                                           groupCaseId == TestGroupCaseId::FRAGSTENCIL_CLEAR ||
+                                                           groupCaseId == TestGroupCaseId::FRAGSTENCIL_BASELEVEL ||
+                                                           groupCaseId == TestGroupCaseId::MULTIPASS_FRAGSTENCIL;
+                                        bool multiViewport = groupCaseId == TestGroupCaseId::MULTIVIEWPORT;
+                                        bool colorLayered  = groupCaseId == TestGroupCaseId::COLORLAYERED ||
+                                                            groupCaseId == TestGroupCaseId::SRLAYERED;
+                                        bool srLayered = groupCaseId == TestGroupCaseId::SRLAYERED ||
+                                                         groupCaseId == TestGroupCaseId::MULTIVIEWSRLAYERED;
+                                        bool multiView = groupCaseId == TestGroupCaseId::MULTIVIEW ||
+                                                         groupCaseId == TestGroupCaseId::MULTIVIEWSRLAYERED ||
+                                                         groupCaseId == TestGroupCaseId::MULTIVIEWCORRELATION;
+                                        bool correlationMask     = groupCaseId == TestGroupCaseId::MULTIVIEWCORRELATION;
+                                        bool interlock           = groupCaseId == TestGroupCaseId::INTERLOCK;
+                                        bool sampleLocations     = groupCaseId == TestGroupCaseId::SAMPLELOCATIONS;
+                                        bool sampleShadingEnable = groupCaseId == TestGroupCaseId::SAMPLESHADINGENABLE;
+                                        bool sampleShadingInput  = groupCaseId == TestGroupCaseId::SAMPLESHADINGINPUT;
+                                        bool useGeometryShader   = (shaderTypeCaseId == TestShaderTypeCaseId::GEOMETRY);
+                                        bool useMeshShader       = (shaderTypeCaseId == TestShaderTypeCaseId::MESH);
+                                        bool earlyAndLateTest = groupCaseId == TestGroupCaseId::FRAGDEPTH_EARLY_LATE ||
+                                                                groupCaseId == TestGroupCaseId::FRAGSTENCIL_EARLY_LATE;
+                                        bool opClear = groupCaseId == TestGroupCaseId::FRAGDEPTH_CLEAR ||
+                                                       groupCaseId == TestGroupCaseId::FRAGSTENCIL_CLEAR;
+                                        uint32_t baseMipLevel =
+                                            (groupCaseId == TestGroupCaseId::FRAGDEPTH_BASELEVEL ||
+                                             groupCaseId == TestGroupCaseId::FRAGSTENCIL_BASELEVEL ||
+                                             groupCaseId == TestGroupCaseId::DS_BASELEVEL) ?
+                                                1 :
+                                                0;
+                                        bool multiPass    = (groupCaseId == TestGroupCaseId::MULTIPASS ||
+                                                          groupCaseId == TestGroupCaseId::MULTIPASS_FRAGDEPTH ||
+                                                          groupCaseId == TestGroupCaseId::MULTIPASS_FRAGSTENCIL);
+                                        bool maintenance6 = (groupCaseId == TestGroupCaseId::MAINTENANCE6);
+                                        bool useDepthStencil =
+                                            (fragDepth || fragStencil || groupCaseId == TestGroupCaseId::DS_BASELEVEL);
+                                        bool shaderWritesRate =
+                                            (shdCases[shdNdx].id == TestShaderRateCaseId::SHADERRATE);
 
                                         VkConservativeRasterizationModeEXT conservativeMode =
-                                            (groupNdx == 3) ? VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT :
-                                                              VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
+                                            (groupCaseId == TestGroupCaseId::CONSERVATIVEUNDER) ?
+                                                VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT :
+                                                VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
                                         uint32_t numColorLayers = (colorLayered || multiView) ? 2u : 1u;
 
                                         // Don't bother with geometry shader if we're not testing shader writes
-                                        if (useGeometryShader && !shdCases[shdNdx].count)
+                                        if (useGeometryShader && !shaderWritesRate)
                                             continue;
 
                                         // reduce number of tests
-                                        if ((groupNdx != 0) &&
-                                            (!dynCases[dynNdx].count ||
-                                             !(combCases[cmb0Ndx].count ==
-                                                   VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR ||
-                                               combCases[cmb0Ndx].count ==
+                                        if ((groupCaseId != TestGroupCaseId::BASIC) &&
+                                            (!useDynamicState ||
+                                             !(combCases[cmb0Ndx].op == VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR ||
+                                               combCases[cmb0Ndx].op ==
                                                    VK_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_KHR) ||
-                                             !(combCases[cmb1Ndx].count ==
-                                                   VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR ||
-                                               combCases[cmb1Ndx].count ==
+                                             !(combCases[cmb1Ndx].op == VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR ||
+                                               combCases[cmb1Ndx].op ==
                                                    VK_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_KHR)))
                                             continue;
 
                                         // Don't bother with geometry shader if we're testing conservative raster, sample mask, depth/stencil
-                                        if (useGeometryShader &&
-                                            (useApiSampleMask || useSampleMaskIn || consRast || fragDepth ||
-                                             fragStencil || maintenance6 || useSampleMaskOut))
+                                        if (useGeometryShader && (useApiSampleMask || useSampleMaskIn || consRast ||
+                                                                  useDepthStencil || maintenance6 || useSampleMaskOut))
                                             continue;
 
                                         // Don't bother with geometry shader if we're testing non-dynamic state
-                                        if (useGeometryShader && !dynCases[dynNdx].count)
+                                        if (useGeometryShader && !useDynamicState)
                                             continue;
 
                                         // Only test multiViewport/layered with shaderWritesRate
-                                        if ((multiViewport || colorLayered) && !shdCases[shdNdx].count)
+                                        if ((multiViewport || colorLayered) && !shaderWritesRate)
                                             continue;
 
                                         // Can't test layered shading rate attachment without an attachment
@@ -3879,45 +4005,44 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                                             continue;
 
                                         CaseDef c{
-                                            groupParams,               // SharedGroupParams groupParams;
-                                            seed++,                    // int32_t seed;
-                                            extentCases[extNdx].count, // VkExtent2D framebufferDim;
-                                            (VkSampleCountFlagBits)sampCases[sampNdx]
-                                                .count, // VkSampleCountFlagBits samples;
-                                            {(VkFragmentShadingRateCombinerOpKHR)combCases[cmb0Ndx].count,
-                                             (VkFragmentShadingRateCombinerOpKHR)combCases[cmb1Ndx]
-                                                 .count},           // VkFragmentShadingRateCombinerOpKHR combinerOp[2];
+                                            groupParams,                // SharedGroupParams groupParams;
+                                            seed++,                     // int32_t seed;
+                                            extentCases[extNdx].extent, // VkExtent2D framebufferDim;
+                                            sampCases[sampNdx].count,   // VkSampleCountFlagBits samples;
+                                            {combCases[cmb0Ndx].op,
+                                             combCases[cmb1Ndx]
+                                                 .op},              // VkFragmentShadingRateCombinerOpKHR combinerOp[2];
                                             attCases[attNdx].usage, // AttachmentUsage attachmentUsage;
-                                            (bool)shdCases[shdNdx].count, // bool shaderWritesRate;
-                                            useGeometryShader,            // bool geometryShader;
-                                            useMeshShader,                // bool meshShader;
-                                            (bool)dynCases[dynNdx].count, // bool useDynamicState;
-                                            useApiSampleMask,             // bool useApiSampleMask;
-                                            useSampleMaskIn,              // bool useSampleMaskIn;
-                                            useSampleMaskOut,             // bool useSampleMaskOut;
-                                            consRast,                     // bool conservativeEnable;
-                                            conservativeMode, // VkConservativeRasterizationModeEXT conservativeMode;
-                                            fragDepth || fragStencil, // bool useDepthStencil;
-                                            fragDepth,                // bool fragDepth;
-                                            fragStencil,              // bool fragStencil;
-                                            multiViewport,            // bool multiViewport;
-                                            colorLayered,             // bool colorLayered;
-                                            srLayered,                // bool srLayered;
-                                            numColorLayers,           // uint32_t numColorLayers;
-                                            multiView,                // bool multiView;
-                                            correlationMask,          // bool correlationMask;
-                                            interlock,                // bool interlock;
-                                            sampleLocations,          // bool sampleLocations;
-                                            sampleShadingEnable,      // bool sampleShadingEnable;
-                                            sampleShadingInput,       // bool sampleShadingInput;
-                                            false,                    // bool sampleMaskTest;
-                                            earlyAndLateTest,         // bool earlyAndLateTest;
-                                            false,                    // bool garbageAttachment;
-                                            opClear,                  // bool dsClearOp;
-                                            baseMipLevel,             // uint32_t dsBaseMipLevel;
-                                            multiPass,                // bool multiSubpasses;
-                                            maintenance6,             // bool maintenance6;
-                                            false,                    // bool helperInvocation;
+                                            shaderWritesRate,       // bool shaderWritesRate;
+                                            useGeometryShader,      // bool geometryShader;
+                                            useMeshShader,          // bool meshShader;
+                                            useDynamicState,        // bool useDynamicState;
+                                            useApiSampleMask,       // bool useApiSampleMask;
+                                            useSampleMaskIn,        // bool useSampleMaskIn;
+                                            useSampleMaskOut,       // bool useSampleMaskOut;
+                                            consRast,               // bool conservativeEnable;
+                                            conservativeMode,    // VkConservativeRasterizationModeEXT conservativeMode;
+                                            useDepthStencil,     // bool useDepthStencil;
+                                            fragDepth,           // bool fragDepth;
+                                            fragStencil,         // bool fragStencil;
+                                            multiViewport,       // bool multiViewport;
+                                            colorLayered,        // bool colorLayered;
+                                            srLayered,           // bool srLayered;
+                                            numColorLayers,      // uint32_t numColorLayers;
+                                            multiView,           // bool multiView;
+                                            correlationMask,     // bool correlationMask;
+                                            interlock,           // bool interlock;
+                                            sampleLocations,     // bool sampleLocations;
+                                            sampleShadingEnable, // bool sampleShadingEnable;
+                                            sampleShadingInput,  // bool sampleShadingInput;
+                                            false,               // bool sampleMaskTest;
+                                            earlyAndLateTest,    // bool earlyAndLateTest;
+                                            false,               // bool garbageAttachment;
+                                            opClear,             // bool dsClearOp;
+                                            baseMipLevel,        // uint32_t dsBaseMipLevel;
+                                            multiPass,           // bool multiSubpasses;
+                                            maintenance6,        // bool maintenance6;
+                                            false,               // bool helperInvocation;
                                         };
 
                                         sampGroup->addChild(new FSRTestCase(testCtx, shaderCases[shaderNdx].name, c));

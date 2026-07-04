@@ -117,6 +117,10 @@ dEQP-VK.memory.map_placed.unmap_reserve.size_1048576
 dEQP-VK.memory.map_placed.unmap_reserve.size_4096
 dEQP-VK.memory.map_placed.unmap_reserve.size_65536
 dEQP-VK.memory.map_placed.unmap_reserve.size_8192
+dEQP-VK.memory.opaque_and_dma.b8g8r8a8_unorm_sample
+dEQP-VK.memory.opaque_and_dma.b8g8r8a8_unorm_transfer
+dEQP-VK.memory.opaque_and_dma.r8g8b8a8_unorm_sample
+dEQP-VK.memory.opaque_and_dma.r8g8b8a8_unorm_transfer
 dEQP-VK.memory.zero_initialize_device_memory.clear_buffer.index_buffer_1
 dEQP-VK.memory.zero_initialize_device_memory.clear_buffer.index_buffer_1_host_visible
 dEQP-VK.memory.zero_initialize_device_memory.clear_buffer.index_buffer_4

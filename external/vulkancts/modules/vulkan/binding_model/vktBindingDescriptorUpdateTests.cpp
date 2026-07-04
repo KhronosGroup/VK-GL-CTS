@@ -632,8 +632,8 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::queuePass(const QueueDat
         }
 
         const vk::VkAttachmentReference colorRef = {
-            0u,                                           // uint32_t attachment;
-            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout layout;
+            0u,               // uint32_t attachment;
+            attachmentLayout, // VkImageLayout layout;
         };
         const std::vector<vk::VkAttachmentReference> colorAttachments(1u, colorRef);
 

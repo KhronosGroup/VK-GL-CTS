@@ -995,7 +995,7 @@ void updateVertexBuffer(const DeviceInterface &vk, const VkDevice device,
 
         bufferOffset += geometryMinAlign;
 
-        deMemcpy(&bufferStart[bufferOffset], geometryPtr, geometryPtrSize);
+        deMemcpy(&bufferStart[bufferOffset], geometryPtr, geometryPtrSize - geometryMinAlign);
 
         bufferOffset += deAlignSize(geometryPtrSize, geometryVertexAlign);
     }

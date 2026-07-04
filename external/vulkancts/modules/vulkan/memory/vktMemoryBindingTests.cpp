@@ -412,14 +412,17 @@ Move<VkCommandBuffer> createCommandBuffer(const DeviceInterface &vk, VkDevice de
 class BaseTestInstance : public TestInstance
 {
 public:
-    BaseTestInstance(Context &ctx, BindingCaseParameters params) : TestInstance(ctx), m_params(params)
+    BaseTestInstance(Context &ctx, BindingCaseParameters params)
+        : TestInstance(ctx)
+        , m_params(params)
+        , m_instance(ctx)
+        , m_logicalDevice(ctx)
     {
 #ifndef CTS_USES_VULKANSC
         if (m_params.priorityMode == PRIORITY_MODE_DYNAMIC)
         {
-            VkInstance instance(m_context.getInstance());
-            InstanceDriver instanceDriver(m_context.getPlatformInterface(), instance);
-            const float queuePriority = 1.0f;
+            const auto &instanceDriver = m_instance.getDriver();
+            const float queuePriority  = 1.0f;
 
             VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT pageableDeviceLocalMemoryFeature = {
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT, // VkStructureType                    sType
@@ -444,7 +447,7 @@ public:
                 features                                      // VkPhysicalDeviceFeatures            features
             };
 
-            instanceDriver.getPhysicalDeviceFeatures2(m_context.getPhysicalDevice(), &features2);
+            instanceDriver.getPhysicalDeviceFeatures2(m_instance.getPhysicalDevice(), &features2);
 
             if (!pageableDeviceLocalMemoryFeature.pageableDeviceLocalMemory)
                 TCU_FAIL("pageableDeviceLocalMemory feature not supported but VK_EXT_pageable_device_local_memory "
@@ -484,30 +487,33 @@ public:
                 nullptr // const VkPhysicalDeviceFeatures* pEnabledFeatures;
             };
 
-            m_logicalDevice = createCustomDevice(m_context.getPlatformInterface(), instance, instanceDriver,
-                                                 m_context.getPhysicalDevice(), &deviceInfo);
+            m_logicalDevice = m_instance.createCustomDevice(&deviceInfo);
         }
 #endif // CTS_USES_VULKANSC
-        m_logicalDeviceInterface = de::MovePtr<DeviceDriver>(
-            new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), getDevice(),
-                             m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
-        m_logicalDeviceInterface->getDeviceQueue(getDevice(), m_context.getUniversalQueueFamilyIndex(), 0,
-                                                 &m_logicalDeviceQueue);
+        getDeviceInterface().getDeviceQueue(getDevice(), m_context.getUniversalQueueFamilyIndex(), 0,
+                                            &m_logicalDeviceQueue);
     };
 
 protected:
-    vk::VkDevice getDevice(void)
+    vk::VkPhysicalDevice getPhysicalDevice(void) const
     {
-        return (m_params.priorityMode == PRIORITY_MODE_DYNAMIC) ? m_logicalDevice.get() : m_context.getDevice();
+        return m_logicalDevice.getPhysicalDevice();
     }
-    const DeviceInterface &getDeviceInterface(void)
+    const InstanceInterface &getInstanceInterface(void) const
     {
-        return (m_params.priorityMode == PRIORITY_MODE_DYNAMIC) ? *m_logicalDeviceInterface.get() :
-                                                                  m_context.getDeviceInterface();
+        return m_logicalDevice.getInstanceDriver();
     }
-    VkQueue getUniversalQueue(void)
+    vk::VkDevice getDevice(void) const
     {
-        return (m_params.priorityMode == PRIORITY_MODE_DYNAMIC) ? m_logicalDeviceQueue : m_context.getUniversalQueue();
+        return *m_logicalDevice;
+    }
+    const DeviceInterface &getDeviceInterface(void) const
+    {
+        return m_logicalDevice.getDriver();
+    }
+    VkQueue getUniversalQueue(void) const
+    {
+        return m_logicalDeviceQueue;
     }
 
     template <typename TTarget>
@@ -537,8 +543,8 @@ protected:
     BindingCaseParameters m_params;
 
 private:
-    vk::Move<vk::VkDevice> m_logicalDevice;
-    de::MovePtr<DeviceDriver> m_logicalDeviceInterface;
+    const InstanceWrapper m_instance;
+    DeviceWrapper m_logicalDevice;
     VkQueue m_logicalDeviceQueue;
 };
 
@@ -997,8 +1003,8 @@ public:
 
     virtual tcu::TestStatus iterate(void)
     {
-        const InstanceInterface &vkInstance     = m_context.getInstanceInterface();
-        const VkPhysicalDevice vkPhysicalDevice = m_context.getPhysicalDevice();
+        const InstanceInterface &vkInstance     = getInstanceInterface();
+        const VkPhysicalDevice vkPhysicalDevice = getPhysicalDevice();
         VkPhysicalDeviceProperties properties;
         vkInstance.getPhysicalDeviceProperties(vkPhysicalDevice, &properties);
         std::vector<de::SharedPtr<Move<TTarget>>> targets;
@@ -1043,8 +1049,8 @@ public:
 
     virtual tcu::TestStatus iterate(void)
     {
-        const InstanceInterface &vkInstance     = m_context.getInstanceInterface();
-        const VkPhysicalDevice vkPhysicalDevice = m_context.getPhysicalDevice();
+        const InstanceInterface &vkInstance     = getInstanceInterface();
+        const VkPhysicalDevice vkPhysicalDevice = getPhysicalDevice();
         VkPhysicalDeviceProperties properties;
         vkInstance.getPhysicalDeviceProperties(vkPhysicalDevice, &properties);
         std::vector<de::SharedPtr<Move<TTarget>>> targets[2];

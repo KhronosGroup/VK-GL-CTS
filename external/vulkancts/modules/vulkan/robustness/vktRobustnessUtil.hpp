@@ -38,11 +38,8 @@ namespace vkt
 namespace robustness
 {
 
-vk::Move<vk::VkDevice> createRobustBufferAccessDevice(Context &context,
-#ifdef CTS_USES_VULKANSC
-                                                      const vkt::CustomInstance &customInstance,
-#endif // CTS_USES_VULKANSC
-                                                      const vk::VkPhysicalDeviceFeatures2 *enabledFeatures2 = nullptr);
+CustomDevice createRobustBufferAccessDevice(Context &context, const InstanceWrapper &instance,
+                                            const vk::VkPhysicalDeviceFeatures2 *enabledFeatures2 = nullptr);
 bool areEqual(float a, float b);
 bool isValueZero(const void *valuePtr, size_t valueSize);
 bool isValueWithinBuffer(const void *buffer, vk::VkDeviceSize bufferSize, const void *valuePtr,
@@ -66,8 +63,8 @@ struct DescriptorHeapEnvironmentParams
 class TestEnvironment
 {
 public:
-    TestEnvironment(Context &context, const vk::DeviceInterface &vk, vk::VkDevice device,
-                    vk::VkDescriptorSetLayout descriptorSetLayout, vk::VkDescriptorSet descriptorSet);
+    TestEnvironment(Context &context, const DeviceWrapper &device, vk::VkDescriptorSetLayout descriptorSetLayout,
+                    vk::VkDescriptorSet descriptorSet);
 
     virtual ~TestEnvironment(void)
     {
@@ -77,7 +74,7 @@ public:
 
 protected:
     Context &m_context;
-    vk::VkDevice m_device;
+    const DeviceWrapper &m_device;
     vk::VkDescriptorSetLayout m_descriptorSetLayout;
     vk::VkDescriptorSet m_descriptorSet;
 
@@ -101,10 +98,10 @@ public:
         uint32_t indexCount;
     };
 
-    GraphicsEnvironment(Context &context, const vk::DeviceInterface &vk, vk::VkDevice device,
-                        vk::VkDescriptorSetLayout descriptorSetLayout, vk::VkDescriptorSet descriptorSet,
-                        const VertexBindings &vertexBindings, const VertexAttributes &vertexAttributes,
-                        const DrawConfig &drawConfig, bool testPipelineRobustness = false,
+    GraphicsEnvironment(Context &context, const DeviceWrapper &device, vk::VkDescriptorSetLayout descriptorSetLayout,
+                        vk::VkDescriptorSet descriptorSet, const VertexBindings &vertexBindings,
+                        const VertexAttributes &vertexAttributes, const DrawConfig &drawConfig,
+                        bool testPipelineRobustness                                 = false,
                         const DescriptorHeapEnvironmentParams *descriptorHeapParams = nullptr);
 
     virtual ~GraphicsEnvironment(void)
@@ -134,9 +131,9 @@ private:
 class ComputeEnvironment : public TestEnvironment
 {
 public:
-    ComputeEnvironment(Context &context, const vk::DeviceInterface &vk, vk::VkDevice device,
-                       vk::VkDescriptorSetLayout descriptorSetLayout, vk::VkDescriptorSet descriptorSet,
-                       bool testPipelineRobustness, const DescriptorHeapEnvironmentParams *descriptorHeapParams);
+    ComputeEnvironment(Context &context, const DeviceWrapper &device, vk::VkDescriptorSetLayout descriptorSetLayout,
+                       vk::VkDescriptorSet descriptorSet, bool testPipelineRobustness,
+                       const DescriptorHeapEnvironmentParams *descriptorHeapParams);
 
     virtual ~ComputeEnvironment(void)
     {

@@ -100,18 +100,17 @@ struct TestParams;
 
 struct DeviceHelper
 {
-    Move<VkDevice> device;
-    de::MovePtr<DeviceDriver> vkd;
+    const InstanceWrapper instance;
+    DeviceWrapper device;
+    const DeviceInterface *vkd;
     uint32_t queueFamilyIndex;
     VkQueue queue;
-    de::MovePtr<SimpleAllocator> allocator;
+    vk::Allocator *allocator;
 
-    DeviceHelper(Context &context)
+    DeviceHelper(Context &context) : instance(context)
     {
-        const auto &vkp           = context.getPlatformInterface();
-        const auto &vki           = context.getInstanceInterface();
-        const auto instance       = context.getInstance();
-        const auto physicalDevice = context.getPhysicalDevice();
+        const auto &vki           = instance.getDriver();
+        const auto physicalDevice = instance.getPhysicalDevice();
 
         queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
@@ -162,12 +161,10 @@ struct DeviceHelper
         };
 
         // Create custom device and related objects
-        device    = createCustomDevice(vkp, instance, vki, physicalDevice, &createInfo);
-        vkd       = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion(),
-                                                               context.getTestContext().getCommandLine()));
+        device    = instance.createCustomDevice(physicalDevice, &createInfo);
+        vkd       = &device.getDriver();
         queue     = getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
-        allocator = de::MovePtr<SimpleAllocator>(
-            new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
+        allocator = &device.getAllocator();
     }
 };
 

@@ -42,6 +42,8 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkPipelineConstructionUtil.hpp"
+#include "vkBuilderUtil.hpp"
 #include "tcuFloat.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuFloat.hpp"
@@ -3048,6 +3050,287 @@ tcu::TestStatus runTest(Context &context, Params params)
 }
 
 } // namespace UnboundInput
+
+namespace NullState
+{
+
+struct Params
+{
+    PipelineConstructionType constructionType;
+    bool isRastDiscardDynamic;
+};
+
+void checkSupport(Context &context, Params params)
+{
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, params.constructionType);
+
+    if (!isConstructionTypeShaderObject(params.constructionType))
+        context.requireDeviceFunctionality("VK_EXT_vertex_input_dynamic_state");
+
+    if (params.isRastDiscardDynamic)
+        context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state2");
+
+    if (!context.getDeviceFeatures().vertexPipelineStoresAndAtomics)
+        TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
+}
+
+void initPrograms(SourceCollections &programCollection, Params)
+{
+    std::ostringstream vert;
+    vert << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+         << "layout (location=0) in vec4 inPos;\n"
+         << "layout (location=1) in vec4 inColor;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "layout (set = 0, binding = 0) buffer ssbo {\n"
+         << "    int data[];\n"
+         << "} outData;\n"
+         << "void main (void) {\n"
+         << "    gl_Position = inPos;\n"
+         << "    outColor = inColor;\n"
+         << "    outData.data[gl_VertexIndex] = gl_VertexIndex + 1;\n"
+         << "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    frag << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+         << "layout (location=0) in vec4 inColor;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main (void) {\n"
+         << "    outColor = inColor;\n"
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+struct PositionColor
+{
+    tcu::Vec4 position;
+    tcu::Vec4 color;
+};
+
+tcu::TestStatus runTest(Context &context, Params params)
+{
+    const auto ctx = context.getContextCommonData();
+    const tcu::IVec3 fbExtent(2, 2, 1);
+    const auto apiExtent = makeExtent3D(fbExtent);
+    const auto format    = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto imgUsage =
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+    const std::vector<PositionColor> vertices{
+        // clang-format off
+        PositionColor{tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f)},
+        PositionColor{tcu::Vec4(-1.0f,  0.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f)},
+        PositionColor{tcu::Vec4( 0.0f, -1.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f)},
+        PositionColor{tcu::Vec4( 0.0f,  0.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f)},
+        // clang-format on
+    };
+    const uint32_t numVertices = de::sizeU32(vertices);
+
+    // Vertex buffer.
+    const auto vtxBufferSize = static_cast<VkDeviceSize>(numVertices);
+    const auto vtxBufferInfo = makeBufferCreateInfo(vtxBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    BufferWithMemory vtxBuffer(ctx.vkd, ctx.device, ctx.allocator, vtxBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &alloc = vtxBuffer.getAllocation();
+        void *data  = alloc.getHostPtr();
+        memcpy(data, de::dataOrNull(vertices), numVertices);
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+    const VkDeviceSize vtxBufferOffset = 0ull;
+
+    // Output data buffer.
+    const auto outputDataBufferSize = static_cast<VkDeviceSize>(numVertices * sizeof(int32_t));
+    const auto outputDataBufferInfo = makeBufferCreateInfo(outputDataBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    BufferWithMemory outputDataBuffer(ctx.vkd, ctx.device, ctx.allocator, outputDataBufferInfo,
+                                      MemoryRequirement::HostVisible);
+    {
+        auto &alloc = outputDataBuffer.getAllocation();
+        void *data  = alloc.getHostPtr();
+        std::vector<int32_t> randomData(numVertices, 0x7FFFFFFF);
+        memcpy(data, de::dataOrNull(randomData), static_cast<size_t>(outputDataBufferSize));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Descriptor set.
+    DescriptorSetLayoutBuilder descSetLayoutBuilder;
+    descSetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+    Move<VkDescriptorSetLayout> descSetLayout = descSetLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    DescriptorPoolBuilder descPoolBuilder;
+    descPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    Move<VkDescriptorPool> descPool =
+        descPoolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    Move<VkDescriptorSet> descSet = makeDescriptorSet(ctx.vkd, ctx.device, *descPool, *descSetLayout);
+
+    const auto descBufferInfo = makeDescriptorBufferInfo(*outputDataBuffer, 0ull, outputDataBufferSize);
+
+    DescriptorSetUpdateBuilder descSetUpdateBuilder;
+    descSetUpdateBuilder.writeSingle(*descSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descBufferInfo);
+    descSetUpdateBuilder.update(ctx.vkd, ctx.device);
+
+    // Color buffer.
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, apiExtent, format, imgUsage, VK_IMAGE_TYPE_2D);
+
+    RenderPassWrapper renderPass(params.constructionType, ctx.vkd, ctx.device, format);
+    renderPass.createFramebuffer(ctx.vkd, ctx.device, colorBuffer.getImage(), colorBuffer.getImageView(),
+                                 apiExtent.width, apiExtent.height);
+
+    // Vertex inputs.
+    const std::vector<VkVertexInputBindingDescription> actualBindings{
+        makeVertexInputBindingDescription(0u, DE_SIZEOF32(PositionColor), VK_VERTEX_INPUT_RATE_VERTEX),
+        makeVertexInputBindingDescription(1u, DE_SIZEOF32(tcu::Vec4), VK_VERTEX_INPUT_RATE_VERTEX),
+    };
+    const std::vector<VkVertexInputAttributeDescription> actualAttributes{
+        makeVertexInputAttributeDescription(0u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT,
+                                            static_cast<uint32_t>(offsetof(PositionColor, position))),
+        makeVertexInputAttributeDescription(1u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT,
+                                            static_cast<uint32_t>(offsetof(PositionColor, color))),
+    };
+
+    // NULL vertex input state.
+    const VkPipelineVertexInputStateCreateInfo *staticVertexInputState = nullptr;
+
+    // Shaders.
+    const auto &binaries = context.getBinaryCollection();
+    const ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
+    const ShaderWrapper fragShader(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    // Dynamic state.
+    std::vector<VkDynamicState> dynamicStates(1u, VK_DYNAMIC_STATE_VERTEX_INPUT_EXT);
+
+    if (params.isRastDiscardDynamic)
+        dynamicStates.push_back(VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT);
+
+    const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+
+    PipelineLayoutWrapper pipelineLayout(params.constructionType, ctx.vkd, ctx.device, *descSetLayout);
+
+    GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(),
+                                     params.constructionType);
+    pipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultColorBlendState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDefaultRasterizationState()
+        .setDefaultRasterizerDiscardEnable(!params.isRastDiscardDynamic) // Rasterization disabled statically.
+        .setDynamicState(&dynamicStateCreateInfo)
+        .setupVertexInputState(staticVertexInputState)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertShader)
+        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u,
+                                  params.isRastDiscardDynamic ? fragShader : ShaderWrapper())
+        .setupFragmentOutputState(*renderPass)
+        .buildPipeline();
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), clearColor);
+    pipeline.bind(cmdBuffer);
+    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vtxBuffer.get(), &vtxBufferOffset);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descSet, 0u,
+                                  nullptr);
+
+    // Dynamic vertex input.
+    {
+        const std::vector<VkVertexInputBindingDescription2EXT> bindings{
+            VkVertexInputBindingDescription2EXT{
+                VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
+                nullptr,
+                actualBindings.at(0u).binding,
+                actualBindings.at(0u).stride,
+                actualBindings.at(0u).inputRate,
+                1u,
+            },
+            VkVertexInputBindingDescription2EXT{
+                VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
+                nullptr,
+                actualBindings.at(1u).binding,
+                actualBindings.at(1u).stride,
+                actualBindings.at(1u).inputRate,
+                1u,
+            },
+        };
+        const std::vector<VkVertexInputAttributeDescription2EXT> attributes{
+            VkVertexInputAttributeDescription2EXT{
+                VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
+                nullptr,
+                actualAttributes.at(0u).location,
+                actualAttributes.at(0u).binding,
+                actualAttributes.at(0u).format,
+                actualAttributes.at(0u).offset,
+            },
+            VkVertexInputAttributeDescription2EXT{
+                VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
+                nullptr,
+                actualAttributes.at(1u).location,
+                actualAttributes.at(1u).binding,
+                actualAttributes.at(1u).format,
+                actualAttributes.at(1u).offset,
+            },
+        };
+        ctx.vkd.cmdSetVertexInputEXT(cmdBuffer, de::sizeU32(bindings), de::dataOrNull(bindings),
+                                     de::sizeU32(attributes), de::dataOrNull(attributes));
+    }
+
+    // Rasterization disabled dynamically.
+    if (params.isRastDiscardDynamic)
+        ctx.vkd.cmdSetRasterizerDiscardEnable(cmdBuffer, VK_TRUE);
+
+    // Draw.
+    ctx.vkd.cmdDraw(cmdBuffer, numVertices, 1u, 0u, 1u);
+    renderPass.end(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), fbExtent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    const auto tcuFormat = mapVkFormat(format);
+    tcu::TextureLevel refLevel(tcuFormat, fbExtent.x(), fbExtent.y());
+    tcu::PixelBufferAccess refAccess = refLevel.getAccess();
+
+    tcu::clear(refAccess, clearColor);
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+
+    tcu::ConstPixelBufferAccess resAccess(tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    // Verify that output color is same as clear color.
+    const float threshold = 0.0f; // Expect exact colors.
+    const tcu::Vec4 thresholdVec(threshold, threshold, threshold, threshold);
+    auto &log = context.getTestContext().getLog();
+
+    if (!tcu::floatThresholdCompare(log, "Result", "", refAccess, resAccess, thresholdVec, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected results in color buffer; check log for details --");
+
+    // Verify output data is vertex index + 1.
+    const auto &outputDataBufferAllocation = outputDataBuffer.getAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, outputDataBufferAllocation);
+
+    const int32_t *outputDataBufferPtr = static_cast<int32_t *>(outputDataBufferAllocation.getHostPtr());
+
+    for (int32_t vertexIdx = 0; vertexIdx < static_cast<int32_t>(numVertices); vertexIdx++)
+    {
+        if (outputDataBufferPtr[vertexIdx] != (vertexIdx + 1))
+            TCU_FAIL("Unexpected results in data buffer");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+} // namespace NullState
 #endif // CTS_USES_VULKANSC
 
 void createMiscVertexInputTests(tcu::TestCaseGroup *miscTests, PipelineConstructionType pipelineConstructionType)
@@ -3088,6 +3371,20 @@ void createMiscVertexInputTests(tcu::TestCaseGroup *miscTests, PipelineConstruct
             }
 #endif
         }
+
+#ifndef CTS_USES_VULKANSC
+        // Null vertex input state with rasterization discard enabled and dynamic vertex input
+        {
+            for (const auto isRastDiscardDynamic : {false, true})
+            {
+                const auto nullStateTestName =
+                    std::string("null_state_dynamic_input_rast_discard") + (isRastDiscardDynamic ? "_dynamic" : "");
+                const NullState::Params nullStateParams{pipelineConstructionType, isRastDiscardDynamic};
+                addFunctionCaseWithPrograms(miscTests, nullStateTestName, NullState::checkSupport,
+                                            NullState::initPrograms, NullState::runTest, nullStateParams);
+            }
+        }
+#endif
     }
 }
 

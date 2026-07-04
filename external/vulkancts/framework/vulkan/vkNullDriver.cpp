@@ -293,6 +293,7 @@ VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Tensor, ARM)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, TensorView, ARM)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, DataGraphPipelineSession, ARM)
 VK_NULL_DEFINE_OBJ_2_WITH_POSTFIX(VkDevice, AccelerationStructure, KHR)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, GpaSession, AMD)
 #endif // CTS_USES_VULKANSC
 
 class Instance

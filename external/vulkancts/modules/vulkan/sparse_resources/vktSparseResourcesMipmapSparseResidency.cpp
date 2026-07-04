@@ -134,7 +134,6 @@ MipmapSparseResidencyInstance::MipmapSparseResidencyInstance(Context &context, c
 
 tcu::TestStatus MipmapSparseResidencyInstance::iterate(void)
 {
-    const InstanceInterface &instance = m_context.getInstanceInterface();
     {
         // Create logical device supporting both sparse and compute operations
         QueueRequirementsVec queueRequirements;
@@ -144,6 +143,7 @@ tcu::TestStatus MipmapSparseResidencyInstance::iterate(void)
         createDeviceSupportingQueues(queueRequirements);
     }
 
+    const InstanceInterface &instance     = getInstanceInterface();
     const VkPhysicalDevice physicalDevice = getPhysicalDevice();
     VkImageCreateInfo imageSparseInfo;
     std::vector<DeviceMemorySp> deviceMemUniquePtrVec;

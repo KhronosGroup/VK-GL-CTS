@@ -21,6 +21,8 @@ set(DEQP_VK_VKSC_MEMORY_SRCS
 	vktMemoryBindingTests.hpp
 	vktMemoryExternalMemoryHostTests.cpp
 	vktMemoryExternalMemoryHostTests.hpp
+	vktMemoryOpaqueAndDmaImageTests.cpp
+	vktMemoryOpaqueAndDmaImageTests.hpp
 	)
 
 set(DEQP_VK_MEMORY_SRCS

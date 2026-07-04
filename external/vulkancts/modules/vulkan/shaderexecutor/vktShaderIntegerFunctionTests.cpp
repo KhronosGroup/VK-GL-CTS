@@ -330,20 +330,19 @@ void IntegerFunctionCase::checkSupport(Context &context) const
 
 // IntegerFunctionTestInstance
 
-class IntegerFunctionTestInstance : public TestInstance
+class IntegerFunctionTestInstance : public MultiQueueRunnerTestInstance
 {
 public:
     IntegerFunctionTestInstance(Context &context, glu::ShaderType shaderType, const ShaderSpec &spec, int numValues,
                                 const char *name)
-        : TestInstance(context)
+        : MultiQueueRunnerTestInstance(context, shaderType == glu::SHADERTYPE_COMPUTE ? COMPUTE_QUEUE : GRAPHICS_QUEUE)
         , m_shaderType(shaderType)
         , m_spec(spec)
         , m_numValues(numValues)
         , m_name(name)
-        , m_executor(createExecutor(context, m_shaderType, m_spec))
     {
     }
-    virtual tcu::TestStatus iterate(void);
+    virtual tcu::TestStatus queuePass(const QueueData &queueData) override;
 
 protected:
     virtual bool compare(const void *const *inputs, const void *const *outputs) = 0;
@@ -359,12 +358,13 @@ protected:
     const char *m_name;
 
     std::ostringstream m_failMsg; //!< Comparison failure help message.
-
-    de::UniquePtr<ShaderExecutor> m_executor;
 };
 
-tcu::TestStatus IntegerFunctionTestInstance::iterate(void)
+tcu::TestStatus IntegerFunctionTestInstance::queuePass(const QueueData &queueData)
 {
+    const UserQueue userQueue(queueData.handle, queueData.familyIndex);
+    de::UniquePtr<ShaderExecutor> executor(createExecutor(m_context, m_shaderType, m_spec, VK_NULL_HANDLE, userQueue));
+
     const int numInputScalars  = computeTotalScalarSize(m_spec.inputs);
     const int numOutputScalars = computeTotalScalarSize(m_spec.outputs);
     vector<uint32_t> inputData(numInputScalars * m_numValues);
@@ -376,7 +376,7 @@ tcu::TestStatus IntegerFunctionTestInstance::iterate(void)
     getInputValues(m_numValues, &inputPointers[0]);
 
     // Execute shader.
-    m_executor->execute(m_numValues, &inputPointers[0], &outputPointers[0]);
+    executor->execute(m_numValues, &inputPointers[0], &outputPointers[0]);
 
     // Compare results.
     {

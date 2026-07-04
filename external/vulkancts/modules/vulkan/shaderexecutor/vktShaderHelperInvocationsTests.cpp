@@ -122,15 +122,15 @@ HelperInvocationsTestInstance::HelperInvocationsTestInstance(Context &context, c
     }
     else if (m_testParam.testType == TestType::LOAD_IMAGE)
     {
-        m_usingBuffer          = false;
-        m_testedImageUsage     = VK_IMAGE_USAGE_STORAGE_BIT;
+        m_usingBuffer = false;
+        m_testedImageUsage |= VK_IMAGE_USAGE_STORAGE_BIT;
         m_testedDescriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
     }
     else if (m_testParam.testType == TestType::LOAD_TEXTURE)
     {
-        m_usingSampler         = true;
-        m_usingBuffer          = false;
-        m_testedImageUsage     = VK_IMAGE_USAGE_SAMPLED_BIT;
+        m_usingSampler = true;
+        m_usingBuffer  = false;
+        m_testedImageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
         m_testedDescriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     }
     else if (m_testParam.testType == TestType::OUTPUT_VARIABLES)
@@ -311,28 +311,18 @@ tcu::TestStatus HelperInvocationsTestInstance::iterate(void)
 
         endRenderPass(vk, *cmdBuffer);
 
-        if (m_usingBuffer)
-        {
-            // wait for color attachment to be filled
-            auto memoryBarrier = makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
-            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 1u, &memoryBarrier, 0u, 0u, 0u, 0u);
+        // wait for color attachment to be filled
+        auto memoryBarrier = makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                              0u, 1u, &memoryBarrier, 0u, 0u, 0u, 0u);
 
-            // copy color image to buffer
-            vk.cmdCopyImageToBuffer(*cmdBuffer, *inputImage, VK_IMAGE_LAYOUT_GENERAL, *inputBuffer, 1u, &copyRegion);
+        // copy color image to buffer
+        vk.cmdCopyImageToBuffer(*cmdBuffer, *inputImage, VK_IMAGE_LAYOUT_GENERAL, *inputBuffer, 1u, &copyRegion);
 
-            // wait for buffer to have data from color image
-            memoryBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT);
-            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0u,
-                                  1u, &memoryBarrier, 0u, 0u, 0u, 0u);
-        }
-        else
-        {
-            // wait for color attachment to be filled
-            auto memoryBarrier = makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT);
-            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0u, 1u, &memoryBarrier, 0u, 0u, 0u, 0u);
-        }
+        // wait for buffer to have data from color image
+        memoryBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT);
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0u, 1u,
+                              &memoryBarrier, 0u, 0u, 0u, 0u);
 
         // draw same triangle once again but this time data with previous rendering result is passed as input to FS
         beginRenderPass(vk, *cmdBuffer, *renderPass, *readFramebuffer, scissors[0], finalClearColor);

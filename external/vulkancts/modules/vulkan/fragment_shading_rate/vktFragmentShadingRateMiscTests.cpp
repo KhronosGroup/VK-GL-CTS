@@ -811,10 +811,11 @@ void initOOBShaders(vk::SourceCollections &programCollection, TestParams param)
     programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
 }
 
-Move<VkDevice> getRobustDevice(Context &context, bool robustness2)
+static CustomDevice createRobustDevice(Context &context, const InstanceWrapper &instance, bool robustness2)
 {
-    const auto &vki           = context.getInstanceInterface();
+    const auto &vki           = instance.getDriver();
     const float queuePriority = 1.0f;
+
     // Create a universal queue that supports graphics and compute
     const VkDeviceQueueCreateInfo queueParams = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType              sType;
@@ -825,18 +826,38 @@ Move<VkDevice> getRobustDevice(Context &context, bool robustness2)
         &queuePriority                              // const float*                 pQueuePriorities;
     };
 
-    VkPhysicalDeviceFeatures2 features2 = getPhysicalDeviceFeatures2(vki, context.getPhysicalDevice());
-    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features    = initVulkanStructure(&features2);
-    robustness2Features.robustImageAccess2                        = true;
-    VkPhysicalDeviceImageRobustnessFeaturesEXT robustnessFeatures = initVulkanStructure(&features2);
-    robustnessFeatures.robustImageAccess                          = true;
+    VkPhysicalDeviceFeatures2 features2 = getPhysicalDeviceFeatures2(vki, instance.getPhysicalDevice());
+
+    // Choose between robustness2 and image robustness. Feature support is checked in the support check functions.
+
+    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = initVulkanStructure(&features2);
+    robustness2Features.robustImageAccess2                     = VK_TRUE;
+
+    VkPhysicalDeviceImageRobustnessFeaturesEXT imgRobustnessFeatures = initVulkanStructure(&features2);
+    imgRobustnessFeatures.robustImageAccess                          = VK_TRUE;
+
     VkPhysicalDeviceFragmentShadingRateFeaturesKHR fsrFeatures =
-        initVulkanStructure(robustness2 ? (void *)&robustness2Features : &robustnessFeatures);
-    fsrFeatures.attachmentFragmentShadingRate = true;
-    fsrFeatures.pipelineFragmentShadingRate   = true;
-    const auto &extensionPtrs                 = context.getDeviceCreationExtensions();
+        initVulkanStructure(robustness2 ? reinterpret_cast<void *>(&robustness2Features) :
+                                          reinterpret_cast<void *>(&imgRobustnessFeatures));
+
+    fsrFeatures.attachmentFragmentShadingRate = VK_TRUE;
+    fsrFeatures.pipelineFragmentShadingRate   = VK_TRUE;
+
+    const auto &extensionPtrs = context.getDeviceCreationExtensions();
 
     void *pNext = (void *)&fsrFeatures;
+
+#ifndef CTS_USES_VULKANSC
+    VkPhysicalDeviceMaintenance7FeaturesKHR m7Features = initVulkanStructure();
+    m7Features.maintenance7                            = VK_TRUE;
+
+    if (context.isDeviceFunctionalitySupported("VK_KHR_maintenance7"))
+    {
+        m7Features.pNext = pNext;
+        pNext            = &m7Features;
+    }
+#endif // CTS_USES_VULKANSC
+
 #ifdef CTS_USES_VULKANSC
     VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
                                                                  context.getResourceInterface()->getStatMax() :
@@ -887,10 +908,8 @@ Move<VkDevice> getRobustDevice(Context &context, bool robustness2)
         de::dataOrNull(extensionPtrs),        // const char* const*               ppEnabledExtensionNames;
         nullptr                               // const VkPhysicalDeviceFeatures*  pEnabledFeatures;
     };
-    const auto instance = context.getInstance();
 
-    return createCustomDevice(context.getPlatformInterface(), instance, vki, context.getPhysicalDevice(),
-                              &deviceParams);
+    return instance.createCustomDevice(&deviceParams);
 }
 
 tcu::TestStatus testOOB(Context &context, TestParams params)
@@ -904,17 +923,12 @@ tcu::TestStatus testOOB(Context &context, TestParams params)
     const auto fsrFormat               = VK_FORMAT_R8_UINT;
     const auto fsrUsage = (VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
     const auto sampleCount = VK_SAMPLE_COUNT_1_BIT;
-    const auto &vki        = context.getInstanceInterface();
-    const auto &vkp        = context.getPlatformInterface();
-    const auto device      = getRobustDevice(context, params.useRobustness2);
-    const auto instance    = context.getInstance();
-    auto driver = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion(),
-                                                             context.getTestContext().getCommandLine()));
-    auto queueFamilyIndex      = context.getUniversalQueueFamilyIndex();
-    auto queue                 = getDeviceQueue(*driver, *device, queueFamilyIndex, 0u);
-    auto alloc                 = de::MovePtr<Allocator>(new SimpleAllocator(
-        *driver, device.get(), getPhysicalDeviceMemoryProperties(vki, context.getPhysicalDevice())));
-    const DeviceInterface &vkd = *driver;
+    const auto instance    = InstanceWrapper(context);
+    const auto device      = createRobustDevice(context, instance, params.useRobustness2);
+    const auto &vkd        = device.getDriver();
+    auto queueFamilyIndex  = context.getUniversalQueueFamilyIndex();
+    auto queue             = getDeviceQueue(vkd, device, queueFamilyIndex, 0u);
+    auto alloc             = &device.getAllocator();
 
     struct Dims
     {
@@ -930,7 +944,7 @@ tcu::TestStatus testOOB(Context &context, TestParams params)
     auto &bufferAlloc = buffer.getAllocation();
     void *bufferData  = bufferAlloc.getHostPtr();
     deMemcpy(bufferData, &dimensions, sizeof(Dims));
-    flushAlloc(vkd, device.get(), bufferAlloc);
+    flushAlloc(vkd, device, bufferAlloc);
 
     const auto outputSize = VkExtent3D{fsrAttachmentTexelSize.width * 4, fsrAttachmentTexelSize.height * 4, 1};
     const tcu::IVec3 fbExtent(static_cast<int>(outputSize.width), static_cast<int>(outputSize.height),
@@ -1073,8 +1087,8 @@ tcu::TestStatus testOOB(Context &context, TestParams params)
     DescriptorSetLayoutBuilder layoutBuilder;
     layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
 
-    auto descriptorSetLayout    = layoutBuilder.build(vkd, device.get());
-    auto graphicsPipelineLayout = makePipelineLayout(vkd, device.get(), descriptorSetLayout.get());
+    auto descriptorSetLayout    = layoutBuilder.build(vkd, device);
+    auto graphicsPipelineLayout = makePipelineLayout(vkd, device, descriptorSetLayout.get());
 
     static const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, //  VkStructureType                             sType;
@@ -1109,10 +1123,8 @@ tcu::TestStatus testOOB(Context &context, TestParams params)
     };
     DescriptorPoolBuilder poolBuilder;
     poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    const auto descriptorPool =
-        poolBuilder.build(vkd, device.get(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
-    const auto descriptorSetBuffer =
-        makeDescriptorSet(vkd, device.get(), descriptorPool.get(), descriptorSetLayout.get());
+    const auto descriptorPool = poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
+    const auto descriptorSetBuffer = makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayout.get());
 
     // Update descriptor sets.
     DescriptorSetUpdateBuilder updater;
@@ -1121,7 +1133,7 @@ tcu::TestStatus testOOB(Context &context, TestParams params)
     updater.writeSingle(descriptorSetBuffer.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo);
 
-    updater.update(vkd, device.get());
+    updater.update(vkd, device);
 
     beginCommandBuffer(vkd, cmdBuffer);
     const auto imgSRR = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, fsrMipCount, 0u, 1u);
@@ -1162,8 +1174,8 @@ tcu::TestStatus testOOB(Context &context, TestParams params)
                              &preHostBarrier);
 
     endCommandBuffer(vkd, cmdBuffer);
-    submitCommandsAndWait(vkd, device.get(), queue, cmdBuffer);
-    invalidateAlloc(vkd, device.get(), colorBuffer.getBufferAllocation());
+    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+    invalidateAlloc(vkd, device, colorBuffer.getBufferAllocation());
 
     const auto colorTcuFormat = mapVkFormat(colorFormat);
     const tcu::ConstPixelBufferAccess colorResultAccess(colorTcuFormat, fbExtent,

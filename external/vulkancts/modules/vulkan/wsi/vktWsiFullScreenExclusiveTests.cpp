@@ -105,10 +105,9 @@ VkPhysicalDeviceFeatures getDeviceFeaturesForWsi(void)
     return features;
 }
 
-Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkInstance instance,
-                                   const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                   const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
-                                   const VkAllocationCallbacks *pAllocator)
+static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, VkPhysicalDevice physicalDevice,
+                                        const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
+                                        const VkAllocationCallbacks *pAllocator)
 {
     const float queuePriorities[]              = {1.0f};
     const VkDeviceQueueCreateInfo queueInfos[] = {{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
@@ -137,14 +136,14 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkInsta
                                        extensions.empty() ? nullptr : &extensions[0],
                                        &features};
 
-    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return instance.createCustomDevice(physicalDevice, &deviceParams, pAllocator);
 }
 
 struct InstanceHelper
 {
     const std::vector<VkExtensionProperties> supportedExtensions;
-    const CustomInstance instance;
-    const InstanceDriver &vki;
+    const InstanceWrapper instance;
+    const InstanceInterface &vki;
 
     InstanceHelper(Context &context, Type wsiType, const VkAllocationCallbacks *pAllocator = nullptr)
         : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
@@ -158,19 +157,18 @@ struct DeviceHelper
 {
     const VkPhysicalDevice physicalDevice;
     const uint32_t queueFamilyIndex;
-    const Unique<VkDevice> device;
-    const DeviceDriver vkd;
+    const DeviceWrapper device;
+    const DeviceInterface &vkd;
     const VkQueue queue;
 
-    DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
+    DeviceHelper(const InstanceHelper &instanceHelper, VkSurfaceKHR surface,
                  const VkAllocationCallbacks *pAllocator = nullptr)
-        : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
-        , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
-        , device(createDeviceWithWsi(context.getPlatformInterface(), instance, vki, physicalDevice,
-                                     enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr), queueFamilyIndex,
-                                     pAllocator))
-        , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
-              context.getTestContext().getCommandLine())
+        : physicalDevice(instanceHelper.instance.getPhysicalDevice())
+        , queueFamilyIndex(chooseQueueFamilyIndex(instanceHelper.vki, physicalDevice, surface))
+        , device(createDeviceWithWsi(instanceHelper.instance, physicalDevice,
+                                     enumerateDeviceExtensionProperties(instanceHelper.vki, physicalDevice, nullptr),
+                                     queueFamilyIndex, pAllocator))
+        , vkd(device.getDriver())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
     {
     }
@@ -312,7 +310,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType,
                                                      *native.display, *native.window,
                                                      context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+    const DeviceHelper devHelper(instHelper, *surface);
     const std::vector<VkExtensionProperties> deviceExtensions(
         enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, nullptr));
     if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))
@@ -382,7 +380,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
 
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
-    SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
+    vk::Allocator &allocator   = devHelper.device.getAllocator();
 
     std::vector<VkSurfaceFormatKHR> surfaceFormats =
         vk::wsi::getPhysicalDeviceSurfaceFormats(instHelper.vki, devHelper.physicalDevice, *surface);

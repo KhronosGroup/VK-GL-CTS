@@ -763,15 +763,15 @@ public:
     DeviceObjectReservationInstance(Context &context, const TestParams &testParams_);
     tcu::TestStatus iterate(void) override;
 
-    virtual Move<VkDevice> createTestDevice(VkDeviceCreateInfo &deviceCreateInfo,
-                                            VkDeviceObjectReservationCreateInfo &objectInfo,
-                                            VkPhysicalDeviceVulkanSC10Features &sc10Features);
-    virtual void performTest(const DeviceInterface &vkd, VkDevice device);
-    virtual bool verifyTestResults(const DeviceInterface &vkd, VkDevice device);
+    virtual CustomDevice createTestDevice(VkDeviceCreateInfo &deviceCreateInfo,
+                                          VkDeviceObjectReservationCreateInfo &objectInfo,
+                                          VkPhysicalDeviceVulkanSC10Features &sc10Features);
+    virtual void performTest(const DeviceWrapper &device);
+    virtual bool verifyTestResults(const DeviceWrapper &device);
 
 protected:
     TestParams testParams;
-    vkt::CustomInstance instance;
+    InstanceWrapper instance;
     VkPhysicalDevice physicalDevice;
 };
 
@@ -779,7 +779,7 @@ DeviceObjectReservationInstance::DeviceObjectReservationInstance(Context &contex
     : vkt::TestInstance(context)
     , testParams(testParams_)
     , instance(vkt::createCustomInstanceFromContext(context))
-    , physicalDevice(chooseDevice(instance.getDriver(), instance, context.getTestContext().getCommandLine()))
+    , physicalDevice(instance.getPhysicalDevice())
 {
 }
 
@@ -822,46 +822,39 @@ tcu::TestStatus DeviceObjectReservationInstance::iterate(void)
 
     deviceCreateInfo.pNext = pNext;
 
-    Move<VkDevice> device = createTestDevice(deviceCreateInfo, objectInfo, sc10Features);
-    de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter> deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
-        new DeviceDriverSC(m_context.getPlatformInterface(), instance, *device,
-                           m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(),
-                           m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(),
-                           m_context.getUsedApiVersion()),
-        DeinitDeviceDeleter(m_context.getResourceInterface().get(), *device));
+    const DeviceWrapper device          = createTestDevice(deviceCreateInfo, objectInfo, sc10Features);
+    const DeviceInterface &deviceDriver = device.getDriver();
 
-    performTest(*deviceDriver, *device);
+    performTest(device);
 
-    const VkQueue queue = getDeviceQueue(*deviceDriver, *device, 0, 0);
-    VK_CHECK(deviceDriver->queueWaitIdle(queue));
+    const VkQueue queue = getDeviceQueue(deviceDriver, device, 0, 0);
+    VK_CHECK(deviceDriver.queueWaitIdle(queue));
 
-    if (!verifyTestResults(*deviceDriver, *device))
+    if (!verifyTestResults(device))
         return tcu::TestStatus::fail("Failed");
     return tcu::TestStatus::pass("Pass");
 }
 
-Move<VkDevice> DeviceObjectReservationInstance::createTestDevice(VkDeviceCreateInfo &deviceCreateInfo,
-                                                                 VkDeviceObjectReservationCreateInfo &objectInfo,
-                                                                 VkPhysicalDeviceVulkanSC10Features &sc10Features)
+CustomDevice DeviceObjectReservationInstance::createTestDevice(VkDeviceCreateInfo &deviceCreateInfo,
+                                                               VkDeviceObjectReservationCreateInfo &objectInfo,
+                                                               VkPhysicalDeviceVulkanSC10Features &sc10Features)
 {
     DE_UNREF(sc10Features);
 
     // perform any non pipeline operations - create 2 semaphores
     objectInfo.semaphoreRequestCount = 2u;
 
-    return createCustomDevice(m_context.getPlatformInterface(), instance, instance.getDriver(), physicalDevice,
-                              &deviceCreateInfo);
+    return instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
 }
 
-void DeviceObjectReservationInstance::performTest(const DeviceInterface &vkd, VkDevice device)
+void DeviceObjectReservationInstance::performTest(const DeviceWrapper &device)
 {
     std::vector<SemaphoreSp> semaphores(2u);
-    createSemaphores(vkd, device, begin(semaphores), end(semaphores));
+    createSemaphores(device.getDriver(), device, begin(semaphores), end(semaphores));
 }
 
-bool DeviceObjectReservationInstance::verifyTestResults(const DeviceInterface &vkd, VkDevice device)
+bool DeviceObjectReservationInstance::verifyTestResults(const DeviceWrapper &device)
 {
-    DE_UNREF(vkd);
     DE_UNREF(device);
     return true;
 }
@@ -874,9 +867,8 @@ public:
         : DeviceObjectReservationInstance(context, testParams_)
     {
     }
-    Move<VkDevice> createTestDevice(VkDeviceCreateInfo &deviceCreateInfo,
-                                    VkDeviceObjectReservationCreateInfo &objectInfo,
-                                    VkPhysicalDeviceVulkanSC10Features &sc10Features) override
+    CustomDevice createTestDevice(VkDeviceCreateInfo &deviceCreateInfo, VkDeviceObjectReservationCreateInfo &objectInfo,
+                                  VkPhysicalDeviceVulkanSC10Features &sc10Features) override
     {
         DE_UNREF(sc10Features);
 
@@ -890,11 +882,10 @@ public:
         objectInfo.deviceMemoryRequestCount = 2;
         objectInfo.pNext                    = &secondObjectInfo;
 
-        return createCustomDevice(m_context.getPlatformInterface(), instance, instance.getDriver(), physicalDevice,
-                                  &deviceCreateInfo);
+        return instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
     }
 
-    void performTest(const DeviceInterface &vkd, VkDevice device) override
+    void performTest(const DeviceWrapper &device) override
     {
         std::vector<VkDeviceMemory> memoryObjects(6, VK_NULL_HANDLE);
         for (size_t ndx = 0; ndx < 6; ndx++)
@@ -906,7 +897,7 @@ public:
                 0U                                      // memoryTypeIndex;
             };
 
-            VK_CHECK(vkd.allocateMemory(device, &alloc, nullptr, &memoryObjects[ndx]));
+            VK_CHECK(device.getDriver().allocateMemory(device, &alloc, nullptr, &memoryObjects[ndx]));
 
             TCU_CHECK(!!memoryObjects[ndx]);
         }
@@ -929,9 +920,8 @@ public:
         : DeviceObjectReservationInstance(context, testParams_)
     {
     }
-    Move<VkDevice> createTestDevice(VkDeviceCreateInfo &deviceCreateInfo,
-                                    VkDeviceObjectReservationCreateInfo &objectInfo,
-                                    VkPhysicalDeviceVulkanSC10Features &sc10Features) override
+    CustomDevice createTestDevice(VkDeviceCreateInfo &deviceCreateInfo, VkDeviceObjectReservationCreateInfo &objectInfo,
+                                  VkPhysicalDeviceVulkanSC10Features &sc10Features) override
     {
         DE_UNREF(sc10Features);
         switch (testParams.testMaxValues)
@@ -975,13 +965,13 @@ public:
             TCU_THROW(InternalError, "Unsupported max value");
         }
 
-        return createCustomDevice(m_context.getPlatformInterface(), instance, instance.getDriver(), physicalDevice,
-                                  &deviceCreateInfo);
+        return instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
     }
 
-    void performTest(const DeviceInterface &vkd, VkDevice device) override
+    void performTest(const DeviceWrapper &device) override
     {
-        SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instance.getDriver(), physicalDevice));
+        const DeviceInterface &vkd = device.getDriver();
+        vk::Allocator &allocator   = device.getAllocator();
         de::MovePtr<ImageWithMemory> image;
         Move<VkQueryPool> queryPool;
         Move<VkDescriptorSetLayout> descriptorSetLayout;
@@ -1185,9 +1175,8 @@ public:
     {
     }
 
-    Move<VkDevice> createTestDevice(VkDeviceCreateInfo &deviceCreateInfo,
-                                    VkDeviceObjectReservationCreateInfo &objectInfo,
-                                    VkPhysicalDeviceVulkanSC10Features &sc10Features) override
+    CustomDevice createTestDevice(VkDeviceCreateInfo &deviceCreateInfo, VkDeviceObjectReservationCreateInfo &objectInfo,
+                                  VkPhysicalDeviceVulkanSC10Features &sc10Features) override
     {
         DE_UNREF(sc10Features);
 
@@ -1320,13 +1309,13 @@ public:
         objectInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
         objectInfo.pPipelinePoolSizes    = poolSizes.empty() ? nullptr : poolSizes.data();
 
-        return createCustomDevice(m_context.getPlatformInterface(), instance, instance.getDriver(), physicalDevice,
-                                  &deviceCreateInfo);
+        return instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
     }
 
-    void performTest(const DeviceInterface &vkd, VkDevice device) override
+    void performTest(const DeviceWrapper &device) override
     {
-        SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instance.getDriver(), physicalDevice));
+        const DeviceInterface &vkd = device.getDriver();
+        vk::Allocator &allocator   = device.getAllocator();
         VkDeviceSize pipelineDefaultSize =
             VkDeviceSize(m_context.getTestContext().getCommandLine().getPipelineDefaultSize());
         uint32_t queueFamilyIndex = 0u;
@@ -1736,9 +1725,8 @@ public:
     {
     }
 
-    Move<VkDevice> createTestDevice(VkDeviceCreateInfo &deviceCreateInfo,
-                                    VkDeviceObjectReservationCreateInfo &objectInfo,
-                                    VkPhysicalDeviceVulkanSC10Features &sc10Features) override
+    CustomDevice createTestDevice(VkDeviceCreateInfo &deviceCreateInfo, VkDeviceObjectReservationCreateInfo &objectInfo,
+                                  VkPhysicalDeviceVulkanSC10Features &sc10Features) override
     {
         DE_UNREF(sc10Features);
 
@@ -1780,14 +1768,14 @@ public:
         objectInfo.subpassDescriptionRequestCount    = 1u;
         objectInfo.attachmentDescriptionRequestCount = 1u;
 
-        return createCustomDevice(m_context.getPlatformInterface(), instance, instance.getDriver(), physicalDevice,
-                                  &deviceCreateInfo);
+        return instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
     }
 
-    void performTest(const DeviceInterface &vk, VkDevice device) override
+    void performTest(const DeviceWrapper &device) override
     {
         const vk::PlatformInterface &vkp = m_context.getPlatformInterface();
         const InstanceInterface &vki     = instance.getDriver();
+        const DeviceInterface &vk        = device.getDriver();
 
         Move<VkShaderModule> vertexShader =
             createShaderModule(vk, device, m_context.getBinaryCollection().get("vertex"), 0);
@@ -1919,9 +1907,8 @@ public:
         }
     }
 
-    bool verifyTestResults(const DeviceInterface &vkd, VkDevice device) override
+    bool verifyTestResults(const DeviceWrapper &device) override
     {
-        DE_UNREF(vkd);
         DE_UNREF(device);
 
         if (!m_context.getTestContext().getCommandLine().isSubProcess())

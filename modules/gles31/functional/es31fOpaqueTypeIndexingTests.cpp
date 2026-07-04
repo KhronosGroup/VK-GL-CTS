@@ -832,7 +832,7 @@ void BlockArrayIndexingCase::getShaderSpec(ShaderSpec *spec, int numInstances, i
     global << "layout(" << layout << ", binding = " << binding << ") " << interfaceName << " " << blockName
            << "\n"
               "{\n"
-              "    uint value;\n"
+              "    highp uint value;\n"
               "} "
            << instanceName << "[" << numInstances << "];\n";
 

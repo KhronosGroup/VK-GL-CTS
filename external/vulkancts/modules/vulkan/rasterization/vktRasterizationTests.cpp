@@ -6079,7 +6079,7 @@ public:
 
 private:
     virtual const VkPipelineColorBlendStateCreateInfo *getColorBlendStateCreateInfo(void) const;
-    int getRenderSize(FillRuleCaseType type) const;
+    static int getRenderSize(FillRuleCaseType type);
     int getNumIterations(FillRuleCaseType type) const;
     void generateTriangles(int iteration, std::vector<tcu::Vec4> &outData) const;
 
@@ -6207,7 +6207,7 @@ tcu::TestStatus FillRuleTestInstance::iterate(void)
         return tcu::TestStatus::incomplete();
 }
 
-int FillRuleTestInstance::getRenderSize(FillRuleCaseType type) const
+int FillRuleTestInstance::getRenderSize(FillRuleCaseType type)
 {
     if (type == FILLRULECASE_CLIPPED_FULL || type == FILLRULECASE_CLIPPED_PARTIAL)
         return RESOLUTION_POT / 4;

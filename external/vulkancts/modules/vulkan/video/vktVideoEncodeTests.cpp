@@ -1362,6 +1362,9 @@ public:
                 flags |= VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_INTRA_REFRESH;
             }
 
+            if (usesGeneralLayout())
+                flags |= VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_UNIFIED_IMAGE_LAYOUTS;
+
             return flags;
         }
         default:
@@ -3398,7 +3401,8 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
     // Use the actual frame count processed rather than the pattern definition
     uint32_t actualFramesToCheck = m_gopCount * m_gopFrameCount;
 
-    auto basicDecoder = createBasicDecoder(&deviceContext, &decodeProfile, actualFramesToCheck, m_resolutionChange);
+    auto basicDecoder = createBasicDecoder(&deviceContext, &decodeProfile, actualFramesToCheck, m_resolutionChange,
+                                           m_testDefinition->usesGeneralLayout());
 
     Demuxer::Params demuxParams = {};
     demuxParams.data            = std::make_unique<BufferedReader>(

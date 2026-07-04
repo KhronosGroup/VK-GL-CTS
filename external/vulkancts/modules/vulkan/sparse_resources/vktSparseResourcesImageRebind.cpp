@@ -193,8 +193,7 @@ VkClearColorValue ImageSparseRebindInstance::getColorClearValue(uint32_t memoryI
 
 tcu::TestStatus ImageSparseRebindInstance::iterate(void)
 {
-    const float epsilon               = 1e-5f;
-    const InstanceInterface &instance = m_context.getInstanceInterface();
+    const float epsilon = 1e-5f;
 
     {
         // Create logical device supporting both sparse and transfer queues
@@ -205,6 +204,7 @@ tcu::TestStatus ImageSparseRebindInstance::iterate(void)
         createDeviceSupportingQueues(queueRequirements);
     }
 
+    const InstanceInterface &instance     = getInstanceInterface();
     const VkPhysicalDevice physicalDevice = getPhysicalDevice();
     VkImageCreateInfo imageSparseInfo;
     std::vector<DeviceMemorySp> deviceMemUniquePtrVec;

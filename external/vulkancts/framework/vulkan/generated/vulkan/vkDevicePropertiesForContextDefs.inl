@@ -36,6 +36,8 @@ const vk::VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			Context::getFragmen
 const vk::VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&	Context::getFragmentShaderBarycentricProperties			(void) const { return m_device->getFragmentShaderBarycentricProperties();		}
 const vk::VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV&		Context::getFragmentShadingRateEnumsProperties			(void) const { return m_device->getFragmentShadingRateEnumsProperties();		}
 const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			Context::getFragmentShadingRateProperties				(void) const { return m_device->getFragmentShadingRateProperties();				}
+const vk::VkPhysicalDeviceGpaProperties2AMD&						Context::getGpaProperties2AMD							(void) const { return m_device->getGpaProperties2AMD();							}
+const vk::VkPhysicalDeviceGpaPropertiesAMD&							Context::getGpaPropertiesAMD							(void) const { return m_device->getGpaPropertiesAMD();							}
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&		Context::getGraphicsPipelineLibraryPropertiesEXT		(void) const { return m_device->getGraphicsPipelineLibraryPropertiesEXT();		}
 const vk::VkPhysicalDeviceHostImageCopyProperties&					Context::getHostImageCopyProperties						(void) const { return m_device->getHostImageCopyProperties();					}
 const vk::VkPhysicalDeviceIDProperties&								Context::getIDProperties								(void) const { return m_device->getIDProperties();								}
@@ -81,6 +83,7 @@ const vk::VkPhysicalDeviceShaderLongVectorPropertiesEXT&			Context::getShaderLon
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		Context::getShaderModuleIdentifierPropertiesEXT			(void) const { return m_device->getShaderModuleIdentifierPropertiesEXT();		}
 const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&				Context::getShaderObjectPropertiesEXT					(void) const { return m_device->getShaderObjectPropertiesEXT();					}
 const vk::VkPhysicalDeviceShaderSMBuiltinsPropertiesNV&				Context::getShaderSMBuiltinsProperties					(void) const { return m_device->getShaderSMBuiltinsProperties();				}
+const vk::VkPhysicalDeviceShaderSplitBarrierPropertiesEXT&			Context::getShaderSplitBarrierPropertiesEXT				(void) const { return m_device->getShaderSplitBarrierPropertiesEXT();			}
 const vk::VkPhysicalDeviceShaderTileImagePropertiesEXT&				Context::getShaderTileImagePropertiesEXT				(void) const { return m_device->getShaderTileImagePropertiesEXT();				}
 const vk::VkPhysicalDeviceShadingRateImagePropertiesNV&				Context::getShadingRateImageProperties					(void) const { return m_device->getShadingRateImageProperties();				}
 const vk::VkPhysicalDeviceSubgroupProperties&						Context::getSubgroupProperties							(void) const { return m_device->getSubgroupProperties();						}

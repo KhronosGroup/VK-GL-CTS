@@ -430,12 +430,11 @@ VkDeviceSize getPtpcBufferSize(const VkPhysicalDevicePerformanceCountersByRegion
     return size;
 }
 
-Move<VkDevice> createCustomDevice(Context &context, const SharedGroupParams groupParams, float queuePriority)
+CustomDevice createTestDevice(Context &context, const InstanceWrapper &instance, const SharedGroupParams groupParams,
+                              float queuePriority)
 {
-    const auto &vkp                = context.getPlatformInterface();
-    const auto &vki                = context.getInstanceInterface();
-    const auto instance            = context.getInstance();
-    const auto physicalDevice      = context.getPhysicalDevice();
+    const auto &vki                = instance.getDriver();
+    const auto physicalDevice      = instance.getPhysicalDevice();
     const auto supportedExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
     const auto queueFamilyIndex    = context.getUniversalQueueFamilyIndex();
 
@@ -500,9 +499,18 @@ Move<VkDevice> createCustomDevice(Context &context, const SharedGroupParams grou
         &features2.features,                            // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    Move<VkDevice> device = createDevice(vkp, instance, vki, physicalDevice, &createInfo, nullptr);
+    const bool validationEnabled = context.getTestContext().getCommandLine().isValidationEnabled();
 
-    return device;
+    vector<const char *> enabledLayers;
+
+    if (createInfo.enabledLayerCount == 0u && validationEnabled)
+    {
+        enabledLayers                  = getValidationLayers(vki, physicalDevice);
+        createInfo.enabledLayerCount   = static_cast<uint32_t>(enabledLayers.size());
+        createInfo.ppEnabledLayerNames = (enabledLayers.empty() ? nullptr : enabledLayers.data());
+    }
+
+    return instance.createCustomDevice(physicalDevice, &createInfo, nullptr);
 }
 
 struct regionTimeStamps
@@ -568,10 +576,10 @@ private:
     const uint32_t m_regionsX;
     const uint32_t m_regionsY;
 
-    const Unique<VkDevice> m_device;
-    const DeviceDriver m_deviceDriver;
-
-    SimpleAllocator m_allocator;
+    const InstanceWrapper m_instance;
+    const DeviceWrapper m_device;
+    const DeviceInterface &m_deviceDriver;
+    vk::Allocator &m_allocator;
 
     const Move<VkImage> m_image;
     const de::MovePtr<Allocation> m_imageMemory;
@@ -618,20 +626,18 @@ PerformanceCountersByRegionContainer::PerformanceCountersByRegionContainer(Conte
     , m_regionsX(deDivRoundUp32(m_width, m_perRegionPerfCtrProperties.performanceCounterRegionSize.width))
     , m_regionsY(deDivRoundUp32(m_height, m_perRegionPerfCtrProperties.performanceCounterRegionSize.height))
 
-    , m_device(createCustomDevice(context, config.groupParams, queuePriority))
-    , m_deviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion(),
-                     context.getTestContext().getCommandLine())
+    , m_instance(context)
+    , m_device(createTestDevice(context, m_instance, config.groupParams, queuePriority))
+    , m_deviceDriver(m_device.getDriver())
+    , m_allocator(m_device.getAllocator())
 
-    , m_allocator(m_deviceDriver, *m_device,
-                  getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()))
-
-    , m_image(createImage(context.getInstanceInterface(), context.getPhysicalDevice(), m_deviceDriver, *m_device,
+    , m_image(createImage(m_device.getInstanceDriver(), m_device.getPhysicalDevice(), m_deviceDriver, *m_device,
                           m_format, m_width, m_height, m_layerCount))
     , m_imageMemory(createImageMemory(m_deviceDriver, *m_device, m_allocator, *m_image))
     , m_imageView(createImageView(m_deviceDriver, *m_device, *m_image, m_format, m_layerCount))
     , m_imageBuffer(createBuffer(m_deviceDriver, *m_device,
-                                 getImageBufferSize(context.getInstanceInterface(), context.getPhysicalDevice(),
-                                                    m_width, m_height, m_layerCount, m_format),
+                                 getImageBufferSize(m_device.getInstanceDriver(), m_device.getPhysicalDevice(), m_width,
+                                                    m_height, m_layerCount, m_format),
                                  VK_BUFFER_USAGE_TRANSFER_DST_BIT))
     , m_imageBufferMemory(
           createBufferMemory(m_deviceDriver, *m_device, m_allocator, *m_imageBuffer, MemoryRequirement::HostVisible))
@@ -653,7 +659,7 @@ PerformanceCountersByRegionContainer::PerformanceCountersByRegionContainer(Conte
     , m_pushConstantRange{VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0u, sizeof(pushConstData)}
     , m_pipelineLayout(config.groupParams->pipelineConstructionType, m_deviceDriver, *m_device, *m_descriptorSetLayout,
                        &m_pushConstantRange)
-    , m_pipeline(context.getInstanceInterface(), m_deviceDriver, context.getPhysicalDevice(), *m_device,
+    , m_pipeline(m_device.getInstanceDriver(), m_deviceDriver, m_device.getPhysicalDevice(), *m_device,
                  context.getDeviceExtensions(), config.groupParams->pipelineConstructionType)
 
     , m_descriptorPool(createDescriptorPool(m_deviceDriver, *m_device))

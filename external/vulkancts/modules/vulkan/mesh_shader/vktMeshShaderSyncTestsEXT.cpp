@@ -841,7 +841,7 @@ std::vector<Move<VkRenderPass>> createCustomRenderPasses(const DeviceInterface &
     const uint32_t subpassCount    = (twoSubpasses ? 2u : 1u);
     const uint32_t renderPassCount = ((twoPipelines && !twoSubpasses) ? 2u : 1u);
 
-    const std::vector<VkAttachmentDescription> attachmentDescs = {{
+    std::vector<VkAttachmentDescription> attachmentDescs = {{
         0u,                                       // VkAttachmentDescriptionFlags flags;
         colorFormat,                              // VkFormat format;
         VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits samples;
@@ -899,7 +899,14 @@ std::vector<Move<VkRenderPass>> createCustomRenderPasses(const DeviceInterface &
     };
 
     for (uint32_t renderPassIdx = 0u; renderPassIdx < renderPassCount; ++renderPassIdx)
+    {
+        if (renderPassIdx > 0)
+        {
+            for (auto &attDesc : attachmentDescs)
+                attDesc.initialLayout = attDesc.finalLayout;
+        }
         renderPasses.push_back(createRenderPass(vkd, device, &createInfo));
+    }
 
     return renderPasses;
 }

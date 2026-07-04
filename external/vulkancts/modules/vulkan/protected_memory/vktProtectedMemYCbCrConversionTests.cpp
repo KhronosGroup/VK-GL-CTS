@@ -941,7 +941,8 @@ void generateYCbCrImage(ProtectedContext &ctx, const TestConfig &config, const t
     const tcu::UVec4 bitDepth(ycbcr::getYCbCrBitDepth(config.format));
     bool explicitReconstruction = config.explicitReconstruction;
     const uint32_t subTexelPrecisionBits(
-        vk::getPhysicalDeviceProperties(ctx.getInstanceDriver(), ctx.getPhysicalDevice()).limits.subTexelPrecisionBits);
+        vk::getPhysicalDeviceProperties(ctx.getInstanceInterface(), ctx.getPhysicalDevice())
+            .limits.subTexelPrecisionBits);
 
     const vk::PlanarFormatDescription planeInfo(vk::getPlanarFormatDescription(config.format));
 
@@ -1107,7 +1108,7 @@ tcu::TestStatus conversionTest(Context &context, TestConfig config)
     tcu::TestLog &log(context.getTestContext().getLog());
 
     const vk::VkFormatProperties properties(
-        vk::getPhysicalDeviceFormatProperties(ctx.getInstanceDriver(), ctx.getPhysicalDevice(), config.format));
+        vk::getPhysicalDeviceFormatProperties(ctx.getInstanceInterface(), ctx.getPhysicalDevice(), config.format));
     const vk::VkFormatFeatureFlags features(config.imageTiling == vk::VK_IMAGE_TILING_OPTIMAL ?
                                                 properties.optimalTilingFeatures :
                                                 properties.linearTilingFeatures);

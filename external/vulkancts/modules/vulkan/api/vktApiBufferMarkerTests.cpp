@@ -53,13 +53,13 @@ using de::MovePtr;
 using de::UniquePtr;
 using namespace vkt::ExternalMemoryUtil;
 
-std::string genBufferMarkerDeviceId(VkQueueFlagBits testQueue, size_t offset)
+std::string genBufferMarkerDeviceId(VkQueueFlagBits testQueue, size_t offset, bool useHostPtr)
 {
     struct WorkingDevice
     {
     };
     return std::string(std::type_index(typeid(WorkingDevice)).name()) + "-" + std::to_string(testQueue) + "-" +
-           std::to_string(offset);
+           std::to_string(offset) + "-" + std::to_string(useHostPtr);
 }
 
 // The goal is to find a queue family that most accurately represents the required queue flag.
@@ -111,7 +111,8 @@ struct BufferMarkerBaseCase : public ApiBufferMarkerBaseTestCase
     using ApiBufferMarkerBaseTestCase::ApiBufferMarkerBaseTestCase;
     virtual std::string getRequiredCapabilitiesId() const override
     {
-        return genBufferMarkerDeviceId(VkQueueFlagBits(m_arg0.arg0.testQueue), m_arg0.arg0.offset);
+        return genBufferMarkerDeviceId(VkQueueFlagBits(m_arg0.arg0.testQueue), m_arg0.arg0.offset,
+                                       m_arg0.arg0.useHostPtr);
     }
     virtual void initDeviceCapabilities(DevCaps &caps) override
     {
@@ -426,7 +427,8 @@ struct BufferMarkerMemDepCase : public ApiBufferMarkerMemDepTestCase
     using ApiBufferMarkerMemDepTestCase::ApiBufferMarkerMemDepTestCase;
     virtual std::string getRequiredCapabilitiesId() const override
     {
-        return genBufferMarkerDeviceId(VkQueueFlagBits(m_arg0.arg0.base.testQueue), m_arg0.arg0.base.offset);
+        return genBufferMarkerDeviceId(VkQueueFlagBits(m_arg0.arg0.base.testQueue), m_arg0.arg0.base.offset,
+                                       m_arg0.arg0.base.useHostPtr);
     }
     virtual void initDeviceCapabilities(DevCaps &caps) override
     {

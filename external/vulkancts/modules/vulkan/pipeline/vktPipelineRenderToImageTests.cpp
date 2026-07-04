@@ -746,7 +746,7 @@ void initPrograms(SourceCollections &programCollection, const CaseDef caseDef)
 
 class SingletonDevice
 {
-    SingletonDevice(Context &context) : m_context(context), m_logicalDevice()
+    SingletonDevice(Context &context) : m_context(context), m_instance(context), m_logicalDevice()
     {
         const float queuePriority              = 1.0;
         const VkDeviceQueueCreateInfo queues[] = {{
@@ -756,10 +756,6 @@ class SingletonDevice
             &queuePriority, // pQueuePriorities
         }};
 
-        const auto &vkp                              = m_context.getPlatformInterface();
-        const auto &vki                              = m_context.getInstanceInterface();
-        const auto instance                          = m_context.getInstance();
-        const auto physicalDevice                    = m_context.getPhysicalDevice();
         std::vector<const char *> creationExtensions = m_context.getDeviceCreationExtensions();
 
         for (auto it = creationExtensions.begin(); it != creationExtensions.end(); ++it)
@@ -783,13 +779,7 @@ class SingletonDevice
         createInfo.ppEnabledExtensionNames = de::dataOrNull(creationExtensions);
         createInfo.pEnabledFeatures        = nullptr;
 
-        m_logicalDevice = createCustomDevice(vkp, instance, vki, physicalDevice, &createInfo, nullptr);
-
-        m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(
-            vkp, instance, *m_logicalDevice, m_context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
-
-        m_allocator = de::MovePtr<SimpleAllocator>(new SimpleAllocator(
-            *m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
+        m_logicalDevice = m_instance.createCustomDevice(&createInfo);
     }
 
 public:
@@ -802,7 +792,7 @@ public:
         if (!m_singletonDevice)
             m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
         DE_ASSERT(m_singletonDevice);
-        return m_singletonDevice->m_logicalDevice.get();
+        return m_singletonDevice->m_logicalDevice;
     }
 
     static VkQueue getUniversalQueue(Context &context)
@@ -816,15 +806,15 @@ public:
         if (!m_singletonDevice)
             m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
         DE_ASSERT(m_singletonDevice);
-        return *(m_singletonDevice->m_deviceDriver.get());
+        return m_singletonDevice->m_logicalDevice.getDriver();
     }
 
-    static Allocator *getAllocator(Context &context)
+    static Allocator &getAllocator(Context &context)
     {
         if (!m_singletonDevice)
             m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
         DE_ASSERT(m_singletonDevice);
-        return m_singletonDevice->m_allocator.get();
+        return m_singletonDevice->m_logicalDevice.getAllocator();
     }
 
     static void destroy()
@@ -834,9 +824,8 @@ public:
 
 private:
     const Context &m_context;
-    Move<vk::VkDevice> m_logicalDevice;
-    de::MovePtr<vk::DeviceDriver> m_deviceDriver;
-    de::MovePtr<vk::SimpleAllocator> m_allocator;
+    const InstanceWrapper m_instance;
+    DeviceWrapper m_logicalDevice;
     static SharedPtr<SingletonDevice> m_singletonDevice;
 };
 SharedPtr<SingletonDevice> SingletonDevice::m_singletonDevice;
@@ -853,7 +842,7 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
     const VkDevice device = needCustomDevice ? SingletonDevice::getDevice(context) : context.getDevice();
     const VkQueue queue = needCustomDevice ? SingletonDevice::getUniversalQueue(context) : context.getUniversalQueue();
     const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
-    Allocator &allocator = needCustomDevice ? *(SingletonDevice::getAllocator(context)) : context.getDefaultAllocator();
+    Allocator &allocator = needCustomDevice ? SingletonDevice::getAllocator(context) : context.getDefaultAllocator();
 
     IVec4 imageSize = getMaxImageSize(caseDef.viewType, caseDef.imageSizeHint);
 

@@ -181,8 +181,7 @@ ImageSparseMemoryAliasingInstance::ImageSparseMemoryAliasingInstance(Context &co
 
 tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
 {
-    const float epsilon               = 1e-5f;
-    const InstanceInterface &instance = m_context.getInstanceInterface();
+    const float epsilon = 1e-5f;
 
     {
         // Create logical device supporting both sparse and compute queues
@@ -193,6 +192,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
         createDeviceSupportingQueues(queueRequirements, formatIsR64(m_format));
     }
 
+    const InstanceInterface &instance      = getInstanceInterface();
     const VkPhysicalDevice physicalDevice  = getPhysicalDevice();
     const tcu::UVec3 maxWorkGroupSize      = tcu::UVec3(128u, 128u, 64u);
     const tcu::UVec3 maxWorkGroupCount     = tcu::UVec3(65535u, 65535u, 65535u);

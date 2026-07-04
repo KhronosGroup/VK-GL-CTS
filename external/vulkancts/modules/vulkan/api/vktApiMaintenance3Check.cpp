@@ -653,8 +653,10 @@ void checkSupportCountLayoutSupport(Context &context, CountLayoutSupportParams p
             TCU_THROW(NotSupportedError, "descriptorBindingVariableDescriptorCount not supported");
     }
 
+#ifndef CTS_USES_VULKANSC
     if (params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
         context.requireDeviceFunctionality("VK_EXT_inline_uniform_block");
+#endif
 }
 
 struct SetLayoutSupportAndCount
@@ -701,7 +703,9 @@ tcu::TestStatus testCountLayoutSupport(Context &context, CountLayoutSupportParam
     case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
     case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
     case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+#ifndef CTS_USES_VULKANSC
     case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK:
+#endif
         stages = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
         break;
 
@@ -733,8 +737,8 @@ tcu::TestStatus testCountLayoutSupport(Context &context, CountLayoutSupportParam
         }
     }
 
-    uint32_t maxInlineUniformBlockSize = 256;
 #ifndef CTS_USES_VULKANSC
+    uint32_t maxInlineUniformBlockSize = 256;
     if (params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
     {
         DevIubProp inlineUniformProps = {
@@ -752,11 +756,13 @@ tcu::TestStatus testCountLayoutSupport(Context &context, CountLayoutSupportParam
     // VUID-VkDescriptorSetLayoutBinding-descriptorType-08004 descriptorCount must be less than or equal
     // to VkPhysicalDeviceInlineUniformBlockProperties::maxInlineUniformBlockSize
     uint32_t descriptorCount;
+#ifndef CTS_USES_VULKANSC
     if (params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
     {
         descriptorCount = std::min(4u, maxInlineUniformBlockSize);
     }
     else
+#endif
     {
         descriptorCount = 1u;
     }
@@ -878,7 +884,9 @@ tcu::TestCaseGroup *createMaintenance3Tests(tcu::TestContext &testCtx)
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
             VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+#ifndef CTS_USES_VULKANSC
             VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK,
+#endif
         };
 
         for (const auto &descriptorType : descriptorTypes)

@@ -316,6 +316,8 @@ public:
     ShaderObjectRenderingInstance(Context &context, const TestParams &params)
         : vkt::TestInstance(context)
         , m_params(params)
+        , m_instance(context)
+        , m_device(context)
     {
     }
     virtual ~ShaderObjectRenderingInstance(void)
@@ -329,17 +331,14 @@ private:
     void beginRendering(vk::VkCommandBuffer cmdBuffer);
     void createDummyImage(vk::VkCommandBuffer cmdBuffer);
     void createDummyRenderPass(void);
-    void setColorFormats(const vk::InstanceDriver &vki);
+    void setColorFormats();
     void generateExpectedImage(const tcu::PixelBufferAccess &outputImage, const uint32_t width, const uint32_t height,
                                uint32_t attachmentIndex);
 
     TestParams m_params;
 
-    de::MovePtr<vk::DeviceDriver> m_customDeviceDriver;
-    vk::Move<vk::VkDevice> m_customDevice;
-    de::MovePtr<vk::Allocator> m_customAllocator;
-    const vk::DeviceInterface *m_deviceInterface;
-    vk::VkDevice m_device;
+    const InstanceWrapper m_instance;
+    DeviceWrapper m_device;
     std::vector<std::string> m_deviceExtensions;
 
     const vk::VkRect2D m_renderArea = vk::makeRect2D(0, 0, 32, 32);
@@ -355,9 +354,9 @@ private:
 
 void ShaderObjectRenderingInstance::createDummyImage(vk::VkCommandBuffer cmdBuffer)
 {
-    const vk::DeviceInterface &vk    = *m_deviceInterface;
+    const vk::DeviceInterface &vk    = m_device.getDriver();
     const vk::VkDevice device        = m_device;
-    auto &alloc                      = *m_customAllocator;
+    auto &alloc                      = m_device.getAllocator();
     const auto colorSubresourceRange = makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 
     vk::VkFormat format = m_params.colorFormat == vk::VK_FORMAT_R8G8B8A8_UNORM ? vk::VK_FORMAT_R32G32B32A32_SFLOAT :
@@ -396,7 +395,7 @@ void ShaderObjectRenderingInstance::createDummyImage(vk::VkCommandBuffer cmdBuff
 
 void ShaderObjectRenderingInstance::createDummyRenderPass(void)
 {
-    const vk::DeviceInterface &vk = *m_deviceInterface;
+    const vk::DeviceInterface &vk = m_device.getDriver();
     const vk::VkDevice device     = m_device;
     vk::VkFormat format = m_params.colorFormat == vk::VK_FORMAT_R8G8B8A8_UNORM ? vk::VK_FORMAT_R32G32B32A32_SFLOAT :
                                                                                  vk::VK_FORMAT_R8G8B8A8_UNORM;
@@ -424,7 +423,7 @@ vk::VkClearValue getClearValue(const tcu::TextureFormat tcuFormat)
 
 void ShaderObjectRenderingInstance::beginRendering(vk::VkCommandBuffer cmdBuffer)
 {
-    const vk::DeviceInterface &vk          = *m_deviceInterface;
+    const vk::DeviceInterface &vk          = m_device.getDriver();
     const vk::VkClearValue floatClearValue = vk::makeClearValueColor({0.0f, 0.0f, 0.0f, 1.0f});
     const vk::VkClearValue clearDepthValue = vk::makeClearValueDepthStencil(1.0f, 0u);
 
@@ -504,9 +503,10 @@ void ShaderObjectRenderingInstance::beginRendering(vk::VkCommandBuffer cmdBuffer
     vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
 }
 
-void ShaderObjectRenderingInstance::setColorFormats(const vk::InstanceDriver &vki)
+void ShaderObjectRenderingInstance::setColorFormats()
 {
-    const auto physicalDevice = m_context.getPhysicalDevice();
+    const auto &vki           = m_device.getInstanceDriver();
+    const auto physicalDevice = m_device.getPhysicalDevice();
 
     m_colorFormats.resize(m_params.colorAttachmentCount + m_params.extraAttachmentCount);
     if (m_params.randomColorFormats)
@@ -734,39 +734,20 @@ void ShaderObjectRenderingInstance::chooseDevice()
             nullptr,                                        // const VkPhysicalDeviceFeatures* pEnabledFeatures;
         };
 
-        m_customDevice =
-            vkt::createCustomDevice(m_context.getPlatformInterface(), m_context.getInstance(),
-                                    m_context.getInstanceInterface(), m_context.getPhysicalDevice(), &deviceCreateInfo);
-        m_customDeviceDriver = de::MovePtr<vk::DeviceDriver>(
-            new vk::DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_customDevice,
-                                 m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
-
-        m_deviceInterface = &*m_customDeviceDriver;
-        m_device          = *m_customDevice;
+        m_device = m_instance.createCustomDevice(&deviceCreateInfo);
     }
-    else
-    {
-        m_deviceInterface = &m_context.getDeviceInterface();
-        m_device          = m_context.getDevice();
-    }
-    m_customAllocator = de::MovePtr<vk::Allocator>(new vk::SimpleAllocator(
-        *m_deviceInterface, m_device,
-        vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice())));
 }
 
 tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
 {
-    const vk::VkInstance instance = m_context.getInstance();
-    const vk::InstanceDriver instanceDriver(m_context.getPlatformInterface(), instance);
-
     chooseDevice();
 
-    const vk::DeviceInterface &vk   = *m_deviceInterface;
+    const vk::DeviceInterface &vk   = m_device.getDriver();
     const vk::VkDevice device       = m_device;
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     vk::VkQueue queue;
     vk.getDeviceQueue(device, queueFamilyIndex, 0u, &queue);
-    auto &alloc                      = *m_customAllocator;
+    auto &alloc                      = m_device.getAllocator();
     tcu::TestLog &log                = m_context.getTestContext().getLog();
     const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;
     const bool geometrySupported     = m_context.getDeviceFeatures().geometryShader;
@@ -780,7 +761,7 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
     const auto colorSubresourceLayers = vk::makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
     vk::VkExtent3D extent             = {m_renderArea.extent.width, m_renderArea.extent.height, 1};
 
-    setColorFormats(instanceDriver);
+    setColorFormats();
 
     vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType

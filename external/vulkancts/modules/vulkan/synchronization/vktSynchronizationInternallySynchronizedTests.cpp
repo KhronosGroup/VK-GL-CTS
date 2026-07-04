@@ -29,6 +29,7 @@
 #include "vkImageUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "tcuTextureUtil.hpp"
@@ -209,8 +210,8 @@ private:
 class CaseThread : public de::Thread
 {
 public:
-    CaseThread(const TestType &testType, Context &context, wsi::Type wsiType, DeviceDriver &vk, VkDevice device,
-               uint32_t queueFamilyIndex, VkQueue queue)
+    CaseThread(const TestType &testType, Context &context, wsi::Type wsiType, const DeviceInterface &vk,
+               VkDevice device, uint32_t queueFamilyIndex, VkQueue queue)
         : de::Thread()
         , m_testType(testType)
         , m_context(context)
@@ -256,22 +257,21 @@ public:
         m_sparseTestData.sparseBuffer = createBuffer(vk, device, &bufferCreateInfo);
 
         VkImageCreateInfo imageCreateInfo = {
-            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType			sType;
-            nullptr,                             // const void*				pNext;
-            VK_IMAGE_CREATE_SPARSE_BINDING_BIT |
-                VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT,                          // VkImageCreateFlags		flags;
-            VK_IMAGE_TYPE_2D,                                                  // VkImageType				imageType;
-            VK_FORMAT_R8G8B8A8_UNORM,                                          // VkFormat				format;
-            m_sparseTestData.imageSize,                                        // VkExtent3D				extent;
-            1u,                                                                // uint32_t				mipLevels;
-            1u,                                                                // uint32_t				arrayLayers;
-            VK_SAMPLE_COUNT_1_BIT,                                             // VkSampleCountFlagBits	samples;
-            VK_IMAGE_TILING_OPTIMAL,                                           // VkImageTiling			tiling;
-            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags		usage;
-            VK_SHARING_MODE_EXCLUSIVE,                                         // VkSharingMode			sharingMode;
-            0u,                                                                // uint32_t				queueFamilyIndexCount;
-            nullptr,                                                           // const uint32_t*			pQueueFamilyIndices;
-            VK_IMAGE_LAYOUT_UNDEFINED                                          // VkImageLayout			initialLayout;
+            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                       // VkStructureType sType;
+            nullptr,                                                                   // const void* pNext;
+            VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT, // VkImageCreateFlags flags;
+            VK_IMAGE_TYPE_2D,                                                          // VkImageType imageType;
+            VK_FORMAT_R8G8B8A8_UNORM,                                                  // VkFormat format;
+            m_sparseTestData.imageSize,                                                // VkExtent3D extent;
+            1u,                                                                        // uint32_t mipLevels;
+            1u,                                                                        // uint32_t arrayLayers;
+            VK_SAMPLE_COUNT_1_BIT,                                                     // VkSampleCountFlagBits samples;
+            VK_IMAGE_TILING_OPTIMAL,                                                   // VkImageTiling tiling;
+            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,         // VkImageUsageFlags usage;
+            VK_SHARING_MODE_EXCLUSIVE,                                                 // VkSharingMode sharingMode;
+            0u,                       // uint32_t queueFamilyIndexCount;
+            nullptr,                  // const uint32_t* pQueueFamilyIndices;
+            VK_IMAGE_LAYOUT_UNDEFINED // VkImageLayout initialLayout;
         };
         m_sparseTestData.sparseImage = createImage(vk, device, &imageCreateInfo);
 
@@ -366,25 +366,24 @@ public:
             }
 
             const VkSwapchainCreateInfoKHR swapchainInfo = {
-                VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR, // VkStructureType					sType;
-                nullptr,                                     // const void*						pNext;
-                0u,                                          // VkSwapchainCreateFlagsKHR		flags;
-                *m_drawTestData.surface,                     // VkSurfaceKHR					surface;
-                capabilities.minImageCount,                  // uint32_t						minImageCount;
-                surfaceFormat.format,                        // VkFormat						imageFormat;
-                surfaceFormat.colorSpace,                    // VkColorSpaceKHR					imageColorSpace;
-                {imageWidth, imageHeight},                   // VkExtent2D						imageExtent;
-                1u,                                          // uint32_t						imageArrayLayers;
-                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                    VK_IMAGE_USAGE_TRANSFER_SRC_BIT,   // VkImageUsageFlags				imageUsage;
-                VK_SHARING_MODE_EXCLUSIVE,             // VkSharingMode					imageSharingMode;
-                0u,                                    // uint32_t						queueFamilyIndexCount;
-                nullptr,                               // const uint32_t*					pQueueFamilyIndices;
-                VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR, // VkSurfaceTransformFlagBitsKHR	preTransform;
-                VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,     // VkCompositeAlphaFlagBitsKHR		compositeAlpha;
-                presentMode,                           // VkPresentModeKHR				presentMode;
-                VK_FALSE,                              // VkBool32						clipped;
-                VK_NULL_HANDLE,                        // VkSwapchainKHR					oldSwapchain;
+                VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR, // VkStructureType sType;
+                nullptr,                                     // const void* pNext;
+                0u,                                          // VkSwapchainCreateFlagsKHR flags;
+                *m_drawTestData.surface,                     // VkSurfaceKHR surface;
+                capabilities.minImageCount,                  // uint32_t minImageCount;
+                surfaceFormat.format,                        // VkFormat imageFormat;
+                surfaceFormat.colorSpace,                    // VkColorSpaceKHR imageColorSpace;
+                {imageWidth, imageHeight},                   // VkExtent2D imageExtent;
+                1u,                                          // uint32_t imageArrayLayers;
+                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags imageUsage;
+                VK_SHARING_MODE_EXCLUSIVE,             // VkSharingMode imageSharingMode;
+                0u,                                    // uint32_t queueFamilyIndexCount;
+                nullptr,                               // const uint32_t* pQueueFamilyIndices;
+                VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR, // VkSurfaceTransformFlagBitsKHR preTransform;
+                VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,     // VkCompositeAlphaFlagBitsKHR compositeAlpha;
+                presentMode,                           // VkPresentModeKHR presentMode;
+                VK_FALSE,                              // VkBool32 clipped;
+                VK_NULL_HANDLE,                        // VkSwapchainKHR oldSwapchain;
             };
 
             m_drawTestData.colorFormat     = surfaceFormat.format;
@@ -538,18 +537,18 @@ public:
         const VkDevice device     = m_device;
 
         VkQueryPoolPerformanceQueryCreateInfoINTEL queryPoolIntel = {
-            VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO_INTEL, // VkStructureType				sType;
-            nullptr,                                        // const void*					pNext;
-            VK_QUERY_POOL_SAMPLING_MODE_MANUAL_INTEL,       // VkQueryPoolSamplingModeINTEL	performanceCountersSampling;
+            VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO_INTEL, // VkStructureType sType;
+            nullptr,                                        // const void* pNext;
+            VK_QUERY_POOL_SAMPLING_MODE_MANUAL_INTEL,       // VkQueryPoolSamplingModeINTEL performanceCountersSampling;
         };
 
         VkQueryPoolCreateInfo queryPoolCreateInfo = {
-            VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType					sType;
-            &queryPoolIntel,                          // const void*						pNext;
-            0,                                        // VkQueryPoolCreateFlags			flags;
-            VK_QUERY_TYPE_PERFORMANCE_QUERY_INTEL,    // VkQueryType						queryType;
-            1,                                        // uint32_t						queryCount;
-            0                                         // VkQueryPipelineStatisticFlags	pipelineStatistics;
+            VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType sType;
+            &queryPoolIntel,                          // const void* pNext;
+            0,                                        // VkQueryPoolCreateFlags flags;
+            VK_QUERY_TYPE_PERFORMANCE_QUERY_INTEL,    // VkQueryType queryType;
+            1,                                        // uint32_t queryCount;
+            0                                         // VkQueryPipelineStatisticFlags pipelineStatistics;
         };
 
         m_performanceConfigurationTestData.queryPool = createQueryPool(vk, device, &queryPoolCreateInfo);
@@ -645,18 +644,18 @@ public:
         };
 
         VkBindSparseInfo bindInfo = {
-            VK_STRUCTURE_TYPE_BIND_SPARSE_INFO, // VkStructureType							sType;
-            nullptr,                            // const void*								pNext;
-            1u,                                 // uint32_t									waitSemaphoreCount;
-            &waitSemaphore,                     // const VkSemaphore*						pWaitSemaphores;
-            1u,                                 // uint32_t									bufferBindCount;
-            &sparseBufferMemoryBindInfo,        // const VkSparseBufferMemoryBindInfo*		pBufferBinds;
-            0u,                                 // uint32_t									imageOpaqueBindCount;
-            nullptr,                            // const VkSparseImageOpaqueMemoryBindInfo*	pImageOpaqueBinds;
-            0u,                                 // uint32_t									imageBindCount;
-            nullptr,                            // const VkSparseImageMemoryBindInfo*		pImageBinds;
-            1u,                                 // uint32_t									signalSemaphoreCount;
-            &signalSemaphore,                   // const VkSemaphore*						pSignalSemaphores;
+            VK_STRUCTURE_TYPE_BIND_SPARSE_INFO, // VkStructureType sType;
+            nullptr,                            // const void* pNext;
+            1u,                                 // uint32_t waitSemaphoreCount;
+            &waitSemaphore,                     // const VkSemaphore* pWaitSemaphores;
+            1u,                                 // uint32_t bufferBindCount;
+            &sparseBufferMemoryBindInfo,        // const VkSparseBufferMemoryBindInfo* pBufferBinds;
+            0u,                                 // uint32_t imageOpaqueBindCount;
+            nullptr,                            // const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
+            0u,                                 // uint32_t imageBindCount;
+            nullptr,                            // const VkSparseImageMemoryBindInfo* pImageBinds;
+            1u,                                 // uint32_t signalSemaphoreCount;
+            &signalSemaphore,                   // const VkSemaphore* pSignalSemaphores;
         };
 
         VK_CHECK(vk.queueBindSparse(m_queue, 1u, &bindInfo, fence));
@@ -680,22 +679,21 @@ public:
         // Check if the image format supports sparse operations
         {
             VkImageCreateInfo imageCreateInfo = {
-                VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType			sType;
-                nullptr,                             // const void*				pNext;
-                VK_IMAGE_CREATE_SPARSE_BINDING_BIT |
-                    VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT,                          // VkImageCreateFlags		flags;
-                VK_IMAGE_TYPE_2D,                                                  // VkImageType				imageType;
-                VK_FORMAT_R8G8B8A8_UNORM,                                          // VkFormat				format;
-                m_sparseTestData.imageSize,                                        // VkExtent3D				extent;
-                1u,                                                                // uint32_t				mipLevels;
-                1u,                                                                // uint32_t				arrayLayers;
-                VK_SAMPLE_COUNT_1_BIT,                                             // VkSampleCountFlagBits	samples;
-                VK_IMAGE_TILING_OPTIMAL,                                           // VkImageTiling			tiling;
-                VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags		usage;
-                VK_SHARING_MODE_EXCLUSIVE,                                         // VkSharingMode			sharingMode;
-                0u,                                                                // uint32_t				queueFamilyIndexCount;
-                nullptr,                  // const uint32_t*			pQueueFamilyIndices;
-                VK_IMAGE_LAYOUT_UNDEFINED // VkImageLayout			initialLayout;
+                VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                       // VkStructureType sType;
+                nullptr,                                                                   // const void* pNext;
+                VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT, // VkImageCreateFlags flags;
+                VK_IMAGE_TYPE_2D,                                                          // VkImageType imageType;
+                VK_FORMAT_R8G8B8A8_UNORM,                                                  // VkFormat format;
+                m_sparseTestData.imageSize,                                                // VkExtent3D extent;
+                1u,                                                                        // uint32_t mipLevels;
+                1u,                                                                        // uint32_t arrayLayers;
+                VK_SAMPLE_COUNT_1_BIT,                                             // VkSampleCountFlagBits samples;
+                VK_IMAGE_TILING_OPTIMAL,                                           // VkImageTiling tiling;
+                VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
+                VK_SHARING_MODE_EXCLUSIVE,                                         // VkSharingMode sharingMode;
+                0u,                                                                // uint32_t queueFamilyIndexCount;
+                nullptr,                  // const uint32_t* pQueueFamilyIndices;
+                VK_IMAGE_LAYOUT_UNDEFINED // VkImageLayout initialLayout;
             };
             if (!checkSparseImageFormatSupport(physicalDevice, vki, imageCreateInfo))
                 TCU_THROW(NotSupportedError, "The image format does not support sparse operations.");
@@ -998,12 +996,12 @@ public:
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_NONE, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr,
                                   0u, nullptr, 1u, &preBarrier);
             VkBufferImageCopy region = {
-                0u,                         // VkDeviceSize				bufferOffset;
-                0u,                         // uint32_t					bufferRowLength;
-                0u,                         // uint32_t					bufferImageHeight;
-                subresourceLayers,          // VkImageSubresourceLayers	imageSubresource;
-                {0, 0, 0},                  // VkOffset3D				imageOffset;
-                m_sparseTestData.imageSize, // VkExtent3D				imageExtent;
+                0u,                         // VkDeviceSize bufferOffset;
+                0u,                         // uint32_t bufferRowLength;
+                0u,                         // uint32_t bufferImageHeight;
+                subresourceLayers,          // VkImageSubresourceLayers imageSubresource;
+                {0, 0, 0},                  // VkOffset3D imageOffset;
+                m_sparseTestData.imageSize, // VkExtent3D imageExtent;
             };
             vk.cmdCopyBufferToImage(*cmdBuffer, **m_sparseTestData.srcBuffer, *m_sparseTestData.sparseImage,
                                     VK_IMAGE_LAYOUT_GENERAL, 1u, &region);
@@ -1020,15 +1018,15 @@ public:
         VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
         VkSubmitInfo submitInfo = {
-            VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType				sType;
-            nullptr,                       // const void*					pNext;
-            1u,                            // uint32_t					    waitSemaphoreCount;
-            &*signalSemaphore,             // const VkSemaphore*			pWaitSemaphores;
-            &waitStage,                    // const VkPipelineStageFlags*	pWaitDstStageMask;
-            1u,                            // uint32_t					    commandBufferCount;
-            &*cmdBuffer,                   // const VkCommandBuffer*		pCommandBuffers;
-            0u,                            // uint32_t					    signalSemaphoreCount;
-            nullptr,                       // const VkSemaphore*			pSignalSemaphores;
+            VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
+            nullptr,                       // const void* pNext;
+            1u,                            // uint32_t     waitSemaphoreCount;
+            &*signalSemaphore,             // const VkSemaphore* pWaitSemaphores;
+            &waitStage,                    // const VkPipelineStageFlags* pWaitDstStageMask;
+            1u,                            // uint32_t     commandBufferCount;
+            &*cmdBuffer,                   // const VkCommandBuffer* pCommandBuffers;
+            0u,                            // uint32_t     signalSemaphoreCount;
+            nullptr,                       // const VkSemaphore* pSignalSemaphores;
         };
 
         vk.queueSubmit(queue, 1u, &submitInfo, fences[1]);
@@ -1066,9 +1064,9 @@ public:
         const VkQueue queue       = m_queue;
 
         VkInitializePerformanceApiInfoINTEL performanceApiInfoIntel = {
-            VK_STRUCTURE_TYPE_INITIALIZE_PERFORMANCE_API_INFO_INTEL, // VkStructureType	sType;
-            nullptr,                                                 // const void*		pNext;
-            nullptr,                                                 // void*		    pUserData;
+            VK_STRUCTURE_TYPE_INITIALIZE_PERFORMANCE_API_INFO_INTEL, // VkStructureType sType;
+            nullptr,                                                 // const void* pNext;
+            nullptr,                                                 // void*     pUserData;
         };
 
         vk.initializePerformanceApiINTEL(device, &performanceApiInfoIntel);
@@ -1086,22 +1084,22 @@ public:
 
         VkPerformanceConfigurationINTEL performanceConfiguration;
         VkPerformanceConfigurationAcquireInfoINTEL acqureInfo = {
-            VK_STRUCTURE_TYPE_PERFORMANCE_CONFIGURATION_ACQUIRE_INFO_INTEL, // VkStructureType						sType;
-            nullptr,                                                        // const void*							pNext;
-            VK_PERFORMANCE_CONFIGURATION_TYPE_COMMAND_QUEUE_METRICS_DISCOVERY_ACTIVATED_INTEL, // VkPerformanceConfigurationTypeINTEL	type;
+            VK_STRUCTURE_TYPE_PERFORMANCE_CONFIGURATION_ACQUIRE_INFO_INTEL,                    // VkStructureType sType;
+            nullptr,                                                                           // const void* pNext;
+            VK_PERFORMANCE_CONFIGURATION_TYPE_COMMAND_QUEUE_METRICS_DISCOVERY_ACTIVATED_INTEL, // VkPerformanceConfigurationTypeINTEL type;
         };
         VK_CHECK(vk.acquirePerformanceConfigurationINTEL(device, &acqureInfo, &performanceConfiguration));
         VK_CHECK(vk.queueSetPerformanceConfigurationINTEL(queue, performanceConfiguration));
         VkSubmitInfo submitInfo = {
-            VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType				sType;
-            nullptr,                       // const void*					pNext;
-            0u,                            // uint32_t					    waitSemaphoreCount;
-            nullptr,                       // const VkSemaphore*			pWaitSemaphores;
-            nullptr,                       // const VkPipelineStageFlags*	pWaitDstStageMask;
-            1u,                            // uint32_t					    commandBufferCount;
-            &*cmdBuffer,                   // const VkCommandBuffer*		pCommandBuffers;
-            0u,                            // uint32_t					    signalSemaphoreCount;
-            nullptr,                       // const VkSemaphore*			pSignalSemaphores;
+            VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
+            nullptr,                       // const void* pNext;
+            0u,                            // uint32_t     waitSemaphoreCount;
+            nullptr,                       // const VkSemaphore* pWaitSemaphores;
+            nullptr,                       // const VkPipelineStageFlags* pWaitDstStageMask;
+            1u,                            // uint32_t     commandBufferCount;
+            &*cmdBuffer,                   // const VkCommandBuffer* pCommandBuffers;
+            0u,                            // uint32_t     signalSemaphoreCount;
+            nullptr,                       // const VkSemaphore* pSignalSemaphores;
         };
 
         vk.queueSubmit(queue, 1u, &submitInfo, VK_NULL_HANDLE);
@@ -1116,9 +1114,9 @@ public:
         const VkQueue queue       = m_queue;
 
         VkBufferCopy region = {
-            0u,                                  // VkDeviceSize				srcOffset;
-            0u,                                  // VkDeviceSize				dstOffset;
-            m_deviceWaitIdleTestData.bufferSize, // VkDeviceSize				size;
+            0u,                                  // VkDeviceSize srcOffset;
+            0u,                                  // VkDeviceSize dstOffset;
+            m_deviceWaitIdleTestData.bufferSize, // VkDeviceSize size;
         };
 
         const Move<VkCommandBuffer> cmdBuffer(
@@ -1128,15 +1126,15 @@ public:
                          &region);
         endCommandBuffer(vk, *cmdBuffer);
         VkSubmitInfo submitInfo = {
-            VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType				sType;
-            nullptr,                       // const void*					pNext;
-            0u,                            // uint32_t					    waitSemaphoreCount;
-            nullptr,                       // const VkSemaphore*			pWaitSemaphores;
-            nullptr,                       // const VkPipelineStageFlags*	pWaitDstStageMask;
-            1u,                            // uint32_t					    commandBufferCount;
-            &*cmdBuffer,                   // const VkCommandBuffer*		pCommandBuffers;
-            0u,                            // uint32_t					    signalSemaphoreCount;
-            nullptr,                       // const VkSemaphore*			pSignalSemaphores;
+            VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
+            nullptr,                       // const void* pNext;
+            0u,                            // uint32_t     waitSemaphoreCount;
+            nullptr,                       // const VkSemaphore* pWaitSemaphores;
+            nullptr,                       // const VkPipelineStageFlags* pWaitDstStageMask;
+            1u,                            // uint32_t     commandBufferCount;
+            &*cmdBuffer,                   // const VkCommandBuffer* pCommandBuffers;
+            0u,                            // uint32_t     signalSemaphoreCount;
+            nullptr,                       // const VkSemaphore* pSignalSemaphores;
         };
         vk.queueSubmit(queue, 1u, &submitInfo, VK_NULL_HANDLE);
         vk.deviceWaitIdle(device);
@@ -1157,9 +1155,9 @@ public:
         if (m_testType == TYPE_OUT_OF_BAND)
         {
             VkOutOfBandQueueTypeInfoNV queueTypeInfo = {
-                VK_STRUCTURE_TYPE_OUT_OF_BAND_QUEUE_TYPE_INFO_NV, // VkStructureType			sType;
-                nullptr,                                          // const void*				pNext;
-                VK_OUT_OF_BAND_QUEUE_TYPE_RENDER_NV,              // VkOutOfBandQueueTypeNV	queueType;
+                VK_STRUCTURE_TYPE_OUT_OF_BAND_QUEUE_TYPE_INFO_NV, // VkStructureType sType;
+                nullptr,                                          // const void* pNext;
+                VK_OUT_OF_BAND_QUEUE_TYPE_RENDER_NV,              // VkOutOfBandQueueTypeNV queueType;
             };
             vk.queueNotifyOutOfBandNV(queue, &queueTypeInfo);
         }
@@ -1241,40 +1239,40 @@ public:
         };
 
         const VkCommandBufferSubmitInfo commandBuffersSubmitInfo = {
-            VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO, // VkStructureType	sType;
-            nullptr,                                      // const void*		pNext;
-            *cmdBuffer,                                   // VkCommandBuffer	commandBuffer;
-            0u                                            // uint32_t		deviceMask;
+            VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO, // VkStructureType sType;
+            nullptr,                                      // const void* pNext;
+            *cmdBuffer,                                   // VkCommandBuffer commandBuffer;
+            0u                                            // uint32_t deviceMask;
         };
 
         VkSemaphoreSubmitInfo waitSemaphoreInfo = {
-            VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO, // VkStructureType			sType;
-            nullptr,                                 // const void*				pNext;
-            *acquireSemaphore,                       // VkSemaphore				semaphore;
-            0u,                                      // uint64_t				value;
-            VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,     // VkPipelineStageFlags2	stageMask;
-            0u,                                      // uint32_t				deviceIndex;
+            VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO, // VkStructureType sType;
+            nullptr,                                 // const void* pNext;
+            *acquireSemaphore,                       // VkSemaphore semaphore;
+            0u,                                      // uint64_t value;
+            VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,     // VkPipelineStageFlags2 stageMask;
+            0u,                                      // uint32_t deviceIndex;
         };
 
         VkSemaphoreSubmitInfo signalSemaphoreInfo = {
-            VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,         // VkStructureType			sType;
-            nullptr,                                         // const void*				pNext;
-            *drawSemaphore,                                  // VkSemaphore				semaphore;
-            0u,                                              // uint64_t				value;
-            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, // VkPipelineStageFlags2	stageMask;
-            0u,                                              // uint32_t				deviceIndex;
+            VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,         // VkStructureType sType;
+            nullptr,                                         // const void* pNext;
+            *drawSemaphore,                                  // VkSemaphore semaphore;
+            0u,                                              // uint64_t value;
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, // VkPipelineStageFlags2 stageMask;
+            0u,                                              // uint32_t deviceIndex;
         };
 
         const VkSubmitInfo2 submitInfo2 = {
-            VK_STRUCTURE_TYPE_SUBMIT_INFO_2,  // VkStructureType					sType;
-            nullptr,                          // const void*						pNext;
-            0u,                               // VkSubmitFlags						flags;
-            m_testType == TYPE_WSI ? 1u : 0u, // uint32_t							waitSemaphoreInfoCount;
-            &waitSemaphoreInfo,               // const VkSemaphoreSubmitInfo*		pWaitSemaphoreInfos;
-            1u,                               // uint32_t							commandBufferInfoCount;
-            &commandBuffersSubmitInfo,        // const VkCommandBufferSubmitInfo*	pCommandBufferInfos;
-            m_testType == TYPE_WSI ? 1u : 0u, // uint32_t							signalSemaphoreInfoCount;
-            &signalSemaphoreInfo              // const VkSemaphoreSubmitInfo*		pSignalSemaphoreInfos;
+            VK_STRUCTURE_TYPE_SUBMIT_INFO_2,  // VkStructureType sType;
+            nullptr,                          // const void* pNext;
+            0u,                               // VkSubmitFlags flags;
+            m_testType == TYPE_WSI ? 1u : 0u, // uint32_t waitSemaphoreInfoCount;
+            &waitSemaphoreInfo,               // const VkSemaphoreSubmitInfo* pWaitSemaphoreInfos;
+            1u,                               // uint32_t commandBufferInfoCount;
+            &commandBuffersSubmitInfo,        // const VkCommandBufferSubmitInfo* pCommandBufferInfos;
+            m_testType == TYPE_WSI ? 1u : 0u, // uint32_t signalSemaphoreInfoCount;
+            &signalSemaphoreInfo              // const VkSemaphoreSubmitInfo* pSignalSemaphoreInfos;
         };
 
         if (m_testType == TYPE_SMALL_IMAGE_SYNC2 || m_testType == TYPE_LARGE_IMAGE_SYNC2)
@@ -1292,14 +1290,14 @@ public:
         if (m_testType == TYPE_WSI)
         {
             VkPresentInfoKHR presentInfo = {
-                VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, // VkStructureType			sType;
-                nullptr,                            // const void*				pNext;
-                1u,                                 // uint32_t				waitSemaphoreCount;
-                &*drawSemaphore,                    // const VkSemaphore*		pWaitSemaphores;
-                1u,                                 // uint32_t				swapchainCount;
-                &*m_drawTestData.swapchain,         // const VkSwapchainKHR*	pSwapchains;
-                &imageIndex,                        // const uint32_t*			pImageIndices;
-                nullptr                             // VkResult*				pResults;
+                VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, // VkStructureType sType;
+                nullptr,                            // const void* pNext;
+                1u,                                 // uint32_t waitSemaphoreCount;
+                &*drawSemaphore,                    // const VkSemaphore* pWaitSemaphores;
+                1u,                                 // uint32_t swapchainCount;
+                &*m_drawTestData.swapchain,         // const VkSwapchainKHR* pSwapchains;
+                &imageIndex,                        // const uint32_t* pImageIndices;
+                nullptr                             // VkResult* pResults;
             };
 
             vk.queuePresentKHR(queue, &presentInfo);
@@ -1409,7 +1407,7 @@ private:
     const TestType m_testType;
     Context &m_context;
     vk::wsi::Type m_wsiType;
-    DeviceDriver &m_vk;
+    const DeviceInterface &m_vk;
     VkDevice m_device;
     SimpleAllocator m_allocator;
     uint32_t m_queueFamilyIndex;
@@ -1419,11 +1417,9 @@ private:
 
 tcu::TestStatus InternallySynchronizedQueuesTestInstance::iterate(void)
 {
-    const vk::PlatformInterface &vkp      = m_context.getPlatformInterface();
-    const InstanceInterface &vki          = m_context.getInstanceInterface();
-    const VkInstance instance             = m_context.getInstance();
-    const DeviceInterface &vk             = m_context.getDeviceInterface();
-    const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+    const auto instance                   = InstanceWrapper(m_context);
+    const InstanceInterface &vki          = instance.getDriver();
+    const VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
 
     uint32_t queueFamilyCount = 1u;
     uint32_t queueCount       = 1u;
@@ -1546,24 +1542,20 @@ tcu::TestStatus InternallySynchronizedQueuesTestInstance::iterate(void)
         nullptr                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    Move<VkDevice> device =
-        createCustomDevice(m_context.getPlatformInterface(), m_context.getInstance(), m_context.getInstanceInterface(),
-                           m_context.getPhysicalDevice(), &deviceInfo);
-
-    DeviceDriver vkd(vkp, instance, *device, m_context.getUsedApiVersion(),
-                     m_context.getTestContext().getCommandLine());
+    const DeviceWrapper device = instance.createCustomDevice(physicalDevice, &deviceInfo);
+    const DeviceInterface &vkd = device.getDriver();
 
     const uint32_t queueIndex    = useSecondQueue ? 1u : 0u;
     VkDeviceQueueInfo2 queueInfo = {
-        VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,                  // VkStructureType			sType;
-        nullptr,                                                // const void*				pNext;
-        VK_DEVICE_QUEUE_CREATE_INTERNALLY_SYNCHRONIZED_BIT_KHR, // VkDeviceQueueCreateFlags	flags;
-        queueFamilyIndex,                                       // uint32_t					queueFamilyIndex;
-        queueIndex,                                             // uint32_t					queueIndex;
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,                  // VkStructureType sType;
+        nullptr,                                                // const void* pNext;
+        VK_DEVICE_QUEUE_CREATE_INTERNALLY_SYNCHRONIZED_BIT_KHR, // VkDeviceQueueCreateFlags flags;
+        queueFamilyIndex,                                       // uint32_t queueFamilyIndex;
+        queueIndex,                                             // uint32_t queueIndex;
     };
 
     VkQueue queue;
-    vk.getDeviceQueue2(*device, &queueInfo, &queue);
+    vkd.getDeviceQueue2(*device, &queueInfo, &queue);
 
     std::vector<de::SharedPtr<de::Thread>> threads;
     threads.push_back(de::SharedPtr<CaseThread>(

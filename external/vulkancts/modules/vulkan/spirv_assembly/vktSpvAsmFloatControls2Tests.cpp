@@ -2176,7 +2176,7 @@ bool checkFloats(const vector<Resource> &, const vector<AllocationSp> &outputAll
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> expectedBytes;
-        expectedOutputs[outputNdx].getBytes(expectedBytes);
+        expectedOutputs[outputNdx].buffer->getBytes(expectedBytes);
 
         if (!compareBytes<TYPE, FLOAT_TYPE>(expectedBytes, outputAllocs[outputNdx], log))
             return false;

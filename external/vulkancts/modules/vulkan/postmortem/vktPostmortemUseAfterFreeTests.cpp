@@ -238,10 +238,10 @@ UseAfterFreeTestInstance::UseAfterFreeTestInstance(Context &context, const uint3
 tcu::TestStatus UseAfterFreeTestInstance::iterate(void)
 {
     const VkDevice device           = *m_logicalDevice;
-    const DeviceInterface &vk       = m_deviceDriver;
+    const DeviceInterface &vk       = m_logicalDevice.getDriver();
     const VkQueue queue             = m_queue;
     const uint32_t queueFamilyIndex = m_queueFamilyIndex;
-    Allocator &allocator            = m_allocator;
+    Allocator &allocator            = m_logicalDevice.getAllocator();
 
     // Customize the test based on buffer type
 

@@ -169,9 +169,8 @@ typedef de::SharedPtr<BufferInterface> BufferSp;
 typedef de::MovePtr<vk::Allocation> AllocationMp;
 typedef de::SharedPtr<vk::Allocation> AllocationSp;
 
-class Resource
+struct Resource
 {
-public:
     Resource(const BufferSp &buffer_, vk::VkDescriptorType descriptorType_ = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
              void *userData_ = NULL)
         : buffer(buffer_)
@@ -180,42 +179,6 @@ public:
     {
     }
 
-    virtual ~Resource()
-    {
-    }
-
-    virtual void getBytes(std::vector<uint8_t> &bytes) const
-    {
-        buffer->getBytes(bytes);
-    }
-    virtual void getPackedBytes(std::vector<uint8_t> &bytes) const
-    {
-        buffer->getPackedBytes(bytes);
-    }
-    virtual size_t getByteSize(void) const
-    {
-        return buffer->getByteSize();
-    }
-
-    virtual void setDescriptorType(vk::VkDescriptorType type)
-    {
-        descriptorType = type;
-    }
-    virtual vk::VkDescriptorType getDescriptorType() const
-    {
-        return descriptorType;
-    }
-
-    virtual void setUserData(void *data)
-    {
-        userData = data;
-    }
-    virtual void *getUserData() const
-    {
-        return userData;
-    }
-
-private:
     BufferSp buffer;
     vk::VkDescriptorType descriptorType;
     void *userData;

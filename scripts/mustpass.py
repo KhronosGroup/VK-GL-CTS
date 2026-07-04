@@ -21,15 +21,21 @@
 
 from ctsbuild.common import *
 from ctsbuild.build import build
-from build_caselists import Module, getModuleByName, getBuildConfig, genCaseList, getCaseListPath, DEFAULT_BUILD_DIR, DEFAULT_TARGET
-from fnmatch import fnmatch
-from copy import copy
-from collections import defaultdict
+from build_caselists import getBuildConfig, getModulesPath, DEFAULT_BUILD_DIR, DEFAULT_TARGET
+import json
 import logging
 import argparse
-import re
+import multiprocessing
+import time
 import xml.etree.cElementTree as ElementTree
 import xml.dom.minidom as minidom
+
+def logPhase(label, t0):
+    """Log elapsed time since `t0` and return the current time so callers can
+    chain measurements: `t0 = logPhase("step a", t0); t0 = logPhase("step b", t0)`."""
+    now = time.perf_counter()
+    logging.info("[TIMING] %s: %.3fs" % (label, now - t0))
+    return now
 
 GENERATED_FILE_WARNING = """
      This file has been automatically generated. Edit with caution.
@@ -70,21 +76,6 @@ class Filter:
     def __init__ (self, type, filenames):
         self.type = type
         self.filenames = filenames
-        self.key = ",".join(filenames)
-
-class TestRoot:
-    def __init__ (self):
-        self.children = []
-
-class TestGroup:
-    def __init__ (self, name):
-        self.name = name
-        self.children = []
-
-class TestCase:
-    def __init__ (self, name):
-        self.name = name
-        self.configurations = []
 
 def getSrcDir (mustpass):
     return os.path.join(mustpass.project.path, mustpass.version, "src")
@@ -114,28 +105,6 @@ def getCommandLine (config):
     cmdLine += "--deqp-watchdog=enable"
 
     return cmdLine
-
-class CaseList:
-    def __init__(self, filePath, sortedLines):
-        self.filePath = filePath
-        self.sortedLines = sortedLines
-
-def readAndSortCaseList (buildCfg, generator, module):
-    build(buildCfg, generator, [module.binName])
-    genCaseList(buildCfg, generator, module, "txt")
-    filePath = getCaseListPath(buildCfg, module, "txt")
-    with open(filePath, 'r') as first_file:
-        lines = first_file.readlines()
-        lines.sort()
-        caseList = CaseList(filePath, lines)
-        return caseList
-
-def readPatternList (filename, patternList):
-    with open(filename, 'rt') as f:
-        for line in f:
-            line = line.strip()
-            if len(line) > 0 and line[0] != '#':
-                patternList.append(line)
 
 def include (*filenames):
     return Filter(Filter.TYPE_INCLUDE, filenames)
@@ -249,193 +218,139 @@ def genAndroidTestXml (mustpass):
 
     return configElement
 
-class PatternSet:
-    def __init__(self):
-        self.namedPatternsTree = {}
-        self.namedPatternsDict = {}
-        self.wildcardPatternsDict = {}
-
-def readPatternSets (mustpass):
-    patternSets = {}
-    for package in mustpass.packages:
-        for cfg in package.configurations:
-            for filter in cfg.filters:
-                if not filter.key in patternSets:
-                    patternList = []
-                    for filename in filter.filenames:
-                        readPatternList(os.path.join(getSrcDir(mustpass), filename), patternList)
-                    patternSet = PatternSet()
-                    for pattern in patternList:
-                        if pattern.find('*') == -1:
-                            patternSet.namedPatternsDict[pattern] = 0
-                            t = patternSet.namedPatternsTree
-                            parts = pattern.split('.')
-                            for part in parts:
-                                t = t.setdefault(part, {})
-                        else:
-                            # We use regex instead of fnmatch because it's faster
-                            patternSet.wildcardPatternsDict[re.compile("^" + pattern.replace(".", r"\.").replace("*", ".*?") + "$")] = 0
-                    patternSets[filter.key] = patternSet
-    return patternSets
-
-def genMustpassFromLists (mustpass, moduleCaseLists):
-    print("Generating mustpass '%s'" % mustpass.version)
-    patternSets = readPatternSets(mustpass)
-
-    for package in mustpass.packages:
-        currentCaseList = moduleCaseLists[package.module]
-        logging.debug("Reading " + currentCaseList.filePath)
-
-        for config in package.configurations:
-            # construct components of path to main destination file
-            mainDstFileDir = getDstCaseListPath(mustpass)
-            mainDstFileName = getCaseListFileName(package, config)
-            mainDstFilePath = os.path.join(mainDstFileDir, mainDstFileName)
-            mainGroupSubDir = mainDstFileName[:-4]
-
-            if not os.path.exists(mainDstFileDir):
-                os.makedirs(mainDstFileDir)
-            mainDstFile = open(mainDstFilePath, 'w')
-            print(mainDstFilePath)
-            output_files = {}
-            def openAndStoreFile(filePath, testFilePath, parentFile):
-                if filePath not in output_files:
-                    try:
-                        print("    " + filePath)
-                        parentFile.write(mainGroupSubDir + "/" + testFilePath + "\n")
-                        currentDir = os.path.dirname(filePath)
-                        if not os.path.exists(currentDir):
-                            os.makedirs(currentDir)
-                        output_files[filePath] = open(filePath, 'w')
-
-                    except FileNotFoundError:
-                        print(f"File not found: {filePath}")
-                return output_files[filePath]
-
-            lastOutputFile = ""
-            currentOutputFile = None
-            for line in currentCaseList.sortedLines:
-                if not line.startswith("TEST: "):
-                    continue
-                caseName = line.replace("TEST: ", "").strip("\n")
-                caseParts = caseName.split(".")
-                keep = True
-                # Do the includes with the complex patterns first
-                for filter in config.filters:
-                    if filter.type == Filter.TYPE_INCLUDE:
-                        keep = False
-                        patterns = patternSets[filter.key].wildcardPatternsDict
-                        for pattern in patterns.keys():
-                            keep = pattern.match(caseName)
-                            if keep:
-                                patterns[pattern] += 1
-                                break
-
-                        if not keep:
-                            t = patternSets[filter.key].namedPatternsTree
-                            if len(t.keys()) == 0:
-                                continue
-                            for part in caseParts:
-                                if part in t:
-                                    t = t[part]
-                                else:
-                                    t = None  # Not found
-                                    break
-                            keep = t == {}
-                            if keep:
-                                patternSets[filter.key].namedPatternsDict[caseName] += 1
-
-                    # Do the excludes
-                    if filter.type == Filter.TYPE_EXCLUDE:
-                        patterns = patternSets[filter.key].wildcardPatternsDict
-                        for pattern in patterns.keys():
-                            discard = pattern.match(caseName)
-                            if discard:
-                                patterns[pattern] += 1
-                                keep = False
-                                break
-                        if keep:
-                            t = patternSets[filter.key].namedPatternsTree
-                            if len(t.keys()) == 0:
-                                continue
-                            for part in caseParts:
-                                if part in t:
-                                    t = t[part]
-                                else:
-                                    t = None  # Not found
-                                    break
-                            if t == {}:
-                                patternSets[filter.key].namedPatternsDict[caseName] += 1
-                                keep = False
-                    if not keep:
-                        break
-                if not keep:
-                    continue
-
-                parts = caseName.split('.')
-                if len(config.listOfGroupsToSplit) > 0:
-                    if len(parts) > 2:
-                        groupName = parts[1].replace("_", "-")
-                        for splitPattern in config.listOfGroupsToSplit:
-                            splitParts = splitPattern.split(".")
-                            if len(splitParts) > 1 and caseName.startswith(splitPattern + "."):
-                                groupName = groupName + "/" + parts[2].replace("_", "-")
-                        filePath = os.path.join(mainDstFileDir, mainGroupSubDir, groupName + ".txt")
-                        if lastOutputFile != filePath:
-                            currentOutputFile = openAndStoreFile(filePath, groupName + ".txt", mainDstFile)
-                            lastOutputFile = filePath
-                        currentOutputFile.write(caseName + "\n")
-                else:
-                    mainDstFile.write(caseName + "\n")
-
-            # Check that all patterns have been used in the filters
-            # This check will help identifying typos and patterns becoming stale
-            for filter in config.filters:
-                if filter.type == Filter.TYPE_INCLUDE:
-                    patternSet = patternSets[filter.key]
-
-                    def log_unused(patternsDict, kind):
-                        log_count = 0
-                        for pattern, usage in patternsDict.items():
-                            if usage == 0:
-                                logging.debug("%s %s in file %s for module %s was never used!" % (kind, pattern, filter.key, config.name))
-                                log_count += 1
-                            if log_count > 100:
-                                logging.warning("Too many '%s unused' logs, the rest are not logged!" % kind)
-                                break
-
-                    log_unused(patternSet.namedPatternsDict, 'Case')
-                    log_unused(patternSet.wildcardPatternsDict, 'Pattern')
-
-    # Generate XML
-    specXML = genSpecXML(mustpass)
+def writeMustpassXmls(mustpass):
     specFilename = os.path.join(mustpass.project.path, mustpass.version, "mustpass.xml")
-
     print("  Writing spec: " + specFilename)
-    writeFile(specFilename, prettifyXML(specXML).decode())
+    writeFile(specFilename, prettifyXML(genSpecXML(mustpass)).decode())
 
     # TODO: Which is the best selector mechanism?
-    if (mustpass.version == "main"):
-        androidTestXML = genAndroidTestXml(mustpass)
+    if mustpass.version == "main":
         androidTestFilename = os.path.join(mustpass.project.path, "AndroidTest.xml")
-
         print("  Writing AndroidTest.xml: " + androidTestFilename)
-        writeFile(androidTestFilename, prettifyXML(androidTestXML).decode())
+        writeFile(androidTestFilename, prettifyXML(genAndroidTestXml(mustpass)).decode())
 
-    print("Done!")
+
+
+
+def emitMustpassSpec(mustpass, package, config, specPath):
+    """Write a single-config JSON spec consumed by the dEQP-* binary's
+    --deqp-runmode=gen-mustpass.  Each Filter (which may aggregate multiple
+    filter files into a single logical OR-of-patterns rule) becomes one
+    {"type": "include"|"exclude", "files": [...]} entry, matching Python's
+    filter-grouping semantics.
+
+    All paths written into the spec are absolutised: the caller invokes the
+    binary after pushWorkingDir() changes cwd, so any relative path embedded
+    in the spec would resolve against the binary's new cwd, not the script's
+    original cwd."""
+    mainDstFileDir = os.path.abspath(getDstCaseListPath(mustpass))
+    srcDir = os.path.abspath(getSrcDir(mustpass))
+    mainFileName = getCaseListFileName(package, config)
+    groupSubDir = mainFileName[:-4]  # strip ".txt"
+    cfg = {
+        "name": config.name,
+        "output_file": mainFileName,
+    }
+    if config.listOfGroupsToSplit:
+        cfg["group_subdir"] = groupSubDir
+        cfg["split_groups"] = list(config.listOfGroupsToSplit)
+    cfg["filters"] = [
+        {
+            "type": "include" if filt.type == Filter.TYPE_INCLUDE else "exclude",
+            "files": [os.path.join(srcDir, fname) for fname in filt.filenames],
+        }
+        for filt in config.filters
+    ]
+    spec = {
+        "output_base_dir": mainDstFileDir,
+        "configs": [cfg],
+    }
+    with open(specPath, 'w', newline='\n') as f:
+        json.dump(spec, f, indent=2)
+        f.write("\n")
+
+
+def runConfigWorker(buildCfg, generator, mustpass, package, config, verbose):
+    """Worker process: emit a single-config spec and invoke the dEQP-* binary
+    with --deqp-runmode=gen-mustpass.  Each task runs in its own subprocess so
+    that all (mustpass, package, config) triples can run concurrently.  Each
+    binary invocation does its own tree walk -- more total CPU than the
+    one-walk-evaluates-all-configs design, but recovers wall-clock parallelism
+    across configs."""
+    initializeLogger(verbose)
+    # workDir / specPath go through abspath because the binary is invoked
+    # after pushWorkingDir() and any relative path would resolve against
+    # the binary's new cwd, not the script's.  Same goes for the paths
+    # emitted into the spec by emitMustpassSpec().
+    workDir = os.path.abspath(os.path.join(getModulesPath(buildCfg), package.module.dirName))
+    binPath = generator.getBinaryPath(buildCfg.getBuildType(),
+                                      os.path.join(".", package.module.binName))
+    specPath = os.path.join(
+        workDir,
+        "mustpass-spec-%s-%s-%s.json" % (mustpass.version, package.module.binName, config.name))
+    emitMustpassSpec(mustpass, package, config, specPath)
+    t0 = time.perf_counter()
+    pushWorkingDir(workDir)
+    try:
+        execute([binPath, "--deqp-runmode=gen-mustpass", "--deqp-mustpass-spec=" + specPath])
+    finally:
+        popWorkingDir()
+    logPhase("module=%s mustpass=%s cfg=%s gen-mustpass" %
+             (package.module.name, mustpass.version, config.name), t0)
 
 
 def genMustpassLists (mustpassLists, generator, buildCfg):
-    moduleCaseLists = {}
+    t0 = time.perf_counter()
 
-    # Getting case lists involves invoking build, so we want to cache the results
+    # Collect the unique set of modules used across all mustpass lists, then
+    # build all of their binaries in a single cmake/ninja invocation.  This
+    # avoids re-running cmake configure (and a fresh ninja launch) once per
+    # module, which on an incremental rebuild was ~7s of overhead for two
+    # modules.
+    tBuild = time.perf_counter()
+    modulesInOrder = []
+    seen = set()
     for mustpass in mustpassLists:
         for package in mustpass.packages:
-            if not package.module in moduleCaseLists:
-                moduleCaseLists[package.module] = readAndSortCaseList(buildCfg, generator, package.module)
+            if package.module.name not in seen:
+                seen.add(package.module.name)
+                modulesInOrder.append(package.module)
+    if modulesInOrder:
+        build(buildCfg, generator, [m.binName for m in modulesInOrder])
+    logPhase("batch build(%s)" % ",".join(m.name for m in modulesInOrder), tBuild)
 
+    # Fan out one child process per (mustpass, package, config).  Each child
+    # invokes the binary with a single-config spec; multiple configs of the
+    # same module run concurrently, each doing its own tree walk.  More total
+    # CPU than a single tree walk evaluating all configs in lockstep, but
+    # better wall-clock since the per-config filter cost no longer serializes.
+    # Compilation stays in the parent (above) so we don't parallelize
+    # cmake/ninja themselves.
+    verbose = logging.getLogger().getEffectiveLevel() == logging.DEBUG
+    procs = []
     for mustpass in mustpassLists:
-        genMustpassFromLists(mustpass, moduleCaseLists)
+        for package in mustpass.packages:
+            for config in package.configurations:
+                name = "%s/%s/%s" % (package.module.name, mustpass.version, config.name)
+                p = multiprocessing.Process(target=runConfigWorker,
+                                            args=(buildCfg, generator, mustpass, package, config, verbose),
+                                            name=name)
+                p.start()
+                procs.append((p, name))
+    failures = []
+    for p, name in procs:
+        p.join()
+        if p.exitcode != 0:
+            failures.append("%s exit=%d" % (name, p.exitcode))
+    if failures:
+        raise Exception("Per-config worker failures: " + ", ".join(failures))
+
+    # XML written in the parent so the spec covers every package, not just
+    # those of one worker's module.
+    for mustpass in mustpassLists:
+        writeMustpassXmls(mustpass)
+
+    logPhase("genMustpassLists total", t0)
 
 def parseCmdLineArgs ():
     parser = argparse.ArgumentParser(description = "Build Android CTS mustpass",

@@ -197,6 +197,7 @@ enum TestType
     TEST_TYPE_AV1_DECODE_GLOBALMOTION_8,
     TEST_TYPE_AV1_DECODE_FILMGRAIN_8,
     TEST_TYPE_AV1_DECODE_SVCL1T2_8,
+    TEST_TYPE_AV1_DECODE_SVCL1T2_8_SB_TILE_UNITS,
     TEST_TYPE_AV1_DECODE_SUPERRES_8,
     TEST_TYPE_AV1_DECODE_SIZEUP_8,
 
@@ -207,6 +208,7 @@ enum TestType
     TEST_TYPE_AV1_DECODE_LOOPFILTER_10,
     TEST_TYPE_AV1_DECODE_CDEF_10,
     TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10,
+    TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10_SB_TILE_UNITS,
     TEST_TYPE_AV1_DECODE_ARGON_TEST_787,
     TEST_TYPE_AV1_DECODE_GOLDEN_FRAME,
 
@@ -347,6 +349,9 @@ static const char *testTypeToStr(TestType type)
     case TEST_TYPE_AV1_DECODE_SVCL1T2_8:
         testName = "svcl1t2_8";
         break;
+    case TEST_TYPE_AV1_DECODE_SVCL1T2_8_SB_TILE_UNITS:
+        testName = "svcl1t2_8_sb_tile_units";
+        break;
     case TEST_TYPE_AV1_DECODE_SUPERRES_8:
         testName = "superres_8";
         break;
@@ -376,6 +381,9 @@ static const char *testTypeToStr(TestType type)
         break;
     case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10:
         testName = "argon_filmgrain_10_test1019";
+        break;
+    case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10_SB_TILE_UNITS:
+        testName = "argon_filmgrain_10_test1019_sb_tile_units";
         break;
     case TEST_TYPE_AV1_DECODE_ARGON_TEST_787:
         testName = "argon_test787";
@@ -506,6 +514,7 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_AV1_DECODE_GLOBALMOTION_8:
     case TEST_TYPE_AV1_DECODE_FILMGRAIN_8:
     case TEST_TYPE_AV1_DECODE_SVCL1T2_8:
+    case TEST_TYPE_AV1_DECODE_SVCL1T2_8_SB_TILE_UNITS:
     case TEST_TYPE_AV1_DECODE_SUPERRES_8:
     case TEST_TYPE_AV1_DECODE_SIZEUP_8:
     case TEST_TYPE_AV1_DECODE_ARGON_SEQCHANGE_AFFINE_8:
@@ -516,6 +525,7 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_AV1_DECODE_CDEF_10:
     case TEST_TYPE_AV1_DECODE_GOLDEN_FRAME:
     case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10:
+    case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10_SB_TILE_UNITS:
     case TEST_TYPE_AV1_DECODE_ARGON_TEST_787:
     case TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS:
     case TEST_TYPE_AV1_DECODE_RELAXED_SESSION_PARAMS:
@@ -572,6 +582,10 @@ enum DecoderOption : uint32_t
     UseInlineSessionParams    = 1 << 8,
     ResetCodecNoSessionParams = 1 << 9,
     ForceDisableFilmGrain     = 1 << 10,
+    // Feed AV1 tile MiColStarts/MiRowStarts in SB units instead of MI units to verify
+    // the driver ignores them, as recommended by the AV1 decode spec note. Drivers that
+    // consume those fields and produce incorrect pixels will trigger a QualityWarning.
+    ForceSbTileUnits = 1 << 11,
 };
 
 static const int ALL_FRAMES = 0;
@@ -639,6 +653,8 @@ struct DecodeTestParam
     {TEST_TYPE_AV1_DECODE_GLOBALMOTION_8, {CLIP_AV1_DEC_GLOBALMOTION_8, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_FILMGRAIN_8, {CLIP_AV1_DEC_FILMGRAIN_8, ALL_FRAMES, DecoderOption::FilmGrainPresent}},
     {TEST_TYPE_AV1_DECODE_SVCL1T2_8, {CLIP_AV1_DEC_SVCL1T2_8, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_SVCL1T2_8_SB_TILE_UNITS,
+     {CLIP_AV1_DEC_SVCL1T2_8, ALL_FRAMES, DecoderOption::ForceSbTileUnits}},
     {TEST_TYPE_AV1_DECODE_SUPERRES_8, {CLIP_AV1_DEC_SUPERRES_8, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_SIZEUP_8, {CLIP_AV1_DEC_SIZEUP_8, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_BASIC_10, {CLIP_AV1_DEC_BASIC_10, ALL_FRAMES, DecoderOption::Default}},
@@ -660,6 +676,9 @@ struct DecodeTestParam
     {TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10,
      {CLIP_AV1_DEC_ARGON_FILMGRAIN_10, 1,
       (DecoderOption)(DecoderOption::AnnexB | DecoderOption::ForceDisableFilmGrain)}},
+    {TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10_SB_TILE_UNITS,
+     {CLIP_AV1_DEC_ARGON_FILMGRAIN_10, 1,
+      (DecoderOption)(DecoderOption::AnnexB | DecoderOption::ForceDisableFilmGrain | DecoderOption::ForceSbTileUnits)}},
 
     // TODO: Did not have sufficient implementations to find out why this is failing.
     //{TEST_TYPE_AV1_DECODE_ARGON_TEST_787, {CLIP_ARGON_TEST_787, 2, DecoderOption::AnnexB}},
@@ -728,11 +747,6 @@ public:
         if (m_params.stream.framesToCheck == ALL_FRAMES)
         {
             m_params.stream.framesToCheck = m_info->totalFrames;
-        }
-
-        if (params.type == TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE_DPB)
-        {
-            m_pictureParameterUpdateTriggerHack = 3;
         }
     }
 
@@ -805,11 +819,6 @@ public:
         return m_generalLayout;
     }
 
-    int getParamaterUpdateHackRequirement() const
-    {
-        return m_pictureParameterUpdateTriggerHack;
-    }
-
     VideoDevice::VideoDeviceFlags requiredDeviceFlags() const
     {
         VideoDevice::VideoDeviceFlags flags = VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED;
@@ -874,13 +883,6 @@ private:
     bool m_isLayeredDpb{};
     bool m_generalLayout{};
     std::vector<VkVideoCoreProfile> m_profiles;
-    // The 1-based count of parameter set updates after which to force
-    // a parameter object release.  This is required due to the design
-    // of the NVIDIA decode-client API. It sends parameter updates and
-    // expects constructed parameter objects back synchronously,
-    // before the next video session is created in a following
-    // BeginSequence call.
-    int m_pictureParameterUpdateTriggerHack{0}; // Zero is "off"
 };
 
 // Vulkan video is not supported on android platform
@@ -896,22 +898,22 @@ static std::shared_ptr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext
                                             vkVideoFrameBuffer));
 
     VideoBaseDecoder::Parameters params;
-    params.profile                           = test.getProfile(0);
-    params.context                           = devctx;
-    params.framebuffer                       = vkVideoFrameBuffer;
-    params.framesToCheck                     = test.framesToCheck();
-    params.layeredDpb                        = test.isLayered();
-    params.queryDecodeStatus                 = test.hasOption(DecoderOption::UseStatusQueries);
-    params.useInlineQueries                  = test.hasOption(DecoderOption::UseInlineStatusQueries);
-    params.useInlineSessionParams            = test.hasOption(DecoderOption::UseInlineSessionParams);
-    params.resetCodecNoSessionParams         = test.hasOption(DecoderOption::ResetCodecNoSessionParams);
-    params.resourcesWithoutProfiles          = test.hasOption(DecoderOption::ResourcesWithoutProfiles);
-    params.outOfOrderDecoding                = test.hasOption(DecoderOption::CachedDecoding);
-    params.alwaysRecreateDPB                 = test.hasOption(DecoderOption::RecreateDPBImages);
-    params.intraOnlyDecodingNoSetupRef       = test.hasOption(DecoderOption::IntraOnlyDecodingNoSetupRef);
-    params.pictureParameterUpdateTriggerHack = test.getParamaterUpdateHackRequirement();
-    params.forceDisableFilmGrain             = forceDisableFilmGrain;
-    params.useGeneralLayout                  = test.usesGeneralLayout();
+    params.profile                     = test.getProfile(0);
+    params.context                     = devctx;
+    params.framebuffer                 = vkVideoFrameBuffer;
+    params.framesToCheck               = test.framesToCheck();
+    params.layeredDpb                  = test.isLayered();
+    params.queryDecodeStatus           = test.hasOption(DecoderOption::UseStatusQueries);
+    params.useInlineQueries            = test.hasOption(DecoderOption::UseInlineStatusQueries);
+    params.useInlineSessionParams      = test.hasOption(DecoderOption::UseInlineSessionParams);
+    params.resetCodecNoSessionParams   = test.hasOption(DecoderOption::ResetCodecNoSessionParams);
+    params.resourcesWithoutProfiles    = test.hasOption(DecoderOption::ResourcesWithoutProfiles);
+    params.outOfOrderDecoding          = test.hasOption(DecoderOption::CachedDecoding);
+    params.alwaysRecreateDPB           = test.hasOption(DecoderOption::RecreateDPBImages);
+    params.intraOnlyDecodingNoSetupRef = test.hasOption(DecoderOption::IntraOnlyDecodingNoSetupRef);
+    params.forceDisableFilmGrain       = forceDisableFilmGrain;
+    params.forceSbTileUnits            = test.hasOption(DecoderOption::ForceSbTileUnits);
+    params.useGeneralLayout            = test.usesGeneralLayout();
 
     return std::make_shared<VideoBaseDecoder>(std::move(params));
 }
@@ -940,7 +942,7 @@ inline uint16_t roru16(uint16_t x, uint16_t n)
     return n == 0 ? x : (x >> n) | (x << (-n & 15));
 }
 
-static void copyAllPlanesToBuffers(const DeviceDriver &vkd, const DecodedFrame &frame, const VkExtent2D &imageExtent,
+static void copyAllPlanesToBuffers(const DeviceInterface &vkd, const DecodedFrame &frame, const VkExtent2D &imageExtent,
                                    const PlanarFormatDescription &planarDescription, VkCommandBuffer cmdbuf,
                                    std::vector<std::unique_ptr<BufferWithMemory>> &planeBuffers)
 {
@@ -1553,6 +1555,15 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
             TCU_THROW(QualityWarning, std::string("Potentially non-standard filmgrain synthesis process: ") + ss.str());
         }
 
+        if (m_testDefinition->hasOption(DecoderOption::ForceSbTileUnits))
+        {
+            return tcu::TestStatus(
+                QP_TEST_RESULT_QUALITY_WARNING,
+                std::string("Driver appears to consume pMiColStarts/pMiRowStarts. Per the AV1 decode spec note, "
+                            "drivers should ignore them and derive tile starts independently: ") +
+                    ss.str());
+        }
+
         return tcu::TestStatus::fail(ss.str());
     }
 #else
@@ -1824,6 +1835,7 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
     case TEST_TYPE_AV1_DECODE_CDFUPDATE_8:
     case TEST_TYPE_AV1_DECODE_FILMGRAIN_8:
     case TEST_TYPE_AV1_DECODE_SVCL1T2_8:
+    case TEST_TYPE_AV1_DECODE_SVCL1T2_8_SB_TILE_UNITS:
     case TEST_TYPE_AV1_DECODE_SUPERRES_8:
     case TEST_TYPE_AV1_DECODE_SIZEUP_8:
     case TEST_TYPE_AV1_DECODE_ARGON_SEQCHANGE_AFFINE_8:
@@ -1834,6 +1846,7 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
     case TEST_TYPE_AV1_DECODE_CDEF_10:
     case TEST_TYPE_AV1_DECODE_GOLDEN_FRAME:
     case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10:
+    case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10_SB_TILE_UNITS:
     case TEST_TYPE_AV1_DECODE_ARGON_TEST_787:
     {
         context.requireDeviceFunctionality("VK_KHR_video_decode_av1");

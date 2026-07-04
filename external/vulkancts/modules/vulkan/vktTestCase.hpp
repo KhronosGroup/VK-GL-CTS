@@ -278,6 +278,7 @@ public:
     virtual void initPrograms(vk::SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
     virtual void checkSupport(Context &context) const;
+    virtual bool needsRebuildPrograms(TestCase const *testCase, Context &context) const;
 
     IterateResult iterate(void)
     {

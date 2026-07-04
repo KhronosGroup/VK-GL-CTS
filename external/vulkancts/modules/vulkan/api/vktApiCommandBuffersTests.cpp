@@ -998,9 +998,6 @@ bool executeSecondaryCmdBuffer(Context &context, VkCommandPool pool, std::vector
 
 tcu::TestStatus trimCommandPoolTest(Context &context, const VkCommandBufferLevel cmdBufferLevel)
 {
-    if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance1"))
-        TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
-
     const VkDevice vkDevice         = context.getDevice();
     const DeviceInterface &vk       = context.getDeviceInterface();
     const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
@@ -1403,11 +1400,6 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context &context)
     const VkQueue queue             = context.getUniversalQueue();
     const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
-#ifdef CTS_USES_VULKANSC
-    if (context.getDeviceVulkanSC10Properties().commandPoolResetCommandBuffer == VK_FALSE)
-        TCU_THROW(NotSupportedError, "commandPoolResetCommandBuffer not supported by this implementation");
-#endif // CTS_USES_VULKANSC
-
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
         nullptr,                                         // const void* pNext;
@@ -1523,11 +1515,6 @@ tcu::TestStatus oneTimeSubmitFlagPrimaryBufferTest(Context &context)
     const VkQueue queue             = context.getUniversalQueue();
     const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
-#ifdef CTS_USES_VULKANSC
-    if (context.getDeviceVulkanSC10Properties().commandPoolResetCommandBuffer == VK_FALSE)
-        TCU_THROW(NotSupportedError, "commandPoolResetCommandBuffer not supported by this implementation");
-#endif // CTS_USES_VULKANSC
-
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
         nullptr,                                         // const void* pNext;
@@ -1597,11 +1584,6 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context &context)
     const DeviceInterface &vk       = context.getDeviceInterface();
     const VkQueue queue             = context.getUniversalQueue();
     const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
-
-#ifdef CTS_USES_VULKANSC
-    if (context.getDeviceVulkanSC10Properties().commandPoolResetCommandBuffer == VK_FALSE)
-        TCU_THROW(NotSupportedError, "commandPoolResetCommandBuffer not supported by this implementation");
-#endif // CTS_USES_VULKANSC
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
@@ -1925,29 +1907,6 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context &cont
 
 tcu::TestStatus renderPassContinueNestedTest(Context &context, bool framebufferHint)
 {
-    bool maintenance7 = false;
-#ifndef CTS_USES_VULKANSC
-    if (context.isDeviceFunctionalitySupported("VK_KHR_maintenance7"))
-    {
-        const auto &features = context.getMaintenance7Features();
-        maintenance7         = features.maintenance7;
-    }
-#endif
-
-    if (!maintenance7)
-    {
-        context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
-#ifndef CTS_USES_VULKANSC
-        const auto &features = context.getNestedCommandBufferFeaturesEXT();
-        if (!features.nestedCommandBuffer)
-#endif // CTS_USES_VULKANSC
-            TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
-#ifndef CTS_USES_VULKANSC
-        if (!features.nestedCommandBufferRendering)
-#endif // CTS_USES_VULKANSC
-            TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported");
-    }
-
     const DeviceInterface &vkd = context.getDeviceInterface();
     CommandBufferRenderPassTestEnvironment env(context, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
@@ -2717,9 +2676,6 @@ tcu::TestStatus recordBufferQueryPreciseWithFlagTest(Context &context)
     const DeviceInterface &vk       = context.getDeviceInterface();
     const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
-    if (!context.getDeviceFeatures().inheritedQueries)
-        TCU_THROW(NotSupportedError, "Inherited queries feature is not supported");
-
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType;
         nullptr,                                         // pNext;
@@ -2806,9 +2762,6 @@ tcu::TestStatus recordBufferQueryImpreciseWithFlagTest(Context &context)
     const DeviceInterface &vk       = context.getDeviceInterface();
     const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
-    if (!context.getDeviceFeatures().inheritedQueries)
-        TCU_THROW(NotSupportedError, "Inherited queries feature is not supported");
-
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType;
         nullptr,                                         // pNext;
@@ -2894,9 +2847,6 @@ tcu::TestStatus recordBufferQueryImpreciseWithoutFlagTest(Context &context)
     const VkDevice vkDevice         = context.getDevice();
     const DeviceInterface &vk       = context.getDeviceInterface();
     const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
-
-    if (!context.getDeviceFeatures().inheritedQueries)
-        TCU_THROW(NotSupportedError, "Inherited queries feature is not supported");
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType;
@@ -4370,11 +4320,6 @@ tcu::TestStatus executeStateTransitionTest(Context &context, StateTransitionTest
     const VkQueue queue             = context.getUniversalQueue();
     const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
-#ifdef CTS_USES_VULKANSC
-    if (context.getDeviceVulkanSC10Properties().commandPoolResetCommandBuffer == VK_FALSE)
-        TCU_THROW(NotSupportedError, "commandPoolResetCommandBuffer not supported by this implementation");
-#endif // CTS_USES_VULKANSC
-
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
     const Unique<VkCommandBuffer> cmdBuffer(
@@ -4563,6 +4508,31 @@ void checkEventSupport(Context &context)
 #endif // CTS_USES_VULKANSC
 }
 
+#ifndef CTS_USES_VULKANSC
+void checkEventAndMaint1Support(Context &context, const VkCommandBufferLevel)
+{
+    checkEventSupport(context);
+    context.requireDeviceFunctionality("VK_KHR_maintenance1");
+}
+#endif // CTS_USES_VULKANSC
+
+void checkCommandPoolResetCommandBufferSupport(Context &context, StateTransitionTest stt = STT_RECORDING_TO_INITIAL)
+{
+    DE_UNREF(stt);
+    DE_UNREF(context);
+
+#ifdef CTS_USES_VULKANSC
+    if (context.getDeviceVulkanSC10Properties().commandPoolResetCommandBuffer == VK_FALSE)
+        TCU_THROW(NotSupportedError, "commandPoolResetCommandBuffer not supported by this implementation");
+#endif // CTS_USES_VULKANSC
+}
+
+void checkOneTimeSubmitSupport(Context &context)
+{
+    checkEventSupport(context);
+    checkCommandPoolResetCommandBufferSupport(context);
+}
+
 void checkCommandBufferSimultaneousUseSupport(Context &context)
 {
 #ifdef CTS_USES_VULKANSC
@@ -4583,14 +4553,20 @@ void checkSecondaryCommandBufferNullOrImagelessFramebufferSupport(Context &conte
 #endif // CTS_USES_VULKANSC
 }
 
-void checkSecondaryCommandBufferNullOrImagelessFramebufferSupport1(Context &context, bool value)
+void checkInheritedQueriesSupport(Context &context)
 {
-    DE_UNREF(value);
+    checkSecondaryCommandBufferNullOrImagelessFramebufferSupport(context);
+    if (!context.getDeviceFeatures().inheritedQueries)
+        TCU_THROW(NotSupportedError, "Inherited queries feature is not supported");
+}
+
+void checkSecondaryCommandBufferNullOrImagelessFramebufferSupport1(Context &context, bool)
+{
+    DE_UNREF(context);
+
 #ifdef CTS_USES_VULKANSC
     if (context.getDeviceVulkanSC10Properties().secondaryCommandBufferNullOrImagelessFramebuffer == VK_FALSE)
         TCU_THROW(NotSupportedError, "secondaryCommandBufferNullFramebuffer is not supported");
-#else
-    DE_UNREF(context);
 #endif // CTS_USES_VULKANSC
 }
 
@@ -4598,6 +4574,12 @@ void checkEventAndSecondaryCommandBufferNullFramebufferSupport(Context &context)
 {
     checkEventSupport(context);
     checkSecondaryCommandBufferNullOrImagelessFramebufferSupport(context);
+}
+
+void checkEventAndSecondaryCommandBufferNullFramebufferAndResetCommandBufferSupport(Context &context)
+{
+    checkEventAndSecondaryCommandBufferNullFramebufferSupport(context);
+    checkCommandPoolResetCommandBufferSupport(context);
 }
 
 void checkSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport(Context &context)
@@ -4637,16 +4619,21 @@ void checkNestedCommandBufferDepthSupport(Context &context)
         TCU_THROW(NotSupportedError, "nestedCommandBuffer with nesting level greater than 1 is not supported");
 }
 
-void checkNestedCommandBufferRenderPassContinueSupport(Context &context, bool value)
+void checkNestedCommandBufferRenderPassContinueSupport(Context &context, bool)
 {
     checkNestedCommandBufferSupport(context);
 
-    DE_UNREF(value);
 #ifndef CTS_USES_VULKANSC
-    const auto &features = context.getNestedCommandBufferFeaturesEXT();
-    if (!features.nestedCommandBufferRendering)
+    if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance7"))
+    {
+        context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
+        const auto &features = context.getNestedCommandBufferFeaturesEXT();
+        if (!features.nestedCommandBuffer)
+            TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+        if (!features.nestedCommandBufferRendering)
+            TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported");
+    }
 #endif // CTS_USES_VULKANSC
-        TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported");
 }
 
 void checkSimultaneousUseAndNestedCommandBufferNullFramebufferSupport(Context &context)
@@ -4659,13 +4646,6 @@ void checkSimultaneousUseAndNestedCommandBufferNullFramebufferSupport(Context &c
 #endif // CTS_USES_VULKANSC
         TCU_THROW(NotSupportedError, "nestedCommandBufferSimultaneousUse is not supported");
 }
-
-#ifndef CTS_USES_VULKANSC
-void checkEventSupport(Context &context, const VkCommandBufferLevel)
-{
-    checkEventSupport(context);
-}
-#endif // CTS_USES_VULKANSC
 
 struct ManyDrawsParams
 {
@@ -6292,10 +6272,10 @@ tcu::TestCaseGroup *createCommandBuffersTests(tcu::TestContext &testCtx)
                     executeLargePrimaryBufferTest);
     addFunctionCase(commandBuffersTests.get(), "reset_implicit", checkEventSupport, resetBufferImplicitlyTest);
 #ifndef CTS_USES_VULKANSC
-    addFunctionCase(commandBuffersTests.get(), "trim_command_pool", checkEventSupport, trimCommandPoolTest,
+    addFunctionCase(commandBuffersTests.get(), "trim_command_pool", checkEventAndMaint1Support, trimCommandPoolTest,
                     VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-    addFunctionCase(commandBuffersTests.get(), "trim_command_pool_secondary", checkEventSupport, trimCommandPoolTest,
-                    VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+    addFunctionCase(commandBuffersTests.get(), "trim_command_pool_secondary", checkEventAndMaint1Support,
+                    trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 #endif // CTS_USES_VULKANSC
     /* 19.3. Command Buffer Recording (5.3 in VK 1.0 Spec) */
     addFunctionCase(commandBuffersTests.get(), "record_single_primary", checkEventSupport,
@@ -6327,11 +6307,13 @@ tcu::TestCaseGroup *createCommandBuffersTests(tcu::TestContext &testCtx)
     }
     addFunctionCase(commandBuffersTests.get(), "submit_twice_primary", checkEventSupport, submitPrimaryBufferTwiceTest);
     addFunctionCase(commandBuffersTests.get(), "submit_twice_secondary",
-                    checkEventAndSecondaryCommandBufferNullFramebufferSupport, submitSecondaryBufferTwiceTest);
-    addFunctionCase(commandBuffersTests.get(), "record_one_time_submit_primary", checkEventSupport,
+                    checkEventAndSecondaryCommandBufferNullFramebufferAndResetCommandBufferSupport,
+                    submitSecondaryBufferTwiceTest);
+    addFunctionCase(commandBuffersTests.get(), "record_one_time_submit_primary", checkOneTimeSubmitSupport,
                     oneTimeSubmitFlagPrimaryBufferTest);
     addFunctionCase(commandBuffersTests.get(), "record_one_time_submit_secondary",
-                    checkEventAndSecondaryCommandBufferNullFramebufferSupport, oneTimeSubmitFlagSecondaryBufferTest);
+                    checkEventAndSecondaryCommandBufferNullFramebufferAndResetCommandBufferSupport,
+                    oneTimeSubmitFlagSecondaryBufferTest);
     addFunctionCase(commandBuffersTests.get(), "render_pass_continue", renderPassContinueTest, true);
     addFunctionCase(commandBuffersTests.get(), "nested_render_pass_continue",
                     checkNestedCommandBufferRenderPassContinueSupport, renderPassContinueNestedTest, true);
@@ -6351,11 +6333,9 @@ tcu::TestCaseGroup *createCommandBuffersTests(tcu::TestContext &testCtx)
                                 genComputeIncrementSource, simultaneousUseNestedSecondaryBufferTwiceTest);
     addFunctionCase(commandBuffersTests.get(), "record_query_precise_w_flag",
                     checkSecondaryCommandBufferNullOrImagelessFramebufferSupport, recordBufferQueryPreciseWithFlagTest);
-    addFunctionCase(commandBuffersTests.get(), "record_query_imprecise_w_flag",
-                    checkSecondaryCommandBufferNullOrImagelessFramebufferSupport,
+    addFunctionCase(commandBuffersTests.get(), "record_query_imprecise_w_flag", checkInheritedQueriesSupport,
                     recordBufferQueryImpreciseWithFlagTest);
-    addFunctionCase(commandBuffersTests.get(), "record_query_imprecise_wo_flag",
-                    checkSecondaryCommandBufferNullOrImagelessFramebufferSupport,
+    addFunctionCase(commandBuffersTests.get(), "record_query_imprecise_wo_flag", checkInheritedQueriesSupport,
                     recordBufferQueryImpreciseWithoutFlagTest);
     addFunctionCaseWithPrograms(commandBuffersTests.get(), "bad_inheritance_info_random",
                                 genComputeIncrementSourceBadInheritance, badInheritanceInfoTest,
@@ -6393,14 +6373,14 @@ tcu::TestCaseGroup *createCommandBuffersTests(tcu::TestContext &testCtx)
     addFunctionCaseWithPrograms(commandBuffersTests.get(), "order_bind_pipeline", genComputeSource,
                                 orderBindPipelineTest);
     /* Verify untested transitions between command buffer states */
-    addFunctionCase(commandBuffersTests.get(), "recording_to_ininitial", executeStateTransitionTest,
-                    STT_RECORDING_TO_INITIAL);
-    addFunctionCase(commandBuffersTests.get(), "executable_to_ininitial", executeStateTransitionTest,
-                    STT_EXECUTABLE_TO_INITIAL);
-    addFunctionCase(commandBuffersTests.get(), "recording_to_invalid", executeStateTransitionTest,
-                    STT_RECORDING_TO_INVALID);
-    addFunctionCase(commandBuffersTests.get(), "executable_to_invalid", executeStateTransitionTest,
-                    STT_EXECUTABLE_TO_INVALID);
+    addFunctionCase(commandBuffersTests.get(), "recording_to_ininitial", checkCommandPoolResetCommandBufferSupport,
+                    executeStateTransitionTest, STT_RECORDING_TO_INITIAL);
+    addFunctionCase(commandBuffersTests.get(), "executable_to_ininitial", checkCommandPoolResetCommandBufferSupport,
+                    executeStateTransitionTest, STT_EXECUTABLE_TO_INITIAL);
+    addFunctionCase(commandBuffersTests.get(), "recording_to_invalid", checkCommandPoolResetCommandBufferSupport,
+                    executeStateTransitionTest, STT_RECORDING_TO_INVALID);
+    addFunctionCase(commandBuffersTests.get(), "executable_to_invalid", checkCommandPoolResetCommandBufferSupport,
+                    executeStateTransitionTest, STT_EXECUTABLE_TO_INVALID);
     addFunctionCaseWithPrograms(commandBuffersTests.get(), "many_indirect_draws_on_secondary",
                                 initManyIndirectDrawsPrograms, manyIndirectDrawsTest);
     addFunctionCaseWithPrograms(commandBuffersTests.get(), "many_indirect_disps_on_secondary",

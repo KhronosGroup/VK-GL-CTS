@@ -37,6 +37,7 @@ vksc-default/image/queue-transfer.txt
 vksc-default/image/sample-cubemap.txt
 vksc-default/image/sample-texture.txt
 vksc-default/image/store.txt
+vksc-default/image/store-load-consistency.txt
 vksc-default/image/subresource-layout.txt
 vksc-default/image/swapchain-mutable.txt
 vksc-default/image/texel-view-compatible.txt

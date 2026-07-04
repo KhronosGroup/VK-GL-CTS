@@ -593,6 +593,11 @@ void checkApiVersionSupport(Context &context)
                                          std::to_string(MINOR) + " required to run test");
 }
 
+void checkMemoryBudgetSupport(Context &context)
+{
+    context.requireDeviceFunctionality("VK_EXT_memory_budget");
+}
+
 typedef struct FeatureLimitTableItem_
 {
     const VkBool32 *cond;
@@ -1842,10 +1847,7 @@ tcu::TestStatus validateLimitsExtFragmentDensityMap(Context &context)
 
 void checkSupportNvRayTracing(Context &context)
 {
-    const std::string &requiredDeviceExtension = "VK_NV_ray_tracing";
-
-    if (!context.isDeviceFunctionalitySupported(requiredDeviceExtension))
-        TCU_THROW(NotSupportedError, requiredDeviceExtension + " is not supported");
+    context.requireDeviceFunctionality("VK_NV_ray_tracing");
 }
 
 tcu::TestStatus validateLimitsNvRayTracing(Context &context)
@@ -2039,16 +2041,13 @@ struct ProfileEntry
 void createTestDevice(Context &context, void *pNext, const char *const *ppEnabledExtensionNames,
                       uint32_t enabledExtensionCount)
 {
-    const PlatformInterface &platformInterface = context.getPlatformInterface();
-    const Unique<VkInstance> instance(createDefaultInstance(platformInterface, context.getUsedApiVersion(),
-                                                            context.getTestContext().getCommandLine()));
-    const InstanceDriver instanceDriver(platformInterface, instance.get());
-    const VkPhysicalDevice physicalDevice =
-        chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
-    const uint32_t queueFamilyIndex = 0;
-    const uint32_t queueCount       = 1;
-    const uint32_t queueIndex       = 0;
-    const float queuePriority       = 1.0f;
+    const InstanceWrapper instance(context);
+    const auto &instanceDriver            = instance.getDriver();
+    const VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
+    const uint32_t queueFamilyIndex       = 0;
+    const uint32_t queueCount             = 1;
+    const uint32_t queueIndex             = 0;
+    const float queuePriority             = 1.0f;
     const vector<VkQueueFamilyProperties> queueFamilyProperties =
         getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
     const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
@@ -2059,43 +2058,6 @@ void createTestDevice(Context &context, void *pNext, const char *const *ppEnable
         queueCount,                                 //  uint32_t queueCount;
         &queuePriority,                             //  const float* pQueuePriorities;
     };
-#ifdef CTS_USES_VULKANSC
-    VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
-                                                                 context.getResourceInterface()->getStatMax() :
-                                                                 resetDeviceObjectReservationCreateInfo();
-    memReservationInfo.pNext                               = pNext;
-    pNext                                                  = &memReservationInfo;
-
-    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-    sc10Features.pNext                              = pNext;
-    pNext                                           = &sc10Features;
-
-    VkPipelineCacheCreateInfo pcCI;
-    std::vector<VkPipelinePoolSize> poolSizes;
-    if (context.getTestContext().getCommandLine().isSubProcess())
-    {
-        if (context.getResourceInterface()->getCacheDataSize() > 0)
-        {
-            pcCI = {
-                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                nullptr,                                      // const void* pNext;
-                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
-                context.getResourceInterface()->getCacheData()            // const void* pInitialData;
-            };
-            memReservationInfo.pipelineCacheCreateInfoCount = 1;
-            memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-        }
-
-        poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
-        if (!poolSizes.empty())
-        {
-            memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-            memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-        }
-    }
-#endif // CTS_USES_VULKANSC
 
     const VkDeviceCreateInfo deviceCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //  VkStructureType sType;
@@ -2109,11 +2071,9 @@ void createTestDevice(Context &context, void *pNext, const char *const *ppEnable
         ppEnabledExtensionNames,              //  const char* const* ppEnabledExtensionNames;
         nullptr,                              //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
-    const Unique<VkDevice> device(
-        createCustomDevice(platformInterface, *instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-    const DeviceDriver deviceDriver(platformInterface, instance.get(), device.get(), context.getUsedApiVersion(),
-                                    context.getTestContext().getCommandLine());
-    const VkQueue queue = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
+    const DeviceWrapper device(instance.createCustomDevice(physicalDevice, &deviceCreateInfo));
+    const auto &deviceDriver = device.getDriver();
+    const VkQueue queue      = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
 
     VK_CHECK(deviceDriver.queueWaitIdle(queue));
 }
@@ -3495,9 +3455,8 @@ tcu::TestStatus deviceMemoryProperties(Context &context)
 tcu::TestStatus deviceGroupPeerMemoryFeatures(Context &context)
 {
     TestLog &log                    = context.getTestContext().getLog();
-    const PlatformInterface &vkp    = context.getPlatformInterface();
-    const VkInstance instance       = context.getInstance(); // "VK_KHR_device_group_creation"
-    const InstanceInterface &vki    = context.getInstanceInterface();
+    const auto instance             = InstanceWrapper(context); // "VK_KHR_device_group_creation"
+    const InstanceInterface &vki    = instance.getDriver();
     const tcu::CommandLine &cmdLine = context.getTestContext().getCommandLine();
     const uint32_t devGroupIdx      = cmdLine.getVKDeviceGroupId() - 1;
     const uint32_t deviceIdx        = vk::chooseDeviceIndex(vki, instance, cmdLine);
@@ -3561,43 +3520,6 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures(Context &context)
     };
 
     void *pNext = &deviceGroupInfo;
-#ifdef CTS_USES_VULKANSC
-    VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
-                                                                 context.getResourceInterface()->getStatMax() :
-                                                                 resetDeviceObjectReservationCreateInfo();
-    memReservationInfo.pNext                               = pNext;
-    pNext                                                  = &memReservationInfo;
-
-    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-    sc10Features.pNext                              = pNext;
-    pNext                                           = &sc10Features;
-
-    VkPipelineCacheCreateInfo pcCI;
-    std::vector<VkPipelinePoolSize> poolSizes;
-    if (context.getTestContext().getCommandLine().isSubProcess())
-    {
-        if (context.getResourceInterface()->getCacheDataSize() > 0)
-        {
-            pcCI = {
-                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                nullptr,                                      // const void* pNext;
-                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
-                context.getResourceInterface()->getCacheData()            // const void* pInitialData;
-            };
-            memReservationInfo.pipelineCacheCreateInfoCount = 1;
-            memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-        }
-
-        poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
-        if (!poolSizes.empty())
-        {
-            memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-            memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-        }
-    }
-#endif // CTS_USES_VULKANSC
 
     const VkDeviceCreateInfo deviceCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //sType;
@@ -3612,12 +3534,10 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures(Context &context)
         nullptr,                              //pEnabledFeatures;
     };
 
-    Move<VkDevice> deviceGroup = createCustomDevice(
-        vkp, instance, vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
-    const DeviceDriver vk(vkp, instance, *deviceGroup, context.getUsedApiVersion(),
-                          context.getTestContext().getCommandLine());
-    context.getInstanceInterface().getPhysicalDeviceMemoryProperties(
-        deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &memProps);
+    const DeviceWrapper deviceGroup =
+        instance.createCustomDevice(deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
+    const auto &vk = deviceGroup.getDriver();
+    vki.getPhysicalDeviceMemoryProperties(deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &memProps);
 
     peerMemFeatures = reinterpret_cast<VkPeerMemoryFeatureFlags *>(buffer);
     deMemset(buffer, GUARD_VALUE, sizeof(buffer));
@@ -3630,8 +3550,8 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures(Context &context)
             {
                 if (localDeviceIndex != remoteDeviceIndex)
                 {
-                    vk.getDeviceGroupPeerMemoryFeatures(deviceGroup.get(), heapIndex, localDeviceIndex,
-                                                        remoteDeviceIndex, peerMemFeatures);
+                    vk.getDeviceGroupPeerMemoryFeatures(deviceGroup, heapIndex, localDeviceIndex, remoteDeviceIndex,
+                                                        peerMemFeatures);
 
                     // Check guard
                     for (int32_t ndx = 0; ndx < GUARD_SIZE; ndx++)
@@ -3651,7 +3571,7 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures(Context &context)
                     if ((!(*peerMemFeatures & requiredFlag)) || *peerMemFeatures > maxValidFlag)
                         return tcu::TestStatus::fail("deviceGroupPeerMemoryFeatures invalid flag");
 
-                    log << TestLog::Message << "deviceGroup = " << deviceGroup.get() << TestLog::EndMessage
+                    log << TestLog::Message << "deviceGroup = " << deviceGroup << TestLog::EndMessage
                         << TestLog::Message << "heapIndex = " << heapIndex << TestLog::EndMessage << TestLog::Message
                         << "localDeviceIndex = " << localDeviceIndex << TestLog::EndMessage << TestLog::Message
                         << "remoteDeviceIndex = " << remoteDeviceIndex << TestLog::EndMessage << TestLog::Message
@@ -3668,9 +3588,6 @@ tcu::TestStatus deviceMemoryBudgetProperties(Context &context)
 {
     TestLog &log = context.getTestContext().getLog();
     uint8_t buffer[sizeof(VkPhysicalDeviceMemoryBudgetPropertiesEXT) + GUARD_SIZE];
-
-    if (!context.isDeviceFunctionalitySupported("VK_EXT_memory_budget"))
-        TCU_THROW(NotSupportedError, "VK_EXT_memory_budget is not supported");
 
     VkPhysicalDeviceMemoryBudgetPropertiesEXT *budgetProps =
         reinterpret_cast<VkPhysicalDeviceMemoryBudgetPropertiesEXT *>(buffer);
@@ -4169,6 +4086,14 @@ bool checkAstc3DfeatureSupport(Context &context)
     return true;
 }
 #endif // CTS_USES_VULKANSC
+
+void checkExtendedFlagsSupport(Context &context)
+{
+    (void)context;
+#ifndef CTS_USES_VULKANSC
+    context.requireDeviceFunctionality(VK_KHR_EXTENDED_FLAGS_EXTENSION_NAME);
+#endif
+}
 
 void checkYcbcrApiSupport(Context &context)
 {
@@ -4913,18 +4838,21 @@ VkSampleCountFlags getRequiredOptimalTilingSampleCounts(const VkPhysicalDeviceLi
 struct ImageFormatPropertyCase
 {
     typedef tcu::TestStatus (*Function)(Context &context, const VkFormat format, const VkImageType imageType,
-                                        const VkImageTiling tiling);
+                                        const VkImageTiling tiling, bool extendedFlags);
 
     Function testFunction;
     VkFormat format;
     VkImageType imageType;
     VkImageTiling tiling;
+    bool extendedFlags;
 
-    ImageFormatPropertyCase(Function testFunction_, VkFormat format_, VkImageType imageType_, VkImageTiling tiling_)
+    ImageFormatPropertyCase(Function testFunction_, VkFormat format_, VkImageType imageType_, VkImageTiling tiling_,
+                            bool extendedFlags_)
         : testFunction(testFunction_)
         , format(format_)
         , imageType(imageType_)
         , tiling(tiling_)
+        , extendedFlags(extendedFlags_)
     {
     }
 
@@ -4933,12 +4861,13 @@ struct ImageFormatPropertyCase
         , format(VK_FORMAT_UNDEFINED)
         , imageType(VK_CORE_IMAGE_TYPE_LAST)
         , tiling(VK_CORE_IMAGE_TILING_LAST)
+        , extendedFlags(false)
     {
     }
 };
 
 tcu::TestStatus imageFormatProperties(Context &context, const VkFormat format, const VkImageType imageType,
-                                      const VkImageTiling tiling)
+                                      const VkImageTiling tiling, bool extendedFlags)
 {
     if (isYCbCrFormat(format))
         // check if Ycbcr format enums are valid given the version and extensions
@@ -4995,18 +4924,44 @@ tcu::TestStatus imageFormatProperties(Context &context, const VkFormat format, c
 
             const bool isRequiredCombination = isRequiredImageParameterCombination(
                 deviceFeatures, format, formatProperties, imageType, tiling, curUsageFlags, curCreateFlags);
-            VkImageFormatProperties properties;
-            VkResult queryResult;
+            VkImageFormatProperties properties = {};
+            VkResult queryResult               = VK_SUCCESS;
 
-            log << TestLog::Message << "Testing " << getImageTypeStr(imageType) << ", " << getImageTilingStr(tiling)
-                << ", " << getImageUsageFlagsStr(curUsageFlags) << ", " << getImageCreateFlagsStr(curCreateFlags)
-                << TestLog::EndMessage;
+            if (!extendedFlags)
+            {
+                log << TestLog::Message << "Testing " << getImageTypeStr(imageType) << ", " << getImageTilingStr(tiling)
+                    << ", " << getImageUsageFlagsStr(curUsageFlags) << ", " << getImageCreateFlagsStr(curCreateFlags)
+                    << TestLog::EndMessage;
 
-            // Set return value to known garbage
-            deMemset(&properties, 0xcd, sizeof(properties));
+                // Set return value to known garbage
+                deMemset(&properties, 0xcd, sizeof(properties));
 
-            queryResult = context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
-                context.getPhysicalDevice(), format, imageType, tiling, curUsageFlags, curCreateFlags, &properties);
+                queryResult = context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
+                    context.getPhysicalDevice(), format, imageType, tiling, curUsageFlags, curCreateFlags, &properties);
+            }
+            else
+            {
+#ifndef CTS_USES_VULKANSC
+                log << TestLog::Message << "Testing " << getImageTypeStr(imageType) << ", " << getImageTilingStr(tiling)
+                    << ", " << getImageUsageFlagsStr(curUsageFlags) << ", " << getImageCreateFlagsStr(curCreateFlags)
+                    << " with VkImageCreateFlags2CreateInfoKHR" << TestLog::EndMessage;
+
+                VkImageCreateFlags2CreateInfoKHR imageCreateFlags2Info = initVulkanStructure();
+                imageCreateFlags2Info.flags                            = curCreateFlags;
+                VkImageUsageFlags2CreateInfoKHR imageUsageFlags2Info   = initVulkanStructure(&imageCreateFlags2Info);
+                imageUsageFlags2Info.usage                             = curUsageFlags;
+                VkPhysicalDeviceImageFormatInfo2 imageFormatInfo2      = initVulkanStructure(&imageUsageFlags2Info);
+                imageFormatInfo2.format                                = format;
+                imageFormatInfo2.type                                  = imageType;
+                imageFormatInfo2.tiling                                = tiling;
+                imageFormatInfo2.usage                                 = (VkImageUsageFlags)0xFFFFFFFFu;
+                imageFormatInfo2.flags                                 = (VkImageCreateFlags)0xFFFFFFFFu;
+                VkImageFormatProperties2 imageFormatProperties2        = initVulkanStructure();
+                queryResult = context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(
+                    context.getPhysicalDevice(), &imageFormatInfo2, &imageFormatProperties2);
+                properties = imageFormatProperties2.imageFormatProperties;
+#endif
+            }
 
             if (queryResult == VK_SUCCESS)
             {
@@ -5156,7 +5111,11 @@ tcu::TestStatus unsupportedImageUsage(Context &context, const VkFormat format, c
 #endif
     TestLog &log = context.getTestContext().getLog();
 
+#ifndef CTS_USES_VULKANSC
     VkFormatFeatureFlags2 usageRequiredFeatures = 0u;
+#else
+    VkFormatFeatureFlags usageRequiredFeatures   = 0u;
+#endif
     switch (imageUsage)
     {
     case VK_IMAGE_USAGE_SAMPLED_BIT:
@@ -7994,11 +7953,13 @@ tcu::TestStatus devicePropertyExtensionsConsistencyVulkan14(Context &context)
 #endif // CTS_USES_VULKANSC
 
 tcu::TestStatus imageFormatProperties2(Context &context, const VkFormat format, const VkImageType imageType,
-                                       const VkImageTiling tiling)
+                                       const VkImageTiling tiling, bool extendedFlags)
 {
     if (isYCbCrFormat(format))
         // check if Ycbcr format enums are valid given the version and extensions
         checkYcbcrApiSupport(context);
+    if (extendedFlags)
+        checkExtendedFlagsSupport(context);
 
     TestLog &log = context.getTestContext().getLog();
 
@@ -8022,15 +7983,13 @@ tcu::TestStatus imageFormatProperties2(Context &context, const VkFormat format, 
 
         for (VkImageCreateFlags curCreateFlags = 0; curCreateFlags <= allCreateFlags; curCreateFlags++)
         {
-            const VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
-                nullptr,
-                format,
-                imageType,
-                tiling,
-                curUsageFlags,
-                curCreateFlags};
-
+            VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+                                                                nullptr,
+                                                                format,
+                                                                imageType,
+                                                                tiling,
+                                                                curUsageFlags,
+                                                                curCreateFlags};
             VkImageFormatProperties coreProperties;
             VkImageFormatProperties2 extProperties;
             VkResult coreResult;
@@ -8045,6 +8004,28 @@ tcu::TestStatus imageFormatProperties2(Context &context, const VkFormat format, 
             coreResult = vki.getPhysicalDeviceImageFormatProperties(
                 physicalDevice, imageFormatInfo.format, imageFormatInfo.type, imageFormatInfo.tiling,
                 imageFormatInfo.usage, imageFormatInfo.flags, &coreProperties);
+
+#ifndef CTS_USES_VULKANSC
+            VkImageCreateFlags2CreateInfoKHR createFlags2 = {
+                VK_STRUCTURE_TYPE_IMAGE_CREATE_FLAGS_2_CREATE_INFO_KHR,
+                nullptr,
+                curCreateFlags,
+            };
+            const VkImageUsageFlags2CreateInfoKHR usageFlags2 = {
+                VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR,
+                &createFlags2,
+                curUsageFlags,
+            };
+
+            if (extendedFlags)
+            {
+                imageFormatInfo.pNext = &usageFlags2;
+                // Swap the usage and create flags, to make sure they are correctly ignored
+                imageFormatInfo.usage = curCreateFlags;
+                imageFormatInfo.flags = curUsageFlags;
+            }
+#endif
+
             extResult = vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &extProperties);
 
             TCU_CHECK(extProperties.sType == VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2);
@@ -8069,8 +8050,11 @@ tcu::TestStatus imageFormatProperties2(Context &context, const VkFormat format, 
 
 #ifndef CTS_USES_VULKANSC
 tcu::TestStatus sparseImageFormatProperties2(Context &context, const VkFormat format, const VkImageType imageType,
-                                             const VkImageTiling tiling)
+                                             const VkImageTiling tiling, bool extendedFlags)
 {
+    if (extendedFlags)
+        checkExtendedFlagsSupport(context);
+
     TestLog &log = context.getTestContext().getLog();
 
     const InstanceInterface &vki          = context.getInstanceInterface();
@@ -8089,6 +8073,21 @@ tcu::TestStatus sparseImageFormatProperties2(Context &context, const VkFormat fo
             if (!isValidImageUsageFlagCombination(curUsageFlags))
                 continue;
 
+            const VkImageUsageFlags2CreateInfoKHR usageFlags2 = {
+                VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR,
+                nullptr,
+                curUsageFlags,
+            };
+
+            const VkPhysicalDeviceSparseImageFormatInfo2 extendedUsageIimageFormatInfo = {
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2,
+                &usageFlags2,
+                format,
+                imageType,
+                (VkSampleCountFlagBits)sampleCountBit,
+                ~curUsageFlags,
+                tiling,
+            };
             const VkPhysicalDeviceSparseImageFormatInfo2 imageFormatInfo = {
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2,
                 nullptr,
@@ -8106,7 +8105,9 @@ tcu::TestStatus sparseImageFormatProperties2(Context &context, const VkFormat fo
             vki.getPhysicalDeviceSparseImageFormatProperties(
                 physicalDevice, imageFormatInfo.format, imageFormatInfo.type, imageFormatInfo.samples,
                 imageFormatInfo.usage, imageFormatInfo.tiling, &numCoreProperties, nullptr);
-            vki.getPhysicalDeviceSparseImageFormatProperties2(physicalDevice, &imageFormatInfo, &numExtProperties,
+            const VkPhysicalDeviceSparseImageFormatInfo2 *imageFormatInfoPtr =
+                extendedFlags ? &extendedUsageIimageFormatInfo : &imageFormatInfo;
+            vki.getPhysicalDeviceSparseImageFormatProperties2(physicalDevice, imageFormatInfoPtr, &numExtProperties,
                                                               nullptr);
 
             if (numCoreProperties != numExtProperties)
@@ -8147,7 +8148,7 @@ tcu::TestStatus sparseImageFormatProperties2(Context &context, const VkFormat fo
                 vki.getPhysicalDeviceSparseImageFormatProperties(
                     physicalDevice, imageFormatInfo.format, imageFormatInfo.type, imageFormatInfo.samples,
                     imageFormatInfo.usage, imageFormatInfo.tiling, &numCoreProperties, &coreProperties[0]);
-                vki.getPhysicalDeviceSparseImageFormatProperties2(physicalDevice, &imageFormatInfo, &numExtProperties,
+                vki.getPhysicalDeviceSparseImageFormatProperties2(physicalDevice, imageFormatInfoPtr, &numExtProperties,
                                                                   &extProperties[0]);
 
                 TCU_CHECK((size_t)numCoreProperties == coreProperties.size());
@@ -8182,7 +8183,7 @@ tcu::TestStatus sparseImageFormatProperties2(Context &context, const VkFormat fo
 
 tcu::TestStatus execImageFormatTest(Context &context, ImageFormatPropertyCase testCase)
 {
-    return testCase.testFunction(context, testCase.format, testCase.imageType, testCase.tiling);
+    return testCase.testFunction(context, testCase.format, testCase.imageType, testCase.tiling, testCase.extendedFlags);
 }
 
 void createImageFormatTypeTilingTests(tcu::TestCaseGroup *testGroup, ImageFormatPropertyCase params)
@@ -8240,26 +8241,43 @@ void createImageFormatTypeTests(tcu::TestCaseGroup *testGroup, ImageFormatProper
 {
     DE_ASSERT(params.tiling == VK_CORE_IMAGE_TILING_LAST);
 
-    testGroup->addChild(createTestGroup(
-        testGroup->getTestContext(), "optimal", createImageFormatTypeTilingTests,
-        ImageFormatPropertyCase(params.testFunction, VK_FORMAT_UNDEFINED, params.imageType, VK_IMAGE_TILING_OPTIMAL)));
-    testGroup->addChild(createTestGroup(
-        testGroup->getTestContext(), "linear", createImageFormatTypeTilingTests,
-        ImageFormatPropertyCase(params.testFunction, VK_FORMAT_UNDEFINED, params.imageType, VK_IMAGE_TILING_LINEAR)));
+    testGroup->addChild(
+        createTestGroup(testGroup->getTestContext(), "optimal", createImageFormatTypeTilingTests,
+                        ImageFormatPropertyCase(params.testFunction, VK_FORMAT_UNDEFINED, params.imageType,
+                                                VK_IMAGE_TILING_OPTIMAL, params.extendedFlags)));
+    testGroup->addChild(
+        createTestGroup(testGroup->getTestContext(), "linear", createImageFormatTypeTilingTests,
+                        ImageFormatPropertyCase(params.testFunction, VK_FORMAT_UNDEFINED, params.imageType,
+                                                VK_IMAGE_TILING_LINEAR, params.extendedFlags)));
 }
 
 void createImageFormatTests(tcu::TestCaseGroup *testGroup, ImageFormatPropertyCase::Function testFunction)
 {
+    testGroup->addChild(createTestGroup(testGroup->getTestContext(), "1d", createImageFormatTypeTests,
+                                        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_1D,
+                                                                VK_CORE_IMAGE_TILING_LAST, false)));
+    testGroup->addChild(createTestGroup(testGroup->getTestContext(), "2d", createImageFormatTypeTests,
+                                        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_2D,
+                                                                VK_CORE_IMAGE_TILING_LAST, false)));
+    testGroup->addChild(createTestGroup(testGroup->getTestContext(), "3d", createImageFormatTypeTests,
+                                        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_3D,
+                                                                VK_CORE_IMAGE_TILING_LAST, false)));
+}
+
+#ifndef CTS_USES_VULKANSC
+void createExtendedFlagsImageFormatTests(tcu::TestCaseGroup *testGroup, ImageFormatPropertyCase::Function testFunction)
+{
     testGroup->addChild(createTestGroup(
         testGroup->getTestContext(), "1d", createImageFormatTypeTests,
-        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_1D, VK_CORE_IMAGE_TILING_LAST)));
+        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_1D, VK_CORE_IMAGE_TILING_LAST, true)));
     testGroup->addChild(createTestGroup(
         testGroup->getTestContext(), "2d", createImageFormatTypeTests,
-        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_2D, VK_CORE_IMAGE_TILING_LAST)));
+        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_2D, VK_CORE_IMAGE_TILING_LAST, true)));
     testGroup->addChild(createTestGroup(
         testGroup->getTestContext(), "3d", createImageFormatTypeTests,
-        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_3D, VK_CORE_IMAGE_TILING_LAST)));
+        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_3D, VK_CORE_IMAGE_TILING_LAST, true)));
 }
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus execImageUsageTest(Context &context, ImageUsagePropertyCase testCase)
 {
@@ -8539,23 +8557,23 @@ tcu::TestStatus FormatPropsTest::iterate(void)
     VkFormatProperties2 retryProps = initVulkanStructure();
     const auto addProperties       = makeStructChainAdder(&retryProps);
 
-    VkDrmFormatModifierPropertiesListEXT drmModProps   = initVulkanStructure();
-    VkDrmFormatModifierPropertiesList2EXT drmModProps2 = initVulkanStructure();
-    VkFormatProperties3 props3                         = initVulkanStructure();
+    VkDrmFormatModifierPropertiesListEXT drmModProps = initVulkanStructure();
 #ifndef CTS_USES_VULKANSC
+    VkDrmFormatModifierPropertiesList2EXT drmModProps2      = initVulkanStructure();
+    VkFormatProperties3 props3                              = initVulkanStructure();
     VkSubpassResolvePerformanceQueryEXT subpassResolveProps = initVulkanStructure();
 #endif // CTS_USES_VULKANSC
 
     if (m_params.pNextFlags & PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST)
         addProperties(&drmModProps);
 
+#ifndef CTS_USES_VULKANSC
     if (m_params.pNextFlags & PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2)
         addProperties(&drmModProps2);
 
     if (m_params.pNextFlags & PNEXT_FORMAT_PROPERTIES_3)
         addProperties(&props3);
 
-#ifndef CTS_USES_VULKANSC
     if (m_params.pNextFlags & PNEXT_SUBPASS_RESOLVE_PERFORMANCE_QUERY)
         addProperties(&subpassResolveProps);
 #endif // CTS_USES_VULKANSC
@@ -8571,6 +8589,7 @@ tcu::TestStatus FormatPropsTest::iterate(void)
     if (basicProps.formatProperties.optimalTilingFeatures != retryProps.formatProperties.optimalTilingFeatures)
         TCU_FAIL("Mismatch in optimalTilingFeatures");
 
+#ifndef CTS_USES_VULKANSC
     if (m_params.pNextFlags & PNEXT_FORMAT_PROPERTIES_3)
     {
         const auto basicBufferFeatures2 =
@@ -8589,6 +8608,7 @@ tcu::TestStatus FormatPropsTest::iterate(void)
         if ((basicOptimalTilingFeatures2 & props3.optimalTilingFeatures) != basicOptimalTilingFeatures2)
             TCU_FAIL("Mismatch in optimalTilingFeatures from VkFormatProperties3");
     }
+#endif // CTS_USES_VULKANSC
 
     return tcu::TestStatus::pass("Pass");
 }
@@ -8878,8 +8898,12 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
     infoTests->addChild(
         createTestGroup(testCtx, "image_format_properties2", createImageFormatTests, imageFormatProperties2));
 #ifndef CTS_USES_VULKANSC
+    infoTests->addChild(createTestGroup(testCtx, "extended_flags_image_format_properties2",
+                                        createExtendedFlagsImageFormatTests, imageFormatProperties2));
     infoTests->addChild(createTestGroup(testCtx, "sparse_image_format_properties2", createImageFormatTests,
                                         sparseImageFormatProperties2));
+    infoTests->addChild(createTestGroup(testCtx, "extended_flags_sparse_image_format_properties2",
+                                        createExtendedFlagsImageFormatTests, sparseImageFormatProperties2));
 
     {
         de::MovePtr<tcu::TestCaseGroup> profilesValidationTests(new tcu::TestCaseGroup(testCtx, "profiles"));
@@ -8944,7 +8968,7 @@ void createFeatureInfoDeviceTests(tcu::TestCaseGroup *testGroup)
     addFunctionCase(testGroup, "device_extension_dependencies", validateDeviceExtensionDependencies);
 #endif
     addFunctionCase(testGroup, "device_no_khx_extensions", testNoKhxExtensions);
-    addFunctionCase(testGroup, "device_memory_budget", deviceMemoryBudgetProperties);
+    addFunctionCase(testGroup, "device_memory_budget", checkMemoryBudgetSupport, deviceMemoryBudgetProperties);
     addFunctionCase(testGroup, "device_mandatory_features", deviceMandatoryFeatures);
 }
 

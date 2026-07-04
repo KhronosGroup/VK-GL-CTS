@@ -296,9 +296,7 @@ struct Node<INodePtr> : public INode
         // Add padding before serialize/deserialize this structura
         updateOffsetWithPadding(nullptr, thisStructAb, offset);
 
-        uint32_t childIndex = 0u;
-
-        for (INodePtr p = children->next; p; p = p->next, ++childIndex)
+        for (INodePtr p = children->next; p; p = p->next)
         {
             // Add padding before enter serialize/deserialize consecutive child field
             updateOffsetWithPadding(nullptr, p->getBaseAlignment(), offset);

@@ -2435,6 +2435,13 @@ void CullDistance::FunctionalTest::deinit()
         m_vao_id = 0;
     }
 
+    if (m_bo_id != 0)
+    {
+        gl.deleteBuffers(1, &m_bo_id);
+
+        m_bo_id = 0;
+    }
+
     deinitPO();
 }
 

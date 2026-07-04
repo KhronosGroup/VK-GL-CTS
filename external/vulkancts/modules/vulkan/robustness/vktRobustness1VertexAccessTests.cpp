@@ -129,9 +129,8 @@ static const auto validColors = vector<Vec4> // Colors accepted as valid in veri
 static const auto invalidColors = vector<Vec4> // Colors accepted as oob access in verification shader
     {expectedColor, unusedColor, Vec4(0.0f), Vec4(0.0f, 0.0f, 0.0f, 1.0f)};
 
-static TestStatus robustness1TestFn(TestContext &testCtx, Context &context, const VkDevice device,
-                                    DeviceDriverPtr deviceDriver, const vector<InputInfo> &inputs,
-                                    const IVec2 &renderSize);
+static TestStatus robustness1TestFn(TestContext &testCtx, Context &context, const DeviceWrapper &device,
+                                    const vector<InputInfo> &inputs, const IVec2 &renderSize);
 
 template <typename T>
 class PaddedAlloc
@@ -192,7 +191,7 @@ PaddedAlloc<T>::PaddedAlloc(uint32_t count, uint32_t paddingCount, const T &padd
     }
 }
 
-typedef function<TestStatus(TestContext &, Context &, const VkDevice device, DeviceDriverPtr deviceDriver)> TestFn;
+typedef function<TestStatus(TestContext &, Context &, const DeviceWrapper &device)> TestFn;
 struct Robustness1TestInfo
 {
     string name;
@@ -208,7 +207,7 @@ static const auto robustness1Tests = vector<Robustness1TestInfo>{
             12    13    14    15    ->    * 5 * 6 * 9 *10
     */
     {"out_of_bounds_stride_0", // string            name
-     [](TestContext &testContext, Context &context, const VkDevice device, DeviceDriverPtr deviceDriver)
+     [](TestContext &testContext, Context &context, const DeviceWrapper &device)
      {
          struct Color
          {
@@ -238,7 +237,7 @@ static const auto robustness1Tests = vector<Robustness1TestInfo>{
              makeVertexInputAttributeDescription(0u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT, 0u),
              makeVertexInputAttributeDescription(1u, 1u, VK_FORMAT_R32G32B32A32_SFLOAT, 0u),
              makeVertexInputAttributeDescription(2u, 2u, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Color, color))};
-         return robustness1TestFn(testContext, context, device, deviceDriver,
+         return robustness1TestFn(testContext, context, device,
                                   {{bindings,
                                     attributes,
                                     {{positions.data(), positions.size() * static_cast<uint32_t>(sizeof(positions[0]))},
@@ -250,7 +249,7 @@ static const auto robustness1Tests = vector<Robustness1TestInfo>{
                                   renderTargetSize);
      }},
     {"out_of_bounds_stride_16_single_buffer", // string            name
-     [](TestContext &testContext, Context &context, const VkDevice device, DeviceDriverPtr deviceDriver)
+     [](TestContext &testContext, Context &context, const DeviceWrapper &device)
      {
          struct Vertex
          {
@@ -279,7 +278,7 @@ static const auto robustness1Tests = vector<Robustness1TestInfo>{
              makeVertexInputAttributeDescription(1u, 1u, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, color1)),
              makeVertexInputAttributeDescription(2u, 1u, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, color2))};
          return robustness1TestFn(
-             testContext, context, device, deviceDriver,
+             testContext, context, device,
              {{
                  bindings,
                  attributes,
@@ -292,7 +291,7 @@ static const auto robustness1Tests = vector<Robustness1TestInfo>{
              renderTargetSize);
      }},
     {"out_of_bounds_stride_30_middle_of_buffer", // string            name
-     [](TestContext &testContext, Context &context, const VkDevice device, DeviceDriverPtr deviceDriver)
+     [](TestContext &testContext, Context &context, const DeviceWrapper &device)
      {
          const vector<uint32_t> invalidIndices = {5, 6, 9, 10};
          const uint32_t invalidCount           = static_cast<uint32_t>(invalidIndices.size());
@@ -333,7 +332,7 @@ static const auto robustness1Tests = vector<Robustness1TestInfo>{
                                                  vertices.paddedStart() * elementSize +
                                                      static_cast<uint32_t>(offsetof(Vertex, color2))),
          };
-         return robustness1TestFn(testContext, context, device, deviceDriver,
+         return robustness1TestFn(testContext, context, device,
                                   {{bindings,
                                     attributes,
                                     {
@@ -345,7 +344,7 @@ static const auto robustness1Tests = vector<Robustness1TestInfo>{
                                   renderTargetSize);
      }},
     {"out_of_bounds_stride_8_middle_of_buffer_separate", // string            name
-     [](TestContext &testContext, Context &context, const VkDevice device, DeviceDriverPtr deviceDriver)
+     [](TestContext &testContext, Context &context, const DeviceWrapper &device)
      {
          /* NOTE: Out of range entries ('padding') need to be initialized with unusedColor as the spec
             allows out of range to return any value from within the bound memory range. */
@@ -378,7 +377,7 @@ static const auto robustness1Tests = vector<Robustness1TestInfo>{
                                                                        colors.paddedStart() * elementSize),
                                    makeVertexInputAttributeDescription(2u, 1u, VK_FORMAT_R32G32B32A32_SFLOAT,
                                                                        (colors.paddedStart() + totalCount) * elementSize)};
-         return robustness1TestFn(testContext, context, device, deviceDriver,
+         return robustness1TestFn(testContext, context, device,
                                   {{bindings,
                                     attributes,
                                     {{vertices.paddedData(), vertices.paddedSize() * elementSize},
@@ -477,14 +476,12 @@ VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const VkFormat for
     return imageInfo;
 }
 
-static TestStatus robustness1TestFn(TestContext &testCtx, Context &context, const VkDevice device,
-                                    DeviceDriverPtr deviceDriver, const vector<InputInfo> &inputs,
-                                    const IVec2 &renderSize)
+static TestStatus robustness1TestFn(TestContext &testCtx, Context &context, const DeviceWrapper &device,
+                                    const vector<InputInfo> &inputs, const IVec2 &renderSize)
 {
     const auto colorFormat    = VK_FORMAT_R8G8B8A8_UNORM;
-    const DeviceInterface &vk = *deviceDriver;
-    auto allocator            = SimpleAllocator(
-        vk, device, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
+    const DeviceInterface &vk = device.getDriver();
+    vk::Allocator &allocator  = device.getAllocator();
 
     const auto queueFamilyIndex = context.getUniversalQueueFamilyIndex();
     VkQueue queue;
@@ -782,15 +779,11 @@ static TestStatus robustness1TestFn(TestContext &testCtx, Context &context, cons
 
 // Robustness1AccessInstance
 
-template <typename T>
 class Robustness1AccessInstance : public vkt::TestInstance
 {
 public:
-    Robustness1AccessInstance(TestContext &testCtx, Context &context,
-#ifdef CTS_USES_VULKANSC
-                              de::MovePtr<CustomInstance> customInstance,
-#endif // CTS_USES_VULKANSC
-                              T device, DeviceDriverPtr deviceDriver, const Robustness1TestInfo &testInfo);
+    Robustness1AccessInstance(TestContext &testCtx, Context &context, InstanceWrapper &&instance,
+                              DeviceWrapper &&device, const Robustness1TestInfo &testInfo);
     virtual ~Robustness1AccessInstance()
     {
     }
@@ -798,39 +791,24 @@ public:
 
 private:
     TestContext &m_testCtx;
-#ifndef CTS_USES_VULKANSC
-    T m_device;
-    de::MovePtr<vk::DeviceDriver> m_deviceDriver;
-#else
-    de::MovePtr<CustomInstance> m_customInstance;
-    T m_device;
-    de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> m_deviceDriver;
-#endif // CTS_USES_VULKANSC
+    const InstanceWrapper m_instance;
+    const DeviceWrapper m_device;
     const Robustness1TestInfo &m_testInfo;
 };
 
-template <typename T>
-Robustness1AccessInstance<T>::Robustness1AccessInstance(TestContext &testCtx, Context &context,
-#ifdef CTS_USES_VULKANSC
-                                                        de::MovePtr<CustomInstance> customInstance,
-#endif // CTS_USES_VULKANSC
-                                                        T device, DeviceDriverPtr deviceDriver,
-                                                        const Robustness1TestInfo &testInfo)
+Robustness1AccessInstance::Robustness1AccessInstance(TestContext &testCtx, Context &context, InstanceWrapper &&instance,
+                                                     DeviceWrapper &&device, const Robustness1TestInfo &testInfo)
     : vkt::TestInstance(context)
     , m_testCtx(testCtx)
-#ifdef CTS_USES_VULKANSC
-    , m_customInstance(customInstance)
-#endif // CTS_USES_VULKANSC
-    , m_device(device)
-    , m_deviceDriver(deviceDriver)
+    , m_instance(std::move(instance))
+    , m_device(std::move(device))
     , m_testInfo(testInfo)
 {
 }
 
-template <typename T>
-TestStatus Robustness1AccessInstance<T>::iterate()
+TestStatus Robustness1AccessInstance::iterate()
 {
-    return m_testInfo.testFn(m_testCtx, m_context, *m_device, m_deviceDriver);
+    return m_testInfo.testFn(m_testCtx, m_context, m_device);
 }
 
 // Robustness1AccessTest
@@ -860,28 +838,10 @@ Robustness1AccessTest::Robustness1AccessTest(TestContext &testContext, const Rob
 
 TestInstance *Robustness1AccessTest::createInstance(Context &context) const
 {
-#ifndef CTS_USES_VULKANSC
-    Move<VkDevice> device = createRobustBufferAccessDevice(context);
-    DeviceDriverPtr deviceDriver =
-        DeviceDriverPtr(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device,
-                                         context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
-#else
-    de::MovePtr<CustomInstance> customInstance =
-        de::MovePtr<CustomInstance>(new CustomInstance(createCustomInstanceFromContext(context)));
-    Move<VkDevice> device = createRobustBufferAccessDevice(context, *customInstance);
-    DeviceDriverPtr deviceDriver =
-        DeviceDriverPtr(new DeviceDriverSC(context.getPlatformInterface(), *customInstance, *device,
-                                           context.getTestContext().getCommandLine(), context.getResourceInterface(),
-                                           context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(),
-                                           context.getUsedApiVersion()),
-                        vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
-#endif // CTS_USES_VULKANSC
+    InstanceWrapper instance(context);
+    DeviceWrapper device = createRobustBufferAccessDevice(context, instance);
 
-    return new Robustness1AccessInstance<Move<VkDevice>>(m_testCtx, context,
-#ifdef CTS_USES_VULKANSC
-                                                         customInstance,
-#endif // CTS_USES_VULKANSC
-                                                         device, deviceDriver, m_testInfo);
+    return new Robustness1AccessInstance(m_testCtx, context, std::move(instance), std::move(device), m_testInfo);
 }
 
 void Robustness1AccessTest::initPrograms(SourceCollections &programCollection) const

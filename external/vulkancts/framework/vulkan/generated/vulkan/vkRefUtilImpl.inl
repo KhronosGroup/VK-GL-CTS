@@ -84,6 +84,12 @@ void Deleter<VkFramebuffer>::operator() (VkFramebuffer obj) const
 }
 
 template<>
+void Deleter<VkGpaSessionAMD>::operator() (VkGpaSessionAMD obj) const
+{
+	m_deviceIface->destroyGpaSessionAMD(m_device, obj, m_allocator);
+}
+
+template<>
 void Deleter<VkImage>::operator() (VkImage obj) const
 {
 	m_deviceIface->destroyImage(m_device, obj, m_allocator);
@@ -375,6 +381,13 @@ Move<VkFramebuffer> createFramebuffer (const DeviceInterface& vk, VkDevice devic
 	VkFramebuffer object = VK_NULL_HANDLE;
 	VK_CHECK(vk.createFramebuffer(device, pCreateInfo, pAllocator, &object));
 	return Move<VkFramebuffer>(check<VkFramebuffer>(object), Deleter<VkFramebuffer>(vk, device, pAllocator));
+}
+
+Move<VkGpaSessionAMD> createGpaSessionAMD (const DeviceInterface& vk, VkDevice device, const VkGpaSessionCreateInfoAMD* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkGpaSessionAMD object = VK_NULL_HANDLE;
+	VK_CHECK(vk.createGpaSessionAMD(device, pCreateInfo, pAllocator, &object));
+	return Move<VkGpaSessionAMD>(check<VkGpaSessionAMD>(object), Deleter<VkGpaSessionAMD>(vk, device, pAllocator));
 }
 
 Move<VkSurfaceKHR> createHeadlessSurfaceEXT (const InstanceInterface& vk, VkInstance instance, const VkHeadlessSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)

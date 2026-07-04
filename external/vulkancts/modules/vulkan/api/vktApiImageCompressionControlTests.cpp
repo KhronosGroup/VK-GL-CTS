@@ -216,10 +216,16 @@ static void validate(const InstanceInterface &vki, const DeviceInterface &vkd, t
     }
 }
 
-static void checkAhbImageSupport(const Context &context, const TestParams testParams, const uint32_t width,
-                                 const uint32_t height, const VkImageUsageFlagBits vkUsage)
+static void checkAhbImageCreateTestSupport(Context &context, TestParams testParams)
 {
+    context.requireDeviceFunctionality("VK_ANDROID_external_memory_android_hardware_buffer");
+    context.requireDeviceFunctionality("VK_EXT_image_compression_control");
+
     using namespace vkt::ExternalMemoryUtil;
+
+    const uint32_t width               = 32;
+    const uint32_t height              = 32;
+    const VkImageUsageFlagBits vkUsage = VK_IMAGE_USAGE_SAMPLED_BIT;
 
     // Check android hardware buffer can be allocated for the format with usage.
     AndroidHardwareBufferExternalApi *ahbApi = AndroidHardwareBufferExternalApi::getInstance();
@@ -294,9 +300,6 @@ static tcu::TestStatus ahbImageCreateTest(Context &context, TestParams testParam
 {
     using namespace vkt::ExternalMemoryUtil;
 
-    context.requireDeviceFunctionality("VK_ANDROID_external_memory_android_hardware_buffer");
-    context.requireDeviceFunctionality("VK_EXT_image_compression_control");
-
     const uint32_t width           = 32;
     const uint32_t height          = 32;
     uint32_t queueFamilyIndex      = context.getUniversalQueueFamilyIndex();
@@ -347,8 +350,6 @@ static tcu::TestStatus ahbImageCreateTest(Context &context, TestParams testParam
                                                   &queueFamilyIndex,
                                                   vk::VK_IMAGE_LAYOUT_UNDEFINED};
 
-        checkAhbImageSupport(context, testParams, width, height, vkUsage);
-
         Move<VkImage> image                     = vk::createImage(vkd, device, &createInfo);
         const VkMemoryRequirements requirements = ExternalMemoryUtil::getImageMemoryRequirements(
             vkd, device, image.get(), VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID);
@@ -364,9 +365,24 @@ static tcu::TestStatus ahbImageCreateTest(Context &context, TestParams testParam
     return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
-static tcu::TestStatus imageCreateTest(Context &context, TestParams testParams)
+static void checkImageCreateTesSupport(Context &context, TestParams testParams)
 {
     checkImageCompressionControlSupport(context);
+
+    const auto &vki     = context.getInstanceInterface();
+    auto physicalDevice = context.getPhysicalDevice();
+
+    VkImageFormatProperties imageFormatProperties;
+    if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, testParams.format, VK_IMAGE_TYPE_2D,
+                                                   VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 0,
+                                                   &imageFormatProperties))
+    {
+        TCU_THROW(NotSupportedError, "Image format not supported.");
+    }
+}
+
+static tcu::TestStatus imageCreateTest(Context &context, TestParams testParams)
+{
     uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
     const VkDevice device     = context.getDevice();
     VkExtent3D extent         = {16, 16, 1};
@@ -387,7 +403,7 @@ static tcu::TestStatus imageCreateTest(Context &context, TestParams testParams)
             testParams.control.pFixedRateFlags = planeFlags;
         }
 
-        VkImageCreateInfo imageCreateInfo = {
+        VkImageCreateInfo imageCreateInfo{
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
             nullptr,                             // const void*                  pNext;
             0,                                   // VkImageCreateFlags   flags;
@@ -409,8 +425,6 @@ static tcu::TestStatus imageCreateTest(Context &context, TestParams testParams)
         {
             imageCreateInfo.pNext = &testParams.control;
         }
-
-        checkImageSupport(context.getInstanceInterface(), context.getPhysicalDevice(), imageCreateInfo);
 
         Move<VkImage> image = createImage(context.getDeviceInterface(), device, &imageCreateInfo);
 
@@ -455,7 +469,7 @@ void addImageCompressionControlTests(tcu::TestCaseGroup *group, TestParams testP
 
             const char *const enumName = getFormatName(testParams.format);
             const string caseName      = de::toLower(string(enumName).substr(10));
-            addFunctionCase(group, caseName, imageCreateTest, testParams);
+            addFunctionCase(group, caseName, checkImageCreateTesSupport, imageCreateTest, testParams);
         }
     }
 }
@@ -468,6 +482,11 @@ CustomInstance createInstanceWithWsi(Context &context, Type wsiType, const vecto
 
     extensions.push_back("VK_KHR_surface");
     extensions.push_back(getExtensionName(wsiType));
+    if (isDisplaySurface(wsiType))
+    {
+        extensions.push_back("VK_KHR_display");
+        extensions.push_back("VK_EXT_direct_mode_display");
+    }
     extensions.push_back("VK_KHR_get_surface_capabilities2");
 
     vector<string> instanceExtensions;
@@ -485,8 +504,8 @@ CustomInstance createInstanceWithWsi(Context &context, Type wsiType, const vecto
 struct InstanceHelper
 {
     const vector<VkExtensionProperties> supportedExtensions;
-    CustomInstance instance;
-    const InstanceDriver &vki;
+    const InstanceWrapper instance;
+    const InstanceInterface &vki;
 
     InstanceHelper(Context &context, Type wsiType, const VkAllocationCallbacks *pAllocator = nullptr)
         : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
@@ -504,10 +523,10 @@ struct InstanceHelper
     }
 };
 
-Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVersion, VkInstance instance,
-                                   const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                   const Extensions &supportedExtensions, const vector<string> &additionalExtensions,
-                                   uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator = nullptr)
+static CustomDevice createDeviceWithWsi(uint32_t apiVersion, const InstanceWrapper &instance,
+                                        VkPhysicalDevice physicalDevice, const Extensions &supportedExtensions,
+                                        const vector<string> &additionalExtensions, uint32_t queueFamilyIndex,
+                                        const VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[]           = {1.0f};
     const VkDeviceQueueCreateInfo queueInfo = {
@@ -554,43 +573,46 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
                                              extensionsChar.data(),                        // ppEnabledExtensionNames
                                              &features};
 
-    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return instance.createCustomDevice(physicalDevice, &deviceParams, pAllocator);
 }
 
 struct DeviceHelper
 {
     const VkPhysicalDevice physicalDevice;
     const uint32_t queueFamilyIndex;
-    const Unique<VkDevice> device;
-    const DeviceDriver vkd;
+    const DeviceWrapper device;
+    const DeviceInterface &vkd;
     const VkQueue queue;
 
-    DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance,
-                 const vector<VkSurfaceKHR> &surface, const vector<string> &additionalExtensions = vector<string>(),
-                 const VkAllocationCallbacks *pAllocator = nullptr)
-        : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
-        , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
-        , device(createDeviceWithWsi(context.getPlatformInterface(), context.getUsedApiVersion(), instance, vki,
-                                     physicalDevice, enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr),
+    DeviceHelper(Context &context, const InstanceHelper &instanceHelper, const vector<VkSurfaceKHR> &surface,
+                 const vector<string> &additionalExtensions = vector<string>(),
+                 const VkAllocationCallbacks *pAllocator    = nullptr)
+        : physicalDevice(instanceHelper.instance.getPhysicalDevice())
+        , queueFamilyIndex(chooseQueueFamilyIndex(instanceHelper.vki, physicalDevice, surface))
+        , device(createDeviceWithWsi(context.getUsedApiVersion(), instanceHelper.instance, physicalDevice,
+                                     enumerateDeviceExtensionProperties(instanceHelper.vki, physicalDevice, nullptr),
                                      additionalExtensions, queueFamilyIndex, pAllocator))
-        , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
-              context.getTestContext().getCommandLine())
+        , vkd(device.getDriver())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
     {
     }
 
     // Single-surface shortcut.
-    DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
+    DeviceHelper(Context &context, const InstanceHelper &instanceHelper, VkSurfaceKHR surface,
                  const vector<string> &additionalExtensions = vector<string>(),
                  const VkAllocationCallbacks *pAllocator    = nullptr)
-        : DeviceHelper(context, vki, instance, vector<VkSurfaceKHR>(1u, surface), additionalExtensions, pAllocator)
+        : DeviceHelper(context, instanceHelper, vector<VkSurfaceKHR>(1u, surface), additionalExtensions, pAllocator)
     {
     }
 };
-static tcu::TestStatus swapchainCreateTest(Context &context, TestParams testParams)
+
+static void checkSwapchainCreateTest(Context &context, TestParams)
 {
     checkImageCompressionControlSupport(context, true);
+}
 
+static tcu::TestStatus swapchainCreateTest(Context &context, TestParams testParams)
+{
     tcu::TestLog &log = context.getTestContext().getLog();
     tcu::ResultCollector results(log);
 
@@ -614,7 +636,7 @@ static tcu::TestStatus swapchainCreateTest(Context &context, TestParams testPara
                                                          native.getDisplay(), native.getWindow(),
                                                          context.getTestContext().getCommandLine()));
 
-        const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, vector<string>());
+        const DeviceHelper devHelper(context, instHelper, *surface, vector<string>());
 
         VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = initVulkanStructure();
         VkSurfaceCapabilities2KHR caps              = initVulkanStructure();
@@ -692,15 +714,15 @@ static tcu::TestStatus swapchainCreateTest(Context &context, TestParams testPara
             swapchainInfo.pNext = &testParams.control;
 
             Move<VkSwapchainKHR> swapchain =
-                createWsiSwapchain(testParams.wsiType, devHelper.vkd, devHelper.device.get(), &swapchainInfo);
+                createWsiSwapchain(testParams.wsiType, devHelper.vkd, devHelper.device, &swapchainInfo);
 
             uint32_t imageCount = 0;
-            devHelper.vkd.getSwapchainImagesKHR(devHelper.device.get(), swapchain.get(), &imageCount, nullptr);
+            devHelper.vkd.getSwapchainImagesKHR(devHelper.device, swapchain.get(), &imageCount, nullptr);
             vector<VkImage> images(imageCount);
-            devHelper.vkd.getSwapchainImagesKHR(devHelper.device.get(), swapchain.get(), &imageCount, images.data());
+            devHelper.vkd.getSwapchainImagesKHR(devHelper.device, swapchain.get(), &imageCount, images.data());
 
-            validate(instHelper.vki, devHelper.vkd, results, devHelper.physicalDevice, devHelper.device.get(),
-                     testParams, images[0]);
+            validate(instHelper.vki, devHelper.vkd, results, devHelper.physicalDevice, devHelper.device, testParams,
+                     images[0]);
         }
 
         delete[] compressionProps;
@@ -729,7 +751,7 @@ void addAhbCompressionControlTests(tcu::TestCaseGroup *group, TestParams testPar
         testParams.format          = ahbFormats[index];
         const char *const enumName = getFormatName(testParams.format);
         const string caseName      = de::toLower(string(enumName).substr(10));
-        addFunctionCase(group, caseName, ahbImageCreateTest, testParams);
+        addFunctionCase(group, caseName, checkAhbImageCreateTestSupport, ahbImageCreateTest, testParams);
     }
 }
 
@@ -791,7 +813,7 @@ tcu::TestCaseGroup *createImageCompressionControlTests(tcu::TestContext &testCtx
         for (auto &flag : compression_flags)
         {
             testParams.control.flags = flag.flag;
-            addFunctionCase(wsi_subgroup, flag.name, swapchainCreateTest, testParams);
+            addFunctionCase(wsi_subgroup, flag.name, checkSwapchainCreateTest, swapchainCreateTest, testParams);
         }
         subgroup->addChild(wsi_subgroup);
     }

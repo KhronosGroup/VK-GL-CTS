@@ -24,11 +24,9 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktApiCopyDepthStencilToBufferTests.hpp"
+#include "vktApiCopiesAndBlittingUtil.hpp"
 
-namespace vkt
-{
-
-namespace api
+namespace vkt::api
 {
 
 namespace
@@ -109,11 +107,6 @@ CopyDepthStencilToBuffer::CopyDepthStencilToBuffer(Context &context, TestParams 
     const bool hasDepth                 = tcu::hasDepthComponent(mapVkFormat(m_params.src.image.format).order);
     const bool hasStencil               = tcu::hasStencilComponent(mapVkFormat(m_params.src.image.format).order);
 
-    if (!isSupportedDepthStencilFormat(vki, vkPhysDevice, testParams.src.image.format))
-    {
-        TCU_THROW(NotSupportedError, "Image format not supported.");
-    }
-
     // Create source image
     {
         VkImageCreateInfo sourceImageParams = {
@@ -149,14 +142,6 @@ CopyDepthStencilToBuffer::CopyDepthStencilToBuffer(Context &context, TestParams 
         {
             sourceImageParams.flags |=
                 (vk::VK_IMAGE_CREATE_SPARSE_BINDING_BIT | vk::VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
-            vk::VkImageFormatProperties imageFormatProperties;
-            if (vki.getPhysicalDeviceImageFormatProperties(vkPhysDevice, sourceImageParams.format,
-                                                           sourceImageParams.imageType, sourceImageParams.tiling,
-                                                           sourceImageParams.usage, sourceImageParams.flags,
-                                                           &imageFormatProperties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-            {
-                TCU_THROW(NotSupportedError, "Image format not supported");
-            }
             m_source          = createImage(vk, m_device, &sourceImageParams);
             m_sparseSemaphore = createSemaphore(vk, m_device);
             allocateAndBindSparseImage(vk, m_device, vkPhysDevice, vki, sourceImageParams, m_sparseSemaphore.get(),
@@ -490,18 +475,20 @@ public:
     {
         checkExtensionSupport(context, m_params.extensionFlags);
 
+        const InstanceInterface &vki        = context.getInstanceInterface();
+        const VkPhysicalDevice vkPhysDevice = context.getPhysicalDevice();
+
+        if (!isSupportedDepthStencilFormat(vki, vkPhysDevice, m_params.src.image.format))
+            TCU_THROW(NotSupportedError, "Image format not supported.");
+
 #ifndef CTS_USES_VULKANSC
         if (m_params.queueSelection != QueueSelectionOptions::Universal)
         {
             context.requireDeviceFunctionality("VK_KHR_format_feature_flags2");
 
-            vk::VkFormatProperties3 formatProperties3{};
-            formatProperties3.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
-            vk::VkFormatProperties2 formatProperties{};
-            formatProperties.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
-            formatProperties.pNext = &formatProperties3;
-            context.getInstanceInterface().getPhysicalDeviceFormatProperties2(
-                context.getPhysicalDevice(), m_params.src.image.format, &formatProperties);
+            vk::VkFormatProperties3 formatProperties3 = initVulkanStructure();
+            vk::VkFormatProperties2 formatProperties  = initVulkanStructure(&formatProperties3);
+            vki.getPhysicalDeviceFormatProperties2(vkPhysDevice, m_params.src.image.format, &formatProperties);
 
             VkImageAspectFlags requiredAspects = 0U;
             for (auto const &region : m_params.regions)
@@ -565,6 +552,9 @@ public:
                 }
             }
         }
+
+        if (m_params.useSparseBinding)
+            checkSparseBindingSupport(context, m_params.src.image);
 #endif // CTS_USES_VULKANSC
     }
 
@@ -718,7 +708,6 @@ void addCopyDepthStencilToBufferTests(tcu::TestCaseGroup *group, TestGroupParams
     }
 }
 
-} // namespace api
-} // namespace vkt
+} // namespace vkt::api
 
 #endif // _VKTAPICOPYIMAGETOBUFFERTESTS_HPP

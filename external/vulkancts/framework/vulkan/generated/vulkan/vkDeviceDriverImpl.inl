@@ -1520,6 +1520,31 @@ void DeviceDriver::cmdEndRendering2KHR (VkCommandBuffer commandBuffer, const VkR
     m_vk.cmdEndRendering2KHR(commandBuffer, pRenderingEndInfo);
 }
 
+VkResult DeviceDriver::debugMarkerSetObjectTagEXT (VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const
+{
+    return m_vk.debugMarkerSetObjectTagEXT(device, pTagInfo);
+}
+
+VkResult DeviceDriver::debugMarkerSetObjectNameEXT (VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo) const
+{
+    return m_vk.debugMarkerSetObjectNameEXT(device, pNameInfo);
+}
+
+void DeviceDriver::cmdDebugMarkerBeginEXT (VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const
+{
+    m_vk.cmdDebugMarkerBeginEXT(commandBuffer, pMarkerInfo);
+}
+
+void DeviceDriver::cmdDebugMarkerEndEXT (VkCommandBuffer commandBuffer) const
+{
+    m_vk.cmdDebugMarkerEndEXT(commandBuffer);
+}
+
+void DeviceDriver::cmdDebugMarkerInsertEXT (VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const
+{
+    m_vk.cmdDebugMarkerInsertEXT(commandBuffer, pMarkerInfo);
+}
+
 void DeviceDriver::cmdBindTransformFeedbackBuffersEXT (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
@@ -1671,6 +1696,66 @@ VkResult DeviceDriver::getAndroidHardwareBufferPropertiesANDROID (VkDevice devic
 VkResult DeviceDriver::getMemoryAndroidHardwareBufferANDROID (VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct pt::AndroidHardwareBufferPtr* pBuffer) const
 {
     return m_vk.getMemoryAndroidHardwareBufferANDROID(device, pInfo, pBuffer);
+}
+
+VkResult DeviceDriver::createGpaSessionAMD (VkDevice device, const VkGpaSessionCreateInfoAMD* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkGpaSessionAMD* pGpaSession) const
+{
+    return m_vk.createGpaSessionAMD(device, pCreateInfo, pAllocator, pGpaSession);
+}
+
+void DeviceDriver::destroyGpaSessionAMD (VkDevice device, VkGpaSessionAMD gpaSession, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyGpaSessionAMD(device, gpaSession, pAllocator);
+}
+
+VkResult DeviceDriver::setGpaDeviceClockModeAMD (VkDevice device, VkGpaDeviceClockModeInfoAMD* pInfo) const
+{
+    return m_vk.setGpaDeviceClockModeAMD(device, pInfo);
+}
+
+VkResult DeviceDriver::getGpaDeviceClockInfoAMD (VkDevice device, VkGpaDeviceGetClockInfoAMD* pInfo) const
+{
+    return m_vk.getGpaDeviceClockInfoAMD(device, pInfo);
+}
+
+VkResult DeviceDriver::cmdBeginGpaSessionAMD (VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession) const
+{
+    return m_vk.cmdBeginGpaSessionAMD(commandBuffer, gpaSession);
+}
+
+VkResult DeviceDriver::cmdEndGpaSessionAMD (VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession) const
+{
+    return m_vk.cmdEndGpaSessionAMD(commandBuffer, gpaSession);
+}
+
+VkResult DeviceDriver::cmdBeginGpaSampleAMD (VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession, const VkGpaSampleBeginInfoAMD* pGpaSampleBeginInfo, uint32_t* pSampleID) const
+{
+    return m_vk.cmdBeginGpaSampleAMD(commandBuffer, gpaSession, pGpaSampleBeginInfo, pSampleID);
+}
+
+void DeviceDriver::cmdEndGpaSampleAMD (VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession, uint32_t sampleID) const
+{
+    m_vk.cmdEndGpaSampleAMD(commandBuffer, gpaSession, sampleID);
+}
+
+VkResult DeviceDriver::getGpaSessionStatusAMD (VkDevice device, VkGpaSessionAMD gpaSession) const
+{
+    return m_vk.getGpaSessionStatusAMD(device, gpaSession);
+}
+
+VkResult DeviceDriver::getGpaSessionResultsAMD (VkDevice device, VkGpaSessionAMD gpaSession, uint32_t sampleID, size_t* pSizeInBytes, void* pData) const
+{
+    return m_vk.getGpaSessionResultsAMD(device, gpaSession, sampleID, pSizeInBytes, pData);
+}
+
+VkResult DeviceDriver::resetGpaSessionAMD (VkDevice device, VkGpaSessionAMD gpaSession) const
+{
+    return m_vk.resetGpaSessionAMD(device, gpaSession);
+}
+
+void DeviceDriver::cmdCopyGpaSessionResultsAMD (VkCommandBuffer commandBuffer, VkGpaSessionAMD gpaSession) const
+{
+    m_vk.cmdCopyGpaSessionResultsAMD(commandBuffer, gpaSession);
 }
 
 VkResult DeviceDriver::writeSamplerDescriptorsEXT (VkDevice device, uint32_t samplerCount, const VkSamplerCreateInfo* pSamplers, const VkHostAddressRangeEXT* pDescriptors) const
@@ -2634,6 +2719,12 @@ void DeviceDriver::cmdBeginCustomResolveEXT (VkCommandBuffer commandBuffer, cons
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdBeginCustomResolveEXT(commandBuffer, pBeginCustomResolveInfo);
+}
+
+void DeviceDriver::cmdSetPrimitiveRestartIndexEXT (VkCommandBuffer commandBuffer, uint32_t primitiveRestartIndex) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetPrimitiveRestartIndexEXT(commandBuffer, primitiveRestartIndex);
 }
 
 VkResult DeviceDriver::createAccelerationStructureKHR (VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const

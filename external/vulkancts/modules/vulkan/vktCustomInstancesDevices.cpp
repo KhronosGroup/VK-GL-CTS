@@ -29,6 +29,9 @@
 #include "vkMemUtil.hpp"
 #include "tcuCommandLine.hpp"
 #include "vktCustomInstancesDevices.hpp"
+#ifdef CTS_USES_VULKANSC
+#include "vkSafetyCriticalUtil.hpp"
+#endif // CTS_USES_VULKANSC
 
 #include <algorithm>
 #include <memory>
@@ -37,13 +40,16 @@
 using std::string;
 using std::vector;
 using vk::Move;
+using vk::VkDevice;
 using vk::VkInstance;
 #ifndef CTS_USES_VULKANSC
 using vk::DebugReportRecorder;
+using vk::DeviceDriver;
 using vk::InstanceDriver;
 using vk::VkDebugUtilsMessengerCreateInfoEXT;
 using vk::VkDebugUtilsMessengerEXT;
 #else
+using vk::DeviceDriverSC;
 using vk::InstanceDriverSC;
 #endif // CTS_USES_VULKANSC
 
@@ -178,9 +184,21 @@ CustomInstance::operator VkInstance() const
     return *m_instance;
 }
 
+VkInstance CustomInstance::operator*() const
+{
+    return *m_instance;
+}
+
 const vk::InstanceDriver &CustomInstance::getDriver() const
 {
+    DE_ASSERT(m_driver != nullptr);
     return *m_driver;
+}
+
+vk::VkPhysicalDevice CustomInstance::getPhysicalDevice() const
+{
+    DE_ASSERT(m_driver != nullptr);
+    return vk::chooseDevice(*m_driver, *m_instance, m_context->getTestContext().getCommandLine());
 }
 
 void CustomInstance::collectMessages()
@@ -281,13 +299,265 @@ UncheckedInstance &UncheckedInstance::operator=(UncheckedInstance &&other)
     return *this;
 }
 
-UncheckedInstance::operator vk::VkInstance() const
+UncheckedInstance::operator VkInstance() const
 {
     return m_instance;
 }
+
+VkInstance UncheckedInstance::operator*() const
+{
+    return m_instance;
+}
+
 UncheckedInstance::operator bool() const
 {
     return (m_instance != nullptr);
+}
+
+const vk::InstanceDriver &UncheckedInstance::getDriver() const
+{
+    DE_ASSERT(m_driver != nullptr);
+    return *m_driver;
+}
+
+vk::VkPhysicalDevice UncheckedInstance::getPhysicalDevice() const
+{
+    DE_ASSERT(m_driver != nullptr);
+    return vk::chooseDevice(*m_driver, m_instance, m_context->getTestContext().getCommandLine());
+}
+
+InstanceWrapper::InstanceWrapper()
+    : m_context(nullptr)
+    , m_customInstance()
+    , m_uncheckedInstance()
+    , m_instance(nullptr)
+    , m_driver(nullptr)
+{
+}
+
+InstanceWrapper::InstanceWrapper(Context &context)
+    : m_context(&context)
+#ifndef CTS_USES_VULKANSC
+    // Use default instance on Vulkan
+    , m_customInstance()
+    , m_uncheckedInstance()
+    , m_instance(context.getInstance())
+    , m_driver(&context.getInstanceInterface())
+#else
+    // Always create custom instance on Vulkan SC
+    , m_customInstance(createCustomInstanceWithExtensions(context, context.getInstanceExtensions()))
+    , m_uncheckedInstance()
+    , m_instance(m_customInstance)
+    , m_driver(&m_customInstance.getDriver())
+#endif // CTS_USES_VULKANSC
+{
+}
+
+InstanceWrapper::InstanceWrapper(CustomInstance &&customInstance)
+    : m_context(customInstance.m_context)
+    , m_customInstance(std::move(customInstance))
+    , m_uncheckedInstance()
+    , m_instance(m_customInstance)
+    , m_driver(&m_customInstance.getDriver())
+{
+}
+
+InstanceWrapper::InstanceWrapper(const CustomInstance &customInstance)
+    : m_context(customInstance.m_context)
+    , m_customInstance()
+    , m_uncheckedInstance()
+    , m_instance(customInstance)
+    , m_driver(&customInstance.getDriver())
+{
+}
+
+InstanceWrapper::InstanceWrapper(UncheckedInstance &&uncheckedInstance)
+    : m_context(uncheckedInstance.m_context)
+    , m_customInstance()
+    , m_uncheckedInstance(std::move(uncheckedInstance))
+    , m_instance(m_uncheckedInstance)
+    , m_driver(&m_uncheckedInstance.getDriver())
+{
+    DE_ASSERT(m_instance != nullptr);
+}
+
+InstanceWrapper::InstanceWrapper(const UncheckedInstance &uncheckedInstance)
+    : m_context(uncheckedInstance.m_context)
+    , m_customInstance()
+    , m_uncheckedInstance()
+    , m_instance(uncheckedInstance)
+    , m_driver(&uncheckedInstance.getDriver())
+{
+    DE_ASSERT(m_instance != nullptr);
+}
+
+InstanceWrapper::InstanceWrapper(InstanceWrapper &&other) : InstanceWrapper()
+{
+    this->swap(other);
+}
+
+InstanceWrapper::~InstanceWrapper()
+{
+}
+
+InstanceWrapper &InstanceWrapper::operator=(InstanceWrapper &&other)
+{
+    InstanceWrapper destroyer;
+    destroyer.swap(other);
+    this->swap(destroyer);
+    return *this;
+}
+
+void InstanceWrapper::swap(InstanceWrapper &other)
+{
+    std::swap(m_context, other.m_context);
+    std::swap(m_customInstance, other.m_customInstance);
+    std::swap(m_uncheckedInstance, other.m_uncheckedInstance);
+    std::swap(m_instance, other.m_instance);
+    std::swap(m_driver, other.m_driver);
+}
+
+InstanceWrapper::operator VkInstance() const
+{
+    return m_instance;
+}
+
+VkInstance InstanceWrapper::operator*() const
+{
+    return m_instance;
+}
+
+const vk::InstanceInterface &InstanceWrapper::getDriver() const
+{
+    DE_ASSERT(m_driver != nullptr);
+    return *m_driver;
+}
+
+vk::VkPhysicalDevice InstanceWrapper::getPhysicalDevice() const
+{
+    DE_ASSERT(m_driver != nullptr);
+    return vk::chooseDevice(*m_driver, m_instance, m_context->getTestContext().getCommandLine());
+}
+
+CustomDevice InstanceWrapper::createCustomDevice(const vk::VkDeviceCreateInfo *pCreateInfo,
+                                                 const vk::VkAllocationCallbacks *pAllocator) const
+{
+    DE_ASSERT(m_driver != nullptr);
+    return createCustomDevice(vk::chooseDevice(*m_driver, m_instance, m_context->getTestContext().getCommandLine()),
+                              pCreateInfo, pAllocator);
+}
+
+CustomDevice InstanceWrapper::createCustomDevice(vk::VkPhysicalDevice physicalDevice,
+                                                 const vk::VkDeviceCreateInfo *pCreateInfo,
+                                                 const vk::VkAllocationCallbacks *pAllocator) const
+{
+    DE_ASSERT(m_driver != nullptr);
+    VkDevice object = VK_NULL_HANDLE;
+    VK_CHECK(createDeviceInternal(physicalDevice, pCreateInfo, pAllocator, &object));
+
+    const vk::PlatformInterface &vkp = m_context->getPlatformInterface();
+    return CustomDevice(
+        *m_context, *this, physicalDevice,
+        Move<VkDevice>(vk::check<VkDevice>(object), vk::Deleter<VkDevice>(vkp, m_instance, object, pAllocator)));
+}
+
+vk::VkResult InstanceWrapper::createUncheckedDevice(const vk::VkDeviceCreateInfo *pCreateInfo,
+                                                    const vk::VkAllocationCallbacks *pAllocator,
+                                                    UncheckedDevice *pDevice) const
+{
+    DE_ASSERT(m_driver != nullptr);
+    return createUncheckedDevice(getPhysicalDevice(), pCreateInfo, pAllocator, pDevice);
+}
+
+vk::VkResult InstanceWrapper::createUncheckedDevice(vk::VkPhysicalDevice physicalDevice,
+                                                    const vk::VkDeviceCreateInfo *pCreateInfo,
+                                                    const vk::VkAllocationCallbacks *pAllocator,
+                                                    UncheckedDevice *pDevice) const
+{
+    DE_ASSERT(m_driver != nullptr);
+    VkDevice object     = VK_NULL_HANDLE;
+    vk::VkResult result = createDeviceInternal(physicalDevice, pCreateInfo, pAllocator, &object);
+
+    *pDevice = UncheckedDevice(*m_context, *this, physicalDevice, object, pAllocator);
+    return result;
+}
+
+vk::VkResult InstanceWrapper::createDeviceInternal(vk::VkPhysicalDevice physicalDevice,
+                                                   const vk::VkDeviceCreateInfo *pCreateInfo,
+                                                   const vk::VkAllocationCallbacks *pAllocator,
+                                                   vk::VkDevice *pDevice) const
+{
+    // Sanity check that indeed the physical device is from this instance to avoid accidental calls
+    // to this function with a physical device from another instance
+    DE_ASSERT(
+        [&]()
+        {
+            auto devs = vk::enumeratePhysicalDevices(*m_driver, m_instance);
+            return std::find(devs.begin(), devs.end(), physicalDevice) != devs.end();
+        }());
+
+    vk::VkDeviceCreateInfo createInfo = *pCreateInfo;
+
+#ifdef CTS_USES_VULKANSC
+    // Add fault callback if there isn't one already.
+    VkFaultCallbackInfo faultCallbackInfo = {
+        VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO, // VkStructureType sType;
+        nullptr,                               // void* pNext;
+        0U,                                    // uint32_t faultCount;
+        nullptr,                               // VkFaultData* pFaults;
+        Context::faultCallbackFunction         // PFN_vkFaultCallbackFunction pfnFaultCallback;
+    };
+    if (!findStructureInChain(createInfo.pNext, getStructureType<VkFaultCallbackInfo>()))
+    {
+        faultCallbackInfo.pNext = createInfo.pNext;
+        createInfo.pNext        = &faultCallbackInfo;
+    }
+
+    // Add object reservation if there isn't one already.
+    VkDeviceObjectReservationCreateInfo objectReservationInfo =
+        m_context->getTestContext().getCommandLine().isSubProcess() ? m_context->getResourceInterface()->getStatMax() :
+                                                                      vk::resetDeviceObjectReservationCreateInfo();
+    VkPipelineCacheCreateInfo pcCI;
+    std::vector<VkPipelinePoolSize> poolSizes;
+    if (!findStructureInChain(createInfo.pNext, getStructureType<VkDeviceObjectReservationCreateInfo>()))
+    {
+        if (m_context->getTestContext().getCommandLine().isSubProcess())
+        {
+            if (m_context->getResourceInterface()->getCacheDataSize() > 0)
+            {
+                pcCI = {
+                    VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
+                    nullptr,                                      // const void* pNext;
+                    VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+                        VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
+                    m_context->getResourceInterface()->getCacheDataSize(),    // uintptr_t initialDataSize;
+                    m_context->getResourceInterface()->getCacheData()         // const void* pInitialData;
+                };
+                objectReservationInfo.pipelineCacheCreateInfoCount = 1;
+                objectReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
+            }
+            poolSizes = m_context->getResourceInterface()->getPipelinePoolSizes();
+            if (!poolSizes.empty())
+            {
+                objectReservationInfo.pipelinePoolSizeCount = static_cast<uint32_t>(poolSizes.size());
+                objectReservationInfo.pPipelinePoolSizes    = poolSizes.data();
+            }
+        }
+
+        objectReservationInfo.pNext = createInfo.pNext;
+        createInfo.pNext            = &objectReservationInfo;
+    }
+
+    // Add Vulkan SC 1.0 features if there isn't one already.
+    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
+    if (!findStructureInChain(createInfo.pNext, getStructureType<VkPhysicalDeviceVulkanSC10Features>()))
+    {
+        sc10Features.pNext = const_cast<void *>(createInfo.pNext);
+        createInfo.pNext   = &sc10Features;
+    }
+#endif // CTS_USES_VULKANSC
+
+    return m_driver->createDevice(physicalDevice, &createInfo, pAllocator, pDevice);
 }
 
 CustomInstance createCustomInstanceWithExtensions(Context &context, const std::vector<std::string> &extensions,
@@ -532,71 +802,343 @@ vk::VkResult createUncheckedInstance(Context &context, const vk::VkInstanceCreat
     return result;
 }
 
-vk::Move<vk::VkDevice> createCustomDevice(const vk::PlatformInterface &vkp, vk::VkInstance instance,
-                                          const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
-                                          const vk::VkDeviceCreateInfo *pCreateInfo,
-                                          const vk::VkAllocationCallbacks *pAllocator)
+CustomDevice::CustomDevice()
+    : m_context(nullptr)
+    , m_instanceDriver(nullptr)
+    , m_physicalDevice(nullptr)
+    , m_device()
+    , m_driver(nullptr)
+    , m_allocator(nullptr)
 {
-    vector<const char *> enabledLayers;
-    vk::VkDeviceCreateInfo createInfo = *pCreateInfo;
+}
 
-#ifdef CTS_USES_VULKANSC
-    // Add fault callback if there isn't one already.
-    VkFaultCallbackInfo faultCallbackInfo = {
-        VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO, // VkStructureType sType;
-        nullptr,                               // void* pNext;
-        0U,                                    // uint32_t faultCount;
-        nullptr,                               // VkFaultData* pFaults;
-        Context::faultCallbackFunction         // PFN_vkFaultCallbackFunction pfnFaultCallback;
-    };
-
-    if (!findStructureInChain(createInfo.pNext, getStructureType<VkFaultCallbackInfo>()))
-    {
-        // XXX workaround incorrect constness on faultCallbackInfo.pNext.
-        faultCallbackInfo.pNext = const_cast<void *>(createInfo.pNext);
-        createInfo.pNext        = &faultCallbackInfo;
-    }
+CustomDevice::CustomDevice(Context &context, const InstanceWrapper &instance, vk::VkPhysicalDevice physicalDevice,
+                           vk::Move<vk::VkDevice> device)
+    : m_context(&context)
+    , m_instanceDriver(&instance.getDriver())
+    , m_physicalDevice(physicalDevice)
+    , m_device(device)
+#ifndef CTS_USES_VULKANSC
+    , m_driver(new DeviceDriver(context.getPlatformInterface(), instance, *m_device, context.getUsedApiVersion(),
+                                context.getTestContext().getCommandLine()))
+#else
+    , m_driver(new DeviceDriverSC(context.getPlatformInterface(), instance, *m_device,
+                                  context.getTestContext().getCommandLine(), context.getResourceInterface(),
+                                  context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(),
+                                  context.getUsedApiVersion()))
 #endif // CTS_USES_VULKANSC
-
-    return createDevice(vkp, instance, vki, physicalDevice, &createInfo, pAllocator);
+    , m_allocator(new vk::SimpleAllocator(*m_driver, *m_device,
+                                          getPhysicalDeviceMemoryProperties(*m_instanceDriver, m_physicalDevice)))
+{
 }
 
-vk::VkResult createUncheckedDevice(const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
-                                   const vk::VkDeviceCreateInfo *pCreateInfo,
-                                   const vk::VkAllocationCallbacks *pAllocator, vk::VkDevice *pDevice)
+CustomDevice::CustomDevice(CustomDevice &&other) : CustomDevice()
 {
-    vector<const char *> enabledLayers;
-    vk::VkDeviceCreateInfo createInfo = *pCreateInfo;
+    this->swap(other);
+}
 
-#ifdef CTS_USES_VULKANSC
-    // Add fault callback if there isn't one already.
-    VkFaultCallbackInfo faultCallbackInfo = {
-        VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO, // VkStructureType sType;
-        nullptr,                               // void* pNext;
-        0U,                                    // uint32_t faultCount;
-        nullptr,                               // VkFaultData* pFaults;
-        Context::faultCallbackFunction         // PFN_vkFaultCallbackFunction pfnFaultCallback;
-    };
+CustomDevice::~CustomDevice()
+{
+}
 
-    if (!findStructureInChain(createInfo.pNext, getStructureType<VkFaultCallbackInfo>()))
-    {
-        // XXX workaround incorrect constness on faultCallbackInfo.pNext.
-        faultCallbackInfo.pNext = const_cast<void *>(createInfo.pNext);
-        createInfo.pNext        = &faultCallbackInfo;
-    }
+CustomDevice &CustomDevice::operator=(CustomDevice &&other)
+{
+    CustomDevice destroyer;
+    destroyer.swap(other);
+    this->swap(destroyer);
+    return *this;
+}
+
+void CustomDevice::swap(CustomDevice &other)
+{
+    std::swap(m_context, other.m_context);
+    std::swap(m_instanceDriver, other.m_instanceDriver);
+    std::swap(m_physicalDevice, other.m_physicalDevice);
+    Move<VkDevice> aux = m_device;
+    m_device           = other.m_device;
+    other.m_device     = aux;
+    m_driver.swap(other.m_driver);
+    m_allocator.swap(other.m_allocator);
+}
+
+CustomDevice::operator VkDevice() const
+{
+    return *m_device;
+}
+
+VkDevice CustomDevice::operator*() const
+{
+    return *m_device;
+}
+
+const vk::InstanceInterface &CustomDevice::getInstanceDriver() const
+{
+    DE_ASSERT(m_instanceDriver != nullptr);
+    return *m_instanceDriver;
+}
+
+vk::VkPhysicalDevice CustomDevice::getPhysicalDevice() const
+{
+    return m_physicalDevice;
+}
+
+const vk::DeviceDriver &CustomDevice::getDriver() const
+{
+    DE_ASSERT(m_driver != nullptr);
+    return *m_driver;
+}
+
+vk::Allocator &CustomDevice::getAllocator() const
+{
+    DE_ASSERT(m_allocator != nullptr);
+    return *m_allocator;
+}
+
+UncheckedDevice::UncheckedDevice()
+    : m_context(nullptr)
+    , m_instanceDriver(nullptr)
+    , m_physicalDevice(nullptr)
+    , m_allocationCallbacks(nullptr)
+    , m_device(Move<VkDevice>())
+    , m_driver(nullptr)
+    , m_allocator(nullptr)
+{
+}
+
+UncheckedDevice::UncheckedDevice(Context &context, const InstanceWrapper &instance, vk::VkPhysicalDevice physicalDevice,
+                                 vk::VkDevice device, const vk::VkAllocationCallbacks *pAllocator)
+    : m_context(&context)
+    , m_instanceDriver(&instance.getDriver())
+    , m_physicalDevice(physicalDevice)
+    , m_allocationCallbacks(pAllocator)
+    , m_device((device != nullptr) ?
+                   Move<VkDevice>(vk::check<VkDevice>(device),
+                                  vk::Deleter<VkDevice>(context.getPlatformInterface(), instance, device, pAllocator)) :
+                   Move<VkDevice>())
+#ifndef CTS_USES_VULKANSC
+    , m_driver((device != nullptr) ?
+                   new DeviceDriver(context.getPlatformInterface(), instance, device, context.getUsedApiVersion(),
+                                    context.getTestContext().getCommandLine()) :
+                   nullptr)
+#else
+    , m_driver((device != nullptr) ?
+                   std::unique_ptr<vk::DeviceDriverSC>(new DeviceDriverSC(
+                       context.getPlatformInterface(), instance, device, context.getTestContext().getCommandLine(),
+                       context.getResourceInterface(), context.getDeviceVulkanSC10Properties(),
+                       context.getDeviceProperties(), context.getUsedApiVersion())) :
+                   nullptr)
 #endif // CTS_USES_VULKANSC
-
-    return vki.createDevice(physicalDevice, &createInfo, pAllocator, pDevice);
-}
-
-CustomInstanceWrapper::CustomInstanceWrapper(Context &context) : instance(vkt::createCustomInstanceFromContext(context))
+    , m_allocator((device != nullptr) ?
+                      new vk::SimpleAllocator(*m_driver, device,
+                                              getPhysicalDeviceMemoryProperties(*m_instanceDriver, m_physicalDevice)) :
+                      nullptr)
 {
 }
 
-CustomInstanceWrapper::CustomInstanceWrapper(Context &context, const std::vector<std::string> extensions)
-    : instance(vkt::createCustomInstanceWithExtensions(context, extensions))
+UncheckedDevice::UncheckedDevice(UncheckedDevice &&other) : UncheckedDevice()
+{
+    this->swap(other);
+}
+
+UncheckedDevice::~UncheckedDevice()
 {
 }
+
+UncheckedDevice &UncheckedDevice::operator=(UncheckedDevice &&other)
+{
+    UncheckedDevice destroyer;
+    destroyer.swap(other);
+    this->swap(destroyer);
+    return *this;
+}
+
+void UncheckedDevice::swap(UncheckedDevice &other)
+{
+    std::swap(m_context, other.m_context);
+    std::swap(m_instanceDriver, other.m_instanceDriver);
+    std::swap(m_physicalDevice, other.m_physicalDevice);
+    std::swap(m_allocationCallbacks, other.m_allocationCallbacks);
+    Move<VkDevice> aux = m_device;
+    m_device           = other.m_device;
+    other.m_device     = aux;
+    m_driver.swap(other.m_driver);
+    std::swap(m_allocator, other.m_allocator);
+}
+
+UncheckedDevice::operator VkDevice() const
+{
+    return *m_device;
+}
+
+VkDevice UncheckedDevice::operator*() const
+{
+    return *m_device;
+}
+
+UncheckedDevice::operator bool() const
+{
+    return (m_driver != nullptr);
+}
+
+const vk::InstanceInterface &UncheckedDevice::getInstanceDriver() const
+{
+    DE_ASSERT(m_instanceDriver != nullptr);
+    return *m_instanceDriver;
+}
+
+vk::VkPhysicalDevice UncheckedDevice::getPhysicalDevice() const
+{
+    return m_physicalDevice;
+}
+
+const vk::DeviceDriver &UncheckedDevice::getDriver() const
+{
+    DE_ASSERT(m_driver != nullptr);
+    return *m_driver;
+}
+
+vk::Allocator &UncheckedDevice::getAllocator() const
+{
+    DE_ASSERT(m_allocator != nullptr);
+    return *m_allocator;
+}
+
+DeviceWrapper::DeviceWrapper()
+    : m_context(nullptr)
+    , m_instanceDriver(nullptr)
+    , m_physicalDevice(nullptr)
+    , m_customDevice()
+    , m_uncheckedDevice()
+    , m_device(nullptr)
+    , m_driver(nullptr)
+    , m_allocator(nullptr)
+{
+}
+
+DeviceWrapper::DeviceWrapper(Context &context)
+    : m_context(&context)
+    , m_instanceDriver(&context.getInstanceInterface())
+    , m_physicalDevice(context.getPhysicalDevice())
+    , m_customDevice()
+    , m_uncheckedDevice()
+    , m_device(context.getDevice())
+    , m_driver(&context.getDeviceInterface())
+    , m_allocator(&context.getDefaultAllocator())
+{
+}
+
+DeviceWrapper::DeviceWrapper(CustomDevice &&customDevice)
+    : m_context(customDevice.m_context)
+    , m_instanceDriver(&customDevice.getInstanceDriver())
+    , m_physicalDevice(customDevice.getPhysicalDevice())
+    , m_customDevice(std::move(customDevice))
+    , m_uncheckedDevice()
+    , m_device(m_customDevice)
+    , m_driver(&m_customDevice.getDriver())
+    , m_allocator(&m_customDevice.getAllocator())
+{
+}
+
+DeviceWrapper::DeviceWrapper(const CustomDevice &customDevice)
+    : m_context(customDevice.m_context)
+    , m_instanceDriver(&customDevice.getInstanceDriver())
+    , m_physicalDevice(customDevice.getPhysicalDevice())
+    , m_customDevice()
+    , m_uncheckedDevice()
+    , m_device(customDevice)
+    , m_driver(&customDevice.getDriver())
+    , m_allocator(&customDevice.getAllocator())
+{
+}
+
+DeviceWrapper::DeviceWrapper(UncheckedDevice &&uncheckedDevice)
+    : m_context(uncheckedDevice.m_context)
+    , m_instanceDriver(&uncheckedDevice.getInstanceDriver())
+    , m_physicalDevice(uncheckedDevice.getPhysicalDevice())
+    , m_customDevice()
+    , m_uncheckedDevice(std::move(uncheckedDevice))
+    , m_device(m_uncheckedDevice)
+    , m_driver(&m_uncheckedDevice.getDriver())
+    , m_allocator(&m_uncheckedDevice.getAllocator())
+{
+    DE_ASSERT(m_device != nullptr);
+}
+
+DeviceWrapper::DeviceWrapper(const UncheckedDevice &uncheckedDevice)
+    : m_context(uncheckedDevice.m_context)
+    , m_instanceDriver(&uncheckedDevice.getInstanceDriver())
+    , m_physicalDevice(uncheckedDevice.getPhysicalDevice())
+    , m_customDevice()
+    , m_uncheckedDevice()
+    , m_device(uncheckedDevice)
+    , m_driver(&uncheckedDevice.getDriver())
+    , m_allocator(&uncheckedDevice.getAllocator())
+{
+    DE_ASSERT(m_device != nullptr);
+}
+
+DeviceWrapper::DeviceWrapper(DeviceWrapper &&other) : DeviceWrapper()
+{
+    this->swap(other);
+}
+
+DeviceWrapper::~DeviceWrapper()
+{
+}
+
+DeviceWrapper &DeviceWrapper::operator=(DeviceWrapper &&other)
+{
+    DeviceWrapper destroyer;
+    destroyer.swap(other);
+    this->swap(destroyer);
+    return *this;
+}
+
+void DeviceWrapper::swap(DeviceWrapper &other)
+{
+    std::swap(m_context, other.m_context);
+    std::swap(m_instanceDriver, other.m_instanceDriver);
+    std::swap(m_physicalDevice, other.m_physicalDevice);
+    std::swap(m_customDevice, other.m_customDevice);
+    std::swap(m_uncheckedDevice, other.m_uncheckedDevice);
+    std::swap(m_device, other.m_device);
+    std::swap(m_driver, other.m_driver);
+    std::swap(m_allocator, other.m_allocator);
+}
+
+DeviceWrapper::operator VkDevice() const
+{
+    return m_device;
+}
+
+VkDevice DeviceWrapper::operator*() const
+{
+    return m_device;
+}
+
+const vk::InstanceInterface &DeviceWrapper::getInstanceDriver() const
+{
+    DE_ASSERT(m_instanceDriver != nullptr);
+    return *m_instanceDriver;
+}
+
+vk::VkPhysicalDevice DeviceWrapper::getPhysicalDevice() const
+{
+    return m_physicalDevice;
+}
+
+const vk::DeviceInterface &DeviceWrapper::getDriver() const
+{
+    DE_ASSERT(m_driver != nullptr);
+    return *m_driver;
+}
+
+vk::Allocator &DeviceWrapper::getAllocator() const
+{
+    DE_ASSERT(m_allocator != nullptr);
+    return *m_allocator;
+}
+
 void VideoDevice::checkSupport(Context &context, const VideoCodecOperationFlags videoCodecOperation)
 {
 #ifndef CTS_USES_VULKANSC
@@ -649,9 +1191,8 @@ void VideoDevice::checkSupport(Context &context, const VideoCodecOperationFlags 
 
 VideoDevice::VideoDevice(Context &context)
     : m_context(context)
+    , m_instance(context)
     , m_logicalDevice()
-    , m_deviceDriver()
-    , m_allocator()
     , m_queueFamilyTransfer(VK_QUEUE_FAMILY_IGNORED)
     , m_queueFamilyDecode(VK_QUEUE_FAMILY_IGNORED)
     , m_queueFamilyEncode(VK_QUEUE_FAMILY_IGNORED)
@@ -822,10 +1363,8 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
                                               const VideoDeviceFlags videoDeviceFlags)
 {
 #ifndef CTS_USES_VULKANSC
-    const vk::PlatformInterface &vkp          = m_context.getPlatformInterface();
-    const vk::InstanceInterface &vki          = m_context.getInstanceInterface();
-    const vk::VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
-    const vk::VkInstance instance             = m_context.getInstance();
+    const vk::InstanceInterface &vki          = m_instance.getDriver();
+    const vk::VkPhysicalDevice physicalDevice = m_instance.getPhysicalDevice();
     const uint32_t apiVersion                 = m_context.getUsedApiVersion();
     const bool queryWithStatusForDecodeSupport =
         (videoDeviceFlags & VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_DECODE_SUPPORT) != 0;
@@ -1124,11 +1663,7 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
         nullptr,                                  //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_logicalDevice = createCustomDevice(vkp, instance, vki, physicalDevice, &deviceCreateInfo);
-    m_deviceDriver  = de::MovePtr<vk::DeviceDriver>(
-        new vk::DeviceDriver(vkp, instance, *m_logicalDevice, apiVersion, m_context.getTestContext().getCommandLine()));
-    m_allocator           = de::MovePtr<vk::Allocator>(new vk::SimpleAllocator(
-        *m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
+    m_logicalDevice       = m_instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
     m_queueFamilyTransfer = queueFamilyTransfer;
     m_queueFamilyDecode   = queueFamilyDecode;
     m_queueFamilyEncode   = queueFamilyEncode;
@@ -1144,12 +1679,10 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
 #endif
 }
 
-const vk::DeviceDriver &VideoDevice::getDeviceDriver(void)
+const vk::DeviceInterface &VideoDevice::getDeviceDriver(void)
 {
 #ifndef CTS_USES_VULKANSC
-    DE_ASSERT(m_deviceDriver.get() != nullptr);
-
-    return *m_deviceDriver;
+    return m_logicalDevice.getDriver();
 #else
     TCU_THROW(NotSupportedError, "Video is not supported for Vulkan SC");
 #endif
@@ -1206,9 +1739,7 @@ uint32_t VideoDevice::getQueueFamilyVideo(void) const
 vk::Allocator &VideoDevice::getAllocator(void)
 {
 #ifndef CTS_USES_VULKANSC
-    DE_ASSERT(m_allocator);
-
-    return *m_allocator;
+    return m_logicalDevice.getAllocator();
 #else
     TCU_THROW(NotSupportedError, "Video is not supported for Vulkan SC");
 #endif

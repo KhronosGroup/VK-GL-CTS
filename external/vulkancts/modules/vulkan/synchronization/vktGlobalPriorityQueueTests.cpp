@@ -154,12 +154,13 @@ GPQInstanceBase::GPQInstanceBase(Context &ctx, const TestConfig &cfg)
 de::MovePtr<ImageWithMemory> GPQInstanceBase::createImage(VkImageUsageFlags usage, uint32_t queueFamilyIdx,
                                                           VkQueue queue) const
 {
-    const InstanceInterface &vki = m_context.getInstanceInterface();
-    const DeviceInterface &vkd   = m_context.getDeviceInterface();
-    const VkPhysicalDevice phys  = m_context.getPhysicalDevice();
-    const VkDevice dev           = m_device.handle;
-    Allocator &alloc             = m_device.getAllocator();
-    VkImageCreateFlags flags     = 0;
+    const InstanceInterface &vki = m_device.instance.getDriver();
+    const DeviceInterface &vkd   = m_device.device.getDriver();
+    ;
+    const VkPhysicalDevice phys = m_device.device.getPhysicalDevice();
+    const VkDevice dev          = m_device.device;
+    Allocator &alloc            = m_device.getAllocator();
+    VkImageCreateFlags flags    = 0;
 
     if (m_config.enableProtected)
         flags |= VK_IMAGE_CREATE_PROTECTED_BIT;
@@ -191,8 +192,8 @@ de::MovePtr<ImageWithMemory> GPQInstanceBase::createImage(VkImageUsageFlags usag
 
 Move<VkImageView> GPQInstanceBase::createView(VkImage image, VkImageSubresourceRange &range) const
 {
-    const DeviceInterface &vkd = m_context.getDeviceInterface();
-    const VkDevice dev         = m_device.handle;
+    const DeviceInterface &vkd = m_device.device.getDriver();
+    const VkDevice dev         = m_device.device;
 
     range = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1);
     return makeImageView(vkd, dev, image, VK_IMAGE_VIEW_TYPE_2D, m_config.format, range);
@@ -215,7 +216,7 @@ Move<VkPipelineLayout> GPQInstanceBase::createPipelineLayout(const VkPushConstan
     info.pushConstantRangeCount = (pRange != nullptr && pRange->size > 0) ? 1 : 0;
     info.pPushConstantRanges    = (pRange != nullptr && pRange->size > 0) ? pRange : nullptr;
 
-    return ::vk::createPipelineLayout(m_context.getDeviceInterface(), m_device.handle, &info);
+    return ::vk::createPipelineLayout(m_device.device.getDriver(), m_device.device, &info);
 }
 
 template <>
@@ -245,13 +246,13 @@ Move<VkCommandPool> GPQInstanceBase::makeCommandPool(uint32_t qFamilyIndex) cons
         qFamilyIndex,                               // uint32_t queueFamilyIndex;
     };
 
-    return createCommandPool(m_context.getDeviceInterface(), m_device.handle, &commandPoolParams);
+    return createCommandPool(m_device.device.getDriver(), m_device.device, &commandPoolParams);
 }
 
 Move<VkPipeline> GPQInstanceBase::createGraphicsPipeline(VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
 {
-    const DeviceInterface &vkd = m_context.getDeviceInterface();
-    const VkDevice dev         = m_device.handle;
+    const DeviceInterface &vkd = m_device.device.getDriver();
+    const VkDevice dev         = m_device.device;
 
     auto sh = std::find_if(std::begin(m_shaders), std::end(m_shaders),
                            [](const NamedShader &ns) { return ns.name == "vert"; });
@@ -287,8 +288,8 @@ Move<VkPipeline> GPQInstanceBase::createGraphicsPipeline(VkPipelineLayout pipeli
 
 Move<VkPipeline> GPQInstanceBase::createComputePipeline(VkPipelineLayout pipelineLayout, bool producer)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
-    const VkDevice dev        = m_device.handle;
+    const DeviceInterface &vk = m_device.device.getDriver();
+    const VkDevice dev        = m_device.device;
 
     const std::string compName = producer ? "cpyb" : "cpyi";
     auto comp                  = std::find_if(std::begin(m_shaders), std::end(m_shaders),
@@ -321,8 +322,8 @@ Move<VkPipeline> GPQInstanceBase::createComputePipeline(VkPipelineLayout pipelin
 VkPipelineStageFlags queueFlagBitToPipelineStage(VkQueueFlagBits bit);
 bool GPQInstanceBase::submitCommands(VkCommandBuffer producerCmd, VkCommandBuffer consumerCmd) const
 {
-    const DeviceInterface &vkd = m_context.getDeviceInterface();
-    const VkDevice dev         = m_device.handle;
+    const DeviceInterface &vkd = m_device.device.getDriver();
+    const VkDevice dev         = m_device.device;
 
     Move<VkSemaphore> sem       = createSemaphore(vkd, dev);
     Move<VkFence> consumerFence = createFence(vkd, dev);
@@ -670,10 +671,10 @@ tcu::TestStatus GPQInstance<VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT>::iterat
                                 m_device.createFileName, m_device.createFileLine);
     }
 
-    const InstanceInterface &vki = m_context.getInstanceInterface();
-    const DeviceInterface &vkd   = m_context.getDeviceInterface();
-    const VkPhysicalDevice phys  = m_context.getPhysicalDevice();
-    const VkDevice device        = m_device.handle;
+    const InstanceInterface &vki = m_device.instance.getDriver();
+    const DeviceInterface &vkd   = m_device.device.getDriver();
+    const VkPhysicalDevice phys  = m_device.device.getPhysicalDevice();
+    const VkDevice device        = m_device.device;
     Allocator &allocator         = m_device.getAllocator();
     const uint32_t producerIndex = m_device.queueFamilyIndexFrom;
     const uint32_t consumerIndex = m_device.queueFamilyIndexTo;
@@ -867,10 +868,10 @@ tcu::TestStatus GPQInstance<VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT>::iterat
                                 m_device.createFileName, m_device.createFileLine);
     }
 
-    const InstanceInterface &vki = m_context.getInstanceInterface();
-    const DeviceInterface &vkd   = m_context.getDeviceInterface();
-    const VkPhysicalDevice phys  = m_context.getPhysicalDevice();
-    const VkDevice device        = m_device.handle;
+    const InstanceInterface &vki = m_device.instance.getDriver();
+    const DeviceInterface &vkd   = m_device.device.getDriver();
+    const VkPhysicalDevice phys  = m_device.device.getPhysicalDevice();
+    const VkDevice device        = m_device.device;
     Allocator &allocator         = m_device.getAllocator();
     const uint32_t producerIndex = m_device.queueFamilyIndexFrom;
     const uint32_t consumerIndex = m_device.queueFamilyIndexTo;
@@ -1066,10 +1067,10 @@ tcu::TestStatus GPQInstance<VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT>::iterat
                                 m_device.createFileName, m_device.createFileLine);
     }
 
-    const InstanceInterface &vki = m_context.getInstanceInterface();
-    const DeviceInterface &vkd   = m_context.getDeviceInterface();
-    const VkPhysicalDevice phys  = m_context.getPhysicalDevice();
-    const VkDevice device        = m_device.handle;
+    const InstanceInterface &vki = m_device.instance.getDriver();
+    const DeviceInterface &vkd   = m_device.device.getDriver();
+    const VkPhysicalDevice phys  = m_device.device.getPhysicalDevice();
+    const VkDevice device        = m_device.device;
     Allocator &allocator         = m_device.getAllocator();
     const uint32_t producerIndex = m_device.queueFamilyIndexFrom;
     const uint32_t consumerIndex = m_device.queueFamilyIndexTo;
@@ -1221,10 +1222,10 @@ tcu::TestStatus GPQInstance<VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT>::iterat
                                 m_device.createFileName, m_device.createFileLine);
     }
 
-    const InstanceInterface &vki = m_context.getInstanceInterface();
-    const DeviceInterface &vkd   = m_context.getDeviceInterface();
-    const VkPhysicalDevice phys  = m_context.getPhysicalDevice();
-    const VkDevice device        = m_device.handle;
+    const InstanceInterface &vki = m_device.instance.getDriver();
+    const DeviceInterface &vkd   = m_device.device.getDriver();
+    const VkPhysicalDevice phys  = m_device.device.getPhysicalDevice();
+    const VkDevice device        = m_device.device;
     Allocator &allocator         = m_device.getAllocator();
     const uint32_t producerIndex = m_device.queueFamilyIndexFrom;
     const uint32_t consumerIndex = m_device.queueFamilyIndexTo;
@@ -1660,12 +1661,10 @@ void PreemptionCase::checkSupport(Context &context) const
 class DeviceHelper
 {
 protected:
-    CustomInstance m_customInstance;
+    InstanceWrapper m_customInstance;
     VkPhysicalDevice m_physicalDevice;
     uint32_t m_qfIndex;
-    Move<VkDevice> m_customDevice;
-    std::unique_ptr<DeviceInterface> m_vkd;
-    std::unique_ptr<SimpleAllocator> m_allocator;
+    DeviceWrapper m_customDevice;
     VkQueue m_queue;
 
     DeviceHelper()
@@ -1673,8 +1672,6 @@ protected:
         , m_physicalDevice(VK_NULL_HANDLE)
         , m_qfIndex(~0u)
         , m_customDevice()
-        , m_vkd()
-        , m_allocator()
         , m_queue(VK_NULL_HANDLE)
     {
     }
@@ -1719,11 +1716,10 @@ public:
             &features,
         };
 
-        const auto apiVersion = context.getUsedApiVersion();
-        const auto &cmdLine   = context.getTestContext().getCommandLine();
+        const auto &cmdLine = context.getTestContext().getCommandLine();
 
-        auto instance   = createCustomInstanceWithExtensions(context, context.getInstanceExtensions());
-        const auto &vki = instance.getDriver();
+        InstanceWrapper instance = createCustomInstanceWithExtensions(context, context.getInstanceExtensions());
+        const auto &vki          = instance.getDriver();
 
         uint32_t physicalDeviceCount = 0u;
         VK_CHECK(vki.enumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr));
@@ -1740,12 +1736,10 @@ public:
         // Overwrite bad value.
         queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
 
-        const auto &vkp = context.getPlatformInterface();
-
-        Move<VkDevice> device;
+        DeviceWrapper device;
         try
         {
-            device = createCustomDevice(vkp, instance, instance.getDriver(), physDev, &createInfo);
+            device = instance.createCustomDevice(physDev, &createInfo);
         }
         catch (vk::Error &err)
         {
@@ -1760,24 +1754,13 @@ public:
         }
 
         // Save created data.
-        m_customInstance.swap(instance);
+        m_customInstance = std::move(instance);
         m_physicalDevice = physDev;
         m_qfIndex        = queueFamilyIndex;
-        m_customDevice   = device;
-        m_vkd.reset(new DeviceDriver(vkp, m_customInstance, m_customDevice.get(), apiVersion, cmdLine));
-        const auto memProperties = getPhysicalDeviceMemoryProperties(m_customInstance.getDriver(), m_physicalDevice);
-        m_allocator.reset(new SimpleAllocator(*m_vkd, m_customDevice.get(), memProperties));
-        m_queue = getDeviceQueue(*m_vkd, m_customDevice.get(), m_qfIndex, 0u);
+        m_customDevice   = std::move(device);
+        m_queue          = getDeviceQueue(m_customDevice.getDriver(), m_customDevice, m_qfIndex, 0u);
     }
 
-    const InstanceInterface &getInstanceInterface() const
-    {
-        return m_customInstance.getDriver();
-    }
-    VkInstance getInstance() const
-    {
-        return m_customInstance;
-    } // Uses conversion operator.
     VkPhysicalDevice getPhysicalDevice() const
     {
         return m_physicalDevice;
@@ -1788,15 +1771,15 @@ public:
     }
     const DeviceInterface &getDeviceInterface() const
     {
-        return *m_vkd;
+        return m_customDevice.getDriver();
     }
     VkDevice getDevice() const
     {
-        return m_customDevice.get();
+        return m_customDevice;
     }
     Allocator &getAllocator() const
     {
-        return *m_allocator;
+        return m_customDevice.getAllocator();
     }
     VkQueue getQueue() const
     {

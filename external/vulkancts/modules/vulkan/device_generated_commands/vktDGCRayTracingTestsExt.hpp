@@ -30,7 +30,7 @@ namespace vkt
 {
 namespace DGC
 {
-tcu::TestCaseGroup *createDGCRayTracingTestsExt(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createDGCRayTracingBasicTestsExt(tcu::TestContext &testCtx);
 } // namespace DGC
 } // namespace vkt
 

@@ -5,7 +5,9 @@
 
 static const VkConformanceVersion knownConformanceVersions[]
 {
+	makeConformanceVersion(1, 4, 6, 1),
 	makeConformanceVersion(1, 4, 6, 0),
+	makeConformanceVersion(1, 4, 5, 4),
 	makeConformanceVersion(1, 4, 5, 3),
 	makeConformanceVersion(1, 4, 5, 2),
 	makeConformanceVersion(1, 4, 5, 1),
@@ -19,9 +21,5 @@ static const VkConformanceVersion knownConformanceVersions[]
 	makeConformanceVersion(1, 4, 3, 0),
 	makeConformanceVersion(1, 4, 2, 1),
 	makeConformanceVersion(1, 4, 2, 0),
-	makeConformanceVersion(1, 4, 1, 3),
-	makeConformanceVersion(1, 4, 1, 2),
-	makeConformanceVersion(1, 4, 1, 1),
-	makeConformanceVersion(1, 4, 1, 0),
 };
 

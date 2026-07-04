@@ -53,6 +53,7 @@ auto fExclusiveScissorFeatures                          = m_context.getExclusive
 auto fExtendedDynamicState2FeaturesEXT                  = m_context.getExtendedDynamicState2FeaturesEXT();
 auto fExtendedDynamicState3FeaturesEXT                  = m_context.getExtendedDynamicState3FeaturesEXT();
 auto fExtendedDynamicStateFeaturesEXT                   = m_context.getExtendedDynamicStateFeaturesEXT();
+auto fExtendedFlagsFeatures                             = m_context.getExtendedFlagsFeatures();
 auto fExternalFormatResolveFeaturesANDROID              = m_context.getExternalFormatResolveFeaturesANDROID();
 auto fExternalMemoryScreenBufferFeaturesQNX             = m_context.getExternalMemoryScreenBufferFeaturesQNX();
 auto fFaultFeaturesEXT                                  = m_context.getFaultFeaturesEXT();
@@ -65,6 +66,7 @@ auto fFragmentShadingRateEnumsFeatures                  = m_context.getFragmentS
 auto fFragmentShadingRateFeatures                       = m_context.getFragmentShadingRateFeatures();
 auto fFrameBoundaryFeaturesEXT                          = m_context.getFrameBoundaryFeaturesEXT();
 auto fGlobalPriorityQueryFeatures                       = m_context.getGlobalPriorityQueryFeatures();
+auto fGpaFeaturesAMD                                    = m_context.getGpaFeaturesAMD();
 auto fGraphicsPipelineLibraryFeaturesEXT                = m_context.getGraphicsPipelineLibraryFeaturesEXT();
 auto fHostImageCopyFeatures                             = m_context.getHostImageCopyFeatures();
 auto fHostQueryResetFeatures                            = m_context.getHostQueryResetFeatures();
@@ -99,6 +101,7 @@ auto fMeshShaderFeaturesEXT                             = m_context.getMeshShade
 auto fMeshShaderFeatures                                = m_context.getMeshShaderFeatures();
 auto fMultiDrawFeaturesEXT                              = m_context.getMultiDrawFeaturesEXT();
 auto fMultisampledRenderToSingleSampledFeaturesEXT      = m_context.getMultisampledRenderToSingleSampledFeaturesEXT();
+auto fMultisampledRenderToSwapchainFeaturesEXT          = m_context.getMultisampledRenderToSwapchainFeaturesEXT();
 auto fMultiviewFeatures                                 = m_context.getMultiviewFeatures();
 auto fMultiviewPerViewRenderAreasFeaturesQCOM           = m_context.getMultiviewPerViewRenderAreasFeaturesQCOM();
 auto fMultiviewPerViewViewportsFeaturesQCOM             = m_context.getMultiviewPerViewViewportsFeaturesQCOM();
@@ -123,6 +126,7 @@ auto fPresentModeFifoLatestReadyFeatures                = m_context.getPresentMo
 auto fPresentTimingFeaturesEXT                          = m_context.getPresentTimingFeaturesEXT();
 auto fPresentWait2Features                              = m_context.getPresentWait2Features();
 auto fPresentWaitFeatures                               = m_context.getPresentWaitFeatures();
+auto fPrimitiveRestartIndexFeaturesEXT                  = m_context.getPrimitiveRestartIndexFeaturesEXT();
 auto fPrimitiveTopologyListRestartFeaturesEXT           = m_context.getPrimitiveTopologyListRestartFeaturesEXT();
 auto fPrimitivesGeneratedQueryFeaturesEXT               = m_context.getPrimitivesGeneratedQueryFeaturesEXT();
 auto fPrivateDataFeatures                               = m_context.getPrivateDataFeatures();
@@ -168,6 +172,7 @@ auto fShaderQuadControlFeatures                         = m_context.getShaderQua
 auto fShaderRelaxedExtendedInstructionFeatures          = m_context.getShaderRelaxedExtendedInstructionFeatures();
 auto fShaderReplicatedCompositesFeaturesEXT             = m_context.getShaderReplicatedCompositesFeaturesEXT();
 auto fShaderSMBuiltinsFeatures                          = m_context.getShaderSMBuiltinsFeatures();
+auto fShaderSplitBarrierFeaturesEXT                     = m_context.getShaderSplitBarrierFeaturesEXT();
 auto fShaderSubgroupExtendedTypesFeatures               = m_context.getShaderSubgroupExtendedTypesFeatures();
 auto fShaderSubgroupPartitionedFeaturesEXT              = m_context.getShaderSubgroupPartitionedFeaturesEXT();
 auto fShaderSubgroupRotateFeatures                      = m_context.getShaderSubgroupRotateFeatures();
@@ -255,6 +260,7 @@ std::vector<void *> pNextFeatures = {
 	&fExtendedDynamicState2FeaturesEXT,
 	&fExtendedDynamicState3FeaturesEXT,
 	&fExtendedDynamicStateFeaturesEXT,
+	&fExtendedFlagsFeatures,
 	&fExternalFormatResolveFeaturesANDROID,
 	&fExternalMemoryScreenBufferFeaturesQNX,
 	&fFaultFeaturesEXT,
@@ -267,6 +273,7 @@ std::vector<void *> pNextFeatures = {
 	&fFragmentShadingRateFeatures,
 	&fFrameBoundaryFeaturesEXT,
 	&fGlobalPriorityQueryFeatures,
+	&fGpaFeaturesAMD,
 	&fGraphicsPipelineLibraryFeaturesEXT,
 	&fHostImageCopyFeatures,
 	&fHostQueryResetFeatures,
@@ -301,6 +308,7 @@ std::vector<void *> pNextFeatures = {
 	&fMeshShaderFeatures,
 	&fMultiDrawFeaturesEXT,
 	&fMultisampledRenderToSingleSampledFeaturesEXT,
+	&fMultisampledRenderToSwapchainFeaturesEXT,
 	&fMultiviewFeatures,
 	&fMultiviewPerViewRenderAreasFeaturesQCOM,
 	&fMultiviewPerViewViewportsFeaturesQCOM,
@@ -325,6 +333,7 @@ std::vector<void *> pNextFeatures = {
 	&fPresentTimingFeaturesEXT,
 	&fPresentWait2Features,
 	&fPresentWaitFeatures,
+	&fPrimitiveRestartIndexFeaturesEXT,
 	&fPrimitiveTopologyListRestartFeaturesEXT,
 	&fPrimitivesGeneratedQueryFeaturesEXT,
 	&fPrivateDataFeatures,
@@ -370,6 +379,7 @@ std::vector<void *> pNextFeatures = {
 	&fShaderRelaxedExtendedInstructionFeatures,
 	&fShaderReplicatedCompositesFeaturesEXT,
 	&fShaderSMBuiltinsFeatures,
+	&fShaderSplitBarrierFeaturesEXT,
 	&fShaderSubgroupExtendedTypesFeatures,
 	&fShaderSubgroupPartitionedFeaturesEXT,
 	&fShaderSubgroupRotateFeatures,

@@ -84,7 +84,7 @@ struct DeviceContext
     {
         return context->getInstanceInterface();
     }
-    const DeviceDriver &getDeviceDriver() const
+    const DeviceInterface &getDeviceDriver() const
     {
         return vd->getDeviceDriver();
     }
@@ -387,7 +387,7 @@ public:
     bool createDeviceSupportingQueue(
         VkQueueFlags queueFlagsRequired, VkVideoCodecOperationFlagsKHR videoCodecOperationFlags,
         VideoDevice::VideoDeviceFlags videoDeviceFlags = VideoDevice::VIDEO_DEVICE_FLAG_NONE);
-    const DeviceDriver &getDeviceDriver();
+    const DeviceInterface &getDeviceDriver();
     uint32_t getQueueFamilyIndexTransfer();
     uint32_t getQueueFamilyIndexDecode();
     uint32_t getQueueFamilyIndexEncode();

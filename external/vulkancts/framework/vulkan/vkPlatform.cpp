@@ -178,6 +178,7 @@ DeviceDriverSC::DeviceDriverSC(const PlatformInterface &platformInterface, VkIns
                                const VkPhysicalDeviceProperties &physicalDeviceProperties,
                                const uint32_t usedApiVersion)
     : DeviceDriver(platformInterface, instance, device, usedApiVersion, cmdLine)
+    , m_device(device)
     , m_normalMode(cmdLine.isSubProcess())
     , m_resourceInterface(resourceInterface)
     , m_physicalDeviceVulkanSC10Properties(physicalDeviceVulkanSC10Properties)
@@ -194,12 +195,13 @@ DeviceDriverSC::DeviceDriverSC(const PlatformInterface &platformInterface, VkIns
 
 DeviceDriverSC::~DeviceDriverSC(void)
 {
+    m_resourceInterface->deinitDevice(m_device);
 }
 
 void DeviceDriverSC::destroyDeviceHandler(VkDevice device, const VkAllocationCallbacks *pAllocator) const
 {
-    DE_UNREF(pAllocator);
     m_resourceInterface->unregisterDeviceFeatures(device);
+    m_vk.destroyDevice(device, pAllocator);
 }
 
 VkResult DeviceDriverSC::createDescriptorSetLayoutHandlerNorm(VkDevice device,
@@ -700,13 +702,19 @@ void DeviceDriverSC::getDescriptorSetLayoutSupportHandler(VkDevice device,
                                                           const VkDescriptorSetLayoutCreateInfo *pCreateInfo,
                                                           VkDescriptorSetLayoutSupport *pSupport) const
 {
-    DE_UNREF(device);
-
     DDSTAT_LOCK();
     for (uint32_t i = 0; i < pCreateInfo->bindingCount; ++i)
         m_resourceInterface->getStatMax().descriptorSetLayoutBindingLimit = de::max(
             m_resourceInterface->getStatMax().descriptorSetLayoutBindingLimit, pCreateInfo->pBindings[i].binding + 1);
-    pSupport->supported = VK_TRUE;
+
+    // Forward to the real driver.  vkGetDescriptorSetLayoutSupport is a pure
+    // query that does not consume DOR reservations, so the main-process default
+    // device's empty reservation set does not affect the result, and the answer
+    // is the same one the subprocess will see in pass 2.  This avoids having to
+    // synthesise a value for pSupport->supported or any pNext output structure
+    // (e.g. VkDescriptorSetVariableDescriptorCountLayoutSupport) - the driver
+    // populates them exactly as it would in the subprocess.
+    m_vk.getDescriptorSetLayoutSupport(device, pCreateInfo, pSupport);
 }
 
 VkResult DeviceDriverSC::createShaderModule(VkDevice device, const VkShaderModuleCreateInfo *pCreateInfo,
@@ -934,6 +942,21 @@ bool Platform::hasDisplay(wsi::Type) const
 void Platform::describePlatform(std::ostream &dst) const
 {
     dst << "vk::Platform::describePlatform() not implemented";
+}
+
+void Platform::setCustomScreenOrientation(bool) const
+{
+    TCU_THROW(NotSupportedError, "Screen rotation not supported");
+}
+
+void Platform::requestPixelCopy(const char *) const
+{
+    TCU_THROW(NotSupportedError, "Pixel copy not supported");
+}
+
+void Platform::rotateScreen(int) const
+{
+    TCU_THROW(NotSupportedError, "Screen rotation not supported");
 }
 
 } // namespace vk

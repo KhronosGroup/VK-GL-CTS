@@ -86,6 +86,7 @@ struct TestParameters
     TestType testType;
     VkFormat colorFormat;
     VkFormat dsFormat;
+    bool extendedFlags;
 };
 
 template <typename T>
@@ -572,120 +573,145 @@ VkImageCreateInfo makeImageCreateInfo(const VkFormat format, const VkExtent2D si
     return imageParams;
 }
 
-std::vector<VkFramebufferAttachmentImageInfo> makeFramebufferAttachmentImageInfos(
-    const VkExtent2D &renderSize, const VkFormat *colorFormat, const VkImageUsageFlags colorUsage,
-    const VkFormat *dsFormat, const VkImageUsageFlags dsUsage, const AspectFlags resolveAspects,
-    const uint32_t inputAttachmentCount)
-{
-    const bool colorResolve        = (resolveAspects & ASPECT_COLOR) != 0;
-    const bool depthStencilResolve = (resolveAspects & ASPECT_DEPTH_STENCIL) != 0;
-    std::vector<VkFramebufferAttachmentImageInfo> framebufferAttachmentImageInfos;
-
-    DE_ASSERT(colorFormat != nullptr);
-    DE_ASSERT(dsFormat != nullptr);
-
-    if (*colorFormat != VK_FORMAT_UNDEFINED)
-    {
-        const VkFramebufferAttachmentImageInfo framebufferAttachmentImageInfo = {
-            VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO, //  VkStructureType sType;
-            nullptr,                                             //  const void* pNext;
-            (VkImageCreateFlags)0u,                              //  VkImageCreateFlags flags;
-            colorUsage,                                          //  VkImageUsageFlags usage;
-            renderSize.width,                                    //  uint32_t width;
-            renderSize.height,                                   //  uint32_t height;
-            1u,                                                  //  uint32_t layerCount;
-            1u,                                                  //  uint32_t viewFormatCount;
-            colorFormat                                          //  const VkFormat* pViewFormats;
-        };
-
-        framebufferAttachmentImageInfos.push_back(framebufferAttachmentImageInfo);
-    }
-
-    if (*dsFormat != VK_FORMAT_UNDEFINED)
-    {
-        const VkFramebufferAttachmentImageInfo framebufferAttachmentImageInfo = {
-            VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO, //  VkStructureType sType;
-            nullptr,                                             //  const void* pNext;
-            (VkImageCreateFlags)0u,                              //  VkImageCreateFlags flags;
-            dsUsage,                                             //  VkImageUsageFlags usage;
-            renderSize.width,                                    //  uint32_t width;
-            renderSize.height,                                   //  uint32_t height;
-            1u,                                                  //  uint32_t layerCount;
-            1u,                                                  //  uint32_t viewFormatCount;
-            dsFormat                                             //  const VkFormat* pViewFormats;
-        };
-
-        framebufferAttachmentImageInfos.push_back(framebufferAttachmentImageInfo);
-    }
-
-    if (colorResolve)
-    {
-        const VkFramebufferAttachmentImageInfo framebufferAttachmentImageInfo = {
-            VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO, //  VkStructureType sType;
-            nullptr,                                             //  const void* pNext;
-            (VkImageCreateFlags)0u,                              //  VkImageCreateFlags flags;
-            colorUsage,                                          //  VkImageUsageFlags usage;
-            renderSize.width,                                    //  uint32_t width;
-            renderSize.height,                                   //  uint32_t height;
-            1u,                                                  //  uint32_t layerCount;
-            1u,                                                  //  uint32_t viewFormatCount;
-            colorFormat                                          //  const VkFormat* pViewFormats;
-        };
-
-        DE_ASSERT(*colorFormat != VK_FORMAT_UNDEFINED);
-
-        framebufferAttachmentImageInfos.push_back(framebufferAttachmentImageInfo);
-    }
-
-    if (depthStencilResolve)
-    {
-        const VkFramebufferAttachmentImageInfo framebufferAttachmentImageInfo = {
-            VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO, //  VkStructureType sType;
-            nullptr,                                             //  const void* pNext;
-            (VkImageCreateFlags)0u,                              //  VkImageCreateFlags flags;
-            dsUsage,                                             //  VkImageUsageFlags usage;
-            renderSize.width,                                    //  uint32_t width;
-            renderSize.height,                                   //  uint32_t height;
-            1u,                                                  //  uint32_t layerCount;
-            1u,                                                  //  uint32_t viewFormatCount;
-            dsFormat                                             //  const VkFormat* pViewFormats;
-        };
-
-        DE_ASSERT(*dsFormat != VK_FORMAT_UNDEFINED);
-
-        framebufferAttachmentImageInfos.push_back(framebufferAttachmentImageInfo);
-    }
-
-    for (uint32_t inputAttachmentNdx = 0; inputAttachmentNdx < inputAttachmentCount; ++inputAttachmentNdx)
-    {
-        const VkFramebufferAttachmentImageInfo framebufferAttachmentImageInfo = {
-            VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO, //  VkStructureType sType;
-            nullptr,                                             //  const void* pNext;
-            (VkImageCreateFlags)0u,                              //  VkImageCreateFlags flags;
-            colorUsage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,    //  VkImageUsageFlags usage;
-            renderSize.width,                                    //  uint32_t width;
-            renderSize.height,                                   //  uint32_t height;
-            1u,                                                  //  uint32_t layerCount;
-            1u,                                                  //  uint32_t viewFormatCount;
-            colorFormat                                          //  const VkFormat* pViewFormats;
-        };
-
-        framebufferAttachmentImageInfos.push_back(framebufferAttachmentImageInfo);
-    }
-
-    return framebufferAttachmentImageInfos;
-}
-
 Move<VkFramebuffer> makeFramebuffer(const DeviceInterface &vk, const VkDevice device, const VkRenderPass renderPass,
                                     const VkExtent2D &renderSize, const VkFormat *colorFormat,
                                     const VkImageUsageFlags colorUsage, const VkFormat *dsFormat,
+                                    const bool extendedFlags,
                                     const VkImageUsageFlags dsUsage     = static_cast<VkImageUsageFlags>(0),
                                     const AspectFlags resolveAspects    = ASPECT_NONE,
                                     const uint32_t inputAttachmentCount = 0)
 {
-    const std::vector<VkFramebufferAttachmentImageInfo> framebufferAttachmentImageInfos =
-        makeFramebufferAttachmentImageInfos(renderSize, colorFormat, colorUsage, dsFormat, dsUsage, resolveAspects,
-                                            inputAttachmentCount);
+    (void)extendedFlags;
+    std::vector<VkFramebufferAttachmentImageInfo> framebufferAttachmentImageInfos;
+    {
+        const bool colorResolve        = (resolveAspects & ASPECT_COLOR) != 0;
+        const bool depthStencilResolve = (resolveAspects & ASPECT_DEPTH_STENCIL) != 0;
+
+        DE_ASSERT(colorFormat != nullptr);
+        DE_ASSERT(dsFormat != nullptr);
+
+        if (*colorFormat != VK_FORMAT_UNDEFINED)
+        {
+            VkFramebufferAttachmentImageInfo framebufferAttachmentImageInfo = {
+                VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO, //  VkStructureType sType;
+                nullptr,                                             //  const void* pNext;
+                (VkImageCreateFlags)0u,                              //  VkImageCreateFlags flags;
+                colorUsage,                                          //  VkImageUsageFlags usage;
+                renderSize.width,                                    //  uint32_t width;
+                renderSize.height,                                   //  uint32_t height;
+                1u,                                                  //  uint32_t layerCount;
+                1u,                                                  //  uint32_t viewFormatCount;
+                colorFormat                                          //  const VkFormat* pViewFormats;
+            };
+
+            framebufferAttachmentImageInfos.push_back(framebufferAttachmentImageInfo);
+        }
+
+        if (*dsFormat != VK_FORMAT_UNDEFINED)
+        {
+            const VkFramebufferAttachmentImageInfo framebufferAttachmentImageInfo = {
+                VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO, //  VkStructureType sType;
+                nullptr,                                             //  const void* pNext;
+                (VkImageCreateFlags)0u,                              //  VkImageCreateFlags flags;
+                dsUsage,                                             //  VkImageUsageFlags usage;
+                renderSize.width,                                    //  uint32_t width;
+                renderSize.height,                                   //  uint32_t height;
+                1u,                                                  //  uint32_t layerCount;
+                1u,                                                  //  uint32_t viewFormatCount;
+                dsFormat                                             //  const VkFormat* pViewFormats;
+            };
+
+            framebufferAttachmentImageInfos.push_back(framebufferAttachmentImageInfo);
+        }
+
+        if (colorResolve)
+        {
+            const VkFramebufferAttachmentImageInfo framebufferAttachmentImageInfo = {
+                VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO, //  VkStructureType sType;
+                nullptr,                                             //  const void* pNext;
+                (VkImageCreateFlags)0u,                              //  VkImageCreateFlags flags;
+                colorUsage,                                          //  VkImageUsageFlags usage;
+                renderSize.width,                                    //  uint32_t width;
+                renderSize.height,                                   //  uint32_t height;
+                1u,                                                  //  uint32_t layerCount;
+                1u,                                                  //  uint32_t viewFormatCount;
+                colorFormat                                          //  const VkFormat* pViewFormats;
+            };
+
+            DE_ASSERT(*colorFormat != VK_FORMAT_UNDEFINED);
+
+            framebufferAttachmentImageInfos.push_back(framebufferAttachmentImageInfo);
+        }
+
+        if (depthStencilResolve)
+        {
+            const VkFramebufferAttachmentImageInfo framebufferAttachmentImageInfo = {
+                VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO, //  VkStructureType sType;
+                nullptr,                                             //  const void* pNext;
+                (VkImageCreateFlags)0u,                              //  VkImageCreateFlags flags;
+                dsUsage,                                             //  VkImageUsageFlags usage;
+                renderSize.width,                                    //  uint32_t width;
+                renderSize.height,                                   //  uint32_t height;
+                1u,                                                  //  uint32_t layerCount;
+                1u,                                                  //  uint32_t viewFormatCount;
+                dsFormat                                             //  const VkFormat* pViewFormats;
+            };
+
+            DE_ASSERT(*dsFormat != VK_FORMAT_UNDEFINED);
+
+            framebufferAttachmentImageInfos.push_back(framebufferAttachmentImageInfo);
+        }
+
+        for (uint32_t inputAttachmentNdx = 0; inputAttachmentNdx < inputAttachmentCount; ++inputAttachmentNdx)
+        {
+            const VkFramebufferAttachmentImageInfo framebufferAttachmentImageInfo = {
+                VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO, //  VkStructureType sType;
+                nullptr,                                             //  const void* pNext;
+                (VkImageCreateFlags)0u,                              //  VkImageCreateFlags flags;
+                colorUsage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,    //  VkImageUsageFlags usage;
+                renderSize.width,                                    //  uint32_t width;
+                renderSize.height,                                   //  uint32_t height;
+                1u,                                                  //  uint32_t layerCount;
+                1u,                                                  //  uint32_t viewFormatCount;
+                colorFormat                                          //  const VkFormat* pViewFormats;
+            };
+
+            framebufferAttachmentImageInfos.push_back(framebufferAttachmentImageInfo);
+        }
+    }
+
+#ifndef CTS_USES_VULKANSC
+    std::vector<VkImageCreateFlags2CreateInfoKHR> createFlags2Infos;
+    std::vector<VkImageUsageFlags2CreateInfoKHR> usageFlags2Infos;
+    if (extendedFlags)
+    {
+        createFlags2Infos.resize(framebufferAttachmentImageInfos.size());
+        usageFlags2Infos.resize(framebufferAttachmentImageInfos.size());
+
+        for (size_t i = 0; i < framebufferAttachmentImageInfos.size(); ++i)
+        {
+            const VkImageCreateFlags2CreateInfoKHR createFlags2Info = {
+                VK_STRUCTURE_TYPE_IMAGE_CREATE_FLAGS_2_CREATE_INFO_KHR,
+                nullptr,
+                (VkImageCreateFlags2KHR)framebufferAttachmentImageInfos[i].flags,
+            };
+            const VkImageUsageFlags2CreateInfoKHR usageFlags2Info = {
+                VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR,
+                nullptr,
+                (VkImageUsageFlags2KHR)framebufferAttachmentImageInfos[i].usage,
+            };
+            createFlags2Infos[i] = createFlags2Info;
+            usageFlags2Infos[i]  = usageFlags2Info;
+
+            usageFlags2Infos[i].pNext                = &createFlags2Infos[i];
+            framebufferAttachmentImageInfos[i].pNext = &usageFlags2Infos[i];
+
+            framebufferAttachmentImageInfos[i].flags = 0u;
+            framebufferAttachmentImageInfos[i].usage = 0u;
+        }
+    }
+#endif
+
     const uint32_t attachmentCount = static_cast<uint32_t>(framebufferAttachmentImageInfos.size());
     const VkFramebufferAttachmentsCreateInfo framebufferAttachmentsCreateInfo = {
         VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO, //  VkStructureType sType;
@@ -1249,7 +1275,8 @@ tcu::TestStatus ColorImagelessTestInstance::iterate(void)
         createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
     const Unique<VkRenderPass> renderPass(makeRenderPass(vk, device, colorFormat, m_parameters.dsFormat));
     const Unique<VkFramebuffer> framebuffer(makeFramebuffer(vk, device, *renderPass, m_imageExtent2D, &colorFormat,
-                                                            m_colorImageUsage, &m_parameters.dsFormat));
+                                                            m_colorImageUsage, &m_parameters.dsFormat,
+                                                            m_parameters.extendedFlags));
     const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device));
     const Unique<VkPipeline> pipeline(
         makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertModule, *fragModule, m_imageExtent2D));
@@ -1491,7 +1518,8 @@ tcu::TestStatus DepthImagelessTestInstance::iterate(void)
         createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
     const Unique<VkRenderPass> renderPass(makeRenderPass(vk, device, colorFormat, dsFormat, sampleCountFlag));
     const Unique<VkFramebuffer> framebuffer(makeFramebuffer(vk, device, *renderPass, m_imageExtent2D, &colorFormat,
-                                                            m_colorImageUsage, &dsFormat, m_dsImageUsage));
+                                                            m_colorImageUsage, &dsFormat, m_parameters.extendedFlags,
+                                                            m_dsImageUsage));
     const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device));
     const Unique<VkPipeline> pipeline(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertModule,
                                                            *fragModule, m_imageExtent2D, ASPECT_DEPTH_STENCIL));
@@ -1720,8 +1748,8 @@ tcu::TestStatus ColorResolveImagelessTestInstance::iterate(void)
         createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
     const Unique<VkRenderPass> renderPass(makeRenderPass(vk, device, colorFormat, m_parameters.dsFormat, sampleCount));
     const Unique<VkFramebuffer> framebuffer(makeFramebuffer(vk, device, *renderPass, m_imageExtent2D, &colorFormat,
-                                                            m_colorImageUsage, &m_parameters.dsFormat, 0u,
-                                                            ASPECT_COLOR));
+                                                            m_colorImageUsage, &m_parameters.dsFormat,
+                                                            m_parameters.extendedFlags, 0u, ASPECT_COLOR));
     const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device));
     const Unique<VkPipeline> pipeline(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertModule,
                                                            *fragModule, m_imageExtent2D, ASPECT_NONE, sampleCount));
@@ -2044,9 +2072,9 @@ tcu::TestStatus DepthResolveImagelessTestInstance::iterate(void)
         createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
     const Unique<VkRenderPass> renderPass(
         makeRenderPass(vk, device, colorFormat, m_parameters.dsFormat, sampleCountFlag, sampleCountFlag));
-    const Unique<VkFramebuffer> framebuffer(makeFramebuffer(vk, device, *renderPass, m_imageExtent2D, &colorFormat,
-                                                            m_colorImageUsage, &m_parameters.dsFormat, m_dsImageUsage,
-                                                            ASPECT_COLOR | ASPECT_DEPTH_STENCIL));
+    const Unique<VkFramebuffer> framebuffer(makeFramebuffer(
+        vk, device, *renderPass, m_imageExtent2D, &colorFormat, m_colorImageUsage, &m_parameters.dsFormat,
+        m_parameters.extendedFlags, m_dsImageUsage, ASPECT_COLOR | ASPECT_DEPTH_STENCIL));
     const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device));
     const Unique<VkPipeline> pipeline(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertModule,
                                                            *fragModule, m_imageExtent2D, ASPECT_DEPTH_STENCIL,
@@ -2337,8 +2365,8 @@ tcu::TestStatus MultisubpassTestInstance::iterate(void)
 
     const Unique<VkRenderPass> renderPass(makeRenderPass(vk, device, colorFormat, nullptr));
     const Unique<VkFramebuffer> framebuffer(makeFramebuffer(vk, device, *renderPass, m_imageExtent2D, &colorFormat,
-                                                            m_colorImageUsage, &m_parameters.dsFormat, 0u, ASPECT_NONE,
-                                                            1u));
+                                                            m_colorImageUsage, &m_parameters.dsFormat,
+                                                            m_parameters.extendedFlags, 0u, ASPECT_NONE, 1u));
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
     const Unique<VkCommandBuffer> cmdBuffer(
@@ -2569,7 +2597,8 @@ tcu::TestStatus DifferentAttachmentsTestInstance::iterate(void)
 
     const Unique<VkRenderPass> renderPass(makeSingleAttachmentRenderPass(vk, device, colorFormat, nullptr));
     const Unique<VkFramebuffer> framebuffer(makeFramebuffer(vk, device, *renderPass, m_imageExtent2D, &colorFormat,
-                                                            m_colorImageUsage, &m_parameters.dsFormat));
+                                                            m_colorImageUsage, &m_parameters.dsFormat,
+                                                            m_parameters.extendedFlags));
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
     const Unique<VkCommandBuffer> cmdBuffer(
@@ -2719,6 +2748,10 @@ void BaseTestCase::checkSupport(Context &context) const
         if (!context.getDeviceProperties().limits.standardSampleLocations)
             TCU_THROW(NotSupportedError, "Non-standard sample locations are not supported");
     }
+#ifndef CTS_USES_VULKANSC
+    if (m_parameters.extendedFlags)
+        context.requireDeviceFunctionality(VK_KHR_EXTENDED_FLAGS_EXTENSION_NAME);
+#endif
 }
 
 void BaseTestCase::initPrograms(SourceCollections &programCollection) const
@@ -2950,72 +2983,78 @@ TestInstance *BaseTestCase::createInstance(Context &context) const
     TCU_THROW(InternalError, "Unknown test type specified");
 }
 
-tcu::TestNode *imagelessColorTests(tcu::TestContext &testCtx)
+tcu::TestNode *imagelessColorTests(tcu::TestContext &testCtx, bool extendedFlags)
 {
     TestParameters parameters = {
         TEST_TYPE_COLOR,          //  TestType testType;
         VK_FORMAT_R8G8B8A8_UNORM, //  VkFormat colorFormat;
         VK_FORMAT_UNDEFINED,      //  VkFormat dsFormat;
+        extendedFlags,            // bool extendedFlags
     };
 
     // Imageless color attachment test
     return new BaseTestCase(testCtx, "color", parameters);
 }
 
-tcu::TestNode *imagelessDepthStencilTests(tcu::TestContext &testCtx)
+tcu::TestNode *imagelessDepthStencilTests(tcu::TestContext &testCtx, bool extendedFlags)
 {
     TestParameters parameters = {
         TEST_TYPE_DEPTH_STENCIL,     //  TestType testType;
         VK_FORMAT_R8G8B8A8_UNORM,    //  VkFormat colorFormat;
         VK_FORMAT_D24_UNORM_S8_UINT, //  VkFormat dsFormat;
+        extendedFlags,               // bool extendedFlags
     };
 
     // Imageless depth/stencil attachment test
     return new BaseTestCase(testCtx, "depth_stencil", parameters);
 }
 
-tcu::TestNode *imagelessColorResolveTests(tcu::TestContext &testCtx)
+tcu::TestNode *imagelessColorResolveTests(tcu::TestContext &testCtx, bool extendedFlags)
 {
     TestParameters parameters = {
         TEST_TYPE_COLOR_RESOLVE,  //  TestType testType;
         VK_FORMAT_R8G8B8A8_UNORM, //  VkFormat colorFormat;
         VK_FORMAT_UNDEFINED,      //  VkFormat dsFormat;
+        extendedFlags,            // bool extendedFlags
     };
 
     // Imageless color attachment resolve test
     return new BaseTestCase(testCtx, "color_resolve", parameters);
 }
 
-tcu::TestNode *imagelessDepthStencilResolveTests(tcu::TestContext &testCtx)
+tcu::TestNode *imagelessDepthStencilResolveTests(tcu::TestContext &testCtx, bool extendedFlags)
 {
     TestParameters parameters = {
         TEST_TYPE_DEPTH_STENCIL_RESOLVE, //  TestType testType;
         VK_FORMAT_R8G8B8A8_UNORM,        //  VkFormat colorFormat;
         VK_FORMAT_D24_UNORM_S8_UINT,     //  VkFormat dsFormat;
+        extendedFlags,                   // bool extendedFlags
     };
 
     // Imageless color and depth/stencil attachment resolve test
     return new BaseTestCase(testCtx, "depth_stencil_resolve", parameters);
 }
 
-tcu::TestNode *imagelessMultisubpass(tcu::TestContext &testCtx)
+tcu::TestNode *imagelessMultisubpass(tcu::TestContext &testCtx, bool extendedFlags)
 {
     TestParameters parameters = {
         TEST_TYPE_MULTISUBPASS,   //  TestType testType;
         VK_FORMAT_R8G8B8A8_UNORM, //  VkFormat colorFormat;
         VK_FORMAT_UNDEFINED,      //  VkFormat dsFormat;
+        extendedFlags,            // bool extendedFlags
     };
 
     // Multi-subpass test
     return new BaseTestCase(testCtx, "multisubpass", parameters);
 }
 
-tcu::TestNode *imagelessDifferentAttachments(tcu::TestContext &testCtx)
+tcu::TestNode *imagelessDifferentAttachments(tcu::TestContext &testCtx, bool extendedFlags)
 {
     TestParameters parameters = {
         TEST_TYPE_DIFFERENT_ATTACHMENTS, //  TestType testType;
         VK_FORMAT_R8G8B8A8_UNORM,        //  VkFormat colorFormat;
         VK_FORMAT_UNDEFINED,             //  VkFormat dsFormat;
+        extendedFlags,                   // bool extendedFlags
     };
 
     // Different attachments in multiple render passes
@@ -3028,14 +3067,23 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
 {
     de::MovePtr<tcu::TestCaseGroup> imagelessFramebufferGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
-    imagelessFramebufferGroup->addChild(imagelessColorTests(testCtx));        // Color only test
-    imagelessFramebufferGroup->addChild(imagelessDepthStencilTests(testCtx)); // Color and depth/stencil test
-    imagelessFramebufferGroup->addChild(imagelessColorResolveTests(testCtx)); // Color and color resolve test
-    imagelessFramebufferGroup->addChild(imagelessDepthStencilResolveTests(
-        testCtx)); // Color, depth and depth resolve test (interaction with VK_KHR_depth_stencil_resolve)
-    imagelessFramebufferGroup->addChild(imagelessMultisubpass(testCtx)); // Multi-subpass test
-    imagelessFramebufferGroup->addChild(
-        imagelessDifferentAttachments(testCtx)); // Different attachments in multiple render passes
+    for (const auto extendedFlags : {false, true})
+    {
+        const char *flagsName = extendedFlags ? "extended_flags" : "none";
+        de::MovePtr<tcu::TestCaseGroup> flagsGroup(new tcu::TestCaseGroup(testCtx, flagsName));
+
+        flagsGroup->addChild(imagelessColorTests(testCtx, extendedFlags));        // Color only test
+        flagsGroup->addChild(imagelessDepthStencilTests(testCtx, extendedFlags)); // Color and depth/stencil test
+        flagsGroup->addChild(imagelessColorResolveTests(testCtx, extendedFlags)); // Color and color resolve test
+        flagsGroup->addChild(imagelessDepthStencilResolveTests(
+            testCtx,
+            extendedFlags)); // Color, depth and depth resolve test (interaction with VK_KHR_depth_stencil_resolve)
+        flagsGroup->addChild(imagelessMultisubpass(testCtx, extendedFlags)); // Multi-subpass test
+        flagsGroup->addChild(
+            imagelessDifferentAttachments(testCtx, extendedFlags)); // Different attachments in multiple render passes
+
+        imagelessFramebufferGroup->addChild(flagsGroup.release());
+    }
 
     return imagelessFramebufferGroup.release();
 }

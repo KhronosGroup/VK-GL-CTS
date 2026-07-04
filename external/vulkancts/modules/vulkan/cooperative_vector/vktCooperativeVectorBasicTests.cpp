@@ -4875,9 +4875,9 @@ tcu::TestCaseGroup *createCooperativeVectorTrainingTests(tcu::TestContext &testC
             VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR outputType;
             false,                                // bool inputPacked;
             {
-                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
-                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
-                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
+                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_TRAINING_OPTIMAL_NV,
+                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_TRAINING_OPTIMAL_NV,
+                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_TRAINING_OPTIMAL_NV,
             },                   // VkCooperativeVectorMatrixLayoutNV matrixLayout;
             false,               // bool transpose;
             SC_BUFFER,           // StorageClass storageClass;

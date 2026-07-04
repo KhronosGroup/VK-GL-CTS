@@ -66,6 +66,10 @@ dEQP-VKSC.memory.external_memory_host.bind_image_memory_and_render.with_zero_off
 dEQP-VKSC.memory.external_memory_host.simple_allocation.minImportedHostPointerAlignment_x1
 dEQP-VKSC.memory.external_memory_host.simple_allocation.minImportedHostPointerAlignment_x3
 dEQP-VKSC.memory.external_memory_host.synchronization.synchronization
+dEQP-VKSC.memory.opaque_and_dma.b8g8r8a8_unorm_sample
+dEQP-VKSC.memory.opaque_and_dma.b8g8r8a8_unorm_transfer
+dEQP-VKSC.memory.opaque_and_dma.r8g8b8a8_unorm_sample
+dEQP-VKSC.memory.opaque_and_dma.r8g8b8a8_unorm_transfer
 dEQP-VKSC.memory.requirements.core.buffer.regular
 dEQP-VKSC.memory.requirements.core.image.regular_tiling_linear
 dEQP-VKSC.memory.requirements.core.image.regular_tiling_optimal

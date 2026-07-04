@@ -120,19 +120,21 @@ static std::vector<std::string> getRequiredExtensions(const bool useValidation, 
     return instanceExtensions;
 }
 
-class CustomDevice
+class TestDevice
 {
-    Move<VkDevice> m_logicalDevice;
+    InstanceWrapper m_instance;
+    DeviceWrapper m_logicalDevice;
 
 public:
-    CustomDevice(Context &context)
+    TestDevice(Context &context) : m_instance(context)
     {
-        const bool useValidation                   = context.getTestContext().getCommandLine().isValidationEnabled();
-        const PlatformInterface &platformInterface = context.getPlatformInterface();
-        const CustomInstance instance              = createCustomInstanceWithExtensions(
+        const bool useValidation = context.getTestContext().getCommandLine().isValidationEnabled();
+
+        m_instance = createCustomInstanceWithExtensions(
             context, getRequiredExtensions(useValidation, context.getUsedApiVersion()));
-        const InstanceInterface &instanceInterface = context.getInstanceInterface();
-        const VkPhysicalDevice physicalDevice      = context.getPhysicalDevice();
+
+        const InstanceInterface &instanceInterface = m_instance.getDriver();
+        const VkPhysicalDevice physicalDevice      = m_instance.getPhysicalDevice();
         const uint32_t queueFamilyIndex            = context.getUniversalQueueFamilyIndex();
         const float queuePriority                  = 1.0f;
 
@@ -167,8 +169,22 @@ public:
             nullptr                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
         };
 
-        m_logicalDevice =
-            createCustomDevice(platformInterface, instance, instanceInterface, physicalDevice, &deviceCreateInfo);
+        m_logicalDevice = m_instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
+    }
+
+    const vk::InstanceInterface &getInstanceInterface() const
+    {
+        return m_logicalDevice.getInstanceDriver();
+    }
+
+    const vk::DeviceInterface &getDeviceInterface() const
+    {
+        return m_logicalDevice.getDriver();
+    }
+
+    VkPhysicalDevice getPhysicalDevice() const
+    {
+        return m_logicalDevice.getPhysicalDevice();
     }
 
     VkDevice getDevice() const
@@ -428,13 +444,14 @@ void DeviceFaultInstance::log(const std::vector<VkDeviceFaultAddressInfoEXT> &ad
 TestStatus DeviceFaultInstance::iterate(void)
 {
     FakeContext fakeContext(m_context);
-    CustomDevice customDevice(m_context);
+    TestDevice customDevice(m_context);
     const VkDevice device = (m_params.type == TestType::Fake) ? m_context.getDevice() : customDevice.getDevice();
-    const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+    const VkPhysicalDevice physicalDevice =
+        (m_params.type == TestType::Fake) ? m_context.getPhysicalDevice() : customDevice.getPhysicalDevice();
     const DeviceInterface &deviceInterface =
-        (m_params.type == TestType::Fake) ? fakeContext.getDeviceInterface() : m_context.getDeviceInterface();
+        (m_params.type == TestType::Fake) ? fakeContext.getDeviceInterface() : customDevice.getDeviceInterface();
     const InstanceInterface &instanceInterface =
-        (m_params.type == TestType::Fake) ? fakeContext.getInstanceInterface() : m_context.getInstanceInterface();
+        (m_params.type == TestType::Fake) ? fakeContext.getInstanceInterface() : customDevice.getInstanceInterface();
 
     VkDeviceFaultCountsEXT fc = initVulkanStructure();
 

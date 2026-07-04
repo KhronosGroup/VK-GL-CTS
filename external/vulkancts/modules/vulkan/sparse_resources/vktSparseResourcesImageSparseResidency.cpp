@@ -364,9 +364,8 @@ ImageSparseResidencyInstance::ImageSparseResidencyInstance(Context &context, con
 
 tcu::TestStatus ImageSparseResidencyInstance::iterate(void)
 {
-    const auto isAlphaOnly            = isAlphaOnlyFormat(m_format);
-    const float epsilon               = 1e-5f;
-    const InstanceInterface &instance = m_context.getInstanceInterface();
+    const auto isAlphaOnly = isAlphaOnlyFormat(m_format);
+    const float epsilon    = 1e-5f;
 
     {
         // Create logical device supporting both sparse and compute queues
@@ -380,6 +379,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate(void)
     VkImageCreateInfo imageCreateInfo;
     std::vector<DeviceMemorySp> deviceMemUniquePtrVec;
 
+    const InstanceInterface &instance               = getInstanceInterface();
     const DeviceInterface &deviceInterface          = getDeviceInterface();
     const Queue &sparseQueue                        = getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
     const Queue &computeQueue                       = getQueue(VK_QUEUE_COMPUTE_BIT, 0);
@@ -764,11 +764,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate(void)
             {
                 const VkImageMemoryBarrier imageSparseLayoutChangeBarrier = makeImageMemoryBarrier(
                     0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, *imageSparse,
-                    subresourceRange,
-                    sparseQueue.queueFamilyIndex != computeQueue.queueFamilyIndex ? sparseQueue.queueFamilyIndex :
-                                                                                    VK_QUEUE_FAMILY_IGNORED,
-                    sparseQueue.queueFamilyIndex != computeQueue.queueFamilyIndex ? computeQueue.queueFamilyIndex :
-                                                                                    VK_QUEUE_FAMILY_IGNORED);
+                    subresourceRange, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED);
 
                 deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr,
@@ -1576,7 +1572,6 @@ tcu::TestStatus ImageMutableSparseTestInstance::verifyImage(const VkExtent3D ima
 
 tcu::TestStatus ImageMutableSparseTestInstance::iterate(void)
 {
-    const InstanceInterface &instance = m_context.getInstanceInterface();
 
     // Create logical device supporting sparse and compute queues
     {
@@ -1588,6 +1583,7 @@ tcu::TestStatus ImageMutableSparseTestInstance::iterate(void)
     }
 
     // Get device interface once queues are created
+    const InstanceInterface &instance      = getInstanceInterface();
     const DeviceInterface &deviceInterface = getDeviceInterface();
 
     // Create sparse image
@@ -1897,7 +1893,6 @@ tcu::TestStatus ImageMutableSparseTestInstance::iterate(void)
     deviceInterface.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
                                           &descriptorSet.get(), 0u, nullptr);
 
-    // Acquire barrier
     {
         const VkImageMemoryBarrier imageSparseLayoutChangeBarrier =
             makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,

@@ -320,8 +320,6 @@ MultisampledImageSparseResidencyInstance::MultisampledImageSparseResidencyInstan
 
 tcu::TestStatus MultisampledImageSparseResidencyInstance::iterate(void)
 {
-    const InstanceInterface &instance = m_context.getInstanceInterface();
-
     {
         // Create logical device supporting both sparse and compute queues
         QueueRequirementsVec queueRequirements;
@@ -333,6 +331,7 @@ tcu::TestStatus MultisampledImageSparseResidencyInstance::iterate(void)
 
     std::vector<DeviceMemorySp> deviceMemUniquePtrVec;
 
+    const InstanceInterface &instance               = getInstanceInterface();
     const DeviceInterface &deviceInterface          = getDeviceInterface();
     const Queue &sparseQueue                        = getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);
     const Queue &computeQueue                       = getQueue(VK_QUEUE_COMPUTE_BIT, 0);

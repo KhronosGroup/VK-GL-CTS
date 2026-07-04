@@ -21,17 +21,13 @@
  * \brief Vulkan Dynamic Rendering Tests
  *//*--------------------------------------------------------------------*/
 
-#include "deRandom.hpp"
 #include "deUniquePtr.hpp"
 
 #include "tcuImageCompare.hpp"
-#include "tcuRGBA.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
-#include "tcuVectorUtil.hpp"
 
 #include "vkBarrierUtil.hpp"
-#include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vktDrawBufferObjectUtil.hpp"
 #include "vktDynamicRenderingTests.hpp"
@@ -39,10 +35,11 @@
 #include "vkObjUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
-#include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vkTypeUtil.hpp"
 
+#include <map>
+#include <string>
 #include <iostream>
 
 namespace vkt
@@ -133,12 +130,95 @@ enum TestAttachmentType
     TEST_ATTACHMENT_LAST
 };
 
+bool goodForPartialBindingDS(TestAttachmentType testAttachmentType)
+{
+    // These combinations are useless because there is no depth/stencil attachment info.
+    return (testAttachmentType != TEST_ATTACHMENT_SINGLE_COLOR &&
+            testAttachmentType != TEST_ATTACHMENT_MULTIPLE_COLOR && testAttachmentType != TEST_ATTACHMENT_NONE);
+}
+
+std::string testAttachmentTypeSuffix(TestAttachmentType testAttachmentType)
+{
+    std::string name;
+
+    switch (testAttachmentType)
+    {
+    case TEST_ATTACHMENT_SINGLE_COLOR:
+        name = "_att_single_color";
+        break;
+    case TEST_ATTACHMENT_DEPTH_ATTACHMENT:
+        name = "_att_depth_attachment";
+        break;
+    case TEST_ATTACHMENT_STENCIL_ATTACHMENT:
+        name = "_att_stencil_attachment";
+        break;
+    case TEST_ATTACHMENT_MULTIPLE_COLOR:
+        name = "_att_multiple_color";
+        break;
+    case TEST_ATTACHMENT_NONE:
+        name = "_att_none";
+        break;
+    case TEST_ATTACHMENT_ALL:
+        name = "_att_all";
+        break;
+    default:
+        break;
+    }
+
+    return name;
+}
+
 enum TestAttachmentStoreOp
 {
     TEST_ATTACHMENT_STORE_OP_STORE     = VK_ATTACHMENT_STORE_OP_STORE,
     TEST_ATTACHMENT_STORE_OP_DONT_CARE = VK_ATTACHMENT_STORE_OP_DONT_CARE,
     TEST_ATTACHMENT_STORE_OP_LAST
 };
+
+// Parameters which are useful for TEST_TYPE_PARTIAL_BINDING_DEPTH_STENCIL.
+
+// Useful for TEST_ATTACHMENT_DEPTH_ATTACHMENT and TEST_ATTACHMENT_STENCIL_ATTACHMENT.
+struct PartialBindDsForBase
+{
+    VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_MAX_ENUM;
+    bool clearOnly            = false;
+    bool useSecondary         = false;
+};
+
+// Useful for TEST_ATTACHMENT_ALL.
+struct PartialBindDsForUndefinedFormat
+{
+    // Depth or stencil.
+    VkImageAspectFlagBits discardAspect = VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM;
+};
+
+struct PartialBindDsParams
+{
+    // Helps decide which side of the union to take, if any.
+    TestAttachmentType testAttachmentType = TEST_ATTACHMENT_LAST;
+    union
+    {
+        PartialBindDsForBase baseTestParams;
+        PartialBindDsForUndefinedFormat undefinedFormatsParams;
+    };
+
+    PartialBindDsParams(TestAttachmentType testAttachmentType_, const PartialBindDsForBase &baseTestParams_)
+        : testAttachmentType(testAttachmentType_)
+        , baseTestParams(baseTestParams_)
+    {
+        DE_ASSERT(testAttachmentType == TEST_ATTACHMENT_DEPTH_ATTACHMENT ||
+                  testAttachmentType == TEST_ATTACHMENT_STENCIL_ATTACHMENT);
+    }
+
+    PartialBindDsParams(TestAttachmentType testAttachmentType_,
+                        const PartialBindDsForUndefinedFormat &undefinedFormatsParams_)
+        : testAttachmentType(testAttachmentType_)
+        , undefinedFormatsParams(undefinedFormatsParams_)
+    {
+        DE_ASSERT(testAttachmentType == TEST_ATTACHMENT_ALL);
+    }
+};
+using PartialBindsDsInfo = tcu::Maybe<PartialBindDsParams>;
 
 struct TestParameters
 {
@@ -149,6 +229,8 @@ struct TestParameters
     const VkFormat imageFormat;
     const UVec2 renderSize;
     bool endRendering2;
+    TestAttachmentType testAttachmentType; // If TEST_ATTACHMENT_LAST, run all the variants.
+    PartialBindsDsInfo partialBindsDsInfo;
 };
 
 struct ImagesLayout
@@ -693,6 +775,11 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate(void)
 
     for (int attachmentTest = 0; attachmentTest < TEST_ATTACHMENT_LAST; ++attachmentTest)
     {
+        // If we provide an explicit attachment test type in the parameters, run only that one; if not, run them all.
+        if (m_parameters.testAttachmentType != TEST_ATTACHMENT_LAST &&
+            attachmentTest != m_parameters.testAttachmentType)
+            continue;
+
         std::vector<VkImageView> attachmentBindInfos;
 
         ImagesFormat imagesFormat{
@@ -996,9 +1083,10 @@ void DynamicRenderingTestInstance::preBarier(VkCommandBuffer cmdBuffer, const ui
     {
         const VkImageSubresourceRange subresource =
             makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-        const VkImageMemoryBarrier barrier = makeImageMemoryBarrier(
-            VK_ACCESS_NONE_KHR, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, imagesLayout.oldColors[ndx],
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *m_imageColor[ndx], subresource);
+        const VkAccessFlags dstAccess = (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT);
+        const VkImageMemoryBarrier barrier =
+            makeImageMemoryBarrier(VK_ACCESS_NONE_KHR, dstAccess, imagesLayout.oldColors[ndx],
+                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *m_imageColor[ndx], subresource);
         barriers.push_back(barrier);
         imagesLayout.oldColors[ndx] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     }
@@ -1007,10 +1095,12 @@ void DynamicRenderingTestInstance::preBarier(VkCommandBuffer cmdBuffer, const ui
     {
         const bool prevXFer           = (imagesLayout.oldDepth == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         const VkAccessFlags srcAccess = (prevXFer ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_NONE_KHR);
+        const VkAccessFlags dstAccess =
+            (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
         const VkImageSubresourceRange subresource =
             makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u);
         const VkImageMemoryBarrier barrier =
-            makeImageMemoryBarrier(srcAccess, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, imagesLayout.oldDepth,
+            makeImageMemoryBarrier(srcAccess, dstAccess, imagesLayout.oldDepth,
                                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, *m_imageStencilDepth, subresource);
         imagesLayout.oldDepth = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         barriers.push_back(barrier);
@@ -1023,10 +1113,12 @@ void DynamicRenderingTestInstance::preBarier(VkCommandBuffer cmdBuffer, const ui
     {
         const bool prevXFer           = (imagesLayout.oldStencil == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         const VkAccessFlags srcAccess = (prevXFer ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_NONE_KHR);
+        const VkAccessFlags dstAccess =
+            (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
         const VkImageSubresourceRange subresource =
             makeImageSubresourceRange(VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, 1u);
         const VkImageMemoryBarrier barrier =
-            makeImageMemoryBarrier(srcAccess, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, imagesLayout.oldStencil,
+            makeImageMemoryBarrier(srcAccess, dstAccess, imagesLayout.oldStencil,
                                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, *m_imageStencilDepth, subresource);
         imagesLayout.oldStencil = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         barriers.push_back(barrier);
@@ -1035,10 +1127,11 @@ void DynamicRenderingTestInstance::preBarier(VkCommandBuffer cmdBuffer, const ui
             srcStages |= VK_PIPELINE_STAGE_TRANSFER_BIT;
     }
 
-    cmdPipelineImageMemoryBarrier(vk, cmdBuffer, srcStages,
-                                  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
-                                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  barriers.data(), barriers.size());
+    const VkPipelineStageFlags dstStages =
+        (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+    cmdPipelineImageMemoryBarrier(vk, cmdBuffer, srcStages, dstStages, barriers.data(), barriers.size());
 }
 
 void DynamicRenderingTestInstance::beginRendering(VkCommandBuffer cmdBuffer,
@@ -3126,10 +3219,11 @@ protected:
 
     void baseTest(const VkPipeline pipeline, const std::vector<VkImageView> &attachmentBindInfos,
                   const uint32_t colorAtchCount, ImagesLayout &imagesLayout, const ImagesFormat &imagesFormat,
-                  bool clearOnly, bool useSecondary);
+                  const PartialBindDsForBase &baseTestParams);
     void secondaryUndefinedFormatTest(const VkPipeline pipeline, const std::vector<VkImageView> &attachmentBindInfos,
                                       const uint32_t colorAtchCount, ImagesLayout &imagesLayout,
-                                      const ImagesFormat &imagesFormat, bool discardDepth, bool discardStencil);
+                                      const ImagesFormat &imagesFormat,
+                                      const PartialBindDsForUndefinedFormat &undefinedFormatParams);
 
     void rendering(const VkPipeline pipeline, const std::vector<VkImageView> &attachmentBindInfos,
                    const uint32_t colorAtchCount, ImagesLayout &imagesLayout,
@@ -3178,8 +3272,12 @@ void PartialBindingDepthStencil::recordRenderingCommands(const DeviceInterface &
 void PartialBindingDepthStencil::baseTest(const VkPipeline pipeline,
                                           const std::vector<VkImageView> &attachmentBindInfos,
                                           const uint32_t colorAtchCount, ImagesLayout &imagesLayout,
-                                          const ImagesFormat &imagesFormat, bool clearOnly, bool useSecondary)
+                                          const ImagesFormat &imagesFormat, const PartialBindDsForBase &baseTestParams)
 {
+    m_attachmentLoadOp       = baseTestParams.loadOp;
+    const auto &useSecondary = baseTestParams.useSecondary;
+    const auto &clearOnly    = baseTestParams.clearOnly;
+
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
     const VkQueue queue       = m_context.getUniversalQueue();
@@ -3227,11 +3325,11 @@ void PartialBindingDepthStencil::baseTest(const VkPipeline pipeline,
     {
         VkImageSubresourceRange subresource =
             makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, 1u);
-        VkImageMemoryBarrier barrier =
+        VkImageMemoryBarrier preClearBarrier =
             makeImageMemoryBarrier(VK_ACCESS_NONE_KHR, VK_ACCESS_TRANSFER_WRITE_BIT, imagesLayout.oldDepth,
                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *m_imageStencilDepth, subresource);
         cmdPipelineImageMemoryBarrier(vk, *m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                      VK_PIPELINE_STAGE_TRANSFER_BIT, &barrier, 1u);
+                                      VK_PIPELINE_STAGE_TRANSFER_BIT, &preClearBarrier, 1u);
         imagesLayout.oldDepth   = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         imagesLayout.oldStencil = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         vk.cmdClearDepthStencilImage(*m_cmdBuffer, *m_imageStencilDepth, imagesLayout.oldDepth, &depthStencilClear, 1,
@@ -3320,12 +3418,15 @@ void PartialBindingDepthStencil::baseTest(const VkPipeline pipeline,
     }
 }
 
-void PartialBindingDepthStencil::secondaryUndefinedFormatTest(const VkPipeline pipeline,
-                                                              const std::vector<VkImageView> &attachmentBindInfos,
-                                                              const uint32_t colorAtchCount, ImagesLayout &imagesLayout,
-                                                              const ImagesFormat &imagesFormat, bool discardDepth,
-                                                              bool discardStencil)
+void PartialBindingDepthStencil::secondaryUndefinedFormatTest(
+    const VkPipeline pipeline, const std::vector<VkImageView> &attachmentBindInfos, const uint32_t colorAtchCount,
+    ImagesLayout &imagesLayout, const ImagesFormat &imagesFormat,
+    const PartialBindDsForUndefinedFormat &undefinedFormatParams)
 {
+    const bool discardDepth   = (undefinedFormatParams.discardAspect == VK_IMAGE_ASPECT_DEPTH_BIT);
+    const bool discardStencil = (undefinedFormatParams.discardAspect == VK_IMAGE_ASPECT_STENCIL_BIT);
+    DE_ASSERT(discardDepth != discardStencil); // Exactly one must be true.
+
     DE_ASSERT(imagesFormat.depth != VK_FORMAT_UNDEFINED);
     DE_ASSERT(imagesFormat.stencil != VK_FORMAT_UNDEFINED);
     const DeviceInterface &vk = m_context.getDeviceInterface();
@@ -3504,41 +3605,98 @@ void PartialBindingDepthStencil::rendering(const VkPipeline pipeline,
     tcu::TestLog &log = m_context.getTestContext().getLog();
     if ((imagesFormat.depth != VK_FORMAT_UNDEFINED) ^ (imagesFormat.stencil != VK_FORMAT_UNDEFINED))
     {
-        log << tcu::TestLog::Message << "Checking depth format " << getFormatName(imagesFormat.depth)
-            << " and stencil format " << getFormatName(imagesFormat.stencil) << tcu::TestLog::EndMessage;
+        if (!!m_parameters.partialBindsDsInfo)
+        {
+            const auto &info = *m_parameters.partialBindsDsInfo;
+            DE_ASSERT(info.testAttachmentType == TEST_ATTACHMENT_DEPTH_ATTACHMENT ||
+                      info.testAttachmentType == TEST_ATTACHMENT_STENCIL_ATTACHMENT);
+            baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, info.baseTestParams);
+        }
+        else
+        {
+            log << tcu::TestLog::Message << "Checking depth format " << getFormatName(imagesFormat.depth)
+                << " and stencil format " << getFormatName(imagesFormat.stencil) << tcu::TestLog::EndMessage;
 
-        log << tcu::TestLog::Message << "Attachment load op LOAD" << tcu::TestLog::EndMessage;
-        m_attachmentLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-        log << tcu::TestLog::Message << "Primary clear only" << tcu::TestLog::EndMessage;
-        baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, true, false);
-        log << tcu::TestLog::Message << "Primary non trivial draw" << tcu::TestLog::EndMessage;
-        baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, false, false);
-        log << tcu::TestLog::Message << "Secondary clear only" << tcu::TestLog::EndMessage;
-        baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, true, true);
-        log << tcu::TestLog::Message << "Secondary non trivial draw" << tcu::TestLog::EndMessage;
-        baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, false, true);
+            PartialBindDsForBase baseParams;
 
-        log << tcu::TestLog::Message << "Attachment load op CLEAR" << tcu::TestLog::EndMessage;
-        m_attachmentLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        log << tcu::TestLog::Message << "Primary clear only" << tcu::TestLog::EndMessage;
-        baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, true, false);
-        log << tcu::TestLog::Message << "Primary non trivial draw" << tcu::TestLog::EndMessage;
-        baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, false, false);
-        log << tcu::TestLog::Message << "Secondary clear only" << tcu::TestLog::EndMessage;
-        baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, true, true);
-        log << tcu::TestLog::Message << "Secondary non trivial draw" << tcu::TestLog::EndMessage;
-        baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, false, true);
+            log << tcu::TestLog::Message << "Attachment load op LOAD" << tcu::TestLog::EndMessage;
+            baseParams.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+
+            log << tcu::TestLog::Message << "Primary clear only" << tcu::TestLog::EndMessage;
+            baseParams.clearOnly    = true;
+            baseParams.useSecondary = false;
+            baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, baseParams);
+
+            log << tcu::TestLog::Message << "Primary non trivial draw" << tcu::TestLog::EndMessage;
+            baseParams.clearOnly    = false;
+            baseParams.useSecondary = false;
+            baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, baseParams);
+
+            log << tcu::TestLog::Message << "Secondary clear only" << tcu::TestLog::EndMessage;
+            baseParams.clearOnly    = true;
+            baseParams.useSecondary = true;
+            baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, baseParams);
+
+            log << tcu::TestLog::Message << "Secondary non trivial draw" << tcu::TestLog::EndMessage;
+            baseParams.clearOnly    = false;
+            baseParams.useSecondary = true;
+            baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, baseParams);
+
+            log << tcu::TestLog::Message << "Attachment load op CLEAR" << tcu::TestLog::EndMessage;
+            baseParams.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+
+            log << tcu::TestLog::Message << "Primary clear only" << tcu::TestLog::EndMessage;
+            baseParams.clearOnly    = true;
+            baseParams.useSecondary = false;
+            baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, baseParams);
+
+            log << tcu::TestLog::Message << "Primary non trivial draw" << tcu::TestLog::EndMessage;
+            baseParams.clearOnly    = false;
+            baseParams.useSecondary = false;
+            baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, baseParams);
+
+            log << tcu::TestLog::Message << "Secondary clear only" << tcu::TestLog::EndMessage;
+            baseParams.clearOnly    = true;
+            baseParams.useSecondary = true;
+            baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, baseParams);
+
+            log << tcu::TestLog::Message << "Secondary non trivial draw" << tcu::TestLog::EndMessage;
+            baseParams.clearOnly    = false;
+            baseParams.useSecondary = true;
+            baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, baseParams);
+        }
     }
     else if (imagesFormat.depth != VK_FORMAT_UNDEFINED && imagesFormat.stencil != VK_FORMAT_UNDEFINED)
     {
-        log << tcu::TestLog::Message << "Depth disabled in VkCommandBufferInheritanceRenderingInfo"
-            << tcu::TestLog::EndMessage;
-        secondaryUndefinedFormatTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, true,
-                                     false);
-        log << tcu::TestLog::Message << "Stencil disabled in VkCommandBufferInheritanceRenderingInfo"
-            << tcu::TestLog::EndMessage;
-        secondaryUndefinedFormatTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, false,
-                                     true);
+        PartialBindDsForUndefinedFormat undefinedFormatParams;
+
+        if (!!m_parameters.partialBindsDsInfo)
+        {
+            const auto &info = *m_parameters.partialBindsDsInfo;
+            DE_ASSERT(info.testAttachmentType == TEST_ATTACHMENT_ALL);
+            secondaryUndefinedFormatTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat,
+                                         info.undefinedFormatsParams);
+        }
+        else
+        {
+            log << tcu::TestLog::Message << "Depth disabled in VkCommandBufferInheritanceRenderingInfo"
+                << tcu::TestLog::EndMessage;
+            undefinedFormatParams.discardAspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+            secondaryUndefinedFormatTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat,
+                                         undefinedFormatParams);
+
+            log << tcu::TestLog::Message << "Stencil disabled in VkCommandBufferInheritanceRenderingInfo"
+                << tcu::TestLog::EndMessage;
+            undefinedFormatParams.discardAspect = VK_IMAGE_ASPECT_STENCIL_BIT;
+            secondaryUndefinedFormatTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat,
+                                         undefinedFormatParams);
+        }
+    }
+    else
+    {
+        // For TEST_ATTACHMENT_LAST this means we're running different combinations in the same test. If not, we are
+        // running a specific combination here and the combination is useless.
+        DE_ASSERT(m_parameters.testAttachmentType == TEST_ATTACHMENT_LAST);
     }
 }
 
@@ -3700,26 +3858,71 @@ TestInstance *BaseTestCase::createInstance(Context &context) const
 
 tcu::TestNode *dynamicRenderingTests(tcu::TestContext &testCtx, const TestParameters &parameters)
 {
-    const std::string testName[TEST_TYPE_LAST] = {
-        "single_cmdbuffer",
-        "single_cmdbuffer_resuming",
-        "2_cmdbuffers_resuming",
-        "2_secondary_cmdbuffers_resuming",
-        "2_secondary_2_primary_cmdbuffers_resuming",
-        "contents_secondary_cmdbuffers",
-        "contents_2_secondary_cmdbuffers",
-        "contents_2_secondary_cmdbuffers_resuming",
-        "contents_2_secondary_2_primary_cmdbuffers_resuming",
-        "contents_primary_secondary_cmdbuffers_resuming",
-        "contents_secondary_primary_cmdbuffers_resuming",
-        "contents_2_primary_secondary_cmdbuffers_resuming",
-        "contents_secondary_2_primary_cmdbuffers_resuming",
-        "secondary_cmdbuffer_out_of_rendering_commands",
-        "partial_binding_depth_stencil",
+    const std::map<TestType, std::string> testNames{
+        std::make_pair(TEST_TYPE_SINGLE_CMDBUF, "single_cmdbuffer"),
+        std::make_pair(TEST_TYPE_SINGLE_CMDBUF_RESUMING, "single_cmdbuffer_resuming"),
+        std::make_pair(TEST_TYPE_TWO_CMDBUF_RESUMING, "2_cmdbuffers_resuming"),
+        std::make_pair(TEST_TYPE_SECONDARY_CMDBUF_RESUMING, "2_secondary_cmdbuffers_resuming"),
+        std::make_pair(TEST_TYPE_SECONDARY_CMDBUF_TWO_PRIMARY_RESUMING, "2_secondary_2_primary_cmdbuffers_resuming"),
+        std::make_pair(TEST_TYPE_CONTENTS_SECONDARY_COMMAND_BUFFER, "contents_secondary_cmdbuffers"),
+        std::make_pair(TEST_TYPE_CONTENTS_2_SECONDARY_COMMAND_BUFFER, "contents_2_secondary_cmdbuffers"),
+        std::make_pair(TEST_TYPE_CONTENTS_2_SECONDARY_COMMAND_BUFFER_RESUMING,
+                       "contents_2_secondary_cmdbuffers_resuming"),
+        std::make_pair(TEST_TYPE_CONTENTS_2_SECONDARY_2_PRIMARY_COMDBUF_RESUMING,
+                       "contents_2_secondary_2_primary_cmdbuffers_resuming"),
+        std::make_pair(TEST_TYPE_CONTENTS_PRIMARY_SECONDARY_COMDBUF_RESUMING,
+                       "contents_primary_secondary_cmdbuffers_resuming"),
+        std::make_pair(TEST_TYPE_CONTENTS_SECONDARY_PRIMARY_COMDBUF_RESUMING,
+                       "contents_secondary_primary_cmdbuffers_resuming"),
+        std::make_pair(TEST_TYPE_CONTENTS_2_PRIMARY_SECONDARY_COMDBUF_RESUMING,
+                       "contents_2_primary_secondary_cmdbuffers_resuming"),
+        std::make_pair(TEST_TYPE_CONTENTS_SECONDARY_2_PRIMARY_COMDBUF_RESUMING,
+                       "contents_secondary_2_primary_cmdbuffers_resuming"),
+        std::make_pair(TEST_TYPE_SECONDARY_CMDBUF_OUT_OF_RENDERING_COMMANDS,
+                       "secondary_cmdbuffer_out_of_rendering_commands"),
+        std::make_pair(TEST_TYPE_PARTIAL_BINDING_DEPTH_STENCIL, "partial_binding_depth_stencil"),
     };
 
+    std::string partialBindingSuffix;
+    if (!!parameters.partialBindsDsInfo)
+    {
+        const auto &partialBindsParams = *parameters.partialBindsDsInfo;
+        if (partialBindsParams.testAttachmentType == TEST_ATTACHMENT_DEPTH_ATTACHMENT ||
+            partialBindsParams.testAttachmentType == TEST_ATTACHMENT_STENCIL_ATTACHMENT)
+        {
+            const auto &baseTestParams = partialBindsParams.baseTestParams;
+
+            if (baseTestParams.loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+                partialBindingSuffix += "_load_op_clear";
+            else if (baseTestParams.loadOp == VK_ATTACHMENT_LOAD_OP_LOAD)
+                partialBindingSuffix += "_load_op_load";
+            else
+                DE_ASSERT(false);
+
+            if (baseTestParams.clearOnly)
+                partialBindingSuffix += "_clear_only";
+
+            if (baseTestParams.useSecondary)
+                partialBindingSuffix += "_use_secondary";
+        }
+        else if (partialBindsParams.testAttachmentType == TEST_ATTACHMENT_ALL)
+        {
+            const auto &undefinedFormatsParams = partialBindsParams.undefinedFormatsParams;
+
+            if (undefinedFormatsParams.discardAspect == VK_IMAGE_ASPECT_DEPTH_BIT)
+                partialBindingSuffix += "_discard_depth";
+            else if (undefinedFormatsParams.discardAspect == VK_IMAGE_ASPECT_STENCIL_BIT)
+                partialBindingSuffix += "_discard_stencil";
+            else
+                DE_ASSERT(false);
+        }
+        else
+            DE_ASSERT(false);
+    }
+
     // Dynamic Rendering tests
-    const auto finalName = testName[parameters.testType] + (parameters.endRendering2 ? "_end_rendering_2" : "");
+    const auto finalName = testNames.at(parameters.testType) + testAttachmentTypeSuffix(parameters.testAttachmentType) +
+                           partialBindingSuffix + (parameters.endRendering2 ? "_end_rendering_2" : "");
     return new BaseTestCase(testCtx, finalName, parameters);
 }
 
@@ -3733,17 +3936,55 @@ tcu::TestCaseGroup *createDynamicRenderingBasicTests(tcu::TestContext &testCtx)
     for (const bool endRendering2 : {false, true})
         for (int testType = 0; testType < TEST_TYPE_LAST; ++testType)
         {
-            const TestParameters parameters = {
-                static_cast<TestType>(testType), // TestType testType;
-                Vec4(0.0f, 0.0f, 0.0f, 1.0f),    // const Vec4 clearColor;
-                1.0f,                            // float depthClearValue;
-                0U,                              // uint32_t stencilClearValue;
-                VK_FORMAT_R8G8B8A8_UNORM,        // const VkFormat imageFormat;
-                (UVec2(32, 32)),                 // const UVec2 renderSize;
-                endRendering2,                   // bool endRendering2;
-            };
+            for (int testAttachmentTypeNdx = 0; testAttachmentTypeNdx <= TEST_ATTACHMENT_LAST; ++testAttachmentTypeNdx)
+            {
+                const auto testAttachmentType = static_cast<TestAttachmentType>(testAttachmentTypeNdx);
 
-            dynamicRenderingGroup->addChild(dynamicRenderingTests(testCtx, parameters));
+                // Skip useless combinations.
+                if (testType == TEST_TYPE_PARTIAL_BINDING_DEPTH_STENCIL && !goodForPartialBindingDS(testAttachmentType))
+                    continue;
+
+                TestParameters parameters = {
+                    static_cast<TestType>(testType), // TestType testType;
+                    Vec4(0.0f, 0.0f, 0.0f, 1.0f),    // const Vec4 clearColor;
+                    1.0f,                            // float depthClearValue;
+                    0U,                              // uint32_t stencilClearValue;
+                    VK_FORMAT_R8G8B8A8_UNORM,        // const VkFormat imageFormat;
+                    (UVec2(32, 32)),                 // const UVec2 renderSize;
+                    endRendering2,                   // bool endRendering2;
+                    testAttachmentType,              // TestAttachmentType testAttachmentType
+                    tcu::Nothing,                    // PartialBindsDsInfo partialBindsDsInfo
+                };
+
+                dynamicRenderingGroup->addChild(dynamicRenderingTests(testCtx, parameters));
+
+                if (testType == TEST_TYPE_PARTIAL_BINDING_DEPTH_STENCIL && testAttachmentType != TEST_ATTACHMENT_LAST)
+                {
+                    if (testAttachmentType == TEST_ATTACHMENT_DEPTH_ATTACHMENT ||
+                        testAttachmentType == TEST_ATTACHMENT_STENCIL_ATTACHMENT)
+                    {
+                        for (const auto loadOp : {VK_ATTACHMENT_LOAD_OP_LOAD, VK_ATTACHMENT_LOAD_OP_CLEAR})
+                            for (const bool clearOnly : {false, true})
+                                for (const bool useSecondary : {false, true})
+                                {
+                                    parameters.partialBindsDsInfo = tcu::just(PartialBindDsParams(
+                                        testAttachmentType, PartialBindDsForBase{loadOp, clearOnly, useSecondary}));
+                                    dynamicRenderingGroup->addChild(dynamicRenderingTests(testCtx, parameters));
+                                }
+                    }
+                    else if (testAttachmentType == TEST_ATTACHMENT_ALL)
+                    {
+                        for (const auto discardAspect : {VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_ASPECT_STENCIL_BIT})
+                        {
+                            parameters.partialBindsDsInfo = tcu::just(PartialBindDsParams(
+                                testAttachmentType, PartialBindDsForUndefinedFormat{discardAspect}));
+                            dynamicRenderingGroup->addChild(dynamicRenderingTests(testCtx, parameters));
+                        }
+                    }
+                    else
+                        DE_ASSERT(false);
+                }
+            }
         }
 
     return dynamicRenderingGroup.release();

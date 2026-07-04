@@ -596,11 +596,12 @@ bool compareAndLogBuffer(TestLog &log, size_t size, size_t referenceSize, const 
         return true;
 }
 
-static Move<VkDevice> createProtectedMemoryDevice(const Context &context, const VkPhysicalDeviceFeatures2 &features2)
+static CustomDevice createProtectedMemoryDevice(const Context &context, const InstanceWrapper &instance,
+                                                VkPhysicalDevice physicalDevice,
+                                                const VkPhysicalDeviceFeatures2 &features2)
 {
-    const InstanceInterface &vki = context.getInstanceInterface();
-    const float queuePriority    = 1.0f;
-    uint32_t queueFamilyIndex    = context.getUniversalQueueFamilyIndex();
+    const float queuePriority = 1.0f;
+    uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
     // Enable VK_KHR_map_memory2 if supported, as required by some tests.
     std::vector<const char *> enabledExtensions;
@@ -629,26 +630,23 @@ static Move<VkDevice> createProtectedMemoryDevice(const Context &context, const 
         nullptr,                              // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    return createCustomDevice(context.getPlatformInterface(), context.getInstance(), vki, context.getPhysicalDevice(),
-                              &deviceInfo);
+    return instance.createCustomDevice(physicalDevice, &deviceInfo);
 }
 
 tcu::TestStatus testMemoryMapping(Context &context, const TestConfig config)
 {
     TestLog &log = context.getTestContext().getLog();
     tcu::ResultCollector result(log);
-    bool atLeastOneTestPerformed                            = false;
-    const VkPhysicalDevice physicalDevice                   = context.getPhysicalDevice();
-    const InstanceInterface &vki                            = context.getInstanceInterface();
-    const DeviceInterface &vkd                              = context.getDeviceInterface();
-    const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(vki, physicalDevice);
-    const VkDeviceSize nonCoherentAtomSize                  = context.getDeviceProperties().limits.nonCoherentAtomSize;
-    const uint32_t queueFamilyIndex                         = context.getUniversalQueueFamilyIndex();
+    bool atLeastOneTestPerformed = false;
+    const auto instance          = InstanceWrapper(context);
+    const VkPhysicalDeviceMemoryProperties memoryProperties =
+        getPhysicalDeviceMemoryProperties(instance.getDriver(), instance.getPhysicalDevice());
+    const VkDeviceSize nonCoherentAtomSize = context.getDeviceProperties().limits.nonCoherentAtomSize;
+    const uint32_t queueFamilyIndex        = context.getUniversalQueueFamilyIndex();
 
     //Create protected memory device if protected memory is supported
     //otherwise use the default device
-    Move<VkDevice> protectMemoryDevice;
-    VkDevice device;
+    DeviceWrapper device(context);
     {
         VkPhysicalDeviceProtectedMemoryFeatures protectedFeatures;
         protectedFeatures.sType           = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES;
@@ -659,18 +657,13 @@ tcu::TestStatus testMemoryMapping(Context &context, const TestConfig config)
         deviceFeatures2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
         deviceFeatures2.pNext = &protectedFeatures;
 
-        vki.getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &deviceFeatures2);
+        instance.getDriver().getPhysicalDeviceFeatures2(instance.getPhysicalDevice(), &deviceFeatures2);
         if (protectedFeatures.protectedMemory && config.implicitUnmap)
         {
-            protectMemoryDevice = createProtectedMemoryDevice(context, deviceFeatures2);
-            device              = *protectMemoryDevice;
-        }
-        else
-        {
-            device = context.getDevice();
+            device = createProtectedMemoryDevice(context, instance, instance.getPhysicalDevice(), deviceFeatures2);
         }
     }
-
+    const DeviceInterface &vkd = device.getDriver();
     {
         const tcu::ScopedLogSection section(log, "TestCaseInfo", "TestCaseInfo");
 

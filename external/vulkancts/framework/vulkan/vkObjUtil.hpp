@@ -132,8 +132,7 @@ Move<VkRenderPass> makeRenderPass(
 
 Move<VkImageView> makeImageView(const DeviceInterface &vk, const VkDevice vkDevice, const VkImage image,
                                 const VkImageViewType imageViewType, const VkFormat format,
-                                const VkImageSubresourceRange subresourceRange,
-                                const vk::VkImageViewUsageCreateInfo *imageUsageCreateInfo = nullptr);
+                                const VkImageSubresourceRange subresourceRange, const void *pNext = nullptr);
 
 Move<VkBufferView> makeBufferView(const DeviceInterface &vk, const VkDevice vkDevice, const VkBuffer buffer,
                                   const VkFormat format, const VkDeviceSize offset, const VkDeviceSize size);

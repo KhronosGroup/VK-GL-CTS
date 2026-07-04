@@ -325,8 +325,12 @@ void DepthStencilSeparateCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "separateDepthStencilAttachmentAccess not supported");
 #endif // CTS_USES_VULKANSC
 
+#ifndef CTS_USES_VULKANSC
     VkFormatProperties3 fp3 = initVulkanStructure();
     VkFormatProperties2 fp2 = initVulkanStructure(&fp3);
+#else
+    VkFormatProperties2 fp2 = initVulkanStructure();
+#endif
 
     // We need to check support for single-sample and multi-sample usages, which differ slightly.
     std::map<VkSampleCountFlagBits, VkImageUsageFlags> usageCases;
@@ -375,12 +379,14 @@ void DepthStencilSeparateCase::checkSupport(Context &context) const
 
     ctx.vki.getPhysicalDeviceFormatProperties2(ctx.physicalDevice, m_params.imageFormat, &fp2);
 
+#ifndef CTS_USES_VULKANSC
     const auto requiredFeatures =
         (VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT |
          VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT);
 
     if ((fp3.optimalTilingFeatures & requiredFeatures) != requiredFeatures)
         TCU_THROW(NotSupportedError, "Required features not supported for this format");
+#endif // CTS_USES_VULKANSC
 
     if (m_params.dynamicStencilRef)
         context.requireDeviceFunctionality("VK_EXT_shader_stencil_export");

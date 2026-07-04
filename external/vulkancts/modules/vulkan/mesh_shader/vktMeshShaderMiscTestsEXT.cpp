@@ -6703,6 +6703,262 @@ tcu::TestStatus workGroupOrderingRun(Context &context)
     return tcu::TestStatus::pass("Pass");
 }
 
+namespace VertexState
+{
+// Attempt to set unused vertex-related state before drawing.
+
+struct Params
+{
+    Params()
+    {
+        memset(this, 0, sizeof(*this));
+    }
+
+    bool bindVBO;
+    bool bindIBO;
+    bool dynamicVertexInput; // VK_DYNAMIC_STATE_VERTEX_INPUT_EXT from VK_EXT_vertex_input_dynamic_state.
+    bool dynamicPrimRestart; // VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE_EXT from VK_EXT_extended_dynamic_state2
+    bool dynamicTopology;    // VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY_EXT from VK_EXT_extended_dynamic_state
+
+    Params(bool bindVBO_, bool bindIBO_, bool dynamicVertexInput_, bool dynamicPrimRestart_, bool dynamicTopology_)
+        : bindVBO(bindVBO_)
+        , bindIBO(bindIBO_)
+        , dynamicVertexInput(dynamicVertexInput_)
+        , dynamicPrimRestart(dynamicPrimRestart_)
+        , dynamicTopology(dynamicTopology_)
+    {
+    }
+
+    tcu::Vec4 getClearColor() const
+    {
+        return tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    }
+
+    tcu::Vec4 getGeomColor() const
+    {
+        return tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f);
+    }
+
+    bool operator==(const Params &other)
+    {
+        return (bindVBO == other.bindVBO && bindIBO == other.bindIBO &&
+                dynamicVertexInput == other.dynamicVertexInput && dynamicPrimRestart == other.dynamicPrimRestart &&
+                dynamicTopology == other.dynamicTopology);
+    }
+};
+using ParamsPtr = std::shared_ptr<Params>;
+
+void checkSupport(Context &context, ParamsPtr params)
+{
+    checkTaskMeshShaderSupportEXT(context, false, true);
+
+    if (params->dynamicVertexInput)
+        context.requireDeviceFunctionality("VK_EXT_vertex_input_dynamic_state");
+
+    if (params->dynamicPrimRestart)
+        context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state2");
+
+    if (params->dynamicTopology)
+        context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state");
+}
+
+void initPrograms(vk::SourceCollections &dst, ParamsPtr params)
+{
+    const auto buildOptions = getMinMeshEXTBuildOptions(dst.usedVulkanVersion);
+
+    std::ostringstream mesh;
+    mesh << "#version 460\n"
+         << "#extension GL_EXT_mesh_shader : enable\n"
+         << "\n"
+         << "layout (local_size_x=1) in;\n"
+         << "layout (triangles) out;\n"
+         << "layout (max_vertices=3, max_primitives=1) out;\n"
+         << "\n"
+         << "layout (set=0, binding=0, std430) readonly buffer VBO { vec4 vertices[]; };\n"
+         << "layout (set=0, binding=1, std430) readonly buffer IBO { uint indices[]; };\n"
+         << "\n"
+         << "void main ()\n"
+         << "{\n"
+         << "    SetMeshOutputsEXT(3u, 1u);\n"
+         << "\n"
+         << "    gl_MeshVerticesEXT[0].gl_Position = vertices[0];\n"
+         << "    gl_MeshVerticesEXT[1].gl_Position = vertices[1];\n"
+         << "    gl_MeshVerticesEXT[2].gl_Position = vertices[2];\n"
+         << "\n"
+         << "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(indices[0], indices[1], indices[2]);\n"
+         << "}\n";
+    dst.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main(void) {\n"
+         << "    outColor = vec4" << params->getGeomColor() << ";\n"
+         << "}\n";
+    dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus iterate(Context &context, ParamsPtr params)
+{
+    const auto ctx = context.getContextCommonData();
+    const tcu::IVec3 extent(1, 1, 1);
+    const auto extentVk    = makeExtent3D(extent);
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto colorUsage =
+        static_cast<VkImageUsageFlags>(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto imageType = VK_IMAGE_TYPE_2D;
+
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, colorFormat, colorUsage, imageType);
+    const auto renderPass  = makeRenderPass(ctx.vkd, ctx.device, colorFormat);
+    const auto framebuffer = makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(),
+                                             extentVk.width, extentVk.height, extentVk.depth);
+
+    const std::vector<tcu::Vec4> vertices{
+        tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
+        tcu::Vec4(-1.0f, 3.0f, 0.0f, 1.0f),
+        tcu::Vec4(3.0f, -1.0f, 0.0f, 1.0f),
+    };
+    const auto vertexBufferSize = static_cast<VkDeviceSize>(de::dataSize(vertices));
+    const auto vertexBufferUsage =
+        static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    const auto vertexBufferInfo = makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage);
+    BufferWithMemory actualVertexBuffer(ctx.vkd, ctx.device, ctx.allocator, vertexBufferInfo, HostIntent::W);
+    {
+        auto &alloc = actualVertexBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    const std::vector<uint32_t> indices{
+        0u,
+        1u,
+        2u,
+    };
+    const auto indexBufferSize = static_cast<VkDeviceSize>(de::dataSize(indices));
+    const auto indexBufferUsage =
+        static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    const auto indexBufferInfo = makeBufferCreateInfo(indexBufferSize, indexBufferUsage);
+    BufferWithMemory actualIndexBuffer(ctx.vkd, ctx.device, ctx.allocator, indexBufferInfo, HostIntent::W);
+    {
+        auto &alloc = actualIndexBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(indices), de::dataSize(indices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // A couple of fake buffers to bind.
+    BufferWithMemory fakeVertexBuffer(ctx.vkd, ctx.device, ctx.allocator, vertexBufferInfo, HostIntent::W);
+    {
+        auto &alloc = fakeVertexBuffer.getAllocation();
+        memset(alloc.getHostPtr(), 0, de::dataSize(vertices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+    BufferWithMemory fakeIndexBuffer(ctx.vkd, ctx.device, ctx.allocator, indexBufferInfo, HostIntent::W);
+    {
+        auto &alloc = fakeIndexBuffer.getAllocation();
+        memset(alloc.getHostPtr(), 0, de::dataSize(indices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    const auto &binaries  = context.getBinaryCollection();
+    const auto meshShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("mesh"));
+    const auto fragShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+
+    const auto descType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const auto descStages = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_MESH_BIT_EXT);
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType, 2u /* vertex and index buffer*/);
+    const auto descriptorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(descType, descStages);
+    setLayoutBuilder.addSingleBinding(descType, descStages);
+    const auto setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    const auto descriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+    DescriptorSetUpdateBuilder setUpdateBuilder;
+    const auto binding              = DescriptorSetUpdateBuilder::Location::binding;
+    const auto vertexBufferDescInfo = makeDescriptorBufferInfo(*actualVertexBuffer, 0ull, vertexBufferSize);
+    const auto indexBufferDescInfo  = makeDescriptorBufferInfo(*actualIndexBuffer, 0ull, indexBufferSize);
+    setUpdateBuilder.writeSingle(*descriptorSet, binding(0u), descType, &vertexBufferDescInfo);
+    setUpdateBuilder.writeSingle(*descriptorSet, binding(1u), descType, &indexBufferDescInfo);
+    setUpdateBuilder.update(ctx.vkd, ctx.device);
+
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+    const auto pipeline       = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, VK_NULL_HANDLE, *meshShader,
+                                                     *fragShader, *renderPass, viewports, scissors);
+
+    const auto geomColor          = params->getGeomColor();
+    const auto clearColor         = params->getClearColor();
+    const auto bindPoint          = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    const auto vertexBufferOffset = static_cast<VkDeviceSize>(0);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.front(), clearColor);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+    if (params->bindVBO)
+        ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &fakeVertexBuffer.get(), &vertexBufferOffset);
+    if (params->bindIBO)
+        ctx.vkd.cmdBindIndexBuffer(cmdBuffer, *fakeIndexBuffer, 0ull, VK_INDEX_TYPE_UINT32);
+    if (params->dynamicVertexInput)
+    {
+        const VkVertexInputBindingDescription2EXT vtxBinding{
+            VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
+            nullptr,
+            0u,
+            DE_SIZEOF32(tcu::Vec4),
+            VK_VERTEX_INPUT_RATE_VERTEX,
+            0u,
+        };
+        const VkVertexInputAttributeDescription2EXT vtxAttrib{
+            VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
+            nullptr,
+            0u,
+            0u,
+            VK_FORMAT_R32G32B32A32_SFLOAT,
+            0u,
+        };
+        ctx.vkd.cmdSetVertexInputEXT(cmdBuffer, 1u, &vtxBinding, 1u, &vtxAttrib);
+    }
+    if (params->dynamicPrimRestart)
+        ctx.vkd.cmdSetPrimitiveRestartEnable(cmdBuffer, VK_TRUE);
+    if (params->dynamicTopology)
+        ctx.vkd.cmdSetPrimitiveTopology(cmdBuffer, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+    ctx.vkd.cmdDrawMeshTasksEXT(cmdBuffer, 1u, 1u, 1u);
+    endRenderPass(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Verify framebuffer.
+    auto &bufferAlloc = colorBuffer.getBufferAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, bufferAlloc);
+
+    const auto tcuFormat = mapVkFormat(colorFormat);
+    tcu::ConstPixelBufferAccess result(tcuFormat, extent, bufferAlloc.getHostPtr());
+
+    tcu::TextureLevel refLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess reference = refLevel.getAccess();
+    tcu::clear(reference, geomColor);
+
+    auto &log = context.getTestContext().getLog();
+    const tcu::Vec4 threshold(0.0f);
+
+    if (!tcu::floatThresholdCompare(log, "Color", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected results in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+} // namespace VertexState
+
 } // anonymous namespace
 
 tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
@@ -7195,6 +7451,30 @@ tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
 
     addFunctionCaseWithPrograms(miscTests.get(), "work_group_ordering", workGroupOrderingCheckSupport,
                                 workGroupOrderingInitPrograms, workGroupOrderingRun);
+
+    {
+        const VertexState::Params defaultParams;
+        for (const bool bindVBO : {false, true})
+            for (const bool bindIBO : {false, true})
+                for (const bool dynamicVertexInput : {false, true})
+                    for (const bool dynamicPrimRestart : {false, true})
+                        for (const bool dynamicTopology : {false, true})
+                        {
+                            VertexState::ParamsPtr params(new VertexState::Params{bindIBO, bindIBO, dynamicVertexInput,
+                                                                                  dynamicPrimRestart, dynamicTopology});
+                            if (*params == defaultParams)
+                                continue;
+
+                            const auto testName = std::string("vertex_state") + (bindVBO ? "_bind_vbo" : "") +
+                                                  (bindIBO ? "_bind_ibo" : "") +
+                                                  (dynamicVertexInput ? "_dynamic_vtx_input" : "") +
+                                                  (dynamicPrimRestart ? "_dynamic_prim_restart" : "") +
+                                                  (dynamicTopology ? "_dynamic_topo" : "");
+
+                            addFunctionCaseWithPrograms(miscTests.get(), testName, VertexState::checkSupport,
+                                                        VertexState::initPrograms, VertexState::iterate, params);
+                        }
+    }
 
     return miscTests.release();
 }

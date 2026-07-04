@@ -549,8 +549,8 @@ TestInstance *VideoTestCase::createInstance(Context &ctx) const
         expectedOutputExtent.height = de::roundUp(h, codedPictureAlignment.height);
     }
 #ifdef DE_BUILD_VIDEO
-    VkResult result = CreateVulkanVideoEncoder(m_requirements.codecOperation, static_cast<int>(args.size()),
-                                               const_cast<char **>(args.data()), encoder);
+    VkResult result =
+        CreateVulkanVideoEncoder(m_requirements.codecOperation, static_cast<int>(args.size()), args.data(), encoder);
     if (result != VK_SUCCESS)
     {
         throw tcu::TestError("Failed to create VulkanVideoEncoder");
@@ -1037,8 +1037,8 @@ bool validateTestDefinition(const TestDefinition &testDef)
         return false;
     }
 
-    // Test only GOP_I_P_B in the case of resolution different from 720x480
-    if (testDef.frameSize.width != 720 && testDef.frameSize.height != 480 && (testDef.gop.gop != GOP_I_P_B))
+    // Test only GOP_I_P in the case of resolution different from 720x480
+    if (testDef.frameSize.width != 720 && testDef.frameSize.height != 480 && (testDef.gop.gop != GOP_I_P))
         return false;
 
     // Remove TILING_1x2 from 7680x4320 resolution as it is not supported by the AV1 specification

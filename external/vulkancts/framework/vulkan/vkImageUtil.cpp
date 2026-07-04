@@ -5012,17 +5012,19 @@ void copyBufferToImageIndirect(const DeviceInterface &vk, const InstanceInterfac
 
     // Create indirect buffer for copy commands
     const VkDeviceSize indirectBufferSize = copyRegions.size() * sizeof(VkCopyMemoryToImageIndirectCommandKHR);
+    const auto indirectBufferUsage =
+        static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                                        VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
 
     const VkBufferCreateInfo indirectBufferCreateInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType
         nullptr,                              // const void* pNext
         0u,                                   // VkBufferCreateFlags flags
         indirectBufferSize,                   // VkDeviceSize size
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT |    // VkBufferUsageFlags usage
-            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
-        VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode sharingMode
-        0u,                        // uint32_t queueFamilyIndexCount
-        nullptr                    // const uint32_t* pQueueFamilyIndices
+        indirectBufferUsage,                  // VkBufferUsageFlags usage
+        VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode
+        0u,                                   // uint32_t queueFamilyIndexCount
+        nullptr                               // const uint32_t* pQueueFamilyIndices
     };
 
     Move<VkBuffer> indirectBuffer = createBuffer(vk, device, &indirectBufferCreateInfo);

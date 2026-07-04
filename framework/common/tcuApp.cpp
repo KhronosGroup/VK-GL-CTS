@@ -26,6 +26,7 @@
 #include "tcuTestContext.hpp"
 #include "tcuTestSessionExecutor.hpp"
 #include "tcuTestHierarchyUtil.hpp"
+#include "tcuMustpassGen.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
 
@@ -184,6 +185,8 @@ App::App(Platform &platform, Archive &archive, TestLog &log, const CommandLine &
             writeTxtCaselistsToFiles(*m_testRoot, *m_testCtx, cmdLine, false, true);
         else if (runMode == RUNMODE_VERIFY_AMBER_COHERENCY)
             verifyAmberCapabilityCoherency(*m_testRoot, *m_testCtx);
+        else if (runMode == RUNMODE_GEN_MUSTPASS)
+            genMustpassFromSpec(*m_testRoot, *m_testCtx, cmdLine);
         else
             DE_ASSERT(false);
     }

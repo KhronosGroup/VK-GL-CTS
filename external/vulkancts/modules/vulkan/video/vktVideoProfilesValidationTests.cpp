@@ -83,7 +83,7 @@ struct TestParams
                 profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR);
     }
 };
-
+#ifdef DE_BUILD_VIDEO
 auto getComponentBitdepth = [](VkVideoComponentBitDepthFlagsKHR flags)
 {
     switch (flags)
@@ -98,6 +98,7 @@ auto getComponentBitdepth = [](VkVideoComponentBitDepthFlagsKHR flags)
         TCU_THROW(InternalError, "unknown component bit depth");
     }
 };
+#endif
 
 typedef de::SharedPtr<TestParams> SharedTestParams;
 
@@ -112,13 +113,13 @@ public:
 protected:
     SharedTestParams m_params;
     DeviceContext m_deviceContext;
-
+#ifdef DE_BUILD_VIDEO
     tcu::TestStatus tryCreateVideoSession(VkFormat imageFormat, VkFormat dpbFormat);
     tcu::TestStatus validateProfileCompatibility();
     tcu::TestStatus validateVideoFormatsWithProfile();
     tcu::TestStatus validateWithFormatProperties(VkVideoFormatPropertiesKHR video_fmt, VkImageUsageFlags usage);
     tcu::TestStatus validateWithImageFormatProperties(VkVideoFormatPropertiesKHR video_fmt, VkImageUsageFlags usage);
-
+#endif
 private:
     bool validateProfileCodec();
     bool videoMaintenance1Support;
@@ -163,6 +164,7 @@ VideoProfilesValidationTestInstance::~VideoProfilesValidationTestInstance(void)
 {
 }
 
+#ifdef DE_BUILD_VIDEO
 tcu::TestStatus VideoProfilesValidationTestInstance::tryCreateVideoSession(VkFormat imageFormat, VkFormat dpbFormat)
 {
     const DeviceInterface &vkd = m_deviceContext.getDeviceDriver();
@@ -742,9 +744,14 @@ tcu::TestStatus VideoProfilesValidationTestInstance::validateVideoFormatsWithPro
 
     return tcu::TestStatus::pass("OK");
 }
+#endif
 
 tcu::TestStatus VideoProfilesValidationTestInstance::iterate(void)
 {
+
+#ifndef DE_BUILD_VIDEO
+    TCU_THROW(NotSupportedError, "Video tests are disabled via DEQP_DISABLE_VK_VIDEO_TESTS");
+#else
     const InstanceInterface &vk           = m_context.getInstanceInterface();
     const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
 
@@ -780,6 +787,7 @@ tcu::TestStatus VideoProfilesValidationTestInstance::iterate(void)
     }
 
     return validateVideoFormatsWithProfile();
+#endif
 }
 
 class VideoProfilesValidationTestCase : public TestCase
@@ -808,6 +816,10 @@ VideoProfilesValidationTestCase::~VideoProfilesValidationTestCase(void)
 
 void VideoProfilesValidationTestCase::checkSupport(Context &context) const
 {
+#ifndef DE_BUILD_VIDEO
+    DE_UNREF(context);
+    TCU_THROW(NotSupportedError, "Video tests are disabled via DEQP_DISABLE_VK_VIDEO_TESTS");
+#else
     context.requireDeviceFunctionality("VK_KHR_video_queue");
 
     if (context.isDeviceFunctionalitySupported("VK_KHR_video_maintenance1"))
@@ -846,6 +858,7 @@ void VideoProfilesValidationTestCase::checkSupport(Context &context) const
     default:
         TCU_THROW(NotSupportedError, "Unknown TestType");
     }
+#endif
 }
 
 TestInstance *VideoProfilesValidationTestCase::createInstance(Context &context) const

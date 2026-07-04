@@ -93,9 +93,9 @@ uint32_t chooseQueueFamilyIndex(const InstanceInterface &vki, VkPhysicalDevice p
     return 0;
 }
 
-Move<VkDevice> createTestDevice(const Context &context, const PlatformInterface &vkp, const VkInstance instance,
-                                const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                const uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator = nullptr)
+static CustomDevice createTestDevice(const Context &context, const InstanceWrapper &instance,
+                                     VkPhysicalDevice physicalDevice, const uint32_t queueFamilyIndex,
+                                     const VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[] = {1.0f};
     bool displayAvailable         = true;
@@ -140,7 +140,7 @@ Move<VkDevice> createTestDevice(const Context &context, const PlatformInterface 
     if (!displayAvailable)
         TCU_THROW(NotSupportedError, "Display is unavailable as windowing system has access");
 
-    return createCustomDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+    return instance.createCustomDevice(physicalDevice, &deviceParams, pAllocator);
 }
 
 VkDisplayKHR getDisplayAndDisplayPlane(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
@@ -555,16 +555,16 @@ private:
 
 private:
     const PlatformInterface &m_vkp;
-    const CustomInstance m_instance;
-    const InstanceDriver &m_vki;
+    const InstanceWrapper m_instance;
+    const InstanceInterface &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     uint32_t m_planeIndex;
     const VkDisplayKHR m_display;
     const VkSurfaceKHR m_surface;
 
     const uint32_t m_queueFamilyIndex;
-    const Unique<VkDevice> m_device;
-    const DeviceDriver m_vkd;
+    const DeviceWrapper m_device;
+    const DeviceInterface &m_vkd;
     const VkQueue m_queue;
 
     const Unique<VkCommandPool> m_commandPool;
@@ -606,14 +606,14 @@ SwapchainCounterTestInstance::SwapchainCounterTestInstance(Context &context)
     , m_vkp(context.getPlatformInterface())
     , m_instance(createInstance(context))
     , m_vki(m_instance.getDriver())
-    , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+    , m_physicalDevice(m_instance.getPhysicalDevice())
     , m_planeIndex(0)
     , m_display(getDisplayAndDisplayPlane(m_vki, m_physicalDevice, &m_planeIndex))
     , m_surface(createSurface(m_vki, m_instance, m_physicalDevice, m_display, m_planeIndex))
 
     , m_queueFamilyIndex(chooseQueueFamilyIndex(m_vki, m_physicalDevice, m_surface))
-    , m_device(createTestDevice(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex))
-    , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
+    , m_device(createTestDevice(context, m_instance, m_physicalDevice, m_queueFamilyIndex))
+    , m_vkd(m_device.getDriver())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
     , m_commandPool(createCommandPool(m_vkd, *m_device, m_queueFamilyIndex))

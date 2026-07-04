@@ -1299,6 +1299,8 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
     // For multilayer views we'll create a single view with all layers.
     const auto layerIterations = (m_parameters.useMultiLayerViews() ? 1u : getLayerCount());
 
+    bool result = true;
+
     for (uint32_t mipNdx = 0u; mipNdx < mipMapSizes.size(); ++mipNdx)
         for (uint32_t layerNdx = 0u; layerNdx < layerIterations; ++layerNdx)
         {
@@ -1666,7 +1668,7 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
 
                     if (!fuzzyCompare(m_context.getTestContext().getLog(), imageName.c_str(), "", resultPixels,
                                       referencePixels, 0.001f, tcu::COMPARE_LOG_ON_ERROR))
-                        return false;
+                        result = false;
                 }
             }
             else if (res == COMPARE_RESULT_ASTC_QUALITY_WARNING)
@@ -1675,7 +1677,7 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
             }
         }
 
-    return true;
+    return result;
 }
 
 class ImageStoreComputeTestInstance : public BasicComputeTestInstance

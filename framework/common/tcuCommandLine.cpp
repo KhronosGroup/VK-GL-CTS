@@ -80,6 +80,7 @@ DE_DECLARE_COMMAND_LINE_OPT(StdinCaseList, bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogFilename, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(RunMode, tcu::RunMode);
 DE_DECLARE_COMMAND_LINE_OPT(ExportFilenamePattern, std::string);
+DE_DECLARE_COMMAND_LINE_OPT(MustpassSpec, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(WatchDog, bool);
 DE_DECLARE_COMMAND_LINE_OPT(CrashHandler, bool);
 DE_DECLARE_COMMAND_LINE_OPT(BaseSeed, int);
@@ -149,6 +150,7 @@ DE_DECLARE_COMMAND_LINE_OPT(ComputeOnly, bool);
 DE_DECLARE_COMMAND_LINE_OPT(VideoLogPrint, bool);
 DE_DECLARE_COMMAND_LINE_OPT(VideoDecodeOutputDump, VideoDecodeOutput);
 DE_DECLARE_COMMAND_LINE_OPT(VideoEncodeOutputDump, VideoEncodeOutput);
+DE_DECLARE_COMMAND_LINE_OPT(VendorSpecific, bool);
 
 static void parseIntList(const char *src, std::vector<int> *dst)
 {
@@ -175,7 +177,8 @@ void registerOptions(de::cmdline::Parser &parser)
                                                                         {"stdout-caselist", RUNMODE_DUMP_STDOUT_CASELIST},
                                                                         {"amber-verify", RUNMODE_VERIFY_AMBER_COHERENCY},
                                                                         {"txt-trie", RUNMODE_DUMP_TEXT_TRIE},
-                                                                        {"stdout-trie", RUNMODE_DUMP_STDOUT_TRIE}};
+                                                                        {"stdout-trie", RUNMODE_DUMP_STDOUT_TRIE},
+                                                                        {"gen-mustpass", RUNMODE_GEN_MUSTPASS}};
     static const NamedValue<WindowVisibility> s_visibilites[]        = {{"windowed", WINDOWVISIBILITY_WINDOWED},
                                                                         {"fullscreen", WINDOWVISIBILITY_FULLSCREEN},
                                                                         {"hidden", WINDOWVISIBILITY_HIDDEN}};
@@ -228,6 +231,10 @@ void registerOptions(de::cmdline::Parser &parser)
         << Option<ExportFilenamePattern>(nullptr, "deqp-caselist-export-file",
                                          "Set the target file name pattern for caselist export",
                                          "${packageName}-cases.${typeExtension}")
+        << Option<MustpassSpec>(nullptr, "deqp-mustpass-spec",
+                                "Path to a mustpass spec file describing per-configuration filters and outputs "
+                                "(used with --deqp-runmode=gen-mustpass)",
+                                "")
         << Option<WatchDog>(nullptr, "deqp-watchdog", "Enable test watchdog", s_enableNames, "disable")
         << Option<CrashHandler>(nullptr, "deqp-crashhandler", "Enable crash handling", s_enableNames, "disable")
         << Option<BaseSeed>(nullptr, "deqp-base-seed", "Base seed for test cases that use randomization", "0")
@@ -356,8 +363,9 @@ void registerOptions(de::cmdline::Parser &parser)
         << Option<VideoDecodeOutputDump>(nullptr, "deqp-vk-video-decode-dump",
                                          "Dump the output of vulkan video decoding tests", s_videoDecodeDump, "disable")
         << Option<VideoEncodeOutputDump>(nullptr, "deqp-vk-video-encode-dump",
-                                         "Dump the output of vulkan video encoding tests", s_videoEncodeDump,
-                                         "disable");
+                                         "Dump the output of vulkan video encoding tests", s_videoEncodeDump, "disable")
+        << Option<VendorSpecific>(nullptr, "deqp-vk-vendor-specific", "Allows you to use vendor-specific configuration",
+                                  s_enableNames, "disable");
 }
 
 void registerLegacyOptions(de::cmdline::Parser &parser)
@@ -846,6 +854,10 @@ static void parseGroupFile(CaseTreeNode *root, std::istream &inGroupList, const 
 
     while (std::getline(namesStream, fileName))
     {
+        trimString(fileName);
+        if (fileName.empty() || fileName.front() == '#') // Ignore empty lines and comments.
+            continue;
+
         de::FilePath groupPath(fileName);
         de::UniquePtr<Resource> groupResource(archive.getResource(groupPath.normalize().getPath()));
         const int groupBufferSize(groupResource->getSize());
@@ -878,10 +890,15 @@ static CaseTreeNode *parseCaseList(std::istream &in, const tcu::Archive &archive
             bool readGroupFile = false;
             if (path)
             {
-                // read the first line and make sure it doesn't contain '\r'
+                // read the first non-empty non-comment line and make sure it doesn't contain '\r'
                 std::string line;
-                std::getline(in, line);
-                line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+                while (std::getline(in, line))
+                {
+                    line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+                    trimString(line);
+                    if (!(line.empty() || line.front() == '#')) // Ignore empty lines and comments.
+                        break;
+                }
 
                 const std::string ending = ".txt";
                 readGroupFile =
@@ -1233,6 +1250,10 @@ const char *CommandLine::getCaseListExportFile(void) const
 {
     return m_cmdLine.getOption<opt::ExportFilenamePattern>().c_str();
 }
+const char *CommandLine::getMustpassSpec(void) const
+{
+    return m_cmdLine.getOption<opt::MustpassSpec>().c_str();
+}
 WindowVisibility CommandLine::getVisibility(void) const
 {
     return m_cmdLine.getOption<opt::Visibility>();
@@ -1400,6 +1421,10 @@ int CommandLine::getPipelineDefaultSize(void) const
 bool CommandLine::isComputeOnly(void) const
 {
     return m_cmdLine.getOption<opt::ComputeOnly>();
+}
+bool CommandLine::isVendorSpecific() const
+{
+    return m_cmdLine.getOption<opt::VendorSpecific>();
 }
 
 const char *CommandLine::getGLContextType(void) const

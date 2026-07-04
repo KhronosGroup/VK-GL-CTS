@@ -44,7 +44,7 @@ namespace
 using namespace vk;
 using namespace tcu;
 
-Move<VkDevice> createPostmortemDevice(Context &context)
+static CustomDevice createPostmortemDevice(Context &context, const InstanceWrapper &instance)
 {
     const float queuePriority = 1.0f;
 
@@ -87,8 +87,7 @@ Move<VkDevice> createPostmortemDevice(Context &context)
         nullptr                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    return createCustomDevice(context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
-                              context.getPhysicalDevice(), &deviceParams);
+    return instance.createCustomDevice(&deviceParams);
 }
 
 class DeviceLossInstance : public TestInstance
@@ -104,14 +103,12 @@ public:
 
 TestStatus DeviceLossInstance::iterate(void)
 {
-    vk::Unique<vk::VkDevice> logicalDevice(createPostmortemDevice(m_context));
-    vk::DeviceDriver deviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *logicalDevice,
-                                  m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine());
+    const InstanceWrapper instance(m_context);
+    const DeviceWrapper logicalDevice(createPostmortemDevice(m_context, instance));
+    const vk::DeviceInterface &deviceDriver(logicalDevice.getDriver());
     uint32_t queueFamilyIndex(0);
     vk::VkQueue queue(getDeviceQueue(deviceDriver, *logicalDevice, queueFamilyIndex, 0));
-    vk::SimpleAllocator allocator(
-        deviceDriver, *logicalDevice,
-        getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+    vk::Allocator &allocator(logicalDevice.getAllocator());
 
     // create query pool
     const VkQueryPoolCreateInfo queryPoolInfo{

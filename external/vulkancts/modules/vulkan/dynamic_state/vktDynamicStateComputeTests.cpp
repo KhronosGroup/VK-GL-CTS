@@ -573,6 +573,8 @@ public:
     virtual ~DeviceHelper()
     {
     }
+    virtual const InstanceInterface &getInstanceInterface(void) const       = 0;
+    virtual VkPhysicalDevice getPhysicalDevice(void) const                  = 0;
     virtual const DeviceInterface &getDeviceInterface(void) const           = 0;
     virtual VkDevice getDevice(void) const                                  = 0;
     virtual uint32_t getQueueFamilyIndex(void) const                        = 0;
@@ -586,7 +588,9 @@ class ContextDeviceHelper : public DeviceHelper
 {
 public:
     ContextDeviceHelper(Context &context)
-        : m_deviceInterface(context.getDeviceInterface())
+        : m_instanceInterface(context.getInstanceInterface())
+        , m_physicalDevice(context.getPhysicalDevice())
+        , m_deviceInterface(context.getDeviceInterface())
         , m_device(context.getDevice())
         , m_queueFamilyIndex(context.getUniversalQueueFamilyIndex())
         , m_queue(context.getUniversalQueue())
@@ -597,6 +601,16 @@ public:
 
     virtual ~ContextDeviceHelper()
     {
+    }
+
+    const InstanceInterface &getInstanceInterface(void) const override
+    {
+        return m_instanceInterface;
+    }
+
+    VkPhysicalDevice getPhysicalDevice(void) const override
+    {
+        return m_physicalDevice;
     }
 
     const DeviceInterface &getDeviceInterface(void) const override
@@ -625,6 +639,8 @@ public:
     }
 
 protected:
+    const InstanceInterface &m_instanceInterface;
+    const VkPhysicalDevice m_physicalDevice;
     const DeviceInterface &m_deviceInterface;
     const VkDevice m_device;
     const uint32_t m_queueFamilyIndex;
@@ -638,11 +654,12 @@ class ShadingRateImageDeviceHelper : public DeviceHelper
 {
 public:
     ShadingRateImageDeviceHelper(Context &context)
+        : m_instance(context)
+        , m_instanceInterface(m_instance.getDriver())
+        , m_physicalDevice(m_instance.getPhysicalDevice())
     {
-        const auto &vkp           = context.getPlatformInterface();
-        const auto &vki           = context.getInstanceInterface();
-        const auto instance       = context.getInstance();
-        const auto physicalDevice = context.getPhysicalDevice();
+        const auto &vki           = m_instance.getDriver();
+        const auto physicalDevice = m_physicalDevice;
         const auto queuePriority  = 1.0f;
 
         // Queue index first.
@@ -668,6 +685,8 @@ public:
         VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(&shadingRateImageFeatures);
 
         vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+#else
+        DE_UNREF(vki);
 #endif // CTS_USES_VULKANSC
 
         const VkDeviceCreateInfo deviceCreateInfo = {
@@ -687,25 +706,31 @@ public:
             nullptr,                                            //pEnabledFeatures;
         };
 
-        m_device = createCustomDevice(vkp, instance, vki, physicalDevice, &deviceCreateInfo);
-        m_vkd.reset(new DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion(),
-                                     context.getTestContext().getCommandLine()));
-        m_queue = getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
-        m_allocator.reset(
-            new SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
+        m_device = m_instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
+        m_queue  = getDeviceQueue(m_device.getDriver(), m_device, m_queueFamilyIndex, 0u);
     }
 
     virtual ~ShadingRateImageDeviceHelper()
     {
     }
 
+    const InstanceInterface &getInstanceInterface(void) const override
+    {
+        return m_instanceInterface;
+    }
+
+    VkPhysicalDevice getPhysicalDevice(void) const override
+    {
+        return m_physicalDevice;
+    }
+
     const DeviceInterface &getDeviceInterface(void) const override
     {
-        return *m_vkd;
+        return m_device.getDriver();
     }
     VkDevice getDevice(void) const override
     {
-        return m_device.get();
+        return *m_device;
     }
     uint32_t getQueueFamilyIndex(void) const override
     {
@@ -717,7 +742,7 @@ public:
     }
     Allocator &getAllocator(void) const override
     {
-        return *m_allocator;
+        return m_device.getAllocator();
     }
     const std::vector<std::string> &getDeviceExtensions(void) const override
     {
@@ -725,11 +750,12 @@ public:
     }
 
 protected:
-    Move<VkDevice> m_device;
-    std::unique_ptr<DeviceDriver> m_vkd;
+    const InstanceWrapper m_instance;
+    const InstanceInterface &m_instanceInterface;
+    const VkPhysicalDevice m_physicalDevice;
+    DeviceWrapper m_device;
     uint32_t m_queueFamilyIndex;
     VkQueue m_queue;
-    std::unique_ptr<SimpleAllocator> m_allocator;
     std::vector<std::string> m_extensions;
 };
 
@@ -934,9 +960,9 @@ void fillBuffer(const DeviceInterface &vkd, VkDevice device, BufferWithMemory &b
 
 tcu::TestStatus DynamicStateComputeInstance::iterateTransfer(void)
 {
-    const auto &vki   = m_context.getInstanceInterface();
-    const auto phyDev = m_context.getPhysicalDevice();
     auto &devHelper   = getDeviceHelper(m_context, m_params.states.at(0));
+    const auto &vki   = devHelper.getInstanceInterface();
+    const auto phyDev = devHelper.getPhysicalDevice();
     const auto &vkd   = devHelper.getDeviceInterface();
     const auto device = devHelper.getDevice();
     const auto qIndex = devHelper.getQueueFamilyIndex();
@@ -1026,9 +1052,9 @@ tcu::TestStatus DynamicStateComputeInstance::iterateTransfer(void)
 
 tcu::TestStatus DynamicStateComputeInstance::iterateCompute(void)
 {
-    const auto &vki   = m_context.getInstanceInterface();
-    const auto phyDev = m_context.getPhysicalDevice();
     auto &devHelper   = getDeviceHelper(m_context, m_params.states.at(0));
+    const auto &vki   = devHelper.getInstanceInterface();
+    const auto phyDev = devHelper.getPhysicalDevice();
     const auto &vkd   = devHelper.getDeviceInterface();
     const auto device = devHelper.getDevice();
     const auto qIndex = devHelper.getQueueFamilyIndex();

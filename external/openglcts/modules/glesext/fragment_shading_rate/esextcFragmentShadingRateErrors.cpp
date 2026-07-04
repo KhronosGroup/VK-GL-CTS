@@ -60,6 +60,22 @@ void FragmentShadingRateErrors::init(void)
 /// Deinitializes all GLES objects created for the test.
 void FragmentShadingRateErrors::deinit(void)
 {
+    // Retrieve GL entry points.
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+
+    // Reset fragment shading rate state
+    if (m_is_fragment_shading_rate_supported)
+    {
+        gl.shadingRateEXT(GL_SHADING_RATE_1X1_PIXELS_EXT);
+        gl.shadingRateCombinerOpsEXT(GL_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_EXT,
+                                     GL_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_EXT);
+    }
+
+    if (m_is_fragment_shading_rate_attachment_supported)
+    {
+        gl.framebufferShadingRateEXT(GL_FRAMEBUFFER, GL_SHADING_RATE_ATTACHMENT_EXT, 0, 0, 1, 1, 1);
+    }
+
     // Deinitialize base class
     TestCaseBase::deinit();
 }
@@ -219,9 +235,10 @@ tcu::TestNode::IterateResult FragmentShadingRateErrors::iterate(void)
         testPassed = testPassed &&
                      verifyError(GL_INVALID_VALUE, "framebufferShadingRateEXT <texelWidth, texelHeight> is not valid");
 
+        gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
         gl.deleteFramebuffers(1, &fbo_id);
-        gl.deleteFramebuffers(1, &to_id);
-        gl.deleteFramebuffers(1, &mutable_to_id);
+        gl.deleteTextures(1, &to_id);
+        gl.deleteTextures(1, &mutable_to_id);
     }
 
     // void ShadingRateCombinerOpsEXT(enum combinerOp0, enum combinerOp1)

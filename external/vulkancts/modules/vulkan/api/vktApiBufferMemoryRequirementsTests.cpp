@@ -791,7 +791,7 @@ void *BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfileListInfoK
 }
 #endif // CTS_USES_VULKANSC
 
-static Move<VkDevice> createProtectedDevice(const Context &context)
+static CustomDevice createProtectedDevice(const Context &context, const InstanceWrapper &instance)
 {
     const float queuePriority = 1.0f;
 
@@ -820,13 +820,12 @@ static Move<VkDevice> createProtectedDevice(const Context &context)
         nullptr,                              // const char* const* ppEnabledExtensionNames;
         nullptr                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
-    return createCustomDevice(context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
-                              context.getPhysicalDevice(), &deviceInfo);
+    return instance.createCustomDevice(&deviceInfo);
 }
 
 TestStatus BufferMemoryRequirementsInstance::iterate(void)
 {
-    const DeviceInterface &vkd      = m_context.getDeviceInterface();
+    const auto instance             = InstanceWrapper(m_context);
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     const Method method = m_config.useMethod2 ? &BufferMemoryRequirementsInstance::getBufferMemoryRequirements2 :
                                                 &BufferMemoryRequirementsInstance::getBufferMemoryRequirements;
@@ -837,17 +836,12 @@ TestStatus BufferMemoryRequirementsInstance::iterate(void)
     std::vector<BufferUsageBitsPtr> failUsageBits;
     std::vector<ExternalMemoryHandleBitsPtr> failExtMemHandleBits;
 
-    Move<VkDevice> protectedDevice;
-    VkDevice device;
+    DeviceWrapper device(m_context);
     if (m_config.createBits->contains(VK_BUFFER_CREATE_PROTECTED_BIT))
     {
-        protectedDevice = createProtectedDevice(m_context);
-        device          = *protectedDevice;
+        device = createProtectedDevice(m_context, instance);
     }
-    else
-    {
-        device = m_context.getDevice();
-    }
+    const DeviceInterface &vkd = device.getDriver();
 
     DE_ASSERT(!m_config.createBits->empty());
     const VkBufferCreateFlags infoCreateFlags = *m_config.createBits;

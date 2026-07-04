@@ -31,8 +31,10 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vkPipelineConstructionUtil.hpp"
+#include "vkQueryUtil.hpp"
 #include "tcuTestLog.hpp"
 #include <limits>
+#include <algorithm>
 
 namespace vkt
 {
@@ -318,12 +320,9 @@ tcu::TestStatus testShadingRates(Context &context)
             << tcu::TestLog::EndMessage;
     }
 
-    std::vector<vk::VkPhysicalDeviceFragmentShadingRateKHR> fragmentShadingRateVect(supportedFragmentShadingRateCount);
-    for (auto &fragmentShadingRate : fragmentShadingRateVect)
-    {
-        fragmentShadingRate.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR;
-        fragmentShadingRate.pNext = nullptr;
-    }
+    const vk::VkPhysicalDeviceFragmentShadingRateKHR defaultPhysicalDeviceFSR = vk::initVulkanStructureConst();
+    std::vector<vk::VkPhysicalDeviceFragmentShadingRateKHR> fragmentShadingRateVect(supportedFragmentShadingRateCount,
+                                                                                    defaultPhysicalDeviceFSR);
 
     // Pass a value of 1 into pFragmentShadingRateCount, and an array of at least length one into pFragmentShadingRates.
     // Check that the returned value is either VK_INCOMPLETE or VK_ERROR_OUT_OF_HOST_MEMORY(and issue a quality warning in the latter case).
@@ -339,6 +338,8 @@ tcu::TestStatus testShadingRates(Context &context)
 
     // Get all available fragment shading rates
     supportedFragmentShadingRateCount = static_cast<uint32_t>(fragmentShadingRateVect.size());
+    std::for_each(fragmentShadingRateVect.begin(), fragmentShadingRateVect.end(),
+                  [&](vk::VkPhysicalDeviceFragmentShadingRateKHR &item) { item = defaultPhysicalDeviceFSR; });
     result = vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount,
                                                           fragmentShadingRateVect.data());
     if ((result != vk::VK_SUCCESS) && (result != vk::VK_ERROR_OUT_OF_HOST_MEMORY))

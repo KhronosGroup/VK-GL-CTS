@@ -42,7 +42,7 @@ bool verifyResult(const std::vector<Resource> &, const std::vector<AllocationSp>
     for (uint32_t outputNdx = 0; outputNdx < static_cast<uint32_t>(outputAllocs.size()); ++outputNdx)
     {
         std::vector<uint8_t> expectedBytes;
-        expectedOutputs[outputNdx].getBytes(expectedBytes);
+        expectedOutputs[outputNdx].buffer->getBytes(expectedBytes);
 
         const uint32_t itemCount = static_cast<uint32_t>(expectedBytes.size()) / 4u;
         const uint32_t *returned = static_cast<const uint32_t *>(outputAllocs[outputNdx]->getHostPtr());

@@ -181,10 +181,11 @@ This is identical to the builds on other platforms and is better for iterative
 runs of headless tests as CTS can be invoked and the output can be checked from
 a single interactive terminal.
 
-This build doesn't support WSI tests and shouldn't be used for conformance
-submissions, it also isn't recommended for longer running tests since Android
-will terminate this process as soon as the `adb shell` session ends which may
-happen due to an unintentional device disconnection.
+This build supports WSI tests via a headless AImageReader fallback for Vulkan
+(Android API 24+). However, it shouldn't be used for conformance submissions.
+It also isn't recommended for longer running tests since Android will terminate
+this process as soon as the `adb shell` session ends, which may happen due to
+an unintentional device disconnection.
 
 	cmake <path to vulkancts> -GNinja -DCMAKE_BUILD_TYPE=Debug \
 	      -DCMAKE_TOOLCHAIN_FILE=<NDK path>/build/cmake/android.toolchain.cmake \
@@ -396,6 +397,21 @@ It informs deqp-vksc application that it works as subprocess:
 For platforms where it is needed to override the default loader library path, this option can be used (e.g. loader library vulkan-1.dll):
 
 	--deqp-vk-library-path=<path>
+
+Some tests are written to cover the full set of configurations the Vulkan API
+allows, regardless of whether the device under test supports each one. For
+example, a test exercising every possible image format builds the work (such as
+shaders) for all of them, even though a given implementation supports only a
+subset. This option informs such tests that they may run in "vendor-specific
+mode":
+
+	--deqp-vk-vendor-specific=[enable|disable]
+
+When enabled, a test adapts to the implementation under test and exercises
+exactly the configurations that device supports, neither more nor fewer,
+instead of the full generic set common to all implementations. In the image
+format example above, the test would build shaders for precisely the formats
+the device exposes. This option is disabled by default.
 
 No other command line options are allowed.
 
@@ -1125,6 +1141,10 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
 
   --deqp-vk-video-encode-dump=[disable|yuv|bitstream|all]
     Dump mode for output of vulkan video encoding tests
+    default: 'disable'
+
+  --deqp-vk-vendor-specific=[enable|disable]
+    Allows you to use vendor-specific configuration
     default: 'disable'
 
 Full list of parameters for the `vksc-server` application:

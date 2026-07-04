@@ -498,14 +498,9 @@ protected:
     void createCustomDeviceWithTransferOnlyQueue(void);
 
 protected:
-#ifdef CTS_USES_VULKANSC
-    const CustomInstance m_customInstance;
-#endif // CTS_USES_VULKANSC
-    Move<VkDevice> m_customDevice;
-    de::MovePtr<Allocator> m_customAllocator;
+    const InstanceWrapper m_instance;
+    DeviceWrapper m_device;
 
-    VkDevice m_device;
-    Allocator *m_allocator;
     uint32_t m_queueFamilyIndex;
 
     const StageFlagVector m_stages;
@@ -559,13 +554,8 @@ TimestampTestInstance::TimestampTestInstance(Context &context, const StageFlagVe
                                              const bool hostQueryReset, const bool transferOnlyQueue,
                                              const VkQueryResultFlags queryResultFlags)
     : TestInstance(context)
-#ifdef CTS_USES_VULKANSC
-    , m_customInstance(createCustomInstanceFromContext(context))
-#endif // CTS_USES_VULKANSC
-    , m_customDevice()
-    , m_customAllocator()
-    , m_device(VK_NULL_HANDLE)
-    , m_allocator(nullptr)
+    , m_instance(context)
+    , m_device(context)
     , m_queueFamilyIndex(std::numeric_limits<uint32_t>::max())
     , m_stages(stages)
     , m_inRenderPass(inRenderPass)
@@ -573,17 +563,15 @@ TimestampTestInstance::TimestampTestInstance(Context &context, const StageFlagVe
     , m_transferOnlyQueue(transferOnlyQueue)
     , m_queryResultFlags(queryResultFlags)
 {
-    const DeviceInterface &vk = context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
-    m_device           = context.getDevice();
-    m_allocator        = &context.getDefaultAllocator();
     m_queueFamilyIndex = context.getUniversalQueueFamilyIndex();
 
     // when needed create custom device and overwrite m_device, m_allocator and m_queueFamilyIndex
     if (m_transferOnlyQueue)
         createCustomDeviceWithTransferOnlyQueue();
 
-    m_timestampMask = getTimestampMask(context.getInstanceInterface(), context.getPhysicalDevice(), m_queueFamilyIndex);
+    m_timestampMask = getTimestampMask(m_device.getInstanceDriver(), m_device.getPhysicalDevice(), m_queueFamilyIndex);
 
     // Create Query Pool
     {
@@ -630,7 +618,7 @@ void TimestampTestInstance::buildPipeline(void)
 
 void TimestampTestInstance::configCommandBuffer(void)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
     beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
@@ -648,7 +636,7 @@ void TimestampTestInstance::configCommandBuffer(void)
 
 tcu::TestStatus TimestampTestInstance::iterate(void)
 {
-    const DeviceInterface &vk    = m_context.getDeviceInterface();
+    const DeviceInterface &vk    = m_device.getDriver();
     const VkQueue queue          = getDeviceQueue(vk, m_device, m_queueFamilyIndex, 0);
     const bool availabilityBit   = m_queryResultFlags & VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
     const uint32_t stageSize     = (uint32_t)m_stages.size();
@@ -743,7 +731,7 @@ tcu::TestStatus TimestampTestInstance::verifyTimestamp(void)
 Move<VkBuffer> TimestampTestInstance::createBufferAndBindMemory(VkDeviceSize size, VkBufferUsageFlags usage,
                                                                 de::MovePtr<Allocation> *pAlloc)
 {
-    const DeviceInterface &vk                   = m_context.getDeviceInterface();
+    const DeviceInterface &vk                   = m_device.getDriver();
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType      sType;
         nullptr,                              // const void*          pNext;
@@ -755,9 +743,9 @@ Move<VkBuffer> TimestampTestInstance::createBufferAndBindMemory(VkDeviceSize siz
         &m_queueFamilyIndex                   // const uint32_t*      pQueueFamilyIndices;
     };
 
-    Move<VkBuffer> vertexBuffer = createBuffer(vk, m_device, &vertexBufferParams);
-    de::MovePtr<Allocation> vertexBufferAlloc =
-        m_allocator->allocate(getBufferMemoryRequirements(vk, m_device, *vertexBuffer), MemoryRequirement::HostVisible);
+    Move<VkBuffer> vertexBuffer               = createBuffer(vk, m_device, &vertexBufferParams);
+    de::MovePtr<Allocation> vertexBufferAlloc = m_device.getAllocator().allocate(
+        getBufferMemoryRequirements(vk, m_device, *vertexBuffer), MemoryRequirement::HostVisible);
 
     VK_CHECK(
         vk.bindBufferMemory(m_device, *vertexBuffer, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset()));
@@ -773,13 +761,13 @@ Move<VkImage> TimestampTestInstance::createImage2DAndBindMemory(VkFormat format,
                                                                 VkSampleCountFlagBits sampleCount,
                                                                 de::details::MovePtr<Allocation> *pAlloc)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
     // Optimal tiling feature check
     VkFormatProperties formatProperty;
 
-    m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), format,
-                                                                       &formatProperty);
+    m_device.getInstanceDriver().getPhysicalDeviceFormatProperties(m_device.getPhysicalDevice(), format,
+                                                                   &formatProperty);
 
     if ((usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) &&
         !(formatProperty.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT))
@@ -816,7 +804,7 @@ Move<VkImage> TimestampTestInstance::createImage2DAndBindMemory(VkFormat format,
 
     // Allocate and bind image memory
     de::MovePtr<Allocation> colorImageAlloc =
-        m_allocator->allocate(getImageMemoryRequirements(vk, m_device, *image), MemoryRequirement::Any);
+        m_device.getAllocator().allocate(getImageMemoryRequirements(vk, m_device, *image), MemoryRequirement::Any);
     VK_CHECK(vk.bindImageMemory(m_device, *image, colorImageAlloc->getMemory(), colorImageAlloc->getOffset()));
 
     DE_ASSERT(pAlloc);
@@ -827,18 +815,8 @@ Move<VkImage> TimestampTestInstance::createImage2DAndBindMemory(VkFormat format,
 
 void TimestampTestInstance::createCustomDeviceWithTransferOnlyQueue(void)
 {
-#ifdef CTS_USES_VULKANSC
-    vk::VkInstance instance          = m_customInstance;
-    const vk::InstanceInterface &vki = m_customInstance.getDriver();
-    const VkPhysicalDevice physicalDevice =
-        chooseDevice(vki, m_customInstance, m_context.getTestContext().getCommandLine());
-#else
-    vk::VkInstance instance               = m_context.getInstance();
-    const vk::InstanceInterface &vki      = m_context.getInstanceInterface();
-    const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
-#endif // CTS_USES_VULKANSC
-
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const InstanceInterface &vki              = m_instance.getDriver();
+    const vk::VkPhysicalDevice physicalDevice = m_instance.getPhysicalDevice();
 
     m_queueFamilyIndex = findQueueFamilyIndexWithCaps(vki, physicalDevice, VK_QUEUE_TRANSFER_BIT,
                                                       VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
@@ -874,39 +852,6 @@ void TimestampTestInstance::createCustomDeviceWithTransferOnlyQueue(void)
         pNext                    = &queryResetFeatures;
     }
 
-#ifdef CTS_USES_VULKANSC
-    VkDeviceObjectReservationCreateInfo memReservationInfo =
-        m_context.getTestContext().getCommandLine().isSubProcess() ? m_context.getResourceInterface()->getStatMax() :
-                                                                     resetDeviceObjectReservationCreateInfo();
-    memReservationInfo.pNext = pNext;
-    pNext                    = &memReservationInfo;
-
-    VkPipelineCacheCreateInfo pcCI;
-    std::vector<VkPipelinePoolSize> poolSizes;
-    if (m_context.getTestContext().getCommandLine().isSubProcess())
-    {
-        if (m_context.getResourceInterface()->getCacheDataSize() > 0)
-        {
-            pcCI = {
-                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                nullptr,                                      // const void* pNext;
-                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                m_context.getResourceInterface()->getCacheDataSize(),     // uintptr_t initialDataSize;
-                m_context.getResourceInterface()->getCacheData()          // const void* pInitialData;
-            };
-            memReservationInfo.pipelineCacheCreateInfoCount = 1;
-            memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-        }
-        poolSizes = m_context.getResourceInterface()->getPipelinePoolSizes();
-        if (!poolSizes.empty())
-        {
-            memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-            memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-        }
-    }
-#endif // CTS_USES_VULKANSC
-
     const VkDeviceCreateInfo deviceCreateInfo{
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,         // VkStructureType sType;
         pNext,                                        // const void* pNext;
@@ -920,13 +865,7 @@ void TimestampTestInstance::createCustomDeviceWithTransferOnlyQueue(void)
         nullptr,                                      // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
-    m_customDevice =
-        vkt::createCustomDevice(m_context.getPlatformInterface(), instance, vki, physicalDevice, &deviceCreateInfo);
-    m_customAllocator = de::MovePtr<Allocator>(
-        new SimpleAllocator(vk, *m_customDevice, getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
-
-    m_device    = *m_customDevice;
-    m_allocator = &(*m_customAllocator);
+    m_device = m_instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
 }
 
 template <class T>
@@ -1596,7 +1535,7 @@ TestInstance *BasicGraphicsTest::createInstance(Context &context) const
 
 void BasicGraphicsTestInstance::buildVertexBuffer(void)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
     // Create vertex buffer
     {
@@ -1611,7 +1550,7 @@ void BasicGraphicsTestInstance::buildVertexBuffer(void)
 
 void BasicGraphicsTestInstance::buildRenderPass(VkFormat colorFormat, VkFormat depthFormat)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
     // Create render pass
     m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, m_device, colorFormat, depthFormat);
@@ -1619,7 +1558,7 @@ void BasicGraphicsTestInstance::buildRenderPass(VkFormat colorFormat, VkFormat d
 
 void BasicGraphicsTestInstance::buildFrameBuffer(tcu::UVec2 renderSize, VkFormat colorFormat, VkFormat depthFormat)
 {
-    const DeviceInterface &vk                     = m_context.getDeviceInterface();
+    const DeviceInterface &vk                     = m_device.getDriver();
     const VkComponentMapping ComponentMappingRGBA = {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G,
                                                      VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
 
@@ -1737,8 +1676,8 @@ BasicGraphicsTestInstance::BasicGraphicsTestInstance(Context &context,
     , m_renderSize(32, 32)
     , m_colorFormat(VK_FORMAT_R8G8B8A8_UNORM)
     , m_depthFormat(VK_FORMAT_D16_UNORM)
-    , m_graphicsPipeline(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(),
-                         context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType)
+    , m_graphicsPipeline(m_device.getInstanceDriver(), m_device.getDriver(), m_device.getPhysicalDevice(), *m_device,
+                         context.getDeviceExtensions(), pipelineConstructionType)
 {
     buildVertexBuffer();
 
@@ -1747,7 +1686,7 @@ BasicGraphicsTestInstance::BasicGraphicsTestInstance(Context &context,
     buildFrameBuffer(m_renderSize, m_colorFormat, m_depthFormat);
 
     // Create pipeline layout
-    const DeviceInterface &vk                             = m_context.getDeviceInterface();
+    const DeviceInterface &vk                             = m_device.getDriver();
     const VkPipelineLayoutCreateInfo pipelineLayoutParams = initVulkanStructure();
     m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, m_device, &pipelineLayoutParams);
 }
@@ -1817,7 +1756,7 @@ static const VkPipelineDepthStencilStateCreateInfo defaultDepthStencilStateParam
 
 void BasicGraphicsTestInstance::buildPipeline(void)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
     auto vertexShaderModule   = ShaderWrapper(vk, m_device, m_context.getBinaryCollection().get("color_vert"), 0);
     auto fragmentShaderModule = ShaderWrapper(vk, m_device, m_context.getBinaryCollection().get("color_frag"), 0);
@@ -1840,7 +1779,7 @@ void BasicGraphicsTestInstance::buildPipeline(void)
 
 void BasicGraphicsTestInstance::configCommandBuffer(void)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
     const VkClearValue attachmentClearValues[2] = {
         defaultClearValue(m_colorFormat),
@@ -2027,7 +1966,7 @@ AdvGraphicsTestInstance::AdvGraphicsTestInstance(Context &context,
     , m_features(context.getDeviceFeatures())
 {
 
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
     // Prepare the indirect draw buffer
     if (m_features.multiDrawIndirect == VK_TRUE)
@@ -2063,7 +2002,7 @@ AdvGraphicsTestInstance::AdvGraphicsTestInstance(Context &context,
 
 void AdvGraphicsTestInstance::buildPipeline(void)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
     const std::vector<VkViewport> viewports{makeViewport(m_renderSize)};
     const std::vector<VkRect2D> scissors{makeRect2D(m_renderSize)};
@@ -2102,7 +2041,7 @@ void AdvGraphicsTestInstance::buildPipeline(void)
 
 void AdvGraphicsTestInstance::configCommandBuffer(void)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
     const VkClearValue attachmentClearValues[2] = {
         defaultClearValue(m_colorFormat),
@@ -2224,8 +2163,9 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context &context, const Stage
                                                    VkQueryResultFlags VkQueryResultFlags)
     : TimestampTestInstance(context, stages, inRenderPass, hostQueryReset, false, VkQueryResultFlags)
 {
-    const DeviceInterface &vk = context.getDeviceInterface();
-    const VkDevice vkDevice   = context.getDevice();
+    const DeviceInterface &vk = m_device.getDriver();
+    ;
+    const VkDevice vkDevice = *m_device;
 
     // Create buffer object, allocate storage, and generate input data
     const VkDeviceSize size = sizeof(tcu::Vec4) * 128u * 128u;
@@ -2338,7 +2278,7 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context &context, const Stage
 
 void BasicComputeTestInstance::configCommandBuffer(void)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
     beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
@@ -2438,7 +2378,7 @@ TransferTestInstance::TransferTestInstance(Context &context, const StageFlagVect
     , m_imageHeight(4u)
     , m_imageSize(256u)
 {
-    const DeviceInterface &vk = context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
     // Create src buffer
     m_srcBuffer = createBufferAndBindMemory(
@@ -2471,7 +2411,7 @@ TransferTestInstance::TransferTestInstance(Context &context, const StageFlagVect
 
 void TransferTestInstance::configCommandBuffer(void)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
     beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
@@ -2694,7 +2634,7 @@ void TransferTestInstance::configCommandBuffer(void)
 void TransferTestInstance::initialImageTransition(VkCommandBuffer cmdBuffer, VkImage image,
                                                   VkImageSubresourceRange subRange, VkImageLayout layout)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
     const VkImageMemoryBarrier imageMemBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType          sType;
@@ -3049,7 +2989,7 @@ TwoCmdBuffersTestInstance::TwoCmdBuffersTestInstance(Context &context, const Sta
     : TimestampTestInstance(context, stages, inRenderPass, hostQueryReset, transferOnlyQueue, queryResultFlags)
     , m_cmdBufferLevel(cmdBufferLevel)
 {
-    const DeviceInterface &vk = context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
     m_secondCmdBuffer = allocateCommandBuffer(vk, m_device, *m_cmdPool, cmdBufferLevel);
     m_dstBuffer = createBufferAndBindMemory(1024, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -3058,7 +2998,7 @@ TwoCmdBuffersTestInstance::TwoCmdBuffersTestInstance(Context &context, const Sta
 
 void TwoCmdBuffersTestInstance::configCommandBuffer(void)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
 
     const VkCommandBufferBeginInfo cmdBufferBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType                          sType;
@@ -3131,7 +3071,7 @@ void TwoCmdBuffersTestInstance::configCommandBuffer(void)
 
 tcu::TestStatus TwoCmdBuffersTestInstance::iterate(void)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_device.getDriver();
     const VkQueue queue       = getDeviceQueue(vk, m_device, m_queueFamilyIndex, 0);
 
     configCommandBuffer();

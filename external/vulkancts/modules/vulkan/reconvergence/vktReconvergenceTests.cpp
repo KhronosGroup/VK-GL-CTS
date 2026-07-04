@@ -257,7 +257,7 @@ struct Ballots : protected std::vector<std::bitset<128>>
         if (ballot.any())
             *this = ballot;
     }
-    Ballots(add_cref<Ballots> other) : super(upcast(other))
+    Ballots(add_cref<Ballots> other) : super(*upcast(other))
     {
     }
     using super::operator[];
@@ -351,16 +351,16 @@ struct Ballots : protected std::vector<std::bitset<128>>
         return (((otherFullyQualifiedInvocationID / otherSubgroupSize) * subgroupInvocationSize) +
                 (otherFullyQualifiedInvocationID % otherSubgroupSize));
     }
-    inline add_cref<super> upcast(add_cref<Ballots> other) const
+    static const super *upcast(const Ballots &b)
     {
-        return static_cast<add_cref<super>>(other);
+        return static_cast<const super *>(&b);
     }
     add_ref<Ballots> operator&=(add_cref<Ballots> other)
     {
         DE_ASSERT(subgroupCount() == other.subgroupCount());
         const uint32_t gg = subgroupCount();
         for (uint32_t g = 0u; g < gg; ++g)
-            super::at(g) = super::at(g) & upcast(other).at(g);
+            super::at(g) = super::at(g) & upcast(other)->at(g);
         return *this;
     }
     Ballots operator&(add_cref<Ballots> other) const
@@ -374,7 +374,7 @@ struct Ballots : protected std::vector<std::bitset<128>>
         DE_ASSERT(subgroupCount() == other.subgroupCount());
         const uint32_t gg = subgroupCount();
         for (uint32_t g = 0u; g < gg; ++g)
-            super::at(g) = super::at(g) | upcast(other).at(g);
+            super::at(g) = super::at(g) | upcast(other)->at(g);
         return *this;
     }
     Ballots operator|(add_cref<Ballots> other) const
@@ -407,7 +407,7 @@ struct Ballots : protected std::vector<std::bitset<128>>
     }
     bool operator==(add_cref<Ballots> other) const
     {
-        if (super::size() == upcast(other).size())
+        if (super::size() == upcast(other)->size())
         {
             const uint32_t gg = subgroupCount();
             for (uint32_t g = 0u; g < gg; ++g)

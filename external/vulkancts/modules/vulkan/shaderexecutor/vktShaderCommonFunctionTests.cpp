@@ -464,18 +464,17 @@ void CommonFunctionCase::checkSupport(Context &context) const
 
 // CommonFunctionTestInstance
 
-class CommonFunctionTestInstance : public TestInstance
+class CommonFunctionTestInstance : public MultiQueueRunnerTestInstance
 {
 public:
     CommonFunctionTestInstance(Context &context, const ShaderSpec &spec, int numValues, const char *name)
-        : TestInstance(context)
+        : MultiQueueRunnerTestInstance(context, COMPUTE_QUEUE)
         , m_spec(spec)
         , m_numValues(numValues)
         , m_name(name)
-        , m_executor(createExecutor(context, glu::SHADERTYPE_COMPUTE, spec))
     {
     }
-    virtual tcu::TestStatus iterate(void);
+    virtual tcu::TestStatus queuePass(const QueueData &queueData) override;
 
 protected:
     virtual void getInputValues(int numValues, void *const *values) const       = 0;
@@ -488,12 +487,14 @@ protected:
     const char *m_name;
 
     std::ostringstream m_failMsg; //!< Comparison failure help message.
-
-    de::UniquePtr<ShaderExecutor> m_executor;
 };
 
-tcu::TestStatus CommonFunctionTestInstance::iterate(void)
+tcu::TestStatus CommonFunctionTestInstance::queuePass(const QueueData &queueData)
 {
+    const UserQueue userQueue(queueData.handle, queueData.familyIndex);
+    de::UniquePtr<ShaderExecutor> executor(
+        createExecutor(m_context, glu::SHADERTYPE_COMPUTE, m_spec, VK_NULL_HANDLE, userQueue));
+
     const int numInputBytes  = computeTotalByteSize(m_spec.inputs);
     const int numOutputBytes = computeTotalByteSize(m_spec.outputs);
     vector<uint8_t> inputData(numInputBytes * m_numValues);
@@ -505,7 +506,7 @@ tcu::TestStatus CommonFunctionTestInstance::iterate(void)
     getInputValues(m_numValues, &inputPointers[0]);
 
     // Execute shader.
-    m_executor->execute(m_numValues, &inputPointers[0], &outputPointers[0]);
+    executor->execute(m_numValues, &inputPointers[0], &outputPointers[0]);
 
     // Compare results.
     {

@@ -3371,14 +3371,18 @@ public:
     void createAndPopulateUnusedDescriptors(IterateCommonVariables &variables) override;
     void updateDescriptors(IterateCommonVariables &variables) override;
     bool verifyVertexWriteResults(IterateCommonVariables &variables) override;
+
+    inline static TestParams makeDynamicStorageBufferTestParams(Context &context, const TestCaseParams &testCaseParams)
+    {
+        return TestParams(VK_SHADER_STAGE_ALL_GRAPHICS, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
+                          VK_DESCRIPTOR_TYPE_UNDEFINED, false,
+                          performWritesInVertex(testCaseParams.descriptorType, context), testCaseParams);
+    }
 };
 
 DynamicStorageBufferInstance::DynamicStorageBufferInstance(Context &context, const TestCaseParams &testCaseParams)
-    : CommonDescriptorInstance(
-          context, TestParams(VK_SHADER_STAGE_ALL_GRAPHICS, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
-                              VK_DESCRIPTOR_TYPE_UNDEFINED, false,
-                              performWritesInVertex(testCaseParams.descriptorType, context), testCaseParams))
-    , DynamicBuffersInstance(context, m_testParams)
+    : CommonDescriptorInstance(context, makeDynamicStorageBufferTestParams(context, testCaseParams))
+    , DynamicBuffersInstance(context, makeDynamicStorageBufferTestParams(context, testCaseParams))
     , StorageBufferInstance(context, testCaseParams)
 {
 }
@@ -3416,14 +3420,18 @@ public:
     void createAndPopulateDescriptors(IterateCommonVariables &variables) override;
     void createAndPopulateUnusedDescriptors(IterateCommonVariables &variables) override;
     void updateDescriptors(IterateCommonVariables &variables) override;
+
+    inline TestParams makeDynamicUniformBufferTestParams(Context &context, const TestCaseParams &testCaseParams)
+    {
+        return TestParams(VK_SHADER_STAGE_ALL_GRAPHICS, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+                          VK_DESCRIPTOR_TYPE_UNDEFINED, false,
+                          performWritesInVertex(testCaseParams.descriptorType, context), testCaseParams);
+    }
 };
 
 DynamicUniformBufferInstance::DynamicUniformBufferInstance(Context &context, const TestCaseParams &testCaseParams)
-    : CommonDescriptorInstance(
-          context, TestParams(VK_SHADER_STAGE_ALL_GRAPHICS, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-                              VK_DESCRIPTOR_TYPE_UNDEFINED, false,
-                              performWritesInVertex(testCaseParams.descriptorType, context), testCaseParams))
-    , DynamicBuffersInstance(context, m_testParams)
+    : CommonDescriptorInstance(context, makeDynamicUniformBufferTestParams(context, testCaseParams))
+    , DynamicBuffersInstance(context, makeDynamicUniformBufferTestParams(context, testCaseParams))
     , UniformBufferInstance(context, testCaseParams)
 {
 }

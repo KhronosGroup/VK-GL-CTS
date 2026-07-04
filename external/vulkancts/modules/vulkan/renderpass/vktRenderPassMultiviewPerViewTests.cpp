@@ -161,7 +161,9 @@ public:
     {
         // For cases with dynamic rendering.
         caps.addExtension("VK_KHR_dynamic_rendering");
+#ifndef CTS_USES_VULKANSC
         caps.addFeature(&VkPhysicalDeviceDynamicRenderingFeatures::dynamicRendering);
+#endif
         caps.addExtension("VK_KHR_depth_stencil_resolve");
 
         // For cases with extended dynamic state.
@@ -579,6 +581,7 @@ tcu::TestStatus ViewportsInstance::iterate(void)
     std::vector<PipelinePtr> pipelines;
     pipelines.reserve(pipelineCount);
 
+#ifndef CTS_USES_VULKANSC
     std::unique_ptr<VkPipelineRenderingCreateInfo> pRenderingCreateInfo;
     if (m_params.useDynamicRendering())
     {
@@ -592,6 +595,7 @@ tcu::TestStatus ViewportsInstance::iterate(void)
             VK_FORMAT_UNDEFINED,
         });
     }
+#endif // CTS_USES_VULKANSC
 
     for (uint32_t i = 0u; i < pipelineCount; ++i)
     {
@@ -601,8 +605,10 @@ tcu::TestStatus ViewportsInstance::iterate(void)
         auto &pipeline = *pipelines.back();
 
         // Appropriate view mask for each pass.
+#ifndef CTS_USES_VULKANSC
         if (m_params.useDynamicRendering())
             pRenderingCreateInfo->viewMask = subpassMasks.at(i);
+#endif // CTS_USES_VULKANSC
 
         pipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
             .setDefaultRasterizationState()
@@ -614,7 +620,13 @@ tcu::TestStatus ViewportsInstance::iterate(void)
             .setupVertexInputState(&vertexInputStateCreateInfo)
             .setupPreRasterizationShaderState(staticViewports, staticScissors, pipelineLayout, *renderPass, i,
                                               vertShader, nullptr, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(),
-                                              nullptr, nullptr, pRenderingCreateInfo.get())
+                                              nullptr, nullptr,
+#ifndef CTS_USES_VULKANSC
+                                              pRenderingCreateInfo.get()
+#else
+                                              nullptr
+#endif
+                                                  )
             .setupFragmentShaderState(pipelineLayout, *renderPass, i, fragShader, &depthStencilStateCreateInfo)
             .setupFragmentOutputState(*renderPass, i)
             .buildPipeline();
@@ -1087,7 +1099,9 @@ public:
 #endif // CTS_USES_VULKANSC
 
         caps.addExtension("VK_KHR_dynamic_rendering");
+#ifndef CTS_USES_VULKANSC
         caps.addFeature(&VkPhysicalDeviceDynamicRenderingFeatures::dynamicRendering);
+#endif
         caps.addExtension("VK_KHR_depth_stencil_resolve");
 
         // Note renderpass2 and its dependencies are always needed, even in the dynamic rendering case, because
@@ -1429,6 +1443,7 @@ tcu::TestStatus RenderAreasInstance::iterate(void)
     std::vector<PipelinePtr> pipelines;
     pipelines.reserve(pipelineCount);
 
+#ifndef CTS_USES_VULKANSC
     std::unique_ptr<VkPipelineRenderingCreateInfo> pRenderingCreateInfo;
     if (m_params.useDynamicRendering())
     {
@@ -1442,6 +1457,7 @@ tcu::TestStatus RenderAreasInstance::iterate(void)
             VK_FORMAT_UNDEFINED,
         });
     }
+#endif // CTS_USES_VULKANSC
 
     const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
@@ -1463,8 +1479,10 @@ tcu::TestStatus RenderAreasInstance::iterate(void)
         auto &pipeline = *pipelines.back();
 
         // Appropriate view mask for each pass.
+#ifndef CTS_USES_VULKANSC
         if (m_params.useDynamicRendering())
             pRenderingCreateInfo->viewMask = subpassMasks.at(i);
+#endif // CTS_USES_VULKANSC
 
         pipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
             .setDefaultRasterizationState()
@@ -1475,7 +1493,12 @@ tcu::TestStatus RenderAreasInstance::iterate(void)
             .setupVertexInputState(&vertexInputStateCreateInfo)
             .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, i, vertShader, nullptr,
                                               ShaderWrapper(), ShaderWrapper(), geomShader, nullptr, nullptr,
-                                              pRenderingCreateInfo.get())
+#ifndef CTS_USES_VULKANSC
+                                              pRenderingCreateInfo.get()
+#else
+                                              nullptr
+#endif
+                                                  )
             .setupFragmentShaderState(pipelineLayout, *renderPass, i, fragShader, nullptr, &multisampleStateCreateInfo)
             .setupFragmentOutputState(*renderPass, i, nullptr, &multisampleStateCreateInfo)
             .buildPipeline();

@@ -127,7 +127,7 @@ bool verifyMatrixOutput(const std::vector<Resource> &inputs, const vector<Alloca
         return false;
 
     vector<uint8_t> expectedBytes;
-    expectedOutputs[0].getBytes(expectedBytes);
+    expectedOutputs[0].buffer->getBytes(expectedBytes);
 
     const float *const expectedOutputAsFloat = reinterpret_cast<const float *>(&expectedBytes.front());
     const float *const outputAsFloat         = static_cast<const float *>(outputAllocs[0]->getHostPtr());

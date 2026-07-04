@@ -27,6 +27,7 @@ template<> inline VkObjectType	getObjectType<VkDisplayModeKHR>					(void) { retu
 template<> inline VkObjectType	getObjectType<VkEvent>							(void) { return VK_OBJECT_TYPE_EVENT;							}
 template<> inline VkObjectType	getObjectType<VkFence>							(void) { return VK_OBJECT_TYPE_FENCE;							}
 template<> inline VkObjectType	getObjectType<VkFramebuffer>					(void) { return VK_OBJECT_TYPE_FRAMEBUFFER;						}
+template<> inline VkObjectType	getObjectType<VkGpaSessionAMD>					(void) { return VK_OBJECT_TYPE_GPA_SESSION_AMD;					}
 template<> inline VkObjectType	getObjectType<VkImage>							(void) { return VK_OBJECT_TYPE_IMAGE;							}
 template<> inline VkObjectType	getObjectType<VkImageView>						(void) { return VK_OBJECT_TYPE_IMAGE_VIEW;						}
 template<> inline VkObjectType	getObjectType<VkIndirectCommandsLayoutEXT>		(void) { return VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_EXT;	}

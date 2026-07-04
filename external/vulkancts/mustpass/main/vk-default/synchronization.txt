@@ -60024,6 +60024,7 @@ dEQP-VK.synchronization.smoke.queue_type_ignore_image_arbitrary
 dEQP-VK.synchronization.smoke.queue_type_ignore_image_external
 dEQP-VK.synchronization.smoke.queue_type_ignore_image_foreign
 dEQP-VK.synchronization.smoke.queue_type_ignore_image_ignored
+dEQP-VK.synchronization.smoke.queue_type_image_barrier_external
 dEQP-VK.synchronization.smoke.timeline_semaphores
 dEQP-VK.synchronization.timeline_semaphore.device_host.misc.initial_value
 dEQP-VK.synchronization.timeline_semaphore.device_host.misc.max_difference_value

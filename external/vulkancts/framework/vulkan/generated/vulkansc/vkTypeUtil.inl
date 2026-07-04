@@ -464,12 +464,3 @@ inline VkXYColorEXT makeXYColorEXT (float x, float y)
 	return res;
 }
 
-inline VkDrmFormatModifierProperties2EXT makeDrmFormatModifierProperties2EXT (uint64_t drmFormatModifier, uint32_t drmFormatModifierPlaneCount, VkFormatFeatureFlags2 drmFormatModifierTilingFeatures)
-{
-	VkDrmFormatModifierProperties2EXT res;
-	res.drmFormatModifier				= drmFormatModifier;
-	res.drmFormatModifierPlaneCount		= drmFormatModifierPlaneCount;
-	res.drmFormatModifierTilingFeatures	= drmFormatModifierTilingFeatures;
-	return res;
-}
-

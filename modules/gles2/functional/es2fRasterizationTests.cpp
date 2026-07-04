@@ -1138,8 +1138,8 @@ public:
     IterateResult iterate(void);
 
 private:
-    int getRenderSize(FillRuleCase::FillRuleCaseType type) const;
-    int getNumIterations(FillRuleCase::FillRuleCaseType type) const;
+    static int getRenderSize(FillRuleCase::FillRuleCaseType type);
+    static int getNumIterations(FillRuleCase::FillRuleCaseType type);
     void generateTriangles(int iteration, std::vector<tcu::Vec4> &outData) const;
 
     const FillRuleCaseType m_caseType;
@@ -1278,7 +1278,7 @@ FillRuleCase::IterateResult FillRuleCase::iterate(void)
         return CONTINUE;
 }
 
-int FillRuleCase::getRenderSize(FillRuleCase::FillRuleCaseType type) const
+int FillRuleCase::getRenderSize(FillRuleCase::FillRuleCaseType type)
 {
     if (type == FILLRULECASE_CLIPPED_FULL || type == FILLRULECASE_CLIPPED_PARTIAL)
         return 64;
@@ -1286,7 +1286,7 @@ int FillRuleCase::getRenderSize(FillRuleCase::FillRuleCaseType type) const
         return 256;
 }
 
-int FillRuleCase::getNumIterations(FillRuleCase::FillRuleCaseType type) const
+int FillRuleCase::getNumIterations(FillRuleCase::FillRuleCaseType type)
 {
     if (type == FILLRULECASE_CLIPPED_FULL || type == FILLRULECASE_CLIPPED_PARTIAL)
         return 15;

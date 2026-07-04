@@ -299,7 +299,7 @@ VkDevice VideoBaseTestInstance::getDeviceSupportingQueue(const VkQueueFlags queu
     return m_videoDevice.getDeviceSupportingQueue(queueFlagsRequired, videoCodecOperationFlags, videoDeviceFlags);
 }
 
-const DeviceDriver &VideoBaseTestInstance::getDeviceDriver(void)
+const DeviceInterface &VideoBaseTestInstance::getDeviceDriver(void)
 {
     return m_videoDevice.getDeviceDriver();
 }
@@ -863,6 +863,9 @@ vector<AllocationPtr> getAndBindVideoSessionMemory(const DeviceInterface &vkd, c
 
     vector<AllocationPtr> allocations(videoSessionMemoryRequirements.size());
     vector<VkBindVideoSessionMemoryInfoKHR> videoBindsMemoryKHR(videoSessionMemoryRequirements.size());
+
+    if (allocations.empty())
+        return allocations;
 
     for (size_t ndx = 0; ndx < allocations.size(); ++ndx)
     {

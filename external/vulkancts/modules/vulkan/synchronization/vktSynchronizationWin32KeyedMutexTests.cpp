@@ -141,11 +141,11 @@ CustomInstance createTestInstance(Context &context)
     return createCustomInstanceWithExtensions(context, extensions);
 }
 
-vk::Move<vk::VkDevice> createTestDevice(Context &context, vk::VkInstance instance, const vk::InstanceInterface &vki,
-                                        vk::VkPhysicalDevice physicalDevice)
+static CustomDevice createTestDevice(Context &context, const InstanceWrapper &instance,
+                                     vk::VkPhysicalDevice physicalDevice)
 {
     const uint32_t apiVersion        = context.getUsedApiVersion();
-    const vk::PlatformInterface &vkp = context.getPlatformInterface();
+    const vk::InstanceInterface &vki = instance.getDriver();
     const float priority             = 0.0f;
     const std::vector<vk::VkQueueFamilyProperties> queueFamilyProperties =
         vk::getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
@@ -192,7 +192,7 @@ vk::Move<vk::VkDevice> createTestDevice(Context &context, vk::VkInstance instanc
                                                    extensions.empty() ? nullptr : &extensions[0],
                                                    &features};
 
-        return createCustomDevice(vkp, instance, vki, physicalDevice, &createInfo);
+        return instance.createCustomDevice(physicalDevice, &createInfo);
     }
     catch (const vk::Error &error)
     {
@@ -1360,10 +1360,11 @@ private:
 class InstanceAndDevice
 {
     InstanceAndDevice(Context &context)
-        : m_instance(createTestInstance(context))
+        : m_customInstance(createTestInstance(context))
+        , m_instance(m_customInstance)
         , m_vki(m_instance.getDriver())
-        , m_physicalDevice(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
-        , m_logicalDevice(createTestDevice(context, m_instance, m_vki, m_physicalDevice))
+        , m_physicalDevice(m_instance.getPhysicalDevice())
+        , m_logicalDevice(createTestDevice(context, m_instance, m_physicalDevice))
         , m_supportDX11(new DX11OperationSupport(m_vki, m_physicalDevice))
     {
     }
@@ -1376,7 +1377,7 @@ public:
 
         return m_instanceAndDevice->m_instance;
     }
-    static const vk::InstanceDriver &getDriver()
+    static const vk::InstanceInterface &getDriver()
     {
         DE_ASSERT(m_instanceAndDevice);
         return m_instanceAndDevice->m_instance.getDriver();
@@ -1386,7 +1387,7 @@ public:
         DE_ASSERT(m_instanceAndDevice);
         return m_instanceAndDevice->m_physicalDevice;
     }
-    static const Unique<vk::VkDevice> &getDevice()
+    static const DeviceWrapper &getDevice()
     {
         DE_ASSERT(m_instanceAndDevice);
         return m_instanceAndDevice->m_logicalDevice;
@@ -1399,7 +1400,7 @@ public:
     static void collectMessages()
     {
         DE_ASSERT(m_instanceAndDevice);
-        m_instanceAndDevice->m_instance.collectMessages();
+        m_instanceAndDevice->m_customInstance.collectMessages();
     }
 
     static void destroy()
@@ -1408,10 +1409,11 @@ public:
     }
 
 private:
-    CustomInstance m_instance;
-    const vk::InstanceDriver &m_vki;
+    CustomInstance m_customInstance;
+    const InstanceWrapper m_instance;
+    const vk::InstanceInterface &m_vki;
     const vk::VkPhysicalDevice m_physicalDevice;
-    const Unique<vk::VkDevice> m_logicalDevice;
+    const DeviceWrapper m_logicalDevice;
     const de::UniquePtr<DX11OperationSupport> m_supportDX11;
 
     static SharedPtr<InstanceAndDevice> m_instanceAndDevice;
@@ -1432,12 +1434,12 @@ private:
 
     const vk::VkInstance m_instance;
 
-    const vk::InstanceDriver &m_vki;
+    const vk::InstanceInterface &m_vki;
     const vk::VkPhysicalDevice m_physicalDevice;
     const std::vector<vk::VkQueueFamilyProperties> m_queueFamilies;
     const std::vector<uint32_t> m_queueFamilyIndices;
-    const vk::Unique<vk::VkDevice> &m_device;
-    const vk::DeviceDriver m_vkd;
+    const DeviceWrapper &m_device;
+    const vk::DeviceInterface &m_vkd;
 
     const vk::VkExternalMemoryHandleTypeFlagBits m_memoryHandleType;
 
@@ -1460,8 +1462,7 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance(Context &context, TestC
     , m_queueFamilies(vk::getPhysicalDeviceQueueFamilyProperties(m_vki, m_physicalDevice))
     , m_queueFamilyIndices(getFamilyIndices(m_queueFamilies))
     , m_device(InstanceAndDevice::getDevice())
-    , m_vkd(context.getPlatformInterface(), m_instance, *m_device, context.getUsedApiVersion(),
-            context.getTestContext().getCommandLine())
+    , m_vkd(m_device.getDriver())
 
     , m_memoryHandleType((m_config.resource.type == RESOURCE_TYPE_IMAGE) ? m_config.memoryHandleTypeImage :
                                                                            m_config.memoryHandleTypeBuffer)
@@ -1473,8 +1474,7 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance(Context &context, TestC
 {
     // When using compute only mode skip universal queue
     if (m_context.getTestContext().getCommandLine().isComputeOnly())
-        m_queueNdx = findQueueFamilyIndexWithCaps(context.getInstanceInterface(), m_physicalDevice,
-                                                  VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT);
+        m_queueNdx = findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT);
 
 #if (DE_OS == DE_OS_WIN32)
     TestLog &log = m_context.getTestContext().getLog();
@@ -1521,7 +1521,7 @@ tcu::TestStatus Win32KeyedMutexTestInstance::iterate(void)
             allocateCommandBuffer(m_vkd, *m_device, *commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
         const vk::Unique<vk::VkCommandBuffer> commandBufferRead(
             allocateCommandBuffer(m_vkd, *m_device, *commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-        vk::SimpleAllocator allocator(m_vkd, *m_device, vk::getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice));
+        vk::Allocator &allocator = m_device.getAllocator();
         OperationContext operationContext(m_context, SynchronizationType::LEGACY, m_vki, m_vkd, m_physicalDevice,
                                           *m_device, allocator, m_context.getBinaryCollection(), m_pipelineCacheData);
 

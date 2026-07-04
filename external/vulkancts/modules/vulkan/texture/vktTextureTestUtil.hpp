@@ -42,6 +42,7 @@
 #include "deSharedPtr.hpp"
 
 #include "../pipeline/vktPipelineImageUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 namespace vkt
 {
@@ -274,7 +275,11 @@ public:
     uint32_t getRenderHeight(void) const;
 
 protected:
+    vk::VkPhysicalDevice getPhysicalDevice(void) const;
     vk::VkDevice getDevice(void) const;
+    const vk::InstanceInterface &getInstanceInterface(void) const;
+    const vk::DeviceInterface &getDeviceInterface(void) const;
+    vk::Allocator &getAllocator(void) const;
 
     vk::Move<vk::VkDescriptorSet> makeDescriptorSet(const vk::VkDescriptorPool descriptorPool,
                                                     const vk::VkDescriptorSetLayout setLayout) const;
@@ -286,8 +291,8 @@ protected:
 protected:
     Context &m_context;
     tcu::TestLog &m_log;
-    vk::Move<vk::VkDevice> m_customDevice;
-    de::MovePtr<vk::Allocator> m_allocator;
+    InstanceWrapper m_instance;
+    DeviceWrapper m_device;
     vk::Move<vk::VkCommandPool> m_commandPool;
     vk::Move<vk::VkCommandBuffer> m_commandBuffer;
 

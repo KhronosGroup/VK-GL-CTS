@@ -2715,6 +2715,28 @@ TestInstance *SSBOLayoutCase::createInstance(Context &context) const
                                       m_usePhysStorageBuffer, m_use64BitIndexing);
 }
 
+#ifndef CTS_USES_VULKANSC
+// Returns true if the physical device has at least one DEVICE_LOCAL heap large
+// enough for the ~4 GB SSBO allocation that the 64-bit-indexing tests perform.
+// Used as a precondition by both delayedInit() (early-return so host-side
+// reference data isn't allocated) and checkSupport() (TCU_THROW NotSupportedError
+// so the test reports as Not Supported).
+static bool deviceHasHeapForSsbo64bAllocation(const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice)
+{
+    const vk::VkPhysicalDeviceMemoryProperties memProps = vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice);
+    const vk::VkDeviceSize requiredHeapSize             = (1ull << 32) + (1ull << 28); // ~4 GB + 256 MB headroom
+    for (uint32_t h = 0; h < memProps.memoryHeapCount; ++h)
+    {
+        if ((memProps.memoryHeaps[h].flags & vk::VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) &&
+            memProps.memoryHeaps[h].size >= requiredHeapSize)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+#endif // !CTS_USES_VULKANSC
+
 void SSBOLayoutCase::checkSupport(Context &context) const
 {
     if (!context.isDeviceFunctionalitySupported("VK_KHR_relaxed_block_layout") && usesRelaxedLayout(m_interface))
@@ -2738,6 +2760,14 @@ void SSBOLayoutCase::checkSupport(Context &context) const
 #ifndef CTS_USES_VULKANSC
     if (m_use64BitIndexing && !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
         TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
+
+    // The 64-bit indexing tests deliberately allocate just over 4 GB to exercise
+    // 64-bit SSBO indexing. Skip on devices with no memory heap large enough to
+    // hold such an allocation (e.g. handhelds), where vkAllocateMemory would
+    // otherwise return VK_ERROR_OUT_OF_DEVICE_MEMORY mid-test.
+    if (m_use64BitIndexing &&
+        !deviceHasHeapForSsbo64bAllocation(context.getInstanceInterface(), context.getPhysicalDevice()))
+        TCU_THROW(NotSupportedError, "No device-local memory heap large enough for >4GB SSBO allocation");
 #endif
     const vk::VkPhysicalDeviceProperties &properties = context.getDeviceProperties();
     // Shader defines N+1 storage buffers: N to operate and one more to store the number of cases passed.
@@ -2761,6 +2791,16 @@ void SSBOLayoutCase::delayedInit(void)
         auto &deviceExtensions = contextManager->getDeviceExtensions();
         if (m_use64BitIndexing && std::find(deviceExtensions.begin(), deviceExtensions.end(),
                                             "VK_EXT_shader_64bit_indexing") == deviceExtensions.end())
+            return;
+
+        // The 64-bit indexing tests build host-side reference data sized to ~4 GB
+        // (matching the device-side allocation in iterate). On memory-constrained
+        // devices (e.g. handhelds with a single ~2 GB heap) initRefDataStorage
+        // would throw bad_alloc inside delayedInit before checkSupport runs.
+        // Skip the host-side allocation here; checkSupport will subsequently
+        // throw NotSupportedError and the test is reported as Not Supported.
+        if (m_use64BitIndexing && !deviceHasHeapForSsbo64bAllocation(contextManager->getInstanceInterface(),
+                                                                     contextManager->getPhysicalDevice()))
             return;
     }
 #endif
