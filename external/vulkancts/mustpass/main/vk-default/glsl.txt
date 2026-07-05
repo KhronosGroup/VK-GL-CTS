@@ -1238,6 +1238,7 @@ dEQP-VK.glsl.builtin.function.common.abs.ivec4_highp_compute
 dEQP-VK.glsl.builtin.function.common.abs.ivec4_mediump_compute
 dEQP-VK.glsl.builtin.function.common.abs.ivec5_highp_compute
 dEQP-VK.glsl.builtin.function.common.abs.ivec5_mediump_compute
+dEQP-VK.glsl.builtin.function.common.clamp.clamp_const_array_dynamic_index
 dEQP-VK.glsl.builtin.function.common.floatbitstoint.float_highp_compute
 dEQP-VK.glsl.builtin.function.common.floatbitstoint.float_mediump_compute
 dEQP-VK.glsl.builtin.function.common.floatbitstoint.vec2_highp_compute
