@@ -4582,6 +4582,7 @@ dEQP-VK.robustness.image_robustness.push.notemplate.rgba32ui.unroll.volatile.sto
 dEQP-VK.robustness.index_access.draw_indexed_2_device_address
 dEQP-VK.robustness.index_access.draw_indexed_indirect_2_device_address
 dEQP-VK.robustness.index_access.draw_indexed_indirect_count_2_device_address
+dEQP-VK.robustness.oob_access.misc.fma_test_hang
 dEQP-VK.robustness.oob_access.robust_off.storage_image_r32_uint_read_off_128x128
 dEQP-VK.robustness.oob_access.robust_off.storage_image_r32_uint_read_off_16x16
 dEQP-VK.robustness.oob_access.robust_off.storage_image_r32_uint_read_off_64x64

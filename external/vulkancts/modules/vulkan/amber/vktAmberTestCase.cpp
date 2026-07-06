@@ -64,7 +64,8 @@ TestInstance *AmberTestCase::createInstance(Context &ctx) const
     return new AmberTestInstance(ctx, m_recipe, nullptr);
 }
 
-static amber::EngineConfig *createEngineConfig(Context &ctx, vk::VkDevice customDevice)
+static amber::EngineConfig *createEngineConfig(Context &ctx, vk::VkDevice customDevice,
+                                               const vk::VkPhysicalDeviceFeatures2 &features2)
 {
     vk::VkDevice dev = customDevice != nullptr ? customDevice : ctx.getDevice();
     vk::VkQueue queue;
@@ -73,8 +74,8 @@ static amber::EngineConfig *createEngineConfig(Context &ctx, vk::VkDevice custom
     vk.getDeviceQueue(dev, ctx.getUniversalQueueFamilyIndex(), 0, &queue);
 
     amber::EngineConfig *vkConfig = GetVulkanConfig(
-        ctx.getInstance(), ctx.getPhysicalDevice(), dev, &ctx.getDeviceFeatures(), &ctx.getDeviceFeatures2(),
-        &ctx.getDeviceProperties(), &ctx.getDeviceProperties2(), ctx.getInstanceExtensions(), ctx.getDeviceExtensions(),
+        ctx.getInstance(), ctx.getPhysicalDevice(), dev, &features2.features, &features2, &ctx.getDeviceProperties(),
+        &ctx.getDeviceProperties2(), ctx.getInstanceExtensions(), ctx.getDeviceExtensions(),
         ctx.getUniversalQueueFamilyIndex(), queue, ctx.getInstanceProcAddr());
 
     return vkConfig;
@@ -551,7 +552,7 @@ tcu::TestStatus AmberTestInstance::iterate(void)
     amber::Result r;
 
     amber_options.engine         = amber::kEngineTypeVulkan;
-    amber_options.config         = createEngineConfig(m_context, m_customDevice);
+    amber_options.config         = createEngineConfig(m_context, m_customDevice, m_features2);
     amber_options.execution_type = amber::ExecutionType::kExecute;
 
     // Check for extensions as declared by the Amber script itself.  Throw an internal

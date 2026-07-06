@@ -1,0 +1,37 @@
+#!amber
+
+DEVICE_FEATURE robustBufferAccess
+
+SHADER compute compute_shader GLSL
+#version 430
+
+layout (local_size_x = 1) in;
+
+layout(binding = 0) buffer binding0 {
+   float src[];
+};
+
+layout(binding = 1) buffer binding1 {
+   float dst[];
+};
+
+void main() {
+   dst[0] = src[1021] + src[1022] + src[1023] + src[1024];
+}
+
+END
+
+# 1024 * sizeof(uint32) = 4096
+BUFFER dst DATA_TYPE uint32 SIZE 1024 FILL 0
+BUFFER src DATA_TYPE uint32 SIZE 1024 FILL 0
+
+BUFFER expected DATA_TYPE uint32 SIZE 1024 FILL 0
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+  BIND BUFFER src AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER dst AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN pipeline 1 1 1
+

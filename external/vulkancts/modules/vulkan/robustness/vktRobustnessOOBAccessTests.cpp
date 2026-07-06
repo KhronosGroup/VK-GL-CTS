@@ -42,6 +42,9 @@
 #include "tcuTestCase.hpp"
 #include "tcuVectorType.hpp"
 
+#include "amber/vktAmberTestCase.hpp"
+#include <string>
+
 namespace vkt
 {
 namespace robustness
@@ -948,6 +951,45 @@ TestStatus OOBImageTestInstance::iterate(void)
     return TestStatus::pass("Pass");
 }
 
+class OOBPartialAccessTestCase : public cts_amber::AmberTestCase
+{
+public:
+    OOBPartialAccessTestCase(tcu::TestContext &testCtx, const char *name, const char *desc,
+                             const std::string &readFilename)
+        : AmberTestCase(testCtx, name, desc, readFilename)
+    {
+    }
+
+    virtual void checkSupport(Context &ctx) const override
+    {
+        const auto &vki           = ctx.getInstanceInterface();
+        const auto physicalDevice = ctx.getPhysicalDevice();
+
+        if (ctx.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+            !getPhysicalDeviceFeatures(vki, physicalDevice).robustBufferAccess)
+            TCU_THROW(NotSupportedError,
+                      "VK_KHR_portability_subset: robustBufferAccess not supported by this implementation");
+    }
+
+    virtual std::string getRequiredCapabilitiesId() const override
+    {
+        return std::type_index(typeid(OOBPartialAccessTestCase)).name();
+    }
+
+    virtual void initDeviceCapabilities(DevCaps &caps) override
+    {
+        caps.addFeature(&VkPhysicalDeviceFeatures::robustBufferAccess);
+    }
+
+    TestInstance *createInstance(Context &ctx) const override
+    {
+        vk::VkPhysicalDeviceFeatures2 features2 = ctx.getDeviceFeatures2();
+        features2.features.robustBufferAccess   = VK_TRUE;
+
+        return new cts_amber::AmberTestInstance(ctx, m_recipe, ctx.getDevice(), &features2);
+    }
+};
+
 TestInstance *OOBImageTestCase::createInstance(Context &context) const
 {
     return new OOBImageTestInstance(context, m_params, m_imageParams);
@@ -1055,6 +1097,25 @@ TestCaseGroup *createOOBAccessTests(TestContext &testCtx)
         }
 
         OOBAccessTests->addChild(robustTests.release());
+    }
+
+    // Amber tests
+    {
+#ifndef CTS_USES_VULKANSC
+        de::MovePtr<TestCaseGroup> miscTests(new TestCaseGroup(testCtx, "misc"));
+
+        const std::string readFilename("vulkan/amber/misc/fma_test_hang.amber");
+
+        cts_amber::AmberTestCase *testCase =
+            new OOBPartialAccessTestCase(testCtx, "fma_test_hang",
+                                         "Test for partially out-of-bounds smem (subgroup-uniform readonly) loads "
+                                         "where the out-of-bounds part was unmapped",
+                                         readFilename);
+        testCase->addRequirement("Features.robustBufferAccess");
+        miscTests->addChild(testCase);
+
+        OOBAccessTests->addChild(miscTests.release());
+#endif
     }
 
     return OOBAccessTests.release();
