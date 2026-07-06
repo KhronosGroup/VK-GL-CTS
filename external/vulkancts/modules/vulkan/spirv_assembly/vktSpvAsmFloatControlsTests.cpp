@@ -26,20 +26,16 @@
 #include "vktSpvAsmFloatControlsTests.hpp"
 #include "vktSpvAsmComputeShaderCase.hpp"
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
-#include "vktTestGroupUtil.hpp"
 #include "tcuFloat.hpp"
 #include "tcuFloatFormat.hpp"
 #include "tcuStringTemplate.hpp"
 #include "deUniquePtr.hpp"
 #include "deFloat16.h"
 #include "vkQueryUtil.hpp"
-#include "vkRefUtil.hpp"
-#include <cstring>
 #include <vector>
 #include <limits>
 #include <cstdint>
 #include <fenv.h>
-#include <cstdint>
 #include <cmath>
 
 namespace vkt::SpirVAssembly
@@ -3639,7 +3635,7 @@ protected:
                                                string &executionMode) const;
 
     void setupFloatControlsProperties(VariableType inVariableType, VariableType outVariableType,
-                                      BehaviorFlags behaviorFlags,
+                                      BehaviorFlags behaviorFlags, OperationId operationId,
                                       vk::VkPhysicalDeviceFloatControlsProperties &props) const;
 
 protected:
@@ -3811,7 +3807,7 @@ void TestGroupBuilderBase::getBehaviorCapabilityAndExecutionMode(BehaviorFlags b
 }
 
 void TestGroupBuilderBase::setupFloatControlsProperties(VariableType inVariableType, VariableType outVariableType,
-                                                        BehaviorFlags behaviorFlags,
+                                                        BehaviorFlags behaviorFlags, OperationId operationId,
                                                         vk::VkPhysicalDeviceFloatControlsProperties &props) const
 {
     // rounding mode should obey the destination type
@@ -3819,6 +3815,11 @@ void TestGroupBuilderBase::setupFloatControlsProperties(VariableType inVariableT
     bool rtzRounding = (behaviorFlags & B_RTZ_ROUNDING) != 0;
     if (rteRounding || rtzRounding)
     {
+        // handle OID_ORTE_ROUND and OID_ORTZ_ROUND tests that set the execution
+        // mode to one rounding mode but then override it on a per-instruction level
+        rteRounding |= (operationId == OID_ORTE_ROUND);
+        rtzRounding |= (operationId == OID_ORTZ_ROUND);
+
         switch (outVariableType)
         {
         case FP16:
@@ -4449,7 +4450,8 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo &testCa
 
     setupFloatControlsProperties(
         inVariableTypeForCaps, // usualy same as inFloatType - different only for UnpackHalf2x16
-        outVariableType, testCase.behaviorFlags, csSpec.requestedVulkanFeatures.floatControlsProperties);
+        outVariableType, testCase.behaviorFlags, testCase.operationId,
+        csSpec.requestedVulkanFeatures.floatControlsProperties);
 }
 
 void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo &testCaseInfo, ComputeShaderSpec &csSpec) const
@@ -5343,7 +5345,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
     VulkanFeatures vulkanFeatures;
     setupFloatControlsProperties(
         inVariableTypeForCaps, // usualy same as inFloatType - different only for UnpackHalf2x16
-        outVariableType, testCase.behaviorFlags, vulkanFeatures.floatControlsProperties);
+        outVariableType, testCase.behaviorFlags, testCase.operationId, vulkanFeatures.floatControlsProperties);
     vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = true;
     vulkanFeatures.coreFeatures.shaderFloat64            = float64FeatureRequired;
     vulkanFeatures.coreFeatures.shaderInt64              = int64FeatureRequired;
