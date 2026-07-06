@@ -445,6 +445,7 @@ de::MovePtr<BufferWithMemory> makeAndFillTransferBuffer(const VkExtent3D &extent
                 bufferImg->setPixel(color, x, y, z);
             }
 
+    flushAlloc(vkd, device, buffer->getAllocation());
     return buffer;
 }
 
