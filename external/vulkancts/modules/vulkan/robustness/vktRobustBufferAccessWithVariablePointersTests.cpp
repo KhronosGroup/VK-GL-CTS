@@ -841,6 +841,8 @@ std::string MakeShader(VkShaderStageFlags shaderStage, ShaderType shaderType, Vk
                        bool unused)
 {
     const bool isR64 = (bufferFormat == VK_FORMAT_R64_UINT || bufferFormat == VK_FORMAT_R64_SINT);
+    const ShaderType shaderTypeForCode =
+        (isR64 && shaderType == SHADER_TYPE_VECTOR_COPY) ? SHADER_TYPE_SCALAR_COPY : shaderType;
     // faster to write
     const char is = '=';
 
@@ -917,7 +919,7 @@ std::string MakeShader(VkShaderStageFlags shaderStage, ShaderType shaderType, Vk
 
         // for scalar types and vector types we use 1024 element array of 4 elements arrays of 4-component vectors
         // so the stride of internal array is size of 4-component vector
-        if (shaderType == SHADER_TYPE_SCALAR_COPY || shaderType == SHADER_TYPE_VECTOR_COPY)
+        if (shaderTypeForCode == SHADER_TYPE_SCALAR_COPY || shaderTypeForCode == SHADER_TYPE_VECTOR_COPY)
         {
             if (isR64)
             {
@@ -1012,7 +1014,7 @@ std::string MakeShader(VkShaderStageFlags shaderStage, ShaderType shaderType, Vk
         }
 
         // below is a second part that aliases based on scalar, vector, matrix
-        switch (shaderType)
+        switch (shaderTypeForCode)
         {
         case SHADER_TYPE_SCALAR_COPY:
             shaderSource.makeSame(var.copy_type, var.buffer_type);
@@ -1045,7 +1047,7 @@ std::string MakeShader(VkShaderStageFlags shaderStage, ShaderType shaderType, Vk
         }
 
         // additional alias for the type of content of this 1024-element outer array.
-        if (shaderType == SHADER_TYPE_SCALAR_COPY || shaderType == SHADER_TYPE_VECTOR_COPY)
+        if (shaderTypeForCode == SHADER_TYPE_SCALAR_COPY || shaderTypeForCode == SHADER_TYPE_VECTOR_COPY)
         {
             shaderSource(var.array_content_type, is, op::TypeArray, var.buffer_type_vec, var.constants[4]);
         }
@@ -1101,7 +1103,7 @@ std::string MakeShader(VkShaderStageFlags shaderStage, ShaderType shaderType, Vk
                                            var.constants[2])(zero, is, op::Load, var.s32, zeroPtr);
 
         // let start copying data using variable pointers
-        switch (shaderType)
+        switch (shaderTypeForCode)
         {
         case SHADER_TYPE_SCALAR_COPY:
             for (int i = 0; i < 4; ++i)
