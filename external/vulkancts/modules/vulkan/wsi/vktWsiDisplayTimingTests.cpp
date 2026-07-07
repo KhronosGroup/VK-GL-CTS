@@ -25,24 +25,18 @@
 #include "vkWsiPlatform.hpp"
 #include "vkWsiUtil.hpp"
 #include "vkQueryUtil.hpp"
-#include "vkDeviceUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkCmdUtil.hpp"
-#include "vkWsiUtil.hpp"
-#include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 
 #include "vktWsiDisplayTimingTests.hpp"
-#include "vktTestCaseUtil.hpp"
-#include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
 
 #include "tcuPlatform.hpp"
 #include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
-#include "tcuCommandLine.hpp"
 
 #include "deClock.h"
 
@@ -56,9 +50,7 @@ using tcu::Maybe;
 using tcu::TestLog;
 using tcu::UVec2;
 
-namespace vkt
-{
-namespace wsi
+namespace vkt::wsi
 {
 namespace
 {
@@ -67,22 +59,10 @@ static const uint64_t SECOND      = 1000ull * MILLISECOND;
 
 typedef vector<vk::VkExtensionProperties> Extensions;
 
-void checkAllSupported(const Extensions &supportedExtensions, const vector<string> &requiredExtensions)
+CustomInstance createInstanceWithWsi(Context &context, vk::wsi::Type wsiType)
 {
-    for (vector<string>::const_iterator requiredExtName = requiredExtensions.begin();
-         requiredExtName != requiredExtensions.end(); ++requiredExtName)
-    {
-        if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(*requiredExtName)))
-            TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
-    }
-}
+    vector<string> extensions{"VK_KHR_surface", getExtensionName(wsiType)};
 
-CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, vk::wsi::Type wsiType)
-{
-    vector<string> extensions;
-
-    extensions.push_back("VK_KHR_surface");
-    extensions.push_back(getExtensionName(wsiType));
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
@@ -90,28 +70,18 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     if (wsiType == vk::wsi::TYPE_DIRECT_DRM)
         extensions.push_back("VK_EXT_direct_mode_display");
 
-    checkAllSupported(supportedExtensions, extensions);
-
     return vkt::createCustomInstanceWithExtensions(context, extensions);
 }
 
-vk::VkPhysicalDeviceFeatures getDeviceNullFeatures(void)
-{
-    vk::VkPhysicalDeviceFeatures features;
-    deMemset(&features, 0, sizeof(features));
-    return features;
-}
-
 static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, vk::VkPhysicalDevice physicalDevice,
-                                        const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
-                                        bool requiresDisplayTiming,
+                                        const uint32_t queueFamilyIndex, bool requiresDisplayTiming,
                                         const vk::VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[]                  = {1.0f};
     const vk::VkDeviceQueueCreateInfo queueInfos[] = {{vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
                                                        (vk::VkDeviceQueueCreateFlags)0, queueFamilyIndex,
                                                        DE_LENGTH_OF_ARRAY(queuePriorities), &queuePriorities[0]}};
-    const vk::VkPhysicalDeviceFeatures features    = getDeviceNullFeatures();
+    const vk::VkPhysicalDeviceFeatures features    = {};
     const char *const extensions[]                 = {"VK_KHR_swapchain", "VK_GOOGLE_display_timing"};
 
     const vk::VkDeviceCreateInfo deviceParams = {vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -124,12 +94,6 @@ static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, vk::VkP
                                                  requiresDisplayTiming ? 2u : 1u,
                                                  DE_ARRAY_BEGIN(extensions),
                                                  &features};
-
-    for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(extensions); ++ndx)
-    {
-        if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(extensions[ndx])))
-            TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
-    }
 
     return instance.createCustomDevice(physicalDevice, &deviceParams, pAllocator);
 }
@@ -442,7 +406,6 @@ private:
     const vk::Unique<vk::VkSurfaceKHR> m_surface;
 
     const uint32_t m_queueFamilyIndex;
-    const Extensions m_deviceExtensions;
     const DeviceWrapper m_device;
     const vk::DeviceInterface &m_vkd;
     const vk::VkQueue m_queue;
@@ -582,7 +545,7 @@ DisplayTimingTestInstance::DisplayTimingTestInstance(Context &context, const Tes
     , m_quadCount(16u)
     , m_vkp(context.getPlatformInterface())
     , m_instanceExtensions(vk::enumerateInstanceExtensionProperties(m_vkp, nullptr))
-    , m_instance(createInstanceWithWsi(context, m_instanceExtensions, testConfig.wsiType))
+    , m_instance(createInstanceWithWsi(context, testConfig.wsiType))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(m_instance.getPhysicalDevice())
     , m_wsiType(testConfig.wsiType)
@@ -593,9 +556,7 @@ DisplayTimingTestInstance::DisplayTimingTestInstance(Context &context, const Tes
                                        context.getTestContext().getCommandLine()))
 
     , m_queueFamilyIndex(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
-    , m_deviceExtensions(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithWsi(m_instance, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex,
-                                   testConfig.useDisplayTiming))
+    , m_device(createDeviceWithWsi(m_instance, m_physicalDevice, m_queueFamilyIndex, testConfig.useDisplayTiming))
     , m_vkd(m_device.getDriver())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
@@ -1044,44 +1005,80 @@ tcu::TestStatus DisplayTimingTestInstance::iterate(void)
         return tcu::TestStatus::incomplete();
 }
 
-struct Programs
+class DisplayTimingTestCase : public vkt::TestCase
 {
-    static void init(vk::SourceCollections &dst, TestConfig)
+public:
+    DisplayTimingTestCase(tcu::TestContext &testCtx, const std::string &name, const TestConfig &config)
+        : vkt::TestCase(testCtx, name)
+        , m_config(config)
     {
-        dst.glslSources.add("quad-vert") << glu::VertexSource(
-            "#version 450\n"
-            "out gl_PerVertex {\n"
-            "\tvec4 gl_Position;\n"
-            "};\n"
-            "highp float;\n"
-            "void main (void) {\n"
-            "\tgl_Position = vec4(((gl_VertexIndex + 2) / 3) % 2 == 0 ? -1.0 : 1.0,\n"
-            "\t                   ((gl_VertexIndex + 1) / 3) % 2 == 0 ? -1.0 : 1.0, 0.0, 1.0);\n"
-            "}\n");
-        dst.glslSources.add("quad-frag") << glu::FragmentSource(
-            "#version 310 es\n"
-            "layout(location = 0) out highp vec4 o_color;\n"
-            "layout(push_constant) uniform PushConstant {\n"
-            "\thighp uint frameNdx;\n"
-            "} pushConstants;\n"
-            "void main (void)\n"
-            "{\n"
-            "\thighp uint frameNdx = pushConstants.frameNdx;\n"
-            "\thighp uint x = frameNdx + uint(gl_FragCoord.x);\n"
-            "\thighp uint y = frameNdx + uint(gl_FragCoord.y);\n"
-            "\thighp uint r = 128u * bitfieldExtract(x, 0, 1)\n"
-            "\t             +  64u * bitfieldExtract(y, 1, 1)\n"
-            "\t             +  32u * bitfieldExtract(x, 3, 1);\n"
-            "\thighp uint g = 128u * bitfieldExtract(y, 0, 1)\n"
-            "\t             +  64u * bitfieldExtract(x, 2, 1)\n"
-            "\t             +  32u * bitfieldExtract(y, 3, 1);\n"
-            "\thighp uint b = 128u * bitfieldExtract(x, 1, 1)\n"
-            "\t             +  64u * bitfieldExtract(y, 2, 1)\n"
-            "\t             +  32u * bitfieldExtract(x, 4, 1);\n"
-            "\to_color = vec4(float(r) / 255.0, float(g) / 255.0, float(b) / 255.0, 1.0);\n"
-            "}\n");
     }
+
+    void checkSupport(Context &context) const;
+    void initPrograms(vk::SourceCollections &programCollection) const;
+    TestInstance *createInstance(Context &context) const;
+
+private:
+    TestConfig m_config;
 };
+
+void DisplayTimingTestCase::checkSupport(Context &context) const
+{
+    auto wsiType = m_config.wsiType;
+    context.requireInstanceFunctionality("VK_KHR_surface");
+    context.requireInstanceFunctionality(getExtensionName(wsiType));
+
+    if (isDisplaySurface(wsiType))
+        context.requireInstanceFunctionality("VK_KHR_display");
+
+    // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
+    if (wsiType == vk::wsi::TYPE_DIRECT_DRM)
+        context.requireInstanceFunctionality("VK_EXT_direct_mode_display");
+
+    for (const auto &ext : {"VK_KHR_swapchain", "VK_GOOGLE_display_timing"})
+        context.requireDeviceFunctionality(ext);
+}
+
+void DisplayTimingTestCase::initPrograms(vk::SourceCollections &dst) const
+{
+    dst.glslSources.add("quad-vert") << glu::VertexSource(
+        "#version 450\n"
+        "out gl_PerVertex {\n"
+        "\tvec4 gl_Position;\n"
+        "};\n"
+        "highp float;\n"
+        "void main (void) {\n"
+        "\tgl_Position = vec4(((gl_VertexIndex + 2) / 3) % 2 == 0 ? -1.0 : 1.0,\n"
+        "\t                   ((gl_VertexIndex + 1) / 3) % 2 == 0 ? -1.0 : 1.0, 0.0, 1.0);\n"
+        "}\n");
+    dst.glslSources.add("quad-frag") << glu::FragmentSource(
+        "#version 310 es\n"
+        "layout(location = 0) out highp vec4 o_color;\n"
+        "layout(push_constant) uniform PushConstant {\n"
+        "\thighp uint frameNdx;\n"
+        "} pushConstants;\n"
+        "void main (void)\n"
+        "{\n"
+        "\thighp uint frameNdx = pushConstants.frameNdx;\n"
+        "\thighp uint x = frameNdx + uint(gl_FragCoord.x);\n"
+        "\thighp uint y = frameNdx + uint(gl_FragCoord.y);\n"
+        "\thighp uint r = 128u * bitfieldExtract(x, 0, 1)\n"
+        "\t             +  64u * bitfieldExtract(y, 1, 1)\n"
+        "\t             +  32u * bitfieldExtract(x, 3, 1);\n"
+        "\thighp uint g = 128u * bitfieldExtract(y, 0, 1)\n"
+        "\t             +  64u * bitfieldExtract(x, 2, 1)\n"
+        "\t             +  32u * bitfieldExtract(y, 3, 1);\n"
+        "\thighp uint b = 128u * bitfieldExtract(x, 1, 1)\n"
+        "\t             +  64u * bitfieldExtract(y, 2, 1)\n"
+        "\t             +  32u * bitfieldExtract(x, 4, 1);\n"
+        "\to_color = vec4(float(r) / 255.0, float(g) / 255.0, float(b) / 255.0, 1.0);\n"
+        "}\n");
+}
+
+TestInstance *DisplayTimingTestCase::createInstance(Context &context) const
+{
+    return new DisplayTimingTestInstance(context, m_config);
+}
 
 } // namespace
 
@@ -1099,28 +1096,21 @@ void createDisplayTimingTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiTy
         {vk::VK_PRESENT_MODE_FIFO_LATEST_READY_KHR, "fifo_latest_ready"},
     };
 
-    for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
+    for (auto &[mode, gName] : presentModes)
     {
-        de::MovePtr<tcu::TestCaseGroup> presentModeGroup(
-            new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name));
+        de::MovePtr<tcu::TestCaseGroup> presentModeGroup(new tcu::TestCaseGroup(testGroup->getTestContext(), gName));
 
         for (size_t ref = 0; ref < 2; ref++)
         {
             const bool isReference = (ref == 0);
             const char *const name = isReference ? "reference" : "display_timing";
-            TestConfig config;
+            TestConfig config{wsiType, !isReference, mode};
 
-            config.wsiType          = wsiType;
-            config.useDisplayTiming = !isReference;
-            config.presentMode      = presentModes[presentModeNdx].mode;
-
-            presentModeGroup->addChild(new vkt::InstanceFactory1<DisplayTimingTestInstance, TestConfig, Programs>(
-                testGroup->getTestContext(), name, Programs(), config));
+            presentModeGroup->addChild(new DisplayTimingTestCase(testGroup->getTestContext(), name, config));
         }
 
         testGroup->addChild(presentModeGroup.release());
     }
 }
 
-} // namespace wsi
-} // namespace vkt
+} // namespace vkt::wsi

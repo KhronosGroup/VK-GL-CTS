@@ -29,13 +29,9 @@
 #include "vkTypeUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkCmdUtil.hpp"
-#include "vkWsiUtil.hpp"
-#include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 
-#include "vktWsiDisplayControlTests.hpp"
 #include "vktTestCaseUtil.hpp"
-#include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
 
 #include "tcuPlatform.hpp"
@@ -43,21 +39,15 @@
 #include "tcuTestLog.hpp"
 #include "tcuCommandLine.hpp"
 
-#include "deClock.h"
-
 #include <vector>
 #include <string>
 
 using std::string;
 using std::vector;
 
-using tcu::Maybe;
 using tcu::TestLog;
-using tcu::UVec2;
 
-namespace vkt
-{
-namespace wsi
+namespace vkt::wsi
 {
 namespace
 {
@@ -69,7 +59,7 @@ typedef vector<VkExtensionProperties> Extensions;
 
 CustomInstance createInstance(Context &context)
 {
-    vector<string> extensions = {
+    vector<string> extensions{
         "VK_KHR_surface",
         "VK_KHR_display",
         "VK_EXT_display_surface_counter",
@@ -105,8 +95,7 @@ static CustomDevice createTestDevice(const Context &context, const InstanceWrapp
                                                    (VkDeviceQueueCreateFlags)0, queueFamilyIndex,
                                                    DE_LENGTH_OF_ARRAY(queuePriorities), &queuePriorities[0]}};
 
-    VkPhysicalDeviceFeatures features;
-    deMemset(&features, 0, sizeof(features));
+    VkPhysicalDeviceFeatures features = {};
 
     const char *extensions[] = {"VK_KHR_swapchain", "VK_EXT_display_control"};
 
@@ -120,12 +109,6 @@ static CustomDevice createTestDevice(const Context &context, const InstanceWrapp
                                              DE_LENGTH_OF_ARRAY(extensions),
                                              &extensions[0],
                                              &features};
-
-    for (auto ext : extensions)
-    {
-        if (!context.isDeviceFunctionalitySupported(ext))
-            TCU_THROW(NotSupportedError, (string(ext) + " is not supported").c_str());
-    }
 
     for (int typeNdx = 0; typeNdx < vk::wsi::TYPE_LAST; ++typeNdx)
     {
@@ -147,15 +130,10 @@ VkDisplayKHR getDisplayAndDisplayPlane(const InstanceInterface &vki, VkPhysicalD
                                        uint32_t *pPlaneIndex)
 {
     uint32_t countDisplays = 0;
-    VkResult result        = vki.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &countDisplays, nullptr);
-    if (result != VK_SUCCESS)
-        TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceDisplayPropertiesKHR failed");
-
-    if (countDisplays == 0)
-        TCU_THROW(NotSupportedError, "No displays available");
+    VK_CHECK(vki.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &countDisplays, nullptr));
 
     uint32_t countDisplayPlanes = 0;
-    result = vki.getPhysicalDeviceDisplayPlanePropertiesKHR(physicalDevice, &countDisplayPlanes, nullptr);
+    auto result = vki.getPhysicalDeviceDisplayPlanePropertiesKHR(physicalDevice, &countDisplayPlanes, nullptr);
     if (result != VK_SUCCESS || !countDisplayPlanes)
         TCU_FAIL("GetPhysicalDeviceDisplayPlanePropertiesKHR failed");
 
@@ -846,8 +824,22 @@ TestInstance *SwapchainCounterTestCase::createInstance(Context &context) const
 
 void SwapchainCounterTestCase::checkSupport(Context &context) const
 {
-    context.requireInstanceFunctionality("VK_KHR_display");
-    context.requireDeviceFunctionality("VK_EXT_display_control");
+    for (const auto &extension : {"VK_KHR_display", "VK_KHR_surface", "VK_EXT_display_surface_counter"})
+        context.requireInstanceFunctionality(extension);
+
+    for (const auto &extension : {"VK_KHR_swapchain", "VK_EXT_display_control"})
+        context.requireDeviceFunctionality(extension);
+
+    uint32_t countDisplays          = 0;
+    VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const InstanceInterface &vki    = context.getInstanceInterface();
+
+    VkResult result = vki.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &countDisplays, nullptr);
+    if (result != VK_SUCCESS)
+        TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceDisplayPropertiesKHR failed");
+
+    if (countDisplays == 0)
+        TCU_THROW(NotSupportedError, "No displays available");
 }
 
 void getDisplays(Context &context, std::vector<VkDisplayKHR> &availableDisplays)
@@ -856,27 +848,12 @@ void getDisplays(Context &context, std::vector<VkDisplayKHR> &availableDisplays)
     uint32_t countReported          = 0u;
     VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
     const InstanceInterface &vki    = context.getInstanceInterface();
-    const vk::Platform &platform    = context.getTestContext().getPlatform().getVulkanPlatform();
 
-    VkResult result = vki.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &countReported, nullptr);
-    if (result != VK_SUCCESS)
-        TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceDisplayPropertiesKHR failed");
-
-    if (countReported == 0)
-        TCU_THROW(NotSupportedError, "No displays available");
-
-    for (int typeNdx = 0; typeNdx < vk::wsi::TYPE_LAST; ++typeNdx)
-    {
-        vk::wsi::Type wsiType = (vk::wsi::Type)typeNdx;
-        if (platform.hasDisplay(wsiType))
-        {
-            TCU_THROW(NotSupportedError, "Display is unavailable as windowing system has access");
-        }
-    }
+    VK_CHECK(vki.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &countReported, nullptr));
 
     // get display properties
     std::vector<VkDisplayPropertiesKHR> displaysProperties(countReported);
-    result = vki.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &countReported, &displaysProperties[0]);
+    auto result = vki.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &countReported, &displaysProperties[0]);
 
     if (result != VK_SUCCESS)
         TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceDisplayPropertiesKHR failed");
@@ -888,9 +865,6 @@ void getDisplays(Context &context, std::vector<VkDisplayKHR> &availableDisplays)
 
 tcu::TestStatus testDisplayPowerControl(Context &context)
 {
-    // make sure VK_EXT_display_control is available
-    context.requireDeviceFunctionality("VK_EXT_display_control");
-
     // get all connected displays
     std::vector<VkDisplayKHR> availableDisplays;
     getDisplays(context, availableDisplays);
@@ -931,9 +905,6 @@ tcu::TestStatus testDisplayPowerControl(Context &context)
 
 tcu::TestStatus testDisplayEvent(Context &context)
 {
-    // make sure VK_EXT_display_control is available
-    context.requireDeviceFunctionality("VK_EXT_display_control");
-
     // get all connected displays
     std::vector<vk::VkDisplayKHR> availableDisplays;
     getDisplays(context, availableDisplays);
@@ -963,9 +934,6 @@ tcu::TestStatus testDisplayEvent(Context &context)
 
 tcu::TestStatus testDeviceEvent(Context &context)
 {
-    // make sure VK_EXT_display_control is available
-    context.requireDeviceFunctionality("VK_EXT_display_control");
-
     VkDevice device             = context.getDevice();
     const DeviceInterface &vkd  = context.getDeviceInterface();
     std::vector<VkFence> fences = std::vector<VkFence>(1, VK_NULL_HANDLE);
@@ -983,15 +951,45 @@ tcu::TestStatus testDeviceEvent(Context &context)
     return tcu::TestStatus::pass("pass");
 }
 
+void checkDisplayControlSupport(Context &context)
+{
+    context.requireDeviceFunctionality("VK_EXT_display_control");
+}
+
+void checkDisplaySupport(Context &context)
+{
+    checkDisplayControlSupport(context);
+
+    uint32_t countReported          = 0u;
+    VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const InstanceInterface &vki    = context.getInstanceInterface();
+    const vk::Platform &platform    = context.getTestContext().getPlatform().getVulkanPlatform();
+
+    VkResult result = vki.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &countReported, nullptr);
+    if (result != VK_SUCCESS)
+        TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceDisplayPropertiesKHR failed");
+
+    if (countReported == 0)
+        TCU_THROW(NotSupportedError, "No displays available");
+
+    for (int typeNdx = 0; typeNdx < vk::wsi::TYPE_LAST; ++typeNdx)
+    {
+        vk::wsi::Type wsiType = (vk::wsi::Type)typeNdx;
+        if (platform.hasDisplay(wsiType))
+        {
+            TCU_THROW(NotSupportedError, "Display is unavailable as windowing system has access");
+        }
+    }
+}
+
 } // namespace
 
 void createDisplayControlTests(tcu::TestCaseGroup *testGroup)
 {
     testGroup->addChild(new SwapchainCounterTestCase(testGroup->getTestContext(), "swapchain_counter"));
-    addFunctionCase(testGroup, "display_power_control", testDisplayPowerControl);
-    addFunctionCase(testGroup, "register_display_event", testDisplayEvent);
-    addFunctionCase(testGroup, "register_device_event", testDeviceEvent);
+    addFunctionCase(testGroup, "display_power_control", checkDisplaySupport, testDisplayPowerControl);
+    addFunctionCase(testGroup, "register_display_event", checkDisplaySupport, testDisplayEvent);
+    addFunctionCase(testGroup, "register_device_event", checkDisplayControlSupport, testDeviceEvent);
 }
 
-} // namespace wsi
-} // namespace vkt
+} // namespace vkt::wsi

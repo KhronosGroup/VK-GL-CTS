@@ -31,18 +31,14 @@
 
 #include "vkQueryUtil.hpp"
 #include "vkWsiUtil.hpp"
-#include "vkDeviceUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 
 #include <thread>
 #include <chrono>
 #include <filesystem>
-#include <unordered_map>
 
-namespace vkt
-{
-namespace wsi
+namespace vkt::wsi
 {
 
 namespace
@@ -69,33 +65,39 @@ struct TestParams
     tcu::ScreenRotation rotation;
 };
 
-void checkAllSupported(const Extensions &supportedExtensions, const vector<string> &requiredExtensions)
+static auto getRequiredInstanceExtensions(vk::wsi::Type wsiType)
 {
-    for (vector<string>::const_iterator requiredExtName = requiredExtensions.begin();
-         requiredExtName != requiredExtensions.end(); ++requiredExtName)
-    {
-        if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(*requiredExtName)))
-            TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
-    }
-}
+    vector<string> extensions{
+        "VK_KHR_surface",
+        getExtensionName(wsiType),
+    };
 
-static CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, Type wsiType,
-                                            const vector<string> extraExtensions)
-{
-    vector<string> extensions = extraExtensions;
-
-    extensions.push_back("VK_KHR_surface");
-    extensions.push_back(getExtensionName(wsiType));
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
-    checkAllSupported(supportedExtensions, extensions);
+    return extensions;
+}
+
+static CustomInstance createInstanceWithWsi(Context &context, Type wsiType, const vector<string> extraExtensions)
+{
+    vector<string> extensions = getRequiredInstanceExtensions(wsiType);
+    extensions.insert(end(extensions), begin(extraExtensions), end(extraExtensions));
 
     return vkt::createCustomInstanceWithExtensions(context, extensions, nullptr);
 }
 
-static CustomDevice createDeviceWithWsi(uint32_t apiVersion, const InstanceWrapper &instance,
-                                        VkPhysicalDevice physicalDevice, const Extensions &supportedExtensions,
+static auto getRequiredDeviceExtensions(const Extensions &supportedExtensions)
+{
+    vector<string> extensions{"VK_KHR_swapchain"};
+
+    if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_present_mode_fifo_latest_ready")))
+        extensions.push_back("VK_KHR_present_mode_fifo_latest_ready");
+
+    return extensions;
+}
+
+static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, VkPhysicalDevice physicalDevice,
+                                        const Extensions &supportedExtensions,
                                         const vector<string> &additionalExtensions,
                                         const vector<uint32_t> &queueFamilyIndices)
 {
@@ -116,22 +118,8 @@ static CustomDevice createDeviceWithWsi(uint32_t apiVersion, const InstanceWrapp
         queueInfos.push_back(info);
     }
 
-    vector<string> extensions;
-    extensions.push_back("VK_KHR_swapchain");
+    vector<string> extensions = getRequiredDeviceExtensions(supportedExtensions);
     extensions.insert(end(extensions), begin(additionalExtensions), end(additionalExtensions));
-
-    for (const auto &extName : extensions)
-    {
-        if (!isCoreDeviceExtension(apiVersion, extName) &&
-            !isExtensionStructSupported(supportedExtensions, RequiredExtension(extName)))
-            TCU_THROW(NotSupportedError, extName + " is not supported");
-    }
-
-    for (const auto &ext : supportedExtensions)
-    {
-        if (strcmp(ext.extensionName, "VK_KHR_present_mode_fifo_latest_ready") == 0)
-            extensions.push_back("VK_KHR_present_mode_fifo_latest_ready");
-    }
 
     VkPhysicalDeviceFeatures features = {};
 
@@ -163,14 +151,7 @@ struct InstanceHelper
 
     InstanceHelper(Context &context, Type wsiType)
         : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
-        , instance(createInstanceWithWsi(context, supportedExtensions, wsiType, vector<string>()))
-        , vki(instance.getDriver())
-    {
-    }
-
-    InstanceHelper(Context &context, Type wsiType, const vector<string> &extensions)
-        : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
-        , instance(createInstanceWithWsi(context, supportedExtensions, wsiType, extensions))
+        , instance(createInstanceWithWsi(context, wsiType, vector<string>()))
         , vki(instance.getDriver())
     {
     }
@@ -184,11 +165,11 @@ struct DeviceHelper
     const DeviceInterface &vkd;
     const VkQueue queue;
 
-    DeviceHelper(Context &context, const InstanceHelper &instanceHelper, VkSurfaceKHR surface,
+    DeviceHelper(const InstanceHelper &instanceHelper, VkSurfaceKHR surface,
                  const vector<string> &additionalExtensions = vector<string>())
         : physicalDevice(instanceHelper.instance.getPhysicalDevice())
         , queueFamilyIndex(chooseQueueFamilyIndex(instanceHelper.vki, physicalDevice, surface))
-        , device(createDeviceWithWsi(context.getUsedApiVersion(), instanceHelper.instance, physicalDevice,
+        , device(createDeviceWithWsi(instanceHelper.instance, physicalDevice,
                                      enumerateDeviceExtensionProperties(instanceHelper.vki, physicalDevice, nullptr),
                                      additionalExtensions, vector<uint32_t>{queueFamilyIndex}))
         , vkd(device.getDriver())
@@ -232,7 +213,7 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters(const InstanceInterface &vk
         VK_SHARING_MODE_EXCLUSIVE,
         0u,
         nullptr,
-        capabilities.currentTransform, // VkSurfaceTransformFlagBitsKHR	preTransform
+        capabilities.currentTransform, // VkSurfaceTransformFlagBitsKHR    preTransform
         compositeAlpha,
         VK_PRESENT_MODE_FIFO_KHR,
         VK_FALSE,      // clipped
@@ -349,7 +330,7 @@ tcu::TestStatus basicRenderTest(Context &context, TestParams params)
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, params.wsiType,
                                                      native.getDisplay(), native.getWindow(),
                                                      context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper, *surface);
+    const DeviceHelper devHelper(instHelper, *surface);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
     SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
@@ -609,6 +590,19 @@ tcu::TestStatus basicRenderTest(Context &context, TestParams params)
     return tcu::TestStatus::pass("Pass");
 }
 
+void checkSupport(Context &context, const TestParams params)
+{
+    for (const auto &ext : getRequiredInstanceExtensions(params.wsiType))
+        context.requireInstanceFunctionality(ext);
+
+    auto physicalDevice   = context.getPhysicalDevice();
+    const auto &vki       = context.getInstanceInterface();
+    auto deviceExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    for (const auto &ext : getRequiredDeviceExtensions(deviceExtensions))
+        context.requireDeviceFunctionality(ext);
+}
+
 void getBasicRenderPrograms(SourceCollections &dst, TestParams)
 {
     std::stringstream vert;
@@ -665,9 +659,9 @@ void createPreTransformTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiTyp
         TestParams params;
         params.wsiType  = wsiType;
         params.rotation = rotationTest.rotation;
-        addFunctionCaseWithPrograms(testGroup, rotationTest.name, getBasicRenderPrograms, basicRenderTest, params);
+        addFunctionCaseWithPrograms(testGroup, rotationTest.name, checkSupport, getBasicRenderPrograms, basicRenderTest,
+                                    params);
     }
 }
 
-} // namespace wsi
-} // namespace vkt
+} // namespace vkt::wsi

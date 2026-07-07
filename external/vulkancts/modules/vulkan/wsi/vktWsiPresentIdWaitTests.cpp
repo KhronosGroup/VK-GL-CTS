@@ -211,14 +211,12 @@ static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, vk::VkP
     const vk::VkDeviceQueueCreateInfo queueInfos[] = {{vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
                                                        (vk::VkDeviceQueueCreateFlags)0, queueFamilyIndex,
                                                        DE_LENGTH_OF_ARRAY(queuePriorities), &queuePriorities[0]}};
-    vk::VkPhysicalDeviceFeatures features;
-    std::vector<const char *> extensions = extraExtensions;
-    const auto mandatoryExtensions       = getMandatoryDeviceExtensions();
+    vk::VkPhysicalDeviceFeatures features          = {};
+    std::vector<const char *> extensions           = extraExtensions;
+    const auto mandatoryExtensions                 = getMandatoryDeviceExtensions();
 
     for (const auto &ext : mandatoryExtensions)
         extensions.push_back(ext);
-
-    deMemset(&features, 0, sizeof(features));
 
     vk::VkPhysicalDeviceFeatures2 physicalDeviceFeatures2{vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, nullptr,
                                                           features};

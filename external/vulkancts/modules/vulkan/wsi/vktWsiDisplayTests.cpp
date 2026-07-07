@@ -45,9 +45,7 @@
 #include <sstream>
 #include <stdexcept>
 
-namespace vkt
-{
-namespace wsi
+namespace vkt::wsi
 {
 using namespace vk;
 using std::map;
@@ -239,32 +237,6 @@ DisplayCoverageTestInstance::DisplayCoverageTestInstance(Context &context, const
     , m_physicalDevice(m_context.getPhysicalDevice())
     , m_testId(testId)
 {
-    const std::string extensionName("VK_KHR_display");
-
-    if (!de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(), extensionName))
-        TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
-
-    switch (m_testId)
-    {
-    case DISPLAY_TEST_INDEX_GET_DISPLAY_PROPERTIES2:
-    case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANES2:
-    case DISPLAY_TEST_INDEX_GET_DISPLAY_MODE2:
-    case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_CAPABILITIES2:
-    {
-        const std::string extensionNameAddition("VK_KHR_get_display_properties2");
-
-        if (!de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(),
-                          extensionNameAddition))
-            TCU_THROW(NotSupportedError, std::string(extensionNameAddition + " is not supported").c_str());
-
-        break;
-    }
-
-    default:
-    {
-        break;
-    }
-    }
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -337,8 +309,7 @@ bool DisplayCoverageTestInstance::getDisplays(DisplayVector &displays)
         return false;
     }
 
-    if (!countReported)
-        TCU_THROW(NotSupportedError, "No displays reported");
+    DE_ASSERT(countReported > 0); // No displays should be checked in DisplayCoverageTestsCase::checkSupport
 
     displaysProps.resize(countReported);
 
@@ -536,8 +507,7 @@ bool DisplayCoverageTestInstance::getDisplays2(DisplayVector &displays)
         return false;
     }
 
-    if (!countReported)
-        TCU_THROW(NotSupportedError, "No displays reported");
+    DE_ASSERT(countReported); // this should be checked in DisplayCoverageTestsCase::checkSupport
 
     displaysProps.resize(countReported, displayProperties2);
 
@@ -788,8 +758,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
     if (result != VK_SUCCESS)
         TCU_FAIL_STR(string("Expected VK_SUCCESS. Have ") + getResultAsString(result));
 
-    if (displayCountReported == 0)
-        TCU_THROW(NotSupportedError, std::string("Cannot perform test: no displays found").c_str());
+    DE_ASSERT(displayCountReported > 0); // this should be checked in DisplayCoverageTestsCase::checkSupport
 
     displayCountToTest = displayCountReported;
     if (displayCountReported > MAX_TESTED_DISPLAY_COUNT)
@@ -1504,12 +1473,6 @@ tcu::TestStatus DisplayCoverageTestInstance::testDisplaySurface(SurfaceTestKind 
 
     DE_ASSERT(testKind >= 0 && testKind < SURFACE_TEST_KIND_MAX_ENUM);
 
-    // Check the needed extension.
-    if (testKind == SURFACE_COUNTERS &&
-        (!isInstanceExtensionSupported(m_context.getUsedApiVersion(), m_context.getInstanceExtensions(),
-                                       "VK_EXT_display_surface_counter")))
-        TCU_THROW(NotSupportedError, "VK_EXT_display_surface_counter not supported");
-
     // Get displays
     if (!getDisplays(displaysVector))
         TCU_FAIL("Failed to retrieve displays");
@@ -1716,8 +1679,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
     if (result != VK_SUCCESS)
         TCU_FAIL_STR(string("Expected VK_SUCCESS. Have ") + getResultAsString(result));
 
-    if (displayCountReported == 0)
-        TCU_THROW(NotSupportedError, std::string("Cannot perform test: no displays found").c_str());
+    DE_ASSERT(displayCountReported > 0);
 
     displayCountToTest = displayCountReported;
     if (displayCountReported > MAX_TESTED_DISPLAY_COUNT)
@@ -1961,8 +1923,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayPlaneCapabilities2KHR
     if (result != VK_SUCCESS)
         TCU_FAIL_STR(string("Expected VK_SUCCESS. Have ") + getResultAsString(result));
 
-    if (planeCountReported == 0)
-        TCU_THROW(NotSupportedError, "No display plane reported");
+    DE_ASSERT(planeCountReported > 0);
 
     if (planeCountReported > MAX_TESTED_PLANE_COUNT)
     {
@@ -2177,6 +2138,69 @@ public:
 private:
     const DisplayIndexTest m_testId;
 
+    void checkSupport(vkt::Context &context) const
+    {
+        context.requireInstanceFunctionality("VK_KHR_display");
+
+        auto physicalDevice = context.getPhysicalDevice();
+        const auto &vki     = context.getInstanceInterface();
+
+        uint32_t checkDisplatProperties = 0u;
+        uint32_t displayCount           = 0u;
+        uint32_t planeCount             = 0u;
+
+        switch (m_testId)
+        {
+        case DISPLAY_TEST_INDEX_GET_DISPLAY_PROPERTIES:
+        case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANES:
+        case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_SUPPORTED_DISPLAY:
+        case DISPLAY_TEST_INDEX_GET_DISPLAY_MODE:
+        case DISPLAY_TEST_INDEX_CREATE_DISPLAY_MODE:
+        case DISPLAY_TEST_INDEX_CREATE_DISPLAY_PLANE_SURFACE:
+            checkDisplatProperties = 1u;
+            break;
+
+        case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_CAPABILITIES:
+            vki.getPhysicalDeviceDisplayPlanePropertiesKHR(physicalDevice, &planeCount, nullptr);
+            checkDisplatProperties = (planeCount == 0); // check display count only if no planes are found
+            break;
+
+        case DISPLAY_TEST_INDEX_SURFACE_COUNTERS:
+            context.requireInstanceFunctionality("VK_EXT_display_surface_counter");
+            checkDisplatProperties = 1u;
+            break;
+
+        case DISPLAY_TEST_INDEX_GET_DISPLAY_PROPERTIES2:
+        case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANES2:
+        case DISPLAY_TEST_INDEX_GET_DISPLAY_MODE2:
+            context.requireInstanceFunctionality("VK_KHR_get_display_properties2");
+            checkDisplatProperties = 2u;
+            break;
+
+        case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_CAPABILITIES2:
+            context.requireInstanceFunctionality("VK_KHR_get_display_properties2");
+            checkDisplatProperties = 2u;
+            vki.getPhysicalDeviceDisplayPlaneProperties2KHR(physicalDevice, &planeCount, nullptr);
+            if (planeCount == 0)
+                TCU_THROW(NotSupportedError, "No display plane reported");
+            break;
+
+        default:
+            break;
+        }
+
+        if (checkDisplatProperties)
+        {
+            if (checkDisplatProperties == 1u)
+                vki.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &displayCount, nullptr);
+            else
+                vki.getPhysicalDeviceDisplayProperties2KHR(physicalDevice, &displayCount, nullptr);
+
+            if (displayCount == 0)
+                TCU_THROW(NotSupportedError, "No displays found");
+        }
+    }
+
     vkt::TestInstance *createInstance(vkt::Context &context) const
     {
         return new DisplayCoverageTestInstance(context, m_testId);
@@ -2227,5 +2251,4 @@ void createDisplayCoverageTests(tcu::TestCaseGroup *group)
     addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_CAPABILITIES2, "get_display_plane_capabilities2");
 }
 
-} // namespace wsi
-} // namespace vkt
+} // namespace vkt::wsi

@@ -29,16 +29,11 @@
 #include "vktCustomInstancesDevices.hpp"
 #include "vktNativeObjectsUtil.hpp"
 
-#include "vkMemUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
-#include "vkDeviceUtil.hpp"
-#include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkWsiPlatform.hpp"
 #include "vkWsiUtil.hpp"
-
-#include "tcuPlatform.hpp"
 
 #include "deMutex.hpp"
 #include "deStringUtil.hpp"
@@ -61,9 +56,7 @@
 #undef RELATIVE
 #endif
 
-namespace vkt
-{
-namespace wsi
+namespace vkt::wsi
 {
 namespace
 {
@@ -127,16 +120,6 @@ VkPresentStageFlagsEXT getLatestStageBit(VkPresentStageFlagsEXT mask)
     return 0;
 }
 
-template <typename T>
-void checkAllSupported(const Extensions &supportedExtensions, const std::vector<T> &requiredExtensions)
-{
-    for (auto &requiredExtension : requiredExtensions)
-    {
-        if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(requiredExtension)))
-            TCU_THROW(NotSupportedError, (std::string(requiredExtension) + " is not supported").c_str());
-    }
-}
-
 // Wrapper class to help track the only acquired image for Shared Present modes
 struct SwapchainAndImage
 {
@@ -166,13 +149,13 @@ struct SwapchainAndImage
     uint32_t m_sharedImageIndex{UINT32_MAX};
 };
 
-CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, Type wsiType)
+static auto getRequiredWsiInstanceExtensions(vk::wsi::Type wsiType)
 {
-    std::vector<std::string> extensions;
-
-    extensions.push_back("VK_KHR_surface");
-    extensions.push_back(getExtensionName(wsiType));
-    extensions.push_back("VK_KHR_get_surface_capabilities2");
+    std::vector<std::string> extensions{
+        "VK_KHR_surface",
+        getExtensionName(wsiType),
+        "VK_KHR_get_surface_capabilities2",
+    };
 
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
@@ -181,16 +164,32 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     if (wsiType == TYPE_DIRECT_DRM)
         extensions.push_back("VK_EXT_direct_mode_display");
 
-    checkAllSupported(supportedExtensions, extensions);
+    return extensions;
+}
 
+CustomInstance createInstanceWithWsi(Context &context, Type wsiType)
+{
+    const auto extensions = getRequiredWsiInstanceExtensions(wsiType);
     return createCustomInstanceWithExtensions(context, extensions);
 }
 
-vk::VkPhysicalDeviceFeatures getDeviceNullFeatures(void)
+static auto getRequiredDeviceExtensions(const Extensions &supportedExtensions, bool requireFifoLatestReady)
 {
-    vk::VkPhysicalDeviceFeatures features;
-    deMemset(&features, 0, sizeof(features));
-    return features;
+    std::vector<const char *> extensions{
+        "VK_KHR_swapchain",
+        "VK_KHR_present_id2",
+        "VK_KHR_calibrated_timestamps",
+        "VK_EXT_present_timing",
+    };
+
+    if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_shared_presentable_image")))
+        extensions.push_back("VK_KHR_shared_presentable_image");
+
+    if (requireFifoLatestReady &&
+        isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_present_mode_fifo_latest_ready")))
+        extensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
+
+    return extensions;
 }
 
 static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, vk::VkPhysicalDevice physicalDevice,
@@ -207,22 +206,8 @@ static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, vk::VkP
         DE_LENGTH_OF_ARRAY(queuePriorities),
         &queuePriorities[0],
     }};
-    const vk::VkPhysicalDeviceFeatures features    = getDeviceNullFeatures();
-    std::vector<const char *> extensions;
-
-    extensions.push_back("VK_KHR_swapchain");
-    extensions.push_back("VK_KHR_present_id2");
-    extensions.push_back("VK_KHR_calibrated_timestamps");
-    extensions.push_back("VK_EXT_present_timing");
-
-    if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_shared_presentable_image")))
-        extensions.push_back("VK_KHR_shared_presentable_image");
-
-    if (requireFifoLatestReady &&
-        isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_present_mode_fifo_latest_ready")))
-        extensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
-
-    checkAllSupported(supportedExtensions, extensions);
+    const vk::VkPhysicalDeviceFeatures features    = {};
+    const auto extensions = getRequiredDeviceExtensions(supportedExtensions, requireFifoLatestReady);
 
     vk::VkPhysicalDevicePresentId2FeaturesKHR presentId2Features{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_2_FEATURES_KHR,
@@ -261,6 +246,24 @@ static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, vk::VkP
     };
 
     return instance.createCustomDevice(physicalDevice, &deviceParams, pAllocator);
+}
+
+void commonInstanceCheckSupport(Context &context, vk::wsi::Type wsiType)
+{
+    for (const auto &ext : getRequiredWsiInstanceExtensions(wsiType))
+        context.requireInstanceFunctionality(ext);
+}
+
+void commonCheckSupport(Context &context, vk::wsi::Type wsiType, bool requireFifoLatestReady)
+{
+    commonInstanceCheckSupport(context, wsiType);
+
+    auto physicalDevice   = context.getPhysicalDevice();
+    const auto &vki       = context.getInstanceInterface();
+    auto deviceExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    for (const auto &ext : getRequiredDeviceExtensions(deviceExtensions, requireFifoLatestReady))
+        context.requireDeviceFunctionality(ext);
 }
 
 vk::VkPresentTimingSurfaceCapabilitiesEXT getSurfacePresentTimingCapabilities(
@@ -451,7 +454,7 @@ struct InstanceHelper
 
     InstanceHelper(Context &context, Type wsiType)
         : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
-        , instance(createInstanceWithWsi(context, supportedExtensions, wsiType))
+        , instance(createInstanceWithWsi(context, wsiType))
         , vki(instance.getDriver())
     {
     }
@@ -1069,6 +1072,11 @@ void showWindow(const NativeObjects &native, vk::wsi::Type wsiType)
     }
 }
 
+void basicCheckSupport(Context &context, vk::wsi::Type wsiType)
+{
+    commonCheckSupport(context, wsiType, false);
+}
+
 tcu::TestStatus timingQueueTest(Context &context, vk::wsi::Type wsiType)
 {
     const InstanceHelper instHelper(context, wsiType);
@@ -1182,6 +1190,11 @@ tcu::TestStatus timingQueueTest(Context &context, vk::wsi::Type wsiType)
     vkd.queueWaitIdle(devHelper.queue);
 
     return tcu::TestStatus::pass("Tests ran successfully");
+}
+
+void checkTimingTestSupport(Context &context, PresentTimingTestConfig config)
+{
+    commonCheckSupport(context, config.wsiType, config.presentMode == VK_PRESENT_MODE_FIFO_LATEST_READY_KHR);
 }
 
 tcu::TestStatus timingTest(Context &context, PresentTimingTestConfig config)
@@ -1682,6 +1695,8 @@ tcu::TestStatus retiredSwapchainTest(Context &context, vk::wsi::Type wsiType)
 
 void presentAtCheckSupport(Context &context, PresentTimingTestConfig config)
 {
+    commonCheckSupport(context, config.wsiType, config.presentMode == VK_PRESENT_MODE_FIFO_LATEST_READY_KHR);
+
     const auto &presentTimingFeatures = context.getPresentTimingFeaturesEXT();
 
     if (config.presentAtMode == PresentAtMode::ABSOLUTE && !presentTimingFeatures.presentAtAbsoluteTime)
@@ -2085,6 +2100,11 @@ tcu::TestStatus timeDomainPropertiesTest(Context &context, Type wsiType)
     return tcu::TestStatus::pass("Tests ran successfully");
 }
 
+void checkTimeDomainCalibrationSupport(Context &context, CalibrationTestConfig config)
+{
+    commonCheckSupport(context, config.wsiType, false);
+}
+
 // Test time domain calibration
 tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfig config)
 {
@@ -2343,10 +2363,10 @@ static const struct
 
 void populateBasicGroup(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
 {
-    addFunctionCase(testGroup, "surface_capabilities", surfaceCapabilitiesTest, wsiType);
-    addFunctionCase(testGroup, "timing_queue", timingQueueTest, wsiType);
-    addFunctionCase(testGroup, "retired_swapchain", retiredSwapchainTest, wsiType);
-    addFunctionCase(testGroup, "large_queue_size", largeQueueSizeTest, wsiType);
+    addFunctionCase(testGroup, "surface_capabilities", commonInstanceCheckSupport, surfaceCapabilitiesTest, wsiType);
+    addFunctionCase(testGroup, "timing_queue", basicCheckSupport, timingQueueTest, wsiType);
+    addFunctionCase(testGroup, "retired_swapchain", basicCheckSupport, retiredSwapchainTest, wsiType);
+    addFunctionCase(testGroup, "large_queue_size", basicCheckSupport, largeQueueSizeTest, wsiType);
 }
 
 void populateQueryGroup(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
@@ -2373,7 +2393,7 @@ void populateQueryGroup(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
                     wsiType, {},   presentMode.mode, presentStageQueries.stage, timeDomain.timeDomain, false,
                     false,   false};
 
-                addFunctionCase(&*presentStageGroup, timeDomain.name, timingTest, config);
+                addFunctionCase(&*presentStageGroup, timeDomain.name, checkTimingTestSupport, timingTest, config);
             }
 
             presentModeGroup->addChild(presentStageGroup.release());
@@ -2385,7 +2405,7 @@ void populateQueryGroup(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
     // A function can't be added to a test group which already has children groups, so we must create
     // this group for our parallel test case
     de::MovePtr<tcu::TestCaseGroup> parallelGroup(new tcu::TestCaseGroup(testGroup->getTestContext(), "parallel"));
-    addFunctionCase(&*parallelGroup, "parallel", timingTestWithBackgroundQueryThreads, wsiType);
+    addFunctionCase(&*parallelGroup, "parallel", basicCheckSupport, timingTestWithBackgroundQueryThreads, wsiType);
     testGroup->addChild(parallelGroup.release());
 }
 
@@ -2395,15 +2415,15 @@ void populateTimeDomainGroup(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiTyp
         new tcu::TestCaseGroup(testGroup->getTestContext(), "calibration"));
     for (auto timeDomain : timeDomains)
     {
-        addFunctionCase(&*calibrationGroup, timeDomain.name, timeDomainCalibrationTest,
-                        CalibrationTestConfig{wsiType, timeDomain.timeDomain});
+        addFunctionCase(&*calibrationGroup, timeDomain.name, checkTimeDomainCalibrationSupport,
+                        timeDomainCalibrationTest, CalibrationTestConfig{wsiType, timeDomain.timeDomain});
     }
     testGroup->addChild(calibrationGroup.release());
 
     // A function can't be added to a test group which already has children groups, so we must create
     // this group for our parallel test case
     de::MovePtr<tcu::TestCaseGroup> propertiesGroup(new tcu::TestCaseGroup(testGroup->getTestContext(), "properties"));
-    addFunctionCase(&*propertiesGroup, "properties", timeDomainPropertiesTest, wsiType);
+    addFunctionCase(&*propertiesGroup, "properties", basicCheckSupport, timeDomainPropertiesTest, wsiType);
     testGroup->addChild(propertiesGroup.release());
 }
 
@@ -2492,5 +2512,4 @@ void createPresentTimingTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiTy
     addTestGroup(testGroup, "present_at", populatePresentAtGroup, wsiType);
 }
 
-} // namespace wsi
-} // namespace vkt
+} // namespace vkt::wsi

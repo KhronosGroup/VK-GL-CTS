@@ -24,45 +24,29 @@
 #include "vktWsiSwapchainTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
-#include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
 #include "vktNativeObjectsUtil.hpp"
 
 #include "vkDefs.hpp"
-#include "vkPlatform.hpp"
-#include "vkStrUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
-#include "vkDeviceUtil.hpp"
 #include "vkPrograms.hpp"
-#include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
-#include "vkWsiPlatform.hpp"
 #include "vkWsiUtil.hpp"
-#include "vkAllocationCallbackUtil.hpp"
-#include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
-#include "tcuSurface.hpp"
 #include "vkImageUtil.hpp"
 
 #include "tcuTestLog.hpp"
-#include "tcuFormatUtil.hpp"
-#include "tcuPlatform.hpp"
-#include "tcuResultCollector.hpp"
-#include "tcuCommandLine.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
-#include "deArrayUtil.hpp"
 #include "deSharedPtr.hpp"
 
 #include <limits>
 
-namespace vkt
-{
-namespace wsi
+namespace vkt::wsi
 {
 
 namespace
@@ -81,31 +65,25 @@ using de::UniquePtr;
 using std::string;
 using std::vector;
 
+struct TestParams
+{
+    Type wsiType;
+    VkFormat format;
+    bool checkHdr;
+};
+
 typedef vector<VkExtensionProperties> Extensions;
 
-void checkAllSupported(const Extensions &supportedExtensions, const vector<string> &requiredExtensions)
+auto getRequiredInstanceExtensions(Context &context, Type wsiType)
 {
-    for (vector<string>::const_iterator requiredExtName = requiredExtensions.begin();
-         requiredExtName != requiredExtensions.end(); ++requiredExtName)
-    {
-        if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(*requiredExtName)))
-            TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
-    }
-}
+    vector<string> requiredExtensions{getExtensionName(wsiType), "VK_KHR_surface"};
 
-CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, Type wsiType,
-                                     const VkAllocationCallbacks *pAllocator = nullptr)
-{
-    vector<string> extensions;
-
-    extensions.push_back("VK_KHR_surface");
-    extensions.push_back(getExtensionName(wsiType));
     if (isDisplaySurface(wsiType))
-        extensions.push_back("VK_KHR_display");
+        requiredExtensions.push_back("VK_KHR_display");
 
     // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
     if (wsiType == TYPE_DIRECT_DRM)
-        extensions.push_back("VK_EXT_direct_mode_display");
+        requiredExtensions.push_back("VK_EXT_direct_mode_display");
 
     // VK_EXT_swapchain_colorspace adds new surface formats. Driver can enumerate
     // the formats regardless of whether VK_EXT_swapchain_colorspace was enabled,
@@ -117,10 +95,15 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     // 2) Enable VK_EXT_swapchain colorspace if advertised by the driver.
     //
     // We opt for (2) as it provides basic coverage for the extension as a bonus.
-    if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_swapchain_colorspace")))
-        extensions.push_back("VK_EXT_swapchain_colorspace");
+    if (context.isInstanceFunctionalitySupported("VK_EXT_swapchain_colorspace"))
+        requiredExtensions.push_back("VK_EXT_swapchain_colorspace");
 
-    checkAllSupported(supportedExtensions, extensions);
+    return requiredExtensions;
+}
+
+CustomInstance createInstanceWithWsi(Context &context, Type wsiType, const VkAllocationCallbacks *pAllocator = nullptr)
+{
+    auto extensions = getRequiredInstanceExtensions(context, wsiType);
 
     return createCustomInstanceWithExtensions(context, extensions, pAllocator);
 }
@@ -141,11 +124,7 @@ static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, VkPhysi
                                                    (VkDeviceQueueCreateFlags)0, queueFamilyIndex,
                                                    DE_LENGTH_OF_ARRAY(queuePriorities), &queuePriorities[0]}};
     const VkPhysicalDeviceFeatures features    = getDeviceFeaturesForWsi();
-    vector<const char *> extensions;
-
-    if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_swapchain")))
-        TCU_THROW(NotSupportedError, "VK_KHR_swapchain is not supported");
-    extensions.push_back("VK_KHR_swapchain");
+    vector<const char *> extensions{"VK_KHR_swapchain"};
 
     if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_hdr_metadata")))
         extensions.push_back("VK_EXT_hdr_metadata");
@@ -172,7 +151,7 @@ struct InstanceHelper
 
     InstanceHelper(Context &context, Type wsiType, const VkAllocationCallbacks *pAllocator = nullptr)
         : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
-        , instance(createInstanceWithWsi(context, supportedExtensions, wsiType, pAllocator))
+        , instance(createInstanceWithWsi(context, wsiType, pAllocator))
         , vki(instance.getDriver())
     {
     }
@@ -380,18 +359,15 @@ tcu::Vec4 getPixel(const DeviceInterface &vkd, const VkDevice device, const VkQu
     return (resultAccess.getPixel(128, 128));
 }
 
-tcu::TestStatus basicExtensionTest(Context &context, Type wsiType)
+tcu::TestStatus basicExtensionTest(Context &context, TestParams params)
 {
+    const Type wsiType = params.wsiType;
     const tcu::UVec2 desiredSize(256, 256);
     const InstanceHelper instHelper(context, wsiType);
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
     const DeviceHelper devHelper(instHelper, *surface);
-
-    if (!de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(),
-                      "VK_EXT_swapchain_colorspace"))
-        TCU_THROW(NotSupportedError, "Extension VK_EXT_swapchain_colorspace not supported");
 
     const vector<VkSurfaceFormatKHR> formats =
         getPhysicalDeviceSurfaceFormats(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -413,18 +389,9 @@ tcu::TestStatus basicExtensionTest(Context &context, Type wsiType)
     return tcu::TestStatus::pass("Extension tests succeeded");
 }
 
-struct TestParams
-{
-    Type wsiType;
-    VkFormat format;
-};
-
 // Create swapchain with multiple images on different colorspaces and compare pixels on those images.
 tcu::TestStatus colorspaceCompareTest(Context &context, TestParams params)
 {
-    if (!context.isInstanceFunctionalitySupported("VK_EXT_swapchain_colorspace"))
-        TCU_THROW(NotSupportedError, "Extension VK_EXT_swapchain_colorspace not supported");
-
     const tcu::UVec2 desiredSize(256, 256);
     const InstanceHelper instHelper(context, params.wsiType);
     const NativeObjects native(context, instHelper.supportedExtensions, params.wsiType, tcu::just(desiredSize));
@@ -575,9 +542,6 @@ tcu::TestStatus surfaceFormatRenderTest(Context &context, Type wsiType, const In
     const vector<VkExtensionProperties> deviceExtensions(
         enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, nullptr));
 
-    if (checkHdr && !isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_hdr_metadata")))
-        TCU_THROW(NotSupportedError, "Extension VK_EXT_hdr_metadata not supported");
-
     const WsiTriangleRenderer renderer(vkd, device, allocator, context.getBinaryCollection(), true, swapchainImages,
                                        swapchainImages, swapchainInfo.imageFormat,
                                        tcu::UVec2(swapchainInfo.imageExtent.width, swapchainInfo.imageExtent.height));
@@ -690,73 +654,58 @@ tcu::TestStatus surfaceFormatRenderTest(Context &context, Type wsiType, const In
     return tcu::TestStatus::pass("Rendering test succeeded");
 }
 
-tcu::TestStatus surfaceFormatRenderTests(Context &context, Type wsiType)
+tcu::TestStatus surfaceFormatRenderTests(Context &context, TestParams params)
 {
     const tcu::UVec2 desiredSize(256, 256);
-    const InstanceHelper instHelper(context, wsiType);
-    const NativeObjects native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
-    const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
-                                                     native.getWindow(), context.getTestContext().getCommandLine()));
+    const InstanceHelper instHelper(context, params.wsiType);
+    const NativeObjects native(context, instHelper.supportedExtensions, params.wsiType, 1u, tcu::just(desiredSize));
+    const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, params.wsiType,
+                                                     native.getDisplay(), native.getWindow(),
+                                                     context.getTestContext().getCommandLine()));
     const DeviceHelper devHelper(instHelper, *surface);
-
-    if (!de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(),
-                      "VK_EXT_swapchain_colorspace"))
-        TCU_THROW(NotSupportedError, "Extension VK_EXT_swapchain_colorspace not supported");
 
     const vector<VkSurfaceFormatKHR> formats =
         getPhysicalDeviceSurfaceFormats(instHelper.vki, devHelper.physicalDevice, *surface);
     for (vector<VkSurfaceFormatKHR>::const_iterator curFmt = formats.begin(); curFmt != formats.end(); ++curFmt)
     {
-        surfaceFormatRenderTest(context, wsiType, instHelper, devHelper, *surface, *curFmt);
+        surfaceFormatRenderTest(context, params.wsiType, instHelper, devHelper, *surface, *curFmt, params.checkHdr);
         context.getTestContext().touchWatchdog();
     }
     return tcu::TestStatus::pass("Rendering tests succeeded");
 }
 
-tcu::TestStatus surfaceFormatRenderWithHdrTests(Context &context, Type wsiType)
+void commonCheckSupport(Context &context, TestParams params)
 {
-    const tcu::UVec2 desiredSize(256, 256);
-    const InstanceHelper instHelper(context, wsiType);
-    const NativeObjects native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
-    const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
-                                                     native.getWindow(), context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(instHelper, *surface);
+    for (const auto &ext : getRequiredInstanceExtensions(context, params.wsiType))
+        context.requireInstanceFunctionality(ext);
 
-    if (!de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(),
-                      "VK_EXT_swapchain_colorspace"))
-        TCU_THROW(NotSupportedError, "Extension VK_EXT_swapchain_colorspace not supported");
+    context.requireInstanceFunctionality("VK_EXT_swapchain_colorspace");
+    context.requireDeviceFunctionality("VK_KHR_swapchain");
 
-    const vector<VkSurfaceFormatKHR> formats =
-        getPhysicalDeviceSurfaceFormats(instHelper.vki, devHelper.physicalDevice, *surface);
-    for (vector<VkSurfaceFormatKHR>::const_iterator curFmt = formats.begin(); curFmt != formats.end(); ++curFmt)
-    {
-        surfaceFormatRenderTest(context, wsiType, instHelper, devHelper, *surface, *curFmt, true);
-        context.getTestContext().touchWatchdog();
-    }
-    return tcu::TestStatus::pass("Rendering tests succeeded");
+    if (params.checkHdr)
+        context.requireDeviceFunctionality("VK_EXT_hdr_metadata");
 }
 
-// We need different versions of this function in order to invoke
-// different overloaded versions of addFunctionCaseWithPrograms.
-void getBasicRenderPrograms2(SourceCollections &dst, TestParams)
+void getBasicRenderPrograms(SourceCollections &dst, TestParams)
 {
     WsiTriangleRenderer::getPrograms(dst);
 }
 
-void getBasicRenderPrograms(SourceCollections &dst, Type)
-{
-    WsiTriangleRenderer::getPrograms(dst);
-}
 } // namespace
 
 void createColorSpaceTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
 {
+    TestParams params{wsiType, VK_FORMAT_UNDEFINED, false};
+
     // Verify Colorspace Extensions
-    addFunctionCase(testGroup, "extensions", basicExtensionTest, wsiType);
+    addFunctionCase(testGroup, "extensions", commonCheckSupport, basicExtensionTest, params);
     // Basic Rendering Tests
-    addFunctionCaseWithPrograms(testGroup, "basic", getBasicRenderPrograms, surfaceFormatRenderTests, wsiType);
+    addFunctionCaseWithPrograms(testGroup, "basic", commonCheckSupport, getBasicRenderPrograms,
+                                surfaceFormatRenderTests, params);
     // Basic Rendering Tests with HDR
-    addFunctionCaseWithPrograms(testGroup, "hdr", getBasicRenderPrograms, surfaceFormatRenderWithHdrTests, wsiType);
+    params.checkHdr = true;
+    addFunctionCaseWithPrograms(testGroup, "hdr", commonCheckSupport, getBasicRenderPrograms, surfaceFormatRenderTests,
+                                params);
 }
 
 void createColorspaceCompareTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
@@ -770,10 +719,10 @@ void createColorspaceCompareTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type w
     {
         const char *const enumName = getFormatName(format);
         const string caseName      = de::toLower(string(enumName).substr(10));
-        const TestParams params    = {wsiType, format};
-        addFunctionCaseWithPrograms(testGroup, caseName, getBasicRenderPrograms2, colorspaceCompareTest, params);
+        const TestParams params    = {wsiType, format, false};
+        addFunctionCaseWithPrograms(testGroup, caseName, commonCheckSupport, getBasicRenderPrograms,
+                                    colorspaceCompareTest, params);
     }
 }
 
-} // namespace wsi
-} // namespace vkt
+} // namespace vkt::wsi

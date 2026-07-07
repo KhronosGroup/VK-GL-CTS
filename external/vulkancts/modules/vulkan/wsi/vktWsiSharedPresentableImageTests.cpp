@@ -24,25 +24,19 @@
 #include "vktWsiSharedPresentableImageTests.hpp"
 #include "vktCustomInstancesDevices.hpp"
 
-#include "vktTestCaseUtil.hpp"
-#include "vktTestGroupUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkWsiPlatform.hpp"
 #include "vkWsiUtil.hpp"
 #include "vkQueryUtil.hpp"
-#include "vkDeviceUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 
-#include "vkWsiUtil.hpp"
-
 #include "tcuPlatform.hpp"
 #include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
-#include "tcuCommandLine.hpp"
 
 #include <vector>
 #include <string>
@@ -54,9 +48,7 @@ using tcu::Maybe;
 using tcu::TestLog;
 using tcu::UVec2;
 
-namespace vkt
-{
-namespace wsi
+namespace vkt::wsi
 {
 namespace
 {
@@ -69,29 +61,13 @@ enum Scaling
 
 typedef vector<vk::VkExtensionProperties> Extensions;
 
-void checkAllSupported(const Extensions &supportedExtensions, const vector<string> &requiredExtensions)
+static auto getRequiredWsiInstanceExtensions(const uint32_t version, vk::wsi::Type wsiType)
 {
-    for (vector<string>::const_iterator requiredExtName = requiredExtensions.begin();
-         requiredExtName != requiredExtensions.end(); ++requiredExtName)
-    {
-        if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(*requiredExtName)))
-            TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
-    }
-}
-
-CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, vk::wsi::Type wsiType)
-{
-    const uint32_t version = context.getUsedApiVersion();
-    vector<string> extensions;
+    vector<string> extensions{"VK_KHR_surface", "VK_KHR_get_surface_capabilities2", getExtensionName(wsiType)};
 
     if (!vk::isCoreInstanceExtension(version, "VK_KHR_get_physical_device_properties2"))
         extensions.push_back("VK_KHR_get_physical_device_properties2");
 
-    extensions.push_back("VK_KHR_surface");
-    extensions.push_back("VK_KHR_get_surface_capabilities2");
-    // Required for device extension to expose new physical device bits (in this
-    // case, presentation mode enums)
-    extensions.push_back(getExtensionName(wsiType));
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
@@ -99,37 +75,32 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     if (wsiType == vk::wsi::TYPE_DIRECT_DRM)
         extensions.push_back("VK_EXT_direct_mode_display");
 
-    checkAllSupported(supportedExtensions, extensions);
+    return extensions;
+}
+
+CustomInstance createInstanceWithWsi(Context &context, vk::wsi::Type wsiType)
+{
+    const uint32_t version    = context.getUsedApiVersion();
+    vector<string> extensions = getRequiredWsiInstanceExtensions(version, wsiType);
 
     return vkt::createCustomInstanceWithExtensions(context, extensions);
 }
 
-vk::VkPhysicalDeviceFeatures getDeviceNullFeatures(void)
-{
-    vk::VkPhysicalDeviceFeatures features;
-    deMemset(&features, 0, sizeof(features));
-    return features;
-}
-
 static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, vk::VkPhysicalDevice physicalDevice,
-                                        const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
-                                        bool requiresSharedPresentableImage, bool extendedFlags,
-                                        const vk::VkAllocationCallbacks *pAllocator = nullptr)
+                                        const uint32_t queueFamilyIndex, bool requiresSharedPresentableImage,
+                                        bool extendedFlags, const vk::VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[]                  = {1.0f};
     const vk::VkDeviceQueueCreateInfo queueInfos[] = {{vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
                                                        (vk::VkDeviceQueueCreateFlags)0, queueFamilyIndex,
                                                        DE_LENGTH_OF_ARRAY(queuePriorities), &queuePriorities[0]}};
-    const vk::VkPhysicalDeviceFeatures features    = getDeviceNullFeatures();
-    std::vector<std::string> enabledExtensions     = {"VK_KHR_swapchain"};
-    if (requiresSharedPresentableImage)
-        enabledExtensions.push_back("VK_KHR_shared_presentable_image");
-    if (extendedFlags)
-        enabledExtensions.push_back("VK_KHR_extended_flags");
+    const vk::VkPhysicalDeviceFeatures features    = {};
 
-    std::vector<const char *> extensions(enabledExtensions.size());
-    for (size_t ndx = 0; ndx < enabledExtensions.size(); ++ndx)
-        extensions[ndx] = enabledExtensions[ndx].c_str();
+    std::vector<const char *> extensions = {"VK_KHR_swapchain"};
+    if (requiresSharedPresentableImage)
+        extensions.push_back("VK_KHR_shared_presentable_image");
+    if (extendedFlags)
+        extensions.push_back("VK_KHR_extended_flags");
 
     const vk::VkDeviceCreateInfo deviceParams = {vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
                                                  nullptr,
@@ -141,12 +112,6 @@ static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, vk::VkP
                                                  (uint32_t)extensions.size(),
                                                  extensions.data(),
                                                  &features};
-
-    for (size_t ndx = 0; ndx < extensions.size(); ++ndx)
-    {
-        if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(extensions[ndx])))
-            TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
-    }
 
     return instance.createCustomDevice(physicalDevice, &deviceParams, pAllocator);
 }
@@ -624,7 +589,7 @@ SharedPresentableImageTestInstance::SharedPresentableImageTestInstance(Context &
     , m_quadCount(16u)
     , m_vkp(context.getPlatformInterface())
     , m_instanceExtensions(vk::enumerateInstanceExtensionProperties(m_vkp, nullptr))
-    , m_instance(createInstanceWithWsi(context, m_instanceExtensions, testConfig.wsiType))
+    , m_instance(createInstanceWithWsi(context, testConfig.wsiType))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(m_instance.getPhysicalDevice())
     , m_wsiType(testConfig.wsiType)
@@ -636,7 +601,7 @@ SharedPresentableImageTestInstance::SharedPresentableImageTestInstance(Context &
 
     , m_queueFamilyIndex(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
     , m_deviceExtensions(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithWsi(m_instance, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex,
+    , m_device(createDeviceWithWsi(m_instance, m_physicalDevice, m_queueFamilyIndex,
                                    testConfig.useSharedPresentableImage, testConfig.extendedFlags))
     , m_vkd(m_device.getDriver())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
@@ -934,49 +899,80 @@ tcu::TestStatus SharedPresentableImageTestInstance::iterate(void)
         return tcu::TestStatus::incomplete();
 }
 
-struct Programs
+class SharedPresentableImageTestCase : public vkt::TestCase
 {
-    static void init(vk::SourceCollections &dst, TestConfig)
+public:
+    SharedPresentableImageTestCase(tcu::TestContext &testCtx, const std::string &name, const TestConfig &config)
+        : vkt::TestCase(testCtx, name)
+        , m_config(config)
     {
-        dst.glslSources.add("quad-vert") << glu::VertexSource(
-            "#version 450\n"
-            "out gl_PerVertex {\n"
-            "\tvec4 gl_Position;\n"
-            "};\n"
-            "layout(location = 0) out highp uint quadIndex;\n"
-            "highp float;\n"
-            "void main (void) {\n"
-            "\tgl_Position = vec4(((gl_VertexIndex + 2) / 3) % 2 == 0 ? -1.0 : 1.0,\n"
-            "\t                   ((gl_VertexIndex + 1) / 3) % 2 == 0 ? -1.0 : 1.0, 0.0, 1.0);\n"
-            "\tquadIndex = gl_VertexIndex / 6;\n"
-            "}\n");
-        dst.glslSources.add("quad-frag") << glu::FragmentSource(
-            "#version 310 es\n"
-            "layout(location = 0) flat in highp uint quadIndex;\n"
-            "layout(location = 0) out highp vec4 o_color;\n"
-            "layout(push_constant) uniform PushConstant {\n"
-            "\thighp uint frameNdx;\n"
-            "} pushConstants;\n"
-            "void main (void)\n"
-            "{\n"
-            "\thighp uint frameNdx = pushConstants.frameNdx;\n"
-            "\thighp uint cellX = bitfieldExtract(uint(gl_FragCoord.x), 7, 10);\n"
-            "\thighp uint cellY = bitfieldExtract(uint(gl_FragCoord.y), 7, 10);\n"
-            "\thighp uint x = quadIndex ^ (frameNdx + (uint(gl_FragCoord.x) >> cellX));\n"
-            "\thighp uint y = quadIndex ^ (frameNdx + (uint(gl_FragCoord.y) >> cellY));\n"
-            "\thighp uint r = 128u * bitfieldExtract(x, 0, 1)\n"
-            "\t             +  64u * bitfieldExtract(y, 1, 1)\n"
-            "\t             +  32u * bitfieldExtract(x, 3, 1);\n"
-            "\thighp uint g = 128u * bitfieldExtract(y, 0, 1)\n"
-            "\t             +  64u * bitfieldExtract(x, 2, 1)\n"
-            "\t             +  32u * bitfieldExtract(y, 3, 1);\n"
-            "\thighp uint b = 128u * bitfieldExtract(x, 1, 1)\n"
-            "\t             +  64u * bitfieldExtract(y, 2, 1)\n"
-            "\t             +  32u * bitfieldExtract(x, 4, 1);\n"
-            "\to_color = vec4(float(r) / 255.0, float(g) / 255.0, float(b) / 255.0, 1.0);\n"
-            "}\n");
     }
+
+    void checkSupport(Context &context) const;
+    void initPrograms(vk::SourceCollections &programCollection) const;
+    TestInstance *createInstance(Context &context) const;
+
+private:
+    TestConfig m_config;
 };
+
+void SharedPresentableImageTestCase::checkSupport(Context &context) const
+{
+    for (const auto &ext : getRequiredWsiInstanceExtensions(context.getUsedApiVersion(), m_config.wsiType))
+        context.requireInstanceFunctionality(ext);
+
+    context.requireDeviceFunctionality("VK_KHR_swapchain");
+    if (m_config.useSharedPresentableImage)
+        context.requireDeviceFunctionality("VK_KHR_shared_presentable_image");
+    if (m_config.extendedFlags)
+        context.requireDeviceFunctionality("VK_KHR_extended_flags");
+}
+
+void SharedPresentableImageTestCase::initPrograms(vk::SourceCollections &dst) const
+{
+    dst.glslSources.add("quad-vert") << glu::VertexSource(
+        "#version 450\n"
+        "out gl_PerVertex {\n"
+        "\tvec4 gl_Position;\n"
+        "};\n"
+        "layout(location = 0) out highp uint quadIndex;\n"
+        "highp float;\n"
+        "void main (void) {\n"
+        "\tgl_Position = vec4(((gl_VertexIndex + 2) / 3) % 2 == 0 ? -1.0 : 1.0,\n"
+        "\t                   ((gl_VertexIndex + 1) / 3) % 2 == 0 ? -1.0 : 1.0, 0.0, 1.0);\n"
+        "\tquadIndex = gl_VertexIndex / 6;\n"
+        "}\n");
+    dst.glslSources.add("quad-frag") << glu::FragmentSource(
+        "#version 310 es\n"
+        "layout(location = 0) flat in highp uint quadIndex;\n"
+        "layout(location = 0) out highp vec4 o_color;\n"
+        "layout(push_constant) uniform PushConstant {\n"
+        "\thighp uint frameNdx;\n"
+        "} pushConstants;\n"
+        "void main (void)\n"
+        "{\n"
+        "\thighp uint frameNdx = pushConstants.frameNdx;\n"
+        "\thighp uint cellX = bitfieldExtract(uint(gl_FragCoord.x), 7, 10);\n"
+        "\thighp uint cellY = bitfieldExtract(uint(gl_FragCoord.y), 7, 10);\n"
+        "\thighp uint x = quadIndex ^ (frameNdx + (uint(gl_FragCoord.x) >> cellX));\n"
+        "\thighp uint y = quadIndex ^ (frameNdx + (uint(gl_FragCoord.y) >> cellY));\n"
+        "\thighp uint r = 128u * bitfieldExtract(x, 0, 1)\n"
+        "\t             +  64u * bitfieldExtract(y, 1, 1)\n"
+        "\t             +  32u * bitfieldExtract(x, 3, 1);\n"
+        "\thighp uint g = 128u * bitfieldExtract(y, 0, 1)\n"
+        "\t             +  64u * bitfieldExtract(x, 2, 1)\n"
+        "\t             +  32u * bitfieldExtract(y, 3, 1);\n"
+        "\thighp uint b = 128u * bitfieldExtract(x, 1, 1)\n"
+        "\t             +  64u * bitfieldExtract(y, 2, 1)\n"
+        "\t             +  32u * bitfieldExtract(x, 4, 1);\n"
+        "\to_color = vec4(float(r) / 255.0, float(g) / 255.0, float(b) / 255.0, 1.0);\n"
+        "}\n");
+};
+
+TestInstance *SharedPresentableImageTestCase::createInstance(Context &context) const
+{
+    return new SharedPresentableImageTestInstance(context, m_config);
+}
 
 } // namespace
 
@@ -1017,22 +1013,22 @@ void createSharedPresentableImageTests(tcu::TestCaseGroup *testGroup, vk::wsi::T
                   {vk::VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR, "post_multiplied"},
                   {vk::VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR, "inherit"}};
 
+    auto &testContext = testGroup->getTestContext();
     for (size_t scalingNdx = 0; scalingNdx < DE_LENGTH_OF_ARRAY(scaling); scalingNdx++)
     {
         if (scaling[scalingNdx].scaling == SCALING_NONE || wsiTypeSupportsScaling(wsiType))
         {
-            de::MovePtr<tcu::TestCaseGroup> scaleGroup(
-                new tcu::TestCaseGroup(testGroup->getTestContext(), scaling[scalingNdx].name));
+            de::MovePtr<tcu::TestCaseGroup> scaleGroup(new tcu::TestCaseGroup(testContext, scaling[scalingNdx].name));
 
             for (size_t transformNdx = 0; transformNdx < DE_LENGTH_OF_ARRAY(transforms); transformNdx++)
             {
                 de::MovePtr<tcu::TestCaseGroup> transformGroup(
-                    new tcu::TestCaseGroup(testGroup->getTestContext(), transforms[transformNdx].name));
+                    new tcu::TestCaseGroup(testContext, transforms[transformNdx].name));
 
                 for (size_t alphaNdx = 0; alphaNdx < DE_LENGTH_OF_ARRAY(alphas); alphaNdx++)
                 {
                     de::MovePtr<tcu::TestCaseGroup> alphaGroup(
-                        new tcu::TestCaseGroup(testGroup->getTestContext(), alphas[alphaNdx].name));
+                        new tcu::TestCaseGroup(testContext, alphas[alphaNdx].name));
 
                     for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
                     {
@@ -1047,9 +1043,7 @@ void createSharedPresentableImageTests(tcu::TestCaseGroup *testGroup, vk::wsi::T
                         config.presentMode               = presentModes[presentModeNdx].mode;
                         config.extendedFlags             = false;
 
-                        alphaGroup->addChild(
-                            new vkt::InstanceFactory1<SharedPresentableImageTestInstance, TestConfig, Programs>(
-                                testGroup->getTestContext(), name, Programs(), config));
+                        alphaGroup->addChild(new SharedPresentableImageTestCase(testContext, name, config));
 
                         if (scaling[scalingNdx].scaling == SCALING_NONE &&
                             transforms[transformNdx].transform == vk::VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
@@ -1058,8 +1052,7 @@ void createSharedPresentableImageTests(tcu::TestCaseGroup *testGroup, vk::wsi::T
 
                             std::string extendedName = std::string(name) + "_extended_flags";
                             alphaGroup->addChild(
-                                new vkt::InstanceFactory1<SharedPresentableImageTestInstance, TestConfig, Programs>(
-                                    testGroup->getTestContext(), extendedName.c_str(), Programs(), config));
+                                new SharedPresentableImageTestCase(testContext, extendedName.c_str(), config));
                         }
                     }
 
@@ -1074,5 +1067,4 @@ void createSharedPresentableImageTests(tcu::TestCaseGroup *testGroup, vk::wsi::T
     }
 }
 
-} // namespace wsi
-} // namespace vkt
+} // namespace vkt::wsi

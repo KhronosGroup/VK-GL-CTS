@@ -178,18 +178,12 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::iterate(void)
 //  *//*--------------------------------------------------------------------*/
 CustomInstance AcquireDrmDisplayTestInstance::createInstanceWithAcquireDrmDisplay(void)
 {
-    vector<VkExtensionProperties> supportedExtensions =
-        enumerateInstanceExtensionProperties(m_context.getPlatformInterface(), nullptr);
     vector<string> requiredExtensions = {
         "VK_KHR_surface",
         "VK_KHR_display",
         "VK_EXT_direct_mode_display",
         "VK_EXT_acquire_drm_display",
     };
-
-    for (const auto &extension : requiredExtensions)
-        if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(extension)))
-            TCU_THROW(NotSupportedError, "Instance extension not supported.");
 
     return createCustomInstanceWithExtensions(m_context, requiredExtensions);
 }
@@ -732,6 +726,14 @@ public:
 
 private:
     const DrmTestIndex m_testId;
+
+    void checkSupport(Context &context) const
+    {
+        context.requireInstanceFunctionality("VK_KHR_surface");
+        context.requireInstanceFunctionality("VK_KHR_display");
+        context.requireInstanceFunctionality("VK_EXT_direct_mode_display");
+        context.requireInstanceFunctionality("VK_EXT_acquire_drm_display");
+    }
 
     vkt::TestInstance *createInstance(vkt::Context &context) const
     {

@@ -29,26 +29,18 @@
 #include "vktNativeObjectsUtil.hpp"
 
 #include "vkDefs.hpp"
-#include "vkPlatform.hpp"
-#include "vkStrUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
-#include "vkDeviceUtil.hpp"
 #include "vkPrograms.hpp"
-#include "vkTypeUtil.hpp"
-#include "vkWsiPlatform.hpp"
 #include "vkWsiUtil.hpp"
 #include "vkAllocationCallbackUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjTypeImpl.inl"
-#include "vkObjUtil.hpp"
 
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
-#include "tcuFormatUtil.hpp"
-#include "tcuPlatform.hpp"
 #include "tcuResultCollector.hpp"
 
 #include "deUniquePtr.hpp"
@@ -65,9 +57,7 @@
 #include <chrono>
 #endif
 
-namespace vkt
-{
-namespace wsi
+namespace vkt::wsi
 {
 
 namespace
@@ -89,24 +79,10 @@ using std::vector;
 
 typedef vector<VkExtensionProperties> Extensions;
 
-void checkAllSupported(const Extensions &supportedExtensions, const vector<string> &requiredExtensions)
+static auto getRequiredWsiInstanceExtensions(const Extensions &supportedExtensions, vk::wsi::Type wsiType)
 {
-    for (vector<string>::const_iterator requiredExtName = requiredExtensions.begin();
-         requiredExtName != requiredExtensions.end(); ++requiredExtName)
-    {
-        if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(*requiredExtName)))
-            TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
-    }
-}
+    vector<string> extensions{"VK_KHR_surface", getExtensionName(wsiType)};
 
-CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, Type wsiType,
-                                     const vector<string> extraExtensions,
-                                     const VkAllocationCallbacks *pAllocator = nullptr)
-{
-    vector<string> extensions = extraExtensions;
-
-    extensions.push_back("VK_KHR_surface");
-    extensions.push_back(getExtensionName(wsiType));
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
@@ -127,20 +103,21 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_swapchain_colorspace")))
         extensions.push_back("VK_EXT_swapchain_colorspace");
 
-    checkAllSupported(supportedExtensions, extensions);
+    return extensions;
+}
+
+CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, Type wsiType,
+                                     const vector<string> extraExtensions,
+                                     const VkAllocationCallbacks *pAllocator = nullptr)
+{
+    vector<string> extensions = getRequiredWsiInstanceExtensions(supportedExtensions, wsiType);
+    extensions.insert(end(extensions), begin(extraExtensions), end(extraExtensions));
 
     return vkt::createCustomInstanceWithExtensions(context, extensions, pAllocator);
 }
 
-VkPhysicalDeviceFeatures getDeviceFeaturesForWsi(void)
-{
-    VkPhysicalDeviceFeatures features;
-    deMemset(&features, 0, sizeof(features));
-    return features;
-}
-
-static CustomDevice createDeviceWithWsi(Context &context, const InstanceWrapper &instance,
-                                        VkPhysicalDevice physicalDevice, const Extensions &supportedExtensions,
+static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, VkPhysicalDevice physicalDevice,
+                                        const Extensions &supportedExtensions,
                                         const vector<string> &additionalExtensions,
                                         const vector<uint32_t> &queueFamilyIndices,
                                         const VkAllocationCallbacks *pAllocator = nullptr)
@@ -166,15 +143,8 @@ static CustomDevice createDeviceWithWsi(Context &context, const InstanceWrapper 
     extensions.push_back("VK_KHR_swapchain");
     extensions.insert(end(extensions), begin(additionalExtensions), end(additionalExtensions));
 
-    for (const auto &extName : extensions)
-    {
-        if (!isCoreDeviceExtension(context.getUsedApiVersion(), extName) &&
-            !isExtensionStructSupported(supportedExtensions, RequiredExtension(extName)))
-            TCU_THROW(NotSupportedError, extName + " is not supported");
-    }
-
     VkPhysicalDeviceFeatures2 features2 = initVulkanStructure();
-    features2.features                  = getDeviceFeaturesForWsi();
+    features2.features                  = {};
 
     VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT fifoLatestReadyFeatures = initVulkanStructure();
     fifoLatestReadyFeatures.presentModeFifoLatestReady                            = VK_TRUE;
@@ -232,6 +202,16 @@ static CustomDevice createDeviceWithWsi(Context &context, const InstanceWrapper 
     return instance.createCustomDevice(physicalDevice, &deviceParams, pAllocator);
 }
 
+void commonCheckSupport(Context &context, Type wsiType)
+{
+    auto supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr));
+
+    for (const auto &ext : getRequiredWsiInstanceExtensions(supportedExtensions, wsiType))
+        context.requireInstanceFunctionality(ext);
+
+    context.requireDeviceFunctionality("VK_KHR_swapchain");
+}
+
 struct InstanceHelper
 {
     const vector<VkExtensionProperties> supportedExtensions;
@@ -283,7 +263,7 @@ struct DeviceHelper
         , queueFamilyIndex(chooseQueueFamilyIndex(instanceHelper.vki, physicalDevice, surface))
         , secondQueueFamilyIndex(requestSecondQueue ? findSecondQueueFamilyIndex(context) :
                                                       std::numeric_limits<uint32_t>::max())
-        , device(createDeviceWithWsi(context, instanceHelper.instance, physicalDevice,
+        , device(createDeviceWithWsi(instanceHelper.instance, physicalDevice,
                                      enumerateDeviceExtensionProperties(instanceHelper.vki, physicalDevice, nullptr),
                                      additionalExtensions,
                                      requestSecondQueue ? vector<uint32_t>{queueFamilyIndex, secondQueueFamilyIndex} :
@@ -312,12 +292,12 @@ struct MultiQueueDeviceHelper
     const DeviceWrapper device;
     const DeviceInterface &vkd;
 
-    MultiQueueDeviceHelper(Context &context, const InstanceHelper &instanceHelper, const vector<VkSurfaceKHR> &surface,
+    MultiQueueDeviceHelper(const InstanceHelper &instanceHelper, const vector<VkSurfaceKHR> &surface,
                            const vector<string> &additionalExtensions = vector<string>(),
                            const VkAllocationCallbacks *pAllocator    = nullptr)
         : physicalDevice(instanceHelper.instance.getPhysicalDevice())
         , queueFamilyIndices(getCompatibleQueueFamilyIndices(instanceHelper.vki, physicalDevice, surface))
-        , device(createDeviceWithWsi(context, instanceHelper.instance, physicalDevice,
+        , device(createDeviceWithWsi(instanceHelper.instance, physicalDevice,
                                      enumerateDeviceExtensionProperties(instanceHelper.vki, physicalDevice, nullptr),
                                      additionalExtensions, queueFamilyIndices, pAllocator))
         , vkd(device.getDriver())
@@ -325,11 +305,10 @@ struct MultiQueueDeviceHelper
     }
 
     // Single-surface shortcut.
-    MultiQueueDeviceHelper(Context &context, const InstanceHelper &instanceHelper, VkSurfaceKHR surface,
+    MultiQueueDeviceHelper(const InstanceHelper &instanceHelper, VkSurfaceKHR surface,
                            const vector<string> additionalExtensions = vector<string>(),
                            const VkAllocationCallbacks *pAllocator   = nullptr)
-        : MultiQueueDeviceHelper(context, instanceHelper, vector<VkSurfaceKHR>(1u, surface), additionalExtensions,
-                                 pAllocator)
+        : MultiQueueDeviceHelper(instanceHelper, vector<VkSurfaceKHR>(1u, surface), additionalExtensions, pAllocator)
     {
     }
 };
@@ -617,6 +596,14 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases(Type wsiType, T
                                            presentModes);
 }
 
+void checkSwapchainTestSupport(Context &context, TestParameters params)
+{
+    commonCheckSupport(context, params.wsiType);
+
+    context.requireDeviceFunctionality("VK_EXT_attachment_feedback_loop_layout");
+    context.requireDeviceFunctionality("VK_KHR_extended_flags");
+}
+
 tcu::TestStatus createSwapchainTest(Context &context, TestParameters params)
 {
     tcu::TestLog &log = context.getTestContext().getLog();
@@ -631,7 +618,7 @@ tcu::TestStatus createSwapchainTest(Context &context, TestParameters params)
         additionalExtensions.push_back("VK_EXT_attachment_feedback_loop_layout");
     if (params.extendedFlags)
         additionalExtensions.push_back("VK_KHR_extended_flags");
-    const MultiQueueDeviceHelper devHelper(context, instHelper, *surface, additionalExtensions);
+    const MultiQueueDeviceHelper devHelper(instHelper, *surface, additionalExtensions);
 
     const vector<VkSwapchainCreateInfoKHR> cases(generateSwapchainParameterCases(
         params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
@@ -765,11 +752,17 @@ static uint64_t HandleToInt(T t)
     return t.getInternal();
 }
 
-tcu::TestStatus createSwapchainPrivateDataTest(Context &context, TestParameters params)
+void checkSwapchainPrivateDataSupport(Context &context, TestParameters params)
 {
+    commonCheckSupport(context, params.wsiType);
+
+    context.requireDeviceFunctionality("VK_EXT_private_data");
     if (!context.getPrivateDataFeatures().privateData)
         TCU_THROW(NotSupportedError, "privateData not supported");
+}
 
+tcu::TestStatus createSwapchainPrivateDataTest(Context &context, TestParameters params)
+{
     tcu::TestLog &log = context.getTestContext().getLog();
     const InstanceHelper instHelper(context, params.wsiType);
     const NativeObjects native(context, instHelper.supportedExtensions, params.wsiType);
@@ -781,7 +774,7 @@ tcu::TestStatus createSwapchainPrivateDataTest(Context &context, TestParameters 
     extraExts.push_back("VK_EXT_private_data");
     if (context.isDeviceFunctionalitySupported("VK_EXT_attachment_feedback_loop_layout"))
         extraExts.push_back("VK_EXT_attachment_feedback_loop_layout");
-    const MultiQueueDeviceHelper devHelper(context, instHelper, *surface, extraExts);
+    const MultiQueueDeviceHelper devHelper(instHelper, *surface, extraExts);
     const vector<VkSwapchainCreateInfoKHR> cases(generateSwapchainParameterCases(
         params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
 
@@ -909,6 +902,11 @@ tcu::TestStatus createSwapchainPrivateDataTest(Context &context, TestParameters 
     return tcu::TestStatus::pass("No sub-case failed");
 }
 
+void commonCheckSupport(Context &context, TestParameters params)
+{
+    commonCheckSupport(context, params.wsiType);
+}
+
 tcu::TestStatus createSwapchainSimulateOOMTest(Context &context, TestParameters params)
 {
     const size_t maxCases    = 300u;
@@ -1028,20 +1026,23 @@ tcu::TestStatus createSwapchainSimulateOOMTest(Context &context, TestParameters 
 
 struct GroupParameters
 {
+    typedef FunctionSupport1<TestParameters>::Function FunctionSupport;
     typedef FunctionInstance1<TestParameters>::Function Function;
 
     Type wsiType;
+    FunctionSupport functionSupport;
     Function function;
     bool extendedFlags;
 
-    GroupParameters(Type wsiType_, Function function_, bool extendedFlags_)
+    GroupParameters(Type wsiType_, FunctionSupport functionSupport_, Function function_, bool extendedFlags_)
         : wsiType(wsiType_)
+        , functionSupport(functionSupport_)
         , function(function_)
         , extendedFlags(extendedFlags_)
     {
     }
 
-    GroupParameters(void) : wsiType(TYPE_LAST), function(nullptr), extendedFlags(false)
+    GroupParameters(void) : wsiType(TYPE_LAST), functionSupport(nullptr), function(nullptr), extendedFlags(false)
     {
     }
 };
@@ -1054,7 +1055,7 @@ void populateSwapchainPrivateDataGroup(tcu::TestCaseGroup *testGroup, GroupParam
         if (testDimension == TEST_DIMENSION_IMAGE_EXTENT)
             continue;
 
-        addFunctionCase(testGroup, getTestDimensionName(testDimension), params.function,
+        addFunctionCase(testGroup, getTestDimensionName(testDimension), params.functionSupport, params.function,
                         TestParameters(params.wsiType, testDimension, params.extendedFlags));
     }
 }
@@ -1319,6 +1320,25 @@ struct ImageSwapchainCreateInfoParams
     bool concurrent;
 };
 
+void checkImageSwapchainCreateSupport(Context &context, ImageSwapchainCreateInfoParams params)
+{
+    const auto &vkp     = context.getPlatformInterface();
+    const auto &vki     = context.getInstanceInterface();
+    auto physicalDevice = context.getPhysicalDevice();
+
+    auto instanceExtensions(enumerateInstanceExtensionProperties(vkp, nullptr));
+    for (const auto &ext : getRequiredWsiInstanceExtensions(instanceExtensions, params.wsiType))
+        context.requireInstanceFunctionality(ext);
+
+    context.requireInstanceFunctionality("VK_KHR_device_group_creation");
+    context.requireDeviceFunctionality("VK_KHR_bind_memory2");
+
+    // structures this tests checks were added in revision 69
+    const Extensions deviceExtensions(enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr));
+    if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_swapchain", 69)))
+        TCU_THROW(NotSupportedError, "Required extension revision is not supported");
+}
+
 tcu::TestStatus testImageSwapchainCreateInfo(Context &context, ImageSwapchainCreateInfoParams params)
 {
     const tcu::UVec2 desiredSize(256, 256);
@@ -1332,13 +1352,6 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, ImageSwapchainCre
 
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice &device     = *devHelper.device;
-
-    const Extensions &deviceExtensions =
-        enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, nullptr);
-
-    // structures this tests checks were added in revision 69
-    if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_swapchain", 69)))
-        TCU_THROW(NotSupportedError, "Required extension revision is not supported");
 
     const auto sharing_mode               = params.concurrent ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
     const auto queueFamilyIndexCount      = params.concurrent ? 2u : 0u;
@@ -1551,7 +1564,7 @@ void populateSwapchainGroup(tcu::TestCaseGroup *testGroup, GroupParameters param
     {
         const TestDimension testDimension = (TestDimension)dimensionNdx;
 
-        addFunctionCase(testGroup, getTestDimensionName(testDimension), params.function,
+        addFunctionCase(testGroup, getTestDimensionName(testDimension), params.functionSupport, params.function,
                         TestParameters(params.wsiType, testDimension, params.extendedFlags));
     }
 
@@ -1560,10 +1573,12 @@ void populateSwapchainGroup(tcu::TestCaseGroup *testGroup, GroupParameters param
         ImageSwapchainCreateInfoParams imageSwapchainCreateInfoParams;
         imageSwapchainCreateInfoParams.wsiType    = params.wsiType;
         imageSwapchainCreateInfoParams.concurrent = false;
-        addFunctionCaseWithPrograms(testGroup, "image_swapchain_create_info", getBasicRenderPrograms,
-                                    testImageSwapchainCreateInfo, imageSwapchainCreateInfoParams);
+        addFunctionCaseWithPrograms(testGroup, "image_swapchain_create_info", checkImageSwapchainCreateSupport,
+                                    getBasicRenderPrograms, testImageSwapchainCreateInfo,
+                                    imageSwapchainCreateInfoParams);
         imageSwapchainCreateInfoParams.concurrent = true;
-        addFunctionCaseWithPrograms(testGroup, "image_swapchain_create_info_concurrent", getBasicRenderPrograms,
+        addFunctionCaseWithPrograms(testGroup, "image_swapchain_create_info_concurrent",
+                                    checkImageSwapchainCreateSupport, getBasicRenderPrograms,
                                     testImageSwapchainCreateInfo, imageSwapchainCreateInfoParams);
     }
 }
@@ -1657,8 +1672,7 @@ struct AccumulatedPresentInfo
     }
 };
 
-template <typename AcquireWrapperType>
-tcu::TestStatus multiSwapchainRenderTest(Context &context, MultiSwapchainParams params)
+void checkMultiSwapchainRenderSupport(Context &context, MultiSwapchainParams params)
 {
     DE_ASSERT(params.swapchainCount > 0);
     const PlatformProperties &platformProperties = getPlatformProperties(params.wsiType);
@@ -1669,6 +1683,12 @@ tcu::TestStatus multiSwapchainRenderTest(Context &context, MultiSwapchainParams 
         TCU_THROW(NotSupportedError, msg.str());
     }
 
+    commonCheckSupport(context, params.wsiType);
+}
+
+template <typename AcquireWrapperType>
+tcu::TestStatus multiSwapchainRenderTest(Context &context, MultiSwapchainParams params)
+{
     const tcu::UVec2 desiredSize(256, 256);
     const InstanceHelper instHelper(context, params.wsiType);
 
@@ -1829,38 +1849,43 @@ tcu::TestStatus multiSwapchainRenderTest(Context &context, MultiSwapchainParams 
     return tcu::TestStatus::pass("Rendering tests succeeded");
 }
 
+void checkDeviceGroupRenderSupport(Context &context, Type wsiType)
+{
+    context.requireInstanceFunctionality("VK_KHR_device_group_creation");
+    context.requireDeviceFunctionality("VK_KHR_device_group");
+
+    const vector<VkPhysicalDeviceGroupProperties> deviceGroupProps =
+        enumeratePhysicalDeviceGroups(context.getInstanceInterface(), context.getInstance());
+
+    const tcu::CommandLine &cmdLine = context.getTestContext().getCommandLine();
+    const uint32_t devGroupIdx      = cmdLine.getVKDeviceGroupId() - 1;
+    const uint32_t deviceIdx        = context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
+
+    if (devGroupIdx >= deviceGroupProps.size())
+        TCU_THROW(NotSupportedError, "Requested device group is not available");
+    if (deviceIdx >= deviceGroupProps[devGroupIdx].physicalDeviceCount)
+        TCU_THROW(NotSupportedError, "Requested device is not available in the device group");
+
+    commonCheckSupport(context, wsiType);
+}
+
 tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
 {
     const InstanceHelper instHelper(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
-    const tcu::CommandLine &cmdLine       = context.getTestContext().getCommandLine();
-    VkPhysicalDevice physicalDevice       = instHelper.instance.getPhysicalDevice();
-    const Extensions &supportedExtensions = enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, nullptr);
+    const tcu::CommandLine &cmdLine = context.getTestContext().getCommandLine();
 
-    std::vector<const char *> deviceExtensions;
-    deviceExtensions.push_back("VK_KHR_swapchain");
+    std::vector<const char *> deviceExtensions{"VK_KHR_swapchain"};
     if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
         deviceExtensions.push_back("VK_KHR_device_group");
-
-    for (std::size_t ndx = 0; ndx < deviceExtensions.size(); ++ndx)
-    {
-        if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(deviceExtensions[ndx])))
-            TCU_THROW(NotSupportedError, (string(deviceExtensions[ndx]) + " is not supported").c_str());
-    }
 
     const tcu::UVec2 desiredSize(256, 256);
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
 
-    const uint32_t devGroupIdx = cmdLine.getVKDeviceGroupId() - 1;
-    const uint32_t deviceIdx   = context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
-    const vector<VkPhysicalDeviceGroupProperties> deviceGroupProps =
-        enumeratePhysicalDeviceGroups(instHelper.vki, instHelper.instance);
-
-    if (devGroupIdx >= deviceGroupProps.size())
-        TCU_THROW(NotSupportedError, "Requested device group is not available");
-    if (deviceIdx >= deviceGroupProps[devGroupIdx].physicalDeviceCount)
-        TCU_THROW(NotSupportedError, "Requested device is not available in the device group");
+    const uint32_t devGroupIdx  = cmdLine.getVKDeviceGroupId() - 1;
+    const uint32_t deviceIdx    = context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
+    const auto deviceGroupProps = enumeratePhysicalDeviceGroups(instHelper.vki, instHelper.instance);
 
     const std::vector<VkPhysicalDevice> physicalDevicesInGroup(deviceGroupProps[devGroupIdx].physicalDevices,
                                                                deviceGroupProps[devGroupIdx].physicalDevices +
@@ -2046,40 +2071,55 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
     return tcu::TestStatus::pass("Rendering tests succeeded");
 }
 
+void checkDeviceGroupRender2Support(Context &context, Type wsiType)
+{
+    context.requireInstanceFunctionality("VK_KHR_device_group_creation");
+
+    const auto &instanceInterface = context.getInstanceInterface();
+    const auto &physicalDevice    = context.getPhysicalDevice();
+
+    auto instanceExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr));
+    for (const auto &ext : getRequiredWsiInstanceExtensions(instanceExtensions, wsiType))
+        context.requireInstanceFunctionality(ext);
+
+    // structures this tests checks were added in revision 69
+    const Extensions &deviceExtensions = enumerateDeviceExtensionProperties(instanceInterface, physicalDevice, nullptr);
+    if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_swapchain", 69)))
+        TCU_THROW(NotSupportedError, "Required extension revision is not supported");
+
+    context.requireDeviceFunctionality("VK_KHR_device_group");
+
+    const auto deviceGroupProps = enumeratePhysicalDeviceGroups(instanceInterface, context.getInstance());
+
+    const tcu::CommandLine &cmdLine = context.getTestContext().getCommandLine();
+    const uint32_t devGroupIdx      = cmdLine.getVKDeviceGroupId() - 1;
+    const uint32_t deviceIdx        = context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
+
+    if (devGroupIdx >= deviceGroupProps.size())
+        TCU_THROW(NotSupportedError, "Requested device group is not available");
+    if (deviceIdx >= deviceGroupProps[devGroupIdx].physicalDeviceCount)
+        TCU_THROW(NotSupportedError, "Requested device is not available in the device group");
+}
+
 tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
 {
     const InstanceHelper instHelper(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
-    const tcu::CommandLine &cmdLine    = context.getTestContext().getCommandLine();
-    VkPhysicalDevice physicalDevice    = instHelper.instance.getPhysicalDevice();
-    const Extensions &deviceExtensions = enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, nullptr);
-
-    // structures this tests checks were added in revision 69
-    if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_swapchain", 69)))
-        TCU_THROW(NotSupportedError, "Required extension revision is not supported");
+    const tcu::CommandLine &cmdLine = context.getTestContext().getCommandLine();
+    VkPhysicalDevice physicalDevice = instHelper.instance.getPhysicalDevice();
 
     std::vector<const char *> requiredExtensions;
     requiredExtensions.push_back("VK_KHR_swapchain");
     if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
-    {
         requiredExtensions.push_back("VK_KHR_device_group");
-        if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_device_group")))
-            TCU_THROW(NotSupportedError, "VK_KHR_device_group is not supported");
-    }
 
     const tcu::UVec2 desiredSize(256, 256);
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
 
-    const uint32_t devGroupIdx = cmdLine.getVKDeviceGroupId() - 1;
-    const uint32_t deviceIdx   = context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
-    const vector<VkPhysicalDeviceGroupProperties> deviceGroupProps =
-        enumeratePhysicalDeviceGroups(instHelper.vki, instHelper.instance);
-
-    if (devGroupIdx >= deviceGroupProps.size())
-        TCU_THROW(NotSupportedError, "Requested device group is not available");
-    if (deviceIdx >= deviceGroupProps[devGroupIdx].physicalDeviceCount)
-        TCU_THROW(NotSupportedError, "Requested device is not available in the device group");
+    const uint32_t devGroupIdx  = cmdLine.getVKDeviceGroupId() - 1;
+    const uint32_t deviceIdx    = context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
+    const auto deviceGroupProps = enumeratePhysicalDeviceGroups(instHelper.vki, instHelper.instance);
 
     const std::vector<VkPhysicalDevice> physicalDevicesInGroup(deviceGroupProps[devGroupIdx].physicalDevices,
                                                                deviceGroupProps[devGroupIdx].physicalDevices +
@@ -2942,39 +2982,41 @@ void getBasicRenderPrograms(SourceCollections &dst, MultiSwapchainParams)
 void populateRenderGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
 {
     // Basic Rendering Test
-    addFunctionCaseWithPrograms(testGroup, "basic", getBasicRenderPrograms, basicRenderTest<AcquireNextImageWrapper>,
-                                wsiType);
+    addFunctionCaseWithPrograms(testGroup, "basic", commonCheckSupport, getBasicRenderPrograms,
+                                basicRenderTest<AcquireNextImageWrapper>, wsiType);
     // Basic Rendering Test using AcquireNextImage2
-    addFunctionCaseWithPrograms(testGroup, "basic2", getBasicRenderPrograms, basicRenderTest<AcquireNextImage2Wrapper>,
-                                wsiType);
+    addFunctionCaseWithPrograms(testGroup, "basic2", commonCheckSupport, getBasicRenderPrograms,
+                                basicRenderTest<AcquireNextImage2Wrapper>, wsiType);
     // Basic Rendering Test using device_group
-    addFunctionCaseWithPrograms(testGroup, "device_group", getBasicRenderPrograms, deviceGroupRenderTest, wsiType);
+    addFunctionCaseWithPrograms(testGroup, "device_group", checkDeviceGroupRenderSupport, getBasicRenderPrograms,
+                                deviceGroupRenderTest, wsiType);
     // Rendering Test using device_group and VkImageSwapchainCreateInfo
-    addFunctionCaseWithPrograms(testGroup, "device_group2", getBasicRenderPrograms, deviceGroupRenderTest2, wsiType);
+    addFunctionCaseWithPrograms(testGroup, "device_group2", checkDeviceGroupRender2Support, getBasicRenderPrograms,
+                                deviceGroupRenderTest2, wsiType);
 
     const MultiSwapchainParams kTwoSwapchains{wsiType, 2u};
     const MultiSwapchainParams kTenSwapchains{wsiType, 10u};
 
     // 2 Swapchains Rendering Test
-    addFunctionCaseWithPrograms(testGroup, "2swapchains", getBasicRenderPrograms,
+    addFunctionCaseWithPrograms(testGroup, "2swapchains", checkMultiSwapchainRenderSupport, getBasicRenderPrograms,
                                 multiSwapchainRenderTest<AcquireNextImageWrapper>, kTwoSwapchains);
     // 2 Swapchains Rendering Test using AcquireNextImage2
-    addFunctionCaseWithPrograms(testGroup, "2swapchains2", getBasicRenderPrograms,
+    addFunctionCaseWithPrograms(testGroup, "2swapchains2", checkMultiSwapchainRenderSupport, getBasicRenderPrograms,
                                 multiSwapchainRenderTest<AcquireNextImage2Wrapper>, kTwoSwapchains);
     // 10 Swapchains Rendering Test
-    addFunctionCaseWithPrograms(testGroup, "10swapchains", getBasicRenderPrograms,
+    addFunctionCaseWithPrograms(testGroup, "10swapchains", checkMultiSwapchainRenderSupport, getBasicRenderPrograms,
                                 multiSwapchainRenderTest<AcquireNextImageWrapper>, kTenSwapchains);
     // 10 Swapchains Rendering Test using AcquireNextImage2
-    addFunctionCaseWithPrograms(testGroup, "10swapchains2", getBasicRenderPrograms,
+    addFunctionCaseWithPrograms(testGroup, "10swapchains2", checkMultiSwapchainRenderSupport, getBasicRenderPrograms,
                                 multiSwapchainRenderTest<AcquireNextImage2Wrapper>, kTenSwapchains);
 }
 
 void populateGetImagesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
 {
     // Test VK_INCOMPLETE return code
-    addFunctionCase(testGroup, "incomplete", getImagesIncompleteResultTest, wsiType);
+    addFunctionCase(testGroup, "incomplete", commonCheckSupport, getImagesIncompleteResultTest, wsiType);
     // Test proper count of images
-    addFunctionCase(testGroup, "count", getImagesResultsCountTest, wsiType);
+    addFunctionCase(testGroup, "count", commonCheckSupport, getImagesResultsCountTest, wsiType);
 }
 
 void populateModifyGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
@@ -2984,7 +3026,8 @@ void populateModifyGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
     if (platformProperties.swapchainExtent != PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE)
     {
         // Resize Swapchain Test
-        addFunctionCaseWithPrograms(testGroup, "resize", getBasicRenderPrograms, resizeSwapchainTest, wsiType);
+        addFunctionCaseWithPrograms(testGroup, "resize", commonCheckSupport, getBasicRenderPrograms,
+                                    resizeSwapchainTest, wsiType);
     }
 
     // \todo [2016-05-30 jesse] Add tests for modifying preTransform, compositeAlpha, presentMode
@@ -2993,21 +3036,23 @@ void populateModifyGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
 void populateDestroyGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
 {
     // Destroying a VK_NULL_HANDLE swapchain
-    addFunctionCase(testGroup, "null_handle", destroyNullHandleSwapchainTest, wsiType);
+    addFunctionCase(testGroup, "null_handle", commonCheckSupport, destroyNullHandleSwapchainTest, wsiType);
     // Destroying an old swapchain
-    addFunctionCase(testGroup, "old_swapchain", destroyOldSwapchainTest, wsiType);
+    addFunctionCase(testGroup, "old_swapchain", commonCheckSupport, destroyOldSwapchainTest, wsiType);
     // Destroying an old swapchain after acquiring image
-    addFunctionCase(testGroup, "old_swapchain_acquired_image", destroyOldSwapchainWithAcquiredImageTest, wsiType);
+    addFunctionCase(testGroup, "old_swapchain_acquired_image", commonCheckSupport,
+                    destroyOldSwapchainWithAcquiredImageTest, wsiType);
     // Present image acquired before retiring swapchain
-    addFunctionCase(testGroup, "retired_swapchain_present", presentImageFromRetiredSwapchain, wsiType);
+    addFunctionCase(testGroup, "retired_swapchain_present", commonCheckSupport, presentImageFromRetiredSwapchain,
+                    wsiType);
 }
 
 void populateAcquireGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
 {
     // Test acquiring too many images with 0 timeout
-    addFunctionCase(testGroup, "too_many", acquireTooManyTest, wsiType);
+    addFunctionCase(testGroup, "too_many", commonCheckSupport, acquireTooManyTest, wsiType);
     // Test acquiring too many images with timeout
-    addFunctionCase(testGroup, "too_many_timeout", acquireTooManyTimeoutTest, wsiType);
+    addFunctionCase(testGroup, "too_many_timeout", commonCheckSupport, acquireTooManyTimeoutTest, wsiType);
 }
 
 } // namespace
@@ -3015,13 +3060,14 @@ void populateAcquireGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
 void createSwapchainTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
 {
     // Create VkSwapchain with various parameters
-    addTestGroup(testGroup, "create", populateSwapchainGroup, GroupParameters(wsiType, createSwapchainTest, false));
+    addTestGroup(testGroup, "create", populateSwapchainGroup,
+                 GroupParameters(wsiType, checkSwapchainTestSupport, createSwapchainTest, false));
     // Simulate OOM using callbacks during swapchain construction
     addTestGroup(testGroup, "simulate_oom", populateSwapchainGroup,
-                 GroupParameters(wsiType, createSwapchainSimulateOOMTest, false));
+                 GroupParameters(wsiType, commonCheckSupport, createSwapchainSimulateOOMTest, false));
     // Create VkSwapchain with VkImageUsageFlags2CreateInfoKHR
     addTestGroup(testGroup, "extended_flags", populateSwapchainGroup,
-                 GroupParameters(wsiType, createSwapchainTest, true));
+                 GroupParameters(wsiType, checkSwapchainTestSupport, createSwapchainTest, true));
     // Rendering Tests
     addTestGroup(testGroup, "render", populateRenderGroup, wsiType);
     // Modify VkSwapchain
@@ -3034,8 +3080,7 @@ void createSwapchainTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
     addTestGroup(testGroup, "acquire", populateAcquireGroup, wsiType);
     // Create VkSwapchain and use VK_EXT_private_data
     addTestGroup(testGroup, "private_data", populateSwapchainPrivateDataGroup,
-                 GroupParameters(wsiType, createSwapchainPrivateDataTest, false));
+                 GroupParameters(wsiType, checkSwapchainPrivateDataSupport, createSwapchainPrivateDataTest, false));
 }
 
-} // namespace wsi
-} // namespace vkt
+} // namespace vkt::wsi

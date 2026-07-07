@@ -31,7 +31,6 @@
 
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
-#include "vkPlatform.hpp"
 #include "vkMemUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -48,20 +47,15 @@
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
 #include "deRandom.hpp"
-#include "deMath.h"
 
 #include "tcuVector.hpp"
 #include "tcuTestLog.hpp"
-#include "tcuImageCompare.hpp"
 #include "tcuTextureUtil.hpp"
-#include "tcuRGBA.hpp"
 
 #include <string>
 #include <vector>
 
-namespace vkt
-{
-namespace wsi
+namespace vkt::wsi
 {
 namespace
 {
@@ -138,26 +132,23 @@ struct Image
                                const uint32_t layerCount);
 };
 
-CustomInstance createInstanceWithWsi(Context &context, vk::wsi::Type wsiType)
+auto getRequiredInstanceExtensions(vk::wsi::Type wsiType)
 {
-    const auto version = context.getUsedApiVersion();
+    std::vector<std::string> requiredExtensions{
+        "VK_KHR_surface",
+        getExtensionName(wsiType),
+        "VK_KHR_get_surface_capabilities2",
+    };
 
-    std::vector<std::string> requiredExtensions;
-
-    requiredExtensions.push_back("VK_KHR_surface");
-    requiredExtensions.push_back(getExtensionName(wsiType));
     if (isDisplaySurface(wsiType))
         requiredExtensions.push_back("VK_KHR_display");
 
-    requiredExtensions.push_back("VK_KHR_get_surface_capabilities2");
+    return requiredExtensions;
+}
 
-    std::vector<std::string> requestedExtensions;
-    for (const auto &extensionName : requiredExtensions)
-    {
-        if (!vk::isCoreInstanceExtension(version, extensionName))
-            requestedExtensions.push_back(extensionName);
-    }
-
+CustomInstance createInstanceWithWsi(Context &context, vk::wsi::Type wsiType)
+{
+    auto requestedExtensions = getRequiredInstanceExtensions(wsiType);
     return vkt::createCustomInstanceWithExtensions(context, requestedExtensions);
 }
 
@@ -175,6 +166,17 @@ struct InstanceHelper
     }
 };
 
+auto getRequiredDeviceExtensions(const TestParams &params)
+{
+    std::vector<const char *> extensions = {"VK_KHR_swapchain", "VK_EXT_multisampled_render_to_single_sampled",
+                                            "VK_EXT_multisampled_render_to_swapchain"};
+
+    if (params.dynamicRendering)
+        extensions.push_back("VK_KHR_dynamic_rendering");
+
+    return extensions;
+}
+
 CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, vk::VkPhysicalDevice physicalDevice,
                                  const uint32_t queueFamilyIndex, const TestParams &params)
 {
@@ -182,8 +184,6 @@ CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, vk::VkPhysical
     const vk::VkDeviceQueueCreateInfo queueInfos[] = {{vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
                                                        (vk::VkDeviceQueueCreateFlags)0, queueFamilyIndex,
                                                        DE_LENGTH_OF_ARRAY(queuePriorities), &queuePriorities[0]}};
-    std::vector<const char *> extensions = {"VK_KHR_swapchain", "VK_EXT_multisampled_render_to_single_sampled",
-                                            "VK_EXT_multisampled_render_to_swapchain"};
 
     vk::VkPhysicalDeviceMultisampledRenderToSwapchainFeaturesEXT mrts_features = initVulkanStructure();
     mrts_features.multisampledRenderToSwapchain                                = VK_TRUE;
@@ -198,11 +198,9 @@ CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, vk::VkPhysical
     vk::VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures = initVulkanStructure();
     dynamicRenderingFeatures.dynamicRendering                             = VK_TRUE;
     if (params.dynamicRendering)
-    {
-        extensions.push_back("VK_KHR_dynamic_rendering");
         mrts_features.pNext = &dynamicRenderingFeatures;
-    }
 
+    const auto extensions                     = getRequiredDeviceExtensions(params);
     const vk::VkDeviceCreateInfo deviceParams = {vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
                                                  &physicalDeviceFeatures2,
                                                  (vk::VkDeviceCreateFlags)0,
@@ -761,14 +759,14 @@ void TestData::present()
     vk::submitCommandsAndWait(vkd, device, devHelper.queue, *presentCmdBuffer);
 
     VkPresentInfoKHR presentInfo = {
-        VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, // VkStructureType			sType;
-        nullptr,                            // const void*				pNext;
-        0u,                                 // uint32_t				    waitSemaphoreCount;
-        nullptr,                            // const VkSemaphore*		pWaitSemaphores;
-        1u,                                 // uint32_t				    swapchainCount;
-        &*swapchain,                        // const VkSwapchainKHR*	pSwapchains;
-        &imageNdx,                          // const uint32_t*			pImageIndices;
-        nullptr                             // VkResult*				pResults;
+        VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, // VkStructureType sType;
+        nullptr,                            // const void* pNext;
+        0u,                                 // uint32_t     waitSemaphoreCount;
+        nullptr,                            // const VkSemaphore* pWaitSemaphores;
+        1u,                                 // uint32_t     swapchainCount;
+        &*swapchain,                        // const VkSwapchainKHR* pSwapchains;
+        &imageNdx,                          // const uint32_t* pImageIndices;
+        nullptr                             // VkResult* pResults;
     };
     vkd.queuePresentKHR(devHelper.queue, &presentInfo);
 }
@@ -1192,16 +1190,16 @@ void prepareVerificationBuffers(TestData &td)
 
 void checkRequirements(Context &context, TestParams params)
 {
+    for (const auto &ext : getRequiredInstanceExtensions(params.wsiType))
+        context.requireInstanceFunctionality(ext);
+
+    for (const auto &ext : getRequiredDeviceExtensions(params))
+        context.requireDeviceFunctionality(ext);
+
     const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
     const vk::InstanceInterface &vki      = context.getInstanceInterface();
 
     context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
-
-    if (params.dynamicRendering)
-        context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
-
-    context.requireDeviceFunctionality("VK_EXT_multisampled_render_to_swapchain");
-    context.requireDeviceFunctionality("VK_EXT_multisampled_render_to_single_sampled");
 
     // Check extension feature
     {
@@ -2240,9 +2238,12 @@ struct SupportedFlagsParams
     VkSwapchainCreateFlagBitsKHR flag;
 };
 
-void supportedFlagsCheckRequirements(Context &context, const SupportedFlagsParams)
+void supportedFlagsCheckRequirements(Context &context, const SupportedFlagsParams params)
 {
     context.requireDeviceFunctionality("VK_EXT_multisampled_render_to_swapchain");
+
+    for (const auto &ext : getRequiredInstanceExtensions(params.wsiType))
+        context.requireInstanceFunctionality(ext);
 }
 
 void supportedFlagsInitPrograms(SourceCollections &, const SupportedFlagsParams)
@@ -2514,8 +2515,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, vk::wsi::Type
                                 renderToWholeFramebuffer ? "whole_framebuffer" : "sub_framebuffer"));
                             for (const bool loc : attachmentLocation)
                             {
-                                TestParams testParams;
-                                deMemset(&testParams, 0, sizeof(testParams));
+                                TestParams testParams = {};
 
                                 testParams.wsiType          = wsiType;
                                 testParams.swapchainFormat  = swapchainFormat;
@@ -2574,5 +2574,4 @@ void createMultisampledRenderToSwapchainTests(tcu::TestCaseGroup *testGroup, vk:
     createMultisampledTestsInGroup(testGroup, wsiType);
 }
 
-} // namespace wsi
-} // namespace vkt
+} // namespace vkt::wsi

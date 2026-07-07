@@ -29,15 +29,12 @@
 
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
-#include "vkDeviceUtil.hpp"
 #include "vkTypeUtil.hpp"
-#include "vkCmdUtil.hpp"
 #include "vkWsiPlatform.hpp"
 #include "vkWsiUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuPlatform.hpp"
-#include "tcuCommandLine.hpp"
 
 #include <limits>
 
@@ -47,9 +44,7 @@
 #include <windows.h>
 #endif
 
-namespace vkt
-{
-namespace wsi
+namespace vkt::wsi
 {
 
 namespace
@@ -66,23 +61,11 @@ struct TestParams
     VkFullScreenExclusiveEXT fseType;
 };
 
-void checkAllSupported(const Extensions &supportedExtensions, const std::vector<std::string> &requiredExtensions)
-{
-    for (std::vector<std::string>::const_iterator requiredExtName = requiredExtensions.begin();
-         requiredExtName != requiredExtensions.end(); ++requiredExtName)
-    {
-        if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(*requiredExtName)))
-            TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
-    }
-}
-
 CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, Type wsiType,
                                      const VkAllocationCallbacks *pAllocator = nullptr)
 {
-    std::vector<std::string> extensions;
+    std::vector<std::string> extensions{"VK_KHR_surface", getExtensionName(wsiType)};
 
-    extensions.push_back("VK_KHR_surface");
-    extensions.push_back(getExtensionName(wsiType));
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
@@ -92,8 +75,6 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
 
     if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_get_surface_capabilities2")))
         extensions.push_back("VK_KHR_get_surface_capabilities2");
-
-    checkAllSupported(supportedExtensions, extensions);
 
     return createCustomInstanceWithExtensions(context, extensions, pAllocator);
 }
@@ -106,24 +87,14 @@ VkPhysicalDeviceFeatures getDeviceFeaturesForWsi(void)
 }
 
 static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, VkPhysicalDevice physicalDevice,
-                                        const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
-                                        const VkAllocationCallbacks *pAllocator)
+                                        const uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator)
 {
     const float queuePriorities[]              = {1.0f};
     const VkDeviceQueueCreateInfo queueInfos[] = {{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
                                                    (VkDeviceQueueCreateFlags)0, queueFamilyIndex,
                                                    DE_LENGTH_OF_ARRAY(queuePriorities), &queuePriorities[0]}};
     const VkPhysicalDeviceFeatures features    = getDeviceFeaturesForWsi();
-    std::vector<const char *> extensions;
-
-    if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_swapchain")))
-        TCU_THROW(NotSupportedError, "VK_KHR_swapchain is not supported");
-    extensions.push_back("VK_KHR_swapchain");
-
-    if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))
-    {
-        extensions.push_back("VK_EXT_full_screen_exclusive");
-    }
+    std::vector<const char *> extensions{"VK_KHR_swapchain", "VK_EXT_full_screen_exclusive"};
 
     VkDeviceCreateInfo deviceParams = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
                                        nullptr,
@@ -165,9 +136,7 @@ struct DeviceHelper
                  const VkAllocationCallbacks *pAllocator = nullptr)
         : physicalDevice(instanceHelper.instance.getPhysicalDevice())
         , queueFamilyIndex(chooseQueueFamilyIndex(instanceHelper.vki, physicalDevice, surface))
-        , device(createDeviceWithWsi(instanceHelper.instance, physicalDevice,
-                                     enumerateDeviceExtensionProperties(instanceHelper.vki, physicalDevice, nullptr),
-                                     queueFamilyIndex, pAllocator))
+        , device(createDeviceWithWsi(instanceHelper.instance, physicalDevice, queueFamilyIndex, pAllocator))
         , vkd(device.getDriver())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
     {
@@ -301,20 +270,12 @@ std::vector<CommandBufferSp> allocateCommandBuffers(const DeviceInterface &vkd, 
 
 tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
 {
-    if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(),
-                      "VK_EXT_full_screen_exclusive"))
-        TCU_THROW(NotSupportedError, "Extension VK_EXT_full_screen_exclusive not supported");
-
     const InstanceHelper instHelper(context, testParams.wsiType);
     const NativeObjectsFS native(context, instHelper.supportedExtensions, testParams.wsiType);
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType,
                                                      *native.display, *native.window,
                                                      context.getTestContext().getCommandLine()));
     const DeviceHelper devHelper(instHelper, *surface);
-    const std::vector<VkExtensionProperties> deviceExtensions(
-        enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, nullptr));
-    if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))
-        TCU_THROW(NotSupportedError, "Extension VK_EXT_full_screen_exclusive not supported");
 
     native.window->setVisible(true);
     bool isForeground = true;
@@ -608,6 +569,22 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
     }
 }
 
+void checkSupport(Context &context, TestParams testParams)
+{
+    context.requireDeviceFunctionality("VK_EXT_full_screen_exclusive");
+    context.requireDeviceFunctionality("VK_KHR_swapchain");
+
+    context.requireInstanceFunctionality(getExtensionName(testParams.wsiType));
+    context.requireInstanceFunctionality("VK_KHR_surface");
+
+    if (isDisplaySurface(testParams.wsiType))
+        context.requireInstanceFunctionality("VK_KHR_display");
+
+    // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
+    if (testParams.wsiType == TYPE_DIRECT_DRM)
+        context.requireInstanceFunctionality("VK_EXT_direct_mode_display");
+}
+
 void getBasicRenderPrograms(SourceCollections &dst, TestParams)
 {
     WsiTriangleRenderer::getPrograms(dst);
@@ -631,11 +608,9 @@ void createFullScreenExclusiveTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type
     for (size_t fseNdx = 0; fseNdx < DE_LENGTH_OF_ARRAY(fullScreenTestTypes); ++fseNdx)
     {
         TestParams testParams{wsiType, fullScreenTestTypes[fseNdx].testType};
-        addFunctionCaseWithPrograms(testGroup, fullScreenTestTypes[fseNdx].name, getBasicRenderPrograms,
+        addFunctionCaseWithPrograms(testGroup, fullScreenTestTypes[fseNdx].name, checkSupport, getBasicRenderPrograms,
                                     fullScreenExclusiveTest, testParams);
     }
 }
 
-} // namespace wsi
-
-} // namespace vkt
+} // namespace vkt::wsi

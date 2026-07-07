@@ -24,25 +24,20 @@
 #include "vktWsiIncrementalPresentTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
-#include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
 #include "vkRefUtil.hpp"
 #include "vkWsiPlatform.hpp"
 #include "vkWsiUtil.hpp"
 #include "vkQueryUtil.hpp"
-#include "vkDeviceUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 
-#include "vkWsiUtil.hpp"
-
 #include "tcuPlatform.hpp"
 #include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
-#include "tcuCommandLine.hpp"
 
 #include <vector>
 #include <string>
@@ -54,9 +49,7 @@ using tcu::Maybe;
 using tcu::TestLog;
 using tcu::UVec2;
 
-namespace vkt
-{
-namespace wsi
+namespace vkt::wsi
 {
 namespace
 {
@@ -69,22 +62,10 @@ enum Scaling
 
 typedef vector<vk::VkExtensionProperties> Extensions;
 
-void checkAllSupported(const Extensions &supportedExtensions, const vector<string> &requiredExtensions)
-{
-    for (vector<string>::const_iterator requiredExtName = requiredExtensions.begin();
-         requiredExtName != requiredExtensions.end(); ++requiredExtName)
-    {
-        if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(*requiredExtName)))
-            TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
-    }
-}
-
 CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, vk::wsi::Type wsiType)
 {
-    vector<string> extensions;
+    vector<string> extensions{"VK_KHR_surface", getExtensionName(wsiType)};
 
-    extensions.push_back("VK_KHR_surface");
-    extensions.push_back(getExtensionName(wsiType));
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
@@ -95,8 +76,6 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     // VUID-VkSwapchainCreateInfoKHR-imageColorSpace-parameter
     if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_EXT_swapchain_colorspace")))
         extensions.push_back("VK_EXT_swapchain_colorspace");
-
-    checkAllSupported(supportedExtensions, extensions);
 
     return vkt::createCustomInstanceWithExtensions(context, extensions);
 }
@@ -140,12 +119,6 @@ static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, vk::VkP
                                                  static_cast<uint32_t>(extensions.size()),
                                                  extensions.data(),
                                                  nullptr};
-
-    for (size_t ndx = 0; ndx < extensions.size(); ++ndx)
-    {
-        if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(extensions[ndx])))
-            TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
-    }
 
     return instance.createCustomDevice(physicalDevice, &deviceParams, pAllocator);
 }
@@ -1033,44 +1006,81 @@ tcu::TestStatus IncrementalPresentTestInstance::iterate(void)
         return tcu::TestStatus::incomplete();
 }
 
-struct Programs
+class IncrementalPresentTestCase : public vkt::TestCase
 {
-    static void init(vk::SourceCollections &dst, TestConfig)
+public:
+    IncrementalPresentTestCase(tcu::TestContext &testCtx, const std::string &name, const TestConfig &config)
+        : vkt::TestCase(testCtx, name)
+        , m_config(config)
     {
-        dst.glslSources.add("quad-vert") << glu::VertexSource(
-            "#version 450\n"
-            "out gl_PerVertex {\n"
-            "\tvec4 gl_Position;\n"
-            "};\n"
-            "highp float;\n"
-            "void main (void) {\n"
-            "\tgl_Position = vec4(((gl_VertexIndex + 2) / 3) % 2 == 0 ? -1.0 : 1.0,\n"
-            "\t                   ((gl_VertexIndex + 1) / 3) % 2 == 0 ? -1.0 : 1.0, 0.0, 1.0);\n"
-            "}\n");
-        dst.glslSources.add("quad-frag") << glu::FragmentSource(
-            "#version 310 es\n"
-            "layout(location = 0) out highp vec4 o_color;\n"
-            "layout(push_constant) uniform PushConstant {\n"
-            "\thighp uint mask;\n"
-            "} pushConstants;\n"
-            "void main (void)\n"
-            "{\n"
-            "\thighp uint mask = pushConstants.mask;\n"
-            "\thighp uint x = mask ^ uint(gl_FragCoord.x);\n"
-            "\thighp uint y = mask ^ uint(gl_FragCoord.y);\n"
-            "\thighp uint r = 128u * bitfieldExtract(x, 0, 1)\n"
-            "\t             +  64u * bitfieldExtract(y, 1, 1)\n"
-            "\t             +  32u * bitfieldExtract(x, 3, 1);\n"
-            "\thighp uint g = 128u * bitfieldExtract(y, 0, 1)\n"
-            "\t             +  64u * bitfieldExtract(x, 2, 1)\n"
-            "\t             +  32u * bitfieldExtract(y, 3, 1);\n"
-            "\thighp uint b = 128u * bitfieldExtract(x, 1, 1)\n"
-            "\t             +  64u * bitfieldExtract(y, 2, 1)\n"
-            "\t             +  32u * bitfieldExtract(x, 4, 1);\n"
-            "\to_color = vec4(float(r) / 255.0, float(g) / 255.0, float(b) / 255.0, 1.0);\n"
-            "}\n");
     }
+
+    void checkSupport(Context &context) const;
+    void initPrograms(vk::SourceCollections &programCollection) const;
+    TestInstance *createInstance(Context &context) const;
+
+private:
+    TestConfig m_config;
 };
+
+void IncrementalPresentTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_KHR_swapchain");
+    if (m_config.useIncrementalPresent)
+        context.requireDeviceFunctionality("VK_KHR_incremental_present");
+
+    auto wsiType = m_config.wsiType;
+    context.requireInstanceFunctionality("VK_KHR_surface");
+    context.requireInstanceFunctionality(getExtensionName(wsiType));
+
+    if (isDisplaySurface(wsiType))
+        context.requireInstanceFunctionality("VK_KHR_display");
+
+    // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
+    if (wsiType == vk::wsi::TYPE_DIRECT_DRM)
+        context.requireInstanceFunctionality("VK_EXT_direct_mode_display");
+}
+
+void IncrementalPresentTestCase::initPrograms(vk::SourceCollections &dst) const
+{
+    dst.glslSources.add("quad-vert") << glu::VertexSource(
+        "#version 450\n"
+        "out gl_PerVertex {\n"
+        "\tvec4 gl_Position;\n"
+        "};\n"
+        "highp float;\n"
+        "void main (void) {\n"
+        "\tgl_Position = vec4(((gl_VertexIndex + 2) / 3) % 2 == 0 ? -1.0 : 1.0,\n"
+        "\t                   ((gl_VertexIndex + 1) / 3) % 2 == 0 ? -1.0 : 1.0, 0.0, 1.0);\n"
+        "}\n");
+    dst.glslSources.add("quad-frag") << glu::FragmentSource(
+        "#version 310 es\n"
+        "layout(location = 0) out highp vec4 o_color;\n"
+        "layout(push_constant) uniform PushConstant {\n"
+        "\thighp uint mask;\n"
+        "} pushConstants;\n"
+        "void main (void)\n"
+        "{\n"
+        "\thighp uint mask = pushConstants.mask;\n"
+        "\thighp uint x = mask ^ uint(gl_FragCoord.x);\n"
+        "\thighp uint y = mask ^ uint(gl_FragCoord.y);\n"
+        "\thighp uint r = 128u * bitfieldExtract(x, 0, 1)\n"
+        "\t             +  64u * bitfieldExtract(y, 1, 1)\n"
+        "\t             +  32u * bitfieldExtract(x, 3, 1);\n"
+        "\thighp uint g = 128u * bitfieldExtract(y, 0, 1)\n"
+        "\t             +  64u * bitfieldExtract(x, 2, 1)\n"
+        "\t             +  32u * bitfieldExtract(y, 3, 1);\n"
+        "\thighp uint b = 128u * bitfieldExtract(x, 1, 1)\n"
+        "\t             +  64u * bitfieldExtract(y, 2, 1)\n"
+        "\t             +  32u * bitfieldExtract(x, 4, 1);\n"
+        "\to_color = vec4(float(r) / 255.0, float(g) / 255.0, float(b) / 255.0, 1.0);\n"
+        "}\n");
+}
+
+TestInstance *IncrementalPresentTestCase::createInstance(Context &context) const
+{
+    return new IncrementalPresentTestInstance(context, m_config);
+}
 
 } // namespace
 
@@ -1112,6 +1122,7 @@ void createIncrementalPresentTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type 
                   {vk::VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR, "post_multiplied"},
                   {vk::VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR, "inherit"}};
 
+    auto &testContext = testGroup->getTestContext();
     for (size_t scalingNdx = 0; scalingNdx < DE_LENGTH_OF_ARRAY(scaling); scalingNdx++)
     {
         if (scaling[scalingNdx].scaling != SCALING_NONE && wsiType == vk::wsi::TYPE_WAYLAND)
@@ -1123,24 +1134,22 @@ void createIncrementalPresentTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type 
             continue;
 
         {
-
-            de::MovePtr<tcu::TestCaseGroup> scaleGroup(
-                new tcu::TestCaseGroup(testGroup->getTestContext(), scaling[scalingNdx].name));
+            de::MovePtr<tcu::TestCaseGroup> scaleGroup(new tcu::TestCaseGroup(testContext, scaling[scalingNdx].name));
 
             for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
             {
                 de::MovePtr<tcu::TestCaseGroup> presentModeGroup(
-                    new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name));
+                    new tcu::TestCaseGroup(testContext, presentModes[presentModeNdx].name));
 
                 for (size_t transformNdx = 0; transformNdx < DE_LENGTH_OF_ARRAY(transforms); transformNdx++)
                 {
                     de::MovePtr<tcu::TestCaseGroup> transformGroup(
-                        new tcu::TestCaseGroup(testGroup->getTestContext(), transforms[transformNdx].name));
+                        new tcu::TestCaseGroup(testContext, transforms[transformNdx].name));
 
                     for (size_t alphaNdx = 0; alphaNdx < DE_LENGTH_OF_ARRAY(alphas); alphaNdx++)
                     {
                         de::MovePtr<tcu::TestCaseGroup> alphaGroup(
-                            new tcu::TestCaseGroup(testGroup->getTestContext(), alphas[alphaNdx].name));
+                            new tcu::TestCaseGroup(testContext, alphas[alphaNdx].name));
 
                         for (size_t ref = 0; ref < 2; ref++)
                         {
@@ -1155,9 +1164,7 @@ void createIncrementalPresentTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type 
                             config.transform             = transforms[transformNdx].transform;
                             config.alpha                 = alphas[alphaNdx].alpha;
 
-                            alphaGroup->addChild(
-                                new vkt::InstanceFactory1<IncrementalPresentTestInstance, TestConfig, Programs>(
-                                    testGroup->getTestContext(), name, Programs(), config));
+                            alphaGroup->addChild(new IncrementalPresentTestCase(testContext, name, config));
                         }
 
                         transformGroup->addChild(alphaGroup.release());
@@ -1174,5 +1181,4 @@ void createIncrementalPresentTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type 
     }
 }
 
-} // namespace wsi
-} // namespace vkt
+} // namespace vkt::wsi
