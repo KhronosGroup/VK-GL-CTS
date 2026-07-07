@@ -33,6 +33,7 @@
 #define VK_MAX_PHYSICAL_DEVICE_NAME_SIZE								(static_cast<uint32_t>	(256))
 #define VK_MAX_PIPELINE_BINARY_KEY_SIZE_KHR								(static_cast<uint32_t>	(32))
 #define VK_MAX_SHADER_MODULE_IDENTIFIER_SIZE_EXT						(static_cast<uint32_t>	(32))
+#define VK_MAX_TENSOR_CREATE_INFO_ROLLING_BACKING_WRAP_COUNT_ARM		(static_cast<uint32_t>	(4))
 #define VK_MAX_VIDEO_AV1_REFERENCES_PER_FRAME_KHR						(static_cast<uint32_t>	(7))
 #define VK_MAX_VIDEO_VP9_REFERENCES_PER_FRAME_KHR						(static_cast<uint32_t>	(3))
 #define VK_PARTITIONED_ACCELERATION_STRUCTURE_PARTITION_INDEX_GLOBAL_NV	(static_cast<uint32_t>	((~0U)))

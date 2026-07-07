@@ -9,7 +9,7 @@
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -45,7 +45,7 @@ extern "C" {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -357,7 +357,7 @@ typedef struct StdVideoH264PictureParameterSet {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -434,7 +434,7 @@ typedef struct StdVideoDecodeH264ReferenceInfo {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -581,7 +581,7 @@ typedef struct StdVideoEncodeH264SliceHeader {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -1027,7 +1027,7 @@ typedef struct StdVideoH265PictureParameterSet {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -1094,7 +1094,7 @@ typedef struct StdVideoDecodeH265ReferenceInfo {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -1251,7 +1251,7 @@ typedef struct StdVideoEncodeH265ReferenceInfo {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -1645,7 +1645,7 @@ typedef struct StdVideoAV1SequenceHeader {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -1754,7 +1754,7 @@ typedef struct StdVideoDecodeAV1ReferenceInfo {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -1897,7 +1897,7 @@ typedef struct StdVideoEncodeAV1ReferenceInfo {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -2048,7 +2048,7 @@ typedef struct StdVideoVP9Segmentation {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -2116,7 +2116,7 @@ typedef struct StdVideoDecodeVP9PictureInfo {
 /*
 ** Copyright 2015-2026 The Khronos Group Inc.
 **
-** SPDX-License-Identifier: Apache-2.0
+** SPDX-License-Identifier: Apache-2.0 OR MIT
 */
 
 /*
@@ -2178,7 +2178,7 @@ extern "C" {
 //#define VK_API_VERSION VK_MAKE_API_VERSION(0, 1, 0, 0) // Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 354
+#define VK_HEADER_VERSION 356
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 4, VK_HEADER_VERSION)
@@ -3455,6 +3455,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_VULKAN_PROPERTIES_KHR = 1000562004,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV = 1000563000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT = 1000564000,
+    VK_STRUCTURE_TYPE_TENSOR_EXPLICIT_TILING_FORMAT_PROPERTIES_ARM = 1000565000,
+    VK_STRUCTURE_TYPE_TENSOR_ROLLING_BACKING_CREATE_INFO_ARM = 1000565001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT8_FEATURES_EXT = 1000567000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV = 1000568000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CLUSTER_ACCELERATION_STRUCTURE_FEATURES_NV = 1000569000,
@@ -3589,6 +3591,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_FLAGS_FEATURES_KHR = 1000668004,
     VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_2_CREATE_INFO_KHR = 1000668005,
     VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_2_KHR = 1000668006,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OCP_MICROSCALING_TYPES_FEATURES_EXT = 1000672000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MIXED_FLOAT_DOT_PRODUCT_FEATURES_VALVE = 1000673000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_THROTTLE_HINT_FEATURES_SEC = 1000674000,
     VK_STRUCTURE_TYPE_THROTTLE_HINT_SUBMIT_INFO_SEC = 1000674001,
@@ -15618,6 +15621,11 @@ typedef enum VkComponentTypeKHR {
     VK_COMPONENT_TYPE_UINT8_PACKED_NV = 1000491001,
     VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT = 1000491002,
     VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT = 1000491003,
+    VK_COMPONENT_TYPE_FLOAT6_E2M3_EXT = 1000672000,
+    VK_COMPONENT_TYPE_FLOAT6_E3M2_EXT = 1000672001,
+    VK_COMPONENT_TYPE_FLOAT4_E2M1_EXT = 1000672002,
+    VK_COMPONENT_TYPE_FLOAT8_UNSIGNED_E8M0_EXT = 1000672003,
+    VK_COMPONENT_TYPE_MXINT8_EXT = 1000672004,
     VK_COMPONENT_TYPE_FLOAT16_NV = VK_COMPONENT_TYPE_FLOAT16_KHR,
     VK_COMPONENT_TYPE_FLOAT32_NV = VK_COMPONENT_TYPE_FLOAT32_KHR,
     VK_COMPONENT_TYPE_FLOAT64_NV = VK_COMPONENT_TYPE_FLOAT64_KHR,
@@ -23812,6 +23820,7 @@ typedef struct VkPhysicalDeviceOpacityMicromapFeaturesEXT {
     void*              pNext;
     VkBool32           micromap;
     VkBool32           micromapCaptureReplay;
+    // micromapHostCommands is legacy, but no reason was given in the API XML
     VkBool32           micromapHostCommands;
 } VkPhysicalDeviceOpacityMicromapFeaturesEXT;
 
@@ -25020,6 +25029,11 @@ VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkTensorViewARM)
 typedef enum VkTensorTilingARM {
     VK_TENSOR_TILING_OPTIMAL_ARM = 0,
     VK_TENSOR_TILING_LINEAR_ARM = 1,
+    VK_TENSOR_TILING_BRICK_16_WIDE_ARM = 1000565000,
+    VK_TENSOR_TILING_BRICK_8_WIDE_ARM = 1000565001,
+    VK_TENSOR_TILING_BRICK_4_WIDE_ARM = 1000565002,
+    VK_TENSOR_TILING_BLOCK_U_INTERLEAVED_ARM = 1000565003,
+    VK_TENSOR_TILING_BLOCK_U_INTERLEAVED_64K_ARM = 1000565004,
     VK_TENSOR_TILING_MAX_ENUM_ARM = 0x7FFFFFFF
 } VkTensorTilingARM;
 typedef VkFlags64 VkTensorCreateFlagsARM;
@@ -26949,6 +26963,29 @@ typedef struct VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT {
 
 
 
+// VK_ARM_tensor_controls is a preprocessor guard. Do not pass it to API calls.
+#define VK_ARM_tensor_controls 1
+#define VK_MAX_TENSOR_CREATE_INFO_ROLLING_BACKING_WRAP_COUNT_ARM 4U
+#define VK_ARM_TENSOR_CONTROLS_SPEC_VERSION 1
+#define VK_ARM_TENSOR_CONTROLS_EXTENSION_NAME "VK_ARM_tensor_controls"
+typedef struct VkTensorRollingBackingCreateInfoARM {
+    VkStructureType    sType;
+    const void*        pNext;
+    uint32_t           wraps[VK_MAX_TENSOR_CREATE_INFO_ROLLING_BACKING_WRAP_COUNT_ARM];
+} VkTensorRollingBackingCreateInfoARM;
+
+typedef struct VkTensorExplicitTilingFormatPropertiesARM {
+    VkStructureType          sType;
+    void*                    pNext;
+    VkFormatFeatureFlags2    brick16TilingTensorFeatures;
+    VkFormatFeatureFlags2    brick8TilingTensorFeatures;
+    VkFormatFeatureFlags2    brick4TilingTensorFeatures;
+    VkFormatFeatureFlags2    blockUTilingTensorFeatures;
+    VkFormatFeatureFlags2    blockU64kTilingTensorFeatures;
+} VkTensorExplicitTilingFormatPropertiesARM;
+
+
+
 // VK_EXT_shader_float8 is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_shader_float8 1
 #define VK_EXT_SHADER_FLOAT8_SPEC_VERSION 1
@@ -28405,6 +28442,21 @@ typedef struct VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT {
 
 
 
+// VK_EXT_shader_ocp_microscaling_types is a preprocessor guard. Do not pass it to API calls.
+#define VK_EXT_shader_ocp_microscaling_types 1
+#define VK_EXT_SHADER_OCP_MICROSCALING_TYPES_SPEC_VERSION 1
+#define VK_EXT_SHADER_OCP_MICROSCALING_TYPES_EXTENSION_NAME "VK_EXT_shader_ocp_microscaling_types"
+typedef struct VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderFloat4;
+    VkBool32           shaderFloat6;
+    VkBool32           shaderFloat8UnsignedE8M0;
+    VkBool32           shaderMXInt8;
+} VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT;
+
+
+
 // VK_VALVE_shader_mixed_float_dot_product is a preprocessor guard. Do not pass it to API calls.
 #define VK_VALVE_shader_mixed_float_dot_product 1
 #define VK_VALVE_SHADER_MIXED_FLOAT_DOT_PRODUCT_SPEC_VERSION 1
@@ -28604,6 +28656,7 @@ typedef struct VkPhysicalDeviceAccelerationStructureFeaturesKHR {
     VkBool32           accelerationStructure;
     VkBool32           accelerationStructureCaptureReplay;
     VkBool32           accelerationStructureIndirectBuild;
+    // accelerationStructureHostCommands is legacy, but no reason was given in the API XML
     VkBool32           accelerationStructureHostCommands;
     VkBool32           descriptorBindingAccelerationStructureUpdateAfterBind;
 } VkPhysicalDeviceAccelerationStructureFeaturesKHR;
