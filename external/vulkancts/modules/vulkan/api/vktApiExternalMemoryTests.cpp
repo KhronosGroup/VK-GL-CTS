@@ -3400,7 +3400,7 @@ tcu::TestStatus testMemoryFdDup(Context &context, MemoryTestConfig config)
 #else
     DE_UNREF(context);
     DE_UNREF(config);
-    return tcu::TestStatus::fail("Fail");
+    TCU_THROW(NotSupportedError, "Platform doesn't support dup()");
 #endif
 }
 
@@ -3471,7 +3471,7 @@ tcu::TestStatus testMemoryFdDup2(Context &context, MemoryTestConfig config)
 #else
     DE_UNREF(context);
     DE_UNREF(config);
-    return tcu::TestStatus::fail("Fail");
+    TCU_THROW(NotSupportedError, "Platform doesn't support dup2()");
 #endif
 }
 
@@ -3542,7 +3542,7 @@ tcu::TestStatus testMemoryFdDup3(Context &context, MemoryTestConfig config)
 #else
     DE_UNREF(context);
     DE_UNREF(config);
-    return tcu::TestStatus::fail("Fail");
+    TCU_THROW(NotSupportedError, "Platform doesn't support dup3()");
 #endif
 }
 
@@ -3696,7 +3696,7 @@ tcu::TestStatus testMemoryFdSendOverSocket(Context &context, MemoryTestConfig co
 #else
     DE_UNREF(context);
     DE_UNREF(config);
-    return tcu::TestStatus::fail("Fail");
+    TCU_THROW(NotSupportedError, "Platform doesn't support sending file descriptors over socket");
 #endif
 }
 
