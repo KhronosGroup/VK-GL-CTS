@@ -51,7 +51,6 @@ sys.path.insert(0, vulkanObjectPath)
 
 from reg import Registry
 from base_generator import BaseGenerator, BaseGeneratorOptions, SetTargetApiName, SetOutputDirectory, SetMergedApiNames, OutputGenerator
-from vulkan_object import Struct, Member, Enum, Command, EnumField, Extension
 
 # list of KHR and EXT extensions that are tested by CTS and that were not promoted to core
 # (core extensions are implicitly in the list because if they are core we know that tests
@@ -627,15 +626,11 @@ class ConformanceItemLists:
         self.bitmasks = self.filterToSupportedByCTS(vkObject.bitmasks)
 
         self.structs = self.filterToSupportedByCTS(vkObject.structs)
-        self.commands = self.filterToSupportedByCTS(vkObject.commands)
+        self.commands = self.filterToSupportedByCTS(vkObject.commands, False)
 
         # <vulkan_object_issues_workaround>
         if isSC:
             self.scPostProcess()
-        elif not any([s for s in self.structs if s.name == 'VkDeviceOrHostAddressConstKHR']):
-            # vulkan_object recognizes VkDeviceOrHostAddressConstKHR as added only by VK_NV_ray_tracing_motion_blur
-            self.structs.append(vkObject.structs['VkDeviceOrHostAddressConstKHR'])
-            self.structs = sorted(self.structs, key=lambda item: item.name)
         # </vulkan_object_issues_workaround>
 
         self.structsIncludingVideo = self.structs + self.filterToSupportedByCTS(vkObject.videoStd.structs)
@@ -715,7 +710,7 @@ class ConformanceItemLists:
         self.commands = sorted(self.commands, key=lambda item: item.name)
     # </vulkan_sc_workaround>
 
-    def filterToSupportedByCTS(self, items):
+    def filterToSupportedByCTS(self, items, sortItems = True):
         # generate framework enums/structs/commands only for items that are tested by CTS;
         # this method assumes that items list passed as argument contains items that have
         # 'extensions' attribute which is a list of extension names that added the item
@@ -730,7 +725,7 @@ class ConformanceItemLists:
             if testedByCTS:
                 resultList.append(item)
         # sort all items by name, except for commands where order matters (KHR should be before EXT)
-        if len(resultList) and not isinstance(resultList[0], Command):
+        if sortItems:
             resultList = sorted(resultList, key=lambda item: item.name)
         return resultList
 
@@ -782,46 +777,8 @@ class BasicTypesGenerator(CTSGenerator):
                 yield line
             yield "\n"
 
-            if self.targetApiName == "vulkansc":
-                st = self.vk.enums['VkStructureType']
-                # append VkStructureType field required by vulkan_json_data.hpp
-                st.fields.append(EnumField(name = "VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV",
-                                         aliases=[],
-                                         parent='VkStructureType',
-                                         protect=None,
-                                         negative=False,
-                                         value = 1000314008,
-                                         valueStr = "1000314008",
-                                         extensions=[],
-                                         extending=True))
-                # append VkStructureType field required by cts for SC
-                st.fields.append(EnumField(name = "VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO",
-                                         aliases=[],
-                                         parent='VkStructureType',
-                                         protect=None,
-                                         negative=False,
-                                         value = 16,
-                                         valueStr = "16",
-                                         extensions=[],
-                                         extending=True))
-
-            # <vulkan_object_issue_workaround>
-            # add missing VK_STD_VIDEO_AV1_COLOR_PRIMARIES_BT_UNSPECIFIED alias
-            if self.vk.videoStd.enums:
-                av1ColorPrimitives = self.vk.videoStd.enums['StdVideoAV1ColorPrimaries']
-                missingAlias = 'STD_VIDEO_AV1_COLOR_PRIMARIES_BT_UNSPECIFIED'
-                for field in av1ColorPrimitives.fields:
-                    if field.name == "STD_VIDEO_AV1_COLOR_PRIMARIES_UNSPECIFIED" and missingAlias not in field.aliases:
-                        field.aliases.append(missingAlias)
-                        break
-            # <vulkan_object_issue_workaround>
-
             yield "// Enums"
             for enum in self.cts.enumsIncludingVideo:
-                # skip empty enums only for vulkan
-                # vulkan_json_data.hpp and vulkan_json_parser.hpp in SC need empty enums
-                if len(enum.fields) == 0 and self.targetApiName == "vulkan":
-                    continue
                 for line in self.genEnumSrc(enum):
                     yield line
 
@@ -916,6 +873,11 @@ class BasicTypesGenerator(CTSGenerator):
         for ed in fields:
             for alias in ed.aliases:
                 lines.append(f"\t{alias}\t= {ed.name},")
+
+        # workaround - append VkStructureType field required by cts for SC
+        if self.targetApiName == "vulkansc" and enum.name == 'VkStructureType':
+            if not any(f.name == 'VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO' for f in enum.fields):
+                lines.append(f"\tVK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO\t= 16,")
 
         # add *_LAST item when enum is linear
         prefix, postfix = self.getEnumValuePrefixAndPostfix(enum)
