@@ -121,6 +121,7 @@ struct TestConfig
     bool unusedResolve;
     tcu::Maybe<VkFormat> compatibleFormat;
     bool sampleMask;
+    VkImageAspectFlags viewAspect;
 
     VkFormat resolveFormat() const
     {
@@ -217,7 +218,8 @@ public:
 protected:
     VkImageSp createImage(VkFormat vkformat, uint32_t sampleCount, VkImageUsageFlags additionalUsage = 0u);
     AllocationSp createImageMemory(VkImageSp image);
-    VkImageViewSp createImageView(VkImageSp image, VkFormat vkformat, uint32_t baseArrayLayer);
+    VkImageViewSp createImageView(VkImageSp image, VkFormat vkformat, uint32_t baseArrayLayer,
+                                  VkImageAspectFlags viewAspect = VK_IMAGE_ASPECT_NONE);
     AllocationSp createBufferMemory(void);
     VkBufferSp createBuffer(void);
 
@@ -273,14 +275,15 @@ DepthStencilResolveTest::DepthStencilResolveTest(Context &context, TestConfig co
 
     , m_multisampleImage(createImage(m_config.format, m_config.sampleCount, VK_IMAGE_USAGE_TRANSFER_SRC_BIT))
     , m_multisampleImageMemory(createImageMemory(m_multisampleImage))
-    , m_multisampleImageView(createImageView(m_multisampleImage, m_config.format, 0u))
+    , m_multisampleImageView(createImageView(m_multisampleImage, m_config.format, 0u, m_config.viewAspect))
 
     , m_singlesampleImage(createImage(
           m_config.resolveFormat(), 1,
           (VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
            (config.unusedResolve ? static_cast<vk::VkImageUsageFlags>(VK_IMAGE_USAGE_TRANSFER_DST_BIT) : 0u))))
     , m_singlesampleImageMemory(createImageMemory(m_singlesampleImage))
-    , m_singlesampleImageView(createImageView(m_singlesampleImage, m_config.resolveFormat(), m_config.resolveBaseLayer))
+    , m_singlesampleImageView(createImageView(m_singlesampleImage, m_config.resolveFormat(), m_config.resolveBaseLayer,
+                                              m_config.viewAspect))
 
     , m_buffer(createBuffer())
     , m_bufferMemory(createBufferMemory())
@@ -335,9 +338,12 @@ AllocationSp DepthStencilResolveTest::createImageMemory(VkImageSp image)
     return safeSharedPtr(allocation.release());
 }
 
-VkImageViewSp DepthStencilResolveTest::createImageView(VkImageSp image, VkFormat vkformat, uint32_t baseArrayLayer)
+VkImageViewSp DepthStencilResolveTest::createImageView(VkImageSp image, VkFormat vkformat, uint32_t baseArrayLayer,
+                                                       VkImageAspectFlags viewAspect)
 {
-    const VkImageSubresourceRange range = {aspectFlagsForFormat(vkformat), 0u, 1u, baseArrayLayer, m_config.viewLayers};
+    const VkImageSubresourceRange range = {(viewAspect != VK_IMAGE_ASPECT_NONE) ? viewAspect :
+                                                                                  aspectFlagsForFormat(vkformat),
+                                           0u, 1u, baseArrayLayer, m_config.viewLayers};
 
     const VkImageViewCreateInfo pCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -1972,7 +1978,8 @@ void initTests(tcu::TestCaseGroup *group)
                                                                    useSeparateDepthStencilLayouts,
                                                                    unusedResolve,
                                                                    tcu::Nothing,
-                                                                   false};
+                                                                   false,
+                                                                   VK_IMAGE_ASPECT_NONE};
                                     formatGroup->addChild(new DSResolveTest(
                                         testCtx, testName, testConfig, CheckSupport::Args(checkSupport, testConfig)));
 
@@ -2017,7 +2024,8 @@ void initTests(tcu::TestCaseGroup *group)
                                                                    useSeparateDepthStencilLayouts,
                                                                    unusedResolve,
                                                                    tcu::Nothing,
-                                                                   false};
+                                                                   false,
+                                                                   VK_IMAGE_ASPECT_NONE};
                                     formatGroup->addChild(new DSResolveTest(
                                         testCtx, testName, testConfig, CheckSupport::Args(checkSupport, testConfig)));
 
@@ -2044,6 +2052,66 @@ void initTests(tcu::TestCaseGroup *group)
                                         formatGroup->addChild(new DSResolveTest(
                                             testCtx, compatibilityTestName.c_str(), compatibilityTestConfig,
                                             CheckSupport::Args(checkSupport, testConfig)));
+                                    }
+                                }
+
+                                if (!useSeparateDepthStencilLayouts && !unusedResolve &&
+                                    (format == VK_FORMAT_D32_SFLOAT_S8_UINT) &&
+                                    (sampleCount <= 8u) /* test only common sample counts */
+                                    && (imageDataNdx == 0u) /* test a single image test type */)
+                                {
+                                    for (const auto isDepthAttachment : {true, false})
+                                    {
+                                        for (const auto isStencilAttachment : {true, false})
+                                        {
+                                            if ((isDepthAttachment ^ isStencilAttachment) == false)
+                                                continue;
+
+                                            // Use aspect opposite to the attachment type
+                                            const VkImageAspectFlags viewAspect = isDepthAttachment ?
+                                                                                      VK_IMAGE_ASPECT_STENCIL_BIT :
+                                                                                      VK_IMAGE_ASPECT_DEPTH_BIT;
+
+                                            const std::string testedAspect = isDepthAttachment ? "depth" : "stencil";
+                                            const std::string ignoredAspect =
+                                                (viewAspect == VK_IMAGE_ASPECT_DEPTH_BIT) ? "depth" : "stencil";
+
+                                            std::string name = baseName + "_testing_" + testedAspect + "_ignore_" +
+                                                               ignoredAspect + "_aspect";
+                                            const char *testName = name.c_str();
+
+                                            VerifyBuffer verifyBuffer = isDepthAttachment ? VB_DEPTH : VB_STENCIL;
+
+                                            const TestConfig testConfig = {
+                                                format,
+                                                imageData.width,
+                                                imageData.height,
+                                                1u,
+                                                1u,
+                                                0u,
+                                                imageData.renderArea,
+                                                aspectFlags,
+                                                sampleCount,
+                                                dResolve.flag,
+                                                sResolve.flag,
+                                                verifyBuffer,
+                                                imageData.clearValue,
+                                                isDepthAttachment ?
+                                                    depthExpectedValue[depthResolveModeNdx][sampleCountNdx] :
+                                                    0.0f,
+                                                isStencilAttachment ?
+                                                    stencilExpectedValue[stencilResolveModeNdx][sampleCountNdx] :
+                                                    (uint8_t)0,
+                                                useSeparateDepthStencilLayouts,
+                                                unusedResolve,
+                                                tcu::Nothing,
+                                                false,
+                                                viewAspect};
+
+                                            formatGroup->addChild(
+                                                new DSResolveTest(testCtx, testName, testConfig,
+                                                                  CheckSupport::Args(checkSupport, testConfig)));
+                                        }
                                     }
                                 }
                             }
@@ -2136,7 +2204,8 @@ void initTests(tcu::TestCaseGroup *group)
                                                                useSeparateDepthStencilLayouts,
                                                                unusedResolve,
                                                                tcu::Nothing,
-                                                               false};
+                                                               false,
+                                                               VK_IMAGE_ASPECT_NONE};
                                 formatGroup->addChild(new DSResolveTest(testCtx, testName, testConfig,
                                                                         CheckSupport::Args(checkSupport, testConfig)));
                             }
@@ -2168,7 +2237,8 @@ void initTests(tcu::TestCaseGroup *group)
                                                                useSeparateDepthStencilLayouts,
                                                                unusedResolve,
                                                                tcu::Nothing,
-                                                               false};
+                                                               false,
+                                                               VK_IMAGE_ASPECT_NONE};
                                 formatGroup->addChild(new DSResolveTest(testCtx, testName, testConfig,
                                                                         CheckSupport::Args(checkSupport, testConfig)));
                             }

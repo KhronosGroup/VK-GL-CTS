@@ -683,6 +683,13 @@ private:
     VkDependencyFlags m_flags;
 };
 
+enum DSAttachmentType
+{
+    DEPTH,
+    STENCIL,
+    DONT_CARE
+};
+
 class Attachment
 {
 public:
@@ -692,7 +699,11 @@ public:
 
                VkAttachmentLoadOp stencilLoadOp, VkAttachmentStoreOp stencilStoreOp,
 
-               VkImageLayout initialLayout, VkImageLayout finalLayout)
+               VkImageLayout initialLayout, VkImageLayout finalLayout,
+
+               DSAttachmentType dsAttachmentType = DSAttachmentType::DONT_CARE,
+
+               VkImageAspectFlags aspect = VK_IMAGE_ASPECT_NONE)
         : m_format(format)
         , m_samples(samples)
 
@@ -704,6 +715,9 @@ public:
 
         , m_initialLayout(initialLayout)
         , m_finalLayout(finalLayout)
+
+        , m_dsAttachmentType(dsAttachmentType)
+        , m_aspect(aspect)
     {
     }
 
@@ -743,6 +757,16 @@ public:
         return m_finalLayout;
     }
 
+    DSAttachmentType getDSAttachmentType(void) const
+    {
+        return m_dsAttachmentType;
+    }
+
+    VkImageAspectFlags getAspect(void) const
+    {
+        return m_aspect;
+    }
+
 private:
     VkFormat m_format;
     VkSampleCountFlagBits m_samples;
@@ -755,6 +779,9 @@ private:
 
     VkImageLayout m_initialLayout;
     VkImageLayout m_finalLayout;
+
+    DSAttachmentType m_dsAttachmentType;
+    VkImageAspectFlags m_aspect;
 };
 
 class RenderPass
@@ -1506,7 +1533,10 @@ public:
         , m_resolveImage()
         , m_resolveImageMemory(nullptr)
         , m_attachmentView(createImageAttachmentView(vk, device, *m_image, attachmentInfo.getFormat(),
-                                                     getImageAspectFlags(attachmentInfo.getFormat())))
+                                                     (attachmentInfo.getAspect() == VK_IMAGE_ASPECT_NONE) ?
+                                                         getImageAspectFlags(attachmentInfo.getFormat()) :
+                                                         attachmentInfo.getAspect()))
+        , m_dsAspect(attachmentInfo.getAspect())
     {
         if (attachmentInfo.getSamples() != VK_SAMPLE_COUNT_1_BIT)
         {
@@ -1519,8 +1549,9 @@ public:
         const tcu::TextureFormat format = mapVkFormat(attachmentInfo.getFormat());
         const bool isDepthFormat        = tcu::hasDepthComponent(format.order);
         const bool isStencilFormat      = tcu::hasStencilComponent(format.order);
+        const bool isDSTypeDontCare     = (attachmentInfo.getDSAttachmentType() == DSAttachmentType::DONT_CARE);
 
-        if (isDepthFormat && isStencilFormat)
+        if (isDSTypeDontCare && (isDepthFormat && isStencilFormat))
         {
             m_depthInputAttachmentView =
                 createImageAttachmentView(vk, device, *m_image, attachmentInfo.getFormat(), VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -1585,6 +1616,11 @@ public:
         return *m_attachmentView;
     }
 
+    VkImageAspectFlags getDSViewAspect(void) const
+    {
+        return m_dsAspect;
+    }
+
     VkImage getImage(void) const
     {
         return *m_image;
@@ -1637,6 +1673,7 @@ private:
     Move<VkImage> m_resolveImage;
     de::MovePtr<Allocation> m_resolveImageMemory;
     const Unique<VkImageView> m_attachmentView;
+    const VkImageAspectFlags m_dsAspect;
 
     Move<VkImageView> m_depthInputAttachmentView;
     Move<VkImageView> m_stencilInputAttachmentView;
@@ -2342,7 +2379,12 @@ void beginDynamicRendering(const DeviceInterface &vk, VkCommandBuffer commandBuf
         const Attachment &dsAttachmentInfo = allAttachments[dsAttachmentIndex];
         const tcu::TextureFormat format    = mapVkFormat(dsAttachmentInfo.getFormat());
 
-        if (tcu::hasDepthComponent(format.order))
+        const DSAttachmentType dsAttachmentType = dsAttachmentInfo.getDSAttachmentType();
+        const bool useAsDepthAttachment         = (dsAttachmentType == DSAttachmentType::DEPTH);
+        const bool useAsStencilAttachment       = (dsAttachmentType == DSAttachmentType::STENCIL);
+        const bool useAsEitherDS                = (dsAttachmentType == DSAttachmentType::DONT_CARE);
+
+        if ((useAsEitherDS && tcu::hasDepthComponent(format.order)) || useAsDepthAttachment)
         {
             depthAttachment.imageView   = attachmentResources[dsAttachmentIndex]->getAttachmentView();
             depthAttachment.imageLayout = dsAttachmentLayout;
@@ -2357,7 +2399,7 @@ void beginDynamicRendering(const DeviceInterface &vk, VkCommandBuffer commandBuf
             pDepthAttachment = &depthAttachment;
         }
 
-        if (tcu::hasStencilComponent(format.order))
+        if ((useAsEitherDS && tcu::hasStencilComponent(format.order)) || useAsStencilAttachment)
         {
             stencilAttachment.imageView   = attachmentResources[dsAttachmentIndex]->getAttachmentView();
             stencilAttachment.imageLayout = dsAttachmentLayout;
@@ -2759,19 +2801,49 @@ public:
         {
             const DepthStencilClear &depthStencilClear = *m_renderInfo.getDepthStencilClear();
             const uint32_t attachmentNdx               = m_renderInfo.getColorAttachmentCount();
-            tcu::TextureFormat format          = mapVkFormat(m_renderInfo.getDepthStencilAttachment()->getFormat());
-            const VkImageLayout layout         = *m_renderInfo.getDepthStencilAttachmentLayout();
+            tcu::TextureFormat format  = mapVkFormat(m_renderInfo.getDepthStencilAttachment()->getFormat());
+            const VkImageLayout layout = *m_renderInfo.getDepthStencilAttachmentLayout();
+
+            const DSAttachmentType dsAttachmentType = m_renderInfo.getDepthStencilAttachment()->getDSAttachmentType();
+            const bool useAsDepthAttachment         = (dsAttachmentType == DSAttachmentType::DEPTH);
+            const bool useAsStencilAttachment       = (dsAttachmentType == DSAttachmentType::STENCIL);
+            const bool useAsEitherDS                = (dsAttachmentType == DSAttachmentType::DONT_CARE);
+
+            VkImageAspectFlags aspectMask = 0;
+
+            if (useAsEitherDS)
+            {
+                aspectMask =
+                    (VkImageAspectFlags)((hasDepthComponent(format.order) &&
+                                                  layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ?
+                                              VK_IMAGE_ASPECT_DEPTH_BIT :
+                                              0) |
+                                         (hasStencilComponent(format.order) &&
+                                                  layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL ?
+                                              VK_IMAGE_ASPECT_STENCIL_BIT :
+                                              0));
+            }
+            else if (useAsDepthAttachment)
+            {
+                aspectMask =
+                    (VkImageAspectFlags)(hasDepthComponent(format.order) &&
+                                                 layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ?
+                                             VK_IMAGE_ASPECT_DEPTH_BIT :
+                                             0);
+            }
+            else if (useAsStencilAttachment)
+            {
+                aspectMask =
+                    (VkImageAspectFlags)(hasStencilComponent(format.order) &&
+                                                 layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL ?
+                                             VK_IMAGE_ASPECT_STENCIL_BIT :
+                                             0);
+            }
+
             const VkClearAttachment attachment = {
-                (VkImageAspectFlags)((hasDepthComponent(format.order) &&
-                                              layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ?
-                                          VK_IMAGE_ASPECT_DEPTH_BIT :
-                                          0) |
-                                     (hasStencilComponent(format.order) &&
-                                              layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL ?
-                                          VK_IMAGE_ASPECT_STENCIL_BIT :
-                                          0)),
-                attachmentNdx,
+                aspectMask, attachmentNdx,
                 makeClearValueDepthStencil(depthStencilClear.getDepth(), depthStencilClear.getStencil())};
+
             const VkClearRect rect = {
                 {{(int32_t)depthStencilClear.getOffset().x(), (int32_t)depthStencilClear.getOffset().y()},
                  {depthStencilClear.getSize().x(), depthStencilClear.getSize().y()}}, // rect
@@ -8441,6 +8513,104 @@ void addFormatTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
     }
 }
 
+void addIgnoreDepthStencilAspectTests(tcu::TestCaseGroup *group, const TestConfigExternal testConfigExternal)
+{
+    tcu::TestContext &testCtx = group->getTestContext();
+
+    const UVec2 targetSize(64, 64);
+    const UVec2 renderPos(0, 0);
+    const UVec2 renderSize(64, 64);
+
+    const struct
+    {
+        const char *const str;
+        const VkAttachmentLoadOp op;
+    } loadOps[] = {{"clear", VK_ATTACHMENT_LOAD_OP_CLEAR},
+                   {"load", VK_ATTACHMENT_LOAD_OP_LOAD},
+                   {"dont_care", VK_ATTACHMENT_LOAD_OP_DONT_CARE}};
+
+    const struct
+    {
+        const char *const str;
+        const TestConfig::RenderTypes types;
+    } renderTypes[] = {{"clear", TestConfig::RENDERTYPES_CLEAR},
+                       {"draw", TestConfig::RENDERTYPES_DRAW},
+                       {"clear_draw", TestConfig::RENDERTYPES_CLEAR | TestConfig::RENDERTYPES_DRAW}};
+
+    const VkFormat combinedDepthStencilFormats[] = {VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT};
+
+    for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(combinedDepthStencilFormats); formatNdx++)
+    {
+        const VkFormat vkFormat = combinedDepthStencilFormats[formatNdx];
+
+        de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, formatToName(vkFormat).c_str()));
+
+        for (const auto isDepthAttachment : {true, false})
+        {
+            for (const auto isStencilAttachment : {true, false})
+            {
+                if ((isDepthAttachment ^ isStencilAttachment) == false)
+                    continue;
+
+                // Use aspect opposite to the attachment type
+                const VkImageAspectFlags useAspect =
+                    isDepthAttachment ? VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_DEPTH_BIT;
+
+                const std::string comboGroupName =
+                    (isDepthAttachment ? "depth" : "stencil") + std::string("_attachment_") +
+                    ((useAspect == VK_IMAGE_ASPECT_DEPTH_BIT) ? "depth" : "stencil") + "_aspect";
+                de::MovePtr<tcu::TestCaseGroup> comboGroup(new tcu::TestCaseGroup(testCtx, comboGroupName.c_str()));
+
+                for (size_t loadOpNdx = 0; loadOpNdx < DE_LENGTH_OF_ARRAY(loadOps); loadOpNdx++)
+                {
+                    const VkAttachmentLoadOp loadOp = loadOps[loadOpNdx].op;
+                    de::MovePtr<tcu::TestCaseGroup> loadOpGroup(
+                        new tcu::TestCaseGroup(testCtx, loadOps[loadOpNdx].str));
+
+                    for (size_t renderTypeNdx = 0; renderTypeNdx < DE_LENGTH_OF_ARRAY(renderTypes); renderTypeNdx++)
+                    {
+                        {
+                            const RenderPass renderPass(
+                                vector<Attachment>(
+                                    1,
+                                    Attachment(vkFormat, VK_SAMPLE_COUNT_1_BIT,
+                                               isDepthAttachment ? loadOp : VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                               isDepthAttachment ? VK_ATTACHMENT_STORE_OP_STORE :
+                                                                   VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                                               isStencilAttachment ? loadOp : VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                               isStencilAttachment ? VK_ATTACHMENT_STORE_OP_STORE :
+                                                                     VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                                               isDepthAttachment ? DSAttachmentType::DEPTH : DSAttachmentType::STENCIL,
+                                               useAspect)),
+                                vector<Subpass>(
+                                    1, Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, vector<AttachmentReference>(),
+                                               vector<AttachmentReference>(), vector<AttachmentReference>(),
+                                               AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL),
+                                               vector<uint32_t>())),
+                                vector<SubpassDependency>());
+                            const TestConfig testConfig(
+                                renderPass, renderTypes[renderTypeNdx].types, TestConfig::COMMANDBUFFERTYPES_INLINE,
+                                TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, false, 90239, 0,
+                                testConfigExternal.allocationKind, testConfigExternal.groupParams);
+
+                            loadOpGroup->addChild(new RenderPassTestCase(group->getTestContext(),
+                                                                         renderTypes[renderTypeNdx].str, testConfig));
+                        }
+                    }
+
+                    comboGroup->addChild(loadOpGroup.release());
+                }
+
+                formatGroup->addChild(comboGroup.release());
+            }
+        }
+
+        group->addChild(formatGroup.release());
+    }
+}
+
 void addRenderPassTests(tcu::TestCaseGroup *group, const AllocationKind allocationKind,
                         const SharedGroupParams groupParams)
 {
@@ -8459,6 +8629,10 @@ void addRenderPassTests(tcu::TestCaseGroup *group, const AllocationKind allocati
         addTestGroup(group, "simple", addSimpleTests, testConfigExternal);
         // Tests for different image formats.
         addTestGroup(group, "formats", addFormatTests, testConfigExternal);
+
+        // Tests for D/S view aspect exception
+        if (allocationKind == ALLOCATION_KIND_SUBALLOCATED)
+            addTestGroup(group, "ignore_ds_aspect", addIgnoreDepthStencilAspectTests, testConfigExternal);
     }
 
     // Attachment format and count tests with load and store ops and image layouts
