@@ -215,6 +215,9 @@ BUILD_TARGETS = [
     Build("vs-64-debug",
           VSConfig("Debug"),
           ANY_VS_X64_GENERATOR),
+    Build("vs-64-release",
+          VSConfig("Release"),
+          ANY_VS_X64_GENERATOR),
 ]
 
 EARLY_SPECIAL_RECIPES = [
