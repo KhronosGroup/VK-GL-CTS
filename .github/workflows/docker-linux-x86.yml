@@ -1,0 +1,110 @@
+name: Linux x86
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  release:
+    types: [ published, created ] # Triggers the build when a release is created or published
+  workflow_dispatch: 
+
+jobs:
+  build-cts:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      
+    # Define the execution matrix for 64-bit and 32-bit targets
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: "x86_64"
+            output_dir: "build-output-64bit"
+            tarball_name: "vk-gl-cts-linux-x86_64.tar.gz"
+            setup_cmd: "echo 'Building for 64-bit...'"
+            cmake_flags: "-DCMAKE_C_FLAGS='-march=x86-64' -DCMAKE_CXX_FLAGS='-march=x86-64'"
+            packages: "pkg-config libpng-dev libz-dev libx11-dev libgl1-mesa-dev libglx-dev libegl-dev libegl1-mesa-dev libgles2-mesa-dev libxcb1-dev libxrender-dev libvulkan-dev"
+            pkg_config: "" # Use default
+
+          - arch: "i686"
+            output_dir: "build-output-32bit"
+            tarball_name: "vk-gl-cts-linux-i686.tar.gz"
+            setup_cmd: "dpkg --add-architecture i386 && apt-get update"
+            cmake_flags: "-DCMAKE_C_FLAGS='-m32 -march=i686' -DCMAKE_CXX_FLAGS='-m32 -march=i686'"
+            packages: "gcc-multilib g++-multilib pkg-config:i386 libpng-dev:i386 libz-dev:i386 libx11-dev:i386 libgl1-mesa-dev:i386 libglx-dev:i386 libegl-dev:i386 libegl1-mesa-dev:i386 libgles2-mesa-dev:i386 libxcb1-dev:i386 libxrender-dev:i386 libvulkan-dev:i386"
+            pkg_config: "PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build CTS inside Ubuntu Container via Docker Run
+        run: |
+          # Create architecture-specific output directory on the host
+          mkdir -p ${{ github.workspace }}/${{ matrix.output_dir }}
+
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            ubuntu:24.04 \
+            /bin/bash -c "
+              set -e
+              
+              # 1. Execute specific architecture setup (e.g., enabling i386)
+              ${{ matrix.setup_cmd }}
+              
+              # 2. Update packages and install target-specific dependencies
+              apt-get update && apt-get install -y --no-install-recommends \
+                build-essential cmake ninja-build git python3 python3-pip ca-certificates \
+                ${{ matrix.packages }}
+
+              # 3. Fetch external sources using the Khronos script
+              python3 external/fetch_sources.py
+              
+              # 4. Configure and compile the project using appropriate flags
+              mkdir build && cd build
+
+              ${{ matrix.pkg_config }} \
+              cmake .. -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DDEQP_TARGET=surfaceless \
+                -DSELECTED_BUILD_TARGETS='deqp-vk;deqp-vksc;glcts' \
+                ${{ matrix.cmake_flags }}
+              ninja
+              
+              # 5. Copy the compiled binaries to the mapped host volume
+              cp -r external/vulkancts/modules/vulkan/deqp-vk /work/${{ matrix.output_dir }}/
+              cp -r external/vulkancts/modules/vulkan/deqp-vksc /work/${{ matrix.output_dir }}/
+              cp -r external/openglcts/modules/glcts /work/${{ matrix.output_dir }}/
+
+              # 6. Copy assets for glcts and vulkancts
+              cp -r external/openglcts/modules/gl_cts /work/${{ matrix.output_dir }}/
+              cp -r external/openglcts/modules/gles2 /work/${{ matrix.output_dir }}/
+              cp -r external/openglcts/modules/gles3 /work/${{ matrix.output_dir }}/
+              cp -r external/openglcts/modules/gles31 /work/${{ matrix.output_dir }}/
+              cp -r external/vulkancts/modules/vulkan /work/${{ matrix.output_dir }}/
+            "
+
+      - name: Fix Permissions, Pack and Compress
+        run: |
+          # Fix file permissions (processes inside the container run as root)
+          sudo chown -R $USER:$USER ${{ github.workspace }}/${{ matrix.output_dir }}
+          
+          tar -czf ${{ matrix.tarball_name }} ${{ matrix.output_dir }}
+
+      - name: Upload Packaged Binaries to GitHub Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.tarball_name }}
+          path: ${{ matrix.tarball_name }}
+          archive: false # FIX: Prevents GitHub from wrapping the .tar.gz file inside a secondary ZIP file
+
+      - name: Upload Binaries directly to GitHub Release
+        # This step runs ONLY if the workflow was triggered by a Release event
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.tarball_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
