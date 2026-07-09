@@ -4569,6 +4569,9 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
             break;
         }
 
+        VkPipelineStageFlags resultSrcStage = 0;
+        VkAccessFlags resultSrcAccess       = 0;
+
         switch (m_params.stage)
         {
         case VK_SHADER_STAGE_FRAGMENT_BIT:
@@ -4626,21 +4629,38 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
             region.imageExtent                     = {1, 1, 1};
             vk.cmdCopyImageToBuffer(cmdBuf, renderTargetImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                     outputBuffer.buffer.get(), 1, &region);
+            resultSrcStage  = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            resultSrcAccess = VK_ACCESS_TRANSFER_WRITE_BIT;
             break;
         }
         case VK_SHADER_STAGE_COMPUTE_BIT:
             vk.cmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
             vk.cmdDispatch(cmdBuf, 1, 1, 1);
+            resultSrcStage  = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+            resultSrcAccess = VK_ACCESS_SHADER_WRITE_BIT;
             break;
         case VK_SHADER_STAGE_RAYGEN_BIT_KHR:
             vk.cmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline);
             cmdTraceRays(vk, cmdBuf, &m_raygenShaderBindingTableRegion, &m_missShaderBindingTableRegion,
                          &m_hitShaderBindingTableRegion, &m_callableShaderBindingTableRegion, m_params.dimension, 1, 1);
+            resultSrcStage  = VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+            resultSrcAccess = VK_ACCESS_SHADER_WRITE_BIT;
             break;
         default:
             DE_ASSERT(0);
             break;
         }
+
+        VkBufferMemoryBarrier outputBufferMemoryBarrier = initVulkanStructure();
+        outputBufferMemoryBarrier.srcAccessMask         = resultSrcAccess;
+        outputBufferMemoryBarrier.dstAccessMask         = VK_ACCESS_HOST_READ_BIT;
+        outputBufferMemoryBarrier.srcQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
+        outputBufferMemoryBarrier.dstQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
+        outputBufferMemoryBarrier.buffer                = outputBuffer.buffer.get();
+        outputBufferMemoryBarrier.offset                = 0;
+        outputBufferMemoryBarrier.size                  = outputBufferSize;
+        vk.cmdPipelineBarrier(cmdBuf, resultSrcStage, VK_PIPELINE_STAGE_HOST_BIT, 0, 0, nullptr, 1,
+                              &outputBufferMemoryBarrier, 0, nullptr);
 
         endCommandBuffer(vk, cmdBuf);
 
@@ -6006,10 +6026,15 @@ VkImageViewCreateInfo DescriptorHeapTestInstanceBasic::createTestImageViewInfo(i
     undefined2transferDependencyInfo.imageMemoryBarrierCount = 1;
     undefined2transferDependencyInfo.pImageMemoryBarriers    = &undefined2transferImageMemoryBarrier;
 
+    const auto dstShaderStage =
+        (m_params.stage == VK_SHADER_STAGE_COMPUTE_BIT)    ? VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT :
+        (m_params.stage == VK_SHADER_STAGE_RAYGEN_BIT_KHR) ? VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR :
+                                                             VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+
     VkImageMemoryBarrier2 transfer2sampleImageMemoryBarrier           = initVulkanStructure();
     transfer2sampleImageMemoryBarrier.srcStageMask                    = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
     transfer2sampleImageMemoryBarrier.srcAccessMask                   = VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR;
-    transfer2sampleImageMemoryBarrier.dstStageMask                    = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    transfer2sampleImageMemoryBarrier.dstStageMask                    = dstShaderStage;
     transfer2sampleImageMemoryBarrier.dstAccessMask                   = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
     transfer2sampleImageMemoryBarrier.oldLayout                       = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     transfer2sampleImageMemoryBarrier.newLayout                       = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
