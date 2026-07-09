@@ -122,20 +122,24 @@ tcu::TestStatus verifyCommandPoolReservedSize(Context &context, TestParams testP
     };
     const Unique<VkCommandPool> cmdPool(createCommandPool(vk, device, &cmdPoolParams));
 
-    // check if size collected by vkGetCommandPoolMemoryConsumption matches size from VkCommandPoolMemoryReservationCreateInfo
+    // vkGetCommandPoolMemoryConsumption should only be called in the child process as the parent process only did mock recording
+    if (context.getTestContext().getCommandLine().isSubProcess())
+    {
+        // check if size collected by vkGetCommandPoolMemoryConsumption matches size from VkCommandPoolMemoryReservationCreateInfo
+        VkCommandPoolMemoryConsumption memConsumption = {
+            VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_CONSUMPTION, // VkStructureType    sType
+            nullptr,                                           // void*            pNext
+            0,                                                 // VkDeviceSize        commandPoolAllocated
+            0,                                                 // VkDeviceSize        commandPoolReservedSize
+            0,                                                 // VkDeviceSize        commandBufferAllocated
+        };
 
-    VkCommandPoolMemoryConsumption memConsumption = {
-        VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_CONSUMPTION, // VkStructureType    sType
-        nullptr,                                           // void*            pNext
-        0,                                                 // VkDeviceSize        commandPoolAllocated
-        0,                                                 // VkDeviceSize        commandPoolReservedSize
-        0,                                                 // VkDeviceSize        commandBufferAllocated
-    };
+        vk.getCommandPoolMemoryConsumption(device, *cmdPool, nullptr, &memConsumption);
 
-    vk.getCommandPoolMemoryConsumption(device, *cmdPool, nullptr, &memConsumption);
+        if (commandPoolReservedSize != memConsumption.commandPoolReservedSize)
+            return tcu::TestStatus::fail("Failed");
+    }
 
-    if (commandPoolReservedSize != memConsumption.commandPoolReservedSize)
-        return tcu::TestStatus::fail("Failed");
     return tcu::TestStatus::pass("Pass");
 }
 
@@ -237,27 +241,31 @@ tcu::TestStatus verifyCommandPoolAllocEqualsCommandBufferAlloc(Context &context,
             vk.resetCommandPool(device, *cmdPool, VkCommandPoolResetFlags(0u));
         }
 
-        // check if size collected by sum of command buffer allocs is equal to command pool alloc
-        VkDeviceSize cbAllocSum       = 0u;
-        VkDeviceSize commandPoolAlloc = 0u;
-        for (uint32_t i = 0; i < testParams.commandBufferCount; ++i)
+        // vkGetCommandPoolMemoryConsumption should only be called in the child process as the parent process only did mock recording
+        if (context.getTestContext().getCommandLine().isSubProcess())
         {
-            VkCommandPoolMemoryConsumption memConsumption = {
-                VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_CONSUMPTION, // VkStructureType    sType
-                nullptr,                                           // void*            pNext
-                0,                                                 // VkDeviceSize        commandPoolAllocated
-                0,                                                 // VkDeviceSize        commandPoolReservedSize
-                0,                                                 // VkDeviceSize        commandBufferAllocated
-            };
-            vk.getCommandPoolMemoryConsumption(device, *cmdPool, commandBuffers[i].get(), &memConsumption);
-            cbAllocSum += memConsumption.commandBufferAllocated;
-            commandPoolAlloc = memConsumption.commandPoolAllocated;
+            // check if size collected by sum of command buffer allocs is equal to command pool alloc
+            VkDeviceSize cbAllocSum       = 0u;
+            VkDeviceSize commandPoolAlloc = 0u;
+            for (uint32_t i = 0; i < testParams.commandBufferCount; ++i)
+            {
+                VkCommandPoolMemoryConsumption memConsumption = {
+                    VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_CONSUMPTION, // VkStructureType    sType
+                    nullptr,                                           // void*            pNext
+                    0,                                                 // VkDeviceSize        commandPoolAllocated
+                    0,                                                 // VkDeviceSize        commandPoolReservedSize
+                    0,                                                 // VkDeviceSize        commandBufferAllocated
+                };
+                vk.getCommandPoolMemoryConsumption(device, *cmdPool, commandBuffers[i].get(), &memConsumption);
+                cbAllocSum += memConsumption.commandBufferAllocated;
+                commandPoolAlloc = memConsumption.commandPoolAllocated;
+            }
+            if (cbAllocSum != commandPoolAlloc)
+                isOK = false;
+            // if we just performed a vkResetCommandPool() then allocated commandPool memory should be equal to 0
+            if ((1 == iter % 2) && commandPoolAlloc != 0u)
+                isOK = false;
         }
-        if (cbAllocSum != commandPoolAlloc)
-            isOK = false;
-        // if we just performed a vkResetCommandPool() then allocated commandPool memory should be equal to 0
-        if ((1 == iter % 2) && commandPoolAlloc != 0u)
-            isOK = false;
     }
     return isOK ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Failed");
 }
