@@ -24101,6 +24101,8 @@ dEQP-VK.api.device_address.misc.copy_from_memory_with_unbound_ranges
 dEQP-VK.api.device_address.misc.copy_to_memory_with_unbound_ranges
 dEQP-VK.api.device_address.misc.memory_range_barrier
 dEQP-VK.api.device_address.misc.use_all_vertex_index_binds
+dEQP-VK.api.device_init.create_device_queue_priorities.basic
+dEQP-VK.api.device_init.create_device_queue_priorities.concurrent_submission
 dEQP-VK.api.device_init.create_device_unsupported_features.cooperative_vector_features_nv
 dEQP-VK.api.device_init.create_device_unsupported_features.copy_memory_indirect_features_khr
 dEQP-VK.api.device_init.create_device_unsupported_features.custom_resolve_features_ext

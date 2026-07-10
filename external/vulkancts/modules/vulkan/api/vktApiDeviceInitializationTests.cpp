@@ -34,6 +34,8 @@
 #include "vkAllocationCallbackUtil.hpp"
 #include "vkDeviceFeatures.hpp"
 #include "vkSafetyCriticalUtil.hpp"
+#include "vkCmdUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuResultCollector.hpp"
@@ -871,6 +873,198 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest(Context &context)
             }
         }
     }
+    return tcu::TestStatus::pass("Pass");
+}
+
+vector<float> makeSpanningQueuePriorities(uint32_t queueCount)
+{
+    vector<float> priorities(queueCount);
+    for (uint32_t queueNdx = 0; queueNdx < queueCount; queueNdx++)
+        priorities[queueNdx] = (queueCount == 1) ? 1.0f : (float)queueNdx / (float)(queueCount - 1);
+    return priorities;
+}
+
+tcu::TestStatus createDeviceWithQueuePrioritiesTest(Context &context)
+{
+    tcu::TestLog &log = context.getTestContext().getLog();
+    const InstanceWrapper instance(createCustomInstanceFromContext(context));
+    const auto &instanceDriver(instance.getDriver());
+    const VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
+    const vector<VkQueueFamilyProperties> queueFamilyProperties =
+        getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+    VkPhysicalDeviceProperties properties;
+    instanceDriver.getPhysicalDeviceProperties(physicalDevice, &properties);
+    const uint32_t discreteQueuePriorities = properties.limits.discreteQueuePriorities;
+
+    log << TestLog::Message << "VkPhysicalDeviceLimits::discreteQueuePriorities = " << discreteQueuePriorities
+        << TestLog::EndMessage;
+
+    for (uint32_t queueFamilyNdx = 0; queueFamilyNdx < (uint32_t)queueFamilyProperties.size(); queueFamilyNdx++)
+    {
+        const uint32_t queueCount =
+            de::min(queueFamilyProperties[queueFamilyNdx].queueCount, discreteQueuePriorities + 1);
+        const vector<float> queuePriorities = makeSpanningQueuePriorities(queueCount);
+
+        const VkDeviceQueueCreateInfo queueCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                                                         nullptr,
+                                                         (VkDeviceQueueCreateFlags)0u,
+                                                         queueFamilyNdx,
+                                                         queueCount,
+                                                         queuePriorities.data()};
+
+        const VkDeviceCreateInfo deviceCreateInfo = {
+            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //sType;
+            nullptr,                              //pNext;
+            (VkDeviceCreateFlags)0u,
+            1,                //queueRecordCount;
+            &queueCreateInfo, //pRequestedQueues;
+            0,                //layerCount;
+            nullptr,          //ppEnabledLayerNames;
+            0,                //extensionCount;
+            nullptr,          //ppEnabledExtensionNames;
+            nullptr,          //pEnabledFeatures;
+        };
+
+        const DeviceWrapper device(instance.createCustomDevice(physicalDevice, &deviceCreateInfo));
+        const auto &deviceDriver(device.getDriver());
+
+        for (uint32_t queueIndex = 0; queueIndex < queueCount; queueIndex++)
+        {
+            const VkQueue queue = getDeviceQueue(deviceDriver, *device, queueFamilyNdx, queueIndex);
+
+            TCU_CHECK(!!queue);
+
+            const VkResult result = deviceDriver.queueWaitIdle(queue);
+            if (result != VK_SUCCESS)
+            {
+                log << TestLog::Message << "vkQueueWaitIdle failed, queueFamilyIndex = " << queueFamilyNdx
+                    << ", queueIndex = " << queueIndex << ", priority = " << queuePriorities[queueIndex]
+                    << ", Error Code: " << result << TestLog::EndMessage;
+                return tcu::TestStatus::fail("Fail");
+            }
+        }
+    }
+    return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus createDeviceWithQueuePrioritiesContentionTest(Context &context)
+{
+    tcu::TestLog &log = context.getTestContext().getLog();
+    const InstanceWrapper instance(createCustomInstanceFromContext(context));
+    const auto &instanceDriver(instance.getDriver());
+    const VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
+    const vector<VkQueueFamilyProperties> queueFamilyProperties =
+        getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+    VkPhysicalDeviceProperties properties;
+    instanceDriver.getPhysicalDeviceProperties(physicalDevice, &properties);
+    const uint32_t discreteQueuePriorities = properties.limits.discreteQueuePriorities;
+
+    const VkDeviceSize bufferSize      = 4 * 1024 * 1024;
+    const uint32_t elementCount        = (uint32_t)(bufferSize / sizeof(uint32_t));
+    const VkQueueFlags transferCapable = (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT);
+    bool anyFamilyTested               = false;
+
+    for (uint32_t queueFamilyNdx = 0; queueFamilyNdx < (uint32_t)queueFamilyProperties.size(); queueFamilyNdx++)
+    {
+        if ((queueFamilyProperties[queueFamilyNdx].queueFlags & transferCapable) == 0)
+            continue;
+
+        const uint32_t queueCount =
+            de::min(queueFamilyProperties[queueFamilyNdx].queueCount, discreteQueuePriorities + 1);
+
+        if (queueCount < 2)
+            continue; // Nothing to contend with a single queue
+
+        anyFamilyTested = true;
+
+        const vector<float> queuePriorities = makeSpanningQueuePriorities(queueCount);
+
+        const VkDeviceQueueCreateInfo queueCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                                                         nullptr,
+                                                         (VkDeviceQueueCreateFlags)0u,
+                                                         queueFamilyNdx,
+                                                         queueCount,
+                                                         queuePriorities.data()};
+
+        const VkDeviceCreateInfo deviceCreateInfo = {
+            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //sType;
+            nullptr,                              //pNext;
+            (VkDeviceCreateFlags)0u,
+            1,                //queueRecordCount;
+            &queueCreateInfo, //pRequestedQueues;
+            0,                //layerCount;
+            nullptr,          //ppEnabledLayerNames;
+            0,                //extensionCount;
+            nullptr,          //ppEnabledExtensionNames;
+            nullptr,          //pEnabledFeatures;
+        };
+
+        const DeviceWrapper device(instance.createCustomDevice(physicalDevice, &deviceCreateInfo));
+        const auto &vkd(device.getDriver());
+        Allocator &allocator = device.getAllocator();
+
+        const Unique<VkCommandPool> commandPool(makeCommandPool(vkd, *device, queueFamilyNdx));
+        const VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+        vector<de::SharedPtr<BufferWithMemory>> buffers(queueCount);
+        vector<Move<VkCommandBuffer>> commandBuffers(queueCount);
+        vector<Move<VkFence>> fences(queueCount);
+        vector<VkFence> fenceHandles(queueCount);
+        vector<uint32_t> fillValues(queueCount);
+
+        // Record every queue's command buffer up front
+        for (uint32_t queueIndex = 0; queueIndex < queueCount; queueIndex++)
+        {
+            buffers[queueIndex] = de::SharedPtr<BufferWithMemory>(
+                new BufferWithMemory(vkd, *device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible));
+            commandBuffers[queueIndex] =
+                allocateCommandBuffer(vkd, *device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+            fillValues[queueIndex] = 0xACE00000u | queueIndex;
+
+            beginCommandBuffer(vkd, *commandBuffers[queueIndex]);
+            vkd.cmdFillBuffer(*commandBuffers[queueIndex], **buffers[queueIndex], 0, bufferSize,
+                              fillValues[queueIndex]);
+            endCommandBuffer(vkd, *commandBuffers[queueIndex]);
+        }
+
+        // Submit to every queue before waiting on any of them so the differently prioritized
+        // queues have overlapping work in flight
+        for (uint32_t queueIndex = 0; queueIndex < queueCount; queueIndex++)
+        {
+            const VkQueue queue = getDeviceQueue(vkd, *device, queueFamilyNdx, queueIndex);
+
+            fences[queueIndex]       = submitCommands(vkd, *device, queue, *commandBuffers[queueIndex]);
+            fenceHandles[queueIndex] = *fences[queueIndex];
+        }
+
+        VK_CHECK(vkd.waitForFences(*device, queueCount, fenceHandles.data(), VK_TRUE, ~0ull));
+
+        for (uint32_t queueIndex = 0; queueIndex < queueCount; queueIndex++)
+        {
+            const Allocation &alloc = buffers[queueIndex]->getAllocation();
+            invalidateAlloc(vkd, *device, alloc);
+
+            const uint32_t *data = reinterpret_cast<const uint32_t *>(alloc.getHostPtr());
+
+            for (uint32_t elementNdx = 0; elementNdx < elementCount; elementNdx++)
+            {
+                if (data[elementNdx] != fillValues[queueIndex])
+                {
+                    log << TestLog::Message << "Corrupted data for queueFamilyIndex = " << queueFamilyNdx
+                        << ", queueIndex = " << queueIndex << ", priority = " << queuePriorities[queueIndex]
+                        << ", element " << elementNdx << ": expected " << fillValues[queueIndex] << ", got "
+                        << data[elementNdx] << TestLog::EndMessage;
+                    return tcu::TestStatus::fail("Fail, corrupted data under priority-differentiated contention");
+                }
+            }
+        }
+    }
+
+    if (!anyFamilyTested)
+        TCU_THROW(NotSupportedError, "No queue family exposes enough queues to test priority contention");
+
     return tcu::TestStatus::pass("Pass");
 }
 
@@ -2642,6 +2836,12 @@ tcu::TestCaseGroup *createDeviceInitializationTests(tcu::TestContext &testCtx)
                                  createDeviceWithUnsupportedExtensionsTest);
     addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_various_queue_counts",
                                  createDeviceWithVariousQueueCountsTest);
+    {
+        de::MovePtr<tcu::TestCaseGroup> subgroup(new tcu::TestCaseGroup(testCtx, "create_device_queue_priorities"));
+        addFunctionCase(subgroup.get(), "basic", createDeviceWithQueuePrioritiesTest);
+        addFunctionCase(subgroup.get(), "concurrent_submission", createDeviceWithQueuePrioritiesContentionTest);
+        deviceInitializationTests->addChild(subgroup.release());
+    }
     addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_global_priority",
                                  checkGlobalPrioritySupport, createDeviceWithGlobalPriorityTest, false);
 #ifndef CTS_USES_VULKANSC
