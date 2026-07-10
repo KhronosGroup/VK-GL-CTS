@@ -1047,7 +1047,7 @@ Move<VkDevice> ContextManager::createDevice(const DevCaps &caps, DevCaps::Runtim
 
     // devices created for Vulkan SC must have VkDeviceObjectReservationCreateInfo
     // structure defined in VkDeviceCreateInfo::pNext chain
-    VkDeviceObjectReservationCreateInfo dorCI = resetDeviceObjectReservationCreateInfo();
+    VkDeviceObjectReservationCreateInfo dorCI = resourceInterface->getDefaultDeviceObjectReservationCreateInfo();
     const bool hasReservationCreateInfo =
         createCaps.getFeatureInfo(makeFeatureDesc<VkDeviceObjectReservationCreateInfo>().sType,
                                   createCaps.m_features) != nullptr;

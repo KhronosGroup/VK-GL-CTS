@@ -397,7 +397,7 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
 
 #ifdef CTS_USES_VULKANSC
     // devices created for Vulkan SC must have VkDeviceObjectReservationCreateInfo structure defined in VkDeviceCreateInfo::pNext chain
-    VkDeviceObjectReservationCreateInfo dmrCI = resetDeviceObjectReservationCreateInfo();
+    VkDeviceObjectReservationCreateInfo dmrCI = resourceInterface->getDefaultDeviceObjectReservationCreateInfo();
     VkPipelineCacheCreateInfo pcCI            = {
         VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
         nullptr,                                      // const void* pNext;

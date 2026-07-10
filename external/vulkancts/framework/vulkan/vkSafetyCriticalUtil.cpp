@@ -61,56 +61,6 @@ struct hash<vk::MemoryArea>
 namespace vk
 {
 
-VkDeviceObjectReservationCreateInfo resetDeviceObjectReservationCreateInfo()
-{
-    VkDeviceObjectReservationCreateInfo result = {
-        VK_STRUCTURE_TYPE_DEVICE_OBJECT_RESERVATION_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                                 // const void* pNext;
-        0u,                                                      // uint32_t pipelineCacheCreateInfoCount;
-        nullptr, // const VkPipelineCacheCreateInfo* pPipelineCacheCreateInfos;
-        0u,      // uint32_t pipelinePoolSizeCount;
-        nullptr, // const VkPipelinePoolSize* pPipelinePoolSizes;
-        0u,      // uint32_t semaphoreRequestCount;
-        0u,      // uint32_t commandBufferRequestCount;
-        0u,      // uint32_t fenceRequestCount;
-        0u,      // uint32_t deviceMemoryRequestCount;
-        0u,      // uint32_t bufferRequestCount;
-        0u,      // uint32_t imageRequestCount;
-        0u,      // uint32_t eventRequestCount;
-        0u,      // uint32_t queryPoolRequestCount;
-        0u,      // uint32_t bufferViewRequestCount;
-        0u,      // uint32_t imageViewRequestCount;
-        0u,      // uint32_t layeredImageViewRequestCount;
-        0u,      // uint32_t pipelineCacheRequestCount;
-        0u,      // uint32_t pipelineLayoutRequestCount;
-        0u,      // uint32_t renderPassRequestCount;
-        0u,      // uint32_t graphicsPipelineRequestCount;
-        0u,      // uint32_t computePipelineRequestCount;
-        0u,      // uint32_t descriptorSetLayoutRequestCount;
-        0u,      // uint32_t samplerRequestCount;
-        0u,      // uint32_t descriptorPoolRequestCount;
-        0u,      // uint32_t descriptorSetRequestCount;
-        0u,      // uint32_t framebufferRequestCount;
-        0u,      // uint32_t commandPoolRequestCount;
-        0u,      // uint32_t samplerYcbcrConversionRequestCount;
-        0u,      // uint32_t surfaceRequestCount;
-        0u,      // uint32_t swapchainRequestCount;
-        0u,      // uint32_t displayModeRequestCount;
-        0u,      // uint32_t subpassDescriptionRequestCount;
-        0u,      // uint32_t attachmentDescriptionRequestCount;
-        0u,      // uint32_t descriptorSetLayoutBindingRequestCount;
-        0u,      // uint32_t descriptorSetLayoutBindingLimit;
-        0u,      // uint32_t maxImageViewMipLevels;
-        0u,      // uint32_t maxImageViewArrayLayers;
-        0u,      // uint32_t maxLayeredImageViewMipLevels;
-        0u,      // uint32_t maxOcclusionQueriesPerPool;
-        0u,      // uint32_t maxPipelineStatisticsQueriesPerPool;
-        0u,      // uint32_t maxTimestampQueriesPerPool;
-        0u,      // uint32_t maxImmutableSamplersPerDescriptorSetLayout;
-    };
-    return result;
-}
-
 VkPipelineOfflineCreateInfo resetPipelineOfflineCreateInfo()
 {
     VkPipelineOfflineCreateInfo pipelineID = {

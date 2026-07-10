@@ -50,11 +50,7 @@ VkResult DeviceDriverSC::allocateMemory (VkDevice device, const VkMemoryAllocate
 	if (m_normalMode)
 		return m_vk.allocateMemory(device, pAllocateInfo, pAllocator, pMemory);
 	else
-	{
-		DDSTAT_LOCK();
-		DDSTAT_HANDLE_CREATE(deviceMemoryRequestCount,1);
-		*pMemory = m_resourceInterface->incResourceCounter<VkDeviceMemory>();
-	}
+		return allocateMemoryHandler(device, pAllocateInfo, pAllocator, pMemory);
 	return VK_SUCCESS;
 }
 
@@ -929,11 +925,7 @@ VkResult DeviceDriverSC::createBuffer (VkDevice device, const VkBufferCreateInfo
 	if (m_normalMode)
 		return m_vk.createBuffer(device, pCreateInfo, pAllocator, pBuffer);
 	else
-	{
-		DDSTAT_LOCK();
-		DDSTAT_HANDLE_CREATE(bufferRequestCount,1);
-		*pBuffer = m_resourceInterface->incResourceCounter<VkBuffer>();
-	}
+		return createBufferHandler(device, pCreateInfo, pAllocator, pBuffer);
 	return VK_SUCCESS;
 }
 
@@ -1049,11 +1041,7 @@ VkResult DeviceDriverSC::createImage (VkDevice device, const VkImageCreateInfo* 
 	if (m_normalMode)
 		return m_vk.createImage(device, pCreateInfo, pAllocator, pImage);
 	else
-	{
-		DDSTAT_LOCK();
-		DDSTAT_HANDLE_CREATE(imageRequestCount,1);
-		*pImage = m_resourceInterface->incResourceCounter<VkImage>();
-	}
+		return createImageHandler(device, pCreateInfo, pAllocator, pImage);
 	return VK_SUCCESS;
 }
 
@@ -1182,10 +1170,7 @@ void DeviceDriverSC::destroyBuffer (VkDevice device, VkBuffer buffer, const VkAl
 	if (m_normalMode)
 		m_vk.destroyBuffer(device, buffer, pAllocator);
 	else
-	{
-		DDSTAT_LOCK();
-		DDSTAT_HANDLE_DESTROY_IF(buffer,bufferRequestCount,1);
-	}
+		destroyBufferHandler(device, buffer, pAllocator);
 }
 
 void DeviceDriverSC::destroyBufferView (VkDevice device, VkBufferView bufferView, const VkAllocationCallbacks* pAllocator) const
@@ -1260,10 +1245,7 @@ void DeviceDriverSC::destroyImage (VkDevice device, VkImage image, const VkAlloc
 	if (m_normalMode)
 		m_vk.destroyImage(device, image, pAllocator);
 	else
-	{
-		DDSTAT_LOCK();
-		DDSTAT_HANDLE_DESTROY_IF(image,imageRequestCount,1);
-	}
+		destroyImageHandler(device, image, pAllocator);
 }
 
 void DeviceDriverSC::destroyImageView (VkDevice device, VkImageView imageView, const VkAllocationCallbacks* pAllocator) const
@@ -1413,12 +1395,7 @@ void DeviceDriverSC::getBufferMemoryRequirements (VkDevice device, VkBuffer buff
 	if (m_normalMode)
 		m_vk.getBufferMemoryRequirements(device, buffer, pMemoryRequirements);
 	else
-	{
-		DDSTAT_LOCK();
-		pMemoryRequirements->size = 1048576U;
-		pMemoryRequirements->alignment = 1U;
-		pMemoryRequirements->memoryTypeBits = ~0U;
-	}
+		return getBufferMemoryRequirementsHandler(device, buffer, pMemoryRequirements);
 }
 
 void DeviceDriverSC::getBufferMemoryRequirements2 (VkDevice device, const VkBufferMemoryRequirementsInfo2* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
@@ -1427,12 +1404,7 @@ void DeviceDriverSC::getBufferMemoryRequirements2 (VkDevice device, const VkBuff
 	if (m_normalMode)
 		m_vk.getBufferMemoryRequirements2(device, pInfo, pMemoryRequirements);
 	else
-	{
-		DDSTAT_LOCK();
-		pMemoryRequirements->memoryRequirements.size = 1048576U;
-		pMemoryRequirements->memoryRequirements.alignment = 1U;
-		pMemoryRequirements->memoryRequirements.memoryTypeBits = ~0U;
-	}
+		return getBufferMemoryRequirements2Handler(device, pInfo, pMemoryRequirements);
 }
 
 uint64_t DeviceDriverSC::getBufferOpaqueCaptureAddress (VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const
@@ -1590,12 +1562,7 @@ void DeviceDriverSC::getImageMemoryRequirements (VkDevice device, VkImage image,
 	if (m_normalMode)
 		m_vk.getImageMemoryRequirements(device, image, pMemoryRequirements);
 	else
-	{
-		DDSTAT_LOCK();
-		pMemoryRequirements->size = 1048576U;
-		pMemoryRequirements->alignment = 1U;
-		pMemoryRequirements->memoryTypeBits = ~0U;
-	}
+		return getImageMemoryRequirementsHandler(device, image, pMemoryRequirements);
 }
 
 void DeviceDriverSC::getImageMemoryRequirements2 (VkDevice device, const VkImageMemoryRequirementsInfo2* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
@@ -1604,12 +1571,7 @@ void DeviceDriverSC::getImageMemoryRequirements2 (VkDevice device, const VkImage
 	if (m_normalMode)
 		m_vk.getImageMemoryRequirements2(device, pInfo, pMemoryRequirements);
 	else
-	{
-		DDSTAT_LOCK();
-		pMemoryRequirements->memoryRequirements.size = 1048576U;
-		pMemoryRequirements->memoryRequirements.alignment = 1U;
-		pMemoryRequirements->memoryRequirements.memoryTypeBits = ~0U;
-	}
+		return getImageMemoryRequirements2Handler(device, pInfo, pMemoryRequirements);
 }
 
 void DeviceDriverSC::getImageSubresourceLayout (VkDevice device, VkImage image, const VkImageSubresource* pSubresource, VkSubresourceLayout* pLayout) const
@@ -1618,14 +1580,7 @@ void DeviceDriverSC::getImageSubresourceLayout (VkDevice device, VkImage image, 
 	if (m_normalMode)
 		m_vk.getImageSubresourceLayout(device, image, pSubresource, pLayout);
 	else
-	{
-		DDSTAT_LOCK();
-		pLayout->offset = 0U;
-		pLayout->size = 1048576U;
-		pLayout->rowPitch = 0U;
-		pLayout->arrayPitch = 0U;
-		pLayout->depthPitch = 0U;
-	}
+		getImageSubresourceLayoutHandler(device, image, pSubresource, pLayout);
 }
 
 void DeviceDriverSC::getImageSubresourceLayout2 (VkDevice device, VkImage image, const VkImageSubresource2* pSubresource, VkSubresourceLayout2* pLayout) const
@@ -1778,19 +1733,17 @@ VkResult DeviceDriverSC::mapMemory (VkDevice device, VkDeviceMemory memory, VkDe
 	if (m_normalMode)
 		return m_vk.mapMemory(device, memory, offset, size, flags, ppData);
 	else
-	{
-		DDSTAT_LOCK();
-		if(m_falseMemory.size() < (static_cast<std::size_t>(offset+size)))
-			m_falseMemory.resize(static_cast<std::size_t>(offset+size));
-		*ppData = (void*)m_falseMemory.data();
-	}
+		return mapMemoryHandler(device, memory, offset, size, flags, ppData);
 	return VK_SUCCESS;
 }
 
 VkResult DeviceDriverSC::mapMemory2 (VkDevice device, const VkMemoryMapInfo* pMemoryMapInfo, void** ppData) const
 {
+	std::lock_guard<std::mutex> lock(functionMutex);
 	if (m_normalMode)
 		return m_vk.mapMemory2(device, pMemoryMapInfo, ppData);
+	else
+		return mapMemory2Handler(device, pMemoryMapInfo, ppData);
 	return VK_SUCCESS;
 }
 
@@ -1950,14 +1903,20 @@ VkResult DeviceDriverSC::transitionImageLayout (VkDevice device, uint32_t transi
 
 void DeviceDriverSC::unmapMemory (VkDevice device, VkDeviceMemory memory) const
 {
+	std::lock_guard<std::mutex> lock(functionMutex);
 	if (m_normalMode)
 		m_vk.unmapMemory(device, memory);
+	else
+		unmapMemoryHandler(device, memory);
 }
 
 VkResult DeviceDriverSC::unmapMemory2 (VkDevice device, const VkMemoryUnmapInfo* pMemoryUnmapInfo) const
 {
+	std::lock_guard<std::mutex> lock(functionMutex);
 	if (m_normalMode)
 		return m_vk.unmapMemory2(device, pMemoryUnmapInfo);
+	else
+		return unmapMemory2Handler(device, pMemoryUnmapInfo);
 	return VK_SUCCESS;
 }
 

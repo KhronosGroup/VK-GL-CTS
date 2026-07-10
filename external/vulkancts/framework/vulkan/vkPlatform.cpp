@@ -181,6 +181,8 @@ DeviceDriverSC::DeviceDriverSC(const PlatformInterface &platformInterface, VkIns
     , m_device(device)
     , m_normalMode(cmdLine.isSubProcess())
     , m_resourceInterface(resourceInterface)
+    , m_jsonGenerator(vpjCreateGenerator())
+    , m_jsonParser(vpjCreateParser())
     , m_physicalDeviceVulkanSC10Properties(physicalDeviceVulkanSC10Properties)
     , m_physicalDeviceProperties(physicalDeviceProperties)
     , m_commandDefaultSize((VkDeviceSize)cmdLine.getCommandDefaultSize())
@@ -188,14 +190,22 @@ DeviceDriverSC::DeviceDriverSC(const PlatformInterface &platformInterface, VkIns
           de::max((VkDeviceSize)cmdLine.getCommandDefaultSize(), (VkDeviceSize)cmdLine.getCommandBufferMinSize()))
     , m_commandPoolMinimumSize((VkDeviceSize)cmdLine.getCommandPoolMinSize())
 {
-    if (!cmdLine.isSubProcess())
-        m_falseMemory.resize(64u * 1024u * 1024u, 0u);
     m_resourceInterface->initDevice(*this, device);
 }
 
 DeviceDriverSC::~DeviceDriverSC(void)
 {
+    // Free any remaining fake memory mappings
+    for (auto it : m_fakeMemoryMapping)
+    {
+        ::operator delete(it.second, std::align_val_t(m_physicalDeviceProperties.limits.minMemoryMapAlignment));
+    }
+    m_fakeMemoryMapping.clear();
+
     m_resourceInterface->deinitDevice(m_device);
+
+    vpjDestroyParser(m_jsonParser);
+    vpjDestroyGenerator(m_jsonGenerator);
 }
 
 void DeviceDriverSC::destroyDeviceHandler(VkDevice device, const VkAllocationCallbacks *pAllocator) const
@@ -725,6 +735,260 @@ VkResult DeviceDriverSC::createShaderModule(VkDevice device, const VkShaderModul
     return m_resourceInterface->createShaderModule(device, pCreateInfo, pAllocator, pShaderModule, m_normalMode);
 }
 
+VkResult DeviceDriverSC::createBufferHandler(VkDevice device, const VkBufferCreateInfo *pCreateInfo,
+                                             const VkAllocationCallbacks *pAllocator, VkBuffer *pBuffer) const
+{
+    DE_UNREF(device);
+    DE_UNREF(pAllocator);
+
+    DDSTAT_LOCK();
+
+    DDSTAT_HANDLE_CREATE(bufferRequestCount, 1);
+    *pBuffer = m_resourceInterface->incResourceCounter<VkBuffer>();
+
+    // Save the create info to be able to return reasonable memory requirements
+    // Note that we use JSON as the storage format lacking a better way to store entire pNext chains safely
+    m_buffers[*pBuffer] = genCreateInfoJson(pCreateInfo);
+
+    return VK_SUCCESS;
+}
+
+void DeviceDriverSC::destroyBufferHandler(VkDevice device, VkBuffer buffer,
+                                          const VkAllocationCallbacks *pAllocator) const
+{
+    DE_UNREF(device);
+    DE_UNREF(pAllocator);
+
+    DDSTAT_LOCK();
+    auto it = m_buffers.find(buffer);
+    if (it != end(m_buffers))
+    {
+        DDSTAT_HANDLE_DESTROY(bufferRequestCount, 1);
+        m_buffers.erase(it);
+    }
+}
+
+void DeviceDriverSC::getBufferMemoryRequirementsHandler(VkDevice device, VkBuffer buffer,
+                                                        VkMemoryRequirements *pMemoryRequirements) const
+{
+    VkMemoryRequirements2 memReq         = {VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
+    VkBufferMemoryRequirementsInfo2 info = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2, nullptr, buffer};
+    getBufferMemoryRequirements2Handler(device, &info, &memReq);
+    *pMemoryRequirements = memReq.memoryRequirements;
+}
+
+void DeviceDriverSC::getBufferMemoryRequirements2Handler(VkDevice device, const VkBufferMemoryRequirementsInfo2 *pInfo,
+                                                         VkMemoryRequirements2 *pMemoryRequirements) const
+{
+    DDSTAT_LOCK();
+
+    auto it = m_buffers.find(pInfo->buffer);
+    DE_ASSERT(it != end(m_buffers));
+    if (it != end(m_buffers))
+    {
+        // We use a temporary buffer to be able to return real memory requirements
+        VkBuffer tempBuffer;
+        VkResult result =
+            m_vk.createBuffer(device, parseCreateInfoJson<VkBufferCreateInfo>(it->second), nullptr, &tempBuffer);
+        if (result != VK_SUCCESS)
+        {
+            const std::string msg = "Failed to create temporary buffer: " + getResultStr(result).toString();
+            TCU_THROW(InternalError, msg);
+        }
+        VkBufferMemoryRequirementsInfo2 info = *pInfo;
+        info.buffer                          = tempBuffer;
+        m_vk.getBufferMemoryRequirements2(device, &info, pMemoryRequirements);
+        m_vk.destroyBuffer(device, tempBuffer, nullptr);
+    }
+    else
+    {
+        const std::string msg = std::string("Invalid buffer handle passed to buffer memory requirements query: ") +
+                                std::to_string(pInfo->buffer.getInternal());
+        TCU_THROW(InternalError, msg);
+    }
+}
+
+VkResult DeviceDriverSC::createImageHandler(VkDevice device, const VkImageCreateInfo *pCreateInfo,
+                                            const VkAllocationCallbacks *pAllocator, VkImage *pImage) const
+{
+    DE_UNREF(device);
+    DE_UNREF(pAllocator);
+
+    DDSTAT_LOCK();
+
+    DDSTAT_HANDLE_CREATE(imageRequestCount, 1);
+    *pImage = m_resourceInterface->incResourceCounter<VkImage>();
+
+    // Save the create info to be able to return reasonable memory requirements
+    // Note that we use JSON as the storage format lacking a better way to store entire pNext chains safely
+    m_images[*pImage] = genCreateInfoJson(pCreateInfo);
+
+    return VK_SUCCESS;
+}
+
+void DeviceDriverSC::destroyImageHandler(VkDevice device, VkImage image, const VkAllocationCallbacks *pAllocator) const
+{
+    DE_UNREF(device);
+    DE_UNREF(pAllocator);
+
+    DDSTAT_LOCK();
+    auto it = m_images.find(image);
+    if (it != end(m_images))
+    {
+        DDSTAT_HANDLE_DESTROY(imageRequestCount, 1);
+        m_images.erase(it);
+    }
+}
+
+void DeviceDriverSC::getImageMemoryRequirementsHandler(VkDevice device, VkImage image,
+                                                       VkMemoryRequirements *pMemoryRequirements) const
+{
+    VkMemoryRequirements2 memReq        = {VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
+    VkImageMemoryRequirementsInfo2 info = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2, nullptr, image};
+    getImageMemoryRequirements2Handler(device, &info, &memReq);
+    *pMemoryRequirements = memReq.memoryRequirements;
+}
+
+void DeviceDriverSC::getImageMemoryRequirements2Handler(VkDevice device, const VkImageMemoryRequirementsInfo2 *pInfo,
+                                                        VkMemoryRequirements2 *pMemoryRequirements) const
+{
+    DDSTAT_LOCK();
+
+    auto it = m_images.find(pInfo->image);
+    DE_ASSERT(it != end(m_images));
+    if (it != end(m_images))
+    {
+        // We use a temporary image to be able to return real memory requirements
+        VkImage tempImage;
+        VkResult result =
+            m_vk.createImage(device, parseCreateInfoJson<VkImageCreateInfo>(it->second), nullptr, &tempImage);
+        if (result != VK_SUCCESS)
+        {
+            const std::string msg = "Failed to create temporary image: " + getResultStr(result).toString();
+            TCU_THROW(InternalError, msg);
+        }
+        VkImageMemoryRequirementsInfo2 info = *pInfo;
+        info.image                          = tempImage;
+        m_vk.getImageMemoryRequirements2(device, &info, pMemoryRequirements);
+        m_vk.destroyImage(device, tempImage, nullptr);
+    }
+    else
+    {
+        const std::string msg = std::string("Invalid image handle passed to image memory requirements query: ") +
+                                std::to_string(pInfo->image.getInternal());
+        TCU_THROW(InternalError, msg);
+    }
+}
+
+void DeviceDriverSC::getImageSubresourceLayoutHandler(VkDevice device, VkImage image,
+                                                      const VkImageSubresource *pSubresource,
+                                                      VkSubresourceLayout *pLayout) const
+{
+    DDSTAT_LOCK();
+
+    auto it = m_images.find(image);
+    DE_ASSERT(it != end(m_images));
+    if (it != end(m_images))
+    {
+        // We use a temporary image to be able to return real subresource layout info
+        VkImage tempImage;
+        VkResult result =
+            m_vk.createImage(device, parseCreateInfoJson<VkImageCreateInfo>(it->second), nullptr, &tempImage);
+        if (result != VK_SUCCESS)
+        {
+            const std::string msg = "Failed to create temporary image: " + getResultStr(result).toString();
+            TCU_THROW(InternalError, msg);
+        }
+        m_vk.getImageSubresourceLayout(device, tempImage, pSubresource, pLayout);
+        m_vk.destroyImage(device, tempImage, nullptr);
+    }
+    else
+    {
+        const std::string msg = std::string("Invalid image handle passed to image subresource layout query: ") +
+                                std::to_string(image.getInternal());
+        TCU_THROW(InternalError, msg);
+    }
+}
+
+VkResult DeviceDriverSC::allocateMemoryHandler(VkDevice device, const VkMemoryAllocateInfo *pAllocateInfo,
+                                               const VkAllocationCallbacks *pAllocator, VkDeviceMemory *pMemory) const
+{
+    DE_UNREF(device);
+    DE_UNREF(pAllocator);
+
+    DDSTAT_LOCK();
+    DDSTAT_HANDLE_CREATE(deviceMemoryRequestCount, 1);
+    *pMemory = m_resourceInterface->incResourceCounter<VkDeviceMemory>();
+
+    // Save the alloc info of the memory allocation as the original size is needed when vkMapMemory[2] is called with VK_WHOLE_SIZE
+    m_deviceMemories[*pMemory] = *pAllocateInfo;
+
+    return VK_SUCCESS;
+}
+
+VkResult DeviceDriverSC::mapMemoryHandler(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset,
+                                          VkDeviceSize size, VkMemoryMapFlags flags, void **ppData) const
+{
+    DE_UNREF(device);
+    DE_UNREF(offset);
+    DE_UNREF(flags);
+
+    DDSTAT_LOCK();
+
+    if (size == VK_WHOLE_SIZE)
+    {
+        DE_ASSERT(m_deviceMemories.find(memory) != end(m_deviceMemories));
+        size = m_deviceMemories[memory].allocationSize;
+    }
+    else
+    {
+        size = offset + size;
+    }
+
+    void *mapping = ::operator new(static_cast<size_t>(size),
+                                   std::align_val_t(m_physicalDeviceProperties.limits.minMemoryMapAlignment));
+    if (mapping != nullptr)
+    {
+        // Zero initialize the memory as some tests will blindly use data in the mapping to index into data arrays
+        // without bounds checking that could result in crashes
+        deMemset(mapping, 0, static_cast<std::size_t>(size));
+
+        m_fakeMemoryMapping[memory] = mapping;
+        *ppData                     = reinterpret_cast<uint8_t *>(mapping) + offset;
+        return VK_SUCCESS;
+    }
+    else
+    {
+        return VK_ERROR_OUT_OF_HOST_MEMORY;
+    }
+}
+
+void DeviceDriverSC::unmapMemoryHandler(VkDevice device, VkDeviceMemory memory) const
+{
+    DE_UNREF(device);
+
+    DDSTAT_LOCK();
+
+    auto it = m_fakeMemoryMapping.find(memory);
+    if (it != end(m_fakeMemoryMapping))
+    {
+        ::operator delete(it->second, std::align_val_t(m_physicalDeviceProperties.limits.minMemoryMapAlignment));
+        m_fakeMemoryMapping.erase(it);
+    }
+}
+
+VkResult DeviceDriverSC::mapMemory2Handler(VkDevice device, const VkMemoryMapInfo *pMemoryMapInfo, void **ppData) const
+{
+    return mapMemoryHandler(device, pMemoryMapInfo->memory, pMemoryMapInfo->offset, pMemoryMapInfo->size,
+                            pMemoryMapInfo->flags, ppData);
+}
+
+VkResult DeviceDriverSC::unmapMemory2Handler(VkDevice device, const VkMemoryUnmapInfo *pMemoryUnmapInfo) const
+{
+    unmapMemoryHandler(device, pMemoryUnmapInfo->memory);
+    return VK_SUCCESS;
+}
+
 VkResult DeviceDriverSC::createCommandPoolHandlerNorm(VkDevice device, const VkCommandPoolCreateInfo *pCreateInfo,
                                                       const VkAllocationCallbacks *pAllocator,
                                                       VkCommandPool *pCommandPool) const
@@ -905,7 +1169,7 @@ void DeviceDriverSC::checkSubpassSupport(uint32_t inputAttachmentCount, uint32_t
     }
 }
 
-de::SharedPtr<ResourceInterface> DeviceDriverSC::gerResourceInterface() const
+de::SharedPtr<ResourceInterface> DeviceDriverSC::getResourceInterface() const
 {
     return m_resourceInterface;
 }

@@ -31,8 +31,10 @@
 #ifdef CTS_USES_VULKANSC
 #include <mutex>
 #include <vector>
+#include <string>
 #include <map>
 #include "vkResourceInterface.hpp"
+#include <vulkan/pcjson/vksc_pipeline_json.h>
 #endif // CTS_USES_VULKANSC
 #include "tcuCommandLine.hpp"
 
@@ -253,12 +255,35 @@ public:
                                        VkCommandBuffer *pCommandBuffers) const;
     void freeCommandBuffersHandler(VkDevice device, VkCommandPool commandPool, uint32_t commandBufferCount,
                                    const VkCommandBuffer *pCommandBuffers) const;
+    VkResult createBufferHandler(VkDevice device, const VkBufferCreateInfo *pCreateInfo,
+                                 const VkAllocationCallbacks *pAllocator, VkBuffer *pBuffer) const;
+    void destroyBufferHandler(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks *pAllocator) const;
+    void getBufferMemoryRequirementsHandler(VkDevice device, VkBuffer buffer,
+                                            VkMemoryRequirements *pMemoryRequirements) const;
+    void getBufferMemoryRequirements2Handler(VkDevice device, const VkBufferMemoryRequirementsInfo2 *pInfo,
+                                             VkMemoryRequirements2 *pMemoryRequirements) const;
+    VkResult createImageHandler(VkDevice device, const VkImageCreateInfo *pCreateInfo,
+                                const VkAllocationCallbacks *pAllocator, VkImage *pImage) const;
+    void destroyImageHandler(VkDevice device, VkImage image, const VkAllocationCallbacks *pAllocator) const;
+    void getImageMemoryRequirementsHandler(VkDevice device, VkImage image,
+                                           VkMemoryRequirements *pMemoryRequirements) const;
+    void getImageMemoryRequirements2Handler(VkDevice device, const VkImageMemoryRequirementsInfo2 *pInfo,
+                                            VkMemoryRequirements2 *pMemoryRequirements) const;
+    void getImageSubresourceLayoutHandler(VkDevice device, VkImage image, const VkImageSubresource *pSubresource,
+                                          VkSubresourceLayout *pLayout) const;
+    VkResult allocateMemoryHandler(VkDevice device, const VkMemoryAllocateInfo *pAllocateInfo,
+                                   const VkAllocationCallbacks *pAllocator, VkDeviceMemory *pMemory) const;
+    VkResult mapMemoryHandler(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size,
+                              VkMemoryMapFlags flags, void **ppData) const;
+    void unmapMemoryHandler(VkDevice device, VkDeviceMemory memory) const;
+    VkResult mapMemory2Handler(VkDevice device, const VkMemoryMapInfo *pMemoryMapInfo, void **ppData) const;
+    VkResult unmapMemory2Handler(VkDevice device, const VkMemoryUnmapInfo *pMemoryUnmapInfo) const;
     void increaseCommandBufferSize(VkCommandBuffer commandBuffer, VkDeviceSize commandSize) const;
     void checkFramebufferSupport(const VkFramebufferCreateInfo *pCreateInfo) const;
     void checkRenderPassSupport(uint32_t attachmentCount, uint32_t subpassCount, uint32_t dependencyCount) const;
     void checkSubpassSupport(uint32_t inputAttachmentCount, uint32_t preserveAttachmentCount) const;
 
-    de::SharedPtr<ResourceInterface> gerResourceInterface() const;
+    de::SharedPtr<ResourceInterface> getResourceInterface() const;
     void reset() const;
 
 protected:
@@ -268,7 +293,73 @@ protected:
 
     de::SharedPtr<vk::ResourceInterface> m_resourceInterface;
 
-    mutable std::vector<uint8_t> m_falseMemory;
+    VpjGenerator m_jsonGenerator;
+    VpjParser m_jsonParser;
+
+    template <typename T>
+    std::string genCreateInfoJson(const T *pCreateInfo) const
+    {
+        std::string result;
+        const char *str, *msg;
+        if (!vpjGenerateSingleStructJson(m_jsonGenerator, pCreateInfo, &str, &msg))
+        {
+            TCU_THROW(InternalError, msg);
+        }
+        result = str;
+        vpjFreeGeneratorOutputs(m_jsonGenerator);
+        return result;
+    }
+
+    template <typename T>
+    class ParsedCreateInfo
+    {
+    public:
+        ParsedCreateInfo(VpjParser jsonParser, T &&createInfo)
+            : m_jsonParser(jsonParser)
+            , m_createInfo(std::move(createInfo))
+        {
+        }
+
+        ~ParsedCreateInfo()
+        {
+            vpjFreeParserOutputs(m_jsonParser);
+        }
+
+        operator const T *() const
+        {
+            return &m_createInfo;
+        }
+
+        const T *operator->() const
+        {
+            return &m_createInfo;
+        }
+
+    private:
+        ParsedCreateInfo(const ParsedCreateInfo &)            = delete;
+        ParsedCreateInfo &operator=(const ParsedCreateInfo &) = delete;
+
+        VpjParser m_jsonParser;
+        const T m_createInfo;
+    };
+
+    template <typename T>
+    ParsedCreateInfo<T> parseCreateInfoJson(const std::string &json) const
+    {
+        T createInfo;
+        const char *msg;
+        if (!vpjParseSingleStructJson(m_jsonParser, json.c_str(), &createInfo, &msg))
+        {
+            TCU_THROW(InternalError, msg);
+        }
+        return ParsedCreateInfo(m_jsonParser, std::move(createInfo));
+    }
+
+    mutable std::map<VkBuffer, std::string> m_buffers;
+    mutable std::map<VkImage, std::string> m_images;
+    mutable std::map<VkDeviceMemory, VkMemoryAllocateInfo> m_deviceMemories;
+    mutable std::map<VkDeviceMemory, void *> m_fakeMemoryMapping;
+
     mutable std::map<VkImageView, VkImageViewCreateInfo> m_imageViews;
     mutable std::map<VkDescriptorSetLayout, VkDescriptorSetLayoutCreateInfo> m_descriptorSetLayouts;
     mutable std::map<VkRenderPass, VkRenderPassCreateInfo> m_renderPasses;

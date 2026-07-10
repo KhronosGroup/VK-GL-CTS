@@ -408,7 +408,8 @@ tcu::TestStatus noResetDescriptorPoolTest(Context &context, const ResetDescripto
         nullptr,                              // pEnabledFeatures;
     };
 
-    VkDeviceObjectReservationCreateInfo objectInfo    = resetDeviceObjectReservationCreateInfo();
+    VkDeviceObjectReservationCreateInfo objectInfo =
+        context.getResourceInterface()->getDefaultDeviceObjectReservationCreateInfo();
     objectInfo.descriptorPoolRequestCount             = 1u;
     objectInfo.descriptorSetRequestCount              = numDescriptorSetsPerIter;
     objectInfo.descriptorSetLayoutRequestCount        = numDescriptorSetsPerIter;

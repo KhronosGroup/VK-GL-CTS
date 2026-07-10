@@ -46,8 +46,8 @@ ResourceInterface::ResourceInterface(tcu::TestContext &testCtx)
     , m_commandPoolIndex(0u)
     , m_resourceCounter(0u)
     , m_uniqueObjIdCounter(0u)
-    , m_statCurrent(resetDeviceObjectReservationCreateInfo())
-    , m_statMax(resetDeviceObjectReservationCreateInfo())
+    , m_statCurrent(initVulkanStructure())
+    , m_statMax(initVulkanStructure())
     , m_enabledHandleDestroy(true)
 #endif // CTS_USES_VULKANSC
 {
@@ -252,7 +252,22 @@ void ResourceInterface::preparePipelinePoolSizes()
     }
 }
 
-std::vector<VkPipelinePoolSize> ResourceInterface::getPipelinePoolSizes() const
+void ResourceInterface::preparePipelineCacheCreateInfo()
+{
+    if (m_cacheData.size() > 0)
+    {
+        m_pipelineCacheCreateInfo = {
+            VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                      // const void* pNext;
+            VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+                VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
+            m_cacheData.size(),                                       // uintptr_t initialDataSize;
+            m_cacheData.data()                                        // const void* pInitialData;
+        };
+    }
+}
+
+const std::vector<VkPipelinePoolSize> &ResourceInterface::getPipelinePoolSizes() const
 {
     return m_pipelinePoolSizes;
 }
@@ -285,6 +300,51 @@ std::size_t ResourceInterface::getCacheDataSize() const
 const uint8_t *ResourceInterface::getCacheData() const
 {
     return m_cacheData.data();
+}
+
+const VkPipelineCacheCreateInfo *ResourceInterface::getPipelineCacheCreateInfo() const
+{
+    return m_cacheData.size() > 0 ? &m_pipelineCacheCreateInfo : nullptr;
+}
+
+VkDeviceObjectReservationCreateInfo ResourceInterface::getDefaultDeviceObjectReservationCreateInfo() const
+{
+    VkDeviceObjectReservationCreateInfo result = initVulkanStructure();
+
+    if (m_testCtx.getCommandLine().isSubProcess())
+    {
+        // Use the collected statistics to initialize subprocess device object reservation info
+        result = getStatMax();
+
+        // If this is the subprocess, then we have to make sure to include the pipeline cache info even if
+        // the test case in question does not use any pipelines as other test cases in the same batch may
+        // This is necessary as the resource interface will always create the pipeline cache if pipeline
+        // cache data is available and that would violate valid usage conditions if the pipeline cache data
+        // (and pipeline cache object reservation) is not specified at device creation time
+        if (getCacheDataSize() > 0)
+        {
+            result.pipelineCacheCreateInfoCount = 1;
+            result.pPipelineCacheCreateInfos    = getPipelineCacheCreateInfo();
+            result.pipelineCacheRequestCount    = de::max(result.pipelineCacheRequestCount, 1u);
+        }
+
+        // Also initialize pool sizes here as needed
+        if (!getPipelinePoolSizes().empty())
+        {
+            result.pipelinePoolSizeCount = static_cast<uint32_t>(getPipelinePoolSizes().size());
+            result.pPipelinePoolSizes    = getPipelinePoolSizes().data();
+        }
+    }
+    else
+    {
+        // If this is called in the parent process we have to reserve one buffer and one image object
+        // as we do temporarily create buffers and images for memory requirements and image subresource
+        // layout query purposes
+        result.bufferRequestCount = 1;
+        result.imageRequestCount  = 1;
+    }
+
+    return result;
 }
 
 VkPipelineCache ResourceInterface::getPipelineCache(VkDevice device) const
@@ -320,20 +380,12 @@ void ResourceInterfaceStandard::initDevice(DeviceInterface &deviceInterface, VkD
     {
         if (m_cacheData.size() > 0)
         {
-            VkPipelineCacheCreateInfo pCreateInfo = {
-                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                nullptr,                                      // const void* pNext;
-                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                m_cacheData.size(),                                       // uintptr_t initialDataSize;
-                m_cacheData.data()                                        // const void* pInitialData;
-            };
             auto &pipelineCacheInfo = m_devicePipelineCaches[device];
             if (pipelineCacheInfo.refCount == 0)
             {
-                pipelineCacheInfo.pipelineCache = de::SharedPtr<Move<VkPipelineCache>>(
-                    new Move<VkPipelineCache>(createPipelineCache(deviceInterface, device, &pCreateInfo, nullptr)));
-                pipelineCacheInfo.refCount = 1;
+                pipelineCacheInfo.pipelineCache = de::SharedPtr<Move<VkPipelineCache>>(new Move<VkPipelineCache>(
+                    createPipelineCache(deviceInterface, device, getPipelineCacheCreateInfo(), nullptr)));
+                pipelineCacheInfo.refCount      = 1;
             }
             else
             {
@@ -913,6 +965,7 @@ void ResourceInterfaceStandard::importPipelineCacheData(const PlatformInterface 
         m_pipelineInput, m_cacheData, uint32_t(m_testCtx.getCommandLine().getPipelineDefaultSize()),
         vulkanSC10Properties.recyclePipelineMemory == VK_TRUE);
     preparePipelinePoolSizes();
+    preparePipelineCacheCreateInfo();
 }
 
 void ResourceInterfaceStandard::resetObjects()
@@ -923,12 +976,13 @@ void ResourceInterfaceStandard::resetObjects()
     m_commandPoolIndex = 0u;
     m_commandBufferMemoryConsumption.clear();
     m_resourceCounter = 0u;
-    m_statCurrent     = resetDeviceObjectReservationCreateInfo();
-    m_statMax         = resetDeviceObjectReservationCreateInfo();
+    m_statCurrent     = initVulkanStructure();
+    m_statMax         = initVulkanStructure();
     // pipelineCacheRequestCount does not contain one instance of createPipelineCache call that happens only in subprocess
     m_statCurrent.pipelineCacheRequestCount = 1u;
     m_statMax.pipelineCacheRequestCount     = 1u;
     m_cacheData.clear();
+    m_pipelineCacheCreateInfo = initVulkanStructure();
     m_pipelineIdentifiers.clear();
     m_pipelineSizes.clear();
     m_pipelinePoolSizes.clear();
@@ -1122,6 +1176,7 @@ void ResourceInterfaceVKSC::importPipelineCacheData(const PlatformInterface &vkp
             m_pipelineInput, m_cacheData, uint32_t(m_testCtx.getCommandLine().getPipelineDefaultSize()),
             vulkanSC10Properties.recyclePipelineMemory == VK_TRUE);
         preparePipelinePoolSizes();
+        preparePipelineCacheCreateInfo();
     }
     else
     {

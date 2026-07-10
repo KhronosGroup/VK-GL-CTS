@@ -429,7 +429,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
             VkDeviceObjectReservationCreateInfo *chainedObjReservation =
                 (VkDeviceObjectReservationCreateInfo *)findStructureInChain(
                     pNextChain, VK_STRUCTURE_TYPE_DEVICE_OBJECT_RESERVATION_CREATE_INFO);
-            VkDeviceObjectReservationCreateInfo localObjReservation = resetDeviceObjectReservationCreateInfo();
+            VkDeviceObjectReservationCreateInfo localObjReservation = initVulkanStructure();
             VkPhysicalDeviceVulkanSC10Features *chainedSC10Features =
                 (VkPhysicalDeviceVulkanSC10Features *)findStructureInChain(
                     pNextChain, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES);

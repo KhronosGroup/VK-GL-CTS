@@ -194,12 +194,13 @@ tcu::TestStatus createDeviceTest(Context &context, TestParams testParams)
 {
     tcu::TestLog &log = context.getTestContext().getLog();
     const InstanceWrapper instance(createCustomInstanceFromContext(context));
-    const std::vector<TestData> testDataList                   = getTestDataList(context, testParams);
-    const float queuePriority                                  = 1.0f;
-    VkDeviceObjectReservationCreateInfo devObjectResCreateInfo = resetDeviceObjectReservationCreateInfo();
-    bool testPassed                                            = true;
-    VkPhysicalDeviceVulkanSC10Features sc10Features            = createDefaultSC10Features();
-    sc10Features.pNext                                         = &devObjectResCreateInfo;
+    const std::vector<TestData> testDataList = getTestDataList(context, testParams);
+    const float queuePriority                = 1.0f;
+    VkDeviceObjectReservationCreateInfo devObjectResCreateInfo =
+        context.getResourceInterface()->getDefaultDeviceObjectReservationCreateInfo();
+    bool testPassed                                 = true;
+    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
+    sc10Features.pNext                              = &devObjectResCreateInfo;
 
     for (TestData testData : testDataList)
     {

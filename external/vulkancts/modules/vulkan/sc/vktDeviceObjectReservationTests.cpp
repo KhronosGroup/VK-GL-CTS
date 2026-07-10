@@ -806,35 +806,9 @@ tcu::TestStatus DeviceObjectReservationInstance::iterate(void)
         nullptr,                              // pEnabledFeatures;
     };
 
-    void *pNext = nullptr;
-
-    VkDeviceObjectReservationCreateInfo objectInfo = resetDeviceObjectReservationCreateInfo();
-    objectInfo.pNext                               = pNext;
-
-    // Make sure to include the pipeline cache info in all cases, as there may be other tests
-    // in the batch that do use pipeline cache data even if this test case does not
-    VkPipelineCacheCreateInfo pcCI = {
-        VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                      // const void* pNext;
-        VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-            VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-        m_context.getResourceInterface()->getCacheDataSize(),     // uintptr_t initialDataSize;
-        m_context.getResourceInterface()->getCacheData()          // const void* pInitialData;
-    };
-    if (m_context.getTestContext().getCommandLine().isSubProcess())
-    {
-        if (m_context.getResourceInterface()->getCacheDataSize() > 0)
-        {
-            objectInfo.pipelineCacheCreateInfoCount = 1;
-            objectInfo.pPipelineCacheCreateInfos    = &pcCI;
-
-            objectInfo.pipelineCacheRequestCount = 1u;
-        }
-    }
-
-    pNext = &objectInfo;
-
-    deviceCreateInfo.pNext = pNext;
+    VkDeviceObjectReservationCreateInfo objectInfo =
+        m_context.getResourceInterface()->getDefaultDeviceObjectReservationCreateInfo();
+    deviceCreateInfo.pNext = &objectInfo;
 
     const DeviceWrapper device          = createTestDevice(deviceCreateInfo, objectInfo);
     const DeviceInterface &deviceDriver = device.getDriver();
@@ -881,10 +855,10 @@ public:
     CustomDevice createTestDevice(VkDeviceCreateInfo &deviceCreateInfo,
                                   VkDeviceObjectReservationCreateInfo &objectInfo) override
     {
-        VkDeviceObjectReservationCreateInfo thirdObjectInfo = resetDeviceObjectReservationCreateInfo();
+        VkDeviceObjectReservationCreateInfo thirdObjectInfo = initVulkanStructure();
         thirdObjectInfo.deviceMemoryRequestCount            = 2;
 
-        VkDeviceObjectReservationCreateInfo secondObjectInfo = resetDeviceObjectReservationCreateInfo();
+        VkDeviceObjectReservationCreateInfo secondObjectInfo = initVulkanStructure();
         secondObjectInfo.deviceMemoryRequestCount            = 2;
         secondObjectInfo.pNext                               = &thirdObjectInfo;
 

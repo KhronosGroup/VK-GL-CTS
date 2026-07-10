@@ -515,35 +515,9 @@ vk::VkResult InstanceWrapper::createDeviceInternal(vk::VkPhysicalDevice physical
 
     // Add object reservation if there isn't one already.
     VkDeviceObjectReservationCreateInfo objectReservationInfo =
-        m_context->getTestContext().getCommandLine().isSubProcess() ? m_context->getResourceInterface()->getStatMax() :
-                                                                      vk::resetDeviceObjectReservationCreateInfo();
-    VkPipelineCacheCreateInfo pcCI;
-    std::vector<VkPipelinePoolSize> poolSizes;
+        m_context->getResourceInterface()->getDefaultDeviceObjectReservationCreateInfo();
     if (!findStructureInChain(createInfo.pNext, getStructureType<VkDeviceObjectReservationCreateInfo>()))
     {
-        if (m_context->getTestContext().getCommandLine().isSubProcess())
-        {
-            if (m_context->getResourceInterface()->getCacheDataSize() > 0)
-            {
-                pcCI = {
-                    VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                    nullptr,                                      // const void* pNext;
-                    VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                        VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                    m_context->getResourceInterface()->getCacheDataSize(),    // uintptr_t initialDataSize;
-                    m_context->getResourceInterface()->getCacheData()         // const void* pInitialData;
-                };
-                objectReservationInfo.pipelineCacheCreateInfoCount = 1;
-                objectReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-            }
-            poolSizes = m_context->getResourceInterface()->getPipelinePoolSizes();
-            if (!poolSizes.empty())
-            {
-                objectReservationInfo.pipelinePoolSizeCount = static_cast<uint32_t>(poolSizes.size());
-                objectReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-            }
-        }
-
         objectReservationInfo.pNext = createInfo.pNext;
         createInfo.pNext            = &objectReservationInfo;
     }

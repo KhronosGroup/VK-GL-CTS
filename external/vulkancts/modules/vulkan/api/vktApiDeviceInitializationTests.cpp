@@ -1222,11 +1222,10 @@ tcu::TestStatus createDeviceFeatures2Test(Context &context)
 
     void *pNext = &enabledFeatures;
 #ifdef CTS_USES_VULKANSC
-    VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
-                                                                 context.getResourceInterface()->getStatMax() :
-                                                                 resetDeviceObjectReservationCreateInfo();
-    memReservationInfo.pNext                               = pNext;
-    pNext                                                  = &memReservationInfo;
+    VkDeviceObjectReservationCreateInfo memReservationInfo =
+        context.getResourceInterface()->getDefaultDeviceObjectReservationCreateInfo();
+    memReservationInfo.pNext = pNext;
+    pNext                    = &memReservationInfo;
 
     VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
     sc10Features.pNext                              = pNext;
