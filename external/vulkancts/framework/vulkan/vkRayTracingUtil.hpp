@@ -2074,7 +2074,6 @@ std::vector<T> rayQueryRayTracingTestSetup(const vk::DeviceInterface &vkd, const
     {
         hitGroup  = 1;
         missGroup = 2;
-        rt_pipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR, shaderModules[1].get()->get(), hitGroup);
         rt_pipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, shaderModules[2].get()->get(), hitGroup);
         rt_pipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, shaderModules[3].get()->get(), missGroup);
     }
@@ -2082,7 +2081,6 @@ std::vector<T> rayQueryRayTracingTestSetup(const vk::DeviceInterface &vkd, const
     {
         hitGroup  = 1;
         missGroup = 2;
-        rt_pipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR, shaderModules[1].get()->get(), hitGroup);
         rt_pipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, shaderModules[2].get()->get(), hitGroup);
         rt_pipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, shaderModules[3].get()->get(), missGroup);
     }
