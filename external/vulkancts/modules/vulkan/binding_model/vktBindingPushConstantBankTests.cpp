@@ -388,6 +388,7 @@ PushConstantBankTestInstance::PushConstantBankTestInstance(Context &context, con
     std::vector<const char *> deviceExtensions;
     deviceExtensions.push_back(VK_NV_PUSH_CONSTANT_BANK_EXTENSION_NAME);
     deviceExtensions.push_back(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+    deviceExtensions.push_back(VK_KHR_MAINTENANCE_6_EXTENSION_NAME);
 
     if (useDescriptorHeap)
     {
@@ -1139,6 +1140,7 @@ public:
     void checkSupport(Context &context) const override
     {
         context.requireDeviceFunctionality(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+        context.requireDeviceFunctionality(VK_KHR_MAINTENANCE_6_EXTENSION_NAME);
         context.requireDeviceFunctionality(VK_NV_PUSH_CONSTANT_BANK_EXTENSION_NAME);
 
         // Check feature support
