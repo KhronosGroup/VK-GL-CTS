@@ -2805,6 +2805,112 @@ tcu::TestStatus FillBufferBeforeCopyTestInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+class TimestampPipelineStageTestInstance : public vkt::TestInstance
+{
+public:
+    TimestampPipelineStageTestInstance(Context &context, VkPipelineStageFlagBits stage)
+        : vkt::TestInstance(context)
+        , m_stage(stage)
+    {
+    }
+    virtual ~TimestampPipelineStageTestInstance(void) = default;
+    virtual tcu::TestStatus iterate(void);
+
+protected:
+    VkPipelineStageFlagBits m_stage;
+};
+
+tcu::TestStatus TimestampPipelineStageTestInstance::iterate(void)
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice vkDevice         = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const uint64_t timestampMask =
+        getTimestampMask(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), queueFamilyIndex);
+    uint64_t timestampValues[2u];
+
+    const VkQueryPoolCreateInfo queryPoolParams{
+        VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType               sType;
+        nullptr,                                  // const void*                   pNext;
+        0u,                                       // VkQueryPoolCreateFlags        flags;
+        VK_QUERY_TYPE_TIMESTAMP,                  // VkQueryType                   queryType;
+        2u,                                       // uint32_t                      entryCount;
+        0u,                                       // VkQueryPipelineStatisticFlags pipelineStatistics;
+    };
+
+    Move<VkQueryPool> queryPool = createQueryPool(vk, vkDevice, &queryPoolParams);
+    Move<VkCommandPool> cmdPool =
+        createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+    Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    beginCommandBuffer(vk, *cmdBuffer, 0u);
+    vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 2u);
+    vk.cmdWriteTimestamp(*cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, *queryPool, 0u);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0u, 0u,
+                          nullptr, 0u, nullptr, 0u, nullptr);
+    vk.cmdWriteTimestamp(*cmdBuffer, m_stage, *queryPool, 1u);
+    endCommandBuffer(vk, *cmdBuffer);
+
+    submitCommandsAndWait(vk, vkDevice, queue, cmdBuffer.get());
+    VK_CHECK(vk.getQueryPoolResults(vkDevice, *queryPool, 0u, 2u, sizeof(timestampValues), timestampValues,
+                                    sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+
+    for (uint32_t queryNdx = 0u; queryNdx < DE_LENGTH_OF_ARRAY(timestampValues); ++queryNdx)
+        timestampValues[queryNdx] &= timestampMask;
+
+    if (timestampValues[0u] > timestampValues[1u])
+    {
+        std::ostringstream msg;
+        msg << "Test stage timestamp (" << timestampValues[1u] << ") is smaller than the preceding guard timestamp ("
+            << timestampValues[0u] << ")";
+        return tcu::TestStatus::fail(msg.str());
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class TimestampPipelineStageTest : public vkt::TestCase
+{
+public:
+    TimestampPipelineStageTest(tcu::TestContext &testContext, const std::string &name, VkPipelineStageFlagBits stage)
+        : vkt::TestCase(testContext, name)
+        , m_stage(stage)
+    {
+    }
+    virtual ~TimestampPipelineStageTest(void) = default;
+    virtual void checkSupport(Context &context) const;
+    virtual TestInstance *createInstance(Context &context) const
+    {
+        return new TimestampPipelineStageTestInstance(context, m_stage);
+    }
+
+protected:
+    VkPipelineStageFlagBits m_stage;
+};
+
+void TimestampPipelineStageTest::checkSupport(Context &context) const
+{
+    checkTimestampValidBitsSupport(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                   context.getUniversalQueueFamilyIndex());
+
+    const VkPhysicalDeviceFeatures &features = context.getDeviceFeatures();
+    switch (m_stage)
+    {
+    case VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT:
+    case VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT:
+        if (!features.tessellationShader)
+            TCU_THROW(NotSupportedError, "Tessellation not supported");
+        break;
+    case VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT:
+        if (!features.geometryShader)
+            TCU_THROW(NotSupportedError, "Geometry shader not supported");
+        break;
+    default:
+        break;
+    }
+}
+
 class ResetTimestampQueryBeforeCopyTest : public vkt::TestCase
 {
 public:
@@ -4419,6 +4525,32 @@ tcu::TestCaseGroup *createTimestampTests(tcu::TestContext &testCtx, PipelineCons
                 new CheckTimestampComputeAndGraphicsTest(testCtx, "check_timestamp_compute_and_graphics"));
             miscTests->addChild(new SequentialTimestampTest(testCtx, "sequential_timestamps"));
         }
+
+        const VkPipelineStageFlagBits pipelineStages[] = {
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+            VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+            VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+            VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,
+            VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT,
+            VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+            VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_HOST_BIT,
+            VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        };
+        for (uint32_t stageNdx = 0u; stageNdx < DE_LENGTH_OF_ARRAY(pipelineStages); ++stageNdx)
+        {
+            const VkPipelineStageFlagBits stage = pipelineStages[stageNdx];
+            miscTests->addChild(new TimestampPipelineStageTest(
+                testCtx, "timestamp_stage_" + getPipelineStageFlagStr(stage, false), stage));
+        }
+
         timestampTests->addChild(miscTests.release());
     }
 
