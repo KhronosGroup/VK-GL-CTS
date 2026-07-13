@@ -22,22 +22,12 @@
 * \brief Test for Image Compression control
 */ /*--------------------------------------------------------------------*/
 
-#include <iostream>
-#include <typeinfo>
-
-#include "tcuCommandLine.hpp"
 #include "tcuDefs.hpp"
-#include "tcuFunctionLibrary.hpp"
-#include "tcuPlatform.hpp"
 #include "tcuResultCollector.hpp"
 #include "tcuTestCase.hpp"
 #include "tcuTestLog.hpp"
 
-#include "vkApiVersion.hpp"
 #include "vkDefs.hpp"
-#include "vkPlatform.hpp"
-
-#include "vktApiVersionCheck.hpp"
 #include "vktCustomInstancesDevices.hpp"
 #include "vktExternalMemoryUtil.hpp"
 #include "vktTestCase.hpp"
@@ -45,16 +35,12 @@
 #include "vktTestGroupUtil.hpp"
 #include "wsi/vktNativeObjectsUtil.hpp"
 
-#include "vkDeviceUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
-#include "vkRefUtil.hpp"
 #include "vkWsiUtil.hpp"
 
-#include "deString.h"
 #include "deStringUtil.hpp"
 
-#include <map>
 #include <vector>
 
 using namespace vk;
@@ -216,41 +202,16 @@ static void validate(const InstanceInterface &vki, const DeviceInterface &vkd, t
     }
 }
 
-static void checkAhbImageCreateTestSupport(Context &context, TestParams testParams)
+static void checkAhbImageSupport(const Context &context, const TestParams testParams, uint64_t ahbUsage)
 {
-    context.requireDeviceFunctionality("VK_ANDROID_external_memory_android_hardware_buffer");
-    context.requireDeviceFunctionality("VK_EXT_image_compression_control");
-
-    using namespace vkt::ExternalMemoryUtil;
-
-    const uint32_t width               = 32;
-    const uint32_t height              = 32;
-    const VkImageUsageFlagBits vkUsage = VK_IMAGE_USAGE_SAMPLED_BIT;
-
-    // Check android hardware buffer can be allocated for the format with usage.
-    AndroidHardwareBufferExternalApi *ahbApi = AndroidHardwareBufferExternalApi::getInstance();
-    if (!ahbApi)
-    {
-        TCU_THROW(NotSupportedError, "Platform doesn't support Android Hardware Buffer handles");
-    }
-    uint64_t ahbUsage = ahbApi->vkUsageToAhbUsage(vkUsage);
-    {
-        pt::AndroidHardwareBufferPtr ahb =
-            ahbApi->allocate(width, height, 1, ahbApi->vkFormatToAhbFormat(testParams.format), ahbUsage);
-        if (ahb.internal == nullptr)
-        {
-            TCU_THROW(NotSupportedError, "Android hardware buffer format not supported");
-        }
-    }
-
-    // Check external memory supported.
-    const VkPhysicalDeviceExternalImageFormatInfoKHR external_image_format_info = {
+    // Check external memory supported
+    const VkPhysicalDeviceExternalImageFormatInfoKHR externalImageFormatInfo{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, &testParams.control,
         VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID};
 
-    const VkPhysicalDeviceImageFormatInfo2 info = {
+    const VkPhysicalDeviceImageFormatInfo2 info{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
-        &external_image_format_info,
+        &externalImageFormatInfo,
         testParams.format,
         VK_IMAGE_TYPE_2D,
         VK_IMAGE_TILING_OPTIMAL,
@@ -258,20 +219,13 @@ static void checkAhbImageCreateTestSupport(Context &context, TestParams testPara
         0,
     };
 
-    VkImageCompressionPropertiesEXT compressionPropertiesSupported = {
-        VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT, nullptr, 0, 0};
+    VkImageCompressionPropertiesEXT compressionPropertiesSupported = initVulkanStructure();
+    VkAndroidHardwareBufferUsageANDROID ahbUsageProperties = initVulkanStructure(&compressionPropertiesSupported);
+    VkExternalImageFormatProperties externalProperties     = initVulkanStructure(&ahbUsageProperties);
+    VkImageFormatProperties2 properties                    = initVulkanStructure(&externalProperties);
 
-    VkAndroidHardwareBufferUsageANDROID ahbUsageProperties = {VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_USAGE_ANDROID,
-                                                              &compressionPropertiesSupported, 0u};
-
-    VkExternalImageFormatProperties externalProperties = {
-        VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES, &ahbUsageProperties, {0u, 0u, 0u}};
-
-    VkImageFormatProperties2 properties = {
-        VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2, &externalProperties, {{0u, 0u, 0u}, 0u, 0u, 0u, 0u}};
-
-    VkResult result = context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(
-        context.getPhysicalDevice(), &info, &properties);
+    const auto &vki = context.getInstanceInterface();
+    VkResult result = vki.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &info, &properties);
 
     if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
         TCU_THROW(NotSupportedError, "Format not supported");
@@ -291,8 +245,50 @@ static void checkAhbImageCreateTestSupport(Context &context, TestParams testPara
     }
 
     if ((ahbUsageProperties.androidHardwareBufferUsage & ahbUsage) != ahbUsage)
-    {
         TCU_THROW(NotSupportedError, "Android hardware buffer usage is not supported");
+}
+
+static void checkAhbImageCreateTestSupport(Context &context, TestParams testParams)
+{
+    using namespace vkt::ExternalMemoryUtil;
+
+    context.requireDeviceFunctionality("VK_ANDROID_external_memory_android_hardware_buffer");
+    context.requireDeviceFunctionality("VK_EXT_image_compression_control");
+
+    const uint32_t width               = 32;
+    const uint32_t height              = 32;
+    const VkImageUsageFlagBits vkUsage = VK_IMAGE_USAGE_SAMPLED_BIT;
+
+    // Check android hardware buffer can be allocated for the format with usage.
+    AndroidHardwareBufferExternalApi *ahbApi = AndroidHardwareBufferExternalApi::getInstance();
+    if (!ahbApi)
+        TCU_THROW(NotSupportedError, "Platform doesn't support Android Hardware Buffer handles");
+
+    uint64_t ahbUsage = ahbApi->vkUsageToAhbUsage(vkUsage);
+    {
+        auto ahb = ahbApi->allocate(width, height, 1, ahbApi->vkFormatToAhbFormat(testParams.format), ahbUsage);
+        if (ahb.internal == nullptr)
+            TCU_THROW(NotSupportedError, "Android hardware buffer format not supported");
+    }
+
+    VkImageCompressionFixedRateFlagsEXT planeFlags[3]{};
+    const bool isFixedRateEx = testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT;
+    const uint32_t numPlanes = isYCbCrFormat(testParams.format) ? getPlaneCount(testParams.format) : 1;
+
+    testParams.control.compressionControlPlaneCount = 0;
+    if (isFixedRateEx)
+    {
+        testParams.control.compressionControlPlaneCount = numPlanes;
+        testParams.control.pFixedRateFlags              = planeFlags;
+    }
+
+    for (unsigned i = 0; i < (isFixedRateEx ? 24u : 1u); i++)
+    {
+        planeFlags[0] ^= 3 << i;
+        planeFlags[1] ^= 5 << i;
+        planeFlags[2] ^= 7 << i;
+
+        checkAhbImageSupport(context, testParams, ahbUsage);
     }
 }
 
