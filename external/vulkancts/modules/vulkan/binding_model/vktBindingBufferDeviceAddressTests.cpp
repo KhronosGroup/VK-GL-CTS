@@ -2314,7 +2314,7 @@ tcu::TestStatus BufferDeviceAddressMiscTestInstance::iterate(void)
     Move<VkCommandPool> cmdPool     = createCommandPool(vk, device, 0, m_context.getUniversalQueueFamilyIndex());
     Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-    const uint32_t bufferSize = 16u;
+    const uint32_t bufferSize = sizeof(uint32_t) * 17u;
     BufferWithMemory buffer(
         vk, device, allocator,
         makeBufferCreateInfo(nullptr, bufferSize,
@@ -2324,9 +2324,11 @@ tcu::TestStatus BufferDeviceAddressMiscTestInstance::iterate(void)
     const vk::VkDescriptorType descriptorType = (m_testType == MiscTestType::COPY_STRUCT) ?
                                                     vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER :
                                                     vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+    const uint32_t storageBufferSize = 16u;
     BufferWithMemory storageBuffer(
         vk, device, allocator,
-        makeBufferCreateInfo(nullptr, bufferSize,
+        makeBufferCreateInfo(nullptr, storageBufferSize,
                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 0u),
         MemoryRequirement::HostVisible);
 
@@ -2339,7 +2341,7 @@ tcu::TestStatus BufferDeviceAddressMiscTestInstance::iterate(void)
     VkDeviceAddress address = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
 
     uint8_t *storageBufferPtr = reinterpret_cast<uint8_t *>(storageBuffer.getAllocation().getHostPtr());
-    deMemset(storageBufferPtr, 0, bufferSize);
+    deMemset(storageBufferPtr, 0, static_cast<size_t>(storageBufferSize));
     deMemcpy(storageBufferPtr + sizeof(uint32_t) * 2, &address, sizeof(VkDeviceAddress));
 
     uint32_t offset = 0;
@@ -2357,6 +2359,7 @@ tcu::TestStatus BufferDeviceAddressMiscTestInstance::iterate(void)
         uint32_t *a = reinterpret_cast<uint32_t *>(buffer.getAllocation().getHostPtr());
         a[1]        = 17;
         a[15]       = 37;
+        flushAlloc(vk, device, buffer.getAllocation());
     }
 
     const Unique<VkShaderModule> shaderModule(
