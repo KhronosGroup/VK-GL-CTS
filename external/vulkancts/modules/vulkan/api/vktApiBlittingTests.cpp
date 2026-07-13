@@ -247,6 +247,86 @@ VkImageBlit make3Dto2DArrayBlit(VkExtent3D srcBaseSize, VkExtent3D dstBaseSize, 
     return blit;
 }
 
+// Helper to create a blit from a 2D array to a 3D image.
+VkImageBlit make2DArrayTo3DBlit(VkExtent3D srcBaseSize, VkExtent3D dstBaseSize, uint32_t srcBaseSlice,
+                                uint32_t dstBaseSlice)
+{
+    const VkImageBlit blit = {
+        makeDefaultSRL(srcBaseSlice, 1), // src subresource layers.
+        {
+            // src offsets.
+            {0, 0, 0},
+            {static_cast<int32_t>(srcBaseSize.width), static_cast<int32_t>(srcBaseSize.height), 1},
+        },
+        makeDefaultSRL(), // dst subresource layers
+        {
+            // dst offsets.
+            {0, 0, static_cast<int32_t>(dstBaseSlice)},
+            {static_cast<int32_t>(dstBaseSize.width), static_cast<int32_t>(dstBaseSize.height),
+             static_cast<int32_t>(dstBaseSlice + 1)},
+        },
+    };
+
+    return blit;
+}
+
+VkImageBlit makeReverseBlit3D2D(
+    VkExtent3D srcBaseSize, // Size of the src image, including amount of slices.
+    VkExtent3D dstBaseSize, // Size of the dst image, including amount of slices.
+    uint32_t srcBaseSlice,  // Slice we want to blit from src to dst.
+    uint32_t dstBaseSlice,  // Dst slice.
+    bool srcIs3D,           // If true, from 3D to 2D array. If false, from 2D array to 3D.
+    bool srcLarger,         // Src and dst regions will be different in size. Which one will be larger?
+    bool invertSrcX,        // Invert coordinates in the X axis for src?
+    bool invertDstX,        // Invert coordinates in the X axis for dst?
+    bool invertSrcY,        // Invert coordinates in the Y axis for src?
+    bool invertDstY,        // Invert coordinates in the Y axis for dst?
+    bool invertZ)           // Invert coordinates in Z for the 3D image?
+{
+    VkImageBlit blit;
+
+    blit.srcSubresource = (srcIs3D ? makeDefaultSRL() : makeDefaultSRL(srcBaseSlice));
+    blit.dstSubresource = (!srcIs3D ? makeDefaultSRL() : makeDefaultSRL(dstBaseSlice));
+
+    blit.srcOffsets[0].x = (srcBaseSize.width / 8u);
+    blit.srcOffsets[0].y = (srcBaseSize.height / 4u);
+    blit.srcOffsets[0].z = (srcIs3D ? srcBaseSlice : 0u);
+
+    blit.srcOffsets[1].x = blit.srcOffsets[0].x + srcBaseSize.width / (srcLarger ? 2u : 4u);
+    blit.srcOffsets[1].y = blit.srcOffsets[0].y + srcBaseSize.height / (srcLarger ? 4u : 8u);
+    blit.srcOffsets[1].z = blit.srcOffsets[0].z + 1u;
+
+    blit.dstOffsets[0].x = (dstBaseSize.width / 16u);
+    blit.dstOffsets[0].y = (dstBaseSize.height / 8u);
+    blit.dstOffsets[0].z = (!srcIs3D ? dstBaseSlice : 0u);
+
+    blit.dstOffsets[1].x = blit.dstOffsets[0].x + dstBaseSize.width / (!srcLarger ? 4u : 8u);
+    blit.dstOffsets[1].y = blit.dstOffsets[0].y + dstBaseSize.height / (!srcLarger ? 2u : 4u);
+    blit.dstOffsets[1].z = blit.dstOffsets[0].z + 1u;
+
+    if (invertSrcX)
+        std::swap(blit.srcOffsets[0].x, blit.srcOffsets[1].x);
+
+    if (invertDstX)
+        std::swap(blit.dstOffsets[0].x, blit.dstOffsets[1].x);
+
+    if (invertSrcY)
+        std::swap(blit.srcOffsets[0].y, blit.srcOffsets[1].y);
+
+    if (invertDstY)
+        std::swap(blit.dstOffsets[0].y, blit.dstOffsets[1].y);
+
+    if (invertZ)
+    {
+        if (srcIs3D)
+            std::swap(blit.srcOffsets[0].z, blit.srcOffsets[1].z);
+        else
+            std::swap(blit.dstOffsets[0].z, blit.dstOffsets[1].z);
+    }
+
+    return blit;
+}
+
 BlittingImages::BlittingImages(Context &context, TestParams params)
     : CopiesAndBlittingTestInstanceWithSparseSemaphore(context, params)
 {
@@ -999,20 +1079,29 @@ void BlittingImages::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, t
 
     flipCoordinates(region, mirrorMode);
 
-    const VkOffset3D srcOffset = region.imageBlit.srcOffsets[0];
-    const VkOffset3D srcExtent = {
+    VkOffset3D srcOffset = region.imageBlit.srcOffsets[0];
+    VkOffset3D srcExtent = {
         region.imageBlit.srcOffsets[1].x - srcOffset.x,
         region.imageBlit.srcOffsets[1].y - srcOffset.y,
         region.imageBlit.srcOffsets[1].z - srcOffset.z,
     };
 
     VkOffset3D dstOffset = region.imageBlit.dstOffsets[0];
-
     VkOffset3D dstExtent = {
         region.imageBlit.dstOffsets[1].x - dstOffset.x,
         region.imageBlit.dstOffsets[1].y - dstOffset.y,
         region.imageBlit.dstOffsets[1].z - dstOffset.z,
     };
+
+    if (m_params.src.image.imageType == VK_IMAGE_TYPE_2D)
+    {
+        // Without taking layers into account.
+        DE_ASSERT(srcOffset.z == 0u && srcExtent.z == 1);
+
+        // Modify offset and extent taking layers into account. This is used for the 2D_ARRAY-to-3D case.
+        srcOffset.z += region.imageBlit.srcSubresource.baseArrayLayer;
+        srcExtent.z = region.imageBlit.srcSubresource.layerCount;
+    }
 
     if (m_params.dst.image.imageType == VK_IMAGE_TYPE_2D)
     {
@@ -1022,6 +1111,49 @@ void BlittingImages::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, t
         // Modify offset and extent taking layers into account. This is used for the 3D-to-2D_ARRAY case.
         dstOffset.z += region.imageBlit.dstSubresource.baseArrayLayer;
         dstExtent.z = region.imageBlit.dstSubresource.layerCount;
+    }
+
+    // The logic in flipCoordinates is not detailed enough for the use case we have here. The extent will be used
+    // to obtain subregions of the pixel buffer accesses below, so it needs to be positive.
+    VkOffset3D srcRegionOffset = srcOffset;
+    VkOffset3D srcRegionExtent = srcExtent;
+    VkOffset3D dstRegionOffset = dstOffset;
+    VkOffset3D dstRegionExtent = dstExtent;
+
+    if (srcRegionExtent.x < 0)
+    {
+        srcRegionExtent.x = -srcRegionExtent.x;
+        srcRegionOffset.x = region.imageBlit.srcOffsets[1].x;
+    }
+
+    if (srcRegionExtent.y < 0)
+    {
+        srcRegionExtent.y = -srcRegionExtent.y;
+        srcRegionOffset.y = region.imageBlit.srcOffsets[1].y;
+    }
+
+    if (srcRegionExtent.z < 0)
+    {
+        srcRegionExtent.z = -srcRegionExtent.z;
+        srcRegionOffset.z = region.imageBlit.srcOffsets[1].z;
+    }
+
+    if (dstRegionExtent.x < 0)
+    {
+        dstRegionExtent.x = -dstRegionExtent.x;
+        dstRegionOffset.x = region.imageBlit.dstOffsets[1].x;
+    }
+
+    if (dstRegionExtent.y < 0)
+    {
+        dstRegionExtent.y = -dstRegionExtent.y;
+        dstRegionOffset.y = region.imageBlit.dstOffsets[1].y;
+    }
+
+    if (dstRegionExtent.z < 0)
+    {
+        dstRegionExtent.z = -dstRegionExtent.z;
+        dstRegionOffset.z = region.imageBlit.dstOffsets[1].z;
     }
 
     tcu::Sampler::FilterMode filter;
@@ -1047,10 +1179,12 @@ void BlittingImages::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, t
         if (tcu::hasDepthComponent(src.getFormat().order))
         {
             const tcu::ConstPixelBufferAccess srcSubRegion = getEffectiveDepthStencilAccess(
-                tcu::getSubregion(src, srcOffset.x, srcOffset.y, srcOffset.z, srcExtent.x, srcExtent.y, srcExtent.z),
+                tcu::getSubregion(src, srcRegionOffset.x, srcRegionOffset.y, srcRegionOffset.z, srcRegionExtent.x,
+                                  srcRegionExtent.y, srcRegionExtent.z),
                 tcu::Sampler::MODE_DEPTH);
             const tcu::PixelBufferAccess dstSubRegion = getEffectiveDepthStencilAccess(
-                tcu::getSubregion(dst, dstOffset.x, dstOffset.y, dstOffset.z, dstExtent.x, dstExtent.y, dstExtent.z),
+                tcu::getSubregion(dst, dstRegionOffset.x, dstRegionOffset.y, dstRegionOffset.z, dstRegionExtent.x,
+                                  dstRegionExtent.y, dstRegionExtent.z),
                 tcu::Sampler::MODE_DEPTH);
             tcu::scale(dstSubRegion, srcSubRegion, filter);
 
@@ -1059,8 +1193,9 @@ void BlittingImages::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, t
                 const tcu::ConstPixelBufferAccess depthSrc =
                     getEffectiveDepthStencilAccess(src, tcu::Sampler::MODE_DEPTH);
                 const tcu::PixelBufferAccess unclampedSubRegion = getEffectiveDepthStencilAccess(
-                    tcu::getSubregion(m_unclampedExpectedTextureLevel->getAccess(), dstOffset.x, dstOffset.y,
-                                      dstOffset.z, dstExtent.x, dstExtent.y, dstExtent.z),
+                    tcu::getSubregion(m_unclampedExpectedTextureLevel->getAccess(), dstRegionOffset.x,
+                                      dstRegionOffset.y, dstRegionOffset.z, dstRegionExtent.x, dstRegionExtent.y,
+                                      dstRegionExtent.z),
                     tcu::Sampler::MODE_DEPTH);
                 scaleFromWholeSrcBuffer(unclampedSubRegion, depthSrc, srcOffset, srcExtent, filter, mirrorMode);
             }
@@ -1070,10 +1205,12 @@ void BlittingImages::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, t
         if (tcu::hasStencilComponent(src.getFormat().order))
         {
             const tcu::ConstPixelBufferAccess srcSubRegion = getEffectiveDepthStencilAccess(
-                tcu::getSubregion(src, srcOffset.x, srcOffset.y, srcOffset.z, srcExtent.x, srcExtent.y, srcExtent.z),
+                tcu::getSubregion(src, srcRegionOffset.x, srcRegionOffset.y, srcRegionOffset.z, srcRegionExtent.x,
+                                  srcRegionExtent.y, srcRegionExtent.z),
                 tcu::Sampler::MODE_STENCIL);
             const tcu::PixelBufferAccess dstSubRegion = getEffectiveDepthStencilAccess(
-                tcu::getSubregion(dst, dstOffset.x, dstOffset.y, dstOffset.z, dstExtent.x, dstExtent.y, dstExtent.z),
+                tcu::getSubregion(dst, dstRegionOffset.x, dstRegionOffset.y, dstRegionOffset.z, dstRegionExtent.x,
+                                  dstRegionExtent.y, dstRegionExtent.z),
                 tcu::Sampler::MODE_STENCIL);
             blit(dstSubRegion, srcSubRegion, filter, mirrorMode);
 
@@ -1082,8 +1219,9 @@ void BlittingImages::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, t
                 const tcu::ConstPixelBufferAccess stencilSrc =
                     getEffectiveDepthStencilAccess(src, tcu::Sampler::MODE_STENCIL);
                 const tcu::PixelBufferAccess unclampedSubRegion = getEffectiveDepthStencilAccess(
-                    tcu::getSubregion(m_unclampedExpectedTextureLevel->getAccess(), dstOffset.x, dstOffset.y,
-                                      dstOffset.z, dstExtent.x, dstExtent.y, dstExtent.z),
+                    tcu::getSubregion(m_unclampedExpectedTextureLevel->getAccess(), dstRegionOffset.x,
+                                      dstRegionOffset.y, dstRegionOffset.z, dstRegionExtent.x, dstRegionExtent.y,
+                                      dstRegionExtent.z),
                     tcu::Sampler::MODE_STENCIL);
                 scaleFromWholeSrcBuffer(unclampedSubRegion, stencilSrc, srcOffset, srcExtent, filter, mirrorMode);
             }
@@ -1092,17 +1230,19 @@ void BlittingImages::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, t
     else
     {
         const tcu::ConstPixelBufferAccess srcSubRegion =
-            tcu::getSubregion(src, srcOffset.x, srcOffset.y, srcOffset.z, srcExtent.x, srcExtent.y, srcExtent.z);
+            tcu::getSubregion(src, srcRegionOffset.x, srcRegionOffset.y, srcRegionOffset.z, srcRegionExtent.x,
+                              srcRegionExtent.y, srcRegionExtent.z);
         const tcu::PixelBufferAccess dstSubRegion =
-            tcu::getSubregion(dst, dstOffset.x, dstOffset.y, dstOffset.z, dstExtent.x, dstExtent.y, dstExtent.z);
+            tcu::getSubregion(dst, dstRegionOffset.x, dstRegionOffset.y, dstRegionOffset.z, dstRegionExtent.x,
+                              dstRegionExtent.y, dstRegionExtent.z);
         blit(dstSubRegion, srcSubRegion, filter, mirrorMode);
 
         if (filter != tcu::Sampler::NEAREST)
         {
             const tcu::PixelBufferAccess unclampedSubRegion =
-                tcu::getSubregion(m_unclampedExpectedTextureLevel->getAccess(), dstOffset.x, dstOffset.y, dstOffset.z,
-                                  dstExtent.x, dstExtent.y, dstExtent.z);
-            scaleFromWholeSrcBuffer(unclampedSubRegion, src, srcOffset, srcExtent, filter, mirrorMode);
+                tcu::getSubregion(m_unclampedExpectedTextureLevel->getAccess(), dstRegionOffset.x, dstRegionOffset.y,
+                                  dstRegionOffset.z, dstRegionExtent.x, dstRegionExtent.y, dstRegionExtent.z);
+            scaleFromWholeSrcBuffer(unclampedSubRegion, src, srcRegionOffset, srcRegionExtent, filter, mirrorMode);
         }
     }
 }
@@ -1341,8 +1481,6 @@ public:
                 TCU_THROW(NotSupportedError, "Source format feature sampled image filter cubic not supported");
             }
         }
-
-        checkExtensionSupport(context, m_params.extensionFlags);
     }
 
 private:
@@ -2442,6 +2580,148 @@ void addBlittingImage3DTo2DArrayTests(tcu::TestCaseGroup *group, TestParamsPtr p
 
             group->addChild(new BlitImageTestCase(testCtx, "complex_blit_" + suffix, params));
         }
+
+        if (params.allocationKind != ALLOCATION_KIND_DEDICATED)
+        {
+            for (const auto srcLarger : {false, true})
+                for (const auto invertSrcX : {false, true})
+                    for (const auto invertDstX : {false, true})
+                        for (const auto invertSrcY : {false, true})
+                            for (const auto invertDstY : {false, true})
+                                for (const auto invertZ : {false, true})
+                                {
+                                    auto blit = makeReverseBlit3D2D(params.src.image.extent, params.dst.image.extent,
+                                                                    4u, 9u, true, srcLarger, invertSrcX, invertDstX,
+                                                                    invertSrcY, invertDstY, invertZ);
+
+                                    CopyRegion region;
+                                    region.imageBlit = blit;
+                                    params.regions.clear();
+                                    params.regions.push_back(region);
+
+                                    const auto testName =
+                                        std::string("reverse_blit") + (srcLarger ? "_srclarger" : "_dstlarger") +
+                                        (invertSrcX ? "_invert_src_x" : "") + (invertDstX ? "_invert_dst_x" : "") +
+                                        (invertSrcY ? "_invert_src_y" : "") + (invertDstY ? "_invert_dst_y" : "") +
+                                        (invertZ ? "_invert_z" : "") + "_" + suffix;
+
+                                    group->addChild(new BlitImageTestCase(testCtx, testName, params));
+                                }
+        }
+    }
+}
+
+void addBlittingImage2DArrayTo3DTests(tcu::TestCaseGroup *group, TestParamsPtr paramsPtr)
+{
+    tcu::TestContext &testCtx = group->getTestContext();
+    TestParams params         = *paramsPtr;
+
+    const uint32_t layerCount     = 16u;
+    params.dst.image.format       = VK_FORMAT_R8G8B8A8_UNORM;
+    params.src.image.extent       = defaultExtent;
+    params.dst.image.extent       = defaultExtent;
+    params.src.image.extent.depth = layerCount;
+    params.dst.image.extent.depth = layerCount;
+    params.extensionFlags |= MAINTENANCE_8;
+
+    for (const auto filter : {VK_FILTER_NEAREST, VK_FILTER_LINEAR})
+    {
+        params.filter            = filter;
+        const std::string suffix = getFilterSuffix(filter);
+
+        // Attempt to blit a single slice into a cube.
+        {
+            const auto cubeLayers             = 6u;
+            TestParams cubeParams             = params;
+            cubeParams.src.image.extent.depth = cubeLayers;
+            cubeParams.dst.image.extent.depth = cubeLayers;
+
+            const std::vector<VkImageBlit> blits{
+                make2DArrayTo3DBlit(cubeParams.src.image.extent, cubeParams.dst.image.extent, 3u, 1u),
+            };
+
+            cubeParams.regions.clear();
+            cubeParams.regions.reserve(blits.size());
+
+            for (const auto &blit : blits)
+            {
+                CopyRegion region;
+                region.imageBlit = blit;
+                cubeParams.regions.push_back(region);
+            }
+
+            group->addChild(new BlitImageTestCase(testCtx, "cube_slice_" + suffix, cubeParams));
+        }
+
+        // Attempt to blit one layer at a time, for multiple layers.
+        {
+            const std::vector<VkImageBlit> blits{
+                make2DArrayTo3DBlit(params.src.image.extent, params.dst.image.extent, 2u, 5u),
+                make2DArrayTo3DBlit(params.src.image.extent, params.dst.image.extent, 4u, 11u),
+                make2DArrayTo3DBlit(params.src.image.extent, params.dst.image.extent, 7u, 2u),
+                make2DArrayTo3DBlit(params.src.image.extent, params.dst.image.extent, 13u, 0u),
+            };
+
+            params.regions.clear();
+            params.regions.reserve(blits.size());
+
+            for (const auto &blit : blits)
+            {
+                CopyRegion region;
+                region.imageBlit = blit;
+                params.regions.push_back(region);
+            }
+
+            group->addChild(new BlitImageTestCase(testCtx, "single_slices_" + suffix, params));
+        }
+
+        // Blit a slice into a smaller slice of a cube image.
+        {
+            auto blit = make2DArrayTo3DBlit(params.src.image.extent, params.dst.image.extent, 3u, 7u);
+
+            blit.dstOffsets[0].x = defaultSize / 4;
+            blit.dstOffsets[0].y = defaultSize / 2;
+
+            blit.dstOffsets[1].x = defaultSize / 4 + defaultSize / 2;
+            blit.dstOffsets[1].y = defaultSize;
+
+            {
+                CopyRegion region;
+                region.imageBlit = blit;
+                params.regions.clear();
+                params.regions.push_back(region);
+            }
+
+            group->addChild(new BlitImageTestCase(testCtx, "complex_blit_" + suffix, params));
+        }
+
+        if (params.allocationKind != ALLOCATION_KIND_DEDICATED)
+        {
+            for (const auto srcLarger : {false, true})
+                for (const auto invertSrcX : {false, true})
+                    for (const auto invertDstX : {false, true})
+                        for (const auto invertSrcY : {false, true})
+                            for (const auto invertDstY : {false, true})
+                                for (const auto invertZ : {false, true})
+                                {
+                                    auto blit = makeReverseBlit3D2D(params.src.image.extent, params.dst.image.extent,
+                                                                    4u, 9u, false, srcLarger, invertSrcX, invertDstX,
+                                                                    invertSrcY, invertDstY, invertZ);
+
+                                    CopyRegion region;
+                                    region.imageBlit = blit;
+                                    params.regions.clear();
+                                    params.regions.push_back(region);
+
+                                    const auto testName =
+                                        std::string("reverse_blit") + (srcLarger ? "_srclarger" : "_dstlarger") +
+                                        (invertSrcX ? "_invert_src_x" : "") + (invertDstX ? "_invert_dst_x" : "") +
+                                        (invertSrcY ? "_invert_src_y" : "") + (invertDstY ? "_invert_dst_y" : "") +
+                                        (invertZ ? "_invert_z" : "") + "_" + suffix;
+
+                                    group->addChild(new BlitImageTestCase(testCtx, testName, params));
+                                }
+        }
     }
 }
 
@@ -2791,6 +3071,11 @@ void addBlittingImageSimpleTests(tcu::TestCaseGroup *group, AllocationKind alloc
     params.dst.image.imageType = VK_IMAGE_TYPE_2D;
     TestParamsPtr params3D2D(new TestParams(params));
     addTestGroup(group, "3d_to_2d_array", addBlittingImage3DTo2DArrayTests, params3D2D);
+
+    params.src.image.imageType = VK_IMAGE_TYPE_2D;
+    params.dst.image.imageType = VK_IMAGE_TYPE_3D;
+    TestParamsPtr params2D3D(new TestParams(params));
+    addTestGroup(group, "2d_array_to_3d", addBlittingImage2DArrayTo3DTests, params2D3D);
 }
 
 enum FilterMaskBits
