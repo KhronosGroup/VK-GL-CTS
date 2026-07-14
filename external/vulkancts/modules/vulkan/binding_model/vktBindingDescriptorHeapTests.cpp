@@ -155,9 +155,19 @@ struct TestParamsBasic : TestParams
     int32_t overrideSamplerStride     = -1;
 };
 
+enum class LastLinked
+{
+    NONE,
+    VERTEX_INPUT,
+    PRE_RASTERIZATION,
+    FRAGMENT_SHADER,
+    FRAGMENT_OUTPUT,
+};
+
 struct TestParamsGPL : TestParams
 {
     bool unbindFragShader = false;
+    LastLinked lastLinked = LastLinked::NONE;
 };
 
 struct TestParamsWithDescriptorType : TestParams
@@ -2209,6 +2219,10 @@ tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
     const VkRect2D scissor       = makeRect2D(0, 0, renderingSize, renderingSize);
 
     Move<VkPipeline> vertexPipeline;
+    Move<VkPipeline> preRasterPipeline;
+    Move<VkPipeline> fragmentShaderPipeline;
+    Move<VkPipeline> fragmentOutputPipeline;
+    Move<VkPipeline> linkedPipelineLibrary;
     Move<VkPipeline> fragmentPipeline;
     Move<VkPipeline> pipeline;
     Move<VkFramebuffer> framebuffer;
@@ -2316,16 +2330,6 @@ tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
         pipelineCreateFlags2CreateInfo.flags =
             VK_PIPELINE_CREATE_2_LIBRARY_BIT_KHR | VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
 
-        VkGraphicsPipelineLibraryCreateInfoEXT vertexGPLCreateInfo = initVulkanStructure();
-        vertexGPLCreateInfo.pNext                                  = &pipelineCreateFlags2CreateInfo;
-        vertexGPLCreateInfo.flags = VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT |
-                                    VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT;
-
-        VkGraphicsPipelineLibraryCreateInfoEXT fragmentGPLCreateInfo = initVulkanStructure();
-        fragmentGPLCreateInfo.pNext                                  = &pipelineCreateFlags2CreateInfo;
-        fragmentGPLCreateInfo.flags = VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT |
-                                      VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT;
-
         VkPipelineShaderStageCreateInfo vertexStage = initVulkanStructure();
         vertexStage.pNext                           = &vertexMappingInfo;
         vertexStage.stage                           = VK_SHADER_STAGE_VERTEX_BIT;
@@ -2338,33 +2342,143 @@ tcu::TestStatus DescriptorHeapTestInstanceGPL::iterate()
         fragmentStage.module                          = *fragmentModule;
         fragmentStage.pName                           = "main";
 
-        auto vertexPipelineCreateInfo       = basePipelineCreateInfo;
-        vertexPipelineCreateInfo.pNext      = &vertexGPLCreateInfo;
-        vertexPipelineCreateInfo.stageCount = 1;
-        vertexPipelineCreateInfo.pStages    = &vertexStage;
+        if (m_params.lastLinked != LastLinked::NONE)
+        {
+            VkGraphicsPipelineLibraryCreateInfoEXT vertexInputGPLCreateInfo =
+                initVulkanStructure(&pipelineCreateFlags2CreateInfo);
+            vertexInputGPLCreateInfo.flags = VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT;
 
-        auto fragmentPipelineCreateInfo       = basePipelineCreateInfo;
-        fragmentPipelineCreateInfo.pNext      = &fragmentGPLCreateInfo;
-        fragmentPipelineCreateInfo.stageCount = 1;
-        fragmentPipelineCreateInfo.pStages    = &fragmentStage;
+            VkGraphicsPipelineLibraryCreateInfoEXT preRasterGPLCreateInfo =
+                initVulkanStructure(&pipelineCreateFlags2CreateInfo);
+            preRasterGPLCreateInfo.flags = VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT;
 
-        vertexPipeline   = createGraphicsPipeline(vkd, *m_device, VK_NULL_HANDLE, &vertexPipelineCreateInfo);
-        fragmentPipeline = createGraphicsPipeline(vkd, *m_device, VK_NULL_HANDLE, &fragmentPipelineCreateInfo);
+            VkGraphicsPipelineLibraryCreateInfoEXT fragmentShaderGPLCreateInfo =
+                initVulkanStructure(&pipelineCreateFlags2CreateInfo);
+            fragmentShaderGPLCreateInfo.flags = VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT;
 
-        const std::array<VkPipeline, 2> gplPipelines = {
-            *vertexPipeline,
-            *fragmentPipeline,
-        };
+            VkGraphicsPipelineLibraryCreateInfoEXT fragmentOutputGPLCreateInfo =
+                initVulkanStructure(&pipelineCreateFlags2CreateInfo);
+            fragmentOutputGPLCreateInfo.flags = VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT;
 
-        pipelineCreateFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+            auto vertexInputPipelineCreateInfo  = basePipelineCreateInfo;
+            vertexInputPipelineCreateInfo.pNext = &vertexInputGPLCreateInfo;
 
-        VkPipelineLibraryCreateInfoKHR linkedPipelineLibraryInfo = initVulkanStructure(&pipelineCreateFlags2CreateInfo);
-        linkedPipelineLibraryInfo.libraryCount                   = de::sizeU32(gplPipelines);
-        linkedPipelineLibraryInfo.pLibraries                     = gplPipelines.data();
+            auto preRasterPipelineCreateInfo                = basePipelineCreateInfo;
+            preRasterPipelineCreateInfo.pNext               = &preRasterGPLCreateInfo;
+            preRasterPipelineCreateInfo.pVertexInputState   = nullptr;
+            preRasterPipelineCreateInfo.pInputAssemblyState = nullptr;
+            preRasterPipelineCreateInfo.stageCount          = 1u;
+            preRasterPipelineCreateInfo.pStages             = &vertexStage;
 
-        VkGraphicsPipelineCreateInfo linkedPipelineInfo = initVulkanStructure(&linkedPipelineLibraryInfo);
+            auto fragmentShaderPipelineCreateInfo       = basePipelineCreateInfo;
+            fragmentShaderPipelineCreateInfo.pNext      = &fragmentShaderGPLCreateInfo;
+            fragmentShaderPipelineCreateInfo.stageCount = 1u;
+            fragmentShaderPipelineCreateInfo.pStages    = &fragmentStage;
 
-        pipeline    = createGraphicsPipeline(vkd, *m_device, VK_NULL_HANDLE, &linkedPipelineInfo);
+            auto fragmentOutputPipelineCreateInfo  = basePipelineCreateInfo;
+            fragmentOutputPipelineCreateInfo.pNext = &fragmentOutputGPLCreateInfo;
+
+            vertexPipeline    = createGraphicsPipeline(vkd, *m_device, VK_NULL_HANDLE, &vertexInputPipelineCreateInfo);
+            preRasterPipeline = createGraphicsPipeline(vkd, *m_device, VK_NULL_HANDLE, &preRasterPipelineCreateInfo);
+            fragmentShaderPipeline =
+                createGraphicsPipeline(vkd, *m_device, VK_NULL_HANDLE, &fragmentShaderPipelineCreateInfo);
+            fragmentOutputPipeline =
+                createGraphicsPipeline(vkd, *m_device, VK_NULL_HANDLE, &fragmentOutputPipelineCreateInfo);
+
+            VkPipeline lastPipeline = VK_NULL_HANDLE;
+            std::vector<VkPipeline> partialGPLPipelines;
+
+            if (m_params.lastLinked == LastLinked::VERTEX_INPUT)
+                lastPipeline = *vertexPipeline;
+            else
+                partialGPLPipelines.push_back(*vertexPipeline);
+
+            if (m_params.lastLinked == LastLinked::PRE_RASTERIZATION)
+                lastPipeline = *preRasterPipeline;
+            else
+                partialGPLPipelines.push_back(*preRasterPipeline);
+
+            if (m_params.lastLinked == LastLinked::FRAGMENT_SHADER)
+                lastPipeline = *fragmentShaderPipeline;
+            else
+                partialGPLPipelines.push_back(*fragmentShaderPipeline);
+
+            if (m_params.lastLinked == LastLinked::FRAGMENT_OUTPUT)
+                lastPipeline = *fragmentOutputPipeline;
+            else
+                partialGPLPipelines.push_back(*fragmentOutputPipeline);
+
+            VkPipelineLibraryCreateInfoKHR partialLinkedPipelineLibraryInfo =
+                initVulkanStructure(&pipelineCreateFlags2CreateInfo);
+            partialLinkedPipelineLibraryInfo.libraryCount = 3u;
+            partialLinkedPipelineLibraryInfo.pLibraries   = partialGPLPipelines.data();
+
+            VkGraphicsPipelineCreateInfo partialLinkedPipelineInfo =
+                initVulkanStructure(&partialLinkedPipelineLibraryInfo);
+            partialLinkedPipelineInfo.flags      = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+            partialLinkedPipelineInfo.renderPass = *renderPass;
+            partialLinkedPipelineInfo.subpass    = 0u;
+
+            linkedPipelineLibrary = createGraphicsPipeline(vkd, *m_device, VK_NULL_HANDLE, &partialLinkedPipelineInfo);
+
+            VkPipeline gplPipelines[2] = {
+                lastPipeline,
+                *linkedPipelineLibrary,
+            };
+
+            VkPipelineCreateFlags2CreateInfoKHR pipelineLinkFlags2CreateInfo = initVulkanStructure();
+            pipelineLinkFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+            VkPipelineLibraryCreateInfoKHR linkedPipelineLibraryInfo =
+                initVulkanStructure(&pipelineLinkFlags2CreateInfo);
+            linkedPipelineLibraryInfo.libraryCount = 2u;
+            linkedPipelineLibraryInfo.pLibraries   = gplPipelines;
+
+            VkGraphicsPipelineCreateInfo linkedPipelineInfo = initVulkanStructure(&linkedPipelineLibraryInfo);
+
+            pipeline = createGraphicsPipeline(vkd, *m_device, VK_NULL_HANDLE, &linkedPipelineInfo);
+        }
+        else
+        {
+            VkGraphicsPipelineLibraryCreateInfoEXT vertexGPLCreateInfo = initVulkanStructure();
+            vertexGPLCreateInfo.pNext                                  = &pipelineCreateFlags2CreateInfo;
+            vertexGPLCreateInfo.flags = VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT |
+                                        VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT;
+
+            VkGraphicsPipelineLibraryCreateInfoEXT fragmentGPLCreateInfo = initVulkanStructure();
+            fragmentGPLCreateInfo.pNext                                  = &pipelineCreateFlags2CreateInfo;
+            fragmentGPLCreateInfo.flags = VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT |
+                                          VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT;
+
+            auto vertexPipelineCreateInfo       = basePipelineCreateInfo;
+            vertexPipelineCreateInfo.pNext      = &vertexGPLCreateInfo;
+            vertexPipelineCreateInfo.stageCount = 1;
+            vertexPipelineCreateInfo.pStages    = &vertexStage;
+
+            auto fragmentPipelineCreateInfo       = basePipelineCreateInfo;
+            fragmentPipelineCreateInfo.pNext      = &fragmentGPLCreateInfo;
+            fragmentPipelineCreateInfo.stageCount = 1;
+            fragmentPipelineCreateInfo.pStages    = &fragmentStage;
+
+            vertexPipeline   = createGraphicsPipeline(vkd, *m_device, VK_NULL_HANDLE, &vertexPipelineCreateInfo);
+            fragmentPipeline = createGraphicsPipeline(vkd, *m_device, VK_NULL_HANDLE, &fragmentPipelineCreateInfo);
+
+            const std::array<VkPipeline, 2> gplPipelines = {
+                *vertexPipeline,
+                *fragmentPipeline,
+            };
+
+            pipelineCreateFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+            VkPipelineLibraryCreateInfoKHR linkedPipelineLibraryInfo =
+                initVulkanStructure(&pipelineCreateFlags2CreateInfo);
+            linkedPipelineLibraryInfo.libraryCount = de::sizeU32(gplPipelines);
+            linkedPipelineLibraryInfo.pLibraries   = gplPipelines.data();
+
+            VkGraphicsPipelineCreateInfo linkedPipelineInfo = initVulkanStructure(&linkedPipelineLibraryInfo);
+
+            pipeline = createGraphicsPipeline(vkd, *m_device, VK_NULL_HANDLE, &linkedPipelineInfo);
+        }
         framebuffer = makeFramebuffer(vkd, *m_device, *renderPass, 0, nullptr, renderingSize, renderingSize);
     }
 
@@ -17049,6 +17163,23 @@ void populateGraphicsPipelineLibraryTests(tcu::TestCaseGroup *topGroup, uint32_t
     gplParams.enableFragmentStoresAndAtomics = true;
     gplParams.seed                           = baseSeed ^ deStringHash("graphics_pipeline_library");
     gplGroup->addChild(new DescriptorHeapTestCaseGPL(testCtx, "graphics_pipeline_library", gplParams));
+
+    const struct
+    {
+        const char *name;
+        LastLinked lastPart;
+    } lastLinkedTests[] = {
+        {"vertex_input", LastLinked::VERTEX_INPUT},
+        {"pre_rasterization", LastLinked::PRE_RASTERIZATION},
+        {"fragment_shader", LastLinked::FRAGMENT_SHADER},
+        {"fragment_output", LastLinked::FRAGMENT_OUTPUT},
+    };
+
+    for (const auto &lastLinkedTest : lastLinkedTests)
+    {
+        gplParams.lastLinked = lastLinkedTest.lastPart;
+        gplGroup->addChild(new DescriptorHeapTestCaseGPL(testCtx, lastLinkedTest.name, gplParams));
+    }
 
     // Shader object case
     TestParamsGPL shaderObjectParams{};
