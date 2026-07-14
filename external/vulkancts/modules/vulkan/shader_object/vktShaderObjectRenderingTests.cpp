@@ -89,6 +89,7 @@ struct TestParams
     bool writeGlFragDepth;
     bool randomColorFormats;
     bool outputArray;
+    bool pushUnusedData;
 };
 
 using TestParamsPtr = std::shared_ptr<TestParams>;
@@ -929,6 +930,20 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
     if (!m_params.bindShadersBeforeBeginRendering)
         vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
                                 *fragShader, taskSupported, meshSupported);
+
+    if (m_params.pushUnusedData)
+    {
+        uint8_t pushData[256];
+        memset(pushData, 255, sizeof(pushData));
+
+        vk::VkPushDataInfoEXT pushDataInfo = vk::initVulkanStructure();
+        pushDataInfo.offset                = 0u;
+        pushDataInfo.data.size             = sizeof(pushData);
+        pushDataInfo.data.address          = pushData;
+
+        vk.cmdPushDataEXT(*cmdBuffer, &pushDataInfo);
+    }
+
     vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
     vk::endRendering(vk, *cmdBuffer);
 
@@ -1105,6 +1120,9 @@ void ShaderObjectRenderingCase::checkSupport(Context &context) const
     {
         TCU_THROW(NotSupportedError, "colorWriteEnable not supported");
     }
+
+    if (m_params.pushUnusedData)
+        context.requireDeviceFunctionality("VK_EXT_descriptor_heap");
 }
 
 void ShaderObjectRenderingCase::initPrograms(vk::SourceCollections &programCollection) const
@@ -1279,6 +1297,7 @@ tcu::TestCaseGroup *createShaderObjectRenderingTests(tcu::TestContext &testCtx)
                                 params.writeGlFragDepth                = writeGlFragDepth;
                                 params.randomColorFormats              = useRandomColorFormats;
                                 params.outputArray                     = false;
+                                params.pushUnusedData                  = false;
                                 params.colorWriteEnable                = COLOR_WRITE_DONT_CARE;
 
                                 auto createTestCases = [](tcu::TestCaseGroup *group_, TestParamsPtr paramsPtr_)
@@ -1365,6 +1384,7 @@ tcu::TestCaseGroup *createShaderObjectRenderingTests(tcu::TestContext &testCtx)
             params.writeGlFragDepth                = false;
             params.randomColorFormats              = false;
             params.outputArray                     = true;
+            params.pushUnusedData                  = false;
             params.colorWriteEnable = colorWriteTest.colorWriteEnable ? COLOR_WRITE_REQUIRE : COLOR_WRITE_DISABLE;
 
             formatGroup->addChild(new ShaderObjectRenderingCase(testCtx, colorWriteTest.name, params));
@@ -1372,6 +1392,29 @@ tcu::TestCaseGroup *createShaderObjectRenderingTests(tcu::TestContext &testCtx)
         outputArrayGroup->addChild(formatGroup.release());
     }
     renderingGroup->addChild(outputArrayGroup.release());
+
+    de::MovePtr<tcu::TestCaseGroup> pushDataGroup(new tcu::TestCaseGroup(testCtx, "push_data"));
+    {
+        TestParams params;
+        params.colorAttachmentCount            = 1u;
+        params.extraAttachmentCount            = 0u;
+        params.extraAttachments                = NONE;
+        params.extraFragmentOutputCount        = 0u;
+        params.extraOutputs                    = NONE;
+        params.useDepthAttachment              = false;
+        params.colorFormat                     = vk::VK_FORMAT_R8G8B8A8_UNORM;
+        params.depthFormat                     = vk::VK_FORMAT_UNDEFINED;
+        params.bindShadersBeforeBeginRendering = false;
+        params.dummyRenderPass                 = DUMMY_NONE;
+        params.writeGlFragDepth                = false;
+        params.randomColorFormats              = false;
+        params.outputArray                     = false;
+        params.pushUnusedData                  = true;
+        params.colorWriteEnable                = COLOR_WRITE_DONT_CARE;
+
+        pushDataGroup->addChild(new ShaderObjectRenderingCase(testCtx, "unused", params));
+    }
+    renderingGroup->addChild(pushDataGroup.release());
 
     return renderingGroup.release();
 }
