@@ -434,6 +434,11 @@ bool deviceSupportsStorageTensorUpdateAfterBind(Context &context)
     return getTensorPhysicalDeviceFeatures(context).descriptorBindingStorageTensorUpdateAfterBind;
 }
 
+bool deviceSupportsShaderStorageTensorArrayDynamicIndexing(Context &context)
+{
+    return getTensorPhysicalDeviceFeatures(context).shaderStorageTensorArrayDynamicIndexing;
+}
+
 bool deviceSupportsShaderStagesTensorAccess(Context &context, const VkShaderStageFlags stages)
 {
     const VkPhysicalDeviceTensorPropertiesARM tensorProps = getTensorPhysicalDeviceProperties(context);

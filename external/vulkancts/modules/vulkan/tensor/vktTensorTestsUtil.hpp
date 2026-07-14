@@ -126,6 +126,8 @@ bool deviceSupportsNonPackedTensors(Context &context);
 bool deviceSupportsShaderTensorAccess(Context &context);
 bool deviceSupportsShaderStagesTensorAccess(Context &context, const VkShaderStageFlags stages);
 bool deviceSupportsStorageTensorUpdateAfterBind(Context &context);
+bool deviceSupportsShaderStorageTensorArrayDynamicIndexing(Context &context);
+bool deviceSupportsImageFormat(Context &context, VkFormat format, VkImageTiling tiling);
 
 uint32_t selectMemoryTypeFromTypeBits(Context &context, uint32_t memoryTypeBits);
 

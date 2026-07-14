@@ -11,6 +11,7 @@ set(DEQP_VK_TENSOR_SRCS
 	vktTensorTestsUtil.cpp
 	vktTensorArrayAccess.cpp
 	vktTensorCreateRequirements.cpp
+	vktTensorDescriptorsArray.cpp
 	vktTensorDimensionQuery.cpp
 	vktTensorCopies.cpp
 	vktTensorGraphicsPipeline.cpp
@@ -25,6 +26,7 @@ set(DEQP_VK_TENSOR_SRCS
 	shaders/vktTensorQueryDimensionsShaders.cpp
 	shaders/vktTensorAccessShaders.cpp
 	shaders/vktTensorArrayAccessShaders.cpp
+	shaders/vktTensorDescriptorsArrayShader.cpp
 	shaders/vktTensorShaderUtil.cpp
 	shaders/vktTensorBooleanShader.cpp
 	shaders/vktTensorRobustnessShaders.cpp

@@ -4,7 +4,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2025 ARM Ltd.
+ * Copyright (c) 2025-2026 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,9 @@ inline constexpr uint32_t dispatchWorkgroupCountLimit = 65535;
 // Tensor Read/Write
 std::string genShaderTensorAccess(size_t rank, VkFormat tensorFormat, AccessVariant variant);
 inline constexpr uint32_t shaderTensorAccessWorkgroupSize = 128;
+
+// Tensor Descriptors Array Write
+std::string genShaderTensorDescriptorsArrayAccess(size_t rank, VkFormat tensorFormat, const size_t descriptorCount);
 
 // Query Dimensions
 std::string genShaderQueryDimensions(size_t rank, VkFormat tensorFormat);
