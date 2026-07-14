@@ -88,8 +88,11 @@ enum TestType
     TEST_TYPE_MULTISAMPLE,
     TEST_TYPE_MULTISAMPLE_RESOLVE,
     TEST_TYPE_QUERIES,
+    TEST_TYPE_QUERIES_AND_TIMESTAMPS,
     TEST_TYPE_NON_PRECISE_QUERIES,
+    TEST_TYPE_NON_PRECISE_QUERIES_AND_TIMESTAMPS,
     TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY,
+    TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY_AND_TIMESTAMPS,
     TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR,
     TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR,
     TEST_TYPE_DEPTH,
@@ -103,8 +106,21 @@ enum TestType
 
 bool isQueryTestType(TestType testType)
 {
-    return (TEST_TYPE_QUERIES == testType || TEST_TYPE_NON_PRECISE_QUERIES == testType ||
-            TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY == testType);
+    return (TEST_TYPE_QUERIES == testType || TEST_TYPE_QUERIES_AND_TIMESTAMPS == testType ||
+            TEST_TYPE_NON_PRECISE_QUERIES == testType || TEST_TYPE_NON_PRECISE_QUERIES_AND_TIMESTAMPS == testType ||
+            TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY == testType ||
+            TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY_AND_TIMESTAMPS == testType);
+}
+
+bool usePreciseQueries(TestType testType)
+{
+    return (testType == TEST_TYPE_QUERIES || testType == TEST_TYPE_QUERIES_AND_TIMESTAMPS);
+}
+
+bool useTimestampQueries(TestType testType)
+{
+    return (testType == TEST_TYPE_QUERIES_AND_TIMESTAMPS || testType == TEST_TYPE_NON_PRECISE_QUERIES_AND_TIMESTAMPS ||
+            testType == TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY_AND_TIMESTAMPS);
 }
 
 enum RenderingType
@@ -556,7 +572,8 @@ void MultiViewRenderTestInstance::afterRenderPass(void)
 
     imageBarrier(m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
-                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                 (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+                 (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 }
 
@@ -594,7 +611,7 @@ void MultiViewRenderTestInstance::addRenderingSubpassDependencyIfRequired(uint32
 
         imageBarrier(m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                     VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                      VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
@@ -602,7 +619,7 @@ void MultiViewRenderTestInstance::addRenderingSubpassDependencyIfRequired(uint32
         {
             imageBarrier(m_device, *m_cmdBuffer, resolveImage, subresourceRange,
                          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                         VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                          VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
         }
@@ -902,8 +919,11 @@ void MultiViewRenderTestInstance::madeShaderModule(map<VkShaderStageFlagBits, Sh
     case TEST_TYPE_MULTISAMPLE:
     case TEST_TYPE_MULTISAMPLE_RESOLVE:
     case TEST_TYPE_QUERIES:
+    case TEST_TYPE_QUERIES_AND_TIMESTAMPS:
     case TEST_TYPE_NON_PRECISE_QUERIES:
+    case TEST_TYPE_NON_PRECISE_QUERIES_AND_TIMESTAMPS:
     case TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY:
+    case TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY_AND_TIMESTAMPS:
     case TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR:
     case TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR:
     case TEST_TYPE_DEPTH:
@@ -1256,7 +1276,8 @@ void MultiViewRenderTestInstance::readImage(VkImage image, const tcu::PixelBuffe
         };
 
         imageBarrier(m_device, *m_cmdBuffer, image, subresourceRange, VK_IMAGE_LAYOUT_GENERAL,
-                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                     (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
                      VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                      VK_PIPELINE_STAGE_TRANSFER_BIT);
 
@@ -1865,8 +1886,9 @@ void MultiViewAttachmentsTestInstance::beforeRenderPass(VkImage resolveImage)
 
     imageBarrier(m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                 VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+                 VK_ACCESS_TRANSFER_WRITE_BIT,
+                 (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+                 VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 }
 
 void MultiViewAttachmentsTestInstance::bindResources(void)
@@ -2913,13 +2935,15 @@ void MultiViewMultisampleTestInstance::afterRenderPass(void)
 
     imageBarrier(m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
-                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+                 (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+                 VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                 VK_PIPELINE_STAGE_TRANSFER_BIT);
 
     const bool useResolveAttachment = (m_parameters.viewIndex == TEST_TYPE_MULTISAMPLE_RESOLVE);
     const auto initialResolveLayout =
         (useResolveAttachment ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED);
-    const auto srcAccess = static_cast<VkAccessFlags>(useResolveAttachment ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : 0);
+    const auto srcAccess = static_cast<VkAccessFlags>(
+        useResolveAttachment ? (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT) : 0);
 
     imageBarrier(m_device, *m_cmdBuffer, m_resolveAttachment->getImage(), subresourceRange, initialResolveLayout,
                  VK_IMAGE_LAYOUT_GENERAL, srcAccess, VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -2960,15 +2984,20 @@ private:
 MultiViewQueriesTestInstance::MultiViewQueriesTestInstance(Context &context, const TestParameters &parameters)
     : MultiViewRenderTestInstance(context, parameters)
     , m_verticesPerPrimitive(4u)
-    , m_occlusionQueryFlags((parameters.viewIndex == TEST_TYPE_QUERIES) * VK_QUERY_CONTROL_PRECISE_BIT)
+    , m_occlusionQueryFlags(usePreciseQueries(parameters.viewIndex) * VK_QUERY_CONTROL_PRECISE_BIT)
     , m_occlusionObjectsOffset(0)
 {
-    // Generate the timestamp mask
-    const auto &vki            = m_context.getInstanceInterface();
-    const auto physicalDevice  = m_context.getPhysicalDevice();
-    const auto queueProperties = getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
+    if (useTimestampQueries(parameters.viewIndex))
+    {
+        // Generate the timestamp mask
+        const auto &vki            = m_context.getInstanceInterface();
+        const auto physicalDevice  = m_context.getPhysicalDevice();
+        const auto queueProperties = getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
 
-    m_timestampMask = 0xFFFFFFFFFFFFFFFFull >> (64 - queueProperties[0].timestampValidBits);
+        m_timestampMask = 0xFFFFFFFFFFFFFFFFull >> (64 - queueProperties[m_queueFamilyIndex].timestampValidBits);
+    }
+    else
+        m_timestampMask = 0ull;
 
     DE_ASSERT(m_parameters.queryType != QUERY_TYPE_NONE);
 }
@@ -3029,7 +3058,7 @@ tcu::TestStatus MultiViewQueriesTestInstance::iterate(void)
 
         if (m_counterSeriesEnd[ndx])
         {
-            if (m_parameters.viewIndex == TEST_TYPE_QUERIES)
+            if (usePreciseQueries(m_parameters.viewIndex))
             {
                 if (occlusionExpectedValue != occlusionValue)
                     return tcu::TestStatus::fail("occlusion, result:" + de::toString(occlusionValue) +
@@ -3044,29 +3073,33 @@ tcu::TestStatus MultiViewQueriesTestInstance::iterate(void)
     }
     verifyAvailabilityBits(m_occlusionAvailabilityValues, "occlusion");
 
-    DE_ASSERT(!m_timestampStartValues.empty());
-    DE_ASSERT(m_timestampStartValues.size() == m_timestampEndValues.size());
-    DE_ASSERT(m_timestampStartValues.size() == m_counterSeriesStart.size());
-    for (size_t ndx = 0; ndx < m_timestampStartValues.size(); ++ndx)
+    if (useTimestampQueries(m_parameters.viewIndex))
     {
-        if (m_counterSeriesStart[ndx])
-        {
-            if (m_timestampEndValues[ndx] > 0 && m_timestampEndValues[ndx] >= m_timestampStartValues[ndx])
-                continue;
-        }
-        else
-        {
-            if (m_timestampEndValues[ndx] > 0 && m_timestampEndValues[ndx] >= m_timestampStartValues[ndx])
-                continue;
+        DE_ASSERT(!m_timestampStartValues.empty());
+        DE_ASSERT(m_timestampStartValues.size() == m_timestampEndValues.size());
+        DE_ASSERT(m_timestampStartValues.size() == m_counterSeriesStart.size());
 
-            if (m_timestampEndValues[ndx] == 0 && m_timestampStartValues[ndx] == 0)
-                continue;
-        }
+        for (size_t ndx = 0; ndx < m_timestampStartValues.size(); ++ndx)
+        {
+            if (m_counterSeriesStart[ndx])
+            {
+                if (m_timestampEndValues[ndx] > 0 && m_timestampEndValues[ndx] >= m_timestampStartValues[ndx])
+                    continue;
+            }
+            else
+            {
+                if (m_timestampEndValues[ndx] > 0 && m_timestampEndValues[ndx] >= m_timestampStartValues[ndx])
+                    continue;
 
-        return tcu::TestStatus::fail("timestamp");
+                if (m_timestampEndValues[ndx] == 0 && m_timestampStartValues[ndx] == 0)
+                    continue;
+            }
+
+            return tcu::TestStatus::fail("timestamp");
+        }
+        verifyAvailabilityBits(m_timestampStartAvailabilityValues, "timestamp start");
+        verifyAvailabilityBits(m_timestampEndAvailabilityValues, "timestamp end");
     }
-    verifyAvailabilityBits(m_timestampStartAvailabilityValues, "timestamp start");
-    verifyAvailabilityBits(m_timestampEndAvailabilityValues, "timestamp end");
 
     return tcu::TestStatus::pass("Pass");
 }
@@ -3315,15 +3348,25 @@ void MultiViewQueriesTestInstance::draw(const uint32_t subpassCount, VkRenderPas
     std::vector<uint64_t> timestampStartQueryResultsBuffer(valuesNumber, 0u);
     std::vector<uint64_t> timestampEndQueryResultsBuffer(valuesNumber, 0u);
 
+    const bool useTS = useTimestampQueries(m_parameters.viewIndex);
+
     m_occlusionValues.resize(queryCountersNumber);
-    m_timestampStartValues.resize(queryCountersNumber);
-    m_timestampEndValues.resize(queryCountersNumber);
+
+    if (useTS)
+    {
+        m_timestampStartValues.resize(queryCountersNumber);
+        m_timestampEndValues.resize(queryCountersNumber);
+    }
 
     if (withAvailability)
     {
         m_occlusionAvailabilityValues.resize(queryCountersNumber);
-        m_timestampStartAvailabilityValues.resize(queryCountersNumber);
-        m_timestampEndAvailabilityValues.resize(queryCountersNumber);
+
+        if (useTS)
+        {
+            m_timestampStartAvailabilityValues.resize(queryCountersNumber);
+            m_timestampEndAvailabilityValues.resize(queryCountersNumber);
+        }
     }
 
     if (m_cmdCopyQueryPoolResults)
@@ -3331,36 +3374,48 @@ void MultiViewQueriesTestInstance::draw(const uint32_t subpassCount, VkRenderPas
         invalidateAlloc(m_context.getDeviceInterface(), m_logicalDevice, queryBuffer.getAllocation());
         memcpy(occlusionQueryResultsBuffer.data(), queryBuffer.getAllocation().getHostPtr(),
                de::dataSize(occlusionQueryResultsBuffer));
-        memcpy(timestampStartQueryResultsBuffer.data(), queryBuffer.getAllocation().getHostPtr(),
-               de::dataSize(timestampStartQueryResultsBuffer));
-        memcpy(timestampEndQueryResultsBuffer.data(), queryBuffer.getAllocation().getHostPtr(),
-               de::dataSize(timestampEndQueryResultsBuffer));
+
+        if (useTS)
+        {
+            memcpy(timestampStartQueryResultsBuffer.data(), queryBuffer.getAllocation().getHostPtr(),
+                   de::dataSize(timestampStartQueryResultsBuffer));
+            memcpy(timestampEndQueryResultsBuffer.data(), queryBuffer.getAllocation().getHostPtr(),
+                   de::dataSize(timestampEndQueryResultsBuffer));
+        }
     }
     else
     {
         m_device.getQueryPoolResults(m_logicalDevice, *occlusionQueryPool, 0u, queryCountersNumber,
                                      de::dataSize(occlusionQueryResultsBuffer),
                                      de::dataOrNull(occlusionQueryResultsBuffer), queryStride, queryFlags);
-        m_device.getQueryPoolResults(m_logicalDevice, *timestampStartQueryPool, 0u, queryCountersNumber,
-                                     de::dataSize(timestampStartQueryResultsBuffer),
-                                     de::dataOrNull(timestampStartQueryResultsBuffer), queryStride, queryFlags);
-        m_device.getQueryPoolResults(m_logicalDevice, *timestampEndQueryPool, 0u, queryCountersNumber,
-                                     de::dataSize(timestampEndQueryResultsBuffer),
-                                     de::dataOrNull(timestampEndQueryResultsBuffer), queryStride, queryFlags);
+
+        if (useTS)
+        {
+            m_device.getQueryPoolResults(m_logicalDevice, *timestampStartQueryPool, 0u, queryCountersNumber,
+                                         de::dataSize(timestampStartQueryResultsBuffer),
+                                         de::dataOrNull(timestampStartQueryResultsBuffer), queryStride, queryFlags);
+            m_device.getQueryPoolResults(m_logicalDevice, *timestampEndQueryPool, 0u, queryCountersNumber,
+                                         de::dataSize(timestampEndQueryResultsBuffer),
+                                         de::dataOrNull(timestampEndQueryResultsBuffer), queryStride, queryFlags);
+        }
     }
 
     unpackValues(occlusionQueryResultsBuffer, &m_occlusionValues,
                  (withAvailability ? &m_occlusionAvailabilityValues : nullptr));
-    unpackValues(timestampStartQueryResultsBuffer, &m_timestampStartValues,
-                 (withAvailability ? &m_timestampStartAvailabilityValues : nullptr));
-    unpackValues(timestampEndQueryResultsBuffer, &m_timestampEndValues,
-                 (withAvailability ? &m_timestampEndAvailabilityValues : nullptr));
 
-    for (uint32_t ndx = 0; ndx < m_timestampStartValues.size(); ++ndx)
-        m_timestampStartValues[ndx] &= m_timestampMask;
+    if (useTS)
+    {
+        unpackValues(timestampStartQueryResultsBuffer, &m_timestampStartValues,
+                     (withAvailability ? &m_timestampStartAvailabilityValues : nullptr));
+        unpackValues(timestampEndQueryResultsBuffer, &m_timestampEndValues,
+                     (withAvailability ? &m_timestampEndAvailabilityValues : nullptr));
 
-    for (uint32_t ndx = 0; ndx < m_timestampEndValues.size(); ++ndx)
-        m_timestampEndValues[ndx] &= m_timestampMask;
+        for (uint32_t ndx = 0; ndx < m_timestampStartValues.size(); ++ndx)
+            m_timestampStartValues[ndx] &= m_timestampMask;
+
+        for (uint32_t ndx = 0; ndx < m_timestampEndValues.size(); ++ndx)
+            m_timestampEndValues[ndx] &= m_timestampMask;
+    }
 }
 
 uint32_t MultiViewQueriesTestInstance::getUsedViewsCount(const uint32_t viewMaskIndex)
@@ -4593,7 +4648,7 @@ private:
 
         if (m_parameters.viewIndex == TEST_TYPE_DEPTH_DIFFERENT_RANGES)
             context.requireDeviceFunctionality("VK_EXT_depth_range_unrestricted");
-        if (m_parameters.viewIndex == TEST_TYPE_QUERIES)
+        if (usePreciseQueries(m_parameters.viewIndex))
             context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_OCCLUSION_QUERY_PRECISE);
         if (m_parameters.viewIndex == TEST_TYPE_NESTED_CMD_BUFFER)
             context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
@@ -4653,11 +4708,11 @@ private:
                 DE_ASSERT(pointSize + 1 <= m_parameters.extent.height / 2);
             }
         }
-        else if (isQueryTestType(m_parameters.viewIndex))
+        else if (useTimestampQueries(m_parameters.viewIndex))
         {
             const auto queueProperties = getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
-            if (queueProperties[0].timestampValidBits == 0)
-                TCU_THROW(NotSupportedError, "Device does not support timestamp.");
+            if (queueProperties[context.getUniversalQueueFamilyIndex()].timestampValidBits == 0)
+                TCU_THROW(NotSupportedError, "Timestamps not supported");
         }
         else if (TEST_TYPE_SECONDARY_CMD_BUFFER == m_parameters.viewIndex ||
                  TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY == m_parameters.viewIndex ||
@@ -5018,8 +5073,12 @@ void multiViewRenderCreateTests(tcu::TestCaseGroup *group)
         std::make_pair(TEST_TYPE_MULTISAMPLE, "multisample"),
         std::make_pair(TEST_TYPE_MULTISAMPLE_RESOLVE, "multisample_resolve"),
         std::make_pair(TEST_TYPE_QUERIES, "queries"),
+        std::make_pair(TEST_TYPE_QUERIES_AND_TIMESTAMPS, "queries_and_timestamps"),
         std::make_pair(TEST_TYPE_NON_PRECISE_QUERIES, "non_precise_queries"),
+        std::make_pair(TEST_TYPE_NON_PRECISE_QUERIES_AND_TIMESTAMPS, "non_precise_queries_and_timestamps"),
         std::make_pair(TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY, "non_precise_queries_with_availability"),
+        std::make_pair(TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY_AND_TIMESTAMPS,
+                       "non_precise_queries_with_availability_and_timestamps"),
         std::make_pair(TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR, "readback_implicit_clear"),
         std::make_pair(TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR, "readback_explicit_clear"),
         std::make_pair(TEST_TYPE_DEPTH, "depth"),
@@ -5239,8 +5298,11 @@ void multiViewRenderCreateTests(tcu::TestCaseGroup *group)
             case TEST_TYPE_MULTISAMPLE:
             case TEST_TYPE_MULTISAMPLE_RESOLVE:
             case TEST_TYPE_QUERIES:
+            case TEST_TYPE_QUERIES_AND_TIMESTAMPS:
             case TEST_TYPE_NON_PRECISE_QUERIES:
+            case TEST_TYPE_NON_PRECISE_QUERIES_AND_TIMESTAMPS:
             case TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY:
+            case TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY_AND_TIMESTAMPS:
             case TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR:
             case TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR:
             case TEST_TYPE_DEPTH:
