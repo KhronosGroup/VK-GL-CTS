@@ -29,15 +29,35 @@
 #include "tcuTestLog.hpp"
 #include "tcuTestSessionExecutor.hpp"
 #include "deUniquePtr.hpp"
+#include "deFile.h"
 #include "qpDebugOut.h"
 
 #include <cstdio>
+#include <string>
 
 // Implement this in your platform port.
 tcu::Platform *createPlatform(void);
 
 namespace
 {
+
+std::string getNextAvailableLogFileName(const char *requestedName)
+{
+    if (!deFileExists(requestedName))
+        return requestedName;
+
+    std::string path(requestedName);
+    const size_t dotPos = path.rfind('.');
+    const std::string base = (dotPos != std::string::npos) ? path.substr(0, dotPos) : path;
+    const std::string ext  = (dotPos != std::string::npos) ? path.substr(dotPos) : "";
+
+    for (int i = 1;; ++i)
+    {
+        std::string candidate = base + std::to_string(i) + ext;
+        if (!deFileExists(candidate.c_str()))
+            return candidate;
+    }
+}
 
 bool disableRawWrites(int, const char *)
 {
@@ -71,7 +91,8 @@ int main(int argc, char **argv)
             disableStdout();
 
         tcu::DirArchive archive(cmdLine.getArchiveDir());
-        tcu::TestLog log(cmdLine.getLogFileName(), cmdLine.getLogFlags());
+        const std::string logFileName = getNextAvailableLogFileName(cmdLine.getLogFileName());
+        tcu::TestLog log(logFileName.c_str(), cmdLine.getLogFlags());
         de::UniquePtr<tcu::Platform> platform(createPlatform());
         de::UniquePtr<tcu::App> app(new tcu::App(*platform, archive, log, cmdLine));
 
