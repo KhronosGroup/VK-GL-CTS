@@ -1700,6 +1700,10 @@ tcu::TestCaseGroup *createInternallySynchronizedTests(tcu::TestContext &testCtx,
                     if (i == j && typeNdx == vk::wsi::Type::TYPE_ANDROID)
                         continue;
 
+                    // VK_KHR_display and VK_EXT_acquire_drm_display also have a limit of one window
+                    if (i == j && (typeNdx == vk::wsi::Type::TYPE_DIRECT || typeNdx == vk::wsi::Type::TYPE_DIRECT_DRM))
+                        continue;
+
                     params.wsiType = (vk::wsi::Type)typeNdx;
 
                     std::string name = std::string(getName(params.wsiType)) + "_" + testName;
