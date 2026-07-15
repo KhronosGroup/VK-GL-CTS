@@ -174,6 +174,21 @@ struct Params
         return (topology == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
     }
 
+    bool needsGeometryShader() const
+    {
+        switch (topology)
+        {
+        case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+        case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+        case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+        case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+            return true;
+        default:
+            break;
+        }
+        return false;
+    }
+
     uint32_t blockCount() const
     {
         return 4u; // We'll draw in 4 blocks, as stated above.
@@ -477,6 +492,9 @@ void RestartIndexCase::checkSupport(Context &context) const
 
     if (m_params->needsPrimitiveTopologyPatchListRestart())
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+
+    if (m_params->needsGeometryShader())
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 
     if (m_params->drawCall == DrawCall::INDIRECT_COUNT || m_params->drawCall == DrawCall::INDIRECT_COUNT_2)
         context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
