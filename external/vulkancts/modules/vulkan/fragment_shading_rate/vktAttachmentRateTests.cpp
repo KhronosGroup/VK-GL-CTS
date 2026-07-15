@@ -1955,7 +1955,7 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
                 1u,                            // uint32_t signalSemaphoreCount;
                 &*semaphore,                   // const VkSemaphore* pSignalSemaphores;
             };
-            const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+            const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
             const VkSubmitInfo graphicsSubmitInfo{
                 VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
                 nullptr,                       // const void* pNext;
