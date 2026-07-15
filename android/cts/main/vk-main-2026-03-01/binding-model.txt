@@ -743,6 +743,8 @@ dEQP-VK.binding_model.descriptor_heap.spirv.atomic_image_within_function
 dEQP-VK.binding_model.descriptor_heap.spirv.copy_object
 dEQP-VK.binding_model.descriptor_heap.spirv.function_call_binding
 dEQP-VK.binding_model.descriptor_heap.spirv.function_call_binding_forward
+dEQP-VK.binding_model.descriptor_heap.spirv.function_call_untyped_buffer
+dEQP-VK.binding_model.descriptor_heap.spirv.function_call_untyped_buffer_2
 dEQP-VK.binding_model.descriptor_heap.spirv.op_image_query_size
 dEQP-VK.binding_model.descriptor_heap.spirv.op_image_query_size_null_descriptor
 dEQP-VK.binding_model.descriptor_heap.spirv.simple_sampler_heap

@@ -206,6 +206,8 @@ enum class SpirvTestType
     SimpleSamplerHeap,
     FunctionCallBinding,
     FunctionCallBindingForward,
+    FunctionCallUntypedBuffer,
+    FunctionCallUntypedBuffer2,
     StorageTexelBufferAtomic64,
     SimpleVariablePointers,
     ArrayVariablePointers,
@@ -9067,6 +9069,101 @@ void DescriptorHeapTestCaseSpirv::initPrograms(vk::SourceCollections &programCol
                OpFunctionEnd
 )";
         break;
+    case SpirvTestType::FunctionCallUntypedBuffer:
+    case SpirvTestType::FunctionCallUntypedBuffer2:
+        assembly = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpCapability VariablePointers
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %resource_heap %pc_var
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %PC Block
+               OpMemberDecorate %PC 0 Offset 0
+               OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpDecorateId %buffer_stride ArrayStrideIdEXT %buffer_size
+
+       %void = OpTypeVoid
+       %bool = OpTypeBool
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+    %uint_10 = OpConstant %uint 10
+    %uint_42 = OpConstant %uint 42
+         %PC = OpTypeStruct %uint
+     %ptr_pc = OpTypePointer PushConstant %PC
+     %pc_var = OpVariable %ptr_pc PushConstant
+       %SSBO = OpTypeStruct %uint
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
+%_ptr_PushConstant_uint = OpTypePointer PushConstant %uint
+%_ptr_StorageBuffer = OpTypeUntypedPointerKHR StorageBuffer
+%type_buffer = OpTypeBufferEXT StorageBuffer
+%buffer_size = OpConstantSizeOfEXT %int %type_buffer
+%buffer_stride = OpTypeRuntimeArray %type_buffer
+
+  %main_type = OpTypeFunction %void
+   %foo_type = OpTypeFunction %uint %_ptr_StorageBuffer %_ptr_StorageBuffer
+
+        %foo = OpFunction %uint None %foo_type
+    %param_a = OpFunctionParameter %_ptr_StorageBuffer
+    %param_b = OpFunctionParameter %_ptr_StorageBuffer
+      %foo_l = OpLabel
+         %44 = OpAccessChain %_ptr_PushConstant_uint %pc_var %int_0
+   %pc_index = OpLoad %uint %44
+         %17 = OpIEqual %bool %pc_index %uint_1
+               OpSelectionMerge %19 None
+               OpBranchConditional %17 %18 %22
+         %18 = OpLabel
+         %20 = OpLoad %uint %param_a
+               OpReturnValue %20
+         %22 = OpLabel
+         %25 = OpULessThan %bool %pc_index %uint_10
+               OpSelectionMerge %27 None
+               OpBranchConditional %25 %26 %27
+         %26 = OpLabel
+         %28 = OpLoad %uint %param_b
+               OpReturnValue %28
+         %27 = OpLabel
+               OpBranch %19
+         %19 = OpLabel
+               OpReturnValue %uint_42
+               OpFunctionEnd
+
+       %main = OpFunction %void None %main_type
+     %main_l = OpLabel
+          %x = OpVariable %_ptr_Function_uint Function
+         %50 = OpAccessChain %_ptr_PushConstant_uint %pc_var %int_0
+  %pc_index_ = OpLoad %uint %50
+
+   %ptr_buf_1 = OpUntypedAccessChainKHR %_ptr_UniformConstant %buffer_stride %resource_heap %int_1
+       %buf_a = OpBufferPointerEXT %_ptr_StorageBuffer %ptr_buf_1
+  %buf_a_data = OpUntypedAccessChainKHR %_ptr_StorageBuffer %SSBO %buf_a %int_0
+  %ptr_buf_pc = OpUntypedAccessChainKHR %_ptr_UniformConstant %buffer_stride %resource_heap %pc_index_
+       %buf_b = OpBufferPointerEXT %_ptr_StorageBuffer %ptr_buf_pc
+  %buf_b_data = OpUntypedAccessChainKHR %_ptr_StorageBuffer %SSBO %buf_b %int_0
+
+         %66 = OpFunctionCall %uint %foo %buf_a_data %buf_b_data
+               OpStore %x %66
+         %68 = OpLoad %uint %x
+         %69 = OpUntypedAccessChainKHR %_ptr_UniformConstant %buffer_stride %resource_heap %int_0
+         %72 = OpBufferPointerEXT %_ptr_StorageBuffer %69
+         %73 = OpUntypedAccessChainKHR %_ptr_StorageBuffer %SSBO %72 %int_0
+               OpStore %73 %68
+               OpReturn
+               OpFunctionEnd
+
+)";
+        break;
     case SpirvTestType::StorageTexelBufferAtomic64:
         assembly = R"(
                OpCapability Shader
@@ -9549,6 +9646,14 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
         expectedOutput = {0x1111, 0x2222};
         heapUserSize   = 2 * resourceDescriptorStride;
         break;
+    case SpirvTestType::FunctionCallUntypedBuffer2:
+        expectedOutput = {42u};
+        heapUserSize   = 101 * storageBufferStride;
+        break;
+    case SpirvTestType::FunctionCallUntypedBuffer:
+        expectedOutput = {0x2222};
+        heapUserSize   = 3 * storageBufferStride;
+        break;
     case SpirvTestType::StorageTexelBufferAtomic64:
         expectedOutput = {0xbeefbeef, 0xcafecafe};
         heapUserSize   = 1 * resourceDescriptorStride;
@@ -9947,6 +10052,49 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
             resourceInfos[i].data.pTexelBuffer = &texelBufferDescriptorInfo[i];
         }
         VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 2, resourceInfos.data(), hostAddressRanges.data()));
+        break;
+    }
+    case SpirvTestType::FunctionCallUntypedBuffer2:
+    case SpirvTestType::FunctionCallUntypedBuffer:
+    {
+        const uint32_t pushIndex = m_params.spirvTestType == SpirvTestType::FunctionCallUntypedBuffer2 ? 100u : 2u;
+        const std::array<uint32_t, 2> inputValues = {0x1111, 0x2222};
+        const std::array<uint32_t, 3> heapIndices = {0u, 1u, pushIndex};
+
+        std::array<VkHostAddressRangeEXT, 3> hostAddressRanges{};
+        std::array<VkResourceDescriptorInfoEXT, 3> resourceInfos{};
+        std::array<VkDeviceAddressRangeEXT, 3> addressRanges{};
+
+        addressRanges[0].address = outputBuffer->address;
+        addressRanges[0].size    = outputBufferSize;
+
+        const VkDeviceSize inputBufferSize = static_cast<VkDeviceSize>(sizeof(uint32_t));
+        for (size_t i = 0; i < inputValues.size(); ++i)
+        {
+            auto &inputBuffer = stagingBuffers.emplace_back(createBufferAndMemory(
+                inputBufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT));
+            deMemcpy(inputBuffer->memory->getHostPtr(), &inputValues[i], inputBufferSize);
+
+            addressRanges[i + 1].address = inputBuffer->address;
+            addressRanges[i + 1].size    = inputBufferSize;
+        }
+
+        for (size_t i = 0; i < hostAddressRanges.size(); ++i)
+        {
+            hostAddressRanges[i].address =
+                reinterpret_cast<char *>(heapContents) + heapIndices[i] * storageBufferStride;
+            hostAddressRanges[i].size = static_cast<size_t>(storageBufferStride);
+
+            resourceInfos[i]                    = initVulkanStructure();
+            resourceInfos[i].type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            resourceInfos[i].data.pAddressRange = &addressRanges[i];
+        }
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, resourceInfos.size(), resourceInfos.data(),
+                                                 hostAddressRanges.data()));
+
+        pushData.resize(sizeof(uint32_t));
+        deMemcpy(pushData.data(), &pushIndex, sizeof(pushIndex));
         break;
     }
     case SpirvTestType::StorageTexelBufferAtomic64:
@@ -19433,6 +19581,8 @@ void populateSpirvTests(tcu::TestCaseGroup *topGroup)
         {SpirvTestType::SimpleSamplerHeap, "simple_sampler_heap"},
         {SpirvTestType::FunctionCallBinding, "function_call_binding"},
         {SpirvTestType::FunctionCallBindingForward, "function_call_binding_forward"},
+        {SpirvTestType::FunctionCallUntypedBuffer, "function_call_untyped_buffer"},
+        {SpirvTestType::FunctionCallUntypedBuffer2, "function_call_untyped_buffer_2"},
         {SpirvTestType::StorageTexelBufferAtomic64, "storage_texel_buffer_atomic64"},
         {SpirvTestType::SimpleVariablePointers, "simple_variable_pointers"},
         {SpirvTestType::ArrayVariablePointers, "array_variable_pointers"},
@@ -19449,7 +19599,9 @@ void populateSpirvTests(tcu::TestCaseGroup *topGroup)
         params.queue                  = VK_QUEUE_COMPUTE_BIT;
         params.spirvTestType          = test.first;
         params.enableVariablePointers = (test.first == SpirvTestType::SimpleVariablePointers) ||
-                                        (test.first == SpirvTestType::ArrayVariablePointers);
+                                        (test.first == SpirvTestType::ArrayVariablePointers) ||
+                                        (test.first == SpirvTestType::FunctionCallUntypedBuffer) ||
+                                        (test.first == SpirvTestType::FunctionCallUntypedBuffer2);
         params.shaderImageInt64Atomics = (params.spirvTestType == SpirvTestType::StorageTexelBufferAtomic64) ||
                                          (params.spirvTestType == SpirvTestType::AtomicImage2d64Bit);
         params.enableShader64bitIndexing    = test.first == SpirvTestType::SizeOf64;
