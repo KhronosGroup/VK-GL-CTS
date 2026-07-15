@@ -2970,7 +2970,7 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                                 if (m_data.useDepthStencil)
                                 {
                                     float *dsample = &depthptr[(y * m_data.framebufferDim.width + x)];
-                                    if (*dsample != 0.4f)
+                                    if (fabs(*dsample - 0.4f) > 0.0001)
                                     {
                                         log << tcu::TestLog::Message << std::hex
                                             << "On another subpass, depth write failed pixel (0x" << x << ",0x" << y
