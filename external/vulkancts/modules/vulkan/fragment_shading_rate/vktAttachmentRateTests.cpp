@@ -1328,7 +1328,9 @@ bool AttachmentRateInstance::runComputeShaderMode(void)
             submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
             invalidateAlloc(vk, device, m_cbReadBuffer[0]->getAllocation());
-            if (!verifyUsingAtomicChecks(tileWidth, tileHeight, m_params->srRate.width, m_params->srRate.height,
+            if (!verifyUsingAtomicChecks(tileWidth, tileHeight,
+                                         m_params->useNullShadingRateImage ? 1u : m_params->srRate.width,
+                                         m_params->useNullShadingRateImage ? 1u : m_params->srRate.height,
                                          (uint32_t *)m_cbReadBuffer[0]->getAllocation().getHostPtr()))
                 return false;
 
@@ -1492,7 +1494,9 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
             submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
             invalidateAlloc(vk, device, m_cbReadBuffer[0]->getAllocation());
-            if (!verifyUsingAtomicChecks(tileWidth, tileHeight, m_params->srRate.width, m_params->srRate.height,
+            if (!verifyUsingAtomicChecks(tileWidth, tileHeight,
+                                         m_params->useNullShadingRateImage ? 1u : m_params->srRate.width,
+                                         m_params->useNullShadingRateImage ? 1u : m_params->srRate.height,
                                          (uint32_t *)m_cbReadBuffer[0]->getAllocation().getHostPtr()))
                 return false;
 
@@ -1646,7 +1650,9 @@ bool AttachmentRateInstance::runCopyMode(void)
             submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
             invalidateAlloc(vk, device, m_cbReadBuffer[0]->getAllocation());
-            if (!verifyUsingAtomicChecks(tileWidth, tileHeight, m_params->srRate.width, m_params->srRate.height,
+            if (!verifyUsingAtomicChecks(tileWidth, tileHeight,
+                                         m_params->useNullShadingRateImage ? 1u : m_params->srRate.width,
+                                         m_params->useNullShadingRateImage ? 1u : m_params->srRate.height,
                                          (uint32_t *)m_cbReadBuffer[0]->getAllocation().getHostPtr()))
                 return false;
 
@@ -1976,7 +1982,9 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
             VK_CHECK(vk.waitForFences(device, 2u, fences, true, ~0ull));
 
             invalidateAlloc(vk, device, m_cbReadBuffer[0]->getAllocation());
-            if (!verifyUsingAtomicChecks(tileWidth, tileHeight, m_params->srRate.width, m_params->srRate.height,
+            if (!verifyUsingAtomicChecks(tileWidth, tileHeight,
+                                         m_params->useNullShadingRateImage ? 1u : m_params->srRate.width,
+                                         m_params->useNullShadingRateImage ? 1u : m_params->srRate.height,
                                          (uint32_t *)m_cbReadBuffer[0]->getAllocation().getHostPtr()))
                 return false;
 
@@ -2104,7 +2112,9 @@ bool AttachmentRateInstance::runFillLinearTiledImage(void)
             submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
             invalidateAlloc(vk, device, m_cbReadBuffer[0]->getAllocation());
-            if (!verifyUsingAtomicChecks(tileWidth, tileHeight, m_params->srRate.width, m_params->srRate.height,
+            if (!verifyUsingAtomicChecks(tileWidth, tileHeight,
+                                         m_params->useNullShadingRateImage ? 1u : m_params->srRate.width,
+                                         m_params->useNullShadingRateImage ? 1u : m_params->srRate.height,
                                          (uint32_t *)m_cbReadBuffer[0]->getAllocation().getHostPtr()))
                 return false;
 
@@ -2587,34 +2597,35 @@ void createAttachmentRateTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *pa
                 {
                     // Duplicate all tests using dynamic rendering for NULL shading image.
                     std::string nullShadingName = std::string(srRate.name) + "_null_shading";
-                    formatGroup->addChild(new AttachmentRateTestCase(testCtx, nullShadingName.c_str(),
-                                                                     de::SharedPtr<TestParams>(new TestParams{
-                                                                         testModeParam.mode, // TestMode mode;
-                                                                         srFormat.format,    // VkFormat srFormat;
-                                                                         srRate.count,       // VkExtent2D srRate;
-                                                                         false,        // bool useDynamicRendering;
-                                                                         false,        // bool useImagelessFramebuffer;
-                                                                         true,         // bool useNullShadingRateImage;
-                                                                         false,        // bool useGeneralLayout;
-                                                                         tcu::Nothing, // OptDSParams dsParams;
-                                                                     })));
+                    formatGroup->addChild(
+                        new AttachmentRateTestCase(testCtx, nullShadingName.c_str(),
+                                                   de::SharedPtr<TestParams>(new TestParams{
+                                                       testModeParam.mode,               // TestMode mode;
+                                                       srFormat.format,                  // VkFormat srFormat;
+                                                       srRate.count,                     // VkExtent2D srRate;
+                                                       groupParams->useDynamicRendering, // bool useDynamicRendering;
+                                                       false,        // bool useImagelessFramebuffer;
+                                                       true,         // bool useNullShadingRateImage;
+                                                       false,        // bool useGeneralLayout;
+                                                       tcu::Nothing, // OptDSParams dsParams;
+                                                   })));
                 }
-
-                if (!groupParams->useDynamicRendering)
+                else
                 {
                     // duplicate all tests for imageless framebuffer
                     std::string imagelessName = std::string(srRate.name) + "_imageless";
-                    formatGroup->addChild(new AttachmentRateTestCase(testCtx, imagelessName.c_str(),
-                                                                     de::SharedPtr<TestParams>(new TestParams{
-                                                                         testModeParam.mode, // TestMode mode;
-                                                                         srFormat.format,    // VkFormat srFormat;
-                                                                         srRate.count,       // VkExtent2D srRate;
-                                                                         false,        // bool useDynamicRendering;
-                                                                         true,         // bool useImagelessFramebuffer;
-                                                                         false,        // bool useNullShadingRateImage;
-                                                                         false,        // bool useGeneralLayout;
-                                                                         tcu::Nothing, // OptDSParams dsParams;
-                                                                     })));
+                    formatGroup->addChild(
+                        new AttachmentRateTestCase(testCtx, imagelessName.c_str(),
+                                                   de::SharedPtr<TestParams>(new TestParams{
+                                                       testModeParam.mode,               // TestMode mode;
+                                                       srFormat.format,                  // VkFormat srFormat;
+                                                       srRate.count,                     // VkExtent2D srRate;
+                                                       groupParams->useDynamicRendering, // bool useDynamicRendering;
+                                                       true,         // bool useImagelessFramebuffer;
+                                                       false,        // bool useNullShadingRateImage;
+                                                       false,        // bool useGeneralLayout;
+                                                       tcu::Nothing, // OptDSParams dsParams;
+                                                   })));
 
                     // duplicate all tests using only general layout
                     std::string generalLayoutName = std::string(srRate.name) + "_general_layout";
