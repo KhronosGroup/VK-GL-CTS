@@ -1542,7 +1542,6 @@ tcu::TestStatus timingTestWithBackgroundQueryThreads(Context &context, Type wsiT
             de::ScopedLock lock(sharedState.m_swapchainMutex);
             VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, **renderSemaphores[frame.imageIndex], *swapchain,
                                                frame.imageIndex, timingInfo, currentPresentId));
-            sharedState.m_swapchainMutex.unlock();
 
             currentPresentId += presentIdStep;
         }
