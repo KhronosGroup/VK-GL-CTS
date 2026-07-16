@@ -449,7 +449,22 @@ class LRZTestInstance : public vkt::TestInstance
 {
 public:
     LRZTestInstance(Context &context, const TestParams &testParams, const SharedGroupParams groupParams);
+#ifndef CTS_USES_VULKANSC
     virtual ~LRZTestInstance(void) = default;
+#else
+    virtual ~LRZTestInstance(void)
+    {
+        // Group shared data containing device child objects stored in global variables is problematic from the
+        // perspective of Vulkan SC as there is no way to destroy them and re-create them at batch boundaries
+        // which will cause object count issues as the next batch will no longer have information about any
+        // such objects pre-allocated in global variables.
+        // A fix for this would be to have proper group shared data support in the CTS framework that the
+        // Vulkan SC test runner then could call deinit and reinit on at batch boundaries, but until such a
+        // thing is available we have to work this around by always resetting the shared data between tests
+        // just to be safe.
+        g_sharedData.reset(nullptr);
+    }
+#endif
 
     virtual tcu::TestStatus iterate(void) override;
 
