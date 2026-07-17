@@ -1894,7 +1894,7 @@ void initPrograms(vk::SourceCollections &dst)
          << "      /*for (uint i = 0; i < 8192; i++) {\n"
          << "         patch_index += (i & 0x1) == 0 ? -1 : 1;\n"
          << "      }*/\n"
-         << "      for (uint i = 0; i < 512; i++)\n"
+         << "      for (uint i = 0; i < 160; i++)\n"
          << "         atomicAdd(ssbo_val, i);\n"
          << "   }\n"
          << "}\n";
