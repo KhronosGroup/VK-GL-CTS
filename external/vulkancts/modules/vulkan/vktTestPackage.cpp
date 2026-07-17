@@ -307,26 +307,29 @@ TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
 #ifdef CTS_USES_VULKANSC
     std::vector<int> caseFraction = testCtx.getCommandLine().getCaseFraction();
     std::string jsonFileName;
-    int portOffset;
     if (caseFraction.empty())
-    {
         jsonFileName = "pipeline_data.txt";
-        portOffset   = 0;
-    }
     else
-    {
         jsonFileName = "pipeline_data_" + std::to_string(caseFraction[0]) + ".txt";
-        portOffset   = caseFraction[0];
-    }
 
     if (testCtx.getCommandLine().isSubProcess())
     {
-        std::vector<uint8_t> input = vksc_server::ipc::Child{portOffset}.GetFile(jsonFileName);
+        // Connect back to the parent's IPC listener on the port the parent selected and forwarded
+        // to us via --deqp-ipc-port. The main process always injects this; a value of 0 means the
+        // option is missing (e.g. subprocess mode was invoked manually), which cannot work.
+        const int ipcPort = testCtx.getCommandLine().getIPCPort();
+        if (ipcPort == 0)
+            TCU_THROW(InternalError, "Subprocess started without --deqp-ipc-port; the IPC port is "
+                                     "assigned and forwarded by the main process and must not be set manually");
+        std::vector<uint8_t> input = vksc_server::ipc::Child{ipcPort}.GetFile(jsonFileName);
         m_resourceInterface->importData(input);
     }
     else
     {
-        m_parentIPC.reset(new vksc_server::ipc::Parent{portOffset});
+        // The parent binds an OS-assigned ephemeral port; its actual value is forwarded to each
+        // spawned subprocess (see runTestsInSubprocess), so concurrent deqp-vksc instances never
+        // collide on a shared/fixed IPC port.
+        m_parentIPC.reset(new vksc_server::ipc::Parent{});
     }
 
     // Load information about test tree branches that use subprocess test count other than default
@@ -934,27 +937,35 @@ void TestCaseExecutor::runTestsInSubprocess(tcu::TestContext &testCtx)
         return;
 
     std::vector<int> caseFraction = testCtx.getCommandLine().getCaseFraction();
+
+    // The parent's IPC port is unique per running process. Use it to disambiguate the
+    // working-directory scratch files (sub QPA, pipeline cache, compiler log, subprocess case list)
+    // so that multiple deqp-vksc instances sharing a working directory never clobber each other's
+    // files. (The pipeline compiler input files live in --deqp-pipeline-dir, which is already
+    // per-instance, so the prefix does not need it. jsonFileName is an in-memory IPC key scoped to
+    // this parent's listener, so it does not need it either.)
+    const std::string portSuffix = "_" + std::to_string(m_parentIPC->getPort());
     std::ostringstream jsonFileName, qpaFileName, pipelineCompilerOutFileName, pipelineCompilerLogFileName,
         pipelineCompilerPrefix;
     if (caseFraction.empty())
     {
         jsonFileName << "pipeline_data.txt";
-        qpaFileName << "sub.qpa";
+        qpaFileName << "sub" << portSuffix << ".qpa";
         if (!std::string(testCtx.getCommandLine().getPipelineCompilerPath()).empty())
         {
-            pipelineCompilerOutFileName << "pipeline_cache.bin";
-            pipelineCompilerLogFileName << "compiler.log";
+            pipelineCompilerOutFileName << "pipeline_cache" << portSuffix << ".bin";
+            pipelineCompilerLogFileName << "compiler" << portSuffix << ".log";
             pipelineCompilerPrefix << "";
         }
     }
     else
     {
         jsonFileName << "pipeline_data_" << caseFraction[0] << ".txt";
-        qpaFileName << "sub_" << caseFraction[0] << ".qpa";
+        qpaFileName << "sub_" << caseFraction[0] << portSuffix << ".qpa";
         if (!std::string(testCtx.getCommandLine().getPipelineCompilerPath()).empty())
         {
-            pipelineCompilerOutFileName << "pipeline_cache_" << caseFraction[0] << ".bin";
-            pipelineCompilerLogFileName << "compiler_" << caseFraction[0] << ".log";
+            pipelineCompilerOutFileName << "pipeline_cache_" << caseFraction[0] << portSuffix << ".bin";
+            pipelineCompilerLogFileName << "compiler_" << caseFraction[0] << portSuffix << ".log";
             pipelineCompilerPrefix << "sub_" << caseFraction[0] << "_";
         }
     }
@@ -991,6 +1002,10 @@ void TestCaseExecutor::runTestsInSubprocess(tcu::TestContext &testCtx)
                 newCmdLine +=
                     " --deqp-pipeline-args=\"" + std::string(testCtx.getCommandLine().getPipelineCompilerArgs()) + "\"";
         }
+
+        // Tell the subprocess which port to use for IPC. The parent picked a free ephemeral port
+        // at construction, so each concurrent deqp-vksc instance uses a distinct port.
+        newCmdLine += " --deqp-ipc-port=" + std::to_string(m_parentIPC->getPort());
     }
 
     // collect parameters, remove parameters associated with case filter and case fraction. We will provide our own case list
@@ -1000,10 +1015,16 @@ void TestCaseExecutor::runTestsInSubprocess(tcu::TestContext &testCtx)
         // brave ( but working ) assumption that each CTS parameter starts with "--deqp"
 
         const std::string paramStr("--deqp");
-        std::vector<std::string> skipElements = {
-            "--deqp-case",           "--deqp-stdin-caselist", "--deqp-log-filename",  "--deqp-pipeline-compiler",
-            "--deqp-pipeline-dir",   "--deqp-pipeline-args",  "--deqp-pipeline-file", "--deqp-pipeline-logfile",
-            "--deqp-pipeline-prefix"};
+        std::vector<std::string> skipElements = {"--deqp-case",
+                                                 "--deqp-stdin-caselist",
+                                                 "--deqp-log-filename",
+                                                 "--deqp-pipeline-compiler",
+                                                 "--deqp-pipeline-dir",
+                                                 "--deqp-pipeline-args",
+                                                 "--deqp-pipeline-file",
+                                                 "--deqp-pipeline-logfile",
+                                                 "--deqp-pipeline-prefix",
+                                                 "--deqp-ipc-port"};
         const std::string replaceElements[]{"-n ", "-n\t", "-f ", "-f\t"};
 
         std::size_t pos = 0;
@@ -1071,7 +1092,7 @@ void TestCaseExecutor::runTestsInSubprocess(tcu::TestContext &testCtx)
     }
 
     std::string caseListName =
-        "subcaselist" + (caseFraction.empty() ? std::string("") : de::toString(caseFraction[0])) + ".txt";
+        "subcaselist" + (caseFraction.empty() ? std::string("") : de::toString(caseFraction[0])) + portSuffix + ".txt";
 
     deFile *exportFile = deFile_create(caseListName.c_str(), DE_FILEMODE_CREATE | DE_FILEMODE_OPEN | DE_FILEMODE_WRITE |
                                                                  DE_FILEMODE_TRUNCATE);

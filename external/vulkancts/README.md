@@ -398,6 +398,19 @@ It informs deqp-vksc application that it works as subprocess:
 
 	--deqp-subprocess=[enable|disable]
 
+The main process and its subprocess communicate over a local TCP connection.
+The main process automatically binds this connection to a free port and hands
+it to the subprocess through another option that is used internally and should
+not be set manually:
+
+	--deqp-ipc-port=<value>
+
+Because each main process picks its own port and derives per-process names for
+the temporary files it exchanges with its subprocess from it, several deqp-vksc
+instances may be executed concurrently, even from the same working directory.
+When using an offline pipeline compiler, give each instance its own
+--deqp-pipeline-dir.
+
 For platforms where it is needed to override the default loader library path, this option can be used (e.g. loader library vulkan-1.dll):
 
 	--deqp-vk-library-path=<path>
@@ -869,6 +882,15 @@ to Vulkan SC requirements:
   Second test run is done in separate process ( subprocess ) and it performs
   the real tests.
 
+  The main process passes the collected information to the subprocess over a
+  local TCP connection. It binds this connection to a free ephemeral port and
+  forwards the port to the subprocess with the internal --deqp-ipc-port option.
+  The temporary files the two processes exchange through the working directory
+  are named per-process using that port as well. As a result multiple deqp-vksc
+  instances can run at the same time (even from the same working directory)
+  without interfering with each other; each instance should still be given its
+  own --deqp-pipeline-dir when an offline pipeline compiler is used.
+
 - Vulkan SC pipelines may be compiled using offline pipeline compiler
   delivered by implementation vendor. You can use command line parameters
   to achieve this ( see parameters: --deqp-pipeline-compiler, --deqp-pipeline-dir,
@@ -1079,6 +1101,12 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
   --deqp-subprocess=[enable|disable]
     Inform app that it works as subprocess (Vulkan SC only, do not use manually)
     default: 'disable'
+
+  --deqp-ipc-port=<value>
+    TCP port used for communication between the main process and the subprocess
+    (Vulkan SC only, do not use manually; the main process picks a free port
+    automatically and passes it to the subprocess)
+    default: '0'
 
   --deqp-subprocess-test-count=<value>
     Define default number of tests performed in subprocess (Vulkan SC only)
