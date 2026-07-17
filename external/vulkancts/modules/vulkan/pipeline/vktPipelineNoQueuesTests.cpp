@@ -224,6 +224,9 @@ void NoQueuesTestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "Vulkan 1.1 not supported");
     }
 
+    if (!context.getSamplerYcbcrConversionFeatures().samplerYcbcrConversion)
+        TCU_THROW(NotSupportedError, "samplerYcbcrConversion not supported");
+
     if (isRayTracingStageKHR(m_data.stage))
     {
         context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
@@ -611,6 +614,34 @@ void appendShaderStageCreateInfo(std::vector<VkPipelineShaderStageCreateInfo> &v
     vec.push_back(info);
 }
 
+std::pair<VkFormat, VkChromaLocation> getSupportedYcbcrFormat(const Context &context)
+{
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    static const VkFormat ycbcrFormats[]  = {
+        VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT,
+        VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
+        VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM,
+    };
+
+    // Section: Formats Requiring Sampler YCbCr Conversion
+    // The 4:2:0 formats provide guaranteed fallbacks with cosited chroma support when
+    // samplerYcbcrConversion is enabled.
+    for (const VkFormat format : ycbcrFormats)
+    {
+        const VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(vki, physicalDevice, format);
+        const VkFormatFeatureFlags features       = formatProperties.optimalTilingFeatures;
+
+        if (features & VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT)
+            return {format, VK_CHROMA_LOCATION_MIDPOINT};
+
+        if (features & VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT)
+            return {format, VK_CHROMA_LOCATION_COSITED_EVEN};
+    }
+
+    TCU_THROW(InternalError, "Could not find a supported YCbCr sampler format");
+}
+
 tcu::TestStatus NoQueuesTestInstance::iterate(void)
 {
     qpTestResult finalres = QP_TEST_RESULT_PASS;
@@ -622,6 +653,7 @@ tcu::TestStatus NoQueuesTestInstance::iterate(void)
     const vk::InstanceInterface &vki          = m_context.getInstanceInterface();
     const vk::VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
     const DeviceInterface &vk                 = m_context.getDeviceInterface();
+    const auto ycbcrFormatAndLocation         = getSupportedYcbcrFormat(m_context);
 
     const DeviceFeatures deviceFeaturesAll(m_context.getInstanceInterface(), m_context.getUsedApiVersion(),
                                            physicalDevice, m_context.getInstanceExtensions(),
@@ -716,7 +748,7 @@ tcu::TestStatus NoQueuesTestInstance::iterate(void)
         const VkSamplerYcbcrConversionCreateInfo conversionInfo = {
             VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
             nullptr,
-            VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT,
+            ycbcrFormatAndLocation.first,
             VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY,
             VK_SAMPLER_YCBCR_RANGE_ITU_FULL,
             {
@@ -725,8 +757,8 @@ tcu::TestStatus NoQueuesTestInstance::iterate(void)
                 VK_COMPONENT_SWIZZLE_IDENTITY,
                 VK_COMPONENT_SWIZZLE_IDENTITY,
             },
-            VK_CHROMA_LOCATION_MIDPOINT,
-            VK_CHROMA_LOCATION_MIDPOINT,
+            ycbcrFormatAndLocation.second,
+            ycbcrFormatAndLocation.second,
             VK_FILTER_NEAREST,
             VK_FALSE,
         };
