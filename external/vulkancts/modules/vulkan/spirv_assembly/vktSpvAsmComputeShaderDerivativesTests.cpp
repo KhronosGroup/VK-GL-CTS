@@ -2815,6 +2815,10 @@ tcu::TestStatus ComputeShaderDerivativeInstance::iterate(void)
     bool passed = false;
 
     // Check results
+    for (uint32_t ndx = 0; ndx < 4; ++ndx)
+    {
+        invalidateAlloc(vkdi, device, *allocations[ndx].get());
+    }
     std::vector<AllocationMp> allocationsVec(allocations, allocations + 4);
     passed = checkResult(allocationsVec);
 
