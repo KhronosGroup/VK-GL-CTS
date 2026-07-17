@@ -50,9 +50,7 @@
 #include <memory>
 #include <array>
 
-namespace vkt
-{
-namespace RayQuery
+namespace vkt::RayQuery
 {
 
 namespace
@@ -2034,6 +2032,140 @@ tcu::TestStatus updateEmptyTopASInstance(Context &context)
     return tcu::TestStatus::pass("Pass");
 }
 
+// Helper class to dispatch a simple ray query test
+class SimpleRayQueryDispatcher
+{
+public:
+    SimpleRayQueryDispatcher(Context &context, const std::vector<tcu::Vec3> &triangles, VkDeviceSize outputBufferSize,
+                             int32_t initialValue = 0);
+
+    void setSpecializationInfo(const VkSpecializationInfo *specializationInfo);
+    void setGeometryInstanceFlags(VkGeometryInstanceFlagsKHR flags);
+
+    void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
+
+    vk::Allocation &getOutputBufferAllocation(void) const;
+
+private:
+    Context &m_context;
+    const std::vector<tcu::Vec3> &m_triangles;
+    std::unique_ptr<BufferWithMemory> m_outputBuffer;
+
+    std::string m_shaderName                            = "comp";
+    VkGeometryInstanceFlagsKHR m_geometryInstanceFlags  = 0;
+    const VkSpecializationInfo *m_specializationInfoPtr = nullptr;
+};
+
+SimpleRayQueryDispatcher::SimpleRayQueryDispatcher(Context &context, const std::vector<tcu::Vec3> &triangles,
+                                                   VkDeviceSize outputBufferSize, int32_t initialValue)
+    : m_context(context)
+    , m_triangles(triangles)
+{
+    const auto ctx = context.getContextCommonData();
+
+    // create output buffer
+    const auto bufferCreateInfo = makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    m_outputBuffer              = std::unique_ptr<BufferWithMemory>(
+        new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, bufferCreateInfo, HostIntent::RW));
+
+    // clear output buffer
+    auto &alloc = m_outputBuffer->getAllocation();
+    memset(alloc.getHostPtr(), initialValue, static_cast<size_t>(outputBufferSize));
+    flushAlloc(ctx.vkd, ctx.device, alloc);
+}
+
+void SimpleRayQueryDispatcher::setSpecializationInfo(const VkSpecializationInfo *specializationInfo)
+{
+    m_specializationInfoPtr = specializationInfo;
+}
+
+void SimpleRayQueryDispatcher::setGeometryInstanceFlags(VkGeometryInstanceFlagsKHR flags)
+{
+    m_geometryInstanceFlags = flags;
+}
+
+void SimpleRayQueryDispatcher::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+{
+    const auto ctx    = m_context.getContextCommonData();
+    const auto stages = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_COMPUTE_BIT);
+
+    // Command pool and buffer.
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    // Build acceleration structures.
+    de::SharedPtr<BottomLevelAccelerationStructure> bottomLevelAS(makeBottomLevelAccelerationStructure().release());
+    bottomLevelAS->addGeometry(m_triangles, true /*triangles*/);
+    bottomLevelAS->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
+
+    de::SharedPtr<TopLevelAccelerationStructure> topLevelAS(makeTopLevelAccelerationStructure().release());
+    topLevelAS->setInstanceCount(1);
+    topLevelAS->addInstance(bottomLevelAS, identityMatrix3x4, 0u, 0xFFu, 0u, m_geometryInstanceFlags);
+    topLevelAS->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
+
+    // Descriptor set layout and pipeline layout.
+    const auto setLayout = DescriptorSetLayoutBuilder()
+                               .addSingleBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, stages)
+                               .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stages)
+                               .build(ctx.vkd, ctx.device);
+
+    // Descriptor pool and set.
+    const auto descriptorPool = DescriptorPoolBuilder()
+                                    .addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+                                    .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+                                    .build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    const auto descriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, descriptorPool.get(), setLayout.get());
+
+    // Update descriptor set.
+    {
+        const VkWriteDescriptorSetAccelerationStructureKHR accelDescInfo{
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+            nullptr,
+            1u,
+            topLevelAS.get()->getPtr(),
+        };
+
+        const auto bufferDescInfo = makeDescriptorBufferInfo(m_outputBuffer->get(), 0ull, VK_WHOLE_SIZE);
+
+        DescriptorSetUpdateBuilder()
+            .writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
+                         VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &accelDescInfo)
+            .writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(1u),
+                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescInfo)
+            .update(ctx.vkd, ctx.device);
+    }
+
+    // Shader modules.
+    const auto &binaries      = m_context.getBinaryCollection();
+    const auto compModule     = createShaderModule(ctx.vkd, ctx.device, binaries.get("comp"));
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, setLayout.get());
+    const auto pipeline       = makeComputePipeline(ctx.vkd, ctx.device, *pipelineLayout, 0u, nullptr, *compModule, 0u,
+                                                    m_specializationInfoPtr);
+
+    // Trace rays.
+    ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
+                                  &descriptorSet.get(), 0u, nullptr);
+    ctx.vkd.cmdDispatch(cmdBuffer, groupCountX, groupCountY, groupCountZ);
+
+    // Barrier for the output buffer.
+    const auto bufferBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+    ctx.vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_HOST_BIT, 0u,
+                               1u, &bufferBarrier, 0u, nullptr, 0u, nullptr);
+
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+}
+
+vk::Allocation &SimpleRayQueryDispatcher::getOutputBufferAllocation(void) const
+{
+    return m_outputBuffer->getAllocation();
+}
+
 // One ray query per invocation, with varying work group sizes.
 struct RayPerInvParams
 {
@@ -2051,7 +2183,7 @@ struct RayPerInvParams
 
 using RayPerInvParamsPtr = std::shared_ptr<RayPerInvParams>;
 
-void RayPerInvSupport(Context &context, RayPerInvParamsPtr params)
+void rayPerInvSupport(Context &context, RayPerInvParamsPtr params)
 {
     checkRayQuerySupport(context);
 
@@ -2065,7 +2197,7 @@ void RayPerInvSupport(Context &context, RayPerInvParamsPtr params)
         DE_ASSERT(*params->single < usedWgSize);
 }
 
-void RayPerInvPrograms(vk::SourceCollections &dst, RayPerInvParamsPtr params)
+void rayPerInvPrograms(vk::SourceCollections &dst, RayPerInvParamsPtr params)
 {
     // Global idea: one output value per invocation, one ray per invocation at most. If there is no ray for a given
     // invocation, the buffer preserves its value (0). If there is a ray and there's an intersection of the expected
@@ -2111,45 +2243,13 @@ void RayPerInvPrograms(vk::SourceCollections &dst, RayPerInvParamsPtr params)
     dst.glslSources.add("comp") << glu::ComputeSource(comp.str()) << buildOptions;
 }
 
-tcu::TestStatus RayPerInvRun(Context &context, RayPerInvParamsPtr params)
+tcu::TestStatus rayPerInvRun(Context &context, RayPerInvParamsPtr params)
 {
     // Decide a WG size.
     const auto &limits    = context.getDeviceProperties().limits;
     const auto &maxInvs   = limits.maxComputeWorkGroupSize[0];
     const auto targetInvs = ((params->wgSize > 0u) ? params->wgSize : maxInvs);
     const tcu::UVec3 wgSize(targetInvs, 1u, 1u);
-
-    const auto ctx        = context.getContextCommonData();
-    const auto &binaries  = context.getBinaryCollection();
-    const auto compShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("comp"));
-
-    DescriptorPoolBuilder poolBuilder;
-    poolBuilder.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
-    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    const auto descriptorPool =
-        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
-
-    DescriptorSetLayoutBuilder setLayoutBuilder;
-    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_COMPUTE_BIT);
-    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
-    const auto setLayout      = setLayoutBuilder.build(ctx.vkd, ctx.device);
-    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
-    const auto descriptorSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
-
-    // Pipeline.
-    const std::vector<VkSpecializationMapEntry> mapEntries{
-        makeSpecializationMapEntry(0u, sizeof(uint32_t) * 0u, sizeof(uint32_t)),
-        makeSpecializationMapEntry(1u, sizeof(uint32_t) * 1u, sizeof(uint32_t)),
-        makeSpecializationMapEntry(2u, sizeof(uint32_t) * 2u, sizeof(uint32_t)),
-    };
-    const VkSpecializationInfo specializationInfo = {
-        de::sizeU32(mapEntries),
-        de::dataOrNull(mapEntries),
-        sizeof(wgSize),
-        &wgSize,
-    };
-    const auto pipeline =
-        makeComputePipeline(ctx.vkd, ctx.device, *pipelineLayout, 0u, nullptr, *compShader, 0u, &specializationInfo);
 
     // Resources.
     const auto rngSeed = params->getRngSeed();
@@ -2191,55 +2291,28 @@ tcu::TestStatus RayPerInvRun(Context &context, RayPerInvParamsPtr params)
         }
     }
 
-    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
-    const auto cmdBuffer = *cmd.cmdBuffer;
-    beginCommandBuffer(ctx.vkd, cmdBuffer);
-
-    AccelerationStructBufferProperties bufferProps;
-    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
-
-    auto blas = makeBottomLevelAccelerationStructure();
-    blas->addGeometry(triangles, true);
-    blas->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
-
-    auto tlas = makeTopLevelAccelerationStructure();
-    tlas->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(blas.release()));
-    tlas->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
+    const std::vector<VkSpecializationMapEntry> mapEntries{
+        makeSpecializationMapEntry(0u, sizeof(uint32_t) * 0u, sizeof(uint32_t)),
+        makeSpecializationMapEntry(1u, sizeof(uint32_t) * 1u, sizeof(uint32_t)),
+        makeSpecializationMapEntry(2u, sizeof(uint32_t) * 2u, sizeof(uint32_t)),
+    };
+    const VkSpecializationInfo specializationInfo{
+        de::sizeU32(mapEntries),
+        de::dataOrNull(mapEntries),
+        sizeof(wgSize),
+        &wgSize,
+    };
 
     std::vector<uint32_t> ssboValues(targetInvs, 0u);
-    const auto ssboSize  = static_cast<VkDeviceSize>(de::dataSize(ssboValues));
-    const auto ssboUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-    const auto ssboInfo  = makeBufferCreateInfo(ssboSize, ssboUsage);
-    BufferWithMemory ssbo(ctx.vkd, ctx.device, ctx.allocator, ssboInfo, HostIntent::RW);
-    auto &ssboAlloc = ssbo.getAllocation();
-    memcpy(ssboAlloc.getHostPtr(), de::dataOrNull(ssboValues), de::dataSize(ssboValues));
-    flushAlloc(ctx.vkd, ctx.device, ssboAlloc);
+    SimpleRayQueryDispatcher rayQueryDispatcher(context, triangles,
+                                                static_cast<VkDeviceSize>(de::dataSize(ssboValues)));
+    rayQueryDispatcher.setSpecializationInfo(&specializationInfo);
+    rayQueryDispatcher.dispatch(1u, 1u, 1u);
 
-    DescriptorSetUpdateBuilder updateBuilder;
-    const auto binding                                          = DescriptorSetUpdateBuilder::Location::binding;
-    const VkWriteDescriptorSetAccelerationStructureKHR tlasDesc = {
-        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
-        nullptr,
-        1u,
-        tlas->getPtr(),
-    };
-    updateBuilder.writeSingle(*descriptorSet, binding(0u), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &tlasDesc);
-    const auto ssboDesc = makeDescriptorBufferInfo(ssbo.get(), 0ull, VK_WHOLE_SIZE);
-    updateBuilder.writeSingle(*descriptorSet, binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &ssboDesc);
-    updateBuilder.update(ctx.vkd, ctx.device);
-
-    const auto bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
-    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
-    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
-    ctx.vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
-    const auto barrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
-    cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                             &barrier);
-    endCommandBuffer(ctx.vkd, cmdBuffer);
-    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
-
-    invalidateAlloc(ctx.vkd, ctx.device, ssboAlloc);
-    memcpy(de::dataOrNull(ssboValues), ssboAlloc.getHostPtr(), de::dataSize(ssboValues));
+    const auto ctx               = context.getContextCommonData();
+    auto &outputBufferAllocation = rayQueryDispatcher.getOutputBufferAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, outputBufferAllocation);
+    memcpy(de::dataOrNull(ssboValues), outputBufferAllocation.getHostPtr(), de::dataSize(ssboValues));
 
     auto &log = context.getTestContext().getLog();
     bool fail = false;
@@ -2292,7 +2365,8 @@ void initFlipFacingPrograms(vk::SourceCollections &dst)
          << "    rayQueryInitializeEXT(rq, topLevelAS, rayFlags, cullMask, origin, tMin, direction, tMax);\n"
          << "    outBuffer.val = 0u;\n"
          << "    while (rayQueryProceedEXT(rq)) {\n"
-         << "        if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT) {\n"
+         << "        if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT) "
+            "{\n"
          << "            atomicAdd(outBuffer.val, 1u);\n"
          << "        }\n"
          << "    }\n"
@@ -2302,17 +2376,6 @@ void initFlipFacingPrograms(vk::SourceCollections &dst)
 
 tcu::TestStatus flipFacingRun(Context &context)
 {
-    const auto ctx    = context.getContextCommonData();
-    const auto stages = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_COMPUTE_BIT);
-
-    // Command pool and buffer.
-    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
-    const auto cmdBuffer = *cmd.cmdBuffer;
-
-    // Build acceleration structures.
-    auto topLevelAS    = makeTopLevelAccelerationStructure();
-    auto bottomLevelAS = makeBottomLevelAccelerationStructure();
-
     const std::vector<float> zPos{5.0f, 6.0f};
     std::vector<tcu::Vec3> triangles;
     triangles.reserve(3 * zPos.size());
@@ -2325,92 +2388,16 @@ tcu::TestStatus flipFacingRun(Context &context)
         // clang-format on
     }
 
-    bottomLevelAS->addGeometry(triangles, true /*triangles*/);
-
-    AccelerationStructBufferProperties bufferProps;
-    bufferProps.useExternalBuffer = false;
-    bufferProps.props.residency   = ResourceResidency::TRADITIONAL;
-
-    beginCommandBuffer(ctx.vkd, cmdBuffer);
-    bottomLevelAS->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
-
-    using SharedBottomPtr = de::SharedPtr<BottomLevelAccelerationStructure>;
-    SharedBottomPtr blasSharedPtr(bottomLevelAS.release());
-
-    topLevelAS->setInstanceCount(1);
-    const auto instanceFlags =
-        static_cast<VkGeometryInstanceFlagsKHR>(VK_GEOMETRY_INSTANCE_TRIANGLE_FLIP_FACING_BIT_KHR);
-    topLevelAS->addInstance(blasSharedPtr, identityMatrix3x4, 0u, 0xFFu, 0u, instanceFlags);
-    topLevelAS->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
-
-    // Create output buffer.
-    const auto bufferSize       = static_cast<VkDeviceSize>(sizeof(uint32_t));
-    const auto bufferCreateInfo = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-    BufferWithMemory buffer(ctx.vkd, ctx.device, ctx.allocator, bufferCreateInfo, HostIntent::RW);
-    {
-        auto &alloc = buffer.getAllocation();
-        memset(alloc.getHostPtr(), 0xFF, sizeof(uint32_t));
-        flushAlloc(ctx.vkd, ctx.device, alloc);
-    }
-
-    // Descriptor set layout and pipeline layout.
-    DescriptorSetLayoutBuilder setLayoutBuilder;
-    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, stages);
-    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stages);
-
-    const auto setLayout      = setLayoutBuilder.build(ctx.vkd, ctx.device);
-    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, setLayout.get());
-
-    // Descriptor pool and set.
-    DescriptorPoolBuilder poolBuilder;
-    poolBuilder.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
-    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    const auto descriptorPool =
-        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
-    const auto descriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, descriptorPool.get(), setLayout.get());
-
-    // Update descriptor set.
-    {
-        const VkWriteDescriptorSetAccelerationStructureKHR accelDescInfo = {
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
-            nullptr,
-            1u,
-            topLevelAS.get()->getPtr(),
-        };
-
-        const auto bufferDescInfo = makeDescriptorBufferInfo(buffer.get(), 0ull, VK_WHOLE_SIZE);
-
-        DescriptorSetUpdateBuilder updateBuilder;
-        updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
-                                  VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &accelDescInfo);
-        updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(1u),
-                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescInfo);
-        updateBuilder.update(ctx.vkd, ctx.device);
-    }
-
-    // Shader modules.
-    const auto &binaries  = context.getBinaryCollection();
-    const auto compModule = createShaderModule(ctx.vkd, ctx.device, binaries.get("comp"));
-    const auto pipeline   = makeComputePipeline(ctx.vkd, ctx.device, *pipelineLayout, *compModule);
-
-    // Trace rays.
-    ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                  &descriptorSet.get(), 0u, nullptr);
-    ctx.vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
-
-    // Barrier for the output buffer.
-    const auto bufferBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
-    ctx.vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_HOST_BIT, 0u,
-                               1u, &bufferBarrier, 0u, nullptr, 0u, nullptr);
-
-    endCommandBuffer(ctx.vkd, cmdBuffer);
-    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+    SimpleRayQueryDispatcher rayQueryDispatcher(context, triangles, sizeof(uint32_t), 0xFF);
+    rayQueryDispatcher.setGeometryInstanceFlags(VK_GEOMETRY_INSTANCE_TRIANGLE_FLIP_FACING_BIT_KHR);
+    rayQueryDispatcher.dispatch(1u, 1u, 1u);
 
     // Read value back from the buffer.
-    uint32_t bufferValue = 0xFFu;
-    invalidateAlloc(ctx.vkd, ctx.device, buffer.getAllocation());
-    memcpy(&bufferValue, buffer.getAllocation().getHostPtr(), sizeof(bufferValue));
+    uint32_t bufferValue         = 0xFFu;
+    const auto ctx               = context.getContextCommonData();
+    auto &outputBufferAllocation = rayQueryDispatcher.getOutputBufferAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, outputBufferAllocation);
+    memcpy(&bufferValue, outputBufferAllocation.getHostPtr(), sizeof(bufferValue));
 
     const auto expected = de::sizeU32(zPos);
     if (bufferValue != expected)
@@ -2418,6 +2405,96 @@ tcu::TestStatus flipFacingRun(Context &context)
         std::ostringstream msg;
         msg << "Unexpected value found in buffer: expected " << expected << " but found " << bufferValue;
         TCU_FAIL(msg.str());
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void initSharedMemoryConsistencyPrograms(vk::SourceCollections &dst)
+{
+    const vk::ShaderBuildOptions buildOptions(dst.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+    std::string comp(R"(
+        #version 460
+        #extension GL_EXT_ray_query : require
+        layout(local_size_x = 64) in;
+
+        layout(binding=0) uniform accelerationStructureEXT topLevelAS;
+        layout(binding=1) writeonly buffer OutputBuffer { uint sharedMemClobbered[]; };
+
+        // declare shared memory - we use a unique pattern per-thread to detect clobbering
+        shared uint sharedData[64];
+
+        void main() {
+            uint tid = gl_LocalInvocationIndex;
+
+            // fill shared memory with thread-specific values
+            uint expectedValue = tid * 13 + 31;
+            sharedData[tid]    = expectedValue;
+
+            // ensure all threads have finished writing to shared memory
+            barrier();
+
+            rayQueryEXT rq;
+            rayQueryInitializeEXT(rq, topLevelAS, gl_RayFlagsNoneEXT,
+                                  0xFF,                // cullMask
+                                  vec3(0.0),           // origin
+                                  1.0,                 // tMin
+                                  vec3(0.0, 0.0, 1.0), // direction
+                                  10.0);               // tMax
+
+            uint errorCount = 0;
+
+            // loop through traversal - rayQueryProceedEXT() might clobber sharedData
+            while (rayQueryProceedEXT(rq))
+            {
+                // verify shared memory was not clobbered by the proceed call
+                errorCount += uint(sharedData[tid] != expectedValue);
+
+                // writing back to shared memory as this might corrupt the internal state
+                // of the ray query, causing subsequent proceeds to fail or behave incorrectly
+                sharedData[tid] = expectedValue;
+
+                // ensure shared memory writes are coherent across the workgroup
+                barrier();
+            }
+
+            // check shared memory after traversal finishes
+            errorCount += uint(sharedData[tid] != expectedValue);
+
+            // verify ray hit the triangle
+            uint raySuccess = uint(rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCandidateIntersectionTriangleEXT);
+
+            // write results to output buffer - we want errorCount to be 0 and raySuccess to be 1
+            sharedMemClobbered[gl_GlobalInvocationID.x] = (errorCount << 1) | raySuccess;
+    })");
+
+    dst.glslSources.add("comp") << glu::ComputeSource(comp) << buildOptions;
+}
+
+tcu::TestStatus sharedMemoryConsistencyTest(Context &context)
+{
+    // check if writing to shared memory in between multiple rayQueryProceedEXT calls corrupts internal ray query state
+    std::vector<tcu::Vec3> triangle{{-1.0f, -1.0f, 5.0f}, {1.0f, -1.0f, 5.0f}, {0.0f, 1.0f, 5.0f}};
+
+    const uint32_t ssboItemsCount = 64;
+    SimpleRayQueryDispatcher rayQueryDispatcher(context, triangle, ssboItemsCount * sizeof(uint32_t), 0xFF);
+    rayQueryDispatcher.dispatch(1u, 1u, 1u);
+
+    // Read value back from the buffer.
+    std::vector<uint32_t> ssboValues(ssboItemsCount, 0xFFu);
+    const auto ctx               = context.getContextCommonData();
+    auto &outputBufferAllocation = rayQueryDispatcher.getOutputBufferAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, outputBufferAllocation);
+    memcpy(ssboValues.data(), outputBufferAllocation.getHostPtr(), de::dataSize(ssboValues));
+
+    uint32_t expected = 1;
+    for (uint32_t result : ssboValues)
+    {
+        if (result == expected)
+            continue;
+
+        TCU_FAIL(std::string("Expected 1 but found ") + std::to_string(result));
     }
 
     return tcu::TestStatus::pass("Pass");
@@ -2552,16 +2629,17 @@ tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx)
                     const auto &singleCaseSuffix = singleCaseSuffixes.at(singleCase);
                     const auto testName = "ray_per_inv_" + std::to_string(wgSize) + (single ? "_single" : "_all") +
                                           (single ? singleCaseSuffix : "");
-                    addFunctionCaseWithPrograms(group.get(), testName, RayPerInvSupport, RayPerInvPrograms,
-                                                RayPerInvRun, params);
+                    addFunctionCaseWithPrograms(group.get(), testName, rayPerInvSupport, rayPerInvPrograms,
+                                                rayPerInvRun, params);
                 }
     }
 
     addFunctionCaseWithPrograms(group.get(), "preserve_flip_facing", checkRayQuerySupport, initFlipFacingPrograms,
                                 flipFacingRun);
+    addFunctionCaseWithPrograms(group.get(), "shared_memory_consistency", checkRayQuerySupport,
+                                initSharedMemoryConsistencyPrograms, sharedMemoryConsistencyTest);
 
     return group.release();
 }
 
-} // namespace RayQuery
-} // namespace vkt
+} // namespace vkt::RayQuery
