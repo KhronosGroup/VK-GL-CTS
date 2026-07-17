@@ -31,7 +31,7 @@ void main() {
       /*for (uint i = 0; i < 8192; i++) {
          patch_index += (i & 0x1) == 0 ? -1 : 1;
       }*/
-      for (uint i = 0; i < 512; i++)
+      for (uint i = 0; i < 160; i++)
          atomicAdd(ssbo_val, i);
    }
 }
