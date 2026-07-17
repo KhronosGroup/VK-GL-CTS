@@ -349,9 +349,11 @@ tcu::TestStatus ArrayCompatibleTestInstance::iterate(void)
 
     auto &dstBufferAlloc  = dstBuffer->getAllocation();
     auto &ssboBufferAlloc = ssbo->getAllocation();
-    uint8_t *srcPtr       = reinterpret_cast<uint8_t *>(srcBufferAlloc.getHostPtr());
-    uint8_t *dstPtr       = reinterpret_cast<uint8_t *>(dstBufferAlloc.getHostPtr());
-    float *ssboPtr        = reinterpret_cast<float *>(ssboBufferAlloc.getHostPtr());
+    invalidateAlloc(vk, device, dstBufferAlloc);
+    invalidateAlloc(vk, device, ssboBufferAlloc);
+    uint8_t *srcPtr = reinterpret_cast<uint8_t *>(srcBufferAlloc.getHostPtr());
+    uint8_t *dstPtr = reinterpret_cast<uint8_t *>(dstBufferAlloc.getHostPtr());
+    float *ssboPtr  = reinterpret_cast<float *>(ssboBufferAlloc.getHostPtr());
     if (memcmp(srcPtr, dstPtr, layerSize) != 0)
     {
         for (uint32_t i = 0; i < layerSize; ++i)
