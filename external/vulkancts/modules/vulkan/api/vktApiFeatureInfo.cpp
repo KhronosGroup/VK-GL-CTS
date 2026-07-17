@@ -3786,6 +3786,15 @@ tcu::TestStatus memoryBudgetMultiInstance(Context &context)
 
         const auto memory1 = allocateMemory(vkd1, *device1, &allocateInfo1);
 
+#ifdef CTS_USES_VULKANSC
+        // We have to skip the actual budget checks in the parent process of the Vulkan SC CTS as they will obviously
+        // not increase, and it will cause the memory object reservation count to be wrong in the child process due to
+        // the early out.
+        // Preferably test cases should not early out, but here it seemed easier to handle things this way.
+        if (!context.getTestContext().getCommandLine().isSubProcess())
+            continue;
+#endif // CTS_USES_VULKANSC
+
         const auto afterAlloc1Budget1 = getBudgetInfo(log, vki1, physDev1);
 
         if (afterAlloc1Budget1->budgetProps.heapUsage[heapIndex1] <= budgetInfo1->budgetProps.heapUsage[heapIndex1])
