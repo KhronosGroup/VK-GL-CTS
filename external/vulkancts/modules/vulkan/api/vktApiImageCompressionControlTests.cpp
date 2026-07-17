@@ -620,7 +620,6 @@ static tcu::TestStatus swapchainCreateTest(Context &context, TestParams testPara
     const wsi::NativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType);
     const bool is_fixed_rate_ex = testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_EXPLICIT_EXT;
 
-    VkExtent2D extent2d = {16, 16};
     VkImageCompressionFixedRateFlagsEXT planeFlags[3]{};
 
     for (unsigned i{}; i < (is_fixed_rate_ex ? 24u : 1u); i++)
@@ -694,6 +693,9 @@ static tcu::TestStatus swapchainCreateTest(Context &context, TestParams testPara
                 testParams.control.pFixedRateFlags[0] =
                     testParams.control.pFixedRateFlags[0] & supportedCompressionRate;
             }
+
+            VkExtent2D extent2d =
+                (isDisplaySurface(testParams.wsiType) ? caps.surfaceCapabilities.currentExtent : VkExtent2D{16, 16});
 
             VkSwapchainCreateInfoKHR swapchainInfo = initVulkanStructure();
             swapchainInfo.surface                  = surface.get();

@@ -59,6 +59,35 @@ using tcu::Sampler;
 using tcu::TestLog;
 using namespace glu::TextureTestUtil;
 
+// Note: Explicit reconstruciton is not an toggleable feature when a formats feature flags include
+// the explicit bit; explicit will be used by the implementation for that format and needs to be
+// accounted for in the verification of the rendering result.
+//
+// https://docs.vulkan.org/spec/latest/chapters/textures.html#textures-chroma-reconstruction
+//
+//   If the format of the image that is to be sampled sets
+//   VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT, or the
+//   VkSamplerYcbcrConversionCreateInfo's forceExplicitReconstruction is VK_TRUE, reconstruction is
+//   performed as an explicit step independent of filtering, described in the Explicit Reconstruction
+//   section.
+
+bool getExplicitReconstruction(Context &context, VkFormat format)
+{
+    tcu::TestLog &log                         = context.getTestContext().getLog();
+    const auto &instInt                       = context.getInstanceInterface();
+    auto physicalDevice                       = context.getPhysicalDevice();
+    const VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(instInt, physicalDevice, format);
+    const VkFormatFeatureFlags featureFlags   = formatProperties.optimalTilingFeatures;
+
+    const bool explicitReconstruction =
+        (featureFlags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT) != 0;
+
+    log << tcu::TestLog::Message << "Implementation uses Explicit Reconstruction for format " << format
+        << tcu::TestLog::EndMessage;
+
+    return explicitReconstruction;
+}
+
 VkSamplerCreateInfo getSamplerInfo(const VkSamplerYcbcrConversionInfo *samplerConversionInfo)
 {
     return {
@@ -204,8 +233,8 @@ Move<VkImageView> createImageView(const DeviceInterface &vkd, VkDevice device, V
 // Helper to verify the filtered results against calculated bounds.
 // Shared by both Graphics and Compute test instances.
 tcu::TestStatus verifyFilteringResult(tcu::TestLog &log, const tcu::ConstPixelBufferAccess &resImage, VkFormat format,
-                                      VkFilter chromaFiltering, const tcu::UVec2 &renderSize,
-                                      const MultiPlaneImageData &imageData,
+                                      VkFilter chromaFiltering, const bool explicitReconstruction,
+                                      const tcu::UVec2 &renderSize, const MultiPlaneImageData &imageData,
                                       const vk::VkComponentMapping &componentMapping, const std::vector<tcu::Vec2> &sts)
 {
     const tcu::UVec2 imageSize                  = imageData.getSize();
@@ -247,9 +276,6 @@ tcu::TestStatus verifyFilteringResult(tcu::TestLog &log, const tcu::ConstPixelBu
     // We assume subTexelPrecisionBits is standard 8 for these tests if context isn't passed,
     // or retrieve it if we pass Context. For safety, we use 8 which is standard lower bound.
     const uint32_t subTexelPrecisionBits = 8;
-
-    // Note: Explicit reconstruction is false for these specific tests based on previous context
-    const bool explicitReconstruction = false;
 
     std::vector<tcu::Vec4> minBound;
     std::vector<tcu::Vec4> maxBound;
@@ -350,6 +376,7 @@ private:
 
     const VkFormat m_format;
     const VkFilter m_chromaFiltering;
+    bool m_explicitReconstruction;
     const DeviceInterface &m_vkd;
     const VkDevice m_device;
     int m_caseIndex;
@@ -360,6 +387,7 @@ LinearFilteringTestInstance::LinearFilteringTestInstance(Context &context, VkFor
     : TestInstance(context)
     , m_format(format)
     , m_chromaFiltering(chromaFiltering)
+    , m_explicitReconstruction{getExplicitReconstruction(context, format)}
     , m_vkd(m_context.getDeviceInterface())
     , m_device(m_context.getDevice())
     , m_caseIndex(0)
@@ -478,8 +506,9 @@ tcu::TestStatus LinearFilteringTestInstance::iterate(void)
         vk::VK_COMPONENT_SWIZZLE_IDENTITY, vk::VK_COMPONENT_SWIZZLE_IDENTITY, vk::VK_COMPONENT_SWIZZLE_IDENTITY,
         vk::VK_COMPONENT_SWIZZLE_IDENTITY};
 
-    tcu::TestStatus result = verifyFilteringResult(m_context.getTestContext().getLog(), resImage, m_format,
-                                                   m_chromaFiltering, renderSize, imageData, componentMapping, sts);
+    tcu::TestStatus result =
+        verifyFilteringResult(m_context.getTestContext().getLog(), resImage, m_format, m_chromaFiltering,
+                              m_explicitReconstruction, renderSize, imageData, componentMapping, sts);
 
     if (++m_caseIndex < (int)m_cases.size())
         return tcu::TestStatus::incomplete();
@@ -499,6 +528,7 @@ protected:
 private:
     const VkFormat m_format;
     const VkFilter m_chromaFiltering;
+    bool m_explicitReconstruction;
     const DeviceInterface &m_vkd;
     const VkDevice m_device;
     int m_caseIndex;
@@ -516,6 +546,7 @@ LinearFilteringComputeTestInstance::LinearFilteringComputeTestInstance(Context &
     : TestInstance(context)
     , m_format(format)
     , m_chromaFiltering(chromaFiltering)
+    , m_explicitReconstruction{getExplicitReconstruction(context, format)}
     , m_vkd(m_context.getDeviceInterface())
     , m_device(m_context.getDevice())
     , m_caseIndex(0)
@@ -666,8 +697,9 @@ tcu::TestStatus LinearFilteringComputeTestInstance::iterate(void)
         vk::VK_COMPONENT_SWIZZLE_IDENTITY, vk::VK_COMPONENT_SWIZZLE_IDENTITY, vk::VK_COMPONENT_SWIZZLE_IDENTITY,
         vk::VK_COMPONENT_SWIZZLE_IDENTITY};
 
-    tcu::TestStatus result = verifyFilteringResult(m_context.getTestContext().getLog(), resImage, m_format,
-                                                   m_chromaFiltering, renderSize, imageData, componentMapping, sts);
+    tcu::TestStatus result =
+        verifyFilteringResult(m_context.getTestContext().getLog(), resImage, m_format, m_chromaFiltering,
+                              m_explicitReconstruction, renderSize, imageData, componentMapping, sts);
 
     if (++m_caseIndex < (int)m_cases.size())
         return tcu::TestStatus::incomplete();
