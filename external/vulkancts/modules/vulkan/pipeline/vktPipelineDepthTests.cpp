@@ -1251,10 +1251,16 @@ void transferLayoutChangePrograms(SourceCollections &dst, TransferLayoutChangePa
     dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
 }
 
-void transferLayoutChangeSupportCheck(Context &context, TransferLayoutChangeParamsPtr)
+void transferLayoutChangeSupportCheck(Context &context, TransferLayoutChangeParamsPtr params)
 {
     // Will throw NotSupportedError if the queue does not exist.
     context.getTransferQueue();
+
+    // VUID-VkImageMemoryBarrier-image-03320
+    const VkImageAspectFlags dsAspects = (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
+    if (params->aspects != dsAspects &&
+        !context.isDeviceFunctionalitySupported("VK_KHR_separate_depth_stencil_layouts"))
+        TCU_THROW(NotSupportedError, "VK_KHR_separate_depth_stencil_layouts is not supported");
 }
 
 // Find a suitable format for the depth/stencil buffer.
@@ -1473,7 +1479,9 @@ tcu::TestStatus transferLayoutChangeTest(Context &context, TransferLayoutChangeP
     qfotBarrierAcquire.srcAccessMask = 0u;
 
     // Release depth/stencil image to the universal queue.
-    cmdPipelineImageMemoryBarrier(ctx.vkd, xferCmdBuffer, xferStage, 0u, &qfotBarrierRelease);
+    // VUID-vkCmdPipelineBarrier-dstStageMask-03937
+    cmdPipelineImageMemoryBarrier(ctx.vkd, xferCmdBuffer, xferStage, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                  &qfotBarrierRelease);
 
     endCommandBuffer(ctx.vkd, xferCmdBuffer);
 
@@ -1483,7 +1491,9 @@ tcu::TestStatus transferLayoutChangeTest(Context &context, TransferLayoutChangeP
     beginCommandBuffer(ctx.vkd, drawCmdBuffer);
 
     // Acquire depth/stencil image.
-    cmdPipelineImageMemoryBarrier(ctx.vkd, drawCmdBuffer, 0u, dsStage, &qfotBarrierAcquire);
+    // VUID-vkCmdPipelineBarrier-srcStageMask-03937
+    cmdPipelineImageMemoryBarrier(ctx.vkd, drawCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dsStage,
+                                  &qfotBarrierAcquire);
 
     // Clear color image.
     {

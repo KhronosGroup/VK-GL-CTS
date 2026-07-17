@@ -1429,15 +1429,16 @@ tcu::TestStatus SubpassDependencyTestInstance::iterateInternal(void)
 
     beginCommandBuffer(vkd, *commandBuffer);
 
-    // Transition stencil aspects to the final layout directly.
+    // Transition depth/stencil aspects to the final layout directly
     if (isDepthStencilFormat(m_format))
     {
+        // VUID-VkImageMemoryBarrier-image-03320
         const VkImageSubresourceRange imageSubresourceRange = {
-            VK_IMAGE_ASPECT_STENCIL_BIT, // VkImageAspectFlags    aspectMask
-            0u,                          // uint32_t                baseMipLevel
-            1u,                          // uint32_t                levelCount
-            0u,                          // uint32_t                baseArrayLayer
-            1u                           // uint32_t                layerCount
+            getImageAspectFlags(mapVkFormat(m_format)), // VkImageAspectFlags    aspectMask
+            0u,                                         // uint32_t                baseMipLevel
+            1u,                                         // uint32_t                levelCount
+            0u,                                         // uint32_t                baseArrayLayer
+            1u                                          // uint32_t                layerCount
         };
 
         VkImageMemoryBarrier barrier = {

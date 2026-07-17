@@ -281,7 +281,8 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
     const VkQueue queue               = m_context.getUniversalQueue();
     const uint32_t queueFamilyIndex   = m_context.getUniversalQueueFamilyIndex();
     Allocator &allocator              = m_context.getDefaultAllocator();
-    VkQueryPool queryPool;
+    // VUID-vkDestroyDevice-device-05137
+    Move<VkQueryPool> queryPool;
     const uint32_t queryCount = 1u;
     std::vector<VkDeviceSize> sampleCounts(queryCount);
 
@@ -295,7 +296,7 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
             queryCount,                               // uint32_t queryCount;
             0u,                                       // VkQueryPipelineStatisticFlags pipelineStatistics;
         };
-        VK_CHECK(vk.createQueryPool(device, &queryPoolInfo, NULL, &queryPool));
+        queryPool = createQueryPool(vk, device, &queryPoolInfo);
     }
 
     // Color attachment
@@ -443,7 +444,7 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
 
         beginCommandBuffer(vk, *cmdBuffer);
 
-        vk.cmdResetQueryPool(*cmdBuffer, queryPool, 0, queryCount);
+        vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0, queryCount);
 
         // Will clear the attachments with specified depth and stencil values.
         beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor, clearDepth, clearStencil);
@@ -478,15 +479,15 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
 
         if (m_preciseBitEnabled)
         {
-            vk.cmdBeginQuery(cmdBuffer.get(), queryPool, 0, VK_QUERY_CONTROL_PRECISE_BIT);
+            vk.cmdBeginQuery(cmdBuffer.get(), *queryPool, 0, VK_QUERY_CONTROL_PRECISE_BIT);
         }
         else
         {
-            vk.cmdBeginQuery(cmdBuffer.get(), queryPool, 0, 0);
+            vk.cmdBeginQuery(cmdBuffer.get(), *queryPool, 0, 0);
         }
 
         vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
-        vk.cmdEndQuery(cmdBuffer.get(), queryPool, 0);
+        vk.cmdEndQuery(cmdBuffer.get(), *queryPool, 0);
 
         endRenderPass(vk, *cmdBuffer);
 
@@ -554,7 +555,7 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
             }
         }
 
-        VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
+        VK_CHECK(vk.getQueryPoolResults(device, *queryPool, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
                                         sampleCounts.data(), sizeof(VkDeviceSize),
                                         VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
 
@@ -564,10 +565,6 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
             log << tcu::TestLog::Message << "Passed Samples : " << de::toString(sampleCounts[0]) << " / " << expResult
                 << tcu::TestLog::EndMessage;
         }
-
-#ifndef CTS_USES_VULKANSC
-        vk.destroyQueryPool(device, queryPool, nullptr);
-#endif // CTS_USES_VULKANSC
 
         if ((m_preciseBitEnabled && sampleCounts[0] == expResult) || (!m_preciseBitEnabled && sampleCounts[0] > 0))
         {

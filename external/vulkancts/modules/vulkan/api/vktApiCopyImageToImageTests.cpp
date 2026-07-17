@@ -4121,6 +4121,8 @@ struct MultiSampleThenSingleSampleParams
 void checkQueueSupport(Context &context, MultiSampleThenSingleSampleParams params)
 {
     const auto &testGroupParams = params.testGroupParams;
+    if (testGroupParams->extensionFlags & COPY_COMMANDS_2)
+        context.requireDeviceFunctionality("VK_KHR_copy_commands2");
     if (testGroupParams->queueSelection == QueueSelectionOptions::ComputeOnly)
         context.getComputeQueue();
     else if (testGroupParams->queueSelection == QueueSelectionOptions::TransferOnly)
@@ -4220,8 +4222,10 @@ tcu::TestStatus multiSampleThenSingleSampleTest(Context &context, MultiSampleThe
             for (const auto &imgHandle : allHandles)
                 prepareBarriers.push_back(makeImageMemoryBarrier(
                     0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, xferDstLayout, imgHandle, colorSRR));
-            cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, 0u, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                          de::dataOrNull(prepareBarriers), prepareBarriers.size());
+            // VUID-vkCmdPipelineBarrier-srcStageMask-03937
+            cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                          VK_PIPELINE_STAGE_TRANSFER_BIT, de::dataOrNull(prepareBarriers),
+                                          prepareBarriers.size());
         }
 
         ctx.vkd.cmdClearColorImage(cmdBuffer, msSrcImg.get(), xferDstLayout, &msSrcColor.color, 1u, &colorSRR);

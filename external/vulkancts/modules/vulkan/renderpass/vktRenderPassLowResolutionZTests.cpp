@@ -757,9 +757,10 @@ tcu::TestStatus LRZTestInstance::iterate(void)
     }
 #endif // CTS_USES_VULKANSC
 
-    // execute all image layout transitions
-    vk.cmdPipelineBarrier(cmdBuffer, 0, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0u, 0u, nullptr, 0u, nullptr,
-                          static_cast<uint32_t>(layoutTransitionBarriers.size()), layoutTransitionBarriers.data());
+    // VUID-vkCmdPipelineBarrier-srcStageMask-03937
+    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0u, 0u,
+                          nullptr, 0u, nullptr, static_cast<uint32_t>(layoutTransitionBarriers.size()),
+                          layoutTransitionBarriers.data());
 
     // if needed setup all blit images with clear values
     for (size_t i = 0; i < blitImagesVect.size(); ++i)

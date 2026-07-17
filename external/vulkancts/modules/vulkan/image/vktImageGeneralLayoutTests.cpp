@@ -381,8 +381,9 @@ tcu::TestStatus AstcSampleTestInstance::iterate(void)
     const VkImageMemoryBarrier initialBarrier =
         makeImageMemoryBarrier(0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
                                *sampledImage, subresourceRange);
-    vk.cmdPipelineBarrier(*cmdBufferInit, VK_PIPELINE_STAGE_NONE, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0,
-                          nullptr, 1, &initialBarrier);
+    // VUID-vkCmdPipelineBarrier-srcStageMask-03937
+    vk.cmdPipelineBarrier(*cmdBufferInit, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
+                          nullptr, 0, nullptr, 1, &initialBarrier);
 
     const VkBufferImageCopy region =
         vk::makeBufferImageCopy(imageExtent, vk::makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
@@ -1969,7 +1970,8 @@ tcu::TestStatus MsaaTestInstance::iterate(void)
                 VK_ACCESS_NONE, VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                 VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, **additionalImages[i], subresourceRange);
 
-            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_NONE,
+            // VUID-vkCmdPipelineBarrier-srcStageMask-03937
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                   VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0,
                                   nullptr, 0, nullptr, 1, &imageBarrier);
         }
@@ -1979,8 +1981,9 @@ tcu::TestStatus MsaaTestInstance::iterate(void)
                 makeImageMemoryBarrier(VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
                                        VK_IMAGE_LAYOUT_GENERAL, **resolveImages[i], subresourceRange);
 
-            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_NONE, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0,
-                                  nullptr, 1, &imageBarrier);
+            // VUID-vkCmdPipelineBarrier-srcStageMask-03937
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
+                                  nullptr, 0, nullptr, 1, &imageBarrier);
         }
     }
 

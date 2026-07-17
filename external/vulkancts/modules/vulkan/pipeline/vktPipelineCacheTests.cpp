@@ -506,6 +506,12 @@ void GraphicsTest::checkSupport(Context &context) const
     if (m_param.getMode() == TestMode::BINARY)
         context.requireDeviceFunctionality("VK_KHR_pipeline_binary");
 
+    // VUID-VkPipelineCacheCreateInfo-flags-parameter
+    // VUID-VkPipelineCacheCreateInfo-pipelineCreationCacheControl-02892
+    if ((m_param.getPipelineCacheCreateFlags() & VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT) &&
+        !context.getPipelineCreationCacheControlFeatures().pipelineCreationCacheControl)
+        TCU_THROW(NotSupportedError, "pipelineCreationCacheControl not supported");
+
     if (m_param.getShaderFlags() & VK_SHADER_STAGE_GEOMETRY_BIT)
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
     if ((m_param.getShaderFlags() & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) ||

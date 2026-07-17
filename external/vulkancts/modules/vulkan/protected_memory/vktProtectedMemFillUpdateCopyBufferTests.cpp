@@ -151,7 +151,8 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
         vk::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     if (m_useDeviceAddressCommands)
         srcUsage |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-    vk::VkBufferUsageFlags dstUsage = srcUsage | vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    // VUID-vkCmdCopyBuffer-srcBuffer-00118
+    vk::VkBufferUsageFlags dstUsage = srcUsage | vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
     de::MovePtr<vk::BufferWithMemory> dstBuffer(makeBuffer(
         ctx, PROTECTION_ENABLED, queueFamilyIndex, bufferSize, srcUsage,

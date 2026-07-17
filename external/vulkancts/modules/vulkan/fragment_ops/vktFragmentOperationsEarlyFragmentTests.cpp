@@ -882,10 +882,11 @@ tcu::TestStatus EarlyFragmentDiscardTestInstance::iterate(void)
         copyImageToBuffer(vk, *cmdBuffer, *colorImage, *colorBuffer, renderSize, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
         VkImageAspectFlags dsAspect =
             m_testMode == MODE_DEPTH ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT;
-        VkImageLayout dsImageLayout = m_testMode == MODE_DEPTH ? VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL :
-                                                                 VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
+        // VUID-VkImageMemoryBarrier-oldLayout-parameter / VUID-VkImageMemoryBarrier-image-03320
+        VkImageLayout dsImageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         copyImageToBuffer(vk, *cmdBuffer, *testImage, *dsBuffer, renderSize,
-                          VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, dsImageLayout, 1u, dsAspect, dsAspect);
+                          VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, dsImageLayout, 1u,
+                          getImageAspectFlags(depthStencilFormat), dsAspect);
 
         endCommandBuffer(vk, *cmdBuffer);
         submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -2142,7 +2143,8 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
     Allocator &allocator            = m_context.getDefaultAllocator();
     const VkFormat colorFormat      = VK_FORMAT_R8G8B8A8_UNORM;
     const VkFormat depthFormat      = VK_FORMAT_D16_UNORM;
-    VkQueryPool queryPool;
+    // VUID-vkDestroyDevice-device-05137
+    Move<VkQueryPool> queryPool;
     const uint32_t queryCount = 2u;
     std::vector<VkDeviceSize> sampleCounts(queryCount);
 
@@ -2157,7 +2159,7 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
             0u,                                       // VkQueryPipelineStatisticFlags pipelineStatistics;
         };
 
-        VK_CHECK(vk.createQueryPool(device, &queryPoolInfo, NULL, &queryPool));
+        queryPool = createQueryPool(vk, device, &queryPoolInfo);
     }
 
     m_context.getTestContext().getLog() << tcu::TestLog::Message << "Using depth format "
@@ -2324,10 +2326,13 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
             makeImageMemoryBarrier(0, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
                                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, *depthImage,
                                    depthSubresourceRange)};
-        vk.cmdPipelineBarrier(*cmdBuffer, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u,
-                              nullptr, 2u, initialImageBarriers);
-        vk.cmdPipelineBarrier(*cmdBuffer, 0, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0u, 0u, nullptr, 0u, nullptr,
-                              1u, &initialImageBarriers[2]);
+        // VUID-vkCmdPipelineBarrier-srcStageMask-03937
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 2u,
+                              initialImageBarriers);
+        // VUID-vkCmdPipelineBarrier-srcStageMask-03937
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                              0u, 0u, nullptr, 0u, nullptr, 1u, &initialImageBarriers[2]);
 
         const VkClearValue clearValues[] = {
             makeClearValueColor(clearColor),      // attachment 0
@@ -2347,7 +2352,7 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
         };
 
         // Reset query pool. Must be done outside of render pass
-        vk.cmdResetQueryPool(*cmdBuffer, queryPool, 0, queryCount);
+        vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0, queryCount);
 
         vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -2356,9 +2361,9 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
         // Run without early fragment test.
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineNoEarlyFrag);
 
-        vk.cmdBeginQuery(cmdBuffer.get(), queryPool, QUERY_INDEX_NO_EARLY_FRAG, VK_QUERY_CONTROL_PRECISE_BIT);
+        vk.cmdBeginQuery(cmdBuffer.get(), *queryPool, QUERY_INDEX_NO_EARLY_FRAG, VK_QUERY_CONTROL_PRECISE_BIT);
         vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
-        vk.cmdEndQuery(cmdBuffer.get(), queryPool, QUERY_INDEX_NO_EARLY_FRAG);
+        vk.cmdEndQuery(cmdBuffer.get(), *queryPool, QUERY_INDEX_NO_EARLY_FRAG);
 
         endRenderPass(vk, *cmdBuffer);
 
@@ -2379,9 +2384,9 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
         // Run with early fragment test.
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineEarlyFrag);
 
-        vk.cmdBeginQuery(cmdBuffer.get(), queryPool, QUERY_INDEX_EARLY_FRAG, VK_QUERY_CONTROL_PRECISE_BIT);
+        vk.cmdBeginQuery(cmdBuffer.get(), *queryPool, QUERY_INDEX_EARLY_FRAG, VK_QUERY_CONTROL_PRECISE_BIT);
         vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
-        vk.cmdEndQuery(cmdBuffer.get(), queryPool, QUERY_INDEX_EARLY_FRAG);
+        vk.cmdEndQuery(cmdBuffer.get(), *queryPool, QUERY_INDEX_EARLY_FRAG);
 
         endRenderPass(vk, *cmdBuffer);
 
@@ -2414,7 +2419,7 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
         uint64_t minValue  = refValue - tolerance;
         uint64_t maxValue  = refValue + tolerance;
 
-        VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
+        VK_CHECK(vk.getQueryPoolResults(device, *queryPool, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
                                         sampleCounts.data(), sizeof(VkDeviceSize),
                                         VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
 
@@ -2431,10 +2436,6 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
                 << "Passed Samples (with early fragment test)    : " << de::toString(sampleCounts[1])
                 << tcu::TestLog::EndMessage;
         }
-
-#ifndef CTS_USES_VULKANSC
-        vk.destroyQueryPool(device, queryPool, nullptr);
-#endif // CTS_USES_VULKANSC
 
         // Check that number of the all passed samples are within an acceptable range.
         if (sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] >= minValue &&

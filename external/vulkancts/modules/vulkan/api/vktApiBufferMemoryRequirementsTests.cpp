@@ -491,6 +491,17 @@ void MemoryRequirementsTest::checkSupport(Context &context) const
                 }
                 notSupported = true;
             }
+
+            // VUID-VkBufferCreateInfo-None-09499
+            if (i->any({VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT,
+                        VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT}) &&
+                !context.isDeviceFunctionalitySupported("VK_EXT_transform_feedback"))
+                notSupported = true;
+
+            // VUID-VkBufferCreateInfo-None-09499
+            if (i->contains(VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT) &&
+                !context.isDeviceFunctionalitySupported("VK_EXT_conditional_rendering"))
+                notSupported = true;
 #endif // CTS_USES_VULKANSC
 
             if (i->contains(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) && !context.isBufferDeviceAddressSupported())
