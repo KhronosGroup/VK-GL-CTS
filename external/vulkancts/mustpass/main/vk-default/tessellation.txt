@@ -264,6 +264,8 @@ dEQP-VK.tessellation.misc_draw.isolines_fractional_even_spacing_draw
 dEQP-VK.tessellation.misc_draw.isolines_fractional_even_spacing_draw_indirect
 dEQP-VK.tessellation.misc_draw.isolines_fractional_odd_spacing_draw
 dEQP-VK.tessellation.misc_draw.isolines_fractional_odd_spacing_draw_indirect
+dEQP-VK.tessellation.misc_draw.non_zero_vertex_instance
+dEQP-VK.tessellation.misc_draw.non_zero_vertex_instance_indirect_draw
 dEQP-VK.tessellation.misc_draw.quads_instances
 dEQP-VK.tessellation.misc_draw.quads_no_patches
 dEQP-VK.tessellation.misc_draw.switch_domain_origin_lower_left_to_upper_left

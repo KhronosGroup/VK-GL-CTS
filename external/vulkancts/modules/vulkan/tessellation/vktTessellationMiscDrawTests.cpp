@@ -2422,6 +2422,211 @@ struct
     {PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV, "_shader_objects"},
 };
 
+namespace NonZeroVertexInstance
+{
+
+struct Params
+{
+    bool indirect;
+};
+using ParamsPtr = std::shared_ptr<Params>;
+
+void checkSupport(Context &context, ParamsPtr)
+{
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+}
+
+void initPrograms(vk::SourceCollections &dst, ParamsPtr)
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "layout (location=0) in vec4 inPos;\n"
+         << "layout (location=0) out flat int instanceIdx;\n"
+         << "out gl_PerVertex {\n"
+         << "    vec4 gl_Position;\n"
+         << "};\n"
+         << "void main(void) {\n"
+         << "    gl_Position = inPos;\n"
+         << "    instanceIdx = gl_InstanceIndex;\n"
+         << "}\n";
+    dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    // Passthrough tessellation shaders.
+    std::ostringstream tesc;
+    tesc << "#version 460\n"
+         << "#extension GL_EXT_tessellation_shader : require\n"
+         << "layout(vertices=3) out;\n"
+         << "in gl_PerVertex\n"
+         << "{\n"
+         << "    vec4 gl_Position;\n"
+         << "} gl_in[gl_MaxPatchVertices];\n"
+         << "layout (location=0) in flat int instanceIdxIn[];\n"
+         << "layout (location=0) out flat int instanceIdxOut[];\n"
+         << "out gl_PerVertex\n"
+         << "{\n"
+         << "    vec4 gl_Position;\n"
+         << "} gl_out[];\n"
+         << "void main() {\n"
+         << "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+         << "    instanceIdxOut[gl_InvocationID] = instanceIdxIn[gl_InvocationID];\n"
+         << "    gl_TessLevelOuter[0] = 1.0;\n"
+         << "    gl_TessLevelOuter[1] = 1.0;\n"
+         << "    gl_TessLevelOuter[2] = 1.0;\n"
+         << "    gl_TessLevelOuter[3] = 1.0;\n"
+         << "    gl_TessLevelInner[0] = 1.0;\n"
+         << "    gl_TessLevelInner[1] = 1.0;\n"
+         << "}\n";
+    dst.glslSources.add("tesc") << glu::TessellationControlSource(tesc.str());
+
+    std::ostringstream tese;
+    tese << "#version 460\n"
+         << "#extension GL_EXT_tessellation_shader : require\n"
+         << "layout(triangles) in;\n"
+         << "in gl_PerVertex {\n"
+         << "    vec4 gl_Position;\n"
+         << "} gl_in[gl_MaxPatchVertices];\n"
+         << "layout (location=0) in flat int instanceIdxIn[];\n"
+         << "layout (location=0) out flat int instanceIdxOut;\n"
+         << "out gl_PerVertex {\n"
+         << "    vec4 gl_Position;\n"
+         << "};\n"
+         << "void main() {\n"
+         << "    gl_Position = (gl_in[0].gl_Position * gl_TessCoord.x + \n"
+         << "                   gl_in[1].gl_Position * gl_TessCoord.y + \n"
+         << "                   gl_in[2].gl_Position * gl_TessCoord.z);\n"
+         << "    instanceIdxOut = instanceIdxIn[0];\n"
+         << "}\n";
+    dst.glslSources.add("tese") << glu::TessellationEvaluationSource(tese.str());
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "layout (location=0) in flat int instanceIdx;\n"
+         << "void main(void) {\n"
+         << "    outColor = vec4(0.0, 0.0, float(instanceIdx), 1.0);\n"
+         << "}\n";
+    dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus iterate(Context &context, ParamsPtr params)
+{
+    const auto ctx = context.getContextCommonData();
+
+    // Two triangles covering the left half and the right half of the framebuffer.
+    std::vector<tcu::Vec4> vertices;
+    vertices.reserve(6u);
+
+    // Left half.
+    vertices.emplace_back(0.0f, -1.0f, 0.0f, 1.0f);
+    vertices.emplace_back(-4.0f, -1.0f, 0.0f, 1.0f);
+    vertices.emplace_back(0.0f, 3.0f, 0.0f, 1.0f);
+
+    // Right half.
+    vertices.emplace_back(0.0f, -1.0f, 0.0f, 1.0f);
+    vertices.emplace_back(0.0f, 3.0f, 0.0f, 1.0f);
+    vertices.emplace_back(4.0f, -1.0f, 0.0f, 1.0f);
+
+    const auto vertexBufferSize  = static_cast<VkDeviceSize>(de::dataSize(vertices));
+    const auto vertexBufferUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    const auto vertexBufferInfo  = makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage);
+    BufferWithMemory vertexBuffer(ctx.vkd, ctx.device, ctx.allocator, vertexBufferInfo, HostIntent::W);
+    {
+        auto &alloc = vertexBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Color buffer with just two pixels: left and right.
+    const tcu::IVec3 extent(2, 1, 1);
+    const auto extentVk    = makeExtent3D(extent);
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto colorUsage  = static_cast<VkImageUsageFlags>(
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto imageType = VK_IMAGE_TYPE_2D;
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, colorFormat, colorUsage, imageType);
+
+    // Indirect buffer, which may not be needed, and draw parameters.
+    const VkDrawIndirectCommand drawCmd{
+        3u, // Just one triangle.
+        1u, // Just one instance.
+        3u, // Skip the left side (first 3 vertices).
+        1u, // Non-zero instance index.
+    };
+
+    const auto indirectBufferSize  = static_cast<VkDeviceSize>(sizeof(drawCmd));
+    const auto indirectBufferUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+    const auto indirectBufferInfo  = makeBufferCreateInfo(indirectBufferSize, indirectBufferUsage);
+    BufferWithMemory indirectBuffer(ctx.vkd, ctx.device, ctx.allocator, indirectBufferInfo, HostIntent::W);
+    {
+        auto &alloc = indirectBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), &drawCmd, sizeof(drawCmd));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    const auto &binaries  = context.getBinaryCollection();
+    const auto vertShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+    const auto tescShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("tesc"));
+    const auto teseShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("tese"));
+    const auto fragShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device);
+    const auto renderPass     = makeRenderPass(ctx.vkd, ctx.device, colorFormat);
+    const auto framebuffer    = makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(),
+                                                extentVk.width, extentVk.height, extentVk.depth);
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+    const auto topology           = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+    const auto patchControlPoints = 3u;
+
+    const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *vertShader, *tescShader,
+                                               *teseShader, VK_NULL_HANDLE, *fragShader, *renderPass, viewports,
+                                               scissors, topology, 0u, patchControlPoints);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer          = *cmd.cmdBuffer;
+    const auto bindPoint          = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    const auto vertexBufferOffset = static_cast<VkDeviceSize>(0);
+
+    const tcu::Vec4 clearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    const tcu::Vec4 geomColor(0.0f, 0.0f, 1.0f, 1.0f);
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+    beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.front(), clearColor);
+    if (params->indirect)
+        ctx.vkd.cmdDrawIndirect(cmdBuffer, *indirectBuffer, 0ull, 1u, DE_SIZEOF32(drawCmd));
+    else
+        ctx.vkd.cmdDraw(cmdBuffer, drawCmd.vertexCount, drawCmd.instanceCount, drawCmd.firstVertex,
+                        drawCmd.firstInstance);
+    endRenderPass(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+    const auto tcuFormat = mapVkFormat(colorFormat);
+    tcu::ConstPixelBufferAccess result(tcuFormat, extent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    tcu::TextureLevel refLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess reference = refLevel.getAccess();
+    const auto halfWidth             = extent.x() / 2;
+    const auto left                  = tcu::getSubregion(reference, 0, 0, halfWidth, extent.y());
+    const auto right                 = tcu::getSubregion(reference, halfWidth, 0, halfWidth, extent.y());
+    tcu::clear(left, clearColor);
+    tcu::clear(right, geomColor);
+
+    auto &log = context.getTestContext().getLog();
+    const tcu::Vec4 threshold(0.0f);
+
+    if (!tcu::floatThresholdCompare(log, "ColorBuffer", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpectd results in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+} // namespace NonZeroVertexInstance
+
 //! These tests correspond to dEQP-GLES31.functional.tessellation.misc_draw.*
 tcu::TestCaseGroup *createMiscDrawTests(tcu::TestContext &testCtx)
 {
@@ -2633,6 +2838,14 @@ tcu::TestCaseGroup *createMiscDrawTests(tcu::TestContext &testCtx)
                                     TessFactorBarrierBug::initPrograms, TessFactorBarrierBug::iterate);
     }
 #endif // CTS_USES_VULKANSC
+
+    for (const auto indirectDraw : {false, true})
+    {
+        NonZeroVertexInstance::ParamsPtr params(new NonZeroVertexInstance::Params{indirectDraw});
+        const auto testName = std::string("non_zero_vertex_instance") + (indirectDraw ? "_indirect_draw" : "");
+        addFunctionCaseWithPrograms(group.get(), testName, NonZeroVertexInstance::checkSupport,
+                                    NonZeroVertexInstance::initPrograms, NonZeroVertexInstance::iterate, params);
+    }
 
     return group.release();
 }

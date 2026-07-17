@@ -1,5 +1,7 @@
 dEQP-VK.tessellation.matrix_multiplication.tesc_1
 dEQP-VK.tessellation.matrix_multiplication.tesc_2
+dEQP-VK.tessellation.misc_draw.non_zero_vertex_instance
+dEQP-VK.tessellation.misc_draw.non_zero_vertex_instance_indirect_draw
 dEQP-VK.tessellation.misc_draw.switch_domain_origin_lower_left_to_upper_left_fast_lib
 dEQP-VK.tessellation.misc_draw.switch_domain_origin_lower_left_to_upper_left_shader_objects
 dEQP-VK.tessellation.misc_draw.switch_domain_origin_lower_left_to_upper_left_with_geom_shader_fast_lib
