@@ -779,6 +779,15 @@ class BasicTypesGenerator(CTSGenerator):
 
             yield "// Enums"
             for enum in self.cts.enumsIncludingVideo:
+                # <vulkan_object_issue_workaround>
+                # add missing VK_STD_VIDEO_AV1_COLOR_PRIMARIES_BT_UNSPECIFIED alias
+                if enum.name == 'StdVideoAV1ColorPrimaries':
+                    missingAlias = 'STD_VIDEO_AV1_COLOR_PRIMARIES_BT_UNSPECIFIED'
+                    for field in enum.fields:
+                        if field.name == "STD_VIDEO_AV1_COLOR_PRIMARIES_UNSPECIFIED" and missingAlias not in field.aliases:
+                            field.aliases.append(missingAlias)
+                            break
+                # <vulkan_object_issue_workaround>
                 for line in self.genEnumSrc(enum):
                     yield line
 
