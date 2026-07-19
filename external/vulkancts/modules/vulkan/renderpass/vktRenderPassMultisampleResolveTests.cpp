@@ -29,7 +29,9 @@
 
 #include "vkDefs.hpp"
 #include "vkBarrierUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 #include "vkDeviceUtil.hpp"
+#include "vkImageWithMemory.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPlatform.hpp"
@@ -54,7 +56,9 @@
 
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
+#include <cstring>
 #include <numeric>
+#include <sstream>
 
 using namespace vk;
 
@@ -2803,6 +2807,347 @@ MultisampleRenderPassResolveLevelTestInstance::MultisampleRenderPassResolveLevel
 {
 }
 
+struct ResolveTo3DImageTestParams
+{
+    uint32_t imageDepth;
+    uint32_t resolveDepth;
+    uint32_t mipLevels;
+    uint32_t resolveMipLevel;
+    bool useCmdResolveImage;
+};
+
+class ResolveTo3DImageTestInstance : public TestInstance
+{
+public:
+    const VkFormat m_format                   = VK_FORMAT_R8G8B8A8_UNORM;
+    const uint32_t m_imageSize                = 32u;
+    const VkSampleCountFlagBits m_sampleCount = VK_SAMPLE_COUNT_4_BIT;
+
+    ResolveTo3DImageTestInstance(Context &context, const ResolveTo3DImageTestParams &params)
+        : TestInstance(context)
+        , m_params(params)
+    {
+    }
+
+    tcu::TestStatus iterate();
+    void createRenderPass(const DeviceInterface &vk, VkDevice device, VkImageView msaaImageView,
+                          VkImageView resolveImageView);
+    void createPipeline(const DeviceInterface &vk, VkDevice device, VkPipelineLayout pipelineLayout,
+                        const BinaryCollection &binaryCollection);
+
+private:
+    Move<VkRenderPass> m_renderPass;
+    Move<VkFramebuffer> m_framebuffer;
+    Move<VkPipeline> m_pipeline;
+
+    const ResolveTo3DImageTestParams m_params;
+};
+
+void ResolveTo3DImageTestInstance::createRenderPass(const DeviceInterface &vk, VkDevice device,
+                                                    VkImageView msaaImageView, VkImageView resolveImageView)
+{
+    const VkAttachmentDescription attachments[] = {
+        {
+            (VkAttachmentDescriptionFlags)0u,         // VkAttachmentDescriptionFlags flags;
+            m_format,                                 // VkFormat format;
+            m_sampleCount,                            // VkSampleCountFlagBits samples;
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp loadOp;
+            VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp storeOp;
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp stencilLoadOp;
+            VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp stencilStoreOp;
+            VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout initialLayout;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout finalLayout;
+        },
+        {
+            (VkAttachmentDescriptionFlags)0u,         // VkAttachmentDescriptionFlags flags;
+            m_format,                                 // VkFormat format;
+            VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits samples;
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp loadOp;
+            VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp storeOp;
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp stencilLoadOp;
+            VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp stencilStoreOp;
+            VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout initialLayout;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout finalLayout;
+        },
+    };
+
+    const VkAttachmentReference colorAttachment = {
+        0u,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    };
+    const VkAttachmentReference resolveAttachment = {
+        1u,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    };
+
+    VkSubpassDescription subpass = {};
+    subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1u;
+    subpass.pColorAttachments    = &colorAttachment;
+    subpass.pResolveAttachments  = m_params.useCmdResolveImage ? nullptr : &resolveAttachment;
+
+    VkRenderPassCreateInfo renderPassInfo = initVulkanStructure();
+    renderPassInfo.attachmentCount        = m_params.useCmdResolveImage ? 1u : 2u;
+    renderPassInfo.pAttachments           = attachments;
+    renderPassInfo.subpassCount           = 1u;
+    renderPassInfo.pSubpasses             = &subpass;
+    m_renderPass                          = vk::createRenderPass(vk, device, &renderPassInfo);
+
+    std::vector<VkImageView> framebufferAttachments(1u, msaaImageView);
+    if (!m_params.useCmdResolveImage)
+        framebufferAttachments.push_back(resolveImageView);
+
+    m_framebuffer = makeFramebuffer(vk, device, *m_renderPass, (uint32_t)framebufferAttachments.size(),
+                                    framebufferAttachments.data(), m_imageSize, m_imageSize);
+}
+
+void ResolveTo3DImageTestInstance::createPipeline(const DeviceInterface &vk, VkDevice device,
+                                                  VkPipelineLayout pipelineLayout,
+                                                  const BinaryCollection &binaryCollection)
+{
+    const Unique<VkShaderModule> vertexShaderModule(createShaderModule(vk, device, binaryCollection.get("vert")));
+    const Unique<VkShaderModule> fragmentShaderModule(createShaderModule(vk, device, binaryCollection.get("frag")));
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {};
+    colorBlendAttachmentState.colorWriteMask =
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+    VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = initVulkanStructure();
+    multisampleStateCreateInfo.rasterizationSamples                 = m_sampleCount;
+
+    VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = initVulkanStructure();
+    colorBlendStateCreateInfo.attachmentCount                     = 1u;
+    colorBlendStateCreateInfo.pAttachments                        = &colorBlendAttachmentState;
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(m_imageSize, m_imageSize));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(m_imageSize, m_imageSize));
+
+    m_pipeline = makeGraphicsPipeline(vk, device, pipelineLayout, *vertexShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                      VK_NULL_HANDLE, *fragmentShaderModule, *m_renderPass, viewports, scissors,
+                                      VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &vertexInputState, nullptr,
+                                      &multisampleStateCreateInfo, nullptr, &colorBlendStateCreateInfo);
+}
+
+tcu::TestStatus ResolveTo3DImageTestInstance::iterate()
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    Allocator &alloc                = m_context.getDefaultAllocator();
+
+    bool maintenance9 = false;
+#ifndef CTS_USES_VULKANSC
+    maintenance9 = m_context.getMaintenance9Features().maintenance9;
+#endif
+    const uint32_t resolveImageSize = m_imageSize << m_params.resolveMipLevel;
+    const uint32_t resolveImageDepth =
+        (m_params.imageDepth == 1u) ? 1u : (m_params.imageDepth << m_params.resolveMipLevel);
+    const uint32_t resolveBarrierLayers     = maintenance9 ? m_params.imageDepth : 1u;
+    const VkImageSubresourceRange msaaRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+    const VkImageSubresourceRange resolveRange =
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, m_params.resolveMipLevel, 1u, 0u, resolveBarrierLayers);
+    const VkImageSubresourceLayers msaaSubresourceLayers =
+        makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+    const VkImageSubresourceLayers resolveSubresourceLayers =
+        makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, m_params.resolveMipLevel, 0u, 1u);
+
+    VkImageCreateInfo imageCreateInfo = initVulkanStructure();
+    imageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.format            = m_format;
+    imageCreateInfo.extent            = {m_imageSize, m_imageSize, 1u};
+    imageCreateInfo.mipLevels         = 1u;
+    imageCreateInfo.arrayLayers       = 1u;
+    imageCreateInfo.samples           = m_sampleCount;
+    imageCreateInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.usage =
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    imageCreateInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+    imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    ImageWithMemory msaaImage(vk, device, alloc, imageCreateInfo, MemoryRequirement::Any);
+    const auto msaaImageView = makeImageView(vk, device, *msaaImage, VK_IMAGE_VIEW_TYPE_2D, m_format, msaaRange);
+
+    imageCreateInfo.flags     = VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
+    imageCreateInfo.imageType = VK_IMAGE_TYPE_3D;
+    imageCreateInfo.extent    = {resolveImageSize, resolveImageSize, resolveImageDepth};
+    imageCreateInfo.mipLevels = m_params.mipLevels;
+    imageCreateInfo.samples   = VK_SAMPLE_COUNT_1_BIT;
+    ImageWithMemory resolveImage(vk, device, alloc, imageCreateInfo, MemoryRequirement::Any);
+    const auto resolveView = makeImageView(
+        vk, device, *resolveImage, VK_IMAGE_VIEW_TYPE_2D, m_format,
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, m_params.resolveMipLevel, 1u, m_params.resolveDepth, 1u));
+
+    const VkDeviceSize layerSize  = m_imageSize * m_imageSize * 4u;
+    const VkDeviceSize bufferSize = layerSize * m_params.imageDepth;
+    const VkBufferCreateInfo resultBufferCreateInfo =
+        makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    BufferWithMemory resultBuffer(vk, device, alloc, resultBufferCreateInfo, MemoryRequirement::HostVisible);
+
+    createRenderPass(vk, device, *msaaImageView, *resolveView);
+    const Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device);
+    createPipeline(vk, device, *pipelineLayout, m_context.getBinaryCollection());
+    const auto cmdPool   = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+    const auto cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    if (!m_params.useCmdResolveImage)
+    {
+        const VkImageMemoryBarrier barrier =
+            makeImageMemoryBarrier(VK_ACCESS_NONE, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_UNDEFINED,
+                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *resolveImage, resolveRange);
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0u, 0u,
+                              nullptr, 0u, nullptr, 1u, &barrier);
+    }
+
+    {
+        VkRenderPassBeginInfo renderPassBeginInfo = initVulkanStructure();
+        renderPassBeginInfo.renderPass            = *m_renderPass;
+        renderPassBeginInfo.framebuffer           = *m_framebuffer;
+        renderPassBeginInfo.renderArea.extent     = makeExtent2D(m_imageSize, m_imageSize);
+        vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+        vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
+        vk.cmdEndRenderPass(*cmdBuffer);
+    }
+
+    if (m_params.useCmdResolveImage)
+    {
+        VkImageMemoryBarrier barriers[] = {
+            makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                   *msaaImage, msaaRange),
+            makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *resolveImage, resolveRange),
+        };
+        vk.cmdPipelineBarrier(*cmdBuffer,
+                              VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                              VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 2u, barriers);
+
+        const VkOffset3D resolveOffset     = {0, 0, static_cast<int32_t>(m_params.resolveDepth)};
+        const VkImageResolve resolveRegion = {
+            msaaSubresourceLayers,          // VkImageSubresourceLayers srcSubresource;
+            {0, 0, 0},                      // VkOffset3D srcOffset;
+            resolveSubresourceLayers,       // VkImageSubresourceLayers dstSubresource;
+            resolveOffset,                  // VkOffset3D dstOffset;
+            {m_imageSize, m_imageSize, 1u}, // VkExtent3D extent;
+        };
+        vk.cmdResolveImage(*cmdBuffer, *msaaImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *resolveImage,
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &resolveRegion);
+
+        const VkImageMemoryBarrier barrier = makeImageMemoryBarrier(
+            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *resolveImage, resolveRange);
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
+                              nullptr, 0u, nullptr, 1u, &barrier);
+    }
+    else
+    {
+        const VkImageMemoryBarrier barrier = makeImageMemoryBarrier(
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *resolveImage, resolveRange);
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                              0u, 0u, nullptr, 0u, nullptr, 1u, &barrier);
+    }
+
+    const VkBufferImageCopy region =
+        makeBufferImageCopy({m_imageSize, m_imageSize, m_params.imageDepth}, resolveSubresourceLayers);
+    vk.cmdCopyImageToBuffer(*cmdBuffer, *resolveImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *resultBuffer, 1u,
+                            &region);
+
+    const VkBufferMemoryBarrier resultBufferBarrier =
+        makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0u, bufferSize);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u,
+                          &resultBufferBarrier, 0u, nullptr);
+
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+    invalidateAlloc(vk, device, resultBuffer.getAllocation());
+
+    const uint8_t *resultData   = static_cast<const uint8_t *>(resultBuffer.getAllocation().getHostPtr());
+    const size_t layerSizeBytes = static_cast<size_t>(layerSize);
+    std::vector<uint8_t> expectedData(layerSizeBytes, 255u);
+
+    if (memcmp(resultData + layerSizeBytes * m_params.resolveDepth, expectedData.data(), expectedData.size()) != 0)
+    {
+        uint32_t resolvedLayer = m_params.imageDepth;
+        for (uint32_t layerNdx = 0u; layerNdx < m_params.imageDepth; ++layerNdx)
+        {
+            if (memcmp(resultData + layerSizeBytes * layerNdx, expectedData.data(), expectedData.size()) == 0)
+            {
+                resolvedLayer = layerNdx;
+                break;
+            }
+        }
+
+        std::ostringstream message;
+        message << "Image was created with extent " << resolveImageSize << "x" << resolveImageSize << "x"
+                << resolveImageDepth << " and " << m_params.mipLevels << " mip levels\n";
+        if (m_params.useCmdResolveImage)
+            message << "vkCmdResolveImage resolved to mip level " << m_params.resolveMipLevel << " layer "
+                    << m_params.resolveDepth;
+        else
+            message << "2D image view was created from mip level " << m_params.resolveMipLevel << " layer "
+                    << m_params.resolveDepth;
+        message << ", but ";
+        if (resolvedLayer == m_params.imageDepth)
+            message << "no layer was resolved to.";
+        else
+            message << "msaa image was resolved to layer " << resolvedLayer;
+        m_context.getTestContext().getLog() << tcu::TestLog::Message << message.str() << tcu::TestLog::EndMessage;
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class ResolveTo3DImageTestCase : public TestCase
+{
+public:
+    ResolveTo3DImageTestCase(tcu::TestContext &testCtx, const char *name, const ResolveTo3DImageTestParams &params)
+        : TestCase(testCtx, name)
+        , m_params(params)
+    {
+        DE_ASSERT(m_params.resolveMipLevel < m_params.mipLevels);
+    }
+
+    void checkSupport(Context &context) const;
+    void initPrograms(SourceCollections &programCollection) const;
+
+    TestInstance *createInstance(Context &context) const
+    {
+        return new ResolveTo3DImageTestInstance(context, m_params);
+    }
+
+private:
+    const ResolveTo3DImageTestParams m_params;
+};
+
+void ResolveTo3DImageTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_KHR_maintenance1");
+}
+
+void ResolveTo3DImageTestCase::initPrograms(SourceCollections &programCollection) const
+{
+    std::string vert = "#version 450\n"
+                       "void main() {\n"
+                       "    vec2 pos = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));\n"
+                       "    gl_Position = vec4(pos * 2.0f - 1.0f, 0.0f, 1.0f);\n"
+                       "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.c_str());
+
+    std::string frag = "#version 450\n"
+                       "layout (location=0) out vec4 outColor;\n"
+                       "void main() {\n"
+                       "    outColor = vec4(1.0f);\n"
+                       "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.c_str());
+}
+
 struct Programs
 {
     void init(vk::SourceCollections &dst, TestConfig config) const
@@ -3931,6 +4276,40 @@ void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)
 
         if (layerCount != 1)
             group->addChild(layerGroup.release());
+    }
+
+    if (groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+    {
+        constexpr struct ResolveTest
+        {
+            uint32_t imageDepth;
+            uint32_t resolveDepth;
+            uint32_t mipLevels;
+            uint32_t resolveMipLevel;
+            const char *name;
+        } resolveTests[] = {
+            {3u, 1u, 1u, 0u, "3_1_1_0"}, {8u, 7u, 1u, 0u, "8_7_1_0"}, {1u, 0u, 4u, 1u, "1_0_4_1"},
+            {1u, 0u, 8u, 7u, "1_0_8_7"}, {4u, 2u, 4u, 2u, "4_2_4_2"},
+        };
+
+        de::MovePtr<tcu::TestCaseGroup> resolveInto3DGroup(new tcu::TestCaseGroup(testCtx, "resolve_into_3d_image"));
+
+        for (const auto useCmdResolveImage : {false, true})
+        {
+            for (const auto &resolveTest : resolveTests)
+            {
+                std::string testName = (useCmdResolveImage ? "cmd_resolve_image_" : "render_pass_resolve_") +
+                                       std::string(resolveTest.name);
+                ResolveTo3DImageTestParams params;
+                params.imageDepth         = resolveTest.imageDepth;
+                params.resolveDepth       = resolveTest.resolveDepth;
+                params.mipLevels          = resolveTest.mipLevels;
+                params.resolveMipLevel    = resolveTest.resolveMipLevel;
+                params.useCmdResolveImage = useCmdResolveImage;
+                resolveInto3DGroup->addChild(new ResolveTo3DImageTestCase(testCtx, testName.c_str(), params));
+            }
+        }
+        group->addChild(resolveInto3DGroup.release());
     }
 }
 
