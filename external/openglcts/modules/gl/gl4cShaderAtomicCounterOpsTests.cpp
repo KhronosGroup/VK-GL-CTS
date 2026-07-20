@@ -399,6 +399,8 @@ void ShaderAtomicCounterOpsTestBase::addOperation(AtomicOperation *newOp)
 
         m_shaderPipelines.push_back(ShaderPipeline((glu::ShaderType)i, newOp, m_contextSupportsGL46));
     }
+
+    m_operations.push_back(newOp);
 }
 
 void ShaderAtomicCounterOpsTestBase::fillAtomicCounterBuffer(AtomicOperation *atomicOp)
@@ -617,6 +619,7 @@ void ShaderAtomicCounterOpsTestBase::deinit()
     {
         delete *iter;
     }
+    m_operations.clear();
 }
 
 tcu::TestNode::IterateResult ShaderAtomicCounterOpsTestBase::iterate()

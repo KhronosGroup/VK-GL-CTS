@@ -462,6 +462,13 @@ void ShaderTextureImageSamplesTestBase::executeFunctionalTest(const _sampler_typ
         TCU_FAIL("Invalid value returned by glGetInternalformativ() for a GL_NUM_SAMPLE_COUNTS query");
     }
 
+    if (m_internalformat_n_samples_data != nullptr)
+    {
+        delete[] m_internalformat_n_samples_data;
+
+        m_internalformat_n_samples_data = nullptr;
+    }
+
     m_internalformat_n_samples_data = new glw::GLint[m_internalformat_n_samples_count];
 
     gl.getInternalformativ(texture_target, texture_internalformat, GL_SAMPLES, m_internalformat_n_samples_count,

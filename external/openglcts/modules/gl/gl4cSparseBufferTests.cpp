@@ -6648,6 +6648,11 @@ BufferStorageTest::BufferStorageTest(deqp::Context &context, BufferStorageTestCa
     /* Left blank intentionally */
 }
 
+BufferStorageTest::~BufferStorageTest()
+{
+    delete mTestCase;
+}
+
 /** Tears down any GL objects set up to run the test. */
 void BufferStorageTest::deinit()
 {
@@ -6655,6 +6660,7 @@ void BufferStorageTest::deinit()
 
     mTestCase->deinitTestCaseGlobal();
     delete mTestCase;
+    mTestCase = nullptr;
 
     if (m_sparse_bo != 0)
     {
