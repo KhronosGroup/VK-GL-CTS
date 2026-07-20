@@ -76,6 +76,8 @@ VULKAN_SC_MAIN_PKG = Package(module = VULKAN_SC_MODULE, configurations = [
                         filters = [include("main_sc.txt"),
                                                    exclude("android-tests-sc.txt")],
                         listOfGroupsToSplit = ["dEQP-VKSC", "dEQP-VKSC.pipeline", "dEQP-VKSC.image", "dEQP-VKSC.shader_object"]),
+          Configuration(name = "fraction-mandatory-tests",
+                        filters = [include("fraction-mandatory-tests-sc.txt")]),
     ])
 
 MUSTPASS_LISTS = [

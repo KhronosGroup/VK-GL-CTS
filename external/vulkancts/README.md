@@ -314,6 +314,10 @@ and a list of mandatory information tests for each fraction must be supplied:
 
 	--deqp-fraction-mandatory-caselist-file=<vulkancts>external/vulkancts/mustpass/main/vk-fraction-mandatory-tests.txt
 
+For Vulkan SC use the corresponding list instead:
+
+	--deqp-fraction-mandatory-caselist-file=<vulkancts>external/vulkancts/mustpass/main/vksc-fraction-mandatory-tests.txt
+
 To specify file containing waived tests that are omitted only by specified vendor and renderer/device
 the following command line option may be used:
 
