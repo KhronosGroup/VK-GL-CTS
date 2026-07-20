@@ -2696,8 +2696,6 @@ void checkDeviceExtensions(tcu::ResultCollector &results, const vector<string> &
     checkDuplicateExtensions(results, extensions);
 }
 
-#ifndef CTS_USES_VULKANSC
-
 void checkExtensionDependencies(tcu::ResultCollector &results, const DependencyCheckVect &dependencies,
                                 uint32_t versionMajor, uint32_t versionMinor,
                                 const ExtPropVect &instanceExtensionProperties,
@@ -2713,8 +2711,6 @@ void checkExtensionDependencies(tcu::ResultCollector &results, const DependencyC
         }
     }
 }
-
-#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus enumerateInstanceLayers(Context &context)
 {
@@ -2784,7 +2780,6 @@ tcu::TestStatus enumerateInstanceExtensions(Context &context)
     return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
-#ifndef CTS_USES_VULKANSC
 tcu::TestStatus validateInstanceExtensionDependencies(Context &context)
 {
     TestLog &log = context.getTestContext().getLog();
@@ -2808,7 +2803,6 @@ tcu::TestStatus validateInstanceExtensionDependencies(Context &context)
 
     return tcu::TestStatus(results.getResult(), results.getMessage());
 }
-#endif
 
 tcu::TestStatus validateDeviceLevelEntryPointsFromInstanceExtensions(Context &context)
 {
@@ -2949,7 +2943,6 @@ tcu::TestStatus enumerateDeviceExtensions(Context &context)
     return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
-#ifndef CTS_USES_VULKANSC
 tcu::TestStatus validateDeviceExtensionDependencies(Context &context)
 {
     TestLog &log = context.getTestContext().getLog();
@@ -2974,7 +2967,6 @@ tcu::TestStatus validateDeviceExtensionDependencies(Context &context)
 
     return tcu::TestStatus(results.getResult(), results.getMessage());
 }
-#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus extensionCoreVersions(Context &context)
 {
@@ -9150,9 +9142,7 @@ void createFeatureInfoInstanceTests(tcu::TestCaseGroup *testGroup)
     addFunctionCase<CustomInstanceTest<E071>>(testGroup, "physical_device_groups", enumeratePhysicalDeviceGroups);
     addFunctionCase(testGroup, "instance_layers", enumerateInstanceLayers);
     addFunctionCase(testGroup, "instance_extensions", enumerateInstanceExtensions);
-#ifndef CTS_USES_VULKANSC
     addFunctionCase(testGroup, "instance_extension_dependencies", validateInstanceExtensionDependencies);
-#endif
     addFunctionCase(testGroup, "instance_extension_device_functions",
                     validateDeviceLevelEntryPointsFromInstanceExtensions);
 }
@@ -9165,9 +9155,7 @@ void createFeatureInfoDeviceTests(tcu::TestCaseGroup *testGroup)
     addFunctionCase(testGroup, "device_memory_properties", deviceMemoryProperties);
     addFunctionCase(testGroup, "device_layers", enumerateDeviceLayers);
     addFunctionCase(testGroup, "device_extensions", enumerateDeviceExtensions);
-#ifndef CTS_USES_VULKANSC
     addFunctionCase(testGroup, "device_extension_dependencies", validateDeviceExtensionDependencies);
-#endif
     addFunctionCase(testGroup, "device_no_khx_extensions", testNoKhxExtensions);
     addFunctionCase(testGroup, "device_memory_budget", checkMemoryBudgetSupport, deviceMemoryBudgetProperties);
     addFunctionCase(testGroup, "device_memory_budget_multi_instance", checkMemoryBudgetSupport,

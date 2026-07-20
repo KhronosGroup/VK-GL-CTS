@@ -50,6 +50,7 @@ vulkanObjectPath = os.path.join(VULKAN_XML_DIR, "..", "scripts")
 sys.path.insert(0, vulkanObjectPath)
 
 from reg import Registry
+import base_generator
 from base_generator import BaseGenerator, BaseGeneratorOptions, SetTargetApiName, SetOutputDirectory, SetMergedApiNames, OutputGenerator
 
 # list of KHR and EXT extensions that are tested by CTS and that were not promoted to core
@@ -445,11 +446,83 @@ def printAttributesToFile(obj, file, indent=0):
         else:
             file.write(f"{indent_str}{repr(obj)}\n")
 
+# Vulkan SC 1.0 is built on Vulkan 1.2 core (it incorporates Vulkan 1.0/1.1/1.2). A future Vulkan SC
+# version built on a newer Vulkan core would only need this constant updated.
+VULKAN_SC_CORE_VK_VERSION = (1, 2)
+
+# Extensions that were promoted to Vulkan 1.1/1.2 core and are therefore always supported in Vulkan
+# SC. Because they are core, they are not present in the Vulkan SC extension registry, so both the
+# core extension lists and extension-dependency resolution must account for them explicitly.
+VULKAN_SC_CORE_PROMOTED_INSTANCE_EXTENSIONS = [
+    # From Vulkan 1.1
+    'VK_KHR_device_group_creation',
+    'VK_KHR_external_fence_capabilities',
+    'VK_KHR_external_memory_capabilities',
+    'VK_KHR_external_semaphore_capabilities',
+    'VK_KHR_get_physical_device_properties2',
+]
+VULKAN_SC_CORE_PROMOTED_DEVICE_EXTENSIONS = [
+    # From Vulkan 1.1
+    'VK_KHR_16bit_storage',
+    'VK_KHR_bind_memory2',
+    'VK_KHR_dedicated_allocation',
+    'VK_KHR_descriptor_update_template',
+    'VK_KHR_device_group',
+    'VK_KHR_external_fence',
+    'VK_KHR_external_memory',
+    'VK_KHR_external_semaphore',
+    'VK_KHR_get_memory_requirements2',
+    'VK_KHR_maintenance1',
+    'VK_KHR_maintenance2',
+    'VK_KHR_maintenance3',
+    'VK_KHR_multiview',
+    'VK_KHR_relaxed_block_layout',
+    'VK_KHR_sampler_ycbcr_conversion',
+    'VK_KHR_shader_draw_parameters',
+    'VK_KHR_storage_buffer_storage_class',
+    'VK_KHR_variable_pointers',
+    # From Vulkan 1.2
+    'VK_EXT_descriptor_indexing',
+    'VK_EXT_host_query_reset',
+    'VK_EXT_sampler_filter_minmax',
+    'VK_EXT_scalar_block_layout',
+    'VK_EXT_separate_stencil_usage',
+    'VK_EXT_shader_viewport_index_layer',
+    'VK_KHR_8bit_storage',
+    'VK_KHR_buffer_device_address',
+    'VK_KHR_create_renderpass2',
+    'VK_KHR_depth_stencil_resolve',
+    'VK_KHR_draw_indirect_count',
+    'VK_KHR_driver_properties',
+    'VK_KHR_image_format_list',
+    'VK_KHR_imageless_framebuffer',
+    'VK_KHR_sampler_mirror_clamp_to_edge',
+    'VK_KHR_separate_depth_stencil_layouts',
+    'VK_KHR_shader_atomic_int64',
+    'VK_KHR_shader_float16_int8',
+    'VK_KHR_shader_float_controls',
+    'VK_KHR_shader_subgroup_extended_types',
+    'VK_KHR_spirv_1_4',
+    'VK_KHR_timeline_semaphore',
+    'VK_KHR_uniform_buffer_standard_layout',
+    'VK_KHR_vulkan_memory_model',
+]
+VULKAN_SC_CORE_PROMOTED_EXTENSIONS = set(
+    VULKAN_SC_CORE_PROMOTED_INSTANCE_EXTENSIONS + VULKAN_SC_CORE_PROMOTED_DEVICE_EXTENSIONS)
+
 def transformSingleDependsConditionToCpp(depPart, vk, checkVersionString, checkExtensionString, extension, depends):
+    isSC = base_generator.globalApiName == 'vulkansc'
     ret = None
     if 'VK_VERSION' in depPart:
         # when dependency is vulkan version then replace it with proper condition
-        ret = checkVersionString % (depPart[-3], depPart[-1])
+        # Vulkan SC 1.0 incorporates Vulkan core up to VULKAN_SC_CORE_VK_VERSION, so a dependency on
+        # any Vulkan version up to that baseline is always satisfied. Without this, extensions that
+        # depend on a promoted-to-core feature through a "<ext>,VK_VERSION_1_x" clause are wrongly
+        # reported as missing a dependency, because Vulkan SC reports apiVersion 1.0.
+        if isSC and (int(depPart[-3]), int(depPart[-1])) <= VULKAN_SC_CORE_VK_VERSION:
+            ret = 'true'
+        else:
+            ret = checkVersionString % (depPart[-3], depPart[-1])
     else:
         # when dependency is extension check if it was promoted
         for dExt in vk.extensions.values():
@@ -467,6 +540,11 @@ def transformSingleDependsConditionToCpp(depPart, vk, checkVersionString, checkE
                      else:
                          isSupportedCheck = checkExtensionString % (depExtVector, p)
                          ret = f'({checkExtensionString % (depExtVector, depPart)} || {isSupportedCheck})'
+        if ret is None and isSC and depPart in VULKAN_SC_CORE_PROMOTED_EXTENSIONS:
+            # The dependency is an extension that was promoted to Vulkan 1.1/1.2 core and is therefore
+            # always present in Vulkan SC. It is absent from the Vulkan SC extension registry precisely
+            # because it is core, which is why the loop above did not find it.
+            ret = 'true'
         if ret is None:
             ret = "false /* UNSUPPORTED CONDITION: " + depPart + "*/"
         if ret is None:
@@ -1917,60 +1995,8 @@ class SupportedExtensionsGenerator(CTSGenerator):
             # therefore are always supported in Vulkan SC
             # NOTE: This is just a workaround for the general deficiencies of the current state of
             # the generator scripts and the CTS framework itself
-            instanceMap['VKSC_API_VERSION_1_0'] = [
-                # From Vulkan 1.1
-                'VK_KHR_device_group_creation',
-                'VK_KHR_external_fence_capabilities',
-                'VK_KHR_external_memory_capabilities',
-                'VK_KHR_external_semaphore_capabilities',
-                'VK_KHR_get_physical_device_properties2',
-            ]
-            deviceMap['VKSC_API_VERSION_1_0'] = [
-                # From Vulkan 1.1
-                'VK_KHR_16bit_storage',
-                'VK_KHR_bind_memory2',
-                'VK_KHR_dedicated_allocation',
-                'VK_KHR_descriptor_update_template',
-                'VK_KHR_device_group',
-                'VK_KHR_external_fence',
-                'VK_KHR_external_memory',
-                'VK_KHR_external_semaphore',
-                'VK_KHR_get_memory_requirements2',
-                'VK_KHR_maintenance1',
-                'VK_KHR_maintenance2',
-                'VK_KHR_maintenance3',
-                'VK_KHR_multiview',
-                'VK_KHR_relaxed_block_layout',
-                'VK_KHR_sampler_ycbcr_conversion',
-                'VK_KHR_shader_draw_parameters',
-                'VK_KHR_storage_buffer_storage_class',
-                'VK_KHR_variable_pointers',
-                # From Vulkan 1.2
-                'VK_EXT_descriptor_indexing',
-                'VK_EXT_host_query_reset',
-                'VK_EXT_sampler_filter_minmax',
-                'VK_EXT_scalar_block_layout',
-                'VK_EXT_separate_stencil_usage',
-                'VK_EXT_shader_viewport_index_layer',
-                'VK_KHR_8bit_storage',
-                'VK_KHR_buffer_device_address',
-                'VK_KHR_create_renderpass2',
-                'VK_KHR_depth_stencil_resolve',
-                'VK_KHR_draw_indirect_count',
-                'VK_KHR_driver_properties',
-                'VK_KHR_image_format_list',
-                'VK_KHR_imageless_framebuffer',
-                'VK_KHR_sampler_mirror_clamp_to_edge',
-                'VK_KHR_separate_depth_stencil_layouts',
-                'VK_KHR_shader_atomic_int64',
-                'VK_KHR_shader_float16_int8',
-                'VK_KHR_shader_float_controls',
-                'VK_KHR_shader_subgroup_extended_types',
-                'VK_KHR_spirv_1_4',
-                'VK_KHR_timeline_semaphore',
-                'VK_KHR_uniform_buffer_standard_layout',
-                'VK_KHR_vulkan_memory_model',
-            ]
+            instanceMap['VKSC_API_VERSION_1_0'] = VULKAN_SC_CORE_PROMOTED_INSTANCE_EXTENSIONS[:]
+            deviceMap['VKSC_API_VERSION_1_0'] = VULKAN_SC_CORE_PROMOTED_DEVICE_EXTENSIONS[:]
 
         self.write(INL_HEADER)
         self.write("")

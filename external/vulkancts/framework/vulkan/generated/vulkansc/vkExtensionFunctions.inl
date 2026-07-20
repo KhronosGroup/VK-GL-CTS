@@ -311,7 +311,7 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	if (extName == "VK_KHR_swapchain")
 	{
 		// Dependencies: VK_VERSION_1_1
-		if (checkVersion(1, 1, apiVersion)) {
+		if (true) {
 			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetPhysicalDevicePresentRectanglesKHR");
 		}
 		return;
@@ -690,7 +690,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkAcquireNextImageKHR");
 		functions.push_back("vkQueuePresentKHR");
 		// Dependencies: VK_VERSION_1_1
-		if (checkVersion(1, 1, apiVersion)) {
+		if (true) {
 			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupPresentCapabilitiesKHR");
 			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupSurfacePresentModesKHR");
 			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkAcquireNextImage2KHR");
