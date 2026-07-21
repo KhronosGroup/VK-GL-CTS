@@ -2540,11 +2540,11 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_ray_query");
     }
 
-    if (m_params.isAccelerationStructure() && m_params.isAccelerationStructureOptional() &&
-        context.getRayQueryFeatures().rayQuery)
-    {
+    const bool useAS = m_params.isAccelerationStructure() &&
+                       (!m_params.isAccelerationStructureOptional() || context.getRayQueryFeatures().rayQuery);
+
+    if (useAS && m_params.isAccelerationStructureOptional())
         context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
-    }
 
     if (m_params.isRayTracing())
     {
@@ -2552,7 +2552,7 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
     }
 
-    if (m_params.isAccelerationStructure() || m_params.isRayTracing())
+    if (useAS || m_params.isRayTracing())
     {
         const auto &accelerationStructureFeatures = context.getAccelerationStructureFeatures();
         if (!accelerationStructureFeatures.accelerationStructure)
