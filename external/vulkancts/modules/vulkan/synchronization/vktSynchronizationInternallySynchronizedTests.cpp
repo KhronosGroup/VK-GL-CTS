@@ -1467,7 +1467,7 @@ tcu::TestStatus InternallySynchronizedQueuesTestInstance::iterate(void)
         queueCount       = 1u;
         for (uint32_t i = 0; i < queueFamilyPropertyCount; ++i)
         {
-            if ((queueFamilyProperties[i].queueFlags & requiredQueueFlags) != 0 &&
+            if ((queueFamilyProperties[i].queueFlags & requiredQueueFlags) == requiredQueueFlags &&
                 queueFamilyIndex == queueFamilyPropertyCount)
                 queueFamilyIndex = i;
             else if (otherQueueFamilyIndex == queueFamilyPropertyCount)
