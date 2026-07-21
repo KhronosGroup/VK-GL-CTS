@@ -6671,6 +6671,7 @@ dEQP-VK.renderpasses.renderpass1.remaining_array_layers.single_layer_fb.1_1
 dEQP-VK.renderpasses.renderpass1.remaining_array_layers.single_layer_fb.1_4
 dEQP-VK.renderpasses.renderpass1.remaining_array_layers.single_layer_fb.2_2
 dEQP-VK.renderpasses.renderpass1.remaining_array_layers.single_layer_fb.4_1
+dEQP-VK.renderpasses.renderpass1.remaining_array_layers.view_transition.3d_texture_view_transition
 dEQP-VK.renderpasses.renderpass1.suballocation.clear_some_attachments.clear_only_color
 dEQP-VK.renderpasses.renderpass1.suballocation.clear_some_attachments.clear_only_depth
 dEQP-VK.renderpasses.renderpass1.suballocation.formats.a2b10g10r10_uint_pack32.input.clear.dont_care.self_dep_clear_draw_ms
@@ -9834,6 +9835,7 @@ dEQP-VK.renderpasses.renderpass2.remaining_array_layers.single_layer_fb.1_1
 dEQP-VK.renderpasses.renderpass2.remaining_array_layers.single_layer_fb.1_4
 dEQP-VK.renderpasses.renderpass2.remaining_array_layers.single_layer_fb.2_2
 dEQP-VK.renderpasses.renderpass2.remaining_array_layers.single_layer_fb.4_1
+dEQP-VK.renderpasses.renderpass2.remaining_array_layers.view_transition.3d_texture_view_transition
 dEQP-VK.renderpasses.renderpass2.suballocation.clear_some_attachments.clear_only_color
 dEQP-VK.renderpasses.renderpass2.suballocation.clear_some_attachments.clear_only_depth
 dEQP-VK.renderpasses.renderpass2.suballocation.formats.a2b10g10r10_uint_pack32.input.clear.dont_care.self_dep_clear_draw_ms

@@ -32,6 +32,8 @@
 #include "vkImageUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "tcuTextureUtil.hpp"
+#include "vktTestCaseUtil.hpp"
+#include "tcuImageCompare.hpp"
 #include <sstream>
 #include <functional>
 #include <vector>
@@ -483,6 +485,314 @@ void RemainingArrayLayersTest::checkSupport(Context &context) const
         context.requireDeviceCoreFeature(vkt::DeviceCoreFeature::DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 }
 
+template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep,
+          typename RenderPassCreateInfo>
+Move<VkRenderPass> createTransitionRenderPass(const DeviceInterface &vk, VkDevice vkDevice, VkImageLayout layout,
+                                              VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED)
+{
+    const AttachmentDesc attachmentDescription(nullptr,                          // pNext
+                                               (VkAttachmentDescriptionFlags)0,  // flags
+                                               VK_FORMAT_R8G8B8A8_UNORM,         // format
+                                               VK_SAMPLE_COUNT_1_BIT,            // samples
+                                               VK_ATTACHMENT_LOAD_OP_CLEAR,      // loadOp
+                                               VK_ATTACHMENT_STORE_OP_STORE,     // storeOp
+                                               VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // stencilLoadOp
+                                               VK_ATTACHMENT_STORE_OP_DONT_CARE, // stencilStoreOp
+                                               initialLayout,                    // initialLayout
+                                               layout                            // finalLayout
+    );
+
+    AttachmentRef attachmentReference = AttachmentRef(nullptr,                  // pNext
+                                                      0u,                       // attachment
+                                                      layout,                   // layout
+                                                      VK_IMAGE_ASPECT_COLOR_BIT // aspectMask
+    );
+
+    const SubpassDesc subpassDescription(nullptr,
+                                         (VkSubpassDescriptionFlags)0,    // flags
+                                         VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
+                                         0u,                              // viewMask
+                                         0u,                              // inputAttachmentCount
+                                         nullptr,                         // pInputAttachments
+                                         1u,                              // colorAttachmentCount
+                                         &attachmentReference,            // pColorAttachments
+                                         nullptr,                         // pResolveAttachments
+                                         nullptr,                         // pDepthStencilAttachment
+                                         0u,                              // preserveAttachmentCount
+                                         nullptr                          // pPreserveAttachments
+    );
+
+    const RenderPassCreateInfo renderPassInfo(nullptr,                     // pNext
+                                              (VkRenderPassCreateFlags)0u, // flags
+                                              1u,                          // attachmentCount
+                                              &attachmentDescription,      // pAttachments
+                                              1u,                          // subpassCount
+                                              &subpassDescription,         // pSubpasses
+                                              0u,                          // dependencyCount
+                                              nullptr,                     // pDependencies
+                                              0u,                          // correlatedViewMaskCount
+                                              nullptr                      // pCorrelatedViewMasks
+    );
+
+    return renderPassInfo.createRenderPass(vk, vkDevice);
+}
+
+template <typename RenderpassSubpass>
+void beginTransitionRenderPass(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, VkRenderPass renderPass,
+                               VkFramebuffer framebuffer, const tcu::Vec4 &clearColor, uint32_t renderSize)
+{
+    const auto clear_value                = makeClearValueColor(clearColor);
+    const VkRenderPassBeginInfo beginInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, nullptr, renderPass,  framebuffer,
+        {{0u, 0u}, {renderSize, renderSize}},     1u,      &clear_value};
+    const typename RenderpassSubpass::SubpassBeginInfo subpassBeginInfo(nullptr, VK_SUBPASS_CONTENTS_INLINE);
+    RenderpassSubpass::cmdBeginRenderPass(vk, cmdBuffer, &beginInfo, &subpassBeginInfo);
+}
+
+template <typename RenderpassSubpass>
+void endTransitionRenderPass(const DeviceInterface &vk, VkCommandBuffer cmdBuffer)
+{
+    const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(nullptr);
+    RenderpassSubpass::cmdEndRenderPass(vk, cmdBuffer, &subpassEndInfo);
+}
+
+void checkTransitionSupport(Context &context, SharedGroupParams groupParams)
+{
+    if (groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
+        context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+
+    context.requireDeviceFunctionality("VK_KHR_maintenance1");
+
+    VkImageFormatProperties imageFormatProperties;
+    if (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
+            context.getPhysicalDevice(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TYPE_3D, VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+            VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT, &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+    {
+        TCU_THROW(NotSupportedError, "VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT with 3D image format not supported");
+    }
+}
+
+tcu::TestStatus testTransitionClear(Context &context, SharedGroupParams groupParams)
+{
+    const DeviceInterface &vk       = context.getDeviceInterface();
+    const VkDevice device           = context.getDevice();
+    auto &alloc                     = context.getDefaultAllocator();
+    const VkQueue queue             = context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+
+    const uint32_t renderSize  = 1u;
+    const uint32_t depth       = 2u;
+    const VkFormat colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+
+    const VkImageCreateInfo imageCreateInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // sType
+        nullptr,                                                               // pNext
+        VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT,                               // flags
+        VK_IMAGE_TYPE_3D,                                                      // imageType
+        colorFormat,                                                           // format
+        {renderSize, renderSize, depth},                                       // extent
+        1u,                                                                    // mipLevels
+        1u,                                                                    // arrayLayers
+        VK_SAMPLE_COUNT_1_BIT,                                                 // samples
+        VK_IMAGE_TILING_OPTIMAL,                                               // tiling
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // usage
+        VK_SHARING_MODE_EXCLUSIVE,                                             // sharingMode
+        0u,                                                                    // queueFamilyIndexCount
+        nullptr,                                                               // pQueueFamilyIndices
+        VK_IMAGE_LAYOUT_UNDEFINED                                              // initialLayout
+    };
+
+    const auto image = de::MovePtr<ImageWithMemory>(
+        new ImageWithMemory(vk, device, alloc, imageCreateInfo, vk::MemoryRequirement::Any));
+
+    const VkImageViewCreateInfo view3DParams = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                                                nullptr,
+                                                0u,
+                                                **image,
+                                                VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+                                                colorFormat,
+                                                makeComponentMappingRGBA(),
+                                                {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, depth}};
+    const auto imageView3D                   = createImageView(vk, device, &view3DParams, nullptr);
+
+    const VkImageViewCreateInfo view2DParams = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                                                nullptr,
+                                                0u,
+                                                **image,
+                                                VK_IMAGE_VIEW_TYPE_2D,
+                                                colorFormat,
+                                                makeComponentMappingRGBA(),
+                                                {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
+    const auto imageView2D                   = createImageView(vk, device, &view2DParams, nullptr);
+
+    Move<VkRenderPass> renderPass3D;
+    Move<VkRenderPass> renderPass2D;
+    if (groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+    {
+        renderPass3D = createTransitionRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1,
+                                                  SubpassDependency1, RenderPassCreateInfo1>(
+            vk, device, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        renderPass2D = createTransitionRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1,
+                                                  SubpassDependency1, RenderPassCreateInfo1>(
+            vk, device, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    }
+    else if (groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
+    {
+        renderPass3D = createTransitionRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2,
+                                                  SubpassDependency2, RenderPassCreateInfo2>(
+            vk, device, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        renderPass2D = createTransitionRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2,
+                                                  SubpassDependency2, RenderPassCreateInfo2>(
+            vk, device, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    }
+
+    const VkFramebufferCreateInfo framebuffer3DParams = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                                                         nullptr,
+                                                         0u,
+                                                         *renderPass3D,
+                                                         1u,
+                                                         &*imageView3D,
+                                                         renderSize,
+                                                         renderSize,
+                                                         depth};
+    const auto framebuffer3D                          = createFramebuffer(vk, device, &framebuffer3DParams);
+
+    const VkFramebufferCreateInfo framebuffer2DParams = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                                                         nullptr,
+                                                         0u,
+                                                         *renderPass2D,
+                                                         1u,
+                                                         &*imageView2D,
+                                                         renderSize,
+                                                         renderSize,
+                                                         1u};
+    const auto framebuffer2D                          = createFramebuffer(vk, device, &framebuffer2DParams);
+
+    const vk::VkCommandPoolCreateInfo cmdPoolInfo = {
+        vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        nullptr,
+        vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        queueFamilyIndex,
+    };
+    const vk::Move<vk::VkCommandPool> cmdPool(createCommandPool(vk, device, &cmdPoolInfo));
+    const vk::Move<vk::VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    const vk::VkDeviceSize colorOutputBufferSize =
+        depth * renderSize * renderSize * tcu::getPixelSize(vk::mapVkFormat(colorFormat));
+    de::MovePtr<vk::BufferWithMemory> colorOutputBuffer = de::MovePtr<vk::BufferWithMemory>(new vk::BufferWithMemory(
+        vk, device, alloc, makeBufferCreateInfo(colorOutputBufferSize, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+        vk::MemoryRequirement::HostVisible));
+
+    const auto sr3D = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT,  // aspectMask
+                                                0u,                         // baseMipLevel
+                                                1u,                         // levelCount
+                                                0u,                         // baseArrayLayer
+                                                VK_REMAINING_ARRAY_LAYERS); // layerCount
+
+    vk::beginCommandBuffer(vk, *cmdBuffer);
+
+    auto initialBarrier = makeImageMemoryBarrier(0u, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, **image, sr3D);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u, &initialBarrier);
+
+    const tcu::Vec4 blueClearColor = tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f);
+    if (groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+    {
+        beginTransitionRenderPass<RenderpassSubpass1>(vk, *cmdBuffer, *renderPass3D, *framebuffer3D, blueClearColor,
+                                                      renderSize);
+        endTransitionRenderPass<RenderpassSubpass1>(vk, *cmdBuffer);
+    }
+    else
+    {
+        beginTransitionRenderPass<RenderpassSubpass2>(vk, *cmdBuffer, *renderPass3D, *framebuffer3D, blueClearColor,
+                                                      renderSize);
+        endTransitionRenderPass<RenderpassSubpass2>(vk, *cmdBuffer);
+    }
+
+    auto interPassBarrier = makeImageMemoryBarrier(
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, **image, sr3D);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u,
+                          nullptr, 1u, &interPassBarrier);
+
+    const tcu::Vec4 redClearColor   = tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    const tcu::Vec4 whiteClearColor = tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+
+    const VkClearRect clearRect = {
+        {{0, 0}, {renderSize, renderSize}},
+        0u, // baseArrayLayer
+        1u  // layerCount
+    };
+
+    const VkClearValue clearVal             = makeClearValueColor(whiteClearColor);
+    const VkClearAttachment clearAttachment = {VK_IMAGE_ASPECT_COLOR_BIT, 0u, clearVal};
+
+    if (groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+    {
+        beginTransitionRenderPass<RenderpassSubpass1>(vk, *cmdBuffer, *renderPass2D, *framebuffer2D, redClearColor,
+                                                      renderSize);
+        vk.cmdClearAttachments(*cmdBuffer, 1u, &clearAttachment, 1u, &clearRect);
+        endTransitionRenderPass<RenderpassSubpass1>(vk, *cmdBuffer);
+    }
+    else
+    {
+        beginTransitionRenderPass<RenderpassSubpass2>(vk, *cmdBuffer, *renderPass2D, *framebuffer2D, redClearColor,
+                                                      renderSize);
+        vk.cmdClearAttachments(*cmdBuffer, 1u, &clearAttachment, 1u, &clearRect);
+        endTransitionRenderPass<RenderpassSubpass2>(vk, *cmdBuffer);
+    }
+    auto barrierBack = makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // srcAccessMask
+                                              VK_ACCESS_TRANSFER_READ_BIT,              // dstAccessMask
+                                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // oldLayout
+                                              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,     // newLayout
+                                              **image,                                  // image
+                                              sr3D);                                    // subresourceRange
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                          (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u, &barrierBack);
+
+    const vk::VkBufferImageCopy copyRegion = {
+        0u, 0u, 0u, {vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u}, {0, 0, 0}, {renderSize, renderSize, depth}};
+    vk.cmdCopyImageToBuffer(*cmdBuffer, **image, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **colorOutputBuffer, 1u,
+                            &copyRegion);
+
+    vk::endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+
+    invalidateAlloc(vk, device, colorOutputBuffer->getAllocation());
+    tcu::ConstPixelBufferAccess resultBuffer =
+        tcu::ConstPixelBufferAccess(vk::mapVkFormat(colorFormat), renderSize, renderSize, depth,
+                                    static_cast<const uint8_t *>(colorOutputBuffer->getAllocation().getHostPtr()) +
+                                        colorOutputBuffer->getAllocation().getOffset());
+
+    tcu::ConstPixelBufferAccess slice0 = tcu::getSubregion(resultBuffer, 0, 0, 0, renderSize, renderSize, 1);
+    tcu::ConstPixelBufferAccess slice1 = tcu::getSubregion(resultBuffer, 0, 0, 1, renderSize, renderSize, 1);
+
+    tcu::TextureLevel expected0(vk::mapVkFormat(colorFormat), renderSize, renderSize, 1);
+    tcu::clear(expected0.getAccess(), whiteClearColor);
+
+    tcu::TextureLevel expected1(vk::mapVkFormat(colorFormat), renderSize, renderSize, 1);
+    tcu::clear(expected1.getAccess(), blueClearColor);
+
+    const tcu::Vec4 threshold(0.02f, 0.02f, 0.02f, 0.02f);
+    bool isOk0 = tcu::floatThresholdCompare(context.getTestContext().getLog(), "Result Slice 0",
+                                            "Image comparison result for slice 0", expected0.getAccess(), slice0,
+                                            threshold, tcu::COMPARE_LOG_ON_ERROR);
+
+    bool isOk1 = tcu::floatThresholdCompare(context.getTestContext().getLog(), "Result Slice 1",
+                                            "Image comparison result for slice 1", expected1.getAccess(), slice1,
+                                            threshold, tcu::COMPARE_LOG_ON_ERROR);
+
+    if (!isOk0 || !isOk1)
+        return tcu::TestStatus::fail("Image verification failed");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createRenderPassRemainingArrayLayersTests(tcu::TestContext &testCtx,
@@ -525,6 +835,11 @@ tcu::TestCaseGroup *createRenderPassRemainingArrayLayersTests(tcu::TestContext &
         }
         testGroup->addChild(layerGroup.release());
     }
+
+    de::MovePtr<tcu::TestCaseGroup> transitionGroup(new tcu::TestCaseGroup(testCtx, "view_transition"));
+    addFunctionCase<SharedGroupParams>(transitionGroup.get(), "3d_texture_view_transition", checkTransitionSupport,
+                                       testTransitionClear, groupParams);
+    testGroup->addChild(transitionGroup.release());
 
     return testGroup.release();
 }
