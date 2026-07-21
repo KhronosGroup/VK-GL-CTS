@@ -118,13 +118,15 @@ typedef uint32_t BehaviorFlags;
 enum ValueId
 {
     // common values used as both arguments and results
-    V_UNUSED = 0, // used to mark arguments that are not used in operation
-    V_MINUS_INF,  //    or results of tests cases that should be skipped
-    V_MINUS_ONE,  // -1.0
-    V_MINUS_ZERO, // -0.0
-    V_ZERO,       //  0.0
-    V_HALF,       //  0.5
-    V_ONE,        //  1.0
+    V_UNUSED = 0,   // used to mark arguments that are not used in operation
+    V_MINUS_INF,    //    or results of tests cases that should be skipped
+    V_MINUS_ONE,    // -1.0
+    V_MINUS_ZERO,   // -0.0
+    V_ZERO,         //  0.0
+    V_HALF,         //  0.5
+    V_ONE,          //  1.0
+    V_ONE_AND_HALF, // 1.5
+    V_TWO,          // 2.0
     V_INF,
     V_DENORM,
     V_NAN,
@@ -719,17 +721,19 @@ TypeValues<deFloat16>::TypeValues() : TypeValuesBase()
 {
     // NOTE: when updating entries in m_valueIdToVariableType make sure to
     // update also valueIdToSnippetArgMap defined in updateSpirvSnippets()
-    ValueMap &vm     = m_valueIdToVariableType;
-    vm[V_UNUSED]     = deFloat32To16(0.0f);
-    vm[V_MINUS_INF]  = 0xfc00;
-    vm[V_MINUS_ONE]  = deFloat32To16(-1.0f);
-    vm[V_MINUS_ZERO] = 0x8000;
-    vm[V_ZERO]       = 0x0000;
-    vm[V_HALF]       = deFloat32To16(0.5f);
-    vm[V_ONE]        = deFloat32To16(1.0f);
-    vm[V_INF]        = 0x7c00;
-    vm[V_DENORM]     = 0x03f0; // this value should be the same as the result of denormBase - epsilon
-    vm[V_NAN]        = 0x7cf0;
+    ValueMap &vm       = m_valueIdToVariableType;
+    vm[V_UNUSED]       = deFloat32To16(0.0f);
+    vm[V_MINUS_INF]    = 0xfc00;
+    vm[V_MINUS_ONE]    = deFloat32To16(-1.0f);
+    vm[V_MINUS_ZERO]   = 0x8000;
+    vm[V_ZERO]         = 0x0000;
+    vm[V_HALF]         = deFloat32To16(0.5f);
+    vm[V_ONE]          = deFloat32To16(1.0f);
+    vm[V_ONE_AND_HALF] = deFloat32To16(1.5f);
+    vm[V_TWO]          = deFloat32To16(2.0f);
+    vm[V_INF]          = 0x7c00;
+    vm[V_DENORM]       = 0x03f0; // this value should be the same as the result of denormBase - epsilon
+    vm[V_NAN]          = 0x7cf0;
 
     vm[V_PI_DIV_2]         = deFloat32To16((float)M_PI_2);
     vm[V_DENORM_TIMES_TWO] = 0x07e0;
@@ -867,17 +871,19 @@ TypeValues<float>::TypeValues() : TypeValuesBase()
 {
     // NOTE: when updating entries in m_valueIdToVariableType make sure to
     // update also valueIdToSnippetArgMap defined in updateSpirvSnippets()
-    ValueMap &vm     = m_valueIdToVariableType;
-    vm[V_UNUSED]     = 0.0f;
-    vm[V_MINUS_INF]  = -std::numeric_limits<float>::infinity();
-    vm[V_MINUS_ONE]  = -1.0f;
-    vm[V_MINUS_ZERO] = -0.0f;
-    vm[V_ZERO]       = 0.0f;
-    vm[V_HALF]       = 0.5f;
-    vm[V_ONE]        = 1.0f;
-    vm[V_INF]        = std::numeric_limits<float>::infinity();
-    vm[V_DENORM]     = static_cast<float>(1.413e-42); // 0x000003f0
-    vm[V_NAN]        = std::numeric_limits<float>::quiet_NaN();
+    ValueMap &vm       = m_valueIdToVariableType;
+    vm[V_UNUSED]       = 0.0f;
+    vm[V_MINUS_INF]    = -std::numeric_limits<float>::infinity();
+    vm[V_MINUS_ONE]    = -1.0f;
+    vm[V_MINUS_ZERO]   = -0.0f;
+    vm[V_ZERO]         = 0.0f;
+    vm[V_HALF]         = 0.5f;
+    vm[V_ONE]          = 1.0f;
+    vm[V_ONE_AND_HALF] = 1.5f;
+    vm[V_TWO]          = 2.0f;
+    vm[V_INF]          = std::numeric_limits<float>::infinity();
+    vm[V_DENORM]       = static_cast<float>(1.413e-42); // 0x000003f0
+    vm[V_NAN]          = std::numeric_limits<float>::quiet_NaN();
 
     vm[V_PI_DIV_2]         = static_cast<float>(M_PI_2);
     vm[V_DENORM_TIMES_TWO] = vm[V_DENORM] + vm[V_DENORM];
@@ -1012,17 +1018,19 @@ TypeValues<double>::TypeValues() : TypeValuesBase()
 {
     // NOTE: when updating entries in m_valueIdToVariableType make sure to
     // update also valueIdToSnippetArgMap defined in updateSpirvSnippets()
-    ValueMap &vm     = m_valueIdToVariableType;
-    vm[V_UNUSED]     = 0.0;
-    vm[V_MINUS_INF]  = -std::numeric_limits<double>::infinity();
-    vm[V_MINUS_ONE]  = -1.0;
-    vm[V_MINUS_ZERO] = -0.0;
-    vm[V_ZERO]       = 0.0;
-    vm[V_HALF]       = 0.5;
-    vm[V_ONE]        = 1.0;
-    vm[V_INF]        = std::numeric_limits<double>::infinity();
-    vm[V_DENORM]     = 4.98e-321; // 0x00000000000003F0
-    vm[V_NAN]        = std::numeric_limits<double>::quiet_NaN();
+    ValueMap &vm       = m_valueIdToVariableType;
+    vm[V_UNUSED]       = 0.0;
+    vm[V_MINUS_INF]    = -std::numeric_limits<double>::infinity();
+    vm[V_MINUS_ONE]    = -1.0;
+    vm[V_MINUS_ZERO]   = -0.0;
+    vm[V_ZERO]         = 0.0;
+    vm[V_HALF]         = 0.5;
+    vm[V_ONE]          = 1.0;
+    vm[V_ONE_AND_HALF] = 1.5;
+    vm[V_TWO]          = 2.0;
+    vm[V_INF]          = std::numeric_limits<double>::infinity();
+    vm[V_DENORM]       = 4.98e-321; // 0x00000000000003F0
+    vm[V_NAN]          = std::numeric_limits<double>::quiet_NaN();
 
     vm[V_PI_DIV_2]         = M_PI_2;
     vm[V_DENORM_TIMES_TWO] = vm[V_DENORM] + vm[V_DENORM];
@@ -1463,17 +1471,19 @@ void TypeSnippetsBase::updateSpirvSnippets()
     // that grab arguments from input, do need to be in this map
     // NOTE: when updating entries in valueIdToSnippetArgMap make
     // sure to update also m_valueIdToVariableType for all valueType width
-    SnippetMap &sm   = valueIdToSnippetArgMap;
-    sm[V_UNUSED]     = "OpFSub %type_valueType %c_valueType_0 %c_valueType_0\n";
-    sm[V_MINUS_INF]  = "OpFDiv %type_valueType %c_valueType_n1 %c_valueType_0\n";
-    sm[V_MINUS_ONE]  = "OpFAdd %type_valueType %c_valueType_n1 %c_valueType_0\n";
-    sm[V_MINUS_ZERO] = "OpFMul %type_valueType %c_valueType_n1 %c_valueType_0\n";
-    sm[V_ZERO]       = "OpFMul %type_valueType %c_valueType_0 %c_valueType_0\n";
-    sm[V_HALF]       = "OpFAdd %type_valueType %c_valueType_0_5 %c_valueType_0\n";
-    sm[V_ONE]        = "OpFAdd %type_valueType %c_valueType_1 %c_valueType_0\n";
-    sm[V_INF]        = "OpFDiv %type_valueType %c_valueType_1 %c_valueType_0\n"; // x / 0 == Inf
-    sm[V_DENORM]     = "OpFSub %type_valueType %c_valueType_denorm_base %c_valueType_eps\n";
-    sm[V_NAN]        = "OpFDiv %type_valueType %c_valueType_0 %c_valueType_0\n"; // 0 / 0 == Nan
+    SnippetMap &sm     = valueIdToSnippetArgMap;
+    sm[V_UNUSED]       = "OpFSub %type_valueType %c_valueType_0 %c_valueType_0\n";
+    sm[V_MINUS_INF]    = "OpFDiv %type_valueType %c_valueType_n1 %c_valueType_0\n";
+    sm[V_MINUS_ONE]    = "OpFAdd %type_valueType %c_valueType_n1 %c_valueType_0\n";
+    sm[V_MINUS_ZERO]   = "OpFMul %type_valueType %c_valueType_n1 %c_valueType_0\n";
+    sm[V_ZERO]         = "OpFMul %type_valueType %c_valueType_0 %c_valueType_0\n";
+    sm[V_HALF]         = "OpFAdd %type_valueType %c_valueType_0_5 %c_valueType_0\n";
+    sm[V_ONE]          = "OpFAdd %type_valueType %c_valueType_1 %c_valueType_0\n";
+    sm[V_ONE_AND_HALF] = "OpFAdd %type_valueType %c_valueType_1 %c_valueType_0_5\n";
+    sm[V_TWO]          = "OpFAdd %type_valueType %c_valueType_1 %c_valueType_1\n";
+    sm[V_INF]          = "OpFDiv %type_valueType %c_valueType_1 %c_valueType_0\n"; // x / 0 == Inf
+    sm[V_DENORM]       = "OpFSub %type_valueType %c_valueType_denorm_base %c_valueType_eps\n";
+    sm[V_NAN]          = "OpFDiv %type_valueType %c_valueType_0 %c_valueType_0\n"; // 0 / 0 == Nan
 
     for (const auto &[v, s] : sm)
         sm[v] = replace(s, typeToken, typeName);
@@ -2863,6 +2873,9 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
             }
         }
     }
+
+    // Special case: check round to even is not affected by a different rounding mode.
+    testCases.emplace_back("rounding_rtz_op", B_RTZ_ROUNDING, OID_ROUND_EV, V_ONE_AND_HALF, V_UNUSED, V_TWO, true);
 
     // special cases
     if (typeTestResults->variableType() == FP16)
@@ -5381,7 +5394,7 @@ InstanceContextPtr GraphicsTestGroupBuilder::createInstanceContext(const Operati
 
     ctx.requiredStages = static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
     ctx.failResult     = QP_TEST_RESULT_FAIL;
-    ctx.failMessageTemplate = "Output doesn't match with expected";
+    ctx.failMessageTemplate = "Output does not match with expected result";
 
     return ctxPtr;
 }
