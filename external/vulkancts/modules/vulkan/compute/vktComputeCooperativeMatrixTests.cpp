@@ -6400,6 +6400,16 @@ void CoopMat64bTest::checkSupport(Context &context) const
                                   m_computePipelineConstructionType);
     if (!context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
         TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
+
+    // The tensor-layout variant emits coopMatLoadTensorNV/coopMatStoreTensorNV (tensor
+    // addressing), so it additionally requires VK_NV_cooperative_matrix2; mirror the gate
+    // in CooperativeMatrixTestCase::checkSupport rather than assuming it from 64-bit indexing.
+    if (m_tensorLayout)
+    {
+        context.requireDeviceFunctionality("VK_NV_cooperative_matrix2");
+        if (!context.getCooperativeMatrix2FeaturesNV().cooperativeMatrixTensorAddressing)
+            TCU_THROW(NotSupportedError, "cooperativeMatrixTensorAddressing not supported");
+    }
 }
 
 void CoopMat64bTest::initPrograms(SourceCollections &sourceCollections) const
