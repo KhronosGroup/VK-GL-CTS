@@ -57,14 +57,14 @@ developing a Vulkan application.
 ### Android
 
  * Android NDK r17c or later.
- * Android SDK with: SDK Tools, SDK Platform-tools, SDK Build-tools, and API 28
+ * Android SDK with: SDK Tools, SDK Platform-tools, SDK Build-tools, and API 34
  * Java Development Kit (JDK)
  * Windows: either NMake or Ninja in PATH
 
 If you have downloaded the Android SDK command line tools package (25.2.3 or higher) then
 you can install the necessary components by running:
 
-	tools/bin/sdkmanager tools platform-tools 'build-tools;25.0.2' 'platforms;android-28'
+	tools/bin/sdkmanager tools platform-tools 'build-tools;25.0.2' 'platforms;android-34'
 
 
 Building CTS
@@ -160,7 +160,7 @@ Following command will build dEQP.apk:
 
 	python3 scripts/android/build_apk.py --sdk <path to Android SDK> --ndk <path to Android NDK>
 
-By default the CTS package will be built for the Android API level 28.
+By default the CTS package will be built for the Android API level 34.
 Another API level may be supplied using --native-api command line option.
 
 The package can be installed by either running:

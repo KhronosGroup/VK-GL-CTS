@@ -288,7 +288,7 @@ The conformance tests come with native Android support. The following packages
 are needed in order to build an Android binary:
 - Python 3.x (for the build related scripts, some other scripts still use Python 2.7.x)
 - Android NDK r17c
-- Android SDK with API 28 packages and tools installed
+- Android SDK with API 34 packages and tools installed
 - Apache Ant
 
 There are two types of builds for Android:
@@ -303,7 +303,7 @@ An Android APK (for ES 3.2) can be built using command:
 
 	python scripts/android/build_apk.py --target=openglcts --sdk <path to Android SDK> --ndk <path to Android NDK>
 
-By default the CTS package will be built for the Android API level 28.
+By default the CTS package will be built for the Android API level 34.
 Another API level may be supplied using --native-api command line option.
 
 The package can be installed by either running:

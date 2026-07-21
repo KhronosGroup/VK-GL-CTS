@@ -217,7 +217,7 @@ cc_defaults {
 
         // dEQP defines:
         "-D_XOPEN_SOURCE=600",
-        "-DDE_ANDROID_API=28",
+        "-DDE_ANDROID_API=34",
         "-DDE_ASSERT_FAILURE_CALLBACK",
         "-DDE_COMPILER=DE_COMPILER_CLANG",
         "-DDE_MINGW=0",
