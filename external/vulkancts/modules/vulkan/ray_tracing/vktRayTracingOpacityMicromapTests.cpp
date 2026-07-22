@@ -1391,6 +1391,209 @@ tcu::TestStatus OpacityMicromapManyTrianglesInstance::iterate(void)
 
 constexpr uint32_t kMaxSubdivisionLevel = 15;
 
+// Minimal coverage for the EXT-only micromap query pool types. Build a micromap, query its
+// compacted / serialization size with vkCmdWriteMicromapsPropertiesEXT, and verify a plausible
+// (non-zero) size is returned. This exercises the vkCreateQueryPool path for
+// VK_QUERY_TYPE_MICROMAP_{COMPACTED,SERIALIZATION}_SIZE_EXT and the write command that consumes such a
+// pool. The end-to-end serialize/compact workflows are
+// only complete under VK_KHR_opacity_micromap and are covered by the KHR opacity micromap tests.
+struct MicromapQueryParams
+{
+    VkQueryType queryType;
+    bool allowCompaction;
+};
+
+class MicromapQueryInstance : public TestInstance
+{
+public:
+    MicromapQueryInstance(Context &context, const MicromapQueryParams &params) : TestInstance(context), m_params(params)
+    {
+    }
+    virtual ~MicromapQueryInstance(void)
+    {
+    }
+
+    virtual tcu::TestStatus iterate(void);
+
+protected:
+    MicromapQueryParams m_params;
+};
+
+class MicromapQueryCase : public TestCase
+{
+public:
+    MicromapQueryCase(tcu::TestContext &testCtx, const std::string &name, const MicromapQueryParams &params)
+        : TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~MicromapQueryCase(void)
+    {
+    }
+
+    virtual void checkSupport(Context &context) const;
+    virtual TestInstance *createInstance(Context &context) const
+    {
+        return new MicromapQueryInstance(context, m_params);
+    }
+
+protected:
+    MicromapQueryParams m_params;
+};
+
+void MicromapQueryCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+    context.requireDeviceFunctionality("VK_EXT_opacity_micromap");
+
+    const VkPhysicalDeviceAccelerationStructureFeaturesKHR &accelerationStructureFeaturesKHR =
+        context.getAccelerationStructureFeatures();
+    if (accelerationStructureFeaturesKHR.accelerationStructure == false)
+        TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
+
+    const VkPhysicalDeviceOpacityMicromapFeaturesEXT &opacityMicromapFeaturesEXT =
+        context.getOpacityMicromapFeaturesEXT();
+    if (opacityMicromapFeaturesEXT.micromap == false)
+        TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceOpacityMicromapFeaturesEXT.micromap");
+}
+
+tcu::TestStatus MicromapQueryInstance::iterate(void)
+{
+    const auto &vkd   = m_context.getDeviceInterface();
+    const auto device = m_context.getDevice();
+    auto &alloc       = m_context.getDefaultAllocator();
+    const auto qIndex = m_context.getUniversalQueueFamilyIndex();
+    const auto queue  = m_context.getUniversalQueue();
+
+    const auto cmdPool      = makeCommandPool(vkd, device, qIndex);
+    const auto cmdBufferPtr = allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    const auto cmdBuffer    = cmdBufferPtr.get();
+
+    beginCommandBuffer(vkd, cmdBuffer);
+
+    // Build a minimal single-triangle, 2-state, subdivision-level-0 opacity micromap.
+    const uint32_t triangleCount         = 1u;
+    const uint32_t numSubtriangles       = levelToSubtriangles(0u);
+    const uint32_t triangleMicromapBytes = (numSubtriangles + 7u) / 8u;
+    const uint32_t opacityMicromapBytes  = triangleMicromapBytes * triangleCount;
+
+    const int TriangleOffset = 0;
+    const int DataOffset     = 512;
+
+    const auto micromapDataBufferSize = static_cast<VkDeviceSize>(1024 + opacityMicromapBytes);
+    const auto micromapDataBufferCreateInfo =
+        makeBufferCreateInfo(micromapDataBufferSize, VK_BUFFER_USAGE_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_EXT |
+                                                         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    BufferWithMemory micromapDataBuffer(vkd, device, alloc, micromapDataBufferCreateInfo,
+                                        MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    void *micromapDataBufferData = micromapDataBuffer.getAllocation().getHostPtr();
+
+    VkMicromapUsageEXT mmUsage = {};
+    mmUsage.count              = triangleCount;
+    mmUsage.subdivisionLevel   = 0u;
+    mmUsage.format             = VK_OPACITY_MICROMAP_FORMAT_2_STATE_EXT;
+
+    {
+        uint8_t *data = static_cast<uint8_t *>(micromapDataBufferData);
+        deMemset(data, 0, size_t(micromapDataBufferSize));
+
+        DE_STATIC_ASSERT(sizeof(VkMicromapTriangleEXT) == 8);
+        VkMicromapTriangleEXT *tri = reinterpret_cast<VkMicromapTriangleEXT *>(&data[TriangleOffset]);
+        tri->dataOffset            = 0u;
+        tri->subdivisionLevel      = uint16_t(mmUsage.subdivisionLevel);
+        tri->format                = uint16_t(mmUsage.format);
+    }
+
+    VkBuildMicromapFlagsEXT buildFlags = 0u;
+    if (m_params.allowCompaction)
+        buildFlags |= VK_BUILD_MICROMAP_ALLOW_COMPACTION_BIT_EXT;
+
+    VkMicromapBuildInfoEXT mmBuildInfo = {
+        VK_STRUCTURE_TYPE_MICROMAP_BUILD_INFO_EXT,
+        nullptr,
+        VK_MICROMAP_TYPE_OPACITY_MICROMAP_EXT,
+        buildFlags,
+        VK_BUILD_MICROMAP_MODE_BUILD_EXT,
+        VK_NULL_HANDLE,
+        1u,
+        &mmUsage,
+        nullptr,
+        makeDeviceOrHostAddressConstKHR(nullptr),
+        makeDeviceOrHostAddressKHR(nullptr),
+        makeDeviceOrHostAddressConstKHR(nullptr),
+        static_cast<VkDeviceSize>(sizeof(VkMicromapTriangleEXT)),
+    };
+
+    VkMicromapBuildSizesInfoEXT sizeInfo = {
+        VK_STRUCTURE_TYPE_MICROMAP_BUILD_SIZES_INFO_EXT, nullptr, 0, 0, false,
+    };
+    vkd.getMicromapBuildSizesEXT(device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &mmBuildInfo, &sizeInfo);
+
+    const auto micromapBackingBufferCreateInfo = makeBufferCreateInfo(
+        sizeInfo.micromapSize, VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    BufferWithMemory micromapBackingBuffer(vkd, device, alloc, micromapBackingBufferCreateInfo,
+                                           MemoryRequirement::Local | MemoryRequirement::DeviceAddress);
+
+    const auto micromapScratchBufferCreateInfo =
+        makeBufferCreateInfo(sizeInfo.buildScratchSize,
+                             VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    BufferWithMemory micromapScratchBuffer(vkd, device, alloc, micromapScratchBufferCreateInfo,
+                                           MemoryRequirement::Local | MemoryRequirement::DeviceAddress);
+
+    VkMicromapCreateInfoEXT maCreateInfo = {
+        VK_STRUCTURE_TYPE_MICROMAP_CREATE_INFO_EXT, nullptr, 0, micromapBackingBuffer.get(), 0, sizeInfo.micromapSize,
+        VK_MICROMAP_TYPE_OPACITY_MICROMAP_EXT,      0ull,
+    };
+    Move<VkMicromapEXT> micromap = vk::createMicromapEXT(vkd, device, &maCreateInfo);
+
+    mmBuildInfo.dstMicromap   = *micromap;
+    mmBuildInfo.data          = makeDeviceOrHostAddressConstKHR(vkd, device, micromapDataBuffer.get(), DataOffset);
+    mmBuildInfo.triangleArray = makeDeviceOrHostAddressConstKHR(vkd, device, micromapDataBuffer.get(), TriangleOffset);
+    mmBuildInfo.scratchData   = makeDeviceOrHostAddressKHR(vkd, device, micromapScratchBuffer.get(), 0);
+
+    vkd.cmdBuildMicromapsEXT(cmdBuffer, 1u, &mmBuildInfo);
+
+    // Make the built micromap available to the property write command.
+    {
+        // vkCmdWriteMicromapsPropertiesEXT reads the source micromaps in the
+        // VK_PIPELINE_STAGE_2_MICROMAP_BUILD_BIT_EXT stage, so the destination scope must cover that
+        // stage (unlike the acceleration-structure-build consumers elsewhere in this file).
+        VkMemoryBarrier2 memoryBarrier = {
+            VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,         nullptr,
+            VK_PIPELINE_STAGE_2_MICROMAP_BUILD_BIT_EXT, VK_ACCESS_2_MICROMAP_WRITE_BIT_EXT,
+            VK_PIPELINE_STAGE_2_MICROMAP_BUILD_BIT_EXT, VK_ACCESS_2_MICROMAP_READ_BIT_EXT};
+        VkDependencyInfoKHR dependencyInfo = {
+            VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR, nullptr, 0u, 1u, &memoryBarrier, 0u, nullptr, 0u, nullptr,
+        };
+        vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+    }
+
+    // Create the EXT micromap query pool and write the requested size property into it.
+    const VkQueryPoolCreateInfo queryPoolCreateInfo = {
+        VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, nullptr, 0u, m_params.queryType, 1u, 0u,
+    };
+    const Unique<VkQueryPool> queryPool(createQueryPool(vkd, device, &queryPoolCreateInfo));
+
+    vkd.cmdResetQueryPool(cmdBuffer, *queryPool, 0u, 1u);
+
+    const VkMicromapEXT micromapHandle = *micromap;
+    vkd.cmdWriteMicromapsPropertiesEXT(cmdBuffer, 1u, &micromapHandle, m_params.queryType, *queryPool, 0u);
+
+    endCommandBuffer(vkd, cmdBuffer);
+    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+    VkDeviceSize resultSize = 0u;
+    VK_CHECK(vkd.getQueryPoolResults(device, *queryPool, 0u, 1u, sizeof(resultSize), &resultSize, sizeof(resultSize),
+                                     VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+
+    // Only a plausible, non-zero size is guaranteed. The spec does not require the compacted size to
+    // be smaller than the (conservative) build allocation, so no upper bound is checked.
+    if (resultSize == 0u)
+        return tcu::TestStatus::fail("Query returned a zero size");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 tcu::TestCaseGroup *createOpacityMicromapTests(tcu::TestContext &testCtx)
 {
     // Test acceleration structures using opacity micromap with ray pipelines
@@ -1563,6 +1766,16 @@ tcu::TestCaseGroup *createOpacityMicromapTests(tcu::TestContext &testCtx)
             }
 
         group->addChild(manyTrianglesGroup.release());
+    }
+
+    // Micromap query pool size queries.
+    {
+        de::MovePtr<tcu::TestCaseGroup> queryGroup(new tcu::TestCaseGroup(group->getTestContext(), "query"));
+        queryGroup->addChild(new MicromapQueryCase(
+            testCtx, "compacted_size", MicromapQueryParams{VK_QUERY_TYPE_MICROMAP_COMPACTED_SIZE_EXT, true}));
+        queryGroup->addChild(new MicromapQueryCase(
+            testCtx, "serialization_size", MicromapQueryParams{VK_QUERY_TYPE_MICROMAP_SERIALIZATION_SIZE_EXT, false}));
+        group->addChild(queryGroup.release());
     }
 
     return group.release();
