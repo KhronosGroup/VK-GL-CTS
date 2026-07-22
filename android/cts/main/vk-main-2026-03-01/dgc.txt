@@ -121,6 +121,7 @@ dEQP-VK.dgc.ext.compute.layout.push_dispatch_shader_objects_dynamic_pipeline_lay
 dEQP-VK.dgc.ext.compute.misc.many_sequences_131072_compute_queue
 dEQP-VK.dgc.ext.compute.misc.many_sequences_131072_universal_queue
 dEQP-VK.dgc.ext.compute.misc.null_set_layouts_info
+dEQP-VK.dgc.ext.compute.push_index_heap.stage_compute
 dEQP-VK.dgc.ext.graphics.mesh.misc.many_sequences_1024
 dEQP-VK.dgc.ext.graphics.mesh.misc.many_sequences_1024_task
 dEQP-VK.dgc.ext.graphics.mesh.misc.many_sequences_131072

@@ -37,6 +37,7 @@
 #include "vktDGCPropertyTestsExt.hpp"
 #include "vktDGCComputeSmokeTestsExt.hpp"
 #include "vktDGCComputeLayoutTestsExt.hpp"
+#include "vktDGCComputePushIndexHeapTestsExt.hpp"
 #include "vktDGCComputeMiscTestsExt.hpp"
 #include "vktDGCComputePreprocessTestsExt.hpp"
 #include "vktDGCComputeSubgroupTestsExt.hpp"
@@ -96,6 +97,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     extComputeGroup->addChild(createDGCComputeGetInfoTestsExt(testCtx));
     extComputeGroup->addChild(createDGCComputeSmokeTestsExt(testCtx));
     extComputeGroup->addChild(createDGCComputeLayoutTestsExt(testCtx));
+    extComputeGroup->addChild(createDGCComputePushIndexHeapTestsExt(testCtx));
     extComputeGroup->addChild(createDGCComputeMiscTestsExt(testCtx));
     extComputeGroup->addChild(createDGCComputePreprocessTestsExt(testCtx));
     extComputeGroup->addChild(createDGCComputeSubgroupTestsExt(testCtx));

@@ -206,6 +206,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCComputeMiscTestsExt.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCComputePreprocessTests.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCComputePreprocessTestsExt.cpp",
+        "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCComputePushIndexHeapTestsExt.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCComputeSmokeTests.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCComputeSmokeTestsExt.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCComputeSubgroupTests.cpp",

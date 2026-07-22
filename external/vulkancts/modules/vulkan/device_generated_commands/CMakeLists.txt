@@ -69,6 +69,8 @@ set(DEQP_VK_DGC_SRCS
 	vktDGCGraphicsMultiviewTestsExt.hpp
 	vktDGCStatQueryTestsExt.cpp
 	vktDGCStatQueryTestsExt.hpp
+	vktDGCComputePushIndexHeapTestsExt.cpp
+	vktDGCComputePushIndexHeapTestsExt.hpp
 	)
 
 set(DEQP_VK_DGC_LIBS
