@@ -785,6 +785,16 @@ const char* getAccelerationStructureMotionInstanceTypeNVName (VkAccelerationStru
 }
 
 
+const char* getAccelerationStructureSerializedBlockTypeKHRName (VkAccelerationStructureSerializedBlockTypeKHR value)
+{
+	switch (value)
+	{
+		case VK_ACCELERATION_STRUCTURE_SERIALIZED_BLOCK_TYPE_OPACITY_MICROMAP_KHR:	return "VK_ACCELERATION_STRUCTURE_SERIALIZED_BLOCK_TYPE_OPACITY_MICROMAP_KHR";
+		default:																	return nullptr;
+	}
+}
+
+
 const char* getAccelerationStructureTypeKHRName (VkAccelerationStructureTypeKHR value)
 {
 	switch (value)
@@ -7168,6 +7178,21 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureGeometry
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureGeometryMicromapDataKHR& value)
+{
+	s << "VkAccelerationStructureGeometryMicromapDataKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tusageCountsCount = " << value.usageCountsCount << '\n';
+	s << "\tpUsageCounts = " << value.pUsageCounts << '\n';
+	s << "\tppUsageCounts = " << value.ppUsageCounts << '\n';
+	s << "\tdata = " << value.data << '\n';
+	s << "\ttriangleArray = " << value.triangleArray << '\n';
+	s << "\ttriangleArrayStride = " << value.triangleArrayStride << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureGeometryMotionTrianglesDataNV& value)
 {
 	s << "VkAccelerationStructureGeometryMotionTrianglesDataNV = {\n";
@@ -7346,6 +7371,20 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureTriangle
 	s << "\tusageCountsCount = " << value.usageCountsCount << '\n';
 	s << "\tpUsageCounts = " << value.pUsageCounts << '\n';
 	s << "\tppUsageCounts = " << value.ppUsageCounts << '\n';
+	s << "\tmicromap = " << value.micromap << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureTrianglesOpacityMicromapKHR& value)
+{
+	s << "VkAccelerationStructureTrianglesOpacityMicromapKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tindexType = " << value.indexType << '\n';
+	s << "\tindexBuffer = " << value.indexBuffer << '\n';
+	s << "\tindexStride = " << value.indexStride << '\n';
+	s << "\tbaseTriangle = " << value.baseTriangle << '\n';
 	s << "\tmicromap = " << value.micromap << '\n';
 	s << '}';
 	return s;
@@ -12434,6 +12473,16 @@ std::ostream& operator<< (std::ostream& s, const VkMicromapUsageEXT& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkMicromapUsageKHR& value)
+{
+	s << "VkMicromapUsageKHR = {\n";
+	s << "\tcount = " << value.count << '\n';
+	s << "\tsubdivisionLevel = " << value.subdivisionLevel << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkMicromapVersionInfoEXT& value)
 {
 	s << "VkMicromapVersionInfoEXT = {\n";
@@ -15174,6 +15223,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceOpacityMicromap
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceOpacityMicromapFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceOpacityMicromapFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmicromap = " << value.micromap << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceOpacityMicromapPropertiesEXT& value)
 {
 	s << "VkPhysicalDeviceOpacityMicromapPropertiesEXT = {\n";
@@ -15181,6 +15240,19 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceOpacityMicromap
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmaxOpacity2StateSubdivisionLevel = " << value.maxOpacity2StateSubdivisionLevel << '\n';
 	s << "\tmaxOpacity4StateSubdivisionLevel = " << value.maxOpacity4StateSubdivisionLevel << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceOpacityMicromapPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceOpacityMicromapPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxOpacity2StateSubdivisionLevel = " << value.maxOpacity2StateSubdivisionLevel << '\n';
+	s << "\tmaxOpacity4StateSubdivisionLevel = " << value.maxOpacity4StateSubdivisionLevel << '\n';
+	s << "\tmaxOpacityLossy4StateSubdivisionLevel = " << value.maxOpacityLossy4StateSubdivisionLevel << '\n';
+	s << "\tmaxMicromapTriangles = " << value.maxMicromapTriangles << '\n';
 	s << '}';
 	return s;
 }

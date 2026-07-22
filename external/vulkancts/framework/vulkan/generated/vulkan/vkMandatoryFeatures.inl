@@ -546,6 +546,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_opacity_micromap"))
 		addFeatures(&physicalDeviceOpacityMicromapFeaturesEXT);
 
+	// VkPhysicalDeviceOpacityMicromapFeaturesKHR for ext [VK_KHR_opacity_micromap]
+	vk::VkPhysicalDeviceOpacityMicromapFeaturesKHR physicalDeviceOpacityMicromapFeaturesKHR = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_opacity_micromap"))
+		addFeatures(&physicalDeviceOpacityMicromapFeaturesKHR);
+
 	// VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT for ext [VK_EXT_pageable_device_local_memory]
 	vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT physicalDevicePageableDeviceLocalMemoryFeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_pageable_device_local_memory"))
@@ -1556,6 +1561,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDevicePresentModeFifoLatestReadyFeaturesKHR.presentModeFifoLatestReady == VK_FALSE )
 			failMesages.push_back("presentModeFifoLatestReady");
+	}
+
+	// VkPhysicalDeviceOpacityMicromapFeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_opacity_micromap")) )
+	{
+		if ( physicalDeviceOpacityMicromapFeaturesKHR.micromap == VK_FALSE )
+			failMesages.push_back("micromap");
 	}
 
 	// VkPhysicalDeviceMaintenance10FeaturesKHR

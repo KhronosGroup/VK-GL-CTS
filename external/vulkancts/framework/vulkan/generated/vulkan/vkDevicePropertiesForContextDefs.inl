@@ -62,6 +62,7 @@ const vk::VkPhysicalDeviceMultiDrawPropertiesEXT&					Context::getMultiDrawPrope
 const vk::VkPhysicalDeviceMultiviewProperties&						Context::getMultiviewProperties							(void) const { return m_device->getMultiviewProperties();						}
 const vk::VkPhysicalDeviceNestedCommandBufferPropertiesEXT&			Context::getNestedCommandBufferPropertiesEXT			(void) const { return m_device->getNestedCommandBufferPropertiesEXT();			}
 const vk::VkPhysicalDeviceOpacityMicromapPropertiesEXT&				Context::getOpacityMicromapPropertiesEXT				(void) const { return m_device->getOpacityMicromapPropertiesEXT();				}
+const vk::VkPhysicalDeviceOpacityMicromapPropertiesKHR&				Context::getOpacityMicromapProperties					(void) const { return m_device->getOpacityMicromapProperties();					}
 const vk::VkPhysicalDevicePCIBusInfoPropertiesEXT&					Context::getPCIBusInfoPropertiesEXT						(void) const { return m_device->getPCIBusInfoPropertiesEXT();					}
 const vk::VkPhysicalDevicePerformanceCountersByRegionPropertiesARM&	Context::getPerformanceCountersByRegionPropertiesARM	(void) const { return m_device->getPerformanceCountersByRegionPropertiesARM();	}
 const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&			Context::getPerformanceQueryProperties					(void) const { return m_device->getPerformanceQueryProperties();				}

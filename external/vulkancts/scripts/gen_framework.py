@@ -189,6 +189,7 @@ VK_KHR_maintenance9
 VK_KHR_maintenance10
 VK_KHR_mir_surface
 VK_KHR_object_refresh
+VK_KHR_opacity_micromap
 VK_KHR_performance_query
 VK_KHR_pipeline_binary
 VK_KHR_pipeline_executable_properties
@@ -464,6 +465,7 @@ def transformSingleDependsConditionToCpp(depPart, vk, checkVersionString, checkE
                      if 'VK_VERSION' in p:
                          ret = f'({checkVersionString % (p[-3], p[-1])} || {isSupportedCheck})'
                      else:
+                         isSupportedCheck = checkExtensionString % (depExtVector, p)
                          ret = f'({checkExtensionString % (depExtVector, depPart)} || {isSupportedCheck})'
         if ret is None:
             ret = "false /* UNSUPPORTED CONDITION: " + depPart + "*/"

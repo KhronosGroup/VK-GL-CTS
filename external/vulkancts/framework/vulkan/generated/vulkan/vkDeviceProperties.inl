@@ -269,6 +269,7 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceMeshShaderPropertiesNV>(VkP
 template<> void initPropertyFromBlob<VkPhysicalDeviceMultiDrawPropertiesEXT>(VkPhysicalDeviceMultiDrawPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceNestedCommandBufferPropertiesEXT>(VkPhysicalDeviceNestedCommandBufferPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceOpacityMicromapPropertiesEXT>(VkPhysicalDeviceOpacityMicromapPropertiesEXT&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceOpacityMicromapPropertiesKHR>(VkPhysicalDeviceOpacityMicromapPropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDevicePCIBusInfoPropertiesEXT>(VkPhysicalDevicePCIBusInfoPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDevicePerformanceCountersByRegionPropertiesARM>(VkPhysicalDevicePerformanceCountersByRegionPropertiesARM&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDevicePerformanceQueryPropertiesKHR>(VkPhysicalDevicePerformanceQueryPropertiesKHR&, const AllPropertiesBlobs&) {}
@@ -351,6 +352,7 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMultiDrawPropertiesEXT>
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMultiviewProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES, VK_KHR_MULTIVIEW_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceNestedCommandBufferPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_NESTED_COMMAND_BUFFER_PROPERTIES_EXT, VK_EXT_NESTED_COMMAND_BUFFER_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceOpacityMicromapPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_PROPERTIES_EXT, VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceOpacityMicromapPropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_PROPERTIES_KHR, VK_KHR_OPACITY_MICROMAP_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePCIBusInfoPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT, VK_EXT_PCI_BUS_INFO_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePerformanceCountersByRegionPropertiesARM>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_PROPERTIES_ARM, VK_ARM_PERFORMANCE_COUNTERS_BY_REGION_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePerformanceQueryPropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_PROPERTIES_KHR, VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME}; }
@@ -447,6 +449,7 @@ static const PropertyStructCreationData propertyStructCreationArray[]
 	{ createPropertyStructWrapper<VkPhysicalDeviceMultiviewProperties>, VK_KHR_MULTIVIEW_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceNestedCommandBufferPropertiesEXT>, VK_EXT_NESTED_COMMAND_BUFFER_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceOpacityMicromapPropertiesEXT>, VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceOpacityMicromapPropertiesKHR>, VK_KHR_OPACITY_MICROMAP_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDevicePCIBusInfoPropertiesEXT>, VK_EXT_PCI_BUS_INFO_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDevicePerformanceCountersByRegionPropertiesARM>, VK_ARM_PERFORMANCE_COUNTERS_BY_REGION_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDevicePerformanceQueryPropertiesKHR>, VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME },

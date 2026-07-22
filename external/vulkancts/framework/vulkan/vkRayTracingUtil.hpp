@@ -208,9 +208,14 @@ public:
     {
         return m_hasOpacityMicromap;
     }
+    inline bool getUseKHROpacityMicromap(void) const
+    {
+        return m_useKHROpacityMicromap;
+    }
     inline void setOpacityMicromap(const VkAccelerationStructureTrianglesOpacityMicromapEXT *opacityGeometryMicromap)
     {
         m_hasOpacityMicromap      = true;
+        m_useKHROpacityMicromap   = false;
         m_opacityGeometryMicromap = *opacityGeometryMicromap;
     }
     inline bool getHasMotionBlur(void) const
@@ -227,6 +232,17 @@ public:
         m_hasMotionBlur = true;
         m_motionData    = *motionBlurData;
     }
+    inline VkAccelerationStructureTrianglesOpacityMicromapKHR &getOpacityMicromapKHR(void)
+    {
+        return m_opacityGeometryMicromapKHR;
+    }
+    inline void setOpacityMicromap(const VkAccelerationStructureTrianglesOpacityMicromapKHR *opacityGeometryMicromapKHR)
+    {
+        m_hasOpacityMicromap         = true;
+        m_useKHROpacityMicromap      = true;
+        m_opacityGeometryMicromapKHR = *opacityGeometryMicromapKHR;
+    }
+
     virtual uint32_t getVertexCount(void) const                           = 0;
     virtual const uint8_t *getVertexPointer(void) const                   = 0;
     virtual VkDeviceSize getVertexStride(void) const                      = 0;
@@ -260,11 +276,13 @@ private:
     VkGeometryFlagsKHR m_geometryFlags;
     bool m_hasOpacityMicromap;
     bool m_hasMotionBlur;
+    bool m_useKHROpacityMicromap;
     VkAccelerationStructureTrianglesOpacityMicromapEXT m_opacityGeometryMicromap;
     VkAccelerationStructureGeometryMotionTrianglesDataNV m_motionData;
     VkRayTracingLssIndexingModeNV m_indexingMode;
     bool m_useEndcaps;
     bool m_doBLASCopy;
+    VkAccelerationStructureTrianglesOpacityMicromapKHR m_opacityGeometryMicromapKHR;
 };
 
 template <typename T>
@@ -998,9 +1016,31 @@ public:
         };
         uint64_t serializedSize;
         uint64_t deserializedSize;
-        uint64_t handleCount;
-        VkDeviceAddress handleArray[1];
+        union
+        {
+            struct // only for TLAS
+            {
+                uint64_t handleCount;
+                VkDeviceAddress handleArray[1];
+            };
+            struct // only for BLAS with micromap
+            {
+                uint64_t blockCount; // upper 32-bits must be FFFFFFFF
+
+                struct
+                {
+                    uint32_t blockType;
+                    uint32_t reserved;
+                    uint64_t blockHandleCount;
+                    VkDeviceAddress blockHandles[1];
+                } blocks[1];
+            };
+        };
     };
+
+    DE_STATIC_ASSERT(offsetof(AccelerationStructureHeader, handleCount) == 48);
+    DE_STATIC_ASSERT(offsetof(AccelerationStructureHeader, blockCount) == 48);
+    DE_STATIC_ASSERT(offsetof(AccelerationStructureHeader, blocks) == 56);
 
     SerialStorage() = delete;
     SerialStorage(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
@@ -1036,6 +1076,137 @@ protected:
     std::vector<de::SharedPtr<SerialStorage>> m_bottoms;
 };
 
+static inline uint32_t levelToSubtriangles(uint32_t level)
+{
+    return 1 << (2 * level);
+}
+
+static constexpr uint32_t opacityBufferAlign = 128;
+
+class MicromapGeometry
+{
+public:
+    MicromapGeometry()                                 = delete;
+    MicromapGeometry(const MicromapGeometry &geometry) = delete;
+    MicromapGeometry(VkGeometryTypeKHR geometryType);
+    ~MicromapGeometry();
+    void addUsage(uint32_t count, uint32_t subdivisionLevel, VkOpacityMicromapFormatKHR format,
+                  bool useSpecialIndex = 0, uint32_t specialIndex = 0);
+    void addData(uint8_t micromapData);
+
+    inline VkGeometryTypeKHR getGeometryType(void) const
+    {
+        return m_geometryType;
+    }
+
+    inline uint32_t getMicromapBytes(void) const
+    {
+        return m_MicromapBytes;
+    }
+    inline uint32_t getTriangleOffset(void) const
+    {
+        return m_triangleOffset;
+    }
+    inline uint32_t getIndexOffset(void) const
+    {
+        return m_indexOffset;
+    }
+    inline uint32_t getDataOffset(void) const
+    {
+        return m_dataOffset;
+    }
+    inline uint32_t getUsagesCount(void) const
+    {
+        return de::sizeU32(m_usages);
+    }
+
+    inline uint32_t getSpecialIndex(void) const
+    {
+        return m_specialIndex;
+    }
+
+    inline bool useSpecialIndex(void) const
+    {
+        return m_useSpecialIndex;
+    }
+
+    inline const VkMicromapUsageKHR *getUsagesPointer(void) const
+    {
+        return reinterpret_cast<const VkMicromapUsageKHR *>(de::dataOrNull(m_usages));
+    }
+    inline uint32_t getMicromapDataSize(void) const
+    {
+        return de::sizeU32(m_micromapData);
+    }
+    inline const uint8_t *getMicromapDataPointer(void) const
+    {
+        return reinterpret_cast<const uint8_t *>(de::dataOrNull(m_micromapData));
+    }
+
+private:
+    VkGeometryTypeKHR m_geometryType;
+    std::vector<VkMicromapUsageKHR> m_usages;
+    std::vector<uint8_t> m_micromapData;
+    uint32_t m_MicromapBytes;
+    bool m_useSpecialIndex;
+    uint32_t m_specialIndex;
+    uint32_t m_triangleOffset;
+    uint32_t m_indexOffset;
+    uint32_t m_dataOffset;
+};
+
+class MicromapAccelerationStructure
+{
+public:
+    MicromapAccelerationStructure();
+    ~MicromapAccelerationStructure();
+
+    void setBuildFlags(const VkBuildAccelerationStructureFlagsKHR buildFlags);
+    void setUseMaintenance5(const bool useMaintenance5);
+
+    const VkAccelerationStructureKHR *getPtr(void) const;
+    VkAccelerationStructureBuildSizesInfoKHR getStructureBuildSizes() const;
+    VkDeviceAddress getIndexBufferAddr(const DeviceInterface &vk, const VkDevice device) const;
+
+    void createAndBuild(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
+                        Allocator &allocator, VkDeviceSize structureSize = 0u);
+    void createAndCopyFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
+                           Allocator &allocator, MicromapAccelerationStructure *accelerationStructure,
+                           VkDeviceSize compactCopySize = 0u);
+    void createAndDeserializeFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
+                                  Allocator &allocator, SerialStorage *storage);
+
+    void create(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
+                VkDeviceSize structureSize = 0u);
+    void build(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer);
+    void copyFrom(const DeviceInterface &vk, const VkCommandBuffer cmdBuffer,
+                  MicromapAccelerationStructure *accelerationStructure, bool compactCopy);
+    void serialize(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
+                   SerialStorage *storage);
+    void deserialize(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
+                     SerialStorage *storage);
+    void addOpacityMicromap(const std::vector<uint8_t> &opacityMicromapData, const uint32_t count,
+                            const uint32_t subdivisionLevel, const VkOpacityMicromapFormatKHR format,
+                            bool useSpecialIndex = 0, uint32_t specialIndex = 0);
+
+protected:
+    VkBuildAccelerationStructureFlagsKHR m_buildFlags;
+    VkDeviceSize m_structureSize;
+    VkDeviceSize m_buildScratchSize;
+    bool m_useMaintenance5;
+    de::SharedPtr<MicromapGeometry> m_geometriesData;
+    de::MovePtr<BufferWithMemory> m_accelerationStructureBuffer;
+    de::MovePtr<BufferWithMemory> m_deviceScratchBuffer;
+    de::MovePtr<BufferWithMemory> m_micromapDataBuffer;
+    Move<VkAccelerationStructureKHR> m_accelerationStructure;
+
+    void prepareMicromapGeometries(const DeviceInterface &vk, const VkDevice device,
+                                   VkAccelerationStructureGeometryKHR &accelerationStructureGeometriesKHR,
+                                   VkAccelerationStructureGeometryMicromapDataKHR &micromapData,
+                                   VkDeviceSize dataOffset = 0, VkDeviceSize triangleOffset = 0) const;
+};
+de::MovePtr<MicromapAccelerationStructure> makeMicromapAccelerationStructure();
+
 class BottomLevelAccelerationStructure
 {
 public:
@@ -1053,8 +1224,11 @@ public:
     virtual void addGeometry(de::SharedPtr<RaytracedGeometryBase> &raytracedGeometry);
     virtual void addGeometry(
         const std::vector<tcu::Vec3> &geometryData, const bool triangles, const VkGeometryFlagsKHR geometryFlags = 0u,
-        const VkAccelerationStructureTrianglesOpacityMicromapEXT *opacityGeometryMicromap = nullptr,
-        const VkAccelerationStructureGeometryMotionTrianglesDataNV *motionData            = nullptr);
+        const VkAccelerationStructureTrianglesOpacityMicromapEXT *opacityGeometryMicromap    = nullptr,
+        const VkAccelerationStructureGeometryMotionTrianglesDataNV *motionData               = nullptr,
+        const VkAccelerationStructureTrianglesOpacityMicromapKHR *opacityGeometryMicromapKHR = nullptr,
+        de::SharedPtr<MicromapAccelerationStructure> opacityMicromapAccelerationStructure =
+            de::SharedPtr<MicromapAccelerationStructure>());
     virtual void addSphereGeometry(const std::vector<tcu::Vec3> &geometryData, const std::vector<float> &radiusData,
                                    const std::vector<uint32_t> &indexData, const bool linear,
                                    const VkIndexType indexType, const VkRayTracingLssIndexingModeNV indexingMode,
@@ -1116,16 +1290,27 @@ public:
     virtual void updateGeometry(size_t geometryIndex, de::SharedPtr<RaytracedGeometryBase> &raytracedGeometry) = 0;
     virtual void setGeometryTransform(size_t geometryIndex, VkTransformMatrixKHR transformMatrix)              = 0;
 
-    virtual void setVertexBufferAddressOffset(int32_t vertexBufferOffset)       = 0;
-    virtual void setIndexBufferAddressOffset(int32_t indexBufferOffset)         = 0;
-    virtual void setTransformBufferAddressOffset(int32_t transformBufferOffset) = 0;
-    virtual void setRadiusBufferAddressOffset(int32_t radiusBufferOffset)       = 0;
+    virtual void setVertexBufferAddressOffset(int32_t vertexBufferOffset)                                         = 0;
+    virtual void setIndexBufferAddressOffset(int32_t indexBufferOffset)                                           = 0;
+    virtual void setTransformBufferAddressOffset(int32_t transformBufferOffset)                                   = 0;
+    virtual void setRadiusBufferAddressOffset(int32_t radiusBufferOffset)                                         = 0;
+    virtual void setOpacityMicromap(size_t geometryIndex,
+                                    VkAccelerationStructureTrianglesOpacityMicromapKHR *opacityGeometryMicromap)  = 0;
+    virtual void setOpacityMicromap(size_t geometryIndex,
+                                    VkAccelerationStructureTrianglesOpacityMicromapEXT *opacityGeometryMicromap)  = 0;
+    virtual std::vector<VkDeviceSize> getSerializingSizes(const DeviceInterface &vk, const VkDevice device,
+                                                          const VkQueue queue, const uint32_t queueFamilyIndex)   = 0;
+    virtual std::vector<uint64_t> getSerializingAddresses(const DeviceInterface &vk, const VkDevice device) const = 0;
 
 protected:
     std::vector<de::SharedPtr<RaytracedGeometryBase>> m_geometriesData;
+    std::vector<de::SharedPtr<MicromapAccelerationStructure>> m_opacityMicromapAccelerationStructure;
     VkDeviceSize m_structureSize;
     VkDeviceSize m_updateScratchSize;
     VkDeviceSize m_buildScratchSize;
+    virtual void createAndDeserializeMircomaps(const DeviceInterface &vk, const VkDevice device,
+                                               const VkCommandBuffer cmdBuffer, Allocator &allocator,
+                                               SerialStorage *storage) = 0;
 };
 
 de::MovePtr<BottomLevelAccelerationStructure> makeBottomLevelAccelerationStructure();
@@ -1358,6 +1543,12 @@ template <>
 inline de::MovePtr<TopLevelAccelerationStructure> makeAccelerationStructure()
 {
     return makeTopLevelAccelerationStructure();
+}
+
+template <>
+inline de::MovePtr<MicromapAccelerationStructure> makeAccelerationStructure()
+{
+    return makeMicromapAccelerationStructure();
 }
 
 bool queryAccelerationStructureSize(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,

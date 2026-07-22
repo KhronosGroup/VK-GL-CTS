@@ -661,7 +661,7 @@ bool check_VK_ARM_pipeline_opacity_micromap(const tcu::UVec2& v, const ExtPropVe
 		return true;
 
 	// depends attribute in xml: VK_EXT_opacity_micromap
-	return (isSupported(vDEP, "VK_EXT_opacity_micromap") || isSupported(vDEP, "VK_EXT_opacity_micromap"));
+	return (isSupported(vDEP, "VK_EXT_opacity_micromap") || isSupported(vDEP, "VK_KHR_opacity_micromap"));
 }
 
 bool check_VK_ARM_rasterization_order_attachment_access(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1281,7 +1281,7 @@ bool check_VK_EXT_global_priority_query(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_EXT_global_priority+(VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)
-	return ((isSupported(vDEP, "VK_EXT_global_priority") || isSupported(vDEP, "VK_EXT_global_priority")) && (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)));
+	return ((isSupported(vDEP, "VK_EXT_global_priority") || isSupported(vDEP, "VK_KHR_global_priority")) && (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)));
 }
 
 bool check_VK_EXT_graphics_pipeline_library(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2133,7 +2133,7 @@ bool check_VK_EXT_swapchain_maintenance1(const tcu::UVec2& v, const ExtPropVect&
 		return true;
 
 	// depends attribute in xml: VK_KHR_swapchain+VK_EXT_surface_maintenance1+(VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)
-	return (isSupported(vDEP, "VK_KHR_swapchain") && (isSupported(vIEP, "VK_EXT_surface_maintenance1") || isSupported(vIEP, "VK_EXT_surface_maintenance1")) && (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)));
+	return (isSupported(vDEP, "VK_KHR_swapchain") && (isSupported(vIEP, "VK_EXT_surface_maintenance1") || isSupported(vIEP, "VK_KHR_surface_maintenance1")) && (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)));
 }
 
 bool check_VK_EXT_texel_buffer_alignment(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -4159,7 +4159,7 @@ bool check_VK_NV_displacement_micromap(const tcu::UVec2& v, const ExtPropVect& v
 		return true;
 
 	// depends attribute in xml: VK_EXT_opacity_micromap
-	return (isSupported(vDEP, "VK_EXT_opacity_micromap") || isSupported(vDEP, "VK_EXT_opacity_micromap"));
+	return (isSupported(vDEP, "VK_EXT_opacity_micromap") || isSupported(vDEP, "VK_KHR_opacity_micromap"));
 }
 
 bool check_VK_NV_extended_sparse_address_space(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)

@@ -1358,6 +1358,17 @@ struct VkAccelerationStructureMotionInfoNV
 	VkAccelerationStructureMotionInfoFlagsNV	flags;
 };
 
+struct VkAccelerationStructureTrianglesOpacityMicromapKHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkIndexType					indexType;
+	VkDeviceAddress				indexBuffer;
+	VkDeviceSize				indexStride;
+	uint32_t					baseTriangle;
+	VkAccelerationStructureKHR	micromap;
+};
+
 struct VkAccelerationStructureVersionInfoKHR
 {
 	VkStructureType	sType;
@@ -4767,6 +4778,25 @@ struct VkMicromapBuildInfoEXT
 	VkDeviceSize						triangleArrayStride;
 };
 
+struct VkMicromapUsageKHR
+{
+	uint32_t					count;
+	uint32_t					subdivisionLevel;
+	VkOpacityMicromapFormatKHR	format;
+};
+
+struct VkAccelerationStructureGeometryMicromapDataKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	uint32_t							usageCountsCount;
+	const VkMicromapUsageKHR*			pUsageCounts;
+	const VkMicromapUsageKHR* const*	ppUsageCounts;
+	VkDeviceAddress						data;
+	VkDeviceAddress						triangleArray;
+	VkDeviceSize						triangleArrayStride;
+};
+
 struct VkMicromapVersionInfoEXT
 {
 	VkStructureType	sType;
@@ -7151,12 +7181,29 @@ struct VkPhysicalDeviceOpacityMicromapFeaturesEXT
 	VkBool32		micromapHostCommands;
 };
 
+struct VkPhysicalDeviceOpacityMicromapFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		micromap;
+};
+
 struct VkPhysicalDeviceOpacityMicromapPropertiesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
 	uint32_t		maxOpacity2StateSubdivisionLevel;
 	uint32_t		maxOpacity4StateSubdivisionLevel;
+};
+
+struct VkPhysicalDeviceOpacityMicromapPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxOpacity2StateSubdivisionLevel;
+	uint32_t		maxOpacity4StateSubdivisionLevel;
+	uint32_t		maxOpacityLossy4StateSubdivisionLevel;
+	uint64_t		maxMicromapTriangles;
 };
 
 struct VkPhysicalDevicePCIBusInfoPropertiesEXT

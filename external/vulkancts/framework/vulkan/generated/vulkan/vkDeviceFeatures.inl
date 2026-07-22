@@ -329,6 +329,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceMutableDescriptorTypeFeature
 template<> void initFeatureFromBlob<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(VkPhysicalDeviceNestedCommandBufferFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT>(VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceOpacityMicromapFeaturesEXT>(VkPhysicalDeviceOpacityMicromapFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceOpacityMicromapFeaturesKHR>(VkPhysicalDeviceOpacityMicromapFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT>(VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePerformanceCountersByRegionFeaturesARM>(VkPhysicalDevicePerformanceCountersByRegionFeaturesARM&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePerformanceQueryFeaturesKHR>(VkPhysicalDevicePerformanceQueryFeaturesKHR&, const AllFeaturesBlobs&) {}
@@ -512,6 +513,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMutableDescriptorTypeFeat
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_NESTED_COMMAND_BUFFER_FEATURES_EXT, VK_EXT_NESTED_COMMAND_BUFFER_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_NON_SEAMLESS_CUBE_MAP_FEATURES_EXT, VK_EXT_NON_SEAMLESS_CUBE_MAP_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceOpacityMicromapFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_FEATURES_EXT, VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceOpacityMicromapFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_FEATURES_KHR, VK_KHR_OPACITY_MICROMAP_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT, VK_EXT_PAGEABLE_DEVICE_LOCAL_MEMORY_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePerformanceCountersByRegionFeaturesARM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_FEATURES_ARM, VK_ARM_PERFORMANCE_COUNTERS_BY_REGION_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePerformanceQueryFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_FEATURES_KHR, VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME}; }
@@ -724,6 +726,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>, VK_EXT_NESTED_COMMAND_BUFFER_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT>, VK_EXT_NON_SEAMLESS_CUBE_MAP_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceOpacityMicromapFeaturesEXT>, VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceOpacityMicromapFeaturesKHR>, VK_KHR_OPACITY_MICROMAP_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT>, VK_EXT_PAGEABLE_DEVICE_LOCAL_MEMORY_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDevicePerformanceCountersByRegionFeaturesARM>, VK_ARM_PERFORMANCE_COUNTERS_BY_REGION_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDevicePerformanceQueryFeaturesKHR>, VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME },

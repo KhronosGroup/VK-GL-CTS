@@ -10,7 +10,6 @@ dEQP-VK.ray_query.multiple_ray_queries.rgen_shader
 dEQP-VK.ray_query.multiple_ray_queries.tess_control_shader
 dEQP-VK.ray_query.multiple_ray_queries.tess_evaluation_shader
 dEQP-VK.ray_query.multiple_ray_queries.vertex_shader
-dEQP-VK.ray_query.opacity_micromap.copy.misc.maintenance5
 dEQP-VK.ray_query.position_fetch.compute_shader.cpu_built.r16g16_sfloat.NoFlags
 dEQP-VK.ray_query.position_fetch.compute_shader.cpu_built.r16g16_sfloat.instance_transform
 dEQP-VK.ray_query.position_fetch.compute_shader.cpu_built.r16g16_snorm.NoFlags

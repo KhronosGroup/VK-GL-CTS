@@ -110,6 +110,7 @@ auto fMutableDescriptorTypeFeaturesEXT                  = m_context.getMutableDe
 auto fNestedCommandBufferFeaturesEXT                    = m_context.getNestedCommandBufferFeaturesEXT();
 auto fNonSeamlessCubeMapFeaturesEXT                     = m_context.getNonSeamlessCubeMapFeaturesEXT();
 auto fOpacityMicromapFeaturesEXT                        = m_context.getOpacityMicromapFeaturesEXT();
+auto fOpacityMicromapFeatures                           = m_context.getOpacityMicromapFeatures();
 auto fPageableDeviceLocalMemoryFeaturesEXT              = m_context.getPageableDeviceLocalMemoryFeaturesEXT();
 auto fPerformanceCountersByRegionFeaturesARM            = m_context.getPerformanceCountersByRegionFeaturesARM();
 auto fPerformanceQueryFeatures                          = m_context.getPerformanceQueryFeatures();
@@ -318,6 +319,7 @@ std::vector<void *> pNextFeatures = {
 	&fNestedCommandBufferFeaturesEXT,
 	&fNonSeamlessCubeMapFeaturesEXT,
 	&fOpacityMicromapFeaturesEXT,
+	&fOpacityMicromapFeatures,
 	&fPageableDeviceLocalMemoryFeaturesEXT,
 	&fPerformanceCountersByRegionFeaturesARM,
 	&fPerformanceQueryFeatures,

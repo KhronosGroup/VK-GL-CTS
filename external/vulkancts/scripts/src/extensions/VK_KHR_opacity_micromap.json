@@ -1,0 +1,18 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceOpacityMicromapFeaturesKHR": [
+            {
+                "features": [
+                    "micromap"
+                ],
+                "requirements": [
+                    "VK_KHR_opacity_micromap"
+                ]
+            }
+        ]
+    }
+}

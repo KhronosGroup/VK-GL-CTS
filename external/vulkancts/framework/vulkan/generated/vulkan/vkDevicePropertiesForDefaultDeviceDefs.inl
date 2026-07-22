@@ -62,6 +62,7 @@ const VkPhysicalDeviceMultiDrawPropertiesEXT&					getMultiDrawPropertiesEXT					
 const VkPhysicalDeviceMultiviewProperties&						getMultiviewProperties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMultiviewProperties>();						}
 const VkPhysicalDeviceNestedCommandBufferPropertiesEXT&			getNestedCommandBufferPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceNestedCommandBufferPropertiesEXT>();			}
 const VkPhysicalDeviceOpacityMicromapPropertiesEXT&				getOpacityMicromapPropertiesEXT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceOpacityMicromapPropertiesEXT>();				}
+const VkPhysicalDeviceOpacityMicromapPropertiesKHR&				getOpacityMicromapProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceOpacityMicromapPropertiesKHR>();				}
 const VkPhysicalDevicePCIBusInfoPropertiesEXT&					getPCIBusInfoPropertiesEXT					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePCIBusInfoPropertiesEXT>();					}
 const VkPhysicalDevicePerformanceCountersByRegionPropertiesARM&	getPerformanceCountersByRegionPropertiesARM	(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePerformanceCountersByRegionPropertiesARM>();	}
 const VkPhysicalDevicePerformanceQueryPropertiesKHR&			getPerformanceQueryProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePerformanceQueryPropertiesKHR>();				}

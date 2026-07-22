@@ -62,6 +62,7 @@ const vk::VkPhysicalDeviceMultiDrawPropertiesEXT&					getMultiDrawPropertiesEXT	
 const vk::VkPhysicalDeviceMultiviewProperties&						getMultiviewProperties						(void) const;
 const vk::VkPhysicalDeviceNestedCommandBufferPropertiesEXT&			getNestedCommandBufferPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceOpacityMicromapPropertiesEXT&				getOpacityMicromapPropertiesEXT				(void) const;
+const vk::VkPhysicalDeviceOpacityMicromapPropertiesKHR&				getOpacityMicromapProperties				(void) const;
 const vk::VkPhysicalDevicePCIBusInfoPropertiesEXT&					getPCIBusInfoPropertiesEXT					(void) const;
 const vk::VkPhysicalDevicePerformanceCountersByRegionPropertiesARM&	getPerformanceCountersByRegionPropertiesARM	(void) const;
 const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&			getPerformanceQueryProperties				(void) const;

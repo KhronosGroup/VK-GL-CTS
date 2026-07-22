@@ -47,6 +47,7 @@
 #include "vktRayTracingNonUniformArgsTests.hpp"
 #include "vktRayTracingPipelineFlagsTests.hpp"
 #include "vktRayTracingOpacityMicromapTests.hpp"
+#include "vktRayTracingOpacityMicromapTestsKHR.hpp"
 #include "vktRayTracingPositionFetchTests.hpp"
 #include "vktRayTracingShaderExecutionReorderTests.hpp"
 #include "vktRayTracingLinearSweptSpheresTests.hpp"
@@ -94,7 +95,12 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     group->addChild(createNonUniformArgsTests(testCtx));
     group->addChild(createPipelineFlagsTests(testCtx));
     group->addChild(createTraceRays2Tests(testCtx));
-    group->addChild(createOpacityMicromapTests(testCtx));
+
+    de::MovePtr<tcu::TestCaseGroup> opacityMicromapGroup(new tcu::TestCaseGroup(testCtx, "opacity_micromap"));
+    opacityMicromapGroup->addChild(createOpacityMicromapTests(testCtx));
+    opacityMicromapGroup->addChild(createOpacityMicromapTestsKHR(testCtx));
+    group->addChild(opacityMicromapGroup.release());
+
     group->addChild(createPositionFetchTests(testCtx));
     group->addChild(createShaderExecutionReorderTests(testCtx));
     group->addChild(createLinearSweptSpheresTests(testCtx));

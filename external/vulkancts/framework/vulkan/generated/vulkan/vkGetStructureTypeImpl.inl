@@ -58,6 +58,11 @@ template<> VkStructureType getStructureType<VkAccelerationStructureGeometryLinea
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_LINEAR_SWEPT_SPHERES_DATA_NV;
 }
 
+template<> VkStructureType getStructureType<VkAccelerationStructureGeometryMicromapDataKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_MICROMAP_DATA_KHR;
+}
+
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometryMotionTrianglesDataNV> (void)
 {
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_MOTION_TRIANGLES_DATA_NV;
@@ -96,6 +101,11 @@ template<> VkStructureType getStructureType<VkAccelerationStructureTrianglesDisp
 template<> VkStructureType getStructureType<VkAccelerationStructureTrianglesOpacityMicromapEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_OPACITY_MICROMAP_EXT;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureTrianglesOpacityMicromapKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_OPACITY_MICROMAP_KHR;
 }
 
 template<> VkStructureType getStructureType<VkAccelerationStructureVersionInfoKHR> (void)
@@ -2758,9 +2768,19 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceOpacityMicromapFeatu
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceOpacityMicromapFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceOpacityMicromapPropertiesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceOpacityMicromapPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_PROPERTIES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDevicePCIBusInfoPropertiesEXT> (void)
