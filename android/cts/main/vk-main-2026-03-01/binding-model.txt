@@ -735,6 +735,7 @@ dEQP-VK.binding_model.descriptor_heap.spirv.untyped_image_texel_pointer
 dEQP-VK.binding_model.descriptor_heap.spirv.untyped_nested_array
 dEQP-VK.binding_model.descriptor_heap.spirv.untyped_nested_array_outer
 dEQP-VK.binding_model.descriptor_heap.spirv.untyped_nested_array_step
+dEQP-VK.binding_model.descriptor_heap.spirv.untyped_non_uniform_indexing
 dEQP-VK.binding_model.descriptor_heap.spirv.untyped_storage_buffer
 dEQP-VK.binding_model.descriptor_heap.state_invalidation.state_invalidation
 dEQP-VK.binding_model.descriptor_heap.switch_heaps.switch_heaps

@@ -192,6 +192,7 @@ enum class SpirvTestType
     UntypedNestedArray,
     UntypedNestedArrayStep,
     UntypedNestedArrayOuter,
+    UntypedNonUniformIndexing,
     UntypedArrayLength,
     SimpleStorageTexelBuffer,
     UntypedImageTexelPointer,
@@ -8549,6 +8550,59 @@ void DescriptorHeapTestCaseSpirv::initPrograms(vk::SourceCollections &programCol
                OpFunctionEnd
 )";
         break;
+    case SpirvTestType::UntypedNonUniformIndexing:
+        assembly = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpCapability ShaderNonUniform
+               OpCapability StorageBufferArrayNonUniformIndexing
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %resource_heap %_
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+               OpDecorate %PushConstant Block
+               OpMemberDecorate %PushConstant 0 Offset 0
+               OpDecorate %17 NonUniform
+               OpDecorate %A Block
+               OpMemberDecorate %A 0 Offset 0
+               OpDecorateId %_runtimearr_22 ArrayStrideIdEXT %23
+               OpDecorate %25 NonUniform
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+%_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
+       %uint = OpTypeInt 32 0
+%PushConstant = OpTypeStruct %uint
+%_ptr_PushConstant_PushConstant = OpTypePointer PushConstant %PushConstant
+          %_ = OpVariable %_ptr_PushConstant_PushConstant PushConstant
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_PushConstant_uint = OpTypePointer PushConstant %uint
+          %A = OpTypeStruct %uint
+    %uint_42 = OpConstant %uint 42
+%_ptr_StorageBuffer = OpTypeUntypedPointerKHR StorageBuffer
+         %22 = OpTypeBufferEXT StorageBuffer
+         %23 = OpConstantSizeOfEXT %int %22
+%_runtimearr_22 = OpTypeRuntimeArray %22
+     %v3uint = OpTypeVector %uint 3
+     %uint_1 = OpConstant %uint 1
+         %29 = OpConstantComposite %v3uint %uint_1 %uint_1 %uint_1
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %15 = OpAccessChain %_ptr_PushConstant_uint %_ %int_0
+         %16 = OpLoad %uint %15
+         %17 = OpCopyObject %uint %16
+         %21 = OpUntypedAccessChainKHR %_ptr_UniformConstant %_runtimearr_22 %resource_heap %17
+         %25 = OpBufferPointerEXT %_ptr_StorageBuffer %21
+         %26 = OpUntypedAccessChainKHR %_ptr_StorageBuffer %A %25 %int_0
+               OpStore %26 %uint_42
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
     case SpirvTestType::UntypedArrayLength:
         assembly = R"(
                OpCapability Shader
@@ -9311,6 +9365,10 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
         expectedOutput.push_back(42);
         heapUserSize = 32 * storageBufferStride;
         break;
+    case SpirvTestType::UntypedNonUniformIndexing:
+        expectedOutput = {42};
+        heapUserSize   = 3 * m_descriptorHeapProperties.bufferDescriptorSize;
+        break;
     case SpirvTestType::UntypedArrayLength:
         expectedOutput.resize(8 * 4);
         expectedOutput[0] = static_cast<uint32_t>(expectedOutput.size() / 4 - 1);
@@ -9559,6 +9617,29 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
         VkResourceDescriptorInfoEXT ssboInfo = initVulkanStructure();
         ssboInfo.type                        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         ssboInfo.data.pAddressRange          = &ssboAddressRange;
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1, &ssboInfo, &hostAddressRange));
+        break;
+    }
+    case SpirvTestType::UntypedNonUniformIndexing:
+    {
+        const uint32_t heapIndex  = 2u;
+        const auto descriptorSize = m_descriptorHeapProperties.bufferDescriptorSize;
+
+        pushData.resize(sizeof(uint32_t));
+        deMemcpy(pushData.data(), &heapIndex, sizeof(uint32_t));
+
+        VkDeviceAddressRangeEXT ssboAddressRange{};
+        ssboAddressRange.address = outputBuffer->address;
+        ssboAddressRange.size    = outputBufferSize;
+
+        VkResourceDescriptorInfoEXT ssboInfo = initVulkanStructure();
+        ssboInfo.type                        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        ssboInfo.data.pAddressRange          = &ssboAddressRange;
+
+        VkHostAddressRangeEXT hostAddressRange{};
+        hostAddressRange.address = reinterpret_cast<char *>(heapContents) + heapIndex * descriptorSize;
+        hostAddressRange.size    = static_cast<size_t>(descriptorSize);
 
         VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1, &ssboInfo, &hostAddressRange));
         break;
@@ -17873,6 +17954,7 @@ void populateSpirvTests(tcu::TestCaseGroup *topGroup)
         {SpirvTestType::UntypedNestedArray, "untyped_nested_array"},
         {SpirvTestType::UntypedNestedArrayStep, "untyped_nested_array_step"},
         {SpirvTestType::UntypedNestedArrayOuter, "untyped_nested_array_outer"},
+        {SpirvTestType::UntypedNonUniformIndexing, "untyped_non_uniform_indexing"},
         {SpirvTestType::UntypedArrayLength, "untyped_array_length"},
         {SpirvTestType::SimpleStorageTexelBuffer, "simple_storage_texel_buffer"},
         {SpirvTestType::UntypedImageTexelPointer, "untyped_image_texel_pointer"},
@@ -17902,7 +17984,8 @@ void populateSpirvTests(tcu::TestCaseGroup *topGroup)
         params.enableRuntimeDescriptorArray = test.first == SpirvTestType::AtomicImageWithinFunction ||
                                               test.first == SpirvTestType::AtomicImage2d ||
                                               test.first == SpirvTestType::AtomicImage2d64Bit;
-        params.enableNullDescriptor = test.first == SpirvTestType::OpImageQuerySizeNullDescriptor;
+        params.enableNullDescriptor                       = test.first == SpirvTestType::OpImageQuerySizeNullDescriptor;
+        params.enableStorageBufferArrayNonUniformIndexing = test.first == SpirvTestType::UntypedNonUniformIndexing;
 
         spirvGroup->addChild(new DescriptorHeapTestCaseSpirv(testCtx, test.second, params));
     }
