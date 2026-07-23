@@ -104,7 +104,7 @@ public:
     Texture3DBase(deqp::Context &context, const char *name, const char *description);
     virtual ~Texture3DBase(void);
 
-    bool isFeatureSupported() const;
+    virtual bool isFeatureSupported() const;
     void getSupportedCompressedFormats(std::set<int> &validFormats) const;
     int calculateDataSize(uint32_t formats, int width, int height, int depth) const;
 
@@ -484,6 +484,8 @@ public:
     IterateResult iterate(void);
 
 private:
+    bool isFeatureSupported() const override;
+
     struct FilterCase
     {
         const glu::Texture3D *texture;
@@ -530,6 +532,29 @@ Texture3DFilteringCase::~Texture3DFilteringCase(void)
     Texture3DFilteringCase::deinit();
 }
 
+bool Texture3DFilteringCase::isFeatureSupported() const
+{
+    if (!Texture3DBase::isFeatureSupported())
+        return false;
+
+    const bool isNpot = !deIsPowerOfTwo32(m_filteringData.width) || !deIsPowerOfTwo32(m_filteringData.height) ||
+                        !deIsPowerOfTwo32(m_filteringData.depth);
+    const bool usesMipmaps  = m_filteringData.minFilter != GL_NEAREST && m_filteringData.minFilter != GL_LINEAR;
+    const bool usesNonClamp = m_filteringData.wrapS != GL_CLAMP_TO_EDGE || m_filteringData.wrapT != GL_CLAMP_TO_EDGE ||
+                              m_filteringData.wrapR != GL_CLAMP_TO_EDGE;
+    const bool fullNpotSupport = m_context.getContextInfo().isExtensionSupported("GL_OES_texture_npot") ||
+                                 glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 0)) ||
+                                 glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(3, 0));
+
+    if (isNpot && (usesMipmaps || usesNonClamp) && !fullNpotSupport)
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "GL_OES_texture_npot");
+        return false;
+    }
+
+    return true;
+}
+
 void Texture3DFilteringCase::init(void)
 {
     if (!isFeatureSupported())
@@ -539,12 +564,13 @@ void Texture3DFilteringCase::init(void)
     const int width               = m_filteringData.width;
     const int height              = m_filteringData.height;
     const int depth               = m_filteringData.depth;
+    const bool usesMipmaps        = m_filteringData.minFilter != GL_NEAREST && m_filteringData.minFilter != GL_LINEAR;
+    const int numLevels           = usesMipmaps ? deLog2Floor32(de::max(de::max(width, height), depth)) + 1 : 1;
 
     const tcu::TextureFormat texFmt      = glu::mapGLInternalFormat(internalFormat);
     const tcu::TextureFormatInfo fmtInfo = tcu::getTextureFormatInfo(texFmt);
     const tcu::Vec4 cScale               = fmtInfo.valueMax - fmtInfo.valueMin;
     const tcu::Vec4 cBias                = fmtInfo.valueMin;
-    const int numLevels                  = deLog2Floor32(de::max(de::max(width, height), depth)) + 1;
 
     // Create textures.
     m_gradientTex = new glu::Texture3D(m_context.getRenderContext(), internalFormat, width, height, depth);
