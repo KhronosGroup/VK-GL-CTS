@@ -3880,6 +3880,9 @@ tcu::TestStatus verifyIndependenceSettings(Context &context)
 {
     context.requireDeviceFunctionality("VK_KHR_shader_float_controls");
 
+    bool isFloat16Supported = context.getShaderFloat16Int8Features().shaderFloat16;
+    bool isFloat64Supported = context.getDeviceFeatures().shaderFloat64;
+
     vk::VkPhysicalDeviceFloatControlsProperties fcProperties = initVulkanStructure();
     vk::VkPhysicalDeviceProperties2 deviceProperties         = initVulkanStructure(&fcProperties);
 
@@ -3895,16 +3898,17 @@ tcu::TestStatus verifyIndependenceSettings(Context &context)
         vk::VkBool32 fp16rte = fcProperties.shaderRoundingModeRTEFloat16;
         vk::VkBool32 fp32rte = fcProperties.shaderRoundingModeRTEFloat32;
         vk::VkBool32 fp64rte = fcProperties.shaderRoundingModeRTEFloat64;
-        if ((fp16rte != fp32rte) || (fp32rte != fp64rte))
+        if ((isFloat16Supported && (fp16rte != fp32rte)) || (isFloat64Supported && (fp32rte != fp64rte)))
             return fail("shaderRoundingModeRTEFloat*");
 
         vk::VkBool32 fp16rtz = fcProperties.shaderRoundingModeRTZFloat16;
         vk::VkBool32 fp32rtz = fcProperties.shaderRoundingModeRTZFloat32;
         vk::VkBool32 fp64rtz = fcProperties.shaderRoundingModeRTZFloat64;
-        if ((fp16rtz != fp32rtz) || (fp32rtz != fp64rtz))
+        if ((isFloat16Supported && (fp16rtz != fp32rtz)) || (isFloat64Supported && (fp32rtz != fp64rtz)))
             return fail("shaderRoundingModeRTZFloat*");
     }
-    else if (fcProperties.roundingModeIndependence == VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY)
+    else if (isFloat16Supported && isFloat64Supported &&
+             (fcProperties.roundingModeIndependence == VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY))
     {
         vk::VkBool32 fp16rte = fcProperties.shaderRoundingModeRTEFloat16;
         vk::VkBool32 fp64rte = fcProperties.shaderRoundingModeRTEFloat64;
@@ -3922,16 +3926,18 @@ tcu::TestStatus verifyIndependenceSettings(Context &context)
         vk::VkBool32 fp16flush = fcProperties.shaderDenormFlushToZeroFloat16;
         vk::VkBool32 fp32flush = fcProperties.shaderDenormFlushToZeroFloat32;
         vk::VkBool32 fp64flush = fcProperties.shaderDenormFlushToZeroFloat64;
-        if ((fp16flush != fp32flush) || (fp32flush != fp64flush))
+        if ((isFloat16Supported && (fp16flush != fp32flush)) || (isFloat64Supported && (fp32flush != fp64flush)))
             return fail("shaderDenormFlushToZeroFloat*");
 
         vk::VkBool32 fp16preserve = fcProperties.shaderDenormPreserveFloat16;
         vk::VkBool32 fp32preserve = fcProperties.shaderDenormPreserveFloat32;
         vk::VkBool32 fp64preserve = fcProperties.shaderDenormPreserveFloat64;
-        if ((fp16preserve != fp32preserve) || (fp32preserve != fp64preserve))
+        if ((isFloat16Supported && (fp16preserve != fp32preserve)) ||
+            (isFloat64Supported && (fp32preserve != fp64preserve)))
             return fail("shaderDenormPreserveFloat*");
     }
-    else if (fcProperties.denormBehaviorIndependence == VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY)
+    else if (isFloat16Supported && isFloat64Supported &&
+             fcProperties.denormBehaviorIndependence == VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY)
     {
         vk::VkBool32 fp16flush = fcProperties.shaderDenormFlushToZeroFloat16;
         vk::VkBool32 fp64flush = fcProperties.shaderDenormFlushToZeroFloat64;
