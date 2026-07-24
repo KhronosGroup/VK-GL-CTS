@@ -36,8 +36,8 @@ KHR-GLES2.core.internalformat.texture2d.luminance_alpha_unsigned_byte_luminance8
 KHR-GLES2.core.internalformat.texture2d.luminance_alpha_unsigned_byte_luminance_alpha
 KHR-GLES2.core.internalformat.texture2d.luminance_unsigned_byte_luminance
 KHR-GLES2.core.internalformat.texture2d.luminance_unsigned_byte_luminance8_oes
-KHR-GLES2.core.internalformat.texture2d.rgb_float_rgb32f
-KHR-GLES2.core.internalformat.texture2d.rgb_float_rgb32f_linear
+KHR-GLES2.core.internalformat.texture2d.rgb_float_rgb
+KHR-GLES2.core.internalformat.texture2d.rgb_float_rgb_linear
 KHR-GLES2.core.internalformat.texture2d.rgb_half_float_oes_rgb
 KHR-GLES2.core.internalformat.texture2d.rgb_half_float_oes_rgb_linear
 KHR-GLES2.core.internalformat.texture2d.rgb_unsigned_byte_rgb
@@ -45,8 +45,8 @@ KHR-GLES2.core.internalformat.texture2d.rgb_unsigned_byte_rgb565
 KHR-GLES2.core.internalformat.texture2d.rgb_unsigned_int_2_10_10_10_rev_rgb
 KHR-GLES2.core.internalformat.texture2d.rgb_unsigned_short_5_6_5_rgb
 KHR-GLES2.core.internalformat.texture2d.rgb_unsigned_short_5_6_5_rgb565
-KHR-GLES2.core.internalformat.texture2d.rgba_float_rgba32f
-KHR-GLES2.core.internalformat.texture2d.rgba_float_rgba32f_linear
+KHR-GLES2.core.internalformat.texture2d.rgba_float_rgba
+KHR-GLES2.core.internalformat.texture2d.rgba_float_rgba_linear
 KHR-GLES2.core.internalformat.texture2d.rgba_half_float_oes_rgba
 KHR-GLES2.core.internalformat.texture2d.rgba_half_float_oes_rgba_linear
 KHR-GLES2.core.internalformat.texture2d.rgba_unsigned_byte_rgb5_a1
