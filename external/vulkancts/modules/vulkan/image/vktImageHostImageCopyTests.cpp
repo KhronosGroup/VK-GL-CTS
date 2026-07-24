@@ -3370,6 +3370,24 @@ void HostImageArrayCopyTestCase::checkSupport(vkt::Context &context) const
     if (hostImageCopyFeatures.hostImageCopy != VK_TRUE)
         TCU_THROW(NotSupportedError, "hostImageCopy not supported");
 
+    vk::VkPhysicalDeviceHostImageCopyPropertiesEXT hostImageCopyProperties = vk::initVulkanStructure();
+    getHostImageCopyProperties(instanceDriver, physicalDevice, &hostImageCopyProperties);
+    std::vector<vk::VkImageLayout> srcLayouts(hostImageCopyProperties.copySrcLayoutCount);
+    std::vector<vk::VkImageLayout> dstLayouts(hostImageCopyProperties.copyDstLayoutCount);
+    hostImageCopyProperties.pCopySrcLayouts = srcLayouts.data();
+    hostImageCopyProperties.pCopyDstLayouts = dstLayouts.data();
+    getHostImageCopyProperties(instanceDriver, physicalDevice, &hostImageCopyProperties);
+
+    const vk::VkImageLayout requiredLayouts[] = {vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                 vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL};
+    for (const auto layout : requiredLayouts)
+    {
+        if (std::find(srcLayouts.begin(), srcLayouts.end(), layout) == srcLayouts.end())
+            TCU_THROW(NotSupportedError, "Required src layout not supported");
+        if (std::find(dstLayouts.begin(), dstLayouts.end(), layout) == dstLayouts.end())
+            TCU_THROW(NotSupportedError, "Required dst layout not supported");
+    }
+
     const vk::VkImageType imageType =
         (m_params.offset.z > 1 || m_params.copyExtent.depth > 1u) ? vk::VK_IMAGE_TYPE_3D : vk::VK_IMAGE_TYPE_2D;
     vk::VkImageFormatProperties2 imageFormatProperties = {
