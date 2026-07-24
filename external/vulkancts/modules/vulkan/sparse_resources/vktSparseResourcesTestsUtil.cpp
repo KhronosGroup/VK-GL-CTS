@@ -30,6 +30,8 @@
 
 #include <deMath.h>
 
+#include <iterator>
+
 using namespace vk;
 
 namespace vkt
