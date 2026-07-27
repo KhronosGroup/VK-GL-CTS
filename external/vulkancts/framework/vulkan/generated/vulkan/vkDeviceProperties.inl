@@ -256,6 +256,7 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentShadingRateProperti
 template<> void initPropertyFromBlob<VkPhysicalDeviceGpaProperties2AMD>(VkPhysicalDeviceGpaProperties2AMD&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceGpaPropertiesAMD>(VkPhysicalDeviceGpaPropertiesAMD&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT>(VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceImageAlignmentControlPropertiesMESA>(VkPhysicalDeviceImageAlignmentControlPropertiesMESA&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceImageProcessingPropertiesQCOM>(VkPhysicalDeviceImageProcessingPropertiesQCOM&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceLayeredApiPropertiesListKHR>(VkPhysicalDeviceLayeredApiPropertiesListKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT>(VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&, const AllPropertiesBlobs&) {}
@@ -332,6 +333,7 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceGpaPropertiesAMD>(void)
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT, VK_EXT_GRAPHICS_PIPELINE_LIBRARY_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceHostImageCopyProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES, VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceIDProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES, VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceImageAlignmentControlPropertiesMESA>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA, VK_MESA_IMAGE_ALIGNMENT_CONTROL_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceImageProcessingPropertiesQCOM>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_PROPERTIES_QCOM, VK_QCOM_IMAGE_PROCESSING_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceInlineUniformBlockProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES, VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceLayeredApiPropertiesListKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_LIST_KHR, VK_KHR_MAINTENANCE_7_EXTENSION_NAME}; }
@@ -429,6 +431,7 @@ static const PropertyStructCreationData propertyStructCreationArray[]
 	{ createPropertyStructWrapper<VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT>, VK_EXT_GRAPHICS_PIPELINE_LIBRARY_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceHostImageCopyProperties>, VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceIDProperties>, VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceImageAlignmentControlPropertiesMESA>, VK_MESA_IMAGE_ALIGNMENT_CONTROL_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceImageProcessingPropertiesQCOM>, VK_QCOM_IMAGE_PROCESSING_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceInlineUniformBlockProperties>, VK_EXT_INLINE_UNIFORM_BLOCK_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceLayeredApiPropertiesListKHR>, VK_KHR_MAINTENANCE_7_EXTENSION_NAME },

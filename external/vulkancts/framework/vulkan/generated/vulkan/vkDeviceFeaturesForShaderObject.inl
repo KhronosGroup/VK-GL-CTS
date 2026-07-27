@@ -72,11 +72,13 @@ auto fGraphicsPipelineLibraryFeaturesEXT                = m_context.getGraphicsP
 auto fHostImageCopyFeatures                             = m_context.getHostImageCopyFeatures();
 auto fHostQueryResetFeatures                            = m_context.getHostQueryResetFeatures();
 auto fImage2DViewOf3DFeaturesEXT                        = m_context.getImage2DViewOf3DFeaturesEXT();
+auto fImageAlignmentControlFeaturesMESA                 = m_context.getImageAlignmentControlFeaturesMESA();
 auto fImageCompressionControlFeaturesEXT                = m_context.getImageCompressionControlFeaturesEXT();
 auto fImageCompressionControlSwapchainFeaturesEXT       = m_context.getImageCompressionControlSwapchainFeaturesEXT();
 auto fImageProcessingFeaturesQCOM                       = m_context.getImageProcessingFeaturesQCOM();
 auto fImageRobustnessFeatures                           = m_context.getImageRobustnessFeatures();
 auto fImageSlicedViewOf3DFeaturesEXT                    = m_context.getImageSlicedViewOf3DFeaturesEXT();
+auto fImageTilingControlFeaturesEXT                     = m_context.getImageTilingControlFeaturesEXT();
 auto fImageViewMinLodFeaturesEXT                        = m_context.getImageViewMinLodFeaturesEXT();
 auto fImagelessFramebufferFeatures                      = m_context.getImagelessFramebufferFeatures();
 auto fIndexTypeUint8Features                            = m_context.getIndexTypeUint8Features();
@@ -281,11 +283,13 @@ std::vector<void *> pNextFeatures = {
 	&fHostImageCopyFeatures,
 	&fHostQueryResetFeatures,
 	&fImage2DViewOf3DFeaturesEXT,
+	&fImageAlignmentControlFeaturesMESA,
 	&fImageCompressionControlFeaturesEXT,
 	&fImageCompressionControlSwapchainFeaturesEXT,
 	&fImageProcessingFeaturesQCOM,
 	&fImageRobustnessFeatures,
 	&fImageSlicedViewOf3DFeaturesEXT,
+	&fImageTilingControlFeaturesEXT,
 	&fImageViewMinLodFeaturesEXT,
 	&fImagelessFramebufferFeatures,
 	&fIndexTypeUint8Features,

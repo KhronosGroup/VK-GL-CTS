@@ -500,6 +500,8 @@ const char* getdVideoH264ProfileIdcName (StdVideoH264ProfileIdc value)
 	{
 		case STD_VIDEO_H264_PROFILE_IDC_BASELINE:				return "STD_VIDEO_H264_PROFILE_IDC_BASELINE";
 		case STD_VIDEO_H264_PROFILE_IDC_HIGH:					return "STD_VIDEO_H264_PROFILE_IDC_HIGH";
+		case STD_VIDEO_H264_PROFILE_IDC_HIGH_10:				return "STD_VIDEO_H264_PROFILE_IDC_HIGH_10";
+		case STD_VIDEO_H264_PROFILE_IDC_HIGH_422:				return "STD_VIDEO_H264_PROFILE_IDC_HIGH_422";
 		case STD_VIDEO_H264_PROFILE_IDC_HIGH_444_PREDICTIVE:	return "STD_VIDEO_H264_PROFILE_IDC_HIGH_444_PREDICTIVE";
 		case STD_VIDEO_H264_PROFILE_IDC_INVALID:				return "STD_VIDEO_H264_PROFILE_IDC_INVALID";
 		case STD_VIDEO_H264_PROFILE_IDC_MAIN:					return "STD_VIDEO_H264_PROFILE_IDC_MAIN";
@@ -2149,6 +2151,18 @@ const char* getImageTilingName (VkImageTiling value)
 }
 
 
+const char* getImageTilingControlEXTName (VkImageTilingControlEXT value)
+{
+	switch (value)
+	{
+		case VK_IMAGE_TILING_CONTROL_DEFAULT_EXT:			return "VK_IMAGE_TILING_CONTROL_DEFAULT_EXT";
+		case VK_IMAGE_TILING_CONTROL_MAX_PERFORMANCE_EXT:	return "VK_IMAGE_TILING_CONTROL_MAX_PERFORMANCE_EXT";
+		case VK_IMAGE_TILING_CONTROL_MIN_SIZE_EXT:			return "VK_IMAGE_TILING_CONTROL_MIN_SIZE_EXT";
+		default:											return nullptr;
+	}
+}
+
+
 const char* getImageTypeName (VkImageType value)
 {
 	switch (value)
@@ -3426,6 +3440,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO:											return "VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2:														return "VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2";
 		case VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR:											return "VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_IMAGE_TILING_CONTROL_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_IMAGE_TILING_CONTROL_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY:													return "VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY";
 		case VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR:										return "VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_ADDRESS_PROPERTIES_NVX:										return "VK_STRUCTURE_TYPE_IMAGE_VIEW_ADDRESS_PROPERTIES_NVX";
@@ -3708,6 +3723,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_PROPERTIES_QCOM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_PROPERTIES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_TILING_CONTROL_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_TILING_CONTROL_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_IMAGE_FORMAT_INFO_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_IMAGE_FORMAT_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES";
@@ -11086,6 +11102,16 @@ std::ostream& operator<< (std::ostream& s, const VkIOSSurfaceCreateInfoMVK& valu
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkImageAlignmentControlCreateInfoMESA& value)
+{
+	s << "VkImageAlignmentControlCreateInfoMESA = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaximumRequestedAlignment = " << value.maximumRequestedAlignment << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkImageBlit& value)
 {
 	s << "VkImageBlit = {\n";
@@ -11450,6 +11476,16 @@ std::ostream& operator<< (std::ostream& s, const VkImageSwapchainCreateInfoKHR& 
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tswapchain = " << value.swapchain << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageTilingControlCreateInfoEXT& value)
+{
+	s << "VkImageTilingControlCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttilingControl = " << value.tilingControl << '\n';
 	s << '}';
 	return s;
 }
@@ -14360,6 +14396,26 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImage2DViewOf3D
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageAlignmentControlFeaturesMESA& value)
+{
+	s << "VkPhysicalDeviceImageAlignmentControlFeaturesMESA = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageAlignmentControl = " << value.imageAlignmentControl << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageAlignmentControlPropertiesMESA& value)
+{
+	s << "VkPhysicalDeviceImageAlignmentControlPropertiesMESA = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsupportedImageAlignmentMask = " << value.supportedImageAlignmentMask << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageCompressionControlFeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceImageCompressionControlFeaturesEXT = {\n";
@@ -14448,6 +14504,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageSlicedView
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\timageSlicedViewOf3D = " << value.imageSlicedViewOf3D << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageTilingControlFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceImageTilingControlFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageTilingControl = " << value.imageTilingControl << '\n';
 	s << '}';
 	return s;
 }

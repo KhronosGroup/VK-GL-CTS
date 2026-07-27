@@ -322,6 +322,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/image/vktImageTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageTestsUtil.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageTexture.cpp",
+        "external/vulkancts/modules/vulkan/image/vktImageTilingControlTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageTranscodingSupportTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageTransfer.cpp",
         "external/vulkancts/modules/vulkan/image_processing/vktImageProcessingApiTests.cpp",

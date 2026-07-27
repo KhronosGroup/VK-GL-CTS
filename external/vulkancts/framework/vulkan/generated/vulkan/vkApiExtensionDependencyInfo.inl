@@ -5323,6 +5323,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_image_drm_format_modifier"),
 	std::make_tuple(1, 0, "VK_EXT_image_robustness"),
 	std::make_tuple(1, 0, "VK_EXT_image_sliced_view_of_3d"),
+	std::make_tuple(1, 0, "VK_EXT_image_tiling_control"),
 	std::make_tuple(1, 0, "VK_EXT_image_view_min_lod"),
 	std::make_tuple(1, 0, "VK_EXT_index_type_uint8"),
 	std::make_tuple(1, 0, "VK_EXT_inline_uniform_block"),

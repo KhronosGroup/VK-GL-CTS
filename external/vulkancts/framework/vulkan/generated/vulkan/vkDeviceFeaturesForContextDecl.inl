@@ -71,11 +71,13 @@ const vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT&				getGraphicsPipe
 const vk::VkPhysicalDeviceHostImageCopyFeatures&							getHostImageCopyFeatures							(void) const;
 const vk::VkPhysicalDeviceHostQueryResetFeatures&							getHostQueryResetFeatures							(void) const;
 const vk::VkPhysicalDeviceImage2DViewOf3DFeaturesEXT&						getImage2DViewOf3DFeaturesEXT						(void) const;
+const vk::VkPhysicalDeviceImageAlignmentControlFeaturesMESA&				getImageAlignmentControlFeaturesMESA				(void) const;
 const vk::VkPhysicalDeviceImageCompressionControlFeaturesEXT&				getImageCompressionControlFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT&		getImageCompressionControlSwapchainFeaturesEXT		(void) const;
 const vk::VkPhysicalDeviceImageProcessingFeaturesQCOM&						getImageProcessingFeaturesQCOM						(void) const;
 const vk::VkPhysicalDeviceImageRobustnessFeatures&							getImageRobustnessFeatures							(void) const;
 const vk::VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT&					getImageSlicedViewOf3DFeaturesEXT					(void) const;
+const vk::VkPhysicalDeviceImageTilingControlFeaturesEXT&					getImageTilingControlFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT&						getImageViewMinLodFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceImagelessFramebufferFeatures&						getImagelessFramebufferFeatures						(void) const;
 const vk::VkPhysicalDeviceIndexTypeUint8Features&							getIndexTypeUint8Features							(void) const;

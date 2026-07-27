@@ -2701,6 +2701,43 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImage2DViewOf3DFeaturesEX
 }
 
 
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageAlignmentControlFeaturesMESA (Context& context)
+{
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const InstanceWrapper instance(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const VkPhysicalDevice                    physicalDevice = instance.getPhysicalDevice();
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceImageAlignmentControlFeaturesMESA>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceImageAlignmentControlFeaturesMESA, imageAlignmentControl),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceImageAlignmentControlFeaturesMESA*>(featuresStruct);
+        checkFeatures(instance, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageCompressionControlFeaturesEXT (Context& context)
 {
     tcu::TestLog&                            log = context.getTestContext().getLog();
@@ -2878,6 +2915,43 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageSlicedViewOf3DFeatur
         FEATURE_ITEM (VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT, imageSlicedViewOf3D),
         };
         auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT*>(featuresStruct);
+        checkFeatures(instance, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageTilingControlFeaturesEXT (Context& context)
+{
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const InstanceWrapper instance(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const VkPhysicalDevice                    physicalDevice = instance.getPhysicalDevice();
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceImageTilingControlFeaturesEXT>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceImageTilingControlFeaturesEXT, imageTilingControl),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceImageTilingControlFeaturesEXT*>(featuresStruct);
         checkFeatures(instance, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
     }
 
@@ -8333,11 +8407,13 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "host_image_copy_features", createDeviceWithUnsupportedFeaturesTestHostImageCopyFeatures);
 	addFunctionCase(testGroup, "host_query_reset_features", createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures);
 	addFunctionCase(testGroup, "image_2d_view_of_3d_features_ext", createDeviceWithUnsupportedFeaturesTestImage2DViewOf3DFeaturesEXT);
+	addFunctionCase(testGroup, "image_alignment_control_features_mesa", createDeviceWithUnsupportedFeaturesTestImageAlignmentControlFeaturesMESA);
 	addFunctionCase(testGroup, "image_compression_control_features_ext", createDeviceWithUnsupportedFeaturesTestImageCompressionControlFeaturesEXT);
 	addFunctionCase(testGroup, "image_compression_control_swapchain_features_ext", createDeviceWithUnsupportedFeaturesTestImageCompressionControlSwapchainFeaturesEXT);
 	addFunctionCase(testGroup, "image_processing_features_qcom", createDeviceWithUnsupportedFeaturesTestImageProcessingFeaturesQCOM);
 	addFunctionCase(testGroup, "image_robustness_features", createDeviceWithUnsupportedFeaturesTestImageRobustnessFeatures);
 	addFunctionCase(testGroup, "image_sliced_view_of_3d_features_ext", createDeviceWithUnsupportedFeaturesTestImageSlicedViewOf3DFeaturesEXT);
+	addFunctionCase(testGroup, "image_tiling_control_features_ext", createDeviceWithUnsupportedFeaturesTestImageTilingControlFeaturesEXT);
 	addFunctionCase(testGroup, "image_view_min_lod_features_ext", createDeviceWithUnsupportedFeaturesTestImageViewMinLodFeaturesEXT);
 	addFunctionCase(testGroup, "imageless_framebuffer_features", createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatures);
 	addFunctionCase(testGroup, "index_type_uint8_features", createDeviceWithUnsupportedFeaturesTestIndexTypeUint8Features);

@@ -42,6 +42,7 @@ const vk::VkPhysicalDeviceGpaPropertiesAMD&							Context::getGpaPropertiesAMD		
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&		Context::getGraphicsPipelineLibraryPropertiesEXT		(void) const { return m_device->getGraphicsPipelineLibraryPropertiesEXT();		}
 const vk::VkPhysicalDeviceHostImageCopyProperties&					Context::getHostImageCopyProperties						(void) const { return m_device->getHostImageCopyProperties();					}
 const vk::VkPhysicalDeviceIDProperties&								Context::getIDProperties								(void) const { return m_device->getIDProperties();								}
+const vk::VkPhysicalDeviceImageAlignmentControlPropertiesMESA&		Context::getImageAlignmentControlPropertiesMESA			(void) const { return m_device->getImageAlignmentControlPropertiesMESA();		}
 const vk::VkPhysicalDeviceImageProcessingPropertiesQCOM&			Context::getImageProcessingPropertiesQCOM				(void) const { return m_device->getImageProcessingPropertiesQCOM();				}
 const vk::VkPhysicalDeviceInlineUniformBlockProperties&				Context::getInlineUniformBlockProperties				(void) const { return m_device->getInlineUniformBlockProperties();				}
 const vk::VkPhysicalDeviceLayeredApiPropertiesListKHR&				Context::getLayeredApiPropertiesList					(void) const { return m_device->getLayeredApiPropertiesList();					}

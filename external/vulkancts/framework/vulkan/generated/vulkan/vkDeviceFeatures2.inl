@@ -2040,6 +2040,45 @@ tcu::TestStatus testPhysicalDeviceFeatureImage2DViewOf3DFeaturesEXT (Context& co
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureImageAlignmentControlFeaturesMESA (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceImageAlignmentControlFeaturesMESA deviceImageAlignmentControlFeaturesMESA[count];
+    const bool                                        isImageAlignmentControlFeaturesMESA = checkExtension(properties, "VK_MESA_image_alignment_control");
+
+    if (!isImageAlignmentControlFeaturesMESA)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceImageAlignmentControlFeaturesMESA[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceImageAlignmentControlFeaturesMESA));
+        deviceImageAlignmentControlFeaturesMESA[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA;
+        deviceImageAlignmentControlFeaturesMESA[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceImageAlignmentControlFeaturesMESA[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceImageAlignmentControlFeaturesMESA[0] << TestLog::EndMessage;
+
+    if (
+        deviceImageAlignmentControlFeaturesMESA[0].imageAlignmentControl != deviceImageAlignmentControlFeaturesMESA[1].imageAlignmentControl)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceImageAlignmentControlFeaturesMESA");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureImageCompressionControlFeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -2192,6 +2231,45 @@ tcu::TestStatus testPhysicalDeviceFeatureImageSlicedViewOf3DFeaturesEXT (Context
         deviceImageSlicedViewOf3DFeaturesEXT[0].imageSlicedViewOf3D != deviceImageSlicedViewOf3DFeaturesEXT[1].imageSlicedViewOf3D)
     {
         TCU_FAIL("Mismatch between VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeatureImageTilingControlFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceImageTilingControlFeaturesEXT deviceImageTilingControlFeaturesEXT[count];
+    const bool                                    isImageTilingControlFeaturesEXT = checkExtension(properties, "VK_EXT_image_tiling_control");
+
+    if (!isImageTilingControlFeaturesEXT)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceImageTilingControlFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceImageTilingControlFeaturesEXT));
+        deviceImageTilingControlFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_TILING_CONTROL_FEATURES_EXT;
+        deviceImageTilingControlFeaturesEXT[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceImageTilingControlFeaturesEXT[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceImageTilingControlFeaturesEXT[0] << TestLog::EndMessage;
+
+    if (
+        deviceImageTilingControlFeaturesEXT[0].imageTilingControl != deviceImageTilingControlFeaturesEXT[1].imageTilingControl)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceImageTilingControlFeaturesEXT");
     }
     return tcu::TestStatus::pass("Querying succeeded");
 }
@@ -7481,10 +7559,12 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "host_image_copy_features", testPhysicalDeviceFeatureHostImageCopyFeatures);
 	addFunctionCase(testGroup, "host_query_reset_features", testPhysicalDeviceFeatureHostQueryResetFeatures);
 	addFunctionCase(testGroup, "image_2d_view_of_3d_features_ext", testPhysicalDeviceFeatureImage2DViewOf3DFeaturesEXT);
+	addFunctionCase(testGroup, "image_alignment_control_features_mesa", testPhysicalDeviceFeatureImageAlignmentControlFeaturesMESA);
 	addFunctionCase(testGroup, "image_compression_control_features_ext", testPhysicalDeviceFeatureImageCompressionControlFeaturesEXT);
 	addFunctionCase(testGroup, "image_compression_control_swapchain_features_ext", testPhysicalDeviceFeatureImageCompressionControlSwapchainFeaturesEXT);
 	addFunctionCase(testGroup, "image_robustness_features", testPhysicalDeviceFeatureImageRobustnessFeatures);
 	addFunctionCase(testGroup, "image_sliced_view_of_3d_features_ext", testPhysicalDeviceFeatureImageSlicedViewOf3DFeaturesEXT);
+	addFunctionCase(testGroup, "image_tiling_control_features_ext", testPhysicalDeviceFeatureImageTilingControlFeaturesEXT);
 	addFunctionCase(testGroup, "image_view_min_lod_features_ext", testPhysicalDeviceFeatureImageViewMinLodFeaturesEXT);
 	addFunctionCase(testGroup, "imageless_framebuffer_features", testPhysicalDeviceFeatureImagelessFramebufferFeatures);
 	addFunctionCase(testGroup, "index_type_uint8_features", testPhysicalDeviceFeatureIndexTypeUint8Features);

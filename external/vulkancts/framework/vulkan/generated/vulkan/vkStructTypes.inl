@@ -3774,6 +3774,13 @@ struct VkIOSSurfaceCreateInfoMVK
 	const void*					pView;
 };
 
+struct VkImageAlignmentControlCreateInfoMESA
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		maximumRequestedAlignment;
+};
+
 struct VkImageCaptureDescriptorDataInfoEXT
 {
 	VkStructureType	sType;
@@ -4018,6 +4025,13 @@ struct VkImageSwapchainCreateInfoKHR
 	VkStructureType	sType;
 	const void*		pNext;
 	VkSwapchainKHR	swapchain;
+};
+
+struct VkImageTilingControlCreateInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkImageTilingControlEXT	tilingControl;
 };
 
 struct VkImageUsageFlags2CreateInfoKHR
@@ -6499,6 +6513,20 @@ struct VkPhysicalDeviceImage2DViewOf3DFeaturesEXT
 	VkBool32		sampler2DViewOf3D;
 };
 
+struct VkPhysicalDeviceImageAlignmentControlFeaturesMESA
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		imageAlignmentControl;
+};
+
+struct VkPhysicalDeviceImageAlignmentControlPropertiesMESA
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		supportedImageAlignmentMask;
+};
+
 struct VkPhysicalDeviceImageCompressionControlFeaturesEXT
 {
 	VkStructureType	sType;
@@ -6567,6 +6595,13 @@ struct VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		imageSlicedViewOf3D;
+};
+
+struct VkPhysicalDeviceImageTilingControlFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		imageTilingControl;
 };
 
 struct VkPhysicalDeviceImageViewImageFormatInfoEXT

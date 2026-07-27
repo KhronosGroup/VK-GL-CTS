@@ -66,6 +66,7 @@ const char*	getGpaPerfBlockAMDName									(VkGpaPerfBlockAMD value);
 const char*	getGpaSampleTypeAMDName									(VkGpaSampleTypeAMD value);
 const char*	getImageLayoutName										(VkImageLayout value);
 const char*	getImageTilingName										(VkImageTiling value);
+const char*	getImageTilingControlEXTName							(VkImageTilingControlEXT value);
 const char*	getImageTypeName										(VkImageType value);
 const char*	getImageViewTypeName									(VkImageViewType value);
 const char*	getIndexTypeName										(VkIndexType value);
@@ -243,6 +244,7 @@ inline tcu::Format::Enum<VkGpaPerfBlockAMD>									getGpaPerfBlockAMDStr							
 inline tcu::Format::Enum<VkGpaSampleTypeAMD>								getGpaSampleTypeAMDStr									(VkGpaSampleTypeAMD value)									{ return tcu::Format::Enum<VkGpaSampleTypeAMD>(getGpaSampleTypeAMDName, value);																}
 inline tcu::Format::Enum<VkImageLayout>										getImageLayoutStr										(VkImageLayout value)										{ return tcu::Format::Enum<VkImageLayout>(getImageLayoutName, value);																		}
 inline tcu::Format::Enum<VkImageTiling>										getImageTilingStr										(VkImageTiling value)										{ return tcu::Format::Enum<VkImageTiling>(getImageTilingName, value);																		}
+inline tcu::Format::Enum<VkImageTilingControlEXT>							getImageTilingControlEXTStr								(VkImageTilingControlEXT value)								{ return tcu::Format::Enum<VkImageTilingControlEXT>(getImageTilingControlEXTName, value);													}
 inline tcu::Format::Enum<VkImageType>										getImageTypeStr											(VkImageType value)											{ return tcu::Format::Enum<VkImageType>(getImageTypeName, value);																			}
 inline tcu::Format::Enum<VkImageViewType>									getImageViewTypeStr										(VkImageViewType value)										{ return tcu::Format::Enum<VkImageViewType>(getImageViewTypeName, value);																	}
 inline tcu::Format::Enum<VkIndexType>										getIndexTypeStr											(VkIndexType value)											{ return tcu::Format::Enum<VkIndexType>(getIndexTypeName, value);																			}
@@ -383,6 +385,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkGpaPerfBlockAMD value)						
 inline std::ostream&	operator<<	(std::ostream& s, VkGpaSampleTypeAMD value)									{ return s << getGpaSampleTypeAMDStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, VkImageLayout value)										{ return s << getImageLayoutStr(value);										}
 inline std::ostream&	operator<<	(std::ostream& s, VkImageTiling value)										{ return s << getImageTilingStr(value);										}
+inline std::ostream&	operator<<	(std::ostream& s, VkImageTilingControlEXT value)							{ return s << getImageTilingControlEXTStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkImageType value)										{ return s << getImageTypeStr(value);										}
 inline std::ostream&	operator<<	(std::ostream& s, VkImageViewType value)									{ return s << getImageViewTypeStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkIndexType value)										{ return s << getIndexTypeStr(value);										}
@@ -948,6 +951,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkHostAddressRangeEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkHostImageCopyDevicePerformanceQuery& value);
 std::ostream&	operator<<	(std::ostream& s, const VkHostImageLayoutTransitionInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkIOSSurfaceCreateInfoMVK& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageAlignmentControlCreateInfoMESA& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageBlit& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageBlit2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageCaptureDescriptorDataInfoEXT& value);
@@ -979,6 +983,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkImageSubresource2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageSubresourceLayers& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageSubresourceRange& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageSwapchainCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageTilingControlCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageToMemoryCopy& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageUsageFlags2CreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageViewASTCDecodeModeEXT& value);
@@ -1218,6 +1223,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceHostImageCopyPr
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceHostQueryResetFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceIDProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImage2DViewOf3DFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageAlignmentControlFeaturesMESA& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageAlignmentControlPropertiesMESA& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageCompressionControlFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageDrmFormatModifierInfoEXT& value);
@@ -1226,6 +1233,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageProcessing
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageProcessingPropertiesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageRobustnessFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageTilingControlFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageViewImageFormatInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageViewMinLodFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImagelessFramebufferFeatures& value);

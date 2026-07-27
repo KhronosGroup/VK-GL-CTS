@@ -42,6 +42,7 @@ const VkPhysicalDeviceGpaPropertiesAMD&							getGpaPropertiesAMD							(void) c
 const VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&		getGraphicsPipelineLibraryPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT>();		}
 const VkPhysicalDeviceHostImageCopyProperties&					getHostImageCopyProperties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceHostImageCopyProperties>();					}
 const VkPhysicalDeviceIDProperties&								getIDProperties								(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceIDProperties>();								}
+const VkPhysicalDeviceImageAlignmentControlPropertiesMESA&		getImageAlignmentControlPropertiesMESA		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceImageAlignmentControlPropertiesMESA>();		}
 const VkPhysicalDeviceImageProcessingPropertiesQCOM&			getImageProcessingPropertiesQCOM			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceImageProcessingPropertiesQCOM>();				}
 const VkPhysicalDeviceInlineUniformBlockProperties&				getInlineUniformBlockProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceInlineUniformBlockProperties>();				}
 const VkPhysicalDeviceLayeredApiPropertiesListKHR&				getLayeredApiPropertiesList					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLayeredApiPropertiesListKHR>();				}

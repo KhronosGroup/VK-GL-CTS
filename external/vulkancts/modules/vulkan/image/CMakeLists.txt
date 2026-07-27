@@ -44,6 +44,8 @@ set(DEQP_VK_VKSC_IMAGE_SRCS
 	vktImageSampleDrawnCubeFaceTests.hpp
 	vktImageSubresourceLayoutTests.cpp
 	vktImageSubresourceLayoutTests.hpp
+	vktImageTilingControlTests.cpp
+	vktImageTilingControlTests.hpp
 	vktImageMismatchedWriteOpTests.cpp
 	vktImageMismatchedWriteOpTests.hpp
 	vktImageDepthStencilDescriptorTests.cpp

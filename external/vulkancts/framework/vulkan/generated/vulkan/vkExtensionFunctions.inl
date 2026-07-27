@@ -481,6 +481,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_image_tiling_control")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_image_view_min_lod")
 	{
 		return;
@@ -2693,6 +2697,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_image_tiling_control")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_image_view_min_lod")
 	{
 		return;
@@ -4355,6 +4363,13 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	}
 	if (extName == "VK_NV_low_latency")
 	{
+		functions.push_back("vkSetLatencySleepModeLegacyNV");
+		functions.push_back("vkLatencySleepLegacyNV");
+		functions.push_back("vkSetLatencyMarkerLegacyNV");
+		functions.push_back("vkGetLatencyTimingsLegacyNV");
+		functions.push_back("vkQueueNotifyOutOfBandLegacyNV");
+		functions.push_back("vkGetSleepStatusLegacyNV");
+		functions.push_back("vkShutdownLatencyDeviceLegacyNV");
 		return;
 	}
 	if (extName == "VK_NV_low_latency2")
@@ -5119,6 +5134,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_SEC_throttle_hint",
 	"VK_ARM_data_graph_neural_accelerator_statistics",
 	"VK_EXT_primitive_restart_index",
+	"VK_EXT_image_tiling_control",
 	"VK_NV_cooperative_matrix_decode_vector",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",

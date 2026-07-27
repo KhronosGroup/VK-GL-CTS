@@ -1273,6 +1273,11 @@ template<> VkStructureType getStructureType<VkIOSSurfaceCreateInfoMVK> (void)
 	return VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK;
 }
 
+template<> VkStructureType getStructureType<VkImageAlignmentControlCreateInfoMESA> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA;
+}
+
 template<> VkStructureType getStructureType<VkImageBlit2> (void)
 {
 	return VK_STRUCTURE_TYPE_IMAGE_BLIT_2;
@@ -1391,6 +1396,11 @@ template<> VkStructureType getStructureType<VkImageSubresource2> (void)
 template<> VkStructureType getStructureType<VkImageSwapchainCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkImageTilingControlCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_TILING_CONTROL_CREATE_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkImageToMemoryCopy> (void)
@@ -2448,6 +2458,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceImage2DViewOf3DFeatu
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageAlignmentControlFeaturesMESA> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageAlignmentControlPropertiesMESA> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceImageCompressionControlFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_FEATURES_EXT;
@@ -2486,6 +2506,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceImageRobustnessFeatu
 template<> VkStructureType getStructureType<VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageTilingControlFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_TILING_CONTROL_FEATURES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceImageViewImageFormatInfoEXT> (void)

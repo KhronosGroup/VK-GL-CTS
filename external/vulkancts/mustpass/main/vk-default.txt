@@ -51,6 +51,7 @@ vk-default/image/store-load-consistency.txt
 vk-default/image/subresource-layout.txt
 vk-default/image/swapchain-mutable.txt
 vk-default/image/texel-view-compatible.txt
+vk-default/image/tiling-control.txt
 vk-default/image-processing.txt
 vk-default/imageless-framebuffer.txt
 vk-default/info.txt
