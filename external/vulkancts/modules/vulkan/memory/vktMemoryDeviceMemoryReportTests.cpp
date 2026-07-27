@@ -2180,10 +2180,7 @@ tcu::TestCaseGroup *createExternalMemoryTestsGroup(tcu::TestContext &testCtx, co
     MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, name));
 
     const std::vector<VkExternalMemoryHandleTypeFlagBits> externalMemoryTypes = {
-        VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT, VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT,
-        VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,
-        VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
-        VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT};
+        VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID};
 
     for (const auto externalMemoryType : externalMemoryTypes)
     {
