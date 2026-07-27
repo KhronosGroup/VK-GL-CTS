@@ -1630,7 +1630,7 @@ tcu::TestStatus TexelBufferSparseResidencyInstance::iterate(void)
 
     const Unique<VkDescriptorPool> descriptorPool(
         DescriptorPoolBuilder()
-            .addType(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1u)
+            .addType(descriptorType, 1u)
             .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u)
             .build(deviceInterface, getDevice(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
