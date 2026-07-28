@@ -1583,9 +1583,10 @@ void BottomLevelAccelerationStructureKHR::createAndDeserializeMircomaps(const De
     DE_ASSERT(addresses.size() == newAddresses.size());
 
     SerialStorage::AccelerationStructureHeader *header = storage->getASHeader();
-    uint64_t micromapsHandleCount                      = 0;
     uint32_t newAddressesIndex                         = 1;
     uint32_t serializedBlockCount                      = static_cast<uint32_t>(header->blockCount & 0xFFFFFFFF);
+    uint64_t micromapsHandleCount                      = 0;
+    DE_UNREF(micromapsHandleCount);
 
     DE_ASSERT(static_cast<uint32_t>(header->blockCount >> 32) == 0xFFFFFFFF);
     for (uint32_t i = 0; i < serializedBlockCount; i++)
