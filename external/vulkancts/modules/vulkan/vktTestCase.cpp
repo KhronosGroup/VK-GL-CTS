@@ -42,6 +42,7 @@
 
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuResultCollector.hpp"
 
 #include "deSTLUtil.hpp"
 #include "deMemory.h"
@@ -1889,24 +1890,33 @@ MultiQueueRunnerTestInstance::MultiQueueRunnerTestInstance(Context &context, Que
 
 tcu::TestStatus MultiQueueRunnerTestInstance::iterate(void)
 {
+    tcu::ResultCollector resultCollector(m_context.getTestContext().getLog());
+
     if (m_queues.size() == 1)
         return queuePass(m_queues[0]);
 
-    bool isFail = false;
-    std::string resultDescription;
-
     for (const auto &queue : m_queues)
     {
-        tcu::TestStatus result = queuePass(queue);
-        if (result.isFail())
+        try
         {
-            resultDescription += "Test failed on queue family " + de::toString(queue.familyIndex) +
-                                 " with descriptoin: " + result.getDescription() + "\n";
-            isFail = true;
+            tcu::TestStatus result = queuePass(queue);
+            if (result.isFail())
+            {
+                resultCollector.addResult(result.getCode(), "Test failed on queue family " +
+                                                                de::toString(queue.familyIndex) +
+                                                                " with description: " + result.getDescription() + "\n");
+            }
+        }
+        catch (const tcu::TestException &e)
+        {
+            resultCollector.addResult(e.getTestResult(),
+                                      "Test exception (" + de::toString(qpGetTestResultName(e.getTestResult())) +
+                                          ") thrown on queue family " + de::toString(queue.familyIndex) +
+                                          " with description: " + e.getMessage());
         }
     }
 
-    return isFail ? tcu::TestStatus::fail(resultDescription) : tcu::TestStatus::pass("All queues passed");
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 std::string TestCase::getRequiredCapabilitiesId() const

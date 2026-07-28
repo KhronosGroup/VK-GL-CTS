@@ -4532,7 +4532,7 @@ tcu::TestStatus EmptyWorkGroupInstance::queuePass(const vkt::QueueData &queueDat
     {
         std::ostringstream msg;
         msg << "Unexpected value found in buffer: " << value << " while expecting 1";
-        TCU_FAIL(msg.str());
+        return tcu::TestStatus::fail(msg.str());
     }
 
     return tcu::TestStatus::pass("Pass");
