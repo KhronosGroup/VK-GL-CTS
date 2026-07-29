@@ -2302,14 +2302,21 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
             else
                 indexData = makeDeviceOrHostAddressConstKHR(nullptr);
 
-            if (getTransformBuffer() != nullptr && geometryData->getTransformPointer() != nullptr)
+            if (geometryData->getTransformPointer() == nullptr)
+                transformData = makeDeviceOrHostAddressConstKHR(nullptr);
+            else if (getTransformBuffer() != nullptr)
             {
                 transformData =
                     makeDeviceOrHostAddressConstKHR(vk, device, getTransformBuffer()->get(), transformBufferOffset);
                 transformBufferOffset += deAlignSize(geometryData->getTransformByteSize(), 16);
             }
             else
-                transformData = makeDeviceOrHostAddressConstKHR(nullptr);
+            {
+                // Only reached while querying the build sizes, before the transform buffer is allocated.
+                // vkGetAccelerationStructureBuildSizesKHR() only checks transformData for NULL, and it has to see a
+                // non-NULL one for the returned size to cover a build that applies a transform.
+                transformData = makeDeviceOrHostAddressConstKHR(geometryData->getTransformPointer());
+            }
             if (getRadiusBuffer() != nullptr)
             {
                 radiusData = makeDeviceOrHostAddressConstKHR(vk, device, getRadiusBuffer()->get(), radiusBufferOffset);
@@ -2327,10 +2334,8 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
 
                 indexData = makeDeviceOrHostAddressConstKHR(nullptr);
 
-            if (getTransformBuffer() != nullptr)
-                transformData = makeDeviceOrHostAddressConstKHR(geometryData->getTransformPointer());
-            else
-                transformData = makeDeviceOrHostAddressConstKHR(nullptr);
+            // Host builds read the transform from the geometry itself, there is no transform buffer for them.
+            transformData = makeDeviceOrHostAddressConstKHR(geometryData->getTransformPointer());
             if (getRadiusBuffer() != nullptr)
                 radiusData = makeDeviceOrHostAddressConstKHR(geometryData->getRadiusPointer());
             else
