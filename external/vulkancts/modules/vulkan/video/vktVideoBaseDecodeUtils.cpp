@@ -567,8 +567,7 @@ void VideoBaseDecoder::StartVideoSequence(const VkParserDetectedVideoFormat *pVi
         (VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
     VkImageUsageFlags dpbImageUsage = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR;
 
-    if (dpbAndOutputCoincide() && (!pVideoFormat->filmGrainEnabled || m_forceDisableFilmGrain) &&
-        !m_intraOnlyDecodingNoSetupRef)
+    if (dpbAndOutputCoincide() && (!pVideoFormat->filmGrainEnabled || m_forceDisableFilmGrain))
     {
         dpbImageUsage = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR | VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR |
                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -1572,7 +1571,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
                                                (uint32_t)cachedParameters->decodedPictureInfo.displayHeight};
     }
 
-    if (dpbAndOutputCoincide() && !pPicParams->filmGrainEnabled && !m_intraOnlyDecodingNoSetupRef)
+    if (dpbAndOutputCoincide() && !pPicParams->filmGrainEnabled)
     {
         // For the Output Coincide, the DPB and destination output resources are the same.
         pPicParams->decodeFrameInfo.dstPictureResource = pPicParams->dpbSetupPictureResource;
