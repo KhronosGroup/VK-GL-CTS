@@ -201,6 +201,7 @@ enum class SpirvTestType
     OpImageQuerySizeNullDescriptor,
     AtomicImage2d,
     AtomicImage2d64Bit,
+    CopyObject,
 };
 
 struct TestParamsSpirv : TestParams
@@ -8113,7 +8114,8 @@ private:
 
 void DescriptorHeapTestCaseSpirv::initPrograms(vk::SourceCollections &programCollection) const
 {
-    char const *assembly = "";
+    char const *assembly      = "";
+    SpirvVersion spirvVersion = vk::SPIRV_VERSION_1_6;
 
     switch (m_params.spirvTestType)
     {
@@ -8930,12 +8932,45 @@ void DescriptorHeapTestCaseSpirv::initPrograms(vk::SourceCollections &programCol
                OpFunctionEnd
 )";
         break;
+    case SpirvTestType::CopyObject:
+        assembly     = R"(
+      OpCapability Shader
+      OpMemoryModel Logical GLSL450
+      OpEntryPoint GLCompute %main "main"
+      OpExecutionMode %main LocalSize 1 1 1
+      OpDecorate %struct BufferBlock
+      OpMemberDecorate %struct 0 Offset 0
+      OpDecorate %buf_array DescriptorSet 0
+      OpDecorate %buf_array Binding 0
+      %void = OpTypeVoid
+      %func_type = OpTypeFunction %void
+      %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %uint = OpTypeInt 32 0
+      %uint_4 = OpConstant %uint 4
+      %struct = OpTypeStruct %int
+      %struct_array = OpTypeArray %struct %uint_4
+      %ptr_struct_array = OpTypePointer Uniform %struct_array
+      %ptr_struct = OpTypePointer Uniform %struct
+      %ptr_int = OpTypePointer Uniform %int
+      %buf_array = OpVariable %ptr_struct_array Uniform
+      %main = OpFunction %void None %func_type
+      %entry = OpLabel
+      %var_copy = OpCopyObject %ptr_struct_array %buf_array
+      %buf_ptr = OpAccessChain %ptr_struct %var_copy %int_0
+      %int_ptr = OpAccessChain %ptr_int %buf_ptr %int_0
+      %val = OpLoad %int %int_ptr
+      OpReturn
+      OpFunctionEnd
+)";
+        spirvVersion = vk::SPIRV_VERSION_1_3;
+        break;
     default:
         DE_ASSERT(0);
         break;
     }
 
-    vk::SpirVAsmBuildOptions options(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_6);
+    vk::SpirVAsmBuildOptions options(programCollection.usedVulkanVersion, spirvVersion);
     programCollection.spirvAsmSources.add("compute") << assembly << options;
 }
 
@@ -9039,6 +9074,10 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
             expectedOutput[2 * i + 1] = 0xcafecafe;
         }
         heapUserSize = dispatchWidth * resourceDescriptorStride;
+        break;
+    case SpirvTestType::CopyObject:
+        expectedOutput = {0};
+        heapUserSize   = 4 * resourceDescriptorStride;
         break;
     default:
         DE_ASSERT(0);
@@ -9557,6 +9596,35 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
             vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                    0u, 0u, nullptr, 0u, nullptr, 1u, &initMemoryBarrier);
         }
+        break;
+    }
+    case SpirvTestType::CopyObject:
+    {
+        mappings.resize(1);
+        mappings[0]              = initVulkanStructure();
+        mappings[0].bindingCount = 4u;
+        mappings[0].resourceMask = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+        mappings[0].source       = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+        mappings[0].sourceData.constantOffset.heapArrayStride = static_cast<uint32_t>(resourceDescriptorStride);
+
+        std::array<VkHostAddressRangeEXT, 4> hostAddressRanges{};
+        std::array<VkResourceDescriptorInfoEXT, 4> resourceInfos{};
+        std::array<VkDeviceAddressRangeEXT, 4> addressRanges{};
+
+        for (size_t i = 0; i < 4; ++i)
+        {
+            hostAddressRanges[i].address = reinterpret_cast<char *>(heapContents) + i * resourceDescriptorStride;
+            hostAddressRanges[i].size    = static_cast<size_t>(resourceDescriptorStride);
+
+            resourceInfos[i]                    = initVulkanStructure();
+            resourceInfos[i].type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            resourceInfos[i].data.pAddressRange = &addressRanges[i];
+
+            addressRanges[i].address = outputBuffer->address;
+            addressRanges[i].size    = outputBufferSize;
+        }
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 4, resourceInfos.data(), hostAddressRanges.data()));
         break;
     }
     default:
@@ -17436,6 +17504,7 @@ void populateSpirvTests(tcu::TestCaseGroup *topGroup)
         {SpirvTestType::OpImageQuerySizeNullDescriptor, "op_image_query_size_null_descriptor"},
         {SpirvTestType::AtomicImage2d, "atomic_image_2d"},
         {SpirvTestType::AtomicImage2d64Bit, "atomic_image_2d_64_bit"},
+        {SpirvTestType::CopyObject, "copy_object"},
     };
     for (const auto &test : tests)
     {

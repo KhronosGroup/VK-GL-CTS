@@ -717,6 +717,7 @@ dEQP-VK.binding_model.descriptor_heap.spirv.array_variable_pointers
 dEQP-VK.binding_model.descriptor_heap.spirv.atomic_image_2d
 dEQP-VK.binding_model.descriptor_heap.spirv.atomic_image_2d_64_bit
 dEQP-VK.binding_model.descriptor_heap.spirv.atomic_image_within_function
+dEQP-VK.binding_model.descriptor_heap.spirv.copy_object
 dEQP-VK.binding_model.descriptor_heap.spirv.function_call_binding
 dEQP-VK.binding_model.descriptor_heap.spirv.function_call_binding_forward
 dEQP-VK.binding_model.descriptor_heap.spirv.op_image_query_size
