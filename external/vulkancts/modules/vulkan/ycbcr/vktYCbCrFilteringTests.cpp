@@ -647,7 +647,7 @@ void LinearFilteringTestCase::initPrograms(SourceCollections &programCollection)
     static const char *fragShader = "#version 450\n"
                                     "precision mediump int; precision highp float;\n"
                                     "layout(location = 0) in vec2 v_texCoord;\n"
-                                    "layout(location = 0) out mediump vec4 dEQP_FragColor;\n"
+                                    "layout(location = 0) out vec4 dEQP_FragColor;\n"
                                     "layout (set=0, binding=0) uniform sampler2D u_sampler;\n"
                                     "void main (void)\n"
                                     "{\n"
