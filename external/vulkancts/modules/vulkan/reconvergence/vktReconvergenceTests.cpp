@@ -5125,7 +5125,7 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
                                                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
                 MemoryRequirement::HostVisible | MemoryRequirement::Cached));
         }
-        catch (tcu::ResourceError &)
+        catch (const tcu::TestError &)
         {
             // Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
             return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
@@ -5244,7 +5244,7 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
                                                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
                 MemoryRequirement::HostVisible | MemoryRequirement::Cached));
         }
-        catch (tcu::ResourceError &)
+        catch (const tcu::TestError &)
         {
             // Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
             return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
@@ -5955,7 +5955,7 @@ std::vector<uint32_t> ReconvergenceTestFragmentInstance::callAuxiliaryShader(tcu
         buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
             vk, device, allocator, createInfo, (MemoryRequirement::HostVisible | MemoryRequirement::Coherent)));
     }
-    catch (tcu::ResourceError &)
+    catch (const tcu::TestError &)
     {
         // Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
         status = tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
@@ -6150,7 +6150,7 @@ tcu::TestStatus ReconvergenceTestFragmentInstance::iterate(void)
                                                                         VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
                                      MemoryRequirement::HostVisible | MemoryRequirement::Cached));
         }
-        catch (tcu::ResourceError &)
+        catch (const tcu::TestError &)
         {
             // Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
             return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
@@ -6302,7 +6302,7 @@ tcu::TestStatus ReconvergenceTestFragmentInstance::iterate(void)
                                                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
                 MemoryRequirement::HostVisible | MemoryRequirement::Cached));
         }
-        catch (tcu::ResourceError &)
+        catch (const tcu::TestError &)
         {
             // Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
             return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
@@ -6485,7 +6485,7 @@ tcu::TestStatus ReconvergenceTestVertexInstance::iterate(void)
                 new BufferWithMemory(vk, device, allocator, makeBufferCreateInfo(sizes[i], usages[i] | cmnUsages),
                                      MemoryRequirement::HostVisible | MemoryRequirement::Cached));
         }
-        catch (tcu::ResourceError &)
+        catch (const tcu::TestError &)
         {
             // Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
             return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
@@ -6633,7 +6633,7 @@ tcu::TestStatus ReconvergenceTestVertexInstance::iterate(void)
                 vk, device, allocator, makeBufferCreateInfo(sizes[OutputBallots], usages[OutputBallots] | cmnUsages),
                 MemoryRequirement::HostVisible | MemoryRequirement::Cached));
         }
-        catch (tcu::ResourceError &)
+        catch (const tcu::TestError &)
         {
             // Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
             return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
@@ -6858,7 +6858,7 @@ tcu::TestStatus ReconvergenceTestTessCtrlInstance::iterate(void)
                                                                         VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
                                      MemoryRequirement::HostVisible | MemoryRequirement::Cached));
         }
-        catch (tcu::ResourceError &)
+        catch (const tcu::TestError &)
         {
             // Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
             return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
@@ -7010,7 +7010,7 @@ tcu::TestStatus ReconvergenceTestTessCtrlInstance::iterate(void)
                                                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
                 MemoryRequirement::HostVisible | MemoryRequirement::Cached));
         }
-        catch (tcu::ResourceError &)
+        catch (const tcu::TestError &)
         {
             // Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
             return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
@@ -7184,7 +7184,7 @@ tcu::TestStatus ReconvergenceTestTessEvalInstance::iterate(void)
                                                                         VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
                                      MemoryRequirement::HostVisible | MemoryRequirement::Cached));
         }
-        catch (tcu::ResourceError &)
+        catch (const tcu::TestError &)
         {
             // Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
             return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
@@ -7335,7 +7335,7 @@ tcu::TestStatus ReconvergenceTestTessEvalInstance::iterate(void)
                                                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
                 MemoryRequirement::HostVisible | MemoryRequirement::Cached));
         }
-        catch (tcu::ResourceError &)
+        catch (const tcu::TestError &)
         {
             // Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
             return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
@@ -7517,7 +7517,7 @@ tcu::TestStatus ReconvergenceTestGeometryInstance::iterate(void)
                 new BufferWithMemory(vk, device, allocator, makeBufferCreateInfo(sizes[i], usages[i] | cmnUsages),
                                      MemoryRequirement::HostVisible | MemoryRequirement::Cached));
         }
-        catch (tcu::ResourceError &)
+        catch (const tcu::TestError &)
         {
             // Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
             return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
@@ -7669,7 +7669,7 @@ tcu::TestStatus ReconvergenceTestGeometryInstance::iterate(void)
                 vk, device, allocator, makeBufferCreateInfo(sizes[1], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | cmnUsages),
                 MemoryRequirement::HostVisible | MemoryRequirement::Cached));
         }
-        catch (tcu::ResourceError &)
+        catch (const tcu::TestError &)
         {
             // Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
             return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
