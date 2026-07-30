@@ -405,6 +405,9 @@ uint32_t findQueueFamilyIndexWithCaps(const vk::InstanceInterface &vkInstance, v
                                       vk::VkQueueFlags requiredCaps, vk::VkQueueFlags excludedCaps = 0u,
                                       uint32_t *availableCount = nullptr);
 
+//! Capabilities to exclude when looking for a dedicated transfer queue family.
+vk::VkQueueFlags getTransferOnlyExcludedCaps(void);
+
 } // namespace vkt
 
 #endif // _VKTTESTCASE_HPP

@@ -68,7 +68,32 @@ struct TestParams
     VkImageAspectFlags writeAspect;
     VkImageLayout readLayout;
     VkImageAspectFlags readAspect;
+
+    // use compute dispatches instead of draws
+    bool useComputePipeline;
 };
+
+// pipeline is not used for transfer and general layouts
+bool needsWritePipeline(const TestParams &testParams)
+{
+    return (testParams.writeLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) &&
+           (testParams.writeLayout != VK_IMAGE_LAYOUT_GENERAL);
+}
+
+bool needsReadPipeline(const TestParams &testParams)
+{
+    return (testParams.readLayout != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) &&
+           (testParams.readLayout != VK_IMAGE_LAYOUT_GENERAL);
+}
+
+// without a pipeline the test is just copies and barriers, which any queue family can execute
+QueueCapabilities getQueueCapabilities(const TestParams &testParams)
+{
+    if (testParams.useComputePipeline)
+        return COMPUTE_QUEUE;
+
+    return (needsWritePipeline(testParams) || needsReadPipeline(testParams)) ? GRAPHICS_QUEUE : TRANSFER_QUEUE;
+}
 
 // Helper class representing image
 class ImageWrapper
@@ -85,9 +110,8 @@ public:
 void ImageWrapper::create(Context &context, SimpleAllocator &alloc, VkFormat format, VkExtent3D extent,
                           VkImageUsageFlags usage)
 {
-    const DeviceInterface &vk       = context.getDeviceInterface();
-    const VkDevice &device          = context.getDevice();
-    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+    const DeviceInterface &vk = context.getDeviceInterface();
+    const VkDevice &device    = context.getDevice();
     const VkImageCreateInfo imageParams{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // sType
         nullptr,                             // pNext
@@ -101,8 +125,8 @@ void ImageWrapper::create(Context &context, SimpleAllocator &alloc, VkFormat for
         VK_IMAGE_TILING_OPTIMAL,             // tiling
         usage,                               // usage
         VK_SHARING_MODE_EXCLUSIVE,           // sharingMode
-        1u,                                  // queueFamilyIndexCount
-        &queueFamilyIndex,                   // pQueueFamilyIndices
+        0u,                                  // queueFamilyIndexCount
+        nullptr,                             // pQueueFamilyIndices
         VK_IMAGE_LAYOUT_UNDEFINED,           // initialLayout
     };
 
@@ -136,15 +160,16 @@ void BufferWrapper::create(Context &context, SimpleAllocator &alloc, VkDeviceSiz
     VK_CHECK(vk.bindBufferMemory(device, *handle, memory->getMemory(), memory->getOffset()));
 }
 
-class NoneStageTestInstance : public vkt::TestInstance
+class NoneStageTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     NoneStageTestInstance(Context &context, const TestParams &testParams);
     virtual ~NoneStageTestInstance(void) = default;
 
-    tcu::TestStatus iterate(void) override;
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 protected:
+    tcu::TestStatus computeQueuePass(const vkt::QueueData &queueData);
     VkAccessFlags2KHR getAccessFlag(VkAccessFlags2KHR access);
     VkBufferImageCopy buildCopyRegion(VkExtent3D extent, VkImageAspectFlags aspect);
     void buildVertexBuffer(void);
@@ -239,7 +264,7 @@ private:
 };
 
 NoneStageTestInstance::NoneStageTestInstance(Context &context, const TestParams &testParams)
-    : vkt::TestInstance(context)
+    : vkt::MultiQueueRunnerTestInstance(context, getQueueCapabilities(testParams))
     , m_testParams(testParams)
     , m_imageExtent{32, 32, 1}
     , m_alloc(m_context.getDeviceInterface(), m_context.getDevice(),
@@ -247,7 +272,6 @@ NoneStageTestInstance::NoneStageTestInstance(Context &context, const TestParams 
 {
     // note: for clarity whole configuration of whats going on in iterate method was moved here
 
-    const auto writeLayout = m_testParams.writeLayout;
     const auto writeAspect = m_testParams.writeAspect;
     const auto readLayout  = m_testParams.readLayout;
     const auto readAspect  = m_testParams.readAspect;
@@ -300,17 +324,24 @@ NoneStageTestInstance::NoneStageTestInstance(Context &context, const TestParams 
     m_referenceImageUsage        = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     m_imageToWriteUsage          = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
-    // pipeline is not created for transfer and general layouts (general layouts in tests follow same path as transfer layouts)
-    m_usePipelineToWrite =
-        (writeLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) && (writeLayout != VK_IMAGE_LAYOUT_GENERAL);
-    m_usePipelineToRead =
-        (readLayout != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) && (readLayout != VK_IMAGE_LAYOUT_GENERAL);
+    m_usePipelineToWrite    = needsWritePipeline(m_testParams);
+    m_usePipelineToRead     = needsReadPipeline(m_testParams);
     m_useStencilDuringWrite = false;
 
     m_srcStageToNoneStageMask     = VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR;
     m_srcAccessToNoneAccessMask   = getAccessFlag(VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR);
     m_dstStageFromNoneStageMask   = VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR;
     m_dstAccessFromNoneAccessMask = getAccessFlag(VK_ACCESS_2_TRANSFER_READ_BIT_KHR);
+
+    // compute variant is self contained in computeQueuePass and only needs the none stage masks
+    if (m_testParams.useComputePipeline)
+    {
+        m_srcStageToNoneStageMask     = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
+        m_srcAccessToNoneAccessMask   = getAccessFlag(VK_ACCESS_2_SHADER_WRITE_BIT_KHR);
+        m_dstStageFromNoneStageMask   = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR;
+        m_dstAccessFromNoneAccessMask = getAccessFlag(VK_ACCESS_2_SHADER_READ_BIT_KHR);
+        return;
+    }
 
     // when graphics pipelines are not created only image with gradient is used for test
     if (!m_usePipelineToWrite && !m_usePipelineToRead)
@@ -411,6 +442,7 @@ VkAccessFlags2KHR NoneStageTestInstance::getAccessFlag(VkAccessFlags2KHR access)
 
         case VK_ACCESS_2_HOST_WRITE_BIT_KHR:
         case VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR:
+        case VK_ACCESS_2_SHADER_WRITE_BIT_KHR:
         case VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT_KHR:
         case VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR:
             return VK_ACCESS_2_MEMORY_WRITE_BIT_KHR;
@@ -751,12 +783,190 @@ Move<VkPipeline> NoneStageTestInstance::buildPipeline(uint32_t subpass, VkImageA
         &depthStencilStateCreateInfo); // VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
 }
 
-tcu::TestStatus NoneStageTestInstance::iterate(void)
+// Compute counterpart of the graphics path below: one dispatch writes the tested image, another reads it back.
+tcu::TestStatus NoneStageTestInstance::computeQueuePass(const vkt::QueueData &queueData)
 {
+    const DeviceInterface &vk                        = m_context.getDeviceInterface();
+    const VkDevice &device                           = m_context.getDevice();
+    const VkFormat format                            = VK_FORMAT_R8G8B8A8_UNORM;
+    const VkImageSubresourceRange subresourceRange   = {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u};
+    const VkBufferImageCopy copyRegion               = buildCopyRegion(m_imageExtent, VK_IMAGE_ASPECT_COLOR_BIT);
+    const uint32_t imageSizeInBytes                  = m_imageExtent.width * m_imageExtent.height * 4;
+    SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(m_testParams.type, vk, false);
+
+    // generate gradient
+    std::vector<uint32_t> referenceData(m_imageExtent.width * m_imageExtent.height);
+    PixelBufferAccess referencePBA(mapVkFormat(format), m_imageExtent.width, m_imageExtent.height, m_imageExtent.depth,
+                                   referenceData.data());
+    fillWithComponentGradients(referencePBA, tcu::Vec4(0.0f), tcu::Vec4(1.0f));
+
+    BufferWrapper srcBuffer;
+    srcBuffer.create(m_context, m_alloc, imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    deMemcpy(srcBuffer.memory->getHostPtr(), referenceData.data(), static_cast<size_t>(imageSizeInBytes));
+    flushAlloc(vk, device, *srcBuffer.memory);
+
+    BufferWrapper dstBuffer;
+    dstBuffer.create(m_context, m_alloc, imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+    ImageWrapper referenceImage, imageToWrite, imageToRead;
+    referenceImage.create(m_context, m_alloc, format, m_imageExtent,
+                          VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    imageToWrite.create(m_context, m_alloc, format, m_imageExtent,
+                        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    imageToRead.create(m_context, m_alloc, format, m_imageExtent,
+                       VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+    const Move<VkImageView> referenceView = buildImageView(*referenceImage.handle, format, subresourceRange);
+    const Move<VkImageView> writeView     = buildImageView(*imageToWrite.handle, format, subresourceRange);
+    const Move<VkImageView> readView      = buildImageView(*imageToRead.handle, format, subresourceRange);
+    const Move<VkSampler> sampler         = buildSampler();
+
+    // both dispatches sample one image into another, so one pipeline with two descriptor sets is enough
+    const Move<VkDescriptorSetLayout> setLayout =
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vk, device);
+    const Move<VkDescriptorPool> descriptorPool =
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2u)
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2u)
+            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u);
+    const Move<VkDescriptorSet> writeSet = makeDescriptorSet(vk, device, *descriptorPool, *setLayout);
+    const Move<VkDescriptorSet> readSet  = makeDescriptorSet(vk, device, *descriptorPool, *setLayout);
+
+    const VkDescriptorImageInfo writeInInfo =
+        makeDescriptorImageInfo(*sampler, *referenceView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    const VkDescriptorImageInfo writeOutInfo =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *writeView, VK_IMAGE_LAYOUT_GENERAL);
+    const VkDescriptorImageInfo readInInfo = makeDescriptorImageInfo(*sampler, *writeView, m_testParams.readLayout);
+    const VkDescriptorImageInfo readOutInfo =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *readView, VK_IMAGE_LAYOUT_GENERAL);
+    const auto binding = DescriptorSetUpdateBuilder::Location::binding;
+
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*writeSet, binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &writeInInfo)
+        .writeSingle(*writeSet, binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &writeOutInfo)
+        .writeSingle(*readSet, binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &readInInfo)
+        .writeSingle(*readSet, binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &readOutInfo)
+        .update(vk, device);
+
+    const Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, *setLayout);
+    const Move<VkShaderModule> shaderModule =
+        createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0);
+    const Move<VkPipeline> pipeline = makeComputePipeline(vk, device, *pipelineLayout, *shaderModule);
+
+    const Move<VkCommandPool> cmdPool =
+        createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueData.familyIndex);
+    const Move<VkCommandBuffer> cmdBuffer = makeCommandBuffer(vk, device, *cmdPool);
+
+    const auto recordImageBarrier = [&](const VkImageMemoryBarrier2KHR &barrier)
+    {
+        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &barrier);
+        synchronizationWrapper->cmdPipelineBarrier(*cmdBuffer, &dependencyInfo);
+    };
+
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    // copy gradient into the reference image
+    {
+        const VkBufferMemoryBarrier2KHR bufferBarrier = makeBufferMemoryBarrier2(
+            VK_PIPELINE_STAGE_2_HOST_BIT_KHR, getAccessFlag(VK_ACCESS_2_HOST_WRITE_BIT_KHR),
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, getAccessFlag(VK_ACCESS_2_TRANSFER_READ_BIT_KHR), *srcBuffer.handle,
+            0u, imageSizeInBytes);
+        const VkImageMemoryBarrier2KHR imageBarrier = makeImageMemoryBarrier2(
+            VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR, VK_ACCESS_2_NONE_KHR, VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,
+            getAccessFlag(VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR), VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *referenceImage.handle, subresourceRange);
+        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferBarrier, &imageBarrier);
+        synchronizationWrapper->cmdPipelineBarrier(*cmdBuffer, &dependencyInfo);
+
+        vk.cmdCopyBufferToImage(*cmdBuffer, *srcBuffer.handle, *referenceImage.handle,
+                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
+    }
+
+    // move all three images to their initial layout
+    recordImageBarrier(
+        makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, getAccessFlag(VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR),
+                                VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR,
+                                getAccessFlag(VK_ACCESS_2_SHADER_READ_BIT_KHR), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, *referenceImage.handle, subresourceRange));
+    recordImageBarrier(makeImageMemoryBarrier2(
+        VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR, VK_ACCESS_2_NONE_KHR, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR,
+        getAccessFlag(VK_ACCESS_2_SHADER_WRITE_BIT_KHR), VK_IMAGE_LAYOUT_UNDEFINED, m_testParams.writeLayout,
+        *imageToWrite.handle, subresourceRange));
+    recordImageBarrier(makeImageMemoryBarrier2(
+        VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR, VK_ACCESS_2_NONE_KHR, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR,
+        getAccessFlag(VK_ACCESS_2_SHADER_WRITE_BIT_KHR), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+        *imageToRead.handle, subresourceRange));
+
+    vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+
+    // produce the tested image
+    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &writeSet.get(), 0u,
+                             nullptr);
+    vk.cmdDispatch(*cmdBuffer, m_imageExtent.width, m_imageExtent.height, 1u);
+
+    // use none stage to wait till data is written to the image
+    recordImageBarrier(makeImageMemoryBarrier2(
+        m_srcStageToNoneStageMask, m_srcAccessToNoneAccessMask, VK_PIPELINE_STAGE_2_NONE_KHR, VK_ACCESS_2_NONE_KHR,
+        m_testParams.writeLayout, m_testParams.writeLayout, *imageToWrite.handle, subresourceRange));
+
+    // use all commands stage to change image layout
+    recordImageBarrier(makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR, VK_ACCESS_2_NONE_KHR,
+                                               m_dstStageFromNoneStageMask, m_dstAccessFromNoneAccessMask,
+                                               m_testParams.writeLayout, m_testParams.readLayout, *imageToWrite.handle,
+                                               subresourceRange));
+
+    // consume the tested image
+    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &readSet.get(), 0u,
+                             nullptr);
+    vk.cmdDispatch(*cmdBuffer, m_imageExtent.width, m_imageExtent.height, 1u);
+
+    // read back the result
+    {
+        recordImageBarrier(makeImageMemoryBarrier2(
+            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR, getAccessFlag(VK_ACCESS_2_SHADER_WRITE_BIT_KHR),
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, getAccessFlag(VK_ACCESS_2_TRANSFER_READ_BIT_KHR),
+            VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *imageToRead.handle, subresourceRange));
+
+        vk.cmdCopyImageToBuffer(*cmdBuffer, *imageToRead.handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                *dstBuffer.handle, 1u, &copyRegion);
+
+        const VkBufferMemoryBarrier2KHR bufferBarrier = makeBufferMemoryBarrier2(
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, getAccessFlag(VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR),
+            VK_PIPELINE_STAGE_2_HOST_BIT_KHR, getAccessFlag(VK_ACCESS_2_HOST_READ_BIT_KHR), *dstBuffer.handle, 0u,
+            imageSizeInBytes);
+        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferBarrier);
+        synchronizationWrapper->cmdPipelineBarrier(*cmdBuffer, &dependencyInfo);
+    }
+
+    endCommandBuffer(vk, *cmdBuffer);
+
+    Move<VkFence> fence                         = createFence(vk, device);
+    VkCommandBufferSubmitInfoKHR cmdBuffersInfo = makeCommonCommandBufferSubmitInfo(*cmdBuffer);
+    synchronizationWrapper->addSubmitInfo(0u, nullptr, 1u, &cmdBuffersInfo, 0u, nullptr);
+    VK_CHECK(synchronizationWrapper->queueSubmit(queueData.handle, *fence));
+    VK_CHECK(vk.waitForFences(device, 1, &fence.get(), VK_TRUE, ~0ull));
+
+    invalidateAlloc(vk, device, *dstBuffer.memory);
+    PixelBufferAccess resultPBA(mapVkFormat(format), m_imageExtent.width, m_imageExtent.height, m_imageExtent.depth,
+                                dstBuffer.memory->getHostPtr());
+
+    if (verifyResult(referencePBA, resultPBA))
+        return TestStatus::pass("Pass");
+    return TestStatus::fail("Fail");
+}
+
+tcu::TestStatus NoneStageTestInstance::queuePass(const vkt::QueueData &queueData)
+{
+    if (m_testParams.useComputePipeline)
+        return computeQueuePass(queueData);
+
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice &device          = m_context.getDevice();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
-    VkQueue queue                   = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
+    VkQueue queue                   = queueData.handle;
     Move<VkCommandPool> cmdPool =
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
     Move<VkCommandBuffer> cmdBuffer                  = makeCommandBuffer(vk, device, *cmdPool);
@@ -1160,6 +1370,22 @@ NoneStageTestCase::NoneStageTestCase(tcu::TestContext &testContext, const std::s
 
 void NoneStageTestCase::initPrograms(SourceCollections &sourceCollections) const
 {
+    if (m_testParams.useComputePipeline)
+    {
+        // used by both dispatches
+        sourceCollections.glslSources.add("comp")
+            << glu::ComputeSource("#version 450\n"
+                                  "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+                                  "layout(set = 0, binding = 0) uniform sampler2D u_sampler;\n"
+                                  "layout(set = 0, binding = 1, rgba8) uniform writeonly image2D u_outImage;\n"
+                                  "void main(void)\n"
+                                  "{\n"
+                                  "  ivec2 coord = ivec2(gl_GlobalInvocationID.xy);\n"
+                                  "  imageStore(u_outImage, coord, texelFetch(u_sampler, coord, 0));\n"
+                                  "}\n");
+        return;
+    }
+
     const auto writeLayout = m_testParams.writeLayout;
     const auto writeAspect = m_testParams.writeAspect;
     const auto readLayout  = m_testParams.readLayout;
@@ -1256,6 +1482,10 @@ TestInstance *NoneStageTestCase::createInstance(Context &context) const
 void NoneStageTestCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_KHR_synchronization2");
+
+    // compute variant only uses mandatory color formats and usages
+    if (m_testParams.useComputePipeline)
+        return;
 
     const auto writeAspect = m_testParams.writeAspect;
     const auto readAspect  = m_testParams.readAspect;
@@ -1437,8 +1667,27 @@ tcu::TestCaseGroup *createNoneStageTests(tcu::TestContext &testCtx)
                 noneStageTests->addChild(
                     new NoneStageTestCase(testCtx, name,
                                           {syncData.type, syncData.useGenericAccessFlags, writeData.token,
-                                           writeData.aspect, readData.token, readData.aspect}));
+                                           writeData.aspect, readData.token, readData.aspect, false}));
             }
+        }
+    }
+
+    // Compute variant. Written image has to be general to be a storage image; it is read with a sampler, which is
+    // valid from both layouts below. Cases and groups can not be mixed under one node, hence the suffix.
+    const std::vector<LayoutData> computeReadableLayoutsData{
+        {VK_IMAGE_LAYOUT_GENERAL, IMAGE_ASPECT_ALL, "general"},
+        {VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, IMAGE_ASPECT_ALL, "shader_read"},
+    };
+
+    for (const auto &syncData : synchronizationData)
+    {
+        for (const auto &readData : computeReadableLayoutsData)
+        {
+            const std::string name = syncData.casePrefix + "general_to_" + readData.name + "_compute";
+            noneStageTests->addChild(
+                new NoneStageTestCase(testCtx, name,
+                                      {syncData.type, syncData.useGenericAccessFlags, VK_IMAGE_LAYOUT_GENERAL,
+                                       IMAGE_ASPECT_ALL, readData.token, readData.aspect, true}));
         }
     }
 

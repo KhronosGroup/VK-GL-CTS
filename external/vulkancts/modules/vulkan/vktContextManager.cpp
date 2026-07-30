@@ -389,8 +389,7 @@ void DevCaps::resetQueuesForMultiQueueRunner(QueueCapabilities caps)
 
         try
         {
-            findQueueFamilyIndexWithCaps(vki, physDev, VK_QUEUE_TRANSFER_BIT,
-                                         VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+            findQueueFamilyIndexWithCaps(vki, physDev, VK_QUEUE_TRANSFER_BIT, getTransferOnlyExcludedCaps());
             hasDedicatedTransfer = true;
         }
         catch (const tcu::NotSupportedError &)
@@ -405,7 +404,7 @@ void DevCaps::resetQueuesForMultiQueueRunner(QueueCapabilities caps)
         if (hasDedicatedCompute)
             infos.push_back({VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT, 1u, 1.0f});
         if (hasDedicatedTransfer)
-            infos.push_back({VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 1u, 1.0f});
+            infos.push_back({VK_QUEUE_TRANSFER_BIT, getTransferOnlyExcludedCaps(), 1u, 1.0f});
         resetQueues(infos);
     }
     else if (caps == GRAPHICS_QUEUE)

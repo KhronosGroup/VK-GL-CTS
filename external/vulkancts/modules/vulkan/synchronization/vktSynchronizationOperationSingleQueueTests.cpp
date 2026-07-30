@@ -49,52 +49,80 @@ namespace
 using namespace vk;
 using tcu::TestLog;
 
-class BaseTestInstance : public TestInstance
+// All stage and access masks come from the operations' SyncInfo, so the queue family follows from the operations.
+// Events are the exception, vkCmdSetEvent and vkCmdWaitEvents need graphics or compute.
+QueueCapabilities getQueueCapabilities(const OperationSupport &writeOp, const OperationSupport &readOp,
+                                       const OperationContext &opContext, SyncPrimitive syncPrimitive)
+{
+    VkQueueFlags requiredFlags = writeOp.getQueueFlags(opContext) | readOp.getQueueFlags(opContext);
+
+    if (syncPrimitive == SYNC_PRIMITIVE_EVENT)
+        requiredFlags |= VK_QUEUE_COMPUTE_BIT;
+
+    if (requiredFlags & VK_QUEUE_GRAPHICS_BIT)
+        return GRAPHICS_QUEUE;
+    if (requiredFlags & VK_QUEUE_COMPUTE_BIT)
+        return COMPUTE_QUEUE;
+    return TRANSFER_QUEUE;
+}
+
+class BaseTestInstance : public MultiQueueRunnerTestInstance
 {
 public:
     BaseTestInstance(Context &context, SynchronizationType type, const ResourceDescription &resourceDesc,
                      const OperationSupport &writeOp, const OperationSupport &readOp,
-                     PipelineCacheData &pipelineCacheData)
-        : TestInstance(context)
+                     PipelineCacheData &pipelineCacheData, QueueCapabilities queueCaps)
+        : MultiQueueRunnerTestInstance(context, queueCaps)
         , m_type(type)
         , m_opContext(context, type, pipelineCacheData)
-        , m_resource(new Resource(m_opContext, resourceDesc,
-                                  writeOp.getOutResourceUsageFlags() | readOp.getInResourceUsageFlags()))
-        , m_writeOp(writeOp.build(m_opContext, *m_resource))
-        , m_readOp(readOp.build(m_opContext, *m_resource))
+        , m_resourceDesc(resourceDesc)
+        , m_writeOpSupport(writeOp)
+        , m_readOpSupport(readOp)
     {
     }
 
 protected:
+    // rebuilt per queue pass so no state carries over between families
+    void buildResources(void)
+    {
+        m_resource = de::MovePtr<Resource>(
+            new Resource(m_opContext, m_resourceDesc,
+                         m_writeOpSupport.getOutResourceUsageFlags() | m_readOpSupport.getInResourceUsageFlags()));
+        m_writeOp = m_writeOpSupport.build(m_opContext, *m_resource);
+        m_readOp  = m_readOpSupport.build(m_opContext, *m_resource);
+    }
+
     SynchronizationType m_type;
     OperationContext m_opContext;
-    const de::UniquePtr<Resource> m_resource;
-    const de::UniquePtr<Operation> m_writeOp;
-    const de::UniquePtr<Operation> m_readOp;
+    const ResourceDescription m_resourceDesc;
+    const OperationSupport &m_writeOpSupport;
+    const OperationSupport &m_readOpSupport;
+    de::MovePtr<Resource> m_resource;
+    de::MovePtr<Operation> m_writeOp;
+    de::MovePtr<Operation> m_readOp;
 };
 
 class EventTestInstance : public BaseTestInstance
 {
     bool m_maintenance9;
-    bool m_computeQueue;
 
 public:
     EventTestInstance(Context &context, SynchronizationType type, const ResourceDescription &resourceDesc,
                       const OperationSupport &writeOp, const OperationSupport &readOp,
-                      PipelineCacheData &pipelineCacheData, bool maintenance9, bool computeQueue)
-        : BaseTestInstance(context, type, resourceDesc, writeOp, readOp, pipelineCacheData)
+                      PipelineCacheData &pipelineCacheData, bool maintenance9, QueueCapabilities queueCaps)
+        : BaseTestInstance(context, type, resourceDesc, writeOp, readOp, pipelineCacheData, queueCaps)
         , m_maintenance9(maintenance9)
-        , m_computeQueue(computeQueue)
     {
     }
 
-    tcu::TestStatus iterate(void)
+    tcu::TestStatus queuePass(const QueueData &queueData) override
     {
-        const DeviceInterface &vk = m_context.getDeviceInterface();
-        const VkDevice device     = m_context.getDevice();
-        const VkQueue queue       = (m_computeQueue ? m_context.getComputeQueue() : m_context.getUniversalQueue());
-        const uint32_t queueFamilyIndex =
-            (m_computeQueue ? m_context.getComputeQueueFamilyIndex() : m_context.getUniversalQueueFamilyIndex());
+        buildResources();
+
+        const DeviceInterface &vk       = m_context.getDeviceInterface();
+        const VkDevice device           = m_context.getDevice();
+        const VkQueue queue             = queueData.handle;
+        const uint32_t queueFamilyIndex = queueData.familyIndex;
         const Unique<VkCommandPool> cmdPool(
             createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
         const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
@@ -374,17 +402,19 @@ class BarrierTestInstance : public BaseTestInstance
 public:
     BarrierTestInstance(Context &context, SynchronizationType type, const ResourceDescription &resourceDesc,
                         const OperationSupport &writeOp, const OperationSupport &readOp,
-                        PipelineCacheData &pipelineCacheData)
-        : BaseTestInstance(context, type, resourceDesc, writeOp, readOp, pipelineCacheData)
+                        PipelineCacheData &pipelineCacheData, QueueCapabilities queueCaps)
+        : BaseTestInstance(context, type, resourceDesc, writeOp, readOp, pipelineCacheData, queueCaps)
     {
     }
 
-    tcu::TestStatus iterate(void)
+    tcu::TestStatus queuePass(const QueueData &queueData) override
     {
+        buildResources();
+
         const DeviceInterface &vk       = m_context.getDeviceInterface();
         const VkDevice device           = m_context.getDevice();
-        const VkQueue queue             = m_context.getUniversalQueue();
-        const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+        const VkQueue queue             = queueData.handle;
+        const uint32_t queueFamilyIndex = queueData.familyIndex;
         const Unique<VkCommandPool> cmdPool(
             createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
         const Move<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
@@ -460,12 +490,12 @@ class BinarySemaphoreTestInstance : public BaseTestInstance
 public:
     BinarySemaphoreTestInstance(Context &context, SynchronizationType type, const ResourceDescription &resourceDesc,
                                 const OperationSupport &writeOp, const OperationSupport &readOp,
-                                PipelineCacheData &pipelineCacheData)
-        : BaseTestInstance(context, type, resourceDesc, writeOp, readOp, pipelineCacheData)
+                                PipelineCacheData &pipelineCacheData, QueueCapabilities queueCaps)
+        : BaseTestInstance(context, type, resourceDesc, writeOp, readOp, pipelineCacheData, queueCaps)
     {
     }
 
-    tcu::TestStatus iterate(void)
+    tcu::TestStatus queuePass(const QueueData &queueData) override
     {
         enum
         {
@@ -473,10 +503,12 @@ public:
             READ,
             COUNT
         };
+        buildResources();
+
         const DeviceInterface &vk       = m_context.getDeviceInterface();
         const VkDevice device           = m_context.getDevice();
-        const VkQueue queue             = m_context.getUniversalQueue();
-        const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+        const VkQueue queue             = queueData.handle;
+        const uint32_t queueFamilyIndex = queueData.familyIndex;
         const Unique<VkSemaphore> semaphore(createSemaphore(vk, device));
         const Unique<VkCommandPool> cmdPool(
             createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -734,12 +766,12 @@ class FenceTestInstance : public BaseTestInstance
 public:
     FenceTestInstance(Context &context, SynchronizationType type, const ResourceDescription &resourceDesc,
                       const OperationSupport &writeOp, const OperationSupport &readOp,
-                      PipelineCacheData &pipelineCacheData)
-        : BaseTestInstance(context, type, resourceDesc, writeOp, readOp, pipelineCacheData)
+                      PipelineCacheData &pipelineCacheData, QueueCapabilities queueCaps)
+        : BaseTestInstance(context, type, resourceDesc, writeOp, readOp, pipelineCacheData, queueCaps)
     {
     }
 
-    tcu::TestStatus iterate(void)
+    tcu::TestStatus queuePass(const QueueData &queueData) override
     {
         enum
         {
@@ -747,10 +779,12 @@ public:
             READ,
             COUNT
         };
+        buildResources();
+
         const DeviceInterface &vk       = m_context.getDeviceInterface();
         const VkDevice device           = m_context.getDevice();
-        const VkQueue queue             = m_context.getUniversalQueue();
-        const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+        const VkQueue queue             = queueData.handle;
+        const uint32_t queueFamilyIndex = queueData.familyIndex;
         const Unique<VkCommandPool> cmdPool(
             createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
         const Move<VkCommandBuffer> ptrCmdBuffer[COUNT] = {makeCommandBuffer(vk, device, *cmdPool),
@@ -822,7 +856,7 @@ public:
     SyncTestCase(tcu::TestContext &testCtx, const std::string &name, SynchronizationType type,
                  const SyncPrimitive syncPrimitive, const ResourceDescription resourceDesc, const OperationName writeOp,
                  const OperationName readOp, const bool specializedAccess, PipelineCacheData &pipelineCacheData,
-                 bool maintenance9, bool computeQueue)
+                 bool maintenance9)
         : TestCase(testCtx, name)
         , m_type(type)
         , m_resourceDesc(resourceDesc)
@@ -831,7 +865,6 @@ public:
         , m_syncPrimitive(syncPrimitive)
         , m_pipelineCacheData(pipelineCacheData)
         , m_maintenance9(maintenance9)
-        , m_computeQueue(computeQueue)
     {
         if (m_syncPrimitive == SYNC_PRIMITIVE_TIMELINE_SEMAPHORE)
         {
@@ -899,30 +932,34 @@ public:
         if (m_maintenance9)
             context.requireDeviceFunctionality("VK_KHR_maintenance9");
 
-        if (m_computeQueue)
-            context.getComputeQueue(); // Will throw NotSupportedError if not available.
-
         m_writeOp->checkSupport(context);
         m_readOp->checkSupport(context);
     }
 
     TestInstance *createInstance(Context &context) const
     {
+        // OperationContext only holds references, so this is cheap
+        const OperationContext opContext(context, m_type, m_pipelineCacheData);
+        const QueueCapabilities queueCaps = getQueueCapabilities(*m_writeOp, *m_readOp, opContext, m_syncPrimitive);
+
         switch (m_syncPrimitive)
         {
         case SYNC_PRIMITIVE_FENCE:
-            return new FenceTestInstance(context, m_type, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData);
+            return new FenceTestInstance(context, m_type, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData,
+                                         queueCaps);
         case SYNC_PRIMITIVE_BINARY_SEMAPHORE:
             return new BinarySemaphoreTestInstance(context, m_type, m_resourceDesc, *m_writeOp, *m_readOp,
-                                                   m_pipelineCacheData);
+                                                   m_pipelineCacheData, queueCaps);
         case SYNC_PRIMITIVE_TIMELINE_SEMAPHORE:
+            // the copy chain always contains a graphics operation, so this stays on the universal queue
             return new TimelineSemaphoreTestInstance(context, m_type, m_resourceDesc, m_writeOp, m_readOp,
                                                      m_pipelineCacheData);
         case SYNC_PRIMITIVE_BARRIER:
-            return new BarrierTestInstance(context, m_type, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData);
+            return new BarrierTestInstance(context, m_type, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData,
+                                           queueCaps);
         case SYNC_PRIMITIVE_EVENT:
             return new EventTestInstance(context, m_type, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData,
-                                         m_maintenance9, m_computeQueue);
+                                         m_maintenance9, queueCaps);
         }
 
         DE_ASSERT(0);
@@ -938,7 +975,6 @@ private:
     const SyncPrimitive m_syncPrimitive;
     PipelineCacheData &m_pipelineCacheData;
     const bool m_maintenance9;
-    const bool m_computeQueue;
 };
 
 class SyncEventsTestCase : public TestCase
@@ -1247,33 +1283,24 @@ void createTests(tcu::TestCaseGroup *group, TestData data)
                             if ((isSpecializedAccessFlagSupported(writeOp) || isSpecializedAccessFlagSupported(readOp)))
                             {
                                 const std::string nameSp = name + "_specialized_access_flag";
-                                opGroup->addChild(new SyncTestCase(
-                                    testCtx, nameSp, data.type, groups[groupNdx].syncPrimitive, resource, writeOp,
-                                    readOp, true, *data.pipelineCacheData, false, false));
+                                opGroup->addChild(new SyncTestCase(testCtx, nameSp, data.type,
+                                                                   groups[groupNdx].syncPrimitive, resource, writeOp,
+                                                                   readOp, true, *data.pipelineCacheData, false));
                             }
 #ifndef CTS_USES_VULKANSC
                             if (groups[groupNdx].syncPrimitive == SYNC_PRIMITIVE_EVENT)
                             {
                                 const std::string nameSp = name + "_maintenance9";
-                                opGroup->addChild(new SyncTestCase(
-                                    testCtx, nameSp, data.type, groups[groupNdx].syncPrimitive, resource, writeOp,
-                                    readOp, false, *data.pipelineCacheData, true, false));
+                                opGroup->addChild(new SyncTestCase(testCtx, nameSp, data.type,
+                                                                   groups[groupNdx].syncPrimitive, resource, writeOp,
+                                                                   readOp, false, *data.pipelineCacheData, true));
                             }
 #endif
                         }
 
-                        if (groups[groupNdx].syncPrimitive == SYNC_PRIMITIVE_EVENT && opCanRunOnCompute(writeOp) &&
-                            opCanRunOnCompute(readOp) && resourceSupportsComputeQueue(resource))
-                        {
-                            const std::string nameSp = name + "_cq";
-                            opGroup->addChild(new SyncTestCase(testCtx, nameSp, data.type,
-                                                               groups[groupNdx].syncPrimitive, resource, writeOp,
-                                                               readOp, false, *data.pipelineCacheData, false, true));
-                        }
-
                         opGroup->addChild(new SyncTestCase(testCtx, name, data.type, groups[groupNdx].syncPrimitive,
                                                            resource, writeOp, readOp, false, *data.pipelineCacheData,
-                                                           false, false));
+                                                           false));
 
                         empty = false;
                     }

@@ -487,6 +487,19 @@ int findQueueFamilyIndexWithCapsNoThrow(const InstanceInterface &vkInstance, VkP
     }
 }
 
+// Video and optical flow families also report VK_QUEUE_TRANSFER_BIT without graphics or compute, so exclude them too;
+// otherwise transfer-only work can end up on a video engine.
+VkQueueFlags getTransferOnlyExcludedCaps(void)
+{
+    VkQueueFlags excludedCaps = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+
+#ifndef CTS_USES_VULKANSC
+    excludedCaps |= VK_QUEUE_VIDEO_DECODE_BIT_KHR | VK_QUEUE_VIDEO_ENCODE_BIT_KHR | VK_QUEUE_OPTICAL_FLOW_BIT_NV;
+#endif // CTS_USES_VULKANSC
+
+    return excludedCaps;
+}
+
 static uint32_t findComputeCapableQueueFamily(const InstanceInterface &vkInstance, VkPhysicalDevice physicalDevice)
 {
     int idx = findQueueFamilyIndexWithCapsNoThrow(vkInstance, physicalDevice,
@@ -933,7 +946,7 @@ DefaultDevice::DefaultDevice(const PlatformInterface &vkPlatform, const tcu::Com
     , m_computeQueueFamilyIndex(findQueueFamilyIndexWithCapsNoThrow(*m_instanceInterface, m_physicalDevice,
                                                                     VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT))
     , m_transferQueueFamilyIndex(findQueueFamilyIndexWithCapsNoThrow(
-          *m_instanceInterface, m_physicalDevice, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT))
+          *m_instanceInterface, m_physicalDevice, VK_QUEUE_TRANSFER_BIT, getTransferOnlyExcludedCaps()))
     , m_devicePropertiesPtr(m_contextManager->getDevicePropertiesPtr())
     , m_deviceProperties(*m_devicePropertiesPtr)
     // When the default device is created, we remove the core extensions from the extension list, but those core extensions are
@@ -1896,17 +1909,28 @@ tcu::TestStatus MultiQueueRunnerTestInstance::iterate(void)
     if (m_queues.size() == 1)
         return queuePass(m_queues[0]);
 
+    bool anyQueueExecuted = false;
+    std::string skipDescription;
+
     for (const auto &queue : m_queues)
     {
         try
         {
             tcu::TestStatus result = queuePass(queue);
+            anyQueueExecuted       = true;
+
             if (result.isFail())
             {
                 resultCollector.addResult(result.getCode(), "Test failed on queue family " +
                                                                 de::toString(queue.familyIndex) +
                                                                 " with description: " + result.getDescription() + "\n");
             }
+        }
+        catch (const tcu::NotSupportedError &e)
+        {
+            // skip just the families that lack a capability the test needs, the rest still provide coverage
+            skipDescription += "Test skipped on queue family " + de::toString(queue.familyIndex) +
+                               " with description: " + e.getMessage() + "\n";
         }
         catch (const tcu::TestException &e)
         {
@@ -1917,7 +1941,10 @@ tcu::TestStatus MultiQueueRunnerTestInstance::iterate(void)
         }
     }
 
-    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+    if (!anyQueueExecuted)
+        throw tcu::NotSupportedError(skipDescription);
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage() + skipDescription);
 }
 
 std::string TestCase::getRequiredCapabilitiesId() const

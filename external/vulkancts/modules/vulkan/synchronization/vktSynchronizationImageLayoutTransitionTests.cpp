@@ -420,17 +420,17 @@ struct ComputeLayoutTransitionParams
     }
 };
 
-class ComputeLayoutTransitionInstance : public vkt::TestInstance
+class ComputeLayoutTransitionInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     ComputeLayoutTransitionInstance(Context &context, const ComputeLayoutTransitionParams &params)
-        : vkt::TestInstance(context)
+        : vkt::MultiQueueRunnerTestInstance(context, vkt::COMPUTE_QUEUE)
         , m_params(params)
     {
     }
     virtual ~ComputeLayoutTransitionInstance(void) = default;
 
-    tcu::TestStatus iterate(void) override;
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 protected:
     const ComputeLayoutTransitionParams m_params;
@@ -461,7 +461,6 @@ protected:
 void ComputeLayoutTransitionCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_KHR_synchronization2");
-    context.getComputeQueue(); // Throws if not available.
 
     if (m_params.storageUsage)
     {
@@ -517,7 +516,7 @@ void ComputeLayoutTransitionCase::initPrograms(vk::SourceCollections &dst) const
     dst.glslSources.add("comp") << glu::ComputeSource(comp.str());
 }
 
-tcu::TestStatus ComputeLayoutTransitionInstance::iterate()
+tcu::TestStatus ComputeLayoutTransitionInstance::queuePass(const vkt::QueueData &queueData)
 {
     const auto ctx           = m_context.getContextCommonData();
     const auto imageExtent   = m_params.getImageExtent();
@@ -677,7 +676,7 @@ tcu::TestStatus ComputeLayoutTransitionInstance::iterate()
 
     // Second: let's move it to the transfer dst layout on the compute queue.
     {
-        CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, m_context.getComputeQueueFamilyIndex());
+        CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, queueData.familyIndex);
         const auto cmdBuffer = *cmd.cmdBuffer;
         const auto barrier   = makeImageMemoryBarrier2(srcStageMask, srcAccessMask, dstStagesMask, dstAccessMask,
                                                        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -686,7 +685,7 @@ tcu::TestStatus ComputeLayoutTransitionInstance::iterate()
         beginCommandBuffer(ctx.vkd, cmdBuffer);
         recordImageBarrier(cmdBuffer, barrier);
         endCommandBuffer(ctx.vkd, cmdBuffer);
-        submitCommandsAndWait(ctx.vkd, ctx.device, m_context.getComputeQueue(), cmdBuffer);
+        submitCommandsAndWait(ctx.vkd, ctx.device, queueData.handle, cmdBuffer);
     }
 
     // Finally: clean it on the universal queue again and copy it out.
@@ -739,6 +738,162 @@ tcu::TestStatus ComputeLayoutTransitionInstance::iterate()
     return tcu::TestStatus::pass("Pass");
 }
 
+struct TransferLayoutTransitionParams
+{
+    // layout used between filling and reading the image back; UNDEFINED skips the transition, like the no_op test
+    VkImageLayout intermediateLayout;
+
+    VkImageUsageFlags getImageUsage() const
+    {
+        VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+        // the layout needs the matching usage even though nothing samples or renders to the image here
+        if (intermediateLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+            usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        else if (intermediateLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+            usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+
+        return usage;
+    }
+};
+
+class TransferLayoutTransitionInstance : public vkt::MultiQueueRunnerTestInstance
+{
+public:
+    TransferLayoutTransitionInstance(Context &context, const TransferLayoutTransitionParams &params)
+        : vkt::MultiQueueRunnerTestInstance(context, vkt::TRANSFER_QUEUE)
+        , m_params(params)
+    {
+    }
+    virtual ~TransferLayoutTransitionInstance(void) = default;
+
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
+
+protected:
+    const TransferLayoutTransitionParams m_params;
+};
+
+class TransferLayoutTransitionCase : public vkt::TestCase
+{
+public:
+    TransferLayoutTransitionCase(tcu::TestContext &testCtx, const std::string &name,
+                                 const TransferLayoutTransitionParams &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~TransferLayoutTransitionCase(void) = default;
+
+    void checkSupport(Context &context) const override
+    {
+        context.requireDeviceFunctionality("VK_KHR_synchronization2");
+    }
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new TransferLayoutTransitionInstance(context, m_params);
+    }
+
+protected:
+    const TransferLayoutTransitionParams m_params;
+};
+
+// Only copies and barriers, so this runs on a transfer queue family too. The image contents have to survive the
+// transition being tested.
+tcu::TestStatus TransferLayoutTransitionInstance::queuePass(const vkt::QueueData &queueData)
+{
+    const auto ctx        = m_context.getContextCommonData();
+    const auto srr        = makeDefaultImageSubresourceRange();
+    const auto extent     = makeExtent3D(WIDTH, HEIGHT, 1u);
+    const auto tcuFormat  = mapVkFormat(FORMAT);
+    const auto bufferSize = static_cast<VkDeviceSize>(WIDTH * HEIGHT * tcu::getPixelSize(tcuFormat));
+
+    const VkImageCreateInfo imageCreateInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType          sType;
+        nullptr,                             // const void*              pNext;
+        0u,                                  // VkImageCreateFlags       flags;
+        VK_IMAGE_TYPE_2D,                    // VkImageType              imageType;
+        FORMAT,                              // VkFormat                 format;
+        extent,                              // VkExtent3D               extent;
+        1u,                                  // uint32_t                 mipLevels;
+        1u,                                  // uint32_t                 arrayLayers;
+        VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits    samples;
+        VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling            tiling;
+        m_params.getImageUsage(),            // VkImageUsageFlags        usage;
+        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode;
+        0u,                                  // uint32_t                 queueFamilyIndexCount;
+        nullptr,                             // const uint32_t*          pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout            initialLayout;
+    };
+    ImageWithMemory image(ctx.vkd, ctx.device, ctx.allocator, imageCreateInfo, MemoryRequirement::Any);
+
+    BufferWithMemory srcBuffer(ctx.vkd, ctx.device, ctx.allocator,
+                               makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+                               MemoryRequirement::HostVisible);
+    BufferWithMemory dstBuffer(ctx.vkd, ctx.device, ctx.allocator,
+                               makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+                               MemoryRequirement::HostVisible);
+
+    tcu::TextureLevel referenceLevel(tcuFormat, WIDTH, HEIGHT, 1);
+    tcu::PixelBufferAccess reference = referenceLevel.getAccess();
+    tcu::fillWithComponentGradients(reference, tcu::Vec4(0.0f), tcu::Vec4(1.0f));
+    deMemcpy(srcBuffer.getAllocation().getHostPtr(), reference.getDataPtr(), static_cast<size_t>(bufferSize));
+    flushAlloc(ctx.vkd, ctx.device, srcBuffer.getAllocation());
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, queueData.familyIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const auto recordImageBarrier = [&ctx, cmdBuffer](const VkImageMemoryBarrier2 &barrier)
+    {
+        const VkDependencyInfo depInfo = makeCommonDependencyInfo(nullptr, nullptr, &barrier);
+#ifndef CTS_USES_VULKANSC
+        ctx.vkd.cmdPipelineBarrier2(cmdBuffer, &depInfo);
+#else
+        ctx.vkd.cmdPipelineBarrier2KHR(cmdBuffer, &depInfo);
+#endif // CTS_USES_VULKANSC
+    };
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    // fill the image from the staging buffer
+    recordImageBarrier(makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
+                                               VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                                               VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                               image.get(), srr));
+
+    const auto copyRegion = makeBufferImageCopy(extent, makeDefaultImageSubresourceLayers());
+    ctx.vkd.cmdCopyBufferToImage(cmdBuffer, srcBuffer.get(), image.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u,
+                                 &copyRegion);
+
+    // the transition under test, with stage and access masks a transfer queue family supports
+    const bool skipTransition     = (m_params.intermediateLayout == VK_IMAGE_LAYOUT_UNDEFINED);
+    const VkImageLayout oldLayout = (skipTransition ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    recordImageBarrier(makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                                               VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT,
+                                               oldLayout, m_params.intermediateLayout, image.get(), srr));
+
+    // read the image back, this also moves it out of the layout under test
+    const VkImageLayout layoutBeforeReadback =
+        (skipTransition ? VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL : m_params.intermediateLayout);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, image.get(), dstBuffer.get(), tcu::IVec2(WIDTH, HEIGHT),
+                      VK_ACCESS_TRANSFER_WRITE_BIT, layoutBeforeReadback, 1u, VK_IMAGE_ASPECT_COLOR_BIT,
+                      VK_IMAGE_ASPECT_COLOR_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, queueData.handle, cmdBuffer);
+
+    auto &bufferAlloc = dstBuffer.getAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, bufferAlloc);
+
+    auto &log = m_context.getTestContext().getLog();
+    const tcu::ConstPixelBufferAccess result(tcuFormat, WIDTH, HEIGHT, 1, bufferAlloc.getHostPtr());
+
+    if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, tcu::Vec4(0.0f), tcu::COMPARE_LOG_ON_ERROR))
+        return tcu::TestStatus::fail("Image contents did not survive the layout transition");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createImageLayoutTransitionTests(tcu::TestContext &testCtx)
@@ -752,6 +907,24 @@ tcu::TestCaseGroup *createImageLayoutTransitionTests(tcu::TestContext &testCtx)
         const auto testName = std::string("compute_transition") + (storageUsage ? "_storage" : "");
         const ComputeLayoutTransitionParams params{storageUsage};
         testGroup->addChild(new ComputeLayoutTransitionCase(testCtx, testName, params));
+    }
+
+    // Transfer queue variants. Color layouts only, depth/stencil copies are graphics only without maintenance10.
+    const struct
+    {
+        VkImageLayout layout;
+        const char *name;
+    } transferLayouts[] = {
+        {VK_IMAGE_LAYOUT_UNDEFINED, "transfer_no_op"},
+        {VK_IMAGE_LAYOUT_GENERAL, "transfer_transition_general"},
+        {VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, "transfer_transition_color_attachment"},
+        {VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, "transfer_transition_shader_read_only"},
+    };
+
+    for (const auto &transferLayout : transferLayouts)
+    {
+        const TransferLayoutTransitionParams params{transferLayout.layout};
+        testGroup->addChild(new TransferLayoutTransitionCase(testCtx, transferLayout.name, params));
     }
 
     return testGroup.release();
