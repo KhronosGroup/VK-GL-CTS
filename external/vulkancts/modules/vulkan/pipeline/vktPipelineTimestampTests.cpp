@@ -1455,7 +1455,7 @@ tcu::TestStatus CalibratedTimestampHostDomainTestInstance::runTest(void)
 // Verify predictable timestamps and calibration possible.
 tcu::TestStatus CalibratedTimestampCalibrationTestInstance::runTest(void)
 {
-    // Sleep time.
+    // Minimum sleep time.
     constexpr uint32_t kSleepMilliseconds = 200;
     constexpr uint32_t kSleepNanoseconds  = kSleepMilliseconds * kNanosecondsPerMillisecond;
 
@@ -1468,14 +1468,19 @@ tcu::TestStatus CalibratedTimestampCalibrationTestInstance::runTest(void)
 
             // Measure time.
             const std::vector<CalibratedTimestamp> before = getCalibratedTimestamps(domains);
+            const auto sleepStart                         = std::chrono::steady_clock::now();
             std::this_thread::sleep_for(std::chrono::nanoseconds(kSleepNanoseconds));
+            const auto sleepEnd                          = std::chrono::steady_clock::now();
             const std::vector<CalibratedTimestamp> after = getCalibratedTimestamps(domains);
+            const uint64_t actualSleepNanoseconds        = static_cast<uint64_t>(
+                std::chrono::duration_cast<std::chrono::nanoseconds>(sleepEnd - sleepStart).count());
 
             // Check device timestamp is as expected.
             const uint64_t devBeforeTicks = before[0].timestamp;
             const uint64_t devAfterTicks  = after[0].timestamp;
             const uint64_t devExpectedTicks =
-                ((devBeforeTicks + static_cast<uint64_t>(static_cast<double>(kSleepNanoseconds) / m_timestampPeriod)) &
+                ((devBeforeTicks +
+                  static_cast<uint64_t>(static_cast<double>(actualSleepNanoseconds) / m_timestampPeriod)) &
                  m_devTimestampMask);
             const uint64_t devDiffNanos =
                 getDeviceNanoseconds(absDiffWithOverflow(devAfterTicks, devExpectedTicks, m_devTimestampMask));
@@ -1493,7 +1498,7 @@ tcu::TestStatus CalibratedTimestampCalibrationTestInstance::runTest(void)
             // Check host timestamp is as expected.
             const uint64_t hostBefore   = getHostNanoseconds(before[1].timestamp);
             const uint64_t hostAfter    = getHostNanoseconds(after[1].timestamp);
-            const uint64_t hostExpected = hostBefore + kSleepNanoseconds;
+            const uint64_t hostExpected = hostBefore + actualSleepNanoseconds;
             const uint64_t hostDiff     = absDiffWithOverflow(hostAfter, hostExpected);
             const uint64_t maxHostDiff  = std::max({kDefaultToleranceNanos, before[1].deviation + after[1].deviation});
 
