@@ -427,12 +427,30 @@ bool intThresholdCompare(const tcu::ConstPixelBufferAccess &reference, const tcu
 
 int countUniqueColors(const tcu::ConstPixelBufferAccess &image)
 {
-    std::set<Vec4, LessThan<Vec4>> colors;
+    const UVec4 colorThreshold(1u);
+    std::vector<tcu::IVec4> colors;
 
     for (int y = 0; y < image.getHeight(); ++y)
         for (int x = 0; x < image.getWidth(); ++x)
         {
-            colors.insert(image.getPixel(x, y));
+            const auto color = image.getPixelInt(x, y);
+
+            bool found = false;
+            for (const auto &existingColor : colors)
+            {
+                const UVec4 diff = abs(color - existingColor).cast<uint32_t>();
+
+                if (boolAll(lessThanEqual(diff, colorThreshold)))
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                colors.push_back(color);
+            }
         }
 
     return static_cast<int>(colors.size());
