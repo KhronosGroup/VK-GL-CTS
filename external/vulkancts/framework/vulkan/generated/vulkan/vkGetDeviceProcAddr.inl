@@ -998,6 +998,15 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		// "VK_NV_fragment_shading_rate_enums
 		"vkCmdSetFragmentShadingRateEnumNV",
 
+		// "VK_NV_low_latency
+		"vkGetLatencyTimingsLegacyNV",
+		"vkGetSleepStatusLegacyNV",
+		"vkLatencySleepLegacyNV",
+		"vkQueueNotifyOutOfBandLegacyNV",
+		"vkSetLatencyMarkerLegacyNV",
+		"vkSetLatencySleepModeLegacyNV",
+		"vkShutdownLatencyDeviceLegacyNV",
+
 		// "VK_NV_low_latency2
 		"vkGetLatencyTimingsNV",
 		"vkLatencySleepNV",

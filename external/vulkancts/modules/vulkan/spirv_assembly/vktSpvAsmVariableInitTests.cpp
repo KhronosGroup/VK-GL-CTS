@@ -94,7 +94,7 @@ const string common =
     "                 %dataOutput = OpVariable %_ptr_Output StorageBuffer\n";
 
 const string globals = "        %_ptr_${type}_global = OpTypePointer Workgroup %${type}\n"
-                       "           %${type}_global_1 = OpVariable %_ptr_${type}_global Workgroup\n";
+                       "${workgroupVarDecl}";
 
 const string decorations = "${arrayStrideDecoration}"
                            "                               OpMemberDecorate %Output 0 Offset 0\n"
@@ -186,6 +186,8 @@ void addComputeVariableInitPrivateTest(tcu::TestCaseGroup *group)
 
             shaderSpec["capabilities"] = "                   OpCapability VariablePointers\n";
             shaderSpec["extensions"]   = "                   OpExtension \"SPV_KHR_variable_pointers\"\n";
+            shaderSpec["workgroupVarDecl"] =
+                "           %" + type + "_global_1 = OpVariable %_ptr_" + type + "_global Workgroup\n";
             shaderSpec["variableInit"] = "     %dataPtrPtr = OpTypePointer Private %_ptr_" + type +
                                          "_global\n"
                                          "             %f1 = OpVariable %dataPtrPtr Private %" +
@@ -215,6 +217,36 @@ void addComputeVariableInitPrivateTest(tcu::TestCaseGroup *group)
             shaderSpec["entryPoints"] += std::string(" %dataOutput %f1 %") + type + "_global_1";
             shaderSpec["extensions"] += "                   OpExtension \"SPV_KHR_workgroup_memory_explicit_layout\"\n";
             shaderSpec["capabilities"] += "                   OpCapability WorkgroupMemoryExplicitLayoutKHR\n";
+
+            // WorkgroupMemoryExplicitLayoutKHR requires the top-level type of a Workgroup
+            // OpVariable to be a Block-decorated struct whenever it carries explicit layout
+            // decorations; ${type} here (floatArray / struct) already has ArrayStride/Offset
+            // decorations from its use inside %Output, so wrap it accordingly.
+            shaderSpec["extraDecorations"] += "                         OpMemberDecorate %_wg_block_" + type +
+                                              " 0 Offset 0\n"
+                                              "                         OpDecorate %_wg_block_" +
+                                              type + " Block\n";
+            shaderSpec["workgroupVarDecl"] = "  %_wg_block_" + type + " = OpTypeStruct %" + type +
+                                             "\n"
+                                             "%_ptr_wg_block_" +
+                                             type + " = OpTypePointer Workgroup %_wg_block_" + type +
+                                             "\n"
+                                             "           %" +
+                                             type + "_global_1 = OpVariable %_ptr_wg_block_" + type + " Workgroup\n";
+            shaderSpec["variableInit"] = "     %dataPtrPtr = OpTypePointer Private %_ptr_" + type +
+                                         "_global\n"
+                                         "             %f1 = OpVariable %dataPtrPtr Private\n";
+            shaderSpec["dataLoad"] = "   %wgMemberPtr = OpAccessChain %_ptr_" + type + "_global %" + type +
+                                     "_global_1 %int_0\n"
+                                     "                   OpStore %f1 %wgMemberPtr\n"
+                                     "  %outputDataPtr = OpLoad %_ptr_" +
+                                     type +
+                                     "_global %f1\n"
+                                     "                   OpStore %wgMemberPtr %" +
+                                     type +
+                                     "_1\n"
+                                     "     %outputData = OpLoad %" +
+                                     type + " %outputDataPtr\n";
 
             spec.extensions.push_back("VK_KHR_workgroup_memory_explicit_layout");
             spec.spirvVersion = SPIRV_VERSION_1_4;

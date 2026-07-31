@@ -10,7 +10,7 @@ OpCapability VariablePointers
 OpCapability WorkgroupMemoryExplicitLayoutKHR
 OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
 OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute %main "main" %gid_var %sel_var %wg1_var %wg2_var %out_var
+OpEntryPoint GLCompute %main "main" %gid_var %sel_var %wg_var %out_var
 OpExecutionMode %main LocalSize 1 1 1
 OpDecorate %gid_var BuiltIn GlobalInvocationId
 OpMemberDecorate %inner 0 Offset 0
@@ -27,6 +27,9 @@ OpDecorate %sel_var DescriptorSet 0
 OpDecorate %sel_var Binding 0
 OpDecorate %out_var DescriptorSet 0
 OpDecorate %out_var Binding 1
+OpDecorate %wg_data ArrayStride 16
+OpMemberDecorate %wg_block 0 Offset 0
+OpDecorate %wg_block Block
 %void = OpTypeVoid
 %bool = OpTypeBool
 %int = OpTypeInt 32 0
@@ -48,8 +51,10 @@ OpDecorate %out_var Binding 1
 %ptr_ssbo_outer = OpTypePointer StorageBuffer %outer
 %sel_var = OpVariable %ptr_ssbo_block StorageBuffer
 %ptr_wg_outer = OpTypePointer Workgroup %outer
-%wg1_var = OpVariable %ptr_wg_outer Workgroup
-%wg2_var = OpVariable %ptr_wg_outer Workgroup
+%wg_data = OpTypeArray %outer %int_2
+%wg_block = OpTypeStruct %wg_data
+%ptr_wg_block = OpTypePointer Workgroup %wg_block
+%wg_var = OpVariable %ptr_wg_block Workgroup
 %out_var = OpVariable %ptr_ssbo_data_block StorageBuffer
 %inner_const0 = OpConstantComposite %inner %int_1 %int_1
 %inner_const1 = OpConstantComposite %inner %int_2 %int_2
@@ -60,12 +65,14 @@ OpDecorate %out_var Binding 1
 %entry = OpLabel
 %gid = OpLoad %int3 %gid_var
 %gid_x = OpCompositeExtract %int %gid 0
-OpStore %wg1_var %outer_const0
-OpStore %wg2_var %outer_const1
+%wg1_gep = OpAccessChain %ptr_wg_outer %wg_var %int_0 %int_0
+%wg2_gep = OpAccessChain %ptr_wg_outer %wg_var %int_0 %int_1
+OpStore %wg1_gep %outer_const0
+OpStore %wg2_gep %outer_const1
 %sel_gep = OpAccessChain %ptr_ssbo_int %sel_var %int_0 %gid_x
 %sel_val = OpLoad %int %sel_gep
 %eq_0 = OpIEqual %bool %sel_val %int_0
-%select = OpSelect %ptr_wg_outer %eq_0 %wg1_var %wg2_var
+%select = OpSelect %ptr_wg_outer %eq_0 %wg1_gep %wg2_gep
 %out_gep = OpAccessChain %ptr_ssbo_outer %out_var %int_0 %gid_x
 %ld = OpLoad %outer %select
 OpStore %out_gep %ld

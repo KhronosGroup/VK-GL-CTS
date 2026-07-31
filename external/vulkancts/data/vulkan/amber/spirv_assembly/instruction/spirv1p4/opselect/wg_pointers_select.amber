@@ -19,6 +19,7 @@ OpMemberDecorate %outer 0 Offset 0
 OpMemberDecorate %outer 1 Offset 8
 OpDecorate %rta ArrayStride 4
 OpDecorate %rta_struct ArrayStride 16
+OpDecorate %wg_data ArrayStride 16
 OpDecorate %block Block
 OpMemberDecorate %block 0 Offset 0
 OpDecorate %data_block Block
@@ -27,6 +28,8 @@ OpDecorate %sel_var DescriptorSet 0
 OpDecorate %sel_var Binding 0
 OpDecorate %out_var DescriptorSet 0
 OpDecorate %out_var Binding 1
+OpMemberDecorate %wg_block 0 Offset 0
+OpDecorate %wg_block Block
 %void = OpTypeVoid
 %bool = OpTypeBool
 %int = OpTypeInt 32 0
@@ -47,10 +50,11 @@ OpDecorate %out_var Binding 1
 %ptr_ssbo_data_block = OpTypePointer StorageBuffer %data_block
 %ptr_ssbo_outer = OpTypePointer StorageBuffer %outer
 %wg_data = OpTypeArray %outer %int_2
-%ptr_wg_data = OpTypePointer Workgroup %wg_data
+%wg_block = OpTypeStruct %wg_data
+%ptr_wg_block = OpTypePointer Workgroup %wg_block
 %ptr_wg_outer = OpTypePointer Workgroup %outer
 %sel_var = OpVariable %ptr_ssbo_block StorageBuffer
-%wg_var = OpVariable %ptr_wg_data Workgroup
+%wg_var = OpVariable %ptr_wg_block Workgroup
 %out_var = OpVariable %ptr_ssbo_data_block StorageBuffer
 %inner_const0 = OpConstantComposite %inner %int_1 %int_1
 %inner_const1 = OpConstantComposite %inner %int_2 %int_2
@@ -61,8 +65,8 @@ OpDecorate %out_var Binding 1
 %entry = OpLabel
 %gid = OpLoad %int3 %gid_var
 %gid_x = OpCompositeExtract %int %gid 0
-%wg_gep0 = OpAccessChain %ptr_wg_outer %wg_var %int_0
-%wg_gep1 = OpAccessChain %ptr_wg_outer %wg_var %int_1
+%wg_gep0 = OpAccessChain %ptr_wg_outer %wg_var %int_0 %int_0
+%wg_gep1 = OpAccessChain %ptr_wg_outer %wg_var %int_0 %int_1
 OpStore %wg_gep0 %outer_const0
 OpStore %wg_gep1 %outer_const1
 %sel_gep = OpAccessChain %ptr_ssbo_int %sel_var %int_0 %gid_x

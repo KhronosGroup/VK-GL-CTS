@@ -573,6 +573,7 @@ void addComputePointerWorkgroupMemoryVariablePointersTest(tcu::TestCaseGroup *gr
         "                          OpMemberDecorate %Output 1 Offset 256\n"
         "                          OpMemberDecorate %struct 0 Offset 0\n"
         "                          OpMemberDecorate %struct 1 Offset 256\n"
+        "                          OpDecorate %struct Block\n"
         "                          OpDecorate %arr_vec4_16 ArrayStride 16\n"
         "                          OpDecorate %arr_vec4_rt ArrayStride 16\n"
         "                          OpDecorate %Output Block\n"
