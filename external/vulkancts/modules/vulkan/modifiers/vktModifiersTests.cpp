@@ -820,7 +820,8 @@ uint32_t chooseMemoryType(uint32_t bits)
 }
 
 template <typename ModifierProps>
-bool exportImportMemoryExplicitModifiersCase(Context &context, const VkFormat format, const ModifierProps &modifier)
+bool exportImportMemoryExplicitModifiersCase(Context &context, const QueueData &queueData, const VkFormat format,
+                                             const ModifierProps &modifier)
 {
     const InstanceInterface &vki = context.getInstanceInterface();
     const DeviceInterface &vkd   = context.getDeviceInterface();
@@ -849,8 +850,8 @@ bool exportImportMemoryExplicitModifiersCase(Context &context, const VkFormat fo
     const de::UniquePtr<BufferWithMemory> outputBuffer(new BufferWithMemory(
         vkd, device, context.getDefaultAllocator(), makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
         MemoryRequirement::HostVisible));
-    Unique<VkCommandPool> cmdPool(createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
-                                                    context.getUniversalQueueFamilyIndex(), nullptr));
+    Unique<VkCommandPool> cmdPool(
+        createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueData.familyIndex, nullptr));
     vkt::ExternalMemoryUtil::NativeHandle inputImageMemFd;
 
     const tcu::TextureFormatInfo formatInfo(tcu::getTextureFormatInfo(referenceTextureFormat));
@@ -886,7 +887,8 @@ bool exportImportMemoryExplicitModifiersCase(Context &context, const VkFormat fo
 
         copies.push_back(image::makeBufferImageCopy(makeExtent3D(imageSize.x(), imageSize.y(), 1u), 1u));
         copyBufferToImage(vkd, *cmdBuffer, inputBuffer->get(), bufferSize, copies, aspect, 1, 1, *srcImage,
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                          VK_ACCESS_TRANSFER_READ_BIT);
     }
 
     Move<VkImage> dstImage(createImageWithDrmFormatModifiers(
@@ -943,29 +945,28 @@ bool exportImportMemoryExplicitModifiersCase(Context &context, const VkFormat fo
     vkd.cmdCopyImage(*cmdBuffer, *srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstImage,
                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopy);
 
-    const VkImageMemoryBarrier exportImageBarrier = {
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        nullptr,                                // const void* pNext;
-        VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
-        VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,   // VkImageLayout newLayout;
-        context.getUniversalQueueFamilyIndex(), // uint32_t dstQueueFamilyIndex;
-        VK_QUEUE_FAMILY_FOREIGN_EXT,            // uint32_t srcQueueFamilyIndex;
-        *dstImage,                              // VkImage image;
-        {
-            // VkImageSubresourceRange subresourceRange;
-            VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
-            0u,                        // uint32_t baseMipLevel;
-            1u,                        // uint32_t mipLevels;
-            0u,                        // uint32_t baseArraySlice;
-            1u                         // uint32_t arraySize;
-        }};
+    const VkImageMemoryBarrier exportImageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+                                                     nullptr,                                // const void* pNext;
+                                                     VK_ACCESS_TRANSFER_WRITE_BIT, // VkAccessFlags dstAccessMask;
+                                                     VK_ACCESS_TRANSFER_WRITE_BIT, // VkAccessFlags srcAccessMask;
+                                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // VkImageLayout oldLayout;
+                                                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // VkImageLayout newLayout;
+                                                     queueData.familyIndex,       // uint32_t dstQueueFamilyIndex;
+                                                     VK_QUEUE_FAMILY_FOREIGN_EXT, // uint32_t srcQueueFamilyIndex;
+                                                     *dstImage,                   // VkImage image;
+                                                     {
+                                                         // VkImageSubresourceRange subresourceRange;
+                                                         VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
+                                                         0u,                        // uint32_t baseMipLevel;
+                                                         1u,                        // uint32_t mipLevels;
+                                                         0u,                        // uint32_t baseArraySlice;
+                                                         1u                         // uint32_t arraySize;
+                                                     }};
 
     vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                            (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &exportImageBarrier);
     VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
-    submitCommandsAndWait(vkd, device, context.getUniversalQueue(), *cmdBuffer);
+    submitCommandsAndWait(vkd, device, queueData.handle, *cmdBuffer);
 
     VkImageDrmFormatModifierPropertiesEXT properties = getDrmFormatModifierProperties(vkd, device, *dstImage);
     TCU_CHECK(properties.drmFormatModifier == modifiers.front());
@@ -1024,34 +1025,33 @@ bool exportImportMemoryExplicitModifiersCase(Context &context, const VkFormat fo
     Unique<VkCommandBuffer> cmdBuffer2(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
     VK_CHECK(vkd.beginCommandBuffer(*cmdBuffer2, &cmdBufferBeginInfo));
 
-    const VkImageMemoryBarrier importedImageBarrier = {
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        nullptr,                                // const void* pNext;
-        VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
-        VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags dstAccessMask;
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,   // VkImageLayout newLayout;
-        VK_QUEUE_FAMILY_FOREIGN_EXT,            // uint32_t srcQueueFamilyIndex;
-        context.getUniversalQueueFamilyIndex(), // uint32_t dstQueueFamilyIndex;
-        *importedSrcImage,                      // VkImage image;
-        {
-            // VkImageSubresourceRange subresourceRange;
-            VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
-            0u,                        // uint32_t baseMipLevel;
-            1u,                        // uint32_t mipLevels;
-            0u,                        // uint32_t baseArraySlice;
-            1u                         // uint32_t arraySize;
-        }};
-    const VkImageMemoryBarrier outImageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-                                                  nullptr,                                // const void* pNext;
-                                                  VK_ACCESS_TRANSFER_READ_BIT,          // VkAccessFlags srcAccessMask;
-                                                  VK_ACCESS_TRANSFER_WRITE_BIT,         // VkAccessFlags dstAccessMask;
-                                                  VK_IMAGE_LAYOUT_UNDEFINED,            // VkImageLayout oldLayout;
-                                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // VkImageLayout newLayout;
-                                                  VK_QUEUE_FAMILY_IGNORED,              // uint32_t srcQueueFamilyIndex;
-                                                  VK_QUEUE_FAMILY_IGNORED,              // uint32_t dstQueueFamilyIndex;
-                                                  *outImage,                            // VkImage image;
-                                                  {
+    const VkImageMemoryBarrier importedImageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+                                                       nullptr,                                // const void* pNext;
+                                                       VK_ACCESS_TRANSFER_WRITE_BIT, // VkAccessFlags srcAccessMask;
+                                                       VK_ACCESS_TRANSFER_READ_BIT,  // VkAccessFlags dstAccessMask;
+                                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // VkImageLayout oldLayout;
+                                                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // VkImageLayout newLayout;
+                                                       VK_QUEUE_FAMILY_FOREIGN_EXT, // uint32_t srcQueueFamilyIndex;
+                                                       queueData.familyIndex,       // uint32_t dstQueueFamilyIndex;
+                                                       *importedSrcImage,           // VkImage image;
+                                                       {
+                                                           // VkImageSubresourceRange subresourceRange;
+                                                           VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
+                                                           0u,                        // uint32_t baseMipLevel;
+                                                           1u,                        // uint32_t mipLevels;
+                                                           0u,                        // uint32_t baseArraySlice;
+                                                           1u                         // uint32_t arraySize;
+                                                       }};
+    const VkImageMemoryBarrier outImageBarrier      = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+                                                       nullptr,                                // const void* pNext;
+                                                       VK_ACCESS_TRANSFER_READ_BIT,  // VkAccessFlags srcAccessMask;
+                                                       VK_ACCESS_TRANSFER_WRITE_BIT, // VkAccessFlags dstAccessMask;
+                                                       VK_IMAGE_LAYOUT_UNDEFINED,    // VkImageLayout oldLayout;
+                                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // VkImageLayout newLayout;
+                                                       VK_QUEUE_FAMILY_IGNORED, // uint32_t srcQueueFamilyIndex;
+                                                       VK_QUEUE_FAMILY_IGNORED, // uint32_t dstQueueFamilyIndex;
+                                                       *outImage,               // VkImage image;
+                                                       {
                                                       // VkImageSubresourceRange subresourceRange;
                                                       VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
                                                       0u,                        // uint32_t baseMipLevel;
@@ -1076,7 +1076,7 @@ bool exportImportMemoryExplicitModifiersCase(Context &context, const VkFormat fo
 
     VK_CHECK(vkd.endCommandBuffer(*cmdBuffer2));
 
-    submitCommandsAndWait(vkd, device, context.getUniversalQueue(), *cmdBuffer2);
+    submitCommandsAndWait(vkd, device, queueData.handle, *cmdBuffer2);
 
     tcu::ConstPixelBufferAccess result(referenceTextureFormat, imageSize.x(), imageSize.y(), 1,
                                        outputBuffer->getAllocation().getHostPtr());
@@ -1089,7 +1089,8 @@ bool exportImportMemoryExplicitModifiersCase(Context &context, const VkFormat fo
 }
 
 template <typename ModifierList, typename ModifierProps, VkStructureType modifierListSType>
-tcu::TestStatus exportImportMemoryExplicitModifiersCase(Context &context, const VkFormat format)
+tcu::TestStatus exportImportMemoryExplicitModifiersCase(Context &context, const QueueData &queueData,
+                                                        const VkFormat format)
 {
     const auto compatibleModifiers =
         getExportImportCompatibleModifiers<ModifierList, ModifierProps, modifierListSType>(context, format);
@@ -1099,7 +1100,7 @@ tcu::TestStatus exportImportMemoryExplicitModifiersCase(Context &context, const 
 
     for (const auto &modifier : compatibleModifiers)
     {
-        if (!exportImportMemoryExplicitModifiersCase(context, format, modifier))
+        if (!exportImportMemoryExplicitModifiersCase(context, queueData, format, modifier))
             return tcu::TestStatus::fail("Unexpected copy image result");
     }
 
@@ -1107,8 +1108,8 @@ tcu::TestStatus exportImportMemoryExplicitModifiersCase(Context &context, const 
 }
 
 template <typename ModifierProps>
-bool exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, const VkFormat format,
-                                                              const ModifierProps &modifier)
+bool exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, const QueueData &queueData,
+                                                              const VkFormat format, const ModifierProps &modifier)
 {
     const InstanceInterface &vki = context.getInstanceInterface();
     const DeviceInterface &vkd   = context.getDeviceInterface();
@@ -1141,8 +1142,8 @@ bool exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, 
         vkd, device, context.getDefaultAllocator(), makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
         MemoryRequirement::HostVisible));
 
-    Unique<VkCommandPool> cmdPool(createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
-                                                    context.getUniversalQueueFamilyIndex(), nullptr));
+    Unique<VkCommandPool> cmdPool(
+        createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueData.familyIndex, nullptr));
     vkt::ExternalMemoryUtil::NativeHandle inputImageMemFd;
 
     const tcu::TextureFormatInfo formatInfo(tcu::getTextureFormatInfo(referenceTextureFormat));
@@ -1178,7 +1179,8 @@ bool exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, 
 
         copies.push_back(image::makeBufferImageCopy(makeExtent3D(imageSize.x(), imageSize.y(), 1u), 1u));
         copyBufferToImage(vkd, *cmdBuffer, inputBuffer->get(), bufferSize, copies, aspect, 1, 1, *srcImage,
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                          VK_ACCESS_TRANSFER_READ_BIT);
     }
 
     Move<VkImage> dstImage(createImageWithDrmFormatModifiers(
@@ -1296,24 +1298,23 @@ bool exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, 
     vkd.cmdCopyImage(*cmdBuffer, *srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstSubImage,
                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopy);
 
-    const VkImageMemoryBarrier exportImageBarrier = {
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        nullptr,                                // const void* pNext;
-        VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
-        VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags srcAccessMask;
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,   // VkImageLayout newLayout;
-        context.getUniversalQueueFamilyIndex(), // uint32_t dstQueueFamilyIndex;
-        VK_QUEUE_FAMILY_FOREIGN_EXT,            // uint32_t srcQueueFamilyIndex;
-        *dstImage,                              // VkImage image;
-        {
-            // VkImageSubresourceRange subresourceRange;
-            VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
-            0u,                        // uint32_t baseMipLevel;
-            1u,                        // uint32_t mipLevels;
-            0u,                        // uint32_t baseArraySlice;
-            1u                         // uint32_t arraySize;
-        }};
+    const VkImageMemoryBarrier exportImageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+                                                     nullptr,                                // const void* pNext;
+                                                     VK_ACCESS_TRANSFER_WRITE_BIT, // VkAccessFlags dstAccessMask;
+                                                     VK_ACCESS_TRANSFER_READ_BIT,  // VkAccessFlags srcAccessMask;
+                                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // VkImageLayout oldLayout;
+                                                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // VkImageLayout newLayout;
+                                                     queueData.familyIndex,       // uint32_t dstQueueFamilyIndex;
+                                                     VK_QUEUE_FAMILY_FOREIGN_EXT, // uint32_t srcQueueFamilyIndex;
+                                                     *dstImage,                   // VkImage image;
+                                                     {
+                                                         // VkImageSubresourceRange subresourceRange;
+                                                         VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
+                                                         0u,                        // uint32_t baseMipLevel;
+                                                         1u,                        // uint32_t mipLevels;
+                                                         0u,                        // uint32_t baseArraySlice;
+                                                         1u                         // uint32_t arraySize;
+                                                     }};
 
     const VkImageMemoryBarrier exportSubImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
@@ -1322,7 +1323,7 @@ bool exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, 
         VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags srcAccessMask;
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,   // VkImageLayout newLayout;
-        context.getUniversalQueueFamilyIndex(), // uint32_t dstQueueFamilyIndex;
+        queueData.familyIndex,                  // uint32_t dstQueueFamilyIndex;
         VK_QUEUE_FAMILY_FOREIGN_EXT,            // uint32_t srcQueueFamilyIndex;
         *dstSubImage,                           // VkImage image;
         {
@@ -1341,7 +1342,7 @@ bool exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, 
                            (const VkBufferMemoryBarrier *)nullptr, 1, &exportSubImageBarrier);
 
     VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
-    submitCommandsAndWait(vkd, device, context.getUniversalQueue(), *cmdBuffer);
+    submitCommandsAndWait(vkd, device, queueData.handle, *cmdBuffer);
 
     VkImageDrmFormatModifierPropertiesEXT dstProperties = getDrmFormatModifierProperties(vkd, device, *dstImage);
     TCU_CHECK(dstProperties.drmFormatModifier == modifiers.front());
@@ -1420,24 +1421,23 @@ bool exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, 
     Unique<VkCommandBuffer> cmdBuffer2(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
     VK_CHECK(vkd.beginCommandBuffer(*cmdBuffer2, &cmdBufferBeginInfo));
 
-    const VkImageMemoryBarrier importedImageBarrier = {
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        nullptr,                                // const void* pNext;
-        VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
-        VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags dstAccessMask;
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,   // VkImageLayout newLayout;
-        VK_QUEUE_FAMILY_FOREIGN_EXT,            // uint32_t srcQueueFamilyIndex;
-        context.getUniversalQueueFamilyIndex(), // uint32_t dstQueueFamilyIndex;
-        *importedSrcImage,                      // VkImage image;
-        {
-            // VkImageSubresourceRange subresourceRange;
-            VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
-            0u,                        // uint32_t baseMipLevel;
-            1u,                        // uint32_t mipLevels;
-            0u,                        // uint32_t baseArraySlice;
-            1u                         // uint32_t arraySize;
-        }};
+    const VkImageMemoryBarrier importedImageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+                                                       nullptr,                                // const void* pNext;
+                                                       VK_ACCESS_TRANSFER_WRITE_BIT, // VkAccessFlags srcAccessMask;
+                                                       VK_ACCESS_TRANSFER_READ_BIT,  // VkAccessFlags dstAccessMask;
+                                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // VkImageLayout oldLayout;
+                                                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // VkImageLayout newLayout;
+                                                       VK_QUEUE_FAMILY_FOREIGN_EXT, // uint32_t srcQueueFamilyIndex;
+                                                       queueData.familyIndex,       // uint32_t dstQueueFamilyIndex;
+                                                       *importedSrcImage,           // VkImage image;
+                                                       {
+                                                           // VkImageSubresourceRange subresourceRange;
+                                                           VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
+                                                           0u,                        // uint32_t baseMipLevel;
+                                                           1u,                        // uint32_t mipLevels;
+                                                           0u,                        // uint32_t baseArraySlice;
+                                                           1u                         // uint32_t arraySize;
+                                                       }};
 
     const VkImageMemoryBarrier importedSubImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
@@ -1447,7 +1447,7 @@ bool exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, 
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,   // VkImageLayout newLayout;
         VK_QUEUE_FAMILY_FOREIGN_EXT,            // uint32_t srcQueueFamilyIndex;
-        context.getUniversalQueueFamilyIndex(), // uint32_t dstQueueFamilyIndex;
+        queueData.familyIndex,                  // uint32_t dstQueueFamilyIndex;
         *importedSrcSubImage,                   // VkImage image;
         {
             // VkImageSubresourceRange subresourceRange;
@@ -1521,7 +1521,7 @@ bool exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, 
 
     VK_CHECK(vkd.endCommandBuffer(*cmdBuffer2));
 
-    submitCommandsAndWait(vkd, device, context.getUniversalQueue(), *cmdBuffer2);
+    submitCommandsAndWait(vkd, device, queueData.handle, *cmdBuffer2);
 
     tcu::ConstPixelBufferAccess primeImageResult(referenceTextureFormat, imageSize.x(), imageSize.y(), 1,
                                                  outputBuffer->getAllocation().getHostPtr());
@@ -1542,7 +1542,8 @@ bool exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, 
 }
 
 template <typename ModifierList, typename ModifierProps, VkStructureType modifierListSType>
-tcu::TestStatus exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, const VkFormat format)
+tcu::TestStatus exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, const QueueData &queueData,
+                                                                         const VkFormat format)
 {
     const auto compatibleModifiers =
         getExportImportCompatibleModifiers<ModifierList, ModifierProps, modifierListSType>(context, format);
@@ -1563,7 +1564,7 @@ tcu::TestStatus exportImportMemoryExplicitModifiersWithSuballocationCase(Context
 
         try
         {
-            if (!exportImportMemoryExplicitModifiersWithSuballocationCase(context, format, modifier))
+            if (!exportImportMemoryExplicitModifiersWithSuballocationCase(context, queueData, format, modifier))
             {
                 loggedLines.push_back("Modifier " + formatModifierStr + " failed: unexpected copy image result");
                 fail = true;
@@ -1594,6 +1595,46 @@ tcu::TestStatus exportImportMemoryExplicitModifiersWithSuballocationCase(Context
         TCU_FAIL("Unexpected copy image results; check log for details");
 
     return tcu::TestStatus::pass("OK; check log for details");
+}
+
+// The export/import cases record nothing but copies and barriers, so they are legal on a transfer-only
+// family. TRANSFER_QUEUE makes them run on the universal queue plus any dedicated compute and transfer
+// families. All copies are whole-subresource at offset (0,0,0), which satisfies minImageTransferGranularity
+// both when it is (0,0,0) and when it is a block size, so no per-queue granularity guard is needed.
+class QueueRunnerInstance : public MultiQueueRunnerTestInstance
+{
+public:
+    typedef tcu::TestStatus (*Function)(Context &context, const QueueData &queueData, VkFormat format);
+
+    struct Args
+    {
+        Function func;
+        VkFormat format;
+    };
+
+    QueueRunnerInstance(Context &context, const Args &args)
+        : MultiQueueRunnerTestInstance(context, TRANSFER_QUEUE)
+        , m_args(args)
+    {
+    }
+
+    tcu::TestStatus queuePass(const QueueData &queueData) override
+    {
+        return m_args.func(m_context, queueData, m_args.format);
+    }
+
+private:
+    const Args m_args;
+};
+
+void addQueueRunnerCase(tcu::TestCaseGroup *group, const std::string &name,
+                        FunctionSupport1<VkFormat>::Function checkSupport, QueueRunnerInstance::Function testFunc,
+                        VkFormat format)
+{
+    group->addChild(
+        new InstanceFactory1WithSupport<QueueRunnerInstance, QueueRunnerInstance::Args, FunctionSupport1<VkFormat>>(
+            group->getTestContext(), name, QueueRunnerInstance::Args{testFunc, format},
+            FunctionSupport1<VkFormat>::Args(checkSupport, format)));
 }
 
 } // namespace
@@ -1709,7 +1750,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
         for (auto format : formats::basicColorFormats)
         {
             // Test exporting/importing images with modifiers
-            addFunctionCase(
+            addQueueRunnerCase(
                 group.get(), getFormatCaseName(format),
                 checkExportImportExtensions<VkDrmFormatModifierPropertiesListEXT, VkDrmFormatModifierPropertiesEXT,
                                             VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>,
@@ -1718,7 +1759,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
                                                         VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>,
                 format);
             // Test exporting/importing images with modifiers
-            addFunctionCase(
+            addQueueRunnerCase(
                 group2.get(), getFormatCaseName(format),
                 checkExportImportExtensions<VkDrmFormatModifierPropertiesList2EXT, VkDrmFormatModifierProperties2EXT,
                                             VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT>,
@@ -1740,7 +1781,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
         for (auto format : formats::basicColorFormats)
         {
             // Test exporting/importing images with modifiers
-            addFunctionCase(
+            addQueueRunnerCase(
                 group.get(), getFormatCaseName(format),
                 checkExportImportExtensions<VkDrmFormatModifierPropertiesListEXT, VkDrmFormatModifierPropertiesEXT,
                                             VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>,
@@ -1749,7 +1790,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
                     VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>,
                 format);
             // Test exporting/importing images with modifiers
-            addFunctionCase(
+            addQueueRunnerCase(
                 group2.get(), getFormatCaseName(format),
                 checkExportImportExtensions<VkDrmFormatModifierPropertiesList2EXT, VkDrmFormatModifierProperties2EXT,
                                             VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT>,
