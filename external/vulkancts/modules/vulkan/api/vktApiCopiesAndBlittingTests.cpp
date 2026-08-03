@@ -11322,7 +11322,7 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
         params.dst.image.extent    = default1dExtent;
         params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
         params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.fillMode  = FILL_MODE_WHITE;
+        params.src.image.fillMode  = FILL_MODE_RANDOM_GRAY;
         params.dst.image.fillMode  = FILL_MODE_GRADIENT;
         params.allocationKind      = testGroupParams->allocationKind;
         params.extensionFlags      = testGroupParams->extensionFlags;
@@ -11375,7 +11375,7 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
         params.dst.image.extent    = defaultRootExtent;
         params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
         params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.fillMode  = FILL_MODE_WHITE;
+        params.src.image.fillMode  = FILL_MODE_RANDOM_GRAY;
         params.dst.image.fillMode  = FILL_MODE_GRADIENT;
         params.allocationKind      = testGroupParams->allocationKind;
         params.extensionFlags      = testGroupParams->extensionFlags;
@@ -11429,7 +11429,7 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
         params.dst.image.extent    = default3dSmallExtent;
         params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
         params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.fillMode  = FILL_MODE_WHITE;
+        params.src.image.fillMode  = FILL_MODE_RANDOM_GRAY;
         params.dst.image.fillMode  = FILL_MODE_GRADIENT;
         params.allocationKind      = testGroupParams->allocationKind;
         params.extensionFlags      = testGroupParams->extensionFlags;
@@ -11486,7 +11486,7 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
         params.dst.image.extent    = default1dQuarterSquaredExtent;
         params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
         params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.fillMode  = FILL_MODE_WHITE;
+        params.src.image.fillMode  = FILL_MODE_RANDOM_GRAY;
         params.dst.image.fillMode  = FILL_MODE_GRADIENT;
         params.allocationKind      = testGroupParams->allocationKind;
         params.extensionFlags      = testGroupParams->extensionFlags;
@@ -11638,7 +11638,7 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
         params.dst.image.extent    = default1dExtent;
         params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
         params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.fillMode  = FILL_MODE_WHITE;
+        params.src.image.fillMode  = FILL_MODE_RANDOM_GRAY;
         params.dst.image.fillMode  = FILL_MODE_GRADIENT;
         params.allocationKind      = testGroupParams->allocationKind;
         params.extensionFlags      = testGroupParams->extensionFlags;
@@ -11692,7 +11692,7 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
         params.dst.image.extent    = defaultExtent;
         params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
         params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.fillMode  = FILL_MODE_WHITE;
+        params.src.image.fillMode  = FILL_MODE_RANDOM_GRAY;
         params.dst.image.fillMode  = FILL_MODE_GRADIENT;
         params.allocationKind      = testGroupParams->allocationKind;
         params.extensionFlags      = testGroupParams->extensionFlags;
@@ -11746,7 +11746,7 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
         params.dst.image.extent    = default3dExtent;
         params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
         params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-        params.src.image.fillMode  = FILL_MODE_WHITE;
+        params.src.image.fillMode  = FILL_MODE_RANDOM_GRAY;
         params.dst.image.fillMode  = FILL_MODE_GRADIENT;
         params.allocationKind      = testGroupParams->allocationKind;
         params.extensionFlags      = testGroupParams->extensionFlags;
