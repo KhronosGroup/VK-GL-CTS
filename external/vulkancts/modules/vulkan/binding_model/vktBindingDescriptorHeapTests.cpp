@@ -131,6 +131,7 @@ struct TestParams
     bool enableSparseHeap                                   = false;
     bool enableProtectedHeap                                = false;
     bool enableDeviceLocalHeap                              = false;
+    bool nonBufferAligned                                   = false;
     bool enableShader64bitIndexing                          = false;
     bool enableShaderUniformTexelBufferArrayDynamicIndexing = false;
     bool enableShaderStorageTexelBufferArrayDynamicIndexing = false;
@@ -4904,6 +4905,11 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
                                     m_descriptorHeapProperties.minSamplerHeapReservedRange;
     const VkDeviceSize samplerDescriptorHeapSize = userSamplerDescriptorsHeapSize + samplerDescriptorHeapReservedSize;
 
+    const VkDeviceSize resourceHeapBindOffset =
+        m_params.nonBufferAligned ? m_descriptorHeapProperties.resourceHeapAlignment : 0u;
+    const VkDeviceSize samplerHeapBindOffset =
+        m_params.nonBufferAligned ? m_descriptorHeapProperties.samplerHeapAlignment : 0u;
+
     const VkDeviceSize outputBufferSize   = alignUp(static_cast<VkDeviceSize>(m_params.dimension * sizeof(uint32_t)),
                                                     physDevProps.limits.minStorageBufferOffsetAlignment);
     const VkDeviceSize swizzlerBufferSize = alignUp(static_cast<VkDeviceSize>(m_params.dimension * sizeof(uint32_t)),
@@ -5036,20 +5042,21 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
     for (uint32_t queueIndex = 0; queueIndex < m_params.queueCount; ++queueIndex)
     {
         auto [resourceHeapBuffer, unprotectedResourceHeap] =
-            createDescriptorHeap(resourceDescriptorHeapSize, queueIndex);
-        auto [samplerHeapBuffer, unprotectedSamplerHeap] = createDescriptorHeap(samplerDescriptorHeapSize, queueIndex);
+            createDescriptorHeap(resourceDescriptorHeapSize + resourceHeapBindOffset, queueIndex);
+        auto [samplerHeapBuffer, unprotectedSamplerHeap] =
+            createDescriptorHeap(samplerDescriptorHeapSize + samplerHeapBindOffset, queueIndex);
 
         std::vector<char> &resourceHeapData = resourceHeapDataVectors.emplace_back(userResourceDescriptorsHeapSize);
         std::vector<char> &samplerHeapData  = samplerHeapDataVectors.emplace_back(userSamplerDescriptorsHeapSize);
 
         VkBindHeapInfoEXT resourceHeap   = initVulkanStructure();
-        resourceHeap.heapRange.address   = resourceHeapBuffer->address;
+        resourceHeap.heapRange.address   = resourceHeapBuffer->address + resourceHeapBindOffset;
         resourceHeap.heapRange.size      = resourceDescriptorHeapSize;
         resourceHeap.reservedRangeOffset = userResourceDescriptorsHeapSize;
         resourceHeap.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
 
         VkBindHeapInfoEXT samplerHeap   = initVulkanStructure();
-        samplerHeap.heapRange.address   = samplerHeapBuffer->address;
+        samplerHeap.heapRange.address   = samplerHeapBuffer->address + samplerHeapBindOffset;
         samplerHeap.heapRange.size      = samplerDescriptorHeapSize;
         samplerHeap.reservedRangeOffset = userSamplerDescriptorsHeapSize;
         samplerHeap.reservedRangeSize   = samplerDescriptorHeapReservedSize;
@@ -5108,12 +5115,12 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
         if (useStagedHeap)
         {
             VkBufferCopy resourceBufferCopy{};
-            resourceBufferCopy.dstOffset = 0;
+            resourceBufferCopy.dstOffset = resourceHeapBindOffset;
             resourceBufferCopy.srcOffset = 0;
             resourceBufferCopy.size      = userResourceDescriptorsHeapSize;
 
             VkBufferCopy samplerBufferCopy{};
-            samplerBufferCopy.dstOffset = 0;
+            samplerBufferCopy.dstOffset = samplerHeapBindOffset;
             samplerBufferCopy.srcOffset = 0;
             samplerBufferCopy.size      = userSamplerDescriptorsHeapSize;
 
@@ -5374,8 +5381,10 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
         }
         else
         {
-            resourceDstAddress = resourceHeapBuffers[queueIndex]->memory->getHostPtr();
-            samplerDstAddress  = samplerHeapBuffers[queueIndex]->memory->getHostPtr();
+            resourceDstAddress =
+                static_cast<char *>(resourceHeapBuffers[queueIndex]->memory->getHostPtr()) + resourceHeapBindOffset;
+            samplerDstAddress =
+                static_cast<char *>(samplerHeapBuffers[queueIndex]->memory->getHostPtr()) + samplerHeapBindOffset;
         }
 
         deMemcpy(resourceDstAddress, resourceHeapDataVectors[queueIndex].data(),
@@ -17407,6 +17416,13 @@ void populateCombinedImageSamplerTests(tcu::TestCaseGroup *topGroup, uint32_t ba
                 }
 
                 embeddedGroup->addChild(new DescriptorHeapTestCaseBasic(testCtx, testName, params));
+
+                if (!useEmbedded && mode.first == Mode::Basic)
+                {
+                    params.nonBufferAligned = true;
+
+                    embeddedGroup->addChild(new DescriptorHeapTestCaseBasic(testCtx, "non_buffer_aligned", params));
+                }
             }
 
             mappingSourceGroup->addChild(embeddedGroup.release());
