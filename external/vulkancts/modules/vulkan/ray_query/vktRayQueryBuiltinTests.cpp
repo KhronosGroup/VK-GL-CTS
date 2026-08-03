@@ -6077,10 +6077,12 @@ void RayQueryBuiltinTestCase::checkSupport(Context &context) const
 
 std::string RayQueryBuiltinTestCase::getRequiredCapabilitiesId() const
 {
-    std::string name = typeid(RayQueryBuiltinTestCase).name();
-
     if (m_data.testType == TEST_TYPE_NULL_ACCELERATION_STRUCTURE)
-        return (name + "_null_acceleration");
+    {
+        std::string name  = typeid(RayQueryBuiltinTestCase).name();
+        std::string stage = (m_data.stage == VK_SHADER_STAGE_COMPUTE_BIT ? "_compute" : "_graphics");
+        return (name + stage + "_null_acceleration");
+    }
 
     return DevCaps::DefDevId;
 }
