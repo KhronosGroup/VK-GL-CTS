@@ -159,7 +159,8 @@ tcu::TextureFormat NearestEdgeTestCase::toTextureFormat(deqp::Context &context, 
         {tcu::PixelFormat(10, 10, 10, 0),
          tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT_1010102_REV)},
         {tcu::PixelFormat(16, 16, 16, 16),
-         tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::HALF_FLOAT)}};
+         tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::HALF_FLOAT)},
+        {tcu::PixelFormat(16, 16, 16, 0), tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::HALF_FLOAT)}};
 
     for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(pixelFormatMap); ndx++)
     {
@@ -188,6 +189,11 @@ tcu::TextureFormat NearestEdgeTestCase::toTextureFormat(deqp::Context &context, 
                         *preferredBgra = true;
                     }
                 }
+            }
+            if (pixelFmt == tcu::PixelFormat(16, 16, 16, 16) || pixelFmt == tcu::PixelFormat(16, 16, 16, 0))
+            {
+                if (implType == GL_UNSIGNED_SHORT)
+                    return tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT16);
             }
             return pixelFormatMap[ndx].texFmt;
         }
