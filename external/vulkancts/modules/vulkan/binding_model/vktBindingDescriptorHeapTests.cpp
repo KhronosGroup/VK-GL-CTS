@@ -7296,14 +7296,6 @@ DescriptorHeapTestInstanceReservedHeap::DescriptorHeapTestInstanceReservedHeap(C
 
 tcu::TestStatus DescriptorHeapTestInstanceReservedHeap::iterate()
 {
-    if ((m_descriptorHeapProperties.minResourceHeapReservedRange == 0) &&
-        (m_descriptorHeapProperties.minSamplerHeapReservedRange == 0) &&
-        (m_descriptorHeapProperties.minSamplerHeapReservedRangeWithEmbedded == 0))
-    {
-        // Implementations without reserved heap ranges are not required to run this test.
-        return tcu::TestStatus::pass("Heap reserved ranges are zero");
-    }
-
     const InstanceInterface &vki = m_instance.getDriver();
     const DeviceInterface &vk    = m_device.getDriver();
 
