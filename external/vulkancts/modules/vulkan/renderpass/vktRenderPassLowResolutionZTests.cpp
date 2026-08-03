@@ -2555,6 +2555,56 @@ static void createChildren(tcu::TestCaseGroup *lrzTests, const SharedGroupParams
           bindPipeline(VK_COMPARE_OP_LESS), //
           draw({0, 0, 1, 1}, 0.2f),         //
           endRenderPass()}},
+
+        {"write_disable_before_boundary",
+         {beginRenderPass(VK_ATTACHMENT_LOAD_OP_CLEAR, 0.0f),
+          bindPipeline(VK_COMPARE_OP_GREATER),                                         //
+          draw({1, 0, 0, 1}, 0.1f),                                                    //
+          bindBlendPipeline(VK_COMPARE_OP_GREATER, DepthWrite::ENABLE, Blend::ENABLE), //
+          draw({0, 1, 0, 0.5f}, 0.4f, DrawMode::EVEN_ROWS),                            //
+          suspendResumeRendering(),                                                    //
+          bindPipeline(VK_COMPARE_OP_GREATER),                                         //
+          draw({0, 0, 1, 1}, 0.2f),                                                    //
+          endRenderPass()}},
+
+        // Once disabled, LRZ writes must remain disabled.
+        {"write_disable_across_two_boundaries",
+         {beginRenderPass(VK_ATTACHMENT_LOAD_OP_CLEAR, 0.0f),
+          bindPipeline(VK_COMPARE_OP_GREATER),                                         //
+          draw({1, 0, 0, 1}, 0.1f),                                                    //
+          bindBlendPipeline(VK_COMPARE_OP_GREATER, DepthWrite::ENABLE, Blend::ENABLE), //
+          draw({0, 1, 0, 0.5f}, 0.4f, DrawMode::EVEN_ROWS),                            //
+          suspendResumeRendering(),                                                    //
+          bindPipeline(VK_COMPARE_OP_GREATER),                                         //
+          draw({1, 1, 0, 1}, 0.3f, DrawMode::ODD_ROWS),                                //
+          suspendResumeRendering(),                                                    //
+          bindPipeline(VK_COMPARE_OP_GREATER),                                         //
+          draw({0, 0, 1, 1}, 0.2f),                                                    //
+          endRenderPass()}},
+
+        {"always_invalidation_before_boundary",
+         {beginRenderPass(),
+          bindPipeline(VK_COMPARE_OP_LESS),   //
+          draw({1, 0, 0, 1}, 0.5f),           //
+          bindPipeline(VK_COMPARE_OP_ALWAYS), //
+          draw({0, 1, 0, 1}, 0.8f),           //
+          suspendResumeRendering(),           //
+          bindPipeline(VK_COMPARE_OP_LESS),   //
+          draw({0, 0, 1, 1}, 0.7f),           //
+          endRenderPass()}},
+
+        // Invalidate LRZ in a segment that is both resumed and suspended.
+        {"invalidation_in_middle_segment",
+         {beginRenderPass(),
+          bindPipeline(VK_COMPARE_OP_LESS),    //
+          draw({1, 0, 0, 1}, 0.5f),            //
+          suspendResumeRendering(),            //
+          bindPipeline(VK_COMPARE_OP_GREATER), //
+          draw({0, 1, 0, 1}, 0.8f),            //
+          suspendResumeRendering(),            //
+          bindPipeline(VK_COMPARE_OP_LESS),    //
+          draw({0, 0, 1, 1}, 0.7f),            //
+          endRenderPass()}},
     };
 
     const std::vector<TestParams> secondaryVect{
@@ -2625,6 +2675,72 @@ static void createChildren(tcu::TestCaseGroup *lrzTests, const SharedGroupParams
           draw({1, 1, 0, 1}, 0.3f),         //
           draw({0, 1, 1, 1}, 0.1f),         //
           endSecondary(),                   //
+          endRenderPass()}},
+
+        {"secondary_write_disable_before_primary",
+         {beginRenderPass(VK_ATTACHMENT_LOAD_OP_CLEAR, 0.0f),
+          bindPipeline(VK_COMPARE_OP_GREATER),                                         //
+          draw({1, 0, 0, 1}, 0.1f),                                                    //
+          beginSecondary(),                                                            //
+          bindBlendPipeline(VK_COMPARE_OP_GREATER, DepthWrite::ENABLE, Blend::ENABLE), //
+          draw({0, 1, 0, 0.5f}, 0.4f, DrawMode::EVEN_ROWS),                            //
+          endSecondary(),                                                              //
+          bindPipeline(VK_COMPARE_OP_GREATER),                                         //
+          draw({0, 0, 1, 1}, 0.2f),                                                    //
+          endRenderPass()}},
+
+        {"depth_only_secondary_after_primary_color",
+         {beginRenderPass(VK_ATTACHMENT_LOAD_OP_CLEAR, 0.0f),
+          bindPipeline(VK_COMPARE_OP_GREATER),                                             //
+          draw({1, 0, 0, 1}, 0.1f),                                                        //
+          beginSecondary(),                                                                //
+          bindBlendPipeline(VK_COMPARE_OP_GREATER, DepthWrite::ENABLE, Blend::DISABLE, 0), //
+          draw({0, 1, 0, 1}, 0.4f, DrawMode::EVEN_ROWS),                                   //
+          endSecondary(),                                                                  //
+          bindPipeline(VK_COMPARE_OP_GREATER),                                             //
+          draw({0, 0, 1, 1}, 0.2f),                                                        //
+          endRenderPass()}},
+
+        {"primary_invalidation_before_secondary",
+         {beginRenderPass(),
+          bindPipeline(VK_COMPARE_OP_LESS),    //
+          draw({1, 0, 0, 1}, 0.5f),            //
+          bindPipeline(VK_COMPARE_OP_GREATER), //
+          draw({0, 1, 0, 1}, 0.8f),            //
+          beginSecondary(),                    //
+          bindPipeline(VK_COMPARE_OP_LESS),    //
+          draw({0, 0, 1, 1}, 0.7f),            //
+          endSecondary(),                      //
+          endRenderPass()}},
+
+        {"invalidation_across_two_secondaries",
+         {beginRenderPass(),
+          bindPipeline(VK_COMPARE_OP_LESS),    //
+          draw({1, 0, 0, 1}, 0.5f),            //
+          beginSecondary(),                    //
+          bindPipeline(VK_COMPARE_OP_LESS),    //
+          draw({1, 0, 1, 1}, 0.4f),            //
+          bindPipeline(VK_COMPARE_OP_GREATER), //
+          draw({0, 1, 0, 1}, 0.8f),            //
+          endSecondary(),                      //
+          beginSecondary(),                    //
+          bindPipeline(VK_COMPARE_OP_LESS),    //
+          draw({0, 0, 1, 1}, 0.7f),            //
+          endSecondary(),                      //
+          endRenderPass()}},
+
+        {"write_disable_across_two_secondaries",
+         {beginRenderPass(VK_ATTACHMENT_LOAD_OP_CLEAR, 0.0f),
+          bindPipeline(VK_COMPARE_OP_GREATER),                                         //
+          draw({1, 0, 0, 1}, 0.1f),                                                    //
+          beginSecondary(),                                                            //
+          bindBlendPipeline(VK_COMPARE_OP_GREATER, DepthWrite::ENABLE, Blend::ENABLE), //
+          draw({0, 1, 0, 0.5f}, 0.4f, DrawMode::EVEN_ROWS),                            //
+          endSecondary(),                                                              //
+          beginSecondary(),                                                            //
+          bindPipeline(VK_COMPARE_OP_GREATER),                                         //
+          draw({0, 0, 1, 1}, 0.2f),                                                    //
+          endSecondary(),                                                              //
           endRenderPass()}},
     };
 
@@ -3028,6 +3144,40 @@ static void createChildren(tcu::TestCaseGroup *lrzTests, const SharedGroupParams
              draw({0, 1, 1, 1}, 0.3f),         //
              suspendResumeRendering(),         //
              draw({0, 0, 1, 1}, 0.2f),         //
+             endRenderPass(),
+         }},
+
+        {"always_invalidation_then_load",
+         {
+             beginRenderPass(),
+             bindPipeline(VK_COMPARE_OP_LESS),   //
+             draw({1, 0, 0, 1}, 0.25f),          //
+             bindPipeline(VK_COMPARE_OP_ALWAYS), //
+             draw({0, 1, 0, 1}, 0.8f),           //
+             suspendResumeRendering(),           //
+             bindPipeline(VK_COMPARE_OP_LESS),   //
+             draw({1, 1, 0, 1}, 0.7f),           //
+             endRenderPass(),
+             beginRenderPass(VK_ATTACHMENT_LOAD_OP_LOAD), //
+             bindPipeline(VK_COMPARE_OP_LESS),            //
+             draw({0, 0, 1, 1}, 0.6f),                    //
+             endRenderPass(),
+         }},
+
+        {"middle_clear_invalidation_then_load",
+         {
+             beginRenderPass(),
+             bindPipeline(VK_COMPARE_OP_LESS), //
+             draw({1, 0, 0, 1}, 0.25f),        //
+             suspendResumeRendering(),         //
+             clearDepthAttachment(0.8f),       //
+             suspendResumeRendering(),         //
+             bindPipeline(VK_COMPARE_OP_LESS), //
+             draw({0, 1, 0, 1}, 0.7f),         //
+             endRenderPass(),
+             beginRenderPass(VK_ATTACHMENT_LOAD_OP_LOAD), //
+             bindPipeline(VK_COMPARE_OP_LESS),            //
+             draw({0, 0, 1, 1}, 0.6f),                    //
              endRenderPass(),
          }},
     };
