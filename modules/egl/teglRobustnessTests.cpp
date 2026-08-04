@@ -522,6 +522,11 @@ RenderingContext::~RenderingContext(void)
 void RenderingContext::createContext(const EGLConfig &sharedContext)
 {
     m_context = m_egl.createContext(m_display, m_config, sharedContext, m_attribList);
+
+    const EGLenum error = m_egl.getError();
+    if ((error == EGL_BAD_MATCH) || (error == EGL_BAD_CONFIG))
+        TCU_THROW(NotSupportedError, "attributes not supported");
+
     EGLU_CHECK_MSG(m_egl, "eglCreateContext()");
 }
 
