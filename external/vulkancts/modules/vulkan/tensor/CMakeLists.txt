@@ -19,12 +19,14 @@ set(DEQP_VK_TENSOR_SRCS
 	vktTensorBool.cpp
 	vktTensorRequired.cpp
 	vktTensorRequiredFormats.cpp
+	vktTensorRobustness.cpp
 	shaders/vktTensorImageAccessShaders.cpp
 	shaders/vktTensorQueryDimensionsShaders.cpp
 	shaders/vktTensorAccessShaders.cpp
 	shaders/vktTensorArrayAccessShaders.cpp
 	shaders/vktTensorShaderUtil.cpp
 	shaders/vktTensorBooleanShader.cpp
+	shaders/vktTensorRobustnessShaders.cpp
 	)
 
 PCH(DEQP_VK_TENSOR_SRCS ../pch.cpp)

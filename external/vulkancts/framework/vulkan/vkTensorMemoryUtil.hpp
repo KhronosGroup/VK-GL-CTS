@@ -44,8 +44,9 @@
 namespace vk
 {
 
-using TensorDimensions = std::vector<int64_t>;
-using TensorStrides    = std::vector<int64_t>;
+using TensorDimensions  = std::vector<int64_t>;
+using TensorStrides     = std::vector<int64_t>;
+using TensorCoordinates = std::vector<uint64_t>;
 
 const TensorStrides getTensorStrides(const TensorDimensions &dimensions, size_t formatSize, int64_t multiplier = 1);
 
@@ -164,7 +165,7 @@ public:
         , m_strides{strides.empty() ? getTensorStrides(m_dimensions, sizeof(T)) : strides}
         , m_memoryPtr{static_cast<T *>(memoryPtr)}
         , m_memorySize{0}
-        , m_packedStrides{getTensorStrides(m_dimensions, 1)}
+        , m_packedStridesInElements{getTensorStrides(m_dimensions, 1)}
         , m_elementCount{static_cast<size_t>(std::accumulate(m_dimensions.cbegin(), m_dimensions.cend(),
                                                              static_cast<int64_t>(1u), std::multiplies<int64_t>()))}
     {
@@ -330,13 +331,27 @@ public:
         return m_dimensions;
     }
 
+    TensorCoordinates getCoordinates(uint64_t index) const
+    {
+        std::vector<uint64_t> coordinates{};
+
+        // Convert 1D index to n-dimensional coordinates
+        for (auto stride : m_packedStridesInElements)
+        {
+            coordinates.push_back(index / stride);
+            index = index % stride;
+        }
+
+        return coordinates;
+    }
+
 private:
     TensorDimensions m_dimensions;
     TensorStrides m_strides;
     T *m_memoryPtr;
 
     uint64_t m_memorySize;
-    TensorStrides m_packedStrides;
+    TensorStrides m_packedStridesInElements;
     size_t m_elementCount;
 
     std::vector<T> m_data;
@@ -355,20 +370,6 @@ private:
     uint64_t getElementOffset(uint64_t index) const
     {
         return getElementOffset(getCoordinates(index));
-    }
-
-    std::vector<uint64_t> getCoordinates(uint64_t index) const
-    {
-        std::vector<uint64_t> coordinates{};
-
-        // Convert 1D index to n-dimensional coordinates
-        for (auto stride : m_packedStrides)
-        {
-            coordinates.push_back(index / stride);
-            index = index % stride;
-        }
-
-        return coordinates;
     }
 };
 

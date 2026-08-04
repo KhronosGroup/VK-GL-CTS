@@ -50,6 +50,7 @@ tcu::TestCaseGroup *createTensorImageAliasingTests(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createTensorBoolTests(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createTensorRequired(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createTensorRequiredFormatsTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createRobustnessTests(tcu::TestContext &testCtx);
 
 tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
 

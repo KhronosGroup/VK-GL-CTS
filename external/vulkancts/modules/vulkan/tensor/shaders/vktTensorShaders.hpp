@@ -29,6 +29,8 @@
 #include "../vktTestCase.hpp"
 #include "vktTensorShaderUtil.hpp"
 
+#include <array>
+
 namespace vkt
 {
 namespace tensor
@@ -54,6 +56,17 @@ std::string genShaderArrayAccess(size_t rank, AccessVariant variant, VkFormat fo
 // Booleans
 std::string genShaderBooleanOp(size_t rank, BooleanOperator op, const bool test_value);
 inline constexpr uint32_t shaderBooleanOpAccessWorkgroupSize = 128;
+
+// Tensor OoB index Read/Write
+std::string genShaderTensorOoBAccess(size_t rank, VkFormat tensorFormat, AccessVariant variant);
+inline constexpr uint32_t shaderTensorOoBAccessWorkgroupSize = 128;
+struct ShaderTensorOoBAccessLineAccess
+{
+    int32_t offsetFromEndOfLine;
+    uint32_t outOfBoundsValue;
+};
+inline constexpr std::array<ShaderTensorOoBAccessLineAccess, 4> shaderTensorOoBAccessLineAccesses{
+    {{-1, 24}, {0, 42}, {13, 0}, {65537, 84}}};
 
 } // namespace tensor
 } // namespace vkt
