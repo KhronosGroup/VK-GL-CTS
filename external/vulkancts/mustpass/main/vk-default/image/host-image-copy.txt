@@ -70714,6 +70714,12 @@ dEQP-VK.image.host_image_copy.optimal.preinitialized.transfer_src_optimal.transf
 dEQP-VK.image.host_image_copy.optimal.preinitialized.transfer_src_optimal.transfer_src_optimal.51x63x1_1.64.r16g16_uint
 dEQP-VK.image.host_image_copy.optimal.preinitialized.transfer_src_optimal.transfer_src_optimal.51x63x1_1.64.r32g32b32a32_sfloat
 dEQP-VK.image.host_image_copy.optimal.preinitialized.transfer_src_optimal.transfer_src_optimal.51x63x1_1.64.r8g8b8a8_unorm
+dEQP-VK.image.host_image_copy.padding.4_4.bc3_srgb_block
+dEQP-VK.image.host_image_copy.padding.4_4.bc5_snorm_block
+dEQP-VK.image.host_image_copy.padding.4_4.bc7_unorm_block
+dEQP-VK.image.host_image_copy.padding.64_32.bc3_srgb_block
+dEQP-VK.image.host_image_copy.padding.64_32.bc5_snorm_block
+dEQP-VK.image.host_image_copy.padding.64_32.bc7_unorm_block
 dEQP-VK.image.host_image_copy.properties.properties
 dEQP-VK.image.host_image_copy.query.linear.b8g8r8a8_sint
 dEQP-VK.image.host_image_copy.query.linear.bc5_snorm_block

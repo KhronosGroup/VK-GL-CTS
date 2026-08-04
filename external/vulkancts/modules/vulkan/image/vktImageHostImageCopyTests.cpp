@@ -3534,6 +3534,8 @@ struct SimpleHostImageCopyTestParameters
     vk::VkImageLayout dstLayout;
     uint32_t depth;
     uint32_t arrayLayers;
+    uint32_t rowPadding;
+    uint32_t heightPadding;
 };
 
 class SimpleHostImageCopyTestInstance : public vkt::TestInstance
@@ -3952,7 +3954,17 @@ tcu::TestStatus SimpleHostImageCopyTestInstance::iterate(void)
 
     const auto subresourceRange  = makeImageSubresourceRange(aspect, 0u, 1u, 0u, m_params.arrayLayers);
     const auto subresourceLayers = makeImageSubresourceLayers(aspect, 0u, 0u, m_params.arrayLayers);
-    const auto bufferSize        = getBufferSize(imageSize);
+    auto bufferSize              = getBufferSize(imageSize);
+    uint32_t memoryRowLength     = 0u;
+    uint32_t memoryImageHeight   = 0u;
+
+    if (m_params.rowPadding > 0u || m_params.heightPadding > 0u)
+    {
+        memoryRowLength             = imageSize.width + m_params.rowPadding;
+        memoryImageHeight           = imageSize.height + m_params.heightPadding;
+        const VkExtent3D memorySize = {memoryRowLength, memoryImageHeight, imageSize.depth};
+        bufferSize                  = getBufferSize(memorySize);
+    }
 
     std::vector<uint8_t> testData(bufferSize);
     std::vector<uint8_t> resultData(bufferSize);
@@ -3960,6 +3972,21 @@ tcu::TestStatus SimpleHostImageCopyTestInstance::iterate(void)
     std::vector<uint8_t> resultData2(bufferSize);
     std::vector<uint8_t> resultData2Stencil(bufferSize);
     generateData(testData.data(), bufferSize, m_params.format);
+
+    if (m_params.rowPadding > 0u || m_params.heightPadding > 0u)
+    {
+        DE_ASSERT(m_params.depth == 1u);
+        DE_ASSERT(m_params.arrayLayers == 1u);
+        const uint32_t blockHeight    = isCompressedFormat(m_params.format) ? getBlockHeight(m_params.format) : 1u;
+        const uint32_t rowExtent      = getBufferSize({memoryRowLength, blockHeight, 1u});
+        const uint32_t imageRowExtent = getBufferSize({imageSize.width, blockHeight, 1u});
+        const uint32_t sliceExtent    = getBufferSize({memoryRowLength, memoryImageHeight, 1u});
+        const uint32_t rowCount       = imageSize.height / blockHeight;
+
+        for (uint32_t row = 0u; row < rowCount; ++row)
+            deMemset(testData.data() + row * rowExtent + imageRowExtent, 0, rowExtent - imageRowExtent);
+        deMemset(testData.data() + rowCount * rowExtent, 0, sliceExtent - rowCount * rowExtent);
+    }
 
     const vk::VkImageUsageFlags usage =
         VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -4022,8 +4049,8 @@ tcu::TestStatus SimpleHostImageCopyTestInstance::iterate(void)
             VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY_EXT, // VkStructureType sType;
             nullptr,                                    // const void* pNext;
             testData.data(),                            // const void* memoryHostPointer;
-            0,                                          // uint32_t memoryRowLength;
-            0,                                          // uint32_t memoryImageHeight;
+            memoryRowLength,                            // uint32_t memoryRowLength;
+            memoryImageHeight,                          // uint32_t memoryImageHeight;
             subresourceLayers,                          // VkImageSubresourceLayers imageSubresource;
             {0, 0, 0},                                  // VkOffset3D imageOffset;
             imageSize                                   // VkExtent3D imageExtent;
@@ -4056,8 +4083,8 @@ tcu::TestStatus SimpleHostImageCopyTestInstance::iterate(void)
                                                                   **srcBuffer, 0u, bufferSize);
             const VkBufferImageCopy bufferImageCopy{
                 0u,                // VkDeviceSize bufferOffset;
-                0u,                // uint32_t bufferRowLength;
-                0u,                // uint32_t bufferImageHeight;
+                memoryRowLength,   // uint32_t bufferRowLength;
+                memoryImageHeight, // uint32_t bufferImageHeight;
                 subresourceLayers, // VkImageSubresourceLayers imageSubresource;
                 {0, 0, 0},         // VkOffset3D imageOffset;
                 imageSize          // VkExtent3D imageExtent;
@@ -4128,8 +4155,8 @@ tcu::TestStatus SimpleHostImageCopyTestInstance::iterate(void)
             VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY_EXT, // VkStructureType sType;
             nullptr,                                    // const void* pNext;
             resultData.data(),                          // void* pHostPointer;
-            0u,                                         // uint32_t memoryRowLength;
-            0u,                                         // uint32_t memoryImageHeight;
+            memoryRowLength,                            // uint32_t memoryRowLength;
+            memoryImageHeight,                          // uint32_t memoryImageHeight;
             subresourceLayers,                          // VkImageSubresourceLayers imageSubresource;
             {0, 0, 0},                                  // VkOffset3D imageOffset;
             imageSize,                                  // VkExtent3D imageExtent;
@@ -5000,12 +5027,14 @@ void testGenerator(tcu::TestCaseGroup *group)
                         continue;
 
                     SimpleHostImageCopyTestParameters params;
-                    params.format      = format;
-                    params.tiling      = tiling.tiling;
-                    params.srcLayout   = imageLayoutTest.srcLayout;
-                    params.dstLayout   = imageLayoutTest.dstLayout;
-                    params.depth       = imageParamsTest.depth;
-                    params.arrayLayers = imageParamsTest.arrayLayers;
+                    params.format        = format;
+                    params.tiling        = tiling.tiling;
+                    params.srcLayout     = imageLayoutTest.srcLayout;
+                    params.dstLayout     = imageLayoutTest.dstLayout;
+                    params.depth         = imageParamsTest.depth;
+                    params.arrayLayers   = imageParamsTest.arrayLayers;
+                    params.rowPadding    = 0u;
+                    params.heightPadding = 0u;
                     layoutGroup->addChild(new SimpleHostImageCopyTestCase(testCtx, imageParamsTest.name, params));
                 }
                 tilingGroup->addChild(layoutGroup.release());
@@ -5015,6 +5044,48 @@ void testGenerator(tcu::TestCaseGroup *group)
         simpleGroup->addChild(formatGroup.release());
     }
     group->addChild(simpleGroup.release());
+
+    constexpr struct PaddingTest
+    {
+        uint32_t rowPadding;
+        uint32_t heightPadding;
+        const char *name;
+    } paddingTests[] = {
+        {4u, 4u, "4_4"},
+        {64u, 32u, "64_32"},
+    };
+
+    const struct PaddingFormats
+    {
+        vk::VkFormat format;
+    } paddingFormats[] = {
+        {vk::VK_FORMAT_BC3_SRGB_BLOCK},
+        {vk::VK_FORMAT_BC5_SNORM_BLOCK},
+        {vk::VK_FORMAT_BC7_UNORM_BLOCK},
+    };
+
+    de::MovePtr<tcu::TestCaseGroup> paddingGroup(new tcu::TestCaseGroup(testCtx, "padding"));
+    for (const auto &paddingTest : paddingTests)
+    {
+        de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, paddingTest.name));
+        for (const auto format : paddingFormats)
+        {
+            SimpleHostImageCopyTestParameters params;
+            params.format        = format.format;
+            params.tiling        = VK_IMAGE_TILING_OPTIMAL;
+            params.srcLayout     = VK_IMAGE_LAYOUT_GENERAL;
+            params.dstLayout     = VK_IMAGE_LAYOUT_GENERAL;
+            params.depth         = 1u;
+            params.arrayLayers   = 1u;
+            params.rowPadding    = paddingTest.rowPadding;
+            params.heightPadding = paddingTest.heightPadding;
+
+            formatGroup->addChild(
+                new SimpleHostImageCopyTestCase(testCtx, getFormatShortString(format.format).c_str(), params));
+        }
+        paddingGroup->addChild(formatGroup.release());
+    }
+    group->addChild(paddingGroup.release());
 }
 
 } // namespace
