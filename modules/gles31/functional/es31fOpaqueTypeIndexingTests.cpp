@@ -44,6 +44,7 @@
 #include "deStringUtil.hpp"
 #include "deRandom.hpp"
 
+#include <set>
 #include <sstream>
 
 namespace deqp
@@ -1119,6 +1120,8 @@ AtomicCounterIndexingCase::IterateResult AtomicCounterIndexingCase::iterate(void
     const RenderContext &renderCtx = m_context.getRenderContext();
     const glw::Functions &gl       = renderCtx.getFunctions();
     const Buffer counterBuffer(renderCtx);
+    const bool allowReexecution =
+        m_shaderType == SHADERTYPE_VERTEX || m_shaderType == SHADERTYPE_TESSELLATION_EVALUATION;
 
     const int numInvocations = 32;
     const int numOps         = 4;
@@ -1190,7 +1193,7 @@ AtomicCounterIndexingCase::IterateResult AtomicCounterIndexingCase::iterate(void
     {
         vector<int> numHits(m_numCounters, 0); // Number of hits per counter.
         vector<uint32_t> counterValues(m_numCounters);
-        vector<vector<bool>> counterMasks(m_numCounters);
+        vector<std::set<uint32_t>> counterResults(m_numCounters);
 
         for (int opNdx = 0; opNdx < numOps; opNdx++)
             numHits[opIndices[opNdx]] += 1;
@@ -1218,35 +1221,30 @@ AtomicCounterIndexingCase::IterateResult AtomicCounterIndexingCase::iterate(void
         // Verify counter values
         for (int counterNdx = 0; counterNdx < m_numCounters; counterNdx++)
         {
-            const uint32_t refCount = (uint32_t)(numHits[counterNdx] * numInvocations);
-            const uint32_t resCount = counterValues[counterNdx];
+            const uint32_t refCount         = (uint32_t)(numHits[counterNdx] * numInvocations);
+            const uint32_t resCount         = counterValues[counterNdx];
+            const bool allowExtraIncrements = allowReexecution && refCount != 0;
 
-            if (refCount != resCount)
+            if (allowExtraIncrements ? resCount < refCount : resCount != refCount)
             {
                 m_testCtx.getLog() << TestLog::Message << "ERROR: atomic counter " << counterNdx << " has value "
-                                   << resCount << ", expected " << refCount << TestLog::EndMessage;
+                                   << resCount << ", expected " << (allowExtraIncrements ? ">= " : "") << refCount
+                                   << TestLog::EndMessage;
 
                 if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
                     m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid atomic counter value");
             }
         }
 
-        // Allocate bitmasks - one bit per each valid result value
-        for (int counterNdx = 0; counterNdx < m_numCounters; counterNdx++)
-        {
-            const int counterValue = numHits[counterNdx] * numInvocations;
-            counterMasks[counterNdx].resize(counterValue, false);
-        }
-
-        // Verify result values from shaders
+        // Track only observed results, not the potentially much larger counter values.
         for (int invocationNdx = 0; invocationNdx < numInvocations; invocationNdx++)
         {
             for (int opNdx = 0; opNdx < numOps; opNdx++)
             {
                 const int counterNdx    = opIndices[opNdx];
                 const uint32_t resValue = outValues[opNdx * numInvocations + invocationNdx];
-                const bool rangeOk      = de::inBounds(resValue, 0u, (uint32_t)counterMasks[counterNdx].size());
-                const bool notSeen      = rangeOk && !counterMasks[counterNdx][resValue];
+                const bool rangeOk      = resValue < counterValues[counterNdx];
+                const bool notSeen      = rangeOk && counterResults[counterNdx].insert(resValue).second;
                 const bool isOk         = rangeOk && notSeen;
 
                 if (!isOk)
@@ -1257,23 +1255,14 @@ AtomicCounterIndexingCase::IterateResult AtomicCounterIndexingCase::iterate(void
                     if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
                         m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid result value");
                 }
-                else
-                {
-                    // Mark as used - no other invocation should see this value from same counter.
-                    counterMasks[counterNdx][resValue] = true;
-                }
             }
         }
 
-        if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+        if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS && !allowReexecution)
         {
-            // Consistency check - all masks should be 1 now
+            // Unique in-range results must cover the entire counter range without re-execution.
             for (int counterNdx = 0; counterNdx < m_numCounters; counterNdx++)
-            {
-                for (vector<bool>::const_iterator i = counterMasks[counterNdx].begin();
-                     i != counterMasks[counterNdx].end(); i++)
-                    TCU_CHECK_INTERNAL(*i);
-            }
+                TCU_CHECK_INTERNAL(counterResults[counterNdx].size() == counterValues[counterNdx]);
         }
     }
 
