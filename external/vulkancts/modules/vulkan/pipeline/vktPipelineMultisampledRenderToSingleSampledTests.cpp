@@ -208,6 +208,8 @@ struct TestParams
     bool useGarbageAttachment = false;
     //!< Whether the test renders to input attachment in previous subpass or if it's initialize outside of render pass
     bool renderToAttachment;
+    //!< Whether the attachments are the first face of a cube compatible image instead of a plain 2D image
+    bool useCubemapImages;
 
     ImageMemoryType imageMemoryType; //!< Whether the test use AHB images
 
@@ -321,7 +323,7 @@ struct Image
     void allocate(const DeviceInterface &vk, const VkDevice device, const MovePtr<Allocator> &allocator,
                   const VkFormat format, const UVec2 &size, const VkSampleCountFlagBits samples,
                   const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const uint32_t layerCount,
-                  const bool usedForMSRTSS);
+                  const bool usedForMSRTSS, const bool cubemap = false);
     void allocateAhb(AndroidHardwareBufferExternalApi *ahbApi, const DeviceInterface &vk, const VkDevice device,
                      const VkFormat format, const UVec2 &size, const VkSampleCountFlagBits samples,
                      const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const uint32_t layerCount,
@@ -458,11 +460,15 @@ const VkImageUsageFlags depthStencilImageUsageFlags =
 
 Move<VkImage> makeImage(const DeviceInterface &vk, const VkDevice device, const VkFormat format, const UVec2 &size,
                         const uint32_t layerCount, const VkSampleCountFlagBits samples, const VkImageUsageFlags usage,
-                        const bool usedForMSRTSS)
+                        const bool usedForMSRTSS, const bool cubemap)
 {
-    const VkImageCreateFlags createFlags = samples == VK_SAMPLE_COUNT_1_BIT && usedForMSRTSS ?
-                                               VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT :
-                                               0;
+    VkImageCreateFlags createFlags = 0u;
+    if (samples == VK_SAMPLE_COUNT_1_BIT && usedForMSRTSS)
+        createFlags |= VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT;
+    if (cubemap)
+        createFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+
+    const uint32_t arrayLayers = cubemap ? 6u : layerCount;
 
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
@@ -472,7 +478,7 @@ Move<VkImage> makeImage(const DeviceInterface &vk, const VkDevice device, const 
         format,                              // VkFormat format;
         makeExtent3D(size.x(), size.y(), 1), // VkExtent3D extent;
         1u,                                  // uint32_t mipLevels;
-        layerCount,                          // uint32_t arrayLayers;
+        arrayLayers,                         // uint32_t arrayLayers;
         samples,                             // VkSampleCountFlagBits samples;
         VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling tiling;
         usage,                               // VkImageUsageFlags usage;
@@ -487,9 +493,9 @@ Move<VkImage> makeImage(const DeviceInterface &vk, const VkDevice device, const 
 void Image::allocate(const DeviceInterface &vk, const VkDevice device, const MovePtr<Allocator> &allocator,
                      const VkFormat format, const UVec2 &size, const VkSampleCountFlagBits samples,
                      const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const uint32_t layerCount,
-                     const bool usedForMSRTSS)
+                     const bool usedForMSRTSS, const bool cubemap)
 {
-    image = makeImage(vk, device, format, size, layerCount, samples, usage, usedForMSRTSS);
+    image = makeImage(vk, device, format, size, layerCount, samples, usage, usedForMSRTSS, cubemap);
     alloc = bindImage(vk, device, *allocator, *image, MemoryRequirement::Any);
     view  = makeView(vk, device, format, aspect, layerCount);
 }
@@ -1021,6 +1027,40 @@ void checkImageRequirements(Context &context, const VkFormat format, const VkFor
 
     if ((imageProperties.sampleCounts & requiredSampleCount) != requiredSampleCount)
         TCU_THROW(NotSupportedError, (de::toString(format) + ": sample count not supported").c_str());
+}
+
+bool checkCubeImageRequirements(Context &context, const VkFormat format, const VkImageUsageFlags requiredUsageFlags,
+                                const VkSampleCountFlagBits requiredSampleCount, std::string &msg)
+{
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
+    VkImageCreateFlags createFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    if (requiredSampleCount == VK_SAMPLE_COUNT_1_BIT)
+        createFlags |= VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT;
+
+    VkImageFormatProperties imageProperties;
+    const VkResult result =
+        vki.getPhysicalDeviceImageFormatProperties(physicalDevice, format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+                                                   requiredUsageFlags, createFlags, &imageProperties);
+
+    if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+    {
+        msg = "vkGetPhysicalDeviceImageFormatProperties() returned VK_ERROR_FORMAT_NOT_SUPPORTED after "
+              "adding VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT flag for format ";
+        msg += getFormatName(format);
+        return false;
+    }
+
+    if (imageProperties.sampleCounts == VK_SAMPLE_COUNT_1_BIT)
+    {
+        msg = "vkGetPhysicalDeviceImageFormatProperties() returned only VK_SAMPLE_COUNT_1_BIT in sampleCounts after "
+              "adding VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT flag for format ";
+        msg += getFormatName(format);
+        return false;
+    }
+
+    return true;
 }
 
 TestObjects::TestObjects(Context &contextIn)
@@ -2012,25 +2052,27 @@ void createWorkingData(Context &context, const TestParams &params, WorkingData &
         {
             wd.floatColor1.allocate(vk, device, allocator, params.floatColor1Format, wd.framebufferSize,
                                     params.numFloatColor1Samples, colorImageUsageFlags, VK_IMAGE_ASPECT_COLOR_BIT, 1,
-                                    true);
+                                    true, params.useCubemapImages);
             wd.floatColor2.allocate(vk, device, allocator, params.floatColor2Format, wd.framebufferSize,
                                     params.numFloatColor2Samples, colorImageUsageFlags, VK_IMAGE_ASPECT_COLOR_BIT, 1,
-                                    true);
+                                    true, params.useCubemapImages);
         }
         wd.intColor.allocate(vk, device, allocator, params.intColorFormat, wd.framebufferSize,
-                             params.numIntColorSamples, colorImageUsageFlags, VK_IMAGE_ASPECT_COLOR_BIT, 1, true);
+                             params.numIntColorSamples, colorImageUsageFlags, VK_IMAGE_ASPECT_COLOR_BIT, 1, true,
+                             params.useCubemapImages);
         if (params.imageMemoryType != IMAGE_MEMORY_AHB_DS)
         {
             wd.depthStencil.allocate(vk, device, allocator, params.depthStencilFormat, wd.framebufferSize,
                                      params.numDepthStencilSamples, depthStencilImageUsageFlags,
-                                     getDepthStencilAspectFlags(params.depthStencilFormat), 1, true);
+                                     getDepthStencilAspectFlags(params.depthStencilFormat), 1, true,
+                                     params.useCubemapImages);
         }
 
         if (!params.renderToAttachment)
         {
             wd.dataColor1.allocate(vk, device, allocator, params.floatColor1Format, wd.framebufferSize,
                                    params.numFloatColor1Samples, colorImageUsageFlags, VK_IMAGE_ASPECT_COLOR_BIT, 1,
-                                   true);
+                                   true, params.useCubemapImages);
             VkDeviceSize bufferSize = static_cast<VkDeviceSize>(wd.framebufferSize.x() * wd.framebufferSize.y() * 4u);
             wd.dataBuffer =
                 makeBuffer(vk, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
@@ -2688,7 +2730,9 @@ void testStart(Context &context, const TestParams &params, WorkingData &wd, Test
     de::Random rng(params.rngSeed);
 
     wd.framebufferSize = UVec2(rng.getInt(60, 80), rng.getInt(48, 64));
-    wd.renderArea      = UVec4(0, 0, wd.framebufferSize.x(), wd.framebufferSize.y());
+    if (params.useCubemapImages)
+        wd.framebufferSize.y() = wd.framebufferSize.x();
+    wd.renderArea = UVec4(0, 0, wd.framebufferSize.x(), wd.framebufferSize.y());
     if (!params.renderToWholeFramebuffer)
     {
         wd.renderArea.x() += rng.getInt(5, 15);
@@ -3588,11 +3632,43 @@ void drawBasic(Context &context, const TestParams &params, WorkingData &wd, Test
     dispatchVerifyBasic(context, params, wd, testObjects);
 }
 
+bool verifyCubemapSupport(Context &context, const TestParams &params, std::string &msg)
+{
+    if (!checkCubeImageRequirements(context, params.floatColor1Format, colorImageUsageFlags,
+                                    params.numFloatColor1Samples, msg))
+        return false;
+
+    if (!checkCubeImageRequirements(context, params.floatColor2Format, colorImageUsageFlags,
+                                    params.numFloatColor2Samples, msg))
+        return false;
+
+    if (!checkCubeImageRequirements(context, params.intColorFormat, colorImageUsageFlags, params.numIntColorSamples,
+                                    msg))
+        return false;
+
+    if (!checkCubeImageRequirements(context, params.depthStencilFormat, depthStencilImageUsageFlags,
+                                    params.numDepthStencilSamples, msg))
+        return false;
+
+    return true;
+}
+
 //! Verify multisampled rendering is done with the exact number of samples.
 tcu::TestStatus testBasic(Context &context, const TestParams params)
 {
     WorkingData wd;
     TestObjects testObjects(context);
+
+    // Verify that cubemaps have the same support as 2d images
+    if (params.useCubemapImages)
+    {
+        std::string msg;
+        if (!verifyCubemapSupport(context, params, msg))
+        {
+            return tcu::TestStatus::fail(msg);
+        }
+    }
+
     testStart(context, params, wd, testObjects);
 
     drawBasic(context, params, wd, testObjects);
@@ -6564,13 +6640,15 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                                         testParams.pipelineConstructionType = pipelineConstructionType;
                                         testParams.isMultisampledRenderToSingleSampled =
                                             isMultisampledRenderToSingleSampled;
-                                        testParams.floatColor1Format  = color1Format;
-                                        testParams.floatColor2Format  = color2Format;
-                                        testParams.intColorFormat     = color3Format;
-                                        testParams.depthStencilFormat = depthStencilFormat;
-                                        testParams.dynamicRendering   = dynamicRendering;
-                                        testParams.renderToAttachment = true;
-                                        testParams.imageMemoryType    = imageMemoryType;
+                                        testParams.floatColor1Format    = color1Format;
+                                        testParams.floatColor2Format    = color2Format;
+                                        testParams.intColorFormat       = color3Format;
+                                        testParams.depthStencilFormat   = depthStencilFormat;
+                                        testParams.dynamicRendering     = dynamicRendering;
+                                        testParams.useGarbageAttachment = false;
+                                        testParams.renderToAttachment   = true;
+                                        testParams.useCubemapImages     = false;
+                                        testParams.imageMemoryType      = imageMemoryType;
 
                                         generateBasicTest(rng, testParams, sampleCount, resolveMode,
                                                           renderToWholeFramebuffer);
@@ -6582,6 +6660,15 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                                         addFunctionCaseWithPrograms(wholeFramebufferGroup.get(), testName,
                                                                     checkRequirements, initBasicPrograms, testBasic,
                                                                     testParams);
+
+                                        if (imageMemoryType == IMAGE_MEMORY_DEFAULT &&
+                                            isMultisampledRenderToSingleSampled)
+                                        {
+                                            testParams.useCubemapImages = true;
+                                            addFunctionCaseWithPrograms(wholeFramebufferGroup.get(), "default_cubemap",
+                                                                        checkRequirements, initBasicPrograms, testBasic,
+                                                                        testParams);
+                                        }
                                     }
                                     resolveGroup->addChild(wholeFramebufferGroup.release());
                                 }
@@ -6628,13 +6715,15 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                                     testParams.pipelineConstructionType = pipelineConstructionType;
                                     testParams.isMultisampledRenderToSingleSampled =
                                         isMultisampledRenderToSingleSampled;
-                                    testParams.floatColor1Format  = color1Format;
-                                    testParams.floatColor2Format  = color2Format;
-                                    testParams.intColorFormat     = color3Format;
-                                    testParams.depthStencilFormat = depthStencilFormat;
-                                    testParams.dynamicRendering   = dynamicRendering;
-                                    testParams.renderToAttachment = true;
-                                    testParams.imageMemoryType    = IMAGE_MEMORY_DEFAULT;
+                                    testParams.floatColor1Format    = color1Format;
+                                    testParams.floatColor2Format    = color2Format;
+                                    testParams.intColorFormat       = color3Format;
+                                    testParams.depthStencilFormat   = depthStencilFormat;
+                                    testParams.dynamicRendering     = dynamicRendering;
+                                    testParams.useGarbageAttachment = false;
+                                    testParams.renderToAttachment   = true;
+                                    testParams.useCubemapImages     = false;
+                                    testParams.imageMemoryType      = IMAGE_MEMORY_DEFAULT;
 
                                     generateBasicTest(rng, testParams, sampleCount, resolveMode,
                                                       renderToWholeFramebuffer);
@@ -6698,6 +6787,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
             testParams.depthStencilFormat                  = depthStencilFormatRange[depthStencilFormatNdx];
             testParams.dynamicRendering                    = false;
             testParams.renderToAttachment                  = true;
+            testParams.useCubemapImages                    = false;
             testParams.imageMemoryType                     = IMAGE_MEMORY_DEFAULT;
 
             generateMultiPassTest(rng, testParams);
@@ -6765,6 +6855,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
             testParams.depthStencilFormat                  = depthStencilFormatRange[depthStencilFormatNdx];
             testParams.dynamicRendering                    = dynamicRendering;
             testParams.renderToAttachment                  = true;
+            testParams.useCubemapImages                    = false;
             testParams.imageMemoryType                     = IMAGE_MEMORY_DEFAULT;
 
             generateMultiPassTest(rng, testParams);
@@ -6838,13 +6929,15 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                                         testParams.pipelineConstructionType = pipelineConstructionType;
                                         testParams.isMultisampledRenderToSingleSampled =
                                             isMultisampledRenderToSingleSampled;
-                                        testParams.floatColor1Format  = color1Format;
-                                        testParams.floatColor2Format  = color2Format;
-                                        testParams.intColorFormat     = color3Format;
-                                        testParams.depthStencilFormat = depthStencilFormat;
-                                        testParams.dynamicRendering   = false;
-                                        testParams.renderToAttachment = renderToAttachment;
-                                        testParams.imageMemoryType    = IMAGE_MEMORY_DEFAULT;
+                                        testParams.floatColor1Format    = color1Format;
+                                        testParams.floatColor2Format    = color2Format;
+                                        testParams.intColorFormat       = color3Format;
+                                        testParams.depthStencilFormat   = depthStencilFormat;
+                                        testParams.dynamicRendering     = false;
+                                        testParams.useGarbageAttachment = false;
+                                        testParams.renderToAttachment   = renderToAttachment;
+                                        testParams.useCubemapImages     = false;
+                                        testParams.imageMemoryType      = IMAGE_MEMORY_DEFAULT;
 
                                         generateInputAttachmentsTest(rng, testParams, sampleCount, resolveMode,
                                                                      renderToWholeFramebuffer, renderToAttachment);
@@ -6977,6 +7070,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                         testParams.dynamicRendering                    = true;
                         testParams.resolveUsedAsInput                  = true;
                         testParams.renderToAttachment                  = true;
+                        testParams.useCubemapImages                    = false;
                         testParams.imageMemoryType                     = IMAGE_MEMORY_DEFAULT;
                         testParams.useDepthStencilInputAttachments     = true;
                         // The resolve attachments must be cleared before the render pass; there is
