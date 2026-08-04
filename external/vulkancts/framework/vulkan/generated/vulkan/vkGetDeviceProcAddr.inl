@@ -82,6 +82,20 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdDrawIndexedIndirectCountAMD",
 		"vkCmdDrawIndirectCountAMD",
 
+		// "VK_AMD_gpa_interface
+		"vkCmdBeginGpaSampleAMD",
+		"vkCmdBeginGpaSessionAMD",
+		"vkCmdCopyGpaSessionResultsAMD",
+		"vkCmdEndGpaSampleAMD",
+		"vkCmdEndGpaSessionAMD",
+		"vkCreateGpaSessionAMD",
+		"vkDestroyGpaSessionAMD",
+		"vkGetGpaDeviceClockInfoAMD",
+		"vkGetGpaSessionResultsAMD",
+		"vkGetGpaSessionStatusAMD",
+		"vkResetGpaSessionAMD",
+		"vkSetGpaDeviceClockModeAMD",
+
 		// "VK_AMD_shader_info
 		"vkGetShaderInfoAMD",
 
@@ -102,8 +116,27 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM",
 		"vkGetPhysicalDeviceQueueFamilyDataGraphPropertiesARM",
 
+		// "VK_ARM_data_graph_instruction_set_tosa
+		"vkGetPhysicalDeviceQueueFamilyDataGraphEngineOperationPropertiesARM",
+
+		// "VK_ARM_data_graph_optical_flow
+		"vkGetPhysicalDeviceQueueFamilyDataGraphEngineOperationPropertiesARM",
+		"vkGetPhysicalDeviceQueueFamilyDataGraphOpticalFlowImageFormatsARM",
+
 		// "VK_ARM_performance_counters_by_region
 		"vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM",
+
+		// "VK_ARM_scheduling_controls
+		"vkCmdSetDispatchParametersARM",
+
+		// "VK_ARM_shader_instrumentation
+		"vkClearShaderInstrumentationMetricsARM",
+		"vkCmdBeginShaderInstrumentationARM",
+		"vkCmdEndShaderInstrumentationARM",
+		"vkCreateShaderInstrumentationARM",
+		"vkDestroyShaderInstrumentationARM",
+		"vkEnumeratePhysicalDeviceShaderInstrumentationMetricsARM",
+		"vkGetShaderInstrumentationValuesARM",
 
 		// "VK_ARM_tensors
 		"vkBindTensorMemoryARM",
@@ -379,6 +412,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetSwapchainTimingPropertiesEXT",
 		"vkSetSwapchainPresentTimingQueueSizeEXT",
 
+		// "VK_EXT_primitive_restart_index
+		"vkCmdSetPrimitiveRestartIndexEXT",
+
 		// "VK_EXT_private_data
 		"vkCreatePrivateDataSlotEXT",
 		"vkDestroyPrivateDataSlotEXT",
@@ -586,6 +622,34 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCreateDescriptorUpdateTemplateKHR",
 		"vkDestroyDescriptorUpdateTemplateKHR",
 		"vkUpdateDescriptorSetWithTemplateKHR",
+
+		// "VK_KHR_device_address_commands
+		"vkCmdBeginConditionalRendering2EXT",
+		"vkCmdBeginTransformFeedback2EXT",
+		"vkCmdBindIndexBuffer3KHR",
+		"vkCmdBindTransformFeedbackBuffers2EXT",
+		"vkCmdBindVertexBuffers3KHR",
+		"vkCmdCopyImageToMemoryKHR",
+		"vkCmdCopyMemoryKHR",
+		"vkCmdCopyMemoryToImageKHR",
+		"vkCmdCopyQueryPoolResultsToMemoryKHR",
+		"vkCmdDispatchIndirect2KHR",
+		"vkCmdDrawIndexedIndirect2KHR",
+		"vkCmdDrawIndexedIndirectCount2KHR",
+		"vkCmdDrawIndirect2KHR",
+		"vkCmdDrawIndirectByteCount2EXT",
+		"vkCmdDrawIndirectCount2KHR",
+		"vkCmdDrawMeshTasksIndirect2EXT",
+		"vkCmdDrawMeshTasksIndirectCount2EXT",
+		"vkCmdEndTransformFeedback2EXT",
+		"vkCmdFillMemoryKHR",
+		"vkCmdUpdateMemoryKHR",
+		"vkCmdWriteMarkerToMemoryAMD",
+		"vkCreateAccelerationStructure2KHR",
+
+		// "VK_KHR_device_fault
+		"vkGetDeviceFaultDebugInfoKHR",
+		"vkGetDeviceFaultReportsKHR",
 
 		// "VK_KHR_device_group
 		"vkAcquireNextImage2KHR",
@@ -992,6 +1056,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		// "VK_OHOS_surface
 		"vkCreateSurfaceOHOS",
 
+		// "VK_QCOM_queue_perf_hint
+		"vkQueueSetPerfHintQCOM",
+
 		// "VK_QCOM_tile_memory_heap
 		"vkCmdBindTileMemoryQCOM",
 
@@ -1010,6 +1077,10 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		// "VK_QNX_screen_surface
 		"vkCreateScreenSurfaceQNX",
 		"vkGetPhysicalDeviceScreenPresentationSupportQNX",
+
+		// "VK_SEC_ubm_surface
+		"vkCreateUbmSurfaceSEC",
+		"vkGetPhysicalDeviceUbmPresentationSupportSEC",
 
 		// "VK_VALVE_descriptor_set_host_mapping
 		"vkGetDescriptorSetHostMappingVALVE",

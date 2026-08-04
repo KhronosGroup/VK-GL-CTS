@@ -1,3 +1,15 @@
+dEQP-VK.robustness.bind_index_buffer2.offset_100.draw_indexed.oo_index_device_address
+dEQP-VK.robustness.bind_index_buffer2.offset_100.draw_indexed.oo_none_device_address
+dEQP-VK.robustness.bind_index_buffer2.offset_100.draw_indexed.oo_size_device_address
+dEQP-VK.robustness.bind_index_buffer2.offset_100.draw_indexed_indirect.oo_index_device_address
+dEQP-VK.robustness.bind_index_buffer2.offset_100.draw_indexed_indirect.oo_none_device_address
+dEQP-VK.robustness.bind_index_buffer2.offset_100.draw_indexed_indirect.oo_size_device_address
+dEQP-VK.robustness.bind_index_buffer2.offset_100.draw_indexed_indirect_count.oo_index_device_address
+dEQP-VK.robustness.bind_index_buffer2.offset_100.draw_indexed_indirect_count.oo_none_device_address
+dEQP-VK.robustness.bind_index_buffer2.offset_100.draw_indexed_indirect_count.oo_size_device_address
+dEQP-VK.robustness.index_access.draw_indexed_2_device_address
+dEQP-VK.robustness.index_access.draw_indexed_indirect_2_device_address
+dEQP-VK.robustness.index_access.draw_indexed_indirect_count_2_device_address
 dEQP-VK.robustness.robustness2.64b_indexing.bind.notemplate.r32ui.dontunroll.nonvolatile.storage_buffer.readwrite.no_fmt_qual.len_16.samples_1.1d.comp
 dEQP-VK.robustness.robustness2.64b_indexing.bind.notemplate.r32ui.dontunroll.nonvolatile.storage_buffer.readwrite.no_fmt_qual.len_16.samples_1.1d.frag
 dEQP-VK.robustness.robustness2.64b_indexing.bind.notemplate.r32ui.dontunroll.nonvolatile.storage_buffer.readwrite.no_fmt_qual.len_16.samples_1.1d.rgen

@@ -75,6 +75,8 @@ set(DEQP_VK_API_SRCS
 	vktApiSmokeTests.hpp
 	vktApiBufferMarkerTests.cpp
 	vktApiBufferMarkerTests.hpp
+	vktApiDeviceAddressCommandsTests.cpp
+	vktApiDeviceAddressCommandsTests.hpp
 	vktApiDeviceDrmPropertiesTests.cpp
 	vktApiDeviceDrmPropertiesTests.hpp
 	vktApiExternalMemoryTests.cpp

@@ -158,6 +158,7 @@ VK_KHR_cooperative_matrix
 VK_KHR_copy_memory_indirect
 VK_KHR_deferred_host_operations
 VK_KHR_depth_clamp_zero_one
+VK_KHR_device_address_commands
 VK_KHR_display
 VK_KHR_display_swapchain
 VK_KHR_external_fence_fd
@@ -178,6 +179,7 @@ VK_KHR_maintenance9
 VK_KHR_maintenance10
 VK_KHR_mir_surface
 VK_KHR_object_refresh
+VK_KHR_opacity_micromap
 VK_KHR_performance_query
 VK_KHR_pipeline_binary
 VK_KHR_pipeline_executable_properties
@@ -446,6 +448,7 @@ def transformSingleDependsConditionToCpp(depPart, vk, checkVersionString, checkE
                      if 'VK_VERSION' in p:
                          ret = f'({checkVersionString % (p[-3], p[-1])} || {isSupportedCheck})'
                      else:
+                         isSupportedCheck = checkExtensionString % (depExtVector, p)
                          ret = f'({checkExtensionString % (depExtVector, depPart)} || {isSupportedCheck})'
         if ret is None:
             ret = "false /* UNSUPPORTED CONDITION: " + depPart + "*/"
@@ -781,19 +784,23 @@ class BasicTypesGenerator(CTSGenerator):
                 # append VkStructureType field required by vulkan_json_data.hpp
                 st.fields.append(EnumField(name = "VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV",
                                          aliases=[],
+                                         parent="VkStructureType",
                                          protect=None,
                                          negative=False,
                                          value = 1000314008,
                                          valueStr = "1000314008",
-                                         extensions=[]))
+                                         extensions=[],
+                                         extending=True))
                 # append VkStructureType field required by cts for SC
                 st.fields.append(EnumField(name = "VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO",
                                          aliases=[],
+                                         parent="VkStructureType",
                                          protect=None,
                                          negative=False,
                                          value = 16,
                                          valueStr = "16",
-                                         extensions=[]))
+                                         extensions=[],
+                                         extending=True))
 
             # <vulkan_object_issue_workaround>
             # add missing VK_STD_VIDEO_AV1_COLOR_PRIMARIES_BT_UNSPECIFIED alias

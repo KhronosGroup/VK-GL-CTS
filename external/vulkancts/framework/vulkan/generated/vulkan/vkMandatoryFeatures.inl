@@ -186,6 +186,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_descriptor_indexing"))
 		addFeatures(&physicalDeviceDescriptorIndexingFeatures);
 
+	// VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR for ext [VK_KHR_device_address_commands]
+	vk::VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR physicalDeviceDeviceAddressCommandsFeaturesKHR = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_device_address_commands"))
+		addFeatures(&physicalDeviceDeviceAddressCommandsFeaturesKHR);
+
 	// VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV for ext [VK_NV_device_generated_commands_compute]
 	vk::VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_device_generated_commands_compute"))
@@ -500,6 +505,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	vk::VkPhysicalDeviceOpacityMicromapFeaturesEXT physicalDeviceOpacityMicromapFeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_opacity_micromap"))
 		addFeatures(&physicalDeviceOpacityMicromapFeaturesEXT);
+
+	// VkPhysicalDeviceOpacityMicromapFeaturesKHR for ext [VK_KHR_opacity_micromap]
+	vk::VkPhysicalDeviceOpacityMicromapFeaturesKHR physicalDeviceOpacityMicromapFeaturesKHR = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_opacity_micromap"))
+		addFeatures(&physicalDeviceOpacityMicromapFeaturesKHR);
 
 	// VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT for ext [VK_EXT_pageable_device_local_memory]
 	vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT physicalDevicePageableDeviceLocalMemoryFeaturesEXT = initVulkanStructure();
@@ -1191,6 +1201,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("synchronization2");
 	}
 
+	// VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_device_address_commands")) )
+	{
+		if ( physicalDeviceDeviceAddressCommandsFeaturesKHR.deviceAddressCommands == VK_FALSE )
+			failMesages.push_back("deviceAddressCommands");
+	}
+
 	// VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_fragment_shader_barycentric")) )
 	{
@@ -1471,6 +1488,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("presentModeFifoLatestReady");
 	}
 
+	// VkPhysicalDeviceOpacityMicromapFeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_opacity_micromap")) )
+	{
+		if ( physicalDeviceOpacityMicromapFeaturesKHR.micromap == VK_FALSE )
+			failMesages.push_back("micromap");
+	}
+
 	// VkPhysicalDeviceMaintenance10FeaturesKHR
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_maintenance10")) )
 	{
@@ -1709,14 +1733,14 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("scalarBlockLayout");
 	}
 
-	// VkPhysicalDeviceSubgroupSizeControlFeatures
+	// VkPhysicalDeviceSubgroupSizeControlFeaturesEXT
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_subgroup_size_control")) )
 	{
 		if ( physicalDeviceSubgroupSizeControlFeatures.subgroupSizeControl == VK_FALSE )
 			failMesages.push_back("subgroupSizeControl");
 	}
 
-	// VkPhysicalDeviceSubgroupSizeControlFeatures
+	// VkPhysicalDeviceSubgroupSizeControlFeaturesEXT
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_subgroup_size_control")) )
 	{
 		if ( physicalDeviceSubgroupSizeControlFeatures.computeFullSubgroups == VK_FALSE )
@@ -1940,7 +1964,7 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("privateData");
 	}
 
-	// VkPhysicalDevicePipelineCreationCacheControlFeatures
+	// VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_pipeline_creation_cache_control")) )
 	{
 		if ( physicalDevicePipelineCreationCacheControlFeatures.pipelineCreationCacheControl == VK_FALSE )

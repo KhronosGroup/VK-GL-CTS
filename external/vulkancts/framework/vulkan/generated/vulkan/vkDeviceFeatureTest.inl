@@ -1574,6 +1574,48 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeature
 }
 
 
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDeviceAddressCommandsFeaturesKHR (Context& context)
+{
+    const PlatformInterface&                vkp = context.getPlatformInterface();
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const InstanceDriver&                    instanceDriver            (instance.getDriver());
+    const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+    const tcu::CommandLine&                    commandLine = context.getTestContext().getCommandLine();
+    bool                                    isSubProcess = context.getTestContext().getCommandLine().isSubProcess();
+
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR, deviceAddressCommands),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR*>(featuresStruct);
+        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDeviceGeneratedCommandsComputeFeaturesNV (Context& context)
 {
     const PlatformInterface&                vkp = context.getPlatformInterface();
@@ -4277,6 +4319,48 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestOpacityMicromapFeaturesEX
         };
         auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceOpacityMicromapFeaturesEXT*>(featuresStruct);
         checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestOpacityMicromapFeaturesKHR (Context& context)
+{
+    const PlatformInterface&                vkp = context.getPlatformInterface();
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const InstanceDriver&                    instanceDriver            (instance.getDriver());
+    const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+    const tcu::CommandLine&                    commandLine = context.getTestContext().getCommandLine();
+    bool                                    isSubProcess = context.getTestContext().getCommandLine().isSubProcess();
+
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceOpacityMicromapFeaturesKHR>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceOpacityMicromapFeaturesKHR, micromap),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceOpacityMicromapFeaturesKHR*>(featuresStruct);
+        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
     }
 
     if (numErrors > 0)
@@ -8655,6 +8739,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "descriptor_buffer_features_ext", createDeviceWithUnsupportedFeaturesTestDescriptorBufferFeaturesEXT);
 	addFunctionCase(testGroup, "descriptor_buffer_tensor_features_arm", createDeviceWithUnsupportedFeaturesTestDescriptorBufferTensorFeaturesARM);
 	addFunctionCase(testGroup, "descriptor_indexing_features", createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeatures);
+	addFunctionCase(testGroup, "device_address_commands_features_khr", createDeviceWithUnsupportedFeaturesTestDeviceAddressCommandsFeaturesKHR);
 	addFunctionCase(testGroup, "device_generated_commands_compute_features_nv", createDeviceWithUnsupportedFeaturesTestDeviceGeneratedCommandsComputeFeaturesNV);
 	addFunctionCase(testGroup, "device_generated_commands_features_ext", createDeviceWithUnsupportedFeaturesTestDeviceGeneratedCommandsFeaturesEXT);
 	addFunctionCase(testGroup, "device_generated_commands_features_nv", createDeviceWithUnsupportedFeaturesTestDeviceGeneratedCommandsFeaturesNV);
@@ -8718,6 +8803,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "nested_command_buffer_features_ext", createDeviceWithUnsupportedFeaturesTestNestedCommandBufferFeaturesEXT);
 	addFunctionCase(testGroup, "non_seamless_cube_map_features_ext", createDeviceWithUnsupportedFeaturesTestNonSeamlessCubeMapFeaturesEXT);
 	addFunctionCase(testGroup, "opacity_micromap_features_ext", createDeviceWithUnsupportedFeaturesTestOpacityMicromapFeaturesEXT);
+	addFunctionCase(testGroup, "opacity_micromap_features_khr", createDeviceWithUnsupportedFeaturesTestOpacityMicromapFeaturesKHR);
 	addFunctionCase(testGroup, "pageable_device_local_memory_features_ext", createDeviceWithUnsupportedFeaturesTestPageableDeviceLocalMemoryFeaturesEXT);
 	addFunctionCase(testGroup, "performance_counters_by_region_features_arm", createDeviceWithUnsupportedFeaturesTestPerformanceCountersByRegionFeaturesARM);
 	addFunctionCase(testGroup, "performance_query_features_khr", createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesKHR);

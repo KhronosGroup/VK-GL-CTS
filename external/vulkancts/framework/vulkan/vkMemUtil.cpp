@@ -356,7 +356,7 @@ MovePtr<Allocation> allocateExtended(const InstanceInterface &vki, const DeviceI
 {
     const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(vki, physDevice);
     const uint32_t memoryTypeNdx = selectMatchingMemoryType(memoryProperties, memReqs.memoryTypeBits, requirement);
-    const VkMemoryAllocateInfo allocInfo = {
+    const VkMemoryAllocateInfo allocInfo{
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, //    VkStructureType    sType
         pNext,                                  //    const void*        pNext
         memReqs.size,                           //    VkDeviceSize    allocationSize

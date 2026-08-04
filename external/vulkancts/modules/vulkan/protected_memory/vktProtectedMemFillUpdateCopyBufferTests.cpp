@@ -61,28 +61,13 @@ enum CmdType
     COPY_BUFFER,
 };
 
-static const char *getTestTypeName(CmdType cmdType)
-{
-    switch (cmdType)
-    {
-    case FILL_BUFFER:
-        return "Fill buffer";
-    case UPDATE_BUFFER:
-        return "Update buffer";
-    case COPY_BUFFER:
-        return "Copy buffer";
-    default:
-        DE_ASSERT(false);
-        return nullptr;
-    }
-}
-
 template <typename T>
 class FillUpdateCopyBufferTestInstance : public ProtectedTestInstance
 {
 public:
     FillUpdateCopyBufferTestInstance(Context &ctx, const uint32_t fillValue, const BufferValidator<T> &validator,
-                                     CmdType cmdType, const CmdBufferType cmdBufferType);
+                                     CmdType cmdType, const CmdBufferType cmdBufferType,
+                                     bool useDeviceAddressCommands = false);
     virtual tcu::TestStatus iterate(void);
 
 private:
@@ -90,6 +75,7 @@ private:
     const BufferValidator<T> &m_validator;
     CmdType m_cmdType;
     const CmdBufferType m_cmdBufferType;
+    const bool m_useDeviceAddressCommands;
 };
 
 template <typename T>
@@ -98,12 +84,13 @@ class FillUpdateCopyBufferTestCase : public TestCase
 public:
     FillUpdateCopyBufferTestCase(tcu::TestContext &testCtx, const std::string &name, uint32_t fillValue,
                                  ValidationData<T> data, CmdType cmdType, CmdBufferType cmdBufferType,
-                                 vk::VkFormat format)
+                                 vk::VkFormat format, bool useDeviceAddressCommands = false)
         : TestCase(testCtx, name)
         , m_fillValue(fillValue)
         , m_validator(data, format)
         , m_cmdType(cmdType)
         , m_cmdBufferType(cmdBufferType)
+        , m_useDeviceAddressCommands(useDeviceAddressCommands)
     {
     }
 
@@ -112,7 +99,8 @@ public:
     }
     virtual TestInstance *createInstance(Context &ctx) const
     {
-        return new FillUpdateCopyBufferTestInstance<T>(ctx, m_fillValue, m_validator, m_cmdType, m_cmdBufferType);
+        return new FillUpdateCopyBufferTestInstance<T>(ctx, m_fillValue, m_validator, m_cmdType, m_cmdBufferType,
+                                                       m_useDeviceAddressCommands);
     }
     virtual void initPrograms(vk::SourceCollections &programCollection) const
     {
@@ -121,6 +109,8 @@ public:
     virtual void checkSupport(Context &context) const
     {
         checkProtectedQueueSupport(context);
+        if (m_useDeviceAddressCommands)
+            context.requireDeviceFunctionality("VK_KHR_device_address_commands");
 #ifdef CTS_USES_VULKANSC
         if (m_cmdBufferType == CMD_BUFFER_SECONDARY &&
             context.getDeviceVulkanSC10Properties().secondaryCommandBufferNullOrImagelessFramebuffer == VK_FALSE)
@@ -133,18 +123,21 @@ private:
     BufferValidator<T> m_validator;
     CmdType m_cmdType;
     CmdBufferType m_cmdBufferType;
+    const bool m_useDeviceAddressCommands;
 };
 
 template <typename T>
 FillUpdateCopyBufferTestInstance<T>::FillUpdateCopyBufferTestInstance(Context &ctx, const uint32_t fillValue,
                                                                       const BufferValidator<T> &validator,
                                                                       CmdType cmdType,
-                                                                      const CmdBufferType cmdBufferType)
+                                                                      const CmdBufferType cmdBufferType,
+                                                                      bool useDeviceAddressCommands)
     : ProtectedTestInstance(ctx)
     , m_fillValue(fillValue)
     , m_validator(validator)
     , m_cmdType(cmdType)
     , m_cmdBufferType(cmdBufferType)
+    , m_useDeviceAddressCommands(useDeviceAddressCommands)
 {
 }
 
@@ -158,16 +151,29 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
     const uint32_t queueFamilyIndex = ctx.getQueueFamilyIndex();
     const uint32_t bufferSize       = (uint32_t)(BUFFER_SIZE * sizeof(uint32_t));
 
-    de::MovePtr<vk::BufferWithMemory> dstBuffer(
-        makeBuffer(ctx, PROTECTION_ENABLED, queueFamilyIndex, bufferSize,
-                   vk::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                   vk::MemoryRequirement::Protected));
+    vk::VkBufferUsageFlags srcUsage =
+        vk::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    if (m_useDeviceAddressCommands)
+        srcUsage |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    vk::VkBufferUsageFlags dstUsage = srcUsage | vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
-    de::MovePtr<vk::BufferWithMemory> srcBuffer(makeBuffer(ctx, PROTECTION_ENABLED, queueFamilyIndex, bufferSize,
-                                                           vk::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT |
-                                                               vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                                                               vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                                           vk::MemoryRequirement::Protected));
+    de::MovePtr<vk::BufferWithMemory> dstBuffer(makeBuffer(
+        ctx, PROTECTION_ENABLED, queueFamilyIndex, bufferSize, srcUsage,
+        m_useDeviceAddressCommands ? vk::MemoryRequirement::Protected | vk::MemoryRequirement::DeviceAddress :
+                                     vk::MemoryRequirement::Protected));
+
+    de::MovePtr<vk::BufferWithMemory> srcBuffer(makeBuffer(
+        ctx, PROTECTION_ENABLED, queueFamilyIndex, bufferSize, dstUsage,
+        m_useDeviceAddressCommands ? vk::MemoryRequirement::Protected | vk::MemoryRequirement::DeviceAddress :
+                                     vk::MemoryRequirement::Protected));
+
+    [[maybe_unused]] vk::VkDeviceAddress srcDevicceAddress = 0ull;
+    [[maybe_unused]] vk::VkDeviceAddress dstDevicceAddress = 0ull;
+    if (m_useDeviceAddressCommands)
+    {
+        srcDevicceAddress = getBufferDeviceAddress(vk, device, **srcBuffer);
+        dstDevicceAddress = getBufferDeviceAddress(vk, device, **dstBuffer);
+    }
 
     vk::Unique<vk::VkCommandPool> cmdPool(makeCommandPool(vk, device, PROTECTION_ENABLED, queueFamilyIndex));
     vk::Unique<vk::VkCommandBuffer> cmdBuffer(
@@ -200,7 +206,15 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
     case FILL_BUFFER:
     {
         // Fill buffer
-        vk.cmdFillBuffer(targetCmdBuffer, **dstBuffer, 0u, VK_WHOLE_SIZE, m_fillValue);
+#ifndef CTS_USES_VULKANSC
+        if (m_useDeviceAddressCommands)
+        {
+            vk::VkDeviceAddressRangeKHR dstRange{dstDevicceAddress, bufferSize};
+            vk.cmdFillMemoryKHR(targetCmdBuffer, &dstRange, vk::VK_ADDRESS_COMMAND_PROTECTED_BIT_KHR, m_fillValue);
+        }
+#endif
+        if (!m_useDeviceAddressCommands)
+            vk.cmdFillBuffer(targetCmdBuffer, **dstBuffer, 0u, VK_WHOLE_SIZE, m_fillValue);
         break;
     }
 
@@ -210,13 +224,31 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
         uint32_t data[BUFFER_SIZE];
         for (size_t ndx = 0; ndx < BUFFER_SIZE; ndx++)
             data[ndx] = m_fillValue;
-        vk.cmdUpdateBuffer(targetCmdBuffer, **dstBuffer, 0u, bufferSize, (const uint32_t *)&data);
+
+#ifndef CTS_USES_VULKANSC
+        if (m_useDeviceAddressCommands)
+        {
+            vk::VkDeviceAddressRangeKHR dstRange{dstDevicceAddress, bufferSize};
+            vk.cmdUpdateMemoryKHR(targetCmdBuffer, &dstRange, vk::VK_ADDRESS_COMMAND_PROTECTED_BIT_KHR, bufferSize,
+                                  (const uint32_t *)&data);
+        }
+#endif
+        if (!m_useDeviceAddressCommands)
+            vk.cmdUpdateBuffer(targetCmdBuffer, **dstBuffer, 0u, bufferSize, (const uint32_t *)&data);
         break;
     }
 
     case COPY_BUFFER:
     {
-        vk.cmdFillBuffer(targetCmdBuffer, **srcBuffer, 0u, VK_WHOLE_SIZE, m_fillValue);
+#ifndef CTS_USES_VULKANSC
+        if (m_useDeviceAddressCommands)
+        {
+            vk::VkDeviceAddressRangeKHR srcRange{srcDevicceAddress, bufferSize};
+            vk.cmdFillMemoryKHR(targetCmdBuffer, &srcRange, vk::VK_ADDRESS_COMMAND_PROTECTED_BIT_KHR, m_fillValue);
+        }
+#endif
+        if (!m_useDeviceAddressCommands)
+            vk.cmdFillBuffer(targetCmdBuffer, **srcBuffer, 0u, VK_WHOLE_SIZE, m_fillValue);
 
         const vk::VkBufferMemoryBarrier copyBufferBarrier = {
             vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType        sType
@@ -234,12 +266,31 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
                               (vk::VkDependencyFlags)0, 0, nullptr, 1, &copyBufferBarrier, 0, nullptr);
 
         // Copy buffer
-        const vk::VkBufferCopy copyBufferRegion = {
-            0ull,      // VkDeviceSize srcOffset;
-            0ull,      // VkDeviceSize dstOffset;
-            bufferSize // VkDeviceSize size;
-        };
-        vk.cmdCopyBuffer(targetCmdBuffer, **srcBuffer, **dstBuffer, 1u, &copyBufferRegion);
+#ifndef CTS_USES_VULKANSC
+        if (m_useDeviceAddressCommands)
+        {
+            vk::VkDeviceMemoryCopyKHR memoryCopy{vk::VK_STRUCTURE_TYPE_DEVICE_MEMORY_COPY_KHR,
+                                                 nullptr,
+                                                 {srcDevicceAddress, bufferSize},
+                                                 vk::VK_ADDRESS_COMMAND_PROTECTED_BIT_KHR,
+                                                 {dstDevicceAddress, bufferSize},
+                                                 vk::VK_ADDRESS_COMMAND_PROTECTED_BIT_KHR};
+
+            vk::VkCopyDeviceMemoryInfoKHR memorInfo{vk::VK_STRUCTURE_TYPE_COPY_DEVICE_MEMORY_INFO_KHR, nullptr, 1u,
+                                                    &memoryCopy};
+            vk.cmdCopyMemoryKHR(targetCmdBuffer, &memorInfo);
+        }
+#endif
+        if (!m_useDeviceAddressCommands)
+        {
+            const vk::VkBufferCopy copyBufferRegion{
+                0ull,      // VkDeviceSize srcOffset;
+                0ull,      // VkDeviceSize dstOffset;
+                bufferSize // VkDeviceSize size;
+            };
+
+            vk.cmdCopyBuffer(targetCmdBuffer, **srcBuffer, **dstBuffer, 1u, &copyBufferRegion);
+        }
         break;
     }
 
@@ -320,8 +371,6 @@ tcu::TestCaseGroup *createFillUpdateCopyBufferFloatTests(tcu::TestContext &testC
           {tcu::Vec4(-2548675.1f), tcu::Vec4(-2548675.1f), tcu::Vec4(-2548675.1f), tcu::Vec4(-2548675.1f)}}},
     };
 
-    std::string desc = std::string(getTestTypeName(cmdType)) + " (float)";
-
     de::MovePtr<tcu::TestCaseGroup> staticTests(new tcu::TestCaseGroup(testCtx, "static"));
     for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
     {
@@ -333,6 +382,14 @@ tcu::TestCaseGroup *createFillUpdateCopyBufferFloatTests(tcu::TestContext &testC
         const std::string name = "test_" + de::toString(ndx + 1);
         staticTests->addChild(new FillUpdateCopyBufferTestCase<tcu::Vec4>(
             testCtx, name.c_str(), testData[ndx].fillValue.uint, testData[ndx].data, cmdType, cmdBufferType,
+            vk::VK_FORMAT_R32G32B32A32_SFLOAT));
+    }
+
+    // Add interaction with VK_KHR_device_address_commands
+    if (cmdBufferType == CMD_BUFFER_PRIMARY)
+    {
+        staticTests->addChild(new FillUpdateCopyBufferTestCase<tcu::Vec4>(
+            testCtx, "test_device_address", testData[1].fillValue.uint, testData[1].data, cmdType, cmdBufferType,
             vk::VK_FORMAT_R32G32B32A32_SFLOAT));
     }
 
@@ -376,7 +433,6 @@ tcu::TestCaseGroup *createFillUpdateCopyBufferFloatTests(tcu::TestContext &testC
 
 tcu::TestCaseGroup *createFillUpdateCopyBufferFloatTests(tcu::TestContext &testCtx, CmdType cmdType)
 {
-    const std::string desc = std::string(getTestTypeName(cmdType)) + " (float)";
     de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "float_buffer"));
     testGroup->addChild(createFillUpdateCopyBufferFloatTests(testCtx, cmdType, CMD_BUFFER_PRIMARY));
     testGroup->addChild(createFillUpdateCopyBufferFloatTests(testCtx, cmdType, CMD_BUFFER_SECONDARY));
@@ -415,7 +471,6 @@ tcu::TestCaseGroup *createFillUpdateCopyBufferIntegerTests(tcu::TestContext &tes
           {tcu::IVec4(-2548675), tcu::IVec4(-2548675), tcu::IVec4(-2548675), tcu::IVec4(-2548675)}}},
     };
 
-    std::string desc = std::string(getTestTypeName(cmdType)) + " (integer)";
     de::MovePtr<tcu::TestCaseGroup> staticTests(new tcu::TestCaseGroup(testCtx, "static"));
     for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
     {
@@ -470,7 +525,6 @@ tcu::TestCaseGroup *createFillUpdateCopyBufferIntegerTests(tcu::TestContext &tes
 
 tcu::TestCaseGroup *createFillUpdateCopyBufferIntegerTests(tcu::TestContext &testCtx, CmdType cmdType)
 {
-    const std::string desc = std::string(getTestTypeName(cmdType)) + " (integer)";
     de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "integer_buffer"));
     testGroup->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, cmdType, CMD_BUFFER_PRIMARY));
     testGroup->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, cmdType, CMD_BUFFER_SECONDARY));
@@ -505,7 +559,6 @@ tcu::TestCaseGroup *createFillUpdateCopyBufferUnsignedTests(tcu::TestContext &te
           {tcu::UVec4(2548675u), tcu::UVec4(2548675u), tcu::UVec4(2548675u), tcu::UVec4(2548675u)}}},
     };
 
-    std::string desc = std::string(getTestTypeName(cmdType)) + " (unsigned)";
     de::MovePtr<tcu::TestCaseGroup> staticTests(new tcu::TestCaseGroup(testCtx, "static"));
 
     for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
@@ -556,7 +609,6 @@ tcu::TestCaseGroup *createFillUpdateCopyBufferUnsignedTests(tcu::TestContext &te
 
 tcu::TestCaseGroup *createFillUpdateCopyBufferUnsignedTests(tcu::TestContext &testCtx, CmdType cmdType)
 {
-    const std::string desc = std::string(getTestTypeName(cmdType)) + " (unsinged)";
     de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "unsigned_buffer"));
     testGroup->addChild(createFillUpdateCopyBufferUnsignedTests(testCtx, cmdType, CMD_BUFFER_PRIMARY));
     testGroup->addChild(createFillUpdateCopyBufferUnsignedTests(testCtx, cmdType, CMD_BUFFER_SECONDARY));

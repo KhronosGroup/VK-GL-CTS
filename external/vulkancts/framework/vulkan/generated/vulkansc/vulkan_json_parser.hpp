@@ -13141,42 +13141,6 @@ static void parse_VkImageDrmFormatModifierPropertiesEXT(const Json::Value &obj,
     parse_uint64_t(obj["drmFormatModifier"], (o.drmFormatModifier));
 }
 
-static void parse_VkDrmFormatModifierProperties2EXT(const Json::Value &obj, VkDrmFormatModifierProperties2EXT &o)
-{
-
-    parse_uint64_t(obj["drmFormatModifier"], (o.drmFormatModifier));
-
-    parse_uint32_t(obj["drmFormatModifierPlaneCount"], (o.drmFormatModifierPlaneCount));
-
-    parse_VkFormatFeatureFlags2(obj["drmFormatModifierTilingFeatures"], (o.drmFormatModifierTilingFeatures));
-}
-
-static void parse_VkDrmFormatModifierPropertiesList2EXT(const Json::Value &obj,
-                                                        VkDrmFormatModifierPropertiesList2EXT &o)
-{
-
-    parse_VkStructureType(obj["sType"], (o.sType));
-
-    o.pNext = (VkDrmFormatModifierPropertiesList2EXT *)parsePNextChain(obj);
-
-    parse_uint32_t(obj["drmFormatModifierCount"], (o.drmFormatModifierCount));
-
-    (o.pDrmFormatModifierProperties) = (VkDrmFormatModifierProperties2EXT *)s_globalMem.allocate(
-        (o.drmFormatModifierCount), sizeof(VkDrmFormatModifierProperties2EXT));
-    const Json::Value &obj_pDrmFormatModifierProperties = obj["pDrmFormatModifierProperties"];
-    if (obj_pDrmFormatModifierProperties.size() == 0)
-        (o.pDrmFormatModifierProperties) = nullptr;
-    else
-    {
-        for (unsigned int i = 0; i < (o.drmFormatModifierCount); i++)
-        {
-            parse_VkDrmFormatModifierProperties2EXT(
-                obj_pDrmFormatModifierProperties[i],
-                const_cast<VkDrmFormatModifierProperties2EXT &>((o.pDrmFormatModifierProperties[i])));
-        }
-    }
-}
-
 static void parse_VkPhysicalDeviceImageViewImageFormatInfoEXT(const Json::Value &obj,
                                                               VkPhysicalDeviceImageViewImageFormatInfoEXT &o)
 {
@@ -14763,11 +14727,6 @@ static void *parsePNextChain(const Json::Value &obj)
         p = s_globalMem.allocate(sizeof(VkImageDrmFormatModifierExplicitCreateInfoEXT));
         parse_VkImageDrmFormatModifierExplicitCreateInfoEXT(pNextObj,
                                                             *((VkImageDrmFormatModifierExplicitCreateInfoEXT *)p));
-        break;
-
-    case VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT:
-        p = s_globalMem.allocate(sizeof(VkDrmFormatModifierPropertiesList2EXT));
-        parse_VkDrmFormatModifierPropertiesList2EXT(pNextObj, *((VkDrmFormatModifierPropertiesList2EXT *)p));
         break;
 
     case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_IMAGE_FORMAT_INFO_EXT:

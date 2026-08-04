@@ -37,6 +37,7 @@ const VkPhysicalDeviceDepthClipEnableFeaturesEXT&						getDepthClipEnableFeature
 const VkPhysicalDeviceDescriptorBufferFeaturesEXT&						getDescriptorBufferFeaturesEXT						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDescriptorBufferFeaturesEXT>();					}
 const VkPhysicalDeviceDescriptorBufferTensorFeaturesARM&				getDescriptorBufferTensorFeaturesARM				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDescriptorBufferTensorFeaturesARM>();				}
 const VkPhysicalDeviceDescriptorIndexingFeatures&						getDescriptorIndexingFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDescriptorIndexingFeatures>();					}
+const VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR&					getDeviceAddressCommandsFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR>();				}
 const VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV&			getDeviceGeneratedCommandsComputeFeaturesNV			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV>();		}
 const VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT&				getDeviceGeneratedCommandsFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT>();			}
 const VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&				getDeviceGeneratedCommandsFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV>();				}
@@ -100,6 +101,7 @@ const VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&					getMutableDescriptor
 const VkPhysicalDeviceNestedCommandBufferFeaturesEXT&					getNestedCommandBufferFeaturesEXT					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>();				}
 const VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT&					getNonSeamlessCubeMapFeaturesEXT					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT>();					}
 const VkPhysicalDeviceOpacityMicromapFeaturesEXT&						getOpacityMicromapFeaturesEXT						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceOpacityMicromapFeaturesEXT>();					}
+const VkPhysicalDeviceOpacityMicromapFeaturesKHR&						getOpacityMicromapFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceOpacityMicromapFeaturesKHR>();					}
 const VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&				getPageableDeviceLocalMemoryFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT>();			}
 const VkPhysicalDevicePerformanceCountersByRegionFeaturesARM&			getPerformanceCountersByRegionFeaturesARM			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePerformanceCountersByRegionFeaturesARM>();		}
 const VkPhysicalDevicePerformanceQueryFeaturesKHR&						getPerformanceQueryFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePerformanceQueryFeaturesKHR>();					}

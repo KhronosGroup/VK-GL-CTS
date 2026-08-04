@@ -37,6 +37,7 @@ const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&						Context::getDepthClip
 const vk::VkPhysicalDeviceDescriptorBufferFeaturesEXT&						Context::getDescriptorBufferFeaturesEXT						(void) const { return m_device->getDescriptorBufferFeaturesEXT();					}
 const vk::VkPhysicalDeviceDescriptorBufferTensorFeaturesARM&				Context::getDescriptorBufferTensorFeaturesARM				(void) const { return m_device->getDescriptorBufferTensorFeaturesARM();				}
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&						Context::getDescriptorIndexingFeatures						(void) const { return m_device->getDescriptorIndexingFeatures();					}
+const vk::VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR&					Context::getDeviceAddressCommandsFeatures					(void) const { return m_device->getDeviceAddressCommandsFeatures();					}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV&			Context::getDeviceGeneratedCommandsComputeFeaturesNV		(void) const { return m_device->getDeviceGeneratedCommandsComputeFeaturesNV();		}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT&				Context::getDeviceGeneratedCommandsFeaturesEXT				(void) const { return m_device->getDeviceGeneratedCommandsFeaturesEXT();			}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&				Context::getDeviceGeneratedCommandsFeatures					(void) const { return m_device->getDeviceGeneratedCommandsFeatures();				}
@@ -100,6 +101,7 @@ const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&					Context::getMuta
 const vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT&					Context::getNestedCommandBufferFeaturesEXT					(void) const { return m_device->getNestedCommandBufferFeaturesEXT();				}
 const vk::VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT&					Context::getNonSeamlessCubeMapFeaturesEXT					(void) const { return m_device->getNonSeamlessCubeMapFeaturesEXT();					}
 const vk::VkPhysicalDeviceOpacityMicromapFeaturesEXT&						Context::getOpacityMicromapFeaturesEXT						(void) const { return m_device->getOpacityMicromapFeaturesEXT();					}
+const vk::VkPhysicalDeviceOpacityMicromapFeaturesKHR&						Context::getOpacityMicromapFeatures							(void) const { return m_device->getOpacityMicromapFeatures();						}
 const vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&				Context::getPageableDeviceLocalMemoryFeaturesEXT			(void) const { return m_device->getPageableDeviceLocalMemoryFeaturesEXT();			}
 const vk::VkPhysicalDevicePerformanceCountersByRegionFeaturesARM&			Context::getPerformanceCountersByRegionFeaturesARM			(void) const { return m_device->getPerformanceCountersByRegionFeaturesARM();		}
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&						Context::getPerformanceQueryFeatures						(void) const { return m_device->getPerformanceQueryFeatures();						}

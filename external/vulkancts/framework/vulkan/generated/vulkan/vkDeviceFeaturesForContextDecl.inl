@@ -37,6 +37,7 @@ const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&						getDepthClipEnableFea
 const vk::VkPhysicalDeviceDescriptorBufferFeaturesEXT&						getDescriptorBufferFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceDescriptorBufferTensorFeaturesARM&				getDescriptorBufferTensorFeaturesARM				(void) const;
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&						getDescriptorIndexingFeatures						(void) const;
+const vk::VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR&					getDeviceAddressCommandsFeatures					(void) const;
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV&			getDeviceGeneratedCommandsComputeFeaturesNV			(void) const;
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT&				getDeviceGeneratedCommandsFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&				getDeviceGeneratedCommandsFeatures					(void) const;
@@ -100,6 +101,7 @@ const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&					getMutableDescri
 const vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT&					getNestedCommandBufferFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT&					getNonSeamlessCubeMapFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceOpacityMicromapFeaturesEXT&						getOpacityMicromapFeaturesEXT						(void) const;
+const vk::VkPhysicalDeviceOpacityMicromapFeaturesKHR&						getOpacityMicromapFeatures							(void) const;
 const vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&				getPageableDeviceLocalMemoryFeaturesEXT				(void) const;
 const vk::VkPhysicalDevicePerformanceCountersByRegionFeaturesARM&			getPerformanceCountersByRegionFeaturesARM			(void) const;
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&						getPerformanceQueryFeatures							(void) const;

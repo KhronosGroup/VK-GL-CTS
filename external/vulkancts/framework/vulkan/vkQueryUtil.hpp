@@ -90,6 +90,8 @@ std::vector<vk::VkSparseImageMemoryRequirements> getDeviceImageSparseMemoryRequi
     VkImageAspectFlagBits planeAspect);
 #endif // CTS_USES_VULKANSC
 
+VkDeviceAddress getBufferDeviceAddress(const DeviceInterface &vk, VkDevice device, VkBuffer buffer);
+
 std::vector<VkLayerProperties> enumerateInstanceLayerProperties(const PlatformInterface &vkp);
 std::vector<VkExtensionProperties> enumerateInstanceExtensionProperties(const PlatformInterface &vkp,
                                                                         const char *layerName);

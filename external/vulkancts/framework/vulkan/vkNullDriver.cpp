@@ -246,6 +246,17 @@ void freeNonDispHandle(Handle handle, const VkAllocationCallbacks *pAllocator)
         }                                                                        \
     };
 
+#define VK_NULL_DEFINE_OBJ_WITH_POSTFIX2(DEVICE_OR_INSTANCE, NAME, POSTFIX)       \
+    struct NAME##POSTFIX                                                          \
+    {                                                                             \
+        NAME##POSTFIX(DEVICE_OR_INSTANCE, const Vk##NAME##CreateInfo##POSTFIX *)  \
+        {                                                                         \
+        }                                                                         \
+        NAME##POSTFIX(DEVICE_OR_INSTANCE, const Vk##NAME##CreateInfo2##POSTFIX *) \
+        {                                                                         \
+        }                                                                         \
+    };
+
 VK_NULL_DEFINE_DEVICE_OBJ(Fence);
 VK_NULL_DEFINE_DEVICE_OBJ(Semaphore);
 VK_NULL_DEFINE_DEVICE_OBJ(Event);
@@ -270,7 +281,7 @@ VK_NULL_DEFINE_DEVICE_OBJ(PrivateDataSlot);
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkInstance, DebugReportCallback, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Micromap, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, AccelerationStructure, NV)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, AccelerationStructure, KHR)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX2(VkDevice, AccelerationStructure, KHR)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, NV)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, VideoSession, KHR)
@@ -305,6 +316,9 @@ class SurfaceKHR
 public:
 #ifndef CTS_USES_VULKANSC
     SurfaceKHR(VkInstance, const VkXlibSurfaceCreateInfoKHR *)
+    {
+    }
+    SurfaceKHR(VkInstance, const VkUbmSurfaceCreateInfoSEC *)
     {
     }
     SurfaceKHR(VkInstance, const VkXcbSurfaceCreateInfoKHR *)

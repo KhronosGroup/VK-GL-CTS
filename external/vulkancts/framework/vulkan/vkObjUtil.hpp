@@ -79,7 +79,8 @@ Move<VkPipeline> makeGraphicsPipeline(
     const VkPipelineDepthStencilStateCreateInfo *depthStencilStateCreateInfo   = nullptr,
     const VkPipelineColorBlendStateCreateInfo *colorBlendStateCreateInfo       = nullptr,
     const VkPipelineDynamicStateCreateInfo *dynamicStateCreateInfo = nullptr, const void *pNext = nullptr,
-    const VkPipelineCreateFlags pipelineCreateFlags = 0u);
+    const VkPipelineCreateFlags pipelineCreateFlags            = 0u,
+    const VkSpecializationInfo *vertexShaderSpecializationInfo = nullptr);
 
 #ifndef CTS_USES_VULKANSC
 Move<VkPipeline> makeGraphicsPipeline(
