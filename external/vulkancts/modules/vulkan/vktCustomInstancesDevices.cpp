@@ -320,6 +320,25 @@ CustomInstance createCustomInstanceWithExtensions(Context &context, const std::v
             usedExtensions.insert(ext);
     }
 
+    // A device created on this custom instance inherits the default device's extension list, which may
+    // include VK_KHR_swapchain. That device extension depends on the VK_KHR_surface instance extension,
+    // so an implementation need not expose it unless surface is enabled on the instance. Enable surface
+    // here when swapchain will be used; otherwise vkCreateDevice may fail with
+    // VK_ERROR_EXTENSION_NOT_PRESENT (cf. VK-GL-CTS issue 4136).
+    {
+        bool wantsSwapchain = false;
+        for (const char *const devExt : context.getDeviceCreationExtensions())
+        {
+            if (std::string(devExt) == "VK_KHR_swapchain")
+            {
+                wantsSwapchain = true;
+                break;
+            }
+        }
+        if (wantsSwapchain && vk::isInstanceExtensionSupported(apiVersion, availableExtensionNames, "VK_KHR_surface"))
+            usedExtensions.insert("VK_KHR_surface");
+    }
+
     // Add debug extension if validation is enabled.
     if (validationEnabled)
         usedExtensions.insert("VK_EXT_debug_report");
