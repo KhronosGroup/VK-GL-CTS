@@ -2247,6 +2247,8 @@ public:
     tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
+    tcu::TestStatus queuePassImpl(const vkt::QueueData &queueData);
+
     SSBOLayoutCase::BufferMode m_bufferMode;
     const ShaderInterface &m_interface;
     const BufferLayout &m_refLayout;
@@ -2289,6 +2291,28 @@ SSBOLayoutCaseInstance::~SSBOLayoutCaseInstance(void)
 }
 
 tcu::TestStatus SSBOLayoutCaseInstance::queuePass(const vkt::QueueData &queueData)
+{
+#ifndef CTS_USES_VULKANSC
+    try
+    {
+        return queuePassImpl(queueData);
+    }
+    catch (const vk::OutOfMemoryError &)
+    {
+        // These tests can allocate a >4 GB buffer plus a similar amount of
+        // app-side reference data and can legitimately OOM under parallel runs.
+        // For such large (>= 4 GB) allocations report Not Supported instead of
+        // aborting the session, matching the compute 64-bit indexing tests.
+        if (m_initialData.data.get() != nullptr && m_initialData.data->size() >= (1ull << 32))
+            TCU_THROW(NotSupportedError, "Out of memory");
+        throw;
+    }
+#else
+    return queuePassImpl(queueData);
+#endif
+}
+
+tcu::TestStatus SSBOLayoutCaseInstance::queuePassImpl(const vkt::QueueData &queueData)
 {
     // Clear accumulated buffers from any prior pass.
     m_uniformBuffers.clear();
