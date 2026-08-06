@@ -40,6 +40,8 @@ set(DEQP_VK_VKSC_RENDER_PASS_SRCS
 	vktRenderPassMultiviewPerViewTests.hpp
 	vktRenderPassLowResolutionZTests.cpp
 	vktRenderPassLowResolutionZTests.hpp
+	vktDynamicRenderingSuspendResumeTestsUtil.cpp
+	vktDynamicRenderingSuspendResumeTestsUtil.hpp
 	)
 
 set(DEQP_VK_RENDER_PASS_SRCS

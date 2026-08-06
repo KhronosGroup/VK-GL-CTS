@@ -24,6 +24,7 @@
 
 #include "vktRenderPassCustomResolveTests.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktDynamicRenderingSuspendResumeTestsUtil.hpp"
 
 #include "vkBarrierUtil.hpp"
 #include "vkBufferWithMemory.hpp"
@@ -43,6 +44,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <numeric>
 #include <set>
 #include <sstream>
 #include <vector>
@@ -294,6 +296,7 @@ struct TestParams
     bool uploadCustomResolveFragOutOnly = false; // In upload pipelines, only include custom resolve info in frag out.
     bool emptyCustomResolveInFragShader = false; // In resolve pipelines, omit format info from the frag shader state.
     bool unusedAttNoUploadCustomInfo    = false; // In upload pipelines, omit all custom resolve info with unused att.
+    bool remapBeforeBeginCustomResolve  = false; // When beginning a custom resolve, remap attachments first.
 
     tcu::IVec3 getExtent() const
     {
@@ -547,13 +550,17 @@ struct TestParams
         return (hasColorAtt ? tcu::just(topLocation) : tcu::Nothing);
     }
 };
+using TestParamsPtr = std::shared_ptr<TestParams>;
 
 using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
 class CustomResolveInstance : public vkt::TestInstance
 {
 public:
-    CustomResolveInstance(Context &context, const TestParams &params) : vkt::TestInstance(context), m_params(params)
+    CustomResolveInstance(Context &context, TestParamsPtr paramsPtr)
+        : vkt::TestInstance(context)
+        , m_paramsPtr(paramsPtr)
+        , m_params(*m_paramsPtr)
     {
     }
     virtual ~CustomResolveInstance(void) = default;
@@ -561,15 +568,17 @@ public:
     tcu::TestStatus iterate(void) override;
 
 protected:
-    const TestParams m_params;
+    TestParamsPtr m_paramsPtr;
+    const TestParams &m_params;
 };
 
 class CustomResolveCase : public vkt::TestCase
 {
 public:
-    CustomResolveCase(tcu::TestContext &testCtx, const std::string &name, const TestParams &params)
+    CustomResolveCase(tcu::TestContext &testCtx, const std::string &name, TestParamsPtr paramsPtr)
         : vkt::TestCase(testCtx, name)
-        , m_params(params)
+        , m_paramsPtr(paramsPtr)
+        , m_params(*m_paramsPtr)
     {
     }
     virtual ~CustomResolveCase(void) = default;
@@ -579,11 +588,12 @@ public:
 
     TestInstance *createInstance(Context &context) const override
     {
-        return new CustomResolveInstance(context, m_params);
+        return new CustomResolveInstance(context, m_paramsPtr);
     }
 
 protected:
-    const TestParams m_params;
+    TestParamsPtr m_paramsPtr;
+    const TestParams &m_params;
 };
 
 void CustomResolveCase::checkSupport(Context &context) const
@@ -2677,9 +2687,11 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
     };
 
     // We will use this function to record the start of the resolve block.
-    const auto recordBeginCustomResolve = [&](VkCommandBuffer targetCmdBuffer, uint32_t resolvePassIndex)
+    const auto recordBeginCustomResolve =
+        [&](VkCommandBuffer targetCmdBuffer, uint32_t resolvePassIndex, bool remapFirst)
     {
-        ctx.vkd.cmdBeginCustomResolveEXT(targetCmdBuffer, nullptr);
+        if (!remapFirst)
+            ctx.vkd.cmdBeginCustomResolveEXT(targetCmdBuffer, nullptr);
 
         if (resolveAttLocations.at(resolvePassIndex))
         {
@@ -2695,6 +2707,9 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
             ctx.vkd.cmdSetRenderingInputAttachmentIndices(targetCmdBuffer,
                                                           resolveInputAttachmentIndexInfos.at(resolvePassIndex).get());
         }
+
+        if (remapFirst)
+            ctx.vkd.cmdBeginCustomResolveEXT(targetCmdBuffer, nullptr);
     };
 
     // Array of secondary command buffers, needed when useSecondaries is true, to record render pass contents.
@@ -3047,7 +3062,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
             }
 
             // Starting here, we're always in the resolve render pass, so we can switch to the custom resolve part.
-            recordBeginCustomResolve(cmdBuffer, i);
+            recordBeginCustomResolve(cmdBuffer, i, m_params.remapBeforeBeginCustomResolve);
         }
         else
         {
@@ -6119,7 +6134,9 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
         {
             {
                 // Simple tests: one attachment, no attachment index changes, no format changes.
-                TestParams params;
+                TestParamsPtr paramsPtr(new TestParams);
+                auto &params = *paramsPtr;
+
                 params.groupParams = groupParams;
                 params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
                                                    VK_FORMAT_R8G8B8A8_UNORM, 0u, true, true);
@@ -6134,7 +6151,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     },
                 });
 
-                constructionGroup->addChild(new CustomResolveCase(testCtx, "simple_average", params));
+                constructionGroup->addChild(new CustomResolveCase(testCtx, "simple_average", paramsPtr));
 
                 {
                     // Using the "average" resolving strategy may not let us see if the driver is resolving the values
@@ -6143,11 +6160,11 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
 
                     resolve.resolveType   = ResolveType::FIXED_VALUE;
                     resolve.resolveParams = StrategyParams(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, "simple_fixed", params));
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, "simple_fixed", paramsPtr));
 
                     resolve.resolveType   = ResolveType::SELECTED_SAMPLE;
                     resolve.resolveParams = StrategyParams(2u);
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, "simple_sample_2", params));
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, "simple_sample_2", paramsPtr));
                 }
 
                 {
@@ -6157,17 +6174,17 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     {
                         params.uploadCustomResolveFragOutOnly = true;
                         constructionGroup->addChild(
-                            new CustomResolveCase(testCtx, "simple_sample_2_no_frag_state_upload_info", params));
+                            new CustomResolveCase(testCtx, "simple_sample_2_no_frag_state_upload_info", paramsPtr));
                         params.uploadCustomResolveFragOutOnly = false;
 
                         params.emptyCustomResolveInFragShader = true;
                         constructionGroup->addChild(
-                            new CustomResolveCase(testCtx, "simple_sample_2_no_formats_frag_state_resolve", params));
+                            new CustomResolveCase(testCtx, "simple_sample_2_no_formats_frag_state_resolve", paramsPtr));
                         params.emptyCustomResolveInFragShader = false;
 
                         params.unusedAttNoUploadCustomInfo = true;
                         constructionGroup->addChild(
-                            new CustomResolveCase(testCtx, "simple_sample_2_no_upload_custom_info", params));
+                            new CustomResolveCase(testCtx, "simple_sample_2_no_upload_custom_info", paramsPtr));
                         params.unusedAttNoUploadCustomInfo = false;
                     }
                 }
@@ -6179,7 +6196,9 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT,   VK_FORMAT_D32_SFLOAT_S8_UINT,
                 };
 
-                TestParams params;
+                TestParamsPtr paramsPtr(new TestParams);
+                auto &params = *paramsPtr;
+
                 params.groupParams = groupParams;
                 params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u,
                                                    true, true);
@@ -6200,7 +6219,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     params.attachmentList.back().attachmentFormat = format;
                     params.attachmentList.back().resolveFormat    = format;
                     const auto testName                           = "depth_only_" + dsFormatNames.at(format);
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                 }
             }
             {
@@ -6212,7 +6231,9 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     VK_FORMAT_D32_SFLOAT_S8_UINT,
                 };
 
-                TestParams params;
+                TestParamsPtr paramsPtr(new TestParams);
+                auto &params = *paramsPtr;
+
                 params.groupParams = groupParams;
                 params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u,
                                                    true, true);
@@ -6232,7 +6253,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     params.attachmentList.back().attachmentFormat = format;
                     params.attachmentList.back().resolveFormat    = format;
                     const auto testName                           = "stencil_only_" + dsFormatNames.at(format);
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                 }
 
                 params.disableStencilExport                                       = true;
@@ -6245,7 +6266,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     params.attachmentList.back().attachmentFormat = format;
                     params.attachmentList.back().resolveFormat    = format;
                     const auto testName = "stencil_only_" + dsFormatNames.at(format) + "_no_stencil_export";
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                 }
             }
             {
@@ -6256,7 +6277,9 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     VK_FORMAT_D32_SFLOAT_S8_UINT,
                 };
 
-                TestParams params;
+                TestParamsPtr paramsPtr(new TestParams);
+                auto &params = *paramsPtr;
+
                 params.groupParams = groupParams;
                 params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u,
                                                    true, true);
@@ -6277,7 +6300,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     params.attachmentList.back().attachmentFormat = format;
                     params.attachmentList.back().resolveFormat    = format;
                     const auto testName = "depth_stencil_upload_both_resolve_depth_" + dsFormatNames.at(format);
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                 }
 
                 params.resolvePasses.back().attachmentResolves.back().attachment.aspects = VK_IMAGE_ASPECT_STENCIL_BIT;
@@ -6287,7 +6310,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     params.attachmentList.back().attachmentFormat = format;
                     params.attachmentList.back().resolveFormat    = format;
                     const auto testName = "depth_stencil_upload_both_resolve_stencil_" + dsFormatNames.at(format);
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                 }
 
                 params.resolvePasses.back().attachmentResolves.back().attachment.aspects =
@@ -6299,12 +6322,12 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     params.attachmentList.back().attachmentFormat = format;
                     params.attachmentList.back().resolveFormat    = format;
                     const auto testName = "depth_stencil_upload_both_resolve_both_" + dsFormatNames.at(format);
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
 
                     params.disableDepthWrites = true;
                     const auto testName2 =
                         "depth_stencil_upload_both_resolve_both_disable_depth_writes_" + dsFormatNames.at(format);
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName2, params));
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName2, paramsPtr));
 
                     params.disableDepthWrites   = false;
                     params.disableStencilExport = true;
@@ -6314,7 +6337,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                         StrategyParams(tcu::Vec4(0.25f, 50.f, 0.0f, 0.0f));
                     const auto testName3 =
                         "depth_stencil_upload_both_resolve_both_" + dsFormatNames.at(format) + "_no_stencil_export";
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName3, params));
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName3, paramsPtr));
 
                     // Restore previous resolve params.
                     params.resolvePasses.back().attachmentResolves.back() = lastAttResolve;
@@ -6329,7 +6352,9 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     VK_FORMAT_D32_SFLOAT_S8_UINT,
                 };
 
-                TestParams params;
+                TestParamsPtr paramsPtr(new TestParams);
+                auto &params = *paramsPtr;
+
                 params.groupParams = groupParams;
                 params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u,
                                                    true, true);
@@ -6355,7 +6380,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     params.attachmentList.back().resolveFormat    = format;
                     const auto testName =
                         "depth_stencil_upload_both_separate_resolve_depth_" + dsFormatNames.at(format);
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                 }
 
                 params.resolvePasses.back().attachmentResolves.back().attachment.aspects =
@@ -6366,7 +6391,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     params.attachmentList.back().attachmentFormat = format;
                     params.attachmentList.back().resolveFormat    = format;
                     const auto testName = "depth_stencil_upload_both_separate_resolve_both_" + dsFormatNames.at(format);
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                 }
 
                 // Same without exporting stencil from the shaders.
@@ -6382,7 +6407,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     params.attachmentList.back().resolveFormat    = format;
                     const auto testName                           = "depth_stencil_upload_both_separate_resolve_both_" +
                                           dsFormatNames.at(format) + "_no_stencil_export";
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                 }
 
                 // Restore previous params and resolve stencil only.
@@ -6396,7 +6421,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     params.attachmentList.back().resolveFormat    = format;
                     const auto testName =
                         "depth_stencil_upload_both_separate_resolve_stencil_" + dsFormatNames.at(format);
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                 }
 
                 // Same without exporting stencil from the shaders.
@@ -6412,7 +6437,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     params.attachmentList.back().resolveFormat    = format;
                     const auto testName = "depth_stencil_upload_both_separate_resolve_stencil_" +
                                           dsFormatNames.at(format) + "_no_stencil_export";
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                 }
 
                 // Do not upload stencil, then resolve only depth.
@@ -6426,13 +6451,15 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     params.attachmentList.back().attachmentFormat = format;
                     params.attachmentList.back().resolveFormat    = format;
                     const auto testName = "depth_stencil_upload_depth_resolve_depth_" + dsFormatNames.at(format);
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                 }
             }
             // Depth/stencil with resolve format not the same as the upload format.
             // Upload depth and resolve depth using different formats.
             {
-                TestParams params;
+                TestParamsPtr paramsPtr(new TestParams);
+                auto &params = *paramsPtr;
+
                 params.groupParams = groupParams;
 
                 const std::vector<VkFormat> depthFormats{
@@ -6465,13 +6492,15 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
 
                         const auto testName = "depth_format_change_" + dsFormatNames.at(origFormat) + "_to_" +
                                               dsFormatNames.at(resolveFormat);
-                        constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                        constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                     }
             }
             {
                 // Depth/stencil with resolve format not the same as the upload format.
                 // Upload stencil and resolve stencil using different formats.
-                TestParams params;
+                TestParamsPtr paramsPtr(new TestParams);
+                auto &params = *paramsPtr;
+
                 params.groupParams = groupParams;
 
                 const std::vector<VkFormat> stencilFormats{
@@ -6506,13 +6535,15 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
 
                         const auto testName = "stencil_format_change_" + dsFormatNames.at(origFormat) + "_to_" +
                                               dsFormatNames.at(resolveFormat);
-                        constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                        constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                     }
             }
             {
                 // Depth/stencil with resolve format not the same as the upload format.
                 // Upload depth and stencil together, and resolve them in different formats.
-                TestParams params;
+                TestParamsPtr paramsPtr(new TestParams);
+                auto &params = *paramsPtr;
+
                 params.groupParams = groupParams;
 
                 const std::vector<VkFormat> dsFormats{
@@ -6556,13 +6587,15 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
 
                         const auto testName = "depth_stencil_format_change_" + dsFormatNames.at(origFormat) + "_to_" +
                                               dsFormatNames.at(resolveFormat);
-                        constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                        constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                     }
             }
             {
                 // Depth/stencil with resolve format not the same as the upload format.
                 // Upload depth and stencil separately, and resolve them in different formats.
-                TestParams params;
+                TestParamsPtr paramsPtr(new TestParams);
+                auto &params = *paramsPtr;
+
                 params.groupParams = groupParams;
 
                 const std::vector<VkFormat> dsFormats{
@@ -6609,14 +6642,16 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                             const auto testName = "depth_stencil_format_change_" + dsFormatNames.at(origFormat) +
                                                   "_to_" + dsFormatNames.at(resolveFormat) + "_upload_" +
                                                   (uploadDepthFirst ? "depth" : "stencil") + "_first";
-                            constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                            constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                         }
                     }
             }
             {
                 // Attachment index tests: simple test but the resolve pipeline uses a different att index.
                 // This will prevent the upload and resolve passes from being merged in dynamic rendering.
-                TestParams params;
+                TestParamsPtr paramsPtr(new TestParams);
+                auto &params = *paramsPtr;
+
                 params.groupParams = groupParams;
                 params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
                                                    VK_FORMAT_R8G8B8A8_UNORM, 1u, true, true);
@@ -6632,17 +6667,31 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     },
                 });
 
-                constructionGroup->addChild(new CustomResolveCase(testCtx, "att_index_change", params));
-
-                if (groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+                for (const bool remapFirst : {false, true})
                 {
-                    params.locationRemapping = true;
-                    constructionGroup->addChild(new CustomResolveCase(testCtx, "att_index_change_with_remap", params));
+                    if (remapFirst && groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+                        continue;
+
+                    params.remapBeforeBeginCustomResolve = remapFirst;
+
+                    const auto remapSuffix = std::string(remapFirst ? "_remap_first" : "");
+
+                    constructionGroup->addChild(
+                        new CustomResolveCase(testCtx, "att_index_change" + remapSuffix, paramsPtr));
+
+                    if (groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+                    {
+                        params.locationRemapping = true;
+                        constructionGroup->addChild(
+                            new CustomResolveCase(testCtx, "att_index_change_with_remap" + remapSuffix, paramsPtr));
+                    }
                 }
             }
             {
                 // Different resolve format: simple test, but the resolve attachment has a different format.
-                TestParams params;
+                TestParamsPtr paramsPtr(new TestParams);
+                auto &params = *paramsPtr;
+
                 params.groupParams = groupParams;
                 params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
                                                    VK_FORMAT_R16G16B16A16_UNORM, 0u, true, true);
@@ -6657,14 +6706,16 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                     },
                 });
 
-                constructionGroup->addChild(new CustomResolveCase(testCtx, "format_change", params));
+                constructionGroup->addChild(new CustomResolveCase(testCtx, "format_change", paramsPtr));
 
                 std::swap(params.attachmentList.back().attachmentFormat, params.attachmentList.back().resolveFormat);
-                constructionGroup->addChild(new CustomResolveCase(testCtx, "format_change_reverse", params));
+                constructionGroup->addChild(new CustomResolveCase(testCtx, "format_change_reverse", paramsPtr));
             }
             {
                 // Complex case with multiple attachments, upload passes and resolves, including format and index changes.
-                TestParams params;
+                TestParamsPtr paramsPtr(new TestParams);
+                auto &params = *paramsPtr;
+
                 params.groupParams = groupParams;
                 params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
                                                    VK_FORMAT_R16G16B16A16_UNORM, 1u, true, true);
@@ -6699,7 +6750,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                 });
 
                 constructionGroup->addChild(
-                    new CustomResolveCase(testCtx, "color_multi_upload_multi_resolve_complex", params));
+                    new CustomResolveCase(testCtx, "color_multi_upload_multi_resolve_complex", paramsPtr));
 
                 // Simplification of the previous case removing the format and index change.
                 for (uint32_t i = 0u; i < de::sizeU32(params.attachmentList); ++i)
@@ -6710,11 +6761,13 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                 }
 
                 constructionGroup->addChild(
-                    new CustomResolveCase(testCtx, "color_multi_upload_multi_resolve_simple", params));
+                    new CustomResolveCase(testCtx, "color_multi_upload_multi_resolve_simple", paramsPtr));
             }
             {
                 // More complex case mixing color and depth/stencil attachments, with multiple upload and resolve passes.
-                TestParams params;
+                TestParamsPtr paramsPtr(new TestParams);
+                auto &params = *paramsPtr;
+
                 params.groupParams = groupParams;
                 params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
                                                    VK_FORMAT_R16G16B16A16_UNORM, 1u, true, true);
@@ -6802,8 +6855,16 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                                     att.attachment.aspects = aspects;
                             }
 
-                        const auto testName = "mix_multi_upload_multi_resolve_" + dsFormatNames.at(format) + nameSuffix;
-                        constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                        for (const bool remapFirst : {false, true})
+                        {
+                            if (remapFirst && params.groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+                                continue;
+
+                            params.remapBeforeBeginCustomResolve = remapFirst;
+                            const auto testName = "mix_multi_upload_multi_resolve_" + dsFormatNames.at(format) +
+                                                  nameSuffix + (remapFirst ? "_remap_first" : "");
+                            constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
+                        }
                     }
 
                 // Now we swap the resolve passes and make the resolve attachment locations the identity, which should
@@ -6836,12 +6897,14 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
 
                         const auto testName =
                             "mix_multi_upload_multi_resolve_with_merge_" + dsFormatNames.at(format) + nameSuffix;
-                        constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                        constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                     }
             }
             {
                 // Upload and resolve multiple color attachments at the same time, with and without remapping.
-                TestParams params;
+                TestParamsPtr paramsPtr(new TestParams);
+                auto &params = *paramsPtr;
+
                 params.groupParams = groupParams;
                 params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
                                                    VK_FORMAT_R16G16B16A16_UNORM, 1u, true, true);
@@ -6877,14 +6940,14 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                 });
 
                 constructionGroup->addChild(
-                    new CustomResolveCase(testCtx, "color_upload_resolve_multi_attachment", params));
+                    new CustomResolveCase(testCtx, "color_upload_resolve_multi_attachment", paramsPtr));
 
                 // Make the resolve attachment locations the identity, which should enable pass merging with dynamic
                 // rendering.
                 for (uint32_t i = 0u; i < de::sizeU32(params.attachmentList); ++i)
                     params.attachmentList.at(i).resolveLocation = i;
                 constructionGroup->addChild(
-                    new CustomResolveCase(testCtx, "color_upload_resolve_multi_attachment_simple", params));
+                    new CustomResolveCase(testCtx, "color_upload_resolve_multi_attachment_simple", paramsPtr));
             }
         }
 
@@ -6894,7 +6957,9 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
             // single upload and resolve pass. However, some variants will remap resolve locations, and the unused flag
             // for one of the attachments will vary.
             {
-                TestParams params;
+                TestParamsPtr paramsPtr(new TestParams);
+                auto &params = *paramsPtr;
+
                 params.groupParams = groupParams;
                 params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
                                                    VK_FORMAT_R8G8B8A8_UNORM, 0u, true, true);
@@ -6940,7 +7005,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                                                       "_usage_pipe_" + yesNo(usedInPipeline) + "_render_" +
                                                       yesNo(usedInRenderPass) +
                                                       (swapResolveLocations ? "_swap_resolve_locations" : "");
-                                constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                                constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                             }
                 }
             }
@@ -6949,7 +7014,9 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
             // following tests have separate upload and resolve passes to be able to test merged passes combined with
             // unused attachments.
             {
-                TestParams params;
+                TestParamsPtr paramsPtr(new TestParams);
+                auto &params = *paramsPtr;
+
                 params.groupParams = groupParams;
                 params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
                                                    VK_FORMAT_R8G8B8A8_UNORM, 0u, true, true);
@@ -7011,7 +7078,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                                                           yesNo(usedInPipeline) + "_render_" + yesNo(usedInRenderPass) +
                                                           (swapResolveLocations ? "_swap_resolve_locations" : "") +
                                                           (noUploadInfo ? "_no_upload_info" : "");
-                                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, paramsPtr));
                                 }
                     }
                 }
@@ -7096,6 +7163,34 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
         {
             addFunctionCaseWithPrograms(constructionGroup.get(), "single_sample_clear", SingleSampleClearCheckSupport,
                                         SingleSampleClearInitPrograms, SingleSampleClearIterate, groupParams);
+        }
+
+        if (origGroupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING &&
+            !origGroupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+        {
+            for (const bool resolveDepth : {false, true})
+            {
+                const auto testName = std::string("suspend_resume") + (resolveDepth ? "_with_depth_resolve" : "");
+                SuspendResume::ParamsPtr params(new SuspendResume::Params{groupParams, 0u, resolveDepth, true});
+                constructionGroup->addChild(new SuspendResume::Case(testCtx, testName, params));
+            }
+
+            // Small framebuffer tests.
+            const auto maxSeedOffset = 10u;
+            for (const bool resolveDepth : {false, true})
+            {
+                for (uint32_t seedOffset = 0u; seedOffset < maxSeedOffset; ++seedOffset)
+                {
+                    const auto testName = std::string("suspend_resume_small_fb") +
+                                          (resolveDepth ? "_with_depth_resolve" : "") + "_test" +
+                                          std::to_string(seedOffset);
+                    SuspendResume::ParamsPtr params(new SuspendResume::Params{
+                        groupParams, seedOffset, resolveDepth, true,
+                        true, // Small framebuffer.
+                    });
+                    constructionGroup->addChild(new SuspendResume::Case(testCtx, testName, params));
+                }
+            }
         }
 
         mainGroup->addChild(constructionGroup.release());
