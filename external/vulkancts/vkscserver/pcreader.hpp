@@ -75,6 +75,8 @@ public:
         : m_CacheSize{cacheSize}
         , m_CacheData{cacheData}
     {
+        DE_UNREF(m_CacheSize); // For release builds.
+
         const VkPipelineCacheHeaderVersionSafetyCriticalOne *const sc1 =
             reinterpret_cast<const VkPipelineCacheHeaderVersionSafetyCriticalOne *>(m_CacheData);
 
