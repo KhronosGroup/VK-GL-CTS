@@ -266,7 +266,6 @@ void supportedCheck(Context &context, CaseDefinition caseDef)
     }
     else if (isAllMeshShadingStages(caseDef.shaderStage))
     {
-        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
         context.requireDeviceFunctionality("VK_EXT_mesh_shader");
 
         if ((caseDef.shaderStage & VK_SHADER_STAGE_TASK_BIT_EXT) != 0u)
