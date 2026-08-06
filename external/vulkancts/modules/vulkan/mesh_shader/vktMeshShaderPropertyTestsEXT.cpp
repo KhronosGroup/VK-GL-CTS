@@ -176,7 +176,6 @@ protected:
 void TaskPayloadShMemSizeCase::checkSupport(Context &context) const
 {
     checkTaskMeshShaderSupportEXT(context, true /*requireTask*/, true /*requireMesh*/);
-    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
 
     const auto &meshProperties = context.getMeshShaderPropertiesEXT();
     const auto minSize         = kLocalInvocations * kElementSize;
@@ -1591,7 +1590,6 @@ void MeshPayloadShMemSizeCase::checkSupport(Context &context) const
     const bool requireTask = m_params.hasPayload();
 
     checkTaskMeshShaderSupportEXT(context, requireTask, true /*requireMesh*/);
-    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
 
     const auto &meshProperties = context.getMeshShaderPropertiesEXT();
     const auto minSize         = kLocalInvocations * kElementSize;
