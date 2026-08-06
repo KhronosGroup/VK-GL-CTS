@@ -6029,36 +6029,43 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
         MovePtr<tcu::TestCaseGroup> group(
             new tcu::TestCaseGroup(rootGroup->getTestContext(), "garbage_color_attachment"));
 
+        const VkSampleCountFlagBits sampleCounts[] = {
+            VK_SAMPLE_COUNT_2_BIT,
+            VK_SAMPLE_COUNT_4_BIT,
+        };
+
         de::Random rng(0x12348765);
 
         for (const VkFormat color1Format : color1FormatRange)
             for (const VkFormat color2Format : color2FormatRange)
                 for (const VkFormat color3Format : color3FormatRange)
                     for (const VkFormat depthStencilFormat : depthStencilFormatRange)
-                    {
-                        TestParams testParams;
-                        deMemset(&testParams, 0, sizeof(testParams));
+                        for (const VkSampleCountFlagBits sampleCount : sampleCounts)
+                        {
+                            TestParams testParams;
+                            deMemset(&testParams, 0, sizeof(testParams));
 
-                        testParams.pipelineConstructionType            = pipelineConstructionType;
-                        testParams.isMultisampledRenderToSingleSampled = isMultisampledRenderToSingleSampled;
-                        testParams.floatColor1Format                   = color1Format;
-                        testParams.floatColor2Format                   = color2Format;
-                        testParams.intColorFormat                      = color3Format;
-                        testParams.depthStencilFormat                  = depthStencilFormat;
-                        testParams.dynamicRendering                    = dynamicRendering;
-                        testParams.useGarbageAttachment                = true;
-                        testParams.renderToAttachment                  = true;
-                        testParams.imageMemoryType                     = IMAGE_MEMORY_DEFAULT;
+                            testParams.pipelineConstructionType            = pipelineConstructionType;
+                            testParams.isMultisampledRenderToSingleSampled = isMultisampledRenderToSingleSampled;
+                            testParams.floatColor1Format                   = color1Format;
+                            testParams.floatColor2Format                   = color2Format;
+                            testParams.intColorFormat                      = color3Format;
+                            testParams.depthStencilFormat                  = depthStencilFormat;
+                            testParams.dynamicRendering                    = dynamicRendering;
+                            testParams.useGarbageAttachment                = true;
+                            testParams.renderToAttachment                  = true;
+                            testParams.imageMemoryType                     = IMAGE_MEMORY_DEFAULT;
 
-                        generateBasicTest(rng, testParams, VK_SAMPLE_COUNT_2_BIT, VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,
-                                          true);
+                            generateBasicTest(rng, testParams, sampleCount, VK_RESOLVE_MODE_SAMPLE_ZERO_BIT, true);
 
-                        // Combination of framebuffer attachment formats
-                        addFunctionCaseWithPrograms(
-                            group.get(),
-                            getFormatCaseName(color1Format, color2Format, color3Format, depthStencilFormat).c_str(),
-                            checkRequirements, initBasicPrograms, testBasic, testParams);
-                    }
+                            // Combination of framebuffer attachment formats
+                            std::string testName =
+                                getFormatCaseName(color1Format, color2Format, color3Format, depthStencilFormat) + "_" +
+                                getSampleCountCaseName(sampleCount);
+
+                            addFunctionCaseWithPrograms(group.get(), testName.c_str(), checkRequirements,
+                                                        initBasicPrograms, testBasic, testParams);
+                        }
 
         rootGroup->addChild(group.release());
     }
