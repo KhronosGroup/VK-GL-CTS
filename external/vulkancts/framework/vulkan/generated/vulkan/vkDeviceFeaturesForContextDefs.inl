@@ -162,6 +162,7 @@ const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&						Context::getShaderA
 const vk::VkPhysicalDeviceShaderAtomicInt64Features&						Context::getShaderAtomicInt64Features						(void) const { return m_device->getShaderAtomicInt64Features();						}
 const vk::VkPhysicalDeviceShaderBfloat16FeaturesKHR&						Context::getShaderBfloat16Features							(void) const { return m_device->getShaderBfloat16Features();						}
 const vk::VkPhysicalDeviceShaderClockFeaturesKHR&							Context::getShaderClockFeatures								(void) const { return m_device->getShaderClockFeatures();							}
+const vk::VkPhysicalDeviceShaderConstantDataFeaturesKHR&					Context::getShaderConstantDataFeatures						(void) const { return m_device->getShaderConstantDataFeatures();					}
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures&			Context::getShaderDemoteToHelperInvocationFeatures			(void) const { return m_device->getShaderDemoteToHelperInvocationFeatures();		}
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						Context::getShaderDrawParametersFeatures					(void) const { return m_device->getShaderDrawParametersFeatures();					}
 const vk::VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD&		Context::getShaderEarlyAndLateFragmentTestsFeaturesAMD		(void) const { return m_device->getShaderEarlyAndLateFragmentTestsFeaturesAMD();	}

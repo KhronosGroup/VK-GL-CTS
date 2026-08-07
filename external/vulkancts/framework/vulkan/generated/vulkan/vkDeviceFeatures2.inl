@@ -5124,6 +5124,45 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderClockFeaturesKHR (Context& contex
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureShaderConstantDataFeaturesKHR (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceShaderConstantDataFeaturesKHR deviceShaderConstantDataFeaturesKHR[count];
+    const bool                                    isShaderConstantDataFeaturesKHR = checkExtension(properties, "VK_KHR_shader_constant_data");
+
+    if (!isShaderConstantDataFeaturesKHR)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceShaderConstantDataFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderConstantDataFeaturesKHR));
+        deviceShaderConstantDataFeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CONSTANT_DATA_FEATURES_KHR;
+        deviceShaderConstantDataFeaturesKHR[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceShaderConstantDataFeaturesKHR[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceShaderConstantDataFeaturesKHR[0] << TestLog::EndMessage;
+
+    if (
+        deviceShaderConstantDataFeaturesKHR[0].shaderConstantData != deviceShaderConstantDataFeaturesKHR[1].shaderConstantData)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceShaderConstantDataFeaturesKHR");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureShaderDemoteToHelperInvocationFeatures (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -7880,6 +7919,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "shader_atomic_int64_features", testPhysicalDeviceFeatureShaderAtomicInt64Features);
 	addFunctionCase(testGroup, "shader_bfloat16_features_khr", testPhysicalDeviceFeatureShaderBfloat16FeaturesKHR);
 	addFunctionCase(testGroup, "shader_clock_features_khr", testPhysicalDeviceFeatureShaderClockFeaturesKHR);
+	addFunctionCase(testGroup, "shader_constant_data_features_khr", testPhysicalDeviceFeatureShaderConstantDataFeaturesKHR);
 	addFunctionCase(testGroup, "shader_demote_to_helper_invocation_features", testPhysicalDeviceFeatureShaderDemoteToHelperInvocationFeatures);
 	addFunctionCase(testGroup, "shader_draw_parameters_features", testPhysicalDeviceFeatureShaderDrawParametersFeatures);
 	addFunctionCase(testGroup, "shader_expect_assume_features", testPhysicalDeviceFeatureShaderExpectAssumeFeatures);

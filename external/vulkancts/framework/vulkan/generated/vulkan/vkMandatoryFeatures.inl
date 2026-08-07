@@ -801,6 +801,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_clock"))
 		addFeatures(&physicalDeviceShaderClockFeaturesKHR);
 
+	// VkPhysicalDeviceShaderConstantDataFeaturesKHR for ext [VK_KHR_shader_constant_data]
+	vk::VkPhysicalDeviceShaderConstantDataFeaturesKHR physicalDeviceShaderConstantDataFeaturesKHR = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_constant_data"))
+		addFeatures(&physicalDeviceShaderConstantDataFeaturesKHR);
+
 	// VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures, VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT for ext [VK_EXT_shader_demote_to_helper_invocation]
 	vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures physicalDeviceShaderDemoteToHelperInvocationFeatures = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_demote_to_helper_invocation"))
@@ -1244,6 +1249,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceFragmentShadingRateFeaturesKHR.pipelineFragmentShadingRate == VK_FALSE )
 			failMesages.push_back("pipelineFragmentShadingRate");
+	}
+
+	// VkPhysicalDeviceShaderConstantDataFeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_constant_data")) )
+	{
+		if ( physicalDeviceShaderConstantDataFeaturesKHR.shaderConstantData == VK_FALSE )
+			failMesages.push_back("shaderConstantData");
 	}
 
 	// VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR

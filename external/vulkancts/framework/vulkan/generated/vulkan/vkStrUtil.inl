@@ -1376,6 +1376,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicFlo
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicInt64Features& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderBfloat16FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderClockFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderConstantDataFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderDrawParametersFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD& value);

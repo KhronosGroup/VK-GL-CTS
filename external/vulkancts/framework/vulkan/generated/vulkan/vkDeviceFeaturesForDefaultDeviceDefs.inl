@@ -162,6 +162,7 @@ const VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&						getShaderAtomicFloatFea
 const VkPhysicalDeviceShaderAtomicInt64Features&						getShaderAtomicInt64Features						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderAtomicInt64Features>();						}
 const VkPhysicalDeviceShaderBfloat16FeaturesKHR&						getShaderBfloat16Features							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderBfloat16FeaturesKHR>();						}
 const VkPhysicalDeviceShaderClockFeaturesKHR&							getShaderClockFeatures								(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderClockFeaturesKHR>();						}
+const VkPhysicalDeviceShaderConstantDataFeaturesKHR&					getShaderConstantDataFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderConstantDataFeaturesKHR>();					}
 const VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures&			getShaderDemoteToHelperInvocationFeatures			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures>();		}
 const VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderDrawParametersFeatures>();					}
 const VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD&		getShaderEarlyAndLateFragmentTestsFeaturesAMD		(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD>();	}

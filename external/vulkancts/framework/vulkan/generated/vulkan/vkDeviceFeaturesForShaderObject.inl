@@ -163,6 +163,7 @@ auto fShaderAtomicFloatFeaturesEXT                      = m_context.getShaderAto
 auto fShaderAtomicInt64Features                         = m_context.getShaderAtomicInt64Features();
 auto fShaderBfloat16Features                            = m_context.getShaderBfloat16Features();
 auto fShaderClockFeatures                               = m_context.getShaderClockFeatures();
+auto fShaderConstantDataFeatures                        = m_context.getShaderConstantDataFeatures();
 auto fShaderDemoteToHelperInvocationFeatures            = m_context.getShaderDemoteToHelperInvocationFeatures();
 auto fShaderDrawParametersFeatures                      = m_context.getShaderDrawParametersFeatures();
 auto fShaderEarlyAndLateFragmentTestsFeaturesAMD        = m_context.getShaderEarlyAndLateFragmentTestsFeaturesAMD();
@@ -379,6 +380,7 @@ std::vector<void *> pNextFeatures = {
 	&fShaderAtomicInt64Features,
 	&fShaderBfloat16Features,
 	&fShaderClockFeatures,
+	&fShaderConstantDataFeatures,
 	&fShaderDemoteToHelperInvocationFeatures,
 	&fShaderDrawParametersFeatures,
 	&fShaderEarlyAndLateFragmentTestsFeaturesAMD,

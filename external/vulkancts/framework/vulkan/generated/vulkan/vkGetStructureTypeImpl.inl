@@ -3188,6 +3188,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderClockFeaturesK
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderConstantDataFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CONSTANT_DATA_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES;

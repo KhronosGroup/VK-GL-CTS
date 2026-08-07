@@ -373,6 +373,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceShaderAtomicFloat2FeaturesEX
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderAtomicFloatFeaturesEXT>(VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderBfloat16FeaturesKHR>(VkPhysicalDeviceShaderBfloat16FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderClockFeaturesKHR>(VkPhysicalDeviceShaderClockFeaturesKHR&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderConstantDataFeaturesKHR>(VkPhysicalDeviceShaderConstantDataFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD>(VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderFloat8FeaturesEXT>(VkPhysicalDeviceShaderFloat8FeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderFmaFeaturesKHR>(VkPhysicalDeviceShaderFmaFeaturesKHR&, const AllFeaturesBlobs&) {}
@@ -574,6 +575,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderAtomicFloatFeatures
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderAtomicInt64Features>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES, VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderBfloat16FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_BFLOAT16_FEATURES_KHR, VK_KHR_SHADER_BFLOAT16_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderClockFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR, VK_KHR_SHADER_CLOCK_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderConstantDataFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CONSTANT_DATA_FEATURES_KHR, VK_KHR_SHADER_CONSTANT_DATA_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES, VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderDrawParametersFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES, DECL_CORE_FEATURES_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS_FEATURES_AMD, VK_AMD_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS_EXTENSION_NAME}; }
@@ -795,6 +797,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderAtomicInt64Features>, VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderBfloat16FeaturesKHR>, VK_KHR_SHADER_BFLOAT16_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderClockFeaturesKHR>, VK_KHR_SHADER_CLOCK_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceShaderConstantDataFeaturesKHR>, VK_KHR_SHADER_CONSTANT_DATA_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures>, VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderDrawParametersFeatures>, DECL_CORE_FEATURES_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD>, VK_AMD_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS_EXTENSION_NAME },

@@ -16275,6 +16275,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderClockFeat
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderConstantDataFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderConstantDataFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderConstantData = " << value.shaderConstantData << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures& value)
 {
 	s << "VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures = {\n";

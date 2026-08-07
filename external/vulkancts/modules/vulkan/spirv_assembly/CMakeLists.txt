@@ -90,6 +90,8 @@ set(DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmMaint9VectorizationTests.hpp
 	vktSpvAsmOpUndefTests.cpp
 	vktSpvAsmOpUndefTests.hpp
+	vktSpvAsmConstantDataTests.cpp
+	vktSpvAsmConstantDataTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_SRCS

@@ -162,6 +162,7 @@ const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&						getShaderAtomicFloa
 const vk::VkPhysicalDeviceShaderAtomicInt64Features&						getShaderAtomicInt64Features						(void) const;
 const vk::VkPhysicalDeviceShaderBfloat16FeaturesKHR&						getShaderBfloat16Features							(void) const;
 const vk::VkPhysicalDeviceShaderClockFeaturesKHR&							getShaderClockFeatures								(void) const;
+const vk::VkPhysicalDeviceShaderConstantDataFeaturesKHR&					getShaderConstantDataFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures&			getShaderDemoteToHelperInvocationFeatures			(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD&		getShaderEarlyAndLateFragmentTestsFeaturesAMD		(void) const;

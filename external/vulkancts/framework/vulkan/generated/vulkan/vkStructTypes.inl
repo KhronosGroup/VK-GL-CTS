@@ -7904,6 +7904,13 @@ struct VkPhysicalDeviceShaderClockFeaturesKHR
 	VkBool32		shaderDeviceClock;
 };
 
+struct VkPhysicalDeviceShaderConstantDataFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderConstantData;
+};
+
 struct VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures
 {
 	VkStructureType	sType;
