@@ -46,9 +46,12 @@
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkBarrierUtil.hpp"
+#include "vkBuilderUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTextureUtil.hpp"
 #include "deUniquePtr.hpp"
+#include <array>
+#include <cmath>
 #include <cstring>
 #include <set>
 #include <sstream>
@@ -2693,6 +2696,396 @@ tcu::TestStatus RemapInstance::iterate(void)
 
 #endif // CTS_USES_VULKANSC
 
+struct MultisampleBlendParams
+{
+    PipelineConstructionType pipelineConstructionType;
+    VkFormat colorFormat;
+    VkPipelineColorBlendAttachmentState blendState;
+    std::array<tcu::Vec4, 4> expectedColors;
+};
+
+class MultisampleBlendTestInstance : public vkt::TestInstance
+{
+public:
+    MultisampleBlendTestInstance(Context &context, const MultisampleBlendParams &params)
+        : vkt::TestInstance(context)
+        , m_params(params)
+    {
+    }
+    virtual ~MultisampleBlendTestInstance()
+    {
+    }
+
+    virtual tcu::TestStatus iterate();
+
+private:
+    const MultisampleBlendParams m_params;
+};
+
+tcu::TestStatus MultisampleBlendTestInstance::iterate()
+{
+    const InstanceInterface &vki          = m_context.getInstanceInterface();
+    const DeviceInterface &vkd            = m_context.getDeviceInterface();
+    const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+    const VkDevice device                 = m_context.getDevice();
+    Allocator &allocator                  = m_context.getDefaultAllocator();
+    const VkQueue queue                   = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex       = m_context.getUniversalQueueFamilyIndex();
+    auto &log                             = m_context.getTestContext().getLog();
+
+    const VkExtent3D renderSize = {32u, 32u, 1u};
+    const tcu::Vec4 srcColor(0.60f, 0.50f, 0.70f, 0.50f);
+    const tcu::Vec4 dstColors[4] = {
+        tcu::Vec4(0.10f, 0.20f, 0.15f, 0.20f),
+        tcu::Vec4(0.65f, 0.15f, 0.40f, 0.40f),
+        tcu::Vec4(0.25f, 0.70f, 0.30f, 0.60f),
+        tcu::Vec4(0.45f, 0.35f, 0.60f, 0.70f),
+    };
+
+    VkImageCreateInfo colorImageCreateInfo = initVulkanStructure();
+    colorImageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+    colorImageCreateInfo.format            = m_params.colorFormat;
+    colorImageCreateInfo.extent            = renderSize;
+    colorImageCreateInfo.mipLevels         = 1u;
+    colorImageCreateInfo.arrayLayers       = 1u;
+    colorImageCreateInfo.samples           = VK_SAMPLE_COUNT_4_BIT;
+    colorImageCreateInfo.usage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+    ImageWithMemory colorImage(vkd, device, allocator, colorImageCreateInfo, MemoryRequirement::Any);
+    const auto colorImageView = makeImageView(vkd, device, colorImage.get(), VK_IMAGE_VIEW_TYPE_2D,
+                                              m_params.colorFormat, makeDefaultImageSubresourceRange());
+
+    VkAttachmentDescription colorAttachmentDescription = {};
+    colorAttachmentDescription.format                  = m_params.colorFormat;
+    colorAttachmentDescription.samples                 = VK_SAMPLE_COUNT_4_BIT;
+    colorAttachmentDescription.loadOp                  = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachmentDescription.storeOp                 = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachmentDescription.stencilLoadOp           = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachmentDescription.stencilStoreOp          = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachmentDescription.finalLayout             = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    const VkAttachmentReference colorAttachmentReference = {0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+
+    VkSubpassDescription subpassDescription = {};
+    subpassDescription.colorAttachmentCount = 1u;
+    subpassDescription.pColorAttachments    = &colorAttachmentReference;
+
+    VkRenderPassCreateInfo renderPassCreateInfo = initVulkanStructure();
+    renderPassCreateInfo.attachmentCount        = 1u;
+    renderPassCreateInfo.pAttachments           = &colorAttachmentDescription;
+    renderPassCreateInfo.subpassCount           = 1u;
+    renderPassCreateInfo.pSubpasses             = &subpassDescription;
+    RenderPassWrapper renderPass(m_params.pipelineConstructionType, vkd, device, &renderPassCreateInfo);
+
+    VkFramebufferCreateInfo framebufferCreateInfo = initVulkanStructure();
+    framebufferCreateInfo.renderPass              = renderPass.get();
+    framebufferCreateInfo.attachmentCount         = 1u;
+    framebufferCreateInfo.pAttachments            = &colorImageView.get();
+    framebufferCreateInfo.width                   = renderSize.width;
+    framebufferCreateInfo.height                  = renderSize.height;
+    framebufferCreateInfo.layers                  = 1u;
+    renderPass.createFramebuffer(vkd, device, &framebufferCreateInfo, colorImage.get());
+
+    const tcu::Vec4 v1(-1.0f, -1.0f, 0.0f, 1.0f);
+    const tcu::Vec4 v2(1.0f, -1.0f, 0.0f, 1.0f);
+    const tcu::Vec4 v3(-1.0f, 1.0f, 0.0f, 1.0f);
+    const tcu::Vec4 v4(1.0f, 1.0f, 0.0f, 1.0f);
+
+    const tcu::Vec4 quadColors[] = {dstColors[1], dstColors[2], dstColors[3], srcColor};
+
+    std::vector<Vertex4RGBA> vertices;
+    for (const tcu::Vec4 &color : quadColors)
+    {
+        vertices.push_back({v1, color});
+        vertices.push_back({v2, color});
+        vertices.push_back({v3, color});
+        vertices.push_back({v4, color});
+    }
+
+    const auto vertexBufferSize = static_cast<VkDeviceSize>(de::dataSize(vertices));
+    BufferWithMemory vertexBuffer(vkd, device, allocator,
+                                  makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
+                                  MemoryRequirement::HostVisible);
+
+    deMemcpy(vertexBuffer.getAllocation().getHostPtr(), vertices.data(), static_cast<size_t>(vertexBufferSize));
+    flushAlloc(vkd, device, vertexBuffer.getAllocation());
+
+    VkVertexInputBindingDescription vertexInputBindingDescription = {};
+    vertexInputBindingDescription.binding                         = 0u;
+    vertexInputBindingDescription.stride                          = sizeof(Vertex4RGBA);
+    vertexInputBindingDescription.inputRate                       = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2];
+    vertexInputAttributeDescriptions[0].location = 0u;
+    vertexInputAttributeDescriptions[0].binding  = 0u;
+    vertexInputAttributeDescriptions[0].format   = VK_FORMAT_R32G32B32A32_SFLOAT;
+    vertexInputAttributeDescriptions[0].offset   = 0u;
+    vertexInputAttributeDescriptions[1].location = 1u;
+    vertexInputAttributeDescriptions[1].binding  = 0u;
+    vertexInputAttributeDescriptions[1].format   = VK_FORMAT_R32G32B32A32_SFLOAT;
+    vertexInputAttributeDescriptions[1].offset   = offsetof(Vertex4RGBA, color);
+
+    VkPipelineVertexInputStateCreateInfo vertexInputStateParams = initVulkanStructure();
+    vertexInputStateParams.vertexBindingDescriptionCount        = 1u;
+    vertexInputStateParams.pVertexBindingDescriptions           = &vertexInputBindingDescription;
+    vertexInputStateParams.vertexAttributeDescriptionCount      = 2u;
+    vertexInputStateParams.pVertexAttributeDescriptions         = vertexInputAttributeDescriptions;
+
+    std::vector<VkViewport> viewports{makeViewport(renderSize)};
+    std::vector<VkRect2D> scissors{makeRect2D(renderSize)};
+
+    const auto pipelineLayout       = PipelineLayoutWrapper(m_params.pipelineConstructionType, vkd, device);
+    const auto vertexShaderModule   = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"));
+    const auto fragmentShaderModule = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag"));
+
+    VkPipelineColorBlendAttachmentState noBlendState = {};
+    noBlendState.srcColorBlendFactor                 = VK_BLEND_FACTOR_ONE;
+    noBlendState.srcAlphaBlendFactor                 = VK_BLEND_FACTOR_ONE;
+    noBlendState.colorWriteMask =
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+    const std::vector<VkSampleMask> sampleMasks = {0x02u, 0x04u, 0x08u, 0x0Fu};
+
+    std::vector<GraphicsPipelineWrapper> pipelines;
+
+    for (uint32_t pipelineNdx = 0u; pipelineNdx < 4u; ++pipelineNdx)
+    {
+        const bool isBlendingPipeline = (pipelineNdx == 3u);
+
+        VkPipelineMultisampleStateCreateInfo multisampleState = initVulkanStructure();
+        multisampleState.rasterizationSamples                 = VK_SAMPLE_COUNT_4_BIT;
+        multisampleState.sampleShadingEnable                  = VK_FALSE;
+        multisampleState.pSampleMask                          = &sampleMasks[pipelineNdx];
+
+        VkPipelineColorBlendStateCreateInfo colorBlendState = initVulkanStructure();
+        colorBlendState.attachmentCount                     = 1u;
+        colorBlendState.pAttachments                        = isBlendingPipeline ? &m_params.blendState : &noBlendState;
+        colorBlendState.blendConstants[0]                   = BlendTest::s_blendConst[0];
+        colorBlendState.blendConstants[1]                   = BlendTest::s_blendConst[1];
+        colorBlendState.blendConstants[2]                   = BlendTest::s_blendConst[2];
+        colorBlendState.blendConstants[3]                   = BlendTest::s_blendConst[3];
+
+        pipelines.emplace_back(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(),
+                               m_params.pipelineConstructionType);
+        pipelines.back()
+            .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+            .setDefaultRasterizationState()
+            .setDefaultDepthStencilState()
+            .setupVertexInputState(&vertexInputStateParams)
+            .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertexShaderModule)
+            .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragmentShaderModule, nullptr, &multisampleState)
+            .setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleState)
+            .setMonolithicPipelineLayout(pipelineLayout)
+            .buildPipeline();
+    }
+
+    const VkDeviceSize bufferSize = static_cast<VkDeviceSize>(4u * 32u * 32u * sizeof(tcu::Vec4));
+    BufferWithMemory buffer(vkd, device, allocator,
+                            makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+                            MemoryRequirement::HostVisible);
+
+    const VkSamplerCreateInfo samplerCreateInfo = {
+        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType sType;
+        nullptr,                                 // const void* pNext;
+        0u,                                      // VkSamplerCreateFlags flags;
+        VK_FILTER_NEAREST,                       // VkFilter magFilter;
+        VK_FILTER_NEAREST,                       // VkFilter minFilter;
+        VK_SAMPLER_MIPMAP_MODE_NEAREST,          // VkSamplerMipmapMode mipmapMode;
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // VkSamplerAddressMode addressModeU;
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // VkSamplerAddressMode addressModeV;
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // VkSamplerAddressMode addressModeW;
+        0.0f,                                    // float mipLodBias;
+        VK_FALSE,                                // VkBool32 anisotropyEnable;
+        1.0f,                                    // float maxAnisotropy;
+        VK_FALSE,                                // VkBool32 compareEnable;
+        VK_COMPARE_OP_NEVER,                     // VkCompareOp compareOp;
+        0.0f,                                    // float minLod;
+        0.0f,                                    // float maxLod;
+        VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK, // VkBorderColor borderColor;
+        VK_FALSE,                                // VkBool32 unnormalizedCoordinates;
+    };
+    const auto sampler = createSampler(vkd, device, &samplerCreateInfo);
+
+    const auto descriptorSetLayout =
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vkd, device);
+
+    const auto descriptorPool = DescriptorPoolBuilder()
+                                    .addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+                                    .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+                                    .build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    const auto descriptorSet = makeDescriptorSet(vkd, device, *descriptorPool, *descriptorSetLayout);
+
+    const auto imageInfo =
+        makeDescriptorImageInfo(sampler.get(), colorImageView.get(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    const auto bufferInfo = makeDescriptorBufferInfo(buffer.get(), 0ull, VK_WHOLE_SIZE);
+
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                     VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageInfo)
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u),
+                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo)
+        .update(vkd, device);
+
+    const auto computePipelineLayout = makePipelineLayout(vkd, device, *descriptorSetLayout);
+    const auto computeShaderModule   = createShaderModule(vkd, device, m_context.getBinaryCollection().get("comp"));
+    const auto computePipeline       = makeComputePipeline(vkd, device, *computePipelineLayout, *computeShaderModule);
+
+    const auto cmdPool      = makeCommandPool(vkd, device, queueFamilyIndex);
+    const auto cmdBufferPtr = allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    const auto cmdBuffer    = *cmdBufferPtr;
+
+    VkClearValue clearValue;
+    clearValue.color.float32[0] = dstColors[0][0];
+    clearValue.color.float32[1] = dstColors[0][1];
+    clearValue.color.float32[2] = dstColors[0][2];
+    clearValue.color.float32[3] = dstColors[0][3];
+
+    beginCommandBuffer(vkd, cmdBuffer);
+    renderPass.begin(vkd, cmdBuffer, makeRect2D(renderSize), clearValue);
+
+    for (uint32_t quadNdx = 0u; quadNdx < 4u; ++quadNdx)
+    {
+        const VkDeviceSize vertexBufferOffset = 4u * sizeof(Vertex4RGBA) * quadNdx;
+        pipelines[quadNdx].bind(cmdBuffer);
+        vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+        vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+    }
+
+    renderPass.end(vkd, cmdBuffer);
+
+    const auto preBarrier = makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT);
+    cmdPipelineMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, &preBarrier);
+
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
+    vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u,
+                              &descriptorSet.get(), 0u, nullptr);
+    vkd.cmdDispatch(cmdBuffer, 32u / 8u, 32u / 8u, 1u);
+
+    const auto postBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+    cmdPipelineMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                             &postBarrier);
+
+    endCommandBuffer(vkd, cmdBuffer);
+    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+    const auto tcuColorFormat = mapVkFormat(m_params.colorFormat);
+
+    invalidateAlloc(vkd, device, buffer.getAllocation());
+    const tcu::Vec4 *results = static_cast<const tcu::Vec4 *>(buffer.getAllocation().getHostPtr());
+    const tcu::Vec4 threshold(getFormatThreshold(tcuColorFormat, 2));
+
+    for (uint32_t sampleNdx = 0u; sampleNdx < 4u; ++sampleNdx)
+    {
+        const tcu::Vec4 &expected = m_params.expectedColors[sampleNdx];
+
+        for (uint32_t y = 0u; y < 32u; y++)
+        {
+            for (uint32_t x = 0u; x < 32u; x++)
+            {
+                const tcu::Vec4 &result = results[(sampleNdx * 32u + y) * 32u + x];
+
+                for (int i = 0; i < 4; i++)
+                {
+                    if (std::abs(result[i] - expected[i]) > threshold[i])
+                    {
+                        log << tcu::TestLog::Message << "Sample " << sampleNdx << " at (" << x << ", " << y
+                            << "): expected " << expected << " (destination " << dstColors[sampleNdx] << "), but was "
+                            << result << tcu::TestLog::EndMessage;
+                        return tcu::TestStatus::fail("Fail");
+                    }
+                }
+            }
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class MultisampleBlendTest : public vkt::TestCase
+{
+public:
+    MultisampleBlendTest(tcu::TestContext &testContext, const std::string &name, const MultisampleBlendParams &params)
+        : vkt::TestCase(testContext, name)
+        , m_params(params)
+    {
+    }
+    virtual ~MultisampleBlendTest(void)
+    {
+    }
+
+    virtual TestInstance *createInstance(Context &context) const
+    {
+        return new MultisampleBlendTestInstance(context, m_params);
+    }
+
+    virtual void initPrograms(SourceCollections &sourceCollections) const;
+    virtual void checkSupport(Context &context) const;
+
+private:
+    const MultisampleBlendParams m_params;
+};
+
+void MultisampleBlendTest::initPrograms(SourceCollections &sourceCollections) const
+{
+    const std::string vert = "#version 450\n"
+                             "layout(location = 0) in vec4 pos;\n"
+                             "layout(location = 1) in vec4 color;\n"
+                             "layout(location = 0) out vec4 outColor;\n"
+                             "void main () {\n"
+                             "    gl_Position = pos;\n"
+                             "    outColor = color;\n"
+                             "}\n";
+
+    const std::string frag = "#version 450\n"
+                             "layout(location = 0) in vec4 color;\n"
+                             "layout(location = 0) out vec4 outColor;\n"
+                             "void main () {\n"
+                             "    outColor = color;\n"
+                             "}\n";
+
+    const std::string comp = "#version 450\n"
+                             "layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;\n"
+                             "layout(set = 0, binding = 0) uniform sampler2DMS image;\n"
+                             "layout(set = 0, binding = 1, std430) writeonly buffer OutBuffer {\n"
+                             "    vec4 values[];\n"
+                             "} outBuffer;\n"
+                             "void main () {\n"
+                             "    const int width = 32;\n"
+                             "    const int height = 32;\n"
+                             "    const int numSamples = 4;\n"
+                             "    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);\n"
+                             "    for (int sampleNdx = 0; sampleNdx < numSamples; ++sampleNdx) {\n"
+                             "        outBuffer.values[(sampleNdx * height + coord.y) * width + coord.x] = "
+                             "texelFetch(image, coord, sampleNdx);\n"
+                             "    }\n"
+                             "}\n";
+
+    sourceCollections.glslSources.add("vert") << glu::VertexSource(vert);
+    sourceCollections.glslSources.add("frag") << glu::FragmentSource(frag);
+    sourceCollections.glslSources.add("comp") << glu::ComputeSource(comp);
+}
+
+void MultisampleBlendTest::checkSupport(Context &context) const
+{
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
+    checkPipelineConstructionRequirements(vki, physicalDevice, m_params.pipelineConstructionType);
+    checkSupportedBlendFormat(vki, physicalDevice, m_params.colorFormat);
+
+    VkImageFormatProperties imageFormatProps;
+    VkResult res = vki.getPhysicalDeviceImageFormatProperties(
+        physicalDevice, m_params.colorFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 0u, &imageFormatProps);
+    if (res != VK_SUCCESS || (imageFormatProps.sampleCounts & VK_SAMPLE_COUNT_4_BIT) == 0u)
+        TCU_THROW(NotSupportedError, "Format not supported");
+}
+
 } // anonymous namespace
 
 std::string getBlendStateSetName(const VkPipelineColorBlendAttachmentState blendStates[BlendTest::QUAD_COUNT])
@@ -2969,6 +3362,100 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
     {
         blendTests->addChild(formatTests.release());
         blendTests->addChild(dynamicMaskTests.release());
+    }
+
+    if (genFormatTests)
+    {
+        const VkFormat formats[] = {
+            VK_FORMAT_R8G8B8A8_UNORM,
+            VK_FORMAT_B8G8R8A8_UNORM,
+            VK_FORMAT_R16G16B16A16_SFLOAT,
+        };
+
+        struct Equation
+        {
+            VkBlendFactor srcFactor;
+            VkBlendFactor dstFactor;
+            VkBlendOp op;
+        };
+
+        struct BlendCase
+        {
+            Equation color;
+            Equation alpha;
+            std::array<tcu::Vec4, 4> expectedColors;
+        };
+
+        const BlendCase blendCases[] = {
+            {
+                {VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD},
+                {VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD},
+                {{tcu::Vec4(0.35f, 0.35f, 0.425f, 0.60f), tcu::Vec4(0.625f, 0.325f, 0.55f, 0.70f),
+                  tcu::Vec4(0.425f, 0.60f, 0.50f, 0.80f), tcu::Vec4(0.525f, 0.425f, 0.65f, 0.85f)}},
+            },
+            {
+                {VK_BLEND_FACTOR_DST_COLOR, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD},
+                {VK_BLEND_FACTOR_DST_ALPHA, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD},
+                {{tcu::Vec4(0.06f, 0.10f, 0.105f, 0.10f), tcu::Vec4(0.39f, 0.075f, 0.28f, 0.20f),
+                  tcu::Vec4(0.15f, 0.35f, 0.21f, 0.30f), tcu::Vec4(0.27f, 0.175f, 0.42f, 0.35f)}},
+            },
+            {
+                {VK_BLEND_FACTOR_SRC_ALPHA_SATURATE, VK_BLEND_FACTOR_ONE, VK_BLEND_OP_ADD},
+                {VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD},
+                {{tcu::Vec4(0.40f, 0.45f, 0.50f, 0.60f), tcu::Vec4(0.95f, 0.40f, 0.75f, 0.70f),
+                  tcu::Vec4(0.49f, 0.90f, 0.58f, 0.80f), tcu::Vec4(0.63f, 0.50f, 0.81f, 0.85f)}},
+            },
+            {
+                {VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_DST_COLOR, VK_BLEND_OP_SUBTRACT},
+                {VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_DST_ALPHA, VK_BLEND_OP_SUBTRACT},
+                {{tcu::Vec4(0.59f, 0.46f, 0.6775f, 0.46f), tcu::Vec4(0.1775f, 0.4775f, 0.54f, 0.34f),
+                  tcu::Vec4(0.5375f, 0.01f, 0.61f, 0.14f), tcu::Vec4(0.3975f, 0.3775f, 0.34f, 0.01f)}},
+            },
+            {
+                {VK_BLEND_FACTOR_SRC_COLOR, VK_BLEND_FACTOR_DST_COLOR, VK_BLEND_OP_MIN},
+                {VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_DST_ALPHA, VK_BLEND_OP_MAX},
+                {{tcu::Vec4(0.10f, 0.20f, 0.15f, 0.50f), tcu::Vec4(0.60f, 0.15f, 0.40f, 0.50f),
+                  tcu::Vec4(0.25f, 0.50f, 0.30f, 0.60f), tcu::Vec4(0.45f, 0.35f, 0.60f, 0.70f)}},
+            },
+        };
+
+        const VkColorComponentFlags colorWriteMask =
+            (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+
+        de::MovePtr<tcu::TestCaseGroup> multisampleTests(new tcu::TestCaseGroup(testCtx, "multisample"));
+
+        for (const VkFormat format : formats)
+        {
+            de::MovePtr<tcu::TestCaseGroup> formatGroup(
+                new tcu::TestCaseGroup(testCtx, getFormatCaseName(format).c_str()));
+
+            for (const BlendCase &blendCase : blendCases)
+            {
+                const VkPipelineColorBlendAttachmentState blendState{
+                    VK_TRUE,
+                    blendCase.color.srcFactor,
+                    blendCase.color.dstFactor,
+                    blendCase.color.op,
+                    blendCase.alpha.srcFactor,
+                    blendCase.alpha.dstFactor,
+                    blendCase.alpha.op,
+                    colorWriteMask,
+                };
+
+                MultisampleBlendParams params;
+                deMemset(&params, 0, sizeof(params));
+                params.pipelineConstructionType = pipelineConstructionType;
+                params.colorFormat              = format;
+                params.blendState               = blendState;
+                params.expectedColors           = blendCase.expectedColors;
+
+                formatGroup->addChild(new MultisampleBlendTest(testCtx, getBlendStateName(blendState), params));
+            }
+
+            multisampleTests->addChild(formatGroup.release());
+        }
+
+        blendTests->addChild(multisampleTests.release());
     }
 
     blendTests->addChild(clampTests.release());
