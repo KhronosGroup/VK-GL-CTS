@@ -73,6 +73,8 @@ namespace opt
 
 DE_DECLARE_COMMAND_LINE_OPT(CasePath, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(ExcludeCasePath, std::string);
+DE_DECLARE_COMMAND_LINE_OPT(AmberTest, std::string);
+DE_DECLARE_COMMAND_LINE_OPT(AmberListFile, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(CaseList, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(CaseListFile, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(CaseListResource, std::string);
@@ -222,6 +224,8 @@ void registerOptions(de::cmdline::Parser &parser)
         << Option<ExcludeCasePath>("e", "deqp-exclude-case",
                                    "Test case(s) to exclude, supports wildcards (e.g. dEQP-GLES2.info.*) and commas to "
                                    "separate multiple patterns")
+        << Option<AmberTest>(nullptr, "deqp-amber-test", "Read single amber file and run it")
+        << Option<AmberListFile>(nullptr, "deqp-amber-list-file", "Read list of paths to amber files and run them")
         << Option<CaseListFile>("f", "deqp-caselist-file", "Read case list (in trie format) from given file")
         << Option<CaseList>(nullptr, "deqp-caselist",
                             "Case list to run in trie format (e.g. {dEQP-GLES2{info{version,renderer}}})")
@@ -1530,6 +1534,22 @@ const char *CommandLine::getServerAddress(void) const
         return nullptr;
 }
 
+const char *CommandLine::getAmberTestPath(void) const
+{
+    if (m_cmdLine.hasOption<opt::AmberTest>())
+        return m_cmdLine.getOption<opt::AmberTest>().c_str();
+    else
+        return nullptr;
+}
+
+const char *CommandLine::getAmberListFilePath(void) const
+{
+    if (m_cmdLine.hasOption<opt::AmberListFile>())
+        return m_cmdLine.getOption<opt::AmberListFile>().c_str();
+    else
+        return nullptr;
+}
+
 const char *CommandLine::getPipelineCompilerPath(void) const
 {
     if (m_cmdLine.hasOption<opt::PipelineCompilerPath>())
@@ -1701,7 +1721,11 @@ CaseListFilter::CaseListFilter(const de::cmdline::CommandLine &cmdLine, const tc
         m_runnerType = cmdLine.getOption<opt::RunnerType>();
     }
 
-    if (cmdLine.hasOption<opt::CaseList>())
+    if (cmdLine.hasOption<opt::AmberTest>() || cmdLine.hasOption<opt::AmberListFile>())
+    {
+        m_casePaths = de::MovePtr<const CasePaths>(new CasePaths("dEQP-VK-amber.*"));
+    }
+    else if (cmdLine.hasOption<opt::CaseList>())
     {
         std::istringstream str(cmdLine.getOption<opt::CaseList>());
 

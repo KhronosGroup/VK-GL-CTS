@@ -355,6 +355,12 @@ public:
     //! Define default size for single pipeline ( Vulkan SC )
     int getPipelineDefaultSize(void) const;
 
+    //! Path to a single amber test
+    const char *getAmberTestPath(void) const;
+
+    //! Path to a file containing a list of amber tests
+    const char *getAmberListFilePath(void) const;
+
     //! Path to offline pipeline compiler executable
     const char *getPipelineCompilerPath(void) const;
 
@@ -411,6 +417,8 @@ public:
      * --deqp-caselist-file
      * --deqp-caselist-resource
      * --deqp-stdin-caselist
+     *
+     * --deqp-amber* overrides --deqp-case* options, if specified.
      *
      * Throws std::invalid_argument if parsing fails.
      *//*--------------------------------------------------------------------*/

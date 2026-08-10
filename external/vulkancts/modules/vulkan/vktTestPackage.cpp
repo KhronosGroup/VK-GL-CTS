@@ -108,6 +108,7 @@
 #include "vktAmberGraphicsFuzzTests.hpp"
 #include "vktAmberGlslTests.hpp"
 #include "vktAmberDepthTests.hpp"
+#include "vktAmberTestCase.hpp"
 #include "vktImagelessFramebufferTests.hpp"
 #include "vktTransformFeedbackTests.hpp"
 #include "vktDescriptorIndexingTests.hpp"
@@ -1384,6 +1385,14 @@ TestPackage::~TestPackage(void)
 {
 }
 
+AmberTestPackage::AmberTestPackage(tcu::TestContext &testCtx) : BaseTestPackage(testCtx, "dEQP-VK-amber")
+{
+}
+
+AmberTestPackage::~AmberTestPackage(void)
+{
+}
+
 ExperimentalTestPackage::ExperimentalTestPackage(tcu::TestContext &testCtx)
     : BaseTestPackage(testCtx, "dEQP-VK-experimental")
 {
@@ -1476,6 +1485,58 @@ void TestPackage::init(void)
     addRootChild("tensor", m_caseListFilter, tensor::createTests);
     addRootChild("data_graph", m_caseListFilter, dataGraph::createTests);
     addRootChild("postmortem", m_caseListFilter, postmortem::createTests);
+}
+
+std::string pathToTestName(const std::string path)
+{
+    std::string testName = path;
+    for (size_t id = 0; id < testName.size(); ++id)
+    {
+        const char c = testName[id];
+        if (!(de::inRange(c, 'a', 'z') || de::inRange(c, 'A', 'Z') || de::inRange(c, '0', '9')))
+        {
+            testName[id] = '_';
+        }
+    }
+    return testName;
+}
+
+void AmberTestPackage::init()
+{
+    if (getTestContext().getCommandLine().getAmberTestPath())
+    {
+        std::string amberTestPath = getTestContext().getCommandLine().getAmberTestPath();
+        std::string amberTestName = pathToTestName(amberTestPath);
+        cts_amber::AmberTestCase *testCase =
+            new cts_amber::AmberTestCase(m_testCtx, amberTestName.c_str(), "", amberTestPath);
+        addChild(testCase);
+    }
+    else if (getTestContext().getCommandLine().getAmberListFilePath())
+    {
+        std::string amberListPath = getTestContext().getCommandLine().getAmberListFilePath();
+
+        std::ifstream file(amberListPath);
+
+        if (file.is_open())
+        {
+            std::string amberTestPath;
+
+            while (std::getline(file, amberTestPath))
+            {
+                if (amberTestPath.empty())
+                {
+                    continue;
+                }
+
+                std::string amberTestName = pathToTestName(amberTestPath);
+                cts_amber::AmberTestCase *testCase =
+                    new cts_amber::AmberTestCase(m_testCtx, amberTestName.c_str(), "", amberTestPath);
+                addChild(testCase);
+            }
+
+            file.close();
+        }
+    }
 }
 
 void ExperimentalTestPackage::init(void)

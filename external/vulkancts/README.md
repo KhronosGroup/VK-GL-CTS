@@ -927,6 +927,12 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
   -e, --deqp-exclude-case=<value>
     Test case(s) to exclude, supports wildcards, works in conjunction witch -n, --deqp-case
 
+  --deqp-amber-test=<value>
+    Read single amber file and run it
+
+  --deqp-amber-list-file=<value>
+    Read list of files to amber files and run them
+
   --deqp-caselist=<value>
     Case list to run in trie format (e.g. {dEQP-GLES2{info{version,renderer}}})
 

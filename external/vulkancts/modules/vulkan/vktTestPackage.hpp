@@ -51,6 +51,15 @@ public:
     virtual void init(void);
 };
 
+class AmberTestPackage : public BaseTestPackage
+{
+public:
+    AmberTestPackage(tcu::TestContext &testCtx);
+    virtual ~AmberTestPackage(void);
+
+    virtual void init(void);
+};
+
 class ExperimentalTestPackage : public BaseTestPackage
 {
 public:

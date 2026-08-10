@@ -58,6 +58,7 @@ add_subdirectory(tensor)
 add_subdirectory(data_graph)
 
 include_directories(
+	.
 	api
 	pipeline
 	binding_model
