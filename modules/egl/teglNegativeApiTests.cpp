@@ -724,11 +724,13 @@ void NegativeApiTests::init(void)
 
         log << TestLog::EndSection;
 
-        log << TestLog::Section("Test2", "EGL_BAD_CONFIG or EGL_BAD_PARAMETER is generated if config is not an EGL "
-                                         "frame buffer configuration or if the PixmapSurface call is not supported");
+        log << TestLog::Section("Test2", "EGL_BAD_CONFIG, EGL_BAD_NATIVE_PIXMAP, or EGL_BAD_PARAMETER is generated "
+                                         "if config is not an EGL frame buffer configuration, native_pixmap is not "
+                                         "a valid pixmap, or the PixmapSurface call is not supported. The spec does "
+                                         "not mandate which validation happens first.");
 
         expectNoSurface(eglCreatePixmapSurface(display, (EGLConfig)-1, DE_NULL, s_emptyAttribList));
-        expectEitherError(EGL_BAD_CONFIG, EGL_BAD_PARAMETER);
+        expectAnyError({EGL_BAD_CONFIG, EGL_BAD_NATIVE_PIXMAP, EGL_BAD_PARAMETER});
 
         log << TestLog::EndSection;
     });
