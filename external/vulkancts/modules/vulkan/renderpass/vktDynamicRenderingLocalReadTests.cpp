@@ -36,6 +36,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkPipelineConstructionUtil.hpp"
 #include "vktDynamicRenderingLocalReadTests.hpp"
+#include "vktDynamicRenderingSuspendResumeTestsUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkQueryUtil.hpp"
@@ -5478,155 +5479,185 @@ IOType RemappingWithGapTestCase::getInstanceIOType() const
 
 } // namespace
 
-tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testCtx, const SharedGroupParams grpParams)
+tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testContext,
+                                                         const SharedGroupParams grpParams)
 {
-    struct TestConfig
-    {
-        std::string name;
-        TestType testType;
-    };
-    std::vector<TestConfig> testConfigs{
-        {"max_input_attachments", TestType::MAX_INPUT_ATTACHMENTS},
-        {"max_attachments_remapped_repeatedly", TestType::MAX_ATTACHMENTS_REMAPPED_REPEATEDLY},
-        {"input_attachments_without_mapping", TestType::INPUT_ATTACHMENTS_WITHOUT_MAPPING},
-        {"unused_writen_discarded", TestType::UNUSED_WRITEN_DISCARDED},
-        {"depth_stencil_mapping_to_no_index", TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX},
-        {"depth_stencil_mapping_to_no_index_depth_clear", TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_DEPTH_CLEAR},
-        {"depth_stencil_mapping_to_no_index_stencil_clear", TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_STENCIL_CLEAR},
-        {"depth_stencil_mapping_to_same_index", TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX},
-        {"depth_stencil_mapping_to_large_index", TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX},
-        {"depth_mapping_stencil_not", TestType::DEPTH_MAPPING_STENCIL_NOT},
-        {"mapping_not_affecting_blend_state", TestType::MAPPING_NOT_AFFECTING_BLEND_STATE},
-        {"interaction_with_color_write_enable", TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE},
-        {"interaction_with_graphics_pipeline_library", TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY},
-        {"interaction_with_extended_dynamic_state3", TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3},
-        {"interaction_with_shader_object", TestType::INTERACTION_WITH_SHADER_OBJECT},
-        {"remap_single_attachment_monolithic", TestType::REMAP_SINGLE_ATTACHMENT_MONOLITHIC},
-        {"remap_single_attachment_fast_lib", TestType::REMAP_SINGLE_ATTACHMENT_FAST_LIB},
-        {"remap_single_attachment_shader_object", TestType::REMAP_SINGLE_ATTACHMENT_SHADER_OBJECT},
-        {"feedback_loop", TestType::FEEDBACK_LOOP},
-        {"feedback_loop_with_shader_object", TestType::FEEDBACK_LOOP_ESO},
-        {"feedback_loop_msaa", TestType::FEEDBACK_LOOP_MSAA},
-        {"frag_shader_only_color", TestType::FRAG_SHADER_ONLY_COLOR},
-    };
-
-    de::MovePtr<tcu::TestCaseGroup> mainGroup(
-        new tcu::TestCaseGroup(testCtx, "local_read", "Test dynamic rendering local read"));
-
-    for (const auto &testConfig : testConfigs)
-    {
-        if (grpParams->pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC &&
-            isConstructionTypeInvariant(testConfig.testType))
-            continue;
-
-        mainGroup->addChild(new LocalReadTestCase(testCtx, testConfig.name, testConfig.testType, grpParams));
-    }
-
-    // Test pColorAttachmentLocations set to NULL
-    if (!grpParams->useSecondaryCmdBuffer)
-    {
-        if (!isConstructionTypeShaderObject(grpParams->pipelineConstructionType))
+    return createTestGroup2(
+        testContext, "local_read",
+        [grpParams](tcu::TestCaseGroup *mainGroup)
         {
-            for (const auto nullBeforeIdentity : {false, true})
+            auto &testCtx = mainGroup->getTestContext();
+
+            struct TestConfig
             {
-                const std::string testName = std::string("null_color_attachment_location_with_locationinfo") +
-                                             (nullBeforeIdentity ? "_before_identity" : "");
-                mainGroup->addChild(new NullAttachmentLocationsTestCase(testCtx, testName, false /* commandMode */,
-                                                                        false /* nullAfterRemap */, nullBeforeIdentity,
-                                                                        grpParams->pipelineConstructionType));
-            }
-        }
+                std::string name;
+                TestType testType;
+            };
+            std::vector<TestConfig> testConfigs{
+                {"max_input_attachments", TestType::MAX_INPUT_ATTACHMENTS},
+                {"max_attachments_remapped_repeatedly", TestType::MAX_ATTACHMENTS_REMAPPED_REPEATEDLY},
+                {"input_attachments_without_mapping", TestType::INPUT_ATTACHMENTS_WITHOUT_MAPPING},
+                {"unused_writen_discarded", TestType::UNUSED_WRITEN_DISCARDED},
+                {"depth_stencil_mapping_to_no_index", TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX},
+                {"depth_stencil_mapping_to_no_index_depth_clear",
+                 TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_DEPTH_CLEAR},
+                {"depth_stencil_mapping_to_no_index_stencil_clear",
+                 TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_STENCIL_CLEAR},
+                {"depth_stencil_mapping_to_same_index", TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX},
+                {"depth_stencil_mapping_to_large_index", TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX},
+                {"depth_mapping_stencil_not", TestType::DEPTH_MAPPING_STENCIL_NOT},
+                {"mapping_not_affecting_blend_state", TestType::MAPPING_NOT_AFFECTING_BLEND_STATE},
+                {"interaction_with_color_write_enable", TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE},
+                {"interaction_with_graphics_pipeline_library", TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY},
+                {"interaction_with_extended_dynamic_state3", TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3},
+                {"interaction_with_shader_object", TestType::INTERACTION_WITH_SHADER_OBJECT},
+                {"remap_single_attachment_monolithic", TestType::REMAP_SINGLE_ATTACHMENT_MONOLITHIC},
+                {"remap_single_attachment_fast_lib", TestType::REMAP_SINGLE_ATTACHMENT_FAST_LIB},
+                {"remap_single_attachment_shader_object", TestType::REMAP_SINGLE_ATTACHMENT_SHADER_OBJECT},
+                {"feedback_loop", TestType::FEEDBACK_LOOP},
+                {"feedback_loop_with_shader_object", TestType::FEEDBACK_LOOP_ESO},
+                {"feedback_loop_msaa", TestType::FEEDBACK_LOOP_MSAA},
+                {"frag_shader_only_color", TestType::FRAG_SHADER_ONLY_COLOR},
+            };
 
-        for (const auto nullAfterRemap : {false, true})
-        {
-            const std::string testName =
-                std::string("null_color_attachment_location_with_command") + (nullAfterRemap ? "_after_remap" : "");
-            mainGroup->addChild(new NullAttachmentLocationsTestCase(testCtx, testName, true /* commandMode */,
-                                                                    nullAfterRemap, false /* nullBeforeIdentity */,
-                                                                    grpParams->pipelineConstructionType));
-        }
-    }
-
-    // Test mapping to (unused) locations higher than default locations
-    if (!grpParams->useSecondaryCmdBuffer)
-    {
-        for (const auto numAttachments : {1, 2})
-        {
-            for (uint32_t firstRemapLocation = numAttachments; firstRemapLocation <= kMaxLocation; firstRemapLocation++)
+            for (const auto &testConfig : testConfigs)
             {
-                const auto lastLocation = firstRemapLocation + (numAttachments - 1u); // includes first used location
+                if (grpParams->pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC &&
+                    isConstructionTypeInvariant(testConfig.testType))
+                    continue;
 
-                if (lastLocation > kMaxLocation)
-                    break;
-
-                const std::string testName = "mapping_" + de::toString(numAttachments) + "_attachments_to_locs_from_" +
-                                             de::toString(firstRemapLocation);
-                mainGroup->addChild(new RemappingToHighLocationTestCase(
-                    testCtx, testName, numAttachments, firstRemapLocation, grpParams->pipelineConstructionType));
+                mainGroup->addChild(new LocalReadTestCase(testCtx, testConfig.name, testConfig.testType, grpParams));
             }
-        }
-    }
 
-    // Test mismatched pipeline input attachment mapping with render pass attachment mapping
-    if (!grpParams->useSecondaryCmdBuffer)
-    {
-        struct AttachmentMappingTest
-        {
-            uint32_t pipelineMappingCount;
-            uint32_t inputAttachmentCount;
-            uint32_t attachmentCount;
-            bool differentIndices;
-            const char *name;
-        } attachmentMappingTests[] = {
-            {0, 0, 4, false, "attachment_mapping_no_mappings"},
-            {2, 0, 4, false, "attachment_mapping_some_mappings"},
-            {4, 0, 4, false, "attachment_mapping_all_mappings"},
-            {2, 0, 4, true, "attachment_mapping_some_mappings_different"},
-            {4, 0, 4, true, "attachment_mapping_all_mappings_different"},
-            {2, 2, 4, false, "attachment_mapping_input_attachments"},
-            {4, 2, 4, false, "attachment_mapping_input_attachments_all"},
-            {3, 2, 4, false, "attachment_mapping_input_attachments_superset"},
-            {4, 2, 4, true, "attachment_mapping_input_attachments_all_different"},
-            {3, 2, 4, true, "attachment_mapping_input_attachments_superset_different"},
-            {4, 4, 8, false, "attachment_mapping_input_attachments_4"},
-            {8, 4, 8, false, "attachment_mapping_input_attachments_all_4"},
-            {6, 4, 8, false, "attachment_mapping_input_attachments_superset_4"},
-            {8, 4, 8, true, "attachment_mapping_input_attachments_all_different_4"},
-            {6, 4, 8, true, "attachment_mapping_input_attachments_superset_different_4"},
-            {6, 6, 8, false, "attachment_mapping_input_attachments_6"},
-            {8, 6, 8, false, "attachment_mapping_input_attachments_all_6"},
-            {7, 6, 8, false, "attachment_mapping_input_attachments_superset_6"},
-            {8, 6, 8, true, "attachment_mapping_input_attachments_all_different_6"},
-            {7, 6, 8, true, "attachment_mapping_input_attachments_superset_different_6"},
-        };
+            // Test pColorAttachmentLocations set to NULL
+            if (!grpParams->useSecondaryCmdBuffer)
+            {
+                if (!isConstructionTypeShaderObject(grpParams->pipelineConstructionType))
+                {
+                    for (const auto nullBeforeIdentity : {false, true})
+                    {
+                        const std::string testName = std::string("null_color_attachment_location_with_locationinfo") +
+                                                     (nullBeforeIdentity ? "_before_identity" : "");
+                        mainGroup->addChild(new NullAttachmentLocationsTestCase(
+                            testCtx, testName, false /* commandMode */, false /* nullAfterRemap */, nullBeforeIdentity,
+                            grpParams->pipelineConstructionType));
+                    }
+                }
 
-        for (const auto &attachmentMappingTest : attachmentMappingTests)
-        {
-            AttachmentMappingParams params;
-            params.pipelineMappingCount = attachmentMappingTest.pipelineMappingCount;
-            params.inputAttachmentCount = attachmentMappingTest.inputAttachmentCount;
-            params.attachmentCount      = attachmentMappingTest.attachmentCount;
-            params.differentIndices     = attachmentMappingTest.differentIndices;
-            mainGroup->addChild(new AttachmentMappingTestCase(testCtx, attachmentMappingTest.name, params));
-        }
-    }
+                for (const auto nullAfterRemap : {false, true})
+                {
+                    const std::string testName = std::string("null_color_attachment_location_with_command") +
+                                                 (nullAfterRemap ? "_after_remap" : "");
+                    mainGroup->addChild(new NullAttachmentLocationsTestCase(
+                        testCtx, testName, true /* commandMode */, nullAfterRemap, false /* nullBeforeIdentity */,
+                        grpParams->pipelineConstructionType));
+                }
+            }
 
-    // Local Read tests with a gap between attachments
-    const TestConfig gapTestConfigs[]{
-        {"max_remapped_attachments_with_gap_read_only", TestType::MAX_REMAPPED_ATTACHMENTS_WITH_GAP_READ_ONLY},
-        {"max_remapped_attachments_with_gap_write_only", TestType::MAX_REMAPPED_ATTACHMENTS_WITH_GAP_WRITE_ONLY},
-        {"max_remapped_attachments_with_gap_write_read", TestType::MAX_REMAPPED_ATTACHMENTS_WITH_GAP_WRITE_THEN_READ},
-    };
-    for (const TestConfig &testConfig : gapTestConfigs)
-    {
-        if (grpParams->pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC &&
-            isConstructionTypeInvariant(testConfig.testType))
-            continue;
+            // Test mapping to (unused) locations higher than default locations
+            if (!grpParams->useSecondaryCmdBuffer)
+            {
+                for (const auto numAttachments : {1, 2})
+                {
+                    for (uint32_t firstRemapLocation = numAttachments; firstRemapLocation <= kMaxLocation;
+                         firstRemapLocation++)
+                    {
+                        const auto lastLocation =
+                            firstRemapLocation + (numAttachments - 1u); // includes first used location
 
-        mainGroup->addChild(new RemappingWithGapTestCase(testCtx, testConfig.name, testConfig.testType, grpParams));
-    }
+                        if (lastLocation > kMaxLocation)
+                            break;
 
-    return mainGroup.release();
+                        const std::string testName = "mapping_" + de::toString(numAttachments) +
+                                                     "_attachments_to_locs_from_" + de::toString(firstRemapLocation);
+                        mainGroup->addChild(new RemappingToHighLocationTestCase(testCtx, testName, numAttachments,
+                                                                                firstRemapLocation,
+                                                                                grpParams->pipelineConstructionType));
+                    }
+                }
+            }
+
+            // Test mismatched pipeline input attachment mapping with render pass attachment mapping
+            if (!grpParams->useSecondaryCmdBuffer)
+            {
+                struct AttachmentMappingTest
+                {
+                    uint32_t pipelineMappingCount;
+                    uint32_t inputAttachmentCount;
+                    uint32_t attachmentCount;
+                    bool differentIndices;
+                    const char *name;
+                } attachmentMappingTests[] = {
+                    {0, 0, 4, false, "attachment_mapping_no_mappings"},
+                    {2, 0, 4, false, "attachment_mapping_some_mappings"},
+                    {4, 0, 4, false, "attachment_mapping_all_mappings"},
+                    {2, 0, 4, true, "attachment_mapping_some_mappings_different"},
+                    {4, 0, 4, true, "attachment_mapping_all_mappings_different"},
+                    {2, 2, 4, false, "attachment_mapping_input_attachments"},
+                    {4, 2, 4, false, "attachment_mapping_input_attachments_all"},
+                    {3, 2, 4, false, "attachment_mapping_input_attachments_superset"},
+                    {4, 2, 4, true, "attachment_mapping_input_attachments_all_different"},
+                    {3, 2, 4, true, "attachment_mapping_input_attachments_superset_different"},
+                    {4, 4, 8, false, "attachment_mapping_input_attachments_4"},
+                    {8, 4, 8, false, "attachment_mapping_input_attachments_all_4"},
+                    {6, 4, 8, false, "attachment_mapping_input_attachments_superset_4"},
+                    {8, 4, 8, true, "attachment_mapping_input_attachments_all_different_4"},
+                    {6, 4, 8, true, "attachment_mapping_input_attachments_superset_different_4"},
+                    {6, 6, 8, false, "attachment_mapping_input_attachments_6"},
+                    {8, 6, 8, false, "attachment_mapping_input_attachments_all_6"},
+                    {7, 6, 8, false, "attachment_mapping_input_attachments_superset_6"},
+                    {8, 6, 8, true, "attachment_mapping_input_attachments_all_different_6"},
+                    {7, 6, 8, true, "attachment_mapping_input_attachments_superset_different_6"},
+                };
+
+                for (const auto &attachmentMappingTest : attachmentMappingTests)
+                {
+                    AttachmentMappingParams params;
+                    params.pipelineMappingCount = attachmentMappingTest.pipelineMappingCount;
+                    params.inputAttachmentCount = attachmentMappingTest.inputAttachmentCount;
+                    params.attachmentCount      = attachmentMappingTest.attachmentCount;
+                    params.differentIndices     = attachmentMappingTest.differentIndices;
+                    mainGroup->addChild(new AttachmentMappingTestCase(testCtx, attachmentMappingTest.name, params));
+                }
+            }
+
+            // Local Read tests with a gap between attachments
+            const TestConfig gapTestConfigs[]{
+                {"max_remapped_attachments_with_gap_read_only", TestType::MAX_REMAPPED_ATTACHMENTS_WITH_GAP_READ_ONLY},
+                {"max_remapped_attachments_with_gap_write_only",
+                 TestType::MAX_REMAPPED_ATTACHMENTS_WITH_GAP_WRITE_ONLY},
+                {"max_remapped_attachments_with_gap_write_read",
+                 TestType::MAX_REMAPPED_ATTACHMENTS_WITH_GAP_WRITE_THEN_READ},
+            };
+            for (const TestConfig &testConfig : gapTestConfigs)
+            {
+                if (grpParams->pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC &&
+                    isConstructionTypeInvariant(testConfig.testType))
+                    continue;
+
+                mainGroup->addChild(
+                    new RemappingWithGapTestCase(testCtx, testConfig.name, testConfig.testType, grpParams));
+            }
+
+            // Test pseudorandom sequences with suspend/resume.
+            {
+                for (const bool resolveDepth : {false, true})
+                {
+                    const auto maxSeedOffset = 10u;
+                    for (uint32_t seedOffset = 0u; seedOffset < maxSeedOffset; ++seedOffset)
+                    {
+                        const auto testName = std::string("suspend_resume_small_fb") +
+                                              (resolveDepth ? "_with_depth_resolve" : "") + "_test" +
+                                              std::to_string(seedOffset);
+                        SuspendResume::ParamsPtr params(new SuspendResume::Params{
+                            grpParams, seedOffset, resolveDepth, false,
+                            true, // Small framebuffer.
+                        });
+                        mainGroup->addChild(new SuspendResume::Case(testCtx, testName, params));
+                    }
+                }
+            }
+        });
 }
 
 } // namespace vkt::renderpass
