@@ -408,7 +408,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/Igalia/video_generator.git",
         "git@github.com:Igalia/video_generator.git",
-        "7119792d8205bd4a04707526af6d174a59191cf5",
+        "v0.1.1",
         "video_generator"),
 ]
 
