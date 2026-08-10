@@ -136,6 +136,7 @@ struct TestParams
     bool enableShaderUniformTexelBufferArrayDynamicIndexing = false;
     bool enableShaderStorageTexelBufferArrayDynamicIndexing = false;
     bool enableUniformAndStorageBuffer8BitAccess            = false;
+    bool enableExtendedFlags                                = false;
     VkQueueFlagBits queue                                   = VK_QUEUE_COMPUTE_BIT;
     uint32_t seed                                           = 0;
     uint32_t queueCount                                     = 1;
@@ -154,6 +155,7 @@ struct TestParamsBasic : TestParams
     bool untypedAccelerationStructure = false;
     int32_t overrideResourceStride    = -1;
     int32_t overrideSamplerStride     = -1;
+    bool useImageViewUsageCreateInfo  = false;
 };
 
 enum class LastLinked
@@ -444,6 +446,8 @@ private:
     std::list<VkDeviceAddressRangeEXT> m_stagingDeviceAddressRanges;
     std::list<VkImageDescriptorInfoEXT> m_stagingImageDescriptorInfos;
     std::list<VkImageViewCreateInfo> m_stagingImageViewCreateInfos;
+    std::list<VkImageViewUsageCreateInfo> m_stagingImageViewUsageCreateInfos;
+    std::list<VkImageViewUsage2CreateInfoKHR> m_stagingImageViewUsage2CreateInfos;
     std::list<VkTexelBufferDescriptorInfoEXT> m_stagingTexelBufferDescriptorInfos;
 
     std::vector<VkResourceDescriptorInfoEXT> m_deferredResourceDescriptors;
@@ -756,6 +760,10 @@ public:
             {
                 TCU_THROW(NotSupportedError, "uniformAndStorageBuffer8BitAccess feature is not supported");
             }
+        }
+        if (m_params.enableExtendedFlags)
+        {
+            context.requireDeviceFunctionality(VK_KHR_EXTENDED_FLAGS_EXTENSION_NAME);
         }
     }
 
@@ -4340,6 +4348,9 @@ DescriptorHeapTestInstanceBase::DescriptorHeapTestInstanceBase(Context &context,
     VkPhysicalDeviceShader64BitIndexingFeaturesEXT shader64BitIndexing = initVulkanStructure();
     shader64BitIndexing.shader64BitIndexing                            = VK_TRUE;
 
+    VkPhysicalDeviceExtendedFlagsFeaturesKHR extendedFlagsFeatures = initVulkanStructure();
+    extendedFlagsFeatures.extendedFlags                            = VK_TRUE;
+
     VkPhysicalDeviceVulkan12Features features12                = initVulkanStructure();
     features12.shaderSampledImageArrayNonUniformIndexing       = params.enableSampledImageArrayNonUniformIndexing;
     features12.shaderStorageImageArrayNonUniformIndexing       = params.enableStorageImageArrayNonUniformIndexing;
@@ -4495,6 +4506,11 @@ DescriptorHeapTestInstanceBase::DescriptorHeapTestInstanceBase(Context &context,
     if (params.enableUniformAndStorageBuffer8BitAccess)
     {
         features12.uniformAndStorageBuffer8BitAccess = VK_TRUE;
+    }
+    if (params.enableExtendedFlags)
+    {
+        extensions.push_back(VK_KHR_EXTENDED_FLAGS_EXTENSION_NAME);
+        addToChainVulkanStructure(&nextPtr, extendedFlagsFeatures);
     }
 
     VkDeviceCreateInfo createInfo      = initVulkanStructure(&features2);
@@ -6685,6 +6701,9 @@ de::MovePtr<BufferWithMemory> DescriptorHeapTestInstanceBasic::createShaderBindi
 
 VkImageViewCreateInfo DescriptorHeapTestInstanceBasic::createTestImageViewInfo(int32_t value, VkCommandBuffer cmdBuf)
 {
+    const VkImageUsageFlags imageUsage =
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+
     VkImageCreateInfo imageCreateInfo = initVulkanStructure();
     imageCreateInfo.flags             = 0;
     imageCreateInfo.imageType         = VK_IMAGE_TYPE_1D;
@@ -6694,7 +6713,10 @@ VkImageViewCreateInfo DescriptorHeapTestInstanceBasic::createTestImageViewInfo(i
     imageCreateInfo.arrayLayers       = 1;
     imageCreateInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
     imageCreateInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
-    imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+    imageCreateInfo.usage             = imageUsage;
+    // Add unused bit that will be removed with VkImageViewUsageCreateInfo
+    if (m_params.useImageViewUsageCreateInfo)
+        imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     imageCreateInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
     imageCreateInfo.queueFamilyIndexCount = 0;
     imageCreateInfo.pQueueFamilyIndices   = nullptr;
@@ -6781,6 +6803,27 @@ VkImageViewCreateInfo DescriptorHeapTestInstanceBasic::createTestImageViewInfo(i
     imageViewCreateInfo.subresourceRange.levelCount     = 1;
     imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
     imageViewCreateInfo.subresourceRange.layerCount     = 1;
+
+    if (m_params.useImageViewUsageCreateInfo)
+    {
+        if (m_params.enableExtendedFlags)
+        {
+            auto &viewUsage2CreateInfo = m_stagingImageViewUsage2CreateInfos.emplace_back();
+            viewUsage2CreateInfo       = initVulkanStructure();
+            viewUsage2CreateInfo.usage = static_cast<VkImageUsageFlags2KHR>(imageUsage);
+
+            imageViewCreateInfo.pNext = &viewUsage2CreateInfo;
+        }
+        else
+        {
+            auto &viewUsageCreateInfo = m_stagingImageViewUsageCreateInfos.emplace_back();
+            viewUsageCreateInfo       = initVulkanStructure();
+            viewUsageCreateInfo.usage = imageUsage;
+
+            imageViewCreateInfo.pNext = &viewUsageCreateInfo;
+        }
+    }
+
     return imageViewCreateInfo;
 }
 
@@ -16694,6 +16737,24 @@ void populateBasicTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
                 params.seed = stageGroupHash ^ deStringHash(testName.c_str());
 
                 stageGroup->addChild(new DescriptorHeapTestCaseBasic(testCtx, testName, params));
+
+                if ((descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
+                    (descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE))
+                {
+                    for (const bool extendedFlags : {false, true})
+                    {
+                        const std::string viewUsageTestName =
+                            testName + (extendedFlags ? "_view_usage2" : "_view_usage");
+
+                        TestParamsBasic viewUsageParams             = params;
+                        viewUsageParams.useImageViewUsageCreateInfo = true;
+                        viewUsageParams.enableExtendedFlags         = extendedFlags;
+                        viewUsageParams.seed = stageGroupHash ^ deStringHash(viewUsageTestName.c_str());
+
+                        stageGroup->addChild(
+                            new DescriptorHeapTestCaseBasic(testCtx, viewUsageTestName, viewUsageParams));
+                    }
+                }
 
                 if (stage == VK_SHADER_STAGE_RAYGEN_BIT_KHR &&
                     descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
