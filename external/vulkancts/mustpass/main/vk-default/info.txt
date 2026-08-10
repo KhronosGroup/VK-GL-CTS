@@ -1,6 +1,7 @@
 dEQP-VK.info.build
 dEQP-VK.info.device
 dEQP-VK.info.device_extension_dependencies
+dEQP-VK.info.device_extension_supported
 dEQP-VK.info.device_extensions
 dEQP-VK.info.device_features
 dEQP-VK.info.device_group_peer_memory_features

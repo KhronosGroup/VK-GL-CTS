@@ -2968,6 +2968,30 @@ tcu::TestStatus validateDeviceExtensionDependencies(Context &context)
     return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
+tcu::TestStatus validateDeviceExtensionSupport(Context &context)
+{
+    TestLog &log = context.getTestContext().getLog();
+    tcu::ResultCollector results(log);
+
+    const std::pair<std::string, std::string> requiredSupport[] = {
+        {"VK_EXT_descriptor_heap", "VK_KHR_shader_untyped_pointers"},
+    };
+
+    const auto deviceExtensionProperties =
+        enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), nullptr);
+
+    for (const auto &exts : requiredSupport)
+    {
+        if (isExtensionStructSupported(deviceExtensionProperties, RequiredExtension(exts.first)) &&
+            !isExtensionStructSupported(deviceExtensionProperties, RequiredExtension(exts.second)))
+        {
+            results.fail("" + exts.first + " is supported, but " + exts.second + " is not");
+        }
+    }
+
+    return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
 tcu::TestStatus extensionCoreVersions(Context &context)
 {
     uint32_t major;
@@ -9156,6 +9180,7 @@ void createFeatureInfoDeviceTests(tcu::TestCaseGroup *testGroup)
     addFunctionCase(testGroup, "device_layers", enumerateDeviceLayers);
     addFunctionCase(testGroup, "device_extensions", enumerateDeviceExtensions);
     addFunctionCase(testGroup, "device_extension_dependencies", validateDeviceExtensionDependencies);
+    addFunctionCase(testGroup, "device_extension_supported", validateDeviceExtensionSupport);
     addFunctionCase(testGroup, "device_no_khx_extensions", testNoKhxExtensions);
     addFunctionCase(testGroup, "device_memory_budget", checkMemoryBudgetSupport, deviceMemoryBudgetProperties);
     addFunctionCase(testGroup, "device_memory_budget_multi_instance", checkMemoryBudgetSupport,

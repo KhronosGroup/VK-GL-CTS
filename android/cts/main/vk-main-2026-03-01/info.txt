@@ -1,3 +1,4 @@
 dEQP-VK.info.device_extension_dependencies
+dEQP-VK.info.device_extension_supported
 dEQP-VK.info.device_memory_budget_multi_instance
 dEQP-VK.info.instance_extension_dependencies
