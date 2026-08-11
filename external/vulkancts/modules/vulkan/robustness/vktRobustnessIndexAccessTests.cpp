@@ -29,7 +29,6 @@
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
-#include "vkDeviceUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
@@ -81,9 +80,17 @@ struct TestParams
     uint32_t robustnessVersion    = 2;
     bool useDeviceAddressCommands = false;
     bool usePipelineRobustness    = false;
+    bool useStartingIndexOffset   = false;
     UsedStages usedStages         = UsedStages::VERT_FRAG; // used by EXT_pipeline_robustness cases
     VkIndexType indexType         = VK_INDEX_TYPE_UINT32;
+    uint32_t firstIndex           = 0;
 };
+
+// size in bytes of a single index of the specified type
+static uint32_t getIndexSize(VkIndexType indexType)
+{
+    return (indexType == VK_INDEX_TYPE_UINT8) ? 1u : (indexType == VK_INDEX_TYPE_UINT16) ? 2u : 4u;
+}
 
 static const std::pair<std::string, TestMode> testModes[]{
     {"draw_indexed", TestMode::TM_DRAW_INDEXED},
@@ -91,6 +98,9 @@ static const std::pair<std::string, TestMode> testModes[]{
     {"draw_indexed_indirect_count", TestMode::TM_DRAW_INDEXED_INDIRECT_COUNT},
     {"draw_multi_indexed", TestMode::TM_DRAW_MULTI_INDEXED},
 };
+
+static const std::pair<VkIndexType, std::string> typeCombinations[]{{VK_INDEX_TYPE_UINT8, "uint8"},
+                                                                    {VK_INDEX_TYPE_UINT16, "uint16"}};
 
 // helper function that executes cmdCopyImageToBuffer or cmdCopyImageToMemoryKHR
 static void copyImageToMemory(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, VkImage image,
@@ -155,9 +165,6 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     vk::Allocator &memAlloc         = m_device.getAllocator();
 
-    // this is testsed - first index in index buffer is outside of bounds
-    constexpr uint32_t oobFirstIndex = std::numeric_limits<uint32_t>::max() - 100u;
-
     const VkFormat colorFormat{VK_FORMAT_R8G8B8A8_UNORM};
     const tcu::UVec2 renderSize{16};
     VkPipelineDynamicStateCreateInfo *dynamicStatePtr = nullptr;
@@ -171,10 +178,11 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
                                    MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress :
                                    MemoryRequirement::HostVisible;
 
-    // create vertex buffer
+    // create vertex buffer with 7 vertices
     const std::vector<float> vertices{
-        0.0f, -0.8f, 0.0f, 1.0f, 0.0f,  0.8f,  0.0f, 1.0f, 0.8f,  -0.8f, 0.0f, 1.0f,
-        0.8f, 0.8f,  0.0f, 1.0f, -0.8f, -0.8f, 0.0f, 1.0f, -0.8f, 0.8f,  0.0f, 1.0f,
+        0.0f, -0.8f, 0.0f, 1.0f, 0.0f,  0.8f,  0.0f, 1.0f, 0.8f,  -0.8f, 0.0f, 1.0f, //
+        0.8f, 0.8f,  0.0f, 1.0f, -0.8f, -0.8f, 0.0f, 1.0f, -0.8f, 0.8f,  0.0f, 1.0f, //
+        0.0f, 0.0f,  0.0f, 1.0f,
     };
     VkDeviceSize vertexBufferSize = vertices.size() * sizeof(float);
     const auto vertexBufferInfo =
@@ -183,42 +191,44 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     deMemcpy(vertexBuffer.getAllocation().getHostPtr(), vertices.data(), vertices.size() * sizeof(float));
     flushAlloc(vk, *m_device, vertexBuffer.getAllocation());
 
+    // number of indices that are reachable through the index buffer binding
+    // use an odd number of elements so that the buffer size for uint16/uint8
+    // index types is not aligned to 4 bytes
+    const uint32_t indexCount  = 7u;
+    const uint32_t startOffset = (uint32_t)m_params.useStartingIndexOffset;
+
     // prepare index data for index type variants
-    const std::vector<uint32_t> index32 = {0, 1, 2, 3, 4, 5};
-    const std::vector<uint16_t> index16 = {0, 1, 2, 3, 4, 5};
-    const std::vector<uint8_t> index8   = {0, 1, 2, 3, 4, 5};
-    const void *indexData               = index32.data();
-    size_t indexDataBytes               = index32.size() * sizeof(uint32_t);
+    std::vector<uint32_t> index32(startOffset + indexCount, 0u);
+    std::vector<uint16_t> index16(startOffset + indexCount, 0u);
+    std::vector<uint8_t> index8(startOffset + indexCount, 0u);
+    for (uint32_t i = 1; i < indexCount; ++i)
+    {
+        index32[startOffset + i] = i;
+        index16[startOffset + i] = static_cast<uint16_t>(i);
+        index8[startOffset + i]  = static_cast<uint8_t>(i);
+    }
 
     // select index data based on index type
+    std::pair<const void *, size_t> indexData{index32.data(), index32.size() * sizeof(uint32_t)};
     if (m_params.indexType == VK_INDEX_TYPE_UINT16)
-    {
-        indexData      = index16.data();
-        indexDataBytes = index16.size() * sizeof(uint16_t);
-    }
+        indexData = {index16.data(), index16.size() * sizeof(uint16_t)};
     else if (m_params.indexType == VK_INDEX_TYPE_UINT8)
-    {
-        indexData      = index8.data();
-        indexDataBytes = index8.size() * sizeof(uint8_t);
-    }
+        indexData = {index8.data(), index8.size() * sizeof(uint8_t)};
 
-    // create index buffer for 6 points
-    // 4--0--2
-    // |  |  |
-    // 5--1--3
-    VkDeviceSize indexBufferSize = static_cast<VkDeviceSize>(indexDataBytes);
+    // create index buffer for 7 points
+    VkDeviceSize indexBufferSize = static_cast<VkDeviceSize>(indexData.second);
     const auto indexBufferInfo = makeBufferCreateInfo(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | commonUsage);
     BufferWithMemory indexBuffer(vk, *m_device, memAlloc, indexBufferInfo, memReq);
-    deMemcpy(indexBuffer.getAllocation().getHostPtr(), indexData, indexDataBytes);
+    deMemcpy(indexBuffer.getAllocation().getHostPtr(), indexData.first, indexData.second);
     flushAlloc(vk, *m_device, indexBuffer.getAllocation());
 
     // create indirect buffer
     const vk::VkDrawIndexedIndirectCommand drawIndirectCommand{
-        (uint32_t)index32.size(), // indexCount
-        1u,                       // instanceCount
-        oobFirstIndex,            // firstIndex
-        0u,                       // vertexOffset
-        0u,                       // firstInstance
+        indexCount,          // indexCount
+        1u,                  // instanceCount
+        m_params.firstIndex, // firstIndex
+        0u,                  // vertexOffset
+        0u,                  // firstInstance
     };
     VkDeviceSize indirectBufferSize = sizeof(drawIndirectCommand);
     const auto indirectBufferInfo =
@@ -418,6 +428,9 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     auto cmdPool = createCommandPool(vk, *m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
     auto cmdBuffer = allocateCommandBuffer(vk, *m_device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
+    // offset is needed for uint8/16 index types - as part of test we dont want them to be aligned to 4 bytes
+    const VkDeviceSize indexBufferOffsetBytes = startOffset * getIndexSize(m_params.indexType);
+
     beginCommandBuffer(vk, *cmdBuffer);
 
     // transition colorbuffer layout
@@ -436,11 +449,11 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     {
         const VkDeviceSize vBuffOffset = 0;
         vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer.get(), &vBuffOffset);
-        vk.cmdBindIndexBuffer(*cmdBuffer, indexBuffer.get(), 0, m_params.indexType);
+        vk.cmdBindIndexBuffer(*cmdBuffer, indexBuffer.get(), indexBufferOffsetBytes, m_params.indexType);
 
         // we will draw all points at index 0
         if (m_params.mode == TM_DRAW_INDEXED)
-            vk.cmdDrawIndexed(*cmdBuffer, (uint32_t)index32.size(), 1, oobFirstIndex, 0, 0);
+            vk.cmdDrawIndexed(*cmdBuffer, indexCount, 1, m_params.firstIndex, 0, 0);
         else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT)
             vk.cmdDrawIndexedIndirect(*cmdBuffer, indirectBuffer.get(), 0, 1, 0);
         else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT)
@@ -450,8 +463,8 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
         {
 #ifndef CTS_USES_VULKANSC
             VkMultiDrawIndexedInfoEXT indexInfo[]{
-                {oobFirstIndex, 3, 0},
-                {oobFirstIndex - 3, 3, 0},
+                {m_params.firstIndex, 3, 0},
+                {m_params.firstIndex + 3, 3, 0},
             };
             vk.cmdDrawMultiIndexedEXT(*cmdBuffer, 2, indexInfo, 1, 0, sizeof(VkMultiDrawIndexedInfoEXT), nullptr);
 #endif // CTS_USES_VULKANSC
@@ -474,14 +487,15 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
         vk.cmdBindVertexBuffers3KHR(*cmdBuffer, 0, 1, &vertexBuffer3Info);
 
         VkBindIndexBuffer3InfoKHR bindIndexBuffer3Info = initVulkanStructure();
-        bindIndexBuffer3Info.addressRange              = {indexBufferAddress, indexBufferSize};
+        bindIndexBuffer3Info.addressRange              = {indexBufferAddress + indexBufferOffsetBytes,
+                                                          indexBufferSize - indexBufferOffsetBytes};
         bindIndexBuffer3Info.indexType                 = m_params.indexType;
         bindIndexBuffer3Info.addressFlags              = addressFlags;
         vk.cmdBindIndexBuffer3KHR(*cmdBuffer, &bindIndexBuffer3Info);
 
         // we will draw all points at index 0
         if (m_params.mode == TM_DRAW_INDEXED)
-            vk.cmdDrawIndexed(*cmdBuffer, (uint32_t)index32.size(), 1, oobFirstIndex, 0, 0);
+            vk.cmdDrawIndexed(*cmdBuffer, indexCount, 1, m_params.firstIndex, 0, 0);
         else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT)
         {
             VkDrawIndirect2InfoKHR drawIndirect2Info = initVulkanStructure();
@@ -942,21 +956,23 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     deMemcpy(vertexBuffer.getAllocation().getHostPtr(), vertices.data(), (size_t)vertexBufferSize);
     flushAlloc(vk, device, vertexBuffer.getAllocation());
 
-    // build index data
+    const uint32_t startOffset  = (uint32_t)m_params.useStartingIndexOffset;
     const uint32_t leadingCount = m_params.leadingCount;
-    std::vector<uint32_t> indices(leadingCount * 6 + 6);
+
+    std::vector<uint32_t> indices(startOffset + leadingCount * 6 + 6);
     for (uint32_t j = 0; j < leadingCount; ++j)
         for (uint32_t k = 0; k < 6; ++k)
         {
-            indices[j * 6 + k] = k;
+            indices[startOffset + j * 6 + k] = k;
         }
-    std::iota(std::next(indices.begin(), (leadingCount * 6)), indices.end(), 6u);
 
-    const uint32_t firstIndex        = 0;
+    std::iota(std::next(indices.begin(), (startOffset + leadingCount * 6)), indices.end(), 6u);
+
     const uint32_t indexCount        = 6;
-    const VkDeviceSize bindingOffset = leadingCount * 6 * sizeof(uint32_t);
-    VkDeviceSize indexBindingSize    = 6 * sizeof(uint32_t);
-    VkDeviceSize indexBufferSize     = indices.size() * sizeof(uint32_t);
+    const uint32_t indexSize         = getIndexSize(m_params.indexType);
+    const VkDeviceSize bindingOffset = (startOffset + leadingCount * 6ull) * indexSize;
+    VkDeviceSize indexBindingSize    = 6ull * indexSize;
+    VkDeviceSize indexBufferSize     = indices.size() * indexSize;
     switch (m_params.ooType)
     {
     case OOTypes::OO_NONE:
@@ -966,28 +982,46 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
         indices.back() = 33; // out of range index
         break;
     case OOTypes::OO_SIZE:
-        indexBindingSize = 5 * sizeof(uint32_t);
+        indexBindingSize = 5ull * indexSize;
         break;
     case OOTypes::OO_WHOLE_SIZE:
         indexBindingSize = VK_WHOLE_SIZE;
-        indexBufferSize  = (indices.size() - 1) * sizeof(uint32_t);
+        indexBufferSize  = (indices.size() - 1) * indexSize;
         break;
+    }
+
+    // serialize the logical indices into the tested index type
+    std::vector<uint8_t> indexBytes(indices.size() * indexSize, 0u);
+    if (m_params.indexType == VK_INDEX_TYPE_UINT32)
+        deMemcpy(indexBytes.data(), indices.data(), indices.size() * sizeof(uint32_t));
+    else if (m_params.indexType == VK_INDEX_TYPE_UINT8)
+    {
+        for (size_t i = 0; i < indices.size(); ++i)
+            indexBytes[i] = static_cast<uint8_t>(indices[i]);
+    }
+    else if (m_params.indexType == VK_INDEX_TYPE_UINT16)
+    {
+        for (size_t i = 0; i < indices.size(); ++i)
+        {
+            const uint16_t v = static_cast<uint16_t>(indices[i]);
+            deMemcpy(&indexBytes[i * 2], &v, sizeof(v));
+        }
     }
 
     // create index buffer
     const VkBufferCreateInfo indexBufferInfo =
         makeBufferCreateInfo(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | commonUsage);
     BufferWithMemory indexBuffer(vk, device, allocator, indexBufferInfo, memReq);
-    deMemcpy(indexBuffer.getAllocation().getHostPtr(), indices.data(), size_t(indexBufferSize));
+    deMemcpy(indexBuffer.getAllocation().getHostPtr(), indexBytes.data(), size_t(indexBufferSize));
     flushAlloc(vk, device, indexBuffer.getAllocation());
 
     // create indirect buffer
     const VkDrawIndexedIndirectCommand drawIndirectCommand{
-        indexCount, // indexCount
-        1u,         // instanceCount
-        firstIndex, // firstIndex
-        0u,         // vertexOffset
-        0u,         // firstInstance
+        indexCount,          // indexCount
+        1u,                  // instanceCount
+        m_params.firstIndex, // firstIndex
+        0u,                  // vertexOffset
+        0u,                  // firstInstance
     };
     const VkDeviceSize indirectBufferSize = sizeof(drawIndirectCommand);
     const VkBufferCreateInfo indirectBufferInfo =
@@ -1105,11 +1139,11 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
 
         VkBindIndexBuffer3InfoKHR bindIndexBuffer3Info = initVulkanStructure();
         bindIndexBuffer3Info.addressRange              = {indexBufferAddress + bindingOffset, indexBindingSize};
-        bindIndexBuffer3Info.indexType                 = VK_INDEX_TYPE_UINT32;
+        bindIndexBuffer3Info.indexType                 = m_params.indexType;
         vk.cmdBindIndexBuffer3KHR(*cmdBuffer, &bindIndexBuffer3Info);
     }
     else
-        vk.cmdBindIndexBuffer2(*cmdBuffer, indexBuffer.get(), bindingOffset, indexBindingSize, VK_INDEX_TYPE_UINT32);
+        vk.cmdBindIndexBuffer2(*cmdBuffer, indexBuffer.get(), bindingOffset, indexBindingSize, m_params.indexType);
 #else
     DE_UNREF(bindingOffset);
     DE_UNREF(indexBindingSize);
@@ -1121,7 +1155,7 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
         switch (m_params.mode)
         {
         case TM_DRAW_INDEXED:
-            vk.cmdDrawIndexed(*cmdBuffer, indexCount, 1u, firstIndex, 0, 0);
+            vk.cmdDrawIndexed(*cmdBuffer, indexCount, 1u, m_params.firstIndex, 0, 0);
             break;
 
         case TM_DRAW_INDEXED_INDIRECT:
@@ -1137,8 +1171,8 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
 #ifndef CTS_USES_VULKANSC
         {
             const VkMultiDrawIndexedInfoEXT indexInfo[/* { firstIndex, indexCount, vertexOffset } */]{
-                {firstIndex + 3, 3, 0},
-                {firstIndex, 3, 0},
+                {m_params.firstIndex + 3, 3, 0},
+                {m_params.firstIndex, 3, 0},
             };
             vk.cmdDrawMultiIndexedEXT(*cmdBuffer, DE_LENGTH_OF_ARRAY(indexInfo), indexInfo, 1, 0,
                                       sizeof(VkMultiDrawIndexedInfoEXT), nullptr);
@@ -1152,7 +1186,7 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     if (m_params.useDeviceAddressCommands)
     {
         if (m_params.mode == TM_DRAW_INDEXED)
-            vk.cmdDrawIndexed(*cmdBuffer, (uint32_t)indexCount, 1, firstIndex, 0, 0);
+            vk.cmdDrawIndexed(*cmdBuffer, (uint32_t)indexCount, 1, m_params.firstIndex, 0, 0);
         else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT)
         {
             VkDrawIndirect2InfoKHR drawIndirect2Info = initVulkanStructure();
@@ -1243,8 +1277,8 @@ tcu::TestCaseGroup *createCmdBindIndexBuffer2Tests(tcu::TestContext &testCtx)
     de::MovePtr<tcu::TestCaseGroup> gRoot(new tcu::TestCaseGroup(testCtx, "bind_index_buffer2"));
     for (uint32_t offset : offsets)
     {
-        de::MovePtr<tcu::TestCaseGroup> gOffset(
-            new tcu::TestCaseGroup(testCtx, ("offset_" + std::to_string(offset)).c_str()));
+        const std::string gOffsetName = "offset_" + std::to_string(offset);
+        de::MovePtr<tcu::TestCaseGroup> gOffset(new tcu::TestCaseGroup(testCtx, gOffsetName.c_str()));
         for (const auto &mode : testModes)
         {
             de::MovePtr<tcu::TestCaseGroup> gMode(new tcu::TestCaseGroup(testCtx, mode.first.c_str()));
@@ -1255,7 +1289,8 @@ tcu::TestCaseGroup *createCmdBindIndexBuffer2Tests(tcu::TestContext &testCtx)
                 p.ooType       = ooType.second;
                 p.leadingCount = offset;
 
-                gMode->addChild(new BindIndexBuffer2TestCase(testCtx, ooType.first, p));
+                std::string name = ooType.first;
+                gMode->addChild(new BindIndexBuffer2TestCase(testCtx, name, p));
 
 #ifndef CTS_USES_VULKANSC
                 // skip testing VK_WHOLE_SIZE for device_address_commands, as it is not supported
@@ -1266,7 +1301,7 @@ tcu::TestCaseGroup *createCmdBindIndexBuffer2Tests(tcu::TestContext &testCtx)
                 if ((mode.second != TestMode::TM_DRAW_MULTI_INDEXED) && (offset == 100))
                 {
                     p.useDeviceAddressCommands = true;
-                    gMode->addChild(new BindIndexBuffer2TestCase(testCtx, ooType.first + "_device_address", p));
+                    gMode->addChild(new BindIndexBuffer2TestCase(testCtx, name + "_device_address", p));
                 }
 #endif // CTS_USES_VULKANSC
             }
@@ -1274,6 +1309,39 @@ tcu::TestCaseGroup *createCmdBindIndexBuffer2Tests(tcu::TestContext &testCtx)
         }
         gRoot->addChild(gOffset.release());
     }
+
+    TestParams testParams;
+    testParams.ooType = OOTypes::OO_SIZE;
+
+    de::MovePtr<tcu::TestCaseGroup> gType(new tcu::TestCaseGroup(testCtx, "type"));
+
+    // Test with 8/16-bit index types; uint16/uint8 exercise bindings that end on a boundary
+    // aligned to the index size but not to 4 bytes
+    for (const auto &[indexType, typeSuffix] : typeCombinations)
+    {
+        for (const auto &[modeName, mode] : testModes)
+        {
+            testParams.mode                     = mode;
+            testParams.indexType                = indexType;
+            testParams.useStartingIndexOffset   = ((mode % 2) == 0);
+            testParams.useDeviceAddressCommands = false;
+
+            std::string name = modeName + "_" + typeSuffix;
+            gType->addChild(new BindIndexBuffer2TestCase(testCtx, name, testParams));
+
+#ifndef CTS_USES_VULKANSC
+            if (mode != TestMode::TM_DRAW_MULTI_INDEXED)
+            {
+                testParams.useDeviceAddressCommands = true;
+
+                name += "_device_address";
+                gType->addChild(new BindIndexBuffer2TestCase(testCtx, name, testParams));
+            }
+#endif // CTS_USES_VULKANSC
+        }
+    }
+
+    gRoot->addChild(gType.release());
 
     return gRoot.release();
 }
@@ -1285,9 +1353,6 @@ tcu::TestCaseGroup *createIndexAccessTests(tcu::TestContext &testCtx)
                                                            {UsedStages::VERT_TESS_FRAG, "vert_tess_frag"},
                                                            {UsedStages::VERT_TESS_GEOM_FRAG, "vert_tess_geom_frag"}};
 
-    std::map<VkIndexType, std::string> typeCombinations{{VK_INDEX_TYPE_UINT8, "uint8"},
-                                                        {VK_INDEX_TYPE_UINT16, "uint16"}};
-
     // Test access outside of the buffer for indices
     de::MovePtr<tcu::TestCaseGroup> indexAccessTests(new tcu::TestCaseGroup(testCtx, "index_access"));
 
@@ -1296,6 +1361,9 @@ tcu::TestCaseGroup *createIndexAccessTests(tcu::TestContext &testCtx)
         TestParams params;
         params.mode              = mode;
         params.robustnessVersion = 2;
+
+        // First index in index buffer is outside of bounds
+        params.firstIndex = std::numeric_limits<uint32_t>::max() - 100u;
 
         std::string name = n + "_2";
         indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name, params));
@@ -1308,20 +1376,28 @@ tcu::TestCaseGroup *createIndexAccessTests(tcu::TestContext &testCtx)
         }
 
         // Test oob access for 8-bit and 16-bit indices
-        params.usedStages            = UsedStages::VERT_FRAG;
-        params.usePipelineRobustness = false;
-        for (const auto &[indexType, postfix] : typeCombinations)
         {
-            name                            = n + "_2_" + postfix;
-            params.indexType                = indexType;
-            params.useDeviceAddressCommands = false;
-            indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name, params));
+            TestParams typeParams = params;
 
-            // Test oob access for 8-bit and 16-bit indices with device address commands
-            if (mode != TestMode::TM_DRAW_MULTI_INDEXED)
+            // Deliberately use index that is outside of bounds but very close to the end of the buffer;
+            // this is to test that the driver does not round up the bound size to a 4-byte boundary
+            typeParams.firstIndex = 7u;
+
+            for (const auto &[indexType, postfix] : typeCombinations)
             {
-                params.useDeviceAddressCommands = true;
-                indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name + "_device_address", params));
+                name                                = n + "_2_" + postfix;
+                typeParams.indexType                = indexType;
+                typeParams.useDeviceAddressCommands = false;
+                typeParams.useStartingIndexOffset   = ((mode % 2) == 1);
+
+                indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name, typeParams));
+
+                // Test oob access for 8-bit and 16-bit indices with device address commands
+                if (mode != TestMode::TM_DRAW_MULTI_INDEXED)
+                {
+                    typeParams.useDeviceAddressCommands = true;
+                    indexAccessTests->addChild(new DrawIndexedTestCase(testCtx, name + "_device_address", typeParams));
+                }
             }
         }
 
