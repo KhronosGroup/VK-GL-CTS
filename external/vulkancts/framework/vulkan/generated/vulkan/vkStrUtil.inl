@@ -1247,6 +1247,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLineRasterizati
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLinearColorAttachmentFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance10FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance10PropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance11FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance3Properties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance4Features& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance4Properties& value);
@@ -1529,6 +1530,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkQueryPoolVideoEncodeFeedbackC
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyDataGraphProcessingEnginePropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyDataGraphPropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyGlobalPriorityProperties& value);
+std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyOptimalImageTransferGranularityPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyOwnershipTransferPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyProperties2& value);

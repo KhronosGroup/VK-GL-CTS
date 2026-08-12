@@ -1,5 +1,6 @@
 include_directories(
 	..
+	../util
 	${DEQP_INL_DIR}
 )
 
@@ -32,6 +33,8 @@ set(DEQP_VK_SHADER_OBJECT_SRCS
 	vktShaderObjectRenderingTests.hpp
 	vktShaderObjectMiscTests.cpp
 	vktShaderObjectMiscTests.hpp
+	vktShaderObjectIndependentSetsTests.cpp
+	vktShaderObjectIndependentSetsTests.hpp
 )
 
 PCH(DEQP_VK_SHADER_OBJECT_UTIL_SRCS ../pch.cpp)

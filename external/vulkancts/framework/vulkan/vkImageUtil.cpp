@@ -5895,7 +5895,7 @@ ImageWithBuffer::ImageWithBuffer(const DeviceInterface &vkd, const VkDevice devi
                                  vk::VkExtent3D extent, vk::VkFormat imageFormat, vk::VkImageUsageFlags usage,
                                  vk::VkImageType imageType, vk::VkImageSubresourceRange ssr, uint32_t arrayLayers,
                                  vk::VkSampleCountFlagBits samples, vk::VkImageTiling tiling, uint32_t mipLevels,
-                                 vk::VkSharingMode sharingMode)
+                                 vk::VkSharingMode sharingMode, HostIntent hostIntent)
 {
 
     if (imageType == VK_IMAGE_TYPE_3D)
@@ -5948,11 +5948,11 @@ ImageWithBuffer::ImageWithBuffer(const DeviceInterface &vkd, const VkDevice devi
     const auto tcuFormat = mapVkFormat(imageFormat);
     const auto verificationBufferSize =
         tcuFormat.getPixelSize() * extent.width * extent.height * arrayLayers * extent.depth;
-    const auto verificationBufferCreateInfo =
-        makeBufferCreateInfo(verificationBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto verificationBufferUsage      = (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto verificationBufferCreateInfo = makeBufferCreateInfo(verificationBufferSize, verificationBufferUsage);
 
     buffer = std::unique_ptr<BufferWithMemory>(
-        new BufferWithMemory(vkd, device, alloc, verificationBufferCreateInfo, HostIntent::R));
+        new BufferWithMemory(vkd, device, alloc, verificationBufferCreateInfo, hostIntent));
     size = verificationBufferSize;
 }
 

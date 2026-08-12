@@ -42,6 +42,7 @@
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
+#include "vktIndependentSetsUtil.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTestLog.hpp"
@@ -6874,6 +6875,18 @@ tcu::TestCaseGroup *createPipelineLibraryTests(tcu::TestContext &testCtx)
                                         viewMaskRun, optimized);
         }
         miscTests->addChild(viewMaskGroup.release());
+    }
+
+    {
+        const auto groupName = "independent_sets_random";
+
+        const std::vector<PipelineConstructionType> constructionTypes{
+            PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC,
+            PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY,
+            PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY,
+        };
+
+        group->addChild(IndependentSets::createRandomTests(testCtx, groupName, constructionTypes));
     }
 
     group->addChild(miscTests.release());

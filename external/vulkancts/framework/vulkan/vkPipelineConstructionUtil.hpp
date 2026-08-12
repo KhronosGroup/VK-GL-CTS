@@ -141,7 +141,8 @@ public:
                           const VkDevice device, const uint32_t setLayoutCount,
                           const VkDescriptorSetLayout *descriptorSetLayout, const uint32_t pushConstantRangeCount,
                           const VkPushConstantRange *pPushConstantRanges,
-                          const VkPipelineLayoutCreateFlags flags = (VkPipelineLayoutCreateFlags)0u);
+                          const VkPipelineLayoutCreateFlags flags = (VkPipelineLayoutCreateFlags)0u,
+                          bool keepShaderObjectIndependentSets    = false);
     PipelineLayoutWrapper(const PipelineLayoutWrapper &rhs) = delete;
     PipelineLayoutWrapper(PipelineLayoutWrapper &&rhs) noexcept;
     ~PipelineLayoutWrapper() = default;
@@ -374,8 +375,8 @@ public:
     void *getBinary(void) const;
 
     void createModule(void);
-    void setLayoutAndSpecialization(const PipelineLayoutWrapper *layout,
-                                    const VkSpecializationInfo *specializationInfo);
+    void setPipelineLayout(const PipelineLayoutWrapper *layout);
+    void setSpecialization(const VkSpecializationInfo *specializationInfo);
 
     const PipelineLayoutWrapper *getPipelineLayout(void) const
     {

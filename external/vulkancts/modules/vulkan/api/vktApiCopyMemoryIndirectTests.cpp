@@ -1257,7 +1257,12 @@ void add2dMemoryToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
         group->addChild(new CopyMemoryToImageIndirectTestCase(testCtx, "buffer_offset", params));
     }
 
-    if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
+    bool testBufferOffsetRelaxed = testGroupParams->queueSelection == QueueSelectionOptions::Universal;
+#ifndef CTS_USES_VULKANSC
+    testBufferOffsetRelaxed |= testGroupParams->queueSelection == QueueSelectionOptions::TransferOnly;
+#endif // CTS_USES_VULKANSC
+
+    if (testBufferOffsetRelaxed)
     {
         TestParams params;
         params.src.buffer.size           = defaultSize * defaultSize;
@@ -1270,6 +1275,9 @@ void add2dMemoryToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
         params.extensionFlags            = testGroupParams->extensionFlags;
         params.queueSelection            = testGroupParams->queueSelection;
         params.useSparseBinding          = testGroupParams->useSparseBinding;
+
+        if (testGroupParams->queueSelection == QueueSelectionOptions::TransferOnly)
+            params.extensionFlags |= MAINTENANCE_11;
 
         const VkBufferImageCopy bufferImageCopy = {
             defaultQuarterSize + 1u,                     // VkDeviceSize bufferOffset;

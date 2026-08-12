@@ -50,6 +50,7 @@ vk-main-2026-03-01/reconvergence.txt
 vk-main-2026-03-01/renderpasses.txt
 vk-main-2026-03-01/robustness.txt
 vk-main-2026-03-01/shader-object/link.txt
+vk-main-2026-03-01/shader-object/m11-independent-sets.txt
 vk-main-2026-03-01/shader-object/misc.txt
 vk-main-2026-03-01/shader-object/rendering.txt
 vk-main-2026-03-01/shader-object/tessellation.txt

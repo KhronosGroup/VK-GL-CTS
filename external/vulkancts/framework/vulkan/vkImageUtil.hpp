@@ -201,7 +201,7 @@ public:
                                                                                 1u),
                     uint32_t arrayLayers = 1, vk::VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT,
                     vk::VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL, uint32_t mipLevels = 1,
-                    vk::VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE);
+                    vk::VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE, HostIntent hostIntent = HostIntent::R);
 
     VkImage getImage() const;
     VkImageView getImageView() const;

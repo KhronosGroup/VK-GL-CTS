@@ -2588,6 +2588,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance10Propert
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_PROPERTIES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance11FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_11_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance3Properties> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES;
@@ -3931,6 +3936,11 @@ template<> VkStructureType getStructureType<VkQueueFamilyDataGraphPropertiesARM>
 template<> VkStructureType getStructureType<VkQueueFamilyGlobalPriorityProperties> (void)
 {
 	return VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES;
+}
+
+template<> VkStructureType getStructureType<VkQueueFamilyOptimalImageTransferGranularityPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_QUEUE_FAMILY_OPTIMAL_IMAGE_TRANSFER_GRANULARITY_PROPERTIES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkQueueFamilyOwnershipTransferPropertiesKHR> (void)

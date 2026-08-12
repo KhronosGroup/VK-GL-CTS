@@ -2073,6 +2073,9 @@ struct TestConfig
     // Create pipeline with VkPipelineSampleLocationsStateCreateInfoEXT
     bool provideSampleLocationsState;
 
+    bool requiresMaintenance11;
+    bool requiresDepthClampZeroOne;
+
     // Static and dynamic pipeline configuration.
     VertexGeneratorConfig vertexGenerator;
     CullModeConfig cullModeConfig;
@@ -2190,6 +2193,8 @@ struct TestConfig
         , minSampleShading(0.0f)
         , disableAlphaToOneFeature(false)
         , provideSampleLocationsState(true)
+        , requiresMaintenance11(false)
+        , requiresDepthClampZeroOne(false)
         , vertexGenerator(makeVertexGeneratorConfig(staticVertexGenerator, dynamicVertexGenerator))
         , cullModeConfig(static_cast<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE))
         , frontFaceConfig(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE)
@@ -2308,6 +2313,8 @@ struct TestConfig
         , minSampleShading(other.minSampleShading)
         , disableAlphaToOneFeature(other.disableAlphaToOneFeature)
         , provideSampleLocationsState(other.provideSampleLocationsState)
+        , requiresMaintenance11(other.requiresMaintenance11)
+        , requiresDepthClampZeroOne(other.requiresDepthClampZeroOne)
         , vertexGenerator(other.vertexGenerator)
         , cullModeConfig(other.cullModeConfig)
         , frontFaceConfig(other.frontFaceConfig)
@@ -3736,6 +3743,12 @@ void ExtendedDynamicStateTest::checkSupport(Context &context) const
 
     if (m_testConfig.sampleMaskConfig.dynamicValue && m_testConfig.sampleMaskConfig.dynamicValue->data() == nullptr)
         context.requireDeviceFunctionality("VK_KHR_maintenance10");
+
+    if (m_testConfig.requiresMaintenance11)
+        context.requireDeviceFunctionality("VK_KHR_maintenance11");
+
+    if (m_testConfig.requiresDepthClampZeroOne)
+        context.requireDeviceFunctionality("VK_EXT_depth_clamp_zero_one");
 
     // Note: Not Supported insted of Fail because some features are not mandatory.
     if (chooseDepthStencilFormat(context, m_testConfig) == nullptr)
@@ -8112,77 +8125,112 @@ tcu::TestCaseGroup *createExtendedDynamicStateTests(tcu::TestContext &testCtx,
                 orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_disable", config));
             }
 
-#if 0
-        // "If the depth clamping state is changed dynamically, and the pipeline was not created with
-        // VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT enabled, then depth clipping is enabled when depth clamping is disabled and vice
-        // versa"
-        //
-        // Try to verify the implementation ignores the static depth clipping state. We cannot test the following sequence orderings for this:
-        // - BEFORE_GOOD_STATIC and TWO_DRAWS_STATIC because they use static-state pipelines, but for this specific case we need dynamic state as per the spec.
-        // - TWO_DRAWS_DYNAMIC and THREE_DRAWS_DYNAMIC because the draw with static state may modify the framebuffer with undesired side-effects.
-        if (kOrdering != SequenceOrdering::BEFORE_GOOD_STATIC && kOrdering != SequenceOrdering::TWO_DRAWS_DYNAMIC && kOrdering != SequenceOrdering::TWO_DRAWS_STATIC && kOrdering != SequenceOrdering::THREE_DRAWS_DYNAMIC)
-        {
+            // "If the depth clamping state is changed dynamically, and the pipeline was not created with
+            // VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT enabled nor includes VkPipelineRasterizationDepthClipStateCreateInfoEXT,
+            // then depth clipping is enabled when depth clamping is disabled and vice versa."
+            //
+            // Try to verify the implementation ignores the static depth clipping state. We cannot test the following sequence orderings for this:
+            // - BEFORE_GOOD_STATIC and TWO_DRAWS_STATIC because they use static-state pipelines, but for this specific case we need dynamic state as per the spec.
+            // - TWO_DRAWS_DYNAMIC and THREE_DRAWS_DYNAMIC because the draw with static state may modify the framebuffer with undesired side-effects.
+            if (kOrdering != SequenceOrdering::BEFORE_GOOD_STATIC && kOrdering != SequenceOrdering::TWO_DRAWS_DYNAMIC &&
+                kOrdering != SequenceOrdering::TWO_DRAWS_STATIC && kOrdering != SequenceOrdering::THREE_DRAWS_DYNAMIC)
             {
-                TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+                {
+                    TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 
-                config.meshParams[0].depth = -0.5f;
-                config.clearDepthValue = 1.0f;
-                config.depthTestEnableConfig.staticValue = true;
-                config.depthWriteEnableConfig.staticValue = true;
-                config.depthCompareOpConfig.staticValue = vk::VK_COMPARE_OP_ALWAYS;
-                config.viewportConfig.staticValue = ViewportVec(1u, vk::makeViewport(0.0f, 0.0f, kWidthF, kHeightF, 0.5f, 1.0f));
-                config.expectedDepth = 0.5f; // Geometry will be clamped to this value.
+                    config.requiresMaintenance11 = true;
 
-                config.depthClampEnableConfig.staticValue = false;
-                config.depthClampEnableConfig.dynamicValue = true;
+                    config.meshParams[0].depth                = -0.5f;
+                    config.clearDepthValue                    = 1.0f;
+                    config.depthTestEnableConfig.staticValue  = true;
+                    config.depthWriteEnableConfig.staticValue = true;
+                    config.depthCompareOpConfig.staticValue   = vk::VK_COMPARE_OP_ALWAYS;
+                    config.viewportConfig.staticValue =
+                        ViewportVec(1u, vk::makeViewport(0.0f, 0.0f, kWidthF, kHeightF, 0.5f, 1.0f));
+                    config.expectedDepth = 0.5f; // Geometry will be clamped to this value.
 
-                // Dynamically enable depth clamp while making sure depth clip is disabled
-                orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_enable_no_clip", config));
+                    config.depthClampEnableConfig.staticValue  = false;
+                    config.depthClampEnableConfig.dynamicValue = true;
+
+                    // Dynamically enable depth clamp while making sure depth clip is disabled
+                    orderingGroup->addChild(
+                        new ExtendedDynamicStateTest(testCtx, "depth_clamp_enable_no_clip", config));
+                }
+                {
+                    TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+                    config.requiresMaintenance11 = true;
+
+                    config.meshParams[0].depth                = -0.5f;
+                    config.clearDepthValue                    = 1.0f;
+                    config.depthTestEnableConfig.staticValue  = true;
+                    config.depthWriteEnableConfig.staticValue = true;
+                    config.depthCompareOpConfig.staticValue   = vk::VK_COMPARE_OP_ALWAYS;
+                    config.viewportConfig.staticValue =
+                        ViewportVec(1u, vk::makeViewport(0.0f, 0.0f, kWidthF, kHeightF, 0.5f, 1.0f));
+                    config.expectedDepth = 1.0f; // Geometry should be clipped in this case.
+                    config.referenceColor.reset(new SingleColorGenerator(kDefaultClearColor));
+
+                    // Enable clamping dynamically, with clipping enabled statically.
+                    config.depthClampEnableConfig.staticValue  = false;
+                    config.depthClampEnableConfig.dynamicValue = true;
+                    config.depthClipEnableConfig.staticValue   = OptBoolean(true);
+
+                    // Dynamically enable depth clamp while keeping depth clip enabled statically
+                    orderingGroup->addChild(
+                        new ExtendedDynamicStateTest(testCtx, "depth_clamp_enable_with_clip", config));
+                }
+                {
+                    TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+                    config.requiresMaintenance11 = true;
+
+                    config.meshParams[0].depth                = -0.5f;
+                    config.clearDepthValue                    = 1.0f;
+                    config.depthTestEnableConfig.staticValue  = true;
+                    config.depthWriteEnableConfig.staticValue = true;
+                    config.depthCompareOpConfig.staticValue   = vk::VK_COMPARE_OP_ALWAYS;
+                    config.viewportConfig.staticValue =
+                        ViewportVec(1u, vk::makeViewport(0.0f, 0.0f, kWidthF, kHeightF, 0.5f, 1.0f));
+                    config.expectedDepth = 1.0f; // Geometry should be clipped in this case.
+                    config.referenceColor.reset(new SingleColorGenerator(kDefaultClearColor));
+
+                    config.depthClampEnableConfig.staticValue  = true;
+                    config.depthClampEnableConfig.dynamicValue = false;
+                    if (vk::isConstructionTypeShaderObject(pipelineConstructionType))
+                        config.depthClipEnableConfig.staticValue = OptBoolean(true);
+
+                    // Dynamically disable depth clamp making sure depth clipping is enabled
+                    orderingGroup->addChild(
+                        new ExtendedDynamicStateTest(testCtx, "depth_clamp_disable_with_clip", config));
+                }
+                // Note: the combination of depth clamp disabled and depth clip disabled cannot be tested because if Zf falls outside
+                // [Zmin,Zmax] from the viewport, then the value of Zf is undefined during the depth test, unless depthClampZeroOne
+                // is enabled.
+                {
+                    TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+                    config.requiresMaintenance11     = true;
+                    config.requiresDepthClampZeroOne = true;
+
+                    config.meshParams[0].depth                = -0.5f;
+                    config.clearDepthValue                    = 1.0f;
+                    config.depthTestEnableConfig.staticValue  = true;
+                    config.depthWriteEnableConfig.staticValue = true;
+                    config.depthCompareOpConfig.staticValue   = vk::VK_COMPARE_OP_ALWAYS;
+                    config.viewportConfig.staticValue =
+                        ViewportVec(1u, vk::makeViewport(0.0f, 0.0f, kWidthF, kHeightF, 0.5f, 1.0f));
+                    config.expectedDepth = 0.25f;
+
+                    config.depthClampEnableConfig.staticValue  = true;
+                    config.depthClampEnableConfig.dynamicValue = false;
+                    config.depthClipEnableConfig.staticValue   = false;
+
+                    // Dynamically disable depth clamp making sure depth clipping is disabled
+                    orderingGroup->addChild(
+                        new ExtendedDynamicStateTest(testCtx, "depth_clamp_disable_no_clip", config));
+                }
             }
-            {
-                TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
-
-                config.meshParams[0].depth = -0.5f;
-                config.clearDepthValue = 1.0f;
-                config.depthTestEnableConfig.staticValue = true;
-                config.depthWriteEnableConfig.staticValue = true;
-                config.depthCompareOpConfig.staticValue = vk::VK_COMPARE_OP_ALWAYS;
-                config.viewportConfig.staticValue = ViewportVec(1u, vk::makeViewport(0.0f, 0.0f, kWidthF, kHeightF, 0.5f, 1.0f));
-                config.expectedDepth = 1.0f; // Geometry should be clipped in this case.
-                config.referenceColor.reset                    (new SingleColorGenerator(kDefaultClearColor));
-
-                // Enable clamping dynamically, with clipping enabled statically.
-                config.depthClampEnableConfig.staticValue = false;
-                config.depthClampEnableConfig.dynamicValue = true;
-                config.depthClipEnableConfig.staticValue = OptBoolean(true);
-
-                // Dynamically enable depth clamp while keeping depth clip enabled statically
-                orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_enable_with_clip", config));
-            }
-            {
-                TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
-
-                config.meshParams[0].depth = -0.5f;
-                config.clearDepthValue = 1.0f;
-                config.depthTestEnableConfig.staticValue = true;
-                config.depthWriteEnableConfig.staticValue = true;
-                config.depthCompareOpConfig.staticValue = vk::VK_COMPARE_OP_ALWAYS;
-                config.viewportConfig.staticValue = ViewportVec(1u, vk::makeViewport(0.0f, 0.0f, kWidthF, kHeightF, 0.5f, 1.0f));
-                config.expectedDepth = 1.0f; // Geometry should be clipped in this case.
-                config.referenceColor.reset                    (new SingleColorGenerator(kDefaultClearColor));
-
-                config.depthClampEnableConfig.staticValue = true;
-                config.depthClampEnableConfig.dynamicValue = false;
-                if (vk::isConstructionTypeShaderObject(pipelineConstructionType))
-                    config.depthClipEnableConfig.staticValue = OptBoolean(true);
-
-                // Dynamically disable depth clamp making sure depth clipping is enabled
-                orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_disable_with_clip", config));
-            }
-            // Note: the combination of depth clamp disabled and depth clip disabled cannot be tested because if Zf falls outside
-            // [Zmin,Zmax] from the viewport, then the value of Zf is undefined during the depth test.
-        }
-#endif
 
             // Polygon mode.
             {

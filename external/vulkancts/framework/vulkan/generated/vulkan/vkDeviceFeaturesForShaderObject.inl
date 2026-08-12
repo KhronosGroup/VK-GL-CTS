@@ -89,6 +89,7 @@ auto fLegacyVertexAttributesFeaturesEXT                 = m_context.getLegacyVer
 auto fLineRasterizationFeatures                         = m_context.getLineRasterizationFeatures();
 auto fLinearColorAttachmentFeatures                     = m_context.getLinearColorAttachmentFeatures();
 auto fMaintenance10Features                             = m_context.getMaintenance10Features();
+auto fMaintenance11Features                             = m_context.getMaintenance11Features();
 auto fMaintenance4Features                              = m_context.getMaintenance4Features();
 auto fMaintenance5Features                              = m_context.getMaintenance5Features();
 auto fMaintenance6Features                              = m_context.getMaintenance6Features();
@@ -298,6 +299,7 @@ std::vector<void *> pNextFeatures = {
 	&fLineRasterizationFeatures,
 	&fLinearColorAttachmentFeatures,
 	&fMaintenance10Features,
+	&fMaintenance11Features,
 	&fMaintenance4Features,
 	&fMaintenance5Features,
 	&fMaintenance6Features,

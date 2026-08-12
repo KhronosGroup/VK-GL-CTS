@@ -172,6 +172,7 @@ vk-default/shader-object/binary.txt
 vk-default/shader-object/binding.txt
 vk-default/shader-object/create.txt
 vk-default/shader-object/link.txt
+vk-default/shader-object/m11-independent-sets.txt
 vk-default/shader-object/misc.txt
 vk-default/shader-object/pipeline-interaction.txt
 vk-default/shader-object/rendering.txt

@@ -14785,6 +14785,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance10Pr
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance11FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceMaintenance11FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaintenance11 = " << value.maintenance11 << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance3Properties& value)
 {
 	s << "VkPhysicalDeviceMaintenance3Properties = {\n";
@@ -18262,6 +18272,16 @@ std::ostream& operator<< (std::ostream& s, const VkQueueFamilyGlobalPriorityProp
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpriorityCount = " << value.priorityCount << '\n';
 	s << "\tpriorities = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.priorities), DE_ARRAY_END(value.priorities)) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkQueueFamilyOptimalImageTransferGranularityPropertiesKHR& value)
+{
+	s << "VkQueueFamilyOptimalImageTransferGranularityPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\toptimalImageTransferGranularity = " << value.optimalImageTransferGranularity << '\n';
 	s << '}';
 	return s;
 }

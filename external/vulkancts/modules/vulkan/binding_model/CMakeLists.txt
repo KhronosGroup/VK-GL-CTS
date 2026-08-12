@@ -30,6 +30,8 @@ set(DEQP_VK_BINDING_MODEL_SRCS
 	vktBindingMutableTests.hpp
 	vktBindingDescriptorCombinationTests.cpp
 	vktBindingDescriptorCombinationTests.hpp
+	vktBindingImageArrayMaintenance11Tests.cpp
+	vktBindingImageArrayMaintenance11Tests.hpp
 	vktBindingDescriptorBufferTests.cpp
 	vktBindingDescriptorBufferTests.hpp
 	vktBindingPushConstantBankTests.cpp

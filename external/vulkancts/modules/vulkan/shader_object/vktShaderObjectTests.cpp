@@ -33,6 +33,7 @@
 #include "vktShaderObjectPerformanceTests.hpp"
 #include "vktShaderObjectRenderingTests.hpp"
 #include "vktShaderObjectMiscTests.hpp"
+#include "vktShaderObjectIndependentSetsTests.hpp"
 
 namespace vkt
 {
@@ -58,6 +59,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     mainGroup->addChild(createShaderObjectPerformanceTests(testCtx));
     mainGroup->addChild(createShaderObjectRenderingTests(testCtx));
     mainGroup->addChild(createShaderObjectMiscTests(testCtx));
+    mainGroup->addChild(createShaderObjectIndependentSetsTests(testCtx));
 
     return mainGroup.release();
 }

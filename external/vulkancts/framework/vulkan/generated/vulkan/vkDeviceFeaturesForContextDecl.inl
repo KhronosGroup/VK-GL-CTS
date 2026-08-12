@@ -88,6 +88,7 @@ const vk::VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT&				getLegacyVertexA
 const vk::VkPhysicalDeviceLineRasterizationFeatures&						getLineRasterizationFeatures						(void) const;
 const vk::VkPhysicalDeviceLinearColorAttachmentFeaturesNV&					getLinearColorAttachmentFeatures					(void) const;
 const vk::VkPhysicalDeviceMaintenance10FeaturesKHR&							getMaintenance10Features							(void) const;
+const vk::VkPhysicalDeviceMaintenance11FeaturesKHR&							getMaintenance11Features							(void) const;
 const vk::VkPhysicalDeviceMaintenance4Features&								getMaintenance4Features								(void) const;
 const vk::VkPhysicalDeviceMaintenance5Features&								getMaintenance5Features								(void) const;
 const vk::VkPhysicalDeviceMaintenance6Features&								getMaintenance6Features								(void) const;

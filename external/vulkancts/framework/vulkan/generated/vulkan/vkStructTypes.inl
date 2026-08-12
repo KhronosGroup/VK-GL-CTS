@@ -6837,6 +6837,13 @@ struct VkPhysicalDeviceMaintenance10PropertiesKHR
 	VkBool32		resolveSrgbFormatSupportsTransferFunctionControl;
 };
 
+struct VkPhysicalDeviceMaintenance11FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance11;
+};
+
 struct VkPhysicalDeviceMaintenance3Properties
 {
 	VkStructureType	sType;
@@ -9495,6 +9502,13 @@ struct VkQueueFamilyGlobalPriorityProperties
 };
 typedef VkQueueFamilyGlobalPriorityProperties VkQueueFamilyGlobalPriorityPropertiesEXT;
 typedef VkQueueFamilyGlobalPriorityProperties VkQueueFamilyGlobalPriorityPropertiesKHR;
+
+struct VkQueueFamilyOptimalImageTransferGranularityPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkExtent3D		optimalImageTransferGranularity;
+};
 
 struct VkQueueFamilyOwnershipTransferPropertiesKHR
 {
