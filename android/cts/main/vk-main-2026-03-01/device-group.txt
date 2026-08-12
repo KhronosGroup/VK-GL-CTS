@@ -4,3 +4,6 @@ dEQP-VK.device_group.compute_alternate_dispatch_peer
 dEQP-VK.device_group.compute_split_dispatch
 dEQP-VK.device_group.compute_split_dispatch_dedicated
 dEQP-VK.device_group.compute_split_dispatch_peer
+dEQP-VK.device_group.transfer_alternate_copy
+dEQP-VK.device_group.transfer_alternate_copy_dedicated
+dEQP-VK.device_group.transfer_alternate_copy_peer

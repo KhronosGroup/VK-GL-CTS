@@ -2510,6 +2510,470 @@ private:
     }
 };
 
+enum TransferTestModeType
+{
+    TRANSFER_TEST_MODE_ALTERNATE_COPY = 1 << 0, //!< Equivalent to AFR
+    TRANSFER_TEST_MODE_DEDICATED      = 1 << 1, //!< Use dedicated memory allocations
+    TRANSFER_TEST_MODE_PEER_MEMORY    = 1 << 2, //!< Copy to and from peer memory
+};
+
+class DeviceGroupTransferTestInstance : public TestInstance
+{
+public:
+    DeviceGroupTransferTestInstance(Context &context, uint32_t mode);
+    ~DeviceGroupTransferTestInstance(void);
+
+private:
+    void init(void);
+    uint32_t getMemoryIndex(uint32_t memoryTypeBits, uint32_t memoryPropertyFlag);
+    bool isPeerCopyAllowed(uint32_t memoryTypeIndex, uint32_t firstdeviceID, uint32_t seconddeviceID);
+    void submitBufferAndWaitForIdle(const vk::DeviceInterface &vk, VkCommandBuffer cmdBuf, uint32_t deviceMask);
+
+    virtual tcu::TestStatus iterate(void);
+
+    const InstanceWrapper m_instance;
+    DeviceWrapper m_deviceGroup;
+
+    uint32_t m_physicalDeviceCount;
+    VkQueue m_deviceGroupQueue;
+    vector<VkPhysicalDevice> m_physicalDevices;
+    uint32_t m_queueFamilyIndex;
+
+    uint32_t m_testMode;
+    bool m_useDedicated;
+    bool m_usePeerMemory;
+    bool m_subsetAllocation;
+};
+
+DeviceGroupTransferTestInstance::DeviceGroupTransferTestInstance(Context &context, const uint32_t mode)
+    : TestInstance(context)
+    , m_instance(createCustomInstanceFromContext(context))
+    , m_physicalDeviceCount(0)
+    , m_deviceGroupQueue(VK_NULL_HANDLE)
+    , m_testMode(mode)
+    , m_useDedicated(m_testMode & TRANSFER_TEST_MODE_DEDICATED)
+    , m_usePeerMemory(m_testMode & TRANSFER_TEST_MODE_PEER_MEMORY)
+    , m_subsetAllocation(true)
+{
+    init();
+}
+
+DeviceGroupTransferTestInstance::~DeviceGroupTransferTestInstance()
+{
+}
+
+uint32_t DeviceGroupTransferTestInstance::getMemoryIndex(const uint32_t memoryTypeBits,
+                                                         const uint32_t memoryPropertyFlag)
+{
+    const VkPhysicalDeviceMemoryProperties deviceMemProps =
+        getPhysicalDeviceMemoryProperties(m_instance.getDriver(), m_deviceGroup.getPhysicalDevice());
+    for (uint32_t memoryTypeNdx = 0; memoryTypeNdx < deviceMemProps.memoryTypeCount; memoryTypeNdx++)
+    {
+        if ((memoryTypeBits & (1u << memoryTypeNdx)) != 0 &&
+            (deviceMemProps.memoryTypes[memoryTypeNdx].propertyFlags & memoryPropertyFlag) == memoryPropertyFlag)
+            return memoryTypeNdx;
+    }
+    TCU_THROW(NotSupportedError, "No compatible memory type found");
+}
+
+bool DeviceGroupTransferTestInstance::isPeerCopyAllowed(uint32_t memoryTypeIndex, uint32_t firstdeviceID,
+                                                        uint32_t seconddeviceID)
+{
+    // Copies read the peer bound instance and write it back, so both directions are needed
+    const VkPeerMemoryFeatureFlags requiredFeatures =
+        VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT | VK_PEER_MEMORY_FEATURE_COPY_DST_BIT;
+    VkPeerMemoryFeatureFlags peerMemFeatures1;
+    VkPeerMemoryFeatureFlags peerMemFeatures2;
+    const DeviceInterface &vk(m_deviceGroup.getDriver());
+    const VkPhysicalDeviceMemoryProperties deviceMemProps1 =
+        getPhysicalDeviceMemoryProperties(m_instance.getDriver(), m_physicalDevices[firstdeviceID]);
+    const VkPhysicalDeviceMemoryProperties deviceMemProps2 =
+        getPhysicalDeviceMemoryProperties(m_instance.getDriver(), m_physicalDevices[seconddeviceID]);
+
+    vk.getDeviceGroupPeerMemoryFeatures(*m_deviceGroup, deviceMemProps2.memoryTypes[memoryTypeIndex].heapIndex,
+                                        firstdeviceID, seconddeviceID, &peerMemFeatures1);
+    vk.getDeviceGroupPeerMemoryFeatures(*m_deviceGroup, deviceMemProps1.memoryTypes[memoryTypeIndex].heapIndex,
+                                        seconddeviceID, firstdeviceID, &peerMemFeatures2);
+
+    return ((peerMemFeatures1 & requiredFeatures) == requiredFeatures) &&
+           ((peerMemFeatures2 & requiredFeatures) == requiredFeatures);
+}
+
+void DeviceGroupTransferTestInstance::submitBufferAndWaitForIdle(const vk::DeviceInterface &vk, VkCommandBuffer cmdBuf,
+                                                                 uint32_t deviceMask)
+{
+    submitCommandsAndWait(vk, *m_deviceGroup, m_deviceGroupQueue, cmdBuf, true, deviceMask);
+    VK_CHECK(vk.deviceWaitIdle(*m_deviceGroup));
+}
+
+void DeviceGroupTransferTestInstance::init(void)
+{
+    if (!m_context.isInstanceFunctionalitySupported("VK_KHR_device_group_creation"))
+        TCU_THROW(NotSupportedError,
+                  "Device Group tests are not supported, no device group creation extension present.");
+
+    if (!m_context.isDeviceFunctionalitySupported("VK_KHR_device_group"))
+        TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_device_group");
+
+    vector<string> deviceExtensions;
+
+    if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_device_group"))
+        deviceExtensions.push_back("VK_KHR_device_group");
+
+    if (m_useDedicated)
+    {
+        if (!m_context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
+            TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_dedicated_allocation");
+
+        if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_dedicated_allocation"))
+            deviceExtensions.push_back("VK_KHR_dedicated_allocation");
+    }
+
+    const InstanceInterface &instanceDriver = m_instance.getDriver();
+
+    // The device is created with a single queue taken from a transfer capable family, so the
+    // whole test is recorded on a queue that may expose nothing but VK_QUEUE_TRANSFER_BIT.
+    const int transferQueueFamilyIndex = m_context.getTransferQueueFamilyIndex();
+
+    if (transferQueueFamilyIndex < 0)
+        TCU_THROW(NotSupportedError, "No queue family with transfer capability found.");
+
+    m_queueFamilyIndex        = (uint32_t)transferQueueFamilyIndex;
+    const float queuePriority = 1.0f;
+    vector<const char *> extensionPtrs;
+
+    {
+        const tcu::CommandLine &cmdLine = m_context.getTestContext().getCommandLine();
+        const vector<vk::VkPhysicalDeviceGroupProperties> properties =
+            enumeratePhysicalDeviceGroups(instanceDriver, m_instance);
+        const int kGroupId    = cmdLine.getVKDeviceGroupId();
+        const int kGroupIndex = kGroupId - 1;
+        const int kDevId      = cmdLine.getVKDeviceId();
+        const int kDevIndex   = kDevId - 1;
+
+        if (kGroupId < 1 || static_cast<size_t>(kGroupId) > properties.size())
+        {
+            std::ostringstream msg;
+            msg << "Invalid device group id " << kGroupId << " (only " << properties.size() << " device groups found)";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
+
+        m_physicalDeviceCount = properties[kGroupIndex].physicalDeviceCount;
+        for (uint32_t idx = 0; idx < m_physicalDeviceCount; idx++)
+        {
+            m_physicalDevices.push_back(properties[kGroupIndex].physicalDevices[idx]);
+        }
+
+        if (m_usePeerMemory && m_physicalDeviceCount < 2)
+            TCU_THROW(NotSupportedError, "Peer memory copies need more than 1 physical device.");
+
+        // Only the peer bound destination buffer needs vkBindBufferMemory2
+        if (m_usePeerMemory)
+        {
+            if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(),
+                              std::string("VK_KHR_bind_memory2")))
+                TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_bind_memory2");
+            if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_bind_memory2"))
+                deviceExtensions.push_back("VK_KHR_bind_memory2");
+        }
+
+        const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
+            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType             sType;
+            nullptr,                                    // const void*                 pNext;
+            (VkDeviceQueueCreateFlags)0u,               // VkDeviceQueueCreateFlags    flags;
+            m_queueFamilyIndex,                         // uint32_t                    queueFamilyIndex;
+            1u,                                         // uint32_t                    queueCount;
+            &queuePriority,                             // const float*                pQueuePriorities;
+        };
+
+        VkDeviceGroupDeviceCreateInfo deviceGroupInfo = {
+            VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO, // VkStructureType            sType;
+            nullptr,                                           // const void*                pNext;
+            properties[kGroupIndex].physicalDeviceCount,       // uint32_t                   physicalDeviceCount;
+            properties[kGroupIndex].physicalDevices            // const VkPhysicalDevice*    pPhysicalDevices;
+        };
+
+        if (kDevId < 1 || static_cast<uint32_t>(kDevId) > m_physicalDeviceCount)
+        {
+            std::ostringstream msg;
+            msg << "Device id " << kDevId << " invalid for group " << kGroupId << " (group " << kGroupId << " has "
+                << m_physicalDeviceCount << " devices)";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
+
+        VkPhysicalDevice physicalDevice                = properties[kGroupIndex].physicalDevices[kDevIndex];
+        VkPhysicalDeviceFeatures enabledDeviceFeatures = getPhysicalDeviceFeatures(instanceDriver, physicalDevice);
+        m_subsetAllocation                             = properties[kGroupIndex].subsetAllocation;
+
+        uint32_t queueFamilyPropertyCount = 0;
+        instanceDriver.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
+        std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyPropertyCount);
+        instanceDriver.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount,
+                                                              queueFamilyProperties.data());
+        if (m_queueFamilyIndex >= queueFamilyPropertyCount ||
+            !(queueFamilyProperties[m_queueFamilyIndex].queueFlags & VK_QUEUE_TRANSFER_BIT))
+            TCU_THROW(NotSupportedError, "Transfer queue family index not usable on this physical device.");
+
+        extensionPtrs.resize(deviceExtensions.size());
+        for (size_t ndx = 0; ndx < deviceExtensions.size(); ++ndx)
+            extensionPtrs[ndx] = deviceExtensions[ndx].c_str();
+
+        const VkDeviceCreateInfo deviceCreateInfo = {
+            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType                    sType;
+            &deviceGroupInfo,                     // const void*                        pNext;
+            (VkDeviceCreateFlags)0u,              // VkDeviceCreateFlags                flags;
+            1,                                    // uint32_t                           queueCreateInfoCount;
+            &deviceQueueCreateInfo,               // const VkDeviceQueueCreateInfo*     pQueueCreateInfos;
+            0u,                                   // uint32_t                           enabledLayerCount;
+            nullptr,                              // const char* const*                 ppEnabledLayerNames;
+            (uint32_t)extensionPtrs.size(),       // uint32_t                           enabledExtensionCount;
+            (extensionPtrs.empty() ? nullptr :
+                                     &extensionPtrs[0]), // const char* const*                 ppEnabledExtensionNames;
+            &enabledDeviceFeatures,                      // const VkPhysicalDeviceFeatures*    pEnabledFeatures;
+        };
+
+        m_deviceGroup = m_instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
+    }
+
+    m_deviceGroupQueue = getDeviceQueue(m_deviceGroup.getDriver(), *m_deviceGroup, m_queueFamilyIndex, 0);
+}
+
+tcu::TestStatus DeviceGroupTransferTestInstance::iterate(void)
+{
+    const DeviceInterface &vk     = m_deviceGroup.getDriver();
+    const VkDeviceSize bufferSize = 4096u;
+
+    vk::Allocator &memAlloc = m_deviceGroup.getAllocator();
+    vector<uint8_t> referenceData((size_t)bufferSize);
+
+    for (size_t ndx = 0; ndx < referenceData.size(); ndx++)
+        referenceData[ndx] = (uint8_t)(ndx & 0xFFu);
+
+    // Loop through all physical devices in the device group
+    for (uint32_t physDevID = 0; physDevID < m_physicalDeviceCount; physDevID++)
+    {
+        const uint32_t firstDeviceID  = physDevID;
+        const uint32_t secondDeviceID = (firstDeviceID + 1) % m_physicalDeviceCount;
+        vector<uint32_t> deviceIndices(m_physicalDeviceCount);
+
+        // Setup allocation mask
+        const uint32_t allocDeviceMask =
+            m_subsetAllocation ? (1 << firstDeviceID) | (1 << secondDeviceID) : (1 << m_physicalDeviceCount) - 1;
+
+        for (uint32_t i = 0; i < m_physicalDeviceCount; i++)
+            deviceIndices[i] = i;
+        deviceIndices[firstDeviceID]  = secondDeviceID;
+        deviceIndices[secondDeviceID] = firstDeviceID;
+
+        // Resource handlers
+        de::MovePtr<Allocation> srcBufferMemory;
+        de::MovePtr<Allocation> readBufferMemory;
+        vk::Move<vk::VkDeviceMemory> dstBufferMemory;
+
+        Move<VkBuffer> srcBuffer;
+        Move<VkBuffer> dstBuffer;
+        Move<VkBuffer> readBuffer;
+
+        Move<VkCommandPool> cmdPool;
+        Move<VkCommandBuffer> cmdBuffer;
+
+        // Memory allocation structures
+        VkMemoryDedicatedAllocateInfo dedicatedAllocInfo = {
+            VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType    sType;
+            nullptr,                                          // const void*        pNext;
+            VK_NULL_HANDLE,                                   // VkImage            image;
+            VK_NULL_HANDLE                                    // VkBuffer           buffer;
+        };
+
+        VkMemoryAllocateFlagsInfo allocDeviceMaskInfo = {
+            VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,   // VkStructureType          sType;
+            m_useDedicated ? &dedicatedAllocInfo : nullptr, // const void*              pNext;
+            VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT,             // VkMemoryAllocateFlags    flags;
+            allocDeviceMask,                                // uint32_t                 deviceMask;
+        };
+
+        VkMemoryAllocateInfo allocInfo = {
+            VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // VkStructureType    sType;
+            &allocDeviceMaskInfo,                   // const void*        pNext;
+            0u,                                     // VkDeviceSize       allocationSize;
+            0u,                                     // uint32_t           memoryTypeIndex;
+        };
+
+        // Host visible source buffer holding the reference pattern. Host local heaps are not
+        // multi instance, so the contents are visible to every physical device in the group.
+        {
+            const VkBufferCreateInfo srcParams = {
+                VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType;
+                nullptr,                              // const void*            pNext;
+                0u,                                   // VkBufferCreateFlags    flags;
+                bufferSize,                           // VkDeviceSize           size;
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags     usage;
+                VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode          sharingMode;
+                1u,                                   // uint32_t               queueFamilyIndexCount;
+                &m_queueFamilyIndex,                  // const uint32_t*        pQueueFamilyIndices;
+            };
+            srcBuffer       = createBuffer(vk, *m_deviceGroup, &srcParams);
+            srcBufferMemory = memAlloc.allocate(getBufferMemoryRequirements(vk, *m_deviceGroup, *srcBuffer),
+                                                MemoryRequirement::HostVisible);
+            VK_CHECK(vk.bindBufferMemory(*m_deviceGroup, *srcBuffer, srcBufferMemory->getMemory(),
+                                         srcBufferMemory->getOffset()));
+
+            deMemcpy(srcBufferMemory->getHostPtr(), referenceData.data(), (size_t)bufferSize);
+            flushAlloc(vk, *m_deviceGroup, *srcBufferMemory);
+        }
+
+        // Device local buffer the copy goes through. With peer memory the instance used by
+        // the copying device is backed by the memory of the other device in the group.
+        {
+            const VkBufferCreateInfo dstParams = {
+                VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                // VkStructureType        sType;
+                nullptr,                                                             // const void*            pNext;
+                0u,                                                                  // VkBufferCreateFlags    flags;
+                bufferSize,                                                          // VkDeviceSize           size;
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, // VkBufferUsageFlags   usage;
+                VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode          sharingMode;
+                1u,                        // uint32_t               queueFamilyIndexCount;
+                &m_queueFamilyIndex,       // const uint32_t*        pQueueFamilyIndices;
+            };
+            dstBuffer = createBuffer(vk, *m_deviceGroup, &dstParams);
+
+            VkMemoryRequirements memReqs = getBufferMemoryRequirements(vk, *m_deviceGroup, dstBuffer.get());
+            uint32_t memoryTypeNdx       = getMemoryIndex(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+            dedicatedAllocInfo.buffer = dstBuffer.get();
+            allocInfo.allocationSize  = memReqs.size;
+            allocInfo.memoryTypeIndex = memoryTypeNdx;
+            dstBufferMemory           = allocateMemory(vk, *m_deviceGroup, &allocInfo);
+
+            if (m_usePeerMemory && !isPeerCopyAllowed(memoryTypeNdx, firstDeviceID, secondDeviceID))
+                TCU_THROW(NotSupportedError, "Peer memory copies are not supported.");
+
+            if (m_usePeerMemory)
+            {
+                VkBindBufferMemoryDeviceGroupInfo devGroupBindInfo = {
+                    VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_DEVICE_GROUP_INFO, // VkStructureType    sType;
+                    nullptr,                                                // const void*        pNext;
+                    m_physicalDeviceCount,                                  // uint32_t           deviceIndexCount;
+                    &deviceIndices[0],                                      // const uint32_t*    pDeviceIndices;
+                };
+
+                VkBindBufferMemoryInfo bindInfo = {
+                    VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO, // VkStructureType    sType;
+                    &devGroupBindInfo,                         // const void*        pNext;
+                    dstBuffer.get(),                           // VkBuffer           buffer;
+                    dstBufferMemory.get(),                     // VkDeviceMemory     memory;
+                    0u,                                        // VkDeviceSize       memoryOffset;
+                };
+                VK_CHECK(vk.bindBufferMemory2(*m_deviceGroup, 1, &bindInfo));
+            }
+            else
+            {
+                VK_CHECK(vk.bindBufferMemory(*m_deviceGroup, dstBuffer.get(), dstBufferMemory.get(), 0));
+            }
+        }
+
+        // Host visible readback buffer
+        {
+            const VkBufferCreateInfo readParams = {
+                VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType;
+                nullptr,                              // const void*            pNext;
+                0u,                                   // VkBufferCreateFlags    flags;
+                bufferSize,                           // VkDeviceSize           size;
+                VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags     usage;
+                VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode          sharingMode;
+                1u,                                   // uint32_t               queueFamilyIndexCount;
+                &m_queueFamilyIndex,                  // const uint32_t*        pQueueFamilyIndices;
+            };
+            readBuffer       = createBuffer(vk, *m_deviceGroup, &readParams);
+            readBufferMemory = memAlloc.allocate(getBufferMemoryRequirements(vk, *m_deviceGroup, *readBuffer),
+                                                 MemoryRequirement::HostVisible);
+            VK_CHECK(vk.bindBufferMemory(*m_deviceGroup, *readBuffer, readBufferMemory->getMemory(),
+                                         readBufferMemory->getOffset()));
+        }
+
+        {
+            const VkCommandPoolCreateInfo poolParams = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, nullptr,
+                                                        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+                                                        m_queueFamilyIndex};
+            cmdPool                                  = createCommandPool(vk, *m_deviceGroup, &poolParams);
+
+            const VkCommandBufferAllocateInfo bufParams = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, nullptr,
+                                                           *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1u};
+            cmdBuffer                                   = allocateCommandBuffer(vk, *m_deviceGroup, &bufParams);
+
+            const VkBufferCopy copyRegion = {0u, 0u, bufferSize};
+
+            beginCommandBuffer(vk, *cmdBuffer);
+
+            // The whole copy chain is executed by a single device of the group
+            vk.cmdSetDeviceMask(*cmdBuffer, 1 << secondDeviceID);
+
+            vk.cmdCopyBuffer(*cmdBuffer, *srcBuffer, *dstBuffer, 1u, &copyRegion);
+
+            const VkBufferMemoryBarrier copyBarrier = {
+                VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType    sType;
+                nullptr,                                 // const void*        pNext;
+                VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags      srcAccessMask;
+                VK_ACCESS_TRANSFER_READ_BIT,             // VkAccessFlags      dstAccessMask;
+                VK_QUEUE_FAMILY_IGNORED,                 // uint32_t           srcQueueFamilyIndex;
+                VK_QUEUE_FAMILY_IGNORED,                 // uint32_t           dstQueueFamilyIndex;
+                *dstBuffer,                              // VkBuffer           buffer;
+                0u,                                      // VkDeviceSize       offset;
+                bufferSize                               // VkDeviceSize       size;
+            };
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
+                                  nullptr, 1, &copyBarrier, 0, nullptr);
+
+            vk.cmdCopyBuffer(*cmdBuffer, *dstBuffer, *readBuffer, 1u, &copyRegion);
+
+            const VkBufferMemoryBarrier readBarrier = {
+                VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType    sType;
+                nullptr,                                 // const void*        pNext;
+                VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags      srcAccessMask;
+                VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags      dstAccessMask;
+                VK_QUEUE_FAMILY_IGNORED,                 // uint32_t           srcQueueFamilyIndex;
+                VK_QUEUE_FAMILY_IGNORED,                 // uint32_t           dstQueueFamilyIndex;
+                *readBuffer,                             // VkBuffer           buffer;
+                0u,                                      // VkDeviceSize       offset;
+                bufferSize                               // VkDeviceSize       size;
+            };
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0, nullptr,
+                                  1, &readBarrier, 0, nullptr);
+
+            endCommandBuffer(vk, *cmdBuffer);
+
+            const uint32_t deviceMask = (1 << firstDeviceID) | (1 << secondDeviceID);
+            submitBufferAndWaitForIdle(vk, *cmdBuffer, deviceMask);
+            m_context.resetCommandPoolForVKSC(*m_deviceGroup, *cmdPool);
+        }
+
+        invalidateAlloc(vk, *m_deviceGroup, *readBufferMemory);
+
+        if (deMemCmp(readBufferMemory->getHostPtr(), referenceData.data(), (size_t)bufferSize) != 0)
+            return tcu::TestStatus::fail("Buffer copy comparison failed");
+    }
+
+    return tcu::TestStatus(QP_TEST_RESULT_PASS, "Device group transfer verification passed");
+}
+
+class DeviceGroupTransferTestCase : public TestCase
+{
+public:
+    DeviceGroupTransferTestCase(tcu::TestContext &context, const char *name, uint32_t mode)
+        : TestCase(context, name)
+        , m_testMode(mode)
+    {
+    }
+
+private:
+    uint32_t m_testMode;
+
+    TestInstance *createInstance(Context &context) const
+    {
+        return new DeviceGroupTransferTestInstance(context, m_testMode);
+    }
+};
+
 } // namespace
 
 class DeviceGroupTestRendering : public tcu::TestCaseGroup
@@ -2600,6 +3064,15 @@ void DeviceGroupTestRendering::init(void)
     addChild(new DeviceGroupComputeTestCase<DeviceGroupComputeTestInstance>(
         m_testCtx, "compute_alternate_dispatch_peer",
         COMPUTE_TEST_MODE_ALTERNATE_DISPATCH | COMPUTE_TEST_MODE_PEER_MEMORY));
+
+    // Test alternate copy on a transfer capable queue
+    addChild(new DeviceGroupTransferTestCase(m_testCtx, "transfer_alternate_copy", TRANSFER_TEST_MODE_ALTERNATE_COPY));
+    // Test alternate copy with dedicated memory allocations
+    addChild(new DeviceGroupTransferTestCase(m_testCtx, "transfer_alternate_copy_dedicated",
+                                             TRANSFER_TEST_MODE_ALTERNATE_COPY | TRANSFER_TEST_MODE_DEDICATED));
+    // Test alternate copy to and from peer memory
+    addChild(new DeviceGroupTransferTestCase(m_testCtx, "transfer_alternate_copy_peer",
+                                             TRANSFER_TEST_MODE_ALTERNATE_COPY | TRANSFER_TEST_MODE_PEER_MEMORY));
 }
 
 tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)

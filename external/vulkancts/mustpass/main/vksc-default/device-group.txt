@@ -7,3 +7,6 @@ dEQP-VKSC.device_group.afr_tessellated_linefill
 dEQP-VKSC.device_group.compute_alternate_dispatch
 dEQP-VKSC.device_group.compute_alternate_dispatch_dedicated
 dEQP-VKSC.device_group.compute_alternate_dispatch_peer
+dEQP-VKSC.device_group.transfer_alternate_copy
+dEQP-VKSC.device_group.transfer_alternate_copy_dedicated
+dEQP-VKSC.device_group.transfer_alternate_copy_peer

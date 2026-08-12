@@ -16,3 +16,6 @@ dEQP-VK.device_group.sfr_dedicated_peer
 dEQP-VK.device_group.sfr_sys
 dEQP-VK.device_group.sfr_tessellated
 dEQP-VK.device_group.sfr_tessellated_linefill
+dEQP-VK.device_group.transfer_alternate_copy
+dEQP-VK.device_group.transfer_alternate_copy_dedicated
+dEQP-VK.device_group.transfer_alternate_copy_peer
