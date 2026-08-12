@@ -35,6 +35,7 @@
 #include "vkObjUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
@@ -1001,6 +1002,172 @@ void ExternalMemoryHostSynchronizationTestInstance::fillBuffer(VkDeviceSize size
                              nullptr, 1u, &bufferBarrier, 0u, nullptr);
 }
 
+class ExternalMemoryHostBindBufferTestInstance : public ExternalMemoryHostBaseTestInstance
+{
+public:
+    ExternalMemoryHostBindBufferTestInstance(Context &context, VkDeviceSize allocationSize)
+        : ExternalMemoryHostBaseTestInstance(context, allocationSize)
+    {
+    }
+
+private:
+    virtual tcu::TestStatus iterate();
+};
+
+tcu::TestStatus ExternalMemoryHostBindBufferTestInstance::iterate()
+{
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+
+    const uint32_t offset         = 3u;
+    const uint32_t elementCount   = 64;
+    const VkDeviceSize bufferSize = elementCount * sizeof(uint32_t);
+
+    const vk::VkExternalMemoryBufferCreateInfo externalInfo = {
+        vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO, nullptr,
+        (vk::VkExternalMemoryHandleTypeFlags)VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT};
+
+    const VkBufferCreateInfo dataBufferCreateInfo = {
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                // VkStructureType        sType
+        &externalInfo,                                                       // const void*            pNext
+        0,                                                                   // VkBufferCreateFlags    flag
+        bufferSize,                                                          // VkDeviceSize            size
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, // VkBufferUsageFlags    usage
+        VK_SHARING_MODE_EXCLUSIVE,                                           // VkSharingMode        sharingMode
+        0,                                                                   // uint32_t                queueFamilyCount
+        nullptr // const uint32_t*        pQueueFamilyIndices
+    };
+    const Unique<VkBuffer> buffer(vk::createBuffer(m_vkd, m_device, &dataBufferCreateInfo, nullptr));
+    const VkMemoryRequirements bufferMemoryRequirements(getBufferMemoryRequirements(m_vkd, m_device, *buffer));
+
+    const VkDeviceSize bindOffset   = offset * bufferMemoryRequirements.alignment;
+    const VkDeviceSize requiredSize = bindOffset + bufferMemoryRequirements.size;
+
+    if (requiredSize > m_allocationSize)
+    {
+        // Reallocate block with a size that is a multiple of minImportedHostPointerAlignment.
+        const auto newHostAllocationSize = de::roundUp(requiredSize, m_minImportedHostPointerAlignment);
+        m_hostMemoryAlloc = alignedRealloc(m_hostMemoryAlloc, newHostAllocationSize, m_minImportedHostPointerAlignment);
+        m_allocationSize  = newHostAllocationSize;
+
+        m_log << tcu::TestLog::Message << "Realloc needed (required size: " << requiredSize << "). "
+              << "New host allocation size: " << newHostAllocationSize << ")." << tcu::TestLog::EndMessage;
+    }
+
+    uint32_t hostPointerMemoryTypeBits = getHostPointerMemoryTypeBits(m_hostMemoryAlloc);
+    uint32_t memoryTypeIndexToTest;
+    if (findCompatibleMemoryTypeIndexToTest(bufferMemoryRequirements.memoryTypeBits, hostPointerMemoryTypeBits,
+                                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &memoryTypeIndexToTest))
+        m_deviceMemoryAllocatedFromHostPointer = allocateMemoryFromHostPointer(memoryTypeIndexToTest);
+    else
+        TCU_THROW(NotSupportedError, "Compatible memory type not found");
+
+    m_vkd.bindBufferMemory(m_device, *buffer, *m_deviceMemoryAllocatedFromHostPointer, bindOffset);
+
+    const VkBufferCreateInfo sourceBufferCreateInfo =
+        makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    const Unique<VkBuffer> sourceBuffer(vk::createBuffer(m_vkd, m_device, &sourceBufferCreateInfo));
+    de::MovePtr<Allocation> sourceBufferAlloc = m_allocator.allocate(
+        getBufferMemoryRequirements(m_vkd, m_device, *sourceBuffer), MemoryRequirement::HostVisible);
+    m_vkd.bindBufferMemory(m_device, *sourceBuffer, sourceBufferAlloc->getMemory(), sourceBufferAlloc->getOffset());
+
+    const VkBufferCreateInfo resultBufferCreateInfo =
+        makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const Unique<VkBuffer> resultBuffer(vk::createBuffer(m_vkd, m_device, &resultBufferCreateInfo));
+    de::MovePtr<Allocation> resultBufferAlloc = m_allocator.allocate(
+        getBufferMemoryRequirements(m_vkd, m_device, *resultBuffer), MemoryRequirement::HostVisible);
+    m_vkd.bindBufferMemory(m_device, *resultBuffer, resultBufferAlloc->getMemory(), resultBufferAlloc->getOffset());
+
+    std::vector<uint32_t> hostData(elementCount);
+    std::vector<uint32_t> deviceData(elementCount);
+
+    for (uint32_t i = 0; i < elementCount; ++i)
+    {
+        hostData[i]   = elementCount + i;
+        deviceData[i] = i;
+    }
+
+    deMemcpy(sourceBufferAlloc->getHostPtr(), deviceData.data(), (size_t)bufferSize);
+    flushAlloc(m_vkd, m_device, *sourceBufferAlloc);
+
+    const size_t hostAllocationSize = (size_t)m_allocationSize;
+    std::vector<uint8_t> initialContents(hostAllocationSize, 123);
+    deMemcpy(initialContents.data() + bindOffset, hostData.data(), (size_t)bufferSize);
+
+    void *mappedPtr = mapMemory(m_vkd, m_device, *m_deviceMemoryAllocatedFromHostPointer, 0u, m_allocationSize, 0u);
+    deMemcpy(mappedPtr, initialContents.data(), hostAllocationSize);
+    flushMappedMemoryRange(m_vkd, m_device, *m_deviceMemoryAllocatedFromHostPointer, 0u, VK_WHOLE_SIZE);
+
+    const auto cmdPool   = createCommandPool(m_vkd, m_device, 0u, queueFamilyIndex);
+    const auto cmdBuffer = allocateCommandBuffer(m_vkd, m_device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    beginCommandBuffer(m_vkd, *cmdBuffer);
+    const VkBufferMemoryBarrier hostWriteBarrier =
+        makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, *buffer, 0u, bufferSize);
+    m_vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr,
+                             1u, &hostWriteBarrier, 0u, nullptr);
+
+    const VkBufferCopy region = {0u, 0u, bufferSize};
+    m_vkd.cmdCopyBuffer(*cmdBuffer, *buffer, *resultBuffer, 1u, &region);
+
+    const VkBufferMemoryBarrier copyBarrier =
+        makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, *buffer, 0u, bufferSize);
+    m_vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
+                             nullptr, 1u, &copyBarrier, 0u, nullptr);
+
+    m_vkd.cmdCopyBuffer(*cmdBuffer, *sourceBuffer, *buffer, 1u, &region);
+
+    VkBufferMemoryBarrier hostReadBarriers[2];
+    hostReadBarriers[0] =
+        makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0u, bufferSize);
+    hostReadBarriers[1] =
+        makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0u, bufferSize);
+    m_vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr,
+                             2u, hostReadBarriers, 0u, nullptr);
+    endCommandBuffer(m_vkd, *cmdBuffer);
+    submitCommandsAndWait(m_vkd, m_device, m_queue, *cmdBuffer);
+
+    invalidateAlloc(m_vkd, m_device, *resultBufferAlloc);
+    invalidateMappedMemoryRange(m_vkd, m_device, *m_deviceMemoryAllocatedFromHostPointer, 0u, VK_WHOLE_SIZE);
+
+    if (deMemCmp(resultBufferAlloc->getHostPtr(), hostData.data(), bufferSize) != 0)
+    {
+        m_log << tcu::TestLog::Message << "Buffer contents read by the device do not match the values written by host"
+              << tcu::TestLog::EndMessage;
+        return tcu::TestStatus::fail("Fail");
+    }
+    else
+    {
+        for (uint32_t i = 0; i < 2u; ++i)
+        {
+            uint8_t *ptr        = i == 0 ? (uint8_t *)mappedPtr : (uint8_t *)m_hostMemoryAlloc;
+            std::string ptrName = i == 0 ? "Mapped pointer memory" : "Imported host pointer memory";
+
+            if (deMemCmp(ptr, initialContents.data(), (size_t)bindOffset) != 0)
+            {
+                m_log << tcu::TestLog::Message << ptrName << " 0 to " << bindOffset << "was modified"
+                      << tcu::TestLog::EndMessage;
+                return tcu::TestStatus::fail("Fail");
+            }
+            if (deMemCmp(ptr + bindOffset, deviceData.data(), bufferSize) != 0)
+            {
+                m_log << tcu::TestLog::Message << ptrName << " " << bindOffset << " to " << bindOffset + bufferSize
+                      << " doesn't match" << tcu::TestLog::EndMessage;
+                return tcu::TestStatus::fail("Fail");
+            }
+
+            const size_t exactSize = size_t(bindOffset + bufferMemoryRequirements.size);
+            if (deMemCmp(ptr + exactSize, initialContents.data() + exactSize, hostAllocationSize - exactSize) != 0)
+            {
+                m_log << tcu::TestLog::Message << ptrName << " was modified after bufferMemoryRequirements.size ("
+                      << exactSize << ")" << tcu::TestLog::EndMessage;
+                return tcu::TestStatus::fail("Fail");
+            }
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 struct AddPrograms
 {
     void init(vk::SourceCollections &sources, TestParams testParams) const
@@ -1176,6 +1343,14 @@ tcu::TestCaseGroup *createMemoryExternalMemoryHostTests(tcu::TestContext &testCt
         testCtx, "synchronization", AddPrograms(), params,
         typename FunctionSupport1<TestParams>::Args(checkHostSynchronizationSupport, params)));
     group->addChild(synchronization.release());
+
+    de::MovePtr<tcu::TestCaseGroup> bind_buffer_memory_and_copy(
+        new tcu::TestCaseGroup(testCtx, "bind_buffer_memory_and_copy"));
+    bind_buffer_memory_and_copy->addChild(
+        new InstanceFactory1WithSupport<ExternalMemoryHostBindBufferTestInstance, VkDeviceSize, FunctionSupport0>(
+            testCtx, "offset", 1, checkSupport));
+    group->addChild(bind_buffer_memory_and_copy.release());
+
     return group.release();
 }
 
