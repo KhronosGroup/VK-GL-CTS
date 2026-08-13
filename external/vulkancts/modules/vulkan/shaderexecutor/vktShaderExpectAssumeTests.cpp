@@ -24,8 +24,8 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktShaderExpectAssumeTests.hpp"
-#include "vktShaderExecutor.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktTestCase.hpp"
 
 #include "tcuStringTemplate.hpp"
 
@@ -35,20 +35,13 @@
 #include "vkObjUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
-#include "vkTypeUtil.hpp"
 
-#include "tcuResultCollector.hpp"
-
-#include "deArrayUtil.hpp"
-#include "deSharedPtr.hpp"
 #include "deStringUtil.hpp"
 
 #include <cassert>
 #include <string>
 
-namespace vkt
-{
-namespace shaderexecutor
+namespace vkt::shaderexecutor
 {
 
 namespace
@@ -1108,6 +1101,8 @@ public:
     void checkSupport(Context &context) const override
     {
         context.requireDeviceFunctionality("VK_KHR_shader_expect_assume");
+        if (m_testParam.shaderType != VK_SHADER_STAGE_COMPUTE_BIT)
+            context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
         const auto &features          = context.getDeviceFeatures();
         const auto &featuresStorage16 = context.get16BitStorageFeatures();
@@ -1518,5 +1513,4 @@ tcu::TestCaseGroup *createShaderExpectAssumeTests(tcu::TestContext &testCtx)
     return createTestGroup(testCtx, "shader_expect_assume", addShaderExpectAssumeTests);
 }
 
-} // namespace shaderexecutor
-} // namespace vkt
+} // namespace vkt::shaderexecutor

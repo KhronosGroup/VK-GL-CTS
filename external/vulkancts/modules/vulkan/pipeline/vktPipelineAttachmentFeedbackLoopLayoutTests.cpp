@@ -41,11 +41,8 @@
 #include "vkImageWithMemory.hpp"
 #include "vkBufferWithMemory.hpp"
 
-#include "tcuPlatform.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTextureUtil.hpp"
-#include "tcuTestLog.hpp"
-#include "tcuMaybe.hpp"
 
 #include "deStringUtil.hpp"
 #include "deMemory.h"
@@ -54,13 +51,9 @@
 #include <sstream>
 #include <vector>
 #include <string>
-#include <memory>
-#include <utility>
 #include <algorithm>
 
-namespace vkt
-{
-namespace pipeline
+namespace vkt::pipeline
 {
 
 using namespace vk;
@@ -2025,7 +2018,13 @@ void AttachmentFeedbackLoopLayoutSamplerTest::checkSupport(Context &context) con
     }
 
     if (m_useGeneralLayout)
+    {
         context.requireDeviceFunctionality("VK_KHR_unified_image_layouts");
+
+        const bool useImageAsColorOrDSAttachment = m_testMode >= TEST_MODE_READ_WRITE_SAME_PIXEL;
+        if (m_imageAspectTestMode != IMAGE_ASPECT_TEST_COLOR && useImageAsColorOrDSAttachment)
+            context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+    }
 }
 
 std::string AttachmentFeedbackLoopLayoutSamplerTest::getGlslTextureType(const tcu::TextureFormat &format,
@@ -3391,5 +3390,4 @@ tcu::TestCaseGroup *createAttachmentFeedbackLoopLayoutTests(tcu::TestContext &te
     return attachmentFeedbackLoopLayoutTests.release();
 }
 
-} // namespace pipeline
-} // namespace vkt
+} // namespace vkt::pipeline

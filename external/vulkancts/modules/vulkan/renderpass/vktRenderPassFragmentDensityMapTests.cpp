@@ -28,7 +28,6 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
 #include "vktRenderPassTestsUtil.hpp"
-#include "vkDeviceUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
@@ -36,14 +35,12 @@
 #include "vkObjUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
-#include "tcuCommandLine.hpp"
 #include "tcuStringTemplate.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
 #include <sstream>
 #include <vector>
-#include <set>
 #include <mutex>
 #include <cmath>
 #include <algorithm>
@@ -80,10 +77,7 @@
 //#define USE_QCOM_OFFSET_EXT 1
 #undef USE_QCOM_OFFSET_EXT
 
-namespace vkt
-{
-
-namespace renderpass
+namespace vkt::renderpass
 {
 
 using namespace vk;
@@ -1573,6 +1567,9 @@ void FragmentDensityMapTest::checkSupport(Context &context) const
         else
             DE_ASSERT(false);
     }
+
+    if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
+        context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
     if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
     {
@@ -5684,6 +5681,4 @@ tcu::TestCaseGroup *createFragmentDensityMapTests(tcu::TestContext &testCtx, con
     return createTestGroup(testCtx, "fragment_density_map", createChildren, groupParams, cleanupGroup);
 }
 
-} // namespace renderpass
-
-} // namespace vkt
+} // namespace vkt::renderpass

@@ -28,10 +28,8 @@
 #include "vktTestGroupUtil.hpp"
 
 #include "vkDefs.hpp"
-#include "vkDeviceUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
-#include "vkPlatform.hpp"
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
@@ -41,9 +39,7 @@
 #include "vkObjUtil.hpp"
 #include "vkBarrierUtil.hpp"
 
-#include "tcuImageCompare.hpp"
 #include "tcuFormatUtil.hpp"
-#include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
 
@@ -1206,6 +1202,7 @@ void checkSupport(Context &context, TestConfig testConfig)
 {
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 
+    context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
     context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
     if (testConfig.imageLayers > 1)
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
@@ -1730,6 +1727,7 @@ void MiscTestCase::checkSupport(Context &context) const
     const VkFormatFeatureFlags requirements =
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
 
+    context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
     context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
 
     if (m_testType == MiscTestType::RESOLVE_STENCIL_ASPECT_THAT_IS_NOT_PRESENT)

@@ -1614,6 +1614,11 @@ private:
 
 void BaseTestCase::checkSupport(Context &context) const
 {
+    if (m_groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
+        context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+    else if (m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+        context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
     const auto &vki     = context.getInstanceInterface();
     auto physicalDevice = context.getPhysicalDevice();
 
