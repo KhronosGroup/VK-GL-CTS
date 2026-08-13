@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2024-2025 ARM Ltd.
+ * Copyright (c) 2024-2026 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@
 #include "deUniquePtr.hpp"
 
 #include "vktDataGraphBasicTests.hpp"
+#include "vktDataGraphDescriptorBufferTests.hpp"
+#include "vktDataGraphUpdateAfterBindTests.hpp"
 #include "vktDataGraphPropertiesTests.hpp"
 #include "vktDataGraphPipelineCacheTests.hpp"
 #include "vktDataGraphTests.hpp"
@@ -43,6 +45,8 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     dataGraphTests->addChild(createTestGroup(testCtx, "basic", basicTestsGroup));
     dataGraphTests->addChild(createTestGroup(testCtx, "cache", cacheTestsGroup));
     dataGraphTests->addChild(createTestGroup(testCtx, "properties", propertiesTestsGroup));
+    dataGraphTests->addChild(createTestGroup(testCtx, "descriptor_buffer", descriptorBufferTestsGroup));
+    dataGraphTests->addChild(createTestGroup(testCtx, "update_after_bind", updateAfterBindTestsGroup));
 
     return dataGraphTests.release();
 }

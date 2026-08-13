@@ -1088,6 +1088,19 @@ void ImageTranscodingCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_KHR_maintenance2");
 
+#ifndef CTS_USES_VULKANSC
+    // VUID-vkGetPhysicalDeviceImageFormatProperties-format-parameter
+    if (m_parameters.featuredFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16 ||
+        m_parameters.featuredFormat == VK_FORMAT_A8_UNORM ||
+        m_parameters.featurelessFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16 ||
+        m_parameters.featurelessFormat == VK_FORMAT_A8_UNORM)
+        context.requireDeviceFunctionality("VK_KHR_maintenance5");
+
+    for (auto compatibleFormat : m_parameters.compatibleFormats)
+        if (compatibleFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16 || compatibleFormat == VK_FORMAT_A8_UNORM)
+            context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
     if ((m_parameters.operation == OPERATION_TEXTURE_READ || m_parameters.operation == OPERATION_TEXTURE_WRITE) &&
         !context.getDeviceFeatures().fragmentStoresAndAtomics)
         TCU_THROW(NotSupportedError, "fragmentStoresAndAtomics not supported");

@@ -214,6 +214,10 @@ void SizeTest::checkSupport(Context &context) const
     if (imgType == IMAGE_TYPE_CUBE_ARRAY)
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
 
+    // VUID-vkGetPhysicalDeviceImageFormatProperties-flags-parameter
+    if (m_2DViewOf3D)
+        context.requireDeviceFunctionality("VK_EXT_image_2d_view_of_3d");
+
     if (imgType != IMAGE_TYPE_BUFFER)
     {
         const auto &vki           = context.getInstanceInterface();
@@ -228,9 +232,6 @@ void SizeTest::checkSupport(Context &context) const
         if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
             TCU_THROW(NotSupportedError, "Format not supported for the specified usage");
     }
-
-    if (m_2DViewOf3D)
-        context.requireDeviceFunctionality("VK_EXT_image_2d_view_of_3d");
 }
 
 void SizeTest::initPrograms(SourceCollections &programCollection) const

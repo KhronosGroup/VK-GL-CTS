@@ -2372,24 +2372,76 @@ void generateYCbCrFile(std::string fileName, uint32_t n_frames, uint32_t width, 
 }
 #endif
 
-const char *getVideoCodecString(VkVideoCodecOperationFlagBitsKHR codec)
+const char *getVideoCodecPathSegment(VkVideoCodecOperationFlagBitsKHR codec)
 {
-    static struct
+    switch (codec)
     {
-        VkVideoCodecOperationFlagBitsKHR eCodec;
-        const char *name;
-    } aCodecName[] = {
-        {VK_VIDEO_CODEC_OPERATION_NONE_KHR, "None"},
-        {VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR, "AVC/H.264"},
-        {VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR, "H.265/HEVC"},
-    };
-
-    for (auto &i : aCodecName)
-    {
-        if (codec == i.eCodec)
-            return aCodecName[codec].name;
+    case VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:
+        return "video.decode.h264";
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
+        return "video.encode.h264";
+    case VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:
+        return "video.decode.h265";
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
+        return "video.encode.h265";
+    case VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
+        return "video.decode.av1";
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR:
+        return "video.encode.av1";
+    case VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR:
+        return "video.decode.vp9";
+    default:
+        TCU_THROW(InternalError, "Unknown video codec");
     }
 
+    return "";
+}
+
+std::string getVideoDumpPath(bool output, const std::string &testName, const std::string &codecSegment,
+                             const std::string &ext, int index)
+{
+    static const char *const dumpDir = "video_dumps";
+
+    // Tolerate a concurrent creator racing us between the exists() check and the create.
+    if (!de::FilePath(dumpDir).exists())
+    {
+        try
+        {
+            de::createDirectoryAndParents(dumpDir);
+        }
+        catch (const std::runtime_error &)
+        {
+            if (!de::FilePath(dumpDir).exists())
+                TCU_THROW(InternalError, "Unable to create path");
+        }
+    }
+
+    std::string baseName = (output ? "out_" : "in_") + codecSegment + "." + testName;
+    if (index >= 0)
+        baseName += "_" + std::to_string(index);
+    baseName += "." + ext;
+
+    return de::FilePath::join(de::FilePath(dumpDir), de::FilePath(baseName)).getPath();
+}
+
+const char *getVideoCodecString(VkVideoCodecOperationFlagBitsKHR codec)
+{
+    switch (codec)
+    {
+    case VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
+        return "AVC/H.264";
+    case VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
+        return "HEVC/H.265";
+    case VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR:
+        return "AV1";
+    case VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR:
+        return "VP9";
+    default:
+        break;
+    }
     return "Unknown";
 }
 

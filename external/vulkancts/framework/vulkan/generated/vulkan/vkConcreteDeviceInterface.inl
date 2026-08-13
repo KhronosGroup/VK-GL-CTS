@@ -393,7 +393,9 @@ virtual void				getDescriptorSetLayoutSizeEXT							(VkDevice device, VkDescript
 virtual void				getDescriptorSetLayoutSupport							(VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkDescriptorSetLayoutSupport* pSupport) const;
 virtual void				getDeviceAccelerationStructureCompatibilityKHR			(VkDevice device, const VkAccelerationStructureVersionInfoKHR* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility) const;
 virtual void				getDeviceBufferMemoryRequirements						(VkDevice device, const VkDeviceBufferMemoryRequirements* pInfo, VkMemoryRequirements2* pMemoryRequirements) const;
+virtual VkResult			getDeviceFaultDebugInfoKHR								(VkDevice device, VkDeviceFaultDebugInfoKHR* pDebugInfo) const;
 virtual VkResult			getDeviceFaultInfoEXT									(VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo) const;
+virtual VkResult			getDeviceFaultReportsKHR								(VkDevice device, uint64_t timeout, uint32_t* pFaultCounts, VkDeviceFaultInfoKHR* pFaultInfo) const;
 virtual void				getDeviceGroupPeerMemoryFeatures						(VkDevice device, uint32_t heapIndex, uint32_t localDeviceIndex, uint32_t remoteDeviceIndex, VkPeerMemoryFeatureFlags* pPeerMemoryFeatures) const;
 virtual VkResult			getDeviceGroupPresentCapabilitiesKHR					(VkDevice device, VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities) const;
 virtual VkResult			getDeviceGroupSurfacePresentModes2EXT					(VkDevice device, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes) const;

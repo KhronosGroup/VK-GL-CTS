@@ -78,6 +78,16 @@ public:
                                       const PixelBufferAccess &referencePixels, const UVec2 &referenceCoord,
                                       const UVec2 &blockSize, const VkComponentMapping &componentMapping);
 
+    const Vec4 getBoxFilterSamplingResult(const bool isUnnormCoord, const PixelBufferAccess &texturePixels,
+                                          const Vec2 &textureCoord, const Vec2 &boxSize, const uint32_t precisionBits,
+                                          const VkComponentMapping &componentMapping);
+
+    std::vector<Vec4> getWeightSamplingResultCandidates(
+        const bool isUnnormCoord, const bool isNonSeparableFilter, const PixelBufferAccess &texturePixels,
+        const Vec2 &textureCoord, const PixelBufferAccess &weightPixels, const VkOffset2D &filterCenter,
+        const VkExtent2D &filterSize, const uint32_t numPhases, const VkSamplerAddressMode &weightAddressMode,
+        const VkSamplerReductionMode &weightReductionMode, const VkComponentMapping &componentMapping);
+
 private:
     VkSamplerAddressMode m_addressMode;
     VkSamplerReductionMode m_reductionMode;
@@ -98,7 +108,7 @@ VkImageType mapImageType(const ImageType imageType);
 
 VkImageCreateInfo makeImageCreateInfo(const ImageType &imageType, const UVec2 imageSize, const VkFormat format,
                                       const VkImageUsageFlags usage, const VkImageCreateFlags flags,
-                                      const VkImageTiling tiling);
+                                      const VkImageTiling tiling, const uint32_t arrayLayers = 1u);
 Move<VkImageView> makeImageViewUtil(const DeviceInterface &vk, const VkDevice vkDevice, const VkImage image,
                                     const VkImageViewType imageViewType, const VkFormat format,
                                     const VkImageSubresourceRange subresourceRange,
@@ -112,6 +122,8 @@ std::string getFormatShortString(const VkFormat format);
 std::string getImageTypeName(const ImageType imageType);
 std::vector<VkFormat> getOpSupportedFormats(const ImageProcOp op);
 const std::string getStageNames(const VkShaderStageFlags stageMask);
+float quantize(const float number, const uint32_t bits);
+bool isSignedFormat(const VkFormat format);
 
 } // namespace ImageProcessing
 } // namespace vkt

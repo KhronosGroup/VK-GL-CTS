@@ -1358,6 +1358,17 @@ struct VkAccelerationStructureMotionInfoNV
 	VkAccelerationStructureMotionInfoFlagsNV	flags;
 };
 
+struct VkAccelerationStructureTrianglesOpacityMicromapKHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkIndexType					indexType;
+	VkDeviceAddress				indexBuffer;
+	VkDeviceSize				indexStride;
+	uint32_t					baseTriangle;
+	VkAccelerationStructureKHR	micromap;
+};
+
 struct VkAccelerationStructureVersionInfoKHR
 {
 	VkStructureType	sType;
@@ -2670,6 +2681,22 @@ struct VkDeviceFaultCountsEXT
 	VkDeviceSize	vendorBinarySize;
 };
 
+struct VkDeviceFaultDebugInfoKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		vendorBinarySize;
+	void*			pVendorBinaryData;
+};
+
+struct VkDeviceFaultShaderAbortMessageInfoKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint64_t		messageDataSize;
+	void*			pMessageData;
+};
+
 struct VkDeviceFaultVendorBinaryHeaderVersionOneKHR
 {
 	uint32_t									headerSize;
@@ -2702,6 +2729,18 @@ struct VkDeviceFaultInfoEXT
 	VkDeviceFaultAddressInfoKHR*	pAddressInfos;
 	VkDeviceFaultVendorInfoKHR*		pVendorInfos;
 	void*							pVendorBinaryData;
+};
+
+struct VkDeviceFaultInfoKHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkDeviceFaultFlagsKHR		flags;
+	uint64_t					groupId;
+	char						description[VK_MAX_DESCRIPTION_SIZE];
+	VkDeviceFaultAddressInfoKHR	faultAddressInfo;
+	VkDeviceFaultAddressInfoKHR	instructionAddressInfo;
+	VkDeviceFaultVendorInfoKHR	vendorInfo;
 };
 
 struct VkDeviceGroupBindSparseInfo
@@ -4767,6 +4806,25 @@ struct VkMicromapBuildInfoEXT
 	VkDeviceSize						triangleArrayStride;
 };
 
+struct VkMicromapUsageKHR
+{
+	uint32_t					count;
+	uint32_t					subdivisionLevel;
+	VkOpacityMicromapFormatKHR	format;
+};
+
+struct VkAccelerationStructureGeometryMicromapDataKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	uint32_t							usageCountsCount;
+	const VkMicromapUsageKHR*			pUsageCounts;
+	const VkMicromapUsageKHR* const*	ppUsageCounts;
+	VkDeviceAddress						data;
+	VkDeviceAddress						triangleArray;
+	VkDeviceSize						triangleArrayStride;
+};
+
 struct VkMicromapVersionInfoEXT
 {
 	VkStructureType	sType;
@@ -6101,6 +6159,23 @@ struct VkPhysicalDeviceFaultFeaturesEXT
 	VkBool32		deviceFaultVendorBinary;
 };
 
+struct VkPhysicalDeviceFaultFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		deviceFault;
+	VkBool32		deviceFaultVendorBinary;
+	VkBool32		deviceFaultReportMasked;
+	VkBool32		deviceFaultDeviceLostOnMasked;
+};
+
+struct VkPhysicalDeviceFaultPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxDeviceFaultCount;
+};
+
 struct VkPhysicalDeviceFeatures
 {
 	VkBool32	robustBufferAccess;
@@ -6230,6 +6305,20 @@ struct VkPhysicalDeviceFragmentDensityMapFeaturesEXT
 	VkBool32		fragmentDensityMap;
 	VkBool32		fragmentDensityMapDynamic;
 	VkBool32		fragmentDensityMapNonSubsampledImages;
+};
+
+struct VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		fragmentDensityMapLayered;
+};
+
+struct VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxFragmentDensityMapLayers;
 };
 
 struct VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT
@@ -6793,6 +6882,13 @@ struct VkPhysicalDeviceMaintenance10PropertiesKHR
 	VkBool32		resolveSrgbFormatSupportsTransferFunctionControl;
 };
 
+struct VkPhysicalDeviceMaintenance11FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance11;
+};
+
 struct VkPhysicalDeviceMaintenance3Properties
 {
 	VkStructureType	sType;
@@ -7137,12 +7233,29 @@ struct VkPhysicalDeviceOpacityMicromapFeaturesEXT
 	VkBool32		micromapHostCommands;
 };
 
+struct VkPhysicalDeviceOpacityMicromapFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		micromap;
+};
+
 struct VkPhysicalDeviceOpacityMicromapPropertiesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
 	uint32_t		maxOpacity2StateSubdivisionLevel;
 	uint32_t		maxOpacity4StateSubdivisionLevel;
+};
+
+struct VkPhysicalDeviceOpacityMicromapPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxOpacity2StateSubdivisionLevel;
+	uint32_t		maxOpacity4StateSubdivisionLevel;
+	uint32_t		maxOpacityLossy4StateSubdivisionLevel;
+	uint64_t		maxMicromapTriangles;
 };
 
 struct VkPhysicalDevicePCIBusInfoPropertiesEXT
@@ -7636,6 +7749,20 @@ struct VkPhysicalDeviceShader64BitIndexingFeaturesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		shader64BitIndexing;
+};
+
+struct VkPhysicalDeviceShaderAbortFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderAbort;
+};
+
+struct VkPhysicalDeviceShaderAbortPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint64_t		maxShaderAbortMessageSize;
 };
 
 struct VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV
@@ -8911,6 +9038,13 @@ struct VkPipelineExecutableStatisticKHR
 	VkPipelineExecutableStatisticValueKHR	value;
 };
 
+struct VkPipelineFragmentDensityMapLayeredCreateInfoVALVE
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		maxFragmentDensityMapLayers;
+};
+
 struct VkPipelineFragmentShadingRateEnumStateCreateInfoNV
 {
 	VkStructureType						sType;
@@ -9427,6 +9561,13 @@ struct VkQueueFamilyGlobalPriorityProperties
 };
 typedef VkQueueFamilyGlobalPriorityProperties VkQueueFamilyGlobalPriorityPropertiesEXT;
 typedef VkQueueFamilyGlobalPriorityProperties VkQueueFamilyGlobalPriorityPropertiesKHR;
+
+struct VkQueueFamilyOptimalImageTransferGranularityPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkExtent3D		optimalImageTransferGranularity;
+};
 
 struct VkQueueFamilyOwnershipTransferPropertiesKHR
 {

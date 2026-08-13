@@ -57,8 +57,10 @@ auto fExtendedFlagsFeatures                             = m_context.getExtendedF
 auto fExternalFormatResolveFeaturesANDROID              = m_context.getExternalFormatResolveFeaturesANDROID();
 auto fExternalMemoryScreenBufferFeaturesQNX             = m_context.getExternalMemoryScreenBufferFeaturesQNX();
 auto fFaultFeaturesEXT                                  = m_context.getFaultFeaturesEXT();
+auto fFaultFeatures                                     = m_context.getFaultFeatures();
 auto fFragmentDensityMap2FeaturesEXT                    = m_context.getFragmentDensityMap2FeaturesEXT();
 auto fFragmentDensityMapFeaturesEXT                     = m_context.getFragmentDensityMapFeaturesEXT();
+auto fFragmentDensityMapLayeredFeaturesVALVE            = m_context.getFragmentDensityMapLayeredFeaturesVALVE();
 auto fFragmentDensityMapOffsetFeaturesEXT               = m_context.getFragmentDensityMapOffsetFeaturesEXT();
 auto fFragmentShaderBarycentricFeatures                 = m_context.getFragmentShaderBarycentricFeatures();
 auto fFragmentShaderInterlockFeaturesEXT                = m_context.getFragmentShaderInterlockFeaturesEXT();
@@ -88,6 +90,7 @@ auto fLegacyVertexAttributesFeaturesEXT                 = m_context.getLegacyVer
 auto fLineRasterizationFeatures                         = m_context.getLineRasterizationFeatures();
 auto fLinearColorAttachmentFeatures                     = m_context.getLinearColorAttachmentFeatures();
 auto fMaintenance10Features                             = m_context.getMaintenance10Features();
+auto fMaintenance11Features                             = m_context.getMaintenance11Features();
 auto fMaintenance4Features                              = m_context.getMaintenance4Features();
 auto fMaintenance5Features                              = m_context.getMaintenance5Features();
 auto fMaintenance6Features                              = m_context.getMaintenance6Features();
@@ -109,6 +112,7 @@ auto fMutableDescriptorTypeFeaturesEXT                  = m_context.getMutableDe
 auto fNestedCommandBufferFeaturesEXT                    = m_context.getNestedCommandBufferFeaturesEXT();
 auto fNonSeamlessCubeMapFeaturesEXT                     = m_context.getNonSeamlessCubeMapFeaturesEXT();
 auto fOpacityMicromapFeaturesEXT                        = m_context.getOpacityMicromapFeaturesEXT();
+auto fOpacityMicromapFeatures                           = m_context.getOpacityMicromapFeatures();
 auto fPageableDeviceLocalMemoryFeaturesEXT              = m_context.getPageableDeviceLocalMemoryFeaturesEXT();
 auto fPerformanceCountersByRegionFeaturesARM            = m_context.getPerformanceCountersByRegionFeaturesARM();
 auto fPerformanceQueryFeatures                          = m_context.getPerformanceQueryFeatures();
@@ -149,6 +153,7 @@ auto fSamplerYcbcrConversionFeatures                    = m_context.getSamplerYc
 auto fScalarBlockLayoutFeatures                         = m_context.getScalarBlockLayoutFeatures();
 auto fSeparateDepthStencilLayoutsFeatures               = m_context.getSeparateDepthStencilLayoutsFeatures();
 auto fShader64BitIndexingFeaturesEXT                    = m_context.getShader64BitIndexingFeaturesEXT();
+auto fShaderAbortFeatures                               = m_context.getShaderAbortFeatures();
 auto fShaderAtomicFloat16VectorFeaturesNV               = m_context.getShaderAtomicFloat16VectorFeaturesNV();
 auto fShaderAtomicFloat2FeaturesEXT                     = m_context.getShaderAtomicFloat2FeaturesEXT();
 auto fShaderAtomicFloatFeaturesEXT                      = m_context.getShaderAtomicFloatFeaturesEXT();
@@ -264,8 +269,10 @@ std::vector<void *> pNextFeatures = {
 	&fExternalFormatResolveFeaturesANDROID,
 	&fExternalMemoryScreenBufferFeaturesQNX,
 	&fFaultFeaturesEXT,
+	&fFaultFeatures,
 	&fFragmentDensityMap2FeaturesEXT,
 	&fFragmentDensityMapFeaturesEXT,
+	&fFragmentDensityMapLayeredFeaturesVALVE,
 	&fFragmentDensityMapOffsetFeaturesEXT,
 	&fFragmentShaderBarycentricFeatures,
 	&fFragmentShaderInterlockFeaturesEXT,
@@ -295,6 +302,7 @@ std::vector<void *> pNextFeatures = {
 	&fLineRasterizationFeatures,
 	&fLinearColorAttachmentFeatures,
 	&fMaintenance10Features,
+	&fMaintenance11Features,
 	&fMaintenance4Features,
 	&fMaintenance5Features,
 	&fMaintenance6Features,
@@ -316,6 +324,7 @@ std::vector<void *> pNextFeatures = {
 	&fNestedCommandBufferFeaturesEXT,
 	&fNonSeamlessCubeMapFeaturesEXT,
 	&fOpacityMicromapFeaturesEXT,
+	&fOpacityMicromapFeatures,
 	&fPageableDeviceLocalMemoryFeaturesEXT,
 	&fPerformanceCountersByRegionFeaturesARM,
 	&fPerformanceQueryFeatures,
@@ -356,6 +365,7 @@ std::vector<void *> pNextFeatures = {
 	&fScalarBlockLayoutFeatures,
 	&fSeparateDepthStencilLayoutsFeatures,
 	&fShader64BitIndexingFeaturesEXT,
+	&fShaderAbortFeatures,
 	&fShaderAtomicFloat16VectorFeaturesNV,
 	&fShaderAtomicFloat2FeaturesEXT,
 	&fShaderAtomicFloatFeaturesEXT,

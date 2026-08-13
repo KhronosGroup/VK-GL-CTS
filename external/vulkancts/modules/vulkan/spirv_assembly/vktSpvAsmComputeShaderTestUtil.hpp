@@ -706,7 +706,7 @@ struct ComputeShaderSpec
         , pushConstants(nullptr)
         , requestedVulkanFeatures()
         , failResult(QP_TEST_RESULT_FAIL)
-        , failMessage("Output doesn't match with expected")
+        , failMessage("Output does not match with expected results")
         , verifyIO(nullptr)
         , verifyBinary(nullptr)
         , spirvVersion(SPIRV_VERSION_1_0)

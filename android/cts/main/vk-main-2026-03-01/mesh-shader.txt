@@ -126,6 +126,7 @@ dEQP-VK.mesh_shader.ext.misc.memory_barrier_shared_in_task_uint64
 dEQP-VK.mesh_shader.ext.misc.memory_barrier_shared_in_task_vector
 dEQP-VK.mesh_shader.ext.misc.multiple_outputs_vertices
 dEQP-VK.mesh_shader.ext.misc.payload_not_accessed
+dEQP-VK.mesh_shader.ext.misc.per_prim_block_output
 dEQP-VK.mesh_shader.ext.misc.vertex_state_bind_ibo
 dEQP-VK.mesh_shader.ext.misc.vertex_state_bind_ibo_dynamic_prim_restart
 dEQP-VK.mesh_shader.ext.misc.vertex_state_bind_ibo_dynamic_prim_restart_dynamic_topo

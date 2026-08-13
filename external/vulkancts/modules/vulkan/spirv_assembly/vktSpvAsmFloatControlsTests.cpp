@@ -26,20 +26,16 @@
 #include "vktSpvAsmFloatControlsTests.hpp"
 #include "vktSpvAsmComputeShaderCase.hpp"
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
-#include "vktTestGroupUtil.hpp"
 #include "tcuFloat.hpp"
 #include "tcuFloatFormat.hpp"
 #include "tcuStringTemplate.hpp"
 #include "deUniquePtr.hpp"
 #include "deFloat16.h"
 #include "vkQueryUtil.hpp"
-#include "vkRefUtil.hpp"
-#include <cstring>
 #include <vector>
 #include <limits>
 #include <cstdint>
 #include <fenv.h>
-#include <cstdint>
 #include <cmath>
 
 namespace vkt::SpirVAssembly
@@ -122,13 +118,15 @@ typedef uint32_t BehaviorFlags;
 enum ValueId
 {
     // common values used as both arguments and results
-    V_UNUSED = 0, // used to mark arguments that are not used in operation
-    V_MINUS_INF,  //    or results of tests cases that should be skipped
-    V_MINUS_ONE,  // -1.0
-    V_MINUS_ZERO, // -0.0
-    V_ZERO,       //  0.0
-    V_HALF,       //  0.5
-    V_ONE,        //  1.0
+    V_UNUSED = 0,   // used to mark arguments that are not used in operation
+    V_MINUS_INF,    //    or results of tests cases that should be skipped
+    V_MINUS_ONE,    // -1.0
+    V_MINUS_ZERO,   // -0.0
+    V_ZERO,         //  0.0
+    V_HALF,         //  0.5
+    V_ONE,          //  1.0
+    V_ONE_AND_HALF, // 1.5
+    V_TWO,          // 2.0
     V_INF,
     V_DENORM,
     V_NAN,
@@ -723,17 +721,19 @@ TypeValues<deFloat16>::TypeValues() : TypeValuesBase()
 {
     // NOTE: when updating entries in m_valueIdToVariableType make sure to
     // update also valueIdToSnippetArgMap defined in updateSpirvSnippets()
-    ValueMap &vm     = m_valueIdToVariableType;
-    vm[V_UNUSED]     = deFloat32To16(0.0f);
-    vm[V_MINUS_INF]  = 0xfc00;
-    vm[V_MINUS_ONE]  = deFloat32To16(-1.0f);
-    vm[V_MINUS_ZERO] = 0x8000;
-    vm[V_ZERO]       = 0x0000;
-    vm[V_HALF]       = deFloat32To16(0.5f);
-    vm[V_ONE]        = deFloat32To16(1.0f);
-    vm[V_INF]        = 0x7c00;
-    vm[V_DENORM]     = 0x03f0; // this value should be the same as the result of denormBase - epsilon
-    vm[V_NAN]        = 0x7cf0;
+    ValueMap &vm       = m_valueIdToVariableType;
+    vm[V_UNUSED]       = deFloat32To16(0.0f);
+    vm[V_MINUS_INF]    = 0xfc00;
+    vm[V_MINUS_ONE]    = deFloat32To16(-1.0f);
+    vm[V_MINUS_ZERO]   = 0x8000;
+    vm[V_ZERO]         = 0x0000;
+    vm[V_HALF]         = deFloat32To16(0.5f);
+    vm[V_ONE]          = deFloat32To16(1.0f);
+    vm[V_ONE_AND_HALF] = deFloat32To16(1.5f);
+    vm[V_TWO]          = deFloat32To16(2.0f);
+    vm[V_INF]          = 0x7c00;
+    vm[V_DENORM]       = 0x03f0; // this value should be the same as the result of denormBase - epsilon
+    vm[V_NAN]          = 0x7cf0;
 
     vm[V_PI_DIV_2]         = deFloat32To16((float)M_PI_2);
     vm[V_DENORM_TIMES_TWO] = 0x07e0;
@@ -871,17 +871,19 @@ TypeValues<float>::TypeValues() : TypeValuesBase()
 {
     // NOTE: when updating entries in m_valueIdToVariableType make sure to
     // update also valueIdToSnippetArgMap defined in updateSpirvSnippets()
-    ValueMap &vm     = m_valueIdToVariableType;
-    vm[V_UNUSED]     = 0.0f;
-    vm[V_MINUS_INF]  = -std::numeric_limits<float>::infinity();
-    vm[V_MINUS_ONE]  = -1.0f;
-    vm[V_MINUS_ZERO] = -0.0f;
-    vm[V_ZERO]       = 0.0f;
-    vm[V_HALF]       = 0.5f;
-    vm[V_ONE]        = 1.0f;
-    vm[V_INF]        = std::numeric_limits<float>::infinity();
-    vm[V_DENORM]     = static_cast<float>(1.413e-42); // 0x000003f0
-    vm[V_NAN]        = std::numeric_limits<float>::quiet_NaN();
+    ValueMap &vm       = m_valueIdToVariableType;
+    vm[V_UNUSED]       = 0.0f;
+    vm[V_MINUS_INF]    = -std::numeric_limits<float>::infinity();
+    vm[V_MINUS_ONE]    = -1.0f;
+    vm[V_MINUS_ZERO]   = -0.0f;
+    vm[V_ZERO]         = 0.0f;
+    vm[V_HALF]         = 0.5f;
+    vm[V_ONE]          = 1.0f;
+    vm[V_ONE_AND_HALF] = 1.5f;
+    vm[V_TWO]          = 2.0f;
+    vm[V_INF]          = std::numeric_limits<float>::infinity();
+    vm[V_DENORM]       = static_cast<float>(1.413e-42); // 0x000003f0
+    vm[V_NAN]          = std::numeric_limits<float>::quiet_NaN();
 
     vm[V_PI_DIV_2]         = static_cast<float>(M_PI_2);
     vm[V_DENORM_TIMES_TWO] = vm[V_DENORM] + vm[V_DENORM];
@@ -1016,17 +1018,19 @@ TypeValues<double>::TypeValues() : TypeValuesBase()
 {
     // NOTE: when updating entries in m_valueIdToVariableType make sure to
     // update also valueIdToSnippetArgMap defined in updateSpirvSnippets()
-    ValueMap &vm     = m_valueIdToVariableType;
-    vm[V_UNUSED]     = 0.0;
-    vm[V_MINUS_INF]  = -std::numeric_limits<double>::infinity();
-    vm[V_MINUS_ONE]  = -1.0;
-    vm[V_MINUS_ZERO] = -0.0;
-    vm[V_ZERO]       = 0.0;
-    vm[V_HALF]       = 0.5;
-    vm[V_ONE]        = 1.0;
-    vm[V_INF]        = std::numeric_limits<double>::infinity();
-    vm[V_DENORM]     = 4.98e-321; // 0x00000000000003F0
-    vm[V_NAN]        = std::numeric_limits<double>::quiet_NaN();
+    ValueMap &vm       = m_valueIdToVariableType;
+    vm[V_UNUSED]       = 0.0;
+    vm[V_MINUS_INF]    = -std::numeric_limits<double>::infinity();
+    vm[V_MINUS_ONE]    = -1.0;
+    vm[V_MINUS_ZERO]   = -0.0;
+    vm[V_ZERO]         = 0.0;
+    vm[V_HALF]         = 0.5;
+    vm[V_ONE]          = 1.0;
+    vm[V_ONE_AND_HALF] = 1.5;
+    vm[V_TWO]          = 2.0;
+    vm[V_INF]          = std::numeric_limits<double>::infinity();
+    vm[V_DENORM]       = 4.98e-321; // 0x00000000000003F0
+    vm[V_NAN]          = std::numeric_limits<double>::quiet_NaN();
 
     vm[V_PI_DIV_2]         = M_PI_2;
     vm[V_DENORM_TIMES_TWO] = vm[V_DENORM] + vm[V_DENORM];
@@ -1467,17 +1471,19 @@ void TypeSnippetsBase::updateSpirvSnippets()
     // that grab arguments from input, do need to be in this map
     // NOTE: when updating entries in valueIdToSnippetArgMap make
     // sure to update also m_valueIdToVariableType for all valueType width
-    SnippetMap &sm   = valueIdToSnippetArgMap;
-    sm[V_UNUSED]     = "OpFSub %type_valueType %c_valueType_0 %c_valueType_0\n";
-    sm[V_MINUS_INF]  = "OpFDiv %type_valueType %c_valueType_n1 %c_valueType_0\n";
-    sm[V_MINUS_ONE]  = "OpFAdd %type_valueType %c_valueType_n1 %c_valueType_0\n";
-    sm[V_MINUS_ZERO] = "OpFMul %type_valueType %c_valueType_n1 %c_valueType_0\n";
-    sm[V_ZERO]       = "OpFMul %type_valueType %c_valueType_0 %c_valueType_0\n";
-    sm[V_HALF]       = "OpFAdd %type_valueType %c_valueType_0_5 %c_valueType_0\n";
-    sm[V_ONE]        = "OpFAdd %type_valueType %c_valueType_1 %c_valueType_0\n";
-    sm[V_INF]        = "OpFDiv %type_valueType %c_valueType_1 %c_valueType_0\n"; // x / 0 == Inf
-    sm[V_DENORM]     = "OpFSub %type_valueType %c_valueType_denorm_base %c_valueType_eps\n";
-    sm[V_NAN]        = "OpFDiv %type_valueType %c_valueType_0 %c_valueType_0\n"; // 0 / 0 == Nan
+    SnippetMap &sm     = valueIdToSnippetArgMap;
+    sm[V_UNUSED]       = "OpFSub %type_valueType %c_valueType_0 %c_valueType_0\n";
+    sm[V_MINUS_INF]    = "OpFDiv %type_valueType %c_valueType_n1 %c_valueType_0\n";
+    sm[V_MINUS_ONE]    = "OpFAdd %type_valueType %c_valueType_n1 %c_valueType_0\n";
+    sm[V_MINUS_ZERO]   = "OpFMul %type_valueType %c_valueType_n1 %c_valueType_0\n";
+    sm[V_ZERO]         = "OpFMul %type_valueType %c_valueType_0 %c_valueType_0\n";
+    sm[V_HALF]         = "OpFAdd %type_valueType %c_valueType_0_5 %c_valueType_0\n";
+    sm[V_ONE]          = "OpFAdd %type_valueType %c_valueType_1 %c_valueType_0\n";
+    sm[V_ONE_AND_HALF] = "OpFAdd %type_valueType %c_valueType_1 %c_valueType_0_5\n";
+    sm[V_TWO]          = "OpFAdd %type_valueType %c_valueType_1 %c_valueType_1\n";
+    sm[V_INF]          = "OpFDiv %type_valueType %c_valueType_1 %c_valueType_0\n"; // x / 0 == Inf
+    sm[V_DENORM]       = "OpFSub %type_valueType %c_valueType_denorm_base %c_valueType_eps\n";
+    sm[V_NAN]          = "OpFDiv %type_valueType %c_valueType_0 %c_valueType_0\n"; // 0 / 0 == Nan
 
     for (const auto &[v, s] : sm)
         sm[v] = replace(s, typeToken, typeName);
@@ -2868,6 +2874,9 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
         }
     }
 
+    // Special case: check round to even is not affected by a different rounding mode.
+    testCases.emplace_back("rounding_rtz_op", B_RTZ_ROUNDING, OID_ROUND_EV, V_ONE_AND_HALF, V_UNUSED, V_TWO, true);
+
     // special cases
     if (typeTestResults->variableType() == FP16)
     {
@@ -3646,7 +3655,7 @@ protected:
                                                string &executionMode) const;
 
     void setupFloatControlsProperties(VariableType inVariableType, VariableType outVariableType,
-                                      BehaviorFlags behaviorFlags,
+                                      BehaviorFlags behaviorFlags, OperationId operationId,
                                       vk::VkPhysicalDeviceFloatControlsProperties &props) const;
 
 protected:
@@ -3818,7 +3827,7 @@ void TestGroupBuilderBase::getBehaviorCapabilityAndExecutionMode(BehaviorFlags b
 }
 
 void TestGroupBuilderBase::setupFloatControlsProperties(VariableType inVariableType, VariableType outVariableType,
-                                                        BehaviorFlags behaviorFlags,
+                                                        BehaviorFlags behaviorFlags, OperationId operationId,
                                                         vk::VkPhysicalDeviceFloatControlsProperties &props) const
 {
     // rounding mode should obey the destination type
@@ -3826,6 +3835,11 @@ void TestGroupBuilderBase::setupFloatControlsProperties(VariableType inVariableT
     bool rtzRounding = (behaviorFlags & B_RTZ_ROUNDING) != 0;
     if (rteRounding || rtzRounding)
     {
+        // handle OID_ORTE_ROUND and OID_ORTZ_ROUND tests that set the execution
+        // mode to one rounding mode but then override it on a per-instruction level
+        rteRounding |= (operationId == OID_ORTE_ROUND);
+        rtzRounding |= (operationId == OID_ORTZ_ROUND);
+
         switch (outVariableType)
         {
         case FP16:
@@ -3879,6 +3893,9 @@ tcu::TestStatus verifyIndependenceSettings(Context &context)
 {
     context.requireDeviceFunctionality("VK_KHR_shader_float_controls");
 
+    bool isFloat16Supported = context.getShaderFloat16Int8Features().shaderFloat16;
+    bool isFloat64Supported = context.getDeviceFeatures().shaderFloat64;
+
     vk::VkPhysicalDeviceFloatControlsProperties fcProperties = initVulkanStructure();
     vk::VkPhysicalDeviceProperties2 deviceProperties         = initVulkanStructure(&fcProperties);
 
@@ -3894,16 +3911,17 @@ tcu::TestStatus verifyIndependenceSettings(Context &context)
         vk::VkBool32 fp16rte = fcProperties.shaderRoundingModeRTEFloat16;
         vk::VkBool32 fp32rte = fcProperties.shaderRoundingModeRTEFloat32;
         vk::VkBool32 fp64rte = fcProperties.shaderRoundingModeRTEFloat64;
-        if ((fp16rte != fp32rte) || (fp32rte != fp64rte))
+        if ((isFloat16Supported && (fp16rte != fp32rte)) || (isFloat64Supported && (fp32rte != fp64rte)))
             return fail("shaderRoundingModeRTEFloat*");
 
         vk::VkBool32 fp16rtz = fcProperties.shaderRoundingModeRTZFloat16;
         vk::VkBool32 fp32rtz = fcProperties.shaderRoundingModeRTZFloat32;
         vk::VkBool32 fp64rtz = fcProperties.shaderRoundingModeRTZFloat64;
-        if ((fp16rtz != fp32rtz) || (fp32rtz != fp64rtz))
+        if ((isFloat16Supported && (fp16rtz != fp32rtz)) || (isFloat64Supported && (fp32rtz != fp64rtz)))
             return fail("shaderRoundingModeRTZFloat*");
     }
-    else if (fcProperties.roundingModeIndependence == VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY)
+    else if (isFloat16Supported && isFloat64Supported &&
+             (fcProperties.roundingModeIndependence == VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY))
     {
         vk::VkBool32 fp16rte = fcProperties.shaderRoundingModeRTEFloat16;
         vk::VkBool32 fp64rte = fcProperties.shaderRoundingModeRTEFloat64;
@@ -3921,16 +3939,18 @@ tcu::TestStatus verifyIndependenceSettings(Context &context)
         vk::VkBool32 fp16flush = fcProperties.shaderDenormFlushToZeroFloat16;
         vk::VkBool32 fp32flush = fcProperties.shaderDenormFlushToZeroFloat32;
         vk::VkBool32 fp64flush = fcProperties.shaderDenormFlushToZeroFloat64;
-        if ((fp16flush != fp32flush) || (fp32flush != fp64flush))
+        if ((isFloat16Supported && (fp16flush != fp32flush)) || (isFloat64Supported && (fp32flush != fp64flush)))
             return fail("shaderDenormFlushToZeroFloat*");
 
         vk::VkBool32 fp16preserve = fcProperties.shaderDenormPreserveFloat16;
         vk::VkBool32 fp32preserve = fcProperties.shaderDenormPreserveFloat32;
         vk::VkBool32 fp64preserve = fcProperties.shaderDenormPreserveFloat64;
-        if ((fp16preserve != fp32preserve) || (fp32preserve != fp64preserve))
+        if ((isFloat16Supported && (fp16preserve != fp32preserve)) ||
+            (isFloat64Supported && (fp32preserve != fp64preserve)))
             return fail("shaderDenormPreserveFloat*");
     }
-    else if (fcProperties.denormBehaviorIndependence == VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY)
+    else if (isFloat16Supported && isFloat64Supported &&
+             fcProperties.denormBehaviorIndependence == VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY)
     {
         vk::VkBool32 fp16flush = fcProperties.shaderDenormFlushToZeroFloat16;
         vk::VkBool32 fp64flush = fcProperties.shaderDenormFlushToZeroFloat64;
@@ -4456,7 +4476,8 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo &testCa
 
     setupFloatControlsProperties(
         inVariableTypeForCaps, // usualy same as inFloatType - different only for UnpackHalf2x16
-        outVariableType, testCase.behaviorFlags, csSpec.requestedVulkanFeatures.floatControlsProperties);
+        outVariableType, testCase.behaviorFlags, testCase.operationId,
+        csSpec.requestedVulkanFeatures.floatControlsProperties);
 }
 
 void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo &testCaseInfo, ComputeShaderSpec &csSpec) const
@@ -5351,7 +5372,7 @@ InstanceContextPtr GraphicsTestGroupBuilder::createInstanceContext(const Operati
     VulkanFeatures vulkanFeatures;
     setupFloatControlsProperties(
         inVariableTypeForCaps, // usualy same as inFloatType - different only for UnpackHalf2x16
-        outVariableType, testCase.behaviorFlags, vulkanFeatures.floatControlsProperties);
+        outVariableType, testCase.behaviorFlags, testCase.operationId, vulkanFeatures.floatControlsProperties);
     vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = true;
     vulkanFeatures.coreFeatures.shaderFloat64            = float64FeatureRequired;
     vulkanFeatures.coreFeatures.shaderInt64              = int64FeatureRequired;
@@ -5373,7 +5394,7 @@ InstanceContextPtr GraphicsTestGroupBuilder::createInstanceContext(const Operati
 
     ctx.requiredStages = static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
     ctx.failResult     = QP_TEST_RESULT_FAIL;
-    ctx.failMessageTemplate = "Output doesn't match with expected";
+    ctx.failMessageTemplate = "Output does not match with expected result";
 
     return ctxPtr;
 }

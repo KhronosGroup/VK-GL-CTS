@@ -454,9 +454,27 @@ void MemoryRequirementsTest::checkSupport(Context &context) const
         int entryCount    = 0;
         msgs.fill(false);
 
+        // VUID-VkBufferCreateInfo-flags-09641
+        const VkBufferUsageFlags protectedAllowedUsage =
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+            VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT |
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
+#ifndef CTS_USES_VULKANSC
+            | VK_BUFFER_USAGE_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR |
+            VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR
+#endif // CTS_USES_VULKANSC
+            ;
+        const bool isProtected = m_testConfig.createBits->contains(VK_BUFFER_CREATE_PROTECTED_BIT);
+
         for (auto i = usageFlags.begin(); i != usageFlags.end();)
         {
             notSupported = false;
+
+            if (isProtected && (((*i)() & ~protectedAllowedUsage) != 0u))
+            {
+                notSupported = true;
+            }
 
 #ifndef CTS_USES_VULKANSC
             if (i->any({VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,

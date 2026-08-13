@@ -5793,21 +5793,24 @@ const std::string TestConfigurationUsingWrapperFunction::getShaderBodyText(const
            "OpFunctionEnd\n";
 }
 
-class RayQueryBuiltinTestInstance : public TestInstance
+class RayQueryBuiltinTestInstance : public MultiQueueRunnerTestInstance
 {
 public:
     RayQueryBuiltinTestInstance(Context &context, const TestParams &data);
     virtual ~RayQueryBuiltinTestInstance(void);
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const QueueData &queueData) override;
 
 private:
     TestParams m_data;
     de::MovePtr<TestConfiguration> m_testConfig;
     de::MovePtr<PipelineConfiguration> m_pipelineConfig;
+    bool m_initialized{false};
+    const VkAccelerationStructureKHR *m_topAS{nullptr};
 };
 
 RayQueryBuiltinTestInstance::RayQueryBuiltinTestInstance(Context &context, const TestParams &data)
-    : vkt::TestInstance(context)
+    : vkt::MultiQueueRunnerTestInstance(context, data.stage == VK_SHADER_STAGE_COMPUTE_BIT ? vkt::COMPUTE_QUEUE :
+                                                                                             vkt::GRAPHICS_QUEUE)
     , m_data(data)
 {
     switch (m_data.testType)
@@ -5935,13 +5938,13 @@ RayQueryBuiltinTestInstance::~RayQueryBuiltinTestInstance(void)
 {
 }
 
-tcu::TestStatus RayQueryBuiltinTestInstance::iterate(void)
+tcu::TestStatus RayQueryBuiltinTestInstance::queuePass(const QueueData &queueData)
 {
     const DeviceInterface &vkd      = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
+    const VkQueue queue             = queueData.handle;
     Allocator &allocator            = m_context.getDefaultAllocator();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
 
     const uint32_t width                    = m_data.width;
     const uint32_t height                   = m_data.height;
@@ -5970,9 +5973,9 @@ tcu::TestStatus RayQueryBuiltinTestInstance::iterate(void)
     const Move<VkCommandPool> cmdPool = createCommandPool(vkd, device, 0, queueFamilyIndex);
     const Move<VkCommandBuffer> cmdBuffer =
         allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-    const VkAccelerationStructureKHR *topAccelerationStructurePtr = nullptr;
 
-    m_pipelineConfig->initConfiguration(m_context, m_data);
+    if (!m_initialized)
+        m_pipelineConfig->initConfiguration(m_context, m_data);
 
     beginCommandBuffer(vkd, *cmdBuffer, 0u);
     {
@@ -5996,10 +5999,10 @@ tcu::TestStatus RayQueryBuiltinTestInstance::iterate(void)
         cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                       VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postImageBarrier);
 
-        topAccelerationStructurePtr = m_testConfig->initAccelerationStructures(m_data, *cmdBuffer);
+        if (!m_initialized)
+            m_topAS = m_testConfig->initAccelerationStructures(m_data, *cmdBuffer);
 
-        m_pipelineConfig->fillCommandBuffer(m_context, m_data, *cmdBuffer, topAccelerationStructurePtr,
-                                            resultImageInfo);
+        m_pipelineConfig->fillCommandBuffer(m_context, m_data, *cmdBuffer, m_topAS, resultImageInfo);
 
         cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                  &postTestMemoryBarrier);
@@ -6013,6 +6016,8 @@ tcu::TestStatus RayQueryBuiltinTestInstance::iterate(void)
     endCommandBuffer(vkd, *cmdBuffer);
 
     submitCommandsAndWait(vkd, device, queue, cmdBuffer.get());
+
+    m_initialized = true;
 
     invalidateMappedMemoryRange(vkd, device, resultBuffer->getAllocation().getMemory(),
                                 resultBuffer->getAllocation().getOffset(), VK_WHOLE_SIZE);
@@ -6114,6 +6119,9 @@ void RayQueryBuiltinTestCase::initDeviceCapabilities(DevCaps &caps)
         {
             caps.addFeature<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>();
         }
+
+        caps.resetQueuesForMultiQueueRunner(m_data.stage == VK_SHADER_STAGE_COMPUTE_BIT ? vkt::COMPUTE_QUEUE :
+                                                                                          vkt::GRAPHICS_QUEUE);
     }
 }
 

@@ -941,12 +941,12 @@ def parseArgs ():
     parser.add_argument('--native-api',
         type=int,
         dest='nativeApi',
-        default=28,
+        default=34,
         help="Android API level to target in native code")
     parser.add_argument('--java-api',
         type=int,
         dest='javaApi',
-        default=28,
+        default=34,
         help="Android API level to target in Java code")
     parser.add_argument('--tool-api',
         type=int,
@@ -956,7 +956,7 @@ def parseArgs ():
     parser.add_argument('--min-api',
         type=int,
         dest='minApi',
-        default=22,
+        default=34,
         help="Minimum Android API level for which the APK can be installed")
     parser.add_argument('--sdk',
         dest='sdkPath',

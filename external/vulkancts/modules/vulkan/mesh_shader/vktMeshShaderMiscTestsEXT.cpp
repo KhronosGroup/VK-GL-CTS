@@ -6959,6 +6959,152 @@ tcu::TestStatus iterate(Context &context, ParamsPtr params)
 }
 } // namespace VertexState
 
+// Test custom per-primitive output interface blocks with a dynamic primitive index.
+//
+// Exercises the SPIR-V shape where PerPrimitiveEXT is placed on struct *members* rather than
+// the output variable:
+//
+//   layout(location = 0) perprimitiveEXT out PrimBlock { ... } prim_out[];
+//
+// produces OpMemberDecorate %PrimBlock N PerPrimitiveEXT for each member, while
+//
+//   layout(location = 0) out perprimitiveEXT Type name[];
+//
+// decorates the variable itself.  A loop variable is used as the array index
+// (prim_out[prim].field = ...) so the access chain is non-constant in SPIR-V.
+// An implementation that routes per-primitive stores only from the base variable's
+// decoration -- and ignores member decorations -- will incorrectly write to per-vertex
+// storage, causing the fragment verification to fail.
+class PerPrimBlockOutputCase : public MeshShaderMiscCase
+{
+public:
+    PerPrimBlockOutputCase(tcu::TestContext &testCtx, const std::string &name, ParamsPtr params)
+        : MeshShaderMiscCase(testCtx, name, std::move(params))
+    {
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    TestInstance *createInstance(Context &context) const override;
+};
+
+class PerPrimBlockOutputInstance : public MeshShaderMiscInstance
+{
+public:
+    PerPrimBlockOutputInstance(Context &context, const MiscTestParams *params) : MeshShaderMiscInstance(context, params)
+    {
+    }
+
+    void generateReferenceLevel() override;
+};
+
+TestInstance *PerPrimBlockOutputCase::createInstance(Context &context) const
+{
+    return new PerPrimBlockOutputInstance(context, m_params.get());
+}
+
+void PerPrimBlockOutputCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    const auto buildOptions = getMinMeshEXTBuildOptions(programCollection.usedVulkanVersion);
+
+    // Mesh shader: two identical full-screen triangles.
+    // The loop variable 'prim' is used as the dynamic interface-block array index.
+    std::ostringstream mesh;
+    mesh << "#version 450\n"
+         << "#extension GL_EXT_mesh_shader : enable\n"
+         << "\n"
+         << "layout(local_size_x = 1) in;\n"
+         << "layout(triangles) out;\n"
+         << "layout(max_vertices = 3, max_primitives = 2) out;\n"
+         << "\n"
+         // perprimitiveEXT *before* out: glslang emits OpMemberDecorate on block
+         // members rather than OpDecorate on the output variable.
+         << "layout(location = 0) perprimitiveEXT out PrimBlock {\n"
+         << "    float field_a;\n"
+         << "    vec3  field_b;\n"
+         << "    float field_c;\n"
+         << "} prim_out[];\n"
+         << "\n"
+         << "out perprimitiveEXT gl_MeshPerPrimitiveEXT {\n"
+         << "    int gl_PrimitiveID;\n"
+         << "} gl_MeshPrimitivesEXT[];\n"
+         << "\n"
+         << "out gl_MeshPerVertexEXT {\n"
+         << "    vec4 gl_Position;\n"
+         << "} gl_MeshVerticesEXT[];\n"
+         << "\n"
+         << "void main()\n"
+         << "{\n"
+         << "    SetMeshOutputsEXT(3u, 2u);\n"
+         << "\n"
+         // One oversized triangle covering the entire viewport when clipped.
+         // Both primitives reference the same vertices, so both cover all pixels.
+         << "    gl_MeshVerticesEXT[0].gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);\n"
+         << "    gl_MeshVerticesEXT[1].gl_Position = vec4( 3.0, -1.0, 0.0, 1.0);\n"
+         << "    gl_MeshVerticesEXT[2].gl_Position = vec4(-1.0,  3.0, 0.0, 1.0);\n"
+         << "\n"
+         << "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0u, 1u, 2u);\n"
+         << "    gl_PrimitiveTriangleIndicesEXT[1] = uvec3(0u, 1u, 2u);\n"
+         << "\n"
+         // Dynamic loop index produces a non-constant OpAccessChain into prim_out[].
+         // Values are multiples of 0.25 (exactly representable in float32).
+         << "    for (uint prim = 0u; prim < 2u; ++prim)\n"
+         << "    {\n"
+         << "        gl_MeshPrimitivesEXT[prim].gl_PrimitiveID = int(prim);\n"
+         << "        prim_out[prim].field_a = 0.25 * float(prim) + 0.25;\n"
+         << "        prim_out[prim].field_b = vec3(0.5, 0.25 * float(prim) + 0.25, 0.75);\n"
+         << "        prim_out[prim].field_c = 0.5  * float(prim) + 0.25;\n"
+         << "    }\n"
+         << "}\n";
+    programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+
+    // Fragment shader: verify all block fields against expected values derived from
+    // gl_PrimitiveID.  Each primitive outputs a distinct color on success (prim=0 red,
+    // prim=1 green) so that the additive blend produces yellow -- verifying both
+    // primitives independently.  Any field mismatch outputs magenta.
+    std::ostringstream frag;
+    frag << "#version 450\n"
+         << "#extension GL_EXT_mesh_shader : enable\n"
+         << "\n"
+         << "layout(location = 0) perprimitiveEXT in PrimBlock {\n"
+         << "    float field_a;\n"
+         << "    vec3  field_b;\n"
+         << "    float field_c;\n"
+         << "} prim_in;\n"
+         << "\n"
+         << "layout(location = 0) out vec4 outColor;\n"
+         << "\n"
+         << "void main()\n"
+         << "{\n"
+         << "    uint  prim = uint(gl_PrimitiveID);\n"
+         << "    float expA = 0.25 * float(prim) + 0.25;\n"
+         << "    vec3  expB = vec3(0.5, 0.25 * float(prim) + 0.25, 0.75);\n"
+         << "    float expC = 0.5  * float(prim) + 0.25;\n"
+         // Expected values are exact multiples of 0.25; 0.005 (> 1/256) is a safe tolerance.
+         << "    const float eps = 0.005;\n"
+         << "\n"
+         << "    bool ok = abs(prim_in.field_a - expA) < eps\n"
+         << "           && all(lessThan(abs(prim_in.field_b - expB), vec3(eps)))\n"
+         << "           && abs(prim_in.field_c - expC) < eps;\n"
+         << "\n"
+         // prim=0 -> red, prim=1 -> green; the base pipeline uses ONE/ONE additive
+         // blend (see MeshShaderMiscInstance::iterate), so both contributions sum to
+         // yellow -- verifying each primitive independently.
+         << "    vec4 primColor = (prim == 0u) ? vec4(1.0, 0.0, 0.0, 1.0) : vec4(0.0, 1.0, 0.0, 1.0);\n"
+         << "    outColor = ok ? primColor : vec4(1.0, 0.0, 1.0, 1.0);\n"
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str()) << buildOptions;
+}
+
+void PerPrimBlockOutputInstance::generateReferenceLevel()
+{
+    // prim=0 outputs red, prim=1 outputs green.  With the additive blending in the
+    // base iterate(), the two layers combine to yellow (1,1,0,1), clamped from
+    // (1,1,0,2) in UNORM8.  A missing or incorrect primitive breaks the color
+    // balance and diverges from yellow, making each primitive's output independently
+    // verifiable.
+    generateSolidRefLevel(tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f), m_referenceLevel);
+}
+
 } // anonymous namespace
 
 tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
@@ -7451,6 +7597,16 @@ tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
 
     addFunctionCaseWithPrograms(miscTests.get(), "work_group_ordering", workGroupOrderingCheckSupport,
                                 workGroupOrderingInitPrograms, workGroupOrderingRun);
+
+    {
+        ParamsPtr paramsPtr(new MiscTestParams(
+            /*taskCount*/ tcu::Nothing,
+            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+            /*width*/ 32u,
+            /*height*/ 32u));
+
+        miscTests->addChild(new PerPrimBlockOutputCase(testCtx, "per_prim_block_output", std::move(paramsPtr)));
+    }
 
     {
         const VertexState::Params defaultParams;

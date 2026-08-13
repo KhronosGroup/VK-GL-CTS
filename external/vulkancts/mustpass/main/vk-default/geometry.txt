@@ -17,6 +17,7 @@ dEQP-VK.geometry.builtin_variable.in_block.primitive_id
 dEQP-VK.geometry.builtin_variable.in_block.primitive_id_in
 dEQP-VK.geometry.builtin_variable.in_block.primitive_id_in_restarted
 dEQP-VK.geometry.builtin_variable.outside_block.position
+dEQP-VK.geometry.builtin_variable.primitive_id.matching
 dEQP-VK.geometry.emit.line_strip_emit_0_end_0
 dEQP-VK.geometry.emit.line_strip_emit_0_end_1
 dEQP-VK.geometry.emit.line_strip_emit_0_end_2

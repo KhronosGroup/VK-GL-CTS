@@ -515,35 +515,9 @@ vk::VkResult InstanceWrapper::createDeviceInternal(vk::VkPhysicalDevice physical
 
     // Add object reservation if there isn't one already.
     VkDeviceObjectReservationCreateInfo objectReservationInfo =
-        m_context->getTestContext().getCommandLine().isSubProcess() ? m_context->getResourceInterface()->getStatMax() :
-                                                                      vk::resetDeviceObjectReservationCreateInfo();
-    VkPipelineCacheCreateInfo pcCI;
-    std::vector<VkPipelinePoolSize> poolSizes;
+        m_context->getResourceInterface()->getDefaultDeviceObjectReservationCreateInfo();
     if (!findStructureInChain(createInfo.pNext, getStructureType<VkDeviceObjectReservationCreateInfo>()))
     {
-        if (m_context->getTestContext().getCommandLine().isSubProcess())
-        {
-            if (m_context->getResourceInterface()->getCacheDataSize() > 0)
-            {
-                pcCI = {
-                    VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                    nullptr,                                      // const void* pNext;
-                    VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                        VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                    m_context->getResourceInterface()->getCacheDataSize(),    // uintptr_t initialDataSize;
-                    m_context->getResourceInterface()->getCacheData()         // const void* pInitialData;
-                };
-                objectReservationInfo.pipelineCacheCreateInfoCount = 1;
-                objectReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-            }
-            poolSizes = m_context->getResourceInterface()->getPipelinePoolSizes();
-            if (!poolSizes.empty())
-            {
-                objectReservationInfo.pipelinePoolSizeCount = static_cast<uint32_t>(poolSizes.size());
-                objectReservationInfo.pPipelinePoolSizes    = poolSizes.data();
-            }
-        }
-
         objectReservationInfo.pNext = createInfo.pNext;
         createInfo.pNext            = &objectReservationInfo;
     }
@@ -1148,9 +1122,6 @@ void VideoDevice::checkSupport(Context &context, const VideoCodecOperationFlags 
     DE_UNREF(videoCodecOperation);
     TCU_THROW(NotSupportedError, "Video tests are disabled via DEQP_DISABLE_VK_VIDEO_TESTS");
 #else
-    if (context.getTestContext().getCommandLine().isComputeOnly())
-        TCU_THROW(NotSupportedError, "Video tests are not supported in compute-only mode");
-
     DE_ASSERT(videoCodecOperation != 0 && isVideoOperation(videoCodecOperation));
 
     if (isVideoOperation(videoCodecOperation))
@@ -1238,6 +1209,47 @@ vk::VkQueueFlags VideoDevice::getQueueFlags(const VideoCodecOperationFlags video
     DE_UNREF(videoCodecOperation);
 
     return 0;
+#endif
+}
+
+bool VideoDevice::supportsCodecOperation(Context &context, const VideoCodecOperationFlags videoCodecOperation)
+{
+#ifndef CTS_USES_VULKANSC
+    const vk::VkQueueFlags requiredQueueFlags = getQueueFlags(videoCodecOperation);
+    if (videoCodecOperation == vk::VK_VIDEO_CODEC_OPERATION_NONE_KHR || requiredQueueFlags == 0)
+        return false;
+
+    const vk::InstanceInterface &vki   = context.getInstanceInterface();
+    const vk::VkPhysicalDevice physDev = context.getPhysicalDevice();
+
+    uint32_t count = 0;
+    vki.getPhysicalDeviceQueueFamilyProperties2(physDev, &count, nullptr);
+    if (count == 0)
+        return false;
+
+    std::vector<vk::VkQueueFamilyProperties2> queues(count);
+    std::vector<vk::VkQueueFamilyVideoPropertiesKHR> videoQueues(count);
+    for (uint32_t ndx = 0; ndx < count; ++ndx)
+    {
+        queues[ndx].sType                     = vk::VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
+        queues[ndx].pNext                     = &videoQueues[ndx];
+        videoQueues[ndx].sType                = vk::VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR;
+        videoQueues[ndx].pNext                = nullptr;
+        videoQueues[ndx].videoCodecOperations = 0;
+    }
+    vki.getPhysicalDeviceQueueFamilyProperties2(physDev, &count, queues.data());
+
+    for (uint32_t ndx = 0; ndx < count; ++ndx)
+        if ((queues[ndx].queueFamilyProperties.queueFlags & requiredQueueFlags) != 0 &&
+            (videoQueues[ndx].videoCodecOperations & videoCodecOperation) != 0)
+            return true;
+
+    return false;
+#else
+    DE_UNREF(context);
+    DE_UNREF(videoCodecOperation);
+
+    return false;
 #endif
 }
 

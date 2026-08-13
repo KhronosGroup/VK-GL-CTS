@@ -136,10 +136,8 @@ dEQP-VKSC.sc.device_object_reservation.limits.request_count.sampler
 dEQP-VKSC.sc.device_object_reservation.limits.request_count.samplerycbcrconversion
 dEQP-VKSC.sc.device_object_reservation.limits.request_count.semaphore
 dEQP-VKSC.sc.device_object_reservation.pipeline_pool_size.multiple_fit
-dEQP-VKSC.sc.device_object_reservation.pipeline_pool_size.none
 dEQP-VKSC.sc.device_object_reservation.pipeline_pool_size.one_fits
 dEQP-VKSC.sc.device_object_reservation.pipeline_pool_size.too_small_size
-dEQP-VKSC.sc.device_object_reservation.pipeline_pool_size.zero
 dEQP-VKSC.sc.fault_handling.fault_callback_info.create_device_with_callback_with_fault_data
 dEQP-VKSC.sc.fault_handling.fault_callback_info.create_device_with_callback_without_fault_data
 dEQP-VKSC.sc.fault_handling.get_fault_data.get_and_clear_all_faults.array

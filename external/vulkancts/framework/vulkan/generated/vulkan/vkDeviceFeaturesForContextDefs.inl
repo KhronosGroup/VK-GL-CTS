@@ -56,8 +56,10 @@ const vk::VkPhysicalDeviceExtendedFlagsFeaturesKHR&							Context::getExtendedFl
 const vk::VkPhysicalDeviceExternalFormatResolveFeaturesANDROID&				Context::getExternalFormatResolveFeaturesANDROID			(void) const { return m_device->getExternalFormatResolveFeaturesANDROID();			}
 const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&			Context::getExternalMemoryScreenBufferFeaturesQNX			(void) const { return m_device->getExternalMemoryScreenBufferFeaturesQNX();			}
 const vk::VkPhysicalDeviceFaultFeaturesEXT&									Context::getFaultFeaturesEXT								(void) const { return m_device->getFaultFeaturesEXT();								}
+const vk::VkPhysicalDeviceFaultFeaturesKHR&									Context::getFaultFeatures									(void) const { return m_device->getFaultFeatures();									}
 const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&					Context::getFragmentDensityMap2FeaturesEXT					(void) const { return m_device->getFragmentDensityMap2FeaturesEXT();				}
 const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&					Context::getFragmentDensityMapFeaturesEXT					(void) const { return m_device->getFragmentDensityMapFeaturesEXT();					}
+const vk::VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE&			Context::getFragmentDensityMapLayeredFeaturesVALVE			(void) const { return m_device->getFragmentDensityMapLayeredFeaturesVALVE();		}
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT&				Context::getFragmentDensityMapOffsetFeaturesEXT				(void) const { return m_device->getFragmentDensityMapOffsetFeaturesEXT();			}
 const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR&				Context::getFragmentShaderBarycentricFeatures				(void) const { return m_device->getFragmentShaderBarycentricFeatures();				}
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&				Context::getFragmentShaderInterlockFeaturesEXT				(void) const { return m_device->getFragmentShaderInterlockFeaturesEXT();			}
@@ -87,6 +89,7 @@ const vk::VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT&				Context::getLega
 const vk::VkPhysicalDeviceLineRasterizationFeatures&						Context::getLineRasterizationFeatures						(void) const { return m_device->getLineRasterizationFeatures();						}
 const vk::VkPhysicalDeviceLinearColorAttachmentFeaturesNV&					Context::getLinearColorAttachmentFeatures					(void) const { return m_device->getLinearColorAttachmentFeatures();					}
 const vk::VkPhysicalDeviceMaintenance10FeaturesKHR&							Context::getMaintenance10Features							(void) const { return m_device->getMaintenance10Features();							}
+const vk::VkPhysicalDeviceMaintenance11FeaturesKHR&							Context::getMaintenance11Features							(void) const { return m_device->getMaintenance11Features();							}
 const vk::VkPhysicalDeviceMaintenance4Features&								Context::getMaintenance4Features							(void) const { return m_device->getMaintenance4Features();							}
 const vk::VkPhysicalDeviceMaintenance5Features&								Context::getMaintenance5Features							(void) const { return m_device->getMaintenance5Features();							}
 const vk::VkPhysicalDeviceMaintenance6Features&								Context::getMaintenance6Features							(void) const { return m_device->getMaintenance6Features();							}
@@ -108,6 +111,7 @@ const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&					Context::getMuta
 const vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT&					Context::getNestedCommandBufferFeaturesEXT					(void) const { return m_device->getNestedCommandBufferFeaturesEXT();				}
 const vk::VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT&					Context::getNonSeamlessCubeMapFeaturesEXT					(void) const { return m_device->getNonSeamlessCubeMapFeaturesEXT();					}
 const vk::VkPhysicalDeviceOpacityMicromapFeaturesEXT&						Context::getOpacityMicromapFeaturesEXT						(void) const { return m_device->getOpacityMicromapFeaturesEXT();					}
+const vk::VkPhysicalDeviceOpacityMicromapFeaturesKHR&						Context::getOpacityMicromapFeatures							(void) const { return m_device->getOpacityMicromapFeatures();						}
 const vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&				Context::getPageableDeviceLocalMemoryFeaturesEXT			(void) const { return m_device->getPageableDeviceLocalMemoryFeaturesEXT();			}
 const vk::VkPhysicalDevicePerformanceCountersByRegionFeaturesARM&			Context::getPerformanceCountersByRegionFeaturesARM			(void) const { return m_device->getPerformanceCountersByRegionFeaturesARM();		}
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&						Context::getPerformanceQueryFeatures						(void) const { return m_device->getPerformanceQueryFeatures();						}
@@ -148,6 +152,7 @@ const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures&					Context::getSample
 const vk::VkPhysicalDeviceScalarBlockLayoutFeatures&						Context::getScalarBlockLayoutFeatures						(void) const { return m_device->getScalarBlockLayoutFeatures();						}
 const vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures&				Context::getSeparateDepthStencilLayoutsFeatures				(void) const { return m_device->getSeparateDepthStencilLayoutsFeatures();			}
 const vk::VkPhysicalDeviceShader64BitIndexingFeaturesEXT&					Context::getShader64BitIndexingFeaturesEXT					(void) const { return m_device->getShader64BitIndexingFeaturesEXT();				}
+const vk::VkPhysicalDeviceShaderAbortFeaturesKHR&							Context::getShaderAbortFeatures								(void) const { return m_device->getShaderAbortFeatures();							}
 const vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV&				Context::getShaderAtomicFloat16VectorFeaturesNV				(void) const { return m_device->getShaderAtomicFloat16VectorFeaturesNV();			}
 const vk::VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT&					Context::getShaderAtomicFloat2FeaturesEXT					(void) const { return m_device->getShaderAtomicFloat2FeaturesEXT();					}
 const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&						Context::getShaderAtomicFloatFeaturesEXT					(void) const { return m_device->getShaderAtomicFloatFeaturesEXT();					}

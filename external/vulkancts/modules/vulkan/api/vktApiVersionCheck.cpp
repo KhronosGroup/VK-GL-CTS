@@ -387,14 +387,14 @@ private:
     CustomDevice createTestDevice(const Context &context, const InstanceWrapper &instance,
                                   vector<string> extensions = vector<string>())
     {
-        auto &cmdLine                   = context.getTestContext().getCommandLine();
+        DE_UNREF(context);
+
         const InstanceInterface &vki    = instance.getDriver();
         VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
         vector<const char *> extensionPtrs;
         const float queuePriority = 1.0f;
-        const uint32_t queueIndex = findQueueFamilyIndex(
-            vki, physicalDevice,
-            cmdLine.isComputeOnly() ? VK_QUEUE_COMPUTE_BIT : VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+        const uint32_t queueIndex =
+            findQueueFamilyIndex(vki, physicalDevice, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 
         for (size_t i = 0; i < extensions.size(); i++)
             extensionPtrs.push_back(extensions[i].c_str());

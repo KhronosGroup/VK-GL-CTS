@@ -500,6 +500,8 @@ const char* getdVideoH264ProfileIdcName (StdVideoH264ProfileIdc value)
 	{
 		case STD_VIDEO_H264_PROFILE_IDC_BASELINE:				return "STD_VIDEO_H264_PROFILE_IDC_BASELINE";
 		case STD_VIDEO_H264_PROFILE_IDC_HIGH:					return "STD_VIDEO_H264_PROFILE_IDC_HIGH";
+		case STD_VIDEO_H264_PROFILE_IDC_HIGH_10:				return "STD_VIDEO_H264_PROFILE_IDC_HIGH_10";
+		case STD_VIDEO_H264_PROFILE_IDC_HIGH_422:				return "STD_VIDEO_H264_PROFILE_IDC_HIGH_422";
 		case STD_VIDEO_H264_PROFILE_IDC_HIGH_444_PREDICTIVE:	return "STD_VIDEO_H264_PROFILE_IDC_HIGH_444_PREDICTIVE";
 		case STD_VIDEO_H264_PROFILE_IDC_INVALID:				return "STD_VIDEO_H264_PROFILE_IDC_INVALID";
 		case STD_VIDEO_H264_PROFILE_IDC_MAIN:					return "STD_VIDEO_H264_PROFILE_IDC_MAIN";
@@ -785,6 +787,16 @@ const char* getAccelerationStructureMotionInstanceTypeNVName (VkAccelerationStru
 }
 
 
+const char* getAccelerationStructureSerializedBlockTypeKHRName (VkAccelerationStructureSerializedBlockTypeKHR value)
+{
+	switch (value)
+	{
+		case VK_ACCELERATION_STRUCTURE_SERIALIZED_BLOCK_TYPE_OPACITY_MICROMAP_KHR:	return "VK_ACCELERATION_STRUCTURE_SERIALIZED_BLOCK_TYPE_OPACITY_MICROMAP_KHR";
+		default:																	return nullptr;
+	}
+}
+
+
 const char* getAccelerationStructureTypeKHRName (VkAccelerationStructureTypeKHR value)
 {
 	switch (value)
@@ -1058,23 +1070,28 @@ const char* getComponentTypeKHRName (VkComponentTypeKHR value)
 {
 	switch (value)
 	{
-		case VK_COMPONENT_TYPE_BFLOAT16_KHR:	return "VK_COMPONENT_TYPE_BFLOAT16_KHR";
-		case VK_COMPONENT_TYPE_FLOAT16_KHR:		return "VK_COMPONENT_TYPE_FLOAT16_KHR";
-		case VK_COMPONENT_TYPE_FLOAT32_KHR:		return "VK_COMPONENT_TYPE_FLOAT32_KHR";
-		case VK_COMPONENT_TYPE_FLOAT64_KHR:		return "VK_COMPONENT_TYPE_FLOAT64_KHR";
-		case VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT:	return "VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT";
-		case VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT:	return "VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT";
-		case VK_COMPONENT_TYPE_SINT16_KHR:		return "VK_COMPONENT_TYPE_SINT16_KHR";
-		case VK_COMPONENT_TYPE_SINT32_KHR:		return "VK_COMPONENT_TYPE_SINT32_KHR";
-		case VK_COMPONENT_TYPE_SINT64_KHR:		return "VK_COMPONENT_TYPE_SINT64_KHR";
-		case VK_COMPONENT_TYPE_SINT8_KHR:		return "VK_COMPONENT_TYPE_SINT8_KHR";
-		case VK_COMPONENT_TYPE_SINT8_PACKED_NV:	return "VK_COMPONENT_TYPE_SINT8_PACKED_NV";
-		case VK_COMPONENT_TYPE_UINT16_KHR:		return "VK_COMPONENT_TYPE_UINT16_KHR";
-		case VK_COMPONENT_TYPE_UINT32_KHR:		return "VK_COMPONENT_TYPE_UINT32_KHR";
-		case VK_COMPONENT_TYPE_UINT64_KHR:		return "VK_COMPONENT_TYPE_UINT64_KHR";
-		case VK_COMPONENT_TYPE_UINT8_KHR:		return "VK_COMPONENT_TYPE_UINT8_KHR";
-		case VK_COMPONENT_TYPE_UINT8_PACKED_NV:	return "VK_COMPONENT_TYPE_UINT8_PACKED_NV";
-		default:								return nullptr;
+		case VK_COMPONENT_TYPE_BFLOAT16_KHR:				return "VK_COMPONENT_TYPE_BFLOAT16_KHR";
+		case VK_COMPONENT_TYPE_FLOAT16_KHR:					return "VK_COMPONENT_TYPE_FLOAT16_KHR";
+		case VK_COMPONENT_TYPE_FLOAT32_KHR:					return "VK_COMPONENT_TYPE_FLOAT32_KHR";
+		case VK_COMPONENT_TYPE_FLOAT4_E2M1_EXT:				return "VK_COMPONENT_TYPE_FLOAT4_E2M1_EXT";
+		case VK_COMPONENT_TYPE_FLOAT64_KHR:					return "VK_COMPONENT_TYPE_FLOAT64_KHR";
+		case VK_COMPONENT_TYPE_FLOAT6_E2M3_EXT:				return "VK_COMPONENT_TYPE_FLOAT6_E2M3_EXT";
+		case VK_COMPONENT_TYPE_FLOAT6_E3M2_EXT:				return "VK_COMPONENT_TYPE_FLOAT6_E3M2_EXT";
+		case VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT:				return "VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT";
+		case VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT:				return "VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT";
+		case VK_COMPONENT_TYPE_FLOAT8_UNSIGNED_E8M0_EXT:	return "VK_COMPONENT_TYPE_FLOAT8_UNSIGNED_E8M0_EXT";
+		case VK_COMPONENT_TYPE_MXINT8_EXT:					return "VK_COMPONENT_TYPE_MXINT8_EXT";
+		case VK_COMPONENT_TYPE_SINT16_KHR:					return "VK_COMPONENT_TYPE_SINT16_KHR";
+		case VK_COMPONENT_TYPE_SINT32_KHR:					return "VK_COMPONENT_TYPE_SINT32_KHR";
+		case VK_COMPONENT_TYPE_SINT64_KHR:					return "VK_COMPONENT_TYPE_SINT64_KHR";
+		case VK_COMPONENT_TYPE_SINT8_KHR:					return "VK_COMPONENT_TYPE_SINT8_KHR";
+		case VK_COMPONENT_TYPE_SINT8_PACKED_NV:				return "VK_COMPONENT_TYPE_SINT8_PACKED_NV";
+		case VK_COMPONENT_TYPE_UINT16_KHR:					return "VK_COMPONENT_TYPE_UINT16_KHR";
+		case VK_COMPONENT_TYPE_UINT32_KHR:					return "VK_COMPONENT_TYPE_UINT32_KHR";
+		case VK_COMPONENT_TYPE_UINT64_KHR:					return "VK_COMPONENT_TYPE_UINT64_KHR";
+		case VK_COMPONENT_TYPE_UINT8_KHR:					return "VK_COMPONENT_TYPE_UINT8_KHR";
+		case VK_COMPONENT_TYPE_UINT8_PACKED_NV:				return "VK_COMPONENT_TYPE_UINT8_PACKED_NV";
+		default:											return nullptr;
 	}
 }
 
@@ -3411,6 +3428,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO:											return "VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2:														return "VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2";
 		case VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR:											return "VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_IMAGE_TILING_CONTROL_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_IMAGE_TILING_CONTROL_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY:													return "VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY";
 		case VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR:										return "VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_ADDRESS_PROPERTIES_NVX:										return "VK_STRUCTURE_TYPE_IMAGE_VIEW_ADDRESS_PROPERTIES_NVX";
@@ -3693,6 +3711,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_PROPERTIES_QCOM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_PROPERTIES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_TILING_CONTROL_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_TILING_CONTROL_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_IMAGE_FORMAT_INFO_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_IMAGE_FORMAT_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES";
@@ -3874,6 +3893,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MULTIPLE_WAIT_QUEUES_PROPERTIES_QCOM:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MULTIPLE_WAIT_QUEUES_PROPERTIES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OCP_MICROSCALING_TYPES_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OCP_MICROSCALING_TYPES_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_QUAD_CONTROL_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_QUAD_CONTROL_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT";
@@ -4169,9 +4189,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_TENSOR_CREATE_INFO_ARM:													return "VK_STRUCTURE_TYPE_TENSOR_CREATE_INFO_ARM";
 		case VK_STRUCTURE_TYPE_TENSOR_DEPENDENCY_INFO_ARM:												return "VK_STRUCTURE_TYPE_TENSOR_DEPENDENCY_INFO_ARM";
 		case VK_STRUCTURE_TYPE_TENSOR_DESCRIPTION_ARM:													return "VK_STRUCTURE_TYPE_TENSOR_DESCRIPTION_ARM";
+		case VK_STRUCTURE_TYPE_TENSOR_EXPLICIT_TILING_FORMAT_PROPERTIES_ARM:							return "VK_STRUCTURE_TYPE_TENSOR_EXPLICIT_TILING_FORMAT_PROPERTIES_ARM";
 		case VK_STRUCTURE_TYPE_TENSOR_FORMAT_PROPERTIES_ARM:											return "VK_STRUCTURE_TYPE_TENSOR_FORMAT_PROPERTIES_ARM";
 		case VK_STRUCTURE_TYPE_TENSOR_MEMORY_BARRIER_ARM:												return "VK_STRUCTURE_TYPE_TENSOR_MEMORY_BARRIER_ARM";
 		case VK_STRUCTURE_TYPE_TENSOR_MEMORY_REQUIREMENTS_INFO_ARM:										return "VK_STRUCTURE_TYPE_TENSOR_MEMORY_REQUIREMENTS_INFO_ARM";
+		case VK_STRUCTURE_TYPE_TENSOR_ROLLING_BACKING_CREATE_INFO_ARM:									return "VK_STRUCTURE_TYPE_TENSOR_ROLLING_BACKING_CREATE_INFO_ARM";
 		case VK_STRUCTURE_TYPE_TENSOR_VIEW_CAPTURE_DESCRIPTOR_DATA_INFO_ARM:							return "VK_STRUCTURE_TYPE_TENSOR_VIEW_CAPTURE_DESCRIPTOR_DATA_INFO_ARM";
 		case VK_STRUCTURE_TYPE_TENSOR_VIEW_CREATE_INFO_ARM:												return "VK_STRUCTURE_TYPE_TENSOR_VIEW_CREATE_INFO_ARM";
 		case VK_STRUCTURE_TYPE_TEXEL_BUFFER_DESCRIPTOR_INFO_EXT:										return "VK_STRUCTURE_TYPE_TEXEL_BUFFER_DESCRIPTOR_INFO_EXT";
@@ -4365,9 +4387,14 @@ const char* getTensorTilingARMName (VkTensorTilingARM value)
 {
 	switch (value)
 	{
-		case VK_TENSOR_TILING_LINEAR_ARM:	return "VK_TENSOR_TILING_LINEAR_ARM";
-		case VK_TENSOR_TILING_OPTIMAL_ARM:	return "VK_TENSOR_TILING_OPTIMAL_ARM";
-		default:							return nullptr;
+		case VK_TENSOR_TILING_BLOCK_U_INTERLEAVED_64K_ARM:	return "VK_TENSOR_TILING_BLOCK_U_INTERLEAVED_64K_ARM";
+		case VK_TENSOR_TILING_BLOCK_U_INTERLEAVED_ARM:		return "VK_TENSOR_TILING_BLOCK_U_INTERLEAVED_ARM";
+		case VK_TENSOR_TILING_BRICK_16_WIDE_ARM:			return "VK_TENSOR_TILING_BRICK_16_WIDE_ARM";
+		case VK_TENSOR_TILING_BRICK_4_WIDE_ARM:				return "VK_TENSOR_TILING_BRICK_4_WIDE_ARM";
+		case VK_TENSOR_TILING_BRICK_8_WIDE_ARM:				return "VK_TENSOR_TILING_BRICK_8_WIDE_ARM";
+		case VK_TENSOR_TILING_LINEAR_ARM:					return "VK_TENSOR_TILING_LINEAR_ARM";
+		case VK_TENSOR_TILING_OPTIMAL_ARM:					return "VK_TENSOR_TILING_OPTIMAL_ARM";
+		default:											return nullptr;
 	}
 }
 
@@ -5039,6 +5066,21 @@ tcu::Format::Bitfield<32> getDeviceAddressBindingFlagsEXTStr (VkDeviceAddressBin
 	static const tcu::Format::BitDesc s_desc[] =
 	{
 		tcu::Format::BitDesc(VK_DEVICE_ADDRESS_BINDING_INTERNAL_OBJECT_BIT_EXT,	"VK_DEVICE_ADDRESS_BINDING_INTERNAL_OBJECT_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
+tcu::Format::Bitfield<32> getDeviceFaultFlagsKHRStr (VkDeviceFaultFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_DEVICE_LOST_KHR,			"VK_DEVICE_FAULT_FLAG_DEVICE_LOST_KHR"),
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_INSTRUCTION_ADDRESS_KHR,	"VK_DEVICE_FAULT_FLAG_INSTRUCTION_ADDRESS_KHR"),
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_MEMORY_ADDRESS_KHR,		"VK_DEVICE_FAULT_FLAG_MEMORY_ADDRESS_KHR"),
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_OVERFLOW_KHR,				"VK_DEVICE_FAULT_FLAG_OVERFLOW_KHR"),
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_VENDOR_KHR,				"VK_DEVICE_FAULT_FLAG_VENDOR_KHR"),
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_WATCHDOG_TIMEOUT_KHR,		"VK_DEVICE_FAULT_FLAG_WATCHDOG_TIMEOUT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -7155,6 +7197,21 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureGeometry
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureGeometryMicromapDataKHR& value)
+{
+	s << "VkAccelerationStructureGeometryMicromapDataKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tusageCountsCount = " << value.usageCountsCount << '\n';
+	s << "\tpUsageCounts = " << value.pUsageCounts << '\n';
+	s << "\tppUsageCounts = " << value.ppUsageCounts << '\n';
+	s << "\tdata = " << value.data << '\n';
+	s << "\ttriangleArray = " << value.triangleArray << '\n';
+	s << "\ttriangleArrayStride = " << value.triangleArrayStride << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureGeometryMotionTrianglesDataNV& value)
 {
 	s << "VkAccelerationStructureGeometryMotionTrianglesDataNV = {\n";
@@ -7333,6 +7390,20 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureTriangle
 	s << "\tusageCountsCount = " << value.usageCountsCount << '\n';
 	s << "\tpUsageCounts = " << value.pUsageCounts << '\n';
 	s << "\tppUsageCounts = " << value.ppUsageCounts << '\n';
+	s << "\tmicromap = " << value.micromap << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureTrianglesOpacityMicromapKHR& value)
+{
+	s << "VkAccelerationStructureTrianglesOpacityMicromapKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tindexType = " << value.indexType << '\n';
+	s << "\tindexBuffer = " << value.indexBuffer << '\n';
+	s << "\tindexStride = " << value.indexStride << '\n';
+	s << "\tbaseTriangle = " << value.baseTriangle << '\n';
 	s << "\tmicromap = " << value.micromap << '\n';
 	s << '}';
 	return s;
@@ -9577,6 +9648,17 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceFaultCountsEXT& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultDebugInfoKHR& value)
+{
+	s << "VkDeviceFaultDebugInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvendorBinarySize = " << value.vendorBinarySize << '\n';
+	s << "\tpVendorBinaryData = " << value.pVendorBinaryData << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDeviceFaultInfoEXT& value)
 {
 	s << "VkDeviceFaultInfoEXT = {\n";
@@ -9586,6 +9668,32 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceFaultInfoEXT& value)
 	s << "\tpAddressInfos = " << value.pAddressInfos << '\n';
 	s << "\tpVendorInfos = " << value.pVendorInfos << '\n';
 	s << "\tpVendorBinaryData = " << value.pVendorBinaryData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultInfoKHR& value)
+{
+	s << "VkDeviceFaultInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getDeviceFaultFlagsKHRStr(value.flags) << '\n';
+	s << "\tgroupId = " << value.groupId << '\n';
+	s << "\tdescription = " << (const char*)value.description << '\n';
+	s << "\tfaultAddressInfo = " << value.faultAddressInfo << '\n';
+	s << "\tinstructionAddressInfo = " << value.instructionAddressInfo << '\n';
+	s << "\tvendorInfo = " << value.vendorInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultShaderAbortMessageInfoKHR& value)
+{
+	s << "VkDeviceFaultShaderAbortMessageInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmessageDataSize = " << value.messageDataSize << '\n';
+	s << "\tpMessageData = " << value.pMessageData << '\n';
 	s << '}';
 	return s;
 }
@@ -12421,6 +12529,16 @@ std::ostream& operator<< (std::ostream& s, const VkMicromapUsageEXT& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkMicromapUsageKHR& value)
+{
+	s << "VkMicromapUsageKHR = {\n";
+	s << "\tcount = " << value.count << '\n';
+	s << "\tsubdivisionLevel = " << value.subdivisionLevel << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkMicromapVersionInfoEXT& value)
 {
 	s << "VkMicromapVersionInfoEXT = {\n";
@@ -13860,6 +13978,29 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFaultFeaturesEX
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFaultFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceFaultFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceFault = " << value.deviceFault << '\n';
+	s << "\tdeviceFaultVendorBinary = " << value.deviceFaultVendorBinary << '\n';
+	s << "\tdeviceFaultReportMasked = " << value.deviceFaultReportMasked << '\n';
+	s << "\tdeviceFaultDeviceLostOnMasked = " << value.deviceFaultDeviceLostOnMasked << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFaultPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceFaultPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxDeviceFaultCount = " << value.maxDeviceFaultCount << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFeatures& value)
 {
 	s << "VkPhysicalDeviceFeatures = {\n";
@@ -13989,6 +14130,26 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensity
 	s << "\tfragmentDensityMap = " << value.fragmentDensityMap << '\n';
 	s << "\tfragmentDensityMapDynamic = " << value.fragmentDensityMapDynamic << '\n';
 	s << "\tfragmentDensityMapNonSubsampledImages = " << value.fragmentDensityMapNonSubsampledImages << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE& value)
+{
+	s << "VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfragmentDensityMapLayered = " << value.fragmentDensityMapLayered << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE& value)
+{
+	s << "VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxFragmentDensityMapLayers = " << value.maxFragmentDensityMapLayers << '\n';
 	s << '}';
 	return s;
 }
@@ -14699,6 +14860,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance10Pr
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance11FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceMaintenance11FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaintenance11 = " << value.maintenance11 << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance3Properties& value)
 {
 	s << "VkPhysicalDeviceMaintenance3Properties = {\n";
@@ -15141,6 +15312,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceOpacityMicromap
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceOpacityMicromapFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceOpacityMicromapFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmicromap = " << value.micromap << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceOpacityMicromapPropertiesEXT& value)
 {
 	s << "VkPhysicalDeviceOpacityMicromapPropertiesEXT = {\n";
@@ -15148,6 +15329,19 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceOpacityMicromap
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmaxOpacity2StateSubdivisionLevel = " << value.maxOpacity2StateSubdivisionLevel << '\n';
 	s << "\tmaxOpacity4StateSubdivisionLevel = " << value.maxOpacity4StateSubdivisionLevel << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceOpacityMicromapPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceOpacityMicromapPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxOpacity2StateSubdivisionLevel = " << value.maxOpacity2StateSubdivisionLevel << '\n';
+	s << "\tmaxOpacity4StateSubdivisionLevel = " << value.maxOpacity4StateSubdivisionLevel << '\n';
+	s << "\tmaxOpacityLossy4StateSubdivisionLevel = " << value.maxOpacityLossy4StateSubdivisionLevel << '\n';
+	s << "\tmaxMicromapTriangles = " << value.maxMicromapTriangles << '\n';
 	s << '}';
 	return s;
 }
@@ -15826,6 +16020,26 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShader64BitInde
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshader64BitIndexing = " << value.shader64BitIndexing << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderAbortFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderAbortFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderAbort = " << value.shaderAbort << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderAbortPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderAbortPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxShaderAbortMessageSize = " << value.maxShaderAbortMessageSize << '\n';
 	s << '}';
 	return s;
 }
@@ -17435,6 +17649,16 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineExecutableStatisticVa
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPipelineFragmentDensityMapLayeredCreateInfoVALVE& value)
+{
+	s << "VkPipelineFragmentDensityMapLayeredCreateInfoVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxFragmentDensityMapLayers = " << value.maxFragmentDensityMapLayers << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPipelineFragmentShadingRateEnumStateCreateInfoNV& value)
 {
 	s << "VkPipelineFragmentShadingRateEnumStateCreateInfoNV = {\n";
@@ -18143,6 +18367,16 @@ std::ostream& operator<< (std::ostream& s, const VkQueueFamilyGlobalPriorityProp
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpriorityCount = " << value.priorityCount << '\n';
 	s << "\tpriorities = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.priorities), DE_ARRAY_END(value.priorities)) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkQueueFamilyOptimalImageTransferGranularityPropertiesKHR& value)
+{
+	s << "VkQueueFamilyOptimalImageTransferGranularityPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\toptimalImageTransferGranularity = " << value.optimalImageTransferGranularity << '\n';
 	s << '}';
 	return s;
 }

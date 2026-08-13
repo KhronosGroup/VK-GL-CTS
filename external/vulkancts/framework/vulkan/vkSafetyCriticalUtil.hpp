@@ -33,7 +33,6 @@
 namespace vk
 {
 
-VkDeviceObjectReservationCreateInfo resetDeviceObjectReservationCreateInfo();
 VkPipelineOfflineCreateInfo resetPipelineOfflineCreateInfo();
 VkPhysicalDeviceVulkanSC10Features createDefaultSC10Features();
 void applyPipelineIdentifier(VkPipelineOfflineCreateInfo &pipelineIdentifier, const std::string &value);

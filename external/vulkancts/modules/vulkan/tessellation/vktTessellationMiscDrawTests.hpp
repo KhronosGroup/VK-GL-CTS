@@ -33,6 +33,7 @@ namespace tessellation
 {
 
 tcu::TestCaseGroup *createMiscDrawTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createUnusedBuiltinOutputTests(tcu::TestContext &testCtx);
 
 } // namespace tessellation
 } // namespace vkt

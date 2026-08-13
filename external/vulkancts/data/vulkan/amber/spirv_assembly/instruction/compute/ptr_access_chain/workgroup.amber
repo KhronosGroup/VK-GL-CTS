@@ -48,6 +48,8 @@ VariablePointerFeatures.variablePointers
                OpDecorate %24 Binding 2
                OpDecorate %_arr_uint_uint_17 ArrayStride 4
                OpDecorate %_ptr_Workgroup_uint ArrayStride 4
+               OpMemberDecorate %_wg_struct 0 Offset 0
+               OpDecorate %_wg_struct Block
        %uint = OpTypeInt 32 0
 %_runtimearr_uint = OpTypeRuntimeArray %uint
   %_struct_3 = OpTypeStruct %_runtimearr_uint
@@ -62,14 +64,15 @@ VariablePointerFeatures.variablePointers
 %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
     %uint_17 = OpConstant %uint 17
 %_arr_uint_uint_17 = OpTypeArray %uint %uint_17
-%_ptr_Workgroup__arr_uint_uint_17 = OpTypePointer Workgroup %_arr_uint_uint_17
+%_wg_struct = OpTypeStruct %_arr_uint_uint_17
+%_ptr_Workgroup__wg_struct = OpTypePointer Workgroup %_wg_struct
        %bool = OpTypeBool
      %uint_1 = OpConstant %uint 1
      %uint_2 = OpConstant %uint 2
      %uint_0 = OpConstant %uint 0
     %uint_16 = OpConstant %uint 16
    %uint_264 = OpConstant %uint 264
-         %20 = OpVariable %_ptr_Workgroup__arr_uint_uint_17 Workgroup
+         %20 = OpVariable %_ptr_Workgroup__wg_struct Workgroup
 %gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
          %22 = OpVariable %_ptr_StorageBuffer__struct_3 StorageBuffer
          %23 = OpVariable %_ptr_StorageBuffer__struct_3 StorageBuffer
@@ -90,13 +93,13 @@ VariablePointerFeatures.variablePointers
          %36 = OpAccessChain %_ptr_StorageBuffer_uint %23 %uint_0 %33
          %37 = OpLoad %uint %36
          %38 = OpIMul %uint %37 %35
-         %39 = OpAccessChain %_ptr_Workgroup_uint %20 %33
+         %39 = OpAccessChain %_ptr_Workgroup_uint %20 %uint_0 %33
                OpStore %39 %38
          %40 = OpIEqual %bool %33 %uint_0
                OpSelectionMerge %43 None
                OpBranchConditional %40 %41 %43
          %41 = OpLabel
-         %42 = OpAccessChain %_ptr_Workgroup_uint %20 %uint_16
+         %42 = OpAccessChain %_ptr_Workgroup_uint %20 %uint_0 %uint_16
                OpStore %42 %uint_0
                OpBranch %43
          %43 = OpLabel

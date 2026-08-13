@@ -541,6 +541,7 @@ tcu::TestStatus dynamicSampleShadingTest(Context &context, DSS::Params params)
     const auto vbOffset = static_cast<VkDeviceSize>(0);
 
     deMemcpy(vbData, de::dataOrNull(vertices), de::dataSize(vertices));
+    flushAlloc(ctx.vkd, ctx.device, vbAlloc);
 
     // Sampled texture.
     const VkImageCreateInfo textureCreateInfo = {
@@ -596,6 +597,7 @@ tcu::TestStatus dynamicSampleShadingTest(Context &context, DSS::Params params)
     const auto dbOffset = static_cast<VkDeviceSize>(0);
 
     deMemset(dbData, 0, static_cast<size_t>(dbSize));
+    flushAlloc(ctx.vkd, ctx.device, dbAlloc);
 
     // Descriptor pool, set, layout, etc.
     DescriptorPoolBuilder poolBuilder;

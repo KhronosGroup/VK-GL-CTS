@@ -836,9 +836,9 @@ void TextureBinding::updateTextureData(const TestTextureSp &textureData, const T
                                           VK_SHARING_MODE_EXCLUSIVE;
     const VkQueue queue             = getDeviceQueue(vkd, m_device, queueFamilyIndex, 0);
 
-    if ((m_context.getTestContext().getCommandLine().isComputeOnly() || m_useCompute) && (isDepthStencilFormat(format)))
+    if (m_useCompute && isDepthStencilFormat(format))
         TCU_THROW(NotSupportedError, (std::string("Format: ") + vk::getFormatName(format)).c_str() +
-                                         std::string(" not supported with compute-only"));
+                                         std::string(" not supported with compute renderer"));
 
     if (imageFormatQueryResult == VK_ERROR_FORMAT_NOT_SUPPORTED)
     {

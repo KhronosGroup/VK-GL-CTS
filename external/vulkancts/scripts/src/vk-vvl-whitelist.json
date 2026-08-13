@@ -149,7 +149,8 @@
                 "VUID-vkCmdDraw-None-07626",
                 "VUID-vkCmdDrawMeshTasksEXT-None-07841",
                 "VUID-vkCmdDrawMeshTasksEXT-None-07627",
-                "VUID-vkCmdDrawMeshTasksEXT-None-07629"
+                "VUID-vkCmdDrawMeshTasksEXT-None-07629",
+                "VUID-vkCmdDraw-samples-07472"
             ],
             "description": "Validation layer requires set state calls when the respective dynamic states are enabled. Tests intentionally skips setting certain dynamic states"
         },
@@ -175,6 +176,7 @@
         {
             "groups": [
                 "dEQP-VK.subgroups.subgroup_uniform_control_flow.large_partial_control.subgroup_reconverge_*",
+                "dEQP-VK.subgroups.subgroup_uniform_control_flow.small_partial_control.small_subgroup_reconverge_*",
                 "dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.*",
                 "dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.*"
             ],
@@ -304,6 +306,7 @@
         {
             "groups": [
                 "dEQP-VK.renderpasses.dynamic_rendering.primary_cmd_buff.random.*",
+                "dEQP-VK.renderpasses.dynamic_rendering.primary_cmd_buff.basic.*resuming",
                 "dEQP-VK.renderpasses.dynamic_rendering.partial_secondary_cmd_buff.fragment_density_map.offset.*suspend_resume*"
             ],
             "messages": [

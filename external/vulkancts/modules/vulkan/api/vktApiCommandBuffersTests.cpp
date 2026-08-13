@@ -2928,6 +2928,100 @@ tcu::TestStatus recordBufferQueryImpreciseWithoutFlagTest(Context &context)
                                  "allowing a precise occlusion query.");
 }
 
+void initInheritedOcclusionQueryWithoutPrimaryQueryPrograms(SourceCollections &programCollection, bool preciseQuery)
+{
+    DE_UNREF(preciseQuery);
+    programCollection.glslSources.add("vert")
+        << glu::VertexSource("#version 450\n"
+                             "void main() {\n"
+                             "    vec2 pos = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));\n"
+                             "    gl_Position = vec4(pos * 2.0f - 1.0f, 0.0f, 1.0f);\n"
+                             "}\n");
+
+    programCollection.glslSources.add("frag") << glu::FragmentSource("#version 450\n"
+                                                                     "layout(location = 0) out uvec4 outColor;\n"
+                                                                     "void main() {\n"
+                                                                     "    outColor = uvec4(255u, 0u, 0u, 255u);\n"
+                                                                     "}\n");
+}
+
+tcu::TestStatus inheritedOcclusionQueryWithoutPrimaryQueryTest(Context &context, bool preciseQuery)
+{
+    const VkDevice vkDevice   = context.getDevice();
+    const DeviceInterface &vk = context.getDeviceInterface();
+
+    CommandBufferRenderPassTestEnvironment env(context, 0u);
+
+    VkCommandBuffer primaryCommandBuffer   = env.getPrimaryCommandBuffer();
+    VkCommandBuffer secondaryCommandBuffer = env.getSecondaryCommandBuffer();
+
+    const auto &binaries = context.getBinaryCollection();
+    const Unique<VkShaderModule> vertModule(createShaderModule(vk, vkDevice, binaries.get("vert"), 0u));
+    const Unique<VkShaderModule> fragModule(createShaderModule(vk, vkDevice, binaries.get("frag"), 0u));
+
+    const VkPipelineLayoutCreateInfo layoutCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
+        nullptr,                                       // pNext
+        0u,                                            // flags
+        0u,                                            // setLayoutCount
+        nullptr,                                       // pSetLayouts
+        0u,                                            // pushConstantRangeCount
+        nullptr,                                       // pPushConstantRanges
+    };
+    Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, vkDevice, &layoutCreateInfo));
+
+    const std::vector<VkViewport> viewports{makeViewport(env.DEFAULT_IMAGE_SIZE)};
+    const std::vector<VkRect2D> scissors{makeRect2D(env.DEFAULT_IMAGE_SIZE)};
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+    const auto pipeline =
+        makeGraphicsPipeline(vk, vkDevice, pipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             VK_NULL_HANDLE, fragModule.get(), env.getRenderPass(), viewports, scissors,
+                             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vertexInputState);
+
+    // Record secondary command buffer with occlusionQueryEnable = VK_TRUE
+    // The issue tested here is the presence of VK_TRUE in occlusionQueryEnable without an active query in the primary buffer.
+    // The specific queryFlags (precise vs. imprecise) do not change this fundamental problem.
+    const VkCommandBufferInheritanceInfo secBufferInheritInfo = {
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+        nullptr,
+        env.getRenderPass(),                                                                // renderPass
+        0u,                                                                                 // subpass
+        env.getFrameBuffer(),                                                               // framebuffer
+        VK_TRUE,                                                                            // occlusionQueryEnable
+        preciseQuery ? static_cast<VkQueryControlFlags>(VK_QUERY_CONTROL_PRECISE_BIT) : 0u, // queryFlags
+        static_cast<VkQueryPipelineStatisticFlags>(0u),                                     // pipelineStatistics
+    };
+    const VkCommandBufferBeginInfo secBufferBeginInfo = {
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,      // sType
+        nullptr,                                          // pNext
+        VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT, // flags
+        &secBufferInheritInfo,
+    };
+
+    VK_CHECK(vk.beginCommandBuffer(secondaryCommandBuffer, &secBufferBeginInfo));
+    vk.cmdBindPipeline(secondaryCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+    vk.cmdDraw(secondaryCommandBuffer, 3u, 1u, 0u, 0u);
+    endCommandBuffer(vk, secondaryCommandBuffer);
+
+    env.beginPrimaryCommandBuffer(0);
+    env.beginRenderPass(VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+    {
+        // Execute secondary command buffer with occlusionQueryEnable = VK_TRUE.
+        // But since we are executing it outside any active query in the primary (no cmdBeginQuery is called),
+        // affected drivers will attempt to write occlusion results to unconfigured query registers, causing DEVICE_LOST.
+        vk.cmdExecuteCommands(primaryCommandBuffer, 1, &secondaryCommandBuffer);
+    }
+    endRenderPass(vk, primaryCommandBuffer);
+    endCommandBuffer(vk, primaryCommandBuffer);
+
+    env.submitPrimaryCommandBuffer();
+
+    return tcu::TestStatus::pass("Successfully executed secondary command buffer with occlusionQueryEnable flag "
+                                 "without an active primary query.");
+}
+
 /******** 19.4. Command Buffer Submission (5.4 in VK 1.0 Spec) ****************/
 tcu::TestStatus submitBufferCountNonZero(Context &context)
 {
@@ -4568,6 +4662,15 @@ void checkSecondaryCommandBufferNullOrImagelessFramebufferSupport1(Context &cont
     if (context.getDeviceVulkanSC10Properties().secondaryCommandBufferNullOrImagelessFramebuffer == VK_FALSE)
         TCU_THROW(NotSupportedError, "secondaryCommandBufferNullFramebuffer is not supported");
 #endif // CTS_USES_VULKANSC
+}
+
+void checkInheritedOcclusionQuerySupport(Context &context, bool preciseQuery)
+{
+    if (!context.getDeviceFeatures().inheritedQueries)
+        TCU_THROW(NotSupportedError, "Inherited queries feature is not supported");
+
+    if (preciseQuery && !context.getDeviceFeatures().occlusionQueryPrecise)
+        TCU_THROW(NotSupportedError, "Precise occlusion queries are not supported");
 }
 
 void checkEventAndSecondaryCommandBufferNullFramebufferSupport(Context &context)
@@ -6337,6 +6440,14 @@ tcu::TestCaseGroup *createCommandBuffersTests(tcu::TestContext &testCtx)
                     recordBufferQueryImpreciseWithFlagTest);
     addFunctionCase(commandBuffersTests.get(), "record_query_imprecise_wo_flag", checkInheritedQueriesSupport,
                     recordBufferQueryImpreciseWithoutFlagTest);
+    addFunctionCaseWithPrograms<bool>(
+        commandBuffersTests.get(), "inherited_occlusion_query_without_primary_query_imprecise",
+        checkInheritedOcclusionQuerySupport, initInheritedOcclusionQueryWithoutPrimaryQueryPrograms,
+        inheritedOcclusionQueryWithoutPrimaryQueryTest, false);
+    addFunctionCaseWithPrograms<bool>(
+        commandBuffersTests.get(), "inherited_occlusion_query_without_primary_query_precise",
+        checkInheritedOcclusionQuerySupport, initInheritedOcclusionQueryWithoutPrimaryQueryPrograms,
+        inheritedOcclusionQueryWithoutPrimaryQueryTest, true);
     addFunctionCaseWithPrograms(commandBuffersTests.get(), "bad_inheritance_info_random",
                                 genComputeIncrementSourceBadInheritance, badInheritanceInfoTest,
                                 BadInheritanceInfoCase::RANDOM_PTR);

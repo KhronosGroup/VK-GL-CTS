@@ -35,8 +35,14 @@ struct ParentImpl;
 
 struct Parent
 {
-    Parent(const int portOffset);
+    // Binds the IPC listener to an OS-assigned ephemeral port on localhost. The actual port
+    // must be queried via getPort() and handed to the subprocess so it can connect back. This
+    // makes concurrent deqp-vksc instances collision-free without any shared/fixed port.
+    Parent();
     ~Parent();
+
+    // Port the IPC listener is actually bound to (only valid after construction succeeds).
+    int getPort() const;
 
     bool SetFile(const string &name, const std::vector<u8> &content);
     vector<u8> GetFile(const string &name);
@@ -49,7 +55,8 @@ struct ChildImpl;
 
 struct Child
 {
-    Child(const int portOffset);
+    // Connects to the parent IPC listener on localhost:port (the port reported by Parent::getPort()).
+    Child(const int port);
     ~Child();
 
     bool SetFile(const string &name, const std::vector<u8> &content);

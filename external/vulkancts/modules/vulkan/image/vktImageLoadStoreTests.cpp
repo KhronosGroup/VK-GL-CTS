@@ -781,14 +781,14 @@ void StoreTest::initPrograms(SourceCollections &programCollection) const
 }
 
 //! Generic test iteration algorithm for image tests
-class BaseTestInstance : public TestInstance
+class BaseTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     BaseTestInstance(Context &context, const Texture &texture, const VkFormat format,
                      const bool declareImageFormatInShader, const bool singleLayerBind, const bool minalign,
-                     const bool bufferLoadUniform);
+                     const bool bufferLoadUniform, vkt::QueueCapabilities caps = vkt::COMPUTE_QUEUE);
 
-    virtual tcu::TestStatus iterate(void);
+    virtual tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
     virtual ~BaseTestInstance(void)
     {
@@ -818,8 +818,11 @@ protected:
 
 BaseTestInstance::BaseTestInstance(Context &context, const Texture &texture, const VkFormat format,
                                    const bool declareImageFormatInShader, const bool singleLayerBind,
-                                   const bool minalign, const bool bufferLoadUniform)
-    : TestInstance(context)
+                                   const bool minalign, const bool bufferLoadUniform, vkt::QueueCapabilities caps)
+    : vkt::MultiQueueRunnerTestInstance(
+          context, ((getImageAspect(format) & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) != 0u) ?
+                       vkt::GRAPHICS_QUEUE :
+                       caps)
     , m_texture(texture)
     , m_format(format)
     , m_declareImageFormatInShader(declareImageFormatInShader)
@@ -833,12 +836,12 @@ BaseTestInstance::BaseTestInstance(Context &context, const Texture &texture, con
 {
 }
 
-tcu::TestStatus BaseTestInstance::iterate(void)
+tcu::TestStatus BaseTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
 
     const Unique<VkShaderModule> shaderModule(
         createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0));
@@ -1056,6 +1059,9 @@ VkDescriptorSetLayout ImageStoreTestInstance::prepareDescriptors(void)
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
 
+    for (auto &ds : m_allDescriptorSets)
+        ds = SharedVkDescriptorSet();
+
     const int numLayers   = m_texture.numLayers();
     m_descriptorSetLayout = DescriptorSetLayoutBuilder()
                                 .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
@@ -1181,6 +1187,9 @@ VkDescriptorSetLayout BufferStoreTestInstance::prepareDescriptors(void)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
+
+    // Disown the old descriptor set before destroying the old pool.
+    m_descriptorSet.disown();
 
     m_descriptorSetLayout = DescriptorSetLayoutBuilder()
                                 .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
@@ -1693,7 +1702,7 @@ class LoadStoreTestInstance : public BaseTestInstance
 public:
     LoadStoreTestInstance(Context &context, const Texture &texture, const VkFormat format, const VkFormat imageFormat,
                           const bool declareImageFormatInShader, const bool singleLayerBind, const bool minalign,
-                          const bool bufferLoadUniform);
+                          const bool bufferLoadUniform, vkt::QueueCapabilities caps = vkt::COMPUTE_QUEUE);
 
 protected:
     virtual BufferWithMemory *getResultBuffer(void) const = 0; //!< Get the buffer that contains the result image
@@ -1724,9 +1733,9 @@ protected:
 LoadStoreTestInstance::LoadStoreTestInstance(Context &context, const Texture &texture, const VkFormat format,
                                              const VkFormat imageFormat, const bool declareImageFormatInShader,
                                              const bool singleLayerBind, const bool minalign,
-                                             const bool bufferLoadUniform)
+                                             const bool bufferLoadUniform, vkt::QueueCapabilities caps)
     : BaseTestInstance(context, texture, format, declareImageFormatInShader, singleLayerBind, minalign,
-                       bufferLoadUniform)
+                       bufferLoadUniform, caps)
     , m_imageSizeBytes(getImageSizeBytes(texture.size(), format))
     , m_imageFormat(imageFormat)
     , m_referenceImage(generateReferenceImage(texture.size(), imageFormat, format))
@@ -1763,8 +1772,9 @@ tcu::TestStatus LoadStoreTestInstance::verifyResult(void)
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
 
-    // Apply the same transformation as done in the shader
-    const tcu::PixelBufferAccess reference = m_referenceImage.getAccess();
+    // Apply the same transformation as done in the shader.
+    tcu::TextureLevel refCopy(m_referenceImage);
+    const tcu::PixelBufferAccess reference = refCopy.getAccess();
     flipHorizontally(reference);
 
     const Allocation &alloc = getResultBuffer()->getAllocation();
@@ -1785,7 +1795,7 @@ public:
     ImageLoadStoreTestInstance(Context &context, const Texture &texture, const VkFormat format,
                                const VkFormat imageFormat, const VkImageTiling tiling,
                                const bool declareImageFormatInShader, const bool singleLayerBind, const bool minalign,
-                               const bool bufferLoadUniform);
+                               const bool bufferLoadUniform, vkt::QueueCapabilities caps = vkt::COMPUTE_QUEUE);
 
 protected:
     VkDescriptorSetLayout commonPrepareDescriptors(const VkShaderStageFlags stageFlags);
@@ -1817,9 +1827,9 @@ ImageLoadStoreTestInstance::ImageLoadStoreTestInstance(Context &context, const T
                                                        const VkFormat imageFormat, const VkImageTiling tiling,
                                                        const bool declareImageFormatInShader,
                                                        const bool singleLayerBind, const bool minalign,
-                                                       const bool bufferLoadUniform)
+                                                       const bool bufferLoadUniform, vkt::QueueCapabilities caps)
     : LoadStoreTestInstance(context, texture, format, imageFormat, declareImageFormatInShader, singleLayerBind,
-                            minalign, bufferLoadUniform)
+                            minalign, bufferLoadUniform, caps)
     , m_allDescriptorSets(texture.numLayers())
     , m_allSrcImageViews(texture.numLayers())
     , m_allDstImageViews(texture.numLayers())
@@ -1851,6 +1861,13 @@ VkDescriptorSetLayout ImageLoadStoreTestInstance::commonPrepareDescriptors(const
 {
     const VkDevice device     = m_context.getDevice();
     const DeviceInterface &vk = m_context.getDeviceInterface();
+
+    for (auto &ds : m_allDescriptorSets)
+        ds = SharedVkDescriptorSet();
+    for (auto &sv : m_allSrcImageViews)
+        sv = SharedVkImageView();
+    for (auto &dv : m_allDstImageViews)
+        dv = SharedVkImageView();
 
     const int numLayers   = m_texture.numLayers();
     m_descriptorSetLayout = DescriptorSetLayoutBuilder()
@@ -1938,6 +1955,13 @@ void ImageLoadStoreTestInstance::commandBeforeCompute(const VkCommandBuffer cmdB
 {
     const DeviceInterface &vk            = m_context.getDeviceInterface();
     const VkImageAspectFlags &aspectMask = getImageAspect(m_format);
+
+    {
+        const VkDevice device   = m_context.getDevice();
+        const Allocation &alloc = m_imageBuffer->getAllocation();
+        deMemcpy(alloc.getHostPtr(), m_referenceImage.getAccess().getDataPtr(), static_cast<size_t>(m_imageSizeBytes));
+        flushAlloc(vk, device, alloc);
+    }
 
     const VkImageSubresourceRange fullImageSubresourceRange =
         makeImageSubresourceRange(aspectMask, 0u, 1u, 0u, m_texture.numLayers());
@@ -2139,8 +2163,9 @@ tcu::TestStatus ImageLoadStoreLodAMDTestInstance::verifyResult(void)
     VkDeviceSize bufferOffset = 0;
     for (int32_t levelNdx = 0; levelNdx < m_texture.numMipmapLevels(); levelNdx++)
     {
-        // Apply the same transformation as done in the shader
-        const tcu::PixelBufferAccess reference = m_referenceImages[levelNdx].getAccess();
+        // Apply the same transformation as done in the shader.
+        tcu::TextureLevel refCopy(m_referenceImages[levelNdx]);
+        const tcu::PixelBufferAccess reference = refCopy.getAccess();
         flipHorizontally(reference);
 
         const tcu::ConstPixelBufferAccess result(mapVkFormat(m_imageFormat), m_texture.size(levelNdx),
@@ -2163,6 +2188,13 @@ VkDescriptorSetLayout ImageLoadStoreLodAMDTestInstance::prepareDescriptors(void)
 {
     const VkDevice device     = m_context.getDevice();
     const DeviceInterface &vk = m_context.getDeviceInterface();
+
+    for (auto &ds : m_allDescriptorSets)
+        ds = SharedVkDescriptorSet();
+    for (auto &sv : m_allSrcImageViews)
+        sv = SharedVkImageView();
+    for (auto &dv : m_allDstImageViews)
+        dv = SharedVkImageView();
 
     const int numLayers   = m_texture.numLayers();
     m_descriptorSetLayout = DescriptorSetLayoutBuilder()
@@ -2236,7 +2268,22 @@ void ImageLoadStoreLodAMDTestInstance::commandBindDescriptorsForLayer(const VkCo
 
 void ImageLoadStoreLodAMDTestInstance::commandBeforeCompute(const VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vk                               = m_context.getDeviceInterface();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+
+    // Re-copy all mipmap levels to buffer for pristine source on each queue pass.
+    {
+        const VkDevice device     = m_context.getDevice();
+        const Allocation &alloc   = m_imageBuffer->getAllocation();
+        VkDeviceSize bufferOffset = 0;
+        for (int32_t levelNdx = 0; levelNdx < m_texture.numMipmapLevels(); levelNdx++)
+        {
+            deMemcpy((char *)alloc.getHostPtr() + bufferOffset, m_referenceImages[levelNdx].getAccess().getDataPtr(),
+                     static_cast<size_t>(getMipmapLevelImageSizeBytes(m_texture, m_imageFormat, levelNdx)));
+            bufferOffset += getMipmapLevelImageSizeBytes(m_texture, m_imageFormat, levelNdx);
+        }
+        flushAlloc(vk, device, alloc);
+    }
+
     const VkImageSubresourceRange fullImageSubresourceRange = makeImageSubresourceRange(
         VK_IMAGE_ASPECT_COLOR_BIT, 0u, m_texture.numMipmapLevels(), 0u, m_texture.numLayers());
     {
@@ -2346,6 +2393,9 @@ VkDescriptorSetLayout BufferLoadStoreTestInstance::prepareDescriptors(void)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
+
+    // Disown the old descriptor set before destroying the old pool.
+    m_descriptorSet.disown();
 
     m_descriptorSetLayout = DescriptorSetLayoutBuilder()
                                 .addSingleBinding(m_bufferLoadDescriptorType, VK_SHADER_STAGE_COMPUTE_BIT)
@@ -2525,6 +2575,10 @@ VkDescriptorSetLayout ImageExtendOperandTestInstance::prepareDescriptors(void)
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
 
+    m_descriptorSet = SharedVkDescriptorSet();
+    m_imageSrcView  = SharedVkImageView();
+    m_imageDstView  = SharedVkImageView();
+
     m_descriptorSetLayout = DescriptorSetLayoutBuilder()
                                 .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
                                 .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
@@ -2575,6 +2629,14 @@ void ImageExtendOperandTestInstance::commandBindDescriptorsForLayer(const VkComm
 void ImageExtendOperandTestInstance::commandBeforeCompute(const VkCommandBuffer cmdBuffer)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
+
+    // Re-copy input data to buffer for pristine source on each queue pass.
+    {
+        const VkDevice device   = m_context.getDevice();
+        const Allocation &alloc = m_buffer->getAllocation();
+        deMemcpy(alloc.getHostPtr(), m_inputImageData.getAccess().getDataPtr(), static_cast<size_t>(m_imageSrcSize));
+        flushAlloc(vk, device, alloc);
+    }
 
     const VkImageSubresourceRange fullImageSubresourceRange =
         makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_texture.numLayers());
@@ -3155,7 +3217,7 @@ public:
     ImageDeviceScopeAccessTestInstance(Context &context, const TestConfigurationType testType, const Texture &texture,
                                        const VkFormat format, const VkImageTiling tiling, const uint32_t verticesCount);
 
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     const TestConfigurationType m_testType;
@@ -3200,9 +3262,6 @@ void ImageDeviceScopeAccessTest::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError,
                   std::string("Vulkan higher than or equal to spirv 1.5 is required for this test to run").c_str());
 
-    if ((m_testType == TC_COMP_DRAW) && context.getTestContext().getCommandLine().isComputeOnly())
-        THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-
     LoadStoreTest::checkSupport(context);
 
     if (m_testType == TC_COMP_DRAW)
@@ -3235,19 +3294,20 @@ ImageDeviceScopeAccessTestInstance::ImageDeviceScopeAccessTestInstance(Context &
                                                                        const Texture &texture, const VkFormat format,
                                                                        const VkImageTiling tiling,
                                                                        const uint32_t verticesCount)
-    : ImageLoadStoreTestInstance(context, texture, format, format, tiling, true, false, false, false)
+    : ImageLoadStoreTestInstance(context, texture, format, format, tiling, true, false, false, false,
+                                 (testType == TC_COMP_COMP) ? vkt::COMPUTE_QUEUE : vkt::GRAPHICS_QUEUE)
     , m_testType(testType)
     , m_tiling(tiling)
     , m_verticesCount(verticesCount)
 {
 }
 
-tcu::TestStatus ImageDeviceScopeAccessTestInstance::iterate(void)
+tcu::TestStatus ImageDeviceScopeAccessTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
     Allocator &allocator            = m_context.getDefaultAllocator();
     const tcu::IVec3 workSize       = m_texture.size();
 

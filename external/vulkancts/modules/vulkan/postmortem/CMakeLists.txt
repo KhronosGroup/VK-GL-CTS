@@ -12,6 +12,8 @@ set(DEQP_VK_POSTMORTEM_SRCS
 	vktPostmortemUseAfterFreeTests.cpp
 	vktPostmortemUtil.hpp
 	vktPostmortemUtil.cpp
+    vktPostmortemCoreDeviceFaultTests.cpp
+	vktPostmortemCoreDeviceFaultTests.hpp
 	vktPostmortemDeviceFaultTests.cpp
 	vktPostmortemDeviceFaultTests.hpp
 	vktPostmortemDeviceLossTests.cpp

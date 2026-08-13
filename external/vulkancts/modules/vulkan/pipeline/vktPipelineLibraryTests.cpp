@@ -42,6 +42,7 @@
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
+#include "vktIndependentSetsUtil.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTestLog.hpp"
@@ -6302,6 +6303,16 @@ tcu::TestStatus PrimaryRebindDiffLayoutsRun(Context &context, PipelineConstructi
     ctx.vkd.cmdPushConstants(primaryCmd, pipelineLayoutB.get(), pcStages, 0u, pcSize, &green);
     ctx.vkd.cmdDraw(primaryCmd, 4u, 1u, 0u, 0u);
     primaryRP.end(ctx.vkd, primaryCmd);
+    {
+        // RP2 (LOAD_OP_CLEAR) re-writes primaryImage; without this the RP1 and RP2
+        // STORE_OP_STORE writes are unordered (write-after-write hazard).
+        const auto rpSrcAccess = static_cast<VkAccessFlags>(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+        const auto rpDstAccess = static_cast<VkAccessFlags>(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+        const auto rpStage     = static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+        const VkImageMemoryBarrier rpBarrier =
+            makeImageMemoryBarrier(rpSrcAccess, rpDstAccess, attLayout, attLayout, primaryImage.getImage(), srr);
+        cmdPipelineImageMemoryBarrier(ctx.vkd, primaryCmd, rpStage, rpStage, &rpBarrier, 1u);
+    }
 
     // Execute secondary (binds pipeline A with 1 descriptor set layout).
     ctx.vkd.cmdExecuteCommands(primaryCmd, 1u, &secondaryCmd);
@@ -6864,6 +6875,18 @@ tcu::TestCaseGroup *createPipelineLibraryTests(tcu::TestContext &testCtx)
                                         viewMaskRun, optimized);
         }
         miscTests->addChild(viewMaskGroup.release());
+    }
+
+    {
+        const auto groupName = "independent_sets_random";
+
+        const std::vector<PipelineConstructionType> constructionTypes{
+            PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC,
+            PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY,
+            PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY,
+        };
+
+        group->addChild(IndependentSets::createRandomTests(testCtx, groupName, constructionTypes));
     }
 
     group->addChild(miscTests.release());

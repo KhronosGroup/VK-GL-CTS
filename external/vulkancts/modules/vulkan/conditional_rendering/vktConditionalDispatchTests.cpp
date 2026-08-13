@@ -98,12 +98,12 @@ private:
     const ConditionalTestSpec m_testSpec;
 };
 
-class ConditionalDispatchTestInstance : public TestInstance
+class ConditionalDispatchTestInstance : public MultiQueueRunnerTestInstance
 {
 public:
     ConditionalDispatchTestInstance(Context &context, ConditionalTestSpec testSpec);
 
-    virtual tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const QueueData &queueData) override;
     void recordDispatch(const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer,
                         vk::BufferWithMemory &indirectBuffer);
 
@@ -139,9 +139,6 @@ void ConditionalDispatchTest::checkSupport(Context &context) const
 {
     checkConditionalRenderingCapabilities(context, m_testSpec.conditionalData);
 
-    if (m_testSpec.computeQueue)
-        context.getComputeQueue(); // Will throw NotSupportedError if not found.
-
     if (m_testSpec.command == DISPATCH_COMMAND_TYPE_DISPATCH_BASE)
         context.requireDeviceFunctionality("VK_KHR_device_group");
 }
@@ -152,7 +149,7 @@ TestInstance *ConditionalDispatchTest::createInstance(Context &context) const
 }
 
 ConditionalDispatchTestInstance::ConditionalDispatchTestInstance(Context &context, ConditionalTestSpec testSpec)
-    : TestInstance(context)
+    : MultiQueueRunnerTestInstance(context, COMPUTE_QUEUE)
     , m_testSpec(testSpec)
 {
 }
@@ -185,15 +182,17 @@ void ConditionalDispatchTestInstance::recordDispatch(const vk::DeviceInterface &
     }
 }
 
-tcu::TestStatus ConditionalDispatchTestInstance::iterate(void)
+tcu::TestStatus ConditionalDispatchTestInstance::queuePass(const QueueData &queueData)
 {
-    const vk::DeviceInterface &vk = m_context.getDeviceInterface();
-    const vk::VkDevice device     = m_context.getDevice();
-    const vk::VkQueue queue = (m_testSpec.computeQueue ? m_context.getComputeQueue() : m_context.getUniversalQueue());
-    const uint32_t queueFamilyIndex =
-        (m_testSpec.computeQueue ? m_context.getComputeQueueFamilyIndex() : m_context.getUniversalQueueFamilyIndex());
-    vk::Allocator &allocator    = m_context.getDefaultAllocator();
-    const auto &conditionalData = m_testSpec.conditionalData;
+    const vk::DeviceInterface &vk   = m_context.getDeviceInterface();
+    const vk::VkDevice device       = m_context.getDevice();
+    const vk::VkQueue queue         = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
+    vk::Allocator &allocator        = m_context.getDefaultAllocator();
+    const auto &conditionalData     = m_testSpec.conditionalData;
+    // Determine whether this pass is running on the dedicated compute queue family,
+    // so the staging-buffer copy inside createConditionalRenderingBuffer uses the right queue.
+    const bool isComputeQueue = (queueData.familyIndex == (uint32_t)m_context.getComputeQueueFamilyIndex());
 
     // Create a buffer and host-visible memory for it
 
@@ -306,7 +305,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate(void)
                              &descriptorSet.get(), 0u, nullptr);
 
     de::SharedPtr<Draw::Buffer> conditionalBuffer =
-        createConditionalRenderingBuffer(m_context, conditionalData, m_testSpec.computeQueue);
+        createConditionalRenderingBuffer(m_context, conditionalData, isComputeQueue);
 
     if (conditionalData.conditionInSecondaryCommandBuffer)
     {

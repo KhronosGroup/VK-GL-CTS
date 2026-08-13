@@ -678,6 +678,15 @@ inline VkMicromapUsageEXT makeMicromapUsageEXT (uint32_t count, uint32_t subdivi
 	return res;
 }
 
+inline VkMicromapUsageKHR makeMicromapUsageKHR (uint32_t count, uint32_t subdivisionLevel, VkOpacityMicromapFormatKHR format)
+{
+	VkMicromapUsageKHR res;
+	res.count				= count;
+	res.subdivisionLevel	= subdivisionLevel;
+	res.format				= format;
+	return res;
+}
+
 inline VkMultiDrawIndexedInfoEXT makeMultiDrawIndexedInfoEXT (uint32_t firstIndex, uint32_t indexCount, int32_t vertexOffset)
 {
 	VkMultiDrawIndexedInfoEXT res;

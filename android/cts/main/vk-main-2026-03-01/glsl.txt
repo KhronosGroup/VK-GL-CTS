@@ -16,6 +16,7 @@ dEQP-VK.glsl.bfloat16.various.function_call
 dEQP-VK.glsl.bfloat16.various.swizzling
 dEQP-VK.glsl.builtin.function.common.abs.ivec5_highp_compute
 dEQP-VK.glsl.builtin.function.common.abs.ivec5_mediump_compute
+dEQP-VK.glsl.builtin.function.common.clamp.clamp_const_array_dynamic_index
 dEQP-VK.glsl.builtin.function.common.floatbitstoint.vec5_highp_compute
 dEQP-VK.glsl.builtin.function.common.floatbitstoint.vec5_mediump_compute
 dEQP-VK.glsl.builtin.function.common.floatbitstouint.vec5_highp_compute
@@ -48,6 +49,7 @@ dEQP-VK.glsl.builtin.function.integer.bitfieldreverse.ivec5_highp_compute
 dEQP-VK.glsl.builtin.function.integer.bitfieldreverse.ivec5_mediump_compute
 dEQP-VK.glsl.builtin.function.integer.bitfieldreverse.uvec5_highp_compute
 dEQP-VK.glsl.builtin.function.integer.bitfieldreverse.uvec5_mediump_compute
+dEQP-VK.glsl.builtin.function.integer.bitwise_vector_modulo.uvec2_compute
 dEQP-VK.glsl.builtin.function.integer.findMSB.ivec5_highp_compute
 dEQP-VK.glsl.builtin.function.integer.findMSB.ivec5_mediump_compute
 dEQP-VK.glsl.builtin.function.integer.findMSB.uvec5_highp_compute
@@ -608,6 +610,11 @@ dEQP-VK.glsl.derivate.fwidthcoarse.linear_vec8.vec4_highp
 dEQP-VK.glsl.derivate.fwidthcoarse.linear_vec8.vec4_mediump
 dEQP-VK.glsl.derivate.fwidthfine.linear_vec8.vec4_highp
 dEQP-VK.glsl.derivate.fwidthfine.linear_vec8.vec4_mediump
+dEQP-VK.glsl.helper_invocation.load_after_store
+dEQP-VK.glsl.helper_invocation.load_after_store_derivative
+dEQP-VK.glsl.helper_invocation.load_after_store_divergent
+dEQP-VK.glsl.helper_invocation.load_after_store_function
+dEQP-VK.glsl.helper_invocation.load_after_store_loop
 dEQP-VK.glsl.helper_invocations.load_from_address
 dEQP-VK.glsl.helper_invocations.load_from_image
 dEQP-VK.glsl.helper_invocations.load_from_ssbo

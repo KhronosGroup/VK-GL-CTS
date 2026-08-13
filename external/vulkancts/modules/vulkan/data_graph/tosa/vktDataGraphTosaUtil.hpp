@@ -4,7 +4,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2025 Arm Ltd.
+ * Copyright (c) 2025-2026 Arm Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,8 +77,8 @@ public:
         {
             m_resInfo.at(_input1).binding  = 2;
             m_resInfo.at(_input2).binding  = 3;
-            m_resInfo.at(_output1).binding = 1;
-            m_resInfo.at(_output2).binding = 0;
+            m_resInfo.at(_output1).binding = 0;
+            m_resInfo.at(_output2).binding = 1;
         }
 
         if (params.strides.inputs != TENSOR_STRIDES_IMPLICIT)
@@ -132,7 +132,8 @@ public:
         std::string out2 = dataGraphSpirv.addSpirvOp("SUB", {m_resInfo.at(_input1).label, m_resInfo.at(_input2).label},
                                                      m_resInfo.at(_output2).label);
 
-        dataGraphSpirv.setOutputs({out1, out2});
+        dataGraphSpirv.setOutput(out1, m_resInfo.at(_output1));
+        dataGraphSpirv.setOutput(out2, m_resInfo.at(_output2));
 
         std::string spirvEntryPoint = dataGraphSpirv.bake();
         std::string spirvSource     = dataGraphSpirv.source();
@@ -222,7 +223,8 @@ public:
                 TosaReferenceImplementation::add(m_inData1, m_inData2, m_outData1);
                 return verifyTensor(m_outData1, outTensorMemory);
             }
-            else //(id == _output2)
+
+            if (id == _output2)
             {
                 TosaReferenceImplementation::sub(m_inData1, m_inData2, m_outData2);
                 return verifyTensor(m_outData2, outTensorMemory);
@@ -292,7 +294,7 @@ public:
         m_resInfo.at(_input) = {
             RESOURCE_TYPE_INPUT, {inOutFormat, params.tiling, {1, 8, 16, 4}, {}}, 0, 0, 0, nullptr, {}, ""};
         m_resInfo.at(_output) = {
-            RESOURCE_TYPE_OUTPUT, {inOutFormat, params.tiling, {1, 4, 8, 4}, {}}, 1, 0, 1, nullptr, {}, ""};
+            RESOURCE_TYPE_OUTPUT, {inOutFormat, params.tiling, {1, 4, 8, 4}, {}}, 1, 0, 0, nullptr, {}, ""};
 
         if (params.shuffleBindings)
         {
@@ -346,7 +348,7 @@ public:
         const std::string maxpool = dataGraphSpirv.addSpirvOp(
             "MAX_POOL2D", {m_resInfo.at(_input).label}, m_resInfo.at(_output).label, {kernel, stride, pad, nan_mode});
 
-        dataGraphSpirv.setOutputs({maxpool});
+        dataGraphSpirv.setOutput(maxpool, m_resInfo.at(_output));
 
         std::string spirvEntryPoint = dataGraphSpirv.bake();
         std::string spirvSource     = dataGraphSpirv.source();
@@ -487,7 +489,7 @@ public:
         m_resInfo.at(_input) = {
             RESOURCE_TYPE_INPUT, {inOutFormat, params.tiling, {1, 8, 16, 4}, {}}, 0, 0, 0, nullptr, {}, ""};
         m_resInfo.at(_output) = {
-            RESOURCE_TYPE_OUTPUT, {inOutFormat, params.tiling, {1, 2, 4, 4}, {}}, 1, 0, 1, nullptr, {}, ""};
+            RESOURCE_TYPE_OUTPUT, {inOutFormat, params.tiling, {1, 2, 4, 4}, {}}, 1, 0, 0, nullptr, {}, ""};
 
         if (params.shuffleBindings)
         {
@@ -548,7 +550,7 @@ public:
         const std::string maxpool2 = dataGraphSpirv.addSpirvOp("MAX_POOL2D", {maxpool1}, m_resInfo.at(_output).label,
                                                                {kernel, stride, pad, nan_mode});
 
-        dataGraphSpirv.setOutputs({maxpool2});
+        dataGraphSpirv.setOutput(maxpool2, m_resInfo.at(_output));
 
         std::string spirvEntryPoint = dataGraphSpirv.bake();
         std::string spirvSource     = dataGraphSpirv.source();
@@ -696,7 +698,7 @@ public:
         m_resInfo.at(_input) = {
             RESOURCE_TYPE_INPUT, {inFormat, params.tiling, {1, 8, 16, 4}, {}}, 0, 0, 0, nullptr, {}, ""};
         m_resInfo.at(_output) = {
-            RESOURCE_TYPE_OUTPUT, {outFormat, params.tiling, {1, 4, 8, 4}, {}}, 1, 0, 1, nullptr, {}, ""};
+            RESOURCE_TYPE_OUTPUT, {outFormat, params.tiling, {1, 4, 8, 4}, {}}, 1, 0, 0, nullptr, {}, ""};
         // VUID-VkDataGraphPipelineConstantARM-pNext-09917 tiling member must be VK_TENSOR_TILING_LINEAR_ARM. Hence, constants ignore the test requirements
         m_resInfo.at(_weights) = {RESOURCE_TYPE_CONSTANT,
                                   {weightsFormat, VK_TENSOR_TILING_LINEAR_ARM, {4, 2, 2, 4}, {}},
@@ -780,7 +782,7 @@ public:
             {m_resInfo.at(_input).label, m_resInfo.at(_weights).label, m_resInfo.at(_bias).label, input_zp, weight_zp},
             m_resInfo.at(_output).label, {pad, stride, dilation, accType, local_bound});
 
-        dataGraphSpirv.setOutputs({conv2d});
+        dataGraphSpirv.setOutput(conv2d, m_resInfo.at(_output));
 
         std::string spirvEntryPoint = dataGraphSpirv.bake();
         std::string spirvSource     = dataGraphSpirv.source();
@@ -869,8 +871,7 @@ public:
             /* compute reference values for graph */
             TosaReferenceImplementation::conv2d<inHostType, weightsHostType, outHostType>(
                 m_inData, m_weightsData, m_biasData, m_outData, {m_padTop, m_padBottom, m_padLeft, m_padRight},
-                std::array<int32_t, 2>{m_strideY, m_strideX}, std::array<int32_t, 2>{m_dilationY, m_dilationX}, m_inZp,
-                m_weightsZp);
+                {m_strideY, m_strideX}, {m_dilationY, m_dilationX}, m_inZp, m_weightsZp);
 
             return verifyTensor(m_outData, outTensorMemory);
         }
@@ -952,7 +953,7 @@ public:
         m_resInfo.at(_input) = {
             RESOURCE_TYPE_INPUT, {inFormat, params.tiling, {1, 8, 16, 4}, {}}, 0, 0, 0, nullptr, {}, ""};
         m_resInfo.at(_output) = {
-            RESOURCE_TYPE_OUTPUT, {outFormat, params.tiling, {1, 2, 4, 4}, {}}, 1, 0, 1, nullptr, {}, ""};
+            RESOURCE_TYPE_OUTPUT, {outFormat, params.tiling, {1, 2, 4, 4}, {}}, 1, 0, 0, nullptr, {}, ""};
         // VUID-VkDataGraphPipelineConstantARM-pNext-09917 tiling member must be VK_TENSOR_TILING_LINEAR_ARM. Hence, constants ignore the test requirements
         m_resInfo.at(_weights) = {RESOURCE_TYPE_CONSTANT,
                                   {weightsFormat, VK_TENSOR_TILING_LINEAR_ARM, {4, 2, 2, 4}, {}},
@@ -1062,7 +1063,7 @@ public:
             "CONV2D", {cast, m_resInfo.at(_weights).label, m_resInfo.at(_bias).label, input_zp, weight_zp},
             m_resInfo.at(_output).label, {pad, stride, dilation, accType2, local_bound});
 
-        dataGraphSpirv.setOutputs({conv2});
+        dataGraphSpirv.setOutput(conv2, m_resInfo.at(_output));
 
         std::string spirvEntryPoint = dataGraphSpirv.bake();
         std::string spirvSource     = dataGraphSpirv.source();
@@ -1151,13 +1152,11 @@ public:
             /* compute reference values for graph */
             TosaReferenceImplementation::conv2d<inHostType, weightsHostType, outHostType>(
                 m_inData, m_weightsData, m_biasData, m_transientData1, {m_padTop, m_padBottom, m_padLeft, m_padRight},
-                std::array<int32_t, 2>{m_strideY, m_strideX}, std::array<int32_t, 2>{m_dilationY, m_dilationX}, m_inZp,
-                m_weightsZp);
+                {m_strideY, m_strideX}, {m_dilationY, m_dilationX}, m_inZp, m_weightsZp);
             TosaReferenceImplementation::vector_cast<outHostType, inHostType>(m_transientData1, m_transientData2);
             TosaReferenceImplementation::conv2d<inHostType, weightsHostType, outHostType>(
                 m_transientData2, m_weightsData, m_biasData, m_outData, {m_padTop, m_padBottom, m_padLeft, m_padRight},
-                std::array<int32_t, 2>{m_strideY, m_strideX}, std::array<int32_t, 2>{m_dilationY, m_dilationX}, m_inZp,
-                m_weightsZp);
+                {m_strideY, m_strideX}, {m_dilationY, m_dilationX}, m_inZp, m_weightsZp);
 
             return verifyTensor(m_outData, outTensorMemory);
         }

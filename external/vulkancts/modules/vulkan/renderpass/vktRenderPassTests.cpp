@@ -28,42 +28,38 @@
 #include "vktRenderPassMultisampleTests.hpp"
 #include "vktRenderPassMultisampleResolveTests.hpp"
 #include "vktRenderPassSampleReadTests.hpp"
-#ifndef CTS_USES_VULKANSC
-#include "vktRenderPassSparseRenderTargetTests.hpp"
-#endif // CTS_USES_VULKANSC
 #include "vktRenderPassSubpassDependencyTests.hpp"
 #include "vktRenderPassUnusedAttachmentTests.hpp"
 #include "vktRenderPassUnusedClearAttachmentTests.hpp"
 #include "vktRenderPassDepthStencilResolveTests.hpp"
 #include "vktRenderPassUnusedAttachmentSparseFillingTests.hpp"
-#include "vktRenderPassFragmentDensityMapTests.hpp"
 #include "vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.hpp"
+#include "vktRenderPassRemainingArrayLayersTests.hpp"
+#include "vktRenderPassLowResolutionZTests.hpp"
+
 #ifndef CTS_USES_VULKANSC
+#include "vktRenderPassSparseRenderTargetTests.hpp"
 #include "vktRenderPassLoadStoreOpNoneTests.hpp"
 #include "vktDynamicRenderingTests.hpp"
 #include "vktDynamicRenderingLocalReadTests.hpp"
 #include "vktDynamicRenderingLocalReadMaint10Tests.hpp"
 #include "vktDynamicRenderingDepthStencilResolveTests.hpp"
 #include "vktRenderPassNestedCommandBuffersTests.hpp"
-#endif // CTS_USES_VULKANSC
+#include "vktRenderPassCustomResolveTests.hpp"
+#include "vktRenderPassFragmentDensityMapTests.hpp"
 #include "vktRenderPassDepthStencilWriteConditionsTests.hpp"
 #include "vktRenderPassSubpassMergeFeedbackTests.hpp"
 #include "vktDynamicRenderingRandomTests.hpp"
 #include "vktRenderPassDitheringTests.hpp"
 #include "vktDynamicRenderingUnusedAttachmentsTests.hpp"
-#include "vktRenderPassRemainingArrayLayersTests.hpp"
 #include "vktRenderPassPerformanceCountersByRegionTests.hpp"
-#ifndef CTS_USES_VULKANSC
-#include "vktRenderPassCustomResolveTests.hpp"
-#endif // CTS_USES_VULKANSC
 #include "vktRenderPassMultiviewPerViewTests.hpp"
 #include "vktDynamicRenderingMultiviewClearTests.hpp"
+#endif // CTS_USES_VULKANSC
 
-#include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 
 #include "vkDefs.hpp"
-#include "vkDeviceUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPlatform.hpp"
@@ -82,7 +78,6 @@
 #include "tcuFloat.hpp"
 #include "tcuFormatUtil.hpp"
 #include "tcuMaybe.hpp"
-#include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorUtil.hpp"
@@ -97,10 +92,8 @@
 #include <set>
 #include <string>
 #include <vector>
-#include <numeric>
 #include <memory>
 #include <algorithm>
-#include <iterator>
 
 using namespace vk;
 
@@ -8584,6 +8577,7 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
     suballocationTestGroup->addChild(createRenderPassUnusedAttachmentSparseFillingTests(testCtx, groupParams));
     suballocationTestGroup->addChild(createRenderPassSubpassDependencyTests(testCtx, groupParams));
     suballocationTestGroup->addChild(createRenderPassMultisampleResolveTests(testCtx, groupParams));
+    suballocationTestGroup->addChild(createRenderPassLowResolutionZTests(testCtx, groupParams));
 #ifndef CTS_USES_VULKANSC
     suballocationTestGroup->addChild(createRenderPassLoadStoreOpNoneTests(testCtx, groupParams));
 #endif // CTS_USES_VULKANSC

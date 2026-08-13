@@ -29,8 +29,10 @@ const vk::VkPhysicalDeviceDrmPropertiesEXT&							getDrmPropertiesEXT							(voi
 const vk::VkPhysicalDeviceExtendedDynamicState3PropertiesEXT&		getExtendedDynamicState3PropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceExternalFormatResolvePropertiesANDROID&	getExternalFormatResolvePropertiesANDROID	(void) const;
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			getExternalMemoryHostPropertiesEXT			(void) const;
+const vk::VkPhysicalDeviceFaultPropertiesKHR&						getFaultProperties							(void) const;
 const vk::VkPhysicalDeviceFloatControlsProperties&					getFloatControlsProperties					(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&			getFragmentDensityMap2PropertiesEXT			(void) const;
+const vk::VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE&	getFragmentDensityMapLayeredPropertiesVALVE	(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT&	getFragmentDensityMapOffsetPropertiesEXT	(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			getFragmentDensityMapPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&	getFragmentShaderBarycentricProperties		(void) const;
@@ -61,6 +63,7 @@ const vk::VkPhysicalDeviceMultiDrawPropertiesEXT&					getMultiDrawPropertiesEXT	
 const vk::VkPhysicalDeviceMultiviewProperties&						getMultiviewProperties						(void) const;
 const vk::VkPhysicalDeviceNestedCommandBufferPropertiesEXT&			getNestedCommandBufferPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceOpacityMicromapPropertiesEXT&				getOpacityMicromapPropertiesEXT				(void) const;
+const vk::VkPhysicalDeviceOpacityMicromapPropertiesKHR&				getOpacityMicromapProperties				(void) const;
 const vk::VkPhysicalDevicePCIBusInfoPropertiesEXT&					getPCIBusInfoPropertiesEXT					(void) const;
 const vk::VkPhysicalDevicePerformanceCountersByRegionPropertiesARM&	getPerformanceCountersByRegionPropertiesARM	(void) const;
 const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&			getPerformanceQueryProperties				(void) const;
@@ -78,6 +81,7 @@ const vk::VkPhysicalDeviceRayTracingPropertiesNV&					getRayTracingProperties			
 const vk::VkPhysicalDeviceRobustness2PropertiesKHR&					getRobustness2Properties					(void) const;
 const vk::VkPhysicalDeviceSampleLocationsPropertiesEXT&				getSampleLocationsPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceSamplerFilterMinmaxProperties&			getSamplerFilterMinmaxProperties			(void) const;
+const vk::VkPhysicalDeviceShaderAbortPropertiesKHR&					getShaderAbortProperties					(void) const;
 const vk::VkPhysicalDeviceShaderIntegerDotProductProperties&		getShaderIntegerDotProductProperties		(void) const;
 const vk::VkPhysicalDeviceShaderLongVectorPropertiesEXT&			getShaderLongVectorPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		getShaderModuleIdentifierPropertiesEXT		(void) const;

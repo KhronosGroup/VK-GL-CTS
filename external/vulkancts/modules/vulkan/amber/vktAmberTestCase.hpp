@@ -51,10 +51,12 @@ struct BufferRequirement
 class AmberTestInstance : public TestInstance
 {
 public:
-    AmberTestInstance(Context &context, amber::Recipe *recipe, vk::VkDevice customDevice)
+    AmberTestInstance(Context &context, amber::Recipe *recipe, vk::VkDevice customDevice,
+                      const vk::VkPhysicalDeviceFeatures2 *customFeatures2 = nullptr)
         : TestInstance(context)
         , m_recipe(recipe)
         , m_customDevice(customDevice)
+        , m_features2(customFeatures2 ? *customFeatures2 : context.getDeviceFeatures2())
     {
     }
 
@@ -63,6 +65,7 @@ public:
 private:
     amber::Recipe *m_recipe;
     vk::VkDevice m_customDevice;
+    vk::VkPhysicalDeviceFeatures2 m_features2;
 };
 
 class AmberTestCase : public TestCase

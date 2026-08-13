@@ -510,6 +510,7 @@ void NoPositionInstance::createDeviceGroup(void)
     if (isConstructionTypeLibrary(m_params.pipelineConstructionType) && gplSupport)
     {
         gplFeatures.graphicsPipelineLibrary = VK_TRUE;
+
         addFeatures(&gplFeatures);
         deviceExtensions.push_back("VK_KHR_pipeline_library");
         deviceExtensions.push_back("VK_EXT_graphics_pipeline_library");

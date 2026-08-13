@@ -14,6 +14,10 @@ set(DEQP_VK_IMAGE_PROCESSING_SRCS
 	vktImageProcessingTestsUtil.hpp
 	vktImageProcessingApiTests.cpp
 	vktImageProcessingApiTests.hpp
+	vktImageProcessingBoxFilterSamplingTests.cpp
+	vktImageProcessingBoxFilterSamplingTests.hpp
+	vktImageProcessingWeightImageSamplingTests.cpp
+	vktImageProcessingWeightImageSamplingTests.hpp
 	)
 
 PCH(DEQP_VK_IMAGE_PROCESSING_SRCS ../pch.cpp)

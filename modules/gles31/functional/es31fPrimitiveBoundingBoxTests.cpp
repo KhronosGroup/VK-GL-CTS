@@ -199,6 +199,13 @@ static bool boundingBoxSupported(Context &context)
             context.getContextInfo().isExtensionSupported("GL_EXT_primitive_bounding_box"));
 }
 
+static void resetBoundingBox(Context &context)
+{
+    // reset bounding box state
+    auto boundingBoxFunc = getBoundingBoxFunction(context);
+    boundingBoxFunc(-1, -1, -1, 1, 1, 1, 1, 1);
+}
+
 class InitialValueCase : public TestCase
 {
 public:
@@ -342,6 +349,8 @@ QueryCase::IterateResult QueryCase::iterate(void)
         if (!verifyState(gl, boundingBox))
             m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Unexpected query result");
     }
+
+    resetBoundingBox(m_context);
 
     return STOP;
 }
@@ -780,6 +789,8 @@ void BBoxRenderCase::init(void)
         gl.bufferData(GL_ARRAY_BUFFER, (int)(data.size() * sizeof(tcu::Vec4)), &data[0], GL_STATIC_DRAW);
         GLU_EXPECT_NO_ERROR(gl.getError(), "create vbo");
     }
+
+    resetBoundingBox(m_context);
 }
 
 void BBoxRenderCase::deinit(void)
@@ -3836,6 +3847,8 @@ BlitFboCase::IterateResult BlitFboCase::iterate(void)
                        ((blitCfg.linear) ? (GL_LINEAR) : (GL_NEAREST)));
     GLU_EXPECT_NO_ERROR(gl.getError(), "blit");
 
+    resetBoundingBox(m_context);
+
     if (!verifyImage(blitCfg))
         m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got unexpected blit result");
 
@@ -4181,6 +4194,8 @@ DepthDrawCase::IterateResult DepthDrawCase::iterate(void)
 
     glu::readPixels(m_context.getRenderContext(), 0, 0, viewport.getAccess());
     GLU_EXPECT_NO_ERROR(gl.getError(), "render and read");
+
+    resetBoundingBox(m_context);
 
     if (verifyImage(viewport))
         m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -4765,6 +4780,8 @@ void ClearCase::renderTo(tcu::Surface &dst, bool useBBox)
             gl.drawArrays(GL_PATCHES, objectVertexStartNdx, objectVertexLength);
     }
 
+    resetBoundingBox(m_context);
+
     GLU_EXPECT_NO_ERROR(gl.getError(), "post draw");
     glu::readPixels(m_context.getRenderContext(), 0, 0, dst.getAccess());
 }
@@ -5060,6 +5077,8 @@ ViewportCallOrderCase::IterateResult ViewportCallOrderCase::iterate(void)
 
     m_testCtx.getLog() << tcu::TestLog::Message << "Verifying image" << tcu::TestLog::EndMessage;
     glu::readPixels(m_context.getRenderContext(), 0, 0, resultSurface.getAccess());
+
+    resetBoundingBox(m_context);
 
     if (!verifyImage(resultSurface.getAccess()))
         m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Image verification failed");

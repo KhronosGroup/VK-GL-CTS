@@ -97,6 +97,10 @@ void ImageBlockShapesCase::checkSupport(Context &context) const
     if (!checkSparseSupportForImageType(instance, physicalDevice, m_imageType))
         TCU_THROW(NotSupportedError, "Sparse residency for image type is not supported");
 
+    // VUID-VkImageCreateInfo-format-06411
+    if (isYCbCrFormat(m_format) && m_numSamples > VK_SAMPLE_COUNT_1_BIT)
+        TCU_THROW(NotSupportedError, "YCbCr conversion formats only support a single sample");
+
     {
         const VkPhysicalDeviceFeatures features = context.getDeviceFeatures();
         bool sparseSamplesSupported             = false;
@@ -255,6 +259,11 @@ tcu::TestStatus ImageBlockShapesInstance::iterate(void)
             pixelSize = static_cast<uint32_t>(getPlanarFormatDescription(m_format).planes[planeNdx].elementSizeBytes) *
                         bitsPerPixel;
         }
+
+        // Standard sparse image block shapes are defined only up to 128-bit texels; larger formats
+        // have no standardized shape, so there is nothing to validate against here.
+        if (pixelSize > 128u)
+            return tcu::TestStatus::pass("Pass (no standard block shape defined for this texel size)");
 
         if (m_imageType == IMAGE_TYPE_3D)
         {

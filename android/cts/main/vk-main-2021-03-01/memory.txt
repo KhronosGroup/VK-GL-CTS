@@ -40,10 +40,6 @@ dEQP-VK.memory.device_memory_report.create_and_destroy_object.sampler
 dEQP-VK.memory.device_memory_report.create_and_destroy_object.semaphore
 dEQP-VK.memory.device_memory_report.create_and_destroy_object.shader_module
 dEQP-VK.memory.device_memory_report.external_memory.import_and_unimport_android_hardware_buffer
-dEQP-VK.memory.device_memory_report.external_memory.import_and_unimport_dma_buf
-dEQP-VK.memory.device_memory_report.external_memory.import_and_unimport_opaque_fd
-dEQP-VK.memory.device_memory_report.external_memory.import_and_unimport_opaque_win32
-dEQP-VK.memory.device_memory_report.external_memory.import_and_unimport_opaque_win32_kmt
 dEQP-VK.memory.device_memory_report.vk_device_memory.allocate_and_free
 dEQP-VK.memory.mapping.dedicated_alloc.buffer.full.variable.implicit_unmap
 dEQP-VK.memory.mapping.dedicated_alloc.image.full.variable.implicit_unmap

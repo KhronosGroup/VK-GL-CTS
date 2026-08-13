@@ -13,6 +13,8 @@ set(DEQP_VK_UTIL_SRCS
 	vktConstexprVectorUtil.hpp
 	vktShaderObjectUtil.cpp
 	vktShaderObjectUtil.hpp
+	vktIndependentSetsUtil.cpp
+	vktIndependentSetsUtil.hpp
 )
 
 add_library(deqp-vk-util STATIC ${DEQP_VK_UTIL_SRCS})

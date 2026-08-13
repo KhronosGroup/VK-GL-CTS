@@ -5648,8 +5648,8 @@ TestStatus CopySBTInstance::iterate(void)
                                   0, // VkDeviceSize srcOffset;
                                   getBufferSizeForSBT(1, shaderGroupHandleSize, shaderGroupBaseAlignment)};
     const VkMemoryBarrier2KHR postCopySBTMemoryBarrier = makeMemoryBarrier2(
-        VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR, VkAccessFlags2KHR(0), VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
-        VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR);
+        VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,
+        VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR);
     const VkDependencyInfoKHR postClearImgCopySBTDependency =
         u::makeDependency(postCopySBTMemoryBarrier, postClearImageImageBarrier);
 

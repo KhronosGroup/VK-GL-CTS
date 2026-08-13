@@ -125,17 +125,15 @@ struct CaseDef
 
 VkFlags getAllShaderStages(tcu::TestContext &testCtx)
 {
-    return testCtx.getCommandLine().isComputeOnly() ?
-               VK_SHADER_STAGE_COMPUTE_BIT :
-               VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    DE_UNREF(testCtx);
+    return VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 }
 
 VkFlags getAllPipelineStages(tcu::TestContext &testCtx)
 {
-    return testCtx.getCommandLine().isComputeOnly() ?
-               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT :
-               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
-                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    DE_UNREF(testCtx);
+    return VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+           VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 }
 
 bool isSplitBarrier(SyncType syncType)
@@ -144,12 +142,12 @@ bool isSplitBarrier(SyncType syncType)
            syncType == ST_SPLIT_CONTROL_BARRIER_AND_BARRIER;
 }
 
-class MemoryModelTestInstance : public TestInstance
+class MemoryModelTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     MemoryModelTestInstance(Context &context, const CaseDef &data);
     ~MemoryModelTestInstance(void) = default;
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     CaseDef m_data;
@@ -162,7 +160,7 @@ private:
 };
 
 MemoryModelTestInstance::MemoryModelTestInstance(Context &context, const CaseDef &data)
-    : vkt::TestInstance(context)
+    : vkt::MultiQueueRunnerTestInstance(context, data.stage == STAGE_COMPUTE ? vkt::COMPUTE_QUEUE : vkt::GRAPHICS_QUEUE)
     , m_data(data)
 {
 }
@@ -1411,14 +1409,16 @@ TestInstance *MemoryModelTestCase::createInstance(Context &context) const
     return new MemoryModelTestInstance(context, m_data);
 }
 
-tcu::TestStatus MemoryModelTestInstance::iterate(void)
+tcu::TestStatus MemoryModelTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
     Allocator &allocator      = m_context.getDefaultAllocator();
 
     const VkFlags allShaderStages   = getAllShaderStages(m_context.getTestContext());
-    const VkFlags allPipelineStages = getAllPipelineStages(m_context.getTestContext());
+    const VkFlags allPipelineStages = (m_data.stage == STAGE_COMPUTE) ?
+                                          (VkFlags)VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT :
+                                          getAllPipelineStages(m_context.getTestContext());
 
     VkPhysicalDeviceProperties2 properties;
     properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -1909,9 +1909,8 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
         pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
     }
 
-    const VkQueue queue             = m_context.getUniversalQueue();
-    Move<VkCommandPool> cmdPool     = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-                                                        m_context.getUniversalQueueFamilyIndex());
+    Move<VkCommandPool> cmdPool =
+        createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueData.familyIndex);
     Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
     VkBufferDeviceAddressInfo addrInfo = {
@@ -2042,7 +2041,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
 
         endCommandBuffer(vk, *cmdBuffer);
 
-        submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+        submitCommandsAndWait(vk, device, queueData.handle, cmdBuffer.get());
 
         m_context.resetCommandPoolForVKSC(device, *cmdPool);
     }

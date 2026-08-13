@@ -2111,6 +2111,16 @@ public:
     {
         const InstanceInterface &vki        = context.getInstanceInterface();
         const VkPhysicalDevice vkPhysDevice = context.getPhysicalDevice();
+
+#ifndef CTS_USES_VULKANSC
+        // VUID-vkGetPhysicalDeviceImageFormatProperties-format-parameter
+        if (m_params.src.image.format == VK_FORMAT_A8_UNORM_KHR ||
+            m_params.dst.image.format == VK_FORMAT_A8_UNORM_KHR ||
+            m_params.src.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR ||
+            m_params.dst.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+            context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
         {
             VkImageFormatProperties properties;
             if (vki.getPhysicalDeviceImageFormatProperties(vkPhysDevice, m_params.src.image.format, VK_IMAGE_TYPE_2D,

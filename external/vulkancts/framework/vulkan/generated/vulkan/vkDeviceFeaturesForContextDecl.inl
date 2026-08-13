@@ -56,8 +56,10 @@ const vk::VkPhysicalDeviceExtendedFlagsFeaturesKHR&							getExtendedFlagsFeatur
 const vk::VkPhysicalDeviceExternalFormatResolveFeaturesANDROID&				getExternalFormatResolveFeaturesANDROID				(void) const;
 const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&			getExternalMemoryScreenBufferFeaturesQNX			(void) const;
 const vk::VkPhysicalDeviceFaultFeaturesEXT&									getFaultFeaturesEXT									(void) const;
+const vk::VkPhysicalDeviceFaultFeaturesKHR&									getFaultFeatures									(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&					getFragmentDensityMap2FeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&					getFragmentDensityMapFeaturesEXT					(void) const;
+const vk::VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE&			getFragmentDensityMapLayeredFeaturesVALVE			(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT&				getFragmentDensityMapOffsetFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR&				getFragmentShaderBarycentricFeatures				(void) const;
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&				getFragmentShaderInterlockFeaturesEXT				(void) const;
@@ -87,6 +89,7 @@ const vk::VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT&				getLegacyVertexA
 const vk::VkPhysicalDeviceLineRasterizationFeatures&						getLineRasterizationFeatures						(void) const;
 const vk::VkPhysicalDeviceLinearColorAttachmentFeaturesNV&					getLinearColorAttachmentFeatures					(void) const;
 const vk::VkPhysicalDeviceMaintenance10FeaturesKHR&							getMaintenance10Features							(void) const;
+const vk::VkPhysicalDeviceMaintenance11FeaturesKHR&							getMaintenance11Features							(void) const;
 const vk::VkPhysicalDeviceMaintenance4Features&								getMaintenance4Features								(void) const;
 const vk::VkPhysicalDeviceMaintenance5Features&								getMaintenance5Features								(void) const;
 const vk::VkPhysicalDeviceMaintenance6Features&								getMaintenance6Features								(void) const;
@@ -108,6 +111,7 @@ const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&					getMutableDescri
 const vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT&					getNestedCommandBufferFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT&					getNonSeamlessCubeMapFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceOpacityMicromapFeaturesEXT&						getOpacityMicromapFeaturesEXT						(void) const;
+const vk::VkPhysicalDeviceOpacityMicromapFeaturesKHR&						getOpacityMicromapFeatures							(void) const;
 const vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&				getPageableDeviceLocalMemoryFeaturesEXT				(void) const;
 const vk::VkPhysicalDevicePerformanceCountersByRegionFeaturesARM&			getPerformanceCountersByRegionFeaturesARM			(void) const;
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&						getPerformanceQueryFeatures							(void) const;
@@ -148,6 +152,7 @@ const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures&					getSamplerYcbcrCon
 const vk::VkPhysicalDeviceScalarBlockLayoutFeatures&						getScalarBlockLayoutFeatures						(void) const;
 const vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures&				getSeparateDepthStencilLayoutsFeatures				(void) const;
 const vk::VkPhysicalDeviceShader64BitIndexingFeaturesEXT&					getShader64BitIndexingFeaturesEXT					(void) const;
+const vk::VkPhysicalDeviceShaderAbortFeaturesKHR&							getShaderAbortFeatures								(void) const;
 const vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV&				getShaderAtomicFloat16VectorFeaturesNV				(void) const;
 const vk::VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT&					getShaderAtomicFloat2FeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&						getShaderAtomicFloatFeaturesEXT						(void) const;

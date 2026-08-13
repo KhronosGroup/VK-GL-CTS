@@ -587,7 +587,9 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0))
     m_vk.getDeviceBufferMemoryRequirements = (GetDeviceBufferMemoryRequirementsFunc) GET_PROC_ADDR("vkGetDeviceBufferMemoryRequirements");
 if (!m_vk.getDeviceBufferMemoryRequirements)
     m_vk.getDeviceBufferMemoryRequirements = (GetDeviceBufferMemoryRequirementsFunc) GET_PROC_ADDR("vkGetDeviceBufferMemoryRequirementsKHR");
+m_vk.getDeviceFaultDebugInfoKHR = (GetDeviceFaultDebugInfoKHRFunc) GET_PROC_ADDR("vkGetDeviceFaultDebugInfoKHR");
 m_vk.getDeviceFaultInfoEXT = (GetDeviceFaultInfoEXTFunc) GET_PROC_ADDR("vkGetDeviceFaultInfoEXT");
+m_vk.getDeviceFaultReportsKHR = (GetDeviceFaultReportsKHRFunc) GET_PROC_ADDR("vkGetDeviceFaultReportsKHR");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 1, 0))
     m_vk.getDeviceGroupPeerMemoryFeatures = (GetDeviceGroupPeerMemoryFeaturesFunc) GET_PROC_ADDR("vkGetDeviceGroupPeerMemoryFeatures");
 if (!m_vk.getDeviceGroupPeerMemoryFeatures)

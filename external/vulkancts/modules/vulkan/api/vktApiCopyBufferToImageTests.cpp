@@ -786,7 +786,12 @@ void add2dBufferToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
             group->addChild(new CopyBufferToImageTestCase(testCtx, testName, params));
         }
 
-        if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
+        bool testBufferOffsetRelaxed = testGroupParams->queueSelection == QueueSelectionOptions::Universal;
+#ifndef CTS_USES_VULKANSC
+        testBufferOffsetRelaxed |= testGroupParams->queueSelection == QueueSelectionOptions::TransferOnly;
+#endif // CTS_USES_VULKANSC
+
+        if (testBufferOffsetRelaxed)
         {
             TestParams params;
             params.src.buffer.size           = defaultSize * defaultSize;
@@ -800,6 +805,9 @@ void add2dBufferToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
             params.queueSelection            = testGroupParams->queueSelection;
             params.useSparseBinding          = testGroupParams->useSparseBinding;
             params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+
+            if (testGroupParams->queueSelection == QueueSelectionOptions::TransferOnly)
+                params.extensionFlags |= MAINTENANCE_11;
 
             const auto offset = de::roundUp(defaultQuarterSize + 1, pixelSize);
 

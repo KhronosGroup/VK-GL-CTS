@@ -39,9 +39,7 @@
 #include "tcuRGBA.hpp"
 #include "vktDrawCreateInfoUtil.hpp"
 
-namespace vkt
-{
-namespace conditional
+namespace vkt::conditional
 {
 namespace
 {
@@ -166,31 +164,31 @@ ConditionalTransformFeedbackDraw::ConditionalTransformFeedbackDraw(Context &cont
                                vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
     , m_command(testSpec.command)
 {
-    checkSupport(context, testSpec);
+    m_data = {
+        {tcu::Vec4(-0.3f, 0.3f, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0},
+        {tcu::Vec4(-0.3f, -0.3f, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0},
+        {tcu::Vec4(0.3f, 0.3f, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0},
 
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(-0.3f, 0.3f, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0));
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(-0.3f, -0.3f, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0));
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(0.3f, 0.3f, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0));
+        {tcu::Vec4(-0.3f, -0.3f, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0},
+        {tcu::Vec4(0.3f, 0.3f, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0},
+        {tcu::Vec4(0.3f, -0.3f, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0},
 
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(-0.3f, -0.3f, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0));
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(0.3f, 0.3f, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0));
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(0.3f, -0.3f, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0));
+        {tcu::Vec4(-0.3f, 0.3f, 0.5f, 1.0f), tcu::RGBA::black().toVec(), 0},
+        {tcu::Vec4(-0.3f, -0.3f, 0.5f, 1.0f), tcu::RGBA::black().toVec(), 0},
+        {tcu::Vec4(0.3f, 0.3f, 0.5f, 1.0f), tcu::RGBA::black().toVec(), 0},
 
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(-0.3f, 0.3f, 0.5f, 1.0f), tcu::RGBA::black().toVec(), 0));
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(-0.3f, -0.3f, 0.5f, 1.0f), tcu::RGBA::black().toVec(), 0));
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(0.3f, 0.3f, 0.5f, 1.0f), tcu::RGBA::black().toVec(), 0));
+        {tcu::Vec4(-0.3f, -0.3f, 0.5f, 1.0f), tcu::RGBA::black().toVec(), 0},
+        {tcu::Vec4(0.3f, 0.3f, 0.5f, 1.0f), tcu::RGBA::black().toVec(), 0},
+        {tcu::Vec4(0.3f, -0.3f, 0.5f, 1.0f), tcu::RGBA::black().toVec(), 0},
 
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(-0.3f, -0.3f, 0.5f, 1.0f), tcu::RGBA::black().toVec(), 0));
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(0.3f, 0.3f, 0.5f, 1.0f), tcu::RGBA::black().toVec(), 0));
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(0.3f, -0.3f, 0.5f, 1.0f), tcu::RGBA::black().toVec(), 0));
+        {tcu::Vec4(5.3f, 6.3f, 0.5f, 1.0f), tcu::RGBA::red().toVec(), 0},
+        {tcu::Vec4(5.3f, 5.3f, 0.5f, 1.0f), tcu::RGBA::red().toVec(), 0},
+        {tcu::Vec4(6.3f, 6.3f, 0.5f, 1.0f), tcu::RGBA::red().toVec(), 0},
 
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(5.3f, 6.3f, 0.5f, 1.0f), tcu::RGBA::red().toVec(), 0));
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(5.3f, 5.3f, 0.5f, 1.0f), tcu::RGBA::red().toVec(), 0));
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(6.3f, 6.3f, 0.5f, 1.0f), tcu::RGBA::red().toVec(), 0));
-
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(5.3f, 5.3f, 0.5f, 1.0f), tcu::RGBA::red().toVec(), 0));
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(6.3f, 6.3f, 0.5f, 1.0f), tcu::RGBA::red().toVec(), 0));
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(6.3f, 5.3f, 0.5f, 1.0f), tcu::RGBA::red().toVec(), 0));
+        {tcu::Vec4(5.3f, 5.3f, 0.5f, 1.0f), tcu::RGBA::red().toVec(), 0},
+        {tcu::Vec4(6.3f, 6.3f, 0.5f, 1.0f), tcu::RGBA::red().toVec(), 0},
+        {tcu::Vec4(6.3f, 5.3f, 0.5f, 1.0f), tcu::RGBA::red().toVec(), 0},
+    };
 
     for (uint32_t index = 0; index < m_data.size(); index++)
     {
@@ -743,5 +741,4 @@ void ConditionalTransformFeedbackTests::init(void)
     }
 }
 
-} // namespace conditional
-} // namespace vkt
+} // namespace vkt::conditional

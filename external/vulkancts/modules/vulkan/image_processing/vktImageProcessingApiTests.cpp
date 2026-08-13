@@ -48,14 +48,20 @@ namespace
 class ImageProcessingApiTest : public TestCase
 {
 public:
-    ImageProcessingApiTest(TestContext &testCtx, const std::string &name);
+    ImageProcessingApiTest(TestContext &testCtx, const std::string &name, const ImageProcOp operation);
     ~ImageProcessingApiTest(void);
 
     void checkSupport(Context &context) const;
     TestInstance *createInstance(Context &context) const;
+
+private:
+    const ImageProcOp m_operation;
 };
 
-ImageProcessingApiTest::ImageProcessingApiTest(TestContext &testCtx, const std::string &name) : TestCase(testCtx, name)
+ImageProcessingApiTest::ImageProcessingApiTest(TestContext &testCtx, const std::string &name,
+                                               const ImageProcOp operation)
+    : TestCase(testCtx, name)
+    , m_operation(operation)
 {
 }
 
@@ -69,20 +75,51 @@ void ImageProcessingApiTest::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_format_feature_flags2");
 
     context.requireDeviceFunctionality("VK_QCOM_image_processing");
+
+    const auto &features = context.getImageProcessingFeaturesQCOM();
+
+    switch (m_operation)
+    {
+    case ImageProcOp::IMAGE_PROC_OP_BLOCK_MATCH_SAD:
+    case ImageProcOp::IMAGE_PROC_OP_BLOCK_MATCH_SSD:
+    {
+        if (!features.textureBlockMatch)
+            TCU_THROW(NotSupportedError, "Feature textureBlockMatch not supported");
+    }
+    break;
+    case ImageProcOp::IMAGE_PROC_OP_SAMPLE_WEIGHTED:
+    {
+        if (!features.textureSampleWeighted)
+            TCU_THROW(NotSupportedError, "Feature textureSampleWeighted not supported");
+    }
+    break;
+    case ImageProcOp::IMAGE_PROC_OP_BOX_FILTER:
+    {
+        if (!features.textureBoxFilter)
+            TCU_THROW(NotSupportedError, "Feature textureBoxFilter not supported");
+    }
+    break;
+    default:
+        DE_ASSERT(false);
+    }
 }
 
 class ImageProcessingApiTestInstance : public TestInstance
 {
 public:
-    ImageProcessingApiTestInstance(Context &context);
+    ImageProcessingApiTestInstance(Context &context, const ImageProcOp operation);
     ~ImageProcessingApiTestInstance(void);
     TestStatus iterate(void);
 
 private:
+    const ImageProcOp m_operation;
     de::Random m_rnd;
 };
 
-ImageProcessingApiTestInstance::ImageProcessingApiTestInstance(Context &context) : TestInstance(context), m_rnd(1234)
+ImageProcessingApiTestInstance::ImageProcessingApiTestInstance(Context &context, const ImageProcOp operation)
+    : TestInstance(context)
+    , m_operation(operation)
+    , m_rnd(1234)
 {
 }
 
@@ -109,19 +146,36 @@ TestStatus ImageProcessingApiTestInstance::iterate(void)
 
         instInterface.getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &properties2);
 
-        if (imgProcProperties.maxWeightFilterPhases < 1024u)
-            return TestStatus::fail("Property maxWeightFilterPhases is less than the minimum limit");
+        switch (m_operation)
+        {
+        case ImageProcOp::IMAGE_PROC_OP_BLOCK_MATCH_SAD:
+        case ImageProcOp::IMAGE_PROC_OP_BLOCK_MATCH_SSD:
+        {
+            if ((imgProcProperties.maxBlockMatchRegion.width < 64) ||
+                (imgProcProperties.maxBlockMatchRegion.height < 64))
+                return TestStatus::fail("Property maxBlockMatchRegion is less than the minimum limit");
+        }
+        break;
+        case ImageProcOp::IMAGE_PROC_OP_SAMPLE_WEIGHTED:
+        {
+            if (imgProcProperties.maxWeightFilterPhases < 1024u)
+                return TestStatus::fail("Property maxWeightFilterPhases is less than the minimum limit");
 
-        if ((imgProcProperties.maxWeightFilterDimension.width < 64) ||
-            (imgProcProperties.maxWeightFilterDimension.height < 64))
-            return TestStatus::fail("Property maxWeightFilterDimension is less than the minimum limit");
-
-        if ((imgProcProperties.maxBoxFilterBlockSize.width < 64) ||
-            (imgProcProperties.maxBoxFilterBlockSize.height < 64))
-            return TestStatus::fail("Property maxBoxFilterBlockSize is less than the minimum limit");
-
-        if ((imgProcProperties.maxBlockMatchRegion.width < 64) || (imgProcProperties.maxBlockMatchRegion.height < 64))
-            return TestStatus::fail("Property maxBlockMatchRegion is less than the minimum limit");
+            if ((imgProcProperties.maxWeightFilterDimension.width < 64) ||
+                (imgProcProperties.maxWeightFilterDimension.height < 64))
+                return TestStatus::fail("Property maxWeightFilterDimension is less than the minimum limit");
+        }
+        break;
+        case ImageProcOp::IMAGE_PROC_OP_BOX_FILTER:
+        {
+            if ((imgProcProperties.maxBoxFilterBlockSize.width < 64) ||
+                (imgProcProperties.maxBoxFilterBlockSize.height < 64))
+                return TestStatus::fail("Property maxBoxFilterBlockSize is less than the minimum limit");
+        }
+        break;
+        default:
+            DE_ASSERT(false);
+        }
     }
 
     return TestStatus::pass("Pass");
@@ -129,7 +183,7 @@ TestStatus ImageProcessingApiTestInstance::iterate(void)
 
 TestInstance *ImageProcessingApiTest::createInstance(Context &context) const
 {
-    return new ImageProcessingApiTestInstance(context);
+    return new ImageProcessingApiTestInstance(context, m_operation);
 }
 
 } // namespace
@@ -138,7 +192,14 @@ TestCaseGroup *createImageProcessingApiTests(TestContext &testCtx)
 {
     de::MovePtr<TestCaseGroup> testGroup(new TestCaseGroup(testCtx, "api"));
 
-    testGroup->addChild(new ImageProcessingApiTest(testCtx, "properties"));
+    testGroup->addChild(new ImageProcessingApiTest(testCtx, "properties_block_matching_sad",
+                                                   ImageProcOp::IMAGE_PROC_OP_BLOCK_MATCH_SAD));
+    testGroup->addChild(new ImageProcessingApiTest(testCtx, "properties_block_matching_ssd",
+                                                   ImageProcOp::IMAGE_PROC_OP_BLOCK_MATCH_SSD));
+    testGroup->addChild(
+        new ImageProcessingApiTest(testCtx, "properties_weight_sampling", ImageProcOp::IMAGE_PROC_OP_SAMPLE_WEIGHTED));
+    testGroup->addChild(
+        new ImageProcessingApiTest(testCtx, "properties_box_filtering", ImageProcOp::IMAGE_PROC_OP_BOX_FILTER));
 
     return testGroup.release();
 }

@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2025 Arm Ltd.
+ * Copyright (c) 2025-2026 Arm Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -225,13 +225,13 @@ std::string TosaSpirv::spirvConstant(TosaSpirv::format fmt, uint64_t value, std:
 std::string TosaSpirv::constantComposite(std::string varName, TosaSpirv::format fmt, spirvOrder order,
                                          const int64_t *values, int64_t size, std::string label)
 {
-    auto to_str   = [](uint64_t value) -> std::string { return std::to_string(value); };
+    auto toStr    = [](uint64_t value) -> std::string { return std::to_string(value); };
     auto to_const = [this, fmt](uint64_t value) -> std::string { return "%" + spirvConstant(fmt, value); };
 
     std::string composite_name  = label.empty() ? (varName + "_VALUES") : label;
     std::string composite_value = "OpConstantComposite %" + varName + " VALUES";
 
-    replaceAll(composite_name, "VALUES", spirvJoin(values, size, "_", to_str));
+    replaceAll(composite_name, "VALUES", spirvJoin(values, size, "_", toStr));
     replaceAll(composite_value, "VALUES", spirvJoin(values, size, " ", to_const));
     m_spirvBlocks[order].push_back(spirvAssignment(composite_name, composite_value));
 
@@ -265,125 +265,139 @@ std::string TosaSpirv::typeTensor(const ResourceInformation &resInfo)
     return typeTensor(fmt, dims, static_cast<uint32_t>(rank));
 }
 
-std::string TosaSpirv::typeTensor(const TosaSpirv::format fmt, const int64_t *dims, const uint32_t &rank)
+std::string TosaSpirv::typeTensor(const TosaSpirv::format fmt, const int64_t *dims, uint32_t rank)
 {
-    auto to_str = [](uint64_t value) -> std::string { return std::to_string(value); };
+    auto toStr = [](uint64_t value) -> std::string { return std::to_string(value); };
 
-    std::string tensor_name  = "TYPE_SHAPE_tensor";
-    std::string tensor_value = "OpTypeTensorARM %TYPE %RANK %SHAPE";
+    std::string tensorName  = "TYPE_SHAPE_tensor";
+    std::string tensorValue = "OpTypeTensorARM %TYPE %RANK %SHAPE";
 
-    replaceAll(tensor_name, "TYPE", typeToString(fmt));
-    replaceAll(tensor_name, "SHAPE", spirvJoin(dims, rank, "_", to_str));
-    replaceAll(tensor_value, "TYPE", typeToString(fmt));
-    replaceAll(tensor_value, "RANK", spirvConstant(TosaSpirv::format::i32_t, rank));
-    replaceAll(tensor_value, "SHAPE", constantCompositeArray(TosaSpirv::format::i32_t, dims, rank));
-    m_spirvBlocks[TENSOR_TYPES].push_back(spirvAssignment(tensor_name, tensor_value));
+    replaceAll(tensorName, "TYPE", typeToString(fmt));
+    replaceAll(tensorName, "SHAPE", spirvJoin(dims, rank, "_", toStr));
+    replaceAll(tensorValue, "TYPE", typeToString(fmt));
+    replaceAll(tensorValue, "RANK", spirvConstant(TosaSpirv::format::i32_t, rank));
+    replaceAll(tensorValue, "SHAPE", constantCompositeArray(TosaSpirv::format::i32_t, dims, rank));
+    m_spirvBlocks[TENSOR_TYPES].push_back(spirvAssignment(tensorName, tensorValue));
 
-    return tensor_name;
+    return tensorName;
 }
 
-std::string TosaSpirv::typeTensor(const VkFormat &fmt, const int64_t *dims, const uint32_t &rank)
+std::string TosaSpirv::typeTensor(VkFormat fmt, const int64_t *dims, uint32_t rank)
 {
     return typeTensor(tosaSpirvFormat(fmt), dims, rank);
 }
 
 std::string TosaSpirv::typeTensorPointer(const ResourceInformation &resInfo)
 {
-    std::string ptr_value = typeTensor(resInfo);
-    std::string ptr_name  = ptr_value + "_ptr";
+    std::string ptrValue = typeTensor(resInfo);
+    std::string ptrName  = ptrValue + "_ptr";
 
-    m_spirvBlocks[POINTER_TYPES].push_back(spirvAssignment(ptr_name, "OpTypePointer UniformConstant %" + ptr_value));
-    return ptr_name;
+    m_spirvBlocks[POINTER_TYPES].push_back(spirvAssignment(ptrName, "OpTypePointer UniformConstant %" + ptrValue));
+    return ptrName;
 }
 
 std::string TosaSpirv::spirvVariable(const ResourceInformation &resInfo)
 {
-    std::string var_name  = (resInfo.type == RESOURCE_TYPE_INPUT) ? "main_arg_ID" : "main_res_ID";
-    std::string var_value = "OpVariable %TENSOR_PTR UniformConstant";
+    std::string varName;
 
-    replaceAll(var_name, "ID", std::to_string(resInfo.id));
-    replaceAll(var_value, "TENSOR_PTR", typeTensorPointer(resInfo));
-    m_spirvBlocks[OP_VARIABLES].push_back(spirvAssignment(var_name, var_value));
+    if (resInfo.type == RESOURCE_TYPE_INPUT)
+    {
+        varName = "main_arg_ID";
+    }
+    else
+    {
+        varName = "main_res_ID";
+    }
+    std::string varValue = "OpVariable %TENSOR_PTR UniformConstant";
 
-    return var_name;
+    replaceAll(varName, "ID", std::to_string(resInfo.id));
+    replaceAll(varValue, "TENSOR_PTR", typeTensorPointer(resInfo));
+    m_spirvBlocks[OP_VARIABLES].push_back(spirvAssignment(varName, varValue));
+
+    return varName;
 }
 
 std::string TosaSpirv::spirvGraphParam(const ResourceInformation &resInfo)
 {
-    std::string op_name       = "OpName %VAR_NAME \"VAR_NAME\"";
-    std::string op_binding    = "OpDecorate %VAR_NAME Binding BINDING";
-    std::string op_descriptor = "OpDecorate %VAR_NAME DescriptorSet DESCRIPTOR";
+    std::string opName       = "OpName %VAR_NAME \"VAR_NAME\"";
+    std::string opBinding    = "OpDecorate %VAR_NAME Binding BINDING";
+    std::string opDescriptor = "OpDecorate %VAR_NAME DescriptorSet DESCRIPTOR";
 
-    std::string var_name = spirvVariable(resInfo);
+    std::string varName = spirvVariable(resInfo);
 
-    replaceAll(op_name, "VAR_NAME", var_name);
-    m_spirvBlocks[OP_NAMES].push_back(spirvDeclaration(op_name));
+    replaceAll(opName, "VAR_NAME", varName);
+    m_spirvBlocks[OP_NAMES].push_back(spirvDeclaration(opName));
 
-    replaceAll(op_binding, "VAR_NAME", var_name);
-    replaceAll(op_binding, "BINDING", std::to_string(resInfo.binding));
-    m_spirvBlocks[OP_DECORATORS].push_back(spirvDeclaration(op_binding));
+    replaceAll(opBinding, "VAR_NAME", varName);
+    replaceAll(opBinding, "BINDING", std::to_string(resInfo.binding));
+    m_spirvBlocks[OP_DECORATORS].push_back(spirvDeclaration(opBinding));
 
-    replaceAll(op_descriptor, "VAR_NAME", var_name);
-    replaceAll(op_descriptor, "DESCRIPTOR", std::to_string(resInfo.descriptorSet));
-    m_spirvBlocks[OP_DECORATORS].push_back(spirvDeclaration(op_descriptor));
+    replaceAll(opDescriptor, "VAR_NAME", varName);
+    replaceAll(opDescriptor, "DESCRIPTOR", std::to_string(resInfo.descriptorSet));
+    m_spirvBlocks[OP_DECORATORS].push_back(spirvDeclaration(opDescriptor));
 
-    return var_name;
+    return varName;
 }
 
 std::string TosaSpirv::graphInput(const ResourceInformation &resInfo)
 {
-    std::string param_name  = "in_ID";
-    std::string param_value = "OpGraphInputARM %TENSOR %INDEX";
+    std::string paramName  = "in_ID";
+    std::string paramValue = "OpGraphInputARM %TENSOR %INDEX";
+    replaceAll(paramName, "ID", std::to_string(resInfo.id));
+    {
+        // force typeTensor to ignore array types
+        const auto &fmt  = resInfo.params.format;
+        const auto &dims = resInfo.params.dimensions.data();
+        const auto &rank = resInfo.params.dimensions.size();
+        replaceAll(paramValue, "TENSOR", typeTensor(fmt, dims, static_cast<uint32_t>(rank)));
+    }
+    replaceAll(paramValue, "INDEX", spirvConstant(TosaSpirv::format::i32_t, resInfo.id));
 
-    replaceAll(param_name, "ID", std::to_string(resInfo.id));
-    replaceAll(param_value, "TENSOR", typeTensor(resInfo));
-    replaceAll(param_value, "INDEX", spirvConstant(TosaSpirv::format::i32_t, resInfo.id));
-    m_spirvBlocks[OP_GRAPH].push_back(spirvAssignment(param_name, param_value));
-
-    return param_name;
+    m_spirvBlocks[OP_GRAPH].push_back(spirvAssignment(paramName, paramValue));
+    return paramName;
 }
 
 std::string TosaSpirv::graphConstant(const ResourceInformation &resInfo)
 {
-    std::string param_name  = resInfo.label.empty() ? "const_input_ID" : resInfo.label;
-    std::string param_value = "OpGraphConstantARM %TENSOR ID";
+    std::string paramName  = resInfo.label.empty() ? "const_input_ID" : resInfo.label;
+    std::string paramValue = "OpGraphConstantARM %TENSOR ID";
 
-    replaceAll(param_name, "ID", std::to_string(resInfo.id));
-    replaceAll(param_value, "TENSOR", typeTensor(resInfo));
-    replaceAll(param_value, "ID", std::to_string(resInfo.id));
-    m_spirvBlocks[OP_GRAPH_CONSTANTS].push_back(spirvAssignment(param_name, param_value));
+    replaceAll(paramName, "ID", std::to_string(resInfo.id));
+    replaceAll(paramValue, "TENSOR", typeTensor(resInfo));
+    replaceAll(paramValue, "ID", std::to_string(resInfo.id));
+    m_spirvBlocks[OP_GRAPH_CONSTANTS].push_back(spirvAssignment(paramName, paramValue));
 
-    return param_name;
+    return paramName;
 }
 
-std::string TosaSpirv::typeGraph(const std::vector<ResourceInformation> &resInfoInputs,
-                                 const std::vector<ResourceInformation> &resInfoOutputs)
+std::string TosaSpirv::typeGraph(const std::vector<ResourceInformation> &resInfoInputTensors,
+                                 const std::vector<ResourceInformation> &resInfoOutputTensors)
 {
-    auto to_str = [this](const ResourceInformation &resInfo) -> std::string { return "%" + this->typeTensor(resInfo); };
+    auto toStr = [this](const ResourceInformation &resInfo) -> std::string { return "%" + this->typeTensor(resInfo); };
 
     std::string type_name  = "graph_type";
-    std::string type_value = "OpTypeGraphARM DIM IN_TENSORS OUT_TENSORS";
+    std::string type_value = "OpTypeGraphARM NUM_INPUTS IN_TENSORS OUT_TENSORS";
 
-    type_value = std::regex_replace(type_value, std::regex("DIM"), std::to_string(resInfoInputs.size()));
+    type_value = std::regex_replace(type_value, std::regex("NUM_INPUTS"), std::to_string(resInfoInputTensors.size()));
     type_value = std::regex_replace(type_value, std::regex("IN_TENSORS"),
-                                    spirvJoin(resInfoInputs.data(), resInfoInputs.size(), " ", to_str));
+                                    spirvJoin(resInfoInputTensors.data(), resInfoInputTensors.size(), " ", toStr));
     type_value = std::regex_replace(type_value, std::regex("OUT_TENSORS"),
-                                    spirvJoin(resInfoOutputs.data(), resInfoOutputs.size(), " ", to_str));
-    m_spirvBlocks[OP_GRAPH_TYPES].push_back(spirvAssignment(type_name, type_value));
+                                    spirvJoin(resInfoOutputTensors.data(), resInfoOutputTensors.size(), " ", toStr));
 
+    m_spirvBlocks[OP_GRAPH_TYPES].push_back(spirvAssignment(type_name, type_value));
     return type_name;
 }
 
-std::string TosaSpirv::spirvGraphObject(const std::vector<ResourceInformation> &resInfoInputs,
-                                        const std::vector<ResourceInformation> &resInfoOutputs)
+std::string TosaSpirv::spirvGraphObject(const std::vector<ResourceInformation> &resInfoInputTensors,
+                                        const std::vector<ResourceInformation> &resInfoOutputTensors)
 {
-    std::string graph_name  = "graph_0";
-    std::string graph_value = "OpGraphARM %GRAPH_TYPE";
+    std::string graphName  = "graph_0";
+    std::string graphValue = "OpGraphARM %GRAPH_TYPE";
 
-    replaceAll(graph_value, "GRAPH_TYPE", typeGraph(resInfoInputs, resInfoOutputs));
-    m_spirvBlocks[OP_GRAPH_VARS].push_back(spirvAssignment(graph_name, graph_value));
+    replaceAll(graphValue, "GRAPH_TYPE", typeGraph(resInfoInputTensors, resInfoOutputTensors));
+    m_spirvBlocks[OP_GRAPH_VARS].push_back(spirvAssignment(graphName, graphValue));
 
-    return graph_name;
+    return graphName;
 }
 
 TosaSpirv::TosaSpirv()
@@ -402,22 +416,49 @@ TosaSpirv::TosaSpirv()
     // Add hardcoded blocks
     m_spirvBlocks[OP_INIT].push_back(spirvAssignment(tosa_ext_name, "OpExtInstImport \"TOSA.001000.1\""));
     m_spirvBlocks[OP_INIT].push_back(spirvDeclaration("OpMemoryModel Logical Vulkan"));
+
+    // Inject comments and spaces to improve readability of the spirv source
+    m_spirvBlocks[OP_NAMES].push_back(
+        "; ---- Interface names ---------------------------------------------------------");
+    m_spirvBlocks[OP_DECORATORS].push_back(
+        "; ---- Descriptor bindings & spec ids -----------------------------------------");
+    m_spirvBlocks[BASIC_TYPES].push_back("; ---- Basic Types ------------------------------------------------");
+    m_spirvBlocks[BASIC_CONSTANTS].push_back("; ---- Basic Constants ------------------------------------------------");
+    m_spirvBlocks[COMPOSITE_TYPES].push_back("; ---- Composite Types ------------------------------------------------");
+    m_spirvBlocks[COMPOSITE_CONSTANTS].push_back(
+        "; ---- Composite Constants ------------------------------------------------");
+    m_spirvBlocks[TENSOR_TYPES].push_back(
+        "; ---- Tensor types ------------------------------------------------------------");
+    m_spirvBlocks[COMPOSITE_TENSORS].push_back(
+        "; ---- Composite Tensors ------------------------------------------------");
+    m_spirvBlocks[OP_GRAPH_CONSTANTS].push_back(
+        "; ---- Graph Constants ------------------------------------------------");
+    m_spirvBlocks[POINTER_TYPES].push_back(
+        "; ---- Pointers for interface variables ---------------------------------------");
+    m_spirvBlocks[OP_VARIABLES].push_back(
+        "; ---- Interface variables (descriptors) ---------------------------------------");
+    m_spirvBlocks[OP_GRAPH_TYPES].push_back(
+        "; ---- Graph signature ---------------------------------------------------------");
+    m_spirvBlocks[OP_GRAPH_VARS].push_back(
+        "; ---- Graph body --------------------------------------------------------------");
+
+    // Add hardcoded blocks
     m_spirvBlocks[OP_GRAPH_END].push_back(spirvDeclaration("OpGraphEndARM"));
 }
 
 std::string TosaSpirv::bake(std::string entry_point)
 {
-    auto params_to_str = [this](const ResourceInformation &t) -> std::string { return "%" + this->spirvGraphParam(t); };
+    auto toStr = [this](const ResourceInformation &t) -> std::string { return "%" + this->spirvGraphParam(t); };
 
     // Add graph object (this will recursively trigger all fmt and variable definitions)
 
-    std::string graph_declaration = "OpGraphEntryPointARM %GRAPH_OBJECT \"ENTRY_POINT\" IN_PARAMS OUT_PARAMS";
+    std::string graphDeclaration = "OpGraphEntryPointARM %GRAPH_OBJECT \"ENTRY_POINT\" IN_TENSORS OUT_TENSORS";
 
-    replaceAll(graph_declaration, "GRAPH_OBJECT", spirvGraphObject(m_inputs, m_outputs));
-    replaceAll(graph_declaration, "ENTRY_POINT", entry_point);
-    replaceAll(graph_declaration, "IN_PARAMS", spirvJoin(m_inputs.data(), m_inputs.size(), " ", params_to_str));
-    replaceAll(graph_declaration, "OUT_PARAMS", spirvJoin(m_outputs.data(), m_outputs.size(), " ", params_to_str));
-    m_spirvBlocks[OP_GRAPH_TYPES].push_back(spirvDeclaration(graph_declaration));
+    replaceAll(graphDeclaration, "GRAPH_OBJECT", spirvGraphObject(m_inputs, m_outputs));
+    replaceAll(graphDeclaration, "ENTRY_POINT", entry_point);
+    replaceAll(graphDeclaration, "IN_TENSORS", spirvJoin(m_inputs.data(), m_inputs.size(), " ", toStr));
+    replaceAll(graphDeclaration, "OUT_TENSORS", spirvJoin(m_outputs.data(), m_outputs.size(), " ", toStr));
+    m_spirvBlocks[OP_GRAPH_TYPES].push_back(spirvDeclaration(graphDeclaration));
 
     return entry_point;
 }
@@ -462,7 +503,7 @@ std::string TosaSpirv::addResource(const ResourceInformation &resInfo)
     return "";
 }
 
-std::string TosaSpirv::defineTensor(const VkFormat &fmt, const int64_t *dims, const uint32_t &rank)
+std::string TosaSpirv::defineTensor(VkFormat fmt, const int64_t *dims, uint32_t rank)
 {
     return typeTensor(fmt, dims, rank);
 }
@@ -470,42 +511,34 @@ std::string TosaSpirv::defineTensor(const VkFormat &fmt, const int64_t *dims, co
 std::string TosaSpirv::addSpirvOp(const std::string &op, const std::vector<std::string> &inputs,
                                   const std::string &output, const std::vector<std::string> &attributes)
 {
-    static uint64_t op_id = 0;
-    auto to_str           = [](std::string value) -> std::string { return "%" + value; };
+    static uint64_t opId = 0;
+    auto toStr           = [](std::string value) -> std::string { return "%" + value; };
 
-    std::string op_name  = "op_ID";
-    std::string op_value = "OpExtInst %OUTPUT %TOSA_EXT_NAME OPERATION ATTRIBUTES INPUTS";
+    std::string opName  = "op_ID";
+    std::string opValue = "OpExtInst %OUTPUT %TOSA_EXT_NAME OPERATION ATTRIBUTES INPUTS";
 
-    op_name = std::regex_replace(op_name, std::regex("ID"), std::to_string(op_id++));
-    replaceAll(op_value, "OUTPUT", output);
-    replaceAll(op_value, "TOSA_EXT_NAME", tosa_ext_name);
-    replaceAll(op_value, "OPERATION", op);
+    opName = std::regex_replace(opName, std::regex("ID"), std::to_string(opId++));
+    replaceAll(opValue, "OUTPUT", output);
+    replaceAll(opValue, "TOSA_EXT_NAME", tosa_ext_name);
+    replaceAll(opValue, "OPERATION", op);
 
-    op_value = std::regex_replace(op_value, std::regex("INPUTS"), spirvJoin(inputs.data(), inputs.size(), " ", to_str));
+    opValue = std::regex_replace(opValue, std::regex("INPUTS"), spirvJoin(inputs.data(), inputs.size(), " ", toStr));
 
-    op_value = std::regex_replace(op_value, std::regex("ATTRIBUTES"),
-                                  spirvJoin(attributes.data(), attributes.size(), " ", to_str));
+    opValue = std::regex_replace(opValue, std::regex("ATTRIBUTES"),
+                                 spirvJoin(attributes.data(), attributes.size(), " ", toStr));
 
-    m_spirvBlocks[OP_GRAPH].push_back(spirvAssignment(op_name, op_value));
+    m_spirvBlocks[OP_GRAPH].push_back(spirvAssignment(opName, opValue));
 
-    return op_name;
+    return opName;
 }
 
-void TosaSpirv::setOutput(const std::string &output)
+void TosaSpirv::setOutput(const std::string &op, const ResourceInformation &resInfo)
 {
-    setOutputs({output});
-}
+    std::string graphDeclaration = "OpGraphSetOutputARM %OP %INDEX";
+    replaceAll(graphDeclaration, "OP", op);
+    replaceAll(graphDeclaration, "INDEX", spirvConstant(TosaSpirv::format::i32_t, resInfo.id));
 
-void TosaSpirv::setOutputs(const std::vector<std::string> &output)
-{
-    /* add one output per line with increasing index */
-    uint32_t index = 0;
-    for (const std::string &out : output)
-    {
-        std::string spirvGraph_output = "OpGraphSetOutputARM";
-        spirvGraph_output += " %" + out + " %" + spirvConstant(TosaSpirv::format::i32_t, index++);
-        m_spirvBlocks[OP_GRAPH].push_back(spirvDeclaration(spirvGraph_output));
-    }
+    m_spirvBlocks[OP_GRAPH].push_back(spirvDeclaration(graphDeclaration));
 }
 
 void TosaSpirv::removeDuplicates(std::vector<std::string> &spirvLines)

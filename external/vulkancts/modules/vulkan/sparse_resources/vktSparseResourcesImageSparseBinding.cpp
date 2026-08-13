@@ -36,6 +36,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkStrUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 
@@ -205,7 +206,8 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
                     imageSparseInfo.usage, imageSparseInfo.flags,
                     &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
             {
-                TCU_THROW(NotSupportedError, "Image format does not support sparse binding operations");
+                TCU_THROW(NotSupportedError, "Image format " + getFormatSimpleName(imageSparseInfo.format) +
+                                                 " does not support sparse binding operations");
             }
 
             imageSparseInfo.mipLevels =
@@ -540,6 +542,8 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
                                                imageSparseTransferSrcBarriers.data());
         }
 
+        m_context.getTestContext().touchWatchdog();
+
         const VkBufferCreateInfo outputBufferCreateInfo =
             makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
         const Unique<VkBuffer> outputBuffer(createBuffer(deviceInterface, getDevice(), &outputBufferCreateInfo));
@@ -575,6 +579,8 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
         const uint8_t *outputData = static_cast<const uint8_t *>(outputBufferAlloc->getHostPtr());
         bool ignoreLsb6Bits       = areLsb6BitsDontCare(imageSparseInfo.format);
         bool ignoreLsb4Bits       = areLsb4BitsDontCare(imageSparseInfo.format);
+
+        m_context.getTestContext().touchWatchdog();
 
         for (uint32_t planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
         {
@@ -618,6 +624,12 @@ TestInstance *ImageSparseBindingCase::createInstance(Context &context) const
 std::vector<TestFormat> getSparseBindingTestFormats(ImageType imageType, bool addExtraFormat)
 {
     auto formats = getTestFormats(imageType);
+
+    // 256-bit (64-bit-per-component) formats are usually buffer-only, but the spec does not forbid
+    // image support; exercise sparse binding where the driver advertises it (skipped otherwise).
+    formats.push_back(TestFormat{VK_FORMAT_R64G64B64A64_UINT});
+    formats.push_back(TestFormat{VK_FORMAT_R64G64B64A64_SINT});
+
 #ifndef CTS_USES_VULKANSC
     if (addExtraFormat)
         formats.push_back(TestFormat{VK_FORMAT_A8_UNORM_KHR});

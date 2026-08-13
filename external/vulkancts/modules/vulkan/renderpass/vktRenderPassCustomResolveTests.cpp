@@ -619,7 +619,7 @@ void CustomResolveCase::checkSupport(Context &context) const
 
     for (const auto &att : m_params.attachmentList)
     {
-        if (!att.usedInResolvePipeline || !att.usedInResolvePipeline)
+        if (!att.usedInResolvePipeline || !att.usedInResolveRendering)
             unusedAttachments = true;
 
         const auto formats = att.getFormats();

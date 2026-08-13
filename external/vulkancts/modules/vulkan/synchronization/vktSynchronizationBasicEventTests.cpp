@@ -300,6 +300,40 @@ tcu::TestStatus singleSubmissionCase(Context &context, TestConfig config)
     return tcu::TestStatus::pass("Wait and set even on device single submission tests pass");
 }
 
+tcu::TestStatus vertexStageBarrierCase(Context &context, TestConfig config)
+{
+    const DeviceInterface &vk       = context.getDeviceInterface();
+    const VkDevice device           = context.getDevice();
+    const VkQueue queue             = context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+
+    const auto cmdPool   = createCommandPool(vk, device, 0u, queueFamilyIndex);
+    const auto cmdBuffer = makeCommandBuffer(vk, device, *cmdPool);
+    const auto event     = createEvent(vk, device, config.flags);
+
+    VkMemoryBarrier2 barrier = initVulkanStructure();
+    barrier.srcStageMask     = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+
+    VkMemoryBarrier2 execDep = initVulkanStructure();
+    execDep.srcStageMask     = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+    execDep.dstStageMask     = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+
+    const VkDependencyInfoKHR eventDependencyInfo    = makeCommonDependencyInfo(&barrier, nullptr, nullptr, true);
+    const VkDependencyInfoKHR execDependencyInfo     = makeCommonDependencyInfo(&execDep, nullptr, nullptr, true);
+    SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(config.type, vk, false);
+
+    beginCommandBuffer(vk, *cmdBuffer);
+    synchronizationWrapper->cmdResetEvent(*cmdBuffer, *event, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
+    synchronizationWrapper->cmdPipelineBarrier(*cmdBuffer, &execDependencyInfo);
+    synchronizationWrapper->cmdSetEvent(*cmdBuffer, *event, &eventDependencyInfo);
+    synchronizationWrapper->cmdWaitEvents(*cmdBuffer, 1u, &event.get(), &eventDependencyInfo);
+    endCommandBuffer(vk, *cmdBuffer);
+
+    submitCommandsAndWait(synchronizationWrapper, vk, device, queue, *cmdBuffer);
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 tcu::TestStatus multiSubmissionCase(Context &context, TestConfig config)
 {
     enum
@@ -601,6 +635,9 @@ tcu::TestCaseGroup *createSynchronization2BasicEventTests(tcu::TestContext &test
                             checkSecondaryBufferSupport, secondaryCommandBufferCase, config);
         // Event set and reset using the none pipeline stage
         addFunctionCase(basicTests.get(), "none_set_reset" + nameSuffix, checkSupport, eventSetResetNoneStage, config);
+        // Event reset, barrier, set and wait in a single command buffer using graphics stages
+        if (!videoCodecOperationFlags && !computeQueue)
+            addFunctionCase(basicTests.get(), "vertex_stage_barrier", checkSupport, vertexStageBarrierCase, config);
 
         config.flags = VK_EVENT_CREATE_DEVICE_ONLY_BIT_KHR;
         // Wait and set GPU-only event single submission

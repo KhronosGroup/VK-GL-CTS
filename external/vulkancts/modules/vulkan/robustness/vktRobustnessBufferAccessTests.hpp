@@ -35,6 +35,7 @@ namespace robustness
 tcu::TestCaseGroup *createBufferAccessTests(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createPipelineRobustnessBufferAccessTests(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createDescriptorHeapBufferAccessTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createPipelineRobustnessHeapBufferAccessTests(tcu::TestContext &testCtx);
 
 } // namespace robustness
 } // namespace vkt

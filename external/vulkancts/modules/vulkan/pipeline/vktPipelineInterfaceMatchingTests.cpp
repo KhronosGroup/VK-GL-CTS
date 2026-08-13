@@ -1342,9 +1342,7 @@ tcu::TestCaseGroup *createInterfaceMatchingTests(tcu::TestContext &testCtx,
             }
     testGroup->addChild(decorationMismatching.release());
 
-#ifndef CTS_USES_VULKANSC
     testGroup->addChild(createShaderCompDecorLayoutMatchingTests(testCtx, pipelineConstructionType));
-#endif
 
     // miscellaneous tests
     de::MovePtr<tcu::TestCaseGroup> miscTests(new tcu::TestCaseGroup(testCtx, "misc"));

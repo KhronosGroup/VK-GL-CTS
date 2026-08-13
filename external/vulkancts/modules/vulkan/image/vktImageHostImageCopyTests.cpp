@@ -754,6 +754,8 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
         computePipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
+    m_context.getTestContext().touchWatchdog();
+
     de::MovePtr<BufferWithMemory> colorOutputBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
         vk, device, alloc, makeBufferCreateInfo(outputBufferSize, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT),
         MemoryRequirement::HostVisible));
@@ -1047,6 +1049,8 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
     tcu::ConstPixelBufferAccess resultBuffer =
         tcu::ConstPixelBufferAccess(outputFormat, renderArea.extent.width, renderArea.extent.height, 1,
                                     (const void *)colorOutputBuffer->getAllocation().getHostPtr());
+
+    m_context.getTestContext().touchWatchdog();
 
     if (m_parameters.action == IMAGE_TO_MEMORY)
     {
@@ -2503,16 +2507,6 @@ tcu::TestStatus IdenticalMemoryLayoutTestInstance::iterate(void)
                  VK_IMAGE_ASPECT_COLOR_BIT);
         const auto imageSRR = makeImageSubresourceRange(aspectMask, 0u, 1u, 0u, 1u);
 
-        // As copying depth/stencil requires queue that supports graphics operations we need to throw NotSupported for compute only implementations
-        if (hasDepth || hasStencil)
-        {
-            const bool isComputeOnly = m_context.getTestContext().getCommandLine().isComputeOnly();
-            if (isComputeOnly)
-            {
-                TCU_THROW(NotSupportedError, "Universal queue does not support graphics operations.");
-            }
-        }
-
         beginCommandBuffer(vk, *cmdbuffer);
         vk.cmdFillBuffer(*cmdbuffer, *baseBuffer, 0ull, VK_WHOLE_SIZE, 0u);
         vk.cmdFillBuffer(*cmdbuffer, *hostXferBuffer, 0ull, VK_WHOLE_SIZE, 0u);
@@ -3481,6 +3475,24 @@ void HostImageArrayCopyTestCase::checkSupport(vkt::Context &context) const
 
     if (hostImageCopyFeatures.hostImageCopy != VK_TRUE)
         TCU_THROW(NotSupportedError, "hostImageCopy not supported");
+
+    vk::VkPhysicalDeviceHostImageCopyPropertiesEXT hostImageCopyProperties = vk::initVulkanStructure();
+    getHostImageCopyProperties(instanceDriver, physicalDevice, &hostImageCopyProperties);
+    std::vector<vk::VkImageLayout> srcLayouts(hostImageCopyProperties.copySrcLayoutCount);
+    std::vector<vk::VkImageLayout> dstLayouts(hostImageCopyProperties.copyDstLayoutCount);
+    hostImageCopyProperties.pCopySrcLayouts = srcLayouts.data();
+    hostImageCopyProperties.pCopyDstLayouts = dstLayouts.data();
+    getHostImageCopyProperties(instanceDriver, physicalDevice, &hostImageCopyProperties);
+
+    const vk::VkImageLayout requiredLayouts[] = {vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                 vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL};
+    for (const auto layout : requiredLayouts)
+    {
+        if (std::find(srcLayouts.begin(), srcLayouts.end(), layout) == srcLayouts.end())
+            TCU_THROW(NotSupportedError, "Required src layout not supported");
+        if (std::find(dstLayouts.begin(), dstLayouts.end(), layout) == dstLayouts.end())
+            TCU_THROW(NotSupportedError, "Required dst layout not supported");
+    }
 
     const vk::VkImageType imageType =
         (m_params.offset.z > 1 || m_params.copyExtent.depth > 1u) ? vk::VK_IMAGE_TYPE_3D : vk::VK_IMAGE_TYPE_2D;

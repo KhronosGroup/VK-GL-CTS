@@ -210,14 +210,15 @@ void OpaqueTypeIndexingCase::checkSupport(Context &context) const
     checkSupportShader(context, m_shaderType);
 }
 
-class OpaqueTypeIndexingTestInstance : public TestInstance
+class OpaqueTypeIndexingTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     OpaqueTypeIndexingTestInstance(Context &context, const glu::ShaderType shaderType, const ShaderSpec &shaderSpec,
-                                   const char *name, const IndexExprType indexExprType);
+                                   const char *name, const IndexExprType indexExprType,
+                                   vkt::QueueCapabilities queueCaps);
     virtual ~OpaqueTypeIndexingTestInstance(void);
 
-    virtual tcu::TestStatus iterate(void) = 0;
+    virtual tcu::TestStatus queuePass(const vkt::QueueData &queueData) override = 0;
 
 protected:
     void checkSupported(const VkDescriptorType descriptorType);
@@ -232,8 +233,9 @@ protected:
 
 OpaqueTypeIndexingTestInstance::OpaqueTypeIndexingTestInstance(Context &context, const glu::ShaderType shaderType,
                                                                const ShaderSpec &shaderSpec, const char *name,
-                                                               const IndexExprType indexExprType)
-    : TestInstance(context)
+                                                               const IndexExprType indexExprType,
+                                                               vkt::QueueCapabilities queueCaps)
+    : vkt::MultiQueueRunnerTestInstance(context, queueCaps)
     , m_testCtx(context.getTestContext())
     , m_shaderType(shaderType)
     , m_shaderSpec(shaderSpec)
@@ -507,7 +509,8 @@ static vk::VkImageViewType getVkImageViewType(TextureType texType)
 class TestImage
 {
 public:
-    TestImage(Context &context, TextureType texType, tcu::TextureFormat format, const void *colorValue);
+    TestImage(Context &context, TextureType texType, tcu::TextureFormat format, const void *colorValue,
+              vk::VkQueue uploadQueue = VK_NULL_HANDLE, uint32_t uploadQueueFamilyIndex = 0u);
 
     VkImageView getImageView(void) const
     {
@@ -578,7 +581,8 @@ Move<VkImageView> createTestImageView(const DeviceInterface &vkd, VkDevice devic
     return createImageView(vkd, device, &createInfo);
 }
 
-TestImage::TestImage(Context &context, TextureType texType, tcu::TextureFormat format, const void *colorValue)
+TestImage::TestImage(Context &context, TextureType texType, tcu::TextureFormat format, const void *colorValue,
+                     vk::VkQueue uploadQueue, uint32_t uploadQueueFamilyIndex)
     : m_image(createTestImage(context.getDeviceInterface(), context.getDevice(), texType, format))
     , m_allocation(allocateAndBindMemory(context.getDeviceInterface(), context.getDevice(),
                                          context.getDefaultAllocator(), *m_image))
@@ -619,13 +623,14 @@ TestImage::TestImage(Context &context, TextureType texType, tcu::TextureFormat f
                                                                          VK_IMAGE_ASPECT_COLOR_BIT);
         const VkBufferImageCopy copyInfo = {0u, 1u, 1u, {imageAspect, 0u, 0u, numLayers}, {0u, 0u, 0u}, {1u, 1u, 1u}};
 
-        VkFlags destPipelineStageFlags = context.getTestContext().getCommandLine().isComputeOnly() ?
-                                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT :
-                                             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        copyBufferToImage(vkd, device, context.getUniversalQueue(), context.getUniversalQueueFamilyIndex(),
-                          *stagingBuffer, stagingBufferSize, vector<VkBufferImageCopy>(1, copyInfo), nullptr,
-                          imageAspect, 1u, numLayers, *m_image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                          destPipelineStageFlags);
+        const VkFlags destPipelineStageFlags = (uploadQueue != VK_NULL_HANDLE) ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT :
+                                                                                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        const vk::VkQueue queue = (uploadQueue != VK_NULL_HANDLE) ? uploadQueue : context.getUniversalQueue();
+        const uint32_t queueFamilyIdx =
+            (uploadQueue != VK_NULL_HANDLE) ? uploadQueueFamilyIndex : context.getUniversalQueueFamilyIndex();
+        copyBufferToImage(vkd, device, queue, queueFamilyIdx, *stagingBuffer, stagingBufferSize,
+                          vector<VkBufferImageCopy>(1, copyInfo), nullptr, imageAspect, 1u, numLayers, *m_image,
+                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, destPipelineStageFlags);
     }
 }
 
@@ -648,7 +653,7 @@ public:
                                 const std::vector<int> &lookupIndices);
     virtual ~SamplerIndexingCaseInstance(void);
 
-    virtual tcu::TestStatus iterate(void);
+    virtual tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 protected:
     const glu::DataType m_samplerType;
@@ -659,7 +664,10 @@ SamplerIndexingCaseInstance::SamplerIndexingCaseInstance(Context &context, const
                                                          const ShaderSpec &shaderSpec, const char *name,
                                                          glu::DataType samplerType, const IndexExprType indexExprType,
                                                          const std::vector<int> &lookupIndices)
-    : OpaqueTypeIndexingTestInstance(context, shaderType, shaderSpec, name, indexExprType)
+    : OpaqueTypeIndexingTestInstance(context, shaderType, shaderSpec, name, indexExprType,
+                                     (shaderType == glu::SHADERTYPE_COMPUTE && !isShadowSampler(samplerType)) ?
+                                         vkt::COMPUTE_QUEUE :
+                                         vkt::GRAPHICS_QUEUE)
     , m_samplerType(samplerType)
     , m_lookupIndices(lookupIndices)
 {
@@ -676,7 +684,7 @@ bool isIntegerFormat(const tcu::TextureFormat &format)
     return chnClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER || chnClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER;
 }
 
-tcu::TestStatus SamplerIndexingCaseInstance::iterate(void)
+tcu::TestStatus SamplerIndexingCaseInstance::queuePass(const vkt::QueueData &queueData)
 {
     const int numInvocations           = SamplerIndexingCaseInstance::NUM_INVOCATIONS;
     const int numSamplers              = SamplerIndexingCaseInstance::NUM_SAMPLERS;
@@ -752,10 +760,15 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate(void)
 
     outData.resize(numLookups * outLookupStride);
 
+    const bool useComputeUpload   = (m_shaderType == glu::SHADERTYPE_COMPUTE && !isShadowSampler(m_samplerType));
+    const vk::VkQueue uploadQueue = useComputeUpload ? queueData.handle : VK_NULL_HANDLE;
+    const uint32_t uploadQueueFamilyIndex = useComputeUpload ? queueData.familyIndex : 0u;
+
     for (int ndx = 0; ndx < numSamplers; ++ndx)
     {
         images.push_back(
-            TestImageSp(new TestImage(m_context, texType, texFormat, &texData[ndx * texFormat.getPixelSize()])));
+            TestImageSp(new TestImage(m_context, texType, texFormat, &texData[ndx * texFormat.getPixelSize()],
+                                      uploadQueue, uploadQueueFamilyIndex)));
 
         {
             tcu::Sampler samplerCopy(refSampler);
@@ -864,8 +877,8 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate(void)
         std::vector<void *> inputs;
         std::vector<void *> outputs;
         std::vector<int> expandedIndices;
-        UniquePtr<ShaderExecutor> executor(
-            createExecutor(m_context, m_shaderType, m_shaderSpec, *extraResourcesLayout));
+        UniquePtr<ShaderExecutor> executor(createExecutor(m_context, m_shaderType, m_shaderSpec, *extraResourcesLayout,
+                                                          UserQueue(queueData.handle, queueData.familyIndex)));
 
         inputs.push_back(&coords[0]);
 
@@ -1156,7 +1169,7 @@ public:
                                    const std::vector<uint32_t> &inValues);
     virtual ~BlockArrayIndexingCaseInstance(void);
 
-    virtual tcu::TestStatus iterate(void);
+    virtual tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     const BlockType m_blockType;
@@ -1171,7 +1184,8 @@ BlockArrayIndexingCaseInstance::BlockArrayIndexingCaseInstance(Context &context,
                                                                const IndexExprType indexExprType,
                                                                const std::vector<int> &readIndices,
                                                                const std::vector<uint32_t> &inValues)
-    : OpaqueTypeIndexingTestInstance(context, shaderType, shaderSpec, name, indexExprType)
+    : OpaqueTypeIndexingTestInstance(context, shaderType, shaderSpec, name, indexExprType,
+                                     (shaderType == glu::SHADERTYPE_COMPUTE) ? vkt::COMPUTE_QUEUE : vkt::GRAPHICS_QUEUE)
     , m_blockType(blockType)
     , m_flags(flags)
     , m_readIndices(readIndices)
@@ -1183,7 +1197,7 @@ BlockArrayIndexingCaseInstance::~BlockArrayIndexingCaseInstance(void)
 {
 }
 
-tcu::TestStatus BlockArrayIndexingCaseInstance::iterate(void)
+tcu::TestStatus BlockArrayIndexingCaseInstance::queuePass(const vkt::QueueData &queueData)
 {
     const int numInvocations = NUM_INVOCATIONS;
     const int numReads       = NUM_READS;
@@ -1337,8 +1351,8 @@ tcu::TestStatus BlockArrayIndexingCaseInstance::iterate(void)
         outputs.push_back(&outValues[readNdx * numInvocations]);
 
     {
-        UniquePtr<ShaderExecutor> executor(
-            createExecutor(m_context, m_shaderType, m_shaderSpec, *extraResourcesLayout));
+        UniquePtr<ShaderExecutor> executor(createExecutor(m_context, m_shaderType, m_shaderSpec, *extraResourcesLayout,
+                                                          UserQueue(queueData.handle, queueData.familyIndex)));
 
         executor->execute(numInvocations, inputs.empty() ? nullptr : &inputs[0], &outputs[0], *extraResourcesSet);
     }
@@ -1523,7 +1537,7 @@ public:
                                       const IndexExprType indexExprType);
     virtual ~AtomicCounterIndexingCaseInstance(void);
 
-    virtual tcu::TestStatus iterate(void);
+    virtual tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     const std::vector<int> &m_opIndices;
@@ -1533,7 +1547,8 @@ AtomicCounterIndexingCaseInstance::AtomicCounterIndexingCaseInstance(Context &co
                                                                      const ShaderSpec &shaderSpec, const char *name,
                                                                      const std::vector<int> &opIndices,
                                                                      const IndexExprType indexExprType)
-    : OpaqueTypeIndexingTestInstance(context, shaderType, shaderSpec, name, indexExprType)
+    : OpaqueTypeIndexingTestInstance(context, shaderType, shaderSpec, name, indexExprType,
+                                     (shaderType == glu::SHADERTYPE_COMPUTE) ? vkt::COMPUTE_QUEUE : vkt::GRAPHICS_QUEUE)
     , m_opIndices(opIndices)
 {
 }
@@ -1542,7 +1557,7 @@ AtomicCounterIndexingCaseInstance::~AtomicCounterIndexingCaseInstance(void)
 {
 }
 
-tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate(void)
+tcu::TestStatus AtomicCounterIndexingCaseInstance::queuePass(const vkt::QueueData &queueData)
 {
     const int numInvocations = NUM_INVOCATIONS;
     const int numCounters    = NUM_COUNTERS;
@@ -1697,8 +1712,8 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate(void)
         outputs.push_back(&outValues[opNdx * numInvocations]);
 
     {
-        UniquePtr<ShaderExecutor> executor(
-            createExecutor(m_context, m_shaderType, m_shaderSpec, *extraResourcesLayout));
+        UniquePtr<ShaderExecutor> executor(createExecutor(m_context, m_shaderType, m_shaderSpec, *extraResourcesLayout,
+                                                          UserQueue(queueData.handle, queueData.familyIndex)));
 
         executor->execute(numInvocations, inputs.empty() ? nullptr : &inputs[0], &outputs[0], *extraResourcesSet);
     }

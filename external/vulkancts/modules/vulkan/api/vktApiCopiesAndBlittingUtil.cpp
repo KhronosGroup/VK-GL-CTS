@@ -276,6 +276,9 @@ void checkExtensionSupport(Context &context, uint32_t flags)
     if (flags & MAINTENANCE_10)
         context.requireDeviceFunctionality("VK_KHR_maintenance10");
 
+    if (flags & MAINTENANCE_11)
+        context.requireDeviceFunctionality("VK_KHR_maintenance11");
+
     if (flags & DEVICE_ADDRESS_COMMANDS)
         context.requireDeviceFunctionality("VK_KHR_device_address_commands");
 }

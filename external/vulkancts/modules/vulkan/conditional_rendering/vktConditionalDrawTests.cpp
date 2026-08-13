@@ -33,7 +33,6 @@
 #include "vkTypeUtil.hpp"
 
 #include "tcuTestLog.hpp"
-#include "tcuResource.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuRGBA.hpp"
@@ -41,9 +40,7 @@
 #include "vkDefs.hpp"
 #include "vkCmdUtil.hpp"
 
-namespace vkt
-{
-namespace conditional
+namespace vkt::conditional
 {
 namespace
 {
@@ -126,15 +123,6 @@ protected:
     vk::Move<vk::VkFramebuffer> m_fbWithClear;
 };
 
-void checkSupport(Context &context, DrawCommandType command, const ConditionalData conditionalData)
-{
-    if (command == DRAW_COMMAND_TYPE_DRAW_INDIRECT_COUNT || command == DRAW_COMMAND_TYPE_DRAW_INDEXED_INDIRECT_COUNT)
-        context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
-
-    if (conditionalData.conditionInherited && !conditionalData.conditionInSecondaryCommandBuffer)
-        context.requireDeviceFunctionality("VK_KHR_maintenance7");
-}
-
 ConditionalDraw::ConditionalDraw(Context &context, ConditionalTestSpec testSpec)
     : Draw::DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX],
                                testSpec.shaders[glu::SHADERTYPE_FRAGMENT],
@@ -144,10 +132,6 @@ ConditionalDraw::ConditionalDraw(Context &context, ConditionalTestSpec testSpec)
     , m_drawCalls(testSpec.drawCalls)
     , m_conditionalData(testSpec.conditionalData)
 {
-    checkConditionalRenderingCapabilities(context, m_conditionalData);
-    checkNestedRenderPassCapabilities(context);
-    checkSupport(context, m_command, m_conditionalData);
-
     const float minX     = -0.3f;
     const float maxX     = 0.3f;
     const float drawStep = 0.6f / static_cast<float>(m_drawCalls);
@@ -157,22 +141,22 @@ ConditionalDraw::ConditionalDraw(Context &context, ConditionalTestSpec testSpec)
         const float minY = minX + static_cast<float>(drawIdx) * drawStep;
         const float maxY = minY + drawStep;
 
-        m_data.push_back(Draw::VertexElementData(tcu::Vec4(minX, maxY, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0));
-        m_data.push_back(Draw::VertexElementData(tcu::Vec4(minX, minY, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0));
-        m_data.push_back(Draw::VertexElementData(tcu::Vec4(maxX, maxY, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0));
+        m_data.emplace_back(tcu::Vec4(minX, maxY, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0);
+        m_data.emplace_back(tcu::Vec4(minX, minY, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0);
+        m_data.emplace_back(tcu::Vec4(maxX, maxY, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0);
 
-        m_data.push_back(Draw::VertexElementData(tcu::Vec4(minX, minY, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0));
-        m_data.push_back(Draw::VertexElementData(tcu::Vec4(maxX, maxY, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0));
-        m_data.push_back(Draw::VertexElementData(tcu::Vec4(maxX, minY, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0));
+        m_data.emplace_back(tcu::Vec4(minX, minY, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0);
+        m_data.emplace_back(tcu::Vec4(maxX, maxY, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0);
+        m_data.emplace_back(tcu::Vec4(maxX, minY, 0.5f, 1.0f), tcu::RGBA::blue().toVec(), 0);
     }
 
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f), tcu::RGBA::red().toVec(), 0));
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), tcu::RGBA::red().toVec(), 0));
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f), tcu::RGBA::red().toVec(), 0));
+    m_data.emplace_back(tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f), tcu::RGBA::red().toVec(), 0);
+    m_data.emplace_back(tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), tcu::RGBA::red().toVec(), 0);
+    m_data.emplace_back(tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f), tcu::RGBA::red().toVec(), 0);
 
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), tcu::RGBA::red().toVec(), 0));
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f), tcu::RGBA::red().toVec(), 0));
-    m_data.push_back(Draw::VertexElementData(tcu::Vec4(1.0f, -1.0f, 0.0f, 1.0f), tcu::RGBA::red().toVec(), 0));
+    m_data.emplace_back(tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), tcu::RGBA::red().toVec(), 0);
+    m_data.emplace_back(tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f), tcu::RGBA::red().toVec(), 0);
+    m_data.emplace_back(tcu::Vec4(1.0f, -1.0f, 0.0f, 1.0f), tcu::RGBA::red().toVec(), 0);
 
     for (uint32_t index = 0; index < m_data.size(); index++)
     {
@@ -604,25 +588,35 @@ tcu::TestStatus ConditionalDraw::iterate(void)
     return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
+void checkSupport(Context &context, ConditionalDraw::TestSpec testSpec)
+{
+    checkConditionalRenderingCapabilities(context, testSpec.conditionalData);
+    checkNestedRenderPassCapabilities(context);
+
+    if (testSpec.command == DRAW_COMMAND_TYPE_DRAW_INDIRECT_COUNT ||
+        testSpec.command == DRAW_COMMAND_TYPE_DRAW_INDEXED_INDIRECT_COUNT)
+    {
+        context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
+    }
+
+    if (testSpec.conditionalData.conditionInherited && !testSpec.conditionalData.conditionInSecondaryCommandBuffer)
+        context.requireDeviceFunctionality("VK_KHR_maintenance7");
+}
+
 } // namespace
 
 ConditionalDrawTests::ConditionalDrawTests(tcu::TestContext &testCtx) : TestCaseGroup(testCtx, "draw")
-{
-    /* Left blank on purpose */
-}
-
-ConditionalDrawTests::~ConditionalDrawTests(void)
 {
 }
 
 void ConditionalDrawTests::init(void)
 {
+    using CheckSupport = FunctionSupport1<ConditionalDraw::TestSpec>;
     for (int conditionNdx = 0; conditionNdx < DE_LENGTH_OF_ARRAY(conditional::s_testsData); conditionNdx++)
     {
         const ConditionalData &conditionData = conditional::s_testsData[conditionNdx];
 
-        tcu::TestCaseGroup *conditionalDrawRootGroup =
-            new tcu::TestCaseGroup(m_testCtx, de::toString(conditionData).c_str());
+        auto *conditionalDrawRootGroup = new tcu::TestCaseGroup(m_testCtx, de::toString(conditionData).c_str());
 
         for (uint32_t commandTypeIdx = 0; commandTypeIdx < DRAW_COMMAND_TYPE_DRAW_LAST; ++commandTypeIdx)
         {
@@ -635,13 +629,12 @@ void ConditionalDrawTests::init(void)
             testSpec.shaders[glu::SHADERTYPE_VERTEX]   = "vulkan/dynamic_state/VertexFetch.vert";
             testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/dynamic_state/VertexFetch.frag";
 
-            conditionalDrawRootGroup->addChild(
-                new Draw::InstanceFactory<ConditionalDraw>(m_testCtx, getDrawCommandTypeName(command), testSpec));
+            conditionalDrawRootGroup->addChild(new Draw::InstanceFactory<ConditionalDraw, CheckSupport>(
+                m_testCtx, getDrawCommandTypeName(command), testSpec, CheckSupport::Args(checkSupport, testSpec)));
         }
 
         addChild(conditionalDrawRootGroup);
     }
 }
 
-} // namespace conditional
-} // namespace vkt
+} // namespace vkt::conditional

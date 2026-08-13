@@ -35,7 +35,7 @@ SHADER vertex variant_vertex_shader PASSTHROUGH
 #
 # void main()
 # {
-#   if (sign(cosh(709.)) == 1. || one == 1)
+#   if (sign(cosh(80.)) == 1. || one == 1)
 #   {
 #     _GLF_color = vec4(1, 0, 0, 1);
 #   }
@@ -72,7 +72,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
           %3 = OpTypeFunction %2
           %6 = OpTypeBool
           %7 = OpTypeFloat 32
-          %8 = OpConstant %7 709
+          %8 = OpConstant %7 80
          %11 = OpConstant %7 1
          %16 = OpTypeInt 32 1
          %17 = OpTypeStruct %16

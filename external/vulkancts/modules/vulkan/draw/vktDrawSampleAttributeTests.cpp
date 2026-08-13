@@ -294,7 +294,8 @@ tcu::TestStatus SampleShadingSampleAttributeTestInstance::iterate(void)
         VK_FORMAT_UNDEFINED,                                  // VkFormat           depthAttachmentFormat;
         VK_FORMAT_UNDEFINED,                                  // VkFormat           stencilAttachmentFormat;
     };
-    const auto *gpPNext = &pipelineRenderInfo;
+    // VUID-VkGraphicsPipelineCreateInfo-pNext-12427
+    const auto *gpPNext = (m_params.general->useDynamicRendering ? &pipelineRenderInfo : nullptr);
 
     const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;

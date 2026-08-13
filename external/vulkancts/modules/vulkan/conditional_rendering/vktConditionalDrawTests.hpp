@@ -35,7 +35,7 @@ class ConditionalDrawTests : public tcu::TestCaseGroup
 {
 public:
     ConditionalDrawTests(tcu::TestContext &testCtx);
-    ~ConditionalDrawTests(void);
+    ~ConditionalDrawTests(void) = default;
     void init(void);
 
 private:

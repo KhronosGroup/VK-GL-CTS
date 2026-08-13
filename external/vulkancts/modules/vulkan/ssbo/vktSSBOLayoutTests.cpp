@@ -1107,11 +1107,21 @@ tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCasePar
         const Unique<VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
 
         // Input buffer
+        // VUID-VkDescriptorBufferInfo-range-00341
+        VkDeviceSize inputBufferSize = (VkDeviceSize)params.bufferSize;
+        if (params.useMinBufferOffset && params.bufferBindLength != VK_WHOLE_SIZE)
+        {
+            const VkDeviceSize minOffset =
+                getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice())
+                    .limits.minStorageBufferOffsetAlignment;
+            inputBufferSize = de::max(inputBufferSize, minOffset + params.bufferBindLength);
+        }
+
         const VkBufferCreateInfo inputBufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             nullptr,
             0,                                  // flags
-            (VkDeviceSize)params.bufferSize,    // size
+            inputBufferSize,                    // size
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, // usage TODO: also test _DYNAMIC case.
             VK_SHARING_MODE_EXCLUSIVE,
             0u,      // queueFamilyCount
@@ -1172,8 +1182,9 @@ tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCasePar
             const VkPhysicalDeviceLimits deviceLimits =
                 getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
             bufferBindOffset = deviceLimits.minStorageBufferOffsetAlignment;
-            if (params.bufferBindLength != VK_WHOLE_SIZE && bufferBindLength < bufferBindOffset)
-                bufferBindLength = bufferBindOffset;
+            // VUID-VkDescriptorBufferInfo-range-00341
+            if (params.bufferBindLength != VK_WHOLE_SIZE)
+                bufferBindLength = bufferBindOffset + params.bufferBindLength;
         }
 
         const VkDeviceSize inputBufferRange =

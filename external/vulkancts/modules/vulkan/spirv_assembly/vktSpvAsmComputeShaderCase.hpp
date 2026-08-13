@@ -43,11 +43,11 @@ namespace SpirVAssembly
  * This instance runs the given compute shader by feeding the data from input
  * buffers and compares the data in the output buffers with the expected.
  *//*--------------------------------------------------------------------*/
-class SpvAsmComputeShaderInstance : public TestInstance
+class SpvAsmComputeShaderInstance : public MultiQueueRunnerTestInstance
 {
 public:
     SpvAsmComputeShaderInstance(Context &ctx, const ComputeShaderSpec &spec);
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const QueueData &queueData) override;
 
 private:
     const ComputeShaderSpec &m_shaderSpec;

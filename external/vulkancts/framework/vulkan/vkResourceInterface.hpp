@@ -124,15 +124,19 @@ public:
     const std::map<uint64_t, std::size_t> &getObjectHashes() const;
 
     void preparePipelinePoolSizes();
-    std::vector<VkPipelinePoolSize> getPipelinePoolSizes() const;
+    const std::vector<VkPipelinePoolSize> &getPipelinePoolSizes() const;
     void fillPoolEntrySize(vk::VkPipelineOfflineCreateInfo &pipelineIdentifier) const;
     vksc_server::VulkanCommandMemoryConsumption getNextCommandPoolSize();
     std::size_t getCacheDataSize() const;
     const uint8_t *getCacheData() const;
+    void preparePipelineCacheCreateInfo();
+    const VkPipelineCacheCreateInfo *getPipelineCacheCreateInfo() const;
     VkPipelineCache getPipelineCache(VkDevice device) const;
     virtual void resetObjects()                                               = 0;
     virtual void resetPipelineCaches()                                        = 0;
     virtual bool resetPipelineCache(VkDevice device, bool onlyIfInSubprocess) = 0;
+
+    VkDeviceObjectReservationCreateInfo getDefaultDeviceObjectReservationCreateInfo() const;
 #endif // CTS_USES_VULKANSC
 
 protected:
@@ -186,6 +190,7 @@ protected:
     mutable VkDeviceObjectReservationCreateInfo m_statMax;
 
     std::vector<uint8_t> m_cacheData;
+    VkPipelineCacheCreateInfo m_pipelineCacheCreateInfo;
     mutable std::map<VkPipeline, VkPipelineOfflineCreateInfo> m_pipelineIdentifiers;
     mutable std::vector<vksc_server::VulkanPipelineSize> m_pipelineSizes;
     std::vector<VkPipelinePoolSize> m_pipelinePoolSizes;

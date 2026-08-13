@@ -42,6 +42,7 @@
 
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuResultCollector.hpp"
 
 #include "deSTLUtil.hpp"
 #include "deMemory.h"
@@ -119,6 +120,7 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         "VK_IMG_format_pvrtc",
         "VK_QCOM_multiview_per_view_viewports",
         "VK_QCOM_multiview_per_view_render_areas",
+        "VK_VALVE_fragment_density_map_layered",
     };
 
     const char *exclusions[] = {"VK_EXT_device_address_binding_report", "VK_EXT_device_memory_report"};
@@ -396,7 +398,7 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
 
 #ifdef CTS_USES_VULKANSC
     // devices created for Vulkan SC must have VkDeviceObjectReservationCreateInfo structure defined in VkDeviceCreateInfo::pNext chain
-    VkDeviceObjectReservationCreateInfo dmrCI = resetDeviceObjectReservationCreateInfo();
+    VkDeviceObjectReservationCreateInfo dmrCI = resourceInterface->getDefaultDeviceObjectReservationCreateInfo();
     VkPipelineCacheCreateInfo pcCI            = {
         VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
         nullptr,                                      // const void* pNext;
@@ -482,6 +484,15 @@ int findQueueFamilyIndexWithCapsNoThrow(const InstanceInterface &vkInstance, VkP
     {
         return -1;
     }
+}
+
+static uint32_t findComputeCapableQueueFamily(const InstanceInterface &vkInstance, VkPhysicalDevice physicalDevice)
+{
+    int idx = findQueueFamilyIndexWithCapsNoThrow(vkInstance, physicalDevice,
+                                                  VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 0u);
+    if (idx >= 0)
+        return static_cast<uint32_t>(idx);
+    return findQueueFamilyIndexWithCaps(vkInstance, physicalDevice, VK_QUEUE_COMPUTE_BIT);
 }
 
 uint32_t findQueueFamilyIndexWithCaps(const InstanceInterface &vkInstance, VkPhysicalDevice physicalDevice,
@@ -909,9 +920,7 @@ DefaultDevice::DefaultDevice(const PlatformInterface &vkPlatform, const tcu::Com
     , m_deviceExtensions((deviceID != DevCaps::DefDevId) ? *pDeviceExtensions : m_contextManager->getDeviceExtensions())
     , m_deviceFeaturesPtr(m_contextManager->getDeviceFeaturesPtr())
     , m_deviceFeatures(*m_deviceFeaturesPtr)
-    , m_universalQueueFamilyIndex(findQueueFamilyIndexWithCaps(
-          *m_instanceInterface, m_physicalDevice,
-          cmdLine.isComputeOnly() ? VK_QUEUE_COMPUTE_BIT : VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT))
+    , m_universalQueueFamilyIndex(findComputeCapableQueueFamily(*m_instanceInterface, m_physicalDevice))
 #ifndef CTS_USES_VULKANSC
     , m_sparseQueueFamilyIndex(
           m_deviceFeatures.getCoreFeatures2().features.sparseBinding ?
@@ -1790,6 +1799,12 @@ DevCaps::QueueInfo Context::getDeviceQueueInfo(uint32_t queueIndex)
     return m_deviceRuntimeData->getQueue(getDeviceInterface(), getDevice(), queueIndex, isDefaultContext());
 }
 
+uint32_t Context::getDeviceQueueCount() const
+{
+    DE_ASSERT(m_deviceRuntimeData);
+    return m_deviceRuntimeData->getQueueCount();
+}
+
 void Context::collectAndReportDebugMessages()
 {
 #ifndef CTS_USES_VULKANSC
@@ -1822,37 +1837,49 @@ MultiQueueRunnerTestInstance::MultiQueueRunnerTestInstance(Context &context, Que
     : TestInstance(context)
     , m_queueCaps(queueCaps)
 {
-    // building vector of unique queues
-    if (m_queueCaps == QueueCapabilities::GRAPHICS_QUEUE)
+    if (!context.isDefaultContext())
     {
-        m_queues.emplace_back(context.getUniversalQueue(), (uint32_t)context.getUniversalQueueFamilyIndex());
-    }
-    else if (m_queueCaps == QueueCapabilities::COMPUTE_QUEUE)
-    {
-        // universal queue supports compute
-        m_queues.emplace_back(context.getUniversalQueue(), (uint32_t)context.getUniversalQueueFamilyIndex());
-        // checking for other queue that supports compute
-        if ((m_context.getComputeQueueFamilyIndex() != -1))
+        const uint32_t queueCount = context.getDeviceQueueCount();
+        for (uint32_t i = 0; i < queueCount; ++i)
         {
-            m_queues.emplace_back(context.getComputeQueue(), (uint32_t)context.getComputeQueueFamilyIndex());
-        }
-    }
-    else if (m_queueCaps == QueueCapabilities::TRANSFER_QUEUE)
-    {
-        // all queues support transfer
-        m_queues.emplace_back(context.getUniversalQueue(), (uint32_t)context.getUniversalQueueFamilyIndex());
-        if ((m_context.getComputeQueueFamilyIndex() != -1))
-        {
-            m_queues.emplace_back(context.getComputeQueue(), (uint32_t)context.getComputeQueueFamilyIndex());
-        }
-        if ((m_context.getTransferQueueFamilyIndex() != -1))
-        {
-            m_queues.emplace_back(context.getTransferQueue(), (uint32_t)context.getTransferQueueFamilyIndex());
+            auto qInfo = context.getDeviceQueueInfo(i);
+            m_queues.emplace_back(qInfo.queue, qInfo.familyIndex);
         }
     }
     else
     {
-        DE_ASSERT(false);
+        if (m_queueCaps == QueueCapabilities::GRAPHICS_QUEUE)
+        {
+            m_queues.emplace_back(context.getUniversalQueue(), (uint32_t)context.getUniversalQueueFamilyIndex());
+        }
+        else if (m_queueCaps == QueueCapabilities::COMPUTE_QUEUE)
+        {
+            m_queues.emplace_back(context.getUniversalQueue(), (uint32_t)context.getUniversalQueueFamilyIndex());
+            if ((m_context.getComputeQueueFamilyIndex() != -1) &&
+                ((uint32_t)m_context.getComputeQueueFamilyIndex() != context.getUniversalQueueFamilyIndex()))
+            {
+                m_queues.emplace_back(context.getComputeQueue(), (uint32_t)context.getComputeQueueFamilyIndex());
+            }
+        }
+        else if (m_queueCaps == QueueCapabilities::TRANSFER_QUEUE)
+        {
+            m_queues.emplace_back(context.getUniversalQueue(), (uint32_t)context.getUniversalQueueFamilyIndex());
+            if ((m_context.getComputeQueueFamilyIndex() != -1) &&
+                ((uint32_t)m_context.getComputeQueueFamilyIndex() != context.getUniversalQueueFamilyIndex()))
+            {
+                m_queues.emplace_back(context.getComputeQueue(), (uint32_t)context.getComputeQueueFamilyIndex());
+            }
+            if ((m_context.getTransferQueueFamilyIndex() != -1) &&
+                ((uint32_t)m_context.getTransferQueueFamilyIndex() != context.getUniversalQueueFamilyIndex()) &&
+                (m_context.getTransferQueueFamilyIndex() != m_context.getComputeQueueFamilyIndex()))
+            {
+                m_queues.emplace_back(context.getTransferQueue(), (uint32_t)context.getTransferQueueFamilyIndex());
+            }
+        }
+        else
+        {
+            DE_ASSERT(false);
+        }
     }
 
     if (m_queues.empty())
@@ -1863,24 +1890,33 @@ MultiQueueRunnerTestInstance::MultiQueueRunnerTestInstance(Context &context, Que
 
 tcu::TestStatus MultiQueueRunnerTestInstance::iterate(void)
 {
+    tcu::ResultCollector resultCollector(m_context.getTestContext().getLog());
+
     if (m_queues.size() == 1)
         return queuePass(m_queues[0]);
 
-    bool isFail = false;
-    std::string resultDescription;
-
     for (const auto &queue : m_queues)
     {
-        tcu::TestStatus result = queuePass(queue);
-        if (result.isFail())
+        try
         {
-            resultDescription += "Test failed on queue family " + de::toString(queue.familyIndex) +
-                                 " with descriptoin: " + result.getDescription() + "\n";
-            isFail = true;
+            tcu::TestStatus result = queuePass(queue);
+            if (result.isFail())
+            {
+                resultCollector.addResult(result.getCode(), "Test failed on queue family " +
+                                                                de::toString(queue.familyIndex) +
+                                                                " with description: " + result.getDescription() + "\n");
+            }
+        }
+        catch (const tcu::TestException &e)
+        {
+            resultCollector.addResult(e.getTestResult(),
+                                      "Test exception (" + de::toString(qpGetTestResultName(e.getTestResult())) +
+                                          ") thrown on queue family " + de::toString(queue.familyIndex) +
+                                          " with description: " + e.getMessage());
         }
     }
 
-    return isFail ? tcu::TestStatus::fail(resultDescription) : tcu::TestStatus::pass("All queues passed");
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 std::string TestCase::getRequiredCapabilitiesId() const

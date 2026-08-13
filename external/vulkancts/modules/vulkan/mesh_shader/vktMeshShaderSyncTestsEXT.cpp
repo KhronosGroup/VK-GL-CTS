@@ -648,9 +648,9 @@ void MeshShaderSyncCase::checkSupport(Context &context) const
 {
     checkTaskMeshShaderSupportEXT(context, m_params.needsTask(), true);
 
-    if (m_params.writeAccess == WriteAccess::SHADER_WRITE)
+    if (m_params.writeAccess == WriteAccess::SHADER_WRITE && m_params.fromStage == Stage::FRAG)
     {
-        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
     }
 }
 
@@ -1581,7 +1581,6 @@ public:
 void BarrierAcrossSecondaryCase::checkSupport(Context &context) const
 {
     checkTaskMeshShaderSupportEXT(context, true, true);
-    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
 }
 
 TestInstance *BarrierAcrossSecondaryCase::createInstance(Context &context) const

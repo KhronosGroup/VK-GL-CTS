@@ -278,8 +278,10 @@ tcu::TestStatus AstcSampleTestInstance::iterate(void)
                          MemoryRequirement::HostVisible);
     uint8_t *srcData = reinterpret_cast<uint8_t *>(srcBuffer.getAllocation().getHostPtr());
     memcpy(srcData, generatedData.data(), (size_t)srcBufferSize);
+    flushAlloc(vk, device, srcBuffer.getAllocation());
     uint8_t *srcData2 = reinterpret_cast<uint8_t *>(srcBuffer2.getAllocation().getHostPtr());
     memcpy(srcData2, generatedData2.data(), (size_t)srcBufferSize);
+    flushAlloc(vk, device, srcBuffer2.getAllocation());
 
     const auto subresourceRange = makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
     const vk::VkImageSubresourceLayers subresourceLayers =
@@ -558,6 +560,7 @@ tcu::TestStatus AstcSampleTestInstance::iterate(void)
 
     if (m_parameters.testType == TEST_TYPE_COPY_FROM_IMAGE)
     {
+        invalidateAlloc(vk, device, srcBufferCopy.getAllocation());
         const auto outputData2 = reinterpret_cast<const uint8_t *>(srcBufferCopy.getAllocation().getHostPtr());
         if (memcmp(srcData, outputData2, (size_t)srcBufferSize) != 0)
         {
@@ -965,6 +968,7 @@ tcu::TestStatus MemoryBarrierTestInstance::iterate(void)
     submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
     {
+        invalidateAlloc(vk, device, readOutputBuffer->getAllocation());
         tcu::ConstPixelBufferAccess resultCopyBuffer =
             tcu::ConstPixelBufferAccess(mapVkFormat(imageCreateInfo.format), imageExtent.width, imageExtent.height, 1u,
                                         (const void *)readOutputBuffer->getAllocation().getHostPtr());
@@ -983,6 +987,7 @@ tcu::TestStatus MemoryBarrierTestInstance::iterate(void)
         }
     }
     {
+        invalidateAlloc(vk, device, imageCopyBuffer->getAllocation());
         tcu::ConstPixelBufferAccess resultCopyBuffer =
             tcu::ConstPixelBufferAccess(mapVkFormat(imageCreateInfo.format), imageExtent.width, imageExtent.height, 1u,
                                         (const void *)imageCopyBuffer->getAllocation().getHostPtr());
@@ -1165,6 +1170,7 @@ tcu::TestStatus InputAttachmentTestInstance::iterate(void)
 
     uint8_t *bufferData = reinterpret_cast<uint8_t *>(buffer->getAllocation().getHostPtr());
     memcpy(bufferData, testData.data(), bufferSize);
+    flushAlloc(vk, device, buffer->getAllocation());
 
     VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -1632,6 +1638,7 @@ tcu::TestStatus InputAttachmentTestInstance::iterate(void)
     endCommandBuffer(vk, *cmdBuffer);
     submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
+    invalidateAlloc(vk, device, buffer->getAllocation());
     tcu::ConstPixelBufferAccess resultCopyBuffer =
         tcu::ConstPixelBufferAccess(mapVkFormat(imageCreateInfo.format), imageExtent.width, imageExtent.height, 1u,
                                     (const void *)buffer->getAllocation().getHostPtr());
@@ -2148,6 +2155,7 @@ tcu::TestStatus MsaaTestInstance::iterate(void)
 
     for (uint32_t attachment = 0; attachment < outputCount; ++attachment)
     {
+        invalidateAlloc(vk, device, outputBuffers[attachment]->getAllocation());
         tcu::ConstPixelBufferAccess resultCopyBuffer =
             tcu::ConstPixelBufferAccess(mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM), imageExtent.width, imageExtent.height,
                                         1u, (const void *)outputBuffers[attachment]->getAllocation().getHostPtr());

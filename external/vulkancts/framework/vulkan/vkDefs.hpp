@@ -107,7 +107,6 @@ typedef uint32_t VkFlags;
 typedef uint64_t VkFlags64;
 typedef uint64_t VkDeviceAddress;
 
-// enum HandleType { HANDLE_TYPE_INSTANCE, ... };
 #include "vkHandleType.inl"
 
 template <HandleType Type>
@@ -267,6 +266,7 @@ typedef void *VkRemoteAddressNV;
 extern "C"
 {
 #include "vkFunctionPointerTypes.inl"
+#include "vkPfnTypes.inl"
 }
 
 class PlatformInterface

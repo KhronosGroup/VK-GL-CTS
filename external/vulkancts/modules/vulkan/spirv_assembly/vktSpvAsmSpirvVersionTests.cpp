@@ -228,7 +228,7 @@ class SpvAsmComputeSpirvVersionsInstance : public ComputeShaderSpec, public SpvA
 {
 public:
     SpvAsmComputeSpirvVersionsInstance(Context &ctx, const TestParameters &testParameters);
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
 private:
     TestParameters m_testParameters;
@@ -244,12 +244,12 @@ SpvAsmComputeSpirvVersionsInstance::SpvAsmComputeSpirvVersionsInstance(Context &
         TCU_THROW(InternalError, "Invalid operation specified");
 }
 
-tcu::TestStatus SpvAsmComputeSpirvVersionsInstance::iterate(void)
+tcu::TestStatus SpvAsmComputeSpirvVersionsInstance::queuePass(const vkt::QueueData &queueData)
 {
     if (!isSpirVersionsAsRequested(m_context.getBinaryCollection(), m_testParameters.spirvVersion))
         return tcu::TestStatus::fail("Binary SPIR-V version is different from requested");
 
-    return SpvAsmComputeShaderInstance::iterate();
+    return SpvAsmComputeShaderInstance::queuePass(queueData);
 }
 
 class SpvAsmSpirvVersionsCase : public TestCase

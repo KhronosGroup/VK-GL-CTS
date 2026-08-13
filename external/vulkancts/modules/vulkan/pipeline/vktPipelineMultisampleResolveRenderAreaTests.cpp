@@ -29,6 +29,7 @@
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 
+#include "vkBarrierUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
@@ -350,7 +351,21 @@ tcu::TestStatus MultisampleRenderAreaTestInstance::iterate(void)
     // Clear whole render area with red color.
     renderPassOne.begin(vk, *commandBuffer, fullRenderArea, static_cast<uint32_t>(clearValuesFullArea.size()),
                         clearValuesFullArea.data());
-    renderPassTwo.end(vk, *commandBuffer);
+    renderPassOne.end(vk, *commandBuffer);
+
+    const VkImageMemoryBarrier imageBarriers[] = {
+        makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                               *colorImage, colorSubresourceRange),
+
+        makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                               *resolveColorImage, colorSubresourceRange),
+    };
+
+    vk.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr,
+                          DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
 
     // Draw shape when render area size is halved.
     renderPassTwo.begin(vk, *commandBuffer, testRenderArea, static_cast<uint32_t>(clearValuesTestArea.size()),

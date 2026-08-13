@@ -282,15 +282,16 @@ tcu::TestStatus createPipelineCacheTest(Context &context, TestParams testParams)
         nullptr,                              // pEnabledFeatures;
     };
 
-    VkDeviceObjectReservationCreateInfo objectInfo = resetDeviceObjectReservationCreateInfo();
-    objectInfo.pNext                               = nullptr;
-    objectInfo.pipelineLayoutRequestCount          = 2u;
-    objectInfo.renderPassRequestCount              = 1u;
-    objectInfo.subpassDescriptionRequestCount      = 1u;
-    objectInfo.attachmentDescriptionRequestCount   = 1u;
-    objectInfo.graphicsPipelineRequestCount        = 1u;
-    objectInfo.computePipelineRequestCount         = 1u;
-    objectInfo.pipelineCacheRequestCount           = 2u;
+    VkDeviceObjectReservationCreateInfo objectInfo =
+        context.getResourceInterface()->getDefaultDeviceObjectReservationCreateInfo();
+    objectInfo.pNext                             = nullptr;
+    objectInfo.pipelineLayoutRequestCount        = 2u;
+    objectInfo.renderPassRequestCount            = 1u;
+    objectInfo.subpassDescriptionRequestCount    = 1u;
+    objectInfo.attachmentDescriptionRequestCount = 1u;
+    objectInfo.graphicsPipelineRequestCount      = 1u;
+    objectInfo.computePipelineRequestCount       = 1u;
+    objectInfo.pipelineCacheRequestCount         = 2u;
 
     VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
@@ -303,12 +304,6 @@ tcu::TestStatus createPipelineCacheTest(Context &context, TestParams testParams)
     objectInfo.pipelineCacheCreateInfoCount = 1u;
     objectInfo.pPipelineCacheCreateInfos    = &pipelineCacheCreateInfo;
 
-    std::vector<VkPipelinePoolSize> poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
-    if (!poolSizes.empty())
-    {
-        objectInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
-        objectInfo.pPipelinePoolSizes    = poolSizes.data();
-    }
     void *pNext = &objectInfo;
 
     VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();

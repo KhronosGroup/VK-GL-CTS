@@ -127,6 +127,8 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineBlendTestsCommon.hpp
 	vktPipelineVertexInputSRGBTests.cpp
 	vktPipelineVertexInputSRGBTests.hpp
+	vktPipelineShaderComponentDecoratedLayoutMatchingTests.cpp
+	vktPipelineShaderComponentDecoratedLayoutMatchingTests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_SRCS
@@ -170,8 +172,6 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineNoQueuesTests.hpp
 	vktPipelineDualBlendTests.cpp
 	vktPipelineDualBlendTests.hpp
-	vktPipelineShaderComponentDecoratedLayoutMatchingTests.cpp
-	vktPipelineShaderComponentDecoratedLayoutMatchingTests.hpp
     vktPipelinePrimitiveRestartIndexTests.cpp
     vktPipelinePrimitiveRestartIndexTests.hpp
 	)

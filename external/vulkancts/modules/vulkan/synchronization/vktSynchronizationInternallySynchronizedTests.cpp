@@ -1463,7 +1463,7 @@ tcu::TestStatus InternallySynchronizedQueuesTestInstance::iterate(void)
         queueCount       = 1u;
         for (uint32_t i = 0; i < queueFamilyPropertyCount; ++i)
         {
-            if ((queueFamilyProperties[i].queueFlags & requiredQueueFlags) != 0 &&
+            if ((queueFamilyProperties[i].queueFlags & requiredQueueFlags) == requiredQueueFlags &&
                 queueFamilyIndex == queueFamilyPropertyCount)
                 queueFamilyIndex = i;
             else if (otherQueueFamilyIndex == queueFamilyPropertyCount)
@@ -1688,6 +1688,10 @@ tcu::TestCaseGroup *createInternallySynchronizedTests(tcu::TestContext &testCtx,
                     // dEQP currently has only one SurfaceView, but multiple SurfaceViews in the activity's view hierarchy
                     // would be required, and attach Vulkan WSI objects to each of them
                     if (i == j && typeNdx == vk::wsi::Type::TYPE_ANDROID)
+                        continue;
+
+                    // VK_KHR_display and VK_EXT_acquire_drm_display also have a limit of one window
+                    if (i == j && (typeNdx == vk::wsi::Type::TYPE_DIRECT || typeNdx == vk::wsi::Type::TYPE_DIRECT_DRM))
                         continue;
 
                     params.wsiType = (vk::wsi::Type)typeNdx;

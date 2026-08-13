@@ -5834,7 +5834,7 @@ void CopyTest::CleanAll()
         m_to_dst = 0;
     }
 
-    if (nullptr == m_result)
+    if (nullptr != m_result)
     {
         delete[] m_result;
 

@@ -57,14 +57,14 @@ developing a Vulkan application.
 ### Android
 
  * Android NDK r17c or later.
- * Android SDK with: SDK Tools, SDK Platform-tools, SDK Build-tools, and API 28
+ * Android SDK with: SDK Tools, SDK Platform-tools, SDK Build-tools, and API 34
  * Java Development Kit (JDK)
  * Windows: either NMake or Ninja in PATH
 
 If you have downloaded the Android SDK command line tools package (25.2.3 or higher) then
 you can install the necessary components by running:
 
-	tools/bin/sdkmanager tools platform-tools 'build-tools;25.0.2' 'platforms;android-28'
+	tools/bin/sdkmanager tools platform-tools 'build-tools;25.0.2' 'platforms;android-34'
 
 
 Building CTS
@@ -160,7 +160,7 @@ Following command will build dEQP.apk:
 
 	python3 scripts/android/build_apk.py --sdk <path to Android SDK> --ndk <path to Android NDK>
 
-By default the CTS package will be built for the Android API level 28.
+By default the CTS package will be built for the Android API level 34.
 Another API level may be supplied using --native-api command line option.
 
 The package can be installed by either running:
@@ -314,6 +314,10 @@ and a list of mandatory information tests for each fraction must be supplied:
 
 	--deqp-fraction-mandatory-caselist-file=<vulkancts>external/vulkancts/mustpass/main/vk-fraction-mandatory-tests.txt
 
+For Vulkan SC use the corresponding list instead:
+
+	--deqp-fraction-mandatory-caselist-file=<vulkancts>external/vulkancts/mustpass/main/vksc-fraction-mandatory-tests.txt
+
 To specify file containing waived tests that are omitted only by specified vendor and renderer/device
 the following command line option may be used:
 
@@ -393,6 +397,19 @@ There is also one option used by CTS internally and should not be used manually.
 It informs deqp-vksc application that it works as subprocess:
 
 	--deqp-subprocess=[enable|disable]
+
+The main process and its subprocess communicate over a local TCP connection.
+The main process automatically binds this connection to a free port and hands
+it to the subprocess through another option that is used internally and should
+not be set manually:
+
+	--deqp-ipc-port=<value>
+
+Because each main process picks its own port and derives per-process names for
+the temporary files it exchanges with its subprocess from it, several deqp-vksc
+instances may be executed concurrently, even from the same working directory.
+When using an offline pipeline compiler, give each instance its own
+--deqp-pipeline-dir.
 
 For platforms where it is needed to override the default loader library path, this option can be used (e.g. loader library vulkan-1.dll):
 
@@ -865,6 +882,15 @@ to Vulkan SC requirements:
   Second test run is done in separate process ( subprocess ) and it performs
   the real tests.
 
+  The main process passes the collected information to the subprocess over a
+  local TCP connection. It binds this connection to a free ephemeral port and
+  forwards the port to the subprocess with the internal --deqp-ipc-port option.
+  The temporary files the two processes exchange through the working directory
+  are named per-process using that port as well. As a result multiple deqp-vksc
+  instances can run at the same time (even from the same working directory)
+  without interfering with each other; each instance should still be given its
+  own --deqp-pipeline-dir when an offline pipeline compiler is used.
+
 - Vulkan SC pipelines may be compiled using offline pipeline compiler
   delivered by implementation vendor. You can use command line parameters
   to achieve this ( see parameters: --deqp-pipeline-compiler, --deqp-pipeline-dir,
@@ -928,6 +954,14 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
   --deqp-watchdog=[enable|disable]
     Enable test watchdog
     default: 'disable'
+
+  --deqp-watchdog-total-time-limit=<value>
+    Total test case time limit in seconds
+    default: '300'
+
+  --deqp-watchdog-interval-time-limit=<value>
+    Per iteration time limit in seconds
+    default: '30'
 
   --deqp-crashhandler=[enable|disable]
     Enable crash handling
@@ -1067,6 +1101,12 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
   --deqp-subprocess=[enable|disable]
     Inform app that it works as subprocess (Vulkan SC only, do not use manually)
     default: 'disable'
+
+  --deqp-ipc-port=<value>
+    TCP port used for communication between the main process and the subprocess
+    (Vulkan SC only, do not use manually; the main process picks a free port
+    automatically and passes it to the subprocess)
+    default: '0'
 
   --deqp-subprocess-test-count=<value>
     Define default number of tests performed in subprocess (Vulkan SC only)

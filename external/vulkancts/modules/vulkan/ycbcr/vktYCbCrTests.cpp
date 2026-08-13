@@ -32,10 +32,9 @@
 #include "vktYCbCrStorageImageWriteTests.hpp"
 #include "vktYCbCrImageOffsetTests.hpp"
 #include "vktYCbCrMiscTests.hpp"
+#include "vktYCbCrRenderAttachmentTests.hpp"
 
-namespace vkt
-{
-namespace ycbcr
+namespace vkt::ycbcr
 {
 
 namespace
@@ -56,6 +55,7 @@ void populateTestGroup(tcu::TestCaseGroup *ycbcrTests)
     ycbcrTests->addChild(createStorageImageWriteTests(testCtx));
     ycbcrTests->addChild(createImageOffsetTests(testCtx));
     ycbcrTests->addChild(createMiscTests(testCtx));
+    ycbcrTests->addChild(createRenderAttachmentTests(testCtx));
 }
 
 } // namespace
@@ -65,5 +65,4 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     return createTestGroup(testCtx, name.c_str(), populateTestGroup);
 }
 
-} // namespace ycbcr
-} // namespace vkt
+} // namespace vkt::ycbcr

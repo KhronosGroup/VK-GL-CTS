@@ -3411,9 +3411,25 @@ VKAPI_ATTR void VKAPI_CALL getDeviceBufferMemoryRequirementsKHR (VkDevice device
 	DE_UNREF(pMemoryRequirements);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getDeviceFaultDebugInfoKHR (VkDevice device, VkDeviceFaultDebugInfoKHR* pDebugInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pDebugInfo);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getDeviceFaultInfoEXT (VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo)
 {
 	DE_UNREF(device);
+	DE_UNREF(pFaultCounts);
+	DE_UNREF(pFaultInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getDeviceFaultReportsKHR (VkDevice device, uint64_t timeout, uint32_t* pFaultCounts, VkDeviceFaultInfoKHR* pFaultInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(timeout);
 	DE_UNREF(pFaultCounts);
 	DE_UNREF(pFaultInfo);
 	return VK_SUCCESS;
@@ -5783,7 +5799,9 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutSupport,								getDescriptorSetLayoutSupport),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceAccelerationStructureCompatibilityKHR,			getDeviceAccelerationStructureCompatibilityKHR),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceBufferMemoryRequirements,							getDeviceBufferMemoryRequirements),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceFaultDebugInfoKHR,								getDeviceFaultDebugInfoKHR),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceFaultInfoEXT,										getDeviceFaultInfoEXT),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceFaultReportsKHR,									getDeviceFaultReportsKHR),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupPeerMemoryFeatures,							getDeviceGroupPeerMemoryFeatures),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupPresentCapabilitiesKHR,						getDeviceGroupPresentCapabilitiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupSurfacePresentModes2EXT,						getDeviceGroupSurfacePresentModes2EXT),

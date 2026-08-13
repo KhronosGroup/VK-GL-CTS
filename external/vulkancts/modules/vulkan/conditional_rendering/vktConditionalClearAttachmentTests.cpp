@@ -31,7 +31,6 @@
 #include "vktDrawBaseClass.hpp"
 
 #include "tcuTestLog.hpp"
-#include "tcuResource.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuRGBA.hpp"
@@ -40,9 +39,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
 
-namespace vkt
-{
-namespace conditional
+namespace vkt::conditional
 {
 namespace
 {
@@ -76,9 +73,6 @@ ConditionalClearAttachmentTest::ConditionalClearAttachmentTest(Context &context,
                                vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
     , m_conditionalData(testSpec.conditionalData)
 {
-    checkConditionalRenderingCapabilities(context, m_conditionalData);
-    checkNestedRenderPassCapabilities(context);
-
     m_data.push_back(Draw::VertexElementData(tcu::Vec4(0.0f), tcu::Vec4(0.0f), 0));
 
     initialize();
@@ -254,6 +248,12 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate(void)
     return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
+void checkSupport(Context &context, ConditionalClearAttachmentTest::TestSpec testSpec)
+{
+    checkConditionalRenderingCapabilities(context, testSpec.conditionalData);
+    checkNestedRenderPassCapabilities(context);
+}
+
 } // namespace
 
 ConditionalClearAttachmentTests::ConditionalClearAttachmentTests(tcu::TestContext &testCtx)
@@ -268,10 +268,9 @@ ConditionalClearAttachmentTests::~ConditionalClearAttachmentTests(void)
 
 void ConditionalClearAttachmentTests::init(void)
 {
-    for (int conditionNdx = 0; conditionNdx < DE_LENGTH_OF_ARRAY(conditional::s_testsData); conditionNdx++)
+    using CheckSupport = FunctionSupport1<ConditionalClearAttachmentTest::TestSpec>;
+    for (const auto &conditionData : conditional::s_testsData)
     {
-        const ConditionalData &conditionData = conditional::s_testsData[conditionNdx];
-
         if (conditionData.clearInRenderPass)
             continue;
 
@@ -283,12 +282,11 @@ void ConditionalClearAttachmentTests::init(void)
         testSpec.shaders[glu::SHADERTYPE_VERTEX]   = "vulkan/dynamic_state/VertexFetch.vert";
         testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/dynamic_state/VertexFetch.frag";
 
-        conditionalDrawRootGroup->addChild(
-            new Draw::InstanceFactory<ConditionalClearAttachmentTest>(m_testCtx, "clear_attachments", testSpec));
+        conditionalDrawRootGroup->addChild(new Draw::InstanceFactory<ConditionalClearAttachmentTest, CheckSupport>(
+            m_testCtx, "clear_attachments", testSpec, CheckSupport::Args(checkSupport, testSpec)));
 
         addChild(conditionalDrawRootGroup);
     }
 }
 
-} // namespace conditional
-} // namespace vkt
+} // namespace vkt::conditional

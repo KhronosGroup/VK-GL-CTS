@@ -661,7 +661,7 @@ bool check_VK_ARM_pipeline_opacity_micromap(const tcu::UVec2& v, const ExtPropVe
 		return true;
 
 	// depends attribute in xml: VK_EXT_opacity_micromap
-	return (isSupported(vDEP, "VK_EXT_opacity_micromap") || isSupported(vDEP, "VK_EXT_opacity_micromap"));
+	return (isSupported(vDEP, "VK_EXT_opacity_micromap") || isSupported(vDEP, "VK_KHR_opacity_micromap"));
 }
 
 bool check_VK_ARM_rasterization_order_attachment_access(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -734,6 +734,18 @@ bool check_VK_ARM_shader_instrumentation(const tcu::UVec2& v, const ExtPropVect&
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
 	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
+bool check_VK_ARM_tensor_controls(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_ARM_tensor_controls"))
+		return true;
+
+	// depends attribute in xml: VK_ARM_tensors
+	return isSupported(vDEP, "VK_ARM_tensors");
 }
 
 bool check_VK_ARM_tensors(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1269,7 +1281,7 @@ bool check_VK_EXT_global_priority_query(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_EXT_global_priority+(VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)
-	return ((isSupported(vDEP, "VK_EXT_global_priority") || isSupported(vDEP, "VK_EXT_global_priority")) && (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)));
+	return ((isSupported(vDEP, "VK_EXT_global_priority") || isSupported(vDEP, "VK_KHR_global_priority")) && (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)));
 }
 
 bool check_VK_EXT_graphics_pipeline_library(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2014,6 +2026,18 @@ bool check_VK_EXT_shader_object(const tcu::UVec2& v, const ExtPropVect& vIEP, co
 	return (((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_dynamic_rendering")) || isCompatible(1, 3, v));
 }
 
+bool check_VK_EXT_shader_ocp_microscaling_types(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_shader_ocp_microscaling_types"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
 bool check_VK_EXT_shader_replicated_composites(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -2109,7 +2133,7 @@ bool check_VK_EXT_swapchain_maintenance1(const tcu::UVec2& v, const ExtPropVect&
 		return true;
 
 	// depends attribute in xml: VK_KHR_swapchain+VK_EXT_surface_maintenance1+(VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)
-	return (isSupported(vDEP, "VK_KHR_swapchain") && (isSupported(vIEP, "VK_EXT_surface_maintenance1") || isSupported(vIEP, "VK_EXT_surface_maintenance1")) && (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)));
+	return (isSupported(vDEP, "VK_KHR_swapchain") && (isSupported(vIEP, "VK_EXT_surface_maintenance1") || isSupported(vIEP, "VK_KHR_surface_maintenance1")) && (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)));
 }
 
 bool check_VK_EXT_texel_buffer_alignment(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -4135,7 +4159,7 @@ bool check_VK_NV_displacement_micromap(const tcu::UVec2& v, const ExtPropVect& v
 		return true;
 
 	// depends attribute in xml: VK_EXT_opacity_micromap
-	return (isSupported(vDEP, "VK_EXT_opacity_micromap") || isSupported(vDEP, "VK_EXT_opacity_micromap"));
+	return (isSupported(vDEP, "VK_EXT_opacity_micromap") || isSupported(vDEP, "VK_KHR_opacity_micromap"));
 }
 
 bool check_VK_NV_extended_sparse_address_space(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -4848,6 +4872,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_ARM_shader_core_builtins",							&check_VK_ARM_shader_core_builtins),
 	std::make_pair("VK_ARM_shader_core_properties",							&check_VK_ARM_shader_core_properties),
 	std::make_pair("VK_ARM_shader_instrumentation",							&check_VK_ARM_shader_instrumentation),
+	std::make_pair("VK_ARM_tensor_controls",								&check_VK_ARM_tensor_controls),
 	std::make_pair("VK_ARM_tensors",										&check_VK_ARM_tensors),
 	std::make_pair("VK_EXT_4444_formats",									&check_VK_EXT_4444_formats),
 	std::make_pair("VK_EXT_astc_decode_mode",								&check_VK_EXT_astc_decode_mode),
@@ -4952,6 +4977,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_shader_long_vector",								&check_VK_EXT_shader_long_vector),
 	std::make_pair("VK_EXT_shader_module_identifier",						&check_VK_EXT_shader_module_identifier),
 	std::make_pair("VK_EXT_shader_object",									&check_VK_EXT_shader_object),
+	std::make_pair("VK_EXT_shader_ocp_microscaling_types",					&check_VK_EXT_shader_ocp_microscaling_types),
 	std::make_pair("VK_EXT_shader_replicated_composites",					&check_VK_EXT_shader_replicated_composites),
 	std::make_pair("VK_EXT_shader_split_barrier",							&check_VK_EXT_shader_split_barrier),
 	std::make_pair("VK_EXT_shader_subgroup_partitioned",					&check_VK_EXT_shader_subgroup_partitioned),
@@ -5231,6 +5257,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_ARM_shader_core_builtins"),
 	std::make_tuple(1, 1, "VK_ARM_shader_core_properties"),
 	std::make_tuple(1, 0, "VK_ARM_shader_instrumentation"),
+	std::make_tuple(1, 3, "VK_ARM_tensor_controls"),
 	std::make_tuple(1, 3, "VK_ARM_tensors"),
 	std::make_tuple(1, 0, "VK_EXT_4444_formats"),
 	std::make_tuple(1, 0, "VK_EXT_acquire_drm_display"),
@@ -5296,6 +5323,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_image_drm_format_modifier"),
 	std::make_tuple(1, 0, "VK_EXT_image_robustness"),
 	std::make_tuple(1, 0, "VK_EXT_image_sliced_view_of_3d"),
+	std::make_tuple(1, 0, "VK_EXT_image_tiling_control"),
 	std::make_tuple(1, 0, "VK_EXT_image_view_min_lod"),
 	std::make_tuple(1, 0, "VK_EXT_index_type_uint8"),
 	std::make_tuple(1, 0, "VK_EXT_inline_uniform_block"),
@@ -5353,6 +5381,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 2, "VK_EXT_shader_long_vector"),
 	std::make_tuple(1, 0, "VK_EXT_shader_module_identifier"),
 	std::make_tuple(1, 0, "VK_EXT_shader_object"),
+	std::make_tuple(1, 0, "VK_EXT_shader_ocp_microscaling_types"),
 	std::make_tuple(1, 0, "VK_EXT_shader_replicated_composites"),
 	std::make_tuple(1, 0, "VK_EXT_shader_split_barrier"),
 	std::make_tuple(1, 0, "VK_EXT_shader_stencil_export"),

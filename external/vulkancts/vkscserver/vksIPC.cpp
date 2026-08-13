@@ -30,7 +30,11 @@ namespace vksc_server
 namespace ipc
 {
 
-constexpr int DefaultPortIPC = 57323;
+// Bind and connect using an explicit IPv4 loopback literal rather than "localhost". "localhost" can
+// resolve to either 127.0.0.1 or ::1, and if the parent's bind and the child's connect pick
+// different families the child would target an address nobody is listening on. A fixed literal keeps
+// both ends on the same loopback interface.
+constexpr const char *LoopbackHost = "127.0.0.1";
 
 struct ChildConnection
 {
@@ -113,9 +117,10 @@ struct PacketsLoop
 struct ParentImpl
 {
     Store fileStore;
-    int m_portOffset;
-    std::thread listenerLoop;
+    de::Socket listener;
+    int m_port{0};
     std::atomic<bool> appActive{true};
+    std::thread listenerLoop;
 
     void ParentLoop()
     {
@@ -124,12 +129,6 @@ struct ParentImpl
 
         try
         {
-            de::SocketAddress addr;
-            addr.setHost("localhost");
-            addr.setPort(DefaultPortIPC + m_portOffset);
-            de::Socket listener;
-            listener.listen(addr);
-
             while (appActive)
             {
                 remove_erase_if(clients, [](const std::future<void> &c) { return is_ready(c); });
@@ -143,8 +142,19 @@ struct ParentImpl
         }
     }
 
-    ParentImpl(const int portOffset) : m_portOffset{portOffset}, listenerLoop{[this]() { ParentLoop(); }}
+    ParentImpl()
     {
+        // Bind to an OS-assigned ephemeral port (port 0) on the loopback interface. This guarantees
+        // a free port, so multiple concurrent deqp-vksc processes never collide on a shared/fixed
+        // port. The listener is bound synchronously here so getPort() is valid before any subprocess
+        // is spawned; the accept loop then runs on its own thread.
+        de::SocketAddress addr;
+        addr.setHost(LoopbackHost);
+        addr.setPort(0);
+        listener.listen(addr);
+        m_port = listener.getBoundPort();
+
+        listenerLoop = std::thread{[this]() { ParentLoop(); }};
     }
 
     ~ParentImpl()
@@ -153,8 +163,8 @@ struct ParentImpl
 
         // Dummy connection to trigger accept()
         de::SocketAddress addr;
-        addr.setHost("localhost");
-        addr.setPort(DefaultPortIPC + m_portOffset);
+        addr.setHost(LoopbackHost);
+        addr.setPort(m_port);
         de::Socket socket;
 
         try
@@ -182,13 +192,18 @@ struct ParentImpl
     }
 };
 
-Parent::Parent(const int portOffset)
+Parent::Parent()
 {
-    impl.reset(new ParentImpl(portOffset));
+    impl.reset(new ParentImpl());
 }
 
 Parent::~Parent()
 {
+}
+
+int Parent::getPort() const
+{
+    return impl->m_port;
 }
 
 bool Parent::SetFile(const string &name, const std::vector<u8> &content)
@@ -208,18 +223,18 @@ vector<u8> Parent::GetFile(const string &name)
 
 struct ChildImpl
 {
-    ChildImpl(const int portOffset) : m_portOffset(portOffset)
+    ChildImpl(const int port) : m_port(port)
     {
-        connection.reset(new Server{"localhost:" + std::to_string(DefaultPortIPC + m_portOffset)});
+        connection.reset(new Server{std::string(LoopbackHost) + ":" + std::to_string(m_port)});
     }
 
-    int m_portOffset;
+    int m_port;
     std::unique_ptr<Server> connection;
 };
 
-Child::Child(const int portOffset)
+Child::Child(const int port)
 {
-    impl.reset(new ChildImpl(portOffset));
+    impl.reset(new ChildImpl(port));
 }
 
 Child::~Child()

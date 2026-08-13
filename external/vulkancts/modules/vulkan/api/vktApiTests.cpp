@@ -51,6 +51,7 @@
 #include "vktApiExtensionDuplicatesTests.hpp"
 #include "vktApiMaintenance7Tests.hpp"
 #include "vktApiDSColorBitCopyTests.hpp"
+#include "vktApiMaintenance11Tests.hpp"
 
 #ifndef CTS_USES_VULKANSC
 #include "vktApiSmokeTests.hpp"
@@ -142,7 +143,8 @@ void createApiTests(tcu::TestCaseGroup *apiTests)
     apiTests->addChild(createRenderPassPerformanceCountersByRegionApiTests(testCtx));
     apiTests->addChild(createGpaInterfaceTests(testCtx));
     apiTests->addChild(createArrayTests(testCtx));
-#endif
+    apiTests->addChild(createMaintenance11Tests(testCtx));
+#endif // CTS_USES_VULKANSC
 }
 
 } // namespace

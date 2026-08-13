@@ -13,6 +13,8 @@ set(DEQP_VK_SHADERRENDER_SRCS
 	vktShaderRenderDerivateTests.hpp
 	vktShaderRenderDiscardTests.cpp
 	vktShaderRenderDiscardTests.hpp
+	vktShaderRenderHelperInvocationTests.cpp
+	vktShaderRenderHelperInvocationTests.hpp
 	vktShaderRenderIndexingTests.cpp
 	vktShaderRenderIndexingTests.hpp
 	vktShaderRenderInvarianceTests.hpp

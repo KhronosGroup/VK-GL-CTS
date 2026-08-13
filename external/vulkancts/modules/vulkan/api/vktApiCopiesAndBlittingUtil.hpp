@@ -140,6 +140,7 @@ enum ExtensionUseBits
     MAINTENANCE_8                 = (1 << 5),
     INDIRECT_COPY                 = (1 << 6),
     MAINTENANCE_10                = (1 << 7),
+    MAINTENANCE_11                = (1 << 8),
     DEVICE_ADDRESS_COMMANDS       = (1 << 8),
 };
 

@@ -1046,6 +1046,7 @@ class BufferStorageTest : public deqp::TestCase
 public:
     /* Public methods */
     BufferStorageTest(deqp::Context &context, BufferStorageTestCase *testCase, const char *name);
+    ~BufferStorageTest();
 
     void deinit();
     void init();

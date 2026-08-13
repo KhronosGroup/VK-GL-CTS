@@ -368,6 +368,7 @@ public:
 
     static void checkSupport(Context &context, const VideoCodecOperationFlags videoCodecOperation);
     static vk::VkQueueFlags getQueueFlags(const VideoCodecOperationFlags videoCodecOperationFlags);
+    static bool supportsCodecOperation(Context &context, const VideoCodecOperationFlags videoCodecOperation);
 
     static void addVideoDeviceExtensions(std::vector<const char *> &deviceExtensions, const uint32_t apiVersion,
                                          const vk::VkQueueFlags queueFlagsRequired,

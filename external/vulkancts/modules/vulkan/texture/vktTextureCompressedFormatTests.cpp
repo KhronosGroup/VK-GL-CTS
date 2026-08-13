@@ -455,6 +455,12 @@ Compressed3DTestInstance::Compressed3DTestInstance(Context &context, const Param
     , m_renderer2D(context, testParameters.sampleCount, testParameters.width, testParameters.height, 1,
                    makeComponentMappingRGBA(), VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D)
 {
+#ifndef CTS_USES_VULKANSC
+    // VUID-vkGetPhysicalDeviceImageFormatProperties-format-parameter
+    if (tcu::isAstc3DFormat(m_compressedFormat))
+        context.requireDeviceFunctionality("VK_EXT_texture_compression_astc_3d");
+#endif // CTS_USES_VULKANSC
+
     m_renderer2D.add3DTexture(m_texture3D, testParameters.aspectMask, testParameters.backingMode);
 
     VkPhysicalDeviceFeatures physicalFeatures;

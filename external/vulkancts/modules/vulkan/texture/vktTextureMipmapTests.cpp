@@ -629,15 +629,7 @@ tcu::TestStatus TextureCubeMipmapTestInstance::iterate(void)
                 refParams, lookupPrec, lodPrec, m_context.getTestContext().getWatchDog());
         }
 
-        int maxAllowedFailedPixels = 0;
-        // Allow small number of errors for compute-only due to cubemap seams.
-        if (m_context.getTestContext().getCommandLine().isComputeOnly())
-        {
-            if (m_testParameters.coordType == COORDTYPE_PROJECTED)
-                maxAllowedFailedPixels = 16;
-            if (m_testParameters.coordType == COORDTYPE_BASIC_BIAS)
-                maxAllowedFailedPixels = 1024;
-        }
+        const int maxAllowedFailedPixels = 0;
 
         if (numFailedPixels > 0)
         {

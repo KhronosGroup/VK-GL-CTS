@@ -20,6 +20,7 @@ dEQP-VKSC.synchronization2.basic.event.single_submit_multi_command_buffer
 dEQP-VKSC.synchronization2.basic.event.single_submit_multi_command_buffer_cq
 dEQP-VKSC.synchronization2.basic.event.single_submit_multi_command_buffer_device_only
 dEQP-VKSC.synchronization2.basic.event.single_submit_multi_command_buffer_device_only_cq
+dEQP-VKSC.synchronization2.basic.event.vertex_stage_barrier
 dEQP-VKSC.synchronization2.basic.timeline_semaphore.chain
 dEQP-VKSC.synchronization2.basic.timeline_semaphore.multi_queue
 dEQP-VKSC.synchronization2.basic.timeline_semaphore.one_queue

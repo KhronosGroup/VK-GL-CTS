@@ -198,6 +198,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		functions.push_back("vkEnumeratePhysicalDeviceShaderInstrumentationMetricsARM");
 		return;
 	}
+	if (extName == "VK_ARM_tensor_controls")
+	{
+		return;
+	}
 	if (extName == "VK_ARM_tensors")
 	{
 		functions.push_back("vkGetPhysicalDeviceExternalTensorPropertiesARM");
@@ -477,6 +481,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_image_tiling_control")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_image_view_min_lod")
 	{
 		return;
@@ -704,6 +712,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_EXT_shader_object")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_shader_ocp_microscaling_types")
 	{
 		return;
 	}
@@ -2222,6 +2234,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkClearShaderInstrumentationMetricsARM");
 		return;
 	}
+	if (extName == "VK_ARM_tensor_controls")
+	{
+		return;
+	}
 	if (extName == "VK_ARM_tensors")
 	{
 		functions.push_back("vkCreateTensorARM");
@@ -2681,6 +2697,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_image_tiling_control")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_image_view_min_lod")
 	{
 		return;
@@ -3049,6 +3069,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		if (extensionIsSupported(vDEP, "VK_EXT_depth_clamp_control")) {
 			functions.push_back("vkCmdSetDepthClampRangeEXT");
 		}
+		return;
+	}
+	if (extName == "VK_EXT_shader_ocp_microscaling_types")
+	{
 		return;
 	}
 	if (extName == "VK_EXT_shader_replicated_composites")
@@ -4339,6 +4363,13 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	}
 	if (extName == "VK_NV_low_latency")
 	{
+		functions.push_back("vkSetLatencySleepModeLegacyNV");
+		functions.push_back("vkLatencySleepLegacyNV");
+		functions.push_back("vkSetLatencyMarkerLegacyNV");
+		functions.push_back("vkGetLatencyTimingsLegacyNV");
+		functions.push_back("vkQueueNotifyOutOfBandLegacyNV");
+		functions.push_back("vkGetSleepStatusLegacyNV");
+		functions.push_back("vkShutdownLatencyDeviceLegacyNV");
 		return;
 	}
 	if (extName == "VK_NV_low_latency2")
@@ -5065,6 +5096,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_command_buffer_inheritance",
 	"VK_NV_shader_atomic_float16_vector",
 	"VK_EXT_shader_replicated_composites",
+	"VK_ARM_tensor_controls",
 	"VK_EXT_shader_float8",
 	"VK_NV_ray_tracing_validation",
 	"VK_NV_cluster_acceleration_structure",
@@ -5097,10 +5129,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_shader_uniform_buffer_unsized_array",
 	"VK_NV_compute_occupancy_priority",
 	"VK_EXT_shader_subgroup_partitioned",
+	"VK_EXT_shader_ocp_microscaling_types",
 	"VK_VALVE_shader_mixed_float_dot_product",
 	"VK_SEC_throttle_hint",
 	"VK_ARM_data_graph_neural_accelerator_statistics",
 	"VK_EXT_primitive_restart_index",
+	"VK_EXT_image_tiling_control",
 	"VK_NV_cooperative_matrix_decode_vector",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",

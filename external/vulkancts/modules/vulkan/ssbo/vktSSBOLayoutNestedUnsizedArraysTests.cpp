@@ -828,17 +828,17 @@ private:
 } //namespace sg
 using namespace sg;
 
-class NestedUnsizedArraysTestInstance : public TestInstance
+class NestedUnsizedArraysTestInstance : public MultiQueueRunnerTestInstance
 {
     INodePtr m_structure;
     const float m_seed;
     const uint32_t m_outerArrayLen;
-    virtual tcu::TestStatus iterate() override;
+    tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
     bool verify(const BufferWithMemory &buffer, const std::size_t stride, std::string &msg) const;
 
 public:
     NestedUnsizedArraysTestInstance(Context &context, INodePtr structure, float seed, uint32_t outerArrayLen)
-        : TestInstance(context)
+        : MultiQueueRunnerTestInstance(context, COMPUTE_QUEUE)
         , m_structure(structure)
         , m_seed(seed)
         , m_outerArrayLen(outerArrayLen)
@@ -884,12 +884,12 @@ auto makeStdBeginEnd(void const *p, N &&n) -> std::pair<R, R>
     return {begin, tmp};
 }
 
-tcu::TestStatus NestedUnsizedArraysTestInstance::iterate()
+tcu::TestStatus NestedUnsizedArraysTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const DeviceInterface &di       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = queueData.handle;
+    const uint32_t queueFamilyIndex = queueData.familyIndex;
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     const std::size_t structSize = m_structure->getLogicalSize();

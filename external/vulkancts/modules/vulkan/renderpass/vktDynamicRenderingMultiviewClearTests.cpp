@@ -353,6 +353,8 @@ tcu::TestStatus runTest(Context &context, TestParamsPtr params)
     {
         const bool inViewMask = (((1 << z) & params->viewMask) != 0);
 
+        context.getTestContext().touchWatchdog();
+
         if (colorOrDepthBuffer)
         {
             const auto refLayer =
