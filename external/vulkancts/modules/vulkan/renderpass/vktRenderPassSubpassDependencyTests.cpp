@@ -4192,6 +4192,630 @@ struct SingleAttachmentPrograms
     }
 };
 
+struct InputAttachmentCoherencyTestConfig
+{
+    InputAttachmentCoherencyTestConfig(SharedGroupParams groupParams_) : groupParams(groupParams_)
+    {
+    }
+
+    SharedGroupParams groupParams;
+};
+
+struct InputAttachmentCoherencyPrograms
+{
+    void init(vk::SourceCollections &dst, InputAttachmentCoherencyTestConfig testConfig) const
+    {
+        DE_UNREF(testConfig);
+
+        dst.glslSources.add("vert") << glu::VertexSource("#version 450\n"
+                                                         "layout(location = 0) in vec4 inPosition;\n"
+                                                         "void main (void)\n"
+                                                         "{\n"
+                                                         "    gl_Position = inPosition;\n"
+                                                         "}\n");
+
+        dst.glslSources.add("frag_opaque")
+            << glu::FragmentSource("#version 450\n"
+                                   "layout(location = 0) out vec4 outGBuffer;\n"
+                                   "layout(location = 1) out vec4 outResolvedColor;\n"
+                                   "void main (void)\n"
+                                   "{\n"
+                                   "    outGBuffer = vec4(0.0, 1.0, 0.0, 1.0);\n"       // Green
+                                   "    outResolvedColor = vec4(1.0, 1.0, 0.0, 1.0);\n" // Yellow
+                                   "}\n");
+
+        dst.glslSources.add("frag_resolve") << glu::FragmentSource(
+            "#version 450\n"
+            "layout(set = 0, input_attachment_index = 0, binding = 0) uniform subpassInput inGBuffer;\n"
+            "layout(location = 0) out vec4 outColor;\n"
+            "void main (void)\n"
+            "{\n"
+            "    outColor = subpassLoad(inGBuffer);\n"
+            "}\n");
+    }
+};
+
+void checkInputAttachmentCoherencySupport(Context &context, InputAttachmentCoherencyTestConfig config)
+{
+    const InstanceInterface &vki        = context.getInstanceInterface();
+    vk::VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
+    checkPipelineConstructionRequirements(vki, physicalDevice, config.groupParams->pipelineConstructionType);
+    if (config.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
+        context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+
+    // Verify Color Format Support (VK_FORMAT_R8G8B8A8_UNORM)
+    {
+        const VkFormatProperties properties =
+            vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, VK_FORMAT_R8G8B8A8_UNORM);
+        const VkFormatFeatureFlags requiredFlags =
+            VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
+        if ((properties.optimalTilingFeatures & requiredFlags) != requiredFlags)
+            TCU_THROW(NotSupportedError,
+                      "VK_FORMAT_R8G8B8A8_UNORM format not supported for required rendering/readback features");
+    }
+
+    // Verify Depth-Stencil Format Support (VK_FORMAT_D24_UNORM_S8_UINT)
+    {
+        const VkFormatProperties properties =
+            vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, VK_FORMAT_D24_UNORM_S8_UINT);
+        const VkFormatFeatureFlags requiredFlags = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        if ((properties.optimalTilingFeatures & requiredFlags) != requiredFlags)
+            TCU_THROW(NotSupportedError, "VK_FORMAT_D24_UNORM_S8_UINT format not supported for depth/stencil features");
+    }
+}
+
+class InputAttachmentCoherencyTestInstance : public TestInstance
+{
+public:
+    InputAttachmentCoherencyTestInstance(Context &context, InputAttachmentCoherencyTestConfig testConfig)
+        : TestInstance(context)
+        , m_groupParams(testConfig.groupParams)
+    {
+    }
+
+    ~InputAttachmentCoherencyTestInstance(void) = default;
+
+    tcu::TestStatus iterate(void) override
+    {
+        switch (m_groupParams->renderingType)
+        {
+        case RENDERING_TYPE_RENDERPASS_LEGACY:
+            return iterateInternal<RenderpassSubpass1>();
+        case RENDERING_TYPE_RENDERPASS2:
+            return iterateInternal<RenderpassSubpass2>();
+        default:
+            TCU_THROW(InternalError, "Impossible");
+        }
+    }
+
+    template <typename RenderpassSubpass>
+    tcu::TestStatus iterateInternal(void)
+    {
+        /*
+         * Input Attachment Coherency Test Architecture:
+         *
+         * Attachments:
+         *   [0] depthImage   : Depth buffer for geometry overlap testing.
+         *   [1] colorImage   : Final resolved output (cleared Black).
+         *   [2] gbufferImage : Intermediate tile memory (cleared Red).
+         *
+         * Execution Lifecycle:
+         *   RenderPassStart
+         *     Subpass 0 (Opaque Geometry) Start:
+         *       - Draws quad geometry; outputs Green to gbufferImage and Yellow to colorImage.
+         *     Subpass 0 End
+         *     Subpass 1 (G-Buffer Resolve) Start:
+         *       - Reads gbufferImage via subpassLoad(); writes resolved Green to colorImage.
+         *     Subpass 1 End
+         *   RenderPassEnd
+         *
+         * Geometry Overlap & Verification Region (32x32 Framebuffer):
+         *   (0,0) +----------------------------------+
+         *         | Subpass 0 Quad (-1.0 to 1.0)     |  Subpass 0 covers full 32x32 viewport.
+         *         | (Yellow in color, Green in tile cache) |
+         *         |   (6,6) +------------------------+  Subpass 1 (-0.6 to 1.4) clips at bottom-
+         *         |         | Subpass 1 Quad         |  right corner covering (6,6) to (32,32).
+         *         |         |   (10,10) +--------+   |
+         *         |         |           | Overlap|   |  We verify only the interior region from
+         *         |         |           | 16x16  |   |  (10,10) to (25,25) to avoid edge raster
+         *         |         |   (25,25) +--------+   |  pixels.
+         *         +---------+------------------------+ (32,32)
+         *
+         * CPU Verification Pass:
+         *   - Extracts 16x16 overlap subregion from colorImage and checks against expected Green.
+         *   - Detects driver tile cache write-back defects if stale Yellow/Red pixels remain.
+         */
+        const DeviceInterface &vkd    = m_context.getDeviceInterface();
+        const VkDevice device         = m_context.getDevice();
+        const VkQueue queue           = m_context.getUniversalQueue();
+        const uint32_t queueFamilyIdx = m_context.getUniversalQueueFamilyIndex();
+        Allocator &alloc              = m_context.getDefaultAllocator();
+
+        const uint32_t width         = 32u;
+        const uint32_t height        = 32u;
+        const VkExtent3D imageExtent = {width, height, 1u};
+
+        // Overlapping region for verification (in pixel space, mapped from NDC overlap)
+        const int overlapMinX = 10;
+        const int overlapMaxX = 25;
+        const int overlapMinY = 10;
+        const int overlapMaxY = 25;
+
+        // Create Images & Views
+        VkImageCreateInfo depthImageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                                                  nullptr,
+                                                  0u,
+                                                  VK_IMAGE_TYPE_2D,
+                                                  VK_FORMAT_D24_UNORM_S8_UINT,
+                                                  imageExtent,
+                                                  1u,
+                                                  1u,
+                                                  VK_SAMPLE_COUNT_1_BIT,
+                                                  VK_IMAGE_TILING_OPTIMAL,
+                                                  VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+                                                      VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+                                                  VK_SHARING_MODE_EXCLUSIVE,
+                                                  0u,
+                                                  nullptr,
+                                                  VK_IMAGE_LAYOUT_UNDEFINED};
+        Move<VkImage> depthImage               = createImage(vkd, device, &depthImageCreateInfo, nullptr);
+
+        const VkFormat colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+
+        VkImageCreateInfo colorImageCreateInfo = {
+            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            nullptr,
+            0u,
+            VK_IMAGE_TYPE_2D,
+            colorFormat,
+            imageExtent,
+            1u,
+            1u,
+            VK_SAMPLE_COUNT_1_BIT,
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+            VK_SHARING_MODE_EXCLUSIVE,
+            0u,
+            nullptr,
+            VK_IMAGE_LAYOUT_UNDEFINED};
+        Move<VkImage> colorImage = createImage(vkd, device, &colorImageCreateInfo, nullptr);
+
+        VkImageCreateInfo gbufferImageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                                                    nullptr,
+                                                    0u,
+                                                    VK_IMAGE_TYPE_2D,
+                                                    colorFormat,
+                                                    imageExtent,
+                                                    1u,
+                                                    1u,
+                                                    VK_SAMPLE_COUNT_1_BIT,
+                                                    VK_IMAGE_TILING_OPTIMAL,
+                                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                                        VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+                                                    VK_SHARING_MODE_EXCLUSIVE,
+                                                    0u,
+                                                    nullptr,
+                                                    VK_IMAGE_LAYOUT_UNDEFINED};
+        Move<VkImage> gbufferImage               = createImage(vkd, device, &gbufferImageCreateInfo, nullptr);
+
+        de::MovePtr<Allocation> depthAlloc =
+            alloc.allocate(getImageMemoryRequirements(vkd, device, *depthImage), MemoryRequirement::Any);
+        de::MovePtr<Allocation> colorAlloc =
+            alloc.allocate(getImageMemoryRequirements(vkd, device, *colorImage), MemoryRequirement::Any);
+        de::MovePtr<Allocation> gbufferAlloc =
+            alloc.allocate(getImageMemoryRequirements(vkd, device, *gbufferImage), MemoryRequirement::Any);
+
+        VK_CHECK(vkd.bindImageMemory(device, *depthImage, depthAlloc->getMemory(), depthAlloc->getOffset()));
+        VK_CHECK(vkd.bindImageMemory(device, *colorImage, colorAlloc->getMemory(), colorAlloc->getOffset()));
+        VK_CHECK(vkd.bindImageMemory(device, *gbufferImage, gbufferAlloc->getMemory(), gbufferAlloc->getOffset()));
+
+        VkImageViewCreateInfo depthImageViewCreateInfo = {
+            VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            nullptr,
+            0u,
+            *depthImage,
+            VK_IMAGE_VIEW_TYPE_2D,
+            VK_FORMAT_D24_UNORM_S8_UINT,
+            makeComponentMappingIdentity(),
+            {VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, 1u}};
+        Move<VkImageView> depthImageView = createImageView(vkd, device, &depthImageViewCreateInfo);
+
+        VkImageViewCreateInfo colorImageViewCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                                                          nullptr,
+                                                          0u,
+                                                          *colorImage,
+                                                          VK_IMAGE_VIEW_TYPE_2D,
+                                                          colorFormat,
+                                                          makeComponentMappingRGBA(),
+                                                          {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
+        Move<VkImageView> colorImageView               = createImageView(vkd, device, &colorImageViewCreateInfo);
+
+        VkImageViewCreateInfo gbufferImageViewCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                                                            nullptr,
+                                                            0u,
+                                                            *gbufferImage,
+                                                            VK_IMAGE_VIEW_TYPE_2D,
+                                                            colorFormat,
+                                                            makeComponentMappingRGBA(),
+                                                            {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
+        Move<VkImageView> gbufferImageView               = createImageView(vkd, device, &gbufferImageViewCreateInfo);
+
+        Move<VkBuffer> resultBuffer               = createBuffer(vkd, device, colorFormat, width, height);
+        de::MovePtr<Allocation> resultBufferAlloc = createBufferMemory(vkd, device, alloc, *resultBuffer);
+
+        // Vertex Data
+        const tcu::Vec4 subpass0Vertices[6] = {
+            tcu::Vec4(-1.0f, -1.0f, 0.0665f, 1.0f), // (top-left)
+            tcu::Vec4(1.0f, 1.0f, 0.0665f, 1.0f),   // (bottom-right)
+            tcu::Vec4(1.0f, -1.0f, 0.0665f, 1.0f),  // (top-right)
+
+            tcu::Vec4(-1.0f, -1.0f, 0.0665f, 1.0f), // (top-left)
+            tcu::Vec4(-1.0f, 1.0f, 0.0665f, 1.0f),  // (bottom-left)
+            tcu::Vec4(1.0f, 1.0f, 0.0665f, 1.0f)    // (bottom-right)
+        };
+
+        const tcu::Vec4 subpass1Vertices[6] = {
+            tcu::Vec4(-0.6f, -0.6f, 0.0857f, 1.0f), // (top-left)
+            tcu::Vec4(1.4f, 1.4f, 0.0857f, 1.0f),   // (bottom-right)
+            tcu::Vec4(1.4f, -0.6f, 0.0857f, 1.0f),  // (top-right)
+
+            tcu::Vec4(-0.6f, -0.6f, 0.0857f, 1.0f), // (top-left)
+            tcu::Vec4(-0.6f, 1.4f, 0.0857f, 1.0f),  // (bottom-left)
+            tcu::Vec4(1.4f, 1.4f, 0.0857f, 1.0f)    // (bottom-right)
+        };
+
+        const VkDeviceSize vertexDataSize = static_cast<VkDeviceSize>(sizeof(tcu::Vec4) * 6);
+
+        // Subpass 0 VB
+        const VkBufferCreateInfo vbCreateInfo0 = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+                                                  nullptr,
+                                                  0u,
+                                                  vertexDataSize,
+                                                  VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                                  VK_SHARING_MODE_EXCLUSIVE,
+                                                  0u,
+                                                  nullptr};
+        Move<VkBuffer> vertexBuffer0           = createBuffer(vkd, device, &vbCreateInfo0);
+        de::MovePtr<Allocation> vertexBufferAlloc0 =
+            alloc.allocate(getBufferMemoryRequirements(vkd, device, *vertexBuffer0), MemoryRequirement::HostVisible);
+        VK_CHECK(vkd.bindBufferMemory(device, *vertexBuffer0, vertexBufferAlloc0->getMemory(),
+                                      vertexBufferAlloc0->getOffset()));
+        deMemcpy(static_cast<uint8_t *>(vertexBufferAlloc0->getHostPtr()) + vertexBufferAlloc0->getOffset(),
+                 subpass0Vertices, static_cast<size_t>(vertexDataSize));
+        flushAlloc(vkd, device, *vertexBufferAlloc0);
+
+        // Subpass 1 VB
+        Move<VkBuffer> vertexBuffer1 = createBuffer(vkd, device, &vbCreateInfo0);
+        de::MovePtr<Allocation> vertexBufferAlloc1 =
+            alloc.allocate(getBufferMemoryRequirements(vkd, device, *vertexBuffer1), MemoryRequirement::HostVisible);
+        VK_CHECK(vkd.bindBufferMemory(device, *vertexBuffer1, vertexBufferAlloc1->getMemory(),
+                                      vertexBufferAlloc1->getOffset()));
+        deMemcpy(static_cast<uint8_t *>(vertexBufferAlloc1->getHostPtr()) + vertexBufferAlloc1->getOffset(),
+                 subpass1Vertices, static_cast<size_t>(vertexDataSize));
+        flushAlloc(vkd, device, *vertexBufferAlloc1);
+
+        // Descriptor Sets
+        Move<VkDescriptorSetLayout> descriptorSetLayout =
+            DescriptorSetLayoutBuilder()
+                .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
+                .build(vkd, device);
+
+        Move<VkDescriptorPool> descriptorPool =
+            DescriptorPoolBuilder()
+                .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1u)
+                .build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+        Move<VkDescriptorSet> descriptorSet = makeDescriptorSet(vkd, device, *descriptorPool, *descriptorSetLayout);
+
+        VkImageLayout inputAttachmentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        VkDescriptorImageInfo descImageInfo =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *gbufferImageView, inputAttachmentLayout);
+        DescriptorSetUpdateBuilder()
+            .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                         VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &descImageInfo)
+            .update(vkd, device);
+
+        PipelineLayoutWrapper geometryPipelineLayout(m_groupParams->pipelineConstructionType, vkd, device);
+        PipelineLayoutWrapper resolvePipelineLayout(m_groupParams->pipelineConstructionType, vkd, device,
+                                                    *descriptorSetLayout);
+
+        // Create Render Pass
+        std::vector<vkt::renderpass::Attachment> renderPassAttachments;
+        renderPassAttachments.push_back(vkt::renderpass::Attachment(
+            VK_FORMAT_D24_UNORM_S8_UINT, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR,
+            VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
+        renderPassAttachments.push_back(vkt::renderpass::Attachment(
+            colorFormat, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+        renderPassAttachments.push_back(vkt::renderpass::Attachment(
+            colorFormat, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+
+        std::vector<vkt::renderpass::Subpass> subpasses;
+        // Subpass 0: Opaque Geometry
+        std::vector<vkt::renderpass::AttachmentReference> subpass0_color;
+        subpass0_color.push_back(vkt::renderpass::AttachmentReference(2, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                                      VK_IMAGE_ASPECT_COLOR_BIT));
+        subpass0_color.push_back(vkt::renderpass::AttachmentReference(1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                                      VK_IMAGE_ASPECT_COLOR_BIT));
+        subpasses.push_back(vkt::renderpass::Subpass(
+            VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, std::vector<vkt::renderpass::AttachmentReference>(), subpass0_color,
+            std::vector<vkt::renderpass::AttachmentReference>(),
+            vkt::renderpass::AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                                                 VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT),
+            std::vector<uint32_t>()));
+
+        // Subpass 1: G-Buffer Resolve
+        std::vector<vkt::renderpass::AttachmentReference> subpass1_input;
+        subpass1_input.push_back(vkt::renderpass::AttachmentReference(2, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                                                      VK_IMAGE_ASPECT_COLOR_BIT));
+        std::vector<vkt::renderpass::AttachmentReference> subpass1_color;
+        subpass1_color.push_back(vkt::renderpass::AttachmentReference(1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                                      VK_IMAGE_ASPECT_COLOR_BIT));
+        subpasses.push_back(vkt::renderpass::Subpass(
+            VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, subpass1_input, subpass1_color,
+            std::vector<vkt::renderpass::AttachmentReference>(),
+            vkt::renderpass::AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                                                 VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT),
+            std::vector<uint32_t>()));
+
+        std::vector<vkt::renderpass::SubpassDependency> dependencies;
+        // Subpass dependency between subpass 0 and subpass 1
+        dependencies.push_back(vkt::renderpass::SubpassDependency(
+            0, 1, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
+                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+            VK_DEPENDENCY_BY_REGION_BIT));
+
+        Move<VkRenderPass> renderPass =
+            createRenderPass(vkd, device, vkt::renderpass::RenderPass(renderPassAttachments, subpasses, dependencies),
+                             m_groupParams->renderingType);
+
+        const VkImageView framebufferAttachments[]          = {*depthImageView, *colorImageView, *gbufferImageView};
+        const VkFramebufferCreateInfo framebufferCreateInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                                                               nullptr,
+                                                               0u,
+                                                               *renderPass,
+                                                               3u,
+                                                               framebufferAttachments,
+                                                               width,
+                                                               height,
+                                                               1u};
+        Move<VkFramebuffer> framebuffer                     = createFramebuffer(vkd, device, &framebufferCreateInfo);
+
+        // Create Pipelines
+        const ShaderWrapper vertexShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+        const ShaderWrapper fragOpaqueModule(vkd, device, m_context.getBinaryCollection().get("frag_opaque"), 0u);
+        const ShaderWrapper fragResolveModule(vkd, device, m_context.getBinaryCollection().get("frag_resolve"), 0u);
+
+        const VkVertexInputBindingDescription vertexInputBindingDescription = {
+            0u, static_cast<uint32_t>(sizeof(tcu::Vec4)), VK_VERTEX_INPUT_RATE_VERTEX};
+
+        const VkVertexInputAttributeDescription vertexInputAttributeDescription = {
+            0u, 0u,
+            VK_FORMAT_R32G32B32A32_SFLOAT, // Vertex format matches 4D float input
+            0u};
+
+        const VkPipelineVertexInputStateCreateInfo vertexInputState = {
+            VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+            nullptr,
+            0u,
+            1u,
+            &vertexInputBindingDescription,
+            1u,
+            &vertexInputAttributeDescription};
+
+        const std::vector<VkViewport> viewports{makeViewport(width, height)};
+        const std::vector<VkRect2D> scissors{makeRect2D(width, height)};
+
+        const VkPipelineColorBlendAttachmentState colorBlendAttachmentState0 = {
+            VK_FALSE,
+            VK_BLEND_FACTOR_ONE,
+            VK_BLEND_FACTOR_ZERO,
+            VK_BLEND_OP_ADD,
+            VK_BLEND_FACTOR_ONE,
+            VK_BLEND_FACTOR_ZERO,
+            VK_BLEND_OP_ADD,
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT};
+        const VkPipelineColorBlendAttachmentState colorBlendAttachments0[] = {colorBlendAttachmentState0,
+                                                                              colorBlendAttachmentState0};
+        const VkPipelineColorBlendStateCreateInfo colorBlendState0         = {
+            VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+            nullptr,
+            0u,
+            VK_FALSE,
+            VK_LOGIC_OP_CLEAR,
+            2u,
+            colorBlendAttachments0,
+            {0.0f, 0.0f, 0.0f, 0.0f}};
+
+        const VkPipelineColorBlendStateCreateInfo colorBlendState1 = {
+            VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+            nullptr,
+            0u,
+            VK_FALSE,
+            VK_LOGIC_OP_CLEAR,
+            1u,
+            &colorBlendAttachmentState0,
+            {0.0f, 0.0f, 0.0f, 0.0f}};
+
+        const VkPipelineDepthStencilStateCreateInfo depthStencilState = {
+            VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+            nullptr,
+            0u,
+            VK_TRUE,
+            VK_TRUE,
+            VK_COMPARE_OP_GREATER_OR_EQUAL, // Reversed depth comparison
+            VK_FALSE,
+            VK_FALSE,
+            {},
+            {},
+            0.0f,
+            1.0f};
+
+        const VkPipelineRasterizationStateCreateInfo rasterizationState = {
+            VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+            nullptr,
+            0u,
+            VK_FALSE,
+            VK_FALSE,
+            VK_POLYGON_MODE_FILL,
+            VK_CULL_MODE_BACK_BIT,
+            VK_FRONT_FACE_COUNTER_CLOCKWISE,
+            VK_FALSE,
+            0.0f,
+            0.0f,
+            0.0f,
+            1.0f};
+
+        GraphicsPipelineWrapper geometryPipeline(m_context.getInstanceInterface(), vkd, m_context.getPhysicalDevice(),
+                                                 device, m_context.getDeviceExtensions(),
+                                                 m_groupParams->pipelineConstructionType);
+        geometryPipeline.setDefaultMultisampleState()
+            .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .setupVertexInputState(&vertexInputState)
+            .setupPreRasterizationShaderState(viewports, scissors, geometryPipelineLayout, *renderPass, 0u,
+                                              vertexShaderModule, &rasterizationState)
+            .setupFragmentShaderState(geometryPipelineLayout, *renderPass, 0u, fragOpaqueModule, &depthStencilState)
+            .setupFragmentOutputState(*renderPass, 0u, &colorBlendState0)
+            .setMonolithicPipelineLayout(geometryPipelineLayout)
+            .buildPipeline();
+
+        GraphicsPipelineWrapper resolvePipeline(m_context.getInstanceInterface(), vkd, m_context.getPhysicalDevice(),
+                                                device, m_context.getDeviceExtensions(),
+                                                m_groupParams->pipelineConstructionType);
+        resolvePipeline.setDefaultMultisampleState()
+            .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            .setupVertexInputState(&vertexInputState)
+            .setupPreRasterizationShaderState(viewports, scissors, resolvePipelineLayout, *renderPass, 1u,
+                                              vertexShaderModule, &rasterizationState)
+            .setupFragmentShaderState(resolvePipelineLayout, *renderPass, 1u, fragResolveModule, &depthStencilState)
+            .setupFragmentOutputState(*renderPass, 1u, &colorBlendState1)
+            .setMonolithicPipelineLayout(resolvePipelineLayout)
+            .buildPipeline();
+
+        CommandPoolWithBuffer cmd(vkd, device, queueFamilyIdx);
+        const VkCommandBuffer cmdBuffer = *cmd.cmdBuffer;
+
+        const typename RenderpassSubpass::SubpassBeginInfo subpassBeginInfo(nullptr, VK_SUBPASS_CONTENTS_INLINE);
+        const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(nullptr);
+
+        VkClearValue clearValues[3];
+        clearValues[0].depthStencil = {0.0f, 0u};                 // Reversed depth clear value
+        clearValues[1].color        = {{0.0f, 0.0f, 0.0f, 1.0f}}; // Black resolved output clear
+        clearValues[2].color        = {{1.0f, 0.0f, 0.0f, 1.0f}}; // Initial red G-Buffer clear
+
+        beginCommandBuffer(vkd, cmdBuffer);
+
+        // Transition image layouts from UNDEFINED to initial optimal states
+        VkImageMemoryBarrier initialBarriers[3];
+        initialBarriers[0] = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                              nullptr,
+                              0u,
+                              VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                              VK_IMAGE_LAYOUT_UNDEFINED,
+                              VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                              VK_QUEUE_FAMILY_IGNORED,
+                              VK_QUEUE_FAMILY_IGNORED,
+                              *depthImage,
+                              {VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, 1u}};
+        initialBarriers[1] = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                              nullptr,
+                              0u,
+                              VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                              VK_IMAGE_LAYOUT_UNDEFINED,
+                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                              VK_QUEUE_FAMILY_IGNORED,
+                              VK_QUEUE_FAMILY_IGNORED,
+                              *colorImage,
+                              {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
+        initialBarriers[2] = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                              nullptr,
+                              0u,
+                              VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                              VK_IMAGE_LAYOUT_UNDEFINED,
+                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                              VK_QUEUE_FAMILY_IGNORED,
+                              VK_QUEUE_FAMILY_IGNORED,
+                              *gbufferImage,
+                              {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
+        vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0u, 0u,
+                               nullptr, 0u, nullptr, 3u, initialBarriers);
+
+        const VkRenderPassBeginInfo beginInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                                                 nullptr,
+                                                 *renderPass,
+                                                 *framebuffer,
+                                                 {{0u, 0u}, {width, height}},
+                                                 3u,
+                                                 clearValues};
+
+        RenderpassSubpass::cmdBeginRenderPass(vkd, cmdBuffer, &beginInfo, &subpassBeginInfo);
+
+        // Subpass 0: Draw Green Opaque Geometry
+        geometryPipeline.bind(cmdBuffer);
+        const VkDeviceSize vbOffset = 0;
+        vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer0.get(), &vbOffset);
+        vkd.cmdDraw(cmdBuffer, 6u, 1u, 0u, 0u);
+
+        // Subpass 1: Resolve G-Buffer (expects Green)
+        RenderpassSubpass::cmdNextSubpass(vkd, cmdBuffer, &subpassBeginInfo, &subpassEndInfo);
+        resolvePipeline.bind(cmdBuffer);
+        vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer1.get(), &vbOffset);
+        vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, resolvePipelineLayout.get(), 0u, 1u,
+                                  &descriptorSet.get(), 0u, nullptr);
+        vkd.cmdDraw(cmdBuffer, 6u, 1u, 0u, 0u);
+
+        RenderpassSubpass::cmdEndRenderPass(vkd, cmdBuffer, &subpassEndInfo);
+
+        // Copy resolved color attachment to staging buffer using builtin helper (which also emits post-copy buffer memory barrier)
+        copyImageToBuffer(vkd, cmdBuffer, *colorImage, *resultBuffer, tcu::IVec2(width, height));
+
+        endCommandBuffer(vkd, cmdBuffer);
+
+        // Submit the recorded command buffer to the graphics queue
+        VkCommandBuffer commandBuffers[] = {cmdBuffer};
+        const VkSubmitInfo submitInfo    = {
+            VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 0u, nullptr, nullptr, 1u, commandBuffers, 0u, nullptr};
+
+        const Unique<VkFence> fence(createFence(vkd, device));
+        VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
+        waitForFence(vkd, device, *fence);
+
+        invalidateAlloc(vkd, device, *resultBufferAlloc);
+
+        const tcu::TextureFormat tcuFormat = mapVkFormat(colorFormat);
+        tcu::ConstPixelBufferAccess resultAccess(tcuFormat, width, height, 1u,
+                                                 static_cast<uint8_t *>(resultBufferAlloc->getHostPtr()) +
+                                                     resultBufferAlloc->getOffset());
+
+        const tcu::Vec4 expectedColor(0.0f, 1.0f, 0.0f, 1.0f); // Expected final resolved color is Green
+        const tcu::Vec4 threshold(0.02f, 0.02f, 0.02f, 0.02f);
+
+        // Verify overlapping region
+        const tcu::ConstPixelBufferAccess overlapAccess = tcu::getSubregion(
+            resultAccess, overlapMinX, overlapMinY, 0, overlapMaxX - overlapMinX + 1, overlapMaxY - overlapMinY + 1, 1);
+        if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result",
+                                        expectedColor, overlapAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        {
+            return tcu::TestStatus::fail(
+                "Resolved color attachment holds corrupted pixels (stale cache read detected)");
+        }
+
+        return tcu::TestStatus::pass("Pass");
+    }
+
+private:
+    SharedGroupParams m_groupParams;
+};
+
 std::string formatToName(VkFormat format)
 {
     const std::string formatStr = de::toString(format);
@@ -4589,6 +5213,23 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
         }
 
         group->addChild(singleAttachmentGroup.release());
+    }
+
+    // Input attachment coherency (opaque geometry resolve tile cache bug)
+    if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+    {
+        de::MovePtr<tcu::TestCaseGroup> inputAttachmentCoherencyGroup(
+            new tcu::TestCaseGroup(testCtx, "input_attachment_coherency"));
+        const InputAttachmentCoherencyTestConfig testConfig(groupParams);
+
+        inputAttachmentCoherencyGroup->addChild(
+            new InstanceFactory1WithSupport<InputAttachmentCoherencyTestInstance, InputAttachmentCoherencyTestConfig,
+                                            FunctionSupport1<InputAttachmentCoherencyTestConfig>,
+                                            InputAttachmentCoherencyPrograms>(
+                testCtx, "test", testConfig,
+                typename FunctionSupport1<InputAttachmentCoherencyTestConfig>::Args(
+                    checkInputAttachmentCoherencySupport, testConfig)));
+        group->addChild(inputAttachmentCoherencyGroup.release());
     }
 }
 } // namespace
