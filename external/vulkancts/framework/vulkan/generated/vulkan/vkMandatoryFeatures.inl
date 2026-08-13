@@ -281,6 +281,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_device_fault"))
 		addFeatures(&physicalDeviceFaultFeaturesEXT);
 
+	// VkPhysicalDeviceFaultFeaturesKHR for ext [VK_KHR_device_fault]
+	vk::VkPhysicalDeviceFaultFeaturesKHR physicalDeviceFaultFeaturesKHR = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_device_fault"))
+		addFeatures(&physicalDeviceFaultFeaturesKHR);
+
 	// VkPhysicalDeviceFragmentDensityMap2FeaturesEXT for ext [VK_EXT_fragment_density_map2]
 	vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT physicalDeviceFragmentDensityMap2FeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_fragment_density_map2"))
@@ -745,6 +750,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	vk::VkPhysicalDeviceShader64BitIndexingFeaturesEXT physicalDeviceShader64BitIndexingFeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_64bit_indexing"))
 		addFeatures(&physicalDeviceShader64BitIndexingFeaturesEXT);
+
+	// VkPhysicalDeviceShaderAbortFeaturesKHR for ext [VK_KHR_shader_abort]
+	vk::VkPhysicalDeviceShaderAbortFeaturesKHR physicalDeviceShaderAbortFeaturesKHR = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_abort"))
+		addFeatures(&physicalDeviceShaderAbortFeaturesKHR);
 
 	// VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV for ext [VK_NV_shader_atomic_float16_vector]
 	vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV physicalDeviceShaderAtomicFloat16VectorFeaturesNV = initVulkanStructure();
@@ -1218,6 +1228,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("dynamicRenderingLocalRead");
 	}
 
+	// VkPhysicalDeviceShaderAbortFeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_abort")) )
+	{
+		if ( physicalDeviceShaderAbortFeaturesKHR.shaderAbort == VK_FALSE )
+			failMesages.push_back("shaderAbort");
+	}
+
 	// VkPhysicalDeviceShaderQuadControlFeaturesKHR
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_quad_control")) )
 	{
@@ -1517,6 +1534,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceMaintenance7FeaturesKHR.maintenance7 == VK_FALSE )
 			failMesages.push_back("maintenance7");
+	}
+
+	// VkPhysicalDeviceFaultFeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_device_fault")) )
+	{
+		if ( physicalDeviceFaultFeaturesKHR.deviceFault == VK_FALSE )
+			failMesages.push_back("deviceFault");
 	}
 
 	// VkPhysicalDeviceMaintenance8FeaturesKHR

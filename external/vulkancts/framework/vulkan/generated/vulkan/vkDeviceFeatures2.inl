@@ -1565,6 +1565,48 @@ tcu::TestStatus testPhysicalDeviceFeatureFaultFeaturesEXT (Context& context)
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureFaultFeaturesKHR (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceFaultFeaturesKHR deviceFaultFeaturesKHR[count];
+    const bool                       isFaultFeaturesKHR = checkExtension(properties, "VK_KHR_device_fault");
+
+    if (!isFaultFeaturesKHR)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceFaultFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceFaultFeaturesKHR));
+        deviceFaultFeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_KHR;
+        deviceFaultFeaturesKHR[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceFaultFeaturesKHR[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceFaultFeaturesKHR[0] << TestLog::EndMessage;
+
+    if (
+        deviceFaultFeaturesKHR[0].deviceFault != deviceFaultFeaturesKHR[1].deviceFault ||
+        deviceFaultFeaturesKHR[0].deviceFaultVendorBinary != deviceFaultFeaturesKHR[1].deviceFaultVendorBinary ||
+        deviceFaultFeaturesKHR[0].deviceFaultReportMasked != deviceFaultFeaturesKHR[1].deviceFaultReportMasked ||
+        deviceFaultFeaturesKHR[0].deviceFaultDeviceLostOnMasked != deviceFaultFeaturesKHR[1].deviceFaultDeviceLostOnMasked)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceFaultFeaturesKHR");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureFragmentDensityMap2FeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -4701,6 +4743,45 @@ tcu::TestStatus testPhysicalDeviceFeatureShader64BitIndexingFeaturesEXT (Context
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureShaderAbortFeaturesKHR (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceShaderAbortFeaturesKHR deviceShaderAbortFeaturesKHR[count];
+    const bool                             isShaderAbortFeaturesKHR = checkExtension(properties, "VK_KHR_shader_abort");
+
+    if (!isShaderAbortFeaturesKHR)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceShaderAbortFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderAbortFeaturesKHR));
+        deviceShaderAbortFeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ABORT_FEATURES_KHR;
+        deviceShaderAbortFeaturesKHR[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceShaderAbortFeaturesKHR[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceShaderAbortFeaturesKHR[0] << TestLog::EndMessage;
+
+    if (
+        deviceShaderAbortFeaturesKHR[0].shaderAbort != deviceShaderAbortFeaturesKHR[1].shaderAbort)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceShaderAbortFeaturesKHR");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureShaderAtomicFloat2FeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -7508,6 +7589,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "extended_dynamic_state_features_ext", testPhysicalDeviceFeatureExtendedDynamicStateFeaturesEXT);
 	addFunctionCase(testGroup, "extended_flags_features_khr", testPhysicalDeviceFeatureExtendedFlagsFeaturesKHR);
 	addFunctionCase(testGroup, "fault_features_ext", testPhysicalDeviceFeatureFaultFeaturesEXT);
+	addFunctionCase(testGroup, "fault_features_khr", testPhysicalDeviceFeatureFaultFeaturesKHR);
 	addFunctionCase(testGroup, "fragment_density_map2_features_ext", testPhysicalDeviceFeatureFragmentDensityMap2FeaturesEXT);
 	addFunctionCase(testGroup, "fragment_density_map_features_ext", testPhysicalDeviceFeatureFragmentDensityMapFeaturesEXT);
 	addFunctionCase(testGroup, "fragment_density_map_offset_features_ext", testPhysicalDeviceFeatureFragmentDensityMapOffsetFeaturesEXT);
@@ -7587,6 +7669,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "scalar_block_layout_features", testPhysicalDeviceFeatureScalarBlockLayoutFeatures);
 	addFunctionCase(testGroup, "separate_depth_stencil_layouts_features", testPhysicalDeviceFeatureSeparateDepthStencilLayoutsFeatures);
 	addFunctionCase(testGroup, "shader64_bit_indexing_features_ext", testPhysicalDeviceFeatureShader64BitIndexingFeaturesEXT);
+	addFunctionCase(testGroup, "shader_abort_features_khr", testPhysicalDeviceFeatureShaderAbortFeaturesKHR);
 	addFunctionCase(testGroup, "shader_atomic_float2_features_ext", testPhysicalDeviceFeatureShaderAtomicFloat2FeaturesEXT);
 	addFunctionCase(testGroup, "shader_atomic_float_features_ext", testPhysicalDeviceFeatureShaderAtomicFloatFeaturesEXT);
 	addFunctionCase(testGroup, "shader_atomic_int64_features", testPhysicalDeviceFeatureShaderAtomicInt64Features);

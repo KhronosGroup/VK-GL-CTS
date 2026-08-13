@@ -29,6 +29,7 @@ const vk::VkPhysicalDeviceDrmPropertiesEXT&							Context::getDrmPropertiesEXT		
 const vk::VkPhysicalDeviceExtendedDynamicState3PropertiesEXT&		Context::getExtendedDynamicState3PropertiesEXT			(void) const { return m_device->getExtendedDynamicState3PropertiesEXT();		}
 const vk::VkPhysicalDeviceExternalFormatResolvePropertiesANDROID&	Context::getExternalFormatResolvePropertiesANDROID		(void) const { return m_device->getExternalFormatResolvePropertiesANDROID();	}
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			Context::getExternalMemoryHostPropertiesEXT				(void) const { return m_device->getExternalMemoryHostPropertiesEXT();			}
+const vk::VkPhysicalDeviceFaultPropertiesKHR&						Context::getFaultProperties								(void) const { return m_device->getFaultProperties();							}
 const vk::VkPhysicalDeviceFloatControlsProperties&					Context::getFloatControlsProperties						(void) const { return m_device->getFloatControlsProperties();					}
 const vk::VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&			Context::getFragmentDensityMap2PropertiesEXT			(void) const { return m_device->getFragmentDensityMap2PropertiesEXT();			}
 const vk::VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE&	Context::getFragmentDensityMapLayeredPropertiesVALVE	(void) const { return m_device->getFragmentDensityMapLayeredPropertiesVALVE();	}
@@ -80,6 +81,7 @@ const vk::VkPhysicalDeviceRayTracingPropertiesNV&					Context::getRayTracingProp
 const vk::VkPhysicalDeviceRobustness2PropertiesKHR&					Context::getRobustness2Properties						(void) const { return m_device->getRobustness2Properties();						}
 const vk::VkPhysicalDeviceSampleLocationsPropertiesEXT&				Context::getSampleLocationsPropertiesEXT				(void) const { return m_device->getSampleLocationsPropertiesEXT();				}
 const vk::VkPhysicalDeviceSamplerFilterMinmaxProperties&			Context::getSamplerFilterMinmaxProperties				(void) const { return m_device->getSamplerFilterMinmaxProperties();				}
+const vk::VkPhysicalDeviceShaderAbortPropertiesKHR&					Context::getShaderAbortProperties						(void) const { return m_device->getShaderAbortProperties();						}
 const vk::VkPhysicalDeviceShaderIntegerDotProductProperties&		Context::getShaderIntegerDotProductProperties			(void) const { return m_device->getShaderIntegerDotProductProperties();			}
 const vk::VkPhysicalDeviceShaderLongVectorPropertiesEXT&			Context::getShaderLongVectorPropertiesEXT				(void) const { return m_device->getShaderLongVectorPropertiesEXT();				}
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		Context::getShaderModuleIdentifierPropertiesEXT			(void) const { return m_device->getShaderModuleIdentifierPropertiesEXT();		}

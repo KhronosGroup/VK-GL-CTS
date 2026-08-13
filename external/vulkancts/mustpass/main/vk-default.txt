@@ -159,6 +159,7 @@ vk-default/pipeline/shader-object-unlinked-spirv/spec-constant.txt
 vk-default/pipeline/shader-object-unlinked-spirv/stencil.txt
 vk-default/pipeline/shader-object-unlinked-spirv/timestamp.txt
 vk-default/pipeline/shader-object-unlinked-spirv/vertex-input.txt
+vk-default/postmortem.txt
 vk-default/protected-memory.txt
 vk-default/query-pool.txt
 vk-default/rasterization.txt

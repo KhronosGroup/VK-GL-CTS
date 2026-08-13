@@ -169,6 +169,7 @@ VK_KHR_copy_memory_indirect
 VK_KHR_deferred_host_operations
 VK_KHR_depth_clamp_zero_one
 VK_KHR_device_address_commands
+VK_KHR_device_fault
 VK_KHR_display
 VK_KHR_display_swapchain
 VK_KHR_extended_flags
@@ -208,6 +209,7 @@ VK_KHR_ray_tracing_maintenance1
 VK_KHR_ray_tracing_pipeline
 VK_KHR_ray_tracing_position_fetch
 VK_KHR_robustness2
+VK_KHR_shader_abort
 VK_KHR_shader_bfloat16
 VK_KHR_shader_clock
 VK_KHR_shader_fma

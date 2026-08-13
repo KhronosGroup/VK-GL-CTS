@@ -793,9 +793,24 @@ template<> VkStructureType getStructureType<VkDeviceFaultCountsEXT> (void)
 	return VK_STRUCTURE_TYPE_DEVICE_FAULT_COUNTS_EXT;
 }
 
+template<> VkStructureType getStructureType<VkDeviceFaultDebugInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_FAULT_DEBUG_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDeviceFaultInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DEVICE_FAULT_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDeviceFaultInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_FAULT_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDeviceFaultShaderAbortMessageInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_FAULT_SHADER_ABORT_MESSAGE_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkDeviceGroupBindSparseInfo> (void)
@@ -2293,6 +2308,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceFaultFeaturesEXT> (v
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceFaultFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceFaultPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_PROPERTIES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceFeatures2> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -3081,6 +3106,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceSeparateDepthStencil
 template<> VkStructureType getStructureType<VkPhysicalDeviceShader64BitIndexingFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_64_BIT_INDEXING_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderAbortFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ABORT_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderAbortPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ABORT_PROPERTIES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV> (void)

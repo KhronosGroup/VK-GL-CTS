@@ -394,6 +394,12 @@ public:
     //! Allows you to use vendor-specific configuration
     bool isVendorSpecific() const;
 
+    //! Define device fault test case(s) to launch in subprocess
+    const char *getDeviceFaultSubprocessCount() const;
+
+    //! Define test case(s) to run
+    const char *getCasePath() const;
+
     /*--------------------------------------------------------------------*//*!
      * \brief Creates case list filter
      * \param archive Resources

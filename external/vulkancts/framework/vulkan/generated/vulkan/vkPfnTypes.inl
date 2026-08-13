@@ -498,7 +498,9 @@ typedef VKAPI_ATTR void	(VKAPI_CALL *PFN_vkGetDescriptorSetLayoutSupportKHR)	(Vk
 typedef VKAPI_ATTR void	(VKAPI_CALL *PFN_vkGetDeviceAccelerationStructureCompatibilityKHR)	(VkDevice device, const VkAccelerationStructureVersionInfoKHR* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility);
 typedef VKAPI_ATTR void	(VKAPI_CALL *PFN_vkGetDeviceBufferMemoryRequirements)	(VkDevice device, const VkDeviceBufferMemoryRequirements* pInfo, VkMemoryRequirements2* pMemoryRequirements);
 typedef VKAPI_ATTR void	(VKAPI_CALL *PFN_vkGetDeviceBufferMemoryRequirementsKHR)	(VkDevice device, const VkDeviceBufferMemoryRequirements* pInfo, VkMemoryRequirements2* pMemoryRequirements);
+typedef VKAPI_ATTR VkResult	(VKAPI_CALL *PFN_vkGetDeviceFaultDebugInfoKHR)	(VkDevice device, VkDeviceFaultDebugInfoKHR* pDebugInfo);
 typedef VKAPI_ATTR VkResult	(VKAPI_CALL *PFN_vkGetDeviceFaultInfoEXT)	(VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo);
+typedef VKAPI_ATTR VkResult	(VKAPI_CALL *PFN_vkGetDeviceFaultReportsKHR)	(VkDevice device, uint64_t timeout, uint32_t* pFaultCounts, VkDeviceFaultInfoKHR* pFaultInfo);
 typedef VKAPI_ATTR void	(VKAPI_CALL *PFN_vkGetDeviceGroupPeerMemoryFeatures)	(VkDevice device, uint32_t heapIndex, uint32_t localDeviceIndex, uint32_t remoteDeviceIndex, VkPeerMemoryFeatureFlags* pPeerMemoryFeatures);
 typedef VKAPI_ATTR void	(VKAPI_CALL *PFN_vkGetDeviceGroupPeerMemoryFeaturesKHR)	(VkDevice device, uint32_t heapIndex, uint32_t localDeviceIndex, uint32_t remoteDeviceIndex, VkPeerMemoryFeatureFlags* pPeerMemoryFeatures);
 typedef VKAPI_ATTR VkResult	(VKAPI_CALL *PFN_vkGetDeviceGroupPresentCapabilitiesKHR)	(VkDevice device, VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities);

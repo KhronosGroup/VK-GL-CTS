@@ -153,6 +153,8 @@ DE_DECLARE_COMMAND_LINE_OPT(VideoLogPrint, bool);
 DE_DECLARE_COMMAND_LINE_OPT(VideoDecodeOutputDump, VideoDecodeOutput);
 DE_DECLARE_COMMAND_LINE_OPT(VideoEncodeOutputDump, VideoEncodeOutput);
 DE_DECLARE_COMMAND_LINE_OPT(VendorSpecific, bool);
+DE_DECLARE_COMMAND_LINE_OPT(DeviceFaultSubprocessCount, std::string);
+DE_DECLARE_COMMAND_LINE_OPT(SubprocessCaseMarker, int);
 
 static void parseIntList(const char *src, std::vector<int> *dst)
 {
@@ -372,7 +374,12 @@ void registerOptions(de::cmdline::Parser &parser)
         << Option<VideoEncodeOutputDump>(nullptr, "deqp-vk-video-encode-dump",
                                          "Dump the output of vulkan video encoding tests", s_videoEncodeDump, "disable")
         << Option<VendorSpecific>(nullptr, "deqp-vk-vendor-specific", "Allows you to use vendor-specific configuration",
-                                  s_enableNames, "disable");
+                                  s_enableNames, "disable")
+        << Option<DeviceFaultSubprocessCount>(
+               nullptr, "deqp-device-fault-subprocess-count",
+               "Device fault test case(s) count to launch in subprocess.\n    "
+               "N: number of case(s), B: mode (0: all at once, !0: batch by batch), P: pretty printing.\n    "
+               "default: [N=0[,B=0[,P=0]]]");
 }
 
 void registerLegacyOptions(de::cmdline::Parser &parser)
@@ -1436,6 +1443,20 @@ int CommandLine::getPipelineDefaultSize(void) const
 bool CommandLine::isVendorSpecific() const
 {
     return m_cmdLine.getOption<opt::VendorSpecific>();
+}
+
+const char *CommandLine::getDeviceFaultSubprocessCount() const
+{
+    static std::string s{};
+    return m_cmdLine.hasOption<opt::DeviceFaultSubprocessCount>() ?
+               m_cmdLine.getOption<opt::DeviceFaultSubprocessCount>().c_str() :
+               s.c_str();
+}
+
+const char *CommandLine::getCasePath() const
+{
+    static std::string emptyString;
+    return m_cmdLine.hasOption<opt::CasePath>() ? m_cmdLine.getOption<opt::CasePath>().c_str() : emptyString.c_str();
 }
 
 const char *CommandLine::getGLContextType(void) const

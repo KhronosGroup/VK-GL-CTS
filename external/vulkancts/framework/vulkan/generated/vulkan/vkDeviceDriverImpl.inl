@@ -1438,6 +1438,16 @@ void DeviceDriver::cmdCopyMemoryToImageIndirectKHR (VkCommandBuffer commandBuffe
     m_vk.cmdCopyMemoryToImageIndirectKHR(commandBuffer, pCopyMemoryToImageIndirectInfo);
 }
 
+VkResult DeviceDriver::getDeviceFaultReportsKHR (VkDevice device, uint64_t timeout, uint32_t* pFaultCounts, VkDeviceFaultInfoKHR* pFaultInfo) const
+{
+    return m_vk.getDeviceFaultReportsKHR(device, timeout, pFaultCounts, pFaultInfo);
+}
+
+VkResult DeviceDriver::getDeviceFaultDebugInfoKHR (VkDevice device, VkDeviceFaultDebugInfoKHR* pDebugInfo) const
+{
+    return m_vk.getDeviceFaultDebugInfoKHR(device, pDebugInfo);
+}
+
 void DeviceDriver::cmdEndRendering2KHR (VkCommandBuffer commandBuffer, const VkRenderingEndInfoKHR* pRenderingEndInfo) const
 {
     m_vk.cmdEndRendering2KHR(commandBuffer, pRenderingEndInfo);

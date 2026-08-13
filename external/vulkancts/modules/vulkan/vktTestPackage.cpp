@@ -1427,11 +1427,12 @@ void TestPackage::init(void)
     addRootChild("cooperative_vector", m_caseListFilter, cooperative_vector::createTests);
     addRootChild("tensor", m_caseListFilter, tensor::createTests);
     addRootChild("data_graph", m_caseListFilter, dataGraph::createTests);
+    addRootChild("postmortem", m_caseListFilter, postmortem::createTests);
 }
 
 void ExperimentalTestPackage::init(void)
 {
-    addRootChild("postmortem", m_caseListFilter, postmortem::createTests);
+    addRootChild("postmortem", m_caseListFilter, postmortem::createTestsExperimental);
     addRootChild("reconvergence", m_caseListFilter, Reconvergence::createTestsExperimental);
 }
 

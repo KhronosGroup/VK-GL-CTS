@@ -2681,6 +2681,22 @@ struct VkDeviceFaultCountsEXT
 	VkDeviceSize	vendorBinarySize;
 };
 
+struct VkDeviceFaultDebugInfoKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		vendorBinarySize;
+	void*			pVendorBinaryData;
+};
+
+struct VkDeviceFaultShaderAbortMessageInfoKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint64_t		messageDataSize;
+	void*			pMessageData;
+};
+
 struct VkDeviceFaultVendorBinaryHeaderVersionOneKHR
 {
 	uint32_t									headerSize;
@@ -2713,6 +2729,18 @@ struct VkDeviceFaultInfoEXT
 	VkDeviceFaultAddressInfoKHR*	pAddressInfos;
 	VkDeviceFaultVendorInfoKHR*		pVendorInfos;
 	void*							pVendorBinaryData;
+};
+
+struct VkDeviceFaultInfoKHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkDeviceFaultFlagsKHR		flags;
+	uint64_t					groupId;
+	char						description[VK_MAX_DESCRIPTION_SIZE];
+	VkDeviceFaultAddressInfoKHR	faultAddressInfo;
+	VkDeviceFaultAddressInfoKHR	instructionAddressInfo;
+	VkDeviceFaultVendorInfoKHR	vendorInfo;
 };
 
 struct VkDeviceGroupBindSparseInfo
@@ -6131,6 +6159,23 @@ struct VkPhysicalDeviceFaultFeaturesEXT
 	VkBool32		deviceFaultVendorBinary;
 };
 
+struct VkPhysicalDeviceFaultFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		deviceFault;
+	VkBool32		deviceFaultVendorBinary;
+	VkBool32		deviceFaultReportMasked;
+	VkBool32		deviceFaultDeviceLostOnMasked;
+};
+
+struct VkPhysicalDeviceFaultPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxDeviceFaultCount;
+};
+
 struct VkPhysicalDeviceFeatures
 {
 	VkBool32	robustBufferAccess;
@@ -7704,6 +7749,20 @@ struct VkPhysicalDeviceShader64BitIndexingFeaturesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		shader64BitIndexing;
+};
+
+struct VkPhysicalDeviceShaderAbortFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderAbort;
+};
+
+struct VkPhysicalDeviceShaderAbortPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint64_t		maxShaderAbortMessageSize;
 };
 
 struct VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV

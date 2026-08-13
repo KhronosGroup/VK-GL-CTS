@@ -290,6 +290,8 @@ CmdSetDescriptorBufferOffsets2EXTFunc						cmdSetDescriptorBufferOffsets2EXT;
 CmdBindDescriptorBufferEmbeddedSamplers2EXTFunc				cmdBindDescriptorBufferEmbeddedSamplers2EXT;
 CmdCopyMemoryIndirectKHRFunc								cmdCopyMemoryIndirectKHR;
 CmdCopyMemoryToImageIndirectKHRFunc							cmdCopyMemoryToImageIndirectKHR;
+GetDeviceFaultReportsKHRFunc								getDeviceFaultReportsKHR;
+GetDeviceFaultDebugInfoKHRFunc								getDeviceFaultDebugInfoKHR;
 CmdEndRendering2KHRFunc										cmdEndRendering2KHR;
 DebugMarkerSetObjectTagEXTFunc								debugMarkerSetObjectTagEXT;
 DebugMarkerSetObjectNameEXTFunc								debugMarkerSetObjectNameEXT;

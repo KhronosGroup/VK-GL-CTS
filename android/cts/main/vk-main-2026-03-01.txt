@@ -41,6 +41,7 @@ vk-main-2026-03-01/pipeline/shader-object-linked-binary.txt
 vk-main-2026-03-01/pipeline/shader-object-linked-spirv.txt
 vk-main-2026-03-01/pipeline/shader-object-unlinked-binary.txt
 vk-main-2026-03-01/pipeline/shader-object-unlinked-spirv.txt
+vk-main-2026-03-01/postmortem.txt
 vk-main-2026-03-01/protected-memory.txt
 vk-main-2026-03-01/query-pool.txt
 vk-main-2026-03-01/rasterization.txt

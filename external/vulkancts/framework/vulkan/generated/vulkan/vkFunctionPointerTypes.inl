@@ -495,6 +495,8 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDescriptorBufferOffsets2EXTFunc)	
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindDescriptorBufferEmbeddedSamplers2EXTFunc)							(VkCommandBuffer commandBuffer, const VkBindDescriptorBufferEmbeddedSamplersInfoEXT* pBindDescriptorBufferEmbeddedSamplersInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyMemoryIndirectKHRFunc)												(VkCommandBuffer commandBuffer, const VkCopyMemoryIndirectInfoKHR* pCopyMemoryIndirectInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyMemoryToImageIndirectKHRFunc)										(VkCommandBuffer commandBuffer, const VkCopyMemoryToImageIndirectInfoKHR* pCopyMemoryToImageIndirectInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceFaultReportsKHRFunc)												(VkDevice device, uint64_t timeout, uint32_t* pFaultCounts, VkDeviceFaultInfoKHR* pFaultInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceFaultDebugInfoKHRFunc)											(VkDevice device, VkDeviceFaultDebugInfoKHR* pDebugInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRendering2KHRFunc)													(VkCommandBuffer commandBuffer, const VkRenderingEndInfoKHR* pRenderingEndInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDebugReportCallbackEXTFunc)											(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyDebugReportCallbackEXTFunc)											(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator);

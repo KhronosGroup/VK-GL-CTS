@@ -27,6 +27,7 @@
 #include "vktPostmortemShaderTimeoutTests.hpp"
 #include "vktPostmortemUseAfterFreeTests.hpp"
 #include "vktPostmortemDeviceFaultTests.hpp"
+#include "vktPostmortemCoreDeviceFaultTests.hpp"
 #include "vktPostmortemDeviceLossTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
@@ -40,6 +41,12 @@ namespace
 void createChildren(tcu::TestCaseGroup *postmortemTests)
 {
     tcu::TestContext &testCtx = postmortemTests->getTestContext();
+    postmortemTests->addChild(createDeviceFaultTestsKHR(testCtx));
+}
+
+void createChildrenExperimental(tcu::TestCaseGroup *postmortemTests)
+{
+    tcu::TestContext &testCtx = postmortemTests->getTestContext();
     postmortemTests->addChild(createShaderTimeoutTests(testCtx));
     postmortemTests->addChild(createUseAfterFreeTests(testCtx));
     postmortemTests->addChild(createDeviceFaultTests(testCtx));
@@ -51,6 +58,11 @@ void createChildren(tcu::TestCaseGroup *postmortemTests)
 tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
     return createTestGroup(testCtx, name.c_str(), createChildren);
+}
+
+tcu::TestCaseGroup *createTestsExperimental(tcu::TestContext &testCtx, const std::string &name)
+{
+    return createTestGroup(testCtx, name.c_str(), createChildrenExperimental);
 }
 
 } // namespace postmortem

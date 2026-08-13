@@ -5071,6 +5071,21 @@ tcu::Format::Bitfield<32> getDeviceAddressBindingFlagsEXTStr (VkDeviceAddressBin
 }
 
 
+tcu::Format::Bitfield<32> getDeviceFaultFlagsKHRStr (VkDeviceFaultFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_DEVICE_LOST_KHR,			"VK_DEVICE_FAULT_FLAG_DEVICE_LOST_KHR"),
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_INSTRUCTION_ADDRESS_KHR,	"VK_DEVICE_FAULT_FLAG_INSTRUCTION_ADDRESS_KHR"),
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_MEMORY_ADDRESS_KHR,		"VK_DEVICE_FAULT_FLAG_MEMORY_ADDRESS_KHR"),
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_OVERFLOW_KHR,				"VK_DEVICE_FAULT_FLAG_OVERFLOW_KHR"),
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_VENDOR_KHR,				"VK_DEVICE_FAULT_FLAG_VENDOR_KHR"),
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_WATCHDOG_TIMEOUT_KHR,		"VK_DEVICE_FAULT_FLAG_WATCHDOG_TIMEOUT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
 tcu::Format::Bitfield<32> getDeviceGroupPresentModeFlagsKHRStr (VkDeviceGroupPresentModeFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -9633,6 +9648,17 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceFaultCountsEXT& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultDebugInfoKHR& value)
+{
+	s << "VkDeviceFaultDebugInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvendorBinarySize = " << value.vendorBinarySize << '\n';
+	s << "\tpVendorBinaryData = " << value.pVendorBinaryData << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDeviceFaultInfoEXT& value)
 {
 	s << "VkDeviceFaultInfoEXT = {\n";
@@ -9642,6 +9668,32 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceFaultInfoEXT& value)
 	s << "\tpAddressInfos = " << value.pAddressInfos << '\n';
 	s << "\tpVendorInfos = " << value.pVendorInfos << '\n';
 	s << "\tpVendorBinaryData = " << value.pVendorBinaryData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultInfoKHR& value)
+{
+	s << "VkDeviceFaultInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getDeviceFaultFlagsKHRStr(value.flags) << '\n';
+	s << "\tgroupId = " << value.groupId << '\n';
+	s << "\tdescription = " << (const char*)value.description << '\n';
+	s << "\tfaultAddressInfo = " << value.faultAddressInfo << '\n';
+	s << "\tinstructionAddressInfo = " << value.instructionAddressInfo << '\n';
+	s << "\tvendorInfo = " << value.vendorInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultShaderAbortMessageInfoKHR& value)
+{
+	s << "VkDeviceFaultShaderAbortMessageInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmessageDataSize = " << value.messageDataSize << '\n';
+	s << "\tpMessageData = " << value.pMessageData << '\n';
 	s << '}';
 	return s;
 }
@@ -13926,6 +13978,29 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFaultFeaturesEX
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFaultFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceFaultFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceFault = " << value.deviceFault << '\n';
+	s << "\tdeviceFaultVendorBinary = " << value.deviceFaultVendorBinary << '\n';
+	s << "\tdeviceFaultReportMasked = " << value.deviceFaultReportMasked << '\n';
+	s << "\tdeviceFaultDeviceLostOnMasked = " << value.deviceFaultDeviceLostOnMasked << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFaultPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceFaultPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxDeviceFaultCount = " << value.maxDeviceFaultCount << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFeatures& value)
 {
 	s << "VkPhysicalDeviceFeatures = {\n";
@@ -15945,6 +16020,26 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShader64BitInde
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshader64BitIndexing = " << value.shader64BitIndexing << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderAbortFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderAbortFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderAbort = " << value.shaderAbort << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderAbortPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderAbortPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxShaderAbortMessageSize = " << value.maxShaderAbortMessageSize << '\n';
 	s << '}';
 	return s;
 }
