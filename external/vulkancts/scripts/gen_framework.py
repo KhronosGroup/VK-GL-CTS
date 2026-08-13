@@ -143,6 +143,7 @@ VK_EXT_shader_atomic_float2
 VK_EXT_shader_float8
 VK_EXT_shader_image_atomic_int64
 VK_EXT_shader_long_vector
+VK_EXT_shader_ocp_microscaling_types
 VK_EXT_shader_module_identifier
 VK_EXT_shader_object
 VK_EXT_shader_subgroup_partitioned

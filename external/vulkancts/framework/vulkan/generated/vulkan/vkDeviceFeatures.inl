@@ -377,6 +377,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceShaderImageAtomicInt64Featur
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderLongVectorFeaturesEXT>(VkPhysicalDeviceShaderLongVectorFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR>(VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT>(VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT>(VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderObjectFeaturesEXT>(VkPhysicalDeviceShaderObjectFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderQuadControlFeaturesKHR>(VkPhysicalDeviceShaderQuadControlFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>(VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR&, const AllFeaturesBlobs&) {}
@@ -579,6 +580,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderIntegerDotProductFe
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderLongVectorFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_LONG_VECTOR_FEATURES_EXT, VK_EXT_SHADER_LONG_VECTOR_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MAXIMAL_RECONVERGENCE_FEATURES_KHR, VK_KHR_SHADER_MAXIMAL_RECONVERGENCE_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_FEATURES_EXT, VK_EXT_SHADER_MODULE_IDENTIFIER_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OCP_MICROSCALING_TYPES_FEATURES_EXT, VK_EXT_SHADER_OCP_MICROSCALING_TYPES_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderObjectFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT, VK_EXT_SHADER_OBJECT_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderQuadControlFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_QUAD_CONTROL_FEATURES_KHR, VK_KHR_SHADER_QUAD_CONTROL_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME}; }
@@ -795,6 +797,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderLongVectorFeaturesEXT>, VK_EXT_SHADER_LONG_VECTOR_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR>, VK_KHR_SHADER_MAXIMAL_RECONVERGENCE_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT>, VK_EXT_SHADER_MODULE_IDENTIFIER_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT>, VK_EXT_SHADER_OCP_MICROSCALING_TYPES_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderObjectFeaturesEXT>, VK_EXT_SHADER_OBJECT_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderQuadControlFeaturesKHR>, VK_KHR_SHADER_QUAD_CONTROL_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>, VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME },

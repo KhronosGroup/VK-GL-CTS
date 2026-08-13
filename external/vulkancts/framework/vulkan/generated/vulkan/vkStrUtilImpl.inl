@@ -16324,6 +16324,19 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderModuleIde
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderFloat4 = " << value.shaderFloat4 << '\n';
+	s << "\tshaderFloat6 = " << value.shaderFloat6 << '\n';
+	s << "\tshaderFloat8UnsignedE8M0 = " << value.shaderFloat8UnsignedE8M0 << '\n';
+	s << "\tshaderMXInt8 = " << value.shaderMXInt8 << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderObjectFeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceShaderObjectFeaturesEXT = {\n";

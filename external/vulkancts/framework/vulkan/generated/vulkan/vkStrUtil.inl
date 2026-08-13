@@ -1378,6 +1378,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderLongVecto
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderObjectFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderObjectPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderQuadControlFeaturesKHR& value);

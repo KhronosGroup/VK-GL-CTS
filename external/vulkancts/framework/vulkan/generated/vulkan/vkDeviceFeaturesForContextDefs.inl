@@ -172,6 +172,7 @@ const vk::VkPhysicalDeviceShaderIntegerDotProductFeatures&					Context::getShade
 const vk::VkPhysicalDeviceShaderLongVectorFeaturesEXT&						Context::getShaderLongVectorFeaturesEXT						(void) const { return m_device->getShaderLongVectorFeaturesEXT();					}
 const vk::VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR&			Context::getShaderMaximalReconvergenceFeatures				(void) const { return m_device->getShaderMaximalReconvergenceFeatures();			}
 const vk::VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT&				Context::getShaderModuleIdentifierFeaturesEXT				(void) const { return m_device->getShaderModuleIdentifierFeaturesEXT();				}
+const vk::VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT&			Context::getShaderOCPMicroscalingTypesFeaturesEXT			(void) const { return m_device->getShaderOCPMicroscalingTypesFeaturesEXT();			}
 const vk::VkPhysicalDeviceShaderObjectFeaturesEXT&							Context::getShaderObjectFeaturesEXT							(void) const { return m_device->getShaderObjectFeaturesEXT();						}
 const vk::VkPhysicalDeviceShaderQuadControlFeaturesKHR&						Context::getShaderQuadControlFeatures						(void) const { return m_device->getShaderQuadControlFeatures();						}
 const vk::VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR&		Context::getShaderRelaxedExtendedInstructionFeatures		(void) const { return m_device->getShaderRelaxedExtendedInstructionFeatures();		}

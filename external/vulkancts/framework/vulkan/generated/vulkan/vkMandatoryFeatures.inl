@@ -851,6 +851,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_module_identifier"))
 		addFeatures(&physicalDeviceShaderModuleIdentifierFeaturesEXT);
 
+	// VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT for ext [VK_EXT_shader_ocp_microscaling_types]
+	vk::VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT physicalDeviceShaderOCPMicroscalingTypesFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_ocp_microscaling_types"))
+		addFeatures(&physicalDeviceShaderOCPMicroscalingTypesFeaturesEXT);
+
 	// VkPhysicalDeviceShaderObjectFeaturesEXT for ext [VK_EXT_shader_object]
 	vk::VkPhysicalDeviceShaderObjectFeaturesEXT physicalDeviceShaderObjectFeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_object"))
@@ -2766,6 +2771,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceShaderSubgroupPartitionedFeaturesEXT.shaderSubgroupPartitioned == VK_FALSE )
 			failMesages.push_back("shaderSubgroupPartitioned");
+	}
+
+	// VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_ocp_microscaling_types")) )
+	{
+		if ( (physicalDeviceShaderOCPMicroscalingTypesFeaturesEXT.shaderFloat4 == VK_FALSE) && (physicalDeviceShaderOCPMicroscalingTypesFeaturesEXT.shaderFloat6 == VK_FALSE) && (physicalDeviceShaderOCPMicroscalingTypesFeaturesEXT.shaderFloat8UnsignedE8M0 == VK_FALSE) && (physicalDeviceShaderOCPMicroscalingTypesFeaturesEXT.shaderMXInt8 == VK_FALSE) )
+			failMesages.push_back("shaderFloat4 or shaderFloat6 or shaderFloat8UnsignedE8M0 or shaderMXInt8");
 	}
 
 	// VkPhysicalDevicePrimitiveRestartIndexFeaturesEXT

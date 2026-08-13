@@ -5476,6 +5476,48 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderModuleIdentifierFeaturesEXT (Cont
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureShaderOCPMicroscalingTypesFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT deviceShaderOCPMicroscalingTypesFeaturesEXT[count];
+    const bool                                            isShaderOCPMicroscalingTypesFeaturesEXT = checkExtension(properties, "VK_EXT_shader_ocp_microscaling_types");
+
+    if (!isShaderOCPMicroscalingTypesFeaturesEXT)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceShaderOCPMicroscalingTypesFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT));
+        deviceShaderOCPMicroscalingTypesFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OCP_MICROSCALING_TYPES_FEATURES_EXT;
+        deviceShaderOCPMicroscalingTypesFeaturesEXT[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceShaderOCPMicroscalingTypesFeaturesEXT[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceShaderOCPMicroscalingTypesFeaturesEXT[0] << TestLog::EndMessage;
+
+    if (
+        deviceShaderOCPMicroscalingTypesFeaturesEXT[0].shaderFloat4 != deviceShaderOCPMicroscalingTypesFeaturesEXT[1].shaderFloat4 ||
+        deviceShaderOCPMicroscalingTypesFeaturesEXT[0].shaderFloat6 != deviceShaderOCPMicroscalingTypesFeaturesEXT[1].shaderFloat6 ||
+        deviceShaderOCPMicroscalingTypesFeaturesEXT[0].shaderFloat8UnsignedE8M0 != deviceShaderOCPMicroscalingTypesFeaturesEXT[1].shaderFloat8UnsignedE8M0 ||
+        deviceShaderOCPMicroscalingTypesFeaturesEXT[0].shaderMXInt8 != deviceShaderOCPMicroscalingTypesFeaturesEXT[1].shaderMXInt8)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureShaderObjectFeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -7687,6 +7729,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "shader_long_vector_features_ext", testPhysicalDeviceFeatureShaderLongVectorFeaturesEXT);
 	addFunctionCase(testGroup, "shader_maximal_reconvergence_features_khr", testPhysicalDeviceFeatureShaderMaximalReconvergenceFeaturesKHR);
 	addFunctionCase(testGroup, "shader_module_identifier_features_ext", testPhysicalDeviceFeatureShaderModuleIdentifierFeaturesEXT);
+	addFunctionCase(testGroup, "shader_ocp_microscaling_types_features_ext", testPhysicalDeviceFeatureShaderOCPMicroscalingTypesFeaturesEXT);
 	addFunctionCase(testGroup, "shader_object_features_ext", testPhysicalDeviceFeatureShaderObjectFeaturesEXT);
 	addFunctionCase(testGroup, "shader_quad_control_features_khr", testPhysicalDeviceFeatureShaderQuadControlFeaturesKHR);
 	addFunctionCase(testGroup, "shader_relaxed_extended_instruction_features_khr", testPhysicalDeviceFeatureShaderRelaxedExtendedInstructionFeaturesKHR);

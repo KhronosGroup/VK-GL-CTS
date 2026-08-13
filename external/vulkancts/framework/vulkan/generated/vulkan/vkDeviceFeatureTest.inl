@@ -6525,6 +6525,46 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderModuleIdentifierFea
 }
 
 
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderOCPMicroscalingTypesFeaturesEXT (Context& context)
+{
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const InstanceWrapper instance(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const VkPhysicalDevice                    physicalDevice = instance.getPhysicalDevice();
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT, shaderFloat4),
+        FEATURE_ITEM (VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT, shaderFloat6),
+        FEATURE_ITEM (VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT, shaderFloat8UnsignedE8M0),
+        FEATURE_ITEM (VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT, shaderMXInt8),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT*>(featuresStruct);
+        checkFeatures(instance, physicalDevice, 4, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderObjectFeaturesEXT (Context& context)
 {
     tcu::TestLog&                            log = context.getTestContext().getLog();
@@ -8548,6 +8588,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "shader_long_vector_features_ext", createDeviceWithUnsupportedFeaturesTestShaderLongVectorFeaturesEXT);
 	addFunctionCase(testGroup, "shader_maximal_reconvergence_features_khr", createDeviceWithUnsupportedFeaturesTestShaderMaximalReconvergenceFeaturesKHR);
 	addFunctionCase(testGroup, "shader_module_identifier_features_ext", createDeviceWithUnsupportedFeaturesTestShaderModuleIdentifierFeaturesEXT);
+	addFunctionCase(testGroup, "shader_ocp_microscaling_types_features_ext", createDeviceWithUnsupportedFeaturesTestShaderOCPMicroscalingTypesFeaturesEXT);
 	addFunctionCase(testGroup, "shader_object_features_ext", createDeviceWithUnsupportedFeaturesTestShaderObjectFeaturesEXT);
 	addFunctionCase(testGroup, "shader_quad_control_features_khr", createDeviceWithUnsupportedFeaturesTestShaderQuadControlFeaturesKHR);
 	addFunctionCase(testGroup, "shader_relaxed_extended_instruction_features_khr", createDeviceWithUnsupportedFeaturesTestShaderRelaxedExtendedInstructionFeaturesKHR);

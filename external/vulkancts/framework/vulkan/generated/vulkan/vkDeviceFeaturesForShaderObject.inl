@@ -173,6 +173,7 @@ auto fShaderIntegerDotProductFeatures                   = m_context.getShaderInt
 auto fShaderLongVectorFeaturesEXT                       = m_context.getShaderLongVectorFeaturesEXT();
 auto fShaderMaximalReconvergenceFeatures                = m_context.getShaderMaximalReconvergenceFeatures();
 auto fShaderModuleIdentifierFeaturesEXT                 = m_context.getShaderModuleIdentifierFeaturesEXT();
+auto fShaderOCPMicroscalingTypesFeaturesEXT             = m_context.getShaderOCPMicroscalingTypesFeaturesEXT();
 auto fShaderQuadControlFeatures                         = m_context.getShaderQuadControlFeatures();
 auto fShaderRelaxedExtendedInstructionFeatures          = m_context.getShaderRelaxedExtendedInstructionFeatures();
 auto fShaderReplicatedCompositesFeaturesEXT             = m_context.getShaderReplicatedCompositesFeaturesEXT();
@@ -385,6 +386,7 @@ std::vector<void *> pNextFeatures = {
 	&fShaderLongVectorFeaturesEXT,
 	&fShaderMaximalReconvergenceFeatures,
 	&fShaderModuleIdentifierFeaturesEXT,
+	&fShaderOCPMicroscalingTypesFeaturesEXT,
 	&fShaderQuadControlFeatures,
 	&fShaderRelaxedExtendedInstructionFeatures,
 	&fShaderReplicatedCompositesFeaturesEXT,

@@ -61,10 +61,11 @@ namespace
 constexpr uint32_t kRandomSeed                          = 0xdeadbeef;
 constexpr size_t kRandomSourcesPerType                  = 240;
 constexpr size_t kMinVectorLength                       = 1;
-constexpr size_t kMaxVectorLength                       = 4;
-constexpr size_t kArrayAlignment                        = 16;              // Bytes.
-constexpr size_t kEffectiveLength[kMaxVectorLength + 1] = {0, 1, 2, 4, 4}; // Effective length of a vector of size i.
-constexpr size_t kGCFNumFloats = 12; // Greatest Common Factor of the number of floats in a test.
+constexpr size_t kMaxVectorLength                       = 16;
+constexpr size_t kArrayAlignment                        = 16; // Bytes.
+constexpr size_t kEffectiveLength[kMaxVectorLength + 1] = {
+    0, 1, 2, 4, 4, 8, 8, 8, 8, 16, 16, 16, 16, 16, 16, 16, 16}; // Effective length of a vector of size i.
+constexpr size_t kGCFNumFloats = 3 * kMaxVectorLength; // Greatest Common Factor of the number of floats in a test.
 
 //#define SIMULATE_BRAIN_FLOAT16
 #ifdef SIMULATE_BRAIN_FLOAT16
@@ -89,7 +90,11 @@ constexpr bool isBFloat16SameBrainFloat16 = std::is_same_v<BFloat16, tcu::BrainF
 template <class T>
 T getRandomNormal(de::Random &rnd)
 {
-    if constexpr (std::is_same_v<T, int32_t>)
+    if constexpr (std::is_same_v<T, tcu::FloatMXINT8>)
+    {
+        return tcu::FloatMXINT8((uint8_t)(rnd.getInt32() & 0xFF));
+    }
+    else if constexpr (std::is_same_v<T, int32_t>)
     {
         return rnd.getInt32();
     }
@@ -130,7 +135,7 @@ const std::vector<T> &interestingSamples()
 
         return samples;
     }
-    else
+    else if (T::supportsSign())
     {
         static const std::vector<T> samples{
             T::zero(-1),           //
@@ -139,6 +144,15 @@ const std::vector<T> &interestingSamples()
             T::largestNormal(1),   //
             T::smallestNormal(-1), //
             T::smallestNormal(1),  //
+        };
+        return samples;
+    }
+    else
+    {
+        static const std::vector<T> samples{
+            T::zero(1),           //
+            T::largestNormal(1),  //
+            T::smallestNormal(1), //
         };
         return samples;
     }
@@ -356,6 +370,11 @@ private:
         , m_bFloatValues(getInputValues<BFloat16>(m_rnd))
         , m_valuesE5M2(getInputValues<tcu::FloatE5M2>(m_rnd))
         , m_valuesE4M3(getInputValues<tcu::FloatE4M3>(m_rnd))
+        , m_valuesE2M1(getInputValues<tcu::FloatE2M1>(m_rnd))
+        , m_valuesE3M2(getInputValues<tcu::FloatE3M2>(m_rnd))
+        , m_valuesE2M3(getInputValues<tcu::FloatE2M3>(m_rnd))
+        , m_valuesUE8M0(getInputValues<tcu::FloatUE8M0>(m_rnd))
+        , m_valuesMXINT8(getInputValues<tcu::FloatMXINT8>(m_rnd))
         , m_int32Values(getInputValues<int32_t>(m_rnd))
         , m_uint32Values(getInputValues<uint32_t>(m_rnd))
     {
@@ -372,6 +391,11 @@ private:
     std::vector<BFloat16> m_bFloatValues;
     std::vector<tcu::FloatE5M2> m_valuesE5M2;
     std::vector<tcu::FloatE4M3> m_valuesE4M3;
+    std::vector<tcu::FloatE2M1> m_valuesE2M1;
+    std::vector<tcu::FloatE3M2> m_valuesE3M2;
+    std::vector<tcu::FloatE2M3> m_valuesE2M3;
+    std::vector<tcu::FloatUE8M0> m_valuesUE8M0;
+    std::vector<tcu::FloatMXINT8> m_valuesMXINT8;
     std::vector<int32_t> m_int32Values;
     std::vector<uint32_t> m_uint32Values;
 };
@@ -413,6 +437,36 @@ const std::vector<tcu::FloatE4M3> &InputGenerator::getValues() const
 }
 
 template <>
+const std::vector<tcu::FloatE2M1> &InputGenerator::getValues() const
+{
+    return m_valuesE2M1;
+}
+
+template <>
+const std::vector<tcu::FloatE3M2> &InputGenerator::getValues() const
+{
+    return m_valuesE3M2;
+}
+
+template <>
+const std::vector<tcu::FloatE2M3> &InputGenerator::getValues() const
+{
+    return m_valuesE2M3;
+}
+
+template <>
+const std::vector<tcu::FloatUE8M0> &InputGenerator::getValues() const
+{
+    return m_valuesUE8M0;
+}
+
+template <>
+const std::vector<tcu::FloatMXINT8> &InputGenerator::getValues() const
+{
+    return m_valuesMXINT8;
+}
+
+template <>
 const std::vector<int32_t> &InputGenerator::getValues() const
 {
     return m_int32Values;
@@ -431,7 +485,19 @@ bool validConversion(const T1 &orig, const T2 &result, bool sat)
     DE_UNREF(sat);
 
     std::vector<T2> acceptedResults;
-    if constexpr (std::is_same_v<T1, int32_t> || std::is_same_v<T1, uint32_t>)
+    if constexpr (std::is_same_v<T1, tcu::FloatMXINT8>)
+    {
+        // 0x80 has undefined conversion result
+        if (orig.bits() == 0x80)
+            return true;
+        return validConversion(tcu::Float32(orig.asFloat()), result, sat);
+    }
+    else if constexpr (std::is_same_v<T2, tcu::FloatMXINT8>)
+    {
+        // converting to FloatMXINT8 is not supported
+        DE_ASSERT(false);
+    }
+    else if constexpr (std::is_same_v<T1, int32_t> || std::is_same_v<T1, uint32_t>)
     {
         acceptedResults = {T2::convert(tcu::Float64(double(orig)), tcu::ROUND_DOWNWARD),
                            T2::convert(tcu::Float64(double(orig)), tcu::ROUND_UPWARD)};
@@ -650,6 +716,11 @@ enum DataType
     BRAIN_FLOAT_16_BITS,
     FLOAT_TYPE_E5M2,
     FLOAT_TYPE_E4M3,
+    FLOAT_TYPE_E2M1,
+    FLOAT_TYPE_E3M2,
+    FLOAT_TYPE_E2M3,
+    FLOAT_TYPE_UE8M0,
+    FLOAT_TYPE_MXINT8,
 
     SIGNED_INT_TYPE_32_BITS,
     UNSIGNED_INT_TYPE_32_BITS,
@@ -673,6 +744,16 @@ static DataType dataTypeToEnum()
         return FLOAT_TYPE_E5M2;
     if constexpr (std::is_same_v<T, tcu::FloatE4M3>)
         return FLOAT_TYPE_E4M3;
+    if constexpr (std::is_same_v<T, tcu::FloatE2M1>)
+        return FLOAT_TYPE_E2M1;
+    if constexpr (std::is_same_v<T, tcu::FloatE3M2>)
+        return FLOAT_TYPE_E3M2;
+    if constexpr (std::is_same_v<T, tcu::FloatE2M3>)
+        return FLOAT_TYPE_E2M3;
+    if constexpr (std::is_same_v<T, tcu::FloatUE8M0>)
+        return FLOAT_TYPE_UE8M0;
+    if constexpr (std::is_same_v<T, tcu::FloatMXINT8>)
+        return FLOAT_TYPE_MXINT8;
 
     if constexpr (std::is_same_v<T, int32_t>)
         return SIGNED_INT_TYPE_32_BITS;
@@ -690,6 +771,11 @@ static std::string getDataTypeName(DataType dt)
                                                    {BRAIN_FLOAT_16_BITS, "bf16"},    //
                                                    {FLOAT_TYPE_E5M2, "fe5m2"},       //
                                                    {FLOAT_TYPE_E4M3, "fe4m3"},       //
+                                                   {FLOAT_TYPE_E2M1, "fe2m1"},       //
+                                                   {FLOAT_TYPE_E3M2, "fe3m2"},       //
+                                                   {FLOAT_TYPE_E2M3, "fe2m3"},       //
+                                                   {FLOAT_TYPE_UE8M0, "fue8m0"},     //
+                                                   {FLOAT_TYPE_MXINT8, "fmxint8"},   //
                                                    {SIGNED_INT_TYPE_32_BITS, "i32"}, //
                                                    {UNSIGNED_INT_TYPE_32_BITS, "u32"}};
     return typeMap.at(dt);
@@ -697,6 +783,12 @@ static std::string getDataTypeName(DataType dt)
 
 template <class, uint32_t>
 std::bad_typeid vtn;
+template <>
+[[maybe_unused]] constexpr const char *vtn<BFloat16, 16> =
+    isBFloat16SameBrainFloat16 ? "vector<bfloat16_t, 16>" : "vector<float16_t, 16>";
+template <>
+[[maybe_unused]] constexpr const char *vtn<BFloat16, 8> =
+    isBFloat16SameBrainFloat16 ? "vector<bfloat16_t, 8>" : "vector<float16_t, 8>";
 template <>
 [[maybe_unused]] constexpr const char *vtn<BFloat16, 4> = isBFloat16SameBrainFloat16 ? "bf16vec4" : "f16vec4";
 template <>
@@ -709,20 +801,39 @@ template <>
 struct TestParams
 {
     static constexpr const char *kGLSLTypes[][kMaxVectorLength + 1] = {
-        {nullptr, "float16_t", "f16vec2", "f16vec3", "f16vec4"},
-        {nullptr, "float", "vec2", "vec3", "vec4"},
-        {nullptr, "double", "dvec2", "dvec3", "dvec4"},
-        {nullptr, vtn<BFloat16, 1>, vtn<BFloat16, 2>, vtn<BFloat16, 3>, vtn<BFloat16, 4>},
-        {nullptr, "floate5m2_t", "fe5m2vec2", "fe5m2vec3", "fe5m2vec4"},
-        {nullptr, "floate4m3_t", "fe4m3vec2", "fe4m3vec3", "fe4m3vec4"},
-        {nullptr, "int", "ivec2", "ivec3", "ivec4"},
-        {nullptr, "uint", "uvec2", "uvec3", "uvec4"},
+        {nullptr, "float16_t", "f16vec2", "f16vec3", "f16vec4", "", "", "", "vector<float16_t, 8>", "", "", "", "", "",
+         "", "", "vector<float16_t, 16>"},
+        {nullptr, "float", "vec2", "vec3", "vec4", "", "", "", "vector<float, 8>", "", "", "", "", "", "", "",
+         "vector<float, 16>"},
+        {nullptr, "double", "dvec2", "dvec3", "dvec4", "", "", "", "vector<double, 8>", "", "", "", "", "", "", "",
+         "vector<double, 16>"},
+        {nullptr, vtn<BFloat16, 1>, vtn<BFloat16, 2>, vtn<BFloat16, 3>, vtn<BFloat16, 4>, "", "", "", vtn<BFloat16, 8>,
+         "", "", "", "", "", "", "", vtn<BFloat16, 16>},
+        {nullptr, "floate5m2_t", "fe5m2vec2", "fe5m2vec3", "fe5m2vec4", "", "", "", "vector<floate5m2_t, 8>", "", "",
+         "", "", "", "", "", "vector<floate5m2_t, 16>"},
+        {nullptr, "floate4m3_t", "fe4m3vec2", "fe4m3vec3", "fe4m3vec4", "", "", "", "vector<floate4m3_t, 8>", "", "",
+         "", "", "", "", "", "vector<floate4m3_t, 16>"},
+        {nullptr, "floate2m1_t", "fe2m1vec2", "fe2m1vec3", "fe2m1vec4", "", "", "", "vector<floate2m1_t, 8>", "", "",
+         "", "", "", "", "", "vector<floate2m1_t, 16>"},
+        {nullptr, "floate3m2_t", "fe3m2vec2", "fe3m2vec3", "fe3m2vec4", "", "", "", "vector<floate3m2_t, 8>", "", "",
+         "", "", "", "", "", "vector<floate3m2_t, 16>"},
+        {nullptr, "floate2m3_t", "fe2m3vec2", "fe2m3vec3", "fe2m3vec4", "", "", "", "vector<floate2m3_t, 8>", "", "",
+         "", "", "", "", "", "vector<floate2m3_t, 16>"},
+        {nullptr, "floatue8m0_t", "fue8m0vec2", "fue8m0vec3", "fue8m0vec4", "", "", "", "vector<floatue8m0_t, 8>", "",
+         "", "", "", "", "", "", "vector<floatue8m0_t, 16>"},
+        {nullptr, "floatmxint8_t", "fmxint8vec2", "fmxint8vec3", "fmxint8vec4", "", "", "", "vector<floatmxint8_t, 8>",
+         "", "", "", "", "", "", "", "vector<floatmxint8_t, 16>"},
+        {nullptr, "int", "ivec2", "ivec3", "ivec4", "", "", "", "vector<int, 8>", "", "", "", "", "", "", "",
+         "vector<int, 16>"},
+        {nullptr, "uint", "uvec2", "uvec3", "uvec4", "", "", "", "vector<uint, 8>", "", "", "", "", "", "", "",
+         "vector<uint, 16>"},
     };
 
     DataType from;
     DataType to;
     size_t vectorLength;
     bool saturatedConvert;
+    bool bitcastExtract;
 
     void validate() const
     {
@@ -915,6 +1026,21 @@ void FConvertTestCase::initPrograms(vk::SourceCollections &programCollection) co
     case FLOAT_TYPE_E4M3:
         numValues = inputGenerator.getValues<tcu::FloatE4M3>().size();
         break;
+    case FLOAT_TYPE_E2M1:
+        numValues = inputGenerator.getValues<tcu::FloatE2M1>().size();
+        break;
+    case FLOAT_TYPE_E3M2:
+        numValues = inputGenerator.getValues<tcu::FloatE3M2>().size();
+        break;
+    case FLOAT_TYPE_E2M3:
+        numValues = inputGenerator.getValues<tcu::FloatE2M3>().size();
+        break;
+    case FLOAT_TYPE_UE8M0:
+        numValues = inputGenerator.getValues<tcu::FloatUE8M0>().size();
+        break;
+    case FLOAT_TYPE_MXINT8:
+        numValues = inputGenerator.getValues<tcu::FloatMXINT8>().size();
+        break;
 
     case SIGNED_INT_TYPE_32_BITS:
         numValues = inputGenerator.getValues<int32_t>().size();
@@ -925,6 +1051,30 @@ void FConvertTestCase::initPrograms(vk::SourceCollections &programCollection) co
     default:
         DE_ASSERT(false);
         break;
+    }
+
+    // Store sub-byte types as vector of u8 in the SSBO
+    std::string ssboInputType = inputType;
+    if (m_params.from == FLOAT_TYPE_E2M1 || m_params.from == FLOAT_TYPE_E3M2 || m_params.from == FLOAT_TYPE_E2M3)
+    {
+        static constexpr const char *uint8str[kMaxVectorLength + 1] = {nullptr,
+                                                                       "uint8_t",
+                                                                       "u8vec2",
+                                                                       "u8vec3",
+                                                                       "u8vec4",
+                                                                       "",
+                                                                       "",
+                                                                       "",
+                                                                       "vector<uint8_t, 8>",
+                                                                       "",
+                                                                       "",
+                                                                       "",
+                                                                       "",
+                                                                       "",
+                                                                       "",
+                                                                       "",
+                                                                       "vector<uint8_t, 16>"};
+        ssboInputType                                               = uint8str[m_params.vectorLength];
     }
 
     const size_t arraySize = numValues / m_params.vectorLength;
@@ -952,18 +1102,256 @@ void FConvertTestCase::initPrograms(vk::SourceCollections &programCollection) co
         s("#extension GL_EXT_float_e4m3 : enable");
         s("#extension GL_EXT_float_e5m2 : enable");
     }
+    if (m_params.from == FLOAT_TYPE_E2M1)
+    {
+        s("#extension GL_EXT_float_e2m1 : enable");
+        s("#extension GL_EXT_shader_explicit_arithmetic_types: require");
+    }
+    if (m_params.from == FLOAT_TYPE_E3M2)
+    {
+        s("#extension GL_EXT_float_e3m2 : enable");
+        s("#extension GL_EXT_shader_explicit_arithmetic_types: require");
+    }
+    if (m_params.from == FLOAT_TYPE_E2M3)
+    {
+        s("#extension GL_EXT_float_e2m3 : enable");
+        s("#extension GL_EXT_shader_explicit_arithmetic_types: require");
+    }
+    if (m_params.from == FLOAT_TYPE_UE8M0)
+    {
+        s("#extension GL_EXT_float_ue8m0 : enable");
+        s("#extension GL_EXT_shader_explicit_arithmetic_types: require");
+    }
+    if (m_params.from == FLOAT_TYPE_MXINT8)
+    {
+        s("#extension GL_EXT_float_mxint8 : enable");
+        s("#extension GL_EXT_shader_explicit_arithmetic_types: require");
+    }
+    if (m_params.vectorLength > 4)
+    {
+        s("#extension GL_EXT_long_vector: require");
+    }
+
     s("layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;");
-    s("layout(set = 0, binding = 0, std140) buffer issbodef { ", inputType, " val[", arraySize, "]; } issbo;");
+    s("layout(set = 0, binding = 0, std140) buffer issbodef { ", ssboInputType, " val[", arraySize, "]; } issbo;");
     s("layout(set = 0, binding = 1, std140) buffer ossbodef { ", outputType, " val[", arraySize, "]; } ossbo;");
     s("void main()");
     s("{");
+
+    switch (m_params.from)
+    {
+    case FLOAT_TYPE_E2M1:
+        switch (m_params.vectorLength)
+        {
+        case 1:
+            s("    uint8_t u = issbo.val[gl_WorkGroupID.x];");
+            if (m_params.bitcastExtract)
+                s("    floate2m1_t f = bitcastExtractfe2m1EXT(uint8_t(u * 2), 1);");
+            else
+                s("    floate2m1_t f = unpackFloat2xfe2m1EXT(u).x;");
+            break;
+        case 2:
+            s("    u8vec2 u = issbo.val[gl_WorkGroupID.x];");
+            if (m_params.bitcastExtract)
+                s("    fe2m1vec2 f = bitcastExtractfe2m1EXT(u8vec2(u * 2), 1);");
+            else
+                s("    fe2m1vec2 f = unpackFloat2xfe2m1EXT(uint8_t((u.x & 0xF) | ((u.y & 0xF) << 4)));");
+            break;
+        case 3:
+            // swizzle and unswizzle
+            s("    u8vec3 u = issbo.val[gl_WorkGroupID.x].zyx;");
+            if (m_params.bitcastExtract)
+                s("    fe2m1vec3 f = bitcastExtractfe2m1EXT(u8vec3(u * 2), 1).zyx;");
+            else
+                s("    fe2m1vec3 f = unpackFloat4xfe2m1EXT(uint16_t((u.x & 0xF) | ((u.y & 0xF) << 4) | ((u.z & 0xF) << "
+                  "8))).zyx;");
+            break;
+        case 4:
+            s("    u8vec4 u = issbo.val[gl_WorkGroupID.x];");
+            if (m_params.bitcastExtract)
+                s("    fe2m1vec4 f = bitcastExtractfe2m1EXT(u8vec4(u * 2), 1);");
+            else
+                s("    fe2m1vec4 f = unpackFloat4xfe2m1EXT(uint16_t((u.x & 0xF) | ((u.y & 0xF) << 4) | ((u.z & 0xF) << "
+                  "8) | ((u.w & 0xF) << 12)));");
+            break;
+        case 8:
+            s("    vector<uint8_t, 8> u = issbo.val[gl_WorkGroupID.x];");
+            if (m_params.bitcastExtract)
+                s("    vector<floate2m1_t, 8> f = bitcastExtractfe2m1EXT(vector<uint8_t, 8>(u * 2), 1);");
+            else
+                s("    vector<floate2m1_t, 8> f = unpackFloat8xfe2m1EXT(uint32_t("
+                  "(u[0] & 0xF) | ((u[1] & 0xF) << 4) | "
+                  "((u[2] & 0xF) << 8) | ((u[3] & 0xF) << 12) | "
+                  "((u[4] & 0xF) << 16) | ((u[5] & 0xF) << 20) | "
+                  "((u[6] & 0xF) << 24) | ((u[7] & 0xF) << 28)));");
+            break;
+        case 16:
+            s("    vector<uint8_t, 16> u = issbo.val[gl_WorkGroupID.x];");
+            if (m_params.bitcastExtract)
+                s("    vector<floate2m1_t, 16> f = bitcastExtractfe2m1EXT(vector<uint8_t, 16>(u * 2), 1);");
+            else
+                s("    vector<floate2m1_t, 16> f = unpackFloat16xfe2m1EXT(u32vec2("
+                  "(u[0] & 0xF) | ((u[1] & 0xF) << 4) |  "
+                  "((u[2] & 0xF) << 8) |  ((u[3] & 0xF) << 12) | "
+                  "((u[4] & 0xF) << 16) |  ((u[5] & 0xF) << 20) | "
+                  "((u[6] & 0xF) << 24) |  ((u[7] & 0xF) << 28), "
+                  "(u[8] & 0xF) | ((u[9] & 0xF) << 4) | "
+                  "((u[10] & 0xF) << 8) | ((u[11] & 0xF) << 12) | "
+                  "((u[12] & 0xF) << 16) | ((u[13] & 0xF) << 20) | "
+                  "((u[14] & 0xF) << 24) | ((u[15] & 0xF) << 28)));");
+            break;
+        default:
+            DE_ASSERT(false);
+            break;
+        }
+        break;
+    case FLOAT_TYPE_E3M2:
+        switch (m_params.vectorLength)
+        {
+        case 1:
+            s("    uint8_t u = issbo.val[gl_WorkGroupID.x];");
+            if (m_params.bitcastExtract)
+                s("    floate3m2_t f = bitcastExtractfe3m2EXT(uint8_t(u * 2), 1);");
+            else
+                s("    floate3m2_t f = unpackFloat4xfe3m2EXT(u8vec3(u & 0x3F, 0, 0)).x;");
+            break;
+        case 2:
+            s("    u8vec2 u = issbo.val[gl_WorkGroupID.x];");
+            if (m_params.bitcastExtract)
+                s("    fe3m2vec2 f = bitcastExtractfe3m2EXT(u8vec2(u * 2), 1);");
+            else
+                s("    fe3m2vec2 f = unpackFloat4xfe3m2EXT(u8vec3((u.x & 0x3F) | ((u.y & 0x3) << 6), (u.y & 0x3C) >> "
+                  "2, 0)).xy;");
+            break;
+        case 3:
+            // swizzle and unswizzle
+            s("    u8vec3 u = issbo.val[gl_WorkGroupID.x].yzx;");
+            if (m_params.bitcastExtract)
+                s("    fe3m2vec3 f = bitcastExtractfe3m2EXT(u8vec3(u * 2), 1).zxy;");
+            else
+                s("    fe3m2vec3 f = unpackFloat4xfe3m2EXT(u8vec3((u.x & 0x3F) | ((u.y & 0x3) << 6), ((u.y & 0x3C) >> "
+                  "2) | ((u.z & 0xF) << 4), ((u.z & 0x30) >> 4))).zxy;");
+            break;
+        case 4:
+            s("    u8vec4 u = issbo.val[gl_WorkGroupID.x];");
+            if (m_params.bitcastExtract)
+                s("    fe3m2vec4 f = bitcastExtractfe3m2EXT(u8vec4(u * 2), 1);");
+            else
+                s("    fe3m2vec4 f = unpackFloat4xfe3m2EXT(u8vec3((u.x & 0x3F) | ((u.y & 0x3) << 6), ((u.y & 0x3C) >> "
+                  "2) | ((u.z & 0xF) << 4), ((u.z & 0x30) >> 4) | ((u.w & 0x3F) << 2)));");
+            break;
+        case 8:
+            s("    vector<uint8_t, 8> u = issbo.val[gl_WorkGroupID.x];");
+            if (m_params.bitcastExtract)
+                s("    vector<floate3m2_t, 8> f = bitcastExtractfe3m2EXT(vector<uint8_t, 8>(u * 2), 1);");
+            else
+                s("    vector<floate3m2_t, 8> f = unpackFloat8xfe3m2EXT(u16vec3("
+                  "(u[0] & 0x3F) | ((u[1] & 0x3F) << 6) | "
+                  "((u[2] & 0xF) << 12), ((u[2] & 0x30) >> 4) | "
+                  "((u[3] & 0x3F) << 2) | ((u[4] & 0x3F) << 8) | "
+                  "((u[5] & 0x3) << 14), ((u[5] & 0x3C) >> 2) | "
+                  "((u[6] & 0x3F) << 4) | ((u[7] & 0x3F) << 10)));");
+            break;
+        case 16:
+            s("    vector<uint8_t, 16> u = issbo.val[gl_WorkGroupID.x];");
+            if (m_params.bitcastExtract)
+                s("    vector<floate3m2_t, 16> f = bitcastExtractfe3m2EXT(vector<uint8_t, 16>(u * 2), 1);");
+            else
+                s("    vector<floate3m2_t, 16> f = unpackFloat16xfe3m2EXT(u32vec3("
+                  "(u[0] & 0x3F) | ((u[1] & 0x3F) << 6) | "
+                  "((u[2] & 0x3F) << 12) | ((u[3] & 0x3F) << 18) | "
+                  "((u[4] & 0x3F) << 24) | ((u[5] & 0x3) << 30), "
+                  "((u[5] & 0x3C) >> 2) | ((u[6] & 0x3F) << 4) | "
+                  "((u[7] & 0x3F) << 10) | ((u[8] & 0x3F) << 16) | "
+                  "((u[9] & 0x3F) << 22) | ((u[10] & 0xF) << 28), "
+                  "((u[10] & 0x30) >> 4) | ((u[11] & 0x3F) << 2) | "
+                  "((u[12] & 0x3F) << 8) | ((u[13] & 0x3F) << 14) | "
+                  "((u[14] & 0x3F) << 20) | ((u[15] & 0x3F) << 26)));");
+            break;
+        default:
+            DE_ASSERT(false);
+            break;
+        }
+        break;
+    case FLOAT_TYPE_E2M3:
+        switch (m_params.vectorLength)
+        {
+        case 1:
+            s("    uint8_t u = issbo.val[gl_WorkGroupID.x];");
+            if (m_params.bitcastExtract)
+                s("    floate2m3_t f = bitcastExtractfe2m3EXT(uint8_t(u * 2), 1);");
+            else
+                s("    floate2m3_t f = unpackFloat4xfe2m3EXT(u8vec3(u & 0x3F, 0, 0)).x;");
+            break;
+        case 2:
+            s("    u8vec2 u = issbo.val[gl_WorkGroupID.x];");
+            if (m_params.bitcastExtract)
+                s("    fe2m3vec2 f = bitcastExtractfe2m3EXT(u8vec2(u * 2), 1);");
+            else
+                s("    fe2m3vec2 f = unpackFloat4xfe2m3EXT(u8vec3((u.x & 0x3F) | ((u.y & 0x3) << 6), (u.y & 0x3C) >> "
+                  "2, 0)).xy;");
+            break;
+        case 3:
+            s("    u8vec3 u = issbo.val[gl_WorkGroupID.x];");
+            if (m_params.bitcastExtract)
+                s("    fe2m3vec3 f = bitcastExtractfe2m3EXT(u8vec3(u * 2), 1);");
+            else
+                s("    fe2m3vec3 f = unpackFloat4xfe2m3EXT(packFloat4xfe2m3EXT(unpackFloat4xfe2m3EXT(u8vec3((u.x & "
+                  "0x3F) | ((u.y & 0x3) << 6), ((u.y & 0x3C) >> 2) | ((u.z & 0xF) << 4), ((u.z & 0x30) >> 4))))).xyz;");
+            break;
+        case 4:
+            // swizzle and unswizzle
+            s("    u8vec4 u = issbo.val[gl_WorkGroupID.x].wzyx;");
+            if (m_params.bitcastExtract)
+                s("    fe2m3vec4 f = bitcastExtractfe2m3EXT(u8vec4(u * 2), 1).wzyx;");
+            else
+                s("    fe2m3vec4 f = unpackFloat4xfe2m3EXT(u8vec3((u.x & 0x3F) | ((u.y & 0x3) << 6), ((u.y & 0x3C) >> "
+                  "2) | ((u.z & 0xF) << 4), ((u.z & 0x30) >> 4) | ((u.w & 0x3F) << 2))).wzyx;");
+            break;
+        case 8:
+            s("    vector<uint8_t, 8> u = issbo.val[gl_WorkGroupID.x];");
+            if (m_params.bitcastExtract)
+                s("    vector<floate2m3_t, 8> f = bitcastExtractfe2m3EXT(vector<uint8_t, 8>(u * 2), 1);");
+            else
+                s("    vector<floate2m3_t, 8> f = unpackFloat8xfe2m3EXT(u16vec3("
+                  "(u[0] & 0x3F) | ((u[1] & 0x3F) << 6) | "
+                  "((u[2] & 0xF) << 12), ((u[2] & 0x30) >> 4) | "
+                  "((u[3] & 0x3F) << 2) | ((u[4] & 0x3F) << 8) | "
+                  "((u[5] & 0x3) << 14), ((u[5] & 0x3C) >> 2) | "
+                  "((u[6] & 0x3F) << 4) | ((u[7] & 0x3F) << 10)));");
+            break;
+        case 16:
+            s("    vector<uint8_t, 16> u = issbo.val[gl_WorkGroupID.x];");
+            if (m_params.bitcastExtract)
+                s("    vector<floate2m3_t, 16> f = bitcastExtractfe2m3EXT(vector<uint8_t, 16>(u * 2), 1);");
+            else
+                s("    vector<floate2m3_t, 16> f = unpackFloat16xfe2m3EXT(u32vec3("
+                  "(u[0] & 0x3F) | ((u[1] & 0x3F) << 6) | "
+                  "((u[2] & 0x3F) << 12) | ((u[3] & 0x3F) << 18) | "
+                  "((u[4] & 0x3F) << 24) | ((u[5] & 0x3) << 30), "
+                  "((u[5] & 0x3C) >> 2) | ((u[6] & 0x3F) << 4) | "
+                  "((u[7] & 0x3F) << 10) | ((u[8] & 0x3F) << 16) | "
+                  "((u[9] & 0x3F) << 22) | ((u[10] & 0xF) << 28), "
+                  "((u[10] & 0x30) >> 4) | ((u[11] & 0x3F) << 2) | "
+                  "((u[12] & 0x3F) << 8) | ((u[13] & 0x3F) << 14) | "
+                  "((u[14] & 0x3F) << 20) | ((u[15] & 0x3F) << 26)));");
+            break;
+        default:
+            DE_ASSERT(false);
+            break;
+        }
+        break;
+    default:
+        s("    ", inputType, " f = issbo.val[gl_WorkGroupID.x];");
+        break;
+    }
     if (m_params.saturatedConvert)
     {
-        s("    saturatedConvertEXT(ossbo.val[gl_WorkGroupID.x], issbo.val[gl_WorkGroupID.x]);");
+        s("    saturatedConvertEXT(ossbo.val[gl_WorkGroupID.x], f);");
     }
     else
     {
-        s("    ossbo.val[gl_WorkGroupID.x] = ", outputType, "(issbo.val[gl_WorkGroupID.x]);");
+        s("    ossbo.val[gl_WorkGroupID.x] = ", outputType, "(f);");
     }
     s("}");
 
@@ -1019,6 +1407,56 @@ void FConvertTestCase::checkSupport(Context &context) const
 #endif
     }
 
+    switch (m_params.from)
+    {
+    case FLOAT_TYPE_E2M1:
+#ifdef CTS_USES_VULKANSC
+        TCU_THROW(NotSupportedError, "shaderFloat4 not available in VulkanSC");
+#else
+        if (!context.getShaderOCPMicroscalingTypesFeaturesEXT().shaderFloat4)
+            TCU_THROW(NotSupportedError, "shaderFloat4 not supported by device");
+#endif
+        break;
+    case FLOAT_TYPE_E3M2:
+    case FLOAT_TYPE_E2M3:
+#ifdef CTS_USES_VULKANSC
+        TCU_THROW(NotSupportedError, "shaderFloat6 not available in VulkanSC");
+#else
+        if (!context.getShaderOCPMicroscalingTypesFeaturesEXT().shaderFloat6)
+            TCU_THROW(NotSupportedError, "shaderFloat4 not supported by device");
+#endif
+        break;
+    case FLOAT_TYPE_UE8M0:
+#ifdef CTS_USES_VULKANSC
+        TCU_THROW(NotSupportedError, "shaderFloat8UnsignedE8M0 not available in VulkanSC");
+#else
+        if (!context.getShaderOCPMicroscalingTypesFeaturesEXT().shaderFloat8UnsignedE8M0)
+            TCU_THROW(NotSupportedError, "shaderFloat8UnsignedE8M0 not supported by device");
+#endif
+        break;
+
+    case FLOAT_TYPE_MXINT8:
+#ifdef CTS_USES_VULKANSC
+        TCU_THROW(NotSupportedError, "shaderMXInt8 not available in VulkanSC");
+#else
+        if (!context.getShaderOCPMicroscalingTypesFeaturesEXT().shaderMXInt8)
+            TCU_THROW(NotSupportedError, "shaderMXInt8 not supported by device");
+#endif
+        break;
+    default:
+        break;
+    }
+
+    if (m_params.vectorLength > 4)
+    {
+#ifdef CTS_USES_VULKANSC
+        TCU_THROW(NotSupportedError, "longVector not available in VulkanSC");
+#else
+        if (!context.getShaderLongVectorFeaturesEXT().longVector)
+            TCU_THROW(NotSupportedError, "longVector not supported by device");
+#endif
+    }
+
     // VUID-vkCmdDispatch-groupCountX-00386
     const InputGenerator &inputGenerator = InputGenerator::getInstance();
     size_t numValues                     = 0;
@@ -1041,6 +1479,21 @@ void FConvertTestCase::checkSupport(Context &context) const
         break;
     case FLOAT_TYPE_E4M3:
         numValues = inputGenerator.getValues<tcu::FloatE4M3>().size();
+        break;
+    case FLOAT_TYPE_E2M1:
+        numValues = inputGenerator.getValues<tcu::FloatE2M1>().size();
+        break;
+    case FLOAT_TYPE_E3M2:
+        numValues = inputGenerator.getValues<tcu::FloatE3M2>().size();
+        break;
+    case FLOAT_TYPE_E2M3:
+        numValues = inputGenerator.getValues<tcu::FloatE2M3>().size();
+        break;
+    case FLOAT_TYPE_UE8M0:
+        numValues = inputGenerator.getValues<tcu::FloatUE8M0>().size();
+        break;
+    case FLOAT_TYPE_MXINT8:
+        numValues = inputGenerator.getValues<tcu::FloatMXINT8>().size();
         break;
     case SIGNED_INT_TYPE_32_BITS:
         numValues = inputGenerator.getValues<int32_t>().size();
@@ -1107,6 +1560,36 @@ tcu::TestStatus FConvertTestInstance::iterate(void)
     {
         auto &inputValues   = InputGenerator::getInstance().getValues<tcu::FloatE4M3>();
         inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::FloatE4M3>(inputValues.size(), m_params.vectorLength);
+        inputMemory         = packData(inputValues, m_params.vectorLength);
+    }
+    else if (m_params.from == FLOAT_TYPE_E2M1)
+    {
+        auto &inputValues   = InputGenerator::getInstance().getValues<tcu::FloatE2M1>();
+        inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::FloatE2M1>(inputValues.size(), m_params.vectorLength);
+        inputMemory         = packData(inputValues, m_params.vectorLength);
+    }
+    else if (m_params.from == FLOAT_TYPE_E3M2)
+    {
+        auto &inputValues   = InputGenerator::getInstance().getValues<tcu::FloatE3M2>();
+        inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::FloatE3M2>(inputValues.size(), m_params.vectorLength);
+        inputMemory         = packData(inputValues, m_params.vectorLength);
+    }
+    else if (m_params.from == FLOAT_TYPE_E2M3)
+    {
+        auto &inputValues   = InputGenerator::getInstance().getValues<tcu::FloatE2M3>();
+        inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::FloatE2M3>(inputValues.size(), m_params.vectorLength);
+        inputMemory         = packData(inputValues, m_params.vectorLength);
+    }
+    else if (m_params.from == FLOAT_TYPE_UE8M0)
+    {
+        auto &inputValues   = InputGenerator::getInstance().getValues<tcu::FloatUE8M0>();
+        inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::FloatUE8M0>(inputValues.size(), m_params.vectorLength);
+        inputMemory         = packData(inputValues, m_params.vectorLength);
+    }
+    else if (m_params.from == FLOAT_TYPE_MXINT8)
+    {
+        auto &inputValues   = InputGenerator::getInstance().getValues<tcu::FloatMXINT8>();
+        inputBufferSizeInfo = BufferSizeInfo::calculate<tcu::FloatMXINT8>(inputValues.size(), m_params.vectorLength);
         inputMemory         = packData(inputValues, m_params.vectorLength);
     }
     else if (m_params.from == SIGNED_INT_TYPE_32_BITS)
@@ -1379,8 +1862,8 @@ tcu::TestStatus FConvertTestInstance::iterate(void)
 #ifdef CTS_USES_VULKANSC
     const std::tuple<tcu::Float16, tcu::Float32, tcu::Float64, int32_t, uint32_t>
 #else
-    const std::tuple<tcu::Float16, tcu::Float32, tcu::Float64, BFloat16, tcu::FloatE5M2, tcu::FloatE4M3, int32_t,
-                     uint32_t>
+    const std::tuple<tcu::Float16, tcu::Float32, tcu::Float64, BFloat16, tcu::FloatE5M2, tcu::FloatE4M3, tcu::FloatE2M1,
+                     tcu::FloatE3M2, tcu::FloatE2M3, tcu::FloatUE8M0, tcu::FloatMXINT8, int32_t, uint32_t>
 #endif
         availableTypes;
 
@@ -1406,8 +1889,9 @@ tcu::TestCaseGroup *createPrecisionFconvertGroup(tcu::TestContext &testCtx)
 #ifdef CTS_USES_VULKANSC
         FLOAT_TYPE_16_BITS, FLOAT_TYPE_32_BITS, FLOAT_TYPE_64_BITS
 #else
-        FLOAT_TYPE_E5M2,    FLOAT_TYPE_E4M3,   BRAIN_FLOAT_16_BITS, FLOAT_TYPE_16_BITS,
-        FLOAT_TYPE_32_BITS, FLOAT_TYPE_64_BITS
+        FLOAT_TYPE_E5M2,    FLOAT_TYPE_E4M3,    FLOAT_TYPE_E2M1,   FLOAT_TYPE_E3M2,
+        FLOAT_TYPE_E2M3,    FLOAT_TYPE_UE8M0,   FLOAT_TYPE_MXINT8, BRAIN_FLOAT_16_BITS,
+        FLOAT_TYPE_16_BITS, FLOAT_TYPE_32_BITS, FLOAT_TYPE_64_BITS
 #endif
     };
 
@@ -1415,40 +1899,64 @@ tcu::TestCaseGroup *createPrecisionFconvertGroup(tcu::TestContext &testCtx)
         for (const DataType to : floatTypes)
             for (size_t k = kMinVectorLength; k <= kMaxVectorLength; ++k)
             {
+                if (k >= 5 && k != 8 && k != 16)
+                {
+                    continue;
+                }
                 // XXX TODO Do we need any floatcontrols stuff for inf/nan testing?
                 for (bool sat : {false, true})
                 {
-
-                    // No actual conversion if the types are the same.
-                    if (from == to)
-                        continue;
-
-                    // Skip unimplemened conversion.
-                    if (false == TestParams::isConversionDoable(from, to))
+                    for (bool bitcastExtract : {false, true})
                     {
-                        continue;
+
+                        // No actual conversion if the types are the same.
+                        if (from == to)
+                            continue;
+
+                        if (bitcastExtract && from != FLOAT_TYPE_E2M1 && from != FLOAT_TYPE_E3M2 &&
+                            from != FLOAT_TYPE_E2M3)
+                            continue;
+
+                        // Skip unimplemened conversion.
+                        if (false == TestParams::isConversionDoable(from, to))
+                        {
+                            continue;
+                        }
+
+                        if (sat && ((to != FLOAT_TYPE_E5M2 && to != FLOAT_TYPE_E4M3) ||
+                                    (from == FLOAT_TYPE_E5M2 || from == FLOAT_TYPE_E4M3)))
+                            continue;
+
+                        if (to == FLOAT_TYPE_E2M1 || to == FLOAT_TYPE_E3M2 || to == FLOAT_TYPE_E2M3 ||
+                            to == FLOAT_TYPE_UE8M0 || to == FLOAT_TYPE_MXINT8)
+                            continue;
+
+                        TestParams params{from, to, k, sat, bitcastExtract};
+
+                        std::string testName = getDataTypeName(from) + "_to_" + getDataTypeName(to) + "_size_" +
+                                               std::to_string(k) + (sat ? "_sat" : "") +
+                                               (bitcastExtract ? "_bitcastextract" : "");
+
+                        newGroup->addChild(new FConvertTestCase(testCtx, testName, params));
                     }
-
-                    if (sat && ((to != FLOAT_TYPE_E5M2 && to != FLOAT_TYPE_E4M3) ||
-                                (from == FLOAT_TYPE_E5M2 || from == FLOAT_TYPE_E4M3)))
-                        continue;
-
-                    TestParams params{from, to, k, sat};
-
-                    std::string testName = getDataTypeName(from) + "_to_" + getDataTypeName(to) + "_size_" +
-                                           std::to_string(k) + (sat ? "_sat" : "");
-
-                    newGroup->addChild(new FConvertTestCase(testCtx, testName, params));
                 }
             }
 
     // test scalar int to/from float conversions
     for (const DataType f : floatTypes)
     {
+        if (f == FLOAT_TYPE_E2M1 || f == FLOAT_TYPE_E3M2 || f == FLOAT_TYPE_E2M3 || f == FLOAT_TYPE_UE8M0 ||
+            f == FLOAT_TYPE_MXINT8)
+            continue;
+
         for (const DataType i : {SIGNED_INT_TYPE_32_BITS, UNSIGNED_INT_TYPE_32_BITS})
         {
             for (size_t k = kMinVectorLength; k <= kMaxVectorLength; ++k)
             {
+                if (k >= 5 && k != 8 && k != 16)
+                {
+                    continue;
+                }
                 std::string intName   = getDataTypeName(i);
                 std::string floatName = getDataTypeName(f);
                 std::string sizeName  = std::string("_size_") + std::to_string(k);
