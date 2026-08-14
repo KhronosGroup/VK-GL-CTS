@@ -7734,6 +7734,7 @@ dEQP-VK.spirv_assembly.instruction.compute.opcopymemory.array
 dEQP-VK.spirv_assembly.instruction.compute.opcopymemory.float
 dEQP-VK.spirv_assembly.instruction.compute.opcopymemory.struct
 dEQP-VK.spirv_assembly.instruction.compute.opcopymemory.vector
+dEQP-VK.spirv_assembly.instruction.compute.opcopyobject.descriptor_array
 dEQP-VK.spirv_assembly.instruction.compute.opcopyobject.spotcheck
 dEQP-VK.spirv_assembly.instruction.compute.opfma.fp16.scalar.rte.denorm_flush.directed
 dEQP-VK.spirv_assembly.instruction.compute.opfma.fp16.scalar.rte.denorm_flush.float_controls

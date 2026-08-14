@@ -5129,6 +5129,7 @@ dEQP-VKSC.spirv_assembly.instruction.compute.opcopymemory.array
 dEQP-VKSC.spirv_assembly.instruction.compute.opcopymemory.float
 dEQP-VKSC.spirv_assembly.instruction.compute.opcopymemory.struct
 dEQP-VKSC.spirv_assembly.instruction.compute.opcopymemory.vector
+dEQP-VKSC.spirv_assembly.instruction.compute.opcopyobject.descriptor_array
 dEQP-VKSC.spirv_assembly.instruction.compute.opcopyobject.spotcheck
 dEQP-VKSC.spirv_assembly.instruction.compute.opfrem.all
 dEQP-VKSC.spirv_assembly.instruction.compute.opfunord.equal

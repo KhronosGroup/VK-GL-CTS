@@ -3548,6 +3548,49 @@ tcu::TestCaseGroup *createOpCopyObjectGroup(tcu::TestContext &testCtx)
 
     group->addChild(new SpvAsmComputeShaderCase(testCtx, "spotcheck", spec));
 
+    {
+        ComputeShaderSpec descriptorArraySpec;
+        const int numDescriptors = 4;
+
+        descriptorArraySpec.assembly = "OpCapability Shader\n"
+                                       "OpMemoryModel Logical GLSL450\n"
+                                       "OpEntryPoint GLCompute %main \"main\"\n"
+                                       "OpExecutionMode %main LocalSize 1 1 1\n"
+                                       "OpDecorate %struct BufferBlock\n"
+                                       "OpMemberDecorate %struct 0 Offset 0\n"
+                                       "OpDecorate %buf_array DescriptorSet 0\n"
+                                       "OpDecorate %buf_array Binding 0\n"
+                                       "%void = OpTypeVoid\n"
+                                       "%func_type = OpTypeFunction %void\n"
+                                       "%int = OpTypeInt 32 1\n"
+                                       "%int_0 = OpConstant %int 0\n"
+                                       "%uint = OpTypeInt 32 0\n"
+                                       "%uint_4 = OpConstant %uint 4\n"
+                                       "%struct = OpTypeStruct %int\n"
+                                       "%struct_array = OpTypeArray %struct %uint_4\n"
+                                       "%ptr_struct_array = OpTypePointer Uniform %struct_array\n"
+                                       "%ptr_struct = OpTypePointer Uniform %struct\n"
+                                       "%ptr_int = OpTypePointer Uniform %int\n"
+                                       "%buf_array = OpVariable %ptr_struct_array Uniform\n"
+                                       "%main = OpFunction %void None %func_type\n"
+                                       "%entry = OpLabel\n"
+                                       "%var_copy = OpCopyObject %ptr_struct_array %buf_array\n"
+                                       "%buf_ptr = OpAccessChain %ptr_struct %var_copy %int_0\n"
+                                       "%int_ptr = OpAccessChain %ptr_int %buf_ptr %int_0\n"
+                                       "%val = OpLoad %int %int_ptr\n"
+                                       "OpReturn\n"
+                                       "OpFunctionEnd\n";
+
+        for (int ndx = 0; ndx < numDescriptors; ++ndx)
+            descriptorArraySpec.inputs.push_back(BufferSp(new Int32Buffer(vector<int32_t>(1, ndx))));
+        descriptorArraySpec.numArrayInputs = numDescriptors;
+
+        descriptorArraySpec.outputs.push_back(BufferSp(new Int32Buffer(vector<int32_t>(1, -1))));
+        descriptorArraySpec.numWorkGroups = IVec3(1, 1, 1);
+
+        group->addChild(new SpvAsmComputeShaderCase(testCtx, "descriptor_array", descriptorArraySpec));
+    }
+
     return group.release();
 }
 // Assembly code used for testing OpUnreachable is based on GLSL source code:

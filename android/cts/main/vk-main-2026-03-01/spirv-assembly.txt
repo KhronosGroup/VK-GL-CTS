@@ -214,6 +214,7 @@ dEQP-VK.spirv_assembly.instruction.compute.maintenance8.opsrem.all
 dEQP-VK.spirv_assembly.instruction.compute.maintenance8.opsrem.positive
 dEQP-VK.spirv_assembly.instruction.compute.maintenance8.opsrem64.all
 dEQP-VK.spirv_assembly.instruction.compute.maintenance8.opsrem64.positive
+dEQP-VK.spirv_assembly.instruction.compute.opcopyobject.descriptor_array
 dEQP-VK.spirv_assembly.instruction.compute.opfma.fp16.scalar.rte.denorm_flush.directed
 dEQP-VK.spirv_assembly.instruction.compute.opfma.fp16.scalar.rte.denorm_flush.float_controls
 dEQP-VK.spirv_assembly.instruction.compute.opfma.fp16.scalar.rte.denorm_flush.random
