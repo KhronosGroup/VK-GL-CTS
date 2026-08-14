@@ -192,11 +192,6 @@ tcu::TestStatus validateOoBWrites(const StridedMemoryUtils<T> &updatedTensor,
                                     std::is_same_v<T, tcu::BrainFloat16> || std::is_same_v<T, tcu::FloatE5M2> ||
                                     std::is_same_v<T, tcu::FloatE4M3>;
 
-    // The shader has written only four elements per "line" of the innermost dimension:
-    // One inbounds value at the end of the line
-    // The out of bounds element directly following the end of the line
-    // Out of bounds elements at offsets 13 and 65537 after the end of the line
-
     const TensorDimensions &realShape = originalTensor.shape();
 
     const size_t lineSize  = static_cast<size_t>(realShape.back());
@@ -541,6 +536,275 @@ tcu::TestStatus OoBAccessTestInstance<T>::iterate()
     return tcu::TestStatus::fail("Invalid test variant");
 }
 
+template <typename T>
+class NullDescriptorTensorTestInstance : public TestInstance
+{
+public:
+    NullDescriptorTensorTestInstance(Context &testCtx, const TensorParameters &parameters, const AccessVariant &variant)
+        : TestInstance(testCtx)
+        , m_parameters(parameters)
+        , m_variant(variant)
+
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    const TensorParameters m_parameters;
+    const AccessVariant m_variant;
+};
+
+template <typename T>
+class NullDescriptorTensorTestCase : public TestCase
+{
+private:
+    static std::string buildTestName(const TensorParameters &parameters, const AccessVariant &variant)
+    {
+        std::ostringstream name;
+        name << "nullDescriptor_" << paramsToString(parameters, variant);
+        return name.str();
+    }
+
+public:
+    NullDescriptorTensorTestCase(tcu::TestContext &testCtx, const TensorParameters &parameters,
+                                 const AccessVariant &variant)
+        : TestCase(testCtx, buildTestName(parameters, variant))
+        , m_parameters(parameters)
+        , m_variant(variant)
+    {
+    }
+
+    TestInstance *createInstance(Context &ctx) const override
+    {
+        return new NullDescriptorTensorTestInstance<T>(ctx, m_parameters, m_variant);
+    }
+
+    std::string getRequiredCapabilitiesId() const override
+    {
+        return "VK_ARM_tensors_robustness2";
+    }
+
+    void initDeviceCapabilities(DevCaps &caps) override
+    {
+        caps.addFeature(&vk::VkPhysicalDevice8BitStorageFeatures::storageBuffer8BitAccess);
+        caps.addFeature(&vk::VkPhysicalDevice16BitStorageFeatures::storageBuffer16BitAccess);
+        caps.addFeature(&vk::VkPhysicalDeviceFeatures::shaderInt16);
+        caps.addFeature(&vk::VkPhysicalDeviceFeatures::shaderInt64);
+        caps.addFeature(&vk::VkPhysicalDeviceShaderFloat16Int8Features::shaderInt8);
+        caps.addFeature(&vk::VkPhysicalDeviceShaderFloat16Int8Features::shaderFloat16);
+
+        caps.addExtension(VK_EXT_SHADER_FLOAT8_EXTENSION_NAME);
+        caps.addFeature(&VkPhysicalDeviceShaderFloat8FeaturesEXT::shaderFloat8);
+
+        caps.addExtension(VK_KHR_SHADER_BFLOAT16_EXTENSION_NAME);
+        caps.addFeature(&VkPhysicalDeviceShaderBfloat16FeaturesKHR::shaderBFloat16Type);
+
+        caps.addExtension(VK_KHR_ROBUSTNESS_2_EXTENSION_NAME);
+        caps.addFeature(&vk::VkPhysicalDeviceRobustness2FeaturesEXT::nullDescriptor);
+
+        caps.addExtension(VK_ARM_TENSORS_EXTENSION_NAME);
+        caps.addFeature(&vk::VkPhysicalDeviceTensorFeaturesARM::tensors);
+        caps.addFeature(&vk::VkPhysicalDeviceTensorFeaturesARM::shaderTensorAccess);
+        caps.addFeature(&vk::VkPhysicalDeviceTensorFeaturesARM::tensorNonPacked);
+    }
+
+    void checkSupport(Context &context) const override
+    {
+        context.requireDeviceFunctionality("VK_ARM_tensors");
+        context.requireDeviceFunctionality("VK_KHR_robustness2");
+
+        requireTensorShapeSupported(context, m_parameters);
+
+        if (m_parameters.format == VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM)
+        {
+            context.requireDeviceFunctionality("VK_KHR_shader_bfloat16");
+        }
+
+        if (m_parameters.format == VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM ||
+            m_parameters.format == VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM)
+        {
+            context.requireDeviceFunctionality("VK_EXT_shader_float8");
+        }
+
+        if (!formatSupportTensorFlags(context, m_parameters.format, m_parameters.tiling,
+                                      VK_FORMAT_FEATURE_2_TENSOR_SHADER_BIT_ARM))
+        {
+            TCU_THROW(NotSupportedError, "Format not supported");
+        }
+
+        if (!deviceSupportsShaderTensorAccess(context))
+        {
+            TCU_THROW(NotSupportedError, "Device does not support shader tensor access");
+        }
+
+        if (!deviceSupportsShaderStagesTensorAccess(context, VK_SHADER_STAGE_COMPUTE_BIT))
+        {
+            TCU_THROW(NotSupportedError, "Device does not support shader tensor access in compute shader stage");
+        }
+
+        if (!m_parameters.packed() && !deviceSupportsNonPackedTensors(context))
+        {
+            TCU_THROW(NotSupportedError, "Non-packed tensors not supported");
+        }
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override
+    {
+        const size_t rank = m_parameters.rank();
+
+        programCollection.glslSources.add("comp")
+            << glu::ComputeSource(genShaderTensorNullDescriptorAccess(rank, m_parameters.format, m_variant));
+    }
+
+private:
+    const TensorParameters m_parameters;
+    const AccessVariant m_variant;
+};
+
+template <typename T>
+tcu::TestStatus NullDescriptorTensorTestInstance<T>::iterate()
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    Allocator &allocator            = m_context.getDefaultAllocator();
+
+    const uint32_t elements =
+        static_cast<uint32_t>(std::accumulate(m_parameters.dimensions.cbegin(), m_parameters.dimensions.cend(),
+                                              static_cast<int64_t>(1), std::multiplies<int64_t>()));
+
+    // Create a buffer and host-visible memory for it
+    const size_t bufferSize = elements * sizeof(T);
+    const BufferWithMemory buffer(vk, device, allocator,
+                                  makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+                                  MemoryRequirement::HostVisible);
+
+    {
+        const Allocation &bufferAllocation = buffer.getAllocation();
+        StridedMemoryUtils<T> bufferMemory({uint32_t(elements)}, {}, bufferAllocation.getHostPtr());
+
+        // Fill buffer with a pattern. In the read from tensor case, we'll
+        // later check that it was filled with zeroes read from the null tensor
+        bufferMemory.fill();
+        flushAlloc(vk, device, bufferAllocation);
+    }
+
+    // Create descriptor set
+
+    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_TENSOR_ARM, VK_SHADER_STAGE_COMPUTE_BIT)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vk, device));
+
+    const Unique<VkDescriptorPool> descriptorPool(
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_TENSOR_ARM)
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+    const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+    // Set the bindings
+
+    const VkTensorViewARM nullTensorViewHandle = VK_NULL_HANDLE;
+
+    DescriptorSetUpdateBuilder updateBuilder;
+    const VkDescriptorBufferInfo bufferDescriptorInfo = makeDescriptorBufferInfo(*buffer, 0ull, elements * sizeof(T));
+    const VkWriteDescriptorSetTensorARM tensorDescriptorInfo{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_TENSOR_ARM, nullptr,
+                                                             1, &nullTensorViewHandle};
+
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_TENSOR_ARM,
+                     &tensorDescriptorInfo)
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u),
+                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptorInfo)
+        .update(vk, device);
+
+    // Perform the computation
+
+    {
+        // Build shader
+
+        const ProgramBinary &binary = m_context.getBinaryCollection().get("comp");
+        const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, binary, 0u));
+
+        // Setup pipeline
+
+        // We're pushing the tensor shape, as that can't be queried from the nullDescriptor tensor in the shader
+        const VkPushConstantRange pushConstantRange = {
+            VK_SHADER_STAGE_COMPUTE_BIT, 0,
+            static_cast<uint32_t>(m_parameters.dimensions.size() * sizeof(m_parameters.dimensions[0]))};
+
+        const Unique<VkPipelineLayout> pipelineLayout(
+            makePipelineLayout(vk, device, *descriptorSetLayout, &pushConstantRange));
+        const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+
+        // Prepare the command buffer
+
+        const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
+        const Unique<VkCommandBuffer> cmdBuffer(
+            allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+        // Start recording commands
+
+        beginCommandBuffer(vk, *cmdBuffer);
+
+        vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+        vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
+                                 &descriptorSet.get(), 0u, nullptr);
+
+        vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, pushConstantRange.offset,
+                            pushConstantRange.size, m_parameters.dimensions.data());
+
+        const uint32_t dispatchCount =
+            singleDimensionWorkgroupCount(elements, shaderTensorNullDescriptorAccessWorkgroupSize);
+        DE_ASSERT(dispatchCount <= dispatchWorkgroupCountLimit);
+        vk.cmdDispatch(*cmdBuffer, dispatchCount, 1u, 1u);
+
+        if (m_variant == AccessVariant::WRITE_TO_BUFFER)
+        {
+            const VkBufferMemoryBarrier bufferBarrier =
+                makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0u, bufferSize);
+
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0,
+                                  nullptr, 1, &bufferBarrier, 0, nullptr);
+        }
+
+        endCommandBuffer(vk, *cmdBuffer);
+
+        // Wait for completion
+
+        submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+    }
+
+    // Validate the results
+
+    if (m_variant == AccessVariant::WRITE_TO_BUFFER)
+    {
+        const Allocation &bufferAllocation = buffer.getAllocation();
+        invalidateAlloc(vk, device, bufferAllocation);
+
+        StridedMemoryUtils<T> bufferMemory({uint32_t(elements)}, {}, bufferAllocation.getHostPtr());
+
+        // The expected all zeroes memory to compare with the output buffer
+        StridedMemoryUtils<T> expected(m_parameters.dimensions, {});
+        for (size_t i = 0; i < expected.elementCount(); ++i)
+        {
+            expected[i] = T(static_cast<double>(i % 2 == 1 ? 42 : 0));
+        }
+
+        return compareStridedMemory(expected, bufferMemory);
+    }
+    else
+    {
+        // In the write to tensor case we don't have anything to check
+        return tcu::TestStatus::pass("Pass");
+    }
+}
+
 template <VkFormat Format>
 void addOoBAccessTests(tcu::TestCaseGroup &testCaseGroup)
 {
@@ -550,6 +814,7 @@ void addOoBAccessTests(tcu::TestCaseGroup &testCaseGroup)
 
     const size_t elementSize = getFormatSize(Format);
     using T                  = typename VkFormatToHostType<Format>::HostType;
+
     for (const TensorDimensions &shape : shapes)
     {
         const size_t rank = shape.size();
@@ -598,6 +863,31 @@ void addOoBAccessTestsForFormats(tcu::TestCaseGroup &testCaseGroup)
     (addOoBAccessTests<Formats>(testCaseGroup), ...);
 }
 
+template <VkFormat Format>
+void addNullDescriptorTests(tcu::TestCaseGroup &testCaseGroup)
+{
+    const TensorDimensions shapes[] = {
+        {71693}, {263, 269}, {37, 43, 47}, {13, 17, 19, 23}, {7, 11, 13, 17, 19, 23},
+    };
+
+    using T = typename VkFormatToHostType<Format>::HostType;
+
+    for (const TensorDimensions &shape : shapes)
+    {
+        const TensorParameters params{Format, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
+        testCaseGroup.addChild(new NullDescriptorTensorTestCase<T>(testCaseGroup.getTestContext(), params,
+                                                                   AccessVariant::READ_FROM_BUFFER));
+        testCaseGroup.addChild(new NullDescriptorTensorTestCase<T>(testCaseGroup.getTestContext(), params,
+                                                                   AccessVariant::WRITE_TO_BUFFER));
+    }
+}
+
+template <VkFormat... Formats>
+void addNullDescriptorTestsForFormats(tcu::TestCaseGroup &testCaseGroup)
+{
+    (addNullDescriptorTests<Formats>(testCaseGroup), ...);
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createRobustnessTests(tcu::TestContext &testCtx)
@@ -608,6 +898,16 @@ tcu::TestCaseGroup *createRobustnessTests(tcu::TestContext &testCtx)
     // clang-format make these harder to read
     // clang-format off
     addOoBAccessTestsForFormats<
+        TENSOR_FORMATS_REGULAR_INTS,
+        TENSOR_FORMATS_REGULAR_FLOATS,
+        VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM,
+        VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM,
+        VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM>(*group);
+    // clang-format on
+
+    // clang-format make these harder to read
+    // clang-format off
+    addNullDescriptorTestsForFormats<
         TENSOR_FORMATS_REGULAR_INTS,
         TENSOR_FORMATS_REGULAR_FLOATS,
         VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM,
