@@ -41,7 +41,8 @@ bool SubprocessTestExecutor::SharedMemory::open(size_t, unsigned long &, bool)
 
 void SubprocessTestExecutor::SharedMemory::close()
 {
-    TCU_THROW(NotSupportedError, NOT_SUPPORTED_MESSAGE);
+    // This method is always called in the destructor, so we avoid throwing.
+    //TCU_THROW(NotSupportedError, NOT_SUPPORTED_MESSAGE);
 }
 
 } // namespace tcu
