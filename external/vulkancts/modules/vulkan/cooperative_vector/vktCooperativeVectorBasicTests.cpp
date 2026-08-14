@@ -307,6 +307,43 @@ CooperativeVectorTestCase::~CooperativeVectorTestCase(void)
 {
 }
 
+size_t getTypeWidth(const VkComponentTypeKHR type)
+{
+    switch (type)
+    {
+    // ---- 1-byte types ----
+    case VK_COMPONENT_TYPE_SINT8_KHR:
+    case VK_COMPONENT_TYPE_UINT8_KHR:
+    case VK_COMPONENT_TYPE_SINT8_PACKED_NV:
+    case VK_COMPONENT_TYPE_UINT8_PACKED_NV:
+    case VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT:
+    case VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT:
+        return 1;
+
+    // ---- 2-byte types ----
+    case VK_COMPONENT_TYPE_FLOAT16_KHR:
+    case VK_COMPONENT_TYPE_SINT16_KHR:
+    case VK_COMPONENT_TYPE_UINT16_KHR:
+    case VK_COMPONENT_TYPE_BFLOAT16_KHR:
+        return 2;
+
+    // ---- 4-byte types ----
+    case VK_COMPONENT_TYPE_FLOAT32_KHR:
+    case VK_COMPONENT_TYPE_SINT32_KHR:
+    case VK_COMPONENT_TYPE_UINT32_KHR:
+        return 4;
+
+    // ---- 8-byte types ----
+    case VK_COMPONENT_TYPE_FLOAT64_KHR:
+    case VK_COMPONENT_TYPE_SINT64_KHR:
+    case VK_COMPONENT_TYPE_UINT64_KHR:
+        return 8;
+
+    default:
+        TCU_THROW(InternalError, "Support for this type is not implemented");
+    }
+}
+
 void CooperativeVectorTestCase::checkSupport(Context &context) const
 {
     if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
@@ -335,6 +372,21 @@ void CooperativeVectorTestCase::checkSupport(Context &context) const
         if (m_data.inputVectorSize > context.getShaderLongVectorPropertiesEXT().maxVectorComponents)
         {
             TCU_THROW(NotSupportedError, "number of components not supported");
+        }
+
+        if (m_data.stage == STAGE_COMPUTE &&
+            (m_data.storageClass == SC_WORKGROUP || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS))
+        {
+            // Compute shaders use 2 separate arrays of memory
+            const size_t sharedMemoryNeeded = getTypeWidth(m_data.inputType) * m_data.inputVectorSize * 2 *
+                                              m_data.threadsPerWorkgroupX * m_data.threadsPerWorkgroupY;
+            auto props             = getPhysicalDeviceProperties(getContextManager()->getInstanceInterface(),
+                                                                 getContextManager()->getPhysicalDevice());
+            uint32_t sharedMemSize = props.limits.maxComputeSharedMemorySize;
+            if (sharedMemoryNeeded > sharedMemSize)
+            {
+                TCU_THROW(NotSupportedError, "Not enough shared memory supported.");
+            }
         }
     }
 

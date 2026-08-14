@@ -2174,6 +2174,31 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
     if (numImages == 0)
         return tcu::TestStatus::pass("Pass");
 
+    // The split-instance bind regions below split the image at half its width,
+    // so that offset must be a multiple of the sparse image block width
+    // (VUID-VkBindImageMemoryDeviceGroupInfo-offset-01638)
+    {
+        uint32_t sparsePropCount = 0;
+        instHelper.vki.getPhysicalDeviceSparseImageFormatProperties(
+            physicalDevice, formats[0].format, VK_IMAGE_TYPE_2D, VK_SAMPLE_COUNT_1_BIT,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_TILING_OPTIMAL, &sparsePropCount, nullptr);
+        if (sparsePropCount > 0)
+        {
+            std::vector<VkSparseImageFormatProperties> sparseProps(sparsePropCount);
+            instHelper.vki.getPhysicalDeviceSparseImageFormatProperties(
+                physicalDevice, formats[0].format, VK_IMAGE_TYPE_2D, VK_SAMPLE_COUNT_1_BIT,
+                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_TILING_OPTIMAL, &sparsePropCount, sparseProps.data());
+
+            for (const auto &sparseProp : sparseProps)
+            {
+                const uint32_t blockWidth = sparseProp.imageGranularity.width;
+                if (blockWidth != 0u && (swapchainInfo.imageExtent.width / 2) % blockWidth != 0u)
+                    TCU_THROW(NotSupportedError,
+                              "Swapchain image width is incompatible with the split-instance bind granularity");
+            }
+        }
+    }
+
     VkImageSwapchainCreateInfoKHR imageSwapchainCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR,
                                                               nullptr, *swapchain};
 
@@ -2184,10 +2209,11 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
         VK_IMAGE_TYPE_2D,                                                                // imageType
         formats[0].format,                                                               // format
         {
-            // extent
-            desiredSize.x(), //   width
-            desiredSize.y(), //   height
-            1u               //   depth
+            // extent must match the swapchain's actual image extent, which can
+            // differ from desiredSize (VUID-VkImageSwapchainCreateInfoKHR-swapchain-00995)
+            swapchainInfo.imageExtent.width,  //   width
+            swapchainInfo.imageExtent.height, //   height
+            1u                                //   depth
         },
         1u,                                  // mipLevels
         1u,                                  // arrayLayers
@@ -2243,10 +2269,10 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
             // Create image
             imagesSfr[idx] = ImageSp(new UniqueImage(createImage(vkd, *groupDevice, &imageCreateInfo)));
 
-            // Split into 2 vertical halves
+            // Split the swapchain's actual image extent into 2 vertical halves
             // NOTE: the same split has to be done also in WsiTriangleRenderer::recordDeviceGroupFrame
-            const uint32_t halfWidth  = desiredSize.x() / 2;
-            const uint32_t height     = desiredSize.y();
+            const uint32_t halfWidth  = swapchainInfo.imageExtent.width / 2;
+            const uint32_t height     = swapchainInfo.imageExtent.height;
             const VkRect2D sfrRects[] = {
                 {{0, 0}, {halfWidth, height}},                  // offset, extent
                 {{(int32_t)halfWidth, 0}, {halfWidth, height}}, // offset, extent

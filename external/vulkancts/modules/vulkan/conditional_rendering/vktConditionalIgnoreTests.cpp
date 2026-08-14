@@ -555,6 +555,7 @@ tcu::TestStatus pushConstantTest(Context &context, GeneralCmdParams params)
     auto &outBufferAlloc = outBuffer.getAllocation();
     {
         memset(outBufferAlloc.getHostPtr(), 0, sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, outBufferAlloc);
     }
 
     const auto crBufferSize  = static_cast<VkDeviceSize>(sizeof(uint32_t));
@@ -651,6 +652,7 @@ tcu::TestStatus updateBufferTest(Context &context, GeneralCmdParams params)
     auto &bufferAlloc = buffer.getAllocation();
     {
         memcpy(bufferAlloc.getHostPtr(), &initialValues, sizeof(initialValues));
+        flushAlloc(ctx.vkd, ctx.device, bufferAlloc);
     }
 
     const auto crBufferSize  = static_cast<VkDeviceSize>(sizeof(uint32_t));
@@ -718,6 +720,7 @@ tcu::TestStatus fillBufferTest(Context &context, GeneralCmdParams params)
     auto &bufferAlloc = buffer.getAllocation();
     {
         memcpy(bufferAlloc.getHostPtr(), &initialValues, sizeof(initialValues));
+        flushAlloc(ctx.vkd, ctx.device, bufferAlloc);
     }
 
     const auto crBufferSize  = static_cast<VkDeviceSize>(sizeof(uint32_t));
@@ -1569,6 +1572,7 @@ tcu::TestStatus copyBufferToImageTest(Context &context, GeneralCmdParams params)
         auto &alloc = srcBuffer.getAllocation();
         tcu::PixelBufferAccess srcAccess(tcuFormat, extent, alloc.getHostPtr());
         tcu::clear(srcAccess, srcColor);
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     const auto crBufferSize  = static_cast<VkDeviceSize>(sizeof(uint32_t));
@@ -1665,6 +1669,7 @@ tcu::TestStatus copyBufferTest(Context &context, GeneralCmdParams params)
         auto &alloc = srcBuffer.getAllocation();
         tcu::PixelBufferAccess srcAccess(tcuFormat, extent, alloc.getHostPtr());
         tcu::clear(srcAccess, srcColor);
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     const auto crBufferSize  = static_cast<VkDeviceSize>(sizeof(uint32_t));
@@ -1795,6 +1800,7 @@ tcu::TestStatus graphicsBindTest(Context &context, GraphicsBindParams params)
     {
         auto &alloc = goodColorsBuffer.getAllocation();
         memcpy(alloc.getHostPtr(), &goodColors, sizeof(goodColors));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     BufferWithMemory badColorsBuffer(ctx.vkd, ctx.device, ctx.allocator, colorsBufferCreateInfo,
@@ -1802,6 +1808,7 @@ tcu::TestStatus graphicsBindTest(Context &context, GraphicsBindParams params)
     {
         auto &alloc = badColorsBuffer.getAllocation();
         memcpy(alloc.getHostPtr(), &badColors, sizeof(badColors));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     // Vertex buffers.
@@ -1822,6 +1829,7 @@ tcu::TestStatus graphicsBindTest(Context &context, GraphicsBindParams params)
     {
         auto &alloc = goodVertexBuffer.getAllocation();
         memcpy(alloc.getHostPtr(), de::dataOrNull(goodVertices), de::dataSize(goodVertices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     BufferWithMemory badVertexBuffer(ctx.vkd, ctx.device, ctx.allocator, vertexBufferCreateInfo,
@@ -1829,6 +1837,7 @@ tcu::TestStatus graphicsBindTest(Context &context, GraphicsBindParams params)
     {
         auto &alloc = badVertexBuffer.getAllocation();
         memcpy(alloc.getHostPtr(), de::dataOrNull(badVertices), de::dataSize(badVertices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     // Index buffers.
@@ -1845,6 +1854,7 @@ tcu::TestStatus graphicsBindTest(Context &context, GraphicsBindParams params)
     {
         auto &alloc = goodIndexBuffer.getAllocation();
         memcpy(alloc.getHostPtr(), de::dataOrNull(goodIndices), de::dataSize(goodIndices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     BufferWithMemory badIndexBuffer(ctx.vkd, ctx.device, ctx.allocator, indexBufferCreateInfo,
@@ -1852,6 +1862,7 @@ tcu::TestStatus graphicsBindTest(Context &context, GraphicsBindParams params)
     {
         auto &alloc = badIndexBuffer.getAllocation();
         memcpy(alloc.getHostPtr(), de::dataOrNull(badIndices), de::dataSize(badIndices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     // Fragment shaders.
