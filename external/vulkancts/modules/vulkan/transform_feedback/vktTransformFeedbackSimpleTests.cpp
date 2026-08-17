@@ -22,7 +22,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktTransformFeedbackSimpleTests.hpp"
-#include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktCustomInstancesDevices.hpp"
 
@@ -51,9 +50,7 @@
 #include <memory>
 #include <map>
 
-namespace vkt
-{
-namespace TransformFeedback
+namespace vkt::TransformFeedback
 {
 namespace
 {
@@ -4240,7 +4237,9 @@ void TransformFeedbackTestCase::checkSupport(Context &context) const
         (xfbProperties.transformFeedbackRasterizationStreamSelect == VK_FALSE) && (m_parameters.streamId > 0))
         TCU_THROW(NotSupportedError, "transformFeedbackRasterizationStreamSelect property is not supported");
 
-    if (m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_MULTIVIEW)
+    if ((m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_MULTIVIEW) ||
+        (m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_OFFSET_MULTIVIEW) ||
+        (m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_BUFFER_OFFSET_MULTIVIEW))
     {
         const auto &features = context.getMultiviewFeatures();
         if (!features.multiview)
@@ -6813,5 +6812,4 @@ tcu::TestCaseGroup *createTransformFeedbackSimpleTests(tcu::TestContext &testCtx
     return mainGroup.release();
 }
 
-} // namespace TransformFeedback
-} // namespace vkt
+} // namespace vkt::TransformFeedback
