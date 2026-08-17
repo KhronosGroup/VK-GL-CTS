@@ -39,6 +39,13 @@ namespace tensor
 using namespace vk;
 
 std::string getTensorFormat(VkFormat format);
+uint32_t getFormatComponents(VkFormat format);
+bool isFormat64BitInteger(const VkFormat format);
+std::string getImageFormat(VkFormat format);
+std::string getImagePrefix(VkFormat format);
+std::string getImageType(VkFormat format, const size_t image_rank);
+VkFormat imageToTensorFormat(VkFormat imageFormat);
+std::string imageCoordinates(std::string prefix, size_t rank);
 std::string getBooleanOp(BooleanOperator op);
 
 inline uint32_t singleDimensionWorkgroupCount(const uint32_t invocations, const uint32_t workgroupSize)

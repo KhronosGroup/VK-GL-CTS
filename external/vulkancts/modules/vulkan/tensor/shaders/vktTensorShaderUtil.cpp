@@ -76,6 +76,283 @@ std::string getTensorFormat(VkFormat format)
     }
 }
 
+uint32_t getFormatComponents(VkFormat format)
+{
+    switch (format)
+    {
+    case VK_FORMAT_R8_SINT:
+    case VK_FORMAT_R16_SINT:
+    case VK_FORMAT_R32_SINT:
+    case VK_FORMAT_R64_SINT:
+    case VK_FORMAT_R8_UINT:
+    case VK_FORMAT_R16_UINT:
+    case VK_FORMAT_R32_UINT:
+    case VK_FORMAT_R64_UINT:
+    case VK_FORMAT_R8_SNORM:
+    case VK_FORMAT_R16_SNORM:
+    case VK_FORMAT_R8_UNORM:
+    case VK_FORMAT_R16_UNORM:
+        return 1;
+
+    case VK_FORMAT_R8G8_SINT:
+    case VK_FORMAT_R16G16_SINT:
+    case VK_FORMAT_R32G32_SINT:
+    case VK_FORMAT_R8G8_UINT:
+    case VK_FORMAT_R16G16_UINT:
+    case VK_FORMAT_R32G32_UINT:
+    case VK_FORMAT_R8G8_SNORM:
+    case VK_FORMAT_R16G16_SNORM:
+    case VK_FORMAT_R8G8_UNORM:
+    case VK_FORMAT_R16G16_UNORM:
+        return 2;
+
+    case VK_FORMAT_R8G8B8A8_SINT:
+    case VK_FORMAT_R16G16B16A16_SINT:
+    case VK_FORMAT_R32G32B32A32_SINT:
+    case VK_FORMAT_R8G8B8A8_UINT:
+    case VK_FORMAT_R16G16B16A16_UINT:
+    case VK_FORMAT_R32G32B32A32_UINT:
+    case VK_FORMAT_R8G8B8A8_SNORM:
+    case VK_FORMAT_R16G16B16A16_SNORM:
+    case VK_FORMAT_R8G8B8A8_UNORM:
+    case VK_FORMAT_R16G16B16A16_UNORM:
+        return 4;
+
+    default:
+        DE_FATAL("Unexpected image format");
+        return 0;
+    }
+}
+
+bool isFormat64BitInteger(const VkFormat format)
+{
+    switch (format)
+    {
+    case VK_FORMAT_R64_SINT:
+    case VK_FORMAT_R64_UINT:
+        return true;
+    default:
+        return false;
+    }
+
+    return false;
+}
+
+std::string getImageFormat(VkFormat format)
+{
+    switch (format)
+    {
+    case VK_FORMAT_R8_SINT:
+        return "r8i";
+    case VK_FORMAT_R16_SINT:
+        return "r16i";
+    case VK_FORMAT_R32_SINT:
+        return "r32i";
+    case VK_FORMAT_R64_SINT:
+        return "r64i";
+    case VK_FORMAT_R8_UINT:
+        return "r8ui";
+    case VK_FORMAT_R16_UINT:
+        return "r16ui";
+    case VK_FORMAT_R32_UINT:
+        return "r32ui";
+    case VK_FORMAT_R64_UINT:
+        return "r64ui";
+    case VK_FORMAT_R8_SNORM:
+        return "r8_snorm";
+    case VK_FORMAT_R16_SNORM:
+        return "r16_snorm";
+    case VK_FORMAT_R8_UNORM:
+        return "r8";
+    case VK_FORMAT_R16_UNORM:
+        return "r16";
+
+    case VK_FORMAT_R8G8_SINT:
+        return "rg8i";
+    case VK_FORMAT_R16G16_SINT:
+        return "rg16i";
+    case VK_FORMAT_R32G32_SINT:
+        return "rg32i";
+    case VK_FORMAT_R8G8_UINT:
+        return "rg8ui";
+    case VK_FORMAT_R16G16_UINT:
+        return "rg16ui";
+    case VK_FORMAT_R32G32_UINT:
+        return "rg32ui";
+    case VK_FORMAT_R8G8_SNORM:
+        return "rg8_snorm";
+    case VK_FORMAT_R16G16_SNORM:
+        return "rg16_snorm";
+    case VK_FORMAT_R8G8_UNORM:
+        return "rg8";
+    case VK_FORMAT_R16G16_UNORM:
+        return "rg16";
+
+    case VK_FORMAT_R8G8B8A8_SINT:
+        return "rgba8i";
+    case VK_FORMAT_R16G16B16A16_SINT:
+        return "rgba16i";
+    case VK_FORMAT_R32G32B32A32_SINT:
+        return "rgba32i";
+    case VK_FORMAT_R8G8B8A8_UINT:
+        return "rgba8ui";
+    case VK_FORMAT_R16G16B16A16_UINT:
+        return "rgba16ui";
+    case VK_FORMAT_R32G32B32A32_UINT:
+        return "rgba32ui";
+    case VK_FORMAT_R8G8B8A8_SNORM:
+        return "rgba8_snorm";
+    case VK_FORMAT_R16G16B16A16_SNORM:
+        return "rgba16_snorm";
+    case VK_FORMAT_R8G8B8A8_UNORM:
+        return "rgba8";
+    case VK_FORMAT_R16G16B16A16_UNORM:
+        return "rgba16";
+
+    default:
+        DE_FATAL("Unexpected image format");
+        return "error";
+    }
+}
+
+std::string getImagePrefix(VkFormat format)
+{
+    switch (format)
+    {
+    case VK_FORMAT_R8_SINT:
+    case VK_FORMAT_R16_SINT:
+    case VK_FORMAT_R32_SINT:
+    case VK_FORMAT_R8G8_SINT:
+    case VK_FORMAT_R16G16_SINT:
+    case VK_FORMAT_R32G32_SINT:
+    case VK_FORMAT_R8G8B8A8_SINT:
+    case VK_FORMAT_R16G16B16A16_SINT:
+    case VK_FORMAT_R32G32B32A32_SINT:
+        return "i";
+
+    case VK_FORMAT_R8_UINT:
+    case VK_FORMAT_R16_UINT:
+    case VK_FORMAT_R32_UINT:
+    case VK_FORMAT_R8G8_UINT:
+    case VK_FORMAT_R16G16_UINT:
+    case VK_FORMAT_R32G32_UINT:
+    case VK_FORMAT_R8G8B8A8_UINT:
+    case VK_FORMAT_R16G16B16A16_UINT:
+    case VK_FORMAT_R32G32B32A32_UINT:
+        return "u";
+
+    case VK_FORMAT_R8_SNORM:
+    case VK_FORMAT_R16_SNORM:
+    case VK_FORMAT_R8_UNORM:
+    case VK_FORMAT_R16_UNORM:
+    case VK_FORMAT_R8G8_SNORM:
+    case VK_FORMAT_R16G16_SNORM:
+    case VK_FORMAT_R8G8_UNORM:
+    case VK_FORMAT_R16G16_UNORM:
+    case VK_FORMAT_R8G8B8A8_SNORM:
+    case VK_FORMAT_R16G16B16A16_SNORM:
+    case VK_FORMAT_R16G16B16A16_UNORM:
+        return "";
+
+    case VK_FORMAT_R64_SINT:
+        return "i64";
+
+    case VK_FORMAT_R64_UINT:
+        return "u64";
+
+    default:
+        DE_FATAL("Unexpected image format");
+        return "error";
+    }
+}
+
+std::string getImageType(VkFormat format, const size_t image_rank)
+{
+    std::ostringstream ss;
+    ss << getImagePrefix(format) << "image" << image_rank << "D";
+    return ss.str();
+}
+
+VkFormat imageToTensorFormat(VkFormat imageFormat)
+{
+    switch (imageFormat)
+    {
+    case VK_FORMAT_R8_SINT:
+    case VK_FORMAT_R8G8B8A8_SINT:
+    case VK_FORMAT_R8G8_SINT:
+        return VK_FORMAT_R8_SINT;
+
+    case VK_FORMAT_R16_SINT:
+    case VK_FORMAT_R16G16_SINT:
+    case VK_FORMAT_R16G16B16A16_SINT:
+        return VK_FORMAT_R16_SINT;
+
+    case VK_FORMAT_R32_SINT:
+    case VK_FORMAT_R32G32_SINT:
+    case VK_FORMAT_R32G32B32A32_SINT:
+        return VK_FORMAT_R32_SINT;
+
+    case VK_FORMAT_R64_SINT:
+        return VK_FORMAT_R64_SINT;
+
+    case VK_FORMAT_R8_UINT:
+    case VK_FORMAT_R8G8_UINT:
+    case VK_FORMAT_R8G8B8A8_UINT:
+        return VK_FORMAT_R8_UINT;
+
+    case VK_FORMAT_R16_UINT:
+    case VK_FORMAT_R16G16_UINT:
+    case VK_FORMAT_R16G16B16A16_UINT:
+        return VK_FORMAT_R16_UINT;
+
+    case VK_FORMAT_R32_UINT:
+    case VK_FORMAT_R32G32_UINT:
+    case VK_FORMAT_R32G32B32A32_UINT:
+        return VK_FORMAT_R32_UINT;
+
+    case VK_FORMAT_R64_UINT:
+        return VK_FORMAT_R64_UINT;
+
+    case VK_FORMAT_R8_SNORM:
+    case VK_FORMAT_R8G8_SNORM:
+    case VK_FORMAT_R8G8B8A8_SNORM:
+    case VK_FORMAT_R8_UNORM:
+    case VK_FORMAT_R8G8_UNORM:
+    case VK_FORMAT_R8G8B8A8_UNORM:
+        return VK_FORMAT_R8_UINT;
+
+    case VK_FORMAT_R16_SNORM:
+    case VK_FORMAT_R16G16_SNORM:
+    case VK_FORMAT_R16G16B16A16_SNORM:
+    case VK_FORMAT_R16_UNORM:
+    case VK_FORMAT_R16G16_UNORM:
+    case VK_FORMAT_R16G16B16A16_UNORM:
+        return VK_FORMAT_R16_SFLOAT;
+
+    default:
+        DE_FATAL("Unexpected image format");
+        return VK_FORMAT_UNDEFINED;
+    }
+}
+
+std::string imageCoordinates(std::string prefix, size_t rank)
+{
+    std::ostringstream src;
+
+    src << "ivec" << rank << "(";
+    for (size_t idx = 0; idx < rank; ++idx)
+    {
+        if (idx != 0)
+        {
+            src << ", ";
+        }
+        src << prefix << rank - (idx + 1);
+    }
+    src << ")";
+
+    return src.str();
+}
+
 std::string getBooleanOp(BooleanOperator op)
 {
     switch (op)

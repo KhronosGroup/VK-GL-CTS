@@ -391,6 +391,7 @@ static inline void initPrograms(vk::SourceCollections &programCollection, TestPa
 static inline void checkImageAliasingSupport(Context &ctx, TestParams testParams)
 {
     const VkImageTiling imageTiling      = VK_IMAGE_TILING_LINEAR;
+    const VkImageType imageType          = VK_IMAGE_TYPE_2D;
     const VkTensorTilingARM tensorTiling = VK_TENSOR_TILING_LINEAR_ARM;
     const std::vector<VkFormat> formats  = getVkFormats(testParams.formats);
 
@@ -398,7 +399,7 @@ static inline void checkImageAliasingSupport(Context &ctx, TestParams testParams
 
     for (const auto format : formats)
     {
-        if (!tensor::formatSupportImageFlags(ctx, format, imageTiling, VK_IMAGE_USAGE_STORAGE_BIT))
+        if (!tensor::formatSupportImageFlags(ctx, imageType, format, imageTiling, VK_IMAGE_USAGE_STORAGE_BIT))
             TCU_THROW(NotSupportedError, "Chosen image format/tiling does not support storage usage");
 
         if (!tensor::formatSupportTensorFlags(ctx, format, tensorTiling, VK_FORMAT_FEATURE_2_TENSOR_SHADER_BIT_ARM))

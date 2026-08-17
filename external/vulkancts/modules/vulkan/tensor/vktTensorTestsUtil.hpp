@@ -55,6 +55,13 @@ enum AccessVariant
     ARRAY_WRITE,
 };
 
+enum ImageAliasingVariant
+{
+    IMAGE_PRODUCER_TENSOR_CONSUMER,
+    TENSOR_PRODUCER_IMAGE_CONSUMER,
+    TENSOR_PRODUCER_IMAGE_SAMPLE
+};
+
 enum BooleanOperator
 {
     AND,
@@ -110,7 +117,8 @@ VkTensorFormatPropertiesARM getTensorFormatProperties(Context &context, const Vk
 
 size_t getFormatSize(VkFormat format);
 bool formatSupportTensorFlags(Context &context, VkFormat format, VkTensorTilingARM tiling, VkFormatFeatureFlags2 flags);
-bool formatSupportImageFlags(Context &context, VkFormat format, VkImageTiling tiling, VkImageUsageFlags flags);
+bool formatSupportImageFlags(Context &context, VkImageType type, VkFormat format, VkImageTiling tiling,
+                             VkImageUsageFlags flags);
 bool tensorSupportsDmaBufImport(Context &context, const VkTensorDescriptionARM description);
 void requireTensorShapeSupported(Context &context, const TensorParameters &parameters);
 

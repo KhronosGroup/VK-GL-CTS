@@ -43,6 +43,11 @@ inline constexpr uint32_t shaderTensorAccessWorkgroupSize = 128;
 // Query Dimensions
 std::string genShaderQueryDimensions(size_t rank, VkFormat tensorFormat);
 
+// Image Read/Write
+std::string genShaderImageAccess(const TensorDimensions &shape, VkFormat bufferFormat, VkFormat imageFormat,
+                                 ImageAliasingVariant variant);
+inline constexpr uint32_t shaderImageAccessWorkgroupSize = 128;
+
 // Array Read/Write
 std::string genShaderArrayAccess(size_t rank, AccessVariant variant, VkFormat format, const int array_size);
 

@@ -335,13 +335,32 @@ bool formatSupportTensorFlags(Context &context, VkFormat format, VkTensorTilingA
     }
 }
 
-bool formatSupportImageFlags(Context &context, VkFormat format, VkImageTiling tiling, VkImageUsageFlags flags)
+bool formatSupportImageFlags(Context &context, const VkImageType type, const VkFormat format,
+                             const VkImageTiling tiling, const VkImageUsageFlags usageFlags)
 {
-    const auto &vki               = context.getInstanceInterface();
-    const auto physicalDevice     = context.getPhysicalDevice();
-    VkImageFormatProperties props = {};
-    return VK_SUCCESS == vki.getPhysicalDeviceImageFormatProperties(physicalDevice, format, VK_IMAGE_TYPE_2D, tiling,
-                                                                    flags, 0, &props);
+    const auto &vki           = context.getInstanceInterface();
+    const auto physicalDevice = context.getPhysicalDevice();
+
+    VkImageFormatProperties2 props = initVulkanStructure();
+
+    VkPhysicalDeviceImageFormatInfo2 format_info = initVulkanStructure();
+    format_info.format                           = format;
+    format_info.type                             = type;
+    format_info.tiling                           = tiling;
+    format_info.usage                            = usageFlags;
+
+    const VkResult queryResult = vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &format_info, &props);
+    switch (queryResult)
+    {
+    case VK_SUCCESS:
+        return true;
+    case VK_ERROR_FORMAT_NOT_SUPPORTED:
+        return false;
+    default:
+        throw vk::Error(queryResult, "Unexpected error code");
+    }
+
+    return false;
 }
 
 void requireTensorShapeSupported(Context &context, const TensorParameters &parameters)
