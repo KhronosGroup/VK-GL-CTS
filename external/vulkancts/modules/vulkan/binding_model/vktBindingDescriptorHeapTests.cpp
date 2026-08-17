@@ -5905,8 +5905,12 @@ void DescriptorHeapTestInstanceBasic::setupDescriptors(VkCommandBuffer cmdBuf, c
                 {
                     descriptorValue = rnd.getInt32();
 
-                    // This can be anything, as long as it's a multiple of 4.
-                    const int32_t customPushOffset = 16;
+                    const VkPhysicalDeviceProperties physDevProps =
+                        getPhysicalDeviceProperties(m_instance.getDriver(), m_physDevice);
+                    int32_t customPushOffset = 16;
+                    customPushOffset =
+                        static_cast<int32_t>(alignUp(static_cast<VkDeviceSize>(customPushOffset),
+                                                     physDevProps.limits.minUniformBufferOffsetAlignment));
 
                     VkPushDataInfoEXT pushDataInfo = initVulkanStructure();
                     pushDataInfo.offset            = binding.mapping.sourceData.heapData.pushOffset;
