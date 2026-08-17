@@ -42,13 +42,13 @@ void main() {
 
     // Workgroup barrier - all invocations have initialized their ray query.
     barrier();
-
+    bool proceed = false;
     // Serialize Proceed() across subgroup lanes.
-    for (uint curLane = 0; curLane < 32; ++curLane) {
+    for (uint curLane = 0; curLane < gl_SubgroupSize; ++curLane) {
         if (gl_SubgroupInvocationID == curLane) {
-            rayQueryProceedEXT(rq);
+            proceed = rayQueryProceedEXT(rq);
         }
-        if (curLane == 0) {
+        if (curLane == 0 && proceed) {
             // Delay to allow other waves of the WG to issue the first Proceed() call.
             // Uses buffer accesses in a loop to prevent compiler optimization.
             uint dummy = 0;
@@ -63,14 +63,16 @@ void main() {
     }
 
     // Accept the candidate hit (non-opaque triangle requires explicit confirmation).
-    rayQueryConfirmIntersectionEXT(rq);
+    if (proceed) {
+        rayQueryConfirmIntersectionEXT(rq);
 
-    // Store result depending on the committed hit.
-    if (rayQueryGetIntersectionTypeEXT(rq, true) ==
-        gl_RayQueryCommittedIntersectionTriangleEXT) {
-        results[gid] = 1;
-    } else {
-        results[gid] = 0;
+        // Store result depending on the committed hit.
+        if (rayQueryGetIntersectionTypeEXT(rq, true) ==
+            gl_RayQueryCommittedIntersectionTriangleEXT) {
+            results[gid] = 1;
+        } else {
+            results[gid] = 0;
+        }
     }
 }
 END
