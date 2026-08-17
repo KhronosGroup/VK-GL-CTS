@@ -101,12 +101,8 @@ public:
     {
         context.requireDeviceFunctionality("VK_ARM_tensors");
 
-        const uint32_t maxTensorDimensionCount = getTensorPhysicalDeviceProperties(context).maxTensorDimensionCount;
-
-        if (m_srcParameters.rank() > maxTensorDimensionCount || m_dstParameters.rank() > maxTensorDimensionCount)
-        {
-            TCU_THROW(NotSupportedError, "Tensor dimension count is higher than what the implementation supports");
-        }
+        requireTensorShapeSupported(context, m_srcParameters);
+        requireTensorShapeSupported(context, m_dstParameters);
 
         if (!formatSupportTensorFlags(context, m_srcParameters.format, m_srcParameters.tiling,
                                       VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT))
@@ -178,16 +174,6 @@ tcu::TestStatus LinearTensorCopyTestInstance<T>::iterate()
 
         beginCommandBuffer(vk, *cmdBuffer);
 
-        // Tensor barrier
-
-        const VkTensorMemoryBarrierARM copyToHostAccess =
-            makeTensorMemoryBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
-                                    VK_PIPELINE_STAGE_HOST_BIT, VK_ACCESS_HOST_READ_BIT, 0, 0, *dstTensor);
-
-        VkDependencyInfo tensorDependencyInfo{};
-        tensorDependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-        tensorDependencyInfo.pNext = &copyToHostAccess;
-
         // Copy tensors
 
         VkTensorCopyARM tensorRegions{};
@@ -202,7 +188,6 @@ tcu::TestStatus LinearTensorCopyTestInstance<T>::iterate()
         copyInfo.regionCount = 1;
 
         vk.cmdCopyTensorARM(*cmdBuffer, &copyInfo);
-        vk.cmdPipelineBarrier2(*cmdBuffer, &tensorDependencyInfo);
 
         endCommandBuffer(vk, *cmdBuffer);
 
@@ -290,12 +275,8 @@ public:
     {
         context.requireDeviceFunctionality("VK_ARM_tensors");
 
-        const uint32_t maxTensorDimensionCount = getTensorPhysicalDeviceProperties(context).maxTensorDimensionCount;
-
-        if (m_srcParameters.rank() > maxTensorDimensionCount || m_dstParameters.rank() > maxTensorDimensionCount)
-        {
-            TCU_THROW(NotSupportedError, "Tensor dimension count is higher than what the implementation supports");
-        }
+        requireTensorShapeSupported(context, m_srcParameters);
+        requireTensorShapeSupported(context, m_dstParameters);
 
         if ((!checkSupportLinearSrcStorageTensor(context, m_srcParameters.format)) ||
             (!checkSupportOptimalStorageTensor(context, m_srcParameters.format)) ||
@@ -375,15 +356,6 @@ tcu::TestStatus OptimalTensorCopyTestInstance<T>::iterate()
         const VkMemoryBarrier interCopiesBarrier{VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr,
                                                  VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT};
 
-        // tensor barrier
-
-        const VkTensorMemoryBarrierARM copyToHostAccess =
-            makeTensorMemoryBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
-                                    VK_PIPELINE_STAGE_HOST_BIT, VK_ACCESS_HOST_READ_BIT, 0, 0, *dstTensorLinear);
-        VkDependencyInfo tensorDependencyInfo{};
-        tensorDependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-        tensorDependencyInfo.pNext = &copyToHostAccess;
-
         // Copy Linear > Optimal
 
         VkTensorCopyARM tensorRegions{};
@@ -420,7 +392,6 @@ tcu::TestStatus OptimalTensorCopyTestInstance<T>::iterate()
         copyInfo.regionCount = 1;
 
         vk.cmdCopyTensorARM(*cmdBuffer, &copyInfo);
-        vk.cmdPipelineBarrier2(*cmdBuffer, &tensorDependencyInfo);
 
         endCommandBuffer(vk, *cmdBuffer);
 
@@ -457,10 +428,7 @@ template <typename T>
 void addTensorCopyTests(tcu::TestCaseGroup &testCaseGroup)
 {
     const TensorDimensions shapes[] = {
-        {71693},
-        {263, 269},
-        {37, 43, 47},
-        {13, 17, 19, 23},
+        {71693}, {263, 269}, {37, 43, 47}, {13, 17, 19, 23}, {7, 11, 13, 17, 19, 23},
     };
 
     for (const TensorDimensions &shape : shapes)

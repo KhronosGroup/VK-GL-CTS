@@ -194,10 +194,7 @@ public:
     {
         context.requireDeviceFunctionality("VK_ARM_tensors");
 
-        if (m_parameters.rank() > getTensorPhysicalDeviceProperties(context).maxTensorDimensionCount)
-        {
-            TCU_THROW(NotSupportedError, "Tensor dimension count is higher than what the implementation supports");
-        }
+        requireTensorShapeSupported(context, m_parameters);
 
         if (!formatSupportTensorFlags(context, m_parameters.format, m_parameters.tiling,
                                       VK_FORMAT_FEATURE_2_TENSOR_SHADER_BIT_ARM))
@@ -325,10 +322,7 @@ public:
     {
         context.requireDeviceFunctionality("VK_ARM_tensors");
 
-        if (m_parameters.rank() > getTensorPhysicalDeviceProperties(context).maxTensorDimensionCount)
-        {
-            TCU_THROW(NotSupportedError, "Tensor dimension count is higher than what the implementation supports");
-        }
+        requireTensorShapeSupported(context, m_parameters);
 
         if (!formatSupportTensorFlags(context, m_parameters.format, m_parameters.tiling,
                                       VK_FORMAT_FEATURE_2_TENSOR_SHADER_BIT_ARM))
@@ -449,7 +443,8 @@ tcu::TestStatus LinearTensorAccessTestInstance<T>::iterate()
     // Create a tensor and memory for it
 
     const uint32_t elements =
-        std::accumulate(m_parameters.dimensions.cbegin(), m_parameters.dimensions.cend(), 1, std::multiplies<size_t>());
+        static_cast<uint32_t>(std::accumulate(m_parameters.dimensions.cbegin(), m_parameters.dimensions.cend(),
+                                              static_cast<int64_t>(1), std::multiplies<int64_t>()));
 
     const VkTensorDescriptionARM tensorDesc =
         makeTensorDescription(m_parameters.tiling, m_parameters.format, m_parameters.dimensions, m_parameters.strides,
@@ -552,29 +547,21 @@ tcu::TestStatus LinearTensorAccessTestInstance<T>::iterate()
 
         beginCommandBuffer(vk, *cmdBuffer);
 
-        const VkTensorMemoryBarrierARM tensorBarrier =
-            makeTensorMemoryBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT,
-                                    VK_PIPELINE_STAGE_HOST_BIT, VK_ACCESS_HOST_READ_BIT, 0, 0, *tensor);
-
-        const VkBufferMemoryBarrier bufferBarrier =
-            makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0u, bufferSize);
-
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
                                  &descriptorSet.get(), 0u, nullptr);
-        vk.cmdDispatch(*cmdBuffer, elements, 1u, 1u);
+
+        const uint32_t dispatchCount = singleDimensionWorkgroupCount(elements, shaderTensorAccessWorkgroupSize);
+        DE_ASSERT(dispatchCount <= dispatchWorkgroupCountLimit);
+        vk.cmdDispatch(*cmdBuffer, dispatchCount, 1u, 1u);
 
         if (m_variant == AccessVariant::WRITE_TO_BUFFER)
         {
+            const VkBufferMemoryBarrier bufferBarrier =
+                makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0u, bufferSize);
+
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0,
                                   nullptr, 1, &bufferBarrier, 0, nullptr);
-        }
-        else // READ_FROM_BUFFER
-        {
-            VkDependencyInfo dependencyInfo{};
-            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-            dependencyInfo.pNext = &tensorBarrier;
-            vk.cmdPipelineBarrier2(*cmdBuffer, &dependencyInfo);
         }
 
         endCommandBuffer(vk, *cmdBuffer);
@@ -665,7 +652,8 @@ tcu::TestStatus OptimalTensorAccessTestInstance<T>::iterate()
     // Create a tensor and its support memory
 
     const uint32_t elements =
-        std::accumulate(m_parameters.dimensions.cbegin(), m_parameters.dimensions.cend(), 1, std::multiplies<size_t>());
+        static_cast<uint32_t>(std::accumulate(m_parameters.dimensions.cbegin(), m_parameters.dimensions.cend(),
+                                              static_cast<int64_t>(1), std::multiplies<int64_t>()));
 
     const VkTensorDescriptionARM tensorDesc =
         makeTensorDescription(m_parameters.tiling, m_parameters.format, m_parameters.dimensions, m_parameters.strides,
@@ -800,7 +788,10 @@ tcu::TestStatus OptimalTensorAccessTestInstance<T>::iterate()
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *bufferToTensorPipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
                                  &bufferToTensorDescriptorSet.get(), 0u, nullptr);
-        vk.cmdDispatch(*cmdBuffer, elements, 1u, 1u);
+
+        const uint32_t dispatchCount = singleDimensionWorkgroupCount(elements, shaderTensorAccessWorkgroupSize);
+        DE_ASSERT(dispatchCount <= dispatchWorkgroupCountLimit);
+        vk.cmdDispatch(*cmdBuffer, dispatchCount, 1u, 1u);
 
         VkDependencyInfo dependencyInfo{};
         dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
@@ -810,7 +801,7 @@ tcu::TestStatus OptimalTensorAccessTestInstance<T>::iterate()
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *tensorToBufferPipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
                                  &tensorToBufferDescriptorSet.get(), 0u, nullptr);
-        vk.cmdDispatch(*cmdBuffer, elements, 1u, 1u);
+        vk.cmdDispatch(*cmdBuffer, dispatchCount, 1u, 1u);
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0,
                               nullptr, 1, &bufferBarrier, 0, nullptr);
@@ -854,13 +845,11 @@ template <typename T>
 void addShaderAccessTests(tcu::TestCaseGroup &testCaseGroup)
 {
     const TensorDimensions shapes[] = {
-        {71693},
-        {263, 269},
-        {37, 43, 47},
-        {13, 17, 19, 23},
+        {71693}, {263, 269}, {37, 43, 47}, {13, 17, 19, 23}, {7, 11, 13, 17, 19, 23},
     };
 
     const TensorDimensions &shape_4d = shapes[3];
+    const TensorDimensions &shape_6d = shapes[4];
 
     for (const VkFormat format : getTestFormats<T>())
     {
@@ -914,6 +903,7 @@ void addShaderAccessTests(tcu::TestCaseGroup &testCaseGroup)
     }
 
     // Tests to force use of staging buffer even when tensor memory is host visible
+    // 4D Tensor
     {
         const TensorParameters forcedStagingBufferParameters{
             getTestFormats<T>()[0], VK_TENSOR_TILING_LINEAR_ARM, shape_4d, {}};
@@ -922,11 +912,30 @@ void addShaderAccessTests(tcu::TestCaseGroup &testCaseGroup)
         testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(
             testCaseGroup.getTestContext(), forcedStagingBufferParameters, AccessVariant::READ_FROM_BUFFER, 0, true));
     }
+    // 6D Tensor
+    {
+        const TensorParameters forcedStagingBufferParameters{
+            getTestFormats<T>()[0], VK_TENSOR_TILING_LINEAR_ARM, shape_6d, {}};
+        testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(
+            testCaseGroup.getTestContext(), forcedStagingBufferParameters, AccessVariant::WRITE_TO_BUFFER, 0, true));
+        testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(
+            testCaseGroup.getTestContext(), forcedStagingBufferParameters, AccessVariant::READ_FROM_BUFFER, 0, true));
+    }
 
     // Tests binding tensor to offset within allocation
+    // 4D Tensor
     {
         const TensorParameters forcedStagingBufferParameters{
             getTestFormats<T>()[0], VK_TENSOR_TILING_LINEAR_ARM, shape_4d, {}};
+        testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(
+            testCaseGroup.getTestContext(), forcedStagingBufferParameters, AccessVariant::WRITE_TO_BUFFER, 2000));
+        testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(
+            testCaseGroup.getTestContext(), forcedStagingBufferParameters, AccessVariant::READ_FROM_BUFFER, 2000));
+    }
+    // 6D Tensor
+    {
+        const TensorParameters forcedStagingBufferParameters{
+            getTestFormats<T>()[0], VK_TENSOR_TILING_LINEAR_ARM, shape_6d, {}};
         testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(
             testCaseGroup.getTestContext(), forcedStagingBufferParameters, AccessVariant::WRITE_TO_BUFFER, 2000));
         testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(
@@ -958,9 +967,10 @@ void addDmaHeapBufferAccessTestInternal(tcu::TestCaseGroup &testCaseGroup)
 {
     static constexpr bool useDmaHeapAllocator = true;
 
-    const TensorDimensions shape{13, 17, 19, 23};
-    const VkFormat format = getTestFormats<T>()[0];
+    const TensorDimensions shapes[] = {{13, 17, 19, 23}, {7, 11, 13, 17, 19, 23}};
+    const VkFormat format           = getTestFormats<T>()[0];
 
+    for (const auto &shape : shapes)
     {
         static constexpr bool forceStagingBuffer = false;
 
@@ -986,6 +996,7 @@ void addDmaHeapBufferAccessTestInternal(tcu::TestCaseGroup &testCaseGroup)
     }
 
     // Tests to force use of staging buffer with dma heap memory
+    for (const auto &shape : shapes)
     {
         static constexpr vk::VkDeviceSize offset = 0;
         static constexpr bool forceStagingBuffer = true;
@@ -999,6 +1010,7 @@ void addDmaHeapBufferAccessTestInternal(tcu::TestCaseGroup &testCaseGroup)
     }
 
     // Tests binding tensor to offset within DMA heap allocation
+    for (const auto &shape : shapes)
     {
         static constexpr vk::VkDeviceSize offset = 2000;
         static constexpr bool forceStagingBuffer = false;

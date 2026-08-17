@@ -34,8 +34,11 @@ namespace vkt
 namespace tensor
 {
 
+inline constexpr uint32_t dispatchWorkgroupCountLimit = 65535;
+
 // Tensor Read/Write
 std::string genShaderTensorAccess(size_t rank, VkFormat tensorFormat, AccessVariant variant);
+inline constexpr uint32_t shaderTensorAccessWorkgroupSize = 128;
 
 // Query Dimensions
 std::string genShaderQueryDimensions(size_t rank, VkFormat tensorFormat);
@@ -45,6 +48,7 @@ std::string genShaderArrayAccess(size_t rank, AccessVariant variant, VkFormat fo
 
 // Booleans
 std::string genShaderBooleanOp(size_t rank, BooleanOperator op, const bool test_value);
+inline constexpr uint32_t shaderBooleanOpAccessWorkgroupSize = 128;
 
 } // namespace tensor
 } // namespace vkt

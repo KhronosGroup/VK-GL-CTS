@@ -184,29 +184,29 @@ const char *tensorFormatShortName(const VkFormat format)
     switch (format)
     {
     case VK_FORMAT_R64_UINT:
-        return "r64_uint";
+        return "R64_UINT";
     case VK_FORMAT_R64_SINT:
-        return "r64_sint";
+        return "R64_SINT";
     case VK_FORMAT_R64_SFLOAT:
-        return "r64_sfloat";
+        return "R64_SFLOAT";
     case VK_FORMAT_R32_UINT:
-        return "r32_uint";
+        return "R32_UINT";
     case VK_FORMAT_R32_SINT:
-        return "r32_sint";
+        return "R32_SINT";
     case VK_FORMAT_R32_SFLOAT:
-        return "r32_sfloat";
+        return "R32_SFLOAT";
     case VK_FORMAT_R16_UINT:
-        return "r16_uint";
+        return "R16_UINT";
     case VK_FORMAT_R16_SINT:
-        return "r16_sint";
+        return "R16_SINT";
     case VK_FORMAT_R16_SFLOAT:
-        return "r16_sfloat";
+        return "R16_SFLOAT";
     case VK_FORMAT_R8_UINT:
-        return "r8_uint";
+        return "R8_UINT";
     case VK_FORMAT_R8_SINT:
-        return "r8_sint";
+        return "R8_SINT";
     case VK_FORMAT_R8_BOOL_ARM:
-        return "r8_bool";
+        return "R8_BOOL";
     default:
         // unsupported formats
         DE_ASSERT(false);
@@ -369,6 +369,62 @@ bool formatSupportImageFlags(Context &context, VkFormat format, VkImageTiling ti
     VkImageFormatProperties props = {};
     return VK_SUCCESS == vki.getPhysicalDeviceImageFormatProperties(physicalDevice, format, VK_IMAGE_TYPE_2D, tiling,
                                                                     flags, 0, &props);
+}
+
+void requireTensorShapeSupported(Context &context, const TensorParameters &parameters)
+{
+    const VkPhysicalDeviceTensorPropertiesARM tensorProps = getTensorPhysicalDeviceProperties(context);
+
+    // Max dimension count
+    if (parameters.rank() > tensorProps.maxTensorDimensionCount)
+    {
+        TCU_THROW(NotSupportedError, "Tensor dimension count is higher than device limit");
+    }
+
+    // Max per dimension elements
+    for (const auto &dimensionSize : parameters.dimensions)
+    {
+        if (static_cast<uint64_t>(dimensionSize) > tensorProps.maxPerDimensionTensorElements)
+        {
+            TCU_THROW(NotSupportedError, "Tensor dimension element count is higher than device limit");
+        }
+    }
+
+    // Max elements
+    if (parameters.elements() > tensorProps.maxTensorElements)
+    {
+        TCU_THROW(NotSupportedError, "Tensor element count is higher than device limit");
+    }
+
+    // Max size
+    if (parameters.strides.empty())
+    {
+        // If we have implicitly packed linear tensor, calculate how much space the elements take
+        // If we have optimal tensor, we can't really know its real size, but it should be at least this
+        if (parameters.hostDataSize() > tensorProps.maxTensorSize)
+        {
+            TCU_THROW(NotSupportedError, "Tensor size in bytes is higher than device limit");
+        }
+    }
+    else
+    {
+        DE_ASSERT(parameters.strides[0] > 0 && parameters.dimensions[0] > 0);
+
+        // We have explicit strides, so calculate the size in bytes from it and tensor shape
+        if (static_cast<uint64_t>(parameters.strides[0] * parameters.dimensions[0]) > tensorProps.maxTensorSize)
+        {
+            TCU_THROW(NotSupportedError, "Tensor size in bytes is higher than device limit");
+        }
+    }
+
+    // Max stride
+    for (const auto &strideSize : parameters.strides)
+    {
+        if (strideSize > tensorProps.maxTensorStride)
+        {
+            TCU_THROW(NotSupportedError, "Tensor stride is higher than device limit");
+        }
+    }
 }
 
 bool deviceSupportsNonPackedTensors(Context &context)

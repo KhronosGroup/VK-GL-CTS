@@ -45,7 +45,7 @@ namespace vk
 using TensorDimensions = std::vector<int64_t>;
 using TensorStrides    = std::vector<int64_t>;
 
-const TensorStrides getTensorStrides(const TensorDimensions &dimensions, size_t formatSize, size_t multiplier = 1);
+const TensorStrides getTensorStrides(const TensorDimensions &dimensions, size_t formatSize, int64_t multiplier = 1);
 
 struct Float16
 {
@@ -163,7 +163,8 @@ public:
         , m_memoryPtr{static_cast<T *>(memoryPtr)}
         , m_memorySize{0}
         , m_packedStrides{getTensorStrides(m_dimensions, 1)}
-        , m_elementCount{std::accumulate(m_dimensions.cbegin(), m_dimensions.cend(), 1u, std::multiplies<size_t>())}
+        , m_elementCount{static_cast<size_t>(std::accumulate(m_dimensions.cbegin(), m_dimensions.cend(),
+                                                             static_cast<int64_t>(1u), std::multiplies<int64_t>()))}
     {
         const size_t dimensionCount = m_dimensions.size();
 
@@ -257,7 +258,8 @@ public:
 
     size_t elementCount() const
     {
-        return std::accumulate(m_dimensions.cbegin(), m_dimensions.cend(), 1, std::multiplies<uint32_t>());
+        return static_cast<size_t>(std::accumulate(m_dimensions.cbegin(), m_dimensions.cend(), static_cast<int64_t>(1),
+                                                   std::multiplies<int64_t>()));
     }
 
     uint64_t memorySize() const

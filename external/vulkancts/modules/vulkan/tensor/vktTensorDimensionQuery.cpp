@@ -239,10 +239,12 @@ public:
     {
         context.requireDeviceFunctionality("VK_ARM_tensors");
 
-        if (m_dimension.size() > getTensorPhysicalDeviceProperties(context).maxTensorDimensionCount)
-        {
-            TCU_THROW(NotSupportedError, "Tensor dimension count is higher than what the implementation supports");
-        }
+        requireTensorShapeSupported(context, TensorParameters{
+                                                 m_format,
+                                                 m_tiling,
+                                                 m_dimension,
+                                                 {},
+                                             });
 
         if (!deviceSupportsShaderTensorAccess(context))
         {
@@ -275,7 +277,8 @@ private:
 void addDimensionQueriesTestCases(tcu::TestCaseGroup &testCaseGroup)
 {
 
-    const std::vector<TensorDimensions> testDimensions = {{1}, {2, 1}, {4, 2, 1}, {8, 4, 2, 1}, {4, 8, 16, 2, 1}};
+    const std::vector<TensorDimensions> testDimensions = {{1},          {2, 1},           {4, 2, 1},
+                                                          {8, 4, 2, 1}, {4, 8, 16, 2, 1}, {7, 11, 13, 17, 19, 23}};
     for (const auto &format : getAllTestFormats())
     {
         for (const auto &dimension : testDimensions)

@@ -79,7 +79,8 @@ public:
     }
     uint32_t elements() const
     {
-        return std::accumulate(dimensions.begin(), dimensions.end(), 1, std::multiplies<uint32_t>());
+        return static_cast<uint32_t>(
+            std::accumulate(dimensions.begin(), dimensions.end(), static_cast<int64_t>(1), std::multiplies<int64_t>()));
     }
 
     /* returns the size required to store all the tensor elements */
@@ -109,6 +110,7 @@ size_t getFormatSize(VkFormat format);
 bool formatSupportTensorFlags(Context &context, VkFormat format, VkTensorTilingARM tiling, VkFormatFeatureFlags2 flags);
 bool formatSupportImageFlags(Context &context, VkFormat format, VkImageTiling tiling, VkImageUsageFlags flags);
 bool tensorSupportsDmaBufImport(Context &context, const VkTensorDescriptionARM description);
+void requireTensorShapeSupported(Context &context, const TensorParameters &parameters);
 
 bool deviceSupportsNonPackedTensors(Context &context);
 bool deviceSupportsShaderTensorAccess(Context &context);

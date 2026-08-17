@@ -28,15 +28,15 @@
 namespace vk
 {
 
-const TensorStrides getTensorStrides(const TensorDimensions &dimensions, size_t formatSize, size_t multiplier)
+const TensorStrides getTensorStrides(const TensorDimensions &dimensions, size_t formatSize, int64_t multiplier)
 {
     DE_ASSERT(dimensions.size() > 0);
     TensorStrides strides{};
 
     for (size_t dim_idx = 0; dim_idx < (dimensions.size() - 1); ++dim_idx)
     {
-        strides.push_back(multiplier * std::accumulate(dimensions.cbegin() + dim_idx + 1, dimensions.cend(), formatSize,
-                                                       std::multiplies<size_t>()));
+        strides.push_back(multiplier * std::accumulate(dimensions.cbegin() + dim_idx + 1, dimensions.cend(),
+                                                       static_cast<int64_t>(formatSize), std::multiplies<int64_t>()));
     }
 
     strides.push_back(formatSize);

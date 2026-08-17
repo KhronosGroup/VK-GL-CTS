@@ -49,7 +49,8 @@ std::string genShaderTensorAccess(const size_t rank, const VkFormat tensorFormat
 #extension GL_EXT_shader_explicit_arithmetic_types : require
 )";
 
-    shader << "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
+    shader << "layout(local_size_x = " << shaderTensorAccessWorkgroupSize
+           << ", local_size_y = 1, local_size_z = 1) in;\n";
     shader << "layout(set=0, binding = 0) uniform tensorARM<" << glslType << ", " << rank << "> tens;\n";
     shader << "layout(set=0, binding = 1, std430) buffer _buff { " << glslType << " data[]; };\n";
 
@@ -60,6 +61,16 @@ std::string genShaderTensorAccess(const size_t rank, const VkFormat tensorFormat
     {
         shader << "\tconst uint size_d" << i << " = tensorSizeARM(tens, " << i << ");\n";
     }
+
+    // Check that the shader invocation is not after the end of the tensor
+    // If it is, end early
+    shader << "\tconst uint tensor_element_count = ";
+    for (size_t i = 0; i < rank; ++i)
+    {
+        shader << "size_d" << i << (i == rank - 1 ? "" : " * ");
+    }
+    shader << ";\n";
+    shader << "\tif (gl_GlobalInvocationID.x >= tensor_element_count) return;\n";
 
     // Calculate tensor coordinates based on global invocation ID and tensor shape
     for (size_t i = 0; i < rank; ++i)

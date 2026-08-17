@@ -109,6 +109,10 @@ void downloadFromTensor(const DeviceInterface &vk, const VkDevice device, vk::Al
     const vk::Allocation &tensorAllocation = tensor.getAllocation();
     const bool useStagingBuffer            = forceStaging || !tensorAllocation.isHostVisible();
 
+    const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
+    const Unique<VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
     if (useStagingBuffer)
     {
         // We need to use the same external memory handle types for the aliasing buffer, in case the allocation is external
@@ -132,9 +136,6 @@ void downloadFromTensor(const DeviceInterface &vk, const VkDevice device, vk::Al
                                              vk::MemoryRequirement::HostVisible);
         const vk::Allocation &dstAllocation = dstBuffer.getAllocation();
 
-        const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-        const Unique<VkCommandBuffer> cmdBuffer(
-            allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
         beginCommandBuffer(vk, *cmdBuffer);
 
         // Memory barrier to make all writes to the tensor memory visible to transfer stage
@@ -164,6 +165,20 @@ void downloadFromTensor(const DeviceInterface &vk, const VkDevice device, vk::Al
     }
     else
     {
+        // Memory barrier to make tensor memory available to host
+        const VkTensorMemoryBarrierARM tensorBarrier = makeTensorMemoryBarrier(
+            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_ACCESS_MEMORY_WRITE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+            VK_ACCESS_HOST_READ_BIT, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, *tensor);
+
+        beginCommandBuffer(vk, *cmdBuffer);
+
+        VkDependencyInfo dependencyInfo = vk::initVulkanStructure();
+        dependencyInfo.pNext            = &tensorBarrier;
+        vk.cmdPipelineBarrier2(*cmdBuffer, &dependencyInfo);
+
+        endCommandBuffer(vk, *cmdBuffer);
+        submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
         // Copy directly from tensor memory to host
         invalidateAlloc(vk, device, tensorAllocation);
         memcpy(hostBuffer, tensorAllocation.getHostPtr(), static_cast<size_t>(hostBufferSize));

@@ -137,10 +137,7 @@ public:
 
         const VkPhysicalDeviceTensorPropertiesARM tensorProperties = getTensorPhysicalDeviceProperties(context);
 
-        if (m_parameters.rank() > tensorProperties.maxTensorDimensionCount)
-        {
-            TCU_THROW(NotSupportedError, "Tensor dimension count is higher than what the implementation supports");
-        }
+        requireTensorShapeSupported(context, m_parameters);
 
         if (!deviceSupportsShaderTensorAccess(context))
         {
@@ -259,10 +256,7 @@ public:
 
         const VkPhysicalDeviceTensorPropertiesARM tensorProperties = getTensorPhysicalDeviceProperties(context);
 
-        if (m_parameters.rank() > tensorProperties.maxTensorDimensionCount)
-        {
-            TCU_THROW(NotSupportedError, "Tensor dimension count is higher than what the implementation supports");
-        }
+        requireTensorShapeSupported(context, m_parameters);
 
         if (!deviceSupportsShaderTensorAccess(context))
         {
@@ -338,7 +332,8 @@ tcu::TestStatus TensorArrayReadWriteTestInstance<T>::iterate()
     // Create a Tensor
 
     const uint32_t elements =
-        std::accumulate(m_parameters.dimensions.cbegin(), m_parameters.dimensions.cend(), 1, std::multiplies<size_t>());
+        static_cast<uint32_t>(std::accumulate(m_parameters.dimensions.cbegin(), m_parameters.dimensions.cend(),
+                                              static_cast<int64_t>(1), std::multiplies<int64_t>()));
 
     const VkTensorDescriptionARM tensorDesc =
         makeTensorDescription(m_parameters.tiling, m_parameters.format, m_parameters.dimensions, m_parameters.strides,
@@ -439,6 +434,9 @@ tcu::TestStatus TensorArrayReadWriteTestInstance<T>::iterate()
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
                                  &descriptorSet.get(), 0u, nullptr);
+
+        DE_ASSERT(inner_count <= dispatchWorkgroupCountLimit);
+        DE_ASSERT(outer_count <= dispatchWorkgroupCountLimit);
         vk.cmdDispatch(*cmdBuffer, static_cast<uint32_t>(inner_count), static_cast<uint32_t>(outer_count), 1u);
 
         if (m_variant == AccessVariant::ARRAY_READ)
@@ -448,17 +446,6 @@ tcu::TestStatus TensorArrayReadWriteTestInstance<T>::iterate()
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0,
                                   nullptr, 1, &bufferBarrier, 0, nullptr);
-        }
-        else // ARRAY_WRITE
-        {
-            const VkTensorMemoryBarrierARM tensorBarrier =
-                makeTensorMemoryBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT,
-                                        VK_PIPELINE_STAGE_HOST_BIT, VK_ACCESS_HOST_READ_BIT, 0, 0, *tensor);
-
-            VkDependencyInfo dependencyInfo{};
-            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-            dependencyInfo.pNext = &tensorBarrier;
-            vk.cmdPipelineBarrier2(*cmdBuffer, &dependencyInfo);
         }
 
         endCommandBuffer(vk, *cmdBuffer);
@@ -507,7 +494,8 @@ tcu::TestStatus OptimalTensorArrayReadWriteTestInstance<T>::iterate()
     // Create a Tensor
 
     const uint32_t elements =
-        std::accumulate(m_parameters.dimensions.cbegin(), m_parameters.dimensions.cend(), 1, std::multiplies<size_t>());
+        static_cast<uint32_t>(std::accumulate(m_parameters.dimensions.cbegin(), m_parameters.dimensions.cend(),
+                                              static_cast<int64_t>(1), std::multiplies<int64_t>()));
 
     const VkTensorDescriptionARM tensorDesc = makeTensorDescription(
         m_parameters.tiling, m_parameters.format, m_parameters.dimensions, m_parameters.strides,
@@ -640,6 +628,8 @@ tcu::TestStatus OptimalTensorArrayReadWriteTestInstance<T>::iterate()
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
                                  &descriptorSet.get(), 0u, nullptr);
+        DE_ASSERT(inner_count <= dispatchWorkgroupCountLimit);
+        DE_ASSERT(outer_count <= dispatchWorkgroupCountLimit);
         vk.cmdDispatch(*cmdBuffer, static_cast<uint32_t>(inner_count), static_cast<uint32_t>(outer_count), 1u);
 
         if (m_variant == AccessVariant::ARRAY_READ)

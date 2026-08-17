@@ -189,6 +189,9 @@ tcu::TestStatus TensorGraphicsPipelineAccessTestInstance::iterate()
     /* Tensor with same shape as image that fragment shader fetches data from */
     static constexpr VkFormat formatFragmentTensor = VK_FORMAT_R8_UINT;
     const TensorDimensions shapeFragmentTensor{m_imageShape.height, m_imageShape.width, 1};
+    requireTensorShapeSupported(
+        m_context, TensorParameters{VK_FORMAT_R8_UINT, VK_TENSOR_TILING_LINEAR_ARM, shapeFragmentTensor, {}});
+
     const VkTensorDescriptionARM fragmentTensorDesc =
         makeTensorDescription(VK_TENSOR_TILING_LINEAR_ARM, formatFragmentTensor, shapeFragmentTensor, {},
                               VK_TENSOR_USAGE_SHADER_BIT_ARM | VK_TENSOR_USAGE_TRANSFER_DST_BIT_ARM);
@@ -210,9 +213,13 @@ tcu::TestStatus TensorGraphicsPipelineAccessTestInstance::iterate()
     /* Tensor with triangles forming rectangles that vertex shader fetches data from */
     const TensorDimensions shapeVertexTensor{static_cast<int64_t>(vertexCountInRectangle * rectangles.size()),
                                              static_cast<int64_t>(dimensionsInVertex)};
+    requireTensorShapeSupported(
+        m_context, TensorParameters{VK_FORMAT_R32_SINT, VK_TENSOR_TILING_LINEAR_ARM, shapeVertexTensor, {}});
+
     const VkTensorDescriptionARM vertexTensorDesc =
         makeTensorDescription(VK_TENSOR_TILING_LINEAR_ARM, VK_FORMAT_R32_SINT, shapeVertexTensor, {},
                               VK_TENSOR_USAGE_SHADER_BIT_ARM | VK_TENSOR_USAGE_TRANSFER_DST_BIT_ARM);
+
     const VkTensorCreateInfoARM vertexTensorCreateInfo = makeTensorCreateInfo(&vertexTensorDesc);
     const TensorWithMemory vertexTensor(vk, device, allocator, vertexTensorCreateInfo, vk::MemoryRequirement::Any);
     const Unique<vk::VkTensorViewARM> vertexTensorView(makeTensorView(vk, device, *vertexTensor, VK_FORMAT_R32_SINT));

@@ -697,7 +697,7 @@ tcu::TestStatus submitPipelineTest(Context &ctx, CacheTestParams params)
                 return tcu::TestStatus::fail(
                     "Pipeline creation expected to fail due to cache miss, but succeeded instead.");
             }
-            catch (const vk::Error &e)
+            catch (const vk::Error &)
             {
                 // we skip creating a session for a failed pipeline
                 continue;

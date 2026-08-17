@@ -88,7 +88,8 @@ tcu::TestStatus TensorBooleanOpTestInstance::iterate()
     // Create a Tensor
 
     const uint32_t elements =
-        std::accumulate(m_parameters.dimensions.cbegin(), m_parameters.dimensions.cend(), 1, std::multiplies<size_t>());
+        static_cast<uint32_t>(std::accumulate(m_parameters.dimensions.cbegin(), m_parameters.dimensions.cend(),
+                                              static_cast<int64_t>(1), std::multiplies<int64_t>()));
 
     const VkTensorDescriptionARM tensorDesc = makeTensorDescription(
         m_parameters.tiling, m_parameters.format, m_parameters.dimensions, m_parameters.strides,
@@ -206,7 +207,9 @@ tcu::TestStatus TensorBooleanOpTestInstance::iterate()
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
                                  &descriptorSet.get(), 0u, nullptr);
-        vk.cmdDispatch(*cmdBuffer, elements, 1u, 1u);
+        const uint32_t dispatchCount = singleDimensionWorkgroupCount(elements, shaderBooleanOpAccessWorkgroupSize);
+        DE_ASSERT(dispatchCount <= dispatchWorkgroupCountLimit);
+        vk.cmdDispatch(*cmdBuffer, dispatchCount, 1u, 1u);
 
         if (optimalTilingTest)
         {
@@ -231,16 +234,6 @@ tcu::TestStatus TensorBooleanOpTestInstance::iterate()
             copyInfo.regionCount = 1;
 
             vk.cmdCopyTensorARM(*cmdBuffer, &copyInfo);
-        }
-        {
-            const VkTensorMemoryBarrierARM tensorBarrier = makeTensorMemoryBarrier(
-                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                VK_ACCESS_HOST_READ_BIT, 0, 0, *(optimalTilingTest ? *linearTensor : tensorOut));
-
-            VkDependencyInfo dependencyInfo{};
-            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-            dependencyInfo.pNext = &tensorBarrier;
-            vk.cmdPipelineBarrier2(*cmdBuffer, &dependencyInfo);
         }
 
         endCommandBuffer(vk, *cmdBuffer);
@@ -326,10 +319,7 @@ public:
     {
         ctx.requireDeviceFunctionality("VK_ARM_tensors");
 
-        if (m_parameters.rank() > getTensorPhysicalDeviceProperties(ctx).maxTensorDimensionCount)
-        {
-            TCU_THROW(NotSupportedError, "Tensor dimension count is higher than what the implementation supports");
-        }
+        requireTensorShapeSupported(ctx, m_parameters);
 
         if (!deviceSupportsShaderTensorAccess(ctx))
         {
@@ -370,10 +360,7 @@ private:
 void addTensorBoolTests(tcu::TestCaseGroup &testCaseGroup)
 {
     const TensorDimensions shapes[] = {
-        {71693},
-        {263, 269},
-        {37, 43, 47},
-        {13, 17, 19, 23},
+        {71693}, {263, 269}, {37, 43, 47}, {13, 17, 19, 23}, {7, 11, 13, 17, 19, 23},
     };
 
     static constexpr VkFormat format = VK_FORMAT_R8_BOOL_ARM;

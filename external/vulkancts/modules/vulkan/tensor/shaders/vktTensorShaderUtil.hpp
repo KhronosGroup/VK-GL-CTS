@@ -29,6 +29,8 @@
 #include "../vktTensorTestsUtil.hpp"
 #include "../vktTestCase.hpp"
 
+#include <cstdint>
+
 namespace vkt
 {
 namespace tensor
@@ -38,6 +40,12 @@ using namespace vk;
 
 std::string getTensorFormat(VkFormat format);
 std::string getBooleanOp(BooleanOperator op);
+
+inline uint32_t singleDimensionWorkgroupCount(const uint32_t invocations, const uint32_t workgroupSize)
+{
+    DE_ASSERT(invocations < UINT32_MAX - workgroupSize);
+    return static_cast<uint32_t>((invocations + workgroupSize - 1) / workgroupSize);
+}
 
 } // namespace tensor
 } // namespace vkt
