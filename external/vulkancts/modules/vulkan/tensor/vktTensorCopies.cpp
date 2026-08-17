@@ -48,6 +48,7 @@
 #include "tcuPlatform.hpp"
 #include "tcuCommandLine.hpp"
 
+#include <array>
 #include <numeric>
 
 namespace vkt
@@ -100,6 +101,20 @@ public:
     void checkSupport(Context &context) const override
     {
         context.requireDeviceFunctionality("VK_ARM_tensors");
+
+        for (const VkFormat format : {m_srcParameters.format, m_dstParameters.format})
+        {
+            if (format == VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM)
+            {
+                context.requireDeviceFunctionality("VK_KHR_shader_bfloat16");
+            }
+
+            if (format == VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM ||
+                format == VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM)
+            {
+                context.requireDeviceFunctionality("VK_EXT_shader_float8");
+            }
+        }
 
         requireTensorShapeSupported(context, m_srcParameters);
         requireTensorShapeSupported(context, m_dstParameters);
@@ -197,25 +212,10 @@ tcu::TestStatus LinearTensorCopyTestInstance<T>::iterate()
     }
 
     // Validate the results
+    StridedMemoryUtils<T> result(m_dstParameters.dimensions, m_dstParameters.strides);
+    downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, dstTensor, result.data(), result.memorySize());
 
-    {
-        StridedMemoryUtils<T> result(m_dstParameters.dimensions, m_dstParameters.strides);
-        downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, dstTensor, result.data(),
-                           result.memorySize());
-
-        for (size_t element_idx = 0; element_idx < inputData.elementCount(); ++element_idx)
-        {
-            if (inputData[element_idx] != result[element_idx])
-            {
-                std::ostringstream msg;
-                msg << "Comparison failed at index " << element_idx << ": source = " << int(inputData[element_idx])
-                    << ", destination = " << int(result[element_idx]);
-                return tcu::TestStatus::fail(msg.str());
-            }
-        }
-    }
-
-    return tcu::TestStatus::pass("Tensor test succeeded");
+    return compareStridedMemory(result, inputData);
 }
 
 template <typename T>
@@ -401,99 +401,133 @@ tcu::TestStatus OptimalTensorCopyTestInstance<T>::iterate()
     }
 
     // Validate the results
+    StridedMemoryUtils<T> result(m_dstParameters.dimensions, m_dstParameters.strides);
+    downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, dstTensorLinear, result.data(),
+                       result.memorySize());
 
-    {
-        StridedMemoryUtils<T> result(m_dstParameters.dimensions, m_dstParameters.strides);
-        downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, dstTensorLinear, result.data(),
-                           result.memorySize());
-
-        for (size_t element_idx = 0; element_idx < inputData.elementCount(); ++element_idx)
-        {
-            if (inputData[element_idx] != result[element_idx])
-            {
-                std::ostringstream msg;
-                msg << "Comparison failed at index " << element_idx << ": source = " << int(inputData[element_idx])
-                    << ", destination = " << int(result[element_idx]);
-                return tcu::TestStatus::fail(msg.str());
-            }
-        }
-    }
-
-    return tcu::TestStatus::pass("Tensor test succeeded");
+    return compareStridedMemory(result, inputData);
 }
 
-} // namespace
+template <typename T, typename Enable = void>
+struct compatibleFormats;
 
 template <typename T>
+struct compatibleFormats<T, std::enable_if_t<sizeof(T) == 1>>
+{
+    static constexpr std::array formats{
+        VK_FORMAT_R8_UINT,
+        VK_FORMAT_R8_SINT,
+        VK_FORMAT_R8_BOOL_ARM,
+        VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM,
+        VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM,
+    };
+};
+
+template <typename T>
+struct compatibleFormats<T, std::enable_if_t<sizeof(T) == 2>>
+{
+    static constexpr std::array formats{
+        VK_FORMAT_R16_UINT,
+        VK_FORMAT_R16_SINT,
+        VK_FORMAT_R16_SFLOAT,
+        VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM,
+    };
+};
+
+template <typename T>
+struct compatibleFormats<T, std::enable_if_t<sizeof(T) == 4>>
+{
+    static constexpr std::array formats{
+        VK_FORMAT_R32_UINT,
+        VK_FORMAT_R32_SINT,
+        VK_FORMAT_R32_SFLOAT,
+    };
+};
+
+template <typename T>
+struct compatibleFormats<T, std::enable_if_t<sizeof(T) == 8>>
+{
+    static constexpr std::array formats{
+        VK_FORMAT_R64_UINT,
+        VK_FORMAT_R64_SINT,
+        VK_FORMAT_R64_SFLOAT,
+    };
+};
+
+template <VkFormat SrcFormat>
 void addTensorCopyTests(tcu::TestCaseGroup &testCaseGroup)
 {
     const TensorDimensions shapes[] = {
         {71693}, {263, 269}, {37, 43, 47}, {13, 17, 19, 23}, {7, 11, 13, 17, 19, 23},
     };
 
+    using T = typename VkFormatToHostType<SrcFormat>::HostType;
+
     for (const TensorDimensions &shape : shapes)
     {
-        for (const VkFormat srcFormat : getTestFormats<T>())
+        for (const VkFormat dstFormat : compatibleFormats<T>::formats)
         {
-            for (const VkFormat dstFormat : getTestFormats<T>())
+            // Packed to packed
             {
-                // Packed to packed
-                {
-                    const TensorParameters srcParams{srcFormat, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
-                    const TensorParameters dstParams{dstFormat, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
-                    testCaseGroup.addChild(
-                        new LinearTensorCopyTestCase<T>(testCaseGroup.getTestContext(), srcParams, dstParams));
-                }
+                const TensorParameters srcParams{SrcFormat, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
+                const TensorParameters dstParams{dstFormat, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
+                testCaseGroup.addChild(
+                    new LinearTensorCopyTestCase<T>(testCaseGroup.getTestContext(), srcParams, dstParams));
+            }
 
-                const size_t rank        = shape.size();
-                const size_t elementSize = getFormatSize(srcFormat);
+            const size_t rank        = shape.size();
+            const size_t elementSize = getFormatSize(SrcFormat);
 
-                // Non-packed strides to use for test involving those
-                TensorStrides paddedStrides(rank);
-                paddedStrides[rank - 1] = elementSize;
-                for (size_t i = 2; i <= rank; ++i)
-                {
-                    paddedStrides[rank - i] = paddedStrides[rank - i + 1] * shape[rank - i + 1] + 13 * elementSize;
-                }
+            // Non-packed strides to use for test involving those
+            TensorStrides paddedStrides(rank);
+            paddedStrides[rank - 1] = elementSize;
+            for (size_t i = 2; i <= rank; ++i)
+            {
+                paddedStrides[rank - i] = paddedStrides[rank - i + 1] * shape[rank - i + 1] + 13 * elementSize;
+            }
 
-                // Packed to non-packed
-                if (rank > 1)
-                {
-                    const TensorParameters srcParams{srcFormat, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
-                    const TensorParameters dstParams{dstFormat, VK_TENSOR_TILING_LINEAR_ARM, shape, paddedStrides};
-                    testCaseGroup.addChild(
-                        new LinearTensorCopyTestCase<T>(testCaseGroup.getTestContext(), srcParams, dstParams));
-                }
+            // Packed to non-packed
+            if (rank > 1)
+            {
+                const TensorParameters srcParams{SrcFormat, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
+                const TensorParameters dstParams{dstFormat, VK_TENSOR_TILING_LINEAR_ARM, shape, paddedStrides};
+                testCaseGroup.addChild(
+                    new LinearTensorCopyTestCase<T>(testCaseGroup.getTestContext(), srcParams, dstParams));
+            }
 
-                // Non-packed to packed
-                if (rank > 1)
-                {
-                    const TensorParameters srcParams{srcFormat, VK_TENSOR_TILING_LINEAR_ARM, shape, paddedStrides};
-                    const TensorParameters dstParams{dstFormat, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
-                    testCaseGroup.addChild(
-                        new LinearTensorCopyTestCase<T>(testCaseGroup.getTestContext(), srcParams, dstParams));
-                }
+            // Non-packed to packed
+            if (rank > 1)
+            {
+                const TensorParameters srcParams{SrcFormat, VK_TENSOR_TILING_LINEAR_ARM, shape, paddedStrides};
+                const TensorParameters dstParams{dstFormat, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
+                testCaseGroup.addChild(
+                    new LinearTensorCopyTestCase<T>(testCaseGroup.getTestContext(), srcParams, dstParams));
+            }
 
-                // Optimal, includes copies between linear packed and optimal tensors of same format
-                {
-                    const TensorParameters srcParams{srcFormat, VK_TENSOR_TILING_OPTIMAL_ARM, shape, {}};
-                    const TensorParameters dstParams{dstFormat, VK_TENSOR_TILING_OPTIMAL_ARM, shape, {}};
-                    testCaseGroup.addChild(
-                        new OptimalTensorCopyTestCase<T>(testCaseGroup.getTestContext(), srcParams, dstParams));
-                }
+            // Optimal, includes copies between linear packed and optimal tensors of same format
+            {
+                const TensorParameters srcParams{SrcFormat, VK_TENSOR_TILING_OPTIMAL_ARM, shape, {}};
+                const TensorParameters dstParams{dstFormat, VK_TENSOR_TILING_OPTIMAL_ARM, shape, {}};
+                testCaseGroup.addChild(
+                    new OptimalTensorCopyTestCase<T>(testCaseGroup.getTestContext(), srcParams, dstParams));
             }
         }
     }
+}
+
+} // namespace
+
+template <VkFormat... Formats>
+void addTensorCopyTestsForFormats(tcu::TestCaseGroup &testCaseGroup)
+{
+    (addTensorCopyTests<Formats>(testCaseGroup), ...);
 }
 
 tcu::TestCaseGroup *createTensorCopyTests(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> tensorCopyTests(new tcu::TestCaseGroup(testCtx, "copies"));
 
-    addTensorCopyTests<uint64_t>(*tensorCopyTests);
-    addTensorCopyTests<uint32_t>(*tensorCopyTests);
-    addTensorCopyTests<uint16_t>(*tensorCopyTests);
-    addTensorCopyTests<uint8_t>(*tensorCopyTests);
+    addTensorCopyTestsForFormats<TENSOR_FORMATS_REGULAR_INTS, TENSOR_FORMATS_REGULAR_FLOATS>(*tensorCopyTests);
 
     return tensorCopyTests.release();
 }

@@ -41,6 +41,11 @@ std::string genShaderTensorAccess(const size_t rank, const VkFormat tensorFormat
 {
     const std::string glslType = getTensorFormat(tensorFormat);
 
+    const bool isFloat = tensorFormat == VK_FORMAT_R32_SFLOAT || tensorFormat == VK_FORMAT_R16_SFLOAT ||
+                         tensorFormat == VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM ||
+                         tensorFormat == VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM ||
+                         tensorFormat == VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM;
+
     std::ostringstream shader;
 
     shader << R"(
@@ -48,6 +53,23 @@ std::string genShaderTensorAccess(const size_t rank, const VkFormat tensorFormat
 #extension GL_ARM_tensors : require
 #extension GL_EXT_shader_explicit_arithmetic_types : require
 )";
+
+    switch (tensorFormat)
+    {
+    case VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM:
+        shader << "#extension GL_EXT_bfloat16: require\n";
+        shader << "#extension GL_ARM_tensors_bfloat16 : require\n";
+        break;
+    case VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM:
+        shader << "#extension GL_EXT_float_e5m2 : require\n";
+        shader << "#extension GL_ARM_tensors_float_e5m2 : require\n";
+        break;
+    case VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM:
+        shader << "#extension GL_EXT_float_e4m3 : require\n";
+        shader << "#extension GL_ARM_tensors_float_e4m3 : require\n";
+        break;
+    default:;
+    }
 
     shader << "layout(local_size_x = " << shaderTensorAccessWorkgroupSize
            << ", local_size_y = 1, local_size_z = 1) in;\n";
@@ -85,19 +107,46 @@ std::string genShaderTensorAccess(const size_t rank, const VkFormat tensorFormat
 
     // Perform a read or write operation using the calculated tensor coordinates
     shader << "\tconst uint index = gl_GlobalInvocationID.x;\n";
-    if (variant == AccessVariant::WRITE_TO_BUFFER)
+
+    if (isFloat)
     {
-        shader << "\ttensorReadARM(tens, uint[](";
+        shader << "\t" << glslType << " value;\n";
+        if (variant == AccessVariant::WRITE_TO_BUFFER)
+        {
+            shader << "\ttensorReadARM(tens, uint[](";
+        }
+        else
+        {
+            shader << "\tfloat floatValue = float(data[index]);\n";
+            shader << "\tvalue = " << glslType << "(floatValue);\n";
+            shader << "\ttensorWriteARM(tens, uint[](";
+        }
+        for (size_t i = 0; i < rank; ++i)
+        {
+            shader << "coord_" << i << (i == rank - 1 ? "" : ", ");
+        }
+        shader << "), value);\n";
+        if (variant == AccessVariant::WRITE_TO_BUFFER)
+        {
+            shader << "\tdata[index] = " << glslType << "(float(value));\n";
+        }
     }
     else
     {
-        shader << "\ttensorWriteARM(tens, uint[](";
+        if (variant == AccessVariant::WRITE_TO_BUFFER)
+        {
+            shader << "\ttensorReadARM(tens, uint[](";
+        }
+        else
+        {
+            shader << "\ttensorWriteARM(tens, uint[](";
+        }
+        for (size_t i = 0; i < rank; ++i)
+        {
+            shader << "coord_" << i << (i == rank - 1 ? "" : ", ");
+        }
+        shader << "), data[index]);\n";
     }
-    for (size_t i = 0; i < rank; ++i)
-    {
-        shader << "coord_" << i << (i == rank - 1 ? "" : ", ");
-    }
-    shader << "), data[index]);\n";
 
     shader << "}\n";
 

@@ -54,6 +54,8 @@ std::string getTensorFormat(VkFormat format)
         return "int32_t";
     case VK_FORMAT_R16_SFLOAT:
         return "float16_t";
+    case VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM:
+        return "bfloat16_t";
     case VK_FORMAT_R16_UINT:
         return "uint16_t";
     case VK_FORMAT_R16_SINT:
@@ -64,6 +66,10 @@ std::string getTensorFormat(VkFormat format)
         return "int8_t";
     case VK_FORMAT_R8_BOOL_ARM:
         return "bool";
+    case VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM:
+        return "floate5m2_t";
+    case VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM:
+        return "floate4m3_t";
     default:
         DE_FATAL("Unexpected tensor format");
         return "error";

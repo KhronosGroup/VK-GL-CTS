@@ -45,16 +45,6 @@ namespace tensor
 using namespace vk;
 using namespace std::placeholders;
 
-const std::vector<VkFormat> getAllTestFormats()
-{
-    static const std::vector<VkFormat> testFormatList = {
-        VK_FORMAT_R8_UINT,  VK_FORMAT_R8_SINT,  VK_FORMAT_R16_UINT, VK_FORMAT_R16_SINT,
-        VK_FORMAT_R32_UINT, VK_FORMAT_R32_SINT, VK_FORMAT_R64_UINT, VK_FORMAT_R64_SINT,
-    };
-
-    return testFormatList;
-}
-
 VkPhysicalDeviceTensorPropertiesARM getTensorPhysicalDeviceProperties(const InstanceInterface &vki,
                                                                       const VkPhysicalDevice physicalDevice)
 {
@@ -95,10 +85,11 @@ size_t getFormatSize(VkFormat format)
     {
     case VK_FORMAT_R64_UINT:
     case VK_FORMAT_R64_SINT:
+    case VK_FORMAT_R64_SFLOAT:
         return 8;
+    case VK_FORMAT_R32_SFLOAT:
     case VK_FORMAT_R32_UINT:
     case VK_FORMAT_R32_SINT:
-    case VK_FORMAT_R32_SFLOAT:
         return 4;
     case VK_FORMAT_R16_UNORM:
     case VK_FORMAT_R16_SNORM:
@@ -107,6 +98,7 @@ size_t getFormatSize(VkFormat format)
     case VK_FORMAT_R16_UINT:
     case VK_FORMAT_R16_SINT:
     case VK_FORMAT_R16_SFLOAT:
+    case VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM:
         return 2;
     case VK_FORMAT_R8_UNORM:
     case VK_FORMAT_R8_SNORM:
@@ -116,56 +108,14 @@ size_t getFormatSize(VkFormat format)
     case VK_FORMAT_R8_SINT:
     case VK_FORMAT_R8_SRGB:
     case VK_FORMAT_R8_BOOL_ARM:
+    case VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM:
+    case VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM:
         return 1;
     default:
         // unsupported formats
         DE_ASSERT(false);
         return 0;
     }
-}
-
-template <>
-const std::vector<VkFormat> getTestFormats<uint64_t>()
-{
-    static const std::vector<VkFormat> testFormatList = {
-        VK_FORMAT_R64_UINT,
-        VK_FORMAT_R64_SINT,
-    };
-
-    return testFormatList;
-}
-
-template <>
-const std::vector<VkFormat> getTestFormats<uint32_t>()
-{
-    static const std::vector<VkFormat> testFormatList = {
-        VK_FORMAT_R32_UINT,
-        VK_FORMAT_R32_SINT,
-    };
-
-    return testFormatList;
-}
-
-template <>
-const std::vector<VkFormat> getTestFormats<uint16_t>()
-{
-    static const std::vector<VkFormat> testFormatList = {
-        VK_FORMAT_R16_UINT,
-        VK_FORMAT_R16_SINT,
-    };
-
-    return testFormatList;
-}
-
-template <>
-const std::vector<VkFormat> getTestFormats<uint8_t>()
-{
-    static const std::vector<VkFormat> testFormatList = {
-        VK_FORMAT_R8_UINT,
-        VK_FORMAT_R8_SINT,
-    };
-
-    return testFormatList;
 }
 
 namespace
@@ -213,12 +163,18 @@ const char *tensorFormatShortName(const VkFormat format)
         return "R16_SINT";
     case VK_FORMAT_R16_SFLOAT:
         return "R16_SFLOAT";
+    case VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM:
+        return "R16_SFLOAT_FPENCODING_BFLOAT16";
     case VK_FORMAT_R8_UINT:
         return "R8_UINT";
     case VK_FORMAT_R8_SINT:
         return "R8_SINT";
     case VK_FORMAT_R8_BOOL_ARM:
         return "R8_BOOL";
+    case VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM:
+        return "R8_SFLOAT_FPENCODING_FLOAT8E5M2";
+    case VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM:
+        return "R8_SFLOAT_FPENCODING_FLOAT8E4M3";
     default:
         // unsupported formats
         DE_ASSERT(false);

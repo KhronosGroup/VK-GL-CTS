@@ -120,11 +120,6 @@ bool deviceSupportsShaderStagesTensorAccess(Context &context, const VkShaderStag
 
 uint32_t selectMemoryTypeFromTypeBits(Context &context, uint32_t memoryTypeBits);
 
-template <typename T>
-const std::vector<VkFormat> getTestFormats();
-
-const std::vector<VkFormat> getAllTestFormats();
-
 const char *tensorFormatShortName(const VkFormat format);
 const char *tensorTilingShortName(const VkTensorTilingARM tiling);
 
@@ -136,6 +131,66 @@ std::string paramsToString(const TensorDimensions &dimensions);
 std::ostream &operator<<(std::ostream &os, TensorParameters params);
 std::ostream &operator<<(std::ostream &os, AccessVariant variant);
 std::ostream &operator<<(std::ostream &os, BooleanOperator op);
+
+// clang-format make these much harder to read
+// clang-format off
+
+/* Tensor VkFormat to host type mappings */
+template <VkFormat Format> struct VkFormatToHostType;
+template <> struct VkFormatToHostType<VK_FORMAT_R8_UINT> { using HostType = uint8_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R8_SINT> { using HostType = int8_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R16_UINT> { using HostType = uint16_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R16_SINT> { using HostType = int16_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R32_UINT> { using HostType = uint32_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R32_SINT> { using HostType = int32_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R64_UINT> { using HostType = uint64_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R64_SINT> { using HostType = int64_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R16_SFLOAT> { using HostType = tcu::Float16; };
+template <> struct VkFormatToHostType<VK_FORMAT_R32_SFLOAT> { using HostType = tcu::Float32; };
+template <> struct VkFormatToHostType<VK_FORMAT_R8_BOOL_ARM> { using HostType = uint8_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM> { using HostType = tcu::FloatE5M2; };
+template <> struct VkFormatToHostType<VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM> { using HostType = tcu::FloatE4M3; };
+template <> struct VkFormatToHostType<VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM> { using HostType = tcu::BrainFloat16; };
+
+/* Additional image VkFormat to host type mappings */
+template <> struct VkFormatToHostType<VK_FORMAT_R8G8_SINT> { using HostType = int8_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R8G8_UINT> { using HostType = uint8_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R8G8B8A8_SINT> { using HostType = int8_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R8G8B8A8_UINT> { using HostType = uint8_t; };
+
+template <> struct VkFormatToHostType<VK_FORMAT_R16G16_SINT> { using HostType = int16_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R16G16_UINT> { using HostType = uint16_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R16G16B16A16_SINT> { using HostType = int16_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R16G16B16A16_UINT> { using HostType = uint16_t; };
+
+template <> struct VkFormatToHostType<VK_FORMAT_R32G32_SINT> { using HostType = int32_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R32G32_UINT> { using HostType = uint32_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R32G32B32A32_SINT> { using HostType = int32_t; };
+template <> struct VkFormatToHostType<VK_FORMAT_R32G32B32A32_UINT> { using HostType = uint32_t; };
+
+#define TENSOR_FORMATS_REGULAR_INTS \
+        VK_FORMAT_R8_UINT, \
+        VK_FORMAT_R8_SINT, \
+        VK_FORMAT_R16_UINT, \
+        VK_FORMAT_R16_SINT, \
+        VK_FORMAT_R32_UINT, \
+        VK_FORMAT_R32_SINT, \
+        VK_FORMAT_R64_UINT, \
+        VK_FORMAT_R64_SINT
+
+#define TENSOR_FORMATS_REGULAR_FLOATS \
+        VK_FORMAT_R16_SFLOAT, \
+        VK_FORMAT_R32_SFLOAT
+
+#define TENSOR_FORMATS_ALL \
+        TENSOR_FORMATS_REGULAR_INTS, \
+        TENSOR_FORMATS_REGULAR_FLOATS, \
+        VK_FORMAT_R8_BOOL_ARM, \
+        VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM, \
+        VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM, \
+        VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM
+
+// clang-format on
 
 } // namespace tensor
 } // namespace vkt

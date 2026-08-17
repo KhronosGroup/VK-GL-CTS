@@ -27,10 +27,12 @@
 
 #include "vkDefs.hpp"
 #include "tcuFloat.hpp"
+#include "tcuTestCase.hpp"
 
 #include <limits>
 #include <numeric>
 #include <iostream>
+#include <sstream>
 #include <stddef.h>
 #include <stdint.h>
 #include <vector>
@@ -220,27 +222,78 @@ public:
 
     void fill()
     {
-        for (size_t element_idx = 0; element_idx < m_elementCount; ++element_idx)
+        constexpr bool isFloat = std::is_same_v<T, tcu::Float32> || std::is_same_v<T, tcu::Float16> ||
+                                 std::is_same_v<T, tcu::BrainFloat16> || std::is_same_v<T, tcu::FloatE5M2> ||
+                                 std::is_same_v<T, tcu::FloatE4M3>;
+        if constexpr (isFloat)
         {
-            m_memoryPtr[getElementOffset(element_idx)] = static_cast<T>(element_idx);
+            // Smallest whole number N where N + 0.5 is not representable due to precision
+            static constexpr uint64_t halfValuesPrecisionLimit = static_cast<uint64_t>(1) << T::MANTISSA_BITS;
+
+            // Element index where this number N is first to be stored
+            static constexpr uint64_t elementIdxHalfValueLimit = static_cast<uint64_t>(halfValuesPrecisionLimit * 2);
+
+            // Bit pattern of this number N
+            static constexpr uint64_t upperBase = (T::MANTISSA_BITS + T::EXPONENT_BIAS) << T::MANTISSA_BITS;
+
+            // Bit pattern for maximum normal value of the type
+            static constexpr uint64_t maxNormalExponentBitPattern =
+                (1 << T::EXPONENT_BITS) - (!std::is_same_v<T, tcu::FloatE4M3> ? 2 : 1);
+            static constexpr uint64_t maxNormalMantissaBitPattern =
+                (1 << T::MANTISSA_BITS) - (!std::is_same_v<T, tcu::FloatE4M3> ? 1 : 2);
+            static constexpr uint64_t maxNormalBitPattern =
+                (maxNormalExponentBitPattern << T::MANTISSA_BITS) | maxNormalMantissaBitPattern;
+
+            // Element index wrap to not go above maximum normal value of the type
+            static constexpr uint64_t wrap = elementIdxHalfValueLimit + maxNormalBitPattern - upperBase + 1;
+
+            for (uint64_t elementIdx = 0; elementIdx < m_elementCount; ++elementIdx)
+            {
+                // Wrapped index
+                const uint64_t wrapped = elementIdx % wrap;
+
+                if (wrapped < elementIdxHalfValueLimit)
+                {
+                    // Fill with sequential values increasing by 0.5 until we run out of precision
+                    m_memoryPtr[getElementOffset(elementIdx)] = T(static_cast<double>(wrapped) * 0.5);
+                }
+                else
+                {
+                    // Then to next representable number
+                    const uint64_t floatBitPattern = wrapped - elementIdxHalfValueLimit + upperBase;
+                    const int exponentUnbiased =
+                        static_cast<int>(floatBitPattern >> T::MANTISSA_BITS) - T::EXPONENT_BIAS;
+                    const typename T::StorageType mantissaBitPattern =
+                        static_cast<typename T::StorageType>(floatBitPattern & ((1 << T::MANTISSA_BITS) - 1));
+                    m_memoryPtr[getElementOffset(elementIdx)] =
+                        T::constructBits(1, exponentUnbiased, mantissaBitPattern);
+                }
+            }
+        }
+        else
+        {
+            for (size_t elementIdx = 0; elementIdx < m_elementCount; ++elementIdx)
+            {
+                m_memoryPtr[getElementOffset(elementIdx)] = static_cast<T>(elementIdx);
+            }
         }
     }
 
     void fill(T startingValue)
     {
-        for (size_t element_idx = 0; element_idx < m_elementCount; ++element_idx)
+        for (size_t elementIdx = 0; elementIdx < m_elementCount; ++elementIdx)
         {
-            m_memoryPtr[getElementOffset(element_idx)] = static_cast<T>(startingValue + static_cast<T>(element_idx));
+            m_memoryPtr[getElementOffset(elementIdx)] = static_cast<T>(startingValue + static_cast<T>(elementIdx));
         }
     }
 
 #ifndef CTS_USES_VULKANSC
     void fill(T startingValue, const std::vector<vk::DataGraphConstantSparsityHint> &sparsityInfo)
     {
-        for (size_t element_idx = 0; element_idx < m_elementCount; ++element_idx)
+        for (size_t elementIdx = 0; elementIdx < m_elementCount; ++elementIdx)
         {
             bool isZero            = false;
-            const auto coordinates = getCoordinates(element_idx);
+            const auto coordinates = getCoordinates(elementIdx);
             for (const auto sparseInfo : sparsityInfo)
             {
                 if ((coordinates.at(sparseInfo.dimension) % sparseInfo.groupSize) < sparseInfo.zeroCount)
@@ -250,8 +303,8 @@ public:
                     break;
                 }
             }
-            m_memoryPtr[getElementOffset(element_idx)] =
-                isZero ? static_cast<T>(0) : static_cast<T>(startingValue + static_cast<T>(element_idx));
+            m_memoryPtr[getElementOffset(elementIdx)] =
+                isZero ? static_cast<T>(0) : static_cast<T>(startingValue + static_cast<T>(elementIdx));
         }
     }
 #endif
@@ -318,6 +371,59 @@ private:
         return coordinates;
     }
 };
+
+template <typename T>
+tcu::TestStatus compareStridedMemory(const StridedMemoryUtils<T> &first, const StridedMemoryUtils<T> &second,
+                                     const double eps = .01)
+{
+    constexpr bool isFloat = std::is_same_v<T, tcu::Float32> || std::is_same_v<T, tcu::Float16> ||
+                             std::is_same_v<T, tcu::BrainFloat16> || std::is_same_v<T, tcu::FloatE5M2> ||
+                             std::is_same_v<T, tcu::FloatE4M3>;
+
+    const size_t elementCount = first.elementCount();
+    DE_ASSERT(elementCount == second.elementCount());
+
+    if constexpr (isFloat)
+    {
+        for (size_t i = 0; i < elementCount; ++i)
+        {
+            const double value    = first[i].asDouble();
+            const double expected = second[i].asDouble();
+
+            if ((first[i].isNaN() && !second[i].isNaN()) || (!first[i].isNaN() && second[i].isNaN()))
+            {
+                std::ostringstream msg;
+                msg << "Only one of the values are NaN at index " << i << ": first = " << value
+                    << ", second = " << expected;
+                return tcu::TestStatus::fail(msg.str());
+            }
+
+            const double error = std::abs(value - expected);
+            if (error > eps)
+            {
+                std::ostringstream msg;
+                msg << "Error between first and second buffer is too large at index " << i << ": Error: " << error
+                    << " > " << eps << ", first = " << value << ", second = " << expected;
+                return tcu::TestStatus::fail(msg.str());
+            }
+        }
+    }
+    else
+    {
+        for (size_t i = 0; i < elementCount; ++i)
+        {
+            if (first[i] != second[i])
+            {
+                std::ostringstream msg;
+                msg << "Comparison failed at index " << i << ": tensor = " << int(first[i])
+                    << ", buffer = " << int(second[i]);
+                return tcu::TestStatus::fail(msg.str());
+            }
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
 
 } // namespace vk
 

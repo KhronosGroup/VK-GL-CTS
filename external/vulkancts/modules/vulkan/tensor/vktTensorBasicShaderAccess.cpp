@@ -56,6 +56,7 @@
 #include <cstdint>
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 
 namespace vkt
 {
@@ -193,6 +194,17 @@ public:
     void checkSupport(Context &context) const override
     {
         context.requireDeviceFunctionality("VK_ARM_tensors");
+
+        if (m_parameters.format == VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM)
+        {
+            context.requireDeviceFunctionality("VK_KHR_shader_bfloat16");
+        }
+
+        if (m_parameters.format == VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM ||
+            m_parameters.format == VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM)
+        {
+            context.requireDeviceFunctionality("VK_EXT_shader_float8");
+        }
 
         requireTensorShapeSupported(context, m_parameters);
 
@@ -573,33 +585,19 @@ tcu::TestStatus LinearTensorAccessTestInstance<T>::iterate()
 
     // Validate the results
 
+    const Allocation &bufferAllocation = buffer.getAllocation();
+
+    invalidateAlloc(vk, device, bufferAllocation);
+
+    if (m_variant == AccessVariant::READ_FROM_BUFFER)
     {
-        const Allocation &bufferAllocation = buffer.getAllocation();
-
-        invalidateAlloc(vk, device, bufferAllocation);
-
-        if (m_variant == AccessVariant::READ_FROM_BUFFER)
-        {
-            downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, tensor, tensorData.data(),
-                               tensorData.memorySize(), m_forceStagingBuffers);
-        }
-
-        StridedMemoryUtils<T> bufferMemory({uint32_t(elements)}, {}, bufferAllocation.getHostPtr());
-
-        for (size_t element_idx = 0; element_idx < elements; ++element_idx)
-        {
-            if (tensorData[element_idx] != bufferMemory[element_idx])
-            {
-
-                std::ostringstream msg;
-                msg << "Comparison failed at index " << element_idx << ": tensor = " << int(tensorData[element_idx])
-                    << ", buffer = " << int(bufferMemory[element_idx]);
-                return tcu::TestStatus::fail(msg.str());
-            }
-        }
+        downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, tensor, tensorData.data(),
+                           tensorData.memorySize(), m_forceStagingBuffers);
     }
 
-    return tcu::TestStatus::pass("Tensor test succeeded");
+    StridedMemoryUtils<T> bufferMemory({uint32_t(elements)}, {}, bufferAllocation.getHostPtr());
+
+    return compareStridedMemory(tensorData, bufferMemory);
 }
 
 template <typename T>
@@ -815,33 +813,19 @@ tcu::TestStatus OptimalTensorAccessTestInstance<T>::iterate()
 
     // Validate the results
 
-    {
-        const Allocation &srcBufferAllocation = srcBuffer.getAllocation();
-        const Allocation &dstBufferAllocation = dstBuffer.getAllocation();
+    const Allocation &srcBufferAllocation = srcBuffer.getAllocation();
+    const Allocation &dstBufferAllocation = dstBuffer.getAllocation();
 
-        invalidateAlloc(vk, device, srcBufferAllocation);
-        invalidateAlloc(vk, device, dstBufferAllocation);
+    invalidateAlloc(vk, device, srcBufferAllocation);
+    invalidateAlloc(vk, device, dstBufferAllocation);
 
-        StridedMemoryUtils<T> srcBufferMemory({uint32_t(elements)}, {}, srcBufferAllocation.getHostPtr());
-        StridedMemoryUtils<T> dstBufferMemory({uint32_t(elements)}, {}, dstBufferAllocation.getHostPtr());
+    StridedMemoryUtils<T> srcBufferMemory({uint32_t(elements)}, {}, srcBufferAllocation.getHostPtr());
+    StridedMemoryUtils<T> dstBufferMemory({uint32_t(elements)}, {}, dstBufferAllocation.getHostPtr());
 
-        for (size_t element_idx = 0; element_idx < elements; ++element_idx)
-        {
-            if (srcBufferMemory[element_idx] != dstBufferMemory[element_idx])
-            {
-                std::ostringstream msg;
-                msg << "Comparison failed at index " << element_idx
-                    << ": source buffer = " << int(srcBufferMemory[element_idx])
-                    << ", destination buffer = " << int(dstBufferMemory[element_idx]);
-                return tcu::TestStatus::fail(msg.str());
-            }
-        }
-    }
-
-    return tcu::TestStatus::pass("Tensor test succeeded");
+    return compareStridedMemory(srcBufferMemory, dstBufferMemory);
 }
 
-template <typename T>
+template <VkFormat Format>
 void addShaderAccessTests(tcu::TestCaseGroup &testCaseGroup)
 {
     const TensorDimensions shapes[] = {
@@ -851,62 +835,59 @@ void addShaderAccessTests(tcu::TestCaseGroup &testCaseGroup)
     const TensorDimensions &shape_4d = shapes[3];
     const TensorDimensions &shape_6d = shapes[4];
 
-    for (const VkFormat format : getTestFormats<T>())
+    const size_t elementSize = getFormatSize(Format);
+    using T                  = typename VkFormatToHostType<Format>::HostType;
+    for (const TensorDimensions &shape : shapes)
     {
-        for (const TensorDimensions &shape : shapes)
+        const size_t rank = shape.size();
+
+        // Implicitly packed linear
         {
-            const size_t rank        = shape.size();
-            const size_t elementSize = getFormatSize(format);
+            const TensorParameters params{Format, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
+            testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params,
+                                                                     AccessVariant::READ_FROM_BUFFER));
+            testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params,
+                                                                     AccessVariant::WRITE_TO_BUFFER));
+        }
 
-            // Implicitly packed linear
+        // Explicit non-packed strides, not applicable to rank 1 tensors
+        if (rank > 1)
+        {
+            TensorStrides paddedStrides(rank);
+            paddedStrides[rank - 1] = elementSize;
+            for (size_t i = 2; i <= rank; ++i)
             {
-                const TensorParameters params{format, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
-                testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params,
-                                                                         AccessVariant::READ_FROM_BUFFER));
-                testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params,
-                                                                         AccessVariant::WRITE_TO_BUFFER));
+                paddedStrides[rank - i] = paddedStrides[rank - i + 1] * shape[rank - i + 1] + 13 * elementSize;
             }
 
-            // Explicit non-packed strides, not applicable to rank 1 tensors
-            if (rank > 1)
-            {
-                TensorStrides paddedStrides(rank);
-                paddedStrides[rank - 1] = elementSize;
-                for (size_t i = 2; i <= rank; ++i)
-                {
-                    paddedStrides[rank - i] = paddedStrides[rank - i + 1] * shape[rank - i + 1] + 13 * elementSize;
-                }
+            const TensorParameters params{Format, VK_TENSOR_TILING_LINEAR_ARM, shape, paddedStrides};
+            testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params,
+                                                                     AccessVariant::READ_FROM_BUFFER));
+            testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params,
+                                                                     AccessVariant::WRITE_TO_BUFFER));
+        }
 
-                const TensorParameters params{format, VK_TENSOR_TILING_LINEAR_ARM, shape, paddedStrides};
-                testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params,
-                                                                         AccessVariant::READ_FROM_BUFFER));
-                testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params,
-                                                                         AccessVariant::WRITE_TO_BUFFER));
-            }
+        // Explicit packed strides
+        {
+            const TensorStrides packedStrides = getTensorStrides(shape, elementSize);
+            const TensorParameters params{Format, VK_TENSOR_TILING_LINEAR_ARM, shape, packedStrides};
+            testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params,
+                                                                     AccessVariant::READ_FROM_BUFFER));
+            testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params,
+                                                                     AccessVariant::WRITE_TO_BUFFER));
+        }
 
-            // Explicit packed strides
-            {
-                const TensorStrides packedStrides = getTensorStrides(shape, elementSize);
-                const TensorParameters params{format, VK_TENSOR_TILING_LINEAR_ARM, shape, packedStrides};
-                testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params,
-                                                                         AccessVariant::READ_FROM_BUFFER));
-                testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params,
-                                                                         AccessVariant::WRITE_TO_BUFFER));
-            }
-
-            // Optimal
-            {
-                const TensorParameters params{format, VK_TENSOR_TILING_OPTIMAL_ARM, shape, {}};
-                testCaseGroup.addChild(new OptimalTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params));
-            }
+        // Optimal
+        {
+            const TensorParameters params{Format, VK_TENSOR_TILING_OPTIMAL_ARM, shape, {}};
+            testCaseGroup.addChild(new OptimalTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params));
         }
     }
 
     // Tests to force use of staging buffer even when tensor memory is host visible
     // 4D Tensor
     {
-        const TensorParameters forcedStagingBufferParameters{
-            getTestFormats<T>()[0], VK_TENSOR_TILING_LINEAR_ARM, shape_4d, {}};
+        const TensorParameters forcedStagingBufferParameters{Format, VK_TENSOR_TILING_LINEAR_ARM, shape_4d, {}};
         testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(
             testCaseGroup.getTestContext(), forcedStagingBufferParameters, AccessVariant::WRITE_TO_BUFFER, 0, true));
         testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(
@@ -914,8 +895,7 @@ void addShaderAccessTests(tcu::TestCaseGroup &testCaseGroup)
     }
     // 6D Tensor
     {
-        const TensorParameters forcedStagingBufferParameters{
-            getTestFormats<T>()[0], VK_TENSOR_TILING_LINEAR_ARM, shape_6d, {}};
+        const TensorParameters forcedStagingBufferParameters{Format, VK_TENSOR_TILING_LINEAR_ARM, shape_6d, {}};
         testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(
             testCaseGroup.getTestContext(), forcedStagingBufferParameters, AccessVariant::WRITE_TO_BUFFER, 0, true));
         testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(
@@ -925,8 +905,7 @@ void addShaderAccessTests(tcu::TestCaseGroup &testCaseGroup)
     // Tests binding tensor to offset within allocation
     // 4D Tensor
     {
-        const TensorParameters forcedStagingBufferParameters{
-            getTestFormats<T>()[0], VK_TENSOR_TILING_LINEAR_ARM, shape_4d, {}};
+        const TensorParameters forcedStagingBufferParameters{Format, VK_TENSOR_TILING_LINEAR_ARM, shape_4d, {}};
         testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(
             testCaseGroup.getTestContext(), forcedStagingBufferParameters, AccessVariant::WRITE_TO_BUFFER, 2000));
         testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(
@@ -934,8 +913,7 @@ void addShaderAccessTests(tcu::TestCaseGroup &testCaseGroup)
     }
     // 6D Tensor
     {
-        const TensorParameters forcedStagingBufferParameters{
-            getTestFormats<T>()[0], VK_TENSOR_TILING_LINEAR_ARM, shape_6d, {}};
+        const TensorParameters forcedStagingBufferParameters{Format, VK_TENSOR_TILING_LINEAR_ARM, shape_6d, {}};
         testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(
             testCaseGroup.getTestContext(), forcedStagingBufferParameters, AccessVariant::WRITE_TO_BUFFER, 2000));
         testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(
@@ -943,32 +921,36 @@ void addShaderAccessTests(tcu::TestCaseGroup &testCaseGroup)
     }
 
     // Test max dimension count supported by implementation
-    for (const VkFormat format : getTestFormats<T>())
+    // Linear packed
     {
-        // Linear packed
-        {
-            const TensorParameters params{format, VK_TENSOR_TILING_LINEAR_ARM, {}, {}};
-            testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params,
-                                                                     AccessVariant::WRITE_TO_BUFFER));
-            testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params,
-                                                                     AccessVariant::READ_FROM_BUFFER));
-        }
+        const TensorParameters params{Format, VK_TENSOR_TILING_LINEAR_ARM, {}, {}};
+        testCaseGroup.addChild(
+            new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params, AccessVariant::WRITE_TO_BUFFER));
+        testCaseGroup.addChild(
+            new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params, AccessVariant::READ_FROM_BUFFER));
+    }
 
-        // Optimal
-        {
-            const TensorParameters params{format, VK_TENSOR_TILING_OPTIMAL_ARM, {}, {}};
-            testCaseGroup.addChild(new OptimalTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params));
-        }
+    // Optimal
+    {
+        const TensorParameters params{Format, VK_TENSOR_TILING_OPTIMAL_ARM, {}, {}};
+        testCaseGroup.addChild(new OptimalTensorAccessTestCase<T>(testCaseGroup.getTestContext(), params));
     }
 }
 
-template <typename T>
-void addDmaHeapBufferAccessTestInternal(tcu::TestCaseGroup &testCaseGroup)
+template <VkFormat... Formats>
+void addShaderAccessTestsForFormats(tcu::TestCaseGroup &testCaseGroup)
+{
+    (addShaderAccessTests<Formats>(testCaseGroup), ...);
+}
+
+template <VkFormat Format>
+void addDmaHeapBufferAccessTests(tcu::TestCaseGroup &testCaseGroup)
 {
     static constexpr bool useDmaHeapAllocator = true;
 
     const TensorDimensions shapes[] = {{13, 17, 19, 23}, {7, 11, 13, 17, 19, 23}};
-    const VkFormat format           = getTestFormats<T>()[0];
+
+    using T = typename VkFormatToHostType<Format>::HostType;
 
     for (const auto &shape : shapes)
     {
@@ -976,7 +958,7 @@ void addDmaHeapBufferAccessTestInternal(tcu::TestCaseGroup &testCaseGroup)
 
         // Implicit packed
         {
-            const TensorParameters param = {format, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
+            const TensorParameters param = {Format, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
             testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), param,
                                                                      AccessVariant::READ_FROM_BUFFER, 0,
                                                                      forceStagingBuffer, useDmaHeapAllocator));
@@ -987,7 +969,7 @@ void addDmaHeapBufferAccessTestInternal(tcu::TestCaseGroup &testCaseGroup)
 
         // Optimal
         {
-            const TensorParameters param = {format, VK_TENSOR_TILING_OPTIMAL_ARM, shape, {}};
+            const TensorParameters param = {Format, VK_TENSOR_TILING_OPTIMAL_ARM, shape, {}};
             testCaseGroup.addChild(
                 new OptimalTensorAccessTestCase<T>(testCaseGroup.getTestContext(), param, 0, useDmaHeapAllocator));
             testCaseGroup.addChild(
@@ -1000,7 +982,7 @@ void addDmaHeapBufferAccessTestInternal(tcu::TestCaseGroup &testCaseGroup)
     {
         static constexpr vk::VkDeviceSize offset = 0;
         static constexpr bool forceStagingBuffer = true;
-        const TensorParameters param             = {format, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
+        const TensorParameters param             = {Format, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
         testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), param,
                                                                  AccessVariant::READ_FROM_BUFFER, offset,
                                                                  forceStagingBuffer, useDmaHeapAllocator));
@@ -1014,7 +996,7 @@ void addDmaHeapBufferAccessTestInternal(tcu::TestCaseGroup &testCaseGroup)
     {
         static constexpr vk::VkDeviceSize offset = 2000;
         static constexpr bool forceStagingBuffer = false;
-        const TensorParameters param             = {format, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
+        const TensorParameters param             = {Format, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
         testCaseGroup.addChild(new LinearTensorAccessTestCase<T>(testCaseGroup.getTestContext(), param,
                                                                  AccessVariant::READ_FROM_BUFFER, offset,
                                                                  forceStagingBuffer, useDmaHeapAllocator));
@@ -1024,12 +1006,10 @@ void addDmaHeapBufferAccessTestInternal(tcu::TestCaseGroup &testCaseGroup)
     }
 }
 
-void addDmaHeapBufferAccessTests(tcu::TestCaseGroup &testCaseGroup)
+template <VkFormat... Formats>
+void addDmaHeapBufferAccessTestsForFormats(tcu::TestCaseGroup &testCaseGroup)
 {
-    addDmaHeapBufferAccessTestInternal<uint8_t>(testCaseGroup);
-    addDmaHeapBufferAccessTestInternal<uint16_t>(testCaseGroup);
-    addDmaHeapBufferAccessTestInternal<uint32_t>(testCaseGroup);
-    addDmaHeapBufferAccessTestInternal<uint64_t>(testCaseGroup);
+    (addDmaHeapBufferAccessTests<Formats>(testCaseGroup), ...);
 }
 
 } // namespace
@@ -1039,11 +1019,19 @@ tcu::TestCaseGroup *createBasicAccessTests(tcu::TestContext &testCtx)
     de::MovePtr<tcu::TestCaseGroup> group(
         new tcu::TestCaseGroup(testCtx, "basic_access", "Basic tensor shader access tests"));
 
-    addShaderAccessTests<uint64_t>(*group);
-    addShaderAccessTests<uint32_t>(*group);
-    addShaderAccessTests<uint16_t>(*group);
-    addShaderAccessTests<uint8_t>(*group);
-    addDmaHeapBufferAccessTests(*group);
+    // clang-format make these harder to read
+    // clang-format off
+    addShaderAccessTestsForFormats<
+        TENSOR_FORMATS_REGULAR_INTS,
+        TENSOR_FORMATS_REGULAR_FLOATS,
+        VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM,
+        VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM,
+        VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM>(*group);
+
+    addDmaHeapBufferAccessTestsForFormats<
+        TENSOR_FORMATS_REGULAR_INTS,
+        TENSOR_FORMATS_REGULAR_FLOATS>(*group);
+    // clang-format on
 
     return group.release();
 }

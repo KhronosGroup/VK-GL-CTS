@@ -239,6 +239,17 @@ public:
     {
         context.requireDeviceFunctionality("VK_ARM_tensors");
 
+        if (m_format == VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM)
+        {
+            context.requireDeviceFunctionality("VK_KHR_shader_bfloat16");
+        }
+
+        if (m_format == VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM ||
+            m_format == VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM)
+        {
+            context.requireDeviceFunctionality("VK_EXT_shader_float8");
+        }
+
         requireTensorShapeSupported(context, TensorParameters{
                                                  m_format,
                                                  m_tiling,
@@ -279,7 +290,7 @@ void addDimensionQueriesTestCases(tcu::TestCaseGroup &testCaseGroup)
 
     const std::vector<TensorDimensions> testDimensions = {{1},          {2, 1},           {4, 2, 1},
                                                           {8, 4, 2, 1}, {4, 8, 16, 2, 1}, {7, 11, 13, 17, 19, 23}};
-    for (const auto &format : getAllTestFormats())
+    for (const auto &format : {TENSOR_FORMATS_ALL})
     {
         for (const auto &dimension : testDimensions)
         {

@@ -223,6 +223,17 @@ public:
     {
         ctx.requireDeviceFunctionality("VK_ARM_tensors");
 
+        if (m_format == VK_FORMAT_R16_SFLOAT_FPENCODING_BFLOAT16_ARM)
+        {
+            ctx.requireDeviceFunctionality("VK_KHR_shader_bfloat16");
+        }
+
+        if (m_format == VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E5M2_ARM ||
+            m_format == VK_FORMAT_R8_SFLOAT_FPENCODING_FLOAT8E4M3_ARM)
+        {
+            ctx.requireDeviceFunctionality("VK_EXT_shader_float8");
+        }
+
         if (!formatSupportTensorFlags(ctx, m_format, m_tiling, VK_FORMAT_FEATURE_2_TENSOR_SHADER_BIT_ARM))
         {
             TCU_THROW(NotSupportedError, "Format not supported");
@@ -238,8 +249,7 @@ private:
 
 void addCreateRequirementTests(tcu::TestCaseGroup &testCaseGroup)
 {
-    const auto &formatList = getAllTestFormats();
-    for (const auto &format : formatList)
+    for (const auto &format : {TENSOR_FORMATS_ALL})
     {
         for (const VkTensorTilingARM tiling : {VK_TENSOR_TILING_LINEAR_ARM, VK_TENSOR_TILING_OPTIMAL_ARM})
         {

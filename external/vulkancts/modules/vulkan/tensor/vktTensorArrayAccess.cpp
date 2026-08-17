@@ -452,34 +452,22 @@ tcu::TestStatus TensorArrayReadWriteTestInstance<T>::iterate()
 
         // Wait for completion
         submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-
-        {
-            const Allocation &bufferAllocation = buffer.getAllocation();
-
-            invalidateAlloc(vk, device, bufferAllocation);
-
-            if (m_variant == AccessVariant::ARRAY_WRITE)
-            {
-                downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, tensor, tensorData.data(),
-                                   tensorData.memorySize());
-            }
-
-            StridedMemoryUtils<T> bufferMemory({uint32_t(elements)}, {}, bufferAllocation.getHostPtr());
-
-            for (size_t element_idx = 0; element_idx < elements; ++element_idx)
-            {
-                if (tensorData[element_idx] != bufferMemory[element_idx])
-                {
-
-                    std::ostringstream msg;
-                    msg << "Comparison failed at index " << element_idx << ": tensor = " << int(tensorData[element_idx])
-                        << ", buffer = " << int(bufferMemory[element_idx]);
-                    return tcu::TestStatus::fail(msg.str());
-                }
-            }
-        }
     }
-    return tcu::TestStatus::pass("Tensor test succeeded");
+
+    // Validate results
+    const Allocation &bufferAllocation = buffer.getAllocation();
+
+    invalidateAlloc(vk, device, bufferAllocation);
+
+    if (m_variant == AccessVariant::ARRAY_WRITE)
+    {
+        downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, tensor, tensorData.data(),
+                           tensorData.memorySize());
+    }
+
+    StridedMemoryUtils<T> bufferMemory({uint32_t(elements)}, {}, bufferAllocation.getHostPtr());
+
+    return compareStridedMemory(tensorData, bufferMemory);
 }
 
 template <typename T>
@@ -669,100 +657,90 @@ tcu::TestStatus OptimalTensorArrayReadWriteTestInstance<T>::iterate()
 
         // Wait for completion
         submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-
-        {
-            const Allocation &bufferAllocation = buffer.getAllocation();
-
-            invalidateAlloc(vk, device, bufferAllocation);
-
-            if (m_variant == AccessVariant::ARRAY_WRITE)
-            {
-                downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, linearTensor, tensorData.data(),
-                                   tensorData.memorySize());
-            }
-
-            StridedMemoryUtils<T> bufferMemory({uint32_t(elements)}, {}, bufferAllocation.getHostPtr());
-
-            for (size_t element_idx = 0; element_idx < elements; ++element_idx)
-            {
-                if (tensorData[element_idx] != bufferMemory[element_idx])
-                {
-
-                    std::ostringstream msg;
-                    msg << "Comparison failed at index " << element_idx << ": tensor = " << int(tensorData[element_idx])
-                        << ", buffer = " << int(bufferMemory[element_idx]);
-                    return tcu::TestStatus::fail(msg.str());
-                }
-            }
-        }
     }
-    return tcu::TestStatus::pass("Tensor test succeeded");
+
+    // Validate results
+    const Allocation &bufferAllocation = buffer.getAllocation();
+
+    invalidateAlloc(vk, device, bufferAllocation);
+
+    if (m_variant == AccessVariant::ARRAY_WRITE)
+    {
+        downloadFromTensor(vk, device, allocator, queue, queueFamilyIndex, linearTensor, tensorData.data(),
+                           tensorData.memorySize());
+    }
+
+    StridedMemoryUtils<T> bufferMemory({uint32_t(elements)}, {}, bufferAllocation.getHostPtr());
+
+    return compareStridedMemory(tensorData, bufferMemory);
 }
 
-template <typename T>
+template <VkFormat Format>
 void addTensorArrayTests(tcu::TestCaseGroup &testCaseGroup)
 {
     const TensorDimensions shape{13, 17, 19, 23};
 
-    for (const VkFormat format : getTestFormats<T>())
-    {
-        for (const unsigned int arraySize : {2, 3, 4})
-        {
-            // Implicitly packed linear
-            {
-                const TensorParameters params{format, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
-                testCaseGroup.addChild(new TensorArrayReadWriteTestCase<T>(testCaseGroup.getTestContext(), params,
-                                                                           AccessVariant::ARRAY_READ, arraySize));
-                testCaseGroup.addChild(new TensorArrayReadWriteTestCase<T>(testCaseGroup.getTestContext(), params,
-                                                                           AccessVariant::ARRAY_WRITE, arraySize));
-            }
+    using T = typename VkFormatToHostType<Format>::HostType;
 
-            // Optimal
-            {
-                const TensorParameters params{format, VK_TENSOR_TILING_OPTIMAL_ARM, shape, {}};
-                testCaseGroup.addChild(new OptimalTensorArrayReadWriteTestCase<T>(
-                    testCaseGroup.getTestContext(), params, AccessVariant::ARRAY_READ, arraySize));
-                testCaseGroup.addChild(new OptimalTensorArrayReadWriteTestCase<T>(
-                    testCaseGroup.getTestContext(), params, AccessVariant::ARRAY_WRITE, arraySize));
-            }
+    for (const unsigned int arraySize : {2, 3, 4})
+    {
+        // Implicitly packed linear
+        {
+            const TensorParameters params{Format, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
+            testCaseGroup.addChild(new TensorArrayReadWriteTestCase<T>(testCaseGroup.getTestContext(), params,
+                                                                       AccessVariant::ARRAY_READ, arraySize));
+            testCaseGroup.addChild(new TensorArrayReadWriteTestCase<T>(testCaseGroup.getTestContext(), params,
+                                                                       AccessVariant::ARRAY_WRITE, arraySize));
         }
 
-        // Test max array accesses supported by implementation
+        // Optimal
         {
-            const unsigned int arraySize = 0; // Zero means test the max
+            const TensorParameters params{Format, VK_TENSOR_TILING_OPTIMAL_ARM, shape, {}};
+            testCaseGroup.addChild(new OptimalTensorArrayReadWriteTestCase<T>(testCaseGroup.getTestContext(), params,
+                                                                              AccessVariant::ARRAY_READ, arraySize));
+            testCaseGroup.addChild(new OptimalTensorArrayReadWriteTestCase<T>(testCaseGroup.getTestContext(), params,
+                                                                              AccessVariant::ARRAY_WRITE, arraySize));
+        }
+    }
 
-            // Implicitly packed linear
-            {
-                const TensorParameters params{format, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
-                testCaseGroup.addChild(new TensorArrayReadWriteTestCase<T>(testCaseGroup.getTestContext(), params,
-                                                                           AccessVariant::ARRAY_READ, arraySize));
-                testCaseGroup.addChild(new TensorArrayReadWriteTestCase<T>(testCaseGroup.getTestContext(), params,
-                                                                           AccessVariant::ARRAY_WRITE, arraySize));
-            }
+    // Test max array accesses supported by implementation
+    {
+        const unsigned int arraySize = 0; // Zero means test the max
 
-            // Optimal
-            {
-                const TensorParameters params{format, VK_TENSOR_TILING_OPTIMAL_ARM, shape, {}};
-                testCaseGroup.addChild(new OptimalTensorArrayReadWriteTestCase<T>(
-                    testCaseGroup.getTestContext(), params, AccessVariant::ARRAY_READ, arraySize));
-                testCaseGroup.addChild(new OptimalTensorArrayReadWriteTestCase<T>(
-                    testCaseGroup.getTestContext(), params, AccessVariant::ARRAY_WRITE, arraySize));
-            }
+        // Implicitly packed linear
+        {
+            const TensorParameters params{Format, VK_TENSOR_TILING_LINEAR_ARM, shape, {}};
+            testCaseGroup.addChild(new TensorArrayReadWriteTestCase<T>(testCaseGroup.getTestContext(), params,
+                                                                       AccessVariant::ARRAY_READ, arraySize));
+            testCaseGroup.addChild(new TensorArrayReadWriteTestCase<T>(testCaseGroup.getTestContext(), params,
+                                                                       AccessVariant::ARRAY_WRITE, arraySize));
+        }
+
+        // Optimal
+        {
+            const TensorParameters params{Format, VK_TENSOR_TILING_OPTIMAL_ARM, shape, {}};
+            testCaseGroup.addChild(new OptimalTensorArrayReadWriteTestCase<T>(testCaseGroup.getTestContext(), params,
+                                                                              AccessVariant::ARRAY_READ, arraySize));
+            testCaseGroup.addChild(new OptimalTensorArrayReadWriteTestCase<T>(testCaseGroup.getTestContext(), params,
+                                                                              AccessVariant::ARRAY_WRITE, arraySize));
         }
     }
 }
 
 } // namespace
 
+template <VkFormat... Formats>
+void addTensorArrayTestsForFormats(tcu::TestCaseGroup &testCaseGroup)
+{
+    (addTensorArrayTests<Formats>(testCaseGroup), ...);
+}
+
 tcu::TestCaseGroup *createArrayAccessTests(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> group(
         new tcu::TestCaseGroup(testCtx, "array_access", "Tensor shader array access tests"));
 
-    addTensorArrayTests<uint64_t>(*group);
-    addTensorArrayTests<uint32_t>(*group);
-    addTensorArrayTests<uint16_t>(*group);
-    addTensorArrayTests<uint8_t>(*group);
+    addTensorArrayTestsForFormats<TENSOR_FORMATS_REGULAR_INTS, TENSOR_FORMATS_REGULAR_FLOATS>(*group);
 
     return group.release();
 }
