@@ -72,6 +72,18 @@ VkPhysicalDeviceTensorPropertiesARM getTensorPhysicalDeviceProperties(Context &c
     return getTensorPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice());
 }
 
+VkPhysicalDeviceTensorFeaturesARM getTensorPhysicalDeviceFeatures(Context &context)
+{
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
+    VkPhysicalDeviceTensorFeaturesARM tensorFeatures = initVulkanStructure();
+    VkPhysicalDeviceFeatures2 features               = initVulkanStructure(&tensorFeatures);
+    vki.getPhysicalDeviceFeatures2(physicalDevice, &features);
+
+    return tensorFeatures;
+}
+
 uint32_t getTensorMaxDimensionCount(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice)
 {
     return getTensorPhysicalDeviceProperties(vki, physicalDevice).maxTensorDimensionCount;
@@ -338,19 +350,24 @@ uint32_t selectMemoryTypeFromTypeBits(Context &context, uint32_t memoryTypeBits)
     return memoryType;
 }
 
-bool formatSupportTensorFlags(Context &context, VkFormat format, VkTensorTilingARM tiling, VkFormatFeatureFlags2 flags)
+VkTensorFormatPropertiesARM getTensorFormatProperties(Context &context, const VkFormat format)
 {
     const auto &vki           = context.getInstanceInterface();
     const auto physicalDevice = context.getPhysicalDevice();
 
-    VkTensorFormatPropertiesARM tensorFormatProp{};
-    tensorFormatProp.sType = VK_STRUCTURE_TYPE_TENSOR_FORMAT_PROPERTIES_ARM;
+    VkTensorFormatPropertiesARM tensorFormatProp = initVulkanStructure();
 
-    VkFormatProperties2 formatProp{};
-    formatProp.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
-    formatProp.pNext = &tensorFormatProp;
+    VkFormatProperties2 formatProp = initVulkanStructure();
+    formatProp.pNext               = &tensorFormatProp;
 
     vki.getPhysicalDeviceFormatProperties2(physicalDevice, format, &formatProp);
+
+    return tensorFormatProp;
+}
+
+bool formatSupportTensorFlags(Context &context, VkFormat format, VkTensorTilingARM tiling, VkFormatFeatureFlags2 flags)
+{
+    const VkTensorFormatPropertiesARM tensorFormatProp = getTensorFormatProperties(context, format);
 
     if (tiling == VK_TENSOR_TILING_OPTIMAL_ARM)
     {
@@ -429,50 +446,17 @@ void requireTensorShapeSupported(Context &context, const TensorParameters &param
 
 bool deviceSupportsNonPackedTensors(Context &context)
 {
-    const auto &vki           = context.getInstanceInterface();
-    const auto physicalDevice = context.getPhysicalDevice();
-
-    VkPhysicalDeviceTensorFeaturesARM tensorFeaturesProp{};
-    tensorFeaturesProp.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TENSOR_FEATURES_ARM;
-
-    VkPhysicalDeviceFeatures2 featuresProp{};
-    featuresProp.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    featuresProp.pNext = &tensorFeaturesProp;
-
-    vki.getPhysicalDeviceFeatures2(physicalDevice, &featuresProp);
-
-    return tensorFeaturesProp.tensorNonPacked;
+    return getTensorPhysicalDeviceFeatures(context).tensorNonPacked;
 }
 
 bool deviceSupportsShaderTensorAccess(Context &context)
 {
-    const auto &vki           = context.getInstanceInterface();
-    const auto physicalDevice = context.getPhysicalDevice();
-
-    VkPhysicalDeviceTensorFeaturesARM tensorFeaturesProp{};
-    tensorFeaturesProp.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TENSOR_FEATURES_ARM;
-
-    VkPhysicalDeviceFeatures2 featuresProp{};
-    featuresProp.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    featuresProp.pNext = &tensorFeaturesProp;
-
-    vki.getPhysicalDeviceFeatures2(physicalDevice, &featuresProp);
-
-    return tensorFeaturesProp.shaderTensorAccess;
+    return getTensorPhysicalDeviceFeatures(context).shaderTensorAccess;
 }
 
 bool deviceSupportsShaderStagesTensorAccess(Context &context, const VkShaderStageFlags stages)
 {
-    const auto &vki           = context.getInstanceInterface();
-    const auto physicalDevice = context.getPhysicalDevice();
-
-    VkPhysicalDeviceTensorPropertiesARM tensorProps = initVulkanStructure();
-
-    VkPhysicalDeviceProperties2 props = initVulkanStructure();
-    props.pNext                       = &tensorProps;
-
-    vki.getPhysicalDeviceProperties2(physicalDevice, &props);
-
+    const VkPhysicalDeviceTensorPropertiesARM tensorProps = getTensorPhysicalDeviceProperties(context);
     return (tensorProps.shaderTensorSupportedStages & stages) == stages;
 }
 

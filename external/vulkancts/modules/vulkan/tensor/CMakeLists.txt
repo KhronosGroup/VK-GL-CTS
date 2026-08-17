@@ -16,6 +16,8 @@ set(DEQP_VK_TENSOR_SRCS
 	vktTensorGraphicsPipeline.cpp
 	vktTensorBasicShaderAccess.cpp
 	vktTensorBool.cpp
+	vktTensorRequired.cpp
+	vktTensorRequiredFormats.cpp
 	shaders/vktTensorQueryDimensionsShaders.cpp
 	shaders/vktTensorAccessShaders.cpp
 	shaders/vktTensorArrayAccessShaders.cpp

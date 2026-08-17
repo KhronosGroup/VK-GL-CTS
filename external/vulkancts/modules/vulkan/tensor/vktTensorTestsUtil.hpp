@@ -104,7 +104,9 @@ public:
 VkPhysicalDeviceTensorPropertiesARM getTensorPhysicalDeviceProperties(Context &context);
 VkPhysicalDeviceTensorPropertiesARM getTensorPhysicalDeviceProperties(const InstanceInterface &vki,
                                                                       const VkPhysicalDevice physicalDevice);
+VkPhysicalDeviceTensorFeaturesARM getTensorPhysicalDeviceFeatures(Context &context);
 uint32_t getTensorMaxDimensionCount(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice);
+VkTensorFormatPropertiesARM getTensorFormatProperties(Context &context, const VkFormat format);
 
 size_t getFormatSize(VkFormat format);
 bool formatSupportTensorFlags(Context &context, VkFormat format, VkTensorTilingARM tiling, VkFormatFeatureFlags2 flags);

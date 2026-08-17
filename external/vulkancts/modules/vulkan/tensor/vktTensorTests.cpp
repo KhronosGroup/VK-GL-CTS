@@ -45,6 +45,8 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     tensorTests->addChild(createArrayAccessTests(testCtx));
     tensorTests->addChild(createGraphicsPipelineTests(testCtx));
     tensorTests->addChild(createTensorBoolTests(testCtx));
+    tensorTests->addChild(createTensorRequired(testCtx));
+    tensorTests->addChild(createTensorRequiredFormatsTests(testCtx));
 
     return tensorTests.release();
 }
