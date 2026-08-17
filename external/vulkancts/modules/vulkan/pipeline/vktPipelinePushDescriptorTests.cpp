@@ -1004,12 +1004,20 @@ tcu::TestStatus PushDescriptorIncrementalUpdatesComputeTestInstance::iterate(voi
         *pipelineLayout,                                     // VkPipelineLayout						    pipelineLayout;
         0u                                                   // uint32_t								    set;
     };
-    const auto descriptorUpdateTemplate1 = createDescriptorUpdateTemplate(m_vkd, *m_device, &templateCreateInfo);
-    templateCreateInfo.descriptorUpdateEntryCount = 1u;
-    templateCreateInfo.pDescriptorUpdateEntries   = &updateEntries[1];
-    const auto descriptorUpdateTemplate2        = createDescriptorUpdateTemplate(m_vkd, *m_device, &templateCreateInfo);
-    templateCreateInfo.pDescriptorUpdateEntries = &updateEntries[0];
-    const auto descriptorUpdateTemplate3        = createDescriptorUpdateTemplate(m_vkd, *m_device, &templateCreateInfo);
+
+    Move<VkDescriptorUpdateTemplate> descriptorUpdateTemplate1;
+    Move<VkDescriptorUpdateTemplate> descriptorUpdateTemplate2;
+    Move<VkDescriptorUpdateTemplate> descriptorUpdateTemplate3;
+
+    if (m_withTemplate)
+    {
+        descriptorUpdateTemplate1 = createDescriptorUpdateTemplate(m_vkd, *m_device, &templateCreateInfo);
+        templateCreateInfo.descriptorUpdateEntryCount = 1u;
+        templateCreateInfo.pDescriptorUpdateEntries   = &updateEntries[1];
+        descriptorUpdateTemplate2 = createDescriptorUpdateTemplate(m_vkd, *m_device, &templateCreateInfo);
+        templateCreateInfo.pDescriptorUpdateEntries = &updateEntries[0];
+        descriptorUpdateTemplate3 = createDescriptorUpdateTemplate(m_vkd, *m_device, &templateCreateInfo);
+    }
 
     beginCommandBuffer(m_vkd, *cmdBuffer);
     m_vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
