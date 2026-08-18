@@ -264,6 +264,11 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_cooperative_matrix_maintenance1")
+	{
+		functions.push_back("vkGetPhysicalDeviceCooperativeMatrixProperties2EXT");
+		return;
+	}
 	if (extName == "VK_EXT_custom_border_color")
 	{
 		return;
@@ -2310,6 +2315,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_EXT_conservative_rasterization")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_cooperative_matrix_maintenance1")
 	{
 		return;
 	}
@@ -5128,6 +5137,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_SEC_pipeline_cache_incremental_mode",
 	"VK_EXT_shader_uniform_buffer_unsized_array",
 	"VK_NV_compute_occupancy_priority",
+	"VK_EXT_cooperative_matrix_maintenance1",
 	"VK_EXT_shader_subgroup_partitioned",
 	"VK_EXT_shader_ocp_microscaling_types",
 	"VK_VALVE_shader_mixed_float_dot_product",

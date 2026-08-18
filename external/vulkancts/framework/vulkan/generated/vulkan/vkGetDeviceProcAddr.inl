@@ -175,6 +175,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdBeginConditionalRenderingEXT",
 		"vkCmdEndConditionalRenderingEXT",
 
+		// "VK_EXT_cooperative_matrix_maintenance1
+		"vkGetPhysicalDeviceCooperativeMatrixProperties2EXT",
+
 		// "VK_EXT_custom_resolve
 		"vkCmdBeginCustomResolveEXT",
 

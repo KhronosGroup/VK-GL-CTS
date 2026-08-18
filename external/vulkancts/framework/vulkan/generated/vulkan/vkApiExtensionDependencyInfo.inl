@@ -616,6 +616,18 @@ bool check_VK_ARM_data_graph_instruction_set_tosa(const tcu::UVec2& v, const Ext
 	return isSupported(vDEP, "VK_ARM_data_graph");
 }
 
+bool check_VK_ARM_data_graph_neural_accelerator_statistics(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_ARM_data_graph_neural_accelerator_statistics"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
 bool check_VK_ARM_data_graph_optical_flow(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -892,6 +904,18 @@ bool check_VK_EXT_conservative_rasterization(const tcu::UVec2& v, const ExtPropV
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
 	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
+bool check_VK_EXT_cooperative_matrix_maintenance1(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_cooperative_matrix_maintenance1"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_cooperative_matrix
+	return isSupported(vDEP, "VK_KHR_cooperative_matrix");
 }
 
 bool check_VK_EXT_custom_border_color(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1408,6 +1432,18 @@ bool check_VK_EXT_image_sliced_view_of_3d(const tcu::UVec2& v, const ExtPropVect
 
 	// depends attribute in xml: (VK_KHR_maintenance1+VK_KHR_get_physical_device_properties2),VK_VERSION_1_1
 	return ((isSupported(vDEP, "VK_KHR_maintenance1") && isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) || isCompatible(1, 1, v));
+}
+
+bool check_VK_EXT_image_tiling_control(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_image_tiling_control"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_image_view_min_lod(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -4862,6 +4898,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_ANDROID_external_memory_android_hardware_buffer",	&check_VK_ANDROID_external_memory_android_hardware_buffer),
 	std::make_pair("VK_ARM_data_graph",										&check_VK_ARM_data_graph),
 	std::make_pair("VK_ARM_data_graph_instruction_set_tosa",				&check_VK_ARM_data_graph_instruction_set_tosa),
+	std::make_pair("VK_ARM_data_graph_neural_accelerator_statistics",		&check_VK_ARM_data_graph_neural_accelerator_statistics),
 	std::make_pair("VK_ARM_data_graph_optical_flow",						&check_VK_ARM_data_graph_optical_flow),
 	std::make_pair("VK_ARM_format_pack",									&check_VK_ARM_format_pack),
 	std::make_pair("VK_ARM_performance_counters_by_region",					&check_VK_ARM_performance_counters_by_region),
@@ -4885,6 +4922,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_color_write_enable",								&check_VK_EXT_color_write_enable),
 	std::make_pair("VK_EXT_conditional_rendering",							&check_VK_EXT_conditional_rendering),
 	std::make_pair("VK_EXT_conservative_rasterization",						&check_VK_EXT_conservative_rasterization),
+	std::make_pair("VK_EXT_cooperative_matrix_maintenance1",				&check_VK_EXT_cooperative_matrix_maintenance1),
 	std::make_pair("VK_EXT_custom_border_color",							&check_VK_EXT_custom_border_color),
 	std::make_pair("VK_EXT_custom_resolve",									&check_VK_EXT_custom_resolve),
 	std::make_pair("VK_EXT_debug_marker",									&check_VK_EXT_debug_marker),
@@ -4927,6 +4965,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_image_drm_format_modifier",						&check_VK_EXT_image_drm_format_modifier),
 	std::make_pair("VK_EXT_image_robustness",								&check_VK_EXT_image_robustness),
 	std::make_pair("VK_EXT_image_sliced_view_of_3d",						&check_VK_EXT_image_sliced_view_of_3d),
+	std::make_pair("VK_EXT_image_tiling_control",							&check_VK_EXT_image_tiling_control),
 	std::make_pair("VK_EXT_image_view_min_lod",								&check_VK_EXT_image_view_min_lod),
 	std::make_pair("VK_EXT_index_type_uint8",								&check_VK_EXT_index_type_uint8),
 	std::make_pair("VK_EXT_inline_uniform_block",							&check_VK_EXT_inline_uniform_block),
@@ -5272,6 +5311,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_color_write_enable"),
 	std::make_tuple(1, 0, "VK_EXT_conditional_rendering"),
 	std::make_tuple(1, 0, "VK_EXT_conservative_rasterization"),
+	std::make_tuple(1, 0, "VK_EXT_cooperative_matrix_maintenance1"),
 	std::make_tuple(1, 0, "VK_EXT_custom_border_color"),
 	std::make_tuple(1, 0, "VK_EXT_custom_resolve"),
 	std::make_tuple(1, 0, "VK_EXT_debug_marker"),
