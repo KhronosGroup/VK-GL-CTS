@@ -5608,9 +5608,9 @@ const std::string TestConfigurationUsingWrapperFunction::getShaderBodyText(const
     DE_UNREF(testParams);
     DE_ASSERT(testParams.isSPIRV);
 
-    // glslang is compiling rayQueryEXT function parameters to OpTypePointer Function to OpTypeRayQueryKHR
-    // To test bare rayQueryEXT object passed as function parameter we need to use SPIR-V assembly.
-    // In it, rayQueryWrapper has been modified to take a bare rayQueryEXT as the third argument, instead of a pointer.
+    // glslang compiles rayQueryEXT function parameters to OpTypePointer Function to OpTypeRayQueryKHR.
+    // Use SPIR-V assembly to exercise passing the same ray query through multiple pointer parameters and using each
+    // parameter directly, without loading or storing the opaque ray query object.
     // The SPIR-V assembly shader below is based on the following GLSL code:
 
     // int rayQueryWrapper(rayQueryEXT rq1, int value, rayQueryEXT rq2)
@@ -5640,8 +5640,8 @@ const std::string TestConfigurationUsingWrapperFunction::getShaderBodyText(const
 
     // The statement to confirm intersections is different depending on the geometry type.
     const std::string confirmationOp =
-        ((testParams.geomType == GEOM_TYPE_AABBS) ? "OpRayQueryGenerateIntersectionKHR %local_var_ray_query_ptr %59\n" :
-                                                    "OpRayQueryConfirmIntersectionKHR %local_var_ray_query_ptr\n");
+        ((testParams.geomType == GEOM_TYPE_AABBS) ? "OpRayQueryGenerateIntersectionKHR %13 %59\n" :
+                                                    "OpRayQueryConfirmIntersectionKHR %13\n");
 
     return std::string() +
            "OpCapability Shader\n"
@@ -5661,13 +5661,12 @@ const std::string TestConfigurationUsingWrapperFunction::getShaderBodyText(const
            // types and constants
            "%2 = OpTypeVoid\n"
            "%3 = OpTypeFunction %2\n"
-           "%bare_query_type = OpTypeRayQueryKHR\n"
-           "%pointer_to_query_type = OpTypePointer Function %bare_query_type\n"
+           "%ray_query_type = OpTypeRayQueryKHR\n"
+           "%pointer_to_query_type = OpTypePointer Function %ray_query_type\n"
            "%8 = OpTypeInt 32 1\n"
            "%9 = OpTypePointer Function %8\n"
 
-           // this function was modified to take also bare rayQueryEXT type
-           "%ray_query_wrapper_fun = OpTypeFunction %8 %pointer_to_query_type %9 %bare_query_type\n"
+           "%ray_query_wrapper_fun = OpTypeFunction %8 %pointer_to_query_type %9 %pointer_to_query_type\n"
 
            "%23 = OpTypeBool\n"
            "%25 = OpConstant %8 1\n"
@@ -5755,22 +5754,20 @@ const std::string TestConfigurationUsingWrapperFunction::getShaderBodyText(const
            "%94 = OpLoad %91 %93\n"
            "%95 = OpLoad %29 %31\n"
            "OpStore %97 %96\n"
-           "%var_ray_query_bare = OpLoad %bare_query_type %var_ray_query_ptr\n"
-           "%98 = OpFunctionCall %8 %14 %var_ray_query_ptr %97 %var_ray_query_bare\n"
+           "%98 = OpFunctionCall %8 %14 %var_ray_query_ptr %97 %var_ray_query_ptr\n"
            "%100 = OpCompositeConstruct %99 %98 %96 %96 %96\n"
            "OpImageWrite %94 %95 %100 SignExtend\n"
            "OpReturn\n"
            "OpFunctionEnd\n"
 
            // int rayQueryWrapper(rayQueryEXT rq1, int value, rayQueryEXT rq2)
-           // where in SPIRV rq1 is pointer and rq2 is bare type
+           // Both ray query parameters are pointers to the same object.
            "%14 = OpFunction %8 None %ray_query_wrapper_fun\n"
            "%11 = OpFunctionParameter %pointer_to_query_type\n"
            "%12 = OpFunctionParameter %9\n"
-           "%13 = OpFunctionParameter %bare_query_type\n"
+           "%13 = OpFunctionParameter %pointer_to_query_type\n"
            "%15 = OpLabel\n"
            "%16 = OpVariable %9 Function\n"
-           "%local_var_ray_query_ptr = OpVariable %pointer_to_query_type Function\n"
            "%17 = OpLoad %8 %12\n"
            "OpStore %16 %17\n"
            "OpBranch %18\n"
@@ -5781,8 +5778,7 @@ const std::string TestConfigurationUsingWrapperFunction::getShaderBodyText(const
            "%24 = OpRayQueryProceedKHR %23 %11\n"
            "OpBranchConditional %24 %19 %20\n"
            "%19 = OpLabel\n"
-           "OpStore %16 %25\n"
-           "OpStore %local_var_ray_query_ptr %13\n" +
+           "OpStore %16 %25\n" +
            confirmationOp +
            "OpBranch %21\n"
            "%21 = OpLabel\n"
