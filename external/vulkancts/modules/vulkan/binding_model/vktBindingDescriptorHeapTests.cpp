@@ -186,6 +186,7 @@ struct TestParamsGraphics : TestParams
     bool useFragmentShader         = false;
     bool useSecondaryCommandBuffer = false;
     bool useVectors                = false;
+    bool useSpirv                  = false;
 };
 
 enum class SpirvTestType
@@ -11048,11 +11049,708 @@ public:
     void initPrograms(vk::SourceCollections &programCollection) const override;
 
 private:
+    void initProgramsSpirv(vk::SourceCollections &programCollection) const;
+
     TestParamsGraphics m_params;
 };
 
+void DescriptorHeapTestCaseGraphics::initProgramsSpirv(vk::SourceCollections &programCollection) const
+{
+    const char *const vertex = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %4 "main" %22 %13 %42
+               OpSource GLSL 450
+               OpSourceExtension "GL_EXT_descriptor_heap"
+               OpName %4 "main"
+               OpName %11 "gl_PerVertex"
+               OpMemberName %11 0 "gl_Position"
+               OpMemberName %11 1 "gl_PointSize"
+               OpMemberName %11 2 "gl_ClipDistance"
+               OpMemberName %11 3 "gl_CullDistance"
+               OpName %13 ""
+               OpName %22 "resource_heap"
+               OpName %26 "O"
+               OpMemberName %26 0 "outputData"
+               OpName %31 "U"
+               OpMemberName %31 0 "inputData"
+               OpName %40 "X"
+               OpMemberName %40 0 "pushData"
+               OpName %42 ""
+               OpName %54 "OV"
+               OpMemberName %54 0 "outputData"
+               OpName %58 "UM"
+               OpMemberName %58 0 "inputData"
+               OpDecorate %11 Block
+               OpMemberDecorate %11 0 BuiltIn Position
+               OpMemberDecorate %11 1 BuiltIn PointSize
+               OpMemberDecorate %11 2 BuiltIn ClipDistance
+               OpMemberDecorate %11 3 BuiltIn CullDistance
+               OpDecorate %22 BuiltIn ResourceHeapEXT
+               OpDecorateId %25 ArrayStrideIdEXT %24
+               OpDecorate %26 Block
+               OpMemberDecorate %26 0 Offset 0
+               OpDecorateId %29 ArrayStrideIdEXT %28
+               OpDecorate %31 Block
+               OpMemberDecorate %31 0 Offset 0
+               OpDecorate %39 ArrayStride 4
+               OpDecorate %40 Block
+               OpMemberDecorate %40 0 Offset 0
+               OpDecorateId %52 ArrayStrideIdEXT %24
+               OpDecorate %54 Block
+               OpMemberDecorate %54 0 Offset 0
+               OpDecorateId %55 ArrayStrideIdEXT %28
+               OpDecorate %58 Block
+               OpMemberDecorate %58 0 ColMajor
+               OpMemberDecorate %58 0 MatrixStride 16
+               OpMemberDecorate %58 0 Offset 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 4
+          %8 = OpTypeInt 32 0
+          %9 = OpConstant %8 1
+         %10 = OpTypeArray %6 %9
+         %11 = OpTypeStruct %7 %6 %10 %10
+         %12 = OpTypePointer Output %11
+         %13 = OpVariable %12 Output
+         %14 = OpTypeInt 32 1
+         %15 = OpConstant %14 0
+         %16 = OpConstant %6 0
+         %17 = OpConstant %6 1
+         %18 = OpConstantComposite %7 %16 %16 %16 %17
+         %19 = OpTypePointer Output %7
+         %21 = OpTypeUntypedPointerKHR UniformConstant
+         %22 = OpUntypedVariableKHR %21 UniformConstant
+         %23 = OpTypeBufferEXT StorageBuffer
+         %24 = OpConstantSizeOfEXT %8 %23
+         %25 = OpTypeRuntimeArray %23
+         %26 = OpTypeStruct %8
+         %27 = OpTypeBufferEXT Uniform
+         %28 = OpConstantSizeOfEXT %8 %27
+         %29 = OpTypeRuntimeArray %27
+         %30 = OpConstant %14 1
+         %31 = OpTypeStruct %8
+         %33 = OpTypeUntypedPointerKHR Uniform
+         %38 = OpConstant %8 5
+         %39 = OpTypeArray %8 %38
+         %40 = OpTypeStruct %39
+         %41 = OpTypeUntypedPointerKHR PushConstant
+         %42 = OpUntypedVariableKHR %41 PushConstant %40
+         %48 = OpTypeUntypedPointerKHR StorageBuffer
+         %52 = OpTypeRuntimeArray %23
+         %53 = OpConstant %14 11
+         %54 = OpTypeStruct %7
+         %55 = OpTypeRuntimeArray %27
+         %56 = OpConstant %14 10
+         %57 = OpTypeMatrix %7 4
+         %58 = OpTypeStruct %57
+         %65 = OpConstant %6 2
+         %66 = OpConstant %6 3
+         %67 = OpConstant %6 4
+         %68 = OpConstantComposite %7 %17 %65 %66 %67
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %20 = OpAccessChain %19 %13 %15
+               OpStore %20 %18
+         %32 = OpUntypedAccessChainKHR %21 %29 %22 %30
+         %34 = OpBufferPointerEXT %33 %32
+         %36 = OpUntypedAccessChainKHR %33 %31 %34 %15
+         %37 = OpLoad %8 %36
+         %44 = OpUntypedAccessChainKHR %41 %40 %42 %15 %15
+         %45 = OpLoad %8 %44
+         %46 = OpBitwiseXor %8 %37 %45
+         %47 = OpUntypedAccessChainKHR %21 %25 %22 %15
+         %49 = OpBufferPointerEXT %48 %47
+         %51 = OpUntypedAccessChainKHR %48 %31 %49 %15
+               OpStore %51 %46
+         %59 = OpUntypedAccessChainKHR %21 %55 %22 %56
+         %61 = OpBufferPointerEXT %33 %59
+         %63 = OpUntypedAccessChainKHR %33 %58 %61 %15
+         %64 = OpLoad %57 %63
+         %69 = OpMatrixTimesVector %7 %64 %68
+         %70 = OpUntypedAccessChainKHR %21 %52 %22 %53
+         %72 = OpBufferPointerEXT %48 %70
+         %74 = OpUntypedAccessChainKHR %48 %54 %72 %15
+               OpStore %74 %69
+               OpReturn
+               OpFunctionEnd
+)";
+
+    const char *const tcs = R"(
+               OpCapability Tessellation
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint TessellationControl %4 "main" %49 %14 %17 %24 %33 %40 %68
+               OpExecutionMode %4 OutputVertices 1
+               OpSource GLSL 450
+               OpSourceExtension "GL_EXT_descriptor_heap"
+               OpName %4 "main"
+               OpName %11 "gl_PerVertex"
+               OpMemberName %11 0 "gl_Position"
+               OpMemberName %11 1 "gl_PointSize"
+               OpMemberName %11 2 "gl_ClipDistance"
+               OpMemberName %11 3 "gl_CullDistance"
+               OpName %14 "gl_out"
+               OpName %17 "gl_InvocationID"
+               OpName %20 "gl_PerVertex"
+               OpMemberName %20 0 "gl_Position"
+               OpMemberName %20 1 "gl_PointSize"
+               OpMemberName %20 2 "gl_ClipDistance"
+               OpMemberName %20 3 "gl_CullDistance"
+               OpName %24 "gl_in"
+               OpName %33 "gl_TessLevelInner"
+               OpName %40 "gl_TessLevelOuter"
+               OpName %49 "resource_heap"
+               OpName %53 "O"
+               OpMemberName %53 0 "outputData"
+               OpName %57 "U"
+               OpMemberName %57 0 "inputData"
+               OpName %66 "X"
+               OpMemberName %66 0 "pushData"
+               OpName %68 ""
+               OpName %80 "OV"
+               OpMemberName %80 0 "outputData"
+               OpName %84 "UM"
+               OpMemberName %84 0 "inputData"
+               OpDecorate %11 Block
+               OpMemberDecorate %11 0 BuiltIn Position
+               OpMemberDecorate %11 1 BuiltIn PointSize
+               OpMemberDecorate %11 2 BuiltIn ClipDistance
+               OpMemberDecorate %11 3 BuiltIn CullDistance
+               OpDecorate %17 BuiltIn InvocationId
+               OpDecorate %20 Block
+               OpMemberDecorate %20 0 BuiltIn Position
+               OpMemberDecorate %20 1 BuiltIn PointSize
+               OpMemberDecorate %20 2 BuiltIn ClipDistance
+               OpMemberDecorate %20 3 BuiltIn CullDistance
+               OpDecorate %33 BuiltIn TessLevelInner
+               OpDecorate %33 Patch
+               OpDecorate %40 BuiltIn TessLevelOuter
+               OpDecorate %40 Patch
+               OpDecorate %49 BuiltIn ResourceHeapEXT
+               OpDecorateId %52 ArrayStrideIdEXT %51
+               OpDecorate %53 Block
+               OpMemberDecorate %53 0 Offset 0
+               OpDecorateId %56 ArrayStrideIdEXT %55
+               OpDecorate %57 Block
+               OpMemberDecorate %57 0 Offset 0
+               OpDecorate %65 ArrayStride 4
+               OpDecorate %66 Block
+               OpMemberDecorate %66 0 Offset 0
+               OpDecorateId %78 ArrayStrideIdEXT %51
+               OpDecorate %80 Block
+               OpMemberDecorate %80 0 Offset 0
+               OpDecorateId %81 ArrayStrideIdEXT %55
+               OpDecorate %84 Block
+               OpMemberDecorate %84 0 ColMajor
+               OpMemberDecorate %84 0 MatrixStride 16
+               OpMemberDecorate %84 0 Offset 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 4
+          %8 = OpTypeInt 32 0
+          %9 = OpConstant %8 1
+         %10 = OpTypeArray %6 %9
+         %11 = OpTypeStruct %7 %6 %10 %10
+         %12 = OpTypeArray %11 %9
+         %13 = OpTypePointer Output %12
+         %14 = OpVariable %13 Output
+         %15 = OpTypeInt 32 1
+         %16 = OpTypePointer Input %15
+         %17 = OpVariable %16 Input
+         %19 = OpConstant %15 0
+         %20 = OpTypeStruct %7 %6 %10 %10
+         %21 = OpConstant %8 32
+         %22 = OpTypeArray %20 %21
+         %23 = OpTypePointer Input %22
+         %24 = OpVariable %23 Input
+         %25 = OpTypePointer Input %7
+         %28 = OpTypePointer Output %7
+         %30 = OpConstant %8 2
+         %31 = OpTypeArray %6 %30
+         %32 = OpTypePointer Output %31
+         %33 = OpVariable %32 Output
+         %34 = OpConstant %6 1
+         %35 = OpTypePointer Output %6
+         %37 = OpConstant %8 4
+         %38 = OpTypeArray %6 %37
+         %39 = OpTypePointer Output %38
+         %40 = OpVariable %39 Output
+         %42 = OpConstant %15 1
+         %44 = OpConstant %15 2
+         %46 = OpConstant %15 3
+         %48 = OpTypeUntypedPointerKHR UniformConstant
+         %49 = OpUntypedVariableKHR %48 UniformConstant
+         %50 = OpTypeBufferEXT StorageBuffer
+         %51 = OpConstantSizeOfEXT %8 %50
+         %52 = OpTypeRuntimeArray %50
+         %53 = OpTypeStruct %8
+         %54 = OpTypeBufferEXT Uniform
+         %55 = OpConstantSizeOfEXT %8 %54
+         %56 = OpTypeRuntimeArray %54
+         %57 = OpTypeStruct %8
+         %59 = OpTypeUntypedPointerKHR Uniform
+         %64 = OpConstant %8 5
+         %65 = OpTypeArray %8 %64
+         %66 = OpTypeStruct %65
+         %67 = OpTypeUntypedPointerKHR PushConstant
+         %68 = OpUntypedVariableKHR %67 PushConstant %66
+         %74 = OpTypeUntypedPointerKHR StorageBuffer
+         %78 = OpTypeRuntimeArray %50
+         %79 = OpConstant %15 12
+         %80 = OpTypeStruct %7
+         %81 = OpTypeRuntimeArray %54
+         %82 = OpConstant %15 10
+         %83 = OpTypeMatrix %7 4
+         %84 = OpTypeStruct %83
+         %91 = OpConstant %6 2
+         %92 = OpConstant %6 3
+         %93 = OpConstant %6 4
+         %94 = OpConstantComposite %7 %34 %91 %92 %93
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %18 = OpLoad %15 %17
+         %26 = OpAccessChain %25 %24 %19 %19
+         %27 = OpLoad %7 %26
+         %29 = OpAccessChain %28 %14 %18 %19
+               OpStore %29 %27
+         %36 = OpAccessChain %35 %33 %19
+               OpStore %36 %34
+         %41 = OpAccessChain %35 %40 %19
+               OpStore %41 %34
+         %43 = OpAccessChain %35 %40 %42
+               OpStore %43 %34
+         %45 = OpAccessChain %35 %40 %44
+               OpStore %45 %34
+         %47 = OpAccessChain %35 %40 %46
+               OpStore %47 %34
+         %58 = OpUntypedAccessChainKHR %48 %56 %49 %46
+         %60 = OpBufferPointerEXT %59 %58
+         %62 = OpUntypedAccessChainKHR %59 %57 %60 %19
+         %63 = OpLoad %8 %62
+         %70 = OpUntypedAccessChainKHR %67 %66 %68 %19 %42
+         %71 = OpLoad %8 %70
+         %72 = OpBitwiseXor %8 %63 %71
+         %73 = OpUntypedAccessChainKHR %48 %52 %49 %44
+         %75 = OpBufferPointerEXT %74 %73
+         %77 = OpUntypedAccessChainKHR %74 %57 %75 %19
+               OpStore %77 %72
+         %85 = OpUntypedAccessChainKHR %48 %81 %49 %82
+         %87 = OpBufferPointerEXT %59 %85
+         %89 = OpUntypedAccessChainKHR %59 %84 %87 %19
+         %90 = OpLoad %83 %89
+         %95 = OpMatrixTimesVector %7 %90 %94
+         %96 = OpUntypedAccessChainKHR %48 %78 %49 %79
+         %98 = OpBufferPointerEXT %74 %96
+        %100 = OpUntypedAccessChainKHR %74 %80 %98 %19
+               OpStore %100 %95
+               OpReturn
+               OpFunctionEnd
+)";
+
+    const char *const tes = R"(
+               OpCapability Tessellation
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint TessellationEvaluation %4 "main" %30 %13 %18 %51
+               OpExecutionMode %4 Triangles
+               OpExecutionMode %4 SpacingEqual
+               OpExecutionMode %4 VertexOrderCw
+               OpSource GLSL 450
+               OpSourceExtension "GL_EXT_descriptor_heap"
+               OpName %4 "main"
+               OpName %11 "gl_PerVertex"
+               OpMemberName %11 0 "gl_Position"
+               OpMemberName %11 1 "gl_PointSize"
+               OpMemberName %11 2 "gl_ClipDistance"
+               OpMemberName %11 3 "gl_CullDistance"
+               OpName %13 ""
+               OpName %18 "gl_TessCoord"
+               OpName %30 "resource_heap"
+               OpName %35 "O"
+               OpMemberName %35 0 "outputData"
+               OpName %40 "U"
+               OpMemberName %40 0 "inputData"
+               OpName %49 "X"
+               OpMemberName %49 0 "pushData"
+               OpName %51 ""
+               OpName %64 "OV"
+               OpMemberName %64 0 "outputData"
+               OpName %68 "UM"
+               OpMemberName %68 0 "inputData"
+               OpDecorate %11 Block
+               OpMemberDecorate %11 0 BuiltIn Position
+               OpMemberDecorate %11 1 BuiltIn PointSize
+               OpMemberDecorate %11 2 BuiltIn ClipDistance
+               OpMemberDecorate %11 3 BuiltIn CullDistance
+               OpDecorate %18 BuiltIn TessCoord
+               OpDecorate %30 BuiltIn ResourceHeapEXT
+               OpDecorateId %33 ArrayStrideIdEXT %32
+               OpDecorate %35 Block
+               OpMemberDecorate %35 0 Offset 0
+               OpDecorateId %38 ArrayStrideIdEXT %37
+               OpDecorate %40 Block
+               OpMemberDecorate %40 0 Offset 0
+               OpDecorate %48 ArrayStride 4
+               OpDecorate %49 Block
+               OpMemberDecorate %49 0 Offset 0
+               OpDecorateId %62 ArrayStrideIdEXT %32
+               OpDecorate %64 Block
+               OpMemberDecorate %64 0 Offset 0
+               OpDecorateId %65 ArrayStrideIdEXT %37
+               OpDecorate %68 Block
+               OpMemberDecorate %68 0 ColMajor
+               OpMemberDecorate %68 0 MatrixStride 16
+               OpMemberDecorate %68 0 Offset 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 4
+          %8 = OpTypeInt 32 0
+          %9 = OpConstant %8 1
+         %10 = OpTypeArray %6 %9
+         %11 = OpTypeStruct %7 %6 %10 %10
+         %12 = OpTypePointer Output %11
+         %13 = OpVariable %12 Output
+         %14 = OpTypeInt 32 1
+         %15 = OpConstant %14 0
+         %16 = OpTypeVector %6 3
+         %17 = OpTypePointer Input %16
+         %18 = OpVariable %17 Input
+         %19 = OpTypeVector %6 2
+         %22 = OpConstant %6 0
+         %23 = OpConstant %6 1
+         %27 = OpTypePointer Output %7
+         %29 = OpTypeUntypedPointerKHR UniformConstant
+         %30 = OpUntypedVariableKHR %29 UniformConstant
+         %31 = OpTypeBufferEXT StorageBuffer
+         %32 = OpConstantSizeOfEXT %8 %31
+         %33 = OpTypeRuntimeArray %31
+         %34 = OpConstant %14 4
+         %35 = OpTypeStruct %8
+         %36 = OpTypeBufferEXT Uniform
+         %37 = OpConstantSizeOfEXT %8 %36
+         %38 = OpTypeRuntimeArray %36
+         %39 = OpConstant %14 5
+         %40 = OpTypeStruct %8
+         %42 = OpTypeUntypedPointerKHR Uniform
+         %47 = OpConstant %8 5
+         %48 = OpTypeArray %8 %47
+         %49 = OpTypeStruct %48
+         %50 = OpTypeUntypedPointerKHR PushConstant
+         %51 = OpUntypedVariableKHR %50 PushConstant %49
+         %52 = OpConstant %14 2
+         %58 = OpTypeUntypedPointerKHR StorageBuffer
+         %62 = OpTypeRuntimeArray %31
+         %63 = OpConstant %14 13
+         %64 = OpTypeStruct %7
+         %65 = OpTypeRuntimeArray %36
+         %66 = OpConstant %14 10
+         %67 = OpTypeMatrix %7 4
+         %68 = OpTypeStruct %67
+         %75 = OpConstant %6 2
+         %76 = OpConstant %6 3
+         %77 = OpConstant %6 4
+         %78 = OpConstantComposite %7 %23 %75 %76 %77
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %20 = OpLoad %16 %18
+         %21 = OpVectorShuffle %19 %20 %20 0 1
+         %24 = OpCompositeExtract %6 %21 0
+         %25 = OpCompositeExtract %6 %21 1
+         %26 = OpCompositeConstruct %7 %24 %25 %22 %23
+         %28 = OpAccessChain %27 %13 %15
+               OpStore %28 %26
+         %41 = OpUntypedAccessChainKHR %29 %38 %30 %39
+         %43 = OpBufferPointerEXT %42 %41
+         %45 = OpUntypedAccessChainKHR %42 %40 %43 %15
+         %46 = OpLoad %8 %45
+         %54 = OpUntypedAccessChainKHR %50 %49 %51 %15 %52
+         %55 = OpLoad %8 %54
+         %56 = OpBitwiseXor %8 %46 %55
+         %57 = OpUntypedAccessChainKHR %29 %33 %30 %34
+         %59 = OpBufferPointerEXT %58 %57
+         %61 = OpUntypedAccessChainKHR %58 %40 %59 %15
+               OpStore %61 %56
+         %69 = OpUntypedAccessChainKHR %29 %65 %30 %66
+         %71 = OpBufferPointerEXT %42 %69
+         %73 = OpUntypedAccessChainKHR %42 %68 %71 %15
+         %74 = OpLoad %67 %73
+         %79 = OpMatrixTimesVector %7 %74 %78
+         %80 = OpUntypedAccessChainKHR %29 %62 %30 %63
+         %82 = OpBufferPointerEXT %58 %80
+         %84 = OpUntypedAccessChainKHR %58 %64 %82 %15
+               OpStore %84 %79
+               OpReturn
+               OpFunctionEnd
+)";
+
+    const char *const geometry = R"(
+               OpCapability Geometry
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Geometry %4 "main" %27 %13 %20 %48
+               OpExecutionMode %4 Triangles
+               OpExecutionMode %4 Invocations 1
+               OpExecutionMode %4 OutputPoints
+               OpExecutionMode %4 OutputVertices 1
+               OpSource GLSL 450
+               OpSourceExtension "GL_EXT_descriptor_heap"
+               OpName %4 "main"
+               OpName %11 "gl_PerVertex"
+               OpMemberName %11 0 "gl_Position"
+               OpMemberName %11 1 "gl_PointSize"
+               OpMemberName %11 2 "gl_ClipDistance"
+               OpMemberName %11 3 "gl_CullDistance"
+               OpName %13 ""
+               OpName %16 "gl_PerVertex"
+               OpMemberName %16 0 "gl_Position"
+               OpMemberName %16 1 "gl_PointSize"
+               OpMemberName %16 2 "gl_ClipDistance"
+               OpMemberName %16 3 "gl_CullDistance"
+               OpName %20 "gl_in"
+               OpName %27 "resource_heap"
+               OpName %32 "O"
+               OpMemberName %32 0 "outputData"
+               OpName %37 "U"
+               OpMemberName %37 0 "inputData"
+               OpName %46 "X"
+               OpMemberName %46 0 "pushData"
+               OpName %48 ""
+               OpName %61 "OV"
+               OpMemberName %61 0 "outputData"
+               OpName %65 "UM"
+               OpMemberName %65 0 "inputData"
+               OpDecorate %11 Block
+               OpMemberDecorate %11 0 BuiltIn Position
+               OpMemberDecorate %11 1 BuiltIn PointSize
+               OpMemberDecorate %11 2 BuiltIn ClipDistance
+               OpMemberDecorate %11 3 BuiltIn CullDistance
+               OpDecorate %16 Block
+               OpMemberDecorate %16 0 BuiltIn Position
+               OpMemberDecorate %16 1 BuiltIn PointSize
+               OpMemberDecorate %16 2 BuiltIn ClipDistance
+               OpMemberDecorate %16 3 BuiltIn CullDistance
+               OpDecorate %27 BuiltIn ResourceHeapEXT
+               OpDecorateId %30 ArrayStrideIdEXT %29
+               OpDecorate %32 Block
+               OpMemberDecorate %32 0 Offset 0
+               OpDecorateId %35 ArrayStrideIdEXT %34
+               OpDecorate %37 Block
+               OpMemberDecorate %37 0 Offset 0
+               OpDecorate %45 ArrayStride 4
+               OpDecorate %46 Block
+               OpMemberDecorate %46 0 Offset 0
+               OpDecorateId %59 ArrayStrideIdEXT %29
+               OpDecorate %61 Block
+               OpMemberDecorate %61 0 Offset 0
+               OpDecorateId %62 ArrayStrideIdEXT %34
+               OpDecorate %65 Block
+               OpMemberDecorate %65 0 ColMajor
+               OpMemberDecorate %65 0 MatrixStride 16
+               OpMemberDecorate %65 0 Offset 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 4
+          %8 = OpTypeInt 32 0
+          %9 = OpConstant %8 1
+         %10 = OpTypeArray %6 %9
+         %11 = OpTypeStruct %7 %6 %10 %10
+         %12 = OpTypePointer Output %11
+         %13 = OpVariable %12 Output
+         %14 = OpTypeInt 32 1
+         %15 = OpConstant %14 0
+         %16 = OpTypeStruct %7 %6 %10 %10
+         %17 = OpConstant %8 3
+         %18 = OpTypeArray %16 %17
+         %19 = OpTypePointer Input %18
+         %20 = OpVariable %19 Input
+         %21 = OpTypePointer Input %7
+         %24 = OpTypePointer Output %7
+         %26 = OpTypeUntypedPointerKHR UniformConstant
+         %27 = OpUntypedVariableKHR %26 UniformConstant
+         %28 = OpTypeBufferEXT StorageBuffer
+         %29 = OpConstantSizeOfEXT %8 %28
+         %30 = OpTypeRuntimeArray %28
+         %31 = OpConstant %14 6
+         %32 = OpTypeStruct %8
+         %33 = OpTypeBufferEXT Uniform
+         %34 = OpConstantSizeOfEXT %8 %33
+         %35 = OpTypeRuntimeArray %33
+         %36 = OpConstant %14 7
+         %37 = OpTypeStruct %8
+         %39 = OpTypeUntypedPointerKHR Uniform
+         %44 = OpConstant %8 5
+         %45 = OpTypeArray %8 %44
+         %46 = OpTypeStruct %45
+         %47 = OpTypeUntypedPointerKHR PushConstant
+         %48 = OpUntypedVariableKHR %47 PushConstant %46
+         %49 = OpConstant %14 3
+         %55 = OpTypeUntypedPointerKHR StorageBuffer
+         %59 = OpTypeRuntimeArray %28
+         %60 = OpConstant %14 14
+         %61 = OpTypeStruct %7
+         %62 = OpTypeRuntimeArray %33
+         %63 = OpConstant %14 10
+         %64 = OpTypeMatrix %7 4
+         %65 = OpTypeStruct %64
+         %72 = OpConstant %6 1
+         %73 = OpConstant %6 2
+         %74 = OpConstant %6 3
+         %75 = OpConstant %6 4
+         %76 = OpConstantComposite %7 %72 %73 %74 %75
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %22 = OpAccessChain %21 %20 %15 %15
+         %23 = OpLoad %7 %22
+         %25 = OpAccessChain %24 %13 %15
+               OpStore %25 %23
+               OpEmitVertex
+               OpEndPrimitive
+         %38 = OpUntypedAccessChainKHR %26 %35 %27 %36
+         %40 = OpBufferPointerEXT %39 %38
+         %42 = OpUntypedAccessChainKHR %39 %37 %40 %15
+         %43 = OpLoad %8 %42
+         %51 = OpUntypedAccessChainKHR %47 %46 %48 %15 %49
+         %52 = OpLoad %8 %51
+         %53 = OpBitwiseXor %8 %43 %52
+         %54 = OpUntypedAccessChainKHR %26 %30 %27 %31
+         %56 = OpBufferPointerEXT %55 %54
+         %58 = OpUntypedAccessChainKHR %55 %37 %56 %15
+               OpStore %58 %53
+         %66 = OpUntypedAccessChainKHR %26 %62 %27 %63
+         %68 = OpBufferPointerEXT %39 %66
+         %70 = OpUntypedAccessChainKHR %39 %65 %68 %15
+         %71 = OpLoad %64 %70
+         %77 = OpMatrixTimesVector %7 %71 %76
+         %78 = OpUntypedAccessChainKHR %26 %59 %27 %60
+         %80 = OpBufferPointerEXT %55 %78
+         %82 = OpUntypedAccessChainKHR %55 %61 %80 %15
+               OpStore %82 %77
+               OpReturn
+               OpFunctionEnd
+)";
+
+    const char *const fragment = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %7 %31
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource GLSL 450
+               OpSourceExtension "GL_EXT_descriptor_heap"
+               OpName %4 "main"
+               OpName %7 "resource_heap"
+               OpName %14 "O"
+               OpMemberName %14 0 "outputData"
+               OpName %20 "U"
+               OpMemberName %20 0 "inputData"
+               OpName %29 "X"
+               OpMemberName %29 0 "pushData"
+               OpName %31 ""
+               OpDecorate %7 BuiltIn ResourceHeapEXT
+               OpDecorateId %11 ArrayStrideIdEXT %10
+               OpDecorate %14 Block
+               OpMemberDecorate %14 0 Offset 0
+               OpDecorateId %18 ArrayStrideIdEXT %17
+               OpDecorate %20 Block
+               OpMemberDecorate %20 0 Offset 0
+               OpDecorate %28 ArrayStride 4
+               OpDecorate %29 Block
+               OpMemberDecorate %29 0 Offset 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeUntypedPointerKHR UniformConstant
+          %7 = OpUntypedVariableKHR %6 UniformConstant
+          %8 = OpTypeBufferEXT StorageBuffer
+          %9 = OpTypeInt 32 0
+         %10 = OpConstantSizeOfEXT %9 %8
+         %11 = OpTypeRuntimeArray %8
+         %12 = OpTypeInt 32 1
+         %13 = OpConstant %12 8
+         %14 = OpTypeStruct %9
+         %15 = OpConstant %12 0
+         %16 = OpTypeBufferEXT Uniform
+         %17 = OpConstantSizeOfEXT %9 %16
+         %18 = OpTypeRuntimeArray %16
+         %19 = OpConstant %12 9
+         %20 = OpTypeStruct %9
+         %22 = OpTypeUntypedPointerKHR Uniform
+         %27 = OpConstant %9 5
+         %28 = OpTypeArray %9 %27
+         %29 = OpTypeStruct %28
+         %30 = OpTypeUntypedPointerKHR PushConstant
+         %31 = OpUntypedVariableKHR %30 PushConstant %29
+         %32 = OpConstant %12 4
+         %38 = OpTypeUntypedPointerKHR StorageBuffer
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %21 = OpUntypedAccessChainKHR %6 %18 %7 %19
+         %23 = OpBufferPointerEXT %22 %21
+         %25 = OpUntypedAccessChainKHR %22 %20 %23 %15
+         %26 = OpLoad %9 %25
+         %34 = OpUntypedAccessChainKHR %30 %29 %31 %15 %32
+         %35 = OpLoad %9 %34
+         %36 = OpBitwiseXor %9 %26 %35
+         %37 = OpUntypedAccessChainKHR %6 %11 %7 %13
+         %39 = OpBufferPointerEXT %38 %37
+         %41 = OpUntypedAccessChainKHR %38 %20 %39 %15
+               OpStore %41 %36
+               OpReturn
+               OpFunctionEnd
+)";
+
+    const vk::SpirVAsmBuildOptions options(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_6);
+
+    programCollection.spirvAsmSources.add("vertex") << vertex << options;
+
+    if (m_params.enableTessellationShader)
+    {
+        programCollection.spirvAsmSources.add("tcs") << tcs << options;
+        programCollection.spirvAsmSources.add("tes") << tes << options;
+    }
+    if (m_params.enableGeometryShader)
+    {
+        programCollection.spirvAsmSources.add("geometry") << geometry << options;
+    }
+    if (m_params.useFragmentShader)
+    {
+        programCollection.spirvAsmSources.add("fragment") << fragment << options;
+    }
+}
+
 void DescriptorHeapTestCaseGraphics::initPrograms(vk::SourceCollections &programCollection) const
 {
+    if (m_params.useSpirv)
+    {
+        initProgramsSpirv(programCollection);
+        return;
+    }
+
     std::string vecDecl = "\n";
     if (m_params.useVectors)
         vecDecl = R"(layout(descriptor_heap) uniform UM { mat4 inputData; }  uboMat[];
@@ -12330,6 +13028,11 @@ tcu::TestStatus DescriptorHeapTestInstanceNonUniformMappings::iterate()
     return tcu::TestStatus::pass("Pass");
 }
 
+struct TestParamsMSAAImageRead : TestParams
+{
+    bool useSpirv = false;
+};
+
 class DescriptorHeapTestInstanceMSAAImageRead final : public DescriptorHeapTestInstanceBase
 {
 public:
@@ -12349,7 +13052,7 @@ class DescriptorHeapTestCaseMSAAImageRead final : public DescriptorHeapTestCaseB
 {
 public:
     explicit DescriptorHeapTestCaseMSAAImageRead(tcu::TestContext &testCtx, const std::string &name,
-                                                 const TestParams &params)
+                                                 const TestParamsMSAAImageRead &params)
         : DescriptorHeapTestCaseBase(testCtx, name, params)
         , m_params{params}
     {
@@ -12363,7 +13066,7 @@ public:
     void initPrograms(vk::SourceCollections &programCollection) const override;
 
 private:
-    TestParams m_params;
+    TestParamsMSAAImageRead m_params;
 };
 
 void DescriptorHeapTestCaseMSAAImageRead::initPrograms(vk::SourceCollections &programCollection) const
@@ -12394,8 +13097,102 @@ void main()
 }
 )";
 
-    // Compute shader for reading MSAA samples
-    std::string computeShader = R"(#version 450
+    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_6, 0u, true);
+
+    programCollection.glslSources.add("write_vert") << glu::VertexSource(writeVertexShader) << buildOptions;
+    programCollection.glslSources.add("write_frag") << glu::FragmentSource(writeFragmentShader) << buildOptions;
+
+    if (m_params.useSpirv)
+    {
+        const char *const computeSpirv = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %4 "main" %19 %17
+               OpExecutionMode %4 LocalSize 1 1 1
+               OpSource GLSL 450
+               OpSourceExtension "GL_EXT_descriptor_heap"
+               OpSourceExtension "GL_EXT_samplerless_texture_functions"
+               OpName %4 "main"
+               OpName %9 "coord"
+               OpName %15 "OutputBuffer"
+               OpMemberName %15 0 "samples"
+               OpName %17 ""
+               OpName %19 "resource_heap"
+               OpDecorate %14 ArrayStride 16
+               OpDecorate %15 Block
+               OpMemberDecorate %15 0 Offset 0
+               OpDecorate %17 Binding 0
+               OpDecorate %17 DescriptorSet 0
+               OpDecorate %19 BuiltIn ResourceHeapEXT
+               OpDecorateId %22 ArrayStrideIdEXT %21
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeVector %6 2
+          %8 = OpTypePointer Function %7
+         %10 = OpConstant %6 0
+         %11 = OpConstantComposite %7 %10 %10
+         %12 = OpTypeInt 32 0
+         %13 = OpTypeVector %12 4
+         %14 = OpTypeRuntimeArray %13
+         %15 = OpTypeStruct %14
+         %16 = OpTypeUntypedPointerKHR StorageBuffer
+         %17 = OpUntypedVariableKHR %16 StorageBuffer %15
+         %18 = OpTypeUntypedPointerKHR UniformConstant
+         %19 = OpUntypedVariableKHR %18 UniformConstant
+         %20 = OpTypeImage %12 2D 0 0 1 1 Unknown
+         %21 = OpConstantSizeOfEXT %12 %20
+         %22 = OpTypeRuntimeArray %20
+         %29 = OpConstant %6 1
+         %35 = OpConstant %6 2
+         %41 = OpConstant %6 3
+         %47 = OpTypeVector %12 3
+         %48 = OpConstant %12 1
+         %49 = OpConstantComposite %47 %48 %48 %48
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %9 = OpVariable %8 Function
+               OpStore %9 %11
+         %23 = OpUntypedAccessChainKHR %18 %22 %19 %10
+         %24 = OpLoad %20 %23
+         %25 = OpLoad %7 %9
+         %26 = OpImageFetch %13 %24 %25 Sample|ZeroExtend %10
+         %28 = OpUntypedAccessChainKHR %16 %15 %17 %10 %10
+               OpStore %28 %26
+         %30 = OpUntypedAccessChainKHR %18 %22 %19 %10
+         %31 = OpLoad %20 %30
+         %32 = OpLoad %7 %9
+         %33 = OpImageFetch %13 %31 %32 Sample|ZeroExtend %29
+         %34 = OpUntypedAccessChainKHR %16 %15 %17 %10 %29
+               OpStore %34 %33
+         %36 = OpUntypedAccessChainKHR %18 %22 %19 %10
+         %37 = OpLoad %20 %36
+         %38 = OpLoad %7 %9
+         %39 = OpImageFetch %13 %37 %38 Sample|ZeroExtend %35
+         %40 = OpUntypedAccessChainKHR %16 %15 %17 %10 %35
+               OpStore %40 %39
+         %42 = OpUntypedAccessChainKHR %18 %22 %19 %10
+         %43 = OpLoad %20 %42
+         %44 = OpLoad %7 %9
+         %45 = OpImageFetch %13 %43 %44 Sample|ZeroExtend %41
+         %46 = OpUntypedAccessChainKHR %16 %15 %17 %10 %41
+               OpStore %46 %45
+               OpReturn
+               OpFunctionEnd
+)";
+
+        const vk::SpirVAsmBuildOptions asmBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_6);
+        programCollection.spirvAsmSources.add("compute") << computeSpirv << asmBuildOptions;
+    }
+    else
+    {
+        // Compute shader for reading MSAA samples
+        std::string computeShader = R"(#version 450
 #extension GL_EXT_samplerless_texture_functions : require
 #extension GL_EXT_descriptor_heap : require
 layout(local_size_x = 1) in;
@@ -12413,11 +13210,8 @@ void main()
 }
 )";
 
-    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_6, 0u, true);
-
-    programCollection.glslSources.add("write_vert") << glu::VertexSource(writeVertexShader) << buildOptions;
-    programCollection.glslSources.add("write_frag") << glu::FragmentSource(writeFragmentShader) << buildOptions;
-    programCollection.glslSources.add("compute") << glu::ComputeSource(computeShader) << buildOptions;
+        programCollection.glslSources.add("compute") << glu::ComputeSource(computeShader) << buildOptions;
+    }
 }
 
 tcu::TestStatus DescriptorHeapTestInstanceMSAAImageRead::iterate()
@@ -18584,6 +19378,22 @@ void populateGraphicsTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
         }
     }
 
+    {
+        const std::string testName = "vertex_tessellation_geometry_fragment_vectors_spirv";
+
+        TestParamsGraphics params{};
+        params.queue                                = VK_QUEUE_GRAPHICS_BIT;
+        params.enableVertexPipelineStoresAndAtomics = true;
+        params.enableTessellationShader             = true;
+        params.enableGeometryShader                 = true;
+        params.enableFragmentStoresAndAtomics       = true;
+        params.useFragmentShader                    = true;
+        params.useVectors                           = true;
+        params.useSpirv                             = true;
+        params.seed                                 = baseSeed ^ deStringHash(testName.c_str());
+        graphicsGroup->addChild(new DescriptorHeapTestCaseGraphics(testCtx, testName, params));
+    }
+
     topGroup->addChild(graphicsGroup.release());
 }
 
@@ -18628,12 +19438,19 @@ void populateMSAAImageReadTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
     tcu::TestContext &testCtx = topGroup->getTestContext();
     MovePtr<tcu::TestCaseGroup> msaaGroup(new tcu::TestCaseGroup(testCtx, "msaa_image_read"));
 
-    TestParams params{};
-    params.queue                   = VK_QUEUE_GRAPHICS_BIT;
-    params.enableSampleRateShading = true;
-    params.seed                    = baseSeed ^ deStringHash("msaa_image_read");
+    for (const bool spirv : {false, true})
+    {
+        const std::string testName = spirv ? "msaa_image_read_spirv" : "msaa_image_read";
 
-    msaaGroup->addChild(new DescriptorHeapTestCaseMSAAImageRead(testCtx, "msaa_image_read", params));
+        TestParamsMSAAImageRead params{};
+        params.queue                   = VK_QUEUE_GRAPHICS_BIT;
+        params.enableSampleRateShading = true;
+        params.useSpirv                = spirv;
+        params.seed                    = baseSeed ^ deStringHash(testName.c_str());
+
+        msaaGroup->addChild(new DescriptorHeapTestCaseMSAAImageRead(testCtx, testName, params));
+    }
+
     topGroup->addChild(msaaGroup.release());
 }
 
