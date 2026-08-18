@@ -18957,16 +18957,35 @@ public:
     tcu::TestStatus iterate() override;
 
 private:
+    bool offsetArray() const
+    {
+        return m_params.offsetSource && (m_params.mappingSource != VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT);
+    }
+
     uint32_t getSourceSize() const
     {
-        return (m_params.mappingSource == VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_DATA_EXT) ?
-                   static_cast<uint32_t>(m_descriptorHeapProperties.maxPushDataSize) :
-                   static_cast<uint32_t>(kShaderRecordSize);
+        if (m_params.mappingSource == VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_DATA_EXT)
+        {
+            return static_cast<uint32_t>(m_descriptorHeapProperties.maxPushDataSize);
+        }
+        else if (m_params.mappingSource == VK_DESCRIPTOR_MAPPING_SOURCE_SHADER_RECORD_DATA_EXT)
+        {
+            return static_cast<uint32_t>(kShaderRecordSize);
+        }
+
+        const uint32_t arrayBytes = de::max((m_params.index + 1u) * uint32_t(sizeof(uint32_t)), 64u);
+
+        return offsetArray() ? arrayBytes * 2u : arrayBytes;
     }
 
     uint32_t getSourceOffset() const
     {
-        return (m_params.offsetSource) ? getSourceSize() / 2u : 0u;
+        return offsetArray() ? getSourceSize() / 2u : 0u;
+    }
+
+    uint32_t getPushOffset() const
+    {
+        return (m_params.offsetSource) ? 16u : 0u;
     }
 
     TestParamsUniformBufferUnsizedArray m_params{};
@@ -18981,15 +19000,20 @@ tcu::TestStatus DescriptorHeapTestInstanceUniformBufferUnsizedArray::iterate()
 
     const uint32_t sourceSize   = getSourceSize();
     const uint32_t sourceOffset = getSourceOffset();
+    const uint32_t pushOffset   = getPushOffset();
     const uint32_t arraySize    = static_cast<uint32_t>((sourceSize - sourceOffset) / sizeof(uint32_t));
 
     const bool fullRange       = (m_params.access == UnsizedArrayAccess::FULL_RANGE);
     const uint32_t accessIndex = m_params.index;
     DE_ASSERT(fullRange || accessIndex < arraySize);
 
-    const VkDeviceSize userHeapSize = alignUp(getBufferDescriptorStride(m_descriptorHeapProperties),
+    const bool heapData         = (m_params.mappingSource == VK_DESCRIPTOR_MAPPING_SOURCE_RESOURCE_HEAP_DATA_EXT);
+    const uint32_t heapDataSize = heapData ? sourceSize : 0u;
+
+    const VkDeviceSize userHeapSize = alignUp(getBufferDescriptorStride(m_descriptorHeapProperties) + heapDataSize,
                                               m_descriptorHeapProperties.resourceHeapAlignment);
     const VkDeviceSize heapSize     = userHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
+    const uint32_t heapDataOffset   = static_cast<uint32_t>(userHeapSize) - heapDataSize;
 
     auto resourceHeap = createBufferAndMemory(heapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
                                                             VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
@@ -19021,6 +19045,22 @@ tcu::TestStatus DescriptorHeapTestInstanceUniformBufferUnsizedArray::iterate()
     std::vector<uint32_t> sourceData(arraySize);
     std::generate(sourceData.begin(), sourceData.end(), [&rnd] { return rnd.getUint32(); });
 
+    if (heapData)
+    {
+        deMemcpy(static_cast<uint8_t *>(resourceHeap->memory->getHostPtr()) + heapDataOffset + sourceOffset,
+                 sourceData.data(), sourceData.size() * sizeof(uint32_t));
+        flushAlloc(vkd, *m_device, *resourceHeap->memory);
+    }
+
+    std::unique_ptr<Buffer> uniformBuffer;
+    if (m_params.mappingSource == VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT)
+    {
+        uniformBuffer = createBufferAndMemory(sourceSize, VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT |
+                                                              VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+        deMemcpy(uniformBuffer->memory->getHostPtr(), sourceData.data(), sourceData.size() * sizeof(uint32_t));
+        flushAlloc(vkd, *m_device, *uniformBuffer->memory);
+    }
+
     VkDescriptorSetAndBindingMappingEXT mappings[2];
     mappings[0]               = initVulkanStructure();
     mappings[0].descriptorSet = 0u;
@@ -19029,9 +19069,22 @@ tcu::TestStatus DescriptorHeapTestInstanceUniformBufferUnsizedArray::iterate()
     mappings[0].resourceMask  = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
     mappings[0].source        = m_params.mappingSource;
     if (m_params.mappingSource == VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_DATA_EXT)
+    {
         mappings[0].sourceData.pushDataOffset = sourceOffset;
-    else
+    }
+    else if (m_params.mappingSource == VK_DESCRIPTOR_MAPPING_SOURCE_SHADER_RECORD_DATA_EXT)
+    {
         mappings[0].sourceData.shaderRecordDataOffset = sourceOffset;
+    }
+    else if (m_params.mappingSource == VK_DESCRIPTOR_MAPPING_SOURCE_RESOURCE_HEAP_DATA_EXT)
+    {
+        mappings[0].sourceData.heapData.heapOffset = heapDataOffset;
+        mappings[0].sourceData.heapData.pushOffset = pushOffset;
+    }
+    else
+    {
+        mappings[0].sourceData.pushAddressOffset = pushOffset;
+    }
     mappings[1]                                           = initVulkanStructure();
     mappings[1].descriptorSet                             = 0u;
     mappings[1].firstBinding                              = 1u;
@@ -19121,10 +19174,27 @@ tcu::TestStatus DescriptorHeapTestInstanceUniformBufferUnsizedArray::iterate()
     bindHeapInfo.reservedRangeOffset = userHeapSize;
     bindHeapInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
 
+    const VkDeviceAddress uniformAddress = uniformBuffer ? uniformBuffer->address : 0u;
+
     VkPushDataInfoEXT pushDataInfo = initVulkanStructure();
-    pushDataInfo.offset            = sourceOffset;
-    pushDataInfo.data.address      = sourceData.data();
-    pushDataInfo.data.size         = sourceData.size() * sizeof(uint32_t);
+    if (m_params.mappingSource == VK_DESCRIPTOR_MAPPING_SOURCE_RESOURCE_HEAP_DATA_EXT)
+    {
+        pushDataInfo.offset       = pushOffset;
+        pushDataInfo.data.address = &sourceOffset;
+        pushDataInfo.data.size    = sizeof(uint32_t);
+    }
+    else if (m_params.mappingSource == VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT)
+    {
+        pushDataInfo.offset       = pushOffset;
+        pushDataInfo.data.address = &uniformAddress;
+        pushDataInfo.data.size    = sizeof(uniformAddress);
+    }
+    else
+    {
+        pushDataInfo.offset       = sourceOffset;
+        pushDataInfo.data.address = sourceData.data();
+        pushDataInfo.data.size    = sourceData.size() * sizeof(uint32_t);
+    }
 
     VkMemoryBarrier2 memoryBarrier = initVulkanStructure();
     memoryBarrier.srcStageMask =
@@ -24163,6 +24233,8 @@ void populateUniformBufferUnsizedArrayTests(tcu::TestCaseGroup *topGroup, uint32
     VkDescriptorMappingSourceEXT const mappingSources[] = {
         VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_DATA_EXT,
         VK_DESCRIPTOR_MAPPING_SOURCE_SHADER_RECORD_DATA_EXT,
+        VK_DESCRIPTOR_MAPPING_SOURCE_RESOURCE_HEAP_DATA_EXT,
+        VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT,
     };
 
     const struct
@@ -24171,7 +24243,7 @@ void populateUniformBufferUnsizedArrayTests(tcu::TestCaseGroup *topGroup, uint32
         uint32_t index;
         const char *name;
     } accessCases[] = {
-        {UnsizedArrayAccess::FULL_RANGE, 0u, "full_range"},
+        {UnsizedArrayAccess::FULL_RANGE, 63u, "full_range"},
         {UnsizedArrayAccess::STATIC_INDEX, 31u, "static_index"},
         {UnsizedArrayAccess::DYNAMIC_INDEX, 31u, "dynamic_index"},
         {UnsizedArrayAccess::SPEC_CONSTANT_INDEX, 1u, "spec_constant_index"},
@@ -24194,15 +24266,15 @@ void populateUniformBufferUnsizedArrayTests(tcu::TestCaseGroup *topGroup, uint32
                 params.enableShaderUniformBufferUnsizedArray = true;
                 params.enableScalarBlockLayout               = true;
                 params.enableRuntimeDescriptorArray          = true;
-                if (mappingSource == VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_DATA_EXT)
-                {
-                    params.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-                }
-                else
+                if (mappingSource == VK_DESCRIPTOR_MAPPING_SOURCE_SHADER_RECORD_DATA_EXT)
                 {
                     params.stage                        = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
                     params.enableRayTracing             = true;
                     params.enableAccelerationStructures = true;
+                }
+                else
+                {
+                    params.stage = VK_SHADER_STAGE_COMPUTE_BIT;
                 }
                 params.mappingSource = mappingSource;
                 params.offsetSource  = offsetSource;
