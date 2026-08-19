@@ -67,6 +67,8 @@ set(DEQP_VK_VKSC_DRAW_SRCS
 	vktDrawNonLineTests.hpp
 	vktDrawIndirectInstancedTests.cpp
 	vktDrawIndirectInstancedTests.hpp
+	vktDrawLargeViewportTests.cpp
+	vktDrawLargeViewportTests.hpp
 )
 
 set(DEQP_VK_DRAW_SRCS

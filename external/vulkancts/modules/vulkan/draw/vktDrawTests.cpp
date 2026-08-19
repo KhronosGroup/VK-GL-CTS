@@ -58,6 +58,7 @@
 #include "vktDrawPointClampTests.hpp"
 #include "vktDrawNonLineTests.hpp"
 #include "vktDrawIndirectInstancedTests.hpp"
+#include "vktDrawLargeViewportTests.hpp"
 
 namespace vkt
 {
@@ -98,6 +99,7 @@ void createChildren(tcu::TestContext &testCtx, tcu::TestCaseGroup *group, const 
         group->addChild(createSampleAttributeTests(testCtx, groupParams));
         group->addChild(createVertexAttributeDivisorTests(testCtx, groupParams));
         group->addChild(createIndirectInstancedTests(testCtx, groupParams));
+        group->addChild(createLargeViewportTests(testCtx, groupParams));
         // NOTE: all new draw tests should handle SharedGroupParams
 
 #ifndef CTS_USES_VULKANSC
