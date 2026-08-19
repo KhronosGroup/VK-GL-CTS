@@ -5980,6 +5980,15 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
 
         {
             cts_amber::AmberTestCase *testCase = cts_amber::createAmberTestCase(
+                testCtx, "private_memory_in_loop", "Accessing private memory array in a loop", "compute",
+                "private_memory_in_loop.amber");
+            testCase->addRequirement("Storage16BitFeatures.storageBuffer16BitAccess");
+            testCase->addRequirement("Float16Int8Features.shaderFloat16");
+            basicComputeTests->addChild(testCase);
+        }
+
+        {
+            cts_amber::AmberTestCase *testCase = cts_amber::createAmberTestCase(
                 testCtx, "pk_immediate", "Immediate/inline arguments to packed 16-bit operations", "compute",
                 "pk-immediate.amber");
             testCase->addRequirement("Storage16BitFeatures.storageBuffer16BitAccess");
