@@ -121,11 +121,6 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 
 		// vulkanextensionrequirements_roadmap2022_promoted_vulkan14
 		ROADMAP_FEATURE_ITEM(vkGlobalPriorityQueryFeaturesKHR, globalPriorityQuery),
-
-
-		// vulkan10optionals_roadmap2022
-		ROADMAP_FEATURE_ITEM(vkFeatures, largePoints),
-		ROADMAP_FEATURE_ITEM(vkFeatures, wideLines),
 	};
 	for (const auto &testedFeature : featureTable)
 	{
@@ -212,11 +207,6 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 		{ PN(checkAlways), PN(vkVulkan12Properties.maxDescriptorSetUpdateAfterBindSampledImages), LIM_MIN_UINT32(500000) },
 		{ PN(checkAlways), PN(vkVulkan12Properties.maxDescriptorSetUpdateAfterBindStorageImages), LIM_MIN_UINT32(500000) },
 		{ PN(checkAlways), PN(vkVulkan12Properties.maxDescriptorSetUpdateAfterBindInputAttachments), LIM_MIN_UINT32(7) },
-
-
-		// vulkan10optionals_roadmap2022
-		{ PN(checkAlways), PN(vkProperties.limits.pointSizeGranularity), LIM_MAX_FLOAT(0.125) },
-		{ PN(checkAlways), PN(vkProperties.limits.lineWidthGranularity), LIM_MAX_FLOAT(0.5) },
 	};
 	for (const auto& testedProperty : propertyTable)
 	    oneOrMoreChecksFailed |= !validateLimit(testedProperty, log);
@@ -793,10 +783,6 @@ tcu::TestStatus validate_roadmap_2026(Context& context)
 
 
 		ROADMAP_FEATURE_ITEM(vkCooperativeMatrixFeaturesKHR, cooperativeMatrix),
-
-
-		// vulkan14dependent
-		ROADMAP_FEATURE_ITEM(vkVulkan14Features, pipelineProtectedAccess),
 	};
 	for (const auto &testedFeature : featureTable)
 	{

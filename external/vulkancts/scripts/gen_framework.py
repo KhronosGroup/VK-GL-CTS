@@ -3433,7 +3433,7 @@ class ProfileTestsGenerator(CTSGenerator):
                 highestMajor = 1
                 highestMinor = 0
 
-                allCapabilities = profileData["capabilities"] + profileData.get("optionals", [])
+                allCapabilities = profileData["capabilities"]
                 for capability in allCapabilities:
                     capabilityList = capability if isinstance(capability, list) else [capability]
                     parsedCapabilities = []
