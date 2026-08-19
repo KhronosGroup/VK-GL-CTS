@@ -96,7 +96,8 @@ vk::VkShaderStageFlags getShaderObjectNextStages(vk::VkShaderStageFlagBits shade
 Move<VkShaderEXT> createShaderFromBinary(const DeviceInterface &vk, VkDevice device,
                                          vk::VkShaderStageFlagBits shaderStage, size_t codeSize, const void *pCode,
                                          bool tessellationShaderFeature, bool geometryShaderFeature,
-                                         vk::VkDescriptorSetLayout descriptorSetLayout)
+                                         vk::VkDescriptorSetLayout descriptorSetLayout,
+                                         const vk::VkPushConstantRange *pushConstantRange)
 {
     vk::VkShaderCreateInfoEXT pCreateInfo = {
         vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
@@ -111,9 +112,9 @@ Move<VkShaderEXT> createShaderFromBinary(const DeviceInterface &vk, VkDevice dev
         "main",                                                                   // const char* pName;
         (descriptorSetLayout != VK_NULL_HANDLE) ? 1u : 0u,                        // uint32_t setLayoutCount;
         (descriptorSetLayout != VK_NULL_HANDLE) ? &descriptorSetLayout : nullptr, // VkDescriptorSetLayout* pSetLayouts;
-        0u,                                                                       // uint32_t pushConstantRangeCount;
-        nullptr, // const VkPushConstantRange* pPushConstantRanges;
-        nullptr, // const VkSpecializationInfo* pSpecializationInfo;
+        (pushConstantRange != nullptr) ? 1u : 0u,                                 // uint32_t pushConstantRangeCount;
+        pushConstantRange, // const VkPushConstantRange* pPushConstantRanges;
+        nullptr,           // const VkSpecializationInfo* pSpecializationInfo;
     };
 
     return createShader(vk, device, pCreateInfo);

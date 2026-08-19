@@ -49,6 +49,8 @@ enum QueryType
     SAME_SHADER,
     NEW_SHADER,
     SHADER_FROM_BINARY,
+    SHADER_FROM_BINARY_NULL_LAYOUT,
+    SHADER_FROM_BINARY_DIFFERENT_LAYOUT,
     NEW_DEVICE,
     DEVICE_NO_EXTS_FEATURES,
     ALL_FEATURE_COMBINATIONS,
@@ -283,6 +285,18 @@ tcu::TestStatus ShaderObjectBinaryQueryInstance::iterate(void)
     vk::VkDescriptorSetLayout layout =
         (m_params.stage == vk::VK_SHADER_STAGE_COMPUTE_BIT) ? *descriptorSetLayout : VK_NULL_HANDLE;
 
+    const vk::Unique<vk::VkDescriptorSetLayout> incompatibleDescriptorSetLayout(
+        vk::DescriptorSetLayoutBuilder()
+            .addSingleBinding(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vk::VK_SHADER_STAGE_ALL)
+            .addSingleBinding(vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vk::VK_SHADER_STAGE_ALL)
+            .build(vk, device));
+
+    const vk::VkPushConstantRange incompatiblePushConstantRange = {
+        vk::VK_SHADER_STAGE_ALL, // VkShaderStageFlags stageFlags;
+        0u,                      // uint32_t offset;
+        64u,                     // uint32_t size;
+    };
+
     const auto &binaries = m_context.getBinaryCollection();
     vk::Move<vk::VkShaderEXT> shader =
         createShader(vk, binaries, device, m_context.getDeviceFeatures(), layout, m_params.linked, m_params.stage);
@@ -314,6 +328,24 @@ tcu::TestStatus ShaderObjectBinaryQueryInstance::iterate(void)
         {
             vk::Move<vk::VkShaderEXT> otherShader = vk::createShaderFromBinary(
                 vk, device, m_params.stage, dataSize, data.data(), tessellationSupported, geometrySupported, layout);
+            vk.getShaderBinaryDataEXT(device, *otherShader, &otherDataSize, nullptr);
+            otherData.resize(otherDataSize);
+            vk.getShaderBinaryDataEXT(device, *otherShader, &otherDataSize, otherData.data());
+        }
+        else if (m_params.queryType == SHADER_FROM_BINARY_NULL_LAYOUT)
+        {
+            vk::Move<vk::VkShaderEXT> otherShader =
+                vk::createShaderFromBinary(vk, device, m_params.stage, dataSize, data.data(), tessellationSupported,
+                                           geometrySupported, VK_NULL_HANDLE);
+            vk.getShaderBinaryDataEXT(device, *otherShader, &otherDataSize, nullptr);
+            otherData.resize(otherDataSize);
+            vk.getShaderBinaryDataEXT(device, *otherShader, &otherDataSize, otherData.data());
+        }
+        else if (m_params.queryType == SHADER_FROM_BINARY_DIFFERENT_LAYOUT)
+        {
+            vk::Move<vk::VkShaderEXT> otherShader = vk::createShaderFromBinary(
+                vk, device, m_params.stage, dataSize, data.data(), tessellationSupported, geometrySupported,
+                *incompatibleDescriptorSetLayout, &incompatiblePushConstantRange);
             vk.getShaderBinaryDataEXT(device, *otherShader, &otherDataSize, nullptr);
             otherData.resize(otherDataSize);
             vk.getShaderBinaryDataEXT(device, *otherShader, &otherDataSize, otherData.data());
@@ -812,6 +844,12 @@ std::string getName(QueryType queryType)
     case SHADER_FROM_BINARY:
         return "shader_from_binary";
         break;
+    case SHADER_FROM_BINARY_NULL_LAYOUT:
+        return "shader_from_binary_null_layout";
+        break;
+    case SHADER_FROM_BINARY_DIFFERENT_LAYOUT:
+        return "shader_from_binary_different_layout";
+        break;
     case NEW_DEVICE:
         return "new_device";
     case DEVICE_NO_EXTS_FEATURES:
@@ -848,7 +886,13 @@ tcu::TestCaseGroup *createShaderObjectBinaryTests(tcu::TestContext &testCtx)
     };
 
     const QueryType queryTypeTests[] = {
-        SAME_SHADER, NEW_SHADER, SHADER_FROM_BINARY, NEW_DEVICE, DEVICE_NO_EXTS_FEATURES,
+        SAME_SHADER,
+        NEW_SHADER,
+        SHADER_FROM_BINARY,
+        SHADER_FROM_BINARY_NULL_LAYOUT,
+        SHADER_FROM_BINARY_DIFFERENT_LAYOUT,
+        NEW_DEVICE,
+        DEVICE_NO_EXTS_FEATURES,
     };
 
     de::MovePtr<tcu::TestCaseGroup> queryGroup(new tcu::TestCaseGroup(testCtx, "query"));
