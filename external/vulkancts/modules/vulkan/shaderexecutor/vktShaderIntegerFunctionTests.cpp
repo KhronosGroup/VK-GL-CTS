@@ -1322,6 +1322,143 @@ public:
     }
 };
 
+class BitwiseNestedLiteralShiftCaseInstance : public IntegerFunctionTestInstance
+{
+public:
+    BitwiseNestedLiteralShiftCaseInstance(Context &context, glu::ShaderType shaderType, const ShaderSpec &spec,
+                                          int numValues, const char *name)
+        : IntegerFunctionTestInstance(context, shaderType, spec, numValues, name)
+    {
+    }
+
+    void getInputValues(int numValues, void *const *values) const
+    {
+        DE_ASSERT(numValues == 1);
+        DE_UNREF(numValues);
+        uint32_t *highBitMaskPattern = static_cast<uint32_t *>(values[0]);
+        int32_t *lowBitsPattern      = static_cast<int32_t *>(values[1]);
+        int32_t *mixedBitsPattern    = static_cast<int32_t *>(values[2]);
+        int32_t *negativeValue       = static_cast<int32_t *>(values[3]);
+
+        highBitMaskPattern[0] = 0xDFFFF7FFu; // 3758094335u
+        lowBitsPattern[0]     = 700;
+        mixedBitsPattern[0]   = 123456789;
+        negativeValue[0]      = -1000;
+    }
+
+    struct OutputSpec
+    {
+        const char *name;
+        int32_t expected;
+    };
+
+    static const OutputSpec *getOutputs(size_t *count = nullptr)
+    {
+        static const OutputSpec s_outputs[] = {
+            // Group 1: Unsigned-to-Signed Compound Shifts (highBitMaskPattern)
+            {"signExtendEqualShift", -1},      // int(highBitMaskPattern << 22u) >> 22
+            {"signExtendCompoundShift", -3},   // int(highBitMaskPattern << 12u) >> 22
+            {"zeroExtendCompoundShift", 511},  // int(highBitMaskPattern << 2u) >> 22
+            {"signExtendReducedShift", -4096}, // int(highBitMaskPattern << 22u) >> 10
+            {"logicalShiftCast", 3},           // int(highBitMaskPattern >> 30u)
+
+            // Group 2: Arithmetic vs. Logical Right Shift Distinction (highBitMaskPattern)
+            {"logicalShiftCompound", 1023}, // int((highBitMaskPattern << 22u) >> 22u)
+
+            // Group 3: Positive Integer Bitfield Extraction & Masking (mixedBitsPattern & lowBitsPattern)
+            {"posIntLeftRightMask", 21504},  // (mixedBitsPattern << 24) >> 14
+            {"posIntRightLeftMask", 114688}, // (mixedBitsPattern >> 24) << 14
+            {"shiftLeftClearAll", 0},        // (lowBitsPattern << 30) >> 10
+            {"shiftRightClearAll", 0},       // lowBitsPattern >> 10
+
+            // Group 4: Negative Integer Compound Shifts & Sign Flipping (negativeValue)
+            {"negIntSignFlip", 6144},     // (negativeValue << 22) >> 14
+            {"negIntSignExtend", -16384}, // (negativeValue >> 22) << 14
+
+            // Group 5: Maximum Legal 32-bit Shift Boundary (>> 31 and << 31)
+            {"maxArithmeticShiftRight", -1},                        // negativeValue >> 31
+            {"maxShiftLeftOdd", static_cast<int32_t>(0x80000000u)}, // mixedBitsPattern << 31
+
+            // Group 6: Consecutive Shift Folding & Identity Shifts (>> 0 and << 0)
+            {"consecutiveRightShiftPos", 1883},                      // (mixedBitsPattern >> 8) >> 8
+            {"consecutiveRightShiftNeg", -1},                        // (negativeValue >> 10) >> 10
+            {"identityRightShift", -1024000},                        // (negativeValue << 10) >> 0
+            {"identityLeftShift", static_cast<int32_t>(0xF3454000u)} // (mixedBitsPattern >> 0) << 14
+        };
+        if (count)
+            *count = DE_LENGTH_OF_ARRAY(s_outputs);
+        return s_outputs;
+    }
+
+    bool compare(const void *const *inputs, const void *const *outputs)
+    {
+        DE_UNREF(inputs);
+        size_t numOutputs             = 0;
+        const OutputSpec *testOutputs = getOutputs(&numOutputs);
+
+        for (size_t ndx = 0; ndx < numOutputs; ndx++)
+        {
+            const int32_t outVal = *static_cast<const int32_t *>(outputs[ndx]);
+            if (outVal != testOutputs[ndx].expected)
+            {
+                m_failMsg << "Output " << testOutputs[ndx].name << " mismatch: expected " << testOutputs[ndx].expected
+                          << ", got " << outVal;
+                return false;
+            }
+        }
+        return true;
+    }
+};
+
+class BitwiseNestedLiteralShiftCase : public IntegerFunctionCase
+{
+public:
+    BitwiseNestedLiteralShiftCase(tcu::TestContext &testCtx, const char *name, glu::ShaderType shaderType)
+        : IntegerFunctionCase(testCtx, name, shaderType)
+    {
+        m_spec.inputs.push_back(Symbol("highBitMaskPattern", glu::VarType(glu::TYPE_UINT, glu::PRECISION_HIGHP)));
+        m_spec.inputs.push_back(Symbol("lowBitsPattern", glu::VarType(glu::TYPE_INT, glu::PRECISION_HIGHP)));
+        m_spec.inputs.push_back(Symbol("mixedBitsPattern", glu::VarType(glu::TYPE_INT, glu::PRECISION_HIGHP)));
+        m_spec.inputs.push_back(Symbol("negativeValue", glu::VarType(glu::TYPE_INT, glu::PRECISION_HIGHP)));
+
+        size_t numOutputs = 0;
+        const BitwiseNestedLiteralShiftCaseInstance::OutputSpec *testOutputs =
+            BitwiseNestedLiteralShiftCaseInstance::getOutputs(&numOutputs);
+        for (size_t ndx = 0; ndx < numOutputs; ndx++)
+            m_spec.outputs.push_back(Symbol(testOutputs[ndx].name, glu::VarType(glu::TYPE_INT, glu::PRECISION_HIGHP)));
+
+        m_spec.source = "// Group 1: Unsigned-to-Signed Compound Shifts\n"
+                        "signExtendEqualShift     = int(highBitMaskPattern << 22u) >> 22;\n"
+                        "signExtendCompoundShift  = int(highBitMaskPattern << 12u) >> 22;\n"
+                        "zeroExtendCompoundShift  = int(highBitMaskPattern << 2u) >> 22;\n"
+                        "signExtendReducedShift   = int(highBitMaskPattern << 22u) >> 10;\n"
+                        "logicalShiftCast         = int(highBitMaskPattern >> 30u);\n\n"
+                        "// Group 2: Arithmetic vs. Logical Right Shift Distinction\n"
+                        "logicalShiftCompound     = int((highBitMaskPattern << 22u) >> 22u);\n\n"
+                        "// Group 3: Positive Integer Bitfield Extraction & Masking\n"
+                        "posIntLeftRightMask      = (mixedBitsPattern << 24) >> 14;\n"
+                        "posIntRightLeftMask      = (mixedBitsPattern >> 24) << 14;\n"
+                        "shiftLeftClearAll        = (lowBitsPattern << 30) >> 10;\n"
+                        "shiftRightClearAll       = lowBitsPattern >> 10;\n\n"
+                        "// Group 4: Negative Integer Compound Shifts & Sign Flipping\n"
+                        "negIntSignFlip           = (negativeValue << 22) >> 14;\n"
+                        "negIntSignExtend         = (negativeValue >> 22) << 14;\n\n"
+                        "// Group 5: Maximum Legal 32-bit Shift Boundary\n"
+                        "maxArithmeticShiftRight  = negativeValue >> 31;\n"
+                        "maxShiftLeftOdd          = mixedBitsPattern << 31;\n\n"
+                        "// Group 6: Consecutive Shift Folding & Identity Shifts\n"
+                        "consecutiveRightShiftPos = (mixedBitsPattern >> 8) >> 8;\n"
+                        "consecutiveRightShiftNeg = (negativeValue >> 10) >> 10;\n"
+                        "identityRightShift       = (negativeValue << 10) >> 0;\n"
+                        "identityLeftShift        = (mixedBitsPattern >> 0) << 14;\n";
+    }
+
+    TestInstance *createInstance(Context &ctx) const
+    {
+        return new BitwiseNestedLiteralShiftCaseInstance(ctx, m_shaderType, m_spec, 1, getName());
+    }
+};
+
 ShaderIntegerFunctionTests::ShaderIntegerFunctionTests(tcu::TestContext &testCtx)
     : tcu::TestCaseGroup(testCtx, "integer")
 {
@@ -1357,9 +1494,13 @@ void ShaderIntegerFunctionTests::init(void)
     addFunctionCases<FindLSBCase>(this, "findlsb", true, true, true, ALL_SHADERS);
     addFunctionCases<findMSBCase>(this, "findMSB", true, true, true, ALL_SHADERS);
 
-    tcu::TestCaseGroup *group = new tcu::TestCaseGroup(getTestContext(), "bitwise_vector_modulo");
-    group->addChild(new BitwiseVectorModuloCase(getTestContext(), "uvec2_compute", glu::SHADERTYPE_COMPUTE));
-    this->addChild(group);
+    tcu::TestCaseGroup *moduloGroup = new tcu::TestCaseGroup(getTestContext(), "bitwise_vector_modulo");
+    moduloGroup->addChild(new BitwiseVectorModuloCase(getTestContext(), "uvec2_compute", glu::SHADERTYPE_COMPUTE));
+    this->addChild(moduloGroup);
+
+    tcu::TestCaseGroup *shiftGroup = new tcu::TestCaseGroup(getTestContext(), "bitwise_nested_literal_shifts");
+    shiftGroup->addChild(new BitwiseNestedLiteralShiftCase(getTestContext(), "compute", glu::SHADERTYPE_COMPUTE));
+    this->addChild(shiftGroup);
 }
 
 } // namespace shaderexecutor
