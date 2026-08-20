@@ -42,6 +42,12 @@ inline constexpr uint32_t dispatchWorkgroupCountLimit = 65535;
 std::string genShaderTensorAccess(size_t rank, VkFormat tensorFormat, AccessVariant variant);
 inline constexpr uint32_t shaderTensorAccessWorkgroupSize = 128;
 
+// Tensor Descriptor Buffer Write
+std::string genShaderTensorDescriptorBufferAccess(size_t rank, VkFormat tensorFormat, const size_t descriptorCount);
+
+// Tensor Descriptor Buffer Rotate
+std::string genShaderTensorDescriptorBufferRotate(const size_t descriptorCount, const size_t shiftIndex);
+
 // Tensor Descriptors Array Write
 std::string genShaderTensorDescriptorsArrayAccess(size_t rank, VkFormat tensorFormat, const size_t descriptorCount);
 

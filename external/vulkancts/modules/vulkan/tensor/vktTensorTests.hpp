@@ -45,6 +45,7 @@ tcu::TestCaseGroup *createTensorCreateRequirementsTests(tcu::TestContext &testCt
 tcu::TestCaseGroup *createDimensionQueryTests(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createArrayAccessTests(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createTensorCopyTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createTensorDescriptorBufferTests(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createGraphicsPipelineTests(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createTensorDescriptorsArrayTests(tcu::TestContext &testCtx);
 tcu::TestCaseGroup *createTensorImageAliasingTests(tcu::TestContext &testCtx);
