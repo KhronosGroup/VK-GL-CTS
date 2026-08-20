@@ -1754,6 +1754,99 @@ tcu::TestCaseGroup *createOpLineGroup(tcu::TestContext &testCtx)
 
     group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", spec));
 
+    // Tests that OpLine may be applied to a module-scope image OpVariable that is accessed inside a function.
+    //
+    // Per the SPIR-V specification, an OpLine sets source-location information for all instructions that follow it,
+    // up to the next OpLine/OpNoLine or the end of the current block. It is valid to place OpLine among the
+    // module-scope declarations, in which case the location applies to the following global declarations, including
+    // OpVariable instructions. Unlike a function-local variable, a module-scope variable is not contained in any
+    // block or function.
+    //
+    // The sibling "all" case already covers OpLine placed before module-scope variables in the Uniform and Input
+    // storage classes (a storage buffer and a built-in), whose values are backed by memory. This case adds the
+    // distinct scenario of an OpLine applied to a module-scope variable of opaque type in the UniformConstant
+    // storage class - here a sampled image - which is accessed (loaded and read) from within the entry point. Such
+    // opaque resource variables are handled differently from memory-backed variables, so this exercises debug
+    // source-location handling for a located, opaque module-scope variable that has no enclosing function, rather
+    // than assuming every located instruction resides in a function body.
+    //
+    // The shader reads each texel of the storage image and copies it to an output buffer; the output is expected to
+    // match the input image contents.
+    {
+        ComputeShaderSpec imageSpec;
+        de::Random imgRnd(deStringHash("opline_module_scope_image"));
+        const uint32_t numTexels = 64; // Framework uploads this into a fixed 8x8 storage image.
+        vector<tcu::Vec4> imageData;
+
+        imageData.reserve(numTexels);
+        for (uint32_t ndx = 0; ndx < numTexels; ++ndx)
+            imageData.push_back(tcu::randomVec4(imgRnd));
+
+        imageSpec.assembly = "OpCapability Shader\n"
+                             "OpMemoryModel Logical GLSL450\n"
+                             "OpEntryPoint GLCompute %main \"main\" %id\n"
+                             "OpExecutionMode %main LocalSize 1 1 1\n"
+
+                             "%fname = OpString \"opline_image.comp\"\n"
+
+                             "OpSource GLSL 430\n"
+                             "OpName %main \"main\"\n"
+                             "OpName %id   \"gl_GlobalInvocationID\"\n"
+
+                             "OpDecorate %id BuiltIn GlobalInvocationId\n"
+                             "OpDecorate %f32arr ArrayStride 16\n"
+                             "OpMemberDecorate %buf 0 Offset 0\n"
+                             "OpDecorate %buf BufferBlock\n"
+                             "OpDecorate %inimage DescriptorSet 0\n"
+                             "OpDecorate %inimage Binding 0\n"
+                             "OpDecorate %outdata DescriptorSet 0\n"
+                             "OpDecorate %outdata Binding 1\n"
+
+                             "%void     = OpTypeVoid\n"
+                             "%voidf    = OpTypeFunction %void\n"
+                             "%u32      = OpTypeInt 32 0\n"
+                             "%f32      = OpTypeFloat 32\n"
+                             "%v2u32    = OpTypeVector %u32 2\n"
+                             "%v3u32    = OpTypeVector %u32 3\n"
+                             "%v4f32    = OpTypeVector %f32 4\n"
+                             "%uvec3ptr = OpTypePointer Input %v3u32\n"
+                             "%id       = OpVariable %uvec3ptr Input\n"
+                             "%zero     = OpConstant %u32 0\n"
+                             "%c_u32_8  = OpConstant %u32 8\n"
+                             "%c_u32_64 = OpConstant %u32 64\n"
+                             "%f32arr   = OpTypeArray %v4f32 %c_u32_64\n"
+                             "%buf      = OpTypeStruct %f32arr\n"
+                             "%bufptr   = OpTypePointer Uniform %buf\n"
+                             "%outdata  = OpVariable %bufptr Uniform\n"
+                             "%v4f32ptr = OpTypePointer Uniform %v4f32\n"
+                             "%image    = OpTypeImage %f32 2D 0 0 0 2 Rgba32f\n"
+                             "%imageptr = OpTypePointer UniformConstant %image\n"
+
+                             "OpLine %fname 1 1\n" // Stamps a line onto the following module-scope image variable.
+
+                             "%inimage  = OpVariable %imageptr UniformConstant\n"
+
+                             "%main     = OpFunction %void None %voidf\n"
+                             "%label    = OpLabel\n"
+                             "%idval    = OpLoad %v3u32 %id\n"
+                             "%ndx      = OpCompositeExtract %u32 %idval 0\n"
+                             "%row      = OpUMod %u32 %ndx %c_u32_8\n"
+                             "%col      = OpUDiv %u32 %ndx %c_u32_8\n"
+                             "%coord    = OpCompositeConstruct %v2u32 %row %col\n"
+                             "%img      = OpLoad %image %inimage\n"
+                             "%texel    = OpImageRead %v4f32 %img %coord\n"
+                             "%outloc   = OpAccessChain %v4f32ptr %outdata %zero %ndx\n"
+                             "            OpStore %outloc %texel\n"
+                             "            OpReturn\n"
+                             "            OpFunctionEnd\n";
+
+        imageSpec.inputs.push_back(Resource(BufferSp(new Vec4Buffer(imageData)), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE));
+        imageSpec.outputs.push_back(BufferSp(new Vec4Buffer(imageData)));
+        imageSpec.numWorkGroups = IVec3(numTexels, 1, 1);
+
+        group->addChild(new SpvAsmComputeShaderCase(testCtx, "module_scope_image", imageSpec));
+    }
+
     return group.release();
 }
 

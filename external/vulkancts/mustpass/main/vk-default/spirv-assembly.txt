@@ -8145,6 +8145,7 @@ dEQP-VK.spirv_assembly.instruction.compute.opinboundsaccesschain.uint.vec_2
 dEQP-VK.spirv_assembly.instruction.compute.opinboundsaccesschain.uint.vec_3
 dEQP-VK.spirv_assembly.instruction.compute.opinboundsaccesschain.uint.vec_4
 dEQP-VK.spirv_assembly.instruction.compute.opline.all
+dEQP-VK.spirv_assembly.instruction.compute.opline.module_scope_image
 dEQP-VK.spirv_assembly.instruction.compute.opmembername.abuse.everything_named_the_same
 dEQP-VK.spirv_assembly.instruction.compute.opmembername.abuse.u3str_x_has_multiple_names
 dEQP-VK.spirv_assembly.instruction.compute.opmembername.abuse.u3str_x_has_very_long_name

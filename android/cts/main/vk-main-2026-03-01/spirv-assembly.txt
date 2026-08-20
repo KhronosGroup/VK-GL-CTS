@@ -538,6 +538,7 @@ dEQP-VK.spirv_assembly.instruction.compute.opfma.fp64.vec4.undef.denorm_none.ran
 dEQP-VK.spirv_assembly.instruction.compute.opfma.fp64.vec4.undef.denorm_preserve.directed
 dEQP-VK.spirv_assembly.instruction.compute.opfma.fp64.vec4.undef.denorm_preserve.float_controls
 dEQP-VK.spirv_assembly.instruction.compute.opfma.fp64.vec4.undef.denorm_preserve.random
+dEQP-VK.spirv_assembly.instruction.compute.opline.module_scope_image
 dEQP-VK.spirv_assembly.instruction.compute.opphi.vartype_longvec
 dEQP-VK.spirv_assembly.instruction.compute.opundef.buffer_storage
 dEQP-VK.spirv_assembly.instruction.compute.opundef.buffer_storage_array
