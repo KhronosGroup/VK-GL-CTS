@@ -8,6 +8,7 @@ dEQP-VK.compute.pipeline.basic.float16_isnan_isinf
 dEQP-VK.compute.pipeline.basic.float64_isnan_isinf
 dEQP-VK.compute.pipeline.basic.indirect_after_base_dispatch
 dEQP-VK.compute.pipeline.basic.read_unbound_ssbo
+dEQP-VK.compute.pipeline.basic.remove_global_load_pass
 dEQP-VK.compute.pipeline.basic.undefined_values
 dEQP-VK.compute.pipeline.basic.vec2_nclamp_nan_component
 dEQP-VK.compute.pipeline.cooperative_matrix.64b_indexing.coopmat_64b_rowmajor

@@ -1,0 +1,131 @@
+#!amber
+
+#// Dumped WGSL:
+#
+#struct Outputs {
+#  data  : array<i32>,
+#};
+#var<private> count: u32 = 0;
+#
+#@group(0) @binding(1) var<storage, read_write> outputs : Outputs;
+#
+#fn put(value : i32) -> i32 {
+#  outputs.data[count] = value;
+#  count += 1;
+#  return value;
+#}
+#
+#@compute @workgroup_size(1)
+#fn main() {
+#  let x = outputs.data[0];
+#  for (var i=5; i<7; i++) { _ = put(i); }
+#}
+SHADER compute workgroup_loop SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+OpCapability Shader
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+%21 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpName %count "count"
+               OpMemberName %Outputs_tint_explicit_layout 0 "data"
+               OpName %Outputs_tint_explicit_layout "Outputs_tint_explicit_layout"
+               OpName %outputs "outputs"
+               OpName %put "put"
+               OpName %value "value"
+               OpName %main "main"
+               OpName %x "x"
+               OpName %i "i"
+               OpDecorate %_runtimearr_int ArrayStride 4
+               OpMemberDecorate %Outputs_tint_explicit_layout 0 Offset 0
+               OpDecorate %Outputs_tint_explicit_layout Block
+               OpDecorate %outputs DescriptorSet 0
+               OpDecorate %outputs Binding 1
+               OpDecorate %outputs Coherent
+       %uint = OpTypeInt 32 0
+%_ptr_Private_uint = OpTypePointer Private %uint
+     %uint_0 = OpConstant %uint 0
+      %count = OpVariable %_ptr_Private_uint Private %uint_0
+        %int = OpTypeInt 32 1
+%_runtimearr_int = OpTypeRuntimeArray %int
+%Outputs_tint_explicit_layout = OpTypeStruct %_runtimearr_int
+%_ptr_StorageBuffer_Outputs_tint_explicit_layout = OpTypePointer StorageBuffer %Outputs_tint_explicit_layout
+    %outputs = OpVariable %_ptr_StorageBuffer_Outputs_tint_explicit_layout StorageBuffer
+         %12 = OpTypeFunction %int %int
+%_ptr_StorageBuffer__runtimearr_int = OpTypePointer StorageBuffer %_runtimearr_int
+     %uint_1 = OpConstant %uint 1
+%_ptr_StorageBuffer_int = OpTypePointer StorageBuffer %int
+       %void = OpTypeVoid
+         %28 = OpTypeFunction %void
+      %int_0 = OpConstant %int 0
+%_ptr_Function_int = OpTypePointer Function %int
+      %int_5 = OpConstant %int 5
+      %int_7 = OpConstant %int 7
+       %bool = OpTypeBool
+      %int_1 = OpConstant %int 1
+        %put = OpFunction %int None %12
+      %value = OpFunctionParameter %int
+         %13 = OpLabel
+         %14 = OpLoad %uint %count
+         %15 = OpAccessChain %_ptr_StorageBuffer__runtimearr_int %outputs %uint_0
+         %17 = OpArrayLength %uint %outputs 0
+         %18 = OpISub %uint %17 %uint_1
+         %20 = OpExtInst %uint %21 UMin %14 %18
+         %22 = OpAccessChain %_ptr_StorageBuffer_int %outputs %uint_0 %20
+               OpStore %22 %value
+         %24 = OpLoad %uint %count
+         %25 = OpIAdd %uint %24 %uint_1
+               OpStore %count %25
+               OpReturnValue %value
+               OpFunctionEnd
+       %main = OpFunction %void None %28
+         %29 = OpLabel
+          %i = OpVariable %_ptr_Function_int Function
+         %30 = OpAccessChain %_ptr_StorageBuffer__runtimearr_int %outputs %uint_0
+         %31 = OpArrayLength %uint %outputs 0
+         %32 = OpISub %uint %31 %uint_1
+         %33 = OpBitcast %uint %int_0
+         %35 = OpExtInst %uint %21 UMin %33 %32
+         %36 = OpAccessChain %_ptr_StorageBuffer_int %outputs %uint_0 %35
+          %x = OpLoad %int %36
+               OpBranch %38
+         %38 = OpLabel
+               OpStore %i %int_5
+               OpBranch %41
+         %41 = OpLabel
+               OpLoopMerge %42 %40 None
+               OpBranch %39
+         %39 = OpLabel
+         %46 = OpLoad %int %i
+         %47 = OpSLessThan %bool %46 %int_7
+               OpSelectionMerge %50 None
+               OpBranchConditional %47 %50 %51
+         %51 = OpLabel
+               OpBranch %42
+         %50 = OpLabel
+         %52 = OpLoad %int %i
+         %53 = OpFunctionCall %int %put %52
+               OpBranch %40
+         %40 = OpLabel
+         %54 = OpLoad %int %i
+         %55 = OpBitcast %uint %54
+         %56 = OpBitcast %uint %int_1
+         %58 = OpIAdd %uint %55 %56
+         %59 = OpBitcast %int %58
+               OpStore %i %59
+               OpBranch %41
+         %42 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+BUFFER buf_out DATA_TYPE int32 DATA
+0 0 0
+END
+PIPELINE compute pipeline
+  ATTACH workgroup_loop
+  BIND BUFFER buf_out AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+RUN pipeline 1 1 1
+EXPECT buf_out IDX 0 EQ 5 6 0

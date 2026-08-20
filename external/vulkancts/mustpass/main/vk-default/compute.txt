@@ -32,6 +32,7 @@ dEQP-VK.compute.pipeline.basic.max_local_size_z
 dEQP-VK.compute.pipeline.basic.pk_immediate
 dEQP-VK.compute.pipeline.basic.pkadd_immediate
 dEQP-VK.compute.pipeline.basic.read_unbound_ssbo
+dEQP-VK.compute.pipeline.basic.remove_global_load_pass
 dEQP-VK.compute.pipeline.basic.replicated_composites_array_array_constant
 dEQP-VK.compute.pipeline.basic.replicated_composites_array_array_specconstant
 dEQP-VK.compute.pipeline.basic.replicated_composites_array_array_value

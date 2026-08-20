@@ -5971,6 +5971,8 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
             testCtx, "webgl_spirv_loop",
             "Simple SPIR-V loop from a WebGL example that caused problems in some implementations", "compute",
             "webgl_spirv_loop.amber"));
+        basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "remove_global_load_pass", "", "compute",
+                                                                   "remove_global_load_pass.amber"));
 
         {
             cts_amber::AmberTestCase *testCase = cts_amber::createAmberTestCase(
