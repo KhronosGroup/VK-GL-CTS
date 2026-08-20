@@ -1,0 +1,97 @@
+#!amber
+
+DEVICE_EXTENSION VK_EXT_shader_demote_to_helper_invocation
+
+# The shader below is compiled from the following WGSL:
+#
+# @vertex
+# fn main( @builtin(vertex_index) VertexIndex : u32 ) -> @builtin(position) vec4f {
+#   var pos = array<vec2f, 3>(
+#     vec2(0.0, 0.5),
+#     vec2(-0.5, -0.5),
+#     vec2(0.5, -0.5)
+#   );
+#
+#   return vec4f(pos[VertexIndex], 0.0, 1.0);
+# }
+#
+# @group(0) @binding(0) var<storage, read_write> output: array<vec2f>;
+# @fragment
+# fn main() -> @location(0) vec4f {
+#   discard;
+#   output[0] = vec2f(0.666, 0.777);
+#   return vec4(19.0, 66.0, 0.0, 1.0);
+# }
+SHADER vertex vert_shader GLSL
+#version 310 es
+layout(location = 0) in vec4 position;
+void main() {
+    gl_Position = position;
+}
+END
+SHADER fragment frag_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+                   OpCapability Shader
+                   OpCapability DemoteToHelperInvocation
+                   OpExtension "SPV_EXT_demote_to_helper_invocation"
+                   OpExtension "SPV_KHR_storage_buffer_storage_class"
+                   OpMemoryModel Logical GLSL450
+                   OpEntryPoint Fragment %25 "main" %7
+                   OpExecutionMode %25 OriginUpperLeft
+                   OpDecorate %4 ArrayStride 8
+                   OpMemberDecorate %3 0 Offset 0
+                   OpDecorate %3 Block
+                   OpDecorate %1 DescriptorSet 0
+                   OpDecorate %1 Binding 0
+                   OpDecorate %7 Location 0
+              %6 = OpTypeFloat 32
+              %5 = OpTypeVector %6 2
+              %4 = OpTypeRuntimeArray %5
+              %3 = OpTypeStruct %4
+              %2 = OpTypePointer StorageBuffer %3
+              %1 = OpVariable %2 StorageBuffer
+              %9 = OpTypeVector %6 4
+              %8 = OpTypePointer Output %9
+              %7 = OpVariable %8 Output
+             %11 = OpTypeFunction %9
+             %14 = OpTypePointer StorageBuffer %5
+             %16 = OpTypeInt 32 0
+             %15 = OpConstant %16 0
+             %18 = OpConstant %6 0x1.54fdf4p-1
+             %19 = OpConstant %6 0x1.8dd2f2p-1
+             %17 = OpConstantComposite %5 %18 %19
+             %21 = OpConstant %6 0x1.3p+4
+             %22 = OpConstant %6 0x1.08p+6
+             %23 = OpConstant %6 0x0p+0
+             %24 = OpConstant %6 0x1p+0
+             %20 = OpConstantComposite %9 %21 %22 %23 %24
+             %26 = OpTypeVoid
+             %27 = OpTypeFunction %26
+             %10 = OpFunction %9 None %11
+             %12 = OpLabel
+                   OpDemoteToHelperInvocation
+             %13 = OpAccessChain %14 %1 %15 %15
+                   OpStore %13 %17
+                   OpReturnValue %20
+                   OpFunctionEnd
+             %25 = OpFunction %26 None %27
+             %28 = OpLabel
+             %29 = OpFunctionCall %9 %10
+                   OpStore %7 %29
+                   OpReturn
+                   OpFunctionEnd
+END
+BUFFER framebuffer FORMAT B8G8R8A8_UNORM
+BUFFER buf_out DATA_TYPE vec2<float> DATA
+0.0 0.0
+END
+PIPELINE graphics repro_pipeline
+  ATTACH vert_shader
+  ATTACH frag_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER framebuffer AS color LOCATION 0
+  BIND BUFFER buf_out AS storage DESCRIPTOR_SET 0 BINDING 0
+END
+RUN repro_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+EXPECT buf_out IDX 0 EQ 0.0 0.0

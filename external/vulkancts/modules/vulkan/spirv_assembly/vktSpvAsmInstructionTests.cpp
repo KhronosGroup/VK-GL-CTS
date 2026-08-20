@@ -21863,6 +21863,15 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
 #ifndef CTS_USES_VULKANSC
     instructionTests->addChild(createSpirvVersion1p4Group(testCtx));
     instructionTests->addChild(createFunctionParamsGroup(testCtx));
+    {
+        de::MovePtr<tcu::TestCaseGroup> demoteGroup(new tcu::TestCaseGroup(testCtx, "demote_to_helper_invocation"));
+        const char *dataDir = "spirv_assembly/instruction/demote_to_helper_invocation";
+        demoteGroup->addChild(cts_amber::createAmberTestCase(
+            testCtx, "statement_discard", "A fragment shader testing discard using OpDemoteToHelperInvocation", dataDir,
+            "statement_discard.amber", {"VK_EXT_shader_demote_to_helper_invocation"}));
+        instructionTests->addChild(demoteGroup.release());
+    }
+
 #endif // CTS_USES_VULKANSC
     instructionTests->addChild(createQueryGroup(testCtx));
     instructionTests->addChild(createTrinaryMinMaxGroup(testCtx));

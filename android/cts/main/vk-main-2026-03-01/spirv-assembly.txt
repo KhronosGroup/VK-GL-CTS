@@ -8875,6 +8875,7 @@ dEQP-VK.spirv_assembly.instruction.compute.variable_pointers.64b_indexing.nullpt
 dEQP-VK.spirv_assembly.instruction.compute.variable_pointers.64b_indexing.nullptr_compute.opvariable_initialized_null
 dEQP-VK.spirv_assembly.instruction.compute.variable_pointers.compute.opselect_different_strides
 dEQP-VK.spirv_assembly.instruction.compute.vector_shuffle.long_vector_shuffle
+dEQP-VK.spirv_assembly.instruction.demote_to_helper_invocation.statement_discard
 dEQP-VK.spirv_assembly.instruction.graphics.float_controls.fp16.generated_args.rounding_rtz_round_ev_nostorage_frag
 dEQP-VK.spirv_assembly.instruction.graphics.float_controls.fp16.generated_args.rounding_rtz_round_ev_nostorage_vert
 dEQP-VK.spirv_assembly.instruction.graphics.float_controls.fp16.input_args.rounding_rtz_round_ev_nostorage_frag

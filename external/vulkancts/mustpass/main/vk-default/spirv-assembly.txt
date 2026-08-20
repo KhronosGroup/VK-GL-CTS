@@ -21631,6 +21631,7 @@ dEQP-VK.spirv_assembly.instruction.compute.workgroup_memory.uint16
 dEQP-VK.spirv_assembly.instruction.compute.workgroup_memory.uint32
 dEQP-VK.spirv_assembly.instruction.compute.workgroup_memory.uint64
 dEQP-VK.spirv_assembly.instruction.compute.workgroup_memory.uint8
+dEQP-VK.spirv_assembly.instruction.demote_to_helper_invocation.statement_discard
 dEQP-VK.spirv_assembly.instruction.function_params.sampler_param
 dEQP-VK.spirv_assembly.instruction.graphics.16bit_storage.input_output_float_16_to_16.scalar0_frag
 dEQP-VK.spirv_assembly.instruction.graphics.16bit_storage.input_output_float_16_to_16.scalar0_geom
