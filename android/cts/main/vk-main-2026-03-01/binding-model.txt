@@ -627,6 +627,7 @@ dEQP-VK.binding_model.descriptor_heap.non_packed.heap_with_shader_record_index.u
 dEQP-VK.binding_model.descriptor_heap.non_packed.heap_with_shader_record_index.uniform_texel_buffer_stride_64
 dEQP-VK.binding_model.descriptor_heap.non_uniform_access.sampled_image
 dEQP-VK.binding_model.descriptor_heap.non_uniform_access.storage_buffer
+dEQP-VK.binding_model.descriptor_heap.non_uniform_access.storage_buffer_8bit
 dEQP-VK.binding_model.descriptor_heap.non_uniform_access.storage_image
 dEQP-VK.binding_model.descriptor_heap.non_uniform_access.storage_texel_buffer
 dEQP-VK.binding_model.descriptor_heap.non_uniform_access.uniform_buffer

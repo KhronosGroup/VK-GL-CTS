@@ -135,6 +135,8 @@ struct TestParams
     bool enableShader64bitIndexing                          = false;
     bool enableShaderUniformTexelBufferArrayDynamicIndexing = false;
     bool enableShaderStorageTexelBufferArrayDynamicIndexing = false;
+    bool enableShaderInt8                                   = false;
+    bool enableStorageBuffer8BitAccess                      = false;
     bool enableUniformAndStorageBuffer8BitAccess            = false;
     bool enableExtendedFlags                                = false;
     VkQueueFlagBits queue                                   = VK_QUEUE_COMPUTE_BIT;
@@ -176,6 +178,7 @@ struct TestParamsGPL : TestParams
 struct TestParamsWithDescriptorType : TestParams
 {
     VkDescriptorType descriptorType{};
+    bool use8BitAccess = false;
 };
 
 struct TestParamsGraphics : TestParams
@@ -753,6 +756,20 @@ public:
             if (!context.getDeviceVulkan12Features().shaderStorageTexelBufferArrayDynamicIndexing)
             {
                 TCU_THROW(NotSupportedError, "shaderStorageTexelBufferArrayDynamicIndexing feature is not supported");
+            }
+        }
+        if (m_params.enableShaderInt8)
+        {
+            if (!context.getDeviceVulkan12Features().shaderInt8)
+            {
+                TCU_THROW(NotSupportedError, "shaderInt8 feature is not supported");
+            }
+        }
+        if (m_params.enableStorageBuffer8BitAccess)
+        {
+            if (!context.getDeviceVulkan12Features().storageBuffer8BitAccess)
+            {
+                TCU_THROW(NotSupportedError, "storageBuffer8BitAccess feature is not supported");
             }
         }
         if (m_params.enableUniformAndStorageBuffer8BitAccess)
@@ -4511,6 +4528,14 @@ DescriptorHeapTestInstanceBase::DescriptorHeapTestInstanceBase(Context &context,
     if (params.enableShaderStorageTexelBufferArrayDynamicIndexing)
     {
         features12.shaderStorageTexelBufferArrayDynamicIndexing = VK_TRUE;
+    }
+    if (params.enableShaderInt8)
+    {
+        features12.shaderInt8 = VK_TRUE;
+    }
+    if (params.enableStorageBuffer8BitAccess)
+    {
+        features12.storageBuffer8BitAccess = VK_TRUE;
     }
     if (params.enableUniformAndStorageBuffer8BitAccess)
     {
@@ -15443,11 +15468,18 @@ void DescriptorHeapTestCaseNonUniformAccess::initPrograms(vk::SourceCollections 
 #extension GL_EXT_nonuniform_qualifier: require
 #extension GL_EXT_samplerless_texture_functions: require
 #extension GL_EXT_descriptor_heap: require
-layout(local_size_x = 64) in;
-layout(binding = 0, std430) buffer OutputBuffer {
-    uint result[];
-};
 )";
+
+    if (m_params.use8BitAccess)
+    {
+        computeShader += "#extension GL_EXT_shader_8bit_storage: require\n";
+        computeShader += "#extension GL_EXT_shader_explicit_arithmetic_types: require\n";
+    }
+
+    const std::string type = (m_params.use8BitAccess ? "uint8_t" : "uint");
+
+    computeShader += "layout(local_size_x = 64) in;\n";
+    computeShader += "layout(binding = 0, std430) buffer OutputBuffer { " + type + " result[]; };\n";
 
     switch (static_cast<int>(m_params.descriptorType))
     {
@@ -15467,7 +15499,7 @@ layout(binding = 0, std430) buffer OutputBuffer {
         computeShader += "layout(descriptor_heap) uniform UBO { uint data; } descs[];\n";
         break;
     case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-        computeShader += "layout(descriptor_heap) buffer SSBO { uint data; } descs[];\n";
+        computeShader += "layout(descriptor_heap) buffer SSBO { " + type + " data; } descs[];\n";
         break;
     }
 
@@ -15475,7 +15507,8 @@ layout(binding = 0, std430) buffer OutputBuffer {
 void main()
 {
     uint idx = gl_GlobalInvocationID.x;
-    uint value = )";
+    )";
+    computeShader += type + " value = ";
     switch (static_cast<int>(m_params.descriptorType))
     {
     case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
@@ -15533,7 +15566,8 @@ tcu::TestStatus DescriptorHeapTestInstanceNonUniformAccess::iterate()
                                                               VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
 
     // Create output buffer
-    const VkDeviceSize outputBufferSize = descriptorCount * sizeof(uint32_t);
+    const size_t outputElementSize      = (m_params.use8BitAccess ? sizeof(uint8_t) : sizeof(uint32_t));
+    const VkDeviceSize outputBufferSize = descriptorCount * outputElementSize;
     auto outputBuffer                   = createBufferAndMemory(outputBufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT |
                                                                                       VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
     deMemset(outputBuffer->memory->getHostPtr(), 0, static_cast<size_t>(outputBufferSize));
@@ -15552,6 +15586,8 @@ tcu::TestStatus DescriptorHeapTestInstanceNonUniformAccess::iterate()
     for (uint32_t i = 0; i < descriptorCount; ++i)
     {
         expectedData[i] = rnd.getUint32();
+        if (m_params.use8BitAccess)
+            expectedData[i] &= 0xffu;
 
         if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
             m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
@@ -15560,7 +15596,15 @@ tcu::TestStatus DescriptorHeapTestInstanceNonUniformAccess::iterate()
                 bufferSize, VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT |
                                 VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR));
             deMemset(buffer->memory->getHostPtr(), 0, static_cast<size_t>(bufferSize));
-            deMemcpy(buffer->memory->getHostPtr(), &expectedData[i], sizeof(uint32_t));
+            if (m_params.use8BitAccess)
+            {
+                const uint8_t byteValue = static_cast<uint8_t>(expectedData[i]);
+                deMemcpy(buffer->memory->getHostPtr(), &byteValue, sizeof(uint8_t));
+            }
+            else
+            {
+                deMemcpy(buffer->memory->getHostPtr(), &expectedData[i], sizeof(uint32_t));
+            }
         }
         else if (m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER ||
                  m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)
@@ -15785,13 +15829,15 @@ tcu::TestStatus DescriptorHeapTestInstanceNonUniformAccess::iterate()
     VK_CHECK(vkd.deviceWaitIdle(*m_device));
 
     // Verify results
-    auto outputData = static_cast<uint32_t *>(outputBuffer->memory->getHostPtr());
+    auto outputData32 = static_cast<uint32_t *>(outputBuffer->memory->getHostPtr());
+    auto outputData8  = static_cast<uint8_t *>(outputBuffer->memory->getHostPtr());
     for (uint32_t i = 0; i < descriptorCount; ++i)
     {
-        if (outputData[i] != expectedData[i])
+        const auto outputData = m_params.use8BitAccess ? static_cast<uint32_t>(outputData8[i]) : outputData32[i];
+        if (outputData != expectedData[i])
         {
             std::stringstream msg;
-            msg << "At index " << i << ", expected 0x" << std::hex << expectedData[i] << " but got 0x" << outputData[i];
+            msg << "At index " << i << ", expected 0x" << std::hex << expectedData[i] << " but got 0x" << outputData;
             return tcu::TestStatus::fail(msg.str());
         }
     }
@@ -18781,6 +18827,22 @@ void populateNonUniformAccessTests(tcu::TestCaseGroup *topGroup, uint32_t baseSe
 
         group->addChild(new DescriptorHeapTestCaseNonUniformAccess(testCtx, testName, params));
     }
+
+    {
+        const char *const testName = "storage_buffer_8bit";
+
+        TestParamsWithDescriptorType params{};
+        params.queue                         = VK_QUEUE_COMPUTE_BIT;
+        params.descriptorType                = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        params.enableRuntimeDescriptorArray  = true;
+        params.enableShaderInt8              = true;
+        params.enableStorageBuffer8BitAccess = true;
+        params.use8BitAccess                 = true;
+        params.seed                          = baseSeed ^ deStringHash(testName);
+
+        group->addChild(new DescriptorHeapTestCaseNonUniformAccess(testCtx, testName, params));
+    }
+
     topGroup->addChild(group.release());
 }
 
@@ -19658,6 +19720,7 @@ void populateSmallBufferTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
     MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "small_buffer"));
 
     TestParams params{};
+    params.enableStorageBuffer8BitAccess           = true;
     params.enableUniformAndStorageBuffer8BitAccess = true;
     params.queue                                   = VK_QUEUE_COMPUTE_BIT;
     params.seed                                    = baseSeed ^ deStringHash("copy");
