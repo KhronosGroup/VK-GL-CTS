@@ -8533,6 +8533,13 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
 
 #ifndef CTS_USES_VULKANSC
     case RENDERING_TYPE_DYNAMIC_RENDERING:
+
+        if (groupParams->useSecondaryCmdBuffer == false ||
+            !groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+        {
+            renderingTests->addChild(createDynamicRenderingLocalReadTests(testCtx, groupParams));
+        }
+
         // we are repeating only some multi-pass tests for pipeline libraries
         if (groupParams->pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
             break;
@@ -8545,7 +8552,6 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
             renderingTests->addChild(createDynamicRenderingRandomTests(testCtx));
             renderingTests->addChild(createDynamicRenderingBasicTests(testCtx));
             renderingTests->addChild(createDynamicRenderingUnusedAttachmentsTests(testCtx, false));
-            renderingTests->addChild(createDynamicRenderingLocalReadTests(testCtx, groupParams));
             renderingTests->addChild(createDynamicRenderingLocalReadMaint10Tests(testCtx));
             renderingTests->addChild(createRenderPassCustomResolveTests(testCtx, groupParams));
             renderingTests->addChild(createRenderPassMultiviewPerViewTests(testCtx, groupParams));
@@ -8554,7 +8560,6 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
         else if (!groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
         {
             renderingTests->addChild(createDynamicRenderingUnusedAttachmentsTests(testCtx, true));
-            renderingTests->addChild(createDynamicRenderingLocalReadTests(testCtx, groupParams));
             renderingTests->addChild(createRenderPassCustomResolveTests(testCtx, groupParams));
         }
         break;
@@ -8625,6 +8630,16 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
     return renderingTests.release();
 }
 
+#ifndef CTS_USES_VULKANSC
+tcu::TestCaseGroup *createShaderObjectTests(tcu::TestContext &testCtx, const char *groupName,
+                                            const SharedGroupParams groupParams)
+{
+    de::MovePtr<tcu::TestCaseGroup> renderingTests(new tcu::TestCaseGroup(testCtx, groupName));
+    renderingTests->addChild(createDynamicRenderingLocalReadTests(testCtx, groupParams));
+    return renderingTests.release();
+}
+#endif // CTS_USES_VULKANSC
+
 } // namespace
 
 tcu::TestCaseGroup *createRenderPassTests(tcu::TestContext &testCtx, const std::string &name)
@@ -8688,6 +8703,17 @@ tcu::TestCaseGroup *createDynamicRenderingTests(tcu::TestContext &testCtx, const
             false,                            // bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
             PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY, // PipelineConstructionType pipelineConstructionType;
         })));
+
+#ifndef CTS_USES_VULKANSC
+    dynamicRenderingGroup->addChild(createShaderObjectTests(
+        testCtx, "shader_object",
+        SharedGroupParams(new GroupParams{
+            RENDERING_TYPE_DYNAMIC_RENDERING, // RenderingType renderingType;
+            false,                            // bool useSecondaryCmdBuffer;
+            false,                            // bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
+            PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_SPIRV, // PipelineConstructionType pipelineConstructionType;
+        })));
+#endif // CTS_USES_VULKANSC
 
     return dynamicRenderingGroup.release();
 }

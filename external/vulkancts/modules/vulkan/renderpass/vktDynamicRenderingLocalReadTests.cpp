@@ -135,6 +135,12 @@ bool isInteractionWithShaderObjOrRemapSingle(TestType testType)
     return (testType == TestType::INTERACTION_WITH_SHADER_OBJECT || isRemapSingle(testType));
 }
 
+bool isConstructionTypeInvariant(TestType testType)
+{
+    return (testType == TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY ||
+            testType == TestType::FEEDBACK_LOOP_ESO || isInteractionWithShaderObjOrRemapSingle(testType));
+}
+
 PipelineConstructionType getRemapSingleConstructionType(TestType testType)
 {
     if (testType == TestType::REMAP_SINGLE_ATTACHMENT_MONOLITHIC)
@@ -563,8 +569,11 @@ bool BasicLocalReadTestInstance::UseColorWriteEnable() const
 
 tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
 {
+    const InstanceInterface &vki           = m_context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice  = m_context.getPhysicalDevice();
     const DeviceInterface &vk              = m_context.getDeviceInterface();
     const VkDevice device                  = m_context.getDevice();
+    const auto &deviceExtensions           = m_context.getDeviceExtensions();
     Allocator &memAlloc                    = m_context.getDefaultAllocator();
     VkQueue queue                          = m_context.getUniversalQueue();
     const uint32_t queueFamilyIndex        = m_context.getUniversalQueueFamilyIndex();
@@ -621,8 +630,9 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     std::vector<VkRenderingAttachmentInfo> colorAttachments(m_colorAttachmentCount, depthStencilAttachment);
     std::vector<VkDescriptorImageInfo> colorImageDescriptors(m_colorAttachmentCount, depthImageDescriptor);
     std::vector<BufferWithMemorySp> outputBuffers(m_outputDrawsCount, BufferWithMemorySp());
-    std::vector<Move<VkPipeline>> writeGraphicsPipelines(m_inputDrawsCount);
-    std::vector<Move<VkPipeline>> readGraphicsPipelines(m_outputDrawsCount);
+    using GraphicsPipelineWrapperPtr = std::unique_ptr<GraphicsPipelineWrapper>;
+    std::vector<GraphicsPipelineWrapperPtr> writeGraphicsPipelines(m_inputDrawsCount);
+    std::vector<GraphicsPipelineWrapperPtr> readGraphicsPipelines(m_outputDrawsCount);
 
     auto setupImageViewSp = [&](VkImage image, VkFormat format, const VkImageSubresourceRange &srr)
     {
@@ -738,12 +748,14 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     // create components for pipelines
     const VkPushConstantRange pushConstantRange             = {VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4};
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {*descriptorSetLayoutA, *descriptorSetLayoutB};
-    Move<VkPipelineLayout> writePipelineLayout = makePipelineLayout(vk, device, 0, nullptr, 1u, &pushConstantRange);
-    Move<VkPipelineLayout> readPipelineLayout  = makePipelineLayout(vk, device, descriptorSetLayouts);
-    auto &bc                                   = m_context.getBinaryCollection();
-    Move<VkShaderModule> vertShaderModule      = createShaderModule(vk, device, bc.get("vert"));
-    Move<VkShaderModule> writeFragShaderModule = createShaderModule(vk, device, bc.get(m_writeFragName));
-    Move<VkShaderModule> readFragShaderModule  = createShaderModule(vk, device, bc.get(m_readFragName));
+    const PipelineConstructionType pipelineType             = m_groupParams->pipelineConstructionType;
+    PipelineLayoutWrapper writePipelineLayout(pipelineType, vk, device, 0u, nullptr, 1u, &pushConstantRange);
+    PipelineLayoutWrapper readPipelineLayout(pipelineType, vk, device, de::sizeU32(descriptorSetLayouts),
+                                             de::dataOrNull(descriptorSetLayouts));
+    auto &bc = m_context.getBinaryCollection();
+    ShaderWrapper vertShader(vk, device, bc.get("vert"));
+    ShaderWrapper writeFragShader(vk, device, bc.get(m_writeFragName));
+    ShaderWrapper readFragShader(vk, device, bc.get(m_readFragName));
 
     // define empty VertexInputState, full screen quad will be generated in vertex shader
     const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
@@ -827,27 +839,36 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
                                                       useStencilAspect ? m_dsFormat : VK_FORMAT_UNDEFINED};
 
     // set attachment locations remapping for write pipelines
-    if (m_useMapping)
-        renderingCreateInfo.pNext = &renderingAttachmentLocationInfo;
+    const RenderingAttachmentLocationInfoWrapper pipelineAttachmentLocationInfo(
+        m_useMapping ? &renderingAttachmentLocationInfo : nullptr);
+    const RenderingInputAttachmentIndexInfoWrapper pipelineInputAttachmentIndexInfo(
+        m_useMapping ? &renderingInputAttachmentIndexInfo : nullptr);
 
     // create write pipelines that writes to color attachments
     for (uint32_t pipelineIndex = 0; pipelineIndex < m_inputDrawsCount; ++pipelineIndex)
     {
         renderingAttachmentLocationInfo.pColorAttachmentLocations = m_colorAttachmentLocations[pipelineIndex].data();
-        writeGraphicsPipelines[pipelineIndex]                     = makeGraphicsPipeline(
-            vk, device, *writePipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
-            *writeFragShaderModule, VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
-            &vertexInputState, nullptr, &multisampleStateCreateInfo, &depthStencilStateCreateInfo,
-            &colorBlendStateCreateInfo, writeDynamicStateCreateInfo, &renderingCreateInfo);
+
+        writeGraphicsPipelines[pipelineIndex].reset(
+            new GraphicsPipelineWrapper(vki, vk, physicalDevice, device, deviceExtensions, pipelineType));
+        writeGraphicsPipelines[pipelineIndex]
+            ->setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+            .setDefaultRasterizationState()
+            .setDynamicState(writeDynamicStateCreateInfo)
+            .setMonolithicPipelineLayout(writePipelineLayout)
+            .setupVertexInputState(&vertexInputState)
+            .setupPreRasterizationShaderState(viewports, scissors, writePipelineLayout, VK_NULL_HANDLE, 0u, vertShader,
+                                              0, {}, {}, {}, 0, nullptr, &renderingCreateInfo)
+            .setupFragmentShaderState(writePipelineLayout, VK_NULL_HANDLE, 0u, writeFragShader,
+                                      &depthStencilStateCreateInfo, &multisampleStateCreateInfo)
+            .setupFragmentOutputState(VK_NULL_HANDLE, 0u, &colorBlendStateCreateInfo, &multisampleStateCreateInfo,
+                                      VK_NULL_HANDLE, {}, pipelineAttachmentLocationInfo)
+            .buildPipeline();
 
         // writte to depth and stencil only in first pipeline
         depthStencilStateCreateInfo.depthTestEnable   = false;
         depthStencilStateCreateInfo.stencilTestEnable = false;
     }
-
-    // set input attachments remapping for read pipelines
-    if (m_useMapping)
-        renderingCreateInfo.pNext = &renderingInputAttachmentIndexInfo;
 
     // read pipelines don't write to the color attachments
     for (auto &cb : colorBlendAttachmentStates)
@@ -867,10 +888,21 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     {
         renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices =
             de::dataOrNull(m_colorAttachmentInputIndices[pipelineIndex]);
-        readGraphicsPipelines[pipelineIndex] = makeGraphicsPipeline(
-            vk, device, *readPipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
-            *readFragShaderModule, VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, subpass,
-            0, &vertexInputState, nullptr, nullptr, nullptr, &colorBlendStateCreateInfo, nullptr, &renderingCreateInfo);
+        readGraphicsPipelines[pipelineIndex].reset(
+            new GraphicsPipelineWrapper(vki, vk, physicalDevice, device, deviceExtensions, pipelineType));
+        readGraphicsPipelines[pipelineIndex]
+            ->setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+            .setDefaultRasterizationState()
+            .setDefaultDepthStencilState()
+            .setDefaultMultisampleState()
+            .setMonolithicPipelineLayout(readPipelineLayout)
+            .setupVertexInputState(&vertexInputState)
+            .setupPreRasterizationShaderState(viewports, scissors, readPipelineLayout, VK_NULL_HANDLE, subpass,
+                                              vertShader, 0, {}, {}, {}, 0, nullptr, &renderingCreateInfo)
+            .setupFragmentShaderState(readPipelineLayout, VK_NULL_HANDLE, subpass, readFragShader, nullptr, nullptr,
+                                      nullptr, VK_NULL_HANDLE, {}, pipelineInputAttachmentIndexInfo)
+            .setupFragmentOutputState(VK_NULL_HANDLE, subpass, &colorBlendStateCreateInfo)
+            .buildPipeline();
     }
 
     VkRenderingInfo renderingInfo = initVulkanStructure();
@@ -887,12 +919,13 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
 
     const auto recordInputRP = [&](VkCommandBuffer cmd, uint32_t index)
     {
+        writeGraphicsPipelines[index]->bind(cmd);
+
         if (useColorWriteEnable)
             vk.cmdSetColorWriteEnableEXT(cmd, 4u, m_colorWriteEnables);
         if (useUseExtendedDynamicState3)
             vk.cmdSetRasterizationSamplesEXT(cmd, actualSampleCount);
 
-        vk.cmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, *writeGraphicsPipelines[index]);
         vk.cmdPushConstants(cmd, *writePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4, &index);
 
         vk.cmdDraw(cmd, 4u, 1u, 0u, 0u);
@@ -902,7 +935,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     {
         VkDescriptorSet descriptorSets[] = {*inputAttachmentsDescriptorSets[index], *bufferDescriptorSets[index]};
 
-        vk.cmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, *readGraphicsPipelines[index]);
+        readGraphicsPipelines[index]->bind(cmd);
         vk.cmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, *readPipelineLayout, 0u, 2u, descriptorSets, 0u,
                                  nullptr);
 
@@ -1170,8 +1203,11 @@ MappingWithBlendStateTestInstance::MappingWithBlendStateTestInstance(Context &co
 
 tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
 {
+    const InstanceInterface &vki           = m_context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice  = m_context.getPhysicalDevice();
     const DeviceInterface &vk              = m_context.getDeviceInterface();
     const VkDevice device                  = m_context.getDevice();
+    const auto &deviceExtensions           = m_context.getDeviceExtensions();
     Allocator &memAlloc                    = m_context.getDefaultAllocator();
     VkQueue queue                          = m_context.getUniversalQueue();
     const uint32_t queueFamilyIndex        = m_context.getUniversalQueueFamilyIndex();
@@ -1264,9 +1300,10 @@ tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
             new BufferWithMemory(vk, device, memAlloc, outputBufferInfo, MemoryRequirement::HostVisible));
     }
 
-    auto pipelineLayout   = makePipelineLayout(vk, device, VK_NULL_HANDLE);
-    auto vertShaderModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"));
-    auto fragShaderModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"));
+    const PipelineConstructionType pipelineType = m_groupParams->pipelineConstructionType;
+    PipelineLayoutWrapper pipelineLayout(pipelineType, vk, device);
+    ShaderWrapper vertShader(vk, device, m_context.getBinaryCollection().get("vert"));
+    ShaderWrapper fragShader(vk, device, m_context.getBinaryCollection().get("frag"));
 
     // define empty VertexInputState, full screen quad will be generated in vertex shader
     const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
@@ -1280,17 +1317,26 @@ tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO_KHR, nullptr, colorAttachmentCount,
         colorAttachmentLocations};
     VkPipelineRenderingCreateInfo renderingCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-                                                      &renderingAttachmentLocations,
+                                                      nullptr,
                                                       0u,
                                                       colorAttachmentCount,
                                                       colorImageFormats.data(),
                                                       VK_FORMAT_UNDEFINED,
                                                       VK_FORMAT_UNDEFINED};
 
-    Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
-        vk, device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
-        *fragShaderModule, VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
-        &vertexInputState, nullptr, nullptr, nullptr, &colorBlendStateCreateInfo, nullptr, &renderingCreateInfo);
+    GraphicsPipelineWrapper graphicsPipeline(vki, vk, physicalDevice, device, deviceExtensions, pipelineType);
+    graphicsPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setMonolithicPipelineLayout(pipelineLayout)
+        .setupVertexInputState(&vertexInputState)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, VK_NULL_HANDLE, 0u, vertShader, 0, {},
+                                          {}, {}, 0, nullptr, &renderingCreateInfo)
+        .setupFragmentShaderState(pipelineLayout, VK_NULL_HANDLE, 0u, fragShader)
+        .setupFragmentOutputState(VK_NULL_HANDLE, 0u, &colorBlendStateCreateInfo, nullptr, VK_NULL_HANDLE, nullptr,
+                                  &renderingAttachmentLocations)
+        .buildPipeline();
 
     const auto renderingFlags = static_cast<VkRenderingFlags>(
         m_groupParams->useSecondaryCmdBuffer ? VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT : 0);
@@ -1310,7 +1356,7 @@ tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
 
     const auto recordRenderPass = [&](VkCommandBuffer cmd)
     {
-        vk.cmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
+        graphicsPipeline.bind(cmd);
         vk.cmdDraw(cmd, 4u, 1u, 0u, 0u);
     };
 
@@ -1786,12 +1832,12 @@ MappingWithShaderObjectOrSingleAttachmentTestInstance::MappingWithShaderObjectOr
 
 tcu::TestStatus MappingWithShaderObjectOrSingleAttachmentTestInstance::iterate()
 {
-    const auto &vki             = m_context.getInstanceInterface();
-    const auto &vk              = m_context.getDeviceInterface();
-    const auto device           = m_context.getDevice();
-    const auto physicalDevice   = m_context.getPhysicalDevice();
-    const auto deviceExtensions = m_context.getDeviceExtensions();
-    Allocator &allocator        = m_context.getDefaultAllocator();
+    const auto &vki              = m_context.getInstanceInterface();
+    const auto &vk               = m_context.getDeviceInterface();
+    const auto device            = m_context.getDevice();
+    const auto physicalDevice    = m_context.getPhysicalDevice();
+    const auto &deviceExtensions = m_context.getDeviceExtensions();
+    Allocator &allocator         = m_context.getDefaultAllocator();
 
     const auto imageSize(8u);
     const auto maxImageCount = 3u;
@@ -2097,7 +2143,7 @@ tcu::TestStatus FeedbackLoopTestInstance::iterate()
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
     const auto physicalDevice       = m_context.getPhysicalDevice();
-    const auto deviceExtensions     = m_context.getDeviceExtensions();
+    const auto &deviceExtensions    = m_context.getDeviceExtensions();
     Allocator &alloc                = m_context.getDefaultAllocator();
     VkQueue queue                   = m_context.getUniversalQueue();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
@@ -2108,7 +2154,7 @@ tcu::TestStatus FeedbackLoopTestInstance::iterate()
     const auto msaaSamples          = isMsaaTest ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
 
     const PipelineConstructionType pipelineType = m_testType != TestType::FEEDBACK_LOOP_ESO ?
-                                                      PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC :
+                                                      m_groupParams->pipelineConstructionType :
                                                       PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_BINARY;
 
     const VkImageSubresourceRange srr = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -2454,6 +2500,7 @@ void LocalReadTestCase::checkSupport(Context &context) const
     VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
 
     context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
+    checkPipelineConstructionRequirements(vki, physicalDevice, m_groupParams->pipelineConstructionType);
 
     if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX)
     {
@@ -3132,7 +3179,8 @@ class NullAttachmentLocationsTestInstance : public TestInstance
 {
 public:
     NullAttachmentLocationsTestInstance(Context &ctx, const bool commandMode, const bool nullAfterRemap,
-                                        const bool nullBeforeIdentity);
+                                        const bool nullBeforeIdentity,
+                                        const PipelineConstructionType pipelineConstructionType);
     virtual ~NullAttachmentLocationsTestInstance(void) = default;
     tcu::TestStatus iterate(void);
 
@@ -3140,15 +3188,17 @@ private:
     const bool m_commandMode;
     const bool m_nullAfterRemap;
     const bool m_nullBeforeIdentity;
+    const PipelineConstructionType m_pipelineConstructionType;
 };
 
-NullAttachmentLocationsTestInstance::NullAttachmentLocationsTestInstance(Context &ctx, const bool commandMode,
-                                                                         const bool nullAfterRemap,
-                                                                         const bool nullBeforeIdentity)
+NullAttachmentLocationsTestInstance::NullAttachmentLocationsTestInstance(
+    Context &ctx, const bool commandMode, const bool nullAfterRemap, const bool nullBeforeIdentity,
+    const PipelineConstructionType pipelineConstructionType)
     : TestInstance(ctx)
     , m_commandMode(commandMode)
     , m_nullAfterRemap(nullAfterRemap)
     , m_nullBeforeIdentity(nullBeforeIdentity)
+    , m_pipelineConstructionType(pipelineConstructionType)
 {
 }
 
@@ -3156,7 +3206,8 @@ class NullAttachmentLocationsTestCase : public TestCase
 {
 public:
     NullAttachmentLocationsTestCase(tcu::TestContext &ctx, const std::string &name, const bool commandMode,
-                                    const bool nullAfterRemap, const bool nullBeforeIdentity);
+                                    const bool nullAfterRemap, const bool nullBeforeIdentity,
+                                    const PipelineConstructionType pipelineConstructionType);
     virtual ~NullAttachmentLocationsTestCase(void) = default;
     virtual void checkSupport(Context &context) const;
     virtual void initPrograms(SourceCollections &programCollection) const;
@@ -3166,21 +3217,25 @@ private:
     const bool m_commandMode;
     const bool m_nullAfterRemap;
     const bool m_nullBeforeIdentity;
+    const PipelineConstructionType m_pipelineConstructionType;
 };
 
-NullAttachmentLocationsTestCase::NullAttachmentLocationsTestCase(tcu::TestContext &ctx, const std::string &name,
-                                                                 const bool commandMode, const bool nullAfterRemap,
-                                                                 const bool nullBeforeIdentity)
+NullAttachmentLocationsTestCase::NullAttachmentLocationsTestCase(
+    tcu::TestContext &ctx, const std::string &name, const bool commandMode, const bool nullAfterRemap,
+    const bool nullBeforeIdentity, const PipelineConstructionType pipelineConstructionType)
     : TestCase(ctx, name)
     , m_commandMode(commandMode)
     , m_nullAfterRemap(nullAfterRemap)
     , m_nullBeforeIdentity(nullBeforeIdentity)
+    , m_pipelineConstructionType(pipelineConstructionType)
 {
 }
 
 void NullAttachmentLocationsTestCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
+    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                          m_pipelineConstructionType);
 }
 
 void NullAttachmentLocationsTestCase::initPrograms(SourceCollections &programCollection) const
@@ -3217,7 +3272,8 @@ void NullAttachmentLocationsTestCase::initPrograms(SourceCollections &programCol
 
 TestInstance *NullAttachmentLocationsTestCase::createInstance(Context &context) const
 {
-    return new NullAttachmentLocationsTestInstance(context, m_commandMode, m_nullAfterRemap, m_nullBeforeIdentity);
+    return new NullAttachmentLocationsTestInstance(context, m_commandMode, m_nullAfterRemap, m_nullBeforeIdentity,
+                                                   m_pipelineConstructionType);
 }
 
 VkRenderingAttachmentInfo makeDynamicRenderingAttachmentInfo(const VkClearValue &clearValue,
@@ -3282,11 +3338,14 @@ VkPipelineRenderingCreateInfo makeDynamicRenderingCreateInfo(
 
 tcu::TestStatus NullAttachmentLocationsTestInstance::iterate(void)
 {
-    const DeviceInterface &vkd    = m_context.getDeviceInterface();
-    const VkDevice device         = m_context.getDevice();
-    const uint32_t queueFamilyIdx = m_context.getUniversalQueueFamilyIndex();
-    const VkQueue queue           = m_context.getUniversalQueue();
-    Allocator &alloc              = m_context.getDefaultAllocator();
+    const InstanceInterface &vki          = m_context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+    const DeviceInterface &vkd            = m_context.getDeviceInterface();
+    const VkDevice device                 = m_context.getDevice();
+    const auto &deviceExtensions          = m_context.getDeviceExtensions();
+    const uint32_t queueFamilyIdx         = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue                   = m_context.getUniversalQueue();
+    Allocator &alloc                      = m_context.getDefaultAllocator();
 
     const uint32_t renderSize              = 16u;
     const VkRect2D renderArea              = makeRect2D(renderSize, renderSize);
@@ -3335,9 +3394,9 @@ tcu::TestStatus NullAttachmentLocationsTestInstance::iterate(void)
         identityColorAttachmentLocations[i]    = i;
     }
 
-    const auto pipelineLayout   = makePipelineLayout(vkd, device, VK_NULL_HANDLE);
-    const auto vertShaderModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"));
-    const auto fragShaderModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"));
+    const PipelineLayoutWrapper pipelineLayout(m_pipelineConstructionType, vkd, device);
+    ShaderWrapper vertShader(vkd, device, m_context.getBinaryCollection().get("vert"));
+    ShaderWrapper fragShader(vkd, device, m_context.getBinaryCollection().get("frag"));
 
     // Dynamic rendering info
     const auto dynRenderingInfo = makeDynamicRenderingInfo(renderArea, de::sizeU32(dynRenderingColorAttachmentInfos),
@@ -3348,18 +3407,16 @@ tcu::TestStatus NullAttachmentLocationsTestInstance::iterate(void)
         colorAttachmentCount, de::dataOrNull(identityColorAttachmentLocations));
 
     // Dynamic rendering attachment with non-identity mapping location info
-    const auto nonIdentityDynRenderingAttachmentLocationInfo = makeDynamicRenderingAttachmentLocationInfo(
+    auto nonIdentityDynRenderingAttachmentLocationInfo = makeDynamicRenderingAttachmentLocationInfo(
         colorAttachmentCount, de::dataOrNull(nonIdentityColorAttachmentLocations));
 
     // Empty dynamic rendering attachment location info
-    const auto emptyDynRenderingAttachmentLocationInfo =
-        makeDynamicRenderingAttachmentLocationInfo(colorAttachmentCount);
+    auto emptyDynRenderingAttachmentLocationInfo = makeDynamicRenderingAttachmentLocationInfo(colorAttachmentCount);
 
     const bool withLocationInfo = !m_commandMode;
     // Dynamic rendering pipeline info
     auto dynRenderingCreateInfo =
-        makeDynamicRenderingCreateInfo(colorAttachmentCount, de::dataOrNull(colorImageFormats),
-                                       withLocationInfo ? &emptyDynRenderingAttachmentLocationInfo : nullptr);
+        makeDynamicRenderingCreateInfo(colorAttachmentCount, de::dataOrNull(colorImageFormats), nullptr);
 
     // Pipeline
     const std::vector<VkViewport> viewports{makeViewport(renderSize, renderSize)};
@@ -3381,20 +3438,36 @@ tcu::TestStatus NullAttachmentLocationsTestInstance::iterate(void)
     colorBlendStateCreateInfo.attachmentCount                     = de::sizeU32(colorBlendAttachmentStates);
     colorBlendStateCreateInfo.pAttachments                        = de::dataOrNull(colorBlendAttachmentStates);
 
-    const auto makeSinglePipeline = [&]() -> Move<VkPipeline>
-    {
-        return makeGraphicsPipeline(vkd, device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE,
-                                    VK_NULL_HANDLE, *fragShaderModule, VK_NULL_HANDLE, viewports, scissors,
-                                    VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0, &vertexInputState, nullptr, nullptr,
-                                    nullptr, &colorBlendStateCreateInfo, nullptr, &dynRenderingCreateInfo);
-    };
+    GraphicsPipelineWrapper graphicsPipeline(vki, vkd, physicalDevice, device, deviceExtensions,
+                                             m_pipelineConstructionType);
+    graphicsPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setMonolithicPipelineLayout(pipelineLayout)
+        .setupVertexInputState(&vertexInputState)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, VK_NULL_HANDLE, 0u, vertShader, 0, {},
+                                          {}, {}, 0, nullptr, &dynRenderingCreateInfo)
+        .setupFragmentShaderState(pipelineLayout, VK_NULL_HANDLE, 0u, fragShader)
+        .setupFragmentOutputState(VK_NULL_HANDLE, 0u, &colorBlendStateCreateInfo, nullptr, VK_NULL_HANDLE, nullptr,
+                                  withLocationInfo ? &emptyDynRenderingAttachmentLocationInfo : nullptr)
+        .buildPipeline();
 
-    Move<VkPipeline> graphicsPipeline = makeSinglePipeline();
-    Move<VkPipeline> altPipeline;
+    GraphicsPipelineWrapper altPipeline(vki, vkd, physicalDevice, device, deviceExtensions, m_pipelineConstructionType);
     if (m_nullAfterRemap)
     {
-        dynRenderingCreateInfo.pNext = &nonIdentityDynRenderingAttachmentLocationInfo;
-        altPipeline                  = makeSinglePipeline();
+        altPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+            .setDefaultRasterizationState()
+            .setDefaultDepthStencilState()
+            .setDefaultMultisampleState()
+            .setMonolithicPipelineLayout(pipelineLayout)
+            .setupVertexInputState(&vertexInputState)
+            .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, VK_NULL_HANDLE, 0u, vertShader, 0,
+                                              {}, {}, {}, 0, nullptr, &dynRenderingCreateInfo)
+            .setupFragmentShaderState(pipelineLayout, VK_NULL_HANDLE, 0u, fragShader)
+            .setupFragmentOutputState(VK_NULL_HANDLE, 0u, &colorBlendStateCreateInfo, nullptr, VK_NULL_HANDLE, nullptr,
+                                      &nonIdentityDynRenderingAttachmentLocationInfo)
+            .buildPipeline();
     }
 
     // Command buffer
@@ -3415,7 +3488,7 @@ tcu::TestStatus NullAttachmentLocationsTestInstance::iterate(void)
         if (m_nullAfterRemap)
         {
             vkd.cmdSetRenderingAttachmentLocations(cmdBuffer, &nonIdentityDynRenderingAttachmentLocationInfo);
-            vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *altPipeline);
+            altPipeline.bind(cmdBuffer);
             vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
         }
 
@@ -3427,7 +3500,7 @@ tcu::TestStatus NullAttachmentLocationsTestInstance::iterate(void)
             vkd.cmdSetRenderingAttachmentLocations(cmdBuffer, &identityDynRenderingAttachmentLocationInfo);
     }
 
-    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
+    graphicsPipeline.bind(cmdBuffer);
     vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
 
     vkd.cmdEndRendering(cmdBuffer);
@@ -3481,20 +3554,24 @@ tcu::TestStatus NullAttachmentLocationsTestInstance::iterate(void)
 class RemapToHighLocationTestInstance : public TestInstance
 {
 public:
-    RemapToHighLocationTestInstance(Context &ctx, const uint32_t numAttachments, const uint32_t firstRemapLocation);
+    RemapToHighLocationTestInstance(Context &ctx, const uint32_t numAttachments, const uint32_t firstRemapLocation,
+                                    const PipelineConstructionType pipelineConstructionType);
     virtual ~RemapToHighLocationTestInstance(void);
     tcu::TestStatus iterate(void);
 
 private:
     const uint32_t m_numAttachments;
     const uint32_t m_firstRemapLocation;
+    const PipelineConstructionType m_pipelineConstructionType;
 };
 
-RemapToHighLocationTestInstance::RemapToHighLocationTestInstance(Context &ctx, const uint32_t numAttachments,
-                                                                 const uint32_t firstRemapLocation)
+RemapToHighLocationTestInstance::RemapToHighLocationTestInstance(
+    Context &ctx, const uint32_t numAttachments, const uint32_t firstRemapLocation,
+    const PipelineConstructionType pipelineConstructionType)
     : TestInstance(ctx)
     , m_numAttachments(numAttachments)
     , m_firstRemapLocation(firstRemapLocation)
+    , m_pipelineConstructionType(pipelineConstructionType)
 {
 }
 
@@ -3506,7 +3583,8 @@ class RemappingToHighLocationTestCase : public TestCase
 {
 public:
     RemappingToHighLocationTestCase(tcu::TestContext &ctx, const std::string &name, const uint32_t numAttachments,
-                                    const uint32_t firstRemapLocation);
+                                    const uint32_t firstRemapLocation,
+                                    const PipelineConstructionType pipelineConstructionType);
     virtual ~RemappingToHighLocationTestCase(void);
     virtual void checkSupport(Context &context) const;
     virtual void initPrograms(SourceCollections &programCollection) const;
@@ -3515,14 +3593,16 @@ public:
 private:
     const uint32_t m_numAttachments;
     const uint32_t m_firstRemapLocation;
+    const PipelineConstructionType m_pipelineConstructionType;
 };
 
-RemappingToHighLocationTestCase::RemappingToHighLocationTestCase(tcu::TestContext &ctx, const std::string &name,
-                                                                 const uint32_t numAttachments,
-                                                                 const uint32_t firstRemapLocation)
+RemappingToHighLocationTestCase::RemappingToHighLocationTestCase(
+    tcu::TestContext &ctx, const std::string &name, const uint32_t numAttachments, const uint32_t firstRemapLocation,
+    const PipelineConstructionType pipelineConstructionType)
     : TestCase(ctx, name)
     , m_numAttachments(numAttachments)
     , m_firstRemapLocation(firstRemapLocation)
+    , m_pipelineConstructionType(pipelineConstructionType)
 {
 }
 
@@ -3533,6 +3613,8 @@ RemappingToHighLocationTestCase::~RemappingToHighLocationTestCase(void)
 void RemappingToHighLocationTestCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
+    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                          m_pipelineConstructionType);
 }
 
 void RemappingToHighLocationTestCase::initPrograms(SourceCollections &programCollection) const
@@ -3576,16 +3658,20 @@ void RemappingToHighLocationTestCase::initPrograms(SourceCollections &programCol
 
 TestInstance *RemappingToHighLocationTestCase::createInstance(Context &context) const
 {
-    return new RemapToHighLocationTestInstance(context, m_numAttachments, m_firstRemapLocation);
+    return new RemapToHighLocationTestInstance(context, m_numAttachments, m_firstRemapLocation,
+                                               m_pipelineConstructionType);
 }
 
 tcu::TestStatus RemapToHighLocationTestInstance::iterate(void)
 {
-    const DeviceInterface &vkd    = m_context.getDeviceInterface();
-    const VkDevice device         = m_context.getDevice();
-    const uint32_t queueFamilyIdx = m_context.getUniversalQueueFamilyIndex();
-    const VkQueue queue           = m_context.getUniversalQueue();
-    Allocator &alloc              = m_context.getDefaultAllocator();
+    const InstanceInterface &vki          = m_context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+    const DeviceInterface &vkd            = m_context.getDeviceInterface();
+    const VkDevice device                 = m_context.getDevice();
+    const auto &deviceExtensions          = m_context.getDeviceExtensions();
+    const uint32_t queueFamilyIdx         = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue                   = m_context.getUniversalQueue();
+    Allocator &alloc                      = m_context.getDefaultAllocator();
 
     const uint32_t renderSize              = 16u;
     const VkRect2D renderArea              = makeRect2D(renderSize, renderSize);
@@ -3633,21 +3719,21 @@ tcu::TestStatus RemapToHighLocationTestInstance::iterate(void)
         nonIdentityColorAttachmentLocations[i] = i + m_firstRemapLocation;
     }
 
-    const auto pipelineLayout   = makePipelineLayout(vkd, device, VK_NULL_HANDLE);
-    const auto vertShaderModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"));
-    const auto fragShaderModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"));
+    const PipelineLayoutWrapper pipelineLayout(m_pipelineConstructionType, vkd, device);
+    ShaderWrapper vertShader(vkd, device, m_context.getBinaryCollection().get("vert"));
+    ShaderWrapper fragShader(vkd, device, m_context.getBinaryCollection().get("frag"));
 
     // Dynamic rendering info
     const auto dynRenderingInfo = makeDynamicRenderingInfo(renderArea, de::sizeU32(dynRenderingColorAttachmentInfos),
                                                            de::dataOrNull(dynRenderingColorAttachmentInfos));
 
     // Dynamic rendering attachment with non-identity mapping location info
-    const auto nonIdentityDynRenderingAttachmentLocationInfo = makeDynamicRenderingAttachmentLocationInfo(
+    auto nonIdentityDynRenderingAttachmentLocationInfo = makeDynamicRenderingAttachmentLocationInfo(
         colorAttachmentCount, de::dataOrNull(nonIdentityColorAttachmentLocations));
 
     // Dynamic rendering pipeline info
-    const auto dynRenderingCreateInfo = makeDynamicRenderingCreateInfo(
-        colorAttachmentCount, de::dataOrNull(colorImageFormats), &nonIdentityDynRenderingAttachmentLocationInfo);
+    auto dynRenderingCreateInfo =
+        makeDynamicRenderingCreateInfo(colorAttachmentCount, de::dataOrNull(colorImageFormats), nullptr);
 
     // Pipeline
     const std::vector<VkViewport> viewports{makeViewport(renderSize, renderSize)};
@@ -3669,10 +3755,20 @@ tcu::TestStatus RemapToHighLocationTestInstance::iterate(void)
     colorBlendStateCreateInfo.attachmentCount                     = de::sizeU32(colorBlendAttachmentStates);
     colorBlendStateCreateInfo.pAttachments                        = de::dataOrNull(colorBlendAttachmentStates);
 
-    Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
-        vkd, device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
-        *fragShaderModule, VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
-        &vertexInputState, nullptr, nullptr, nullptr, &colorBlendStateCreateInfo, nullptr, &dynRenderingCreateInfo);
+    GraphicsPipelineWrapper pipelineWrapper(vki, vkd, physicalDevice, device, deviceExtensions,
+                                            m_pipelineConstructionType);
+    pipelineWrapper.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setMonolithicPipelineLayout(pipelineLayout)
+        .setupVertexInputState(&vertexInputState)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, VK_NULL_HANDLE, 0u, vertShader, 0, {},
+                                          {}, {}, 0, nullptr, &dynRenderingCreateInfo)
+        .setupFragmentShaderState(pipelineLayout, VK_NULL_HANDLE, 0u, fragShader)
+        .setupFragmentOutputState(VK_NULL_HANDLE, 0u, &colorBlendStateCreateInfo, nullptr, VK_NULL_HANDLE, nullptr,
+                                  &nonIdentityDynRenderingAttachmentLocationInfo)
+        .buildPipeline();
 
     // Command buffer
     const auto cmdPool =
@@ -3687,7 +3783,7 @@ tcu::TestStatus RemapToHighLocationTestInstance::iterate(void)
 
     vkd.cmdBeginRendering(cmdBuffer, &dynRenderingInfo);
 
-    vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
+    pipelineWrapper.bind(cmdBuffer);
 
     vkd.cmdSetRenderingAttachmentLocations(cmdBuffer, &nonIdentityDynRenderingAttachmentLocationInfo);
 
@@ -4177,17 +4273,27 @@ tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testC
         new tcu::TestCaseGroup(testCtx, "local_read", "Test dynamic rendering local read"));
 
     for (const auto &testConfig : testConfigs)
+    {
+        if (grpParams->pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC &&
+            isConstructionTypeInvariant(testConfig.testType))
+            continue;
+
         mainGroup->addChild(new LocalReadTestCase(testCtx, testConfig.name, testConfig.testType, grpParams));
+    }
 
     // Test pColorAttachmentLocations set to NULL
     if (!grpParams->useSecondaryCmdBuffer)
     {
-        for (const auto nullBeforeIdentity : {false, true})
+        if (!isConstructionTypeShaderObject(grpParams->pipelineConstructionType))
         {
-            const std::string testName = std::string("null_color_attachment_location_with_locationinfo") +
-                                         (nullBeforeIdentity ? "_before_identity" : "");
-            mainGroup->addChild(new NullAttachmentLocationsTestCase(testCtx, testName, false /* commandMode */,
-                                                                    false /* nullAfterRemap */, nullBeforeIdentity));
+            for (const auto nullBeforeIdentity : {false, true})
+            {
+                const std::string testName = std::string("null_color_attachment_location_with_locationinfo") +
+                                             (nullBeforeIdentity ? "_before_identity" : "");
+                mainGroup->addChild(new NullAttachmentLocationsTestCase(testCtx, testName, false /* commandMode */,
+                                                                        false /* nullAfterRemap */, nullBeforeIdentity,
+                                                                        grpParams->pipelineConstructionType));
+            }
         }
 
         for (const auto nullAfterRemap : {false, true})
@@ -4195,7 +4301,8 @@ tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testC
             const std::string testName =
                 std::string("null_color_attachment_location_with_command") + (nullAfterRemap ? "_after_remap" : "");
             mainGroup->addChild(new NullAttachmentLocationsTestCase(testCtx, testName, true /* commandMode */,
-                                                                    nullAfterRemap, false /* nullBeforeIdentity */));
+                                                                    nullAfterRemap, false /* nullBeforeIdentity */,
+                                                                    grpParams->pipelineConstructionType));
         }
     }
 
@@ -4212,8 +4319,8 @@ tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testC
 
                 const std::string testName = "mapping_" + de::toString(numAttachments) + "_attachments_to_locs_from_" +
                                              de::toString(firstRemapLocation);
-                mainGroup->addChild(
-                    new RemappingToHighLocationTestCase(testCtx, testName, numAttachments, firstRemapLocation));
+                mainGroup->addChild(new RemappingToHighLocationTestCase(
+                    testCtx, testName, numAttachments, firstRemapLocation, grpParams->pipelineConstructionType));
             }
         }
     }
