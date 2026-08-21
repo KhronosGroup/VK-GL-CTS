@@ -34,6 +34,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuWaiverUtil.hpp"
+#include "tcuTestHierarchyUtil.hpp"
 
 #include "vkPlatform.hpp"
 #include "vkPrograms.hpp"
@@ -493,6 +494,10 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
             getCurrentSubprocessCount(casePath, m_contextManager->getCommandLine().getSubprocessTestCount());
         if (m_subprocessCount && currentSubprocessCount != m_subprocessCount)
         {
+            // The device and all of its child objects are recreated below,
+            // so shared data should also be recreated
+            tcu::resetSharedResources(testCase);
+
             runTestsInSubprocess(testCase->getTestContext());
 
             // Clean up data after performing tests in subprocess and prepare system for another batch of tests
@@ -703,6 +708,10 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
                                                                testContext.getCommandLine().getSubprocessTestCount());
         if (m_testsForSubprocess.size() >= std::size_t(currentSubprocessCount))
         {
+            // The device and all of its child objects are recreated below,
+            // so shared data should also be recreated
+            tcu::resetSharedResources(testCase);
+
             runTestsInSubprocess(testContext);
 
             // Clean up data after performing tests in subprocess and prepare system for another batch of tests

@@ -36,17 +36,9 @@ TestHierarchyInflater::TestHierarchyInflater(void)
 {
 }
 
-TestHierarchyInflater::~TestHierarchyInflater(void)
-{
-}
-
 // DefaultHierarchyInflater
 
 DefaultHierarchyInflater::DefaultHierarchyInflater(TestContext &testCtx) : m_testCtx(testCtx)
-{
-}
-
-DefaultHierarchyInflater::~DefaultHierarchyInflater(void)
 {
 }
 

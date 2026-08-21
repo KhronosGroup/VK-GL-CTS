@@ -58,6 +58,7 @@ public:
     {
         if (m_cleanupGroup)
             m_cleanupGroup(this);
+        tcu::TestCaseGroup::deinit();
     }
 
 private:
@@ -126,6 +127,7 @@ public:
     {
         if (m_cleanupGroup)
             m_cleanupGroup(this, m_arg0);
+        tcu::TestCaseGroup::deinit();
     }
 
 private:
@@ -159,6 +161,7 @@ public:
     {
         if (m_cleanupGroup)
             m_cleanupGroup(this, m_arg0, m_arg1);
+        tcu::TestCaseGroup::deinit();
     }
 
 private:
