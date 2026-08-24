@@ -25,7 +25,6 @@
 #include "pipeline/vktPipelineImageUtil.hpp"
 #include "deMath.h"
 #include "vktTestCase.hpp"
-#include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
 #include "vktRenderPassTestsUtil.hpp"
 #include "vkImageUtil.hpp"
@@ -35,13 +34,13 @@
 #include "vkObjUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "tcuTestHierarchyUtil.hpp"
 #include "tcuStringTemplate.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
 #include <sstream>
 #include <vector>
-#include <mutex>
 #include <cmath>
 #include <algorithm>
 #include <iterator>
@@ -135,105 +134,11 @@ struct Vertex4RGBA
     tcu::Vec4 color;
 };
 
-class DeviceHelper
+// Instance and device shared by all test cases of the group; owned by FDMTestGroup.
+class SharedData : public tcu::SharedResourceBase
 {
 public:
-    DeviceHelper(Context &context)
-        : m_instance(context)
-        , m_device()
-        , m_queueFamilyIndex(context.getUniversalQueueFamilyIndex())
-        , m_queue(VK_NULL_HANDLE)
-    {
-        const float queuePriority = 1.0f;
-
-        // Create a universal queue that supports graphics and compute
-        const VkDeviceQueueCreateInfo queueParams{
-            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                    // const void* pNext;
-            0u,                                         // VkDeviceQueueCreateFlags flags;
-            m_queueFamilyIndex,                         // uint32_t queueFamilyIndex;
-            1u,                                         // uint32_t queueCount;
-            &queuePriority                              // const float* pQueuePriorities;
-        };
-
-        // \note Extensions in core are not explicitly enabled even though
-        //         they are in the extension list advertised to tests.
-        const auto &extensionPtrs = context.getDeviceCreationExtensions();
-
-        VkPhysicalDevicePortabilitySubsetFeaturesKHR portabilitySubsetFeatures                 = initVulkanStructure();
-        VkPhysicalDeviceMultiviewFeatures multiviewFeatures                                    = initVulkanStructure();
-        VkPhysicalDeviceImagelessFramebufferFeatures imagelessFramebufferFeatures              = initVulkanStructure();
-        VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures                      = initVulkanStructure();
-        VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR dynamicRenderingLocalReadFeatures = initVulkanStructure();
-        VkPhysicalDeviceFragmentDensityMap2FeaturesEXT fragmentDensityMap2Features             = initVulkanStructure();
-        VkPhysicalDeviceFragmentDensityMapFeaturesEXT fragmentDensityMapFeatures               = initVulkanStructure();
-        VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT fragmentDensityMapOffsetFeatures   = initVulkanStructure();
-        VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE fragmentDensityMapLayeredFeatures =
-            initVulkanStructure();
-        VkPhysicalDeviceVulkan12Features vulkan12Features = initVulkanStructure();
-        VkPhysicalDeviceFeatures2 features2               = initVulkanStructure();
-
-        const auto addFeatures = makeStructChainAdder(&features2);
-
-        if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
-            addFeatures(&portabilitySubsetFeatures);
-
-        if (context.isDeviceFunctionalitySupported("VK_KHR_multiview"))
-            addFeatures(&multiviewFeatures);
-
-        if (context.isDeviceFunctionalitySupported("VK_KHR_dynamic_rendering"))
-            addFeatures(&dynamicRenderingFeatures);
-
-        if (context.isDeviceFunctionalitySupported("VK_KHR_dynamic_rendering_local_read"))
-            addFeatures(&dynamicRenderingLocalReadFeatures);
-
-        if (context.isDeviceFunctionalitySupported("VK_EXT_fragment_density_map2"))
-            addFeatures(&fragmentDensityMap2Features);
-
-#ifdef USE_QCOM_OFFSET_EXT
-        if (context.isDeviceFunctionalitySupported("VK_QCOM_fragment_density_map_offset"))
-#else
-        if (context.isDeviceFunctionalitySupported("VK_EXT_fragment_density_map_offset"))
-#endif
-            addFeatures(&fragmentDensityMapOffsetFeatures);
-
-        if (context.isDeviceFunctionalitySupported("VK_VALVE_fragment_density_map_layered"))
-            addFeatures(&fragmentDensityMapLayeredFeatures);
-
-        if (context.contextSupports(vk::ApiVersion(0u, 1u, 2u, 0u)))
-            addFeatures(&vulkan12Features);
-        else
-        {
-            // VUID-VkDeviceCreateInfo-pNext-02830
-            // If we add the Vulkan12Features struct we should not add the imagelessFramebufferFeatures struct.
-            if (context.isDeviceFunctionalitySupported("VK_KHR_imageless_framebuffer"))
-                addFeatures(&imagelessFramebufferFeatures);
-        }
-
-        addFeatures(&fragmentDensityMapFeatures);
-
-        const auto &vki = m_instance.getDriver();
-
-        vki.getPhysicalDeviceFeatures2(m_instance.getPhysicalDevice(), &features2);
-        features2.features.robustBufferAccess = VK_FALSE;
-
-        const VkDeviceCreateInfo deviceCreateInfo{
-            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //sType;
-            &features2,                           //pNext;
-            0u,                                   //flags
-            1,                                    //queueRecordCount;
-            &queueParams,                         //pRequestedQueues;
-            0u,                                   //layerCount;
-            nullptr,                              //ppEnabledLayerNames;
-            de::sizeU32(extensionPtrs),           // uint32_t enabledExtensionCount;
-            de::dataOrNull(extensionPtrs),        // const char* const* ppEnabledExtensionNames;
-            nullptr,                              //pEnabledFeatures;
-        };
-
-        m_device = m_instance.createCustomDevice(&deviceCreateInfo);
-
-        m_device.getDriver().getDeviceQueue(*m_device, m_queueFamilyIndex, 0u, &m_queue);
-    }
+    void setup(Context &context);
 
     const DeviceInterface &getDeviceInterface() const
     {
@@ -256,24 +161,115 @@ public:
         return m_device.getAllocator();
     }
 
-protected:
-    const InstanceWrapper m_instance;
+    void reset() override
+    {
+        *this = SharedData{};
+    }
+
+private:
+    InstanceWrapper m_instance;
     DeviceWrapper m_device;
-    uint32_t m_queueFamilyIndex;
-    VkQueue m_queue;
+    uint32_t m_queueFamilyIndex = 0u;
+    VkQueue m_queue             = VK_NULL_HANDLE;
 };
 
-// With non-null context, creates and gets the device. With null context, destroys it.
-std::unique_ptr<DeviceHelper> g_deviceHelperPtr;
-
-DeviceHelper &getDeviceHelper(Context &context)
+void SharedData::setup(Context &context)
 {
-    std::mutex creationMutex;
-    std::lock_guard<std::mutex> lockGuard(creationMutex);
+    // setup shared data only once
+    if (*m_device)
+        return;
 
-    if (!g_deviceHelperPtr)
-        g_deviceHelperPtr.reset(new DeviceHelper(context));
-    return *g_deviceHelperPtr;
+    m_instance         = context;
+    m_queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+
+    const float queuePriority = 1.0f;
+
+    // Create a universal queue that supports graphics and compute
+    const VkDeviceQueueCreateInfo queueParams{
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                    // const void* pNext;
+        0u,                                         // VkDeviceQueueCreateFlags flags;
+        m_queueFamilyIndex,                         // uint32_t queueFamilyIndex;
+        1u,                                         // uint32_t queueCount;
+        &queuePriority                              // const float* pQueuePriorities;
+    };
+
+    // \note Extensions in core are not explicitly enabled even though
+    //         they are in the extension list advertised to tests.
+    const auto &extensionPtrs = context.getDeviceCreationExtensions();
+
+    VkPhysicalDevicePortabilitySubsetFeaturesKHR portabilitySubsetFeatures                   = initVulkanStructure();
+    VkPhysicalDeviceMultiviewFeatures multiviewFeatures                                      = initVulkanStructure();
+    VkPhysicalDeviceImagelessFramebufferFeatures imagelessFramebufferFeatures                = initVulkanStructure();
+    VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures                        = initVulkanStructure();
+    VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR dynamicRenderingLocalReadFeatures   = initVulkanStructure();
+    VkPhysicalDeviceFragmentDensityMap2FeaturesEXT fragmentDensityMap2Features               = initVulkanStructure();
+    VkPhysicalDeviceFragmentDensityMapFeaturesEXT fragmentDensityMapFeatures                 = initVulkanStructure();
+    VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT fragmentDensityMapOffsetFeatures     = initVulkanStructure();
+    VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE fragmentDensityMapLayeredFeatures = initVulkanStructure();
+    VkPhysicalDeviceVulkan12Features vulkan12Features                                        = initVulkanStructure();
+    VkPhysicalDeviceFeatures2 features2                                                      = initVulkanStructure();
+
+    const auto addFeatures = makeStructChainAdder(&features2);
+
+    if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
+        addFeatures(&portabilitySubsetFeatures);
+
+    if (context.isDeviceFunctionalitySupported("VK_KHR_multiview"))
+        addFeatures(&multiviewFeatures);
+
+    if (context.isDeviceFunctionalitySupported("VK_KHR_dynamic_rendering"))
+        addFeatures(&dynamicRenderingFeatures);
+
+    if (context.isDeviceFunctionalitySupported("VK_KHR_dynamic_rendering_local_read"))
+        addFeatures(&dynamicRenderingLocalReadFeatures);
+
+    if (context.isDeviceFunctionalitySupported("VK_EXT_fragment_density_map2"))
+        addFeatures(&fragmentDensityMap2Features);
+
+#ifdef USE_QCOM_OFFSET_EXT
+    if (context.isDeviceFunctionalitySupported("VK_QCOM_fragment_density_map_offset"))
+#else
+    if (context.isDeviceFunctionalitySupported("VK_EXT_fragment_density_map_offset"))
+#endif
+        addFeatures(&fragmentDensityMapOffsetFeatures);
+
+    if (context.isDeviceFunctionalitySupported("VK_VALVE_fragment_density_map_layered"))
+        addFeatures(&fragmentDensityMapLayeredFeatures);
+
+    if (context.contextSupports(vk::ApiVersion(0u, 1u, 2u, 0u)))
+        addFeatures(&vulkan12Features);
+    else
+    {
+        // VUID-VkDeviceCreateInfo-pNext-02830
+        // If we add the Vulkan12Features struct we should not add the imagelessFramebufferFeatures struct.
+        if (context.isDeviceFunctionalitySupported("VK_KHR_imageless_framebuffer"))
+            addFeatures(&imagelessFramebufferFeatures);
+    }
+
+    addFeatures(&fragmentDensityMapFeatures);
+
+    const auto &vki = m_instance.getDriver();
+
+    vki.getPhysicalDeviceFeatures2(m_instance.getPhysicalDevice(), &features2);
+    features2.features.robustBufferAccess = VK_FALSE;
+
+    const VkDeviceCreateInfo deviceCreateInfo{
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //sType;
+        &features2,                           //pNext;
+        0u,                                   //flags
+        1,                                    //queueRecordCount;
+        &queueParams,                         //pRequestedQueues;
+        0u,                                   //layerCount;
+        nullptr,                              //ppEnabledLayerNames;
+        de::sizeU32(extensionPtrs),           // uint32_t enabledExtensionCount;
+        de::dataOrNull(extensionPtrs),        // const char* const* ppEnabledExtensionNames;
+        nullptr,                              //pEnabledFeatures;
+    };
+
+    m_device = m_instance.createCustomDevice(&deviceCreateInfo);
+
+    m_device.getDriver().getDeviceQueue(*m_device, m_queueFamilyIndex, 0u, &m_queue);
 }
 
 std::vector<Vertex4RGBA> createFullscreenMesh(uint32_t viewCount, tcu::Vec2 redGradient, tcu::Vec2 greenGradient)
@@ -1263,7 +1259,7 @@ private:
 class FragmentDensityMapTestInstance : public vkt::TestInstance
 {
 public:
-    FragmentDensityMapTestInstance(Context &context, const TestParams &testParams);
+    FragmentDensityMapTestInstance(Context &context, const TestParams &testParams, SharedData &sharedData);
     virtual tcu::TestStatus iterate(void);
 
 private:
@@ -1284,7 +1280,7 @@ private:
                                                 const VkRect2D &colorImageRenderArea, const VkRect2D &outputRenderArea);
     void endRendering(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, bool addZeroOffset = false,
                       uint32_t viewCount = 0u);
-    tcu::TestStatus verifyImage(const DeviceHelper &deviceHelper);
+    tcu::TestStatus verifyImage();
 
 private:
     typedef de::SharedPtr<Unique<VkSampler>> VkSamplerSp;
@@ -1293,6 +1289,8 @@ private:
     typedef de::SharedPtr<Unique<VkImageView>> VkImageViewSp;
 
     TestParams m_testParams;
+    SharedData &m_sharedData;
+
     tcu::UVec2 m_renderSize;
     tcu::Vec2 m_densityValue;
     uint32_t m_viewMask;
@@ -1535,7 +1533,9 @@ void FragmentDensityMapTest::initPrograms(SourceCollections &sourceCollections) 
 
 TestInstance *FragmentDensityMapTest::createInstance(Context &context) const
 {
-    return new FragmentDensityMapTestInstance(context, m_testParams);
+    auto &sharedData = tcu::retrieveSharedResource<SharedData>(this);
+    sharedData.setup(context);
+    return new FragmentDensityMapTestInstance(context, m_testParams, sharedData);
 }
 
 void FragmentDensityMapTest::checkSupport(Context &context) const
@@ -1722,9 +1722,11 @@ tcu::Vec2 getFormatDelta(VkFormat densityMapFormat)
     return tcu::Vec2(0.0f);
 }
 
-FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context, const TestParams &testParams)
+FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context, const TestParams &testParams,
+                                                               SharedData &sharedData)
     : vkt::TestInstance(context)
     , m_testParams(testParams)
+    , m_sharedData(sharedData)
 {
     m_renderSize = tcu::UVec2(
         de::roundDown(
@@ -1743,12 +1745,11 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
         (m_testParams.viewCount > 1 && !m_testParams.layeredFramebuffer()) ? ((1u << m_testParams.viewCount) - 1u) : 0u;
     m_fbLayers = (m_testParams.layeredFramebuffer() ? m_testParams.viewCount : 1u);
 
-    const auto &deviceHelper                      = getDeviceHelper(m_context);
-    const DeviceInterface &vk                     = deviceHelper.getDeviceInterface();
-    const VkDevice vkDevice                       = deviceHelper.getDevice();
-    const uint32_t queueFamilyIndex               = deviceHelper.getQueueFamilyIndex();
-    const VkQueue queue                           = deviceHelper.getQueue();
-    auto &memAlloc                                = deviceHelper.getAllocator();
+    const DeviceInterface &vk                     = m_sharedData.getDeviceInterface();
+    const VkDevice vkDevice                       = m_sharedData.getDevice();
+    const uint32_t queueFamilyIndex               = m_sharedData.getQueueFamilyIndex();
+    const VkQueue queue                           = m_sharedData.getQueue();
+    auto &memAlloc                                = m_sharedData.getAllocator();
     const VkComponentMapping componentMappingRGBA = makeComponentMappingRGBA();
     RenderPassWrapperBasePtr renderPassWrapper;
 
@@ -3170,15 +3171,14 @@ void FragmentDensityMapTestInstance::endRendering(const DeviceInterface &vk, VkC
 
 tcu::TestStatus FragmentDensityMapTestInstance::iterate(void)
 {
-    const auto &deviceHelper = getDeviceHelper(m_context);
-    submitCommandsAndWait(deviceHelper.getDeviceInterface(), deviceHelper.getDevice(), deviceHelper.getQueue(),
+    submitCommandsAndWait(m_sharedData.getDeviceInterface(), m_sharedData.getDevice(), m_sharedData.getQueue(),
                           m_cmdBuffer.get());
 
     // approximations used when coarse reconstruction is specified are implementation defined
     if (m_testParams.coarseReconstruction)
         return tcu::TestStatus::pass("Pass");
 
-    return verifyImage(deviceHelper);
+    return verifyImage();
 }
 
 struct Vec4Sorter
@@ -3195,13 +3195,13 @@ struct Vec4Sorter
     }
 };
 
-tcu::TestStatus FragmentDensityMapTestInstance::verifyImage(const DeviceHelper &deviceHelper)
+tcu::TestStatus FragmentDensityMapTestInstance::verifyImage()
 {
-    const auto &vk      = deviceHelper.getDeviceInterface();
-    const auto vkDevice = deviceHelper.getDevice();
-    const auto qfIndex  = deviceHelper.getQueueFamilyIndex();
-    const auto queue    = deviceHelper.getQueue();
-    auto &memAlloc      = deviceHelper.getAllocator();
+    const auto &vk      = m_sharedData.getDeviceInterface();
+    const auto vkDevice = m_sharedData.getDevice();
+    const auto qfIndex  = m_sharedData.getQueueFamilyIndex();
+    const auto queue    = m_sharedData.getQueue();
+    auto &memAlloc      = m_sharedData.getAllocator();
     tcu::UVec2 renderSize(m_renderSize.x(), m_renderSize.y());
 
     de::UniquePtr<tcu::TextureLevel> outputImage(pipeline::readColorAttachment(vk, vkDevice, queue, qfIndex, memAlloc,
@@ -3399,7 +3399,10 @@ using TexLevelsVec       = std::vector<TextureLevelPtr>;
 class FDMOffsetBaseInstance : public vkt::TestInstance
 {
 public:
-    FDMOffsetBaseInstance(Context &context, FDMOffsetParamsPtr params) : vkt::TestInstance(context), m_params(params)
+    FDMOffsetBaseInstance(Context &context, FDMOffsetParamsPtr params, SharedData &sharedData)
+        : vkt::TestInstance(context)
+        , m_params(params)
+        , m_sharedData(sharedData)
     {
     }
     virtual ~FDMOffsetBaseInstance(void) = default;
@@ -3424,6 +3427,7 @@ protected:
                               const std::vector<tcu::IVec2> &fdmOffsets) const      = 0;
 
     FDMOffsetParamsPtr m_params;
+    SharedData &m_sharedData;
 };
 
 class FDMOffsetBaseCase : public vkt::TestCase
@@ -3619,12 +3623,11 @@ enum class QuadPiece
 
 tcu::TestStatus FDMOffsetBaseInstance::iterate()
 {
-    const auto &deviceHelper = getDeviceHelper(m_context);
-    const auto &vkd          = deviceHelper.getDeviceInterface();
-    const auto device        = deviceHelper.getDevice();
-    const auto qfIndex       = deviceHelper.getQueueFamilyIndex();
-    const auto queue         = deviceHelper.getQueue();
-    auto &alloc              = deviceHelper.getAllocator();
+    const auto &vkd    = m_sharedData.getDeviceInterface();
+    const auto device  = m_sharedData.getDevice();
+    const auto qfIndex = m_sharedData.getQueueFamilyIndex();
+    const auto queue   = m_sharedData.getQueue();
+    auto &alloc        = m_sharedData.getAllocator();
 
     const auto fbFlags    = (VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT | VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT);
     const auto fbFormat   = VK_FORMAT_R8G8B8A8_UNORM;
@@ -4391,7 +4394,8 @@ struct FDMOffsetOversizedFDMParams : public FDMOffsetBaseParams
 class FDMOffsetOversizedFDMInstance : public FDMOffsetBaseInstance
 {
 public:
-    FDMOffsetOversizedFDMInstance(Context &context, FDMOffsetParamsPtr params) : FDMOffsetBaseInstance(context, params)
+    FDMOffsetOversizedFDMInstance(Context &context, FDMOffsetParamsPtr params, SharedData &sharedData)
+        : FDMOffsetBaseInstance(context, params, sharedData)
     {
     }
     virtual ~FDMOffsetOversizedFDMInstance(void) = default;
@@ -4571,7 +4575,9 @@ public:
 
     TestInstance *createInstance(Context &context) const override
     {
-        return new FDMOffsetOversizedFDMInstance(context, m_params);
+        auto &sharedData = tcu::retrieveSharedResource<SharedData>(this);
+        sharedData.setup(context);
+        return new FDMOffsetOversizedFDMInstance(context, m_params, sharedData);
     }
 };
 
@@ -4615,7 +4621,8 @@ struct FDMOffsetMinShiftParams : public FDMOffsetBaseParams
 class FDMOffsetMinShiftInstance : public FDMOffsetBaseInstance
 {
 public:
-    FDMOffsetMinShiftInstance(Context &context, FDMOffsetParamsPtr params) : FDMOffsetBaseInstance(context, params)
+    FDMOffsetMinShiftInstance(Context &context, FDMOffsetParamsPtr params, SharedData &sharedData)
+        : FDMOffsetBaseInstance(context, params, sharedData)
     {
     }
     virtual ~FDMOffsetMinShiftInstance(void) = default;
@@ -4915,7 +4922,9 @@ public:
 
     TestInstance *createInstance(Context &context) const override
     {
-        return new FDMOffsetMinShiftInstance(context, m_params);
+        auto &sharedData = tcu::retrieveSharedResource<SharedData>(this);
+        sharedData.setup(context);
+        return new FDMOffsetMinShiftInstance(context, m_params, sharedData);
     }
 };
 
@@ -4946,7 +4955,8 @@ struct FDMOffsetClampToEdgeParams : public FDMOffsetBaseParams
 class FDMOffsetClampToEdgeInstance : public FDMOffsetBaseInstance
 {
 public:
-    FDMOffsetClampToEdgeInstance(Context &context, FDMOffsetParamsPtr params) : FDMOffsetBaseInstance(context, params)
+    FDMOffsetClampToEdgeInstance(Context &context, FDMOffsetParamsPtr params, SharedData &sharedData)
+        : FDMOffsetBaseInstance(context, params, sharedData)
     {
     }
     virtual ~FDMOffsetClampToEdgeInstance() = default;
@@ -5120,15 +5130,31 @@ public:
 
     TestInstance *createInstance(Context &context) const override
     {
-        return new FDMOffsetClampToEdgeInstance(context, m_params);
+        auto &sharedData = tcu::retrieveSharedResource<SharedData>(this);
+        sharedData.setup(context);
+        return new FDMOffsetClampToEdgeInstance(context, m_params, sharedData);
     }
 };
 
-} // namespace
-
-static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams groupParams)
+class FDMTestGroup : public tcu::TestCaseGroup
 {
-    tcu::TestContext &testCtx = fdmTests->getTestContext();
+public:
+    FDMTestGroup(tcu::TestContext &testCtx, const char *name, const SharedGroupParams groupParams)
+        : tcu::TestCaseGroup(testCtx, name)
+        , m_groupParams(groupParams)
+    {
+    }
+
+    void init(void) override;
+
+private:
+    const SharedGroupParams m_groupParams;
+};
+
+void FDMTestGroup::init(void)
+{
+    setSharedResource(std::make_unique<SharedData>());
+    tcu::TestContext &testCtx = getTestContext();
 
     const struct
     {
@@ -5176,19 +5202,19 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
 
     for (const auto &view : views)
     {
-        if ((groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY) && view.viewCount > 1)
+        if ((m_groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY) && view.viewCount > 1)
             continue;
 
         // Reduce number of tests for secondary command buffers in dynamic rendering to 1 and 2 views
-        if (groupParams->useSecondaryCmdBuffer && (view.viewCount > 2))
+        if (m_groupParams->useSecondaryCmdBuffer && (view.viewCount > 2))
             continue;
 
         de::MovePtr<tcu::TestCaseGroup> viewGroup(new tcu::TestCaseGroup(testCtx, view.name.c_str()));
         for (const auto &render : renders)
         {
-            if ((groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) && render.makeCopy &&
-                groupParams->useSecondaryCmdBuffer &&
-                (groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass == false))
+            if ((m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) && render.makeCopy &&
+                m_groupParams->useSecondaryCmdBuffer &&
+                (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass == false))
                 continue;
 
             de::MovePtr<tcu::TestCaseGroup> renderGroup(new tcu::TestCaseGroup(testCtx, render.name.c_str()));
@@ -5198,7 +5224,7 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
                 for (const auto &sample : samples)
                 {
                     // Reduce number of tests for dynamic rendering cases where secondary command buffer is used
-                    if (groupParams->useSecondaryCmdBuffer && (sample.samples > VK_SAMPLE_COUNT_2_BIT))
+                    if (m_groupParams->useSecondaryCmdBuffer && (sample.samples > VK_SAMPLE_COUNT_2_BIT))
                         break;
 
                     de::MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(testCtx, sample.name.c_str()));
@@ -5218,7 +5244,7 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
                             if (addZeroOffset && area != tcu::UVec2(2u, 2u))
                                 continue;
 
-                            if (addZeroOffset && groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+                            if (addZeroOffset && m_groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
                                 continue;
 
                             std::stringstream str;
@@ -5247,7 +5273,7 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
                                 {16, 16},                     // tcu::UVec2 densityMapSize;
                                 VK_FORMAT_R8G8_UNORM,         // VkFormat densityMapFormat;
                                 VK_FORMAT_D16_UNORM,          // VkFormat depthFormat;
-                                groupParams                   // SharedGroupParams groupParams;
+                                m_groupParams                 // SharedGroupParams groupParams;
                             };
 
                             sampleGroup->addChild(new FragmentDensityMapTest(
@@ -5277,7 +5303,7 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
                             }
 
                             // test multiviewport - each of views uses different viewport; limit number of cases to 2 samples
-                            if ((groupParams->renderingType == RENDERING_TYPE_RENDERPASS2) && (!render.makeCopy) &&
+                            if ((m_groupParams->renderingType == RENDERING_TYPE_RENDERPASS2) && (!render.makeCopy) &&
                                 (view.viewCount > 1) && (sample.samples == VK_SAMPLE_COUNT_2_BIT) && !addZeroOffset)
                             {
                                 params.nonSubsampledImages = false;
@@ -5295,7 +5321,7 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
             }
 
             // Verifies 2^ceil(log2(floor(fb / fdm))) texel-size formula in VK_EXT_fragment_density_map spec version 3
-            if (groupParams->renderingType != RENDERING_TYPE_RENDERPASS_LEGACY)
+            if (m_groupParams->renderingType != RENDERING_TYPE_RENDERPASS_LEGACY)
             {
                 de::MovePtr<tcu::TestCaseGroup> floorSizeGroup(new tcu::TestCaseGroup(testCtx, "density_formula"));
                 de::MovePtr<tcu::TestCaseGroup> sample1Group(new tcu::TestCaseGroup(testCtx, "1_sample"));
@@ -5321,7 +5347,7 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
                     {16, 16},              // densityMapSize
                     VK_FORMAT_R8G8_UNORM,  // densityMapFormat
                     VK_FORMAT_D16_UNORM,   // depthFormat
-                    groupParams,           // groupParams
+                    m_groupParams,         // groupParams
                     true,                  // checkDensityFormula
                 };
 
@@ -5338,10 +5364,10 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
 
             viewGroup->addChild(renderGroup.release());
         }
-        fdmTests->addChild(viewGroup.release());
+        addChild(viewGroup.release());
     }
 
-    if (groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+    if (m_groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
     {
         const struct
         {
@@ -5375,14 +5401,14 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
                 {16, 16},              // tcu::UVec2 densityMapSize;
                 VK_FORMAT_R8G8_UNORM,  // VkFormat densityMapFormat;
                 format.format,         // VkFormat depthFormat;
-                groupParams            // SharedGroupParams groupParams;
+                m_groupParams          // SharedGroupParams groupParams;
             };
             depthFormatGroup->addChild(new FragmentDensityMapTest(testCtx, format.name, params));
 
-            if (groupParams->useSecondaryCmdBuffer)
+            if (m_groupParams->useSecondaryCmdBuffer)
                 break;
         }
-        fdmTests->addChild(depthFormatGroup.release());
+        addChild(depthFormatGroup.release());
     }
 
     const struct
@@ -5418,17 +5444,17 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
             {16, 16},              // tcu::UVec2 densityMapSize;
             VK_FORMAT_R8G8_UNORM,  // VkFormat densityMapFormat;
             VK_FORMAT_D16_UNORM,   // VkFormat depthFormat;
-            groupParams            // SharedGroupParams groupParams;
+            m_groupParams          // SharedGroupParams groupParams;
         };
         propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, sampler.name, params));
 
         // Reduce number of tests for dynamic rendering cases where secondary command buffer is used
-        if (groupParams->useSecondaryCmdBuffer)
+        if (m_groupParams->useSecondaryCmdBuffer)
             break;
     }
 
-    if ((groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) &&
-        (groupParams->useSecondaryCmdBuffer == false))
+    if ((m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) &&
+        (m_groupParams->useSecondaryCmdBuffer == false))
     {
         TestParams params{
             false,                 // bool dynamicDensityMap;
@@ -5451,12 +5477,12 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
             {16, 16},              // tcu::UVec2 densityMapSize;
             VK_FORMAT_R8G8_UNORM,  // VkFormat densityMapFormat;
             VK_FORMAT_D16_UNORM,   // VkFormat depthFormat;
-            groupParams            // SharedGroupParams groupParams;
+            m_groupParams          // SharedGroupParams groupParams;
         };
         propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "maintenance5", params));
     }
 
-    if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+    if (m_groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
     {
         // interaction between fragment density map and imageless framebuffer
 
@@ -5491,7 +5517,7 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
                 VK_FORMAT_D16_UNORM,              // VkFormat depthFormat;
                 SharedGroupParams(new GroupParams // SharedGroupParams groupParams;
                                   {
-                                      groupParams->renderingType,        // RenderingType renderingType;
+                                      m_groupParams->renderingType,      // RenderingType renderingType;
                                       cmdBuffType.useSecondaryCmdBuffer, // bool useSecondaryCmdBuffer;
                                       false, // bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
                                       PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC, // bool useGraphicsPipelineLibrary;
@@ -5512,7 +5538,7 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
         }
     }
 
-    if (groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
+    if (m_groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
     {
         TestParams params{
             false,                 // bool dynamicDensityMap;
@@ -5535,7 +5561,7 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
             {16, 16},              // tcu::UVec2 densityMapSize;
             VK_FORMAT_R8G8_UNORM,  // VkFormat densityMapFormat;
             VK_FORMAT_D16_UNORM,   // VkFormat depthFormat;
-            groupParams            // SharedGroupParams groupParams;
+            m_groupParams          // SharedGroupParams groupParams;
         };
         propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "subsampled_loads", params));
         params.subsampledLoads      = false;
@@ -5545,9 +5571,9 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
         propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "memory_access", params));
     }
 
-    if (groupParams->renderingType != RENDERING_TYPE_RENDERPASS_LEGACY)
+    if (m_groupParams->renderingType != RENDERING_TYPE_RENDERPASS_LEGACY)
     {
-        DE_ASSERT(groupParams->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC);
+        DE_ASSERT(m_groupParams->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC);
         de::MovePtr<tcu::TestCaseGroup> offsetGroup(new tcu::TestCaseGroup(testCtx, "offset"));
 
         const struct
@@ -5579,11 +5605,11 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
                     for (const auto resumeRendering : {false, true})
                         for (const bool extraLarge : {false, true})
                         {
-                            if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING && resumeRendering)
+                            if (m_groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING && resumeRendering)
                                 continue;
 
                             FDMOffsetParamsPtr params(new FDMOffsetOversizedFDMParams(
-                                groupParams, offsetCase.horOffsetType, offsetCase.vertOffsetType,
+                                m_groupParams, offsetCase.horOffsetType, offsetCase.vertOffsetType,
                                 multiViewCase.multiViewType, resumeRendering, extraLarge));
                             const auto testName = std::string(offsetCase.name) + multiViewCase.suffix +
                                                   (resumeRendering ? "_suspend_resume" : "") +
@@ -5614,11 +5640,11 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
                 for (const auto &multiViewCase : multiViewTypeCases)
                     for (const auto resumeRendering : {false, true})
                     {
-                        if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING && resumeRendering)
+                        if (m_groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING && resumeRendering)
                             continue;
 
                         FDMOffsetParamsPtr params(new FDMOffsetMinShiftParams(
-                            groupParams, offsetCase.horOffsetType, offsetCase.vertOffsetType,
+                            m_groupParams, offsetCase.horOffsetType, offsetCase.vertOffsetType,
                             multiViewCase.multiViewType, resumeRendering));
                         const auto testName = std::string(offsetCase.name) + multiViewCase.suffix +
                                               (resumeRendering ? "_suspend_resume" : "");
@@ -5648,11 +5674,11 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
                 for (const auto &multiViewCase : multiViewTypeCases)
                     for (const auto resumeRendering : {false, true})
                     {
-                        if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING && resumeRendering)
+                        if (m_groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING && resumeRendering)
                             continue;
 
                         FDMOffsetParamsPtr params(new FDMOffsetClampToEdgeParams(
-                            groupParams, offsetCase.horOffsetType, offsetCase.vertOffsetType,
+                            m_groupParams, offsetCase.horOffsetType, offsetCase.vertOffsetType,
                             multiViewCase.multiViewType, resumeRendering));
                         const auto testName = std::string(offsetCase.name) + multiViewCase.suffix +
                                               (resumeRendering ? "_suspend_resume" : "");
@@ -5662,23 +5688,18 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
             offsetGroup->addChild(clampToEdgeGroup.release());
         }
 
-        fdmTests->addChild(offsetGroup.release());
+        addChild(offsetGroup.release());
     }
 
-    fdmTests->addChild(propertiesGroup.release());
+    addChild(propertiesGroup.release());
 }
 
-static void cleanupGroup(tcu::TestCaseGroup *group, const SharedGroupParams)
-{
-    DE_UNREF(group);
-    // Destroy singleton objects.
-    g_deviceHelperPtr.reset(nullptr);
-}
+} // namespace
 
 tcu::TestCaseGroup *createFragmentDensityMapTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams)
 {
     // VK_EXT_fragment_density_map and VK_EXT_fragment_density_map2 extensions tests
-    return createTestGroup(testCtx, "fragment_density_map", createChildren, groupParams, cleanupGroup);
+    return new FDMTestGroup(testCtx, "fragment_density_map", groupParams);
 }
 
 } // namespace vkt::renderpass

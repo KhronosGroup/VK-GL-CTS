@@ -27,7 +27,7 @@
 #include "vktRenderPassLowResolutionZTests.hpp"
 #include "vkPipelineConstructionUtil.hpp"
 #include "vktRenderPassTestsUtil.hpp"
-#include "vktTestGroupUtil.hpp"
+#include "tcuTestHierarchyUtil.hpp"
 #include "vktTestCase.hpp"
 
 #include "vkBarrierUtil.hpp"
@@ -43,6 +43,7 @@
 #include <variant>
 #include <utility>
 #include <string>
+#include <array>
 #include <cmath>
 #include <set>
 #include <map>
@@ -331,8 +332,11 @@ const uint32_t DEPTH_IMAGE_COUNT = 3;
 // number of depth image layers available in first d/s image
 const uint32_t DEPTH_LAYER_COUNT = 3;
 
-// Tests operate on large images; to avoid recreating images for each instance, share them
-struct SharedData
+// dimensions of the shared color and depth/stencil images
+const uint32_t IMAGE_SIZE = 1024;
+
+// Tests operate on large images; to avoid recreating images for each instance, share them.
+struct SharedData : public tcu::SharedResourceBase
 {
     const VkFormat colorFormat       = VK_FORMAT_R8G8B8A8_UNORM;
     VkFormat depthStencilFormat      = VK_FORMAT_D24_UNORM_S8_UINT;
@@ -346,14 +350,31 @@ struct SharedData
     std::shared_ptr<BufferWithMemory> copyBuffer;
     std::shared_ptr<BufferWithMemory> outBuffer;
 
-    Move<VkImageView> depthStencilViews[DEPTH_IMAGE_COUNT][DEPTH_LAYER_COUNT];
-    Move<VkImageView> storeView;
-};
-std::unique_ptr<SharedData> g_sharedData;
+    // we need to store all views under shared_ptr to make SharedData copyable
+    std::shared_ptr<std::array<Move<VkImageView>, DEPTH_IMAGE_COUNT + DEPTH_LAYER_COUNT + 1>> imageViewsArrayPtr;
 
-void setupSharedData(Context &context, uint32_t imageSize)
+    // we don't use DEPTH_IMAGE_COUNT * DEPTH_LAYER_COUNT ds views; we only use first row and first column
+    VkImageView depthStencilViews[DEPTH_IMAGE_COUNT][DEPTH_LAYER_COUNT];
+    VkImageView storeView;
+
+    void setup(Context &context, uint32_t imageSize);
+    void reset() override
+    {
+        colorBuffer.reset();
+        copyImage.reset();
+        storeImage.reset();
+        copyBuffer.reset();
+        outBuffer.reset();
+        imageViewsArrayPtr.reset();
+        for (uint32_t i = 0; i < DEPTH_IMAGE_COUNT; ++i)
+            depthStencilBuffer[i].reset();
+    }
+};
+
+void SharedData::setup(Context &context, uint32_t imageSize)
 {
-    if (g_sharedData)
+    // setup shared data only once
+    if (colorBuffer)
         return;
 
     const auto &vki           = context.getInstanceInterface();
@@ -365,16 +386,14 @@ void setupSharedData(Context &context, uint32_t imageSize)
     const VkExtent3D imageExtent = {imageSize, imageSize, 1};
     auto dsIsr = makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, 1u);
 
-    g_sharedData = std::make_unique<SharedData>();
-
     // check which of required DS formats is supported
     VkFormatProperties formatProperties;
     VkFormatFeatureFlags feature = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    vki.getPhysicalDeviceFormatProperties(physicalDevice, g_sharedData->depthStencilFormat, &formatProperties);
+    vki.getPhysicalDeviceFormatProperties(physicalDevice, depthStencilFormat, &formatProperties);
     if ((formatProperties.optimalTilingFeatures & feature) != feature)
     {
-        g_sharedData->depthStencilFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
-        vki.getPhysicalDeviceFormatProperties(physicalDevice, g_sharedData->depthStencilFormat, &formatProperties);
+        depthStencilFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
+        vki.getPhysicalDeviceFormatProperties(physicalDevice, depthStencilFormat, &formatProperties);
     }
 
     // if format supports transfer destination add it to usage as some tests need it
@@ -384,87 +403,80 @@ void setupSharedData(Context &context, uint32_t imageSize)
         imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
     // define images for depth/stencil attachment (first one hase <DEPTH_LAYER_COUNT> layers)
-    auto dsCreateInfo = makeImageCreateInfo(g_sharedData->depthStencilFormat, imageSize, imageUsage, DEPTH_LAYER_COUNT);
+    auto dsCreateInfo = makeImageCreateInfo(depthStencilFormat, imageSize, imageUsage, DEPTH_LAYER_COUNT);
     for (uint32_t i = 0; i < DEPTH_IMAGE_COUNT; ++i)
     {
-        g_sharedData->depthStencilBuffer[i] =
+        depthStencilBuffer[i] =
             std::make_shared<ImageWithMemory>(vk, device, allocator, dsCreateInfo, MemoryRequirement::Any);
 
         // all images except the first one have one layer, to not increase complexity unnecessarily
         dsCreateInfo.arrayLayers = 1;
     }
 
+    uint32_t imageViewIndex = 0;
+    imageViewsArrayPtr = std::make_shared<std::array<Move<VkImageView>, DEPTH_IMAGE_COUNT + DEPTH_LAYER_COUNT + 1>>();
+
     // define image view for layer 0 of each of depth/stencil image
     for (uint32_t i = 0; i < DEPTH_IMAGE_COUNT; i++)
     {
-        g_sharedData->depthStencilViews[i][0] =
-            makeImageView(vk, device, **g_sharedData->depthStencilBuffer[i], VK_IMAGE_VIEW_TYPE_2D,
-                          g_sharedData->depthStencilFormat, dsIsr);
+        auto dsImage = **depthStencilBuffer[i];
+        auto view    = makeImageView(vk, device, dsImage, VK_IMAGE_VIEW_TYPE_2D, depthStencilFormat, dsIsr);
+
+        imageViewsArrayPtr->at(imageViewIndex) = view;
+        depthStencilViews[i][0]                = *imageViewsArrayPtr->at(imageViewIndex++);
     }
 
     // define image view for each layer of first depth/stencil image (we omit first layer as we created view for it)
     for (uint32_t i = 1; i < DEPTH_LAYER_COUNT; i++)
     {
+        auto dsImage         = **depthStencilBuffer[0];
         dsIsr.baseArrayLayer = i;
-        g_sharedData->depthStencilViews[0][i] =
-            makeImageView(vk, device, **g_sharedData->depthStencilBuffer[0], VK_IMAGE_VIEW_TYPE_2D,
-                          g_sharedData->depthStencilFormat, dsIsr);
+        auto view            = makeImageView(vk, device, dsImage, VK_IMAGE_VIEW_TYPE_2D, depthStencilFormat, dsIsr);
+
+        imageViewsArrayPtr->at(imageViewIndex) = view;
+        depthStencilViews[0][i]                = *imageViewsArrayPtr->at(imageViewIndex++);
     }
     dsIsr.baseArrayLayer = 0;
 
     // define image for color attachment
-    imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-    g_sharedData->colorBuffer = std::make_shared<ImageWithBuffer>(
-        vk, device, allocator, imageExtent, g_sharedData->colorFormat, imageUsage, VK_IMAGE_TYPE_2D);
+    imageUsage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+    colorBuffer = std::make_shared<ImageWithBuffer>(vk, device, allocator, imageExtent, colorFormat, imageUsage,
+                                                    VK_IMAGE_TYPE_2D);
 
     // define image for copy operations
     dsCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    g_sharedData->copyImage =
-        std::make_shared<ImageWithMemory>(vk, device, allocator, dsCreateInfo, MemoryRequirement::Any);
+    copyImage          = std::make_shared<ImageWithMemory>(vk, device, allocator, dsCreateInfo, MemoryRequirement::Any);
 
     // define image for store operations
     imageUsage           = VK_IMAGE_USAGE_STORAGE_BIT;
-    auto colorCreateInfo = makeImageCreateInfo(g_sharedData->colorFormat, 4, imageUsage, 1);
+    auto colorCreateInfo = makeImageCreateInfo(colorFormat, 4, imageUsage, 1);
     auto colorIsr        = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-    g_sharedData->storeImage =
-        std::make_shared<ImageWithMemory>(vk, device, allocator, colorCreateInfo, MemoryRequirement::Any);
-    g_sharedData->storeView = makeImageView(vk, device, **g_sharedData->storeImage, VK_IMAGE_VIEW_TYPE_2D,
-                                            g_sharedData->colorFormat, colorIsr);
+    storeImage = std::make_shared<ImageWithMemory>(vk, device, allocator, colorCreateInfo, MemoryRequirement::Any);
+
+    auto view = makeImageView(vk, device, **storeImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorIsr);
+    imageViewsArrayPtr->at(imageViewIndex) = view;
+    storeView                              = *imageViewsArrayPtr->at(imageViewIndex++);
 
     // define buffer for copy operations
     auto bufferUsage                = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     const uint32_t copyBufferSize   = imageSize * imageSize * 5; // enough to store data for D32_SFLOAT_S8_UINT
     const auto copyBufferCreateInfo = makeBufferCreateInfo(copyBufferSize, bufferUsage);
-    g_sharedData->copyBuffer =
+    copyBuffer =
         std::make_shared<BufferWithMemory>(vk, device, allocator, copyBufferCreateInfo, MemoryRequirement::HostVisible);
 
     // define buffer used for cases with atomic operations and for verification with compute shader
     bufferUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    const auto outBufferCreateInfo = makeBufferCreateInfo(g_sharedData->outBufferSize, bufferUsage);
-    g_sharedData->outBuffer =
+    const auto outBufferCreateInfo = makeBufferCreateInfo(outBufferSize, bufferUsage);
+    outBuffer =
         std::make_shared<BufferWithMemory>(vk, device, allocator, outBufferCreateInfo, MemoryRequirement::HostVisible);
 }
 
 class LRZTestInstance : public vkt::TestInstance
 {
 public:
-    LRZTestInstance(Context &context, const TestParams &testParams, const SharedGroupParams groupParams);
-#ifndef CTS_USES_VULKANSC
+    LRZTestInstance(Context &context, const TestParams &testParams, const SharedGroupParams groupParams,
+                    SharedData &sharedData);
     virtual ~LRZTestInstance(void) = default;
-#else
-    virtual ~LRZTestInstance(void)
-    {
-        // Group shared data containing device child objects stored in global variables is problematic from the
-        // perspective of Vulkan SC as there is no way to destroy them and re-create them at batch boundaries
-        // which will cause object count issues as the next batch will no longer have information about any
-        // such objects pre-allocated in global variables.
-        // A fix for this would be to have proper group shared data support in the CTS framework that the
-        // Vulkan SC test runner then could call deinit and reinit on at batch boundaries, but until such a
-        // thing is available we have to work this around by always resetting the shared data between tests
-        // just to be safe.
-        g_sharedData.reset(nullptr);
-    }
-#endif
 
     virtual tcu::TestStatus iterate(void) override;
 
@@ -501,6 +513,7 @@ protected:
 private:
     const TestParams &m_testParams;
     GroupParams m_groupParams;
+    SharedData &m_sharedData;
 
     std::vector<float> m_blitDepthsVect;
     std::vector<const BindPipelineData *> m_pipelineDataVect;
@@ -513,7 +526,7 @@ private:
     std::size_t m_numberOfRequiredSecondaryCommandBuffers = 0ULL;
     bool m_hasCustomSecondary                             = false;
 
-    const uint32_t m_imageSize     = 1024;
+    const uint32_t m_imageSize     = IMAGE_SIZE;
     const VkExtent3D m_imageExtent = {m_imageSize, m_imageSize, 1};
 
     // define subresource ranges for color and depth/stencil attachments
@@ -525,13 +538,13 @@ private:
     std::vector<GraphicsPipelineWrapper> m_pipelineVect;
 };
 
-LRZTestInstance::LRZTestInstance(Context &context, const TestParams &testParams, const SharedGroupParams groupParams)
+LRZTestInstance::LRZTestInstance(Context &context, const TestParams &testParams, const SharedGroupParams groupParams,
+                                 SharedData &sharedData)
     : vkt::TestInstance(context)
     , m_testParams(testParams)
     , m_groupParams(*groupParams)
+    , m_sharedData(sharedData)
 {
-    setupSharedData(context, m_imageSize);
-
 #ifndef CTS_USES_VULKANSC
     // to increase coverage and reduce redundancy when shader object extension is supported
     // use it for tests that operate on secondary command buffers
@@ -555,8 +568,8 @@ tcu::TestStatus LRZTestInstance::iterate(void)
     // some test configurations require altering sequence of steps
     preprocessSteps();
 
-    ImageWithBuffer &colorBuffer = *g_sharedData->colorBuffer;
-    BufferWithMemory &outBuffer  = *g_sharedData->outBuffer;
+    ImageWithBuffer &colorBuffer = *m_sharedData.colorBuffer;
+    BufferWithMemory &outBuffer  = *m_sharedData.outBuffer;
 
     auto makeRenderPassFunc = &LRZTestInstance::makeRenderPass<1u>;
     if (m_groupParams.renderingType == RENDERING_TYPE_RENDERPASS2)
@@ -614,7 +627,7 @@ tcu::TestStatus LRZTestInstance::iterate(void)
 
     // define image create info for blit images
     const VkImageUsageFlags blitImageUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    VkImageCreateInfo imageCreateInfo      = makeImageCreateInfo(g_sharedData->depthStencilFormat, 1, blitImageUsage);
+    VkImageCreateInfo imageCreateInfo      = makeImageCreateInfo(m_sharedData.depthStencilFormat, 1, blitImageUsage);
 
     std::vector<std::shared_ptr<ImageWithMemory>> blitImagesVect;
     for (std::size_t d = 0; d < m_blitDepthsVect.size(); ++d)
@@ -626,12 +639,12 @@ tcu::TestStatus LRZTestInstance::iterate(void)
     VkImageView iamgeViews[]{colorBuffer.getImageView(), nh};
     for (uint32_t i = 0; !useDynamicRendering && i <= m_highestUsedDepthImageIndex; ++i)
     {
-        iamgeViews[1]     = *g_sharedData->depthStencilViews[i][0];
+        iamgeViews[1]     = m_sharedData.depthStencilViews[i][0];
         framebuffer[i][0] = makeFramebuffer(vk, device, *renderPassVect[0], 2, iamgeViews, m_imageSize, m_imageSize);
     }
     for (uint32_t i = 0; !useDynamicRendering && i <= m_highestUsedDepthImageLayer; ++i)
     {
-        iamgeViews[1]     = *g_sharedData->depthStencilViews[0][i];
+        iamgeViews[1]     = m_sharedData.depthStencilViews[0][i];
         framebuffer[0][i] = makeFramebuffer(vk, device, *renderPassVect[0], 2, iamgeViews, m_imageSize, m_imageSize);
     }
 
@@ -653,13 +666,13 @@ tcu::TestStatus LRZTestInstance::iterate(void)
     flushAlloc(vk, device, outBufferAlloc);
 
     // update descriptor sets for some fragment shaders that need descriptors
-    const auto dbDescInfo = makeDescriptorBufferInfo(*outBuffer, 0, g_sharedData->outBufferSize);
+    const auto dbDescInfo = makeDescriptorBufferInfo(*outBuffer, 0, m_sharedData.outBufferSize);
     DescriptorSetUpdateBuilder()
         .writeSingle(*fsStorageBufferDescriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
                      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &dbDescInfo)
         .update(vk, device);
 
-    auto diDescInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, *g_sharedData->storeView, VK_IMAGE_LAYOUT_GENERAL);
+    auto diDescInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, m_sharedData.storeView, VK_IMAGE_LAYOUT_GENERAL);
     DescriptorSetUpdateBuilder()
         .writeSingle(*fsStorageImageDescriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
                      VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &diDescInfo)
@@ -686,7 +699,7 @@ tcu::TestStatus LRZTestInstance::iterate(void)
     std::vector layoutTransitionBarriers{initialImageBarrier};
 
     // transition store image
-    initialImageBarrier.image = **g_sharedData->storeImage;
+    initialImageBarrier.image = **m_sharedData.storeImage;
     layoutTransitionBarriers.push_back(initialImageBarrier);
 
     // transition depth images
@@ -694,7 +707,7 @@ tcu::TestStatus LRZTestInstance::iterate(void)
     initialImageBarrier.subresourceRange.layerCount = DEPTH_LAYER_COUNT;
     for (uint32_t i = 0; i < DEPTH_IMAGE_COUNT; ++i)
     {
-        initialImageBarrier.image = **g_sharedData->depthStencilBuffer[i];
+        initialImageBarrier.image = **m_sharedData.depthStencilBuffer[i];
         layoutTransitionBarriers.push_back(initialImageBarrier);
 
         // only first image has multiple layers
@@ -702,7 +715,7 @@ tcu::TestStatus LRZTestInstance::iterate(void)
     }
 
     // transition copy image
-    initialImageBarrier.image            = **g_sharedData->copyImage;
+    initialImageBarrier.image            = **m_sharedData.copyImage;
     initialImageBarrier.subresourceRange = m_dsIsr;
     layoutTransitionBarriers.push_back(initialImageBarrier);
 
@@ -734,9 +747,9 @@ tcu::TestStatus LRZTestInstance::iterate(void)
     if (m_groupParams.useSecondaryCmdBuffer)
     {
         inheritanceRenderingInfo.colorAttachmentCount    = 1u;
-        inheritanceRenderingInfo.pColorAttachmentFormats = &g_sharedData->colorFormat;
-        inheritanceRenderingInfo.depthAttachmentFormat   = g_sharedData->depthStencilFormat;
-        inheritanceRenderingInfo.stencilAttachmentFormat = g_sharedData->depthStencilFormat;
+        inheritanceRenderingInfo.pColorAttachmentFormats = &m_sharedData.colorFormat;
+        inheritanceRenderingInfo.depthAttachmentFormat   = m_sharedData.depthStencilFormat;
+        inheritanceRenderingInfo.stencilAttachmentFormat = m_sharedData.depthStencilFormat;
         inheritanceRenderingInfo.rasterizationSamples    = VK_SAMPLE_COUNT_1_BIT;
 
         commandBufBeginParams.pInheritanceInfo = &bufferInheritanceInfo;
@@ -911,7 +924,7 @@ tcu::TestStatus LRZTestInstance::iterate(void)
             DE_ASSERT(cmdBuffer == *primCmdBuffer);
             auto cd                  = std::get<ClearBlitCopyData>(testStep.data);
             const auto clearValue    = makeClearValueDepthStencil(cd.depth, 0);
-            auto &depthStencilBuffer = *g_sharedData->depthStencilBuffer[cd.depthImageIndex];
+            auto &depthStencilBuffer = *m_sharedData.depthStencilBuffer[cd.depthImageIndex];
             auto dsIsr               = m_dsIsr;
             dsIsr.baseArrayLayer     = cd.depthImageLayer;
             vk.cmdClearDepthStencilImage(cmdBuffer, *depthStencilBuffer, VK_IMAGE_LAYOUT_GENERAL,
@@ -921,7 +934,7 @@ tcu::TestStatus LRZTestInstance::iterate(void)
         {
             DE_ASSERT(cmdBuffer == *primCmdBuffer);
             auto cd                  = std::get<ClearBlitCopyData>(testStep.data);
-            auto &depthStencilBuffer = *g_sharedData->depthStencilBuffer[cd.depthImageIndex];
+            auto &depthStencilBuffer = *m_sharedData.depthStencilBuffer[cd.depthImageIndex];
 
             VkImageBlit blitRegion{isl, {{}, {1, 1, 1}}, isl, {{}, {(int32_t)m_imageSize, (int32_t)m_imageSize, 1}}};
             blitRegion.dstSubresource.baseArrayLayer = cd.depthImageLayer;
@@ -932,9 +945,9 @@ tcu::TestStatus LRZTestInstance::iterate(void)
         else if (currStep == TestStepType::COPY_BUFFER)
         {
             auto cd                 = std::get<ClearBlitCopyData>(testStep.data);
-            auto depthStencilBuffer = **g_sharedData->depthStencilBuffer[cd.depthImageIndex];
-            auto copyImage          = **g_sharedData->copyImage;
-            auto copyBuffer         = **g_sharedData->copyBuffer;
+            auto depthStencilBuffer = **m_sharedData.depthStencilBuffer[cd.depthImageIndex];
+            auto copyImage          = **m_sharedData.copyImage;
+            auto copyBuffer         = **m_sharedData.copyBuffer;
 
             // wait for previous operations on copyImage to be finished
             auto imageBarrier =
@@ -973,8 +986,8 @@ tcu::TestStatus LRZTestInstance::iterate(void)
         else if (currStep == TestStepType::COPY_IMAGE)
         {
             auto cd                 = std::get<ClearBlitCopyData>(testStep.data);
-            auto depthStencilBuffer = **g_sharedData->depthStencilBuffer[cd.depthImageIndex];
-            auto copyImage          = **g_sharedData->copyImage;
+            auto depthStencilBuffer = **m_sharedData.depthStencilBuffer[cd.depthImageIndex];
+            auto copyImage          = **m_sharedData.copyImage;
 
             VkImageCopy imageCopy{isl, {}, isl, {}, m_imageExtent};
             imageCopy.dstSubresource.baseArrayLayer = cd.depthImageLayer;
@@ -998,7 +1011,7 @@ tcu::TestStatus LRZTestInstance::iterate(void)
                                   &bufferBarrier, 0u, nullptr, 0u, nullptr);
 
             // copy image to depth image
-            vk.cmdCopyImage(cmdBuffer, **g_sharedData->copyImage, VK_IMAGE_LAYOUT_GENERAL, depthStencilBuffer,
+            vk.cmdCopyImage(cmdBuffer, **m_sharedData.copyImage, VK_IMAGE_LAYOUT_GENERAL, depthStencilBuffer,
                             VK_IMAGE_LAYOUT_GENERAL, 1, &imageCopy);
         }
         else
@@ -1034,9 +1047,9 @@ tcu::TestStatus LRZTestInstance::iterate(void)
         return tcu::TestStatus::pass("Pass");
 
     // log image if test failed
-    const Allocation &imageAllocation = g_sharedData->colorBuffer->getBufferAllocation();
+    const Allocation &imageAllocation = m_sharedData.colorBuffer->getBufferAllocation();
     invalidateAlloc(vk, device, imageAllocation);
-    tcu::PixelBufferAccess resultAccess(mapVkFormat(g_sharedData->colorFormat), m_imageSize, m_imageSize, 1,
+    tcu::PixelBufferAccess resultAccess(mapVkFormat(m_sharedData.colorFormat), m_imageSize, m_imageSize, 1,
                                         imageAllocation.getHostPtr());
     m_context.getTestContext().getLog() << tcu::TestLog::Image("Result", "", resultAccess);
 
@@ -1403,9 +1416,9 @@ void LRZTestInstance::preparePipelines(VkRenderPass renderPass)
 #ifndef CTS_USES_VULKANSC
     VkPipelineRenderingCreateInfo renderingCreateInfo = initVulkanStructure();
     renderingCreateInfo.colorAttachmentCount          = 1;
-    renderingCreateInfo.pColorAttachmentFormats       = &g_sharedData->colorFormat;
-    renderingCreateInfo.depthAttachmentFormat         = g_sharedData->depthStencilFormat;
-    renderingCreateInfo.stencilAttachmentFormat       = g_sharedData->depthStencilFormat;
+    renderingCreateInfo.pColorAttachmentFormats       = &m_sharedData.colorFormat;
+    renderingCreateInfo.depthAttachmentFormat         = m_sharedData.depthStencilFormat;
+    renderingCreateInfo.stencilAttachmentFormat       = m_sharedData.depthStencilFormat;
 
     if (renderPass == VK_NULL_HANDLE)
         renderingCreateInfoWrapper.ptr = &renderingCreateInfo;
@@ -1495,9 +1508,9 @@ Move<VkRenderPass> LRZTestInstance::makeRenderPass(const VkAttachmentLoadOp load
     const auto lg           = VK_IMAGE_LAYOUT_GENERAL;
 
     const AttachmentDescription attachments[]{
-        {np, 0, g_sharedData->colorFormat, VK_SAMPLE_COUNT_1_BIT, loadOperation, VK_ATTACHMENT_STORE_OP_STORE,
+        {np, 0, m_sharedData.colorFormat, VK_SAMPLE_COUNT_1_BIT, loadOperation, VK_ATTACHMENT_STORE_OP_STORE,
          VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE, lg, lg},
-        {np, 0, g_sharedData->depthStencilFormat, VK_SAMPLE_COUNT_1_BIT, loadOperation, VK_ATTACHMENT_STORE_OP_STORE,
+        {np, 0, m_sharedData.depthStencilFormat, VK_SAMPLE_COUNT_1_BIT, loadOperation, VK_ATTACHMENT_STORE_OP_STORE,
          loadOperation, VK_ATTACHMENT_STORE_OP_STORE, lg, lg},
     };
 
@@ -1519,7 +1532,6 @@ void LRZTestInstance::beginRendering(const DeviceInterface &vk, const VkCommandB
     DE_UNREF(depthImage);
     DE_UNREF(depthLayer);
     DE_UNREF(depthLoadOp);
-    DE_ASSERT(g_sharedData);
 
     const VkClearValue clearValues[]{
         makeClearValueColor({0.0f, 0.0f, 0.0f, 1.0f}),        // color attachment 0
@@ -1531,14 +1543,14 @@ void LRZTestInstance::beginRendering(const DeviceInterface &vk, const VkCommandB
 #ifndef CTS_USES_VULKANSC
         // note: using same load op for color and D/S
         VkRenderingAttachmentInfoKHR colorAttachment = initVulkanStructure();
-        colorAttachment.imageView                    = g_sharedData->colorBuffer->getImageView();
+        colorAttachment.imageView                    = m_sharedData.colorBuffer->getImageView();
         colorAttachment.imageLayout                  = VK_IMAGE_LAYOUT_GENERAL;
         colorAttachment.loadOp                       = depthLoadOp;
         colorAttachment.storeOp                      = VK_ATTACHMENT_STORE_OP_STORE;
         colorAttachment.clearValue                   = clearValues[0];
 
         VkRenderingAttachmentInfoKHR dsAttachment = colorAttachment;
-        dsAttachment.imageView                    = *g_sharedData->depthStencilViews[depthImage][depthLayer];
+        dsAttachment.imageView                    = m_sharedData.depthStencilViews[depthImage][depthLayer];
         dsAttachment.loadOp                       = depthLoadOp;
         dsAttachment.clearValue                   = clearValues[1];
 
@@ -1827,10 +1839,10 @@ void BaseTestCase::initPrograms(SourceCollections &programCollection) const
 
 TestInstance *BaseTestCase::createInstance(Context &context) const
 {
-    return new LRZTestInstance(context, m_testParams, m_groupParams);
+    auto &sharedData = tcu::retrieveSharedResource<SharedData>(this);
+    sharedData.setup(context, IMAGE_SIZE);
+    return new LRZTestInstance(context, m_testParams, m_groupParams, sharedData);
 }
-
-} // namespace
 
 class FuzzTestBuilder
 {
@@ -2086,27 +2098,46 @@ DrawData FuzzTestBuilder::fuzzDraw(const BindPipelineData &pipelineData)
     return {color, randDepth(), 1.0f, DrawMode::FULL_QUAD};
 }
 
-tcu::TestCaseGroup *createFuzzGroup(uint32_t count, uint32_t seed, tcu::TestContext &testCtx,
-                                    const SharedGroupParams groupParams)
+class LRZTestGroup : public tcu::TestCaseGroup
 {
-    FuzzTestBuilder testBuilder(seed + groupParams->renderingType + groupParams->useSecondaryCmdBuffer +
-                                groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass);
+public:
+    LRZTestGroup(tcu::TestContext &testCtx, const char *name, const SharedGroupParams groupParams)
+        : tcu::TestCaseGroup(testCtx, name)
+        , m_groupParams(groupParams)
+    {
+    }
 
-    de::MovePtr<tcu::TestCaseGroup> fuzzGroup(new tcu::TestCaseGroup(testCtx, "fuzz"));
+    void init(void) override;
+
+protected:
+    tcu::TestCaseGroup *createFuzzGroup(uint32_t count, uint32_t seed);
+
+private:
+    const SharedGroupParams m_groupParams;
+};
+
+tcu::TestCaseGroup *LRZTestGroup::createFuzzGroup(uint32_t count, uint32_t seed)
+{
+    FuzzTestBuilder testBuilder(seed + m_groupParams->renderingType + m_groupParams->useSecondaryCmdBuffer +
+                                m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass);
+
+    de::MovePtr<tcu::TestCaseGroup> fuzzGroup(new tcu::TestCaseGroup(m_testCtx, "fuzz"));
     for (uint32_t caseIndex = 0; caseIndex < count; ++caseIndex)
     {
         TestParams testParams{std::to_string(caseIndex)};
         testBuilder.build(testParams.stepVect);
 
-        fuzzGroup->addChild(new BaseTestCase(testCtx, testParams.name, testParams, groupParams));
+        fuzzGroup->addChild(new BaseTestCase(m_testCtx, testParams.name, testParams, m_groupParams));
     }
 
     return fuzzGroup.release();
 }
 
-static void createChildren(tcu::TestCaseGroup *lrzTests, const SharedGroupParams groupParams)
+void LRZTestGroup::init(void)
 {
     using namespace StepHelpers;
+
+    setSharedResource(std::make_unique<SharedData>());
 
     // Each test is constructed from a series of steps that are used to build test command buffer.
     // To simplify test configuration, some steps are removed/inserted in the preprocessSteps method.
@@ -3183,14 +3214,12 @@ static void createChildren(tcu::TestCaseGroup *lrzTests, const SharedGroupParams
          }},
     };
 
-    tcu::TestContext &testCtx = lrzTests->getTestContext();
-
     auto createCaseGroup = [&](const char *groupName, const std::vector<TestParams> &testParamsVect)
     {
-        de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, groupName));
+        de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(m_testCtx, groupName));
         for (const auto &testParams : testParamsVect)
-            testGroup->addChild(new BaseTestCase(testCtx, testParams.name, testParams, groupParams));
-        lrzTests->addChild(testGroup.release());
+            testGroup->addChild(new BaseTestCase(m_testCtx, testParams.name, testParams, m_groupParams));
+        addChild(testGroup.release());
     };
 
     createCaseGroup("direction_change", directionChangeVect);
@@ -3201,29 +3230,25 @@ static void createChildren(tcu::TestCaseGroup *lrzTests, const SharedGroupParams
     createCaseGroup("fragment_shader", fragmentShaderVect);
     createCaseGroup("cross_renderpass", crossRenderpassVect);
 
-    if (groupParams->useSecondaryCmdBuffer && !groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+    if (m_groupParams->useSecondaryCmdBuffer && !m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
         createCaseGroup("secondary", secondaryVect);
 
-    if ((groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING && !groupParams->useSecondaryCmdBuffer) ||
-        (groupParams->useSecondaryCmdBuffer && groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass))
+    if ((m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING && !m_groupParams->useSecondaryCmdBuffer) ||
+        (m_groupParams->useSecondaryCmdBuffer && m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass))
     {
         createCaseGroup("suspend_resume", suspendResumeVect);
         createCaseGroup("cross_renderpass_suspend_resume", crossRenderpassSuspendResumeVect);
     }
 
     // note different fuzz tests are created for each flag combination in groupParams
-    lrzTests->addChild(createFuzzGroup(16, 0xba5eba11, testCtx, groupParams));
+    addChild(createFuzzGroup(16, 0xba5eba11));
 }
 
-static void cleanupGroup(tcu::TestCaseGroup *, const SharedGroupParams)
-{
-    // destroy singleton object
-    g_sharedData.reset(nullptr);
-}
+} // namespace
 
 tcu::TestCaseGroup *createRenderPassLowResolutionZTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams)
 {
-    return createTestGroup(testCtx, "low_resolution_z", createChildren, groupParams, cleanupGroup);
+    return new LRZTestGroup(testCtx, "low_resolution_z", groupParams);
 }
 
 } // namespace vkt::renderpass
