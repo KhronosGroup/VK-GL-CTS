@@ -2150,6 +2150,10 @@ void initRefDataStorage(const ShaderInterface &interface, const BufferLayout &la
     }
 
     storage.data = de::SharedPtr(new std::vector<uint8_t>);
+#if (DE_PTR_SIZE == 4)
+    // 64-bit indexing cases are skipped on 32-bit; guard against silent truncation.
+    DE_ASSERT(totalSize == (uint64_t)(size_t)totalSize);
+#endif
     storage.data->resize((size_t)totalSize);
 
     // Pointers for each block.
@@ -2788,6 +2792,12 @@ void SSBOLayoutCase::checkSupport(Context &context) const
     if (m_use64BitIndexing && !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
         TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
 
+#if (DE_PTR_SIZE == 4)
+    // >4 GB host data can't be represented with a 32-bit size_t.
+    if (m_use64BitIndexing)
+        TCU_THROW(NotSupportedError, "64-bit indexing SSBO tests require a 64-bit build");
+#endif
+
     // The 64-bit indexing tests deliberately allocate just over 4 GB to exercise
     // 64-bit SSBO indexing. Skip on devices with no memory heap large enough to
     // hold such an allocation (e.g. handhelds), where vkAllocateMemory would
@@ -2813,6 +2823,12 @@ void SSBOLayoutCase::checkSupport(Context &context) const
 void SSBOLayoutCase::delayedInit(void)
 {
 #ifndef CTS_USES_VULKANSC
+#if (DE_PTR_SIZE == 4)
+    // Skip the >4 GB host alloc on 32-bit; checkSupport reports NotSupported.
+    if (m_use64BitIndexing)
+        return;
+#endif
+
     if (auto contextManager = getContextManager())
     {
         auto &deviceExtensions = contextManager->getDeviceExtensions();

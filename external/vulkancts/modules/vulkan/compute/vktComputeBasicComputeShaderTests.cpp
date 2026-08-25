@@ -1280,6 +1280,11 @@ void BufferToBufferInvertTest::checkSupport(Context &context) const
     {
         if (!context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
             TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
+
+#if (DE_PTR_SIZE == 4)
+        // >4 GB buffers can't be represented with a 32-bit size_t.
+        TCU_THROW(NotSupportedError, "64-bit indexing tests require a 64-bit build");
+#endif
     }
 #endif
     if (m_doBoundsCheck)
