@@ -36,6 +36,12 @@
 #include "vkQueryUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkPipelineConstructionUtil.hpp"
+#include "vkImageWithMemory.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkBuilderUtil.hpp"
+#include "vktTestCaseUtil.hpp"
+#include "tcuImageCompare.hpp"
 #include <limits>
 
 namespace vkt
@@ -5035,6 +5041,209 @@ static void createCaseGroup(tcu::TestCaseGroup *parent, const char *groupName, c
     parent->addChild(group.release());
 }
 
+void initSamplerTruncationPrograms(vk::SourceCollections &dst)
+{
+    dst.glslSources.add("vert") << glu::VertexSource(
+        "#version 450\n"
+        "layout(location = 0) out vec2 outUV;\n"
+        "void main() {\n"
+        "    vec2 pos = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));\n"
+        "    outUV = pos;\n"
+        "    gl_Position = vec4(pos * 2.0f - 1.0f, 0.0f, 1.0f);\n"
+        "}\n");
+
+    dst.glslSources.add("frag") << glu::FragmentSource("#version 450\n"
+                                                       "layout(location = 0) in vec2 outUV;\n"
+                                                       "layout(binding = 0) uniform usampler2D srcTex;\n"
+                                                       "layout(location = 0) out vec4 outColor;\n"
+                                                       "void main() {\n"
+                                                       "    uint v = texture(srcTex, outUV).r;\n"
+                                                       "    uint t = v & 0xFFFFu; // intended 16-bit truncation.\n"
+                                                       "    float ratio = float(t) / 65535.0;\n"
+                                                       "    outColor = vec4(ratio, 1.0 - ratio, 0.0, 1.0);\n"
+                                                       "}\n");
+}
+
+void checkSamplerTruncationSupport(Context &context)
+{
+    const vk::InstanceInterface &vki          = context.getInstanceInterface();
+    const vk::VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
+    const auto fbFormat = vk::VK_FORMAT_R8G8B8A8_UNORM;
+    const auto fbUsage  = (vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+    vk::VkImageFormatProperties fbImageProperties;
+    if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, fbFormat, vk::VK_IMAGE_TYPE_2D,
+                                                   vk::VK_IMAGE_TILING_OPTIMAL, fbUsage, 0u,
+                                                   &fbImageProperties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+        TCU_THROW(NotSupportedError, "Format VK_FORMAT_R8G8B8A8_UNORM not supported for required framebuffer features");
+
+    const auto texFormat = vk::VK_FORMAT_R32_UINT;
+    const auto texUsage  = (vk::VK_IMAGE_USAGE_SAMPLED_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+    vk::VkImageFormatProperties texImageProperties;
+    if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, texFormat, vk::VK_IMAGE_TYPE_2D,
+                                                   vk::VK_IMAGE_TILING_OPTIMAL, texUsage, 0u,
+                                                   &texImageProperties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+        TCU_THROW(NotSupportedError, "Format VK_FORMAT_R32_UINT not supported for required sampling features");
+}
+
+tcu::TestStatus testSamplerTruncation(Context &context)
+{
+    const vk::DeviceInterface &vk             = context.getDeviceInterface();
+    const vk::InstanceInterface &vki          = context.getInstanceInterface();
+    const vk::VkDevice device                 = context.getDevice();
+    const vk::VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    vk::Allocator &memAlloc                   = context.getDefaultAllocator();
+    const uint32_t queueFamilyIndex           = context.getUniversalQueueFamilyIndex();
+    const vk::VkQueue queue                   = context.getUniversalQueue();
+    const auto &deviceExtensions              = context.getDeviceExtensions();
+
+    const tcu::IVec3 fbExtent(4, 4, 1);
+    const auto vkExtent  = vk::makeExtent3D(fbExtent);
+    const auto fbFormat  = vk::VK_FORMAT_R8G8B8A8_UNORM;
+    const auto tcuFormat = vk::mapVkFormat(fbFormat);
+    const auto fbUsage   = (vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    const tcu::Vec4 expectedColor(0.0f, 1.0f, 0.0f, 1.0f);
+
+    vk::ImageWithBuffer colorBuffer(vk, device, memAlloc, vkExtent, fbFormat, fbUsage, vk::VK_IMAGE_TYPE_2D);
+    vk::RenderPassWrapper renderPass(vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC, vk, device, fbFormat);
+    renderPass.createFramebuffer(vk, device, colorBuffer.getImage(), colorBuffer.getImageView(), fbExtent.x(),
+                                 fbExtent.y());
+
+    const tcu::IVec3 texExtent(1, 1, 1);
+    const auto vkTexExtent = vk::makeExtent3D(texExtent);
+    const auto texFormat   = vk::VK_FORMAT_R32_UINT;
+    const auto texUsage    = (vk::VK_IMAGE_USAGE_SAMPLED_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+    const vk::VkImageCreateInfo srcTexCreateInfo = {
+        vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // sType
+        nullptr,                                 // pNext
+        0u,                                      // flags
+        vk::VK_IMAGE_TYPE_2D,                    // imageType
+        texFormat,                               // format
+        vkTexExtent,                             // extent
+        1u,                                      // mipLevels
+        1u,                                      // arrayLayers
+        vk::VK_SAMPLE_COUNT_1_BIT,               // samples
+        vk::VK_IMAGE_TILING_OPTIMAL,             // tiling
+        texUsage,                                // usage
+        vk::VK_SHARING_MODE_EXCLUSIVE,           // sharingMode
+        0u,                                      // queueFamilyIndexCount
+        nullptr,                                 // pQueueFamilyIndices
+        vk::VK_IMAGE_LAYOUT_UNDEFINED,           // initialLayout
+    };
+    vk::ImageWithMemory srcTexture(vk, device, memAlloc, srcTexCreateInfo, vk::MemoryRequirement::Any);
+    const auto srcImageView =
+        vk::makeImageView(vk, device, srcTexture.get(), vk::VK_IMAGE_VIEW_TYPE_2D, texFormat,
+                          vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
+
+    const auto stagingBufferCreateInfo = vk::makeBufferCreateInfo(4u, vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    vk::BufferWithMemory stagingBuffer(vk, device, memAlloc, stagingBufferCreateInfo,
+                                       vk::MemoryRequirement::HostVisible);
+    uint32_t *hostPtr = static_cast<uint32_t *>(stagingBuffer.getAllocation().getHostPtr());
+    *hostPtr          = 0x00010000u;
+    vk::flushAlloc(vk, device, stagingBuffer.getAllocation());
+
+    const vk::VkSamplerCreateInfo samplerCreateInfo = {
+        vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // sType
+        nullptr,                                     // pNext
+        0u,                                          // flags
+        vk::VK_FILTER_NEAREST,                       // magFilter
+        vk::VK_FILTER_NEAREST,                       // minFilter
+        vk::VK_SAMPLER_MIPMAP_MODE_NEAREST,          // mipmapMode
+        vk::VK_SAMPLER_ADDRESS_MODE_REPEAT,          // addressModeU
+        vk::VK_SAMPLER_ADDRESS_MODE_REPEAT,          // addressModeV
+        vk::VK_SAMPLER_ADDRESS_MODE_REPEAT,          // addressModeW
+        0.0f,                                        // mipLodBias
+        VK_FALSE,                                    // anisotropyEnable
+        0.0f,                                        // maxAnisotropy
+        VK_FALSE,                                    // compareEnable
+        vk::VK_COMPARE_OP_NEVER,                     // compareOp
+        0.0f,                                        // minLod
+        VK_LOD_CLAMP_NONE,                           // maxLod
+        vk::VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK, // borderColor
+        VK_FALSE                                     // unnormalizedCoordinates
+    };
+    const auto sampler = vk::createSampler(vk, device, &samplerCreateInfo);
+
+    vk::DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto descriptorSetLayout = setLayoutBuilder.build(vk, device);
+    const vk::PipelineLayoutWrapper pipelineLayout(vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC, vk, device,
+                                                   *descriptorSetLayout);
+
+    vk::DescriptorPoolBuilder descriptorPoolBuilder;
+    descriptorPoolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    const auto descriptorPool =
+        descriptorPoolBuilder.build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    const auto descriptorSet = vk::makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+
+    vk::DescriptorSetUpdateBuilder setUpdateBuilder;
+    const auto samplerDescriptorInfo =
+        vk::makeDescriptorImageInfo(*sampler, srcImageView.get(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
+                                 vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &samplerDescriptorInfo);
+    setUpdateBuilder.update(vk, device);
+
+    const auto &binaries = context.getBinaryCollection();
+    const vk::ShaderWrapper vertModule(vk, device, binaries.get("vert"));
+    const vk::ShaderWrapper fragModule(vk, device, binaries.get("frag"));
+
+    const vk::VkPipelineVertexInputStateCreateInfo vertexInputState = {
+        vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, nullptr, 0u, 0u, nullptr, 0u, nullptr};
+    vk::GraphicsPipelineWrapper pipelineWrapper(vki, vk, physicalDevice, device, deviceExtensions,
+                                                vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC);
+    pipelineWrapper.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultRasterizationState()
+        .setDefaultColorBlendState()
+        .setDefaultMultisampleState()
+        .setDefaultDepthStencilState()
+        .setupVertexInputState(&vertexInputState)
+        .setupPreRasterizationShaderState({vk::makeViewport(vkExtent)}, {vk::makeRect2D(vkExtent)}, pipelineLayout,
+                                          *renderPass, 0u, vertModule)
+        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
+        .setupFragmentOutputState(*renderPass)
+        .setMonolithicPipelineLayout(pipelineLayout)
+        .buildPipeline();
+
+    vk::CommandPoolWithBuffer cmd(vk, device, queueFamilyIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    vk::beginCommandBuffer(vk, cmdBuffer);
+
+    const auto copyLayers = vk::makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+    const auto copyRegion = vk::makeBufferImageCopy(vkTexExtent, copyLayers);
+    vk::copyBufferToImage(vk, cmdBuffer, stagingBuffer.get(), 4u, {copyRegion}, vk::VK_IMAGE_ASPECT_COLOR_BIT, 1u, 1u,
+                          srcTexture.get());
+
+    renderPass.begin(vk, cmdBuffer, vk::makeRect2D(vkExtent), clearColor);
+    pipelineWrapper.bind(cmdBuffer);
+    vk.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u,
+                             &descriptorSet.get(), 0u, nullptr);
+    vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+    renderPass.end(vk, cmdBuffer);
+
+    vk::copyImageToBuffer(vk, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), fbExtent.swizzle(0, 1));
+    vk::endCommandBuffer(vk, cmdBuffer);
+
+    vk::submitCommandsAndWait(vk, device, queue, cmdBuffer);
+    vk::invalidateAlloc(vk, device, colorBuffer.getBufferAllocation());
+
+    tcu::ConstPixelBufferAccess resultAccess(tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+    const tcu::Vec4 threshold(0.02f, 0.02f, 0.02f, 0.02f);
+
+    bool isOk = tcu::floatThresholdCompare(context.getTestContext().getLog(), "Result", "Image comparison result",
+                                           expectedColor, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR);
+
+    if (!isOk)
+        return tcu::TestStatus::fail("Image threshold comparison failed");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 void ShaderTextureFunctionTests::init(void)
 {
     struct WrappingModeWithName
@@ -8363,6 +8572,11 @@ void ShaderTextureFunctionTests::init(void)
 
         addChild(queryGroup.release());
     }
+
+    de::MovePtr<tcu::TestCaseGroup> truncationGroup(new tcu::TestCaseGroup(m_testCtx, "truncation"));
+    addFunctionCaseWithPrograms(truncationGroup.get(), "usampler2d_16bit_truncation", checkSamplerTruncationSupport,
+                                initSamplerTruncationPrograms, testSamplerTruncation);
+    addChild(truncationGroup.release());
 }
 
 } // namespace

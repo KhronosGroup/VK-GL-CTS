@@ -21727,6 +21727,7 @@ dEQP-VKSC.glsl.texture_functions.textureprojoffset_pcoffset.repeat.usampler2d_ve
 dEQP-VKSC.glsl.texture_functions.textureprojoffset_pcoffset.repeat.usampler3d_bias_fragment
 dEQP-VKSC.glsl.texture_functions.textureprojoffset_pcoffset.repeat.usampler3d_fragment
 dEQP-VKSC.glsl.texture_functions.textureprojoffset_pcoffset.repeat.usampler3d_vertex
+dEQP-VKSC.glsl.texture_functions.truncation.usampler2d_16bit_truncation
 dEQP-VKSC.glsl.texture_gather.compute.basic.2d.depth32f.base_level.level_1
 dEQP-VKSC.glsl.texture_gather.compute.basic.2d.depth32f.base_level.level_2
 dEQP-VKSC.glsl.texture_gather.compute.basic.2d.depth32f.filter_mode.min_linear_mag_linear
