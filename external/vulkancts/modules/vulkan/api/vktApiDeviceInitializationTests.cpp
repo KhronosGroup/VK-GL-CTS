@@ -965,6 +965,7 @@ tcu::TestStatus createDeviceWithQueuePrioritiesContentionTest(Context &context)
     const uint32_t elementCount        = (uint32_t)(bufferSize / sizeof(uint32_t));
     const VkQueueFlags transferCapable = (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT);
     bool anyFamilyTested               = false;
+    bool anyFailed                     = false;
 
     for (uint32_t queueFamilyNdx = 0; queueFamilyNdx < (uint32_t)queueFamilyProperties.size(); queueFamilyNdx++)
     {
@@ -1056,7 +1057,7 @@ tcu::TestStatus createDeviceWithQueuePrioritiesContentionTest(Context &context)
                         << ", queueIndex = " << queueIndex << ", priority = " << queuePriorities[queueIndex]
                         << ", element " << elementNdx << ": expected " << fillValues[queueIndex] << ", got "
                         << data[elementNdx] << TestLog::EndMessage;
-                    return tcu::TestStatus::fail("Fail, corrupted data under priority-differentiated contention");
+                    anyFailed = true;
                 }
             }
         }
@@ -1064,6 +1065,9 @@ tcu::TestStatus createDeviceWithQueuePrioritiesContentionTest(Context &context)
 
     if (!anyFamilyTested)
         TCU_THROW(NotSupportedError, "No queue family exposes enough queues to test priority contention");
+
+    if (anyFailed)
+        return tcu::TestStatus::fail("Fail, corrupted data under priority-differentiated contention");
 
     return tcu::TestStatus::pass("Pass");
 }
