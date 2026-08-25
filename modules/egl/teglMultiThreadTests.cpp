@@ -506,6 +506,26 @@ TestCase::IterateResult MultiThreadedTest::iterate(void)
             m_testCtx.getLog() << tcu::TestLog::Message << "[" << (currentTimeUs - m_startTimeUs)
                                << "] (-) Trying to perform resource cleanup..." << tcu::TestLog::EndMessage;
 
+            // Signal threads to stop and release any threads blocked at a barrier.
+            m_ok = false;
+            for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
+            {
+                m_barrierSemaphore1.increment();
+                m_barrierSemaphore2.increment();
+            }
+
+            // Join all threads before returning so that deinit() does not race
+            // with threads still modifying shared EGL object vectors.
+            for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
+                m_threads[threadNdx]->join();
+            m_testCtx.getLog() << tcu::TestLog::Message << "[-] All threads joined, resource cleanup complete."
+                               << tcu::TestLog::EndMessage;
+
+            // Destroy thread objects.
+            for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
+                delete m_threads[threadNdx];
+            m_threads.clear();
+
             m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
             return STOP;
         }
