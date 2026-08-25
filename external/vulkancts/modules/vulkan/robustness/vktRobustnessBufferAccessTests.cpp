@@ -1300,7 +1300,7 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
 
         int64_t userResourceHeapSize          = 0;
         userResourceHeapSize                  = userResourceHeapSize + heapProps.bufferDescriptorSize;
-        userResourceHeapSize                  = deAlign64(descriptorSize, descriptorAlignment);
+        userResourceHeapSize                  = deAlign64(userResourceHeapSize, descriptorAlignment);
         const VkDeviceSize testResourceOffset = static_cast<VkDeviceSize>(userResourceHeapSize);
         userResourceHeapSize                  = userResourceHeapSize + 2 * descriptorSize;
         userResourceHeapSize = deAlign64(userResourceHeapSize, static_cast<int64_t>(heapProps.resourceHeapAlignment));
