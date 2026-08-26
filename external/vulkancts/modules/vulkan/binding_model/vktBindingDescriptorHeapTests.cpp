@@ -871,27 +871,32 @@ tcu::TestStatus testLimits(Context &context)
     const uint64_t applicationDescriptors = uint64_t{(1U << 20) - (1U << 15)};
 
     const Limit minLimits[] = {
-        {"maxSamplerHeapSize", properties.maxSamplerHeapSize, 4080 * properties.samplerDescriptorSize},
+        {"maxSamplerHeapSize", properties.maxSamplerHeapSize,
+         de::max(4000 * properties.samplerDescriptorSize + properties.minSamplerHeapReservedRange,
+                 2048 * properties.samplerDescriptorSize + properties.minSamplerHeapReservedRangeWithEmbedded)},
         {"maxResourceHeapSize", properties.maxResourceHeapSize,
-         applicationDescriptors * properties.imageDescriptorSize},
+         applicationDescriptors * de::max(properties.imageDescriptorSize, properties.bufferDescriptorSize) +
+             properties.minResourceHeapReservedRange},
         {"maxPushDataSize", properties.maxPushDataSize, 256},
         {"maxDescriptorHeapEmbeddedSamplers ", properties.maxDescriptorHeapEmbeddedSamplers, (int64_t{1} << 11) - 16},
     };
     const Limit maxLimits[] = {
         {"samplerHeapAlignment", properties.samplerHeapAlignment, 65536},
         {"resourceHeapAlignment", properties.resourceHeapAlignment, 65536},
-        {"minSamplerHeapReservedRange", properties.minSamplerHeapReservedRange,
-         properties.maxSamplerHeapSize - (4000 * properties.samplerDescriptorSize)},
+        {"minSamplerHeapReservedRange", properties.minSamplerHeapReservedRange, 96 * properties.samplerDescriptorSize},
         {"minSamplerHeapReservedRangeWithEmbedded", properties.minSamplerHeapReservedRangeWithEmbedded,
-         properties.maxSamplerHeapSize - (2048 * properties.samplerDescriptorSize)},
+         2048 * properties.samplerDescriptorSize},
         {"minResourceHeapReservedRange", properties.minResourceHeapReservedRange,
-         properties.maxResourceHeapSize - applicationDescriptors * properties.imageDescriptorSize},
-        {"samplerDescriptorSize", properties.samplerDescriptorSize, 256},
-        {"imageDescriptorSize", properties.imageDescriptorSize, 256},
-        {"bufferDescriptorSize", properties.bufferDescriptorSize, 256},
-        {"samplerDescriptorAlignment", properties.samplerDescriptorAlignment, 256},
-        {"imageDescriptorAlignment", properties.imageDescriptorAlignment, 256},
-        {"bufferDescriptorAlignment", properties.bufferDescriptorAlignment, 256},
+         (1U << 15) * de::max(properties.imageDescriptorSize, properties.bufferDescriptorSize)},
+        {"samplerDescriptorSize", properties.samplerDescriptorSize, 32},
+        {"imageDescriptorSize", properties.imageDescriptorSize, 64},
+        {"bufferDescriptorSize", properties.bufferDescriptorSize, 128},
+        {"samplerDescriptorAlignment", properties.samplerDescriptorAlignment,
+         de::min((VkDeviceSize)32, properties.samplerDescriptorSize)},
+        {"imageDescriptorAlignment", properties.imageDescriptorAlignment,
+         de::min((VkDeviceSize)64, properties.imageDescriptorSize)},
+        {"bufferDescriptorAlignment", properties.bufferDescriptorAlignment,
+         de::min((VkDeviceSize)128, properties.bufferDescriptorSize)},
         {"samplerYcbcrConversionCount", properties.samplerYcbcrConversionCount, 3},
     };
 
