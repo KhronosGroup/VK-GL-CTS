@@ -102,7 +102,7 @@ enum TestType
     TEST_TYPE_H264_ENCODE_USAGE, // Encode one I frame with non-default encode usage setup
     TEST_TYPE_H264_ENCODE_I_P, // Encode one I frame and one P frame, recording and submission order match encode order
     TEST_TYPE_H264_ENCODE_I_P_NOT_MATCHING_ORDER, // Encode one I frame, one P frame, recording and submission order not matching encoding order
-    TEST_TYPE_H264_I_P_B_13, // Encode two 13-frame GOPs, both I, P, and B frames recording and submission order match encode order
+    TEST_TYPE_H264_ENCODE_I_P_B_13, // Encode two 13-frame GOPs, both I, P, and B frames recording and submission order match encode order
     TEST_TYPE_H264_ENCODE_QUERY_RESULT_WITH_STATUS, // Encode one I frame, one P frame with status query reported successfully for both frames. Recording and submission order match encode order
     TEST_TYPE_H264_ENCODE_INLINE_QUERY, // VK_KHR_video_maintenance1 required test: Encode one I frame with inline without vkCmdBegin/EndQuery
     TEST_TYPE_H264_ENCODE_RESOURCES_WITHOUT_PROFILES, // VK_KHR_video_maintenance1 required test: Encode one I frame with DPB resources defined without passing an encode profile
@@ -139,7 +139,13 @@ enum TestType
     TEST_TYPE_H265_ENCODE_USAGE,
     TEST_TYPE_H265_ENCODE_I_P,
     TEST_TYPE_H265_ENCODE_I_P_NOT_MATCHING_ORDER,
-    TEST_TYPE_H265_I_P_B_13,
+    TEST_TYPE_H265_ENCODE_I_P_B_13,
+
+    // Main10 (10-bit) test types for H265
+    TEST_TYPE_H265_ENCODE_I_10BIT,
+    TEST_TYPE_H265_ENCODE_I_P_10BIT,
+    TEST_TYPE_H265_ENCODE_I_P_B_13_10BIT,
+
     TEST_TYPE_H265_ENCODE_QUERY_RESULT_WITH_STATUS,
     TEST_TYPE_H265_ENCODE_INLINE_QUERY,
     TEST_TYPE_H265_ENCODE_RESOURCES_WITHOUT_PROFILES,
@@ -203,7 +209,7 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H264_ENCODE_USAGE:
     case TEST_TYPE_H264_ENCODE_I_P:
     case TEST_TYPE_H264_ENCODE_I_P_NOT_MATCHING_ORDER:
-    case TEST_TYPE_H264_I_P_B_13:
+    case TEST_TYPE_H264_ENCODE_I_P_B_13:
     case TEST_TYPE_H264_ENCODE_RESOLUTION_CHANGE_DPB:
     case TEST_TYPE_H264_ENCODE_QUERY_RESULT_WITH_STATUS:
     case TEST_TYPE_H264_ENCODE_INLINE_QUERY:
@@ -241,7 +247,10 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H265_ENCODE_USAGE:
     case TEST_TYPE_H265_ENCODE_I_P:
     case TEST_TYPE_H265_ENCODE_I_P_NOT_MATCHING_ORDER:
-    case TEST_TYPE_H265_I_P_B_13:
+    case TEST_TYPE_H265_ENCODE_I_P_B_13:
+    case TEST_TYPE_H265_ENCODE_I_10BIT:
+    case TEST_TYPE_H265_ENCODE_I_P_10BIT:
+    case TEST_TYPE_H265_ENCODE_I_P_B_13_10BIT:
     case TEST_TYPE_H265_ENCODE_RESOLUTION_CHANGE_DPB:
     case TEST_TYPE_H265_ENCODE_QUERY_RESULT_WITH_STATUS:
     case TEST_TYPE_H265_ENCODE_INLINE_QUERY:
@@ -661,7 +670,7 @@ struct EncodeTestParam
      /* curSlot */ {0, 1},
      /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
      /* encoderOptions */ Option::ResolutionChange},
-    {TEST_TYPE_H264_I_P_B_13,
+    {TEST_TYPE_H264_ENCODE_I_P_B_13,
      CLIP_H264_ENC_E,
      2,
      {IDR_FRAME, P_FRAME, B_FRAME, B_FRAME, P_FRAME, B_FRAME, B_FRAME, P_FRAME, B_FRAME, B_FRAME, P_FRAME, B_FRAME,
@@ -1119,8 +1128,74 @@ struct EncodeTestParam
      /* curSlot */ {0, 1},
      /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
      /* encoderOptions */ Option::ResolutionChange},
-    {TEST_TYPE_H265_I_P_B_13,
+    {TEST_TYPE_H265_ENCODE_I_P_B_13,
      CLIP_H265_ENC_F,
+     2,
+     {IDR_FRAME, P_FRAME, B_FRAME, B_FRAME, P_FRAME, B_FRAME, B_FRAME, P_FRAME, B_FRAME, B_FRAME, P_FRAME, B_FRAME,
+      B_FRAME, P_FRAME},
+     /* frameIdx */ {0, 3, 1, 2, 6, 4, 5, 9, 7, 8, 12, 10, 11, 13},
+     /* framePoc */ {0, 3, 1, 2, 6, 4, 5, 9, 7, 8, 12, 10, 11, 13},
+     /* frameNum */ {0, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5},
+     /* spsMaxRefFrames */ 2,
+     /* ppsNumActiveRefs */ {1, 1},
+     /* shNumActiveRefs */
+     {refs(0, 0), refs(1, 0), refs(1, 1), refs(1, 1), refs(1, 0), refs(1, 1), refs(1, 1), refs(1, 0), refs(1, 1),
+      refs(1, 1), refs(1, 0), refs(1, 1), refs(1, 1), refs(1, 0)},
+     /* refSlots */
+     {{},
+      {0},
+      {0, 1},
+      {0, 1},
+      {0, 1},
+      {0, 1, 2},
+      {0, 1, 2},
+      {0, 1, 2},
+      {0, 1, 2, 3},
+      {0, 1, 2, 3},
+      {0, 1, 2, 3},
+      {1, 2, 3, 4},
+      {1, 2, 3, 4},
+      {1, 2, 3, 4}},
+     /* curSlot */ {0, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5},
+     /* frameReferences */
+     {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {}),
+      refs<std::vector<uint8_t>>({0, 1}, {1, 0}), refs<std::vector<uint8_t>>({0, 1}, {1, 0}),
+      refs<std::vector<uint8_t>>({1, 0}, {}), refs<std::vector<uint8_t>>({1, 0}, {2, 1}),
+      refs<std::vector<uint8_t>>({1, 0}, {2, 1}), refs<std::vector<uint8_t>>({2, 1}, {}),
+      refs<std::vector<uint8_t>>({2, 1}, {3, 2}), refs<std::vector<uint8_t>>({2, 1}, {3, 2}),
+      refs<std::vector<uint8_t>>({3, 2}, {}), refs<std::vector<uint8_t>>({3, 2}, {4, 3}),
+      refs<std::vector<uint8_t>>({3, 2}, {4, 3}), refs<std::vector<uint8_t>>({4, 3}, {})},
+     /* encoderOptions */ Option::Default},
+    {TEST_TYPE_H265_ENCODE_I_10BIT,
+     CLIP_H265_ENC_I_10BIT,
+     1,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* framePoc */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */ Option::Default},
+    {TEST_TYPE_H265_ENCODE_I_P_10BIT,
+     CLIP_H265_ENC_I_10BIT,
+     1,
+     {IDR_FRAME, P_FRAME},
+     /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 1},
+     /* FrameNum */ {0, 1},
+     /* spsMaxRefFrames */ 2,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0), refs(1, 0)},
+     /* refSlots */ {{}, {0}},
+     /* curSlot */ {0, 1},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
+     /* encoderOptions */ Option::Default},
+    {TEST_TYPE_H265_ENCODE_I_P_B_13_10BIT,
+     CLIP_H265_ENC_I_10BIT,
      2,
      {IDR_FRAME, P_FRAME, B_FRAME, B_FRAME, P_FRAME, B_FRAME, B_FRAME, P_FRAME, B_FRAME, B_FRAME, P_FRAME, B_FRAME,
       B_FRAME, P_FRAME},
@@ -1410,9 +1485,18 @@ public:
         case TEST_TYPE_H265_ENCODE_I_P_NOT_MATCHING_ORDER:
             testName += "i_p_not_matching_order";
             break;
-        case TEST_TYPE_H264_I_P_B_13:
-        case TEST_TYPE_H265_I_P_B_13:
+        case TEST_TYPE_H264_ENCODE_I_P_B_13:
+        case TEST_TYPE_H265_ENCODE_I_P_B_13:
             testName += "i_p_b_13";
+            break;
+        case TEST_TYPE_H265_ENCODE_I_10BIT:
+            testName += "i_10bit";
+            break;
+        case TEST_TYPE_H265_ENCODE_I_P_10BIT:
+            testName += "i_p_10bit";
+            break;
+        case TEST_TYPE_H265_ENCODE_I_P_B_13_10BIT:
+            testName += "i_p_b_13_10bit";
             break;
         case TEST_TYPE_H264_ENCODE_RESOLUTION_CHANGE_DPB:
         case TEST_TYPE_H265_ENCODE_RESOLUTION_CHANGE_DPB:
@@ -2509,9 +2593,17 @@ void VideoEncodeTestInstance::initializeTestParameters()
         m_customEncodeUsage ? VK_VIDEO_ENCODE_CONTENT_DESKTOP_BIT_KHR : VK_VIDEO_ENCODE_CONTENT_DEFAULT_KHR,
         m_customEncodeUsage ? VK_VIDEO_ENCODE_TUNING_MODE_HIGH_QUALITY_KHR : VK_VIDEO_ENCODE_TUNING_MODE_DEFAULT_KHR);
 
-    // Create encode and decode profiles
-    m_videoEncodeProfile = getVideoProfile(m_videoCodecEncodeOperation, m_encodeUsageInfo.get());
-    m_videoDecodeProfile = getVideoProfile(m_videoCodecDecodeOperation, m_testDefinition->getDecodeProfileExtension());
+    // Create encode and decode profiles. Chroma subsampling and bit depth must match the coded content
+    // (e.g. 8-bit Main vs 10-bit Main10), otherwise session/parameter validation fails for 10-bit clips.
+    const VkVideoChromaSubsamplingFlagsKHR chromaSubsampling = m_testDefinition->getProfile()->GetColorSubsampling();
+    const VkVideoComponentBitDepthFlagsKHR lumaBitDepth = m_testDefinition->getProfile()->GetProfile()->lumaBitDepth;
+    const VkVideoComponentBitDepthFlagsKHR chromaBitDepth =
+        m_testDefinition->getProfile()->GetProfile()->chromaBitDepth;
+
+    m_videoEncodeProfile = getVideoProfile(m_videoCodecEncodeOperation, m_encodeUsageInfo.get(), chromaSubsampling,
+                                           lumaBitDepth, chromaBitDepth);
+    m_videoDecodeProfile = getVideoProfile(m_videoCodecDecodeOperation, m_testDefinition->getDecodeProfileExtension(),
+                                           chromaSubsampling, lumaBitDepth, chromaBitDepth);
 
     // Create profile list for encode
     m_videoEncodeProfileList = getVideoProfileList(m_videoEncodeProfile.get(), 1);
@@ -2557,11 +2649,17 @@ void VideoEncodeTestInstance::setupDeviceAndQueues()
     m_vki            = &m_context.getInstanceInterface();
     m_physicalDevice = m_context.getPhysicalDevice();
 
-    // Get formats
-    m_imageFormat    = checkImageFormat(VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR, m_videoEncodeProfileList.get(),
-                                        VK_FORMAT_G8_B8R8_2PLANE_420_UNORM);
-    m_dpbImageFormat = checkImageFormat(VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR, m_videoEncodeProfileList.get(),
-                                        VK_FORMAT_G8_B8R8_2PLANE_420_UNORM);
+    // Get formats. Semi-planar picture format matching the profile bit depth (8-bit yields
+    // VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, Main10 yields VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16).
+    const VkVideoCoreProfile *profile = m_testDefinition->getProfile();
+    const VkFormat pictureFormat      = VkVideoCoreProfile::CodecGetVkFormat(
+        static_cast<VkVideoChromaSubsamplingFlagBitsKHR>(profile->GetColorSubsampling()),
+        static_cast<VkVideoComponentBitDepthFlagBitsKHR>(profile->GetProfile()->lumaBitDepth), true);
+
+    m_imageFormat =
+        checkImageFormat(VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR, m_videoEncodeProfileList.get(), pictureFormat);
+    m_dpbImageFormat =
+        checkImageFormat(VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR, m_videoEncodeProfileList.get(), pictureFormat);
 
     m_hasDecodeSupport = VideoDevice::supportsCodecOperation(m_context, m_videoCodecDecodeOperation);
 
@@ -3110,8 +3208,17 @@ void VideoEncodeTestInstance::setupSessionParameters()
                                                nullptr)),
             1u, 1u, encodeH264SessionParametersAddInfoKHRs.back().get()));
 
+        // These H265 parameter sets are populated for every iteration but only consumed for H265 sessions, so
+        // fall back to Main when the active profile is H264 (GetEncodeH265Profile() returns null in that case).
+        const StdVideoH265ProfileIdc h265ProfileIdc =
+            m_testDefinition->getProfile()->IsH265() ?
+                m_testDefinition->getProfile()->GetEncodeH265Profile()->stdProfileIdc :
+                STD_VIDEO_H265_PROFILE_IDC_MAIN;
+        const uint8_t h265BitDepthMinus8 =
+            static_cast<uint8_t>(m_testDefinition->getProfile()->GetLumaBitDepthMinus8());
+
         stdVideoH265ProfileTierLevels.push_back(
-            getStdVideoH265ProfileTierLevel(STD_VIDEO_H265_PROFILE_IDC_MAIN, STD_VIDEO_H265_LEVEL_IDC_6_2));
+            getStdVideoH265ProfileTierLevel(h265ProfileIdc, STD_VIDEO_H265_LEVEL_IDC_6_2));
         stdVideoH265DecPicBufMgrs.push_back(getStdVideoH265DecPicBufMgr());
         stdVideoH265VideoParameterSets.push_back(getStdVideoH265VideoParameterSet(
             stdVideoH265DecPicBufMgrs.back().get(), stdVideoH265ProfileTierLevels.back().get()));
@@ -3120,7 +3227,8 @@ void VideoEncodeTestInstance::setupSessionParameters()
         stdVideoH265SequenceParameterSets.push_back(getStdVideoH265SequenceParameterSet(
             extentWidth, extentHeight, m_videoH265CapabilitiesExtension->ctbSizes,
             m_videoH265CapabilitiesExtension->transformBlockSizes, stdVideoH265DecPicBufMgrs.back().get(),
-            stdVideoH265ProfileTierLevels.back().get(), stdVideoH265SequenceParameterSetVuis.back().get()));
+            stdVideoH265ProfileTierLevels.back().get(), stdVideoH265SequenceParameterSetVuis.back().get(),
+            h265BitDepthMinus8));
         stdVideoH265PictureParameterSets.push_back(
             getStdVideoH265PictureParameterSet(m_videoH265CapabilitiesExtension.get(), m_tileColumns, m_tileRows));
         encodeH265SessionParametersAddInfoKHRs.push_back(getVideoEncodeH265SessionParametersAddInfoKHR(
@@ -4144,6 +4252,7 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
 
         auto resultImage = getDecodedImageFromContext(deviceContext, layout, &frame);
         processor.releaseFrame(&frame);
+
         de::MovePtr<std::vector<uint8_t>> out;
         de::MovePtr<std::vector<uint16_t>> out16;
 
@@ -5697,6 +5806,8 @@ public:
     virtual void checkSupport(Context &context) const;
 
 private:
+    void checkEncodePictureFormatSupport(Context &context) const;
+
     MovePtr<TestDefinition> m_testDefinition;
 };
 
@@ -5727,7 +5838,7 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
     case TEST_TYPE_H264_ENCODE_USAGE:
     case TEST_TYPE_H264_ENCODE_I_P:
     case TEST_TYPE_H264_ENCODE_I_P_NOT_MATCHING_ORDER:
-    case TEST_TYPE_H264_I_P_B_13:
+    case TEST_TYPE_H264_ENCODE_I_P_B_13:
     case TEST_TYPE_H264_ENCODE_RESOLUTION_CHANGE_DPB:
     case TEST_TYPE_H264_ENCODE_QUERY_RESULT_WITH_STATUS:
         context.requireDeviceFunctionality("VK_KHR_video_encode_h264");
@@ -5782,10 +5893,16 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
     case TEST_TYPE_H265_ENCODE_USAGE:
     case TEST_TYPE_H265_ENCODE_I_P:
     case TEST_TYPE_H265_ENCODE_I_P_NOT_MATCHING_ORDER:
-    case TEST_TYPE_H265_I_P_B_13:
+    case TEST_TYPE_H265_ENCODE_I_P_B_13:
     case TEST_TYPE_H265_ENCODE_RESOLUTION_CHANGE_DPB:
     case TEST_TYPE_H265_ENCODE_QUERY_RESULT_WITH_STATUS:
         context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
+        break;
+    case TEST_TYPE_H265_ENCODE_I_10BIT:
+    case TEST_TYPE_H265_ENCODE_I_P_10BIT:
+    case TEST_TYPE_H265_ENCODE_I_P_B_13_10BIT:
+        context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
+        checkEncodePictureFormatSupport(context);
         break;
     case TEST_TYPE_H265_ENCODE_INLINE_QUERY:
     case TEST_TYPE_H265_ENCODE_RESOURCES_WITHOUT_PROFILES:
@@ -5841,6 +5958,37 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
             TCU_THROW(NotSupportedError, "unifiedImageLayoutsVideo");
         }
     }
+}
+
+// Report NotSupported at case-collection time when the implementation exposes VK_KHR_video_encode_h265 but not the
+// picture format required by the profile bit depth (e.g. Main10 on an 8-bit-only encoder). Mirrors the instance-side
+// checkImageFormat query so both paths accept exactly the same formats.
+void VideoEncodeTestCase::checkEncodePictureFormatSupport(Context &context) const
+{
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const VkVideoCoreProfile *profile     = m_testDefinition->getProfile();
+
+    const MovePtr<VkVideoEncodeUsageInfoKHR> encodeUsageInfo =
+        getEncodeUsageInfo(m_testDefinition->getEncodeProfileExtension(), VK_VIDEO_ENCODE_USAGE_DEFAULT_KHR,
+                           VK_VIDEO_ENCODE_CONTENT_DEFAULT_KHR, VK_VIDEO_ENCODE_TUNING_MODE_DEFAULT_KHR);
+    const MovePtr<VkVideoProfileInfoKHR> encodeProfile =
+        getVideoProfile(m_testDefinition->getCodecOperation(), encodeUsageInfo.get(), profile->GetColorSubsampling(),
+                        profile->GetProfile()->lumaBitDepth, profile->GetProfile()->chromaBitDepth);
+    const MovePtr<VkVideoProfileListInfoKHR> encodeProfileList = getVideoProfileList(encodeProfile.get(), 1);
+
+    const VkFormat pictureFormat = VkVideoCoreProfile::CodecGetVkFormat(
+        static_cast<VkVideoChromaSubsamplingFlagBitsKHR>(profile->GetColorSubsampling()),
+        static_cast<VkVideoComponentBitDepthFlagBitsKHR>(profile->GetProfile()->lumaBitDepth), true);
+
+    MovePtr<vector<VkFormat>> supportedFormats =
+        getSupportedFormats(vki, physicalDevice, VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR, encodeProfileList.get());
+
+    if (!supportedFormats || supportedFormats->empty())
+        TCU_THROW(NotSupportedError, "No supported encode picture formats for the requested profile");
+
+    if (std::find(supportedFormats->begin(), supportedFormats->end(), pictureFormat) == supportedFormats->end())
+        TCU_THROW(NotSupportedError, "Encode picture format for the requested bit depth is not supported");
 }
 
 TestInstance *VideoEncodeTestCase::createInstance(Context &context) const

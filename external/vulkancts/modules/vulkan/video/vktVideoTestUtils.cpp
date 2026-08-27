@@ -1526,7 +1526,7 @@ de::MovePtr<StdVideoH265SequenceParameterSet> getStdVideoH265SequenceParameterSe
     uint32_t width, uint32_t height, VkVideoEncodeH265CtbSizeFlagsKHR ctbSizesFlag,
     VkVideoEncodeH265TransformBlockSizeFlagsKHR transformBlockSizesFlag, const StdVideoH265DecPicBufMgr *pDecPicBufMgr,
     const StdVideoH265ProfileTierLevel *pProfileTierLevel,
-    const StdVideoH265SequenceParameterSetVui *pSequenceParameterSetVui)
+    const StdVideoH265SequenceParameterSetVui *pSequenceParameterSetVui, uint8_t bitDepthMinus8)
 {
     const StdVideoH265SpsFlags stdVideoH265SpsFlags = {
         1, //  sps_temporal_id_nesting_flag : 1;
@@ -1632,8 +1632,8 @@ de::MovePtr<StdVideoH265SequenceParameterSet> getStdVideoH265SequenceParameterSe
         0u,                                   //  uint8_t sps_video_parameter_set_id;
         0u,                                   //  uint8_t sps_max_sub_layers_minus1;
         0u,                                   //  uint8_t sps_seq_parameter_set_id;
-        0u,                                   //  uint8_t bit_depth_luma_minus8;
-        0u,                                   //  uint8_t bit_depth_chroma_minus8;
+        bitDepthMinus8,                       //  uint8_t bit_depth_luma_minus8;
+        bitDepthMinus8,                       //  uint8_t bit_depth_chroma_minus8;
         4u, //  uint8_t                                log2_max_pic_order_cnt_lsb_minus;4
         log2_min_luma_coding_block_size_minus3,      //  uint8_t log2_min_luma_coding_block_size_minus3;
         log2_diff_max_min_luma_coding_block_size,    //  uint8_t log2_diff_max_min_luma_coding_block_size;
