@@ -213,6 +213,7 @@ enum class SpirvTestType
     StorageTexelBufferAtomic64,
     SimpleVariablePointers,
     ArrayVariablePointers,
+    UntypedVariablePointers,
     AtomicImageWithinFunction,
     OpImageQuerySize,
     OpImageQuerySizeNullDescriptor,
@@ -9389,6 +9390,65 @@ void DescriptorHeapTestCaseSpirv::initPrograms(vk::SourceCollections &programCol
                OpFunctionEnd
 )";
         break;
+    case SpirvTestType::UntypedVariablePointers:
+        assembly = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpCapability VariablePointers
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_variable_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main" %2 %3
+               OpExecutionMode %1 LocalSize 1 1 1
+               OpDecorate %2 BuiltIn ResourceHeapEXT
+               OpDecorate %3 BuiltIn GlobalInvocationId
+               OpDecorateId %4 ArrayStrideIdEXT %5
+               OpDecorate %6 ArrayStride 4
+               OpDecorate %7 Block
+               OpMemberDecorate %7 0 Offset 0
+          %8 = OpTypeVoid
+          %9 = OpTypeFunction %8
+         %10 = OpTypeInt 32 0
+         %11 = OpConstant %10 0
+         %12 = OpConstant %10 1
+         %13 = OpConstant %10 2
+         %14 = OpTypeBool
+         %15 = OpTypeVector %10 3
+         %16 = OpTypePointer Input %15
+          %3 = OpVariable %16 Input
+         %17 = OpTypePointer Input %10
+         %18 = OpTypeUntypedPointerKHR UniformConstant
+         %19 = OpTypeUntypedPointerKHR StorageBuffer
+         %20 = OpTypeBufferEXT StorageBuffer
+          %5 = OpConstantSizeOfEXT %10 %20
+          %4 = OpTypeRuntimeArray %20
+          %2 = OpUntypedVariableKHR %18 UniformConstant
+          %6 = OpTypeRuntimeArray %10
+          %7 = OpTypeStruct %6
+         %21 = OpTypePointer StorageBuffer %7
+          %1 = OpFunction %8 None %9
+         %22 = OpLabel
+         %23 = OpAccessChain %17 %3 %11
+         %24 = OpLoad %10 %23
+         %25 = OpINotEqual %14 %24 %11
+         %26 = OpUntypedAccessChainKHR %18 %4 %2 %11
+         %27 = OpBufferPointerEXT %21 %26
+         %28 = OpUntypedAccessChainKHR %19 %7 %27 %11 %11
+         %29 = OpUntypedAccessChainKHR %18 %4 %2 %12
+         %30 = OpBufferPointerEXT %21 %29
+         %31 = OpUntypedAccessChainKHR %19 %7 %30 %11 %11
+         %32 = OpSelect %19 %25 %28 %31
+         %33 = OpLoad %10 %32
+         %34 = OpUntypedAccessChainKHR %18 %4 %2 %13
+         %35 = OpBufferPointerEXT %21 %34
+         %36 = OpUntypedAccessChainKHR %19 %7 %35 %11 %24
+               OpStore %36 %33
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
     case SpirvTestType::AtomicImageWithinFunction:
         assembly = R"(
                OpCapability Shader
@@ -9826,6 +9886,11 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
     case SpirvTestType::ArrayVariablePointers:
         expectedOutput = {0x5};
         heapUserSize   = 4 * resourceDescriptorStride;
+        break;
+    case SpirvTestType::UntypedVariablePointers:
+        expectedOutput = {0xc, 0x5};
+        heapUserSize   = 3 * storageBufferStride;
+        dispatchWidth  = 2;
         break;
     case SpirvTestType::AtomicImageWithinFunction:
     case SpirvTestType::AtomicImage2d:
@@ -10343,6 +10408,39 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
         addressRanges[3].size    = outputBufferSize;
 
         VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 4, resourceInfos.data(), hostAddressRanges.data()));
+        break;
+    }
+    case SpirvTestType::UntypedVariablePointers:
+    {
+        const std::array<uint32_t, 2> values = {0x5, 0xc};
+        std::array<VkHostAddressRangeEXT, 3> hostAddressRanges{};
+        std::array<VkResourceDescriptorInfoEXT, 3> resourceInfos{};
+        std::array<VkDeviceAddressRangeEXT, 3> addressRanges{};
+
+        for (size_t i = 0; i < 3; ++i)
+        {
+            hostAddressRanges[i].address = reinterpret_cast<char *>(heapContents) + i * storageBufferStride;
+            hostAddressRanges[i].size    = static_cast<size_t>(storageBufferStride);
+
+            resourceInfos[i]                    = initVulkanStructure();
+            resourceInfos[i].type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            resourceInfos[i].data.pAddressRange = &addressRanges[i];
+        }
+        for (size_t i = 0; i < values.size(); ++i)
+        {
+            const VkDeviceSize inputBufferSize =
+                alignUp(VkDeviceSize{sizeof(uint32_t)}, physDevProps.limits.minStorageBufferOffsetAlignment);
+            auto &inputBuffer = stagingBuffers.emplace_back(createBufferAndMemory(
+                inputBufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT));
+            deMemcpy(inputBuffer->memory->getHostPtr(), &values[i], sizeof(uint32_t));
+
+            addressRanges[i].address = inputBuffer->address;
+            addressRanges[i].size    = inputBufferSize;
+        }
+        addressRanges[2].address = outputBuffer->address;
+        addressRanges[2].size    = outputBufferSize;
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 3, resourceInfos.data(), hostAddressRanges.data()));
         break;
     }
     case SpirvTestType::AtomicImageWithinFunction:
@@ -21408,6 +21506,7 @@ void populateSpirvTests(tcu::TestCaseGroup *topGroup)
         {SpirvTestType::StorageTexelBufferAtomic64, "storage_texel_buffer_atomic64"},
         {SpirvTestType::SimpleVariablePointers, "simple_variable_pointers"},
         {SpirvTestType::ArrayVariablePointers, "array_variable_pointers"},
+        {SpirvTestType::UntypedVariablePointers, "untyped_variable_pointers"},
         {SpirvTestType::AtomicImageWithinFunction, "atomic_image_within_function"},
         {SpirvTestType::OpImageQuerySize, "op_image_query_size"},
         {SpirvTestType::OpImageQuerySizeNullDescriptor, "op_image_query_size_null_descriptor"},
@@ -21425,7 +21524,8 @@ void populateSpirvTests(tcu::TestCaseGroup *topGroup)
         params.enableVariablePointers = (test.first == SpirvTestType::SimpleVariablePointers) ||
                                         (test.first == SpirvTestType::ArrayVariablePointers) ||
                                         (test.first == SpirvTestType::FunctionCallUntypedBuffer) ||
-                                        (test.first == SpirvTestType::FunctionCallUntypedBuffer2);
+                                        (test.first == SpirvTestType::FunctionCallUntypedBuffer2) ||
+                                        (test.first == SpirvTestType::UntypedVariablePointers);
         params.shaderImageInt64Atomics = (params.spirvTestType == SpirvTestType::StorageTexelBufferAtomic64) ||
                                          (params.spirvTestType == SpirvTestType::AtomicImage2d64Bit);
         params.enableShader64bitIndexing    = test.first == SpirvTestType::SizeOf64;
