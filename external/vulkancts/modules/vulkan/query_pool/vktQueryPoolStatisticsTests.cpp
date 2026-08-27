@@ -1795,23 +1795,24 @@ bool GraphicBasicTestInstance::checkImage(void)
     }
     else
     {
+        int colorInc = (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) ? 6 : 4;
         int colorNdx = 0;
 
         for (int y = 0; y < iHeight / 2; ++y)
             for (int x = 0; x < iWidth / 2; ++x)
                 referenceFrame.getLevel(0).setPixel(m_data[colorNdx].color, x, y);
 
-        colorNdx += 4;
+        colorNdx += colorInc;
         for (int y = iHeight / 2; y < iHeight; ++y)
             for (int x = 0; x < iWidth / 2; ++x)
                 referenceFrame.getLevel(0).setPixel(m_data[colorNdx].color, x, y);
 
-        colorNdx += 4;
+        colorNdx += colorInc;
         for (int y = 0; y < iHeight / 2; ++y)
             for (int x = iWidth / 2; x < iWidth; ++x)
                 referenceFrame.getLevel(0).setPixel(m_data[colorNdx].color, x, y);
 
-        colorNdx += 4;
+        colorNdx += colorInc;
         for (int y = iHeight / 2; y < iHeight; ++y)
             for (int x = iWidth / 2; x < iWidth; ++x)
                 referenceFrame.getLevel(0).setPixel(m_data[colorNdx].color, x, y);
@@ -2070,7 +2071,7 @@ tcu::TestStatus VertexShaderTestInstance::checkResult(VkQueryPool queryPool)
         expectedMin = 16u;
         break;
     case VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT:
-        expectedMin = m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST             ? 15u :
+        expectedMin = m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST             ? 24u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY  ? 8u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY ? 14u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY ? 6u :
@@ -2082,7 +2083,7 @@ tcu::TestStatus VertexShaderTestInstance::checkResult(VkQueryPool queryPool)
         expectedMin = m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST                ? 16u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST                 ? 8u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP                ? 15u :
-                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST             ? 5u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST             ? 8u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP            ? 8u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN              ? 8u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY  ? 4u :
@@ -2110,7 +2111,7 @@ tcu::TestStatus VertexShaderTestInstance::checkResult(VkQueryPool queryPool)
         expectedMin = m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST                ? 16u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST                 ? 8u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP                ? 15u :
-                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST             ? 5u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST             ? 8u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP            ? 8u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN              ? 8u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY  ? 4u :
@@ -2124,7 +2125,7 @@ tcu::TestStatus VertexShaderTestInstance::checkResult(VkQueryPool queryPool)
         expectedMin = m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST                ? 16u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST                 ? 8u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP                ? 15u :
-                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST             ? 5u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST             ? 8u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP            ? 8u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN              ? 8u :
                       m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY  ? 4u :
@@ -2987,13 +2988,19 @@ tcu::TestStatus GeometryShaderTestInstance::checkResult(VkQueryPool queryPool)
 void GeometryShaderTestInstance::draw(VkCommandBuffer cmdBuffer)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
-    if (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP ||
-        m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+    if (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
     {
         vk.cmdDraw(cmdBuffer, 3u, 1u, 0u, 1u);
         vk.cmdDraw(cmdBuffer, 3u, 1u, 4u, 1u);
         vk.cmdDraw(cmdBuffer, 3u, 1u, 8u, 2u);
         vk.cmdDraw(cmdBuffer, 3u, 1u, 12u, 3u);
+    }
+    else if (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+    {
+        vk.cmdDraw(cmdBuffer, 3u, 1u, 0u, 1u);
+        vk.cmdDraw(cmdBuffer, 3u, 1u, 6u, 1u);
+        vk.cmdDraw(cmdBuffer, 3u, 1u, 12u, 2u);
+        vk.cmdDraw(cmdBuffer, 3u, 1u, 18u, 3u);
     }
     else
     {
@@ -4145,8 +4152,7 @@ public:
             const auto blue  = tcu::RGBA::blue().toVec();
             const auto gray  = tcu::RGBA::gray().toVec();
 
-            const bool triListSkip = (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST &&
-                                      m_parametersGraphic.clearOp == CLEAR_SKIP);
+            const bool triList = m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
             // --- TOP LEFT VERTICES ---
             // For line strips with adjacency, everything is drawn with a single draw call, but we add a first and a last
@@ -4160,7 +4166,7 @@ public:
             if (isTriFan)
                 std::swap(m_data.at(m_data.size() - 1), m_data.at(m_data.size() - 2));
             m_data.push_back(VertexData(tcu::Vec4(center, top, 1.0f, 1.0f), red));
-            if (triListSkip)
+            if (triList)
             {
                 m_data.push_back(VertexData(tcu::Vec4(center, top, 1.0f, 1.0f), red));
                 m_data.push_back(VertexData(tcu::Vec4(left, middle, 1.0f, 1.0f), red));
@@ -4173,7 +4179,7 @@ public:
             if (isTriFan)
                 std::swap(m_data.at(m_data.size() - 1), m_data.at(m_data.size() - 2));
             m_data.push_back(VertexData(tcu::Vec4(center, middle, 1.0f, 1.0f), green));
-            if (triListSkip)
+            if (triList)
             {
                 m_data.push_back(VertexData(tcu::Vec4(center, middle, 1.0f, 1.0f), green));
                 m_data.push_back(VertexData(tcu::Vec4(left, bottom, 1.0f, 1.0f), green));
@@ -4186,7 +4192,7 @@ public:
             if (isTriFan)
                 std::swap(m_data.at(m_data.size() - 1), m_data.at(m_data.size() - 2));
             m_data.push_back(VertexData(tcu::Vec4(right, top, 1.0f, 1.0f), blue));
-            if (triListSkip)
+            if (triList)
             {
                 m_data.push_back(VertexData(tcu::Vec4(right, top, 1.0f, 1.0f), blue));
                 m_data.push_back(VertexData(tcu::Vec4(center, middle, 1.0f, 1.0f), blue));
@@ -4199,7 +4205,7 @@ public:
             if (isTriFan)
                 std::swap(m_data.at(m_data.size() - 1), m_data.at(m_data.size() - 2));
             m_data.push_back(VertexData(tcu::Vec4(right, middle, 1.0f, 1.0f), gray));
-            if (triListSkip)
+            if (triList)
             {
                 m_data.push_back(VertexData(tcu::Vec4(right, middle, 1.0f, 1.0f), gray));
                 m_data.push_back(VertexData(tcu::Vec4(center, bottom, 1.0f, 1.0f), gray));
