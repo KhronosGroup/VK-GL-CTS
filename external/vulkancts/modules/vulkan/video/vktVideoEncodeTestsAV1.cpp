@@ -1268,6 +1268,12 @@ void VideoTestCase::buildEncoderParams(std::vector<std::string> &params, const F
     params.push_back("--inputBpp");
     params.push_back(std::to_string(m_definition.bitDepth.depth));
 
+    if (m_definition.bitDepth.depth > 8)
+    {
+        params.push_back("--msbShift");
+        params.push_back(std::to_string(16 - m_definition.bitDepth.depth));
+    }
+
     params.push_back("--consecutiveBFrameCount");
     params.push_back(de::toString(m_definition.gop.consecutiveBFrames));
 

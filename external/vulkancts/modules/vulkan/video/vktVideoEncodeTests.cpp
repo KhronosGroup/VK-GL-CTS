@@ -2182,6 +2182,9 @@ private:
 
     // Input video frames
     std::vector<de::MovePtr<std::vector<uint8_t>>> m_inVector;
+    std::vector<de::MovePtr<std::vector<uint16_t>>> m_inVector16;
+    template <typename PlaneType>
+    void storeReferenceFrame(vkt::ycbcr::MultiPlaneImageData *frame, uint32_t frameIdx);
     void loadVideoFrames(void);
 
     // Frame encoding
@@ -2196,6 +2199,9 @@ private:
 
     // Verify Encoded Bitstream
     tcu::TestStatus verifyEncodedBitstream(const BufferWithMemory &encodeBuffer, VkDeviceSize encodeBufferSize);
+    template <typename PlaneType>
+    de::MovePtr<std::vector<PlaneType>> convertDecodedFrame(vkt::ycbcr::MultiPlaneImageData *image,
+                                                            const std::string &encodePrefix, uint32_t frameIdx);
 
     // Dump output of encoding tests.
     tcu::VideoEncodeOutput m_dumpOutput;
@@ -2217,7 +2223,8 @@ private:
     VkVideoEncodeFlagsKHR getEncodeFlags(uint32_t nalIdx);
     uint32_t getIntraRefreshIndex(uint32_t nalIdx) const;
 
-    uint32_t calculateTotalFramesFromClipData(const std::vector<uint8_t> &clip, uint32_t width, uint32_t height);
+    uint32_t calculateTotalFramesFromClipData(const std::vector<uint8_t> &clip, uint32_t width, uint32_t height,
+                                              VkFormat format);
 
     // VK_KHR_video_encode_feedback2 parameters
     bool m_useFeedback2;
@@ -3218,16 +3225,39 @@ void VideoEncodeTestInstance::prepareInputImages(void)
     }
 }
 
+// Convert a semi-planar frame to planar I420 at the coded bit depth, optionally dump it,
+// and store it as the reference for later PSNR verification.
+template <typename PlaneType>
+void VideoEncodeTestInstance::storeReferenceFrame(vkt::ycbcr::MultiPlaneImageData *frame, uint32_t frameIdx)
+{
+    de::MovePtr<std::vector<PlaneType>> planar = vkt::ycbcr::YCbCrConvUtil<PlaneType>::MultiPlanarNV12toI420(frame);
+
+    if (m_dumpOutput & tcu::DUMP_ENC_YUV)
+    {
+        const std::string encodePrefix = util::getVideoCodecPathSegment(m_testDefinition->getCodecOperation());
+        const std::string filename =
+            util::getVideoDumpPath(false, m_testDefinition->getTestName(), encodePrefix, "yuv", frameIdx);
+        vkt::ycbcr::YCbCrContent<PlaneType>::save(*planar, filename);
+    }
+
+    if constexpr (std::is_same_v<PlaneType, uint16_t>)
+        m_inVector16.push_back(std::move(planar));
+    else
+        m_inVector.push_back(std::move(planar));
+}
+
 void VideoEncodeTestInstance::loadVideoFrames(void)
 {
     de::MovePtr<vector<uint8_t>> clip = loadVideoData(m_testDefinition->getClipFilePath());
 
     m_inVector.clear();
+    m_inVector16.clear();
 
     // Get the available frame count from the clip info, but if it is zero then calculate it.
     uint32_t availableFrames = m_testDefinition->getClipTotalFrames();
     if (availableFrames == 0)
-        availableFrames = calculateTotalFramesFromClipData(*clip, m_codedExtent.width, m_codedExtent.height);
+        availableFrames =
+            calculateTotalFramesFromClipData(*clip, m_codedExtent.width, m_codedExtent.height, m_imageFormat);
 
     // Log the available frame count
     m_context.getTestContext().getLog() << tcu::TestLog::Message << "Available frames in clip: " << availableFrames
@@ -3247,6 +3277,8 @@ void VideoEncodeTestInstance::loadVideoFrames(void)
 
     // Limit the number of frames to process based on availableFrames
     uint32_t framesToProcess = std::min(m_gopCount * m_gopFrameCount, availableFrames);
+
+    const bool is10Bit = m_testDefinition->getProfile()->GetLumaBitDepthMinus8() != 0;
 
     for (uint32_t i = 0; i < framesToProcess; ++i)
     {
@@ -3269,23 +3301,15 @@ void VideoEncodeTestInstance::loadVideoFrames(void)
         vkt::ycbcr::extractI420Frame(*clip, i, m_codedExtent.width, m_codedExtent.height, multiPlaneImageData.get(),
                                      half_size);
 
-        // Save NV12 Multiplanar frame to YUV 420p 8 bits
-        de::MovePtr<std::vector<uint8_t>> in =
-            vkt::ycbcr::YCbCrConvUtil<uint8_t>::MultiPlanarNV12toI420(multiPlaneImageData.get());
-
-        if (m_dumpOutput & tcu::DUMP_ENC_YUV)
-        {
-            const std::string encodePrefix = util::getVideoCodecPathSegment(m_testDefinition->getCodecOperation());
-            const std::string filename =
-                util::getVideoDumpPath(false, m_testDefinition->getTestName(), encodePrefix, "yuv", i);
-            vkt::ycbcr::YCbCrContent<uint8_t>::save(*in, filename);
-        }
+        // Save the semi-planar frame as planar I420 at the coded bit depth for later PSNR verification.
+        if (is10Bit)
+            storeReferenceFrame<uint16_t>(multiPlaneImageData.get(), i);
+        else
+            storeReferenceFrame<uint8_t>(multiPlaneImageData.get(), i);
 
         vkt::ycbcr::uploadImage(*m_videoDeviceDriver, m_videoEncodeDevice, m_transferQueueFamilyIndex, getAllocator(),
                                 m_layeredSrc ? m_imageVector[0]->get() : m_imageVector[i]->get(), *multiPlaneImageData,
                                 0, VK_IMAGE_LAYOUT_GENERAL, m_layeredSrc ? i : 0);
-
-        m_inVector.push_back(std::move(in));
     }
 }
 
@@ -3900,6 +3924,25 @@ void VideoEncodeTestInstance::handleSwapOrderSubmission(Move<VkQueryPool> &encod
         TCU_FAIL("Failed to get query pool results");
 }
 
+// Convert a decoded semi-planar frame to planar I420 at the coded bit depth, matching the
+// input references built in loadVideoFrames, and optionally dump it.
+template <typename PlaneType>
+de::MovePtr<std::vector<PlaneType>> VideoEncodeTestInstance::convertDecodedFrame(vkt::ycbcr::MultiPlaneImageData *image,
+                                                                                 const std::string &encodePrefix,
+                                                                                 uint32_t frameIdx)
+{
+    de::MovePtr<std::vector<PlaneType>> planar = vkt::ycbcr::YCbCrConvUtil<PlaneType>::MultiPlanarNV12toI420(image);
+
+    if (m_dumpOutput & tcu::DUMP_ENC_YUV)
+    {
+        const std::string filename =
+            util::getVideoDumpPath(true, m_testDefinition->getTestName(), encodePrefix, "yuv", frameIdx);
+        vkt::ycbcr::YCbCrContent<PlaneType>::save(*planar, filename);
+    }
+
+    return planar;
+}
+
 tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWithMemory &encodeBuffer,
                                                                 VkDeviceSize encodeBufferSize)
 {
@@ -3932,8 +3975,11 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
     const Unique<VkCommandBuffer> decodeCmdBuffer(allocateCommandBuffer(
         *m_videoDeviceDriver, m_videoEncodeDevice, *decodeCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
+    const uint32_t bitDepth  = 8u + m_testDefinition->getProfile()->GetLumaBitDepthMinus8();
+    const bool is10BitDecode = (bitDepth == 10u);
+
     uint32_t H264profileIdc = STD_VIDEO_H264_PROFILE_IDC_MAIN;
-    uint32_t H265profileIdc = STD_VIDEO_H265_PROFILE_IDC_MAIN;
+    uint32_t H265profileIdc = is10BitDecode ? STD_VIDEO_H265_PROFILE_IDC_MAIN_10 : STD_VIDEO_H265_PROFILE_IDC_MAIN;
 
     uint32_t profileIdc = 0;
 
@@ -3943,9 +3989,11 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
         profileIdc = H265profileIdc;
     DE_ASSERT(profileIdc);
 
-    auto decodeProfile =
-        VkVideoCoreProfile(m_videoCodecDecodeOperation, VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,
-                           VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR, VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR, profileIdc);
+    const VkVideoComponentBitDepthFlagBitsKHR decodeBitDepth =
+        is10BitDecode ? VK_VIDEO_COMPONENT_BIT_DEPTH_10_BIT_KHR : VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
+
+    auto decodeProfile = VkVideoCoreProfile(m_videoCodecDecodeOperation, VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,
+                                            decodeBitDepth, decodeBitDepth, profileIdc);
 
     // Use the actual frame count processed rather than the pattern definition
     uint32_t actualFramesToCheck = m_gopCount * m_gopFrameCount;
@@ -3990,15 +4038,13 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
 
         auto resultImage = getDecodedImageFromContext(deviceContext, layout, &frame);
         processor.releaseFrame(&frame);
-        de::MovePtr<std::vector<uint8_t>> out =
-            vkt::ycbcr::YCbCrConvUtil<uint8_t>::MultiPlanarNV12toI420(resultImage.get());
+        de::MovePtr<std::vector<uint8_t>> out;
+        de::MovePtr<std::vector<uint16_t>> out16;
 
-        if (m_dumpOutput & tcu::DUMP_ENC_YUV)
-        {
-            const string outputFileName =
-                util::getVideoDumpPath(true, m_testDefinition->getTestName(), encodePrefix, "yuv", NALIdx);
-            vkt::ycbcr::YCbCrContent<uint8_t>::save(*out, outputFileName);
-        }
+        if (is10BitDecode)
+            out16 = convertDecodedFrame<uint16_t>(resultImage.get(), encodePrefix, NALIdx);
+        else
+            out = convertDecodedFrame<uint8_t>(resultImage.get(), encodePrefix, NALIdx);
 
         // Quantization maps verification
         if (m_useDeltaMap || m_useEmphasisMap)
@@ -5491,13 +5537,14 @@ uint32_t VideoEncodeTestInstance::getIntraRefreshIndex(uint32_t nalIdx) const
 }
 
 uint32_t VideoEncodeTestInstance::calculateTotalFramesFromClipData(const std::vector<uint8_t> &clip, uint32_t width,
-                                                                   uint32_t height)
+                                                                   uint32_t height, VkFormat format)
 {
-    // Calculate frame size in bytes for YUV 4:2:0 format
-    size_t frameSize = width * height * 3 / 2; // Y: width*height, U/V: width*height/4 each
+    const uint32_t bytesPerSample = vkt::ycbcr::getYCbCrBitDepth(format).x() > 8 ? 2u : 1u;
+    // Frame size in bytes for YUV 4:2:0: Y = width*height, U/V = width*height/4 each
+    const size_t frameSize = static_cast<size_t>(width) * height * 3 / 2 * bytesPerSample;
     DE_ASSERT(frameSize > 0);
     // Calculate the maximum number of complete frames in the clip
-    size_t maxFrames = clip.size() / frameSize;
+    const size_t maxFrames = clip.size() / frameSize;
     DE_ASSERT(maxFrames <= UINT32_MAX);
 
     return static_cast<uint32_t>(maxFrames);

@@ -203,61 +203,87 @@ void checkImageSupport(Context &context, VkFormat format, VkImageCreateFlags cre
     }
 }
 
-void extractI420Frame(std::vector<uint8_t> &videoDataPtr, uint32_t frameNumber, uint32_t width, uint32_t height,
-                      vkt::ycbcr::MultiPlaneImageData *imageData, bool half_size)
+template <typename SampleType>
+static void extractI420FrameToNV12(std::vector<uint8_t> &videoDataPtr, uint32_t frameNumber, uint32_t width,
+                                   uint32_t height, vkt::ycbcr::MultiPlaneImageData *imageData, bool half_size,
+                                   uint32_t msbShift)
 {
-    uint32_t uOffset   = width * height;
-    uint32_t vOffset   = uOffset + (uOffset / 4);
-    uint32_t frameSize = uOffset + (uOffset / 2);
+    const uint32_t ySize        = width * height;
+    const uint32_t uvSize       = ySize / 4;
+    const uint32_t frameSamples = ySize + 2u * uvSize;
 
     // Ensure the videoDataPtr is large enough for the requested frame
-    if (videoDataPtr.size() < (frameNumber + 1) * frameSize)
+    if (videoDataPtr.size() < (static_cast<size_t>(frameNumber) + 1u) * frameSamples * sizeof(SampleType))
     {
-        TCU_THROW(NotSupportedError, "Video data pointer content is too small for requested frame");
+        TCU_THROW(InternalError, "Video data pointer content is too small for requested frame");
     }
 
-    const uint8_t *yPlane = videoDataPtr.data() + frameNumber * frameSize;
-    const uint8_t *uPlane = videoDataPtr.data() + frameNumber * frameSize + uOffset;
-    const uint8_t *vPlane = videoDataPtr.data() + frameNumber * frameSize + vOffset;
+    // Ensure the destination planes are large enough for the samples written below
+    const uint32_t dstYSamples  = half_size ? ySize / 4u : ySize;
+    const uint32_t dstUVSamples = dstYSamples / 2u;
+    if (imageData->getPlaneSize(0) < dstYSamples * sizeof(SampleType) ||
+        imageData->getPlaneSize(1) < dstUVSamples * sizeof(SampleType))
+    {
+        TCU_THROW(InternalError, "Destination image planes are too small for the frame");
+    }
 
-    uint8_t *yPlaneData  = static_cast<uint8_t *>(imageData->getPlanePtr(0));
-    uint8_t *uvPlaneData = static_cast<uint8_t *>(imageData->getPlanePtr(1));
+    const SampleType *frame =
+        reinterpret_cast<const SampleType *>(videoDataPtr.data()) + static_cast<size_t>(frameNumber) * frameSamples;
+    const SampleType *yPlane = frame;
+    const SampleType *uPlane = frame + ySize;
+    const SampleType *vPlane = frame + ySize + uvSize;
+
+    SampleType *yPlaneData  = static_cast<SampleType *>(imageData->getPlanePtr(0));
+    SampleType *uvPlaneData = static_cast<SampleType *>(imageData->getPlanePtr(1));
 
     // If half_size is true, perform a simple 2x reduction
     if (half_size)
     {
         for (uint32_t j = 0; j < height; j += 2)
-        {
             for (uint32_t i = 0; i < width; i += 2)
-            {
-                yPlaneData[(j / 2) * (width / 2) + (i / 2)] = yPlane[j * width + i];
-            }
-        }
+                yPlaneData[(j / 2) * (width / 2) + (i / 2)] =
+                    static_cast<SampleType>(yPlane[j * width + i] << msbShift);
+
         for (uint32_t j = 0; j < height / 2; j += 2)
-        {
             for (uint32_t i = 0; i < width / 2; i += 2)
             {
-                uint32_t reducedIndex = (j / 2) * (width / 4) + (i / 2);
-                uint32_t fullIndex    = j * (width / 2) + i;
+                const uint32_t reducedIndex = (j / 2) * (width / 4) + (i / 2);
+                const uint32_t fullIndex    = j * (width / 2) + i;
 
-                uvPlaneData[2 * reducedIndex]     = uPlane[fullIndex];
-                uvPlaneData[2 * reducedIndex + 1] = vPlane[fullIndex];
+                uvPlaneData[2 * reducedIndex]     = static_cast<SampleType>(uPlane[fullIndex] << msbShift);
+                uvPlaneData[2 * reducedIndex + 1] = static_cast<SampleType>(vPlane[fullIndex] << msbShift);
             }
-        }
     }
     else
     {
-        // Writing NV12 frame
-        uint32_t yPlaneSize = width * height;
-        deMemcpy(yPlaneData, yPlane, yPlaneSize);
+        // Writing NV12 frame, interleaving the planar U/V (U at even, V at odd samples)
+        for (uint32_t i = 0; i < ySize; ++i)
+            yPlaneData[i] = static_cast<SampleType>(yPlane[i] << msbShift);
 
-        uint32_t uvPlaneSize = yPlaneSize / 2;
-        for (uint32_t i = 0; i < uvPlaneSize; i += 2)
+        const uint32_t uvInterleavedSize = ySize / 2;
+        for (uint32_t i = 0; i < uvInterleavedSize; i += 2)
         {
-            uvPlaneData[i]     = uPlane[i / 2];
-            uvPlaneData[i + 1] = vPlane[i / 2];
+            uvPlaneData[i]     = static_cast<SampleType>(uPlane[i / 2] << msbShift);
+            uvPlaneData[i + 1] = static_cast<SampleType>(vPlane[i / 2] << msbShift);
         }
     }
+}
+
+void extractI420Frame(std::vector<uint8_t> &videoDataPtr, uint32_t frameNumber, uint32_t width, uint32_t height,
+                      vkt::ycbcr::MultiPlaneImageData *imageData, bool half_size)
+{
+    // Source I420 files store samples LSB-aligned. For >8-bit content the destination uses an X6/X4
+    // video format that keeps the value in the most-significant bits, so samples are widened to 16 bits
+    // and shifted (<<6 for 10-bit, <<4 for 12-bit), mirroring the >>msbShift the decode side applies in
+    // MultiPlanarNV12toI420.
+    const uint32_t bitDepth = getYCbCrBitDepth(imageData->getFormat()).x();
+    DE_ASSERT(bitDepth == 8 || bitDepth == 10 || bitDepth == 12);
+
+    if (bitDepth > 8)
+        extractI420FrameToNV12<uint16_t>(videoDataPtr, frameNumber, width, height, imageData, half_size,
+                                         16u - bitDepth);
+    else
+        extractI420FrameToNV12<uint8_t>(videoDataPtr, frameNumber, width, height, imageData, half_size, 0u);
 }
 
 void fillRandomNoNaN(de::Random *randomGen, uint8_t *const data, uint32_t size, const vk::VkFormat format)
