@@ -4049,8 +4049,12 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
         // Quantization maps verification
         if (m_useDeltaMap || m_useEmphasisMap)
         {
-            double d = util::calculatePSNRdifference(*m_inVector[NALIdx], *out, m_codedExtent, m_quantizationMapExtent,
-                                                     m_quantizationMapTexelSize);
+            double d =
+                is10BitDecode ?
+                    util::calculatePSNRdifference(*m_inVector16[NALIdx], *out16, m_codedExtent, m_quantizationMapExtent,
+                                                  m_quantizationMapTexelSize, bitDepth) :
+                    util::calculatePSNRdifference(*m_inVector[NALIdx], *out, m_codedExtent, m_quantizationMapExtent,
+                                                  m_quantizationMapTexelSize, bitDepth);
 
             psnrDiff.push_back(d);
 
@@ -4069,13 +4073,19 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
             }
         }
 
-        double higherPsnrThreshold     = 30.0;
-        double lowerPsnrThreshold      = 20.0;
-        double criticalPsnrThreshold   = 10;
-        double psnrThresholdLowerLimit = m_disableRateControl ? lowerPsnrThreshold : higherPsnrThreshold;
+        constexpr double higherPsnrThreshold   = 30.0;
+        constexpr double lowerPsnrThreshold    = 20.0;
+        constexpr double criticalPsnrThreshold = 10.0;
+
+        const double psnrThresholdLowerLimit = m_disableRateControl ? lowerPsnrThreshold : higherPsnrThreshold;
         string failMessage;
 
-        double psnr = util::PSNR(*m_inVector[NALIdx], *out);
+        double psnr = is10BitDecode ? util::PSNR(*m_inVector16[NALIdx], *out16, bitDepth) :
+                                      util::PSNR(*m_inVector[NALIdx], *out, bitDepth);
+
+        m_context.getTestContext().getLog()
+            << tcu::TestLog::Message << "Frame " << NALIdx << ": PSNR " << psnr << " dB (" << bitDepth
+            << "-bit samples, lower threshold " << psnrThresholdLowerLimit << " dB)" << tcu::TestLog::EndMessage;
 
         // Quality checks
         if (psnr < psnrThresholdLowerLimit)

@@ -402,6 +402,13 @@ tcu::TestStatus VideoBaseTestInstance::validateEncodedContent(
     FrameProcessor processor(std::move(demuxer), basicDecoder);
     std::vector<int> incorrectFrames;
     std::vector<int> correctFrames;
+
+    const uint32_t bitDepth = (lumaBitDepth == VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR)  ? 8u :
+                              (lumaBitDepth == VK_VIDEO_COMPONENT_BIT_DEPTH_10_BIT_KHR) ? 10u :
+                              (lumaBitDepth == VK_VIDEO_COMPONENT_BIT_DEPTH_12_BIT_KHR) ? 12u :
+                                                                                          0u;
+    TCU_CHECK_AND_THROW(InternalError, bitDepth != 0u, "Invalid luma bit depth");
+
     for (int frameIdx = 0; frameIdx < numberOfFrames; frameIdx++)
     {
         DecodedFrame frame;
@@ -431,7 +438,7 @@ tcu::TestStatus VideoBaseTestInstance::validateEncodedContent(
             de::MovePtr<std::vector<uint8_t>> inputFrame =
                 vkt::ycbcr::YCbCrContent<uint8_t>::getFrame(yuvFileName, inputWidth, inputHeight, frameIdx);
             psnr = util::PSNRImplicitCrop(*inputFrame, inputWidth, inputHeight, *out, expectedOutputExtent.width,
-                                          expectedOutputExtent.height);
+                                          expectedOutputExtent.height, bitDepth);
             if (dumpOutput & tcu::DUMP_ENC_YUV)
             {
                 const string outputFileName = "out_" + std::to_string(frameIdx) + ".yuv";
@@ -447,7 +454,7 @@ tcu::TestStatus VideoBaseTestInstance::validateEncodedContent(
             de::MovePtr<std::vector<uint16_t>> inputFrame =
                 vkt::ycbcr::YCbCrContent<uint16_t>::getFrame(yuvFileName, inputWidth, inputHeight, frameIdx);
             psnr = util::PSNRImplicitCrop(*inputFrame, inputWidth, inputHeight, *out, expectedOutputExtent.width,
-                                          expectedOutputExtent.height);
+                                          expectedOutputExtent.height, bitDepth);
             if (dumpOutput & tcu::DUMP_ENC_YUV)
             {
                 const string outputFileName = "out_" + std::to_string(frameIdx) + ".yuv";
@@ -2907,77 +2914,6 @@ VkResult getVideoEncodeCapabilities(DeviceContext &devCtx, const VkVideoCoreProf
     VkResult result = util::getVideoCapabilities(devCtx, videoProfile, &videoCapabilities);
     TCU_CHECK_AND_THROW(InternalError, result == VK_SUCCESS, "GetVideoCapabilities failed");
     return result;
-}
-
-double PSNR(const std::vector<uint8_t> &img1, const std::vector<uint8_t> &img2)
-{
-    TCU_CHECK_AND_THROW(InternalError, (img1.size() > 0) && (img1.size() == img2.size()),
-                        "Input and output YUVs have different sizes " + de::toString(img1.size()) + " vs " +
-                            de::toString(img2.size()));
-
-    using sizet         = std::vector<uint8_t>::size_type;
-    sizet sz            = img1.size();
-    double squaredError = 0.0;
-
-    for (sizet i = 0; i < sz; i++)
-    {
-        int diff = static_cast<int>(img1[i]) - static_cast<int>(img2[i]);
-        squaredError += std::abs(diff);
-    }
-
-    double mse = squaredError / static_cast<double>(sz);
-    if (mse == 0)
-    {
-        return std::numeric_limits<double>::infinity();
-    }
-
-    return 10 * std::log10((255.0 * 255.0) / mse);
-}
-
-double calculatePSNRdifference(const std::vector<uint8_t> &inVector, const std::vector<uint8_t> &out,
-                               const VkExtent2D &codedExtent, const VkExtent2D &quantizationMapExtent,
-                               const VkExtent2D &quantizationMapTexelSize)
-{
-    uint32_t halfWidthInPixels = (quantizationMapExtent.width / 2) * quantizationMapTexelSize.width;
-    halfWidthInPixels          = std::min(halfWidthInPixels, codedExtent.width);
-
-    std::vector<uint8_t> inLeftHalfRef =
-        util::cropImage(inVector, codedExtent.width, codedExtent.height, 0, 0, halfWidthInPixels, codedExtent.height);
-    std::vector<uint8_t> inRightHalfRef =
-        util::cropImage(inVector, codedExtent.width, codedExtent.height, halfWidthInPixels, 0,
-                        codedExtent.width - halfWidthInPixels, codedExtent.height);
-    std::vector<uint8_t> outLeftHalf =
-        util::cropImage(out, codedExtent.width, codedExtent.height, 0, 0, halfWidthInPixels, codedExtent.height);
-    std::vector<uint8_t> outRightHalf = util::cropImage(out, codedExtent.width, codedExtent.height, halfWidthInPixels,
-                                                        0, codedExtent.width - halfWidthInPixels, codedExtent.height);
-
-    double leftPSNR  = PSNR(inLeftHalfRef, outLeftHalf);
-    double rightPSNR = PSNR(inRightHalfRef, outRightHalf);
-
-    return rightPSNR - leftPSNR;
-}
-
-std::vector<uint8_t> cropImage(const std::vector<uint8_t> &imageData, int imageWidth, int imageHeight, int roiX,
-                               int roiY, int roiWidth, int roiHeight)
-{
-    TCU_CHECK_AND_THROW(InternalError, roiX >= 0 && roiY >= 0 && roiWidth > 0 && roiHeight > 0,
-                        "Invalid crop ROI dimensions");
-    TCU_CHECK_AND_THROW(InternalError, roiX + roiWidth <= imageWidth && roiY + roiHeight <= imageHeight,
-                        "Crop ROI out of image bounds");
-    DE_UNREF(imageHeight);
-
-    std::vector<uint8_t> croppedImage;
-    croppedImage.reserve(roiWidth * roiHeight);
-
-    for (int y = roiY; y < roiY + roiHeight; ++y)
-    {
-        for (int x = roiX; x < roiX + roiWidth; ++x)
-        {
-            croppedImage.push_back((imageData)[y * imageWidth + x]);
-        }
-    }
-
-    return croppedImage;
 }
 
 } // namespace util

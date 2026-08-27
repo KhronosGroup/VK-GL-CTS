@@ -1327,17 +1327,11 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
 VkResult getVideoDecodeCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &videoProfile,
                                     VkVideoCapabilitiesKHR &videoCapabilities,
                                     VkVideoDecodeCapabilitiesKHR &videoDecodeCapabilities);
-double PSNR(const std::vector<uint8_t> &img1, const std::vector<uint8_t> &img2);
-double calculatePSNRdifference(const std::vector<uint8_t> &inVector, const std::vector<uint8_t> &out,
-                               const VkExtent2D &codedExtent, const VkExtent2D &quantizationMapExtent,
-                               const VkExtent2D &quantizationMapTexelSize);
-std::vector<uint8_t> cropImage(const std::vector<uint8_t> &imageData, int imageWidth, int imageHeight, int roiX,
-                               int roiY, int roiWidth, int roiHeight);
-
 void generateYCbCrFile(std::string fileName, uint32_t n_frames, uint32_t width, uint32_t height, uint32_t format,
                        uint8_t bitdepth);
+
 template <typename planeType>
-double PSNR(const std::vector<planeType> &img1, const std::vector<planeType> &img2)
+double PSNR(const std::vector<planeType> &img1, const std::vector<planeType> &img2, const uint32_t bitDepth)
 {
     TCU_CHECK_AND_THROW(InternalError, (img1.size() > 0) && (img1.size() == img2.size()),
                         "Input and output YUVs have different sizes " + de::toString(img1.size()) + " vs " +
@@ -1348,9 +1342,8 @@ double PSNR(const std::vector<planeType> &img1, const std::vector<planeType> &im
 
     for (size_t i = 0; i < sz; i++)
     {
-        int diff = img1[i] - img2[i];
-        if (diff > 100)
-            squaredError += std::abs(diff);
+        const int diff = static_cast<int>(img1[i]) - static_cast<int>(img2[i]);
+        squaredError += static_cast<double>(diff) * diff;
     }
 
     double mse = squaredError / static_cast<double>(sz);
@@ -1358,13 +1351,14 @@ double PSNR(const std::vector<planeType> &img1, const std::vector<planeType> &im
     {
         return std::numeric_limits<double>::infinity();
     }
-    double type_max = (double)std::numeric_limits<planeType>::max();
-    return 10 * std::log10((type_max * type_max) / mse);
+    double maxValue = (double)((1u << bitDepth) - 1u);
+    return 10 * std::log10((maxValue * maxValue) / mse);
 }
 
 template <typename planeType>
 double PSNRImplicitCrop(const std::vector<planeType> &img1, const uint32_t width1, const uint32_t height1,
-                        const std::vector<planeType> &img2, const uint32_t width2, const uint32_t height2)
+                        const std::vector<planeType> &img2, const uint32_t width2, const uint32_t height2,
+                        const uint32_t bitDepth)
 {
     size_t sz           = img1.size();
     double squaredError = 0.0;
@@ -1392,11 +1386,10 @@ double PSNRImplicitCrop(const std::vector<planeType> &img1, const uint32_t width
             auto accumulateDiff = [&squaredError, &img1, &img2](auto offset1, auto stride1, auto offset2, auto stride2,
                                                                 auto _row, auto _col)
             {
-                auto index1 = offset1 + _row * stride1 + _col;
-                auto index2 = offset2 + _row * stride2 + _col;
-                int diff    = img1[index1] - img2[index2];
-                if (diff > 100)
-                    squaredError += std::abs(diff);
+                auto index1    = offset1 + _row * stride1 + _col;
+                auto index2    = offset2 + _row * stride2 + _col;
+                const int diff = static_cast<int>(img1[index1]) - static_cast<int>(img2[index2]);
+                squaredError += static_cast<double>(diff) * diff;
             };
 
             accumulateDiff(yOffset1, yStride1, yOffset2, yStride2, row, col);
@@ -1412,8 +1405,57 @@ double PSNRImplicitCrop(const std::vector<planeType> &img1, const uint32_t width
     {
         return std::numeric_limits<double>::infinity();
     }
-    double type_max = (double)std::numeric_limits<planeType>::max();
-    return 10 * std::log10((type_max * type_max) / mse);
+
+    double maxValue = (double)((1u << bitDepth) - 1u);
+    return 10 * std::log10((maxValue * maxValue) / mse);
+}
+
+template <typename planeType>
+std::vector<planeType> cropImage(const std::vector<planeType> &imageData, int imageWidth, int imageHeight, int roiX,
+                                 int roiY, int roiWidth, int roiHeight)
+{
+    TCU_CHECK_AND_THROW(InternalError, roiX >= 0 && roiY >= 0 && roiWidth > 0 && roiHeight > 0,
+                        "Invalid crop ROI dimensions");
+    TCU_CHECK_AND_THROW(InternalError, roiX + roiWidth <= imageWidth && roiY + roiHeight <= imageHeight,
+                        "Crop ROI out of image bounds");
+    DE_UNREF(imageHeight);
+
+    std::vector<planeType> croppedImage;
+    croppedImage.reserve(roiWidth * roiHeight);
+
+    for (int y = roiY; y < roiY + roiHeight; ++y)
+    {
+        for (int x = roiX; x < roiX + roiWidth; ++x)
+        {
+            croppedImage.push_back((imageData)[y * imageWidth + x]);
+        }
+    }
+
+    return croppedImage;
+}
+
+template <typename planeType>
+double calculatePSNRdifference(const std::vector<planeType> &inVector, const std::vector<planeType> &out,
+                               const VkExtent2D &codedExtent, const VkExtent2D &quantizationMapExtent,
+                               const VkExtent2D &quantizationMapTexelSize, const uint32_t bitDepth)
+{
+    uint32_t halfWidthInPixels = (quantizationMapExtent.width / 2) * quantizationMapTexelSize.width;
+    halfWidthInPixels          = std::min(halfWidthInPixels, codedExtent.width);
+
+    std::vector<planeType> inLeftHalfRef =
+        util::cropImage(inVector, codedExtent.width, codedExtent.height, 0, 0, halfWidthInPixels, codedExtent.height);
+    std::vector<planeType> inRightHalfRef =
+        util::cropImage(inVector, codedExtent.width, codedExtent.height, halfWidthInPixels, 0,
+                        codedExtent.width - halfWidthInPixels, codedExtent.height);
+    std::vector<planeType> outLeftHalf =
+        util::cropImage(out, codedExtent.width, codedExtent.height, 0, 0, halfWidthInPixels, codedExtent.height);
+    std::vector<planeType> outRightHalf = util::cropImage(out, codedExtent.width, codedExtent.height, halfWidthInPixels,
+                                                          0, codedExtent.width - halfWidthInPixels, codedExtent.height);
+
+    double leftPSNR  = PSNR(inLeftHalfRef, outLeftHalf, bitDepth);
+    double rightPSNR = PSNR(inRightHalfRef, outRightHalf, bitDepth);
+
+    return rightPSNR - leftPSNR;
 }
 
 } // namespace util

@@ -1487,9 +1487,9 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
         if (processorWithoutFilmGrain)
         {
             static const double numPlanes = 3.0;
-            util::PSNR(downloadedFrame.luma, downloadedFrameWithoutFilmGrain.luma);
-            psnr += util::PSNR(downloadedFrame.cb, downloadedFrameWithoutFilmGrain.cb);
-            psnr += util::PSNR(downloadedFrame.cr, downloadedFrameWithoutFilmGrain.cr);
+            util::PSNR(downloadedFrame.luma, downloadedFrameWithoutFilmGrain.luma, 8u);
+            psnr += util::PSNR(downloadedFrame.cb, downloadedFrameWithoutFilmGrain.cb, 8u);
+            psnr += util::PSNR(downloadedFrame.cr, downloadedFrameWithoutFilmGrain.cr, 8u);
             psnr /= numPlanes;
         }
 

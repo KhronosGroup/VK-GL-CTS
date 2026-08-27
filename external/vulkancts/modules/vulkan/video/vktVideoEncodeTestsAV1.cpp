@@ -67,10 +67,6 @@ using vkt::ycbcr::getYCbCrBitDepth;
 using vkt::ycbcr::isXChromaSubsampled;
 using vkt::ycbcr::isYChromaSubsampled;
 
-#ifdef DE_BUILD_VIDEO
-static constexpr double PSNR_THRESHOLD_LOWER_LIMIT = 50.0;
-#endif
-
 bool checkClipFileExists(const std::string &clipName);
 void removeClip(const std::string &clipName);
 
@@ -555,12 +551,18 @@ tcu::TestStatus VideoTestInstance::iterate(void)
     {
         if (VideoDevice::supportsCodecOperation(m_context, VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR))
         {
+            constexpr double higherPsnrThreshold = 30.0;
+            constexpr double lowerPsnrThreshold  = 20.0;
+
+            const double psnrThresholdLowerLimit =
+                (m_definition.rateControl.rc == RC_DISABLED) ? lowerPsnrThreshold : higherPsnrThreshold;
+
             status = validateEncodedContent(
                 VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR, STD_VIDEO_AV1_PROFILE_MAIN, m_outputClipFilename.c_str(),
                 m_inputClipFilename.c_str(), m_definition.gop.frameCount, m_definition.frameSize.width,
                 m_definition.frameSize.height, m_expectedOutputExtent,
                 getChromaSubSampling(m_definition.subsampling.subsampling), getBitDepth(m_definition.bitDepth.depth),
-                getBitDepth(m_definition.bitDepth.depth), PSNR_THRESHOLD_LOWER_LIMIT);
+                getBitDepth(m_definition.bitDepth.depth), psnrThresholdLowerLimit);
         }
         else
         {
