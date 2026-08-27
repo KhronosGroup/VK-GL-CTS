@@ -22161,6 +22161,10 @@ dEQP-VK.ray_tracing_pipeline.procedural_geometry.triangle_in_between
 dEQP-VK.ray_tracing_pipeline.rtir_activity.activity
 dEQP-VK.ray_tracing_pipeline.ser.builtin_var.array_160x91
 dEQP-VK.ray_tracing_pipeline.ser.builtin_var.array_nonuniform_160x91
+dEQP-VK.ray_tracing_pipeline.ser.builtin_var.copy_160x91
+dEQP-VK.ray_tracing_pipeline.ser.builtin_var.copy_full_hit_160x91
+dEQP-VK.ray_tracing_pipeline.ser.builtin_var.copy_function_160x91
+dEQP-VK.ray_tracing_pipeline.ser.builtin_var.copy_phi_160x91
 dEQP-VK.ray_tracing_pipeline.ser.builtin_var.custom_index_160x91
 dEQP-VK.ray_tracing_pipeline.ser.builtin_var.empty_160x91
 dEQP-VK.ray_tracing_pipeline.ser.builtin_var.geometry_index_160x91

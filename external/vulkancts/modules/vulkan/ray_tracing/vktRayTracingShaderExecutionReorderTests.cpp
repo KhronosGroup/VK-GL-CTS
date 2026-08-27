@@ -69,6 +69,10 @@ enum class HitObjectTestType
     HIT_OBJECT_RECORD_FROM_QUERY_TRACE_EXECUTE,
     HIT_OBJECT_SET_SBT_RECORD_INDEX,
     HIT_OBJECT_RECORD_MISS,
+    HIT_OBJECT_COPY,
+    HIT_OBJECT_COPY_PHI,
+    HIT_OBJECT_COPY_FUNCTION,
+    HIT_OBJECT_COPY_FULL_HIT,
     HIT_OBJECT_TMIN,
     HIT_OBJECT_TMAX,
     HIT_OBJECT_CUSTOM_INDEX,
@@ -149,6 +153,10 @@ std::string HitObjectTestNames[] = {
     "record_from_query_trace_execute",
     "set_sbt_record_index",
     "record_miss",
+    "copy",
+    "copy_phi",
+    "copy_function",
+    "copy_full_hit",
     "tmin",
     "tmax",
     "custom_index",
@@ -437,9 +445,341 @@ void RayTracingTestCase::checkSupport(Context &context) const
     }
 }
 
+enum class HitObjectCopyShaderType
+{
+    BASIC,
+    PHI,
+    FUNCTION,
+    FULL_HIT,
+};
+
+std::string getHitObjectCopyShader(const HitObjectCopyShaderType shaderType)
+{
+    std::ostringstream source;
+    source << R"(
+OpCapability RayTracingKHR
+OpCapability ShaderInvocationReorderEXT
+OpExtension "SPV_KHR_ray_tracing"
+OpExtension "SPV_EXT_shader_invocation_reorder"
+OpMemoryModel Logical GLSL450
+OpEntryPoint RayGenerationKHR %main "main" %payload %source %copy %missCandidate %emptyCandidate %resultImage %topLevelAS %attributes %launchId %launchSize
+OpDecorate %resultImage DescriptorSet 0
+OpDecorate %resultImage Binding 0
+OpDecorate %topLevelAS DescriptorSet 0
+OpDecorate %topLevelAS Binding 1
+OpDecorate %attributes Location 0
+OpDecorate %launchId BuiltIn LaunchIdKHR
+OpDecorate %launchSize BuiltIn LaunchSizeKHR
+
+%void = OpTypeVoid
+%fn = OpTypeFunction %void
+%bool = OpTypeBool
+%uint = OpTypeInt 32 0
+%int = OpTypeInt 32 1
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%v2uint = OpTypeVector %uint 2
+%v2int = OpTypeVector %int 2
+%v3uint = OpTypeVector %uint 3
+%v3float = OpTypeVector %float 3
+%v4float = OpTypeVector %float 4
+%hitObject = OpTypeHitObjectEXT
+%accelerationStructure = OpTypeAccelerationStructureKHR
+%image = OpTypeImage %float 2D 0 0 0 2 R32f
+%ptrRayPayload = OpTypePointer RayPayloadKHR %v4float
+%ptrPrivateHitObject = OpTypePointer Private %hitObject
+%ptrFunctionHitObject = OpTypePointer Function %hitObject
+%ptrUniformImage = OpTypePointer UniformConstant %image
+%ptrUniformAccelerationStructure = OpTypePointer UniformConstant %accelerationStructure
+%ptrHitObjectAttribute = OpTypePointer HitObjectAttributeEXT %v2float
+%ptrInputV3uint = OpTypePointer Input %v3uint
+%payload = OpVariable %ptrRayPayload RayPayloadKHR
+%source = OpVariable %ptrPrivateHitObject Private
+%copy = OpVariable %ptrPrivateHitObject Private
+%missCandidate = OpVariable %ptrPrivateHitObject Private
+%emptyCandidate = OpVariable %ptrPrivateHitObject Private
+%resultImage = OpVariable %ptrUniformImage UniformConstant
+%topLevelAS = OpVariable %ptrUniformAccelerationStructure UniformConstant
+%attributes = OpVariable %ptrHitObjectAttribute HitObjectAttributeEXT
+%launchId = OpVariable %ptrInputV3uint Input
+%launchSize = OpVariable %ptrInputV3uint Input
+%uint0 = OpConstant %uint 0
+%uint1 = OpConstant %uint 1
+%uint255 = OpConstant %uint 255
+%int0 = OpConstant %int 0
+%int1 = OpConstant %int 1
+%float0 = OpConstant %float 0
+%float1 = OpConstant %float 1
+%float2 = OpConstant %float 2
+%floatHalf = OpConstant %float 0.5
+%floatMinus1 = OpConstant %float -1
+%float9 = OpConstant %float 9
+%float99 = OpConstant %float 99
+%float100 = OpConstant %float 100
+%origin = OpConstantComposite %v3float %float0 %float0 %float0
+%direction = OpConstantComposite %v3float %float0 %float0 %floatMinus1
+%initialPayload = OpConstantComposite %v4float %float2 %float0 %float0 %float1
+
+)";
+
+    if (shaderType == HitObjectCopyShaderType::FUNCTION)
+    {
+        source << R"(
+%makeMissFn = OpTypeFunction %hitObject %uint
+%makeEmptyFn = OpTypeFunction %hitObject
+
+%makeMiss = OpFunction %hitObject None %makeMissFn
+%missIndex = OpFunctionParameter %uint
+%makeMissEntry = OpLabel
+%localMiss = OpVariable %ptrFunctionHitObject Function
+OpHitObjectRecordMissEXT %localMiss %uint1 %missIndex %origin %floatHalf %direction %float9
+%missReturnValue = OpLoad %hitObject %localMiss
+OpReturnValue %missReturnValue
+OpFunctionEnd
+
+%makeEmpty = OpFunction %hitObject None %makeEmptyFn
+%makeEmptyEntry = OpLabel
+%localEmpty = OpVariable %ptrFunctionHitObject Function
+OpHitObjectRecordEmptyEXT %localEmpty
+%emptyReturnValue = OpLoad %hitObject %localEmpty
+OpReturnValue %emptyReturnValue
+OpFunctionEnd
+)";
+    }
+
+    source << R"(
+%main = OpFunction %void None %fn
+%entry = OpLabel
+)";
+
+    if (shaderType == HitObjectCopyShaderType::FUNCTION)
+    {
+        // Match the source-level reproducer more closely by creating both alternatives in helper functions that
+        // return hit object values from Function storage class locals.
+        source << R"(
+%id = OpLoad %v3uint %launchId
+%size = OpLoad %v3uint %launchSize
+%x = OpCompositeExtract %uint %id 0
+%y = OpCompositeExtract %uint %id 1
+%width = OpCompositeExtract %uint %size 0
+%rowOffset = OpIMul %uint %y %width
+%linearIndex = OpIAdd %uint %rowOffset %x
+%parity = OpBitwiseAnd %uint %linearIndex %uint1
+%isOdd = OpINotEqual %bool %parity %uint0
+OpSelectionMerge %merge None
+OpBranchConditional %isOdd %callMiss %callEmpty
+
+%callMiss = OpLabel
+%missValue = OpFunctionCall %hitObject %makeMiss %uint0
+OpBranch %merge
+
+%callEmpty = OpLabel
+%emptyValue = OpFunctionCall %hitObject %makeEmpty
+OpBranch %merge
+
+%merge = OpLabel
+%selectedValue = OpPhi %hitObject %missValue %callMiss %emptyValue %callEmpty
+OpStore %source %selectedValue
+%copyValue = OpLoad %hitObject %source
+OpStore %copy %copyValue
+OpHitObjectSetShaderBindingTableRecordIndexEXT %copy %uint1
+OpStore %payload %initialPayload
+OpHitObjectExecuteShaderEXT %source %payload
+%afterSource = OpLoad %v4float %payload
+%sourceResult = OpCompositeExtract %float %afterSource 0
+OpHitObjectExecuteShaderEXT %copy %payload
+%afterCopy = OpLoad %v4float %payload
+%copyResult = OpCompositeExtract %float %afterCopy 0
+)";
+    }
+    else if (shaderType == HitObjectCopyShaderType::PHI)
+    {
+        // This follows the original reproducer: select a miss or empty object through a branch, copy the selected
+        // value, change the copy's SBT record index, and then execute both objects.
+        source << R"(
+%id = OpLoad %v3uint %launchId
+%size = OpLoad %v3uint %launchSize
+%x = OpCompositeExtract %uint %id 0
+%y = OpCompositeExtract %uint %id 1
+%width = OpCompositeExtract %uint %size 0
+%rowOffset = OpIMul %uint %y %width
+%linearIndex = OpIAdd %uint %rowOffset %x
+%parity = OpBitwiseAnd %uint %linearIndex %uint1
+%isOdd = OpINotEqual %bool %parity %uint0
+OpSelectionMerge %merge None
+OpBranchConditional %isOdd %recordMiss %recordEmpty
+
+%recordMiss = OpLabel
+OpHitObjectRecordMissEXT %missCandidate %uint1 %uint0 %origin %floatHalf %direction %float9
+%missValue = OpLoad %hitObject %missCandidate
+OpBranch %merge
+
+%recordEmpty = OpLabel
+OpHitObjectRecordEmptyEXT %emptyCandidate
+%emptyValue = OpLoad %hitObject %emptyCandidate
+OpBranch %merge
+
+%merge = OpLabel
+%selectedValue = OpPhi %hitObject %missValue %recordMiss %emptyValue %recordEmpty
+OpStore %source %selectedValue
+%copyValue = OpLoad %hitObject %source
+OpStore %copy %copyValue
+OpHitObjectSetShaderBindingTableRecordIndexEXT %copy %uint1
+OpStore %payload %initialPayload
+OpHitObjectExecuteShaderEXT %source %payload
+%afterSource = OpLoad %v4float %payload
+%sourceResult = OpCompositeExtract %float %afterSource 0
+OpHitObjectExecuteShaderEXT %copy %payload
+%afterCopy = OpLoad %v4float %payload
+%copyResult = OpCompositeExtract %float %afterCopy 0
+)";
+    }
+    else if (shaderType == HitObjectCopyShaderType::FULL_HIT)
+    {
+        // Copy a traced hit or miss, overwrite the source, and verify the copy retained its state. The hit path
+        // checks attributes, primitive index, SBT index, ray flags, and world-space ray origin before execution.
+        source << R"(
+%id = OpLoad %v3uint %launchId
+%size = OpLoad %v3uint %launchSize
+%x = OpCompositeExtract %uint %id 0
+%y = OpCompositeExtract %uint %id 1
+%width = OpCompositeExtract %uint %size 0
+%height = OpCompositeExtract %uint %size 1
+%xf = OpConvertUToF %float %x
+%yf = OpConvertUToF %float %y
+%widthf = OpConvertUToF %float %width
+%heightf = OpConvertUToF %float %height
+%centeredX = OpFAdd %float %xf %floatHalf
+%centeredY = OpFAdd %float %yf %floatHalf
+%originX = OpFDiv %float %centeredX %widthf
+%originY = OpFDiv %float %centeredY %heightf
+%traceOrigin = OpCompositeConstruct %v3float %originX %originY %float0
+%asValue = OpLoad %accelerationStructure %topLevelAS
+OpStore %payload %initialPayload
+OpHitObjectTraceRayEXT %source %asValue %uint1 %uint255 %uint0 %uint1 %uint0 %traceOrigin %floatHalf %direction %float9 %payload
+%copyValue = OpLoad %hitObject %source
+OpStore %copy %copyValue
+OpHitObjectRecordEmptyEXT %source
+%sourceIsEmpty = OpHitObjectIsEmptyEXT %bool %source
+%copyIsHit = OpHitObjectIsHitEXT %bool %copy
+OpSelectionMerge %stateMerge None
+OpBranchConditional %copyIsHit %validateHit %validateMiss
+
+%validateHit = OpLabel
+%primitiveIndex = OpHitObjectGetPrimitiveIndexEXT %int %copy
+%primitiveAtLeastZero = OpSGreaterThanEqual %bool %primitiveIndex %int0
+%primitiveAtMostOne = OpSLessThanEqual %bool %primitiveIndex %int1
+%primitiveValid = OpLogicalAnd %bool %primitiveAtLeastZero %primitiveAtMostOne
+%sbtIndex = OpHitObjectGetShaderBindingTableRecordIndexEXT %uint %copy
+%sbtValid = OpIEqual %bool %sbtIndex %uint0
+%rayFlags = OpHitObjectGetRayFlagsEXT %uint %copy
+%rayFlagsValid = OpIEqual %bool %rayFlags %uint1
+%copyOrigin = OpHitObjectGetWorldRayOriginEXT %v3float %copy
+%copyOriginX = OpCompositeExtract %float %copyOrigin 0
+%copyOriginY = OpCompositeExtract %float %copyOrigin 1
+%originXValid = OpFOrdEqual %bool %copyOriginX %originX
+%originYValid = OpFOrdEqual %bool %copyOriginY %originY
+%originValid = OpLogicalAnd %bool %originXValid %originYValid
+OpHitObjectGetAttributesEXT %copy %attributes
+%attributeValue = OpLoad %v2float %attributes
+%attributeX = OpCompositeExtract %float %attributeValue 0
+%attributeY = OpCompositeExtract %float %attributeValue 1
+%attributeSum = OpFAdd %float %attributeX %attributeY
+%attributeXValid = OpFOrdGreaterThanEqual %bool %attributeX %float0
+%attributeYValid = OpFOrdGreaterThanEqual %bool %attributeY %float0
+%attributeSumValid = OpFOrdLessThanEqual %bool %attributeSum %float1
+%attributesNonNegative = OpLogicalAnd %bool %attributeXValid %attributeYValid
+%attributesValid = OpLogicalAnd %bool %attributesNonNegative %attributeSumValid
+%hitMetadata0 = OpLogicalAnd %bool %primitiveValid %sbtValid
+%hitMetadata1 = OpLogicalAnd %bool %rayFlagsValid %originValid
+%hitMetadata2 = OpLogicalAnd %bool %hitMetadata0 %hitMetadata1
+%hitMetadataValid = OpLogicalAnd %bool %hitMetadata2 %attributesValid
+%hitStateValid = OpLogicalAnd %bool %sourceIsEmpty %hitMetadataValid
+OpBranch %stateMerge
+
+%validateMiss = OpLabel
+%copyIsMiss = OpHitObjectIsMissEXT %bool %copy
+%missStateValid = OpLogicalAnd %bool %sourceIsEmpty %copyIsMiss
+OpBranch %stateMerge
+
+%stateMerge = OpLabel
+%stateValid = OpPhi %bool %hitStateValid %validateHit %missStateValid %validateMiss
+OpStore %payload %initialPayload
+OpHitObjectExecuteShaderEXT %copy %payload
+%afterCopy = OpLoad %v4float %payload
+%executionResult = OpCompositeExtract %float %afterCopy 0
+%finalResult = OpSelect %float %stateValid %executionResult %float99
+)";
+    }
+    else
+    {
+        // Record miss shader 1 in the source and switch only its copy to miss shader 0. Executing the copy first
+        // distinguishes a true value copy (4, then 11) from two aliases (4, then 4).
+        source << R"(
+%id = OpLoad %v3uint %launchId
+OpHitObjectRecordMissEXT %source %uint1 %uint1 %origin %floatHalf %direction %float9
+%copyValue = OpLoad %hitObject %source
+OpStore %copy %copyValue
+OpHitObjectSetShaderBindingTableRecordIndexEXT %copy %uint0
+OpStore %payload %initialPayload
+OpHitObjectExecuteShaderEXT %copy %payload
+%afterCopy = OpLoad %v4float %payload
+%sourceResult = OpCompositeExtract %float %afterCopy 0
+OpHitObjectExecuteShaderEXT %source %payload
+%afterSource = OpLoad %v4float %payload
+%copyResult = OpCompositeExtract %float %afterSource 0
+)";
+    }
+
+    if (shaderType == HitObjectCopyShaderType::FULL_HIT)
+    {
+        source << R"(
+%output = OpCompositeConstruct %v4float %finalResult %float0 %float0 %float1
+%imageValue = OpLoad %image %resultImage
+%xy = OpVectorShuffle %v2uint %id %id 0 1
+%coords = OpBitcast %v2int %xy
+OpImageWrite %imageValue %coords %output
+OpReturn
+OpFunctionEnd
+)";
+    }
+    else
+    {
+        source << R"(
+%scaledSourceResult = OpFMul %float %sourceResult %float100
+%encodedResult = OpFAdd %float %scaledSourceResult %copyResult
+%output = OpCompositeConstruct %v4float %encodedResult %float0 %float0 %float1
+%imageValue = OpLoad %image %resultImage
+%xy = OpVectorShuffle %v2uint %id %id 0 1
+%coords = OpBitcast %v2int %xy
+OpImageWrite %imageValue %coords %output
+OpReturn
+OpFunctionEnd
+)";
+    }
+    return source.str();
+}
+
 void RayTracingTestCase::initPrograms(SourceCollections &programCollection) const
 {
     const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+    const bool isHitObjectCopyTest = (m_data.testType == HitObjectTestType::HIT_OBJECT_COPY ||
+                                      m_data.testType == HitObjectTestType::HIT_OBJECT_COPY_PHI ||
+                                      m_data.testType == HitObjectTestType::HIT_OBJECT_COPY_FUNCTION ||
+                                      m_data.testType == HitObjectTestType::HIT_OBJECT_COPY_FULL_HIT);
+    if (isHitObjectCopyTest)
+    {
+        const vk::SpirVAsmBuildOptions asmOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, true);
+        HitObjectCopyShaderType shaderType = HitObjectCopyShaderType::BASIC;
+        if (m_data.testType == HitObjectTestType::HIT_OBJECT_COPY_PHI)
+            shaderType = HitObjectCopyShaderType::PHI;
+        else if (m_data.testType == HitObjectTestType::HIT_OBJECT_COPY_FUNCTION)
+            shaderType = HitObjectCopyShaderType::FUNCTION;
+        else if (m_data.testType == HitObjectTestType::HIT_OBJECT_COPY_FULL_HIT)
+            shaderType = HitObjectCopyShaderType::FULL_HIT;
+        programCollection.spirvAsmSources.add("rgen") << getHitObjectCopyShader(shaderType) << asmOptions;
+    }
+    else
     {
         std::stringstream extensions;
         if (m_data.testType == HitObjectTestType::HIT_OBJECT_RECORD_FROM_QUERY_EMPTY ||
@@ -2061,6 +2401,22 @@ bool RayTracingSERTestInstance::validateBuffer(de::MovePtr<BufferWithMemory> buf
         missValue   = 11.0f;
         break;
 
+    case HitObjectTestType::HIT_OBJECT_COPY:
+        anyHitValue = 411.0f; // The copy uses miss shader 0 (4), then the source uses miss shader 1 (11).
+        missValue   = 411.0f;
+        break;
+
+    case HitObjectTestType::HIT_OBJECT_COPY_PHI:
+    case HitObjectTestType::HIT_OBJECT_COPY_FUNCTION:
+        anyHitValue = 202.0f; // Even invocations copy and execute an empty object twice.
+        missValue   = 411.0f; // Odd invocations execute miss shader 0, then miss shader 1 from the copy.
+        break;
+
+    case HitObjectTestType::HIT_OBJECT_COPY_FULL_HIT:
+        anyHitValue = 3.0f; // The copied hit retains metadata and executes closest-hit shader 0.
+        missValue   = 4.0f; // The copied miss retains its state and executes miss shader 0.
+        break;
+
     case HitObjectTestType::MOTION_GET_TIME: // All rays have the same t value
         anyHitValue = 0.25f;
         missValue   = 0.25f;
@@ -2208,30 +2564,20 @@ bool RayTracingSERTestInstance::validateBuffer(de::MovePtr<BufferWithMemory> buf
     {
         for (uint32_t x = 0; x < validateWidth && passed; ++x)
         {
-            uint32_t offset    = y * validateWidth + x;
-            const float result = bufferPtr[offset];
+            uint32_t offset           = y * validateWidth + x;
+            const float result        = bufferPtr[offset];
+            const bool mixedCopy      = (m_data.testType == HitObjectTestType::HIT_OBJECT_COPY_PHI ||
+                                    m_data.testType == HitObjectTestType::HIT_OBJECT_COPY_FUNCTION);
+            const float expectedValue = mixedCopy ? ((offset & 1u) != 0u ? missValue : anyHitValue) :
+                                                    (x < validateWidth / 2 ? anyHitValue : missValue);
 
-            if (x < validateWidth / 2)
+            if (std::abs(result - expectedValue) > epsilon)
             {
-                if (std::abs(result - anyHitValue) > epsilon)
-                {
-                    m_context.getTestContext().getLog()
-                        << tcu::TestLog::Message << "Got " << result << ", expected " << anyHitValue << " at (" << x
-                        << ", " << y << ")" << tcu::TestLog::EndMessage;
-                    passed = false;
-                    break;
-                }
-            }
-            else
-            {
-                if (std::abs(result - missValue) > epsilon)
-                {
-                    m_context.getTestContext().getLog()
-                        << tcu::TestLog::Message << "Got " << result << ", expected " << missValue << " at (" << x
-                        << ", " << y << ")" << tcu::TestLog::EndMessage;
-                    passed = false;
-                    break;
-                }
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "Got " << result << ", expected " << expectedValue << " at (" << x
+                    << ", " << y << ")" << tcu::TestLog::EndMessage;
+                passed = false;
+                break;
             }
         }
     }
