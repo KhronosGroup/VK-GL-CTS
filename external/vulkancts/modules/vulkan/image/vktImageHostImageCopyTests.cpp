@@ -1410,14 +1410,25 @@ void HostImageCopyTestCase::initPrograms(vk::SourceCollections &programCollectio
     }
 }
 
-class PreinitializedTestInstance : public vkt::TestInstance
+vkt::QueueCapabilities getPreinitializedQueueCaps(vk::VkFormat format, vk::VkExtent3D size, uint32_t arrayLayers,
+                                                  vk::VkImageTiling tiling, uint32_t offset)
+{
+    const bool representativeCase =
+        (tiling == vk::VK_IMAGE_TILING_OPTIMAL && offset == 0u && arrayLayers == 1u && size.width == 32u &&
+         size.height == 32u && size.depth == 1u && format == vk::VK_FORMAT_R8G8B8A8_UNORM);
+
+    return representativeCase ? vkt::TRANSFER_QUEUE : vkt::GRAPHICS_QUEUE;
+}
+
+class PreinitializedTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     PreinitializedTestInstance(vkt::Context &context, const vk::VkFormat format, vk::VkImageLayout srcLayout,
                                vk::VkImageLayout dstLayout, vk::VkExtent3D size, uint32_t arrayLayers,
                                bool imageToImageCopy, bool memcpy, vk::VkImageTiling tiling, uint32_t offset,
                                bool captureReplay)
-        : vkt::TestInstance(context)
+        : vkt::MultiQueueRunnerTestInstance(context,
+                                            getPreinitializedQueueCaps(format, size, arrayLayers, tiling, offset))
         , m_format(format)
         , m_srcLayout(srcLayout)
         , m_dstLayout(dstLayout)
@@ -1431,9 +1442,9 @@ public:
     {
     }
 
-private:
-    tcu::TestStatus iterate(void);
+    virtual tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
+private:
     const vk::VkFormat m_format;
     const vk::VkImageLayout m_srcLayout;
     const vk::VkImageLayout m_dstLayout;
@@ -1489,14 +1500,14 @@ static VkImageUsageFlags GetUsage(VkImageLayout srcLayout, VkImageLayout dstLayo
     return usage;
 }
 
-tcu::TestStatus PreinitializedTestInstance::iterate(void)
+tcu::TestStatus PreinitializedTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     vk::InstanceDriver instanceDriver(m_context.getPlatformInterface(), m_context.getInstance());
     vk::VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
     const DeviceInterface &vk           = m_context.getDeviceInterface();
     const vk::VkDevice device           = m_context.getDevice();
-    const uint32_t queueFamilyIndex     = m_context.getUniversalQueueFamilyIndex();
-    const vk::VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex     = queueData.familyIndex;
+    const vk::VkQueue queue             = queueData.handle;
     auto &alloc                         = m_context.getDefaultAllocator();
     tcu::TestLog &log                   = m_context.getTestContext().getLog();
 
@@ -2223,19 +2234,34 @@ void QueryTestCase::checkSupport(vkt::Context &context) const
         TCU_THROW(NotSupportedError, "Format feature sampled image bit not supported for linear tiling.");
 }
 
-class IdenticalMemoryLayoutTestInstance : public vkt::TestInstance
+// Depth/stencil buffer to image copies are graphics-only and on a graphics-less device no family can legally record them
+void checkDepthStencilCopyQueueSupport(vkt::Context &context, bool copiesDepthStencilAspect)
+{
+    if (!copiesDepthStencilAspect)
+        return;
+
+    const InstanceInterface &vki = context.getInstanceInterface();
+    const auto queueProps        = getPhysicalDeviceQueueFamilyProperties(vki, context.getPhysicalDevice());
+
+    if ((queueProps[context.getUniversalQueueFamilyIndex()].queueFlags & vk::VK_QUEUE_GRAPHICS_BIT) == 0u)
+        TCU_THROW(NotSupportedError, "Depth/stencil buffer to image copy requires a graphics queue");
+}
+
+class IdenticalMemoryLayoutTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     IdenticalMemoryLayoutTestInstance(vkt::Context &context, const vk::VkFormat format, const vk::VkImageTiling tiling)
-        : vkt::TestInstance(context)
+        // The device-side upload is a buffer to image copy, which stays graphics-only for depth/stencil aspects
+        : vkt::MultiQueueRunnerTestInstance(context,
+                                            isDepthStencilFormat(format) ? vkt::GRAPHICS_QUEUE : vkt::TRANSFER_QUEUE)
         , m_format(format)
         , m_tiling(tiling)
     {
     }
 
-private:
-    tcu::TestStatus iterate(void);
+    virtual tcu::TestStatus queuePass(const vkt::QueueData &queueData) override;
 
+private:
     const vk::VkFormat m_format;
     const vk::VkImageTiling m_tiling;
 };
@@ -2400,15 +2426,15 @@ void generateCompressedImageData(const DeviceInterface &vkd, VkDevice device, vk
     submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 }
 
-tcu::TestStatus IdenticalMemoryLayoutTestInstance::iterate(void)
+tcu::TestStatus IdenticalMemoryLayoutTestInstance::queuePass(const vkt::QueueData &queueData)
 {
     const InstanceInterface &vki          = m_context.getInstanceInterface();
     const DeviceInterface &vk             = m_context.getDeviceInterface();
     const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
     const VkDevice device                 = m_context.getDevice();
     const auto memoryProperties           = getPhysicalDeviceMemoryProperties(vki, physicalDevice);
-    const uint32_t queueFamilyIndex       = m_context.getUniversalQueueFamilyIndex();
-    const VkQueue queue                   = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex       = queueData.familyIndex;
+    const VkQueue queue                   = queueData.handle;
     auto &alloc                           = m_context.getDefaultAllocator();
     const tcu::IVec3 extent(32, 32, 1);
     const auto vkExtent           = makeExtent3D(extent);
@@ -2603,6 +2629,9 @@ private:
 void IdenticalMemoryLayoutTestCase::checkSupport(vkt::Context &context) const
 {
     context.requireDeviceFunctionality("VK_EXT_host_image_copy");
+
+    // generateImageData() uploads each depth and stencil aspect with its own buffer to image copy.
+    checkDepthStencilCopyQueueSupport(context, isDepthStencilFormat(m_format));
 
     const InstanceInterface &vki          = context.getInstanceInterface();
     VkFormatProperties3 formatProperties3 = initVulkanStructure();
@@ -4287,6 +4316,10 @@ void SimpleHostImageCopyTestCase::checkSupport(vkt::Context &context) const
     vk::VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
 
     context.requireDeviceFunctionality("VK_EXT_host_image_copy");
+
+    // Only a lone aspect reaches vkCmdCopyBufferToImage; combined formats take the host path and record nothing.
+    checkDepthStencilCopyQueueSupport(context, isDepthStencilFormat(m_params.format) &&
+                                                   mapVkFormat(m_params.format).order != tcu::TextureFormat::DS);
 
     vk::VkPhysicalDeviceHostImageCopyFeaturesEXT hostImageCopyFeatures = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_FEATURES_EXT, // VkStructureType                    sType
