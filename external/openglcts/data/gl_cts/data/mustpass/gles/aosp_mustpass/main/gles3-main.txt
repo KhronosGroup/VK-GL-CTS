@@ -3743,6 +3743,7 @@ dEQP-GLES3.functional.fbo.invalidate.format.rgba8i
 dEQP-GLES3.functional.fbo.invalidate.format.rgba8ui
 dEQP-GLES3.functional.fbo.invalidate.format.srgb8_alpha8
 dEQP-GLES3.functional.fbo.invalidate.format.stencil_index8
+dEQP-GLES3.functional.fbo.invalidate.incomplete.depth_stencil
 dEQP-GLES3.functional.fbo.invalidate.sub.render_all
 dEQP-GLES3.functional.fbo.invalidate.sub.render_color
 dEQP-GLES3.functional.fbo.invalidate.sub.render_depth

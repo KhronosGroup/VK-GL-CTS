@@ -1,3 +1,4 @@
+dEQP-GLES3.functional.fbo.invalidate.incomplete.depth_stencil
 dEQP-GLES3.functional.negative_api.shader.redeclaring_gl_frag_depth
 dEQP-GLES3.functional.negative_api.shader.redeclaring_gl_frag_depth_extension_not_enabled
 dEQP-GLES3.functional.occlusion_query.fbo_delete_conservative
