@@ -223,6 +223,7 @@ struct TestParams
     bool taskShader;
     bool useExecutionSet;
     bool unorderedSequences;
+    bool drawCountIsZero;
 
     bool indirect(void) const
     {
@@ -1163,7 +1164,7 @@ tcu::TestStatus DGCMeshDrawInstance::iterate(void)
             indirectDrawCmds.push_back(VkDrawIndirectCountIndirectCommandEXT{
                 bufferInfo.buffer->getDeviceAddress(),
                 getStrideBytes(bufferInfo.extraStructs),
-                directDrawGroupSizes.at(i),
+                m_params.drawCountIsZero ? 0u : directDrawGroupSizes.at(i),
             });
             if (directDrawGroupSizes.at(i) > maxDrawCount)
                 maxDrawCount = directDrawGroupSizes.at(i);
@@ -1513,7 +1514,8 @@ tcu::TestStatus DGCMeshDrawInstance::iterate(void)
                 (m_params.taskShader && m_params.useExecutionSet && taskShaderIndices.at(iesIndex) > 0u);
 
             // A pixel is not drawn into if the column doesn't have coverage in that row, or if the clip and cull distances are below zero for that triangle.
-            bool blank = ((!reversed && ux >= coverage.at(uy)) || (reversed && (kWidth - ux - 1) >= coverage.at(uy)));
+            bool blank = m_params.drawCountIsZero ||
+                         ((!reversed && ux >= coverage.at(uy)) || (reversed && (kWidth - ux - 1) >= coverage.at(uy)));
 
             const auto firstVertexIdx = (uy * kWidth + ux) * kPerTriangleVertices;
             const auto &extraData     = vertices.at(firstVertexIdx).extraData;
@@ -2362,9 +2364,10 @@ tcu::TestCaseGroup *createDGCGraphicsMeshTestsExt(tcu::TestContext &testCtx)
                     for (const auto &preprocessCase : preprocessCases)
                         for (const bool unorderedSequences : {false, true})
                         {
-                            const TestParams params{
+                            TestParams params{
                                 drawType,   pipelineCase.pipelineType, preprocessCase.preprocessType,
                                 taskShader, useExecutionSet,           unorderedSequences,
+                                false /* drawCountIsZero */
                             };
 
                             const auto testName = std::string(pipelineCase.name) +
@@ -2374,6 +2377,20 @@ tcu::TestCaseGroup *createDGCGraphicsMeshTestsExt(tcu::TestContext &testCtx)
 
                             auto &targetGroup = (drawType == DrawType::DIRECT ? directGroup : indirectGroup);
                             targetGroup->addChild(new DGCMeshDrawCase(testCtx, testName, params));
+
+                            // Test drawCount = 0
+                            if ((drawType == DrawType::INDIRECT) &&
+                                (pipelineCase.pipelineType == PipelineType::MONOLITHIC) &&
+                                (preprocessCase.preprocessType == PreprocessType::NONE) && !useExecutionSet &&
+                                !unorderedSequences)
+                            {
+                                const auto caseName =
+                                    std::string("draw_count_0") + (taskShader ? "_with_task_shader" : "");
+
+                                params.drawCountIsZero = true;
+
+                                targetGroup->addChild(new DGCMeshDrawCase(testCtx, caseName, params));
+                            }
                         }
                 }
 

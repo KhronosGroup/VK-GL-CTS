@@ -157,6 +157,7 @@ struct TestParams
     bool useExecutionSet;
     bool useShaderObjects;
     bool unorderedSequences;
+    bool drawCountIsZero;
 
     uint32_t getRandomSeed(void) const
     {
@@ -726,7 +727,7 @@ tcu::TestStatus testDrawCountRun(Context &context, TestParams params)
         drawTokenData.emplace_back(VkDrawIndirectCountIndirectCommandEXT{
             seqInfo.buffer->getDeviceAddress(),
             seqInfo.stride,
-            seqInfo.chunkCount,
+            params.drawCountIsZero ? 0u : seqInfo.chunkCount,
         });
 
         if (seqInfo.chunkCount > maxDrawCount)
@@ -1441,7 +1442,8 @@ tcu::TestStatus testDrawCountRun(Context &context, TestParams params)
             const auto col        = static_cast<int>(pixelIdx % vkExtent.width);
             const auto redValue   = static_cast<float>(firstInstance + (instanceCount - 1u)) / maxInstanceIndex;
             const auto &extraData = vertices.at(pixelIdx * kPerTriangleVertices).extraData;
-            const bool blank = (extraData.x() < 0.0f || extraData.y() < 0.0f); // Filtered by clip or cull distance.
+            const bool blank      = params.drawCountIsZero ||
+                               (extraData.x() < 0.0f || extraData.y() < 0.0f); // Filtered by clip or cull distance.
 
             const tcu::Vec4 color(redValue, 0.0f, 1.0f, 1.0f);
             refAccess.setPixel((blank ? fbClearColor : color), col, row);
@@ -1500,9 +1502,13 @@ tcu::TestCaseGroup *createDGCGraphicsDrawCountTestsExt(tcu::TestContext &testCtx
                     for (const bool unordered : {false, true})
                         for (const bool checkDrawParams : {false, true})
                         {
-                            const TestParams params{testTypeCase.testType, preProcessCase.preprocessType,
-                                                    checkDrawParams,       executionSets,
-                                                    shaderObjects,         unordered};
+                            TestParams params{testTypeCase.testType,
+                                              preProcessCase.preprocessType,
+                                              checkDrawParams,
+                                              executionSets,
+                                              shaderObjects,
+                                              unordered,
+                                              false /* drawCountIsZero */};
 
                             const std::string testName =
                                 std::string() + (shaderObjects ? "shader_objects" : "pipelines") +
@@ -1514,6 +1520,18 @@ tcu::TestCaseGroup *createDGCGraphicsDrawCountTestsExt(tcu::TestContext &testCtx
                                 (params.indexedDraws() ? drawIndexedCountGroup.get() : drawCountGroup.get());
                             addFunctionCaseWithPrograms(group, testName, checkDrawCountSupport, initDrawCountPrograms,
                                                         testDrawCountRun, params);
+
+                            // Test drawCount = 0
+                            if ((preProcessCase.preprocessType == PreprocessType::NONE) && !checkDrawParams &&
+                                !executionSets && !shaderObjects && !unordered)
+                            {
+                                const std::string caseName = std::string("draw_count_0") + testTypeCase.suffix;
+
+                                params.drawCountIsZero = true;
+
+                                addFunctionCaseWithPrograms(group, caseName, checkDrawCountSupport,
+                                                            initDrawCountPrograms, testDrawCountRun, params);
+                            }
                         }
 
     mainGroup->addChild(drawCountGroup.release());

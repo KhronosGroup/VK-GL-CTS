@@ -122,6 +122,9 @@ dEQP-VK.dgc.ext.compute.misc.many_sequences_131072_compute_queue
 dEQP-VK.dgc.ext.compute.misc.many_sequences_131072_universal_queue
 dEQP-VK.dgc.ext.compute.misc.null_set_layouts_info
 dEQP-VK.dgc.ext.compute.push_index_heap.stage_compute
+dEQP-VK.dgc.ext.graphics.draw_count.token_draw_count.draw_count_0
+dEQP-VK.dgc.ext.graphics.draw_count.token_draw_indexed_count.draw_count_0
+dEQP-VK.dgc.ext.graphics.draw_count.token_draw_indexed_count.draw_count_0_with_index_buffer_token
 dEQP-VK.dgc.ext.graphics.mesh.misc.many_sequences_1024
 dEQP-VK.dgc.ext.graphics.mesh.misc.many_sequences_1024_task
 dEQP-VK.dgc.ext.graphics.mesh.misc.many_sequences_131072
@@ -154,6 +157,8 @@ dEQP-VK.dgc.ext.graphics.mesh.misc.no_frag_shader_shader_objects_with_task
 dEQP-VK.dgc.ext.graphics.mesh.misc.no_frag_shader_shader_objects_with_task_preprocess
 dEQP-VK.dgc.ext.graphics.mesh.misc.no_frag_shader_shader_objects_with_task_with_ies
 dEQP-VK.dgc.ext.graphics.mesh.misc.no_frag_shader_shader_objects_with_task_with_ies_preprocess
+dEQP-VK.dgc.ext.graphics.mesh.token_draw_count.draw_count_0
+dEQP-VK.dgc.ext.graphics.mesh.token_draw_count.draw_count_0_with_task_shader
 dEQP-VK.dgc.ext.graphics.misc.fast_lib_dynamic_a2c_disabled
 dEQP-VK.dgc.ext.graphics.misc.fast_lib_dynamic_a2c_disabled_ies
 dEQP-VK.dgc.ext.graphics.misc.fast_lib_dynamic_a2c_disabled_ies_preprocess

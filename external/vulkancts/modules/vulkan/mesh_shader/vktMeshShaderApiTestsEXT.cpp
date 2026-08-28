@@ -105,8 +105,9 @@ struct TestParams
 {
     DrawType drawType;
     uint32_t seed;
-    uint32_t drawCount;                                    // Equivalent to taskCount or drawCount.
-    tcu::Maybe<IndirectArgs> indirectArgs;                 // Only used for DRAW_INDIRECT*.
+    uint32_t drawCount;                    // Equivalent to taskCount or drawCount.
+    bool isGroupCountZero;                 // When drawCount is set to 0, also set group count X, Y, Z to 0
+    tcu::Maybe<IndirectArgs> indirectArgs; // Only used for DRAW_INDIRECT*.
     tcu::Maybe<IndirectCountLimitType> indirectCountLimit; // Only used for DRAW_INDIRECT_COUNT.
     tcu::Maybe<uint32_t> indirectCountOffset;              // Only used for DRAW_INDIRECT_COUNT.
     bool useTask;
@@ -396,24 +397,34 @@ VkExtent3D getExtent()
     return makeExtent3D(32u, 64u, 1u);
 }
 
-VkDrawMeshTasksIndirectCommandEXT getIndirectCommand(uint32_t blockSize, uint32_t dimCoord)
+VkDrawMeshTasksIndirectCommandEXT getIndirectCommand(uint32_t blockSize, uint32_t dimCoord,
+                                                     bool setGroupCountZero = false)
 {
     VkDrawMeshTasksIndirectCommandEXT indirectCmd{1u, 1u, 1u};
 
-    switch (dimCoord)
+    if (setGroupCountZero)
     {
-    case 0u:
-        indirectCmd.groupCountX = blockSize;
-        break;
-    case 1u:
-        indirectCmd.groupCountY = blockSize;
-        break;
-    case 2u:
-        indirectCmd.groupCountZ = blockSize;
-        break;
-    default:
-        DE_ASSERT(false);
-        break;
+        indirectCmd.groupCountX = 0u;
+        indirectCmd.groupCountY = 0u;
+        indirectCmd.groupCountZ = 0u;
+    }
+    else
+    {
+        switch (dimCoord)
+        {
+        case 0u:
+            indirectCmd.groupCountX = blockSize;
+            break;
+        case 1u:
+            indirectCmd.groupCountY = blockSize;
+            break;
+        case 2u:
+            indirectCmd.groupCountZ = blockSize;
+            break;
+        default:
+            DE_ASSERT(false);
+            break;
+        }
     }
 
     return indirectCmd;
@@ -583,8 +594,10 @@ tcu::TestStatus MeshApiInstance::iterate(void)
         std::vector<VkDrawMeshTasksIndirectCommandEXT> commands;
         commands.reserve(blockSizes.size());
 
+        const bool setGroupCountZero = (m_params.drawCount == 0u) && m_params.isGroupCountZero;
         std::transform(begin(blockSizes), end(blockSizes), std::back_inserter(commands),
-                       [dimCoord](uint32_t blockSize) { return getIndirectCommand(blockSize, dimCoord); });
+                       [dimCoord, setGroupCountZero](uint32_t blockSize)
+                       { return getIndirectCommand(blockSize, dimCoord, setGroupCountZero); });
 
         VkBufferUsageFlags usage = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
                                    (m_params.useDeviceAddressCommands ? VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT : 0);
@@ -866,83 +879,98 @@ tcu::TestCaseGroup *createMeshShaderApiTestsEXT(tcu::TestContext &testCtx)
 
         for (const auto &drawCountCase : drawCountCases)
         {
-            const auto drawCountName = "draw_count_" + de::toString(drawCountCase);
-            GroupPtr drawCountGroup(new tcu::TestCaseGroup(testCtx, drawCountName.c_str()));
-
-            for (std::size_t indirectArgsIndex = 0; indirectArgsIndex < std::size(indirectArgsCases);
-                 ++indirectArgsIndex)
+            for (const auto isGroupCountZero : {true, false})
             {
-                const auto &indirectArgsCase = indirectArgsCases[indirectArgsIndex];
-                const bool hasIndirectArgs   = static_cast<bool>(indirectArgsCase.indirectArgs);
-                const bool strideZero        = (hasIndirectArgs && indirectArgsCase.indirectArgs.get().stride == 0u);
-
-                if (isIndirect != hasIndirectArgs)
+                // Allow only valid cases with group count 0
+                if ((isGroupCountZero == true) && (!isIndirect || (drawCountCase != 0u)))
                     continue;
 
-                if (((isIndirectNoCount && drawCountCase > 1u) || isIndirectCount) && strideZero)
-                    continue;
+                const auto drawCountName =
+                    "draw_count_" + de::toString(drawCountCase) + (isGroupCountZero ? "_group_count_0" : "");
+                GroupPtr drawCountGroup(new tcu::TestCaseGroup(testCtx, drawCountName.c_str()));
 
-                GroupPtr indirectArgsGroup(new tcu::TestCaseGroup(testCtx, indirectArgsCase.name));
-
-                for (const auto &countLimitCase : countLimitCases)
+                for (std::size_t indirectArgsIndex = 0; indirectArgsIndex < std::size(indirectArgsCases);
+                     ++indirectArgsIndex)
                 {
-                    const bool hasCountLimit = static_cast<bool>(countLimitCase.limitType);
+                    const auto &indirectArgsCase = indirectArgsCases[indirectArgsIndex];
+                    const bool hasIndirectArgs   = static_cast<bool>(indirectArgsCase.indirectArgs);
+                    const bool strideZero = (hasIndirectArgs && indirectArgsCase.indirectArgs.get().stride == 0u);
 
-                    if (isIndirectCount != hasCountLimit)
+                    if (isIndirect != hasIndirectArgs)
                         continue;
 
-                    GroupPtr countLimitGroup(new tcu::TestCaseGroup(testCtx, countLimitCase.name));
+                    if (((isIndirectNoCount && drawCountCase > 1u) || isIndirectCount) && strideZero)
+                        continue;
 
-                    for (const auto &countOffsetCase : countOffsetCases)
+                    GroupPtr indirectArgsGroup(new tcu::TestCaseGroup(testCtx, indirectArgsCase.name));
+
+                    for (const auto &countLimitCase : countLimitCases)
                     {
-                        const bool hasCountOffsetType = static_cast<bool>(countOffsetCase.countOffset);
+                        const bool hasCountLimit = static_cast<bool>(countLimitCase.limitType);
 
-                        if (isIndirectCount != hasCountOffsetType)
+                        if (isIndirectCount != hasCountLimit)
                             continue;
 
-                        GroupPtr countOffsetGroup(new tcu::TestCaseGroup(testCtx, countOffsetCase.name));
+                        GroupPtr countLimitGroup(new tcu::TestCaseGroup(testCtx, countLimitCase.name));
 
-                        for (const auto &taskCase : taskCases)
+                        for (const auto &countOffsetCase : countOffsetCases)
                         {
-                            for (const auto &cmdBufferCase : cmdBufferCases)
+                            const bool hasCountOffsetType = static_cast<bool>(countOffsetCase.countOffset);
+
+                            if (isIndirectCount != hasCountOffsetType)
+                                continue;
+
+                            GroupPtr countOffsetGroup(new tcu::TestCaseGroup(testCtx, countOffsetCase.name));
+
+                            for (const auto &taskCase : taskCases)
                             {
-                                auto testName = std::string(taskCase.name) + cmdBufferCase.suffix;
-                                TestParams params{
-                                    drawCase,                      // DrawType drawType;
-                                    seed++,                        // uint32_t seed;
-                                    drawCountCase,                 // uint32_t drawCount;
-                                    indirectArgsCase.indirectArgs, // tcu::Maybe<IndirectArgs> indirectArgs;
-                                    countLimitCase.limitType, // tcu::Maybe<IndirectCountLimitType> indirectCountLimit;
-                                    countOffsetCase.countOffset, // tcu::Maybe<uint32_t> indirectCountOffset;
-                                    taskCase.useTask,            // bool useTask;
-                                    cmdBufferCase.secondaryCmd,  // bool useSecondaryCmdBuffer;
-                                    false,                       // bool useDeviceAddressCommands;
-                                };
-
-                                countOffsetGroup->addChild(new MeshApiCase(testCtx, testName, params));
-
-                                // limit number of tests repeated for device_address_commands
-                                if ((drawCase != DrawType::DRAW) &&
-                                    (indirectArgsIndex % 2 == cmdBufferCase.secondaryCmd) &&
-                                    (taskCase.useTask == hasCountLimit))
+                                for (const auto &cmdBufferCase : cmdBufferCases)
                                 {
-                                    params.useDeviceAddressCommands = true;
-                                    testName += "_device_address";
+                                    // Reduce test combinations with group count 0
+                                    if ((isGroupCountZero == true) &&
+                                        ((indirectArgsIndex >= 3) || cmdBufferCase.secondaryCmd))
+                                        continue;
+
+                                    auto testName = std::string(taskCase.name) + cmdBufferCase.suffix;
+                                    TestParams params{
+                                        drawCase,                      // DrawType drawType;
+                                        seed++,                        // uint32_t seed;
+                                        drawCountCase,                 // uint32_t drawCount;
+                                        isGroupCountZero,              // bool isGroupCountZero
+                                        indirectArgsCase.indirectArgs, // tcu::Maybe<IndirectArgs> indirectArgs;
+                                        countLimitCase
+                                            .limitType, // tcu::Maybe<IndirectCountLimitType> indirectCountLimit;
+                                        countOffsetCase.countOffset, // tcu::Maybe<uint32_t> indirectCountOffset;
+                                        taskCase.useTask,            // bool useTask;
+                                        cmdBufferCase.secondaryCmd,  // bool useSecondaryCmdBuffer;
+                                        false,                       // bool useDeviceAddressCommands;
+                                    };
+
                                     countOffsetGroup->addChild(new MeshApiCase(testCtx, testName, params));
+
+                                    // limit number of tests repeated for device_address_commands
+                                    if ((drawCase != DrawType::DRAW) &&
+                                        (indirectArgsIndex % 2 == cmdBufferCase.secondaryCmd) &&
+                                        (taskCase.useTask == hasCountLimit))
+                                    {
+                                        params.useDeviceAddressCommands = true;
+                                        testName += "_device_address";
+                                        countOffsetGroup->addChild(new MeshApiCase(testCtx, testName, params));
+                                    }
                                 }
                             }
+
+                            countLimitGroup->addChild(countOffsetGroup.release());
                         }
 
-                        countLimitGroup->addChild(countOffsetGroup.release());
+                        indirectArgsGroup->addChild(countLimitGroup.release());
                     }
 
-                    indirectArgsGroup->addChild(countLimitGroup.release());
+                    drawCountGroup->addChild(indirectArgsGroup.release());
                 }
 
-                drawCountGroup->addChild(indirectArgsGroup.release());
+                drawGroup->addChild(drawCountGroup.release());
             }
-
-            drawGroup->addChild(drawCountGroup.release());
         }
 
         mainGroup->addChild(drawGroup.release());

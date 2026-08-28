@@ -109,6 +109,7 @@ struct DrawTypedTestSpec : public TestSpecBase
         , layerCount(1u)
         , bindIndexBufferOffset(0ull)
         , indexBufferAllocOffset(0ull)
+        , drawCountIsZero(false)
         , m_useMultiDraw(false)
     {
     }
@@ -129,6 +130,7 @@ struct DrawTypedTestSpec : public TestSpecBase
     uint32_t layerCount;
     vk::VkDeviceSize bindIndexBufferOffset;
     vk::VkDeviceSize indexBufferAllocOffset;
+    bool drawCountIsZero;
 
 protected:
     friend class MultiDrawScopedSetter;
@@ -209,6 +211,7 @@ protected:
     vk::Move<vk::VkPipelineLayout> m_pipelineLayout;
     vk::Move<vk::VkPipeline> m_computePipeline;
     const bool m_delayInit;
+    const bool m_drawCountIsZero;
 };
 
 struct FirstInstanceSupported
@@ -512,6 +515,7 @@ IndirectDraw::IndirectDraw(Context &context, TestSpec testSpec, const bool delay
     , m_bindIndexBufferOffset(testSpec.bindIndexBufferOffset)
     , m_indexBufferAllocOffset(testSpec.indexBufferAllocOffset)
     , m_delayInit(delayInit)
+    , m_drawCountIsZero(testSpec.drawCountIsZero)
 {
     if (!delayInit)
     {
@@ -596,32 +600,32 @@ void IndirectDraw::draw(vk::VkCommandBuffer cmdBuffer)
         {
             if (m_testIndirectCountExt != IndirectCountType::NONE)
             {
-                const uint32_t maxDrawCount =
-                    kDrawCount +
-                    (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_indirectCountExtDrawPadding : 0u);
+                const uint32_t maxDrawCount = (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ?
+                                                   (kDrawCount + m_indirectCountExtDrawPadding) :
+                                                   (m_drawCountIsZero ? 0u : (kDrawCount + 0u)));
                 m_vk.cmdDrawIndirectCount(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
                                           m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
                                           m_strideInBuffer);
             }
             else
-                m_vk.cmdDrawIndirect(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, kDrawCount,
-                                     m_strideInBuffer);
+                m_vk.cmdDrawIndirect(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
+                                     m_drawCountIsZero ? 0u : kDrawCount, m_strideInBuffer);
             break;
         }
         case DRAW_TYPE_INDEXED:
         {
             if (m_testIndirectCountExt != IndirectCountType::NONE)
             {
-                const uint32_t maxDrawCount =
-                    kDrawCount +
-                    (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_indirectCountExtDrawPadding : 0u);
+                const uint32_t maxDrawCount = (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ?
+                                                   (kDrawCount + m_indirectCountExtDrawPadding) :
+                                                   (m_drawCountIsZero ? 0u : (kDrawCount + 0u)));
                 m_vk.cmdDrawIndexedIndirectCount(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
                                                  m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
                                                  m_strideInBuffer);
             }
             else
-                m_vk.cmdDrawIndexedIndirect(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, kDrawCount,
-                                            m_strideInBuffer);
+                m_vk.cmdDrawIndexedIndirect(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
+                                            m_drawCountIsZero ? 0u : kDrawCount, m_strideInBuffer);
             break;
         }
         default:
@@ -640,14 +644,15 @@ void IndirectDraw::draw(vk::VkCommandBuffer cmdBuffer)
                 {
                     const uint32_t maxDrawCount = (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ?
                                                        kDrawCount + m_indirectCountExtDrawPadding :
-                                                       1u);
+                                                       (m_drawCountIsZero ? 0u : 1u));
                     m_vk.cmdDrawIndirectCount(
                         cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx * m_strideInBuffer,
                         m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount, m_strideInBuffer);
                 }
                 else
                     m_vk.cmdDrawIndirect(cmdBuffer, m_indirectBuffer->object(),
-                                         m_offsetInBuffer + drawNdx * m_strideInBuffer, 1u, 0u);
+                                         m_offsetInBuffer + drawNdx * m_strideInBuffer, m_drawCountIsZero ? 0u : 1u,
+                                         0u);
                 break;
             }
             case DRAW_TYPE_INDEXED:
@@ -656,14 +661,15 @@ void IndirectDraw::draw(vk::VkCommandBuffer cmdBuffer)
                 {
                     const uint32_t maxDrawCount = (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ?
                                                        kDrawCount + m_indirectCountExtDrawPadding :
-                                                       1u);
+                                                       (m_drawCountIsZero ? 0u : 1u));
                     m_vk.cmdDrawIndexedIndirectCount(
                         cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx * m_strideInBuffer,
                         m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount, m_strideInBuffer);
                 }
                 else
                     m_vk.cmdDrawIndexedIndirect(cmdBuffer, m_indirectBuffer->object(),
-                                                m_offsetInBuffer + drawNdx * m_strideInBuffer, 1u, 0u);
+                                                m_offsetInBuffer + drawNdx * m_strideInBuffer,
+                                                m_drawCountIsZero ? 0u : 1u, 0u);
                 break;
             }
             default:
@@ -933,12 +939,13 @@ tcu::TestStatus IndirectDraw::iterate(void)
         // For IndirectCountType::PARAM_LIMIT, the real limit will be set using the call parameter.
         if (m_useMultiDraw)
             *(uint32_t *)(countBufferPtr + m_offsetInCountBuffer) =
-                kDrawCount +
-                (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? 0u : m_indirectCountExtDrawPadding);
+                (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ?
+                     (m_drawCountIsZero ? 0u : (kDrawCount + 0u)) :
+                     (kDrawCount + m_indirectCountExtDrawPadding));
         else
             *(uint32_t *)(countBufferPtr + m_offsetInCountBuffer) =
                 (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ?
-                     1u :
+                     (m_drawCountIsZero ? 0u : 1u) :
                      kDrawCount + m_indirectCountExtDrawPadding);
 
         if (m_dataFromComputeShader)
@@ -1054,7 +1061,8 @@ tcu::TestStatus IndirectDraw::iterate(void)
 
             if ((yCoord >= refCoords.bottom && yCoord <= refCoords.top && xCoord >= refCoords.left &&
                  xCoord <= refCoords.right))
-                referenceFrame.getLevel(0).setPixel(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), x, y);
+                referenceFrame.getLevel(0).setPixel(
+                    m_drawCountIsZero ? tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f) : tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), x, y);
         }
     }
 
@@ -1954,6 +1962,24 @@ void IndirectDrawTests::init(void)
                                         m_testCtx, "triangle_list_multi_draw", testSpec,
                                         FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
                             }
+                            // Set draw count to 0
+                            if (!dataFromCompute && !m_groupParams->useSecondaryCmdBuffer &&
+                                !nonZeroBindIndexBufferOffset && !indexBufferAllocOffset)
+                            {
+                                testSpec.drawCountIsZero = true;
+                                indirectDrawGroup->addChild(
+                                    new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec>>(
+                                        m_testCtx, "triangle_list_count_0", testSpec,
+                                        FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+                                {
+                                    MultiDrawScopedSetter setter(testSpec);
+                                    indirectDrawGroup->addChild(
+                                        new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec>>(
+                                            m_testCtx, "triangle_list_multi_draw_count_0", testSpec,
+                                            FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+                                }
+                                testSpec.drawCountIsZero = false;
+                            }
                             testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
                             indirectDrawGroup->addChild(
                                 new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec>>(
@@ -1987,6 +2013,24 @@ void IndirectDrawTests::init(void)
                                         m_testCtx, "triangle_list_multi_draw", testSpec,
                                         FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
                             }
+                            // Set draw count to 0 in buffer
+                            if (!dataFromCompute && !m_groupParams->useSecondaryCmdBuffer &&
+                                !nonZeroBindIndexBufferOffset && !indexBufferAllocOffset)
+                            {
+                                testSpec.drawCountIsZero = true;
+                                indirectDrawCountGroup->addChild(
+                                    new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec>>(
+                                        m_testCtx, "triangle_list_count_0", testSpec,
+                                        FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+                                {
+                                    MultiDrawScopedSetter setter(testSpec);
+                                    indirectDrawCountGroup->addChild(
+                                        new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec>>(
+                                            m_testCtx, "triangle_list_multi_draw_count_0", testSpec,
+                                            FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+                                }
+                                testSpec.drawCountIsZero = false;
+                            }
                             testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
                             indirectDrawCountGroup->addChild(
                                 new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec>>(
@@ -2019,6 +2063,24 @@ void IndirectDrawTests::init(void)
                                     new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec>>(
                                         m_testCtx, "triangle_list_multi_draw", testSpec,
                                         FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+                            }
+                            // Set draw count to 0 in max draw count call parameter
+                            if (!dataFromCompute && !m_groupParams->useSecondaryCmdBuffer &&
+                                !nonZeroBindIndexBufferOffset && !indexBufferAllocOffset)
+                            {
+                                testSpec.drawCountIsZero = true;
+                                indirectDrawParamCountGroup->addChild(
+                                    new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec>>(
+                                        m_testCtx, "triangle_list_count_0", testSpec,
+                                        FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+                                {
+                                    MultiDrawScopedSetter setter(testSpec);
+                                    indirectDrawParamCountGroup->addChild(
+                                        new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec>>(
+                                            m_testCtx, "triangle_list_multi_draw_count_0", testSpec,
+                                            FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+                                }
+                                testSpec.drawCountIsZero = false;
                             }
                             testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
                             indirectDrawParamCountGroup->addChild(

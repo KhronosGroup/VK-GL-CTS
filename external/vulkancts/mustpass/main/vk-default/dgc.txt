@@ -1642,6 +1642,7 @@ dEQP-VK.dgc.ext.graphics.draw.token_draw_indexed.shader_objects_with_tess_with_e
 dEQP-VK.dgc.ext.graphics.draw.token_draw_indexed.shader_objects_with_tess_with_execution_set_preprocess_separate_state_cmd_buffer_unordered_dx_index
 dEQP-VK.dgc.ext.graphics.draw.token_draw_indexed.shader_objects_with_tess_with_execution_set_unordered
 dEQP-VK.dgc.ext.graphics.draw.token_draw_indexed.shader_objects_with_tess_with_execution_set_unordered_dx_index
+dEQP-VK.dgc.ext.graphics.draw_count.token_draw_count.draw_count_0
 dEQP-VK.dgc.ext.graphics.draw_count.token_draw_count.pipelines
 dEQP-VK.dgc.ext.graphics.draw_count.token_draw_count.pipelines_check_draw_params
 dEQP-VK.dgc.ext.graphics.draw_count.token_draw_count.pipelines_execution_set
@@ -1690,6 +1691,8 @@ dEQP-VK.dgc.ext.graphics.draw_count.token_draw_count.shader_objects_preprocess_s
 dEQP-VK.dgc.ext.graphics.draw_count.token_draw_count.shader_objects_preprocess_separate_state_cmd_buffer_unordered_check_draw_params
 dEQP-VK.dgc.ext.graphics.draw_count.token_draw_count.shader_objects_unordered
 dEQP-VK.dgc.ext.graphics.draw_count.token_draw_count.shader_objects_unordered_check_draw_params
+dEQP-VK.dgc.ext.graphics.draw_count.token_draw_indexed_count.draw_count_0
+dEQP-VK.dgc.ext.graphics.draw_count.token_draw_indexed_count.draw_count_0_with_index_buffer_token
 dEQP-VK.dgc.ext.graphics.draw_count.token_draw_indexed_count.pipelines
 dEQP-VK.dgc.ext.graphics.draw_count.token_draw_indexed_count.pipelines_check_draw_params
 dEQP-VK.dgc.ext.graphics.draw_count.token_draw_indexed_count.pipelines_check_draw_params_with_index_buffer_token
@@ -1974,6 +1977,8 @@ dEQP-VK.dgc.ext.graphics.mesh.token_draw.shader_objects_with_task_shader_with_ex
 dEQP-VK.dgc.ext.graphics.mesh.token_draw.shader_objects_with_task_shader_with_execution_set_preprocess_separate_state_cmd_buffer
 dEQP-VK.dgc.ext.graphics.mesh.token_draw.shader_objects_with_task_shader_with_execution_set_preprocess_separate_state_cmd_buffer_unordered
 dEQP-VK.dgc.ext.graphics.mesh.token_draw.shader_objects_with_task_shader_with_execution_set_unordered
+dEQP-VK.dgc.ext.graphics.mesh.token_draw_count.draw_count_0
+dEQP-VK.dgc.ext.graphics.mesh.token_draw_count.draw_count_0_with_task_shader
 dEQP-VK.dgc.ext.graphics.mesh.token_draw_count.gpl_fast
 dEQP-VK.dgc.ext.graphics.mesh.token_draw_count.gpl_fast_preprocess_same_state_cmd_buffer
 dEQP-VK.dgc.ext.graphics.mesh.token_draw_count.gpl_fast_preprocess_same_state_cmd_buffer_unordered
