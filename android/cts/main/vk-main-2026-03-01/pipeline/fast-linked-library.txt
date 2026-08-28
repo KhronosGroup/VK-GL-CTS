@@ -10472,10 +10472,6 @@ dEQP-VK.pipeline.fast_linked_library.blend.dynamic_dual_disable.att_count_8
 dEQP-VK.pipeline.fast_linked_library.blend.dynamic_dual_disable.att_count_8_plus_1
 dEQP-VK.pipeline.fast_linked_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_0_alpha_blend
 dEQP-VK.pipeline.fast_linked_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_0_no_blend
-dEQP-VK.pipeline.fast_linked_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_a_alpha_blend
-dEQP-VK.pipeline.fast_linked_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_a_no_blend
-dEQP-VK.pipeline.fast_linked_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_rgb_alpha_blend
-dEQP-VK.pipeline.fast_linked_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_rgb_no_blend
 dEQP-VK.pipeline.fast_linked_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_rgba_alpha_blend
 dEQP-VK.pipeline.fast_linked_library.blend.dynamic_mask.format.e5b9g9r9_ufloat_pack32.states.mask_rgba_no_blend
 dEQP-VK.pipeline.fast_linked_library.depth.depth_only.dynamic_rendering_postpass
