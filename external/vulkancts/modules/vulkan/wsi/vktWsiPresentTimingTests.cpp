@@ -1174,12 +1174,12 @@ tcu::TestStatus timingQueueTest(Context &context, vk::wsi::Type wsiType)
     VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, **renderSemaphores[retryFrame.imageIndex], *swapchain,
                                        retryFrame.imageIndex, timingInfo, 0));
 
-    vkd.queueWaitIdle(devHelper.queue);
-
     // Drain all outstanding results
     resultsCount = drainPresentationTimingResults(vkd, device, *swapchain, pth, remainingResults + 1);
     if (resultsCount != remainingResults + 1)
         TCU_FAIL("Failed to retrieve remaining results");
+
+    vkd.queueWaitIdle(devHelper.queue);
 
     return tcu::TestStatus::pass("Tests ran successfully");
 }
@@ -1270,13 +1270,13 @@ tcu::TestStatus timingTest(Context &context, PresentTimingTestConfig config)
         currentPresentId += presentIdStep;
     }
 
-    vkd.queueWaitIdle(devHelper.queue);
-
     if (drainPresentationTimingResults(vkd, device, *swapchain, pth, pendingResults) != pendingResults)
         TCU_FAIL("Failed to retrieve all timing results");
 
     pth.sortResults();
     pth.verifyPresentIds(initialPresentId, presentIdStep, frameCount, config.presentStageQueries);
+
+    vkd.queueWaitIdle(devHelper.queue);
 
     return tcu::TestStatus::pass("All tests ran successfully");
 }
@@ -1371,13 +1371,13 @@ tcu::TestStatus largeQueueSizeTest(Context &context, vk::wsi::Type wsiType)
         currentPresentId += presentIdStep;
     }
 
-    vkd.queueWaitIdle(devHelper.queue);
-
     if (drainPresentationTimingResults(vkd, device, *swapchain, pth, pendingResults) != pendingResults)
         TCU_FAIL("Failed to retrieve all timing results");
 
     pth.sortResults();
     pth.verifyPresentIds(initialPresentId, presentIdStep, frameCount, kAllPresentStages);
+
+    vkd.queueWaitIdle(devHelper.queue);
 
     return tcu::TestStatus::pass("All tests ran successfully");
 }
@@ -1562,8 +1562,6 @@ tcu::TestStatus timingTestWithBackgroundQueryThreads(Context &context, Type wsiT
     }
     timingQueryThreads.clear();
 
-    vkd.queueWaitIdle(devHelper.queue);
-
     // Drain any remaining results after presenting is done
     PresentTimingHelper &pth = sharedState.m_pths[0];
     if (drainPresentationTimingResults(vkd, device, *swapchain, pth, sharedState.m_pendingResults) !=
@@ -1577,6 +1575,8 @@ tcu::TestStatus timingTestWithBackgroundQueryThreads(Context &context, Type wsiT
 
     pth.sortResults();
     pth.verifyPresentIds(initialPresentId, presentIdStep, frameCount, surfaceCaps.presentStageQueries);
+
+    vkd.queueWaitIdle(devHelper.queue);
 
     return tcu::TestStatus::pass("All tests ran successfully");
 }
@@ -1652,8 +1652,6 @@ tcu::TestStatus retiredSwapchainTest(Context &context, vk::wsi::Type wsiType)
         swapchainInfo.oldSwapchain = *swapchains[swapchainIdx];
     }
 
-    vkd.queueWaitIdle(devHelper.queue);
-
     // Query and verify Present Timing Data
     for (uint32_t swapchainIdx = 0; swapchainIdx < 2; swapchainIdx++)
     {
@@ -1676,6 +1674,8 @@ tcu::TestStatus retiredSwapchainTest(Context &context, vk::wsi::Type wsiType)
         // Explicitly trigger the destruction of the swapchain
         swapchains[swapchainIdx].m_swapchain = {};
     }
+
+    vkd.queueWaitIdle(devHelper.queue);
 
     return tcu::TestStatus::pass("Tests ran successfully");
 }
@@ -1882,8 +1882,6 @@ tcu::TestStatus presentAtTest(Context &context, PresentTimingTestConfig config)
         pendingResults -= resultCount;
     }
 
-    vkd.queueWaitIdle(devHelper.queue);
-
     if (drainPresentationTimingResults(vkd, device, *swapchain, pth, pendingResults) != pendingResults)
         TCU_FAIL("Failed to retrieve all timing results");
 
@@ -1928,15 +1926,14 @@ tcu::TestStatus presentAtTest(Context &context, PresentTimingTestConfig config)
                 // Check that Present landed after the requested time, according to the VK_PRESENT_STAGE_IMAGE_FIRST_PIXEL_VISIBLE_BIT_EXT stage timing
                 if (presentStage == VK_PRESENT_STAGE_IMAGE_FIRST_PIXEL_VISIBLE_BIT_EXT)
                 {
-                    const uint32_t targetTimeIdx = static_cast<uint32_t>(result.presentId - targetTimes[0].presentId);
                     const uint64_t requestedPresentTime = config.presentAtMode == PresentAtMode::ABSOLUTE ?
-                                                              targetTimes[targetTimeIdx].targetTime :
-                                                              targetTimes[targetTimeIdx].targetTime + prevPresentTime;
+                                                              targetTimes[i].targetTime :
+                                                              targetTimes[i].targetTime + prevPresentTime;
                     if (actualPresentTime < requestedPresentTime)
                     {
                         const uint64_t early = requestedPresentTime - actualPresentTime;
                         const uint64_t max   = config.presentAtNearestRefreshCycle ?
-                                                   kTargetTimeMarginNs + targetTimes[targetTimeIdx].refreshCycleDuration :
+                                                   kTargetTimeMarginNs + targetTimes[i].refreshCycleDuration :
                                                    kTargetTimeMarginNs;
                         if (early >= max)
                             TCU_FAIL("Frame was presented earlier than expected");
@@ -1945,6 +1942,8 @@ tcu::TestStatus presentAtTest(Context &context, PresentTimingTestConfig config)
             }
         }
     }
+
+    vkd.queueWaitIdle(devHelper.queue);
 
     return tcu::TestStatus::pass("Tests ran successfully");
 }
@@ -2076,12 +2075,12 @@ tcu::TestStatus timeDomainPropertiesTest(Context &context, Type wsiType)
         }
     }
 
-    vkd.queueWaitIdle(devHelper.queue);
-
     // Drain all outstanding results
     const uint32_t pendingResults = maxQueuedFrames - handledResults;
     if (drainPresentationTimingResults(vkd, device, *swapchain, pth, pendingResults) != pendingResults)
         TCU_FAIL("Failed to retrieve all remaining timing results");
+
+    vkd.queueWaitIdle(devHelper.queue);
 
     return tcu::TestStatus::pass("Tests ran successfully");
 }

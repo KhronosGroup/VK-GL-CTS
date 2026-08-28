@@ -752,7 +752,7 @@ tcu::TestStatus DepthStencilMSAA::checkCopyResults(VkCommandBuffer cmdBuffer,
         m_params.samples,                     // VkSampleCountFlagBits samples;
         VK_ATTACHMENT_LOAD_OP_LOAD,           // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,         // VkAttachmentStoreOp storeOp;
-        VK_ATTACHMENT_LOAD_OP_DONT_CARE,      // VkAttachmentLoadOp stencilLoadOp;
+        VK_ATTACHMENT_LOAD_OP_LOAD,           // VkAttachmentLoadOp stencilLoadOp;
         VK_ATTACHMENT_STORE_OP_DONT_CARE,     // VkAttachmentStoreOp stencilStoreOp;
         m_dstImage.operationLayout,           // VkImageLayout initialLayout;
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // VkImageLayout finalLayout;

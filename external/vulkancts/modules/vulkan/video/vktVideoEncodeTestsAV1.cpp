@@ -564,7 +564,13 @@ TestInstance *VideoTestCase::createInstance(Context &ctx) const
 #ifdef DE_BUILD_VIDEO
     VkResult result =
         CreateVulkanVideoEncoder(m_requirements.codecOperation, static_cast<int>(args.size()), args.data(), encoder);
-    if (result != VK_SUCCESS)
+    if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY || result == VK_ERROR_OUT_OF_HOST_MEMORY)
+    {
+        // Some video encode tests require a very large amount of host-visible memory to run, and may fail on some platforms,
+        // especially 32-bit platforms.
+        TCU_THROW(NotSupportedError, "Out of memory");
+    }
+    else if (result != VK_SUCCESS)
     {
         throw tcu::TestError("Failed to create VulkanVideoEncoder");
     }
