@@ -3786,8 +3786,8 @@ tcu::TestStatus AttachmentMappingTestInstance::iterate(void)
     const bool hasInputAttachments = inputsCount > 0;
 
     VkImageMemoryBarrier colorImageBarrier =
-        makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-                               VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE, colorSRR);
+        makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                               VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE, colorSRR);
     VkImageMemoryBarrier drawImageBarrier =
         makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
                                VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE, colorSRR);
@@ -3870,7 +3870,7 @@ tcu::TestStatus AttachmentMappingTestInstance::iterate(void)
     }
 
     VkRenderingInputAttachmentIndexInfo pipelineInputAttachmentIndexInfo = initVulkanStructure();
-    pipelineInputAttachmentIndexInfo.colorAttachmentCount                = m_params.pipelineMappingCount;
+    pipelineInputAttachmentIndexInfo.colorAttachmentCount                = colorAttachmentCount;
     pipelineInputAttachmentIndexInfo.pColorAttachmentInputIndices = de::dataOrNull(inputAttachmentIndicesPipeline);
 
     const auto descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
