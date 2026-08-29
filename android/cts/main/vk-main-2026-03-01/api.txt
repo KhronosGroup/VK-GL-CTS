@@ -31663,3 +31663,5 @@ dEQP-VK.api.maintenance3_check.support_count_uniform_texel_buffer_no_variable_si
 dEQP-VK.api.maintenance3_check.support_count_uniform_texel_buffer_nonzero_binding_offset
 dEQP-VK.api.maintenance3_check.support_count_uniform_texel_buffer_nonzero_binding_offset_create_layout
 dEQP-VK.api.performance_counters_by_region.enumerate_counters
+dEQP-VK.api.smoke.compute
+dEQP-VK.api.smoke.transfer

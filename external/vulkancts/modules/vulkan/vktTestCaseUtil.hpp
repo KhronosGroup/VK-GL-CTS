@@ -176,6 +176,39 @@ private:
     const Args m_args;
 };
 
+//! Function-based counterpart of MultiQueueRunnerTestInstance, called once per capable queue family.
+template <typename Arg0>
+class MultiQueueFunctionInstance1 : public MultiQueueRunnerTestInstance
+{
+public:
+    typedef tcu::TestStatus (*Function)(Context &context, const QueueData &queueData, Arg0 arg0);
+
+    struct Args
+    {
+        Args(Function func_, Arg0 arg0_, QueueCapabilities queueCaps_) : func(func_), arg0(arg0_), queueCaps(queueCaps_)
+        {
+        }
+
+        Function func;
+        Arg0 arg0;
+        QueueCapabilities queueCaps;
+    };
+
+    MultiQueueFunctionInstance1(Context &context, const Args &args)
+        : MultiQueueRunnerTestInstance(context, args.queueCaps)
+        , m_args(args)
+    {
+    }
+
+    tcu::TestStatus queuePass(const QueueData &queueData) override
+    {
+        return m_args.func(m_context, queueData, m_args.arg0);
+    }
+
+private:
+    const Args m_args;
+};
+
 class FunctionPrograms0
 {
 public:
@@ -267,6 +300,25 @@ public:
     }
 
     void init(vk::SourceCollections &dst, const typename FunctionInstance1<Arg0>::Args &args) const
+    {
+        m_func(dst, args.arg0);
+    }
+
+private:
+    const Function m_func;
+};
+
+template <typename Arg0>
+class MultiQueueFunctionPrograms1
+{
+public:
+    typedef void (*Function)(vk::SourceCollections &dst, Arg0 arg0);
+
+    MultiQueueFunctionPrograms1(Function func) : m_func(func)
+    {
+    }
+
+    void init(vk::SourceCollections &dst, const typename MultiQueueFunctionInstance1<Arg0>::Args &args) const
     {
         m_func(dst, args.arg0);
     }
@@ -434,6 +486,39 @@ void addFunctionCaseWithPrograms(tcu::TestCaseGroup *group, tcu::TestNodeType ty
 {
     group->addChild(createFunctionCaseWithPrograms<Arg0, FunctionFactoryClass>(group->getTestContext(), type, name,
                                                                                initPrograms, testFunc, arg0));
+}
+
+// addFunctionCaseMultiQueue
+
+template <typename Arg0>
+void addFunctionCaseMultiQueue(tcu::TestCaseGroup *group, const std::string &name, QueueCapabilities queueCaps,
+                               typename FunctionSupport1<Arg0>::Function checkSupport,
+                               typename MultiQueueFunctionInstance1<Arg0>::Function testFunc, Arg0 arg0)
+{
+    typedef InstanceFactory1WithSupport<MultiQueueFunctionInstance1<Arg0>,
+                                        typename MultiQueueFunctionInstance1<Arg0>::Args, FunctionSupport1<Arg0>>
+        FactoryClass;
+
+    group->addChild(new FactoryClass(group->getTestContext(), name,
+                                     typename MultiQueueFunctionInstance1<Arg0>::Args(testFunc, arg0, queueCaps),
+                                     typename FunctionSupport1<Arg0>::Args(checkSupport, arg0)));
+}
+
+template <typename Arg0>
+void addFunctionCaseWithProgramsMultiQueue(tcu::TestCaseGroup *group, const std::string &name,
+                                           QueueCapabilities queueCaps,
+                                           typename FunctionSupport1<Arg0>::Function checkSupport,
+                                           typename MultiQueueFunctionPrograms1<Arg0>::Function initPrograms,
+                                           typename MultiQueueFunctionInstance1<Arg0>::Function testFunc, Arg0 arg0)
+{
+    typedef InstanceFactory1WithSupport<MultiQueueFunctionInstance1<Arg0>,
+                                        typename MultiQueueFunctionInstance1<Arg0>::Args, FunctionSupport1<Arg0>,
+                                        MultiQueueFunctionPrograms1<Arg0>>
+        FactoryClass;
+
+    group->addChild(new FactoryClass(group->getTestContext(), name, MultiQueueFunctionPrograms1<Arg0>(initPrograms),
+                                     typename MultiQueueFunctionInstance1<Arg0>::Args(testFunc, arg0, queueCaps),
+                                     typename FunctionSupport1<Arg0>::Args(checkSupport, arg0)));
 }
 
 } // namespace vkt

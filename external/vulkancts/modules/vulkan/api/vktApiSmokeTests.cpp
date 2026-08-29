@@ -38,6 +38,10 @@
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
+#include "vkBuilderUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
@@ -859,6 +863,173 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest(Context &context)
     return tcu::TestStatus::pass("Rendering succeeded");
 }
 
+// Smoke tests that need no graphics queue.
+struct NonGraphicsSmokeConfig
+{
+    bool transferWork; //!< produce the data with a copy instead of a dispatch
+};
+
+constexpr uint32_t NON_GRAPHICS_SMOKE_IMAGE_SIZE  = 32u;
+constexpr uint32_t NON_GRAPHICS_SMOKE_VALUE_COUNT = NON_GRAPHICS_SMOKE_IMAGE_SIZE * NON_GRAPHICS_SMOKE_IMAGE_SIZE;
+constexpr uint32_t NON_GRAPHICS_SMOKE_LOCAL_SIZE  = 64u;
+
+void initNonGraphicsSmokeShaders(SourceCollections &dst, NonGraphicsSmokeConfig config)
+{
+    if (config.transferWork)
+        return;
+
+    std::ostringstream comp;
+    comp << "#version 450\n"
+         << "layout(local_size_x = " << NON_GRAPHICS_SMOKE_LOCAL_SIZE << ") in;\n"
+         << "layout(set = 0, binding = 0, std430) writeonly buffer Out { uint v[]; } outBuffer;\n"
+         << "void main (void)\n"
+         << "{\n"
+         << "    outBuffer.v[gl_GlobalInvocationID.x] = gl_GlobalInvocationID.x + 1u;\n"
+         << "}\n";
+    dst.glslSources.add("comp") << glu::ComputeSource(comp.str());
+}
+
+void checkNonGraphicsSmokeSupport(Context &, NonGraphicsSmokeConfig)
+{
+    // nothing optional is used
+}
+
+// Copies are whole subresource at offset (0,0,0), so minImageTransferGranularity holds on every family.
+tcu::TestStatus nonGraphicsSmokeTest(Context &context, const QueueData &queueData, NonGraphicsSmokeConfig config)
+{
+    const DeviceInterface &vk     = context.getDeviceInterface();
+    const VkDevice device         = context.getDevice();
+    Allocator &allocator          = context.getDefaultAllocator();
+    const VkDeviceSize bufferSize = NON_GRAPHICS_SMOKE_VALUE_COUNT * sizeof(uint32_t);
+
+    vector<uint32_t> expected(NON_GRAPHICS_SMOKE_VALUE_COUNT);
+    for (uint32_t ndx = 0; ndx < NON_GRAPHICS_SMOKE_VALUE_COUNT; ++ndx)
+        expected[ndx] = ndx + 1u;
+
+    const BufferWithMemory workBuffer(vk, device, allocator,
+                                      makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                                                           VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                                                                           VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+                                      MemoryRequirement::Any);
+    const BufferWithMemory resultBuffer(vk, device, allocator,
+                                        makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+                                        MemoryRequirement::HostVisible);
+
+    const VkImageCreateInfo imageParams = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                // VkStructureType sType;
+        nullptr,                                                            // const void* pNext;
+        0u,                                                                 // VkImageCreateFlags flags;
+        VK_IMAGE_TYPE_2D,                                                   // VkImageType imageType;
+        VK_FORMAT_R8G8B8A8_UNORM,                                           // VkFormat format;
+        {NON_GRAPHICS_SMOKE_IMAGE_SIZE, NON_GRAPHICS_SMOKE_IMAGE_SIZE, 1u}, // VkExtent3D extent;
+        1u,                                                                 // uint32_t mipLevels;
+        1u,                                                                 // uint32_t arrayLayers;
+        VK_SAMPLE_COUNT_1_BIT,                                              // VkSampleCountFlagBits samples;
+        VK_IMAGE_TILING_OPTIMAL,                                            // VkImageTiling tiling;
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,  // VkImageUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,                                          // VkSharingMode sharingMode;
+        0u,                                                                 // uint32_t queueFamilyIndexCount;
+        nullptr,                                                            // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,                                          // VkImageLayout initialLayout;
+    };
+    const ImageWithMemory image(vk, device, allocator, imageParams, MemoryRequirement::Any);
+
+    // compute flavour only, but must outlive the command buffer
+    Move<VkDescriptorSetLayout> setLayout;
+    Move<VkDescriptorPool> descriptorPool;
+    Move<VkDescriptorSet> descriptorSet;
+    Move<VkPipelineLayout> pipelineLayout;
+    Move<VkShaderModule> shaderModule;
+    Move<VkPipeline> pipeline;
+
+    if (!config.transferWork)
+    {
+        setLayout = DescriptorSetLayoutBuilder()
+                        .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+                        .build(vk, device);
+        descriptorPool = DescriptorPoolBuilder()
+                             .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+                             .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+        descriptorSet                                  = makeDescriptorSet(vk, device, *descriptorPool, *setLayout);
+        const VkDescriptorBufferInfo bufferDescription = makeDescriptorBufferInfo(*workBuffer, 0ull, bufferSize);
+        DescriptorSetUpdateBuilder()
+            .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescription)
+            .update(vk, device);
+
+        pipelineLayout = makePipelineLayout(vk, device, *setLayout);
+        shaderModule   = createShaderModule(vk, device, context.getBinaryCollection().get("comp"), 0u);
+        pipeline       = makeComputePipeline(vk, device, *pipelineLayout, *shaderModule);
+    }
+
+    const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueData.familyIndex));
+    const Unique<VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    if (config.transferWork)
+        vk.cmdUpdateBuffer(*cmdBuffer, *workBuffer, 0ull, bufferSize, expected.data());
+    else
+    {
+        vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+        vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
+                                 &descriptorSet.get(), 0u, nullptr);
+        vk.cmdDispatch(*cmdBuffer, NON_GRAPHICS_SMOKE_VALUE_COUNT / NON_GRAPHICS_SMOKE_LOCAL_SIZE, 1u, 1u);
+    }
+
+    const VkPipelineStageFlags workStage =
+        (config.transferWork ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    const VkAccessFlags workAccess = (config.transferWork ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_SHADER_WRITE_BIT);
+    const VkImageSubresourceRange subresourceRange =
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+    const VkBufferImageCopy copyRegion =
+        makeBufferImageCopy(imageParams.extent, makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
+
+    // work buffer -> image
+    {
+        const VkBufferMemoryBarrier bufferBarrier =
+            makeBufferMemoryBarrier(workAccess, VK_ACCESS_TRANSFER_READ_BIT, *workBuffer, 0ull, bufferSize);
+        const VkImageMemoryBarrier imageBarrier =
+            makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *image, subresourceRange);
+        vk.cmdPipelineBarrier(*cmdBuffer, workStage, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0u, 0u, nullptr,
+                              1u, &bufferBarrier, 1u, &imageBarrier);
+        vk.cmdCopyBufferToImage(*cmdBuffer, *workBuffer, *image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
+    }
+
+    // image -> result buffer
+    {
+        const VkImageMemoryBarrier imageBarrier = makeImageMemoryBarrier(
+            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *image, subresourceRange);
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                              (VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u, &imageBarrier);
+        vk.cmdCopyImageToBuffer(*cmdBuffer, *image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *resultBuffer, 1u,
+                                &copyRegion);
+
+        const VkBufferMemoryBarrier bufferBarrier = makeBufferMemoryBarrier(
+            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0ull, bufferSize);
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                              (VkDependencyFlags)0u, 0u, nullptr, 1u, &bufferBarrier, 0u, nullptr);
+    }
+
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, device, queueData.handle, *cmdBuffer);
+    invalidateAlloc(vk, device, resultBuffer.getAllocation());
+
+    const uint32_t *result = static_cast<const uint32_t *>(resultBuffer.getAllocation().getHostPtr());
+    for (uint32_t ndx = 0; ndx < NON_GRAPHICS_SMOKE_VALUE_COUNT; ++ndx)
+        if (result[ndx] != expected[ndx])
+        {
+            context.getTestContext().getLog() << TestLog::Message << "Unexpected value at index " << ndx << ", got "
+                                              << result[ndx] << ", expected " << expected[ndx] << TestLog::EndMessage;
+            return tcu::TestStatus::fail("Unexpected value in the result buffer");
+        }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createSmokeTests(tcu::TestContext &testCtx)
@@ -872,6 +1043,12 @@ tcu::TestCaseGroup *createSmokeTests(tcu::TestContext &testCtx)
     addFunctionCaseWithPrograms(smokeTests.get(), "asm_triangle_no_opname", createProgsNoOpName, renderTriangleTest);
     addFunctionCaseWithPrograms(smokeTests.get(), "unused_resolve_attachment", createTriangleProgs,
                                 renderTriangleUnusedResolveAttachmentTest);
+
+    addFunctionCaseWithProgramsMultiQueue(smokeTests.get(), "compute", COMPUTE_QUEUE, checkNonGraphicsSmokeSupport,
+                                          initNonGraphicsSmokeShaders, nonGraphicsSmokeTest,
+                                          NonGraphicsSmokeConfig{false});
+    addFunctionCaseMultiQueue(smokeTests.get(), "transfer", TRANSFER_QUEUE, checkNonGraphicsSmokeSupport,
+                              nonGraphicsSmokeTest, NonGraphicsSmokeConfig{true});
 
     return smokeTests.release();
 }
