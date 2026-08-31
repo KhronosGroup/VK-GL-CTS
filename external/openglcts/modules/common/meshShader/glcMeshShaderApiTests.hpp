@@ -72,6 +72,9 @@ public:
     MeshApiCase(deqp::Context &context, const char *name, const ApiTestParams &params)
         : deqp::TestCase(context, name, "Mesh shader Api tests")
         , m_params(params)
+        , m_blockSizesBuffer(0)
+        , m_indirectBuffer(0)
+        , m_countBuffer(0)
     {
     }
     virtual ~MeshApiCase(void)
@@ -82,10 +85,14 @@ public:
     bool ExpectError(glw::GLenum expected_error, const glw::GLchar *function, const glw::GLchar *conditions);
 
     virtual void init() override;
+    virtual void deinit() override;
     virtual IterateResult iterate() override;
 
 protected:
     ApiTestParams m_params;
+    glw::GLuint m_blockSizesBuffer;
+    glw::GLuint m_indirectBuffer;
+    glw::GLuint m_countBuffer;
 };
 
 class MeshShaderApiTestsGroup : public deqp::TestCaseGroup

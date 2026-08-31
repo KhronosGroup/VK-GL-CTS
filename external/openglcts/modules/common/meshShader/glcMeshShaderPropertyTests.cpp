@@ -512,13 +512,12 @@ tcu::TestNode::IterateResult PayloadShMemSizeCase::iterate()
     }
 
     uint32_t result[2] = {0, 0};
-    GLuint resultBlock;
-    gl.genBuffers(1, &resultBlock);
-    gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, resultBlock);
+    gl.genBuffers(1, &m_resultBlock);
+    gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_resultBlock);
     gl.bufferData(GL_SHADER_STORAGE_BUFFER, 2 * sizeof(uint32_t), result, GL_STATIC_READ);
 
     gl.useProgram(m_params.program);
-    gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, resultBlock);
+    gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_resultBlock);
 
     ext.DrawMeshTasksEXT(1u, 1u, 1u);
 
@@ -544,6 +543,23 @@ tcu::TestNode::IterateResult PayloadShMemSizeCase::iterate()
     m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
     return tcu::TestNode::STOP;
+}
+
+void PayloadShMemSizeCase::deinit()
+{
+    const Functions &gl = m_context.getRenderContext().getFunctions();
+
+    gl.useProgram(0);
+    gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
+    gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+    if (m_resultBlock != 0)
+        gl.deleteBuffers(1, &m_resultBlock);
+    if (m_params.program != 0)
+        gl.deleteProgram(m_params.program);
+
+    m_resultBlock    = 0;
+    m_params.program = 0;
 }
 
 void MaxMeshOutputSizeCase::init()
@@ -776,26 +792,24 @@ tcu::TestNode::IterateResult MaxMeshOutputSizeCase::iterate()
     const ExtFunctions &ext = ExtFunctions(m_context.getRenderContext());
 
     // First create the array texture and multiview FBO.
-    GLuint arrayTexture;
-    GLuint multiviewFbo;
-    gl.genTextures(1, &arrayTexture);
-    gl.bindTexture(GL_TEXTURE_2D_ARRAY, arrayTexture);
+    gl.genTextures(1, &m_arrayTexture);
+    gl.bindTexture(GL_TEXTURE_2D_ARRAY, m_arrayTexture);
     gl.texStorage3D(GL_TEXTURE_2D_ARRAY, 1 /* num mipmaps */, GL_RGBA8, width, height, m_numViews /* num levels */);
     gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Create array texture");
     gl.bindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
-    gl.genFramebuffers(1, &multiviewFbo);
-    gl.bindFramebuffer(GL_FRAMEBUFFER, multiviewFbo);
+    gl.genFramebuffers(1, &m_multiviewFbo);
+    gl.bindFramebuffer(GL_FRAMEBUFFER, m_multiviewFbo);
     if (m_numViews > 1)
     {
-        gl.framebufferTextureMultiviewOVR(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, arrayTexture, 0 /* mip level */,
+        gl.framebufferTextureMultiviewOVR(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_arrayTexture, 0 /* mip level */,
                                           0 /* base view index */, m_numViews /* num views */);
     }
     else
     {
-        gl.framebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, arrayTexture, 0);
+        gl.framebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_arrayTexture, 0);
     }
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "Create multiview FBO");
@@ -830,7 +844,7 @@ tcu::TestNode::IterateResult MaxMeshOutputSizeCase::iterate()
 
     uint32_t bufSize = width * height * m_numViews * 4;
     std::vector<GLubyte> pixels(bufSize);
-    gl.getTextureImage(arrayTexture, 0, GL_RGBA, GL_UNSIGNED_BYTE, bufSize, pixels.data());
+    gl.getTextureImage(m_arrayTexture, 0, GL_RGBA, GL_UNSIGNED_BYTE, bufSize, pixels.data());
     auto fmt = tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
     tcu::ConstPixelBufferAccess resultAccess(fmt, width, height, m_numViews, pixels.data());
     tcu::TextureLevel referenceLevel(fmt, width, height, m_numViews);
@@ -852,6 +866,27 @@ tcu::TestNode::IterateResult MaxMeshOutputSizeCase::iterate()
     m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
     return tcu::TestNode::STOP;
+}
+
+void MaxMeshOutputSizeCase::deinit()
+{
+    const Functions &gl = m_context.getRenderContext().getFunctions();
+
+    gl.useProgram(0);
+    gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
+    gl.bindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    gl.disable(GL_SCISSOR_TEST);
+
+    if (m_multiviewFbo != 0)
+        gl.deleteFramebuffers(1, &m_multiviewFbo);
+    if (m_arrayTexture != 0)
+        gl.deleteTextures(1, &m_arrayTexture);
+    if (m_params.program != 0)
+        gl.deleteProgram(m_params.program);
+
+    m_multiviewFbo   = 0;
+    m_arrayTexture   = 0;
+    m_params.program = 0;
 }
 
 MeshShaderPropertyTestsGroup::MeshShaderPropertyTestsGroup(deqp::Context &context)
