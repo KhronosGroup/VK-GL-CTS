@@ -2505,6 +2505,35 @@ class FeaturesOrPropertiesGenericGenerator(CTSGenerator):
                 tabs = "\t" * int((88 - len(bcs.sType)) / 4)
                 blobCheckerMap += f'\t{{ {bcs.sType},{tabs}{apiVersion} }},\n'
         blobCheckerMap += "};\n\n"
+
+        # Map each promoted structure to the *blob structure* that absorbed it, rather than to an
+        # API version. For Vulkan SC every promoted feature is collapsed onto VKSC_API_VERSION_1_0
+        # above, which makes the version useless for deciding blob membership: features belonging to
+        # different blobs become indistinguishable. Keying on the blob sType keeps that distinction,
+        # which is what the "is this feature already covered by a blob" check actually needs.
+        blobSTypeByName = {bs.name: bs.sType for bs in self.blobList}
+        blobStructMap = "static const std::map<VkStructureType, VkStructureType> sTypeToBlobStructMap\n" \
+                        "{\n"
+        for blobName, blobData in blobDataDict.items():
+            blobStructMap += f'\t// {blobName}\n'
+            for bcs in blobData.componentStructs:
+                if bcs.version is None:
+                    continue
+                if self.targetApiName == 'vulkansc' and bcs.version.nameApi not in ('VK_API_VERSION_1_0', 'VK_API_VERSION_1_1', 'VK_API_VERSION_1_2'):
+                    # not supported in Vulkan SC - see the note on the version map above
+                    continue
+                tabs = "\t" * int((88 - len(bcs.sType)) / 4)
+                blobStructMap += f'\t{{ {bcs.sType},{tabs}{blobSTypeByName[blobName]} }},\n'
+        blobStructMap += "};\n\n"
+        blobStructExpander = f"std::set<VkStructureType> getBlobStruct{structGroupSingular}List (VkStructureType blobSType)\n{{\n" \
+                              "\tstd::set<VkStructureType> features;\n" \
+                              "\tfor (const std::pair<const VkStructureType, VkStructureType> &item : sTypeToBlobStructMap)\n" \
+                              "\t{\n" \
+                              "\t\tif (item.second == blobSType)\n" \
+                              "\t\t\tfeatures.insert(item.first);\n" \
+                              "\t}\n" \
+                              "\treturn features;\n" \
+                              "}\n"
         blobChecker = f"uint32_t getBlob{self.structGroup}Version (VkStructureType sType)\n{{\n" \
                        "\tauto it = sTypeBlobMap.find(sType);\n" \
                        "\tif(it == sTypeBlobMap.end())\n" \
@@ -2539,6 +2568,8 @@ class FeaturesOrPropertiesGenericGenerator(CTSGenerator):
         stream.append(blobCheckerMap)
         stream.append(blobChecker)
         stream.append(blobExpander)
+        stream.append(blobStructMap)
+        stream.append(blobStructExpander)
         stream.append('} // vk')
         self.write(combineLines(stream, INL_HEADER))
 

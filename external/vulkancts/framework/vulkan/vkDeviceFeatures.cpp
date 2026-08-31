@@ -346,6 +346,11 @@ std::set<VkStructureType> DeviceFeatures::getVersionBlobFeatures(uint32_t versio
     return getVersionBlobFeatureList(version);
 }
 
+std::set<VkStructureType> DeviceFeatures::getBlobStructFeatures(VkStructureType blobSType)
+{
+    return getBlobStructFeatureList(blobSType);
+}
+
 DeviceFeatures::~DeviceFeatures(void)
 {
     for (auto p : m_features)

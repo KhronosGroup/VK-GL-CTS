@@ -140,6 +140,7 @@ public:
 
     static uint32_t getBlobFeatureVersion(VkStructureType sType);
     static std::set<VkStructureType> getVersionBlobFeatures(uint32_t version);
+    static std::set<VkStructureType> getBlobStructFeatures(VkStructureType blobSType);
 
 private:
     static bool verifyFeatureAddCriteria(const FeatureStructCreationData &item,
