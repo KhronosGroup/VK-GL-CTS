@@ -286,6 +286,7 @@ tcu::Format::Bitfield<32>	getPipelineLayoutCreateFlagsStr				(VkPipelineLayoutCr
 tcu::Format::Bitfield<32>	getPipelineShaderStageCreateFlagsStr		(VkPipelineShaderStageCreateFlags value);
 tcu::Format::Bitfield<32>	getPipelineStageFlagsStr					(VkPipelineStageFlags value);
 tcu::Format::Bitfield<64>	getPipelineStageFlags2Str					(VkPipelineStageFlags2 value);
+tcu::Format::Bitfield<32>	getPrivateDataSlotCreateFlagsStr			(VkPrivateDataSlotCreateFlags value);
 tcu::Format::Bitfield<32>	getQueryControlFlagsStr						(VkQueryControlFlags value);
 tcu::Format::Bitfield<32>	getQueryPipelineStatisticFlagsStr			(VkQueryPipelineStatisticFlags value);
 tcu::Format::Bitfield<32>	getQueryPoolCreateFlagsStr					(VkQueryPoolCreateFlags value);

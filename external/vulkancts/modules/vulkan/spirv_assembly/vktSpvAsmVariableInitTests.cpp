@@ -393,7 +393,6 @@ void addShaderCodeOutput(vk::SourceCollections &dst, ShaderParams params)
             "                            OpMemberDecorate %Data 3 Offset 52\n"
             "                            OpMemberDecorate %Data 4 Offset 56\n"
             "                            OpMemberDecorate %Data 5 Offset 60\n"
-            "                            OpMemberDecorate %DataOutput 0 Offset 0\n"
             "                    %void = OpTypeVoid\n"
             "                %voidFunc = OpTypeFunction %void\n"
             "                   %float = OpTypeFloat 32\n"

@@ -1392,8 +1392,8 @@ bool check_VK_EXT_image_compression_control_swapchain(const tcu::UVec2& v, const
 	if (!isSupported(vDEP, "VK_EXT_image_compression_control_swapchain"))
 		return true;
 
-	// depends attribute in xml: VK_EXT_image_compression_control
-	return isSupported(vDEP, "VK_EXT_image_compression_control");
+	// depends attribute in xml: VK_EXT_image_compression_control+VK_KHR_swapchain
+	return (isSupported(vDEP, "VK_EXT_image_compression_control") && isSupported(vDEP, "VK_KHR_swapchain"));
 }
 
 bool check_VK_EXT_image_drm_format_modifier(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -4390,6 +4390,18 @@ bool check_VK_NV_present_metering(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
+bool check_VK_NV_private_data_base_handle(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_NV_private_data_base_handle"))
+		return true;
+
+	// depends attribute in xml: VK_VERSION_1_3,VK_EXT_private_data
+	return (isCompatible(1, 3, v) || isSupported(vDEP, "VK_EXT_private_data"));
+}
+
 bool check_VK_NV_raw_access_chains(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -5202,6 +5214,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_NV_per_stage_descriptor_set",						&check_VK_NV_per_stage_descriptor_set),
 	std::make_pair("VK_NV_present_barrier",									&check_VK_NV_present_barrier),
 	std::make_pair("VK_NV_present_metering",								&check_VK_NV_present_metering),
+	std::make_pair("VK_NV_private_data_base_handle",						&check_VK_NV_private_data_base_handle),
 	std::make_pair("VK_NV_raw_access_chains",								&check_VK_NV_raw_access_chains),
 	std::make_pair("VK_NV_ray_tracing",										&check_VK_NV_ray_tracing),
 	std::make_pair("VK_NV_ray_tracing_invocation_reorder",					&check_VK_NV_ray_tracing_invocation_reorder),
@@ -5676,6 +5689,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 1, "VK_NV_per_stage_descriptor_set"),
 	std::make_tuple(1, 0, "VK_NV_present_barrier"),
 	std::make_tuple(1, 0, "VK_NV_present_metering"),
+	std::make_tuple(1, 0, "VK_NV_private_data_base_handle"),
 	std::make_tuple(1, 0, "VK_NV_push_constant_bank"),
 	std::make_tuple(1, 0, "VK_NV_raw_access_chains"),
 	std::make_tuple(1, 0, "VK_NV_ray_tracing"),

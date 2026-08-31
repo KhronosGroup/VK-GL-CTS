@@ -553,6 +553,7 @@ tcu::Format::Bitfield<32>	getPresentGravityFlagsKHRStr					(VkPresentGravityFlag
 tcu::Format::Bitfield<32>	getPresentScalingFlagsKHRStr					(VkPresentScalingFlagsKHR value);
 tcu::Format::Bitfield<32>	getPresentStageFlagsEXTStr						(VkPresentStageFlagsEXT value);
 tcu::Format::Bitfield<32>	getPresentTimingInfoFlagsEXTStr					(VkPresentTimingInfoFlagsEXT value);
+tcu::Format::Bitfield<32>	getPrivateDataSlotCreateFlagsStr				(VkPrivateDataSlotCreateFlags value);
 tcu::Format::Bitfield<32>	getQueryControlFlagsStr							(VkQueryControlFlags value);
 tcu::Format::Bitfield<32>	getQueryPipelineStatisticFlagsStr				(VkQueryPipelineStatisticFlags value);
 tcu::Format::Bitfield<32>	getQueryPoolCreateFlagsStr						(VkQueryPoolCreateFlags value);

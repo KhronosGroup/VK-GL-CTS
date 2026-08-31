@@ -2739,6 +2739,16 @@ tcu::Format::Bitfield<64> getPipelineStageFlags2Str (VkPipelineStageFlags2 value
 }
 
 
+tcu::Format::Bitfield<32> getPrivateDataSlotCreateFlagsStr (VkPrivateDataSlotCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
 tcu::Format::Bitfield<32> getQueryControlFlagsStr (VkQueryControlFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -8099,7 +8109,7 @@ std::ostream& operator<< (std::ostream& s, const VkPrivateDataSlotCreateInfo& va
 	s << "VkPrivateDataSlotCreateInfo = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << value.flags << '\n';
+	s << "\tflags = " << getPrivateDataSlotCreateFlagsStr(value.flags) << '\n';
 	s << '}';
 	return s;
 }

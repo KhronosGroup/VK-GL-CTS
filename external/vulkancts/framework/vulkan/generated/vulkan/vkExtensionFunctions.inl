@@ -1809,6 +1809,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_NV_private_data_base_handle")
+	{
+		return;
+	}
 	if (extName == "VK_NV_push_constant_bank")
 	{
 		return;
@@ -4432,6 +4436,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_NV_private_data_base_handle")
+	{
+		return;
+	}
 	if (extName == "VK_NV_push_constant_bank")
 	{
 		return;
@@ -5146,6 +5154,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_primitive_restart_index",
 	"VK_EXT_image_tiling_control",
 	"VK_NV_cooperative_matrix_decode_vector",
+	"VK_NV_private_data_base_handle",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_KHR_ray_query",

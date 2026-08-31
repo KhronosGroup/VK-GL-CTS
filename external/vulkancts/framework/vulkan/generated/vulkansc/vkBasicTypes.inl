@@ -2415,6 +2415,12 @@ typedef uint64_t VkPipelineStageFlags2;
 
 typedef VkPipelineStageFlagBits2 VkPipelineStageFlagBits2KHR;
 
+enum VkPrivateDataSlotCreateFlagBits
+{
+	VK_PRIVATE_DATA_SLOT_CREATE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF
+};
+typedef uint32_t VkPrivateDataSlotCreateFlags;
+
 enum VkQueryControlFlagBits
 {
 	VK_QUERY_CONTROL_PRECISE_BIT		= 0x00000001,

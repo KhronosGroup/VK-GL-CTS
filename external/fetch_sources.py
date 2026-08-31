@@ -360,28 +360,32 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Tools.git",
         "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "e39e5c5838bc4b4162c349f2a2e5f163efe5432f",
+        "b40380bfa431d028fb7ca8eb375e4d21ea98a70e",
         "spirv-tools"),
     GitRepo(
-        "https://github.com/KhronosGroup/glslang.git",
-        "git@github.com:KhronosGroup/glslang.git",
-        "2cc82463217481bf7f187d4f9f3bdf652de363dd",
+        # DO NOT SUBMIT: temporarily pinned to lordalcol/glslang#trial/4398-plus-localsize-revert,
+        # PR #4398's OpAbortKHR layout fix (https://github.com/KhronosGroup/glslang/pull/4398)
+        # cherry-picked onto mainline past the local_size_*_id/SPIR-V-1.2 revert (e7e245dd),
+        # to trial both fixes together in CI. Revert to a mainline commit once #4398 merges.
+        "https://github.com/lordalcol/glslang.git",
+        "git@github.com:lordalcol/glslang.git",
+        "60520320c8f8976c759d121243f58d71248ddbf2",
         "glslang",
         removeTags = ["main-tot", "master-tot"]),
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Headers.git",
         "git@github.com:KhronosGroup/SPIRV-Headers.git",
-        "0d25db97cb9b8f725e4c95e4553001710e7fc39d",
+        "496543121ce6419f23d6fa5d7194ba66c36212d2",
         "spirv-headers"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Docs.git",
         "git@github.com:KhronosGroup/Vulkan-Docs.git",
-        "090f1b190d60ced4a1d198fd3747d071cc271b1c",
+        "20a9e5892e2aab7b9776b16a238b10fc8133090a",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
         "git@github.com:KhronosGroup/Vulkan-ValidationLayers.git",
-        "6d4c4f8b14241307a822f21bb9453b2380b66117",
+        "da870218f27970d891111164cbbc092bf2bac5da",
         "vulkan-validationlayers",
         postCheckout="python3 scripts/update_deps.py --dir external  --optional tests  --api vulkan"),
     GitRepo(
@@ -397,7 +401,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/VulkanSC-pcutil.git",
         "git@github.com:KhronosGroup/VulkanSC-pcutil.git",
-        "d4e3e47797c035e122f32651a4ebc62e4777da10",
+        "5153a0315ce9a9f08f59381aeb41a8ce61fc94b6",
         "vulkansc-pcutil"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
@@ -408,7 +412,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/Igalia/video_generator.git",
         "git@github.com:Igalia/video_generator.git",
-        "426300e12a5cc5d4676807039a1be237a2b68187",
+        "7119792d8205bd4a04707526af6d174a59191cf5",
         "video_generator"),
 ]
 
