@@ -565,6 +565,9 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
 #endif // CTS_USES_VULKANSC
                                             memoryObjects[memoryObjects.size() - 1 - ndx] = VK_NULL_HANDLE;
                                         }
+
+                                        if (memoryType.propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT)
+                                            m_context.getTestContext().touchWatchdog();
                                     }
                                 }
                                 else
@@ -580,6 +583,9 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
 #endif // CTS_USES_VULKANSC
                                             memoryObjects[ndx] = VK_NULL_HANDLE;
                                         }
+
+                                        if (memoryType.propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT)
+                                            m_context.getTestContext().touchWatchdog();
                                     }
                                 }
                             }
