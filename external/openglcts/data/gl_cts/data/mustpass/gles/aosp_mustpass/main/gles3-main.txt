@@ -8901,6 +8901,10 @@ dEQP-GLES3.functional.occlusion_query.depth_write_depth_clear_stencil_write_sten
 dEQP-GLES3.functional.occlusion_query.depth_write_stencil_clear
 dEQP-GLES3.functional.occlusion_query.depth_write_stencil_write
 dEQP-GLES3.functional.occlusion_query.depth_write_stencil_write_stencil_clear
+dEQP-GLES3.functional.occlusion_query.fbo_delete_conservative
+dEQP-GLES3.functional.occlusion_query.fbo_delete_conservative_nodraw
+dEQP-GLES3.functional.occlusion_query.fbo_delete_strict
+dEQP-GLES3.functional.occlusion_query.fbo_delete_strict_nodraw
 dEQP-GLES3.functional.occlusion_query.scissor
 dEQP-GLES3.functional.occlusion_query.scissor_depth_clear
 dEQP-GLES3.functional.occlusion_query.scissor_depth_clear_stencil_clear
