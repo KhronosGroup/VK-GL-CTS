@@ -904,8 +904,9 @@ tcu::TestStatus createSwapchainTest(Context &baseCtx, TestParameters params)
         }
     }
 
+    const vkt::CustomInstance instance(makeProtectedMemInstance(baseCtx, instExts));
     const NativeObjects native(baseCtx, supportedExtensions, params.wsiType);
-    ProtectedContext context(baseCtx, params.wsiType, *native.display, *native.window, instExts, devExts);
+    ProtectedContext context(baseCtx, instance, params.wsiType, *native.display, *native.window, devExts);
     vk::VkSurfaceKHR surface = context.getSurface();
 
     if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
@@ -1290,8 +1291,9 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
     std::vector<std::string> devExts{"VK_KHR_swapchain"};
 
     const tcu::UVec2 desiredSize(256, 256);
+    const vkt::CustomInstance instance(makeProtectedMemInstance(baseCtx, instExts));
     const NativeObjects native(baseCtx, supportedExtensions, wsiType, tcu::just(desiredSize));
-    ProtectedContext context(baseCtx, wsiType, *native.display, *native.window, instExts, devExts);
+    ProtectedContext context(baseCtx, instance, wsiType, *native.display, *native.window, devExts);
     vk::VkSurfaceKHR surface       = context.getSurface();
     const vk::DeviceInterface &vkd = context.getDeviceInterface();
     const vk::VkDevice device      = context.getDevice();

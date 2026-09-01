@@ -45,9 +45,9 @@ public:
     ProtectedContext(Context &ctx, const std::vector<std::string> instanceExtensions = std::vector<std::string>(),
                      const std::vector<std::string> deviceExtensions = std::vector<std::string>());
 
-    ProtectedContext(Context &ctx, vk::wsi::Type wsiType, vk::wsi::Display &display, vk::wsi::Window &window,
-                     const std::vector<std::string> instanceExtensions = std::vector<std::string>(),
-                     const std::vector<std::string> deviceExtensions   = std::vector<std::string>());
+    ProtectedContext(Context &ctx, const vkt::CustomInstance &instance, vk::wsi::Type wsiType,
+                     vk::wsi::Display &display, vk::wsi::Window &window,
+                     const std::vector<std::string> deviceExtensions = std::vector<std::string>());
 
     const vk::DeviceInterface &getDeviceInterface(void) const
     {

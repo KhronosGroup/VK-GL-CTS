@@ -40,12 +40,12 @@ ProtectedContext::ProtectedContext(Context &ctx, const std::vector<std::string> 
 {
 }
 
-ProtectedContext::ProtectedContext(Context &ctx, vk::wsi::Type wsiType, vk::wsi::Display &display,
-                                   vk::wsi::Window &window, const std::vector<std::string> instanceExtensions,
+ProtectedContext::ProtectedContext(Context &ctx, const vkt::CustomInstance &instance, vk::wsi::Type wsiType,
+                                   vk::wsi::Display &display, vk::wsi::Window &window,
                                    const std::vector<std::string> deviceExtensions)
     : m_context(ctx)
     , m_interface(m_context.getPlatformInterface())
-    , m_instance(makeProtectedMemInstance(m_context, instanceExtensions))
+    , m_instance(instance)
     , m_surface(vk::wsi::createSurface(m_instance.getDriver(), m_instance, wsiType, display, window,
                                        m_context.getTestContext().getCommandLine()))
     , m_queueFamilyIndex(
