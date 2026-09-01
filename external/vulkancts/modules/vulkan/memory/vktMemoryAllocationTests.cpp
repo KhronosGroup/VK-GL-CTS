@@ -547,6 +547,9 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
                                     VK_CHECK(res);
 
                                     TCU_CHECK(!!memoryObjects[ndx]);
+
+                                    if (memoryType.propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT)
+                                        m_context.getTestContext().touchWatchdog();
                                 }
 
                                 if (m_config.order == TestConfig::ALLOC_FREE)
@@ -598,6 +601,9 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
                                     vkd.freeMemory(device, memoryObjects[ndx], nullptr);
 #endif // CTS_USES_VULKANSC
                                     memoryObjects[ndx] = VK_NULL_HANDLE;
+
+                                    if (memoryType.propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT)
+                                        m_context.getTestContext().touchWatchdog();
                                 }
                             }
                         }
