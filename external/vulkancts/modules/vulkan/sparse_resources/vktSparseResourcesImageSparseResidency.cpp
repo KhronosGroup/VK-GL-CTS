@@ -694,11 +694,11 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate(void)
                 .build(deviceInterface, getDevice()));
 
         // Create and bind descriptor set
-        const Unique<VkDescriptorPool> descriptorPool(DescriptorPoolBuilder()
-                                                          .addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1u)
-                                                          .build(deviceInterface, getDevice(),
-                                                                 VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-                                                                 vk::PlanarFormatDescription::MAX_PLANES));
+        const Unique<VkDescriptorPool> descriptorPool(
+            DescriptorPoolBuilder()
+                .addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, vk::PlanarFormatDescription::MAX_PLANES)
+                .build(deviceInterface, getDevice(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+                       vk::PlanarFormatDescription::MAX_PLANES));
 
         const Unique<VkPipelineLayout> pipelineLayout(
             makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout));
