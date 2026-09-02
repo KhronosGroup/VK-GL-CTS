@@ -141,7 +141,7 @@ enum ExtensionUseBits
     INDIRECT_COPY                 = (1 << 6),
     MAINTENANCE_10                = (1 << 7),
     MAINTENANCE_11                = (1 << 8),
-    DEVICE_ADDRESS_COMMANDS       = (1 << 8),
+    DEVICE_ADDRESS_COMMANDS       = (1 << 9),
 };
 
 template <typename Type>
