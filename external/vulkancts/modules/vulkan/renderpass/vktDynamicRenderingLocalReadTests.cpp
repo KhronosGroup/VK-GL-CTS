@@ -4641,6 +4641,7 @@ tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testC
     }
 
     // Test mapping to (unused) locations higher than default locations
+    if (!grpParams->useSecondaryCmdBuffer)
     {
         for (const auto numAttachments : {1, 2})
         {
@@ -4660,6 +4661,7 @@ tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testC
     }
 
     // Test mismatched pipeline input attachment mapping with render pass attachment mapping
+    if (!grpParams->useSecondaryCmdBuffer)
     {
         struct AttachmentMappingTest
         {
