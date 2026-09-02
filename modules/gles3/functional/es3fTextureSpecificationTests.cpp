@@ -34,6 +34,7 @@
 #include "gluStrUtil.hpp"
 #include "gluTexture.hpp"
 #include "gluTextureUtil.hpp"
+#include "gluObjectWrapper.hpp"
 #include "sglrContextUtil.hpp"
 #include "sglrContextWrapper.hpp"
 #include "sglrGLContext.hpp"
@@ -3565,6 +3566,102 @@ TextureSpecificationTests::~TextureSpecificationTests(void)
 {
 }
 
+// TexStorage2D with BASE_LEVEL increase and FBO attachment case (strictly GLES 3.0 core minimum requirements)
+class TexStorage2DBaseLevelFboCase : public TestCase
+{
+public:
+    TexStorage2DBaseLevelFboCase(Context &context, const char *name, const char *desc, int width, int height,
+                                 int numLevels, int newBaseLevel, int numIterations = 32)
+        : TestCase(context, name, desc)
+        , m_width(width)
+        , m_height(height)
+        , m_numLevels(numLevels)
+        , m_newBaseLevel(newBaseLevel)
+        , m_numIterations(numIterations)
+    {
+        DE_ASSERT(m_newBaseLevel > 1 && m_newBaseLevel < m_numLevels);
+    }
+
+    IterateResult iterate(void)
+    {
+        const glw::Functions &gl         = m_context.getRenderContext().getFunctions();
+        tcu::TestLog &log                = m_testCtx.getLog();
+        const glw::GLenum internalFormat = GL_RGBA8;
+
+        log << tcu::TestLog::Message << "Testing glTexStorage2D with size " << m_width << "x" << m_height << ", "
+            << m_numLevels << " levels, format " << glu::getTextureFormatStr(internalFormat)
+            << " and BASE_LEVEL increase to " << m_newBaseLevel << " across " << m_numIterations << " iterations."
+            << tcu::TestLog::EndMessage;
+
+        int maxTexSize = 0;
+        gl.getIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
+        if (m_width > maxTexSize || m_height > maxTexSize)
+        {
+            log << tcu::TestLog::Message << "Texture dimension exceeds GL_MAX_TEXTURE_SIZE (" << maxTexSize
+                << "), skipping." << tcu::TestLog::EndMessage;
+            m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Texture size not supported");
+            return STOP;
+        }
+
+        glu::TransferFormat transferFmt = glu::getTransferFormat(glu::mapGLInternalFormat(internalFormat));
+        int subW                        = de::min(de::max(1, m_width >> 1), 200);
+        int subH                        = de::min(de::max(1, m_height >> 1), 200);
+        int pixelSize                   = glu::mapGLInternalFormat(internalFormat).getPixelSize();
+        std::vector<uint8_t> dummyData(subW * subH * pixelSize, 0x55);
+
+        for (int iter = 0; iter < m_numIterations; ++iter)
+        {
+            glu::Texture tex(gl);
+            glu::Framebuffer fbo(gl);
+
+            gl.bindTexture(GL_TEXTURE_2D, *tex);
+            gl.texStorage2D(GL_TEXTURE_2D, m_numLevels, internalFormat, m_width, m_height);
+            gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glTexStorage2D failed");
+
+            gl.bindFramebuffer(GL_FRAMEBUFFER, *fbo);
+            gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *tex, m_newBaseLevel);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTexture2D failed");
+            TCU_CHECK(gl.checkFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+
+            // 1. Initial clear of FBO attachment (mip level m_newBaseLevel) while GL_TEXTURE_BASE_LEVEL is 0
+            gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+            gl.clearColor(0.25f, 0.5f, 0.75f, 1.0f);
+            gl.clear(GL_COLOR_BUFFER_BIT);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glClear at BASE_LEVEL 0 failed");
+
+            // 2. Increase GL_TEXTURE_BASE_LEVEL to m_newBaseLevel and clear FBO attachment again
+            gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, m_newBaseLevel);
+            gl.clearColor(1.0f, 0.0f, 0.0f, 1.0f);
+            gl.clear(GL_COLOR_BUFFER_BIT);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glClear at increased BASE_LEVEL failed");
+
+            // 3. Sub-image update on mip level 1
+            // We update mip level 1 specifically to test updating a mip level that is lower than the new BASE_LEVEL.
+            gl.texSubImage2D(GL_TEXTURE_2D, 1, 0, 0, subW, subH, transferFmt.format, transferFmt.dataType,
+                             dummyData.data());
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glTexSubImage2D failed");
+
+            // 4. Cleanup
+            gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "Cleanup failed");
+        }
+
+        gl.finish();
+
+        m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+        return STOP;
+    }
+
+private:
+    int m_width;
+    int m_height;
+    int m_numLevels;
+    int m_newBaseLevel;
+    int m_numIterations;
+};
+
 void TextureSpecificationTests::init(void)
 {
     struct
@@ -4726,6 +4823,37 @@ void TextureSpecificationTests::init(void)
                           "_levels";
 
             sizeGroup->addChild(new BasicTexStorageCubeCase(m_context, name.c_str(), "", format, size, levels));
+        }
+
+        // Base level increase on immutable textures (strictly GLES 3.0 core minimum requirements: GL_RGBA8 and dimensions <= 2048).
+        {
+            tcu::TestCaseGroup *baseLevelGroup =
+                new tcu::TestCaseGroup(m_testCtx, "base_level", "glTexStorage2D() with BASE_LEVEL increase");
+            texStorageGroup->addChild(baseLevelGroup);
+
+            static const struct
+            {
+                int width;
+                int height;
+                int levels;
+                int newBaseLevel;
+            } baseLevelCases[] = {{2047, 3, 5, 3},     {2047, 1, 5, 3},  {1537, 3, 5, 3},
+                                  {1023, 1023, 10, 5}, {511, 511, 6, 3}, {257, 257, 6, 3}};
+
+            for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(baseLevelCases); ndx++)
+            {
+                int width        = baseLevelCases[ndx].width;
+                int height       = baseLevelCases[ndx].height;
+                int levels       = baseLevelCases[ndx].levels;
+                int newBaseLevel = baseLevelCases[ndx].newBaseLevel;
+                std::string name = std::string("rgba8_") + de::toString(width) + "x" + de::toString(height) +
+                                   "_level_" + de::toString(newBaseLevel);
+                std::string desc = std::string("BASE_LEVEL ") + de::toString(newBaseLevel) + " on " +
+                                   de::toString(width) + "x" + de::toString(height) + " RGBA8";
+
+                baseLevelGroup->addChild(new TexStorage2DBaseLevelFboCase(m_context, name.c_str(), desc.c_str(), width,
+                                                                          height, levels, newBaseLevel));
+            }
         }
     }
 

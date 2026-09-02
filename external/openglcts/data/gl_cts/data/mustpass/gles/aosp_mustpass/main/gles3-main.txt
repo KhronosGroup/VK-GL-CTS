@@ -35414,6 +35414,12 @@ dEQP-GLES3.functional.texture.specification.teximage3d_unpack_params.rgba8_compl
 dEQP-GLES3.functional.texture.specification.teximage3d_unpack_params.rgba8_complex2
 dEQP-GLES3.functional.texture.specification.teximage3d_unpack_params.rgba8_complex3
 dEQP-GLES3.functional.texture.specification.teximage3d_unpack_params.rgba8_complex4
+dEQP-GLES3.functional.texture.specification.texstorage2d.base_level.rgba8_1023x1023_level_5
+dEQP-GLES3.functional.texture.specification.texstorage2d.base_level.rgba8_1537x3_level_3
+dEQP-GLES3.functional.texture.specification.texstorage2d.base_level.rgba8_2047x1_level_3
+dEQP-GLES3.functional.texture.specification.texstorage2d.base_level.rgba8_2047x3_level_3
+dEQP-GLES3.functional.texture.specification.texstorage2d.base_level.rgba8_257x257_level_3
+dEQP-GLES3.functional.texture.specification.texstorage2d.base_level.rgba8_511x511_level_3
 dEQP-GLES3.functional.texture.specification.texstorage2d.format.depth24_stencil8_2d
 dEQP-GLES3.functional.texture.specification.texstorage2d.format.depth24_stencil8_cube
 dEQP-GLES3.functional.texture.specification.texstorage2d.format.depth32f_stencil8_2d
