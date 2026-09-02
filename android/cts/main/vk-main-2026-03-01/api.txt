@@ -22241,6 +22241,8 @@ dEQP-VK.api.copy_and_blit.device_address.buffer_to_image.2d_images.larger_buffer
 dEQP-VK.api.copy_and_blit.device_address.buffer_to_image.2d_images.larger_buffer_rgb32_sfloat
 dEQP-VK.api.copy_and_blit.device_address.buffer_to_image.2d_images.larger_buffer_rgb32_sfloat_linear
 dEQP-VK.api.copy_and_blit.device_address.buffer_to_image.2d_images.larger_buffer_rgba8_uint
+dEQP-VK.api.copy_and_blit.device_address.buffer_to_image.2d_images.memory_to_image_offset_relaxed_r8_unorm
+dEQP-VK.api.copy_and_blit.device_address.buffer_to_image.2d_images.memory_to_image_offset_relaxed_r8_unorm_linear
 dEQP-VK.api.copy_and_blit.device_address.buffer_to_image.2d_images.regions
 dEQP-VK.api.copy_and_blit.device_address.buffer_to_image.2d_images.regions_r64_uint
 dEQP-VK.api.copy_and_blit.device_address.buffer_to_image.2d_images.regions_r8_unorm

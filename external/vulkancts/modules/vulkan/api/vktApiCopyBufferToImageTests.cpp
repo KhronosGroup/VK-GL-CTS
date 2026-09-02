@@ -828,6 +828,46 @@ void add2dBufferToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
             group->addChild(new CopyBufferToImageTestCase(testCtx, testName, params));
         }
 
+#ifndef CTS_USES_VULKANSC
+        if ((testGroupParams->extensionFlags & DEVICE_ADDRESS_COMMANDS) &&
+            testGroupParams->queueSelection == QueueSelectionOptions::Universal && pixelSize < 4)
+        {
+            TestParams params;
+            params.src.buffer.size           = defaultSize * defaultSize;
+            params.dst.image.imageType       = imageType;
+            params.dst.image.format          = formatAndSuffix.format;
+            params.dst.image.extent          = defaultExtent;
+            params.dst.image.tiling          = formatAndSuffix.tiling;
+            params.dst.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            params.allocationKind            = testGroupParams->allocationKind;
+            params.extensionFlags            = testGroupParams->extensionFlags | MAINTENANCE_11;
+            // We intentionally change the queue selection from testGroupParams->queueSelection to TransferOnly,
+            // because these tests needs to run on transfer queue and there is no other combination of queue
+            // selection and extension flags that would allow this test to run on transfer queue.
+            params.queueSelection   = QueueSelectionOptions::TransferOnly;
+            params.useSparseBinding = testGroupParams->useSparseBinding;
+            params.useGeneralLayout = testGroupParams->useGeneralLayout;
+
+            const auto offset = de::roundUp(defaultQuarterSize + 1, pixelSize);
+
+            const VkBufferImageCopy bufferImageCopy = {
+                static_cast<VkDeviceSize>(offset),           // VkDeviceSize bufferOffset;
+                defaultHalfSize + defaultQuarterSize,        // uint32_t bufferRowLength;
+                defaultHalfSize + defaultQuarterSize,        // uint32_t bufferImageHeight;
+                defaultSourceLayer,                          // VkImageSubresourceLayers imageSubresource;
+                {defaultQuarterSize, defaultQuarterSize, 0}, // VkOffset3D imageOffset;
+                defaultHalfExtent                            // VkExtent3D imageExtent;
+            };
+            CopyRegion copyRegion;
+            copyRegion.bufferImageCopy = bufferImageCopy;
+
+            params.regions.push_back(copyRegion);
+
+            const auto testName = std::string("memory_to_image_offset_relaxed") + formatAndSuffix.suffix;
+            group->addChild(new CopyBufferToImageTestCase(testCtx, testName, params));
+        }
+#endif // CTS_USES_VULKANSC
+
         {
             TestParams params;
             params.src.buffer.size           = (defaultHalfSize - 1u) * defaultSize + defaultHalfSize;
