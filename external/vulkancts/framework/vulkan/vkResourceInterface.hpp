@@ -178,6 +178,14 @@ protected:
 
     std::map<VkDevice, DevicePipelineCacheInfo> m_devicePipelineCaches;
 
+    // DeviceDriverSC objects are constructed and destroyed on several threads at once by the
+    // multithreaded object management tests, and its constructor and destructor register and
+    // unregister the device's pipeline cache. Guard every access to the map above, so that the
+    // lookup, the reference count update and the insertion or erasure that follows it happen as
+    // one atomic step. Without this a thread can erase an entry that another thread has just
+    // registered, or is still using, leaving the device without a pipeline cache.
+    mutable std::mutex m_devicePipelineCachesMutex;
+
     mutable std::mutex m_mutex;
     // NOTE: m_resourceCounter is used to drive parent process handle generation
     //       m_uniqueObjIdCounter behaves similarly, drives pipeline cache handle uniqueness,
