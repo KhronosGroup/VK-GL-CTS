@@ -10843,6 +10843,378 @@ tcu::TestStatus DescriptorHeapTestInstanceResourceMasking::iterate()
     return tcu::TestStatus::pass("Pass");
 }
 
+struct TestParamsInputAttachment : TestParams
+{
+    bool nonWritable = false;
+};
+
+class DescriptorHeapTestInstanceInputAttachment final : public DescriptorHeapTestInstanceBase
+{
+public:
+    explicit DescriptorHeapTestInstanceInputAttachment(Context &context, const TestParamsInputAttachment &params)
+        : DescriptorHeapTestInstanceBase(context, params)
+        , m_params(params)
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    TestParamsInputAttachment m_params;
+};
+
+tcu::TestStatus DescriptorHeapTestInstanceInputAttachment::iterate()
+{
+    const auto &vkd = m_device.getDriver();
+
+    const VkFormat format     = VK_FORMAT_R32_SFLOAT;
+    const float expectedValue = 0.75f;
+
+    const VkImageSubresourceRange imageSubresourceRange   = makeDefaultImageSubresourceRange();
+    const VkImageSubresourceLayers imageSubresourceLayers = makeDefaultImageSubresourceLayers();
+
+    const VkDeviceSize imageStride          = getImageDescriptorStride(m_descriptorHeapProperties);
+    const VkDeviceSize resourceHeapUserSize = alignUp(imageStride, m_descriptorHeapProperties.resourceHeapAlignment);
+    const VkDeviceSize resourceHeapSize =
+        resourceHeapUserSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
+    auto resourceHeap = createBufferAndMemory(resourceHeapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
+                                                                    VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+    auto outputBuffer = createBufferAndMemory(sizeof(float), VK_BUFFER_USAGE_2_TRANSFER_DST_BIT);
+    deMemset(outputBuffer->memory->getHostPtr(), 0, sizeof(float));
+    flushAlloc(vkd, *m_device, *outputBuffer->memory);
+
+    VkImageCreateInfo imageCreateInfo = initVulkanStructure();
+    imageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.format            = format;
+    imageCreateInfo.extent            = {1u, 1u, 1u};
+    imageCreateInfo.mipLevels         = 1u;
+    imageCreateInfo.arrayLayers       = 1u;
+    imageCreateInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.usage             = VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    auto inputImage                   = createImageAndMemory(imageCreateInfo);
+
+    imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    auto colorImage       = createImageAndMemory(imageCreateInfo);
+
+    VkImageViewCreateInfo imageViewCreateInfo = initVulkanStructure();
+    imageViewCreateInfo.image                 = *colorImage->image;
+    imageViewCreateInfo.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+    imageViewCreateInfo.format                = format;
+    imageViewCreateInfo.components            = makeComponentMappingRGBA();
+    imageViewCreateInfo.subresourceRange      = imageSubresourceRange;
+    auto colorImageView                       = createImageView(vkd, *m_device, &imageViewCreateInfo);
+
+    imageViewCreateInfo.image = *inputImage->image;
+    auto inputImageView       = createImageView(vkd, *m_device, &imageViewCreateInfo);
+
+    VkImageDescriptorInfoEXT imageDescriptorInfo = initVulkanStructure();
+    imageDescriptorInfo.pView                    = &imageViewCreateInfo;
+    imageDescriptorInfo.layout                   = VK_IMAGE_LAYOUT_GENERAL;
+
+    VkResourceDescriptorInfoEXT resourceInfo = initVulkanStructure();
+    resourceInfo.type                        = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+    resourceInfo.data.pImage                 = &imageDescriptorInfo;
+
+    VkHostAddressRangeEXT resourceHostRange;
+    resourceHostRange.address = resourceHeap->memory->getHostPtr();
+    resourceHostRange.size    = static_cast<size_t>(m_descriptorHeapProperties.imageDescriptorSize);
+    VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1u, &resourceInfo, &resourceHostRange));
+    flushAlloc(vkd, *m_device, *resourceHeap->memory);
+
+    VkDescriptorSetAndBindingMappingEXT mapping = initVulkanStructure();
+    mapping.descriptorSet                       = 0u;
+    mapping.firstBinding                        = 0u;
+    mapping.bindingCount                        = 1u;
+    mapping.resourceMask = m_params.nonWritable ? VK_SPIRV_RESOURCE_TYPE_READ_ONLY_IMAGE_BIT_EXT :
+                                                  VK_SPIRV_RESOURCE_TYPE_READ_WRITE_IMAGE_BIT_EXT;
+    mapping.source       = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mapping.sourceData.constantOffset.heapOffset = 0u;
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+    mappingInfo.mappingCount                                  = 1u;
+    mappingInfo.pMappings                                     = &mapping;
+
+    VkAttachmentDescription attachmentDescriptions[2] = {};
+    attachmentDescriptions[0].format                  = format;
+    attachmentDescriptions[0].samples                 = VK_SAMPLE_COUNT_1_BIT;
+    attachmentDescriptions[0].loadOp                  = VK_ATTACHMENT_LOAD_OP_LOAD;
+    attachmentDescriptions[0].storeOp                 = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachmentDescriptions[0].stencilLoadOp           = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachmentDescriptions[0].stencilStoreOp          = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachmentDescriptions[0].initialLayout           = VK_IMAGE_LAYOUT_GENERAL;
+    attachmentDescriptions[0].finalLayout             = VK_IMAGE_LAYOUT_GENERAL;
+    attachmentDescriptions[1].format                  = format;
+    attachmentDescriptions[1].samples                 = VK_SAMPLE_COUNT_1_BIT;
+    attachmentDescriptions[1].loadOp                  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachmentDescriptions[1].storeOp                 = VK_ATTACHMENT_STORE_OP_STORE;
+    attachmentDescriptions[1].stencilLoadOp           = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachmentDescriptions[1].stencilStoreOp          = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachmentDescriptions[1].initialLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachmentDescriptions[1].finalLayout             = VK_IMAGE_LAYOUT_GENERAL;
+
+    VkAttachmentReference inputReference;
+    inputReference.attachment = 0u;
+    inputReference.layout     = VK_IMAGE_LAYOUT_GENERAL;
+
+    VkAttachmentReference colorReference;
+    colorReference.attachment = 1u;
+    colorReference.layout     = VK_IMAGE_LAYOUT_GENERAL;
+
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.inputAttachmentCount = 1u;
+    subpass.pInputAttachments    = &inputReference;
+    subpass.colorAttachmentCount = 1u;
+    subpass.pColorAttachments    = &colorReference;
+
+    VkRenderPassCreateInfo renderPassCreateInfo = initVulkanStructure();
+    renderPassCreateInfo.attachmentCount        = 2u;
+    renderPassCreateInfo.pAttachments           = attachmentDescriptions;
+    renderPassCreateInfo.subpassCount           = 1u;
+    renderPassCreateInfo.pSubpasses             = &subpass;
+    auto renderPass                             = createRenderPass(vkd, *m_device, &renderPassCreateInfo);
+
+    const VkImageView attachments[] = {*inputImageView, *colorImageView};
+    auto framebuffer                = makeFramebuffer(vkd, *m_device, *renderPass, 2u, attachments, 1u, 1u);
+
+    auto vertexModule   = createShaderModule(vkd, *m_device, getShaderBinary("vert"));
+    auto fragmentModule = createShaderModule(vkd, *m_device, getShaderBinary("frag"));
+
+    VkPipelineShaderStageCreateInfo stages[2];
+    stages[0]        = initVulkanStructure(&mappingInfo);
+    stages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
+    stages[0].module = *vertexModule;
+    stages[0].pName  = "main";
+    stages[1]        = initVulkanStructure(&mappingInfo);
+    stages[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
+    stages[1].module = *fragmentModule;
+    stages[1].pName  = "main";
+
+    VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = initVulkanStructure();
+    inputAssemblyState.topology                               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+
+    const VkViewport viewport = makeViewport(tcu::IVec2(1, 1));
+    const VkRect2D scissor    = makeRect2D(tcu::IVec2(1, 1));
+
+    VkPipelineViewportStateCreateInfo viewportState = initVulkanStructure();
+    viewportState.viewportCount                     = 1u;
+    viewportState.pViewports                        = &viewport;
+    viewportState.scissorCount                      = 1u;
+    viewportState.pScissors                         = &scissor;
+
+    VkPipelineRasterizationStateCreateInfo rasterizationState = initVulkanStructure();
+    rasterizationState.polygonMode                            = VK_POLYGON_MODE_FILL;
+    rasterizationState.frontFace                              = VK_FRONT_FACE_CLOCKWISE;
+    rasterizationState.lineWidth                              = 1.0f;
+
+    VkPipelineMultisampleStateCreateInfo multisampleState = initVulkanStructure();
+    multisampleState.rasterizationSamples                 = VK_SAMPLE_COUNT_1_BIT;
+    VkSampleMask sampleMask                               = 0xffffffff;
+    multisampleState.pSampleMask                          = &sampleMask;
+
+    VkPipelineDepthStencilStateCreateInfo depthStencilState = initVulkanStructure();
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachmentState{};
+    colorBlendAttachmentState.colorWriteMask =
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+    VkPipelineColorBlendStateCreateInfo colorBlendState = initVulkanStructure();
+    colorBlendState.attachmentCount                     = 1u;
+    colorBlendState.pAttachments                        = &colorBlendAttachmentState;
+
+    VkPipelineCreateFlags2CreateInfoKHR pipelineCreateFlags2CreateInfo = initVulkanStructure();
+    pipelineCreateFlags2CreateInfo.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+    VkGraphicsPipelineCreateInfo pipelineCreateInfo = initVulkanStructure(&pipelineCreateFlags2CreateInfo);
+    pipelineCreateInfo.stageCount                   = 2u;
+    pipelineCreateInfo.pStages                      = stages;
+    pipelineCreateInfo.pVertexInputState            = &vertexInputState;
+    pipelineCreateInfo.pInputAssemblyState          = &inputAssemblyState;
+    pipelineCreateInfo.pViewportState               = &viewportState;
+    pipelineCreateInfo.pRasterizationState          = &rasterizationState;
+    pipelineCreateInfo.pMultisampleState            = &multisampleState;
+    pipelineCreateInfo.pDepthStencilState           = &depthStencilState;
+    pipelineCreateInfo.pColorBlendState             = &colorBlendState;
+    pipelineCreateInfo.layout                       = VK_NULL_HANDLE;
+    pipelineCreateInfo.renderPass                   = *renderPass;
+    pipelineCreateInfo.subpass                      = 0u;
+    auto pipeline = createGraphicsPipeline(vkd, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+    VkBindHeapInfoEXT resourceHeapBindInfo   = initVulkanStructure();
+    resourceHeapBindInfo.heapRange.address   = resourceHeap->address;
+    resourceHeapBindInfo.heapRange.size      = resourceHeapSize;
+    resourceHeapBindInfo.reservedRangeOffset = resourceHeapUserSize;
+    resourceHeapBindInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    VkClearColorValue clearColor{};
+    clearColor.float32[0] = expectedValue;
+
+    VkRenderPassBeginInfo renderPassBeginInfo = initVulkanStructure();
+    renderPassBeginInfo.renderPass            = *renderPass;
+    renderPassBeginInfo.framebuffer           = *framebuffer;
+    renderPassBeginInfo.renderArea            = scissor;
+
+    const VkImageMemoryBarrier2 preClearBarrier = makeImageMemoryBarrier2(
+        VK_PIPELINE_STAGE_2_NONE, VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, *inputImage->image, imageSubresourceRange);
+
+    const VkImageMemoryBarrier2 postClearBarrier = makeImageMemoryBarrier2(
+        VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+        VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_INPUT_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
+        VK_IMAGE_LAYOUT_GENERAL, *inputImage->image, imageSubresourceRange);
+
+    const VkImageMemoryBarrier2 copyBarrier = makeImageMemoryBarrier2(
+        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+        VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorImage->image, imageSubresourceRange);
+
+    VkDependencyInfo imageDependencyInfo        = initVulkanStructure();
+    imageDependencyInfo.imageMemoryBarrierCount = 1u;
+
+    VkBufferImageCopy copyRegion{};
+    copyRegion.imageSubresource = imageSubresourceLayers;
+    copyRegion.imageExtent      = {1, 1, 1};
+
+    const VkMemoryBarrier2 memoryBarrier =
+        makeMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                           VK_PIPELINE_STAGE_2_HOST_BIT, VK_ACCESS_2_HOST_READ_BIT);
+
+    VkDependencyInfo dependencyInfo   = initVulkanStructure();
+    dependencyInfo.memoryBarrierCount = 1u;
+    dependencyInfo.pMemoryBarriers    = &memoryBarrier;
+
+    auto cmdPool      = makeCommandPool(vkd, *m_device, m_queueFamilyIndex);
+    auto cmdBufferPtr = allocateCommandBuffer(vkd, *m_device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    auto cmdBuffer    = cmdBufferPtr.get();
+
+    beginCommandBuffer(vkd, cmdBuffer);
+    vkd.cmdBindResourceHeapEXT(cmdBuffer, &resourceHeapBindInfo);
+
+    imageDependencyInfo.pImageMemoryBarriers = &preClearBarrier;
+    vkd.cmdPipelineBarrier2(cmdBuffer, &imageDependencyInfo);
+    vkd.cmdClearColorImage(cmdBuffer, *inputImage->image, VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1u,
+                           &imageSubresourceRange);
+    imageDependencyInfo.pImageMemoryBarriers = &postClearBarrier;
+    vkd.cmdPipelineBarrier2(cmdBuffer, &imageDependencyInfo);
+
+    vkd.cmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+    vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+    vkd.cmdEndRenderPass(cmdBuffer);
+
+    imageDependencyInfo.pImageMemoryBarriers = &copyBarrier;
+    vkd.cmdPipelineBarrier2(cmdBuffer, &imageDependencyInfo);
+    vkd.cmdCopyImageToBuffer(cmdBuffer, *colorImage->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *outputBuffer->buffer,
+                             1u, &copyRegion);
+    vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+    endCommandBuffer(vkd, cmdBuffer);
+
+    submitCommandsAndWait(vkd, *m_device, m_queues[0], cmdBuffer);
+    invalidateAlloc(vkd, *m_device, *outputBuffer->memory);
+
+    float result;
+    deMemcpy(&result, outputBuffer->memory->getHostPtr(), sizeof(result));
+
+    if (result != expectedValue)
+    {
+        std::stringstream msg;
+        msg << "Expected result value " << expectedValue << ", but was " << result;
+        return tcu::TestStatus::fail(msg.str());
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class DescriptorHeapTestCaseInputAttachment final : public DescriptorHeapTestCaseBase
+{
+public:
+    explicit DescriptorHeapTestCaseInputAttachment(tcu::TestContext &testCtx, const std::string &name,
+                                                   const TestParamsInputAttachment &params)
+        : DescriptorHeapTestCaseBase(testCtx, name, params)
+        , m_params(params)
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceInputAttachment(context, m_params);
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+private:
+    TestParamsInputAttachment m_params;
+};
+
+void DescriptorHeapTestCaseInputAttachment::initPrograms(vk::SourceCollections &programCollection) const
+{
+    const std::string vertexShader = R"(#version 450
+void main() {
+    vec2 pos = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));
+    gl_Position = vec4(pos * 2.0f - 1.0f, 0.0f, 1.0f);
+}
+)";
+
+    vk::ShaderBuildOptions options(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_6, 0);
+    programCollection.glslSources.add("vert") << glu::VertexSource(vertexShader) << options;
+
+    if (!m_params.nonWritable)
+    {
+        const std::string fragmentShader = R"(#version 450
+layout(location = 0) out vec4 color;
+layout(set = 0, binding = 0, input_attachment_index = 0) uniform subpassInput inputColor;
+void main() {
+    color = subpassLoad(inputColor);
+}
+)";
+
+        programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentShader) << options;
+    }
+    else
+    {
+        const std::string fragmentShader = R"(
+               OpCapability Shader
+               OpCapability InputAttachment
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %color
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %color Location 0
+               OpDecorate %inputColor Binding 0
+               OpDecorate %inputColor DescriptorSet 0
+               OpDecorate %inputColor InputAttachmentIndex 0
+               ;; added which glslang, dxc, slang don't generate
+               OpDecorate %inputColor NonWritable
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+      %color = OpVariable %_ptr_Output_v4float Output
+         %11 = OpTypeImage %float SubpassData 0 0 0 2 Unknown
+%_ptr_UniformConstant_11 = OpTypePointer UniformConstant %11
+ %inputColor = OpVariable %_ptr_UniformConstant_11 UniformConstant
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %v2int = OpTypeVector %int 2
+         %18 = OpConstantComposite %v2int %int_0 %int_0
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+         %14 = OpLoad %11 %inputColor
+         %19 = OpImageRead %v4float %14 %18
+               OpStore %color %19
+               OpReturn
+               OpFunctionEnd
+)";
+
+        programCollection.spirvAsmSources.add("frag") << fragmentShader;
+    }
+}
+
 class DescriptorHeapTestInstanceNullImageQueries : public DescriptorHeapTestInstanceBase
 {
 public:
@@ -19625,6 +19997,17 @@ void populateResourceMaskingTests(tcu::TestCaseGroup *topGroup)
     TestParams params{};
     params.queue = VK_QUEUE_COMPUTE_BIT;
     resourceMaskingGroup->addChild(new DescriptorHeapTestCaseResourceMasking(testCtx, "resource_masking", params));
+
+    for (const bool nonWritable : {false, true})
+    {
+        TestParamsInputAttachment inputAttachmentParams{};
+        inputAttachmentParams.queue       = VK_QUEUE_GRAPHICS_BIT;
+        inputAttachmentParams.nonWritable = nonWritable;
+
+        const char *const testName = nonWritable ? "input_attachment_read_only" : "input_attachment_read_write";
+        resourceMaskingGroup->addChild(
+            new DescriptorHeapTestCaseInputAttachment(testCtx, testName, inputAttachmentParams));
+    }
 
     topGroup->addChild(resourceMaskingGroup.release());
 }
