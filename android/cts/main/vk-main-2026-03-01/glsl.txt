@@ -2351,6 +2351,7 @@ dEQP-VK.glsl.swizzles.vector_swizzles.mediump_vec4_xyzw_compute
 dEQP-VK.glsl.swizzles.vector_swizzles.mediump_vec4_yyw_compute
 dEQP-VK.glsl.swizzles.vector_swizzles.mediump_vec4_yyyy_compute
 dEQP-VK.glsl.swizzles.vector_swizzles.mediump_vec4_zzwz_compute
+dEQP-VK.glsl.texture_functions.loop_unroll_hoisting.fragment
 dEQP-VK.glsl.texture_functions.query.imagesizems.iimage2dms_fragment
 dEQP-VK.glsl.texture_functions.query.imagesizems.iimage2dms_vertex
 dEQP-VK.glsl.texture_functions.query.imagesizems.iimage2dmsarray_fragment
