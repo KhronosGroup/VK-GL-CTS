@@ -466,18 +466,83 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     if (!vktCase)
         TCU_THROW(InternalError, "Test node not an instance of vkt::TestCase");
 
+    tcu::TestLog &log = testCase->getTestContext().getLog();
+
+    // Some functions, such as checkSupport() or initDeviceCapabilities(), and especially
+    // the function that creates a new device, may throw an exception. All messages, including
+    // logging, are disabled while the test is being processed by the SC in the main process,
+    // so in the event of an exception, control will immediately jump to the exception handler
+    // without any information about the situation. To handle this, we put the test on the list
+    // of tests to run in the subprocess before calling the functions that may throw an exception.
+#ifdef CTS_USES_VULKANSC
+    // Queues the test for execution in the subprocess. Factored out of onBeforeRunTestCase() so
+    // that it can also be invoked when the test's context cannot be established - either its custom
+    // instance or its device. Such a test must still be handed to the subprocess so that it reports
+    // a result (typically NotSupported). Otherwise the case produces no result at all and silently
+    // disappears from the run, which is indistinguishable from it never having been in the mustpass.
+    bool queuedForSubprocess = false;
+    auto queueForSubprocess  = [&]() -> void
+    {
+        if (queuedForSubprocess)
+            return;
+        queuedForSubprocess = true;
+
+        const int currentSubprocessCount =
+            getCurrentSubprocessCount(casePath, m_contextManager->getCommandLine().getSubprocessTestCount());
+        if (m_subprocessCount && currentSubprocessCount != m_subprocessCount)
+        {
+            runTestsInSubprocess(testCase->getTestContext());
+
+            // Clean up data after performing tests in subprocess and prepare system for another batch of tests
+            m_testsForSubprocess.clear();
+            const vk::DeviceInterface &vkd = getDefaultContext()->getDeviceInterface();
+            const vk::DeviceDriverSC *dds  = dynamic_cast<const vk::DeviceDriverSC *>(&vkd);
+            if (dds == nullptr)
+                TCU_THROW(InternalError, "Undefined device driver for Vulkan SC");
+            dds->reset();
+            m_resourceInterface->resetObjects();
+
+            suppressStandardOutput();
+            log.supressLogging(true);
+        }
+        m_subprocessCount = currentSubprocessCount;
+        m_testsForSubprocess.push_back(casePath);
+
+        // Keep the resource interface's notion of the current case in step with what was
+        // just queued. On the normal path onBeforeRunTestCase() does this immediately after
+        // queuing; doing it here as well keeps the exception paths consistent, and the call
+        // is an idempotent assignment.
+        m_resourceInterface->initTestCase(casePath);
+    };
+#else
+    // Outside Vulkan SC there is no subprocess model: an exception thrown while establishing the
+    // test's context propagates to the executor and is reported normally, so nothing needs queuing.
+    // Defined as a no-op rather than #ifdef-ing each call site below.
+    auto queueForSubprocess = []() -> void {};
+#endif // CTS_USES_VULKANSC
+
     // findCustomManager() method may throw an exception, the assignment
     // below ensures that the m_contextManager variable will always have a value.
     // The m_defaultContextManager was introduced for compatibility with existing code.
     m_contextManager = m_defaultContextManager;
-    m_contextManager =
-        m_defaultContextManager->findCustomManager(vktCase, m_defaultContextManager, m_defaultInstCaps.operator->());
-    // ContextManager acts as a Vulkan instance with a physical device.
-    // The currently running test can use the information contained in
-    // it for the time when the logical device has not been created.
-    m_contextManager->setContextManager(m_contextManager, vktCase);
+    // findCustomManager() builds the test's custom Vulkan instance, and can throw when the
+    // requested instance capabilities cannot be satisfied. Queue the test before rethrowing so
+    // that it still reports a result rather than disappearing from the run.
+    try
+    {
+        m_contextManager = m_defaultContextManager->findCustomManager(vktCase, m_defaultContextManager,
+                                                                      m_defaultInstCaps.operator->());
+        // ContextManager acts as a Vulkan instance with a physical device.
+        // The currently running test can use the information contained in
+        // it for the time when the logical device has not been created.
+        m_contextManager->setContextManager(m_contextManager, vktCase);
+    }
+    catch (...)
+    {
+        queueForSubprocess();
+        throw;
+    }
 
-    tcu::TestLog &log                           = testCase->getTestContext().getLog();
     const uint32_t usedVulkanVersion            = getUsedApiVersion(m_defaultContextManager);
     const vk::SpirvVersion baselineSpirvVersion = vk::getBaselineSpirvVersion(usedVulkanVersion);
     vk::ShaderBuildOptions defaultGlslBuildOptions(usedVulkanVersion, baselineSpirvVersion, 0u);
@@ -490,38 +555,9 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
 
     bool needsRebuildPrograms = false;
 
-    // Some functions, such as checkSupport() or initDeviceCapabilities(), and especially
-    // the function that creates a new device, may throw an exception. All messages, including
-    // logging, are disabled while the test is being processed by the SC in the main process,
-    // so in the event of an exception, control will immediately jump to the exception handler
-    // without any information about the situation. To handle this, we put the test on the list
-    // of tests to run in the subprocess before calling the functions that may throw an exception.
     auto onBeforeRunTestCase = [&](de::SharedPtr<Context> outTestContext, bool callCheckSupport) -> void
     {
-        {
-#ifdef CTS_USES_VULKANSC
-            const int currentSubprocessCount =
-                getCurrentSubprocessCount(casePath, m_contextManager->getCommandLine().getSubprocessTestCount());
-            if (m_subprocessCount && currentSubprocessCount != m_subprocessCount)
-            {
-                runTestsInSubprocess(testCase->getTestContext());
-
-                // Clean up data after performing tests in subprocess and prepare system for another batch of tests
-                m_testsForSubprocess.clear();
-                const vk::DeviceInterface &vkd = getDefaultContext()->getDeviceInterface();
-                const vk::DeviceDriverSC *dds  = dynamic_cast<const vk::DeviceDriverSC *>(&vkd);
-                if (dds == nullptr)
-                    TCU_THROW(InternalError, "Undefined device driver for Vulkan SC");
-                dds->reset();
-                m_resourceInterface->resetObjects();
-
-                suppressStandardOutput();
-                log.supressLogging(true);
-            }
-            m_subprocessCount = currentSubprocessCount;
-            m_testsForSubprocess.push_back(casePath);
-#endif // CTS_USES_VULKANSC
-        }
+        queueForSubprocess();
 
         m_resourceInterface->initTestCase(casePath);
         // non-const delayedInit() is called before const checkSupport() so that changes
@@ -540,8 +576,20 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     };
 
     m_context = {/* release reference counter value before serching for new context */};
-    m_context = m_contextManager->findContext(m_contextManager, vktCase, m_context, m_defaultContextManager,
-                                              m_progCollection, onBeforeRunTestCase);
+    // findContext() resolves the device capabilities the test asked for and may fail - for example
+    // with NotSupportedError when a requested feature cannot be satisfied. In that case
+    // onBeforeRunTestCase() is never reached, so the test would never be queued and would produce no
+    // result. Queue it before rethrowing so it still records an outcome.
+    try
+    {
+        m_context = m_contextManager->findContext(m_contextManager, vktCase, m_context, m_defaultContextManager,
+                                                  m_progCollection, onBeforeRunTestCase);
+    }
+    catch (...)
+    {
+        queueForSubprocess();
+        throw;
+    }
 
     for (vk::GlslSourceCollection::Iterator progIter = sourceProgs.glslSources.begin();
          progIter != sourceProgs.glslSources.end() && needsRebuildPrograms; ++progIter)

@@ -45,6 +45,7 @@
 #include "tcuImageCompare.hpp"
 #include "vkImageUtil.hpp"
 #include "tcuCommandLine.hpp"
+#include "tcuResultCollector.hpp"
 #include "tcuRGBA.hpp"
 #include "tcuStringTemplate.hpp"
 
@@ -707,7 +708,14 @@ tcu::TestStatus ComputeInvocationsTestInstance::iterate(void)
                      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo)
         .update(vk, device);
 
+    // Each iteration creates a command pool and allocates command buffers from it. Under Vulkan SC the
+    // main process records that resource usage so the subprocess can reserve it up front, which requires
+    // both passes to allocate identically. Returning early on a non-passing result would make the number
+    // of command pools depend on the result: the recording pass cannot produce meaningful query results,
+    // so it would stop after the first queue while the subprocess iterates over all of them, leaving the
+    // pools created beyond the first under-reserved. Collect the results and report them after the loop.
     const uint32_t queueCount = m_context.getDeviceQueueCount();
+    tcu::ResultCollector resultCollector(m_context.getTestContext().getLog());
     for (uint32_t qi = 0; qi < queueCount; ++qi)
     {
         m_queueIndex = qi;
@@ -715,9 +723,9 @@ tcu::TestStatus ComputeInvocationsTestInstance::iterate(void)
         const Unique<VkCommandPool> cmdPool(createCommandPool(vk, device, &cmdPoolCreateInfo));
         const tcu::TestStatus result = executeTest(*cmdPool, *pipelineLayout, *descriptorSet, buffer, bufferSizeBytes);
         if (result.getCode() != QP_TEST_RESULT_PASS)
-            return result;
+            resultCollector.addResult(result.getCode(), "Queue " + de::toString(qi) + ": " + result.getDescription());
     }
-    return tcu::TestStatus::pass("Pass");
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 tcu::TestStatus ComputeInvocationsTestInstance::executeTest(const VkCommandPool &cmdPool,

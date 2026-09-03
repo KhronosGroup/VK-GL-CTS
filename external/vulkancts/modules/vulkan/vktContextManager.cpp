@@ -514,9 +514,25 @@ void DevCaps::verifyFeature(vk::VkStructureType sType, bool checkRuntimeApiVersi
         }
         return 0u;
     };
-    const std::set<vk::VkStructureType> blobFeatures(newFeatureIsBlob ?
-                                                         vk::DeviceFeatures::getVersionBlobFeatures(blobToApi(sType)) :
-                                                         std::set<vk::VkStructureType>());
+    // Ask which features this specific blob absorbed. Looking the blob up by API version instead
+    // would over-match under Vulkan SC, where all promoted features share one API version and every
+    // blob would therefore appear to contain every promoted feature.
+    const std::set<vk::VkStructureType> blobFeatures(
+        newFeatureIsBlob ? vk::DeviceFeatures::getBlobStructFeatures(sType) : std::set<vk::VkStructureType>());
+
+    // The blobs that absorbed the feature being added - normally exactly one.
+    auto blobsContainingFeature = [&](vk::VkStructureType feature) -> std::vector<vk::VkStructureType>
+    {
+        std::vector<vk::VkStructureType> blobs;
+        for (const auto &items : apiToBlob)
+            for (const auto &blob : items.second)
+            {
+                const auto absorbed = vk::DeviceFeatures::getBlobStructFeatures(blob);
+                if (absorbed.find(feature) != absorbed.end())
+                    blobs.push_back(blob);
+            }
+        return blobs;
+    };
 
     enum class Status
     {
@@ -600,9 +616,9 @@ void DevCaps::verifyFeature(vk::VkStructureType sType, bool checkRuntimeApiVersi
     }
     else if (Status::Ok == status)
     {
-        auto blob = apiToBlob.find(newFeatureBlobVersion);
-        DE_ASSERT(apiToBlob.end() != blob);
-        for (const auto &item : blob->second)
+        const std::vector<vk::VkStructureType> blobs = blobsContainingFeature(sType);
+        DE_ASSERT(!blobs.empty());
+        for (const auto &item : blobs)
         {
             traverseFeatures(m_features, item, blobInFeatures);
         }
