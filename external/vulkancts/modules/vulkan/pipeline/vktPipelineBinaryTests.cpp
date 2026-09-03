@@ -67,6 +67,7 @@ enum class TestType
     RAY_TRACING_PIPELINE_FROM_BINARY_DATA,
     RAY_TRACING_PIPELINE_WITH_ZERO_BINARY_COUNT,
     UNIQUE_KEY_PAIRS,
+    UNIQUE_BLOB_KEYS,
     VALID_KEY,
 };
 
@@ -1086,6 +1087,164 @@ tcu::TestStatus UniqueKayPairsTestInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+class UniqueBlobKeysTestInstance : public vkt::TestInstance
+{
+public:
+    UniqueBlobKeysTestInstance(Context &context, const TestParams &testParams)
+        : TestInstance(context)
+        , m_testParams(testParams)
+    {
+    }
+    virtual ~UniqueBlobKeysTestInstance() = default;
+
+    virtual tcu::TestStatus iterate() override;
+
+private:
+    const TestParams m_testParams;
+};
+
+tcu::TestStatus UniqueBlobKeysTestInstance::iterate()
+{
+    const InstanceInterface &vki      = m_context.getInstanceInterface();
+    const DeviceInterface &vkd        = m_context.getDeviceInterface();
+    const VkDevice vkDevice           = m_context.getDevice();
+    VkPhysicalDevice vkPhysicalDevice = m_context.getPhysicalDevice();
+    tcu::TestLog &log                 = m_context.getTestContext().getLog();
+
+    const Move<VkRenderPass> renderPass = makeRenderPass(vkd, vkDevice, VK_FORMAT_R8G8B8A8_UNORM);
+    const std::vector<VkViewport> viewport{makeViewport(16, 16)};
+    const std::vector<VkRect2D> scissor{makeRect2D(16, 16)};
+    const VkPipelineLayoutCreateInfo pipelineLayoutInfo = initVulkanStructure();
+    const PipelineLayoutWrapper pipelineLayout(m_testParams.pipelineConstructionType, vkd, vkDevice,
+                                               &pipelineLayoutInfo);
+
+    vk::BinaryCollection &binaryCollection = m_context.getBinaryCollection();
+    ShaderWrapper vert1Shader              = ShaderWrapper(vkd, vkDevice, binaryCollection.get("vert1"));
+    ShaderWrapper vert2Shader              = ShaderWrapper(vkd, vkDevice, binaryCollection.get("vert2"));
+    ShaderWrapper frag1Shader              = ShaderWrapper(vkd, vkDevice, binaryCollection.get("frag1"));
+    ShaderWrapper frag2Shader              = ShaderWrapper(vkd, vkDevice, binaryCollection.get("frag2"));
+    ShaderWrapper frag3Shader              = ShaderWrapper(vkd, vkDevice, binaryCollection.get("frag3"));
+
+    GraphicsPipelineWrapper pipelines[4]{
+        GraphicsPipelineWrapper(vki, vkd, vkPhysicalDevice, vkDevice, m_context.getDeviceExtensions(),
+                                m_testParams.pipelineConstructionType),
+        GraphicsPipelineWrapper(vki, vkd, vkPhysicalDevice, vkDevice, m_context.getDeviceExtensions(),
+                                m_testParams.pipelineConstructionType),
+        GraphicsPipelineWrapper(vki, vkd, vkPhysicalDevice, vkDevice, m_context.getDeviceExtensions(),
+                                m_testParams.pipelineConstructionType),
+        GraphicsPipelineWrapper(vki, vkd, vkPhysicalDevice, vkDevice, m_context.getDeviceExtensions(),
+                                m_testParams.pipelineConstructionType),
+    };
+    PipelineBinaryWrapper binaries[4]{
+        PipelineBinaryWrapper(vkd, vkDevice),
+        PipelineBinaryWrapper(vkd, vkDevice),
+        PipelineBinaryWrapper(vkd, vkDevice),
+        PipelineBinaryWrapper(vkd, vkDevice),
+    };
+    std::vector<VkPipelineBinaryDataKHR> pipelineDataInfo[4];
+    std::vector<std::vector<uint8_t>> pipelineDataBlob[4];
+
+    const VkPipelineRasterizationStateCreateInfo alternativeRasterizationState{
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                                    // const void* pNext;
+        0u,                                                         // VkPipelineRasterizationStateCreateFlags flags;
+        VK_FALSE,                                                   // VkBool32 depthClampEnable;
+        VK_FALSE,                                                   // VkBool32 rasterizerDiscardEnable;
+        VK_POLYGON_MODE_FILL,                                       // VkPolygonMode polygonMode;
+        VK_CULL_MODE_BACK_BIT,                                      // VkCullModeFlags cullMode;
+        VK_FRONT_FACE_CLOCKWISE,                                    // VkFrontFace frontFace;
+        VK_FALSE,                                                   // VkBool32 depthBiasEnable;
+        0.0f,                                                       // float depthBiasConstantFactor;
+        0.0f,                                                       // float depthBiasClamp;
+        0.0f,                                                       // float depthBiasSlopeFactor;
+        1.0f,                                                       // float lineWidth;
+    };
+    const VkPipelineColorBlendAttachmentState alternativeBlendAttachment{
+        VK_TRUE,                             // VkBool32 blendEnable;
+        VK_BLEND_FACTOR_SRC_ALPHA,           // VkBlendFactor srcColorBlendFactor;
+        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // VkBlendFactor dstColorBlendFactor;
+        VK_BLEND_OP_ADD,                     // VkBlendOp colorBlendOp;
+        VK_BLEND_FACTOR_ONE,                 // VkBlendFactor srcAlphaBlendFactor;
+        VK_BLEND_FACTOR_ZERO,                // VkBlendFactor dstAlphaBlendFactor;
+        VK_BLEND_OP_SUBTRACT,                // VkBlendOp alphaBlendOp;
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+            VK_COLOR_COMPONENT_B_BIT, // VkColorComponentFlags colorWriteMask;
+    };
+    const VkPipelineColorBlendStateCreateInfo alternativeColorBlendState{
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                                  // const void* pNext;
+        0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
+        VK_FALSE,                                                 // VkBool32 logicOpEnable;
+        VK_LOGIC_OP_CLEAR,                                        // VkLogicOp logicOp;
+        1u,                                                       // uint32_t attachmentCount;
+        &alternativeBlendAttachment, // const VkPipelineColorBlendAttachmentState* pAttachments;
+        {0.0f, 0.0f, 0.0f, 0.0f},    // float blendConstants[4];
+    };
+
+    const ShaderWrapper *vertShaders[]{&vert1Shader, &vert1Shader, &vert1Shader, &vert2Shader};
+    const ShaderWrapper *fragShaders[]{&frag1Shader, &frag1Shader, &frag2Shader, &frag3Shader};
+
+    for (uint32_t i = 0; i < 4; ++i)
+    {
+        const bool useAlternativeState = (i == 1) || (i == 3);
+
+        pipelines[i]
+            .setPipelineCreateFlags2(VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR)
+            .setDefaultRasterizationState()
+            .setDefaultColorBlendState()
+            .setDefaultDepthStencilState()
+            .setDefaultMultisampleState()
+            .setMonolithicPipelineLayout(pipelineLayout)
+            .setupVertexInputState()
+            .setupPreRasterizationShaderState(viewport, scissor, pipelineLayout, *renderPass, 0u, *vertShaders[i],
+                                              useAlternativeState ? &alternativeRasterizationState : nullptr)
+            .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, *fragShaders[i])
+            .setupFragmentOutputState(*renderPass, 0u, useAlternativeState ? &alternativeColorBlendState : nullptr)
+            .buildPipeline();
+
+        VK_CHECK(binaries[i].createPipelineBinariesFromPipeline(pipelines[i].getPipeline()));
+        binaries[i].getPipelineBinaryData(pipelineDataInfo[i], pipelineDataBlob[i]);
+    }
+
+    bool testOk = true;
+    for (uint32_t i = 0; i < 4; ++i)
+    {
+        for (uint32_t j = i; j < 4; ++j)
+        {
+            for (size_t a = 0; a < pipelineDataBlob[i].size(); ++a)
+            {
+                for (size_t b = ((i == j) ? a + 1 : 0); b < pipelineDataBlob[j].size(); ++b)
+                {
+                    const auto &keyA  = binaries[i].getBinaryKeys()[a];
+                    const auto &keyB  = binaries[j].getBinaryKeys()[b];
+                    const auto &dataA = pipelineDataBlob[i][a];
+                    const auto &dataB = pipelineDataBlob[j][b];
+
+                    if ((keyA.keySize != keyB.keySize) || (deMemCmp(keyA.key, keyB.key, keyA.keySize) != 0))
+                        continue;
+
+                    if ((dataA.size() == dataB.size()) && (deMemCmp(dataA.data(), dataB.data(), dataA.size()) == 0))
+                        continue;
+
+                    log << tcu::TestLog::Message << "Pipeline " << i << " binary " << a << " and pipeline " << j
+                        << " binary " << b << " have the same key but different data" << tcu::TestLog::EndMessage;
+
+                    log << tcu::TestLog::Message << "Pipeline " << i << " produced " << pipelineDataBlob[i].size()
+                        << " binaries" << tcu::TestLog::EndMessage;
+                    log << tcu::TestLog::Message << "Pipeline " << j << " produced " << pipelineDataBlob[j].size()
+                        << " binaries" << tcu::TestLog::EndMessage;
+                    testOk = false;
+                }
+            }
+        }
+    }
+
+    if (!testOk)
+        return tcu::TestStatus::fail("Fail");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 class PipelineBinaryTestWrapper : public PipelineBinaryWrapper
 {
 public:
@@ -1410,6 +1569,59 @@ void BaseTestCase::initPrograms(SourceCollections &programCollection) const
                                    "  fragColor = vertColor + vec4(fColor);\n"
                                    "}\n");
     }
+    else if (m_testParams.type == TestType::UNIQUE_BLOB_KEYS)
+    {
+        programCollection.glslSources.add("vert1")
+            << glu::VertexSource("#version 450\n"
+                                 "layout(location = 0) out highp vec4 vertColor;\n"
+                                 "out gl_PerVertex { vec4 gl_Position; };\n"
+                                 "void main (void)\n"
+                                 "{\n"
+                                 "  const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
+                                 "  const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
+                                 "  vertColor = vec4(x, y, 0.0, 1.0);\n"
+                                 "  gl_Position = vec4(x, y, 0.0, 1.0);\n"
+                                 "}\n");
+
+        programCollection.glslSources.add("vert2")
+            << glu::VertexSource("#version 450\n"
+                                 "layout(location = 0) out highp vec2 texCoord;\n"
+                                 "out gl_PerVertex { vec4 gl_Position; };\n"
+                                 "void main (void)\n"
+                                 "{\n"
+                                 "  texCoord = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));\n"
+                                 "  gl_Position = vec4(texCoord * 2.0 - 1.0, 0.0, 1.0);\n"
+                                 "}\n");
+
+        programCollection.glslSources.add("frag1")
+            << glu::FragmentSource("#version 450\n"
+                                   "layout(location = 0) in highp vec4 vertColor;\n"
+                                   "layout(location = 0) out highp vec4 fragColor;\n"
+                                   "void main (void)\n"
+                                   "{\n"
+                                   "  fragColor = vertColor;\n"
+                                   "}\n");
+
+        programCollection.glslSources.add("frag2")
+            << glu::FragmentSource("#version 450\n"
+                                   "layout(location = 0) in highp vec4 vertColor;\n"
+                                   "layout(location = 0) out highp vec4 fragColor;\n"
+                                   "void main (void)\n"
+                                   "{\n"
+                                   "  fragColor = vec4(sin(vertColor.x), cos(vertColor.y), "
+                                   "dot(vertColor, vertColor), 1.0);\n"
+                                   "}\n");
+
+        programCollection.glslSources.add("frag3")
+            << glu::FragmentSource("#version 450\n"
+                                   "layout(location = 0) in highp vec2 texCoord;\n"
+                                   "layout(location = 0) out highp vec4 fragColor;\n"
+                                   "void main (void)\n"
+                                   "{\n"
+                                   "  const float d = length(texCoord - vec2(0.5));\n"
+                                   "  fragColor = vec4(fract(d * 8.0), texCoord, 1.0);\n"
+                                   "}\n");
+    }
 }
 
 void BaseTestCase::checkSupport(Context &context) const
@@ -1461,6 +1673,8 @@ TestInstance *BaseTestCase::createInstance(Context &context) const
         return new RayTracingPipelineTestInstance(context, m_testParams);
     if (m_testParams.type == TestType::VALID_KEY)
         return new PipelineBinaryKeyTestInstance(context, m_testParams);
+    if (m_testParams.type == TestType::UNIQUE_BLOB_KEYS)
+        return new UniqueBlobKeysTestInstance(context, m_testParams);
 
     return new UniqueKayPairsTestInstance(context, m_testParams);
 }
@@ -1474,6 +1688,8 @@ de::MovePtr<tcu::TestCaseGroup> addPipelineBinaryDedicatedTests(tcu::TestContext
     de::MovePtr<tcu::TestCaseGroup> dedicatedTests(new tcu::TestCaseGroup(testCtx, "dedicated"));
     dedicatedTests->addChild(
         new BaseTestCase(testCtx, "unique_key_pairs", {pipelineConstructionType, TestType::UNIQUE_KEY_PAIRS, false}));
+    dedicatedTests->addChild(
+        new BaseTestCase(testCtx, "unique_blob_keys", {pipelineConstructionType, TestType::UNIQUE_BLOB_KEYS, false}));
     dedicatedTests->addChild(
         new BaseTestCase(testCtx, "graphics_pipeline_from_internal_cache",
                          {pipelineConstructionType, TestType::GRAPHICS_PIPELINE_FROM_INTERNAL_CACHE, false}));
