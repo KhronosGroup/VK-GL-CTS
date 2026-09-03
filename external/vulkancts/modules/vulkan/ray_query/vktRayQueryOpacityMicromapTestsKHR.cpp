@@ -1241,7 +1241,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
         // invers all bits
         for (uint32_t i = 0; i < opacityMicromapData.size(); ++i)
         {
-            opacityMicromapData[i] = ~opacityMicromapData[i];
+            opacityMicromapData[i] = static_cast<decltype(opacityMicromapData)::value_type>(~opacityMicromapData[i]);
         }
 
         micromapASShadow->setBuildFlags(micromapBuildFlag);

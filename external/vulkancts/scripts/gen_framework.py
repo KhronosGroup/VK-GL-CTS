@@ -2098,16 +2098,18 @@ class ExtensionFunctionsGenerator(CTSGenerator):
         yield '}'
 
     def genHelperFunctions(self):
-        yield 'bool checkVersion(uint32_t major, uint32_t minor, const uint32_t testedApiVersion)'
-        yield '{'
-        yield '\tuint32_t testedMajor = VK_API_VERSION_MAJOR(testedApiVersion);'
-        yield '\tuint32_t testedMinor = VK_API_VERSION_MINOR(testedApiVersion);'
-        yield '\t// return true when tested api version is greater'
-        yield '\t// or equal to version represented by two uints'
-        yield '\tif (major == testedMajor)'
-        yield '\t\treturn minor <= testedMinor;'
-        yield '\treturn major < testedMajor;'
-        yield '}\n'
+        if self.targetApiName != 'vulkansc':
+            # This one does not seem to be used in vulkansc
+            yield 'bool checkVersion(uint32_t major, uint32_t minor, const uint32_t testedApiVersion)'
+            yield '{'
+            yield '\tuint32_t testedMajor = VK_API_VERSION_MAJOR(testedApiVersion);'
+            yield '\tuint32_t testedMinor = VK_API_VERSION_MINOR(testedApiVersion);'
+            yield '\t// return true when tested api version is greater'
+            yield '\t// or equal to version represented by two uints'
+            yield '\tif (major == testedMajor)'
+            yield '\t\treturn minor <= testedMinor;'
+            yield '\treturn major < testedMajor;'
+            yield '}\n'
         if self.targetApiName != 'vulkansc':
             yield 'bool extensionIsSupported(const std::vector<std::string> extNames, const std::string& ext)'
             yield '{'

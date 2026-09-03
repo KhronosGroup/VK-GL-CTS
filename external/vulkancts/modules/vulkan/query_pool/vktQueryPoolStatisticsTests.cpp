@@ -1466,13 +1466,13 @@ public:
         bool cullModeFrontAndBack;
     };
     GraphicBasicTestInstance(vkt::Context &context, const std::vector<VertexData> &data,
-                             const std::vector<uint32_t> &indexData, const ParametersGraphic &parametersGraphic,
+                             const std::vector<uint32_t> *indexData, const ParametersGraphic &parametersGraphic,
                              const std::vector<uint64_t> &drawRepeats);
     GraphicBasicTestInstance(vkt::Context &context, const std::vector<VertexData> &data,
                              const ParametersGraphic &parametersGraphic, const std::vector<uint64_t> &drawRepeats)
-        : GraphicBasicTestInstance(context, data, m_indexContainer, parametersGraphic, drawRepeats)
+        : GraphicBasicTestInstance(context, data, nullptr, parametersGraphic, drawRepeats)
     {
-        // Intentionally empty
+        m_indexData = &m_indexContainer;
     }
     tcu::TestStatus iterate(void);
 
@@ -1503,7 +1503,7 @@ protected:
     Move<VkPipeline> m_pipeline;
     const std::vector<uint32_t> m_indexContainer;
     const std::vector<VertexData> &m_data;
-    const std::vector<uint32_t> &m_indexData;
+    const std::vector<uint32_t> *m_indexData;
     const ParametersGraphic &m_parametersGraphic;
     const std::vector<uint64_t> m_drawRepeats;
     const uint32_t m_blockCount;
@@ -1512,7 +1512,7 @@ protected:
 };
 
 GraphicBasicTestInstance::GraphicBasicTestInstance(vkt::Context &context, const std::vector<VertexData> &data,
-                                                   const std::vector<uint32_t> &indexData,
+                                                   const std::vector<uint32_t> *indexData,
                                                    const ParametersGraphic &parametersGraphic,
                                                    const std::vector<uint64_t> &drawRepeats)
     : StatisticQueryTestInstance(context, static_cast<uint32_t>(drawRepeats.size()), parametersGraphic.dstOffset, false,
@@ -1565,10 +1565,10 @@ BufferPtr GraphicBasicTestInstance::creatAndFillIndexBuffer(void)
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
 
-    DE_ASSERT(m_indexData.empty() == false);
+    DE_ASSERT(m_indexData->empty() == false);
 
     const VkDeviceSize dataSize = static_cast<VkDeviceSize>(
-        deAlignSize(static_cast<size_t>(m_indexData.size() * sizeof(uint32_t)),
+        deAlignSize(static_cast<size_t>(m_indexData->size() * sizeof(uint32_t)),
                     static_cast<size_t>(m_context.getDeviceProperties().limits.nonCoherentAtomSize)));
 
     BufferPtr indexBuffer =
@@ -1576,7 +1576,7 @@ BufferPtr GraphicBasicTestInstance::creatAndFillIndexBuffer(void)
                                m_context.getDefaultAllocator(), MemoryRequirement::HostVisible);
 
     uint8_t *ptr = reinterpret_cast<uint8_t *>(indexBuffer->getBoundMemory().getHostPtr());
-    deMemcpy(ptr, m_indexData.data(), static_cast<size_t>(m_indexData.size() * sizeof(uint32_t)));
+    deMemcpy(ptr, m_indexData->data(), static_cast<size_t>(m_indexData->size() * sizeof(uint32_t)));
 
     flushMappedMemoryRange(vk, device, indexBuffer->getBoundMemory().getMemory(),
                            indexBuffer->getBoundMemory().getOffset(), dataSize);
@@ -2348,7 +2348,7 @@ void VertexShaderTestInstance::draw(VkCommandBuffer cmdBuffer)
 
     if (m_parametersGraphic.primitiveRestart)
     {
-        vk.cmdDrawIndexed(cmdBuffer, uint32_t(m_indexData.size()), 1u, 0u, 0, 0u);
+        vk.cmdDrawIndexed(cmdBuffer, uint32_t(m_indexData->size()), 1u, 0u, 0, 0u);
         return;
     }
 
@@ -5883,7 +5883,7 @@ public:
     vkt::TestInstance *createInstance(vkt::Context &context) const
     {
         if (m_parametersGraphic.primitiveRestart)
-            return new Instance(context, m_data, m_indices, m_parametersGraphic, m_drawRepeats);
+            return new Instance(context, m_data, &m_indices, m_parametersGraphic, m_drawRepeats);
         return new Instance(context, m_data, m_parametersGraphic, m_drawRepeats);
     }
 

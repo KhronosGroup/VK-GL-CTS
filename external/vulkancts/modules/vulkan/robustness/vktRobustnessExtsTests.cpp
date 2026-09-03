@@ -4598,6 +4598,7 @@ static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipeli
     }
 }
 
+#ifndef CTS_USES_VULKANSC
 // GL_EXT_long_vector load+store cases. Atomics covered separately.
 // Output VkFormat is fixed to R32_UINT so iterate()'s default readback works.
 static void createLongVectorTests(tcu::TestCaseGroup *group, bool pipelineRobustness)
@@ -4769,6 +4770,7 @@ static void createLongVectorTests(tcu::TestCaseGroup *group, bool pipelineRobust
         group->addChild(scalarGroup.release());
     }
 }
+#endif // CTS_USES_VULKANSC
 
 static void createRobustness2Tests(tcu::TestCaseGroup *group)
 {
