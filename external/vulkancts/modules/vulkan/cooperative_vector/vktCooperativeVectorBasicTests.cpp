@@ -344,6 +344,11 @@ size_t getTypeWidth(const VkComponentTypeKHR type)
     }
 }
 
+static bool isVertexPipelineStoresAndAtomicsStage(const Stage stage)
+{
+    return stage == STAGE_VERTEX || stage == STAGE_TESS_CTRL || stage == STAGE_TESS_EVAL || stage == STAGE_GEOMETRY;
+}
+
 void CooperativeVectorTestCase::checkSupport(Context &context) const
 {
     if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
@@ -388,6 +393,17 @@ void CooperativeVectorTestCase::checkSupport(Context &context) const
                 TCU_THROW(NotSupportedError, "Not enough shared memory supported.");
             }
         }
+    }
+
+    if (isVertexPipelineStoresAndAtomicsStage(m_data.stage) &&
+        !context.getDeviceFeatures().vertexPipelineStoresAndAtomics)
+    {
+        TCU_THROW(NotSupportedError, "vertexPipelineStoresAndAtomics not supported");
+    }
+
+    if (m_data.stage == STAGE_FRAGMENT && !context.getDeviceFeatures().fragmentStoresAndAtomics)
+    {
+        TCU_THROW(NotSupportedError, "fragmentStoresAndAtomics not supported");
     }
 
 #ifndef CTS_USES_VULKANSC

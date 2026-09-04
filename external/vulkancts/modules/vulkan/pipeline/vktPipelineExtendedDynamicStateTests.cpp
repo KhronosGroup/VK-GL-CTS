@@ -8511,11 +8511,11 @@ tcu::TestCaseGroup *createExtendedDynamicStateTests(tcu::TestContext &testCtx,
                     OptBoolean dynamicVal;
                     const char *name;
                 } depthClipEnableCases[] = {
-                    // Dynamically switch negative one to one mode from none (true) to false
+                    // Dynamically switch depth clip enable from none (true) to false
                     {tcu::Nothing, tcu::just(false), "depth_clip_enable_true_to_false_implicit"},
-                    // Dynamically switch negative one to one mode from true to false
+                    // Dynamically switch depth clip enable from true to false
                     {tcu::just(true), tcu::just(false), "depth_clip_enable_true_to_false_explicit"},
-                    // Dynamically switch negative one to one mode from false to true
+                    // Dynamically switch depth clip enable from false to true
                     {tcu::just(false), tcu::just(true), "depth_clip_enable_true_to_false"},
                 };
 
@@ -8534,14 +8534,12 @@ tcu::TestCaseGroup *createExtendedDynamicStateTests(tcu::TestContext &testCtx,
 
                     const bool depthClipActive = config.getActiveDepthClipEnable();
 
-                    // Enable depth test and set values so it passes.
-                    config.depthTestEnableConfig.staticValue  = true;
-                    config.depthWriteEnableConfig.staticValue = true;
-                    config.depthCompareOpConfig.staticValue   = vk::VK_COMPARE_OP_LESS;
-                    config.meshParams[0].depth                = -0.5f;
-                    config.viewportConfig.staticValue =
-                        ViewportVec(1u, vk::makeViewport(0.0f, 0.0f, kWidthF, kHeightF, 0.5f, 1.0f));
-                    config.expectedDepth = (depthClipActive ? 1.0f : 0.25f);
+                    // To test depth clipping, we do not need to enable depth testing or depth writes.
+                    // The values in the color attachment will show whether the geometry was clipped.
+                    // To verify depth values, we would need to enable depthClampZeroOne, because
+                    // without it, the depth value is undefined when the geometry is clipped.
+                    config.meshParams[0].depth = -0.5f;
+                    config.expectedDepth       = config.clearDepthValue;
                     config.referenceColor.reset(
                         new SingleColorGenerator(depthClipActive ? kDefaultClearColor : kDefaultTriangleColor));
 
