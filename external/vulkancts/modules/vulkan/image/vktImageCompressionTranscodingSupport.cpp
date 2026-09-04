@@ -2578,9 +2578,10 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression(const VkCommandPool &c
 
     // VUID-vkCmdCopyBufferToImage-dstImage-00207
     // VUID-vkCmdCopyBufferToImage-bufferImageHeight-09107
+    const UVec3 copyBufferToImageDims = getLayerSize(m_parameters.imageType, mipmapDimsBlocked);
     const VkBufferImageCopy copyBufferToImageRegion =
         (m_parameters.imageType == IMAGE_TYPE_1D) ?
-            makeBufferImageCopy(mipmapDims.x(), mipmapDims.y(), 0u, 0u, 0u, 0u) :
+            makeBufferImageCopy(copyBufferToImageDims.x(), copyBufferToImageDims.y(), 0u, 0u, 0u, 0u) :
             makeBufferImageCopy(mipmapDimsBlocked.x(), mipmapDimsBlocked.y(), 0u, 0u, mipmapDimsBlocked.x(),
                                 mipmapDimsBlocked.y());
     const VkBufferImageCopy copyRegion = makeBufferImageCopy(mipmapDims.x(), mipmapDims.y(), 0u, 0u);
