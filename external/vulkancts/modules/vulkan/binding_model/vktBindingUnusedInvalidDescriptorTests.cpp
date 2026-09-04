@@ -535,13 +535,13 @@ public:
             endCommandBuffer(vk, cmdBuffer.get());
             submitCommandsAndWait(vk, device, queueData.handle, cmdBuffer.get());
         }
-        else // reqireBuffer
+        else // requireBuffer
         {
             tcu::Vec4 color(0.5f, 0.5f, 0.5f, 0.5f);
 
             deMemcpy(m_allocation->getHostPtr(), &color, sizeof(color));
 
-            invalidateAlloc(vk, device, *m_allocation.get());
+            flushAlloc(vk, device, *m_allocation.get());
         }
     }
 
