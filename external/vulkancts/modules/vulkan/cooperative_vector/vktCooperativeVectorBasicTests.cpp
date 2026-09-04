@@ -302,6 +302,11 @@ CooperativeVectorTestCase::~CooperativeVectorTestCase(void)
 {
 }
 
+static bool isVertexPipelineStoresAndAtomicsStage(const Stage stage)
+{
+    return stage == STAGE_VERTEX || stage == STAGE_TESS_CTRL || stage == STAGE_TESS_EVAL || stage == STAGE_GEOMETRY;
+}
+
 void CooperativeVectorTestCase::checkSupport(Context &context) const
 {
     if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
@@ -312,6 +317,17 @@ void CooperativeVectorTestCase::checkSupport(Context &context) const
     if (!context.getCooperativeVectorFeaturesNV().cooperativeVector)
     {
         TCU_THROW(NotSupportedError, "cooperativeVector not supported");
+    }
+
+    if (isVertexPipelineStoresAndAtomicsStage(m_data.stage) &&
+        !context.getDeviceFeatures().vertexPipelineStoresAndAtomics)
+    {
+        TCU_THROW(NotSupportedError, "vertexPipelineStoresAndAtomics not supported");
+    }
+
+    if (m_data.stage == STAGE_FRAGMENT && !context.getDeviceFeatures().fragmentStoresAndAtomics)
+    {
+        TCU_THROW(NotSupportedError, "fragmentStoresAndAtomics not supported");
     }
 
     if (isRayTracingStageKHR(m_data.stage))
