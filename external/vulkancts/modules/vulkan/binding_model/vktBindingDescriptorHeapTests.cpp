@@ -14109,6 +14109,353 @@ tcu::TestStatus DescriptorHeapTestInstanceMSAAImageRead::iterate()
     return tcu::TestStatus::pass("Pass");
 }
 
+class DescriptorHeapTestInstanceInputAttachmentDraw final : public DescriptorHeapTestInstanceBase
+{
+public:
+    explicit DescriptorHeapTestInstanceInputAttachmentDraw(Context &context, const TestParams &params)
+        : DescriptorHeapTestInstanceBase(context, params)
+        , m_params(params)
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    TestParams m_params;
+};
+
+tcu::TestStatus DescriptorHeapTestInstanceInputAttachmentDraw::iterate()
+{
+    const auto &vkd = m_device.getDriver();
+
+    const VkExtent3D extent    = {8u, 8u, 1u};
+    const uint32_t outputCount = extent.width * extent.height;
+
+    VkImageCreateInfo imageCreateInfo = initVulkanStructure();
+    imageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.format            = VK_FORMAT_R32_SINT;
+    imageCreateInfo.extent            = extent;
+    imageCreateInfo.mipLevels         = 1u;
+    imageCreateInfo.arrayLayers       = 1u;
+    imageCreateInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.usage =
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    auto renderTargetImage = createImageAndMemory(imageCreateInfo);
+    auto inputImage        = createImageAndMemory(imageCreateInfo);
+
+    VkImageSubresourceRange imageSubresourceRange = makeDefaultImageSubresourceRange();
+
+    VkImageViewCreateInfo imageViewCreateInfo = initVulkanStructure();
+    imageViewCreateInfo.image                 = *renderTargetImage->image;
+    imageViewCreateInfo.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+    imageViewCreateInfo.format                = VK_FORMAT_R32_SINT;
+    imageViewCreateInfo.components            = makeComponentMappingRGBA();
+    imageViewCreateInfo.subresourceRange      = imageSubresourceRange;
+
+    auto renderTargetImageView = createImageView(vkd, *m_device, &imageViewCreateInfo);
+    imageViewCreateInfo.image  = *inputImage->image;
+    auto inputImageView        = createImageView(vkd, *m_device, &imageViewCreateInfo);
+
+    const VkDeviceSize outputBufferSize = outputCount * sizeof(int32_t);
+    auto outputBuffer = createBufferAndMemory(outputBufferSize, VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR);
+
+    const VkDeviceSize imageDescriptorStride = getImageDescriptorStride(m_descriptorHeapProperties);
+    const VkDeviceSize userHeapSize = alignUp(imageDescriptorStride, m_descriptorHeapProperties.resourceHeapAlignment);
+    const VkDeviceSize heapSize     = userHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    auto heap               = createBufferAndMemory(heapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
+                                                                  VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+    char *const heapHostPtr = static_cast<char *>(heap->memory->getHostPtr());
+
+    VkImageDescriptorInfoEXT imageDescriptorInfo = initVulkanStructure();
+    imageDescriptorInfo.layout                   = VK_IMAGE_LAYOUT_GENERAL;
+    imageDescriptorInfo.pView                    = &imageViewCreateInfo;
+
+    VkResourceDescriptorInfoEXT resourceInfo = initVulkanStructure();
+    resourceInfo.type                        = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+    resourceInfo.data.pImage                 = &imageDescriptorInfo;
+
+    VkHostAddressRangeEXT descriptorRange;
+    descriptorRange.address = heapHostPtr;
+    descriptorRange.size    = static_cast<size_t>(imageDescriptorStride);
+    VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1, &resourceInfo, &descriptorRange));
+
+    VkAttachmentDescription colorAttachment{};
+    colorAttachment.format         = VK_FORMAT_R32_SINT;
+    colorAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_GENERAL;
+
+    VkAttachmentDescription attachments[2];
+    attachments[0] = colorAttachment;
+    attachments[1] = colorAttachment;
+
+    VkAttachmentReference inputReference;
+    inputReference.attachment = 0u;
+    inputReference.layout     = VK_IMAGE_LAYOUT_GENERAL;
+
+    VkAttachmentReference colorReference;
+    colorReference.attachment = 1u;
+    colorReference.layout     = VK_IMAGE_LAYOUT_GENERAL;
+
+    VkSubpassDescription subpasses[2];
+    subpasses[0]                      = {};
+    subpasses[0].pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpasses[0].colorAttachmentCount = 1u;
+    subpasses[0].pColorAttachments    = &inputReference;
+    subpasses[1]                      = {};
+    subpasses[1].pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpasses[1].inputAttachmentCount = 1u;
+    subpasses[1].pInputAttachments    = &inputReference;
+    subpasses[1].colorAttachmentCount = 1u;
+    subpasses[1].pColorAttachments    = &colorReference;
+
+    VkSubpassDependency dependency = {};
+    dependency.srcSubpass          = 0u;
+    dependency.dstSubpass          = 1u;
+    dependency.srcStageMask        = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstStageMask        = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    dependency.srcAccessMask       = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependency.dstAccessMask       = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+    dependency.dependencyFlags     = VK_DEPENDENCY_BY_REGION_BIT;
+
+    VkRenderPassCreateInfo renderPassCreateInfo = initVulkanStructure();
+    renderPassCreateInfo.attachmentCount        = 2u;
+    renderPassCreateInfo.pAttachments           = attachments;
+    renderPassCreateInfo.subpassCount           = 2u;
+    renderPassCreateInfo.pSubpasses             = subpasses;
+    renderPassCreateInfo.dependencyCount        = 1u;
+    renderPassCreateInfo.pDependencies          = &dependency;
+    auto renderPass                             = createRenderPass(vkd, *m_device, &renderPassCreateInfo);
+
+    VkImageView imageViews[2];
+    imageViews[0]    = *inputImageView;
+    imageViews[1]    = *renderTargetImageView;
+    auto framebuffer = makeFramebuffer(vkd, *m_device, *renderPass, 2u, imageViews, extent.width, extent.height);
+
+    VkDescriptorSetAndBindingMappingEXT mapping  = initVulkanStructure();
+    mapping.descriptorSet                        = 0u;
+    mapping.firstBinding                         = 2u;
+    mapping.bindingCount                         = 1u;
+    mapping.resourceMask                         = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    mapping.source                               = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mapping.sourceData.constantOffset.heapOffset = 0u;
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+    mappingInfo.mappingCount                                  = 1u;
+    mappingInfo.pMappings                                     = &mapping;
+
+    auto vertModule  = createShaderModule(vkd, *m_device, getShaderBinary("vert"));
+    auto frag1Module = createShaderModule(vkd, *m_device, getShaderBinary("frag1"));
+    auto frag2Module = createShaderModule(vkd, *m_device, getShaderBinary("frag2"));
+
+    VkPipelineShaderStageCreateInfo vertStage = initVulkanStructure();
+    vertStage.stage                           = VK_SHADER_STAGE_VERTEX_BIT;
+    vertStage.module                          = *vertModule;
+    vertStage.pName                           = "main";
+
+    VkPipelineShaderStageCreateInfo frag1Stage = initVulkanStructure();
+    frag1Stage.stage                           = VK_SHADER_STAGE_FRAGMENT_BIT;
+    frag1Stage.module                          = *frag1Module;
+    frag1Stage.pName                           = "main";
+
+    VkPipelineShaderStageCreateInfo frag2Stage = initVulkanStructure();
+    frag2Stage.pNext                           = &mappingInfo;
+    frag2Stage.stage                           = VK_SHADER_STAGE_FRAGMENT_BIT;
+    frag2Stage.module                          = *frag2Module;
+    frag2Stage.pName                           = "main";
+
+    VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = initVulkanStructure();
+    inputAssemblyState.topology                               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+
+    const VkViewport viewport = makeViewport(tcu::IVec2(extent.width, extent.height));
+    const VkRect2D scissor    = makeRect2D(tcu::IVec2(extent.width, extent.height));
+
+    VkPipelineViewportStateCreateInfo viewportState = initVulkanStructure();
+    viewportState.viewportCount                     = 1u;
+    viewportState.pViewports                        = &viewport;
+    viewportState.scissorCount                      = 1u;
+    viewportState.pScissors                         = &scissor;
+
+    VkPipelineRasterizationStateCreateInfo rasterizationState = initVulkanStructure();
+    rasterizationState.polygonMode                            = VK_POLYGON_MODE_FILL;
+    rasterizationState.cullMode                               = VK_CULL_MODE_NONE;
+    rasterizationState.frontFace                              = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterizationState.lineWidth                              = 1.0f;
+
+    VkPipelineMultisampleStateCreateInfo multisampleState = initVulkanStructure();
+    multisampleState.rasterizationSamples                 = VK_SAMPLE_COUNT_1_BIT;
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+    colorBlendAttachment.colorWriteMask =
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+    VkPipelineColorBlendStateCreateInfo colorBlendState = initVulkanStructure();
+    colorBlendState.attachmentCount                     = 1u;
+    colorBlendState.pAttachments                        = &colorBlendAttachment;
+
+    VkPipelineCreateFlags2CreateInfoKHR pipelineCreateFlags2CreateInfo = initVulkanStructure();
+    pipelineCreateFlags2CreateInfo.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+    VkPipelineShaderStageCreateInfo shaderStages[2];
+    shaderStages[0] = vertStage;
+    shaderStages[1] = frag1Stage;
+
+    VkGraphicsPipelineCreateInfo pipelineCreateInfo = initVulkanStructure(&pipelineCreateFlags2CreateInfo);
+    pipelineCreateInfo.stageCount                   = 2u;
+    pipelineCreateInfo.pStages                      = shaderStages;
+    pipelineCreateInfo.pVertexInputState            = &vertexInputState;
+    pipelineCreateInfo.pInputAssemblyState          = &inputAssemblyState;
+    pipelineCreateInfo.pViewportState               = &viewportState;
+    pipelineCreateInfo.pRasterizationState          = &rasterizationState;
+    pipelineCreateInfo.pMultisampleState            = &multisampleState;
+    pipelineCreateInfo.pColorBlendState             = &colorBlendState;
+    pipelineCreateInfo.layout                       = VK_NULL_HANDLE;
+    pipelineCreateInfo.renderPass                   = *renderPass;
+    pipelineCreateInfo.subpass                      = 0u;
+    auto pipeline1 = createGraphicsPipeline(vkd, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+    shaderStages[1]            = frag2Stage;
+    pipelineCreateInfo.pStages = shaderStages;
+    pipelineCreateInfo.subpass = 1u;
+    auto pipeline              = createGraphicsPipeline(vkd, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+    auto cmdPool              = makeCommandPool(vkd, *m_device, m_queueFamilyIndex);
+    auto cmdBufferPtr         = allocateCommandBuffer(vkd, *m_device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    VkCommandBuffer cmdBuffer = cmdBufferPtr.get();
+
+    VkBindHeapInfoEXT heapBindInfo   = initVulkanStructure();
+    heapBindInfo.heapRange.address   = heap->address;
+    heapBindInfo.heapRange.size      = heapSize;
+    heapBindInfo.reservedRangeOffset = userHeapSize;
+    heapBindInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    VkClearValue clearValues[2];
+    clearValues[0] = makeClearValueColorI32(123, 0, 0, 0);
+    clearValues[1] = makeClearValueColorI32(234, 0, 0, 0);
+
+    const VkImageMemoryBarrier2 copyBarrier =
+        makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
+                                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *renderTargetImage->image, imageSubresourceRange);
+
+    VkDependencyInfo copyDependency        = initVulkanStructure();
+    copyDependency.imageMemoryBarrierCount = 1u;
+    copyDependency.pImageMemoryBarriers    = &copyBarrier;
+
+    const VkMemoryBarrier2 hostBarrier =
+        makeMemoryBarrier2(VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_HOST_BIT,
+                           VK_ACCESS_2_HOST_READ_BIT);
+
+    VkDependencyInfo hostDependency   = initVulkanStructure();
+    hostDependency.memoryBarrierCount = 1u;
+    hostDependency.pMemoryBarriers    = &hostBarrier;
+
+    beginCommandBuffer(vkd, cmdBuffer);
+    vkd.cmdBindResourceHeapEXT(cmdBuffer, &heapBindInfo);
+
+    beginRenderPass(vkd, cmdBuffer, *renderPass, *framebuffer, scissor, 2u, clearValues);
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline1);
+    vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+    vkd.cmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+    vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+    endRenderPass(vkd, cmdBuffer);
+
+    vkd.cmdPipelineBarrier2(cmdBuffer, &copyDependency);
+    const VkBufferImageCopy region = makeBufferImageCopy(extent, makeDefaultImageSubresourceLayers());
+    vkd.cmdCopyImageToBuffer(cmdBuffer, *renderTargetImage->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                             outputBuffer->buffer.get(), 1, &region);
+    vkd.cmdPipelineBarrier2(cmdBuffer, &hostDependency);
+
+    endCommandBuffer(vkd, cmdBuffer);
+    submitCommandsAndWait(vkd, *m_device, m_queues.front(), cmdBuffer);
+    invalidateAlloc(vkd, *m_device, *outputBuffer->memory);
+
+    const int32_t *result = static_cast<const int32_t *>(outputBuffer->memory->getHostPtr());
+    for (uint32_t x = 0; x < extent.width; ++x)
+    {
+        for (uint32_t y = 0; y < extent.height; ++y)
+        {
+            const int32_t expected = static_cast<int32_t>(x * 256 + y);
+            const int32_t value    = result[y * extent.width + x];
+
+            if (value != expected)
+            {
+                std::ostringstream str;
+                str << "At (" << x << ", " << y << ") expected value " << expected << ", but was " << value;
+                return tcu::TestStatus::fail(str.str());
+            }
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class DescriptorHeapTestCaseInputAttachmentDraw final : public DescriptorHeapTestCaseBase
+{
+public:
+    explicit DescriptorHeapTestCaseInputAttachmentDraw(tcu::TestContext &testCtx, const std::string &name,
+                                                       const TestParams &params)
+        : DescriptorHeapTestCaseBase(testCtx, name, params)
+        , m_params(params)
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceInputAttachmentDraw(context, m_params);
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+private:
+    TestParams m_params;
+};
+
+void DescriptorHeapTestCaseInputAttachmentDraw::initPrograms(vk::SourceCollections &programCollection) const
+{
+    const std::string vertexShader = R"(#version 450
+void main()
+{
+    vec2 pos = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));
+    gl_Position = vec4(pos * 2.0f - 1.0f, 0.0f, 1.0f);
+}
+)";
+
+    const std::string prePassFragmentShader = R"(#version 450
+layout(location = 0) out int result;
+void main()
+{
+    int x = int(gl_FragCoord.x);
+    int y = int(gl_FragCoord.y);
+    result = x * 256 + y;
+}
+)";
+
+    const std::string fragmentShader = R"(#version 450
+layout(input_attachment_index = 0, set = 0, binding = 2) uniform isubpassInput inputAttachment;
+layout(location = 0) out int result;
+void main()
+{
+    result = subpassLoad(inputAttachment).r;
+}
+)";
+
+    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+    programCollection.glslSources.add("vert") << glu::VertexSource(vertexShader) << buildOptions;
+    programCollection.glslSources.add("frag1") << glu::FragmentSource(prePassFragmentShader) << buildOptions;
+    programCollection.glslSources.add("frag2") << glu::FragmentSource(fragmentShader) << buildOptions;
+}
+
 class DescriptorHeapTestInstanceResourceHeapAccess final : public DescriptorHeapTestInstanceBase
 {
 public:
@@ -21333,6 +21680,19 @@ void populateCustomBorderColorTests(tcu::TestCaseGroup *topGroup)
     topGroup->addChild(group.release());
 }
 
+void populateInputAttachmentTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
+{
+    tcu::TestContext &testCtx = topGroup->getTestContext();
+    MovePtr<tcu::TestCaseGroup> inputAttachmentGroup(new tcu::TestCaseGroup(testCtx, "input_attachment"));
+
+    TestParams params{};
+    params.queue = VK_QUEUE_GRAPHICS_BIT;
+    params.seed  = baseSeed ^ deStringHash("input_attachment");
+
+    inputAttachmentGroup->addChild(new DescriptorHeapTestCaseInputAttachmentDraw(testCtx, "draw", params));
+    topGroup->addChild(inputAttachmentGroup.release());
+}
+
 void populateDescriptorPreciseSizeTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
 {
     tcu::TestContext &testCtx = topGroup->getTestContext();
@@ -21421,6 +21781,7 @@ void populateDescriptorHeapTests(tcu::TestCaseGroup *topGroup)
     populateSmallBufferTests(topGroup, baseSeed);
     populateCustomBorderColorTests(topGroup);
     populateBindingCountTests(topGroup, baseSeed);
+    populateInputAttachmentTests(topGroup, baseSeed);
 }
 
 } // namespace
