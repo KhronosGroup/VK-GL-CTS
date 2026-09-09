@@ -34,6 +34,7 @@
 #include "vktImageAstcDecodeModeTests.hpp"
 #include "vktImageMisalignedCubeTests.hpp"
 #include "vktImageSubresourceLayoutTests.hpp"
+#include "vktImageTilingControlTests.hpp"
 #include "vktImageMismatchedFormatsTests.hpp"
 #include "vktImageMismatchedWriteOpTests.hpp"
 #include "vktImageSampleDrawnCubeFaceTests.hpp"
@@ -81,6 +82,7 @@ void createChildren(tcu::TestCaseGroup *imageTests)
     imageTests->addChild(createMisalignedCubeTests(testCtx));
     imageTests->addChild(createImageLoadStoreLodAMDTests(testCtx));
     imageTests->addChild(createImageSubresourceLayoutTests(testCtx));
+    imageTests->addChild(createImageTilingControlTests(testCtx));
     imageTests->addChild(createImageMismatchedFormatsTests(testCtx));
     imageTests->addChild(createImageWriteOpTests(testCtx));
     imageTests->addChild(createImageSampleDrawnCubeFaceTests(testCtx));

@@ -72,11 +72,13 @@ const vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT&				Context::getGra
 const vk::VkPhysicalDeviceHostImageCopyFeatures&							Context::getHostImageCopyFeatures							(void) const { return m_device->getHostImageCopyFeatures();							}
 const vk::VkPhysicalDeviceHostQueryResetFeatures&							Context::getHostQueryResetFeatures							(void) const { return m_device->getHostQueryResetFeatures();						}
 const vk::VkPhysicalDeviceImage2DViewOf3DFeaturesEXT&						Context::getImage2DViewOf3DFeaturesEXT						(void) const { return m_device->getImage2DViewOf3DFeaturesEXT();					}
+const vk::VkPhysicalDeviceImageAlignmentControlFeaturesMESA&				Context::getImageAlignmentControlFeaturesMESA				(void) const { return m_device->getImageAlignmentControlFeaturesMESA();				}
 const vk::VkPhysicalDeviceImageCompressionControlFeaturesEXT&				Context::getImageCompressionControlFeaturesEXT				(void) const { return m_device->getImageCompressionControlFeaturesEXT();			}
 const vk::VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT&		Context::getImageCompressionControlSwapchainFeaturesEXT		(void) const { return m_device->getImageCompressionControlSwapchainFeaturesEXT();	}
 const vk::VkPhysicalDeviceImageProcessingFeaturesQCOM&						Context::getImageProcessingFeaturesQCOM						(void) const { return m_device->getImageProcessingFeaturesQCOM();					}
 const vk::VkPhysicalDeviceImageRobustnessFeatures&							Context::getImageRobustnessFeatures							(void) const { return m_device->getImageRobustnessFeatures();						}
 const vk::VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT&					Context::getImageSlicedViewOf3DFeaturesEXT					(void) const { return m_device->getImageSlicedViewOf3DFeaturesEXT();				}
+const vk::VkPhysicalDeviceImageTilingControlFeaturesEXT&					Context::getImageTilingControlFeaturesEXT					(void) const { return m_device->getImageTilingControlFeaturesEXT();					}
 const vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT&						Context::getImageViewMinLodFeaturesEXT						(void) const { return m_device->getImageViewMinLodFeaturesEXT();					}
 const vk::VkPhysicalDeviceImagelessFramebufferFeatures&						Context::getImagelessFramebufferFeatures					(void) const { return m_device->getImagelessFramebufferFeatures();					}
 const vk::VkPhysicalDeviceIndexTypeUint8Features&							Context::getIndexTypeUint8Features							(void) const { return m_device->getIndexTypeUint8Features();						}

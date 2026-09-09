@@ -2152,6 +2152,18 @@ const char* getImageTilingName (VkImageTiling value)
 }
 
 
+const char* getImageTilingControlEXTName (VkImageTilingControlEXT value)
+{
+	switch (value)
+	{
+		case VK_IMAGE_TILING_CONTROL_DEFAULT_EXT:			return "VK_IMAGE_TILING_CONTROL_DEFAULT_EXT";
+		case VK_IMAGE_TILING_CONTROL_MAX_PERFORMANCE_EXT:	return "VK_IMAGE_TILING_CONTROL_MAX_PERFORMANCE_EXT";
+		case VK_IMAGE_TILING_CONTROL_MIN_SIZE_EXT:			return "VK_IMAGE_TILING_CONTROL_MIN_SIZE_EXT";
+		default:											return nullptr;
+	}
+}
+
+
 const char* getImageTypeName (VkImageType value)
 {
 	switch (value)
@@ -11172,6 +11184,16 @@ std::ostream& operator<< (std::ostream& s, const VkIOSSurfaceCreateInfoMVK& valu
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkImageAlignmentControlCreateInfoMESA& value)
+{
+	s << "VkImageAlignmentControlCreateInfoMESA = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaximumRequestedAlignment = " << value.maximumRequestedAlignment << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkImageBlit& value)
 {
 	s << "VkImageBlit = {\n";
@@ -11536,6 +11558,16 @@ std::ostream& operator<< (std::ostream& s, const VkImageSwapchainCreateInfoKHR& 
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tswapchain = " << value.swapchain << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageTilingControlCreateInfoEXT& value)
+{
+	s << "VkImageTilingControlCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttilingControl = " << value.tilingControl << '\n';
 	s << '}';
 	return s;
 }
@@ -14469,6 +14501,26 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImage2DViewOf3D
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageAlignmentControlFeaturesMESA& value)
+{
+	s << "VkPhysicalDeviceImageAlignmentControlFeaturesMESA = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageAlignmentControl = " << value.imageAlignmentControl << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageAlignmentControlPropertiesMESA& value)
+{
+	s << "VkPhysicalDeviceImageAlignmentControlPropertiesMESA = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsupportedImageAlignmentMask = " << value.supportedImageAlignmentMask << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageCompressionControlFeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceImageCompressionControlFeaturesEXT = {\n";
@@ -14557,6 +14609,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageSlicedView
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\timageSlicedViewOf3D = " << value.imageSlicedViewOf3D << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageTilingControlFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceImageTilingControlFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageTilingControl = " << value.imageTilingControl << '\n';
 	s << '}';
 	return s;
 }

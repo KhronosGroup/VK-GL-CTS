@@ -43,6 +43,7 @@ const vk::VkPhysicalDeviceGpaPropertiesAMD&							getGpaPropertiesAMD							(voi
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&		getGraphicsPipelineLibraryPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceHostImageCopyProperties&					getHostImageCopyProperties					(void) const;
 const vk::VkPhysicalDeviceIDProperties&								getIDProperties								(void) const;
+const vk::VkPhysicalDeviceImageAlignmentControlPropertiesMESA&		getImageAlignmentControlPropertiesMESA		(void) const;
 const vk::VkPhysicalDeviceImageProcessingPropertiesQCOM&			getImageProcessingPropertiesQCOM			(void) const;
 const vk::VkPhysicalDeviceInlineUniformBlockProperties&				getInlineUniformBlockProperties				(void) const;
 const vk::VkPhysicalDeviceLayeredApiPropertiesListKHR&				getLayeredApiPropertiesList					(void) const;

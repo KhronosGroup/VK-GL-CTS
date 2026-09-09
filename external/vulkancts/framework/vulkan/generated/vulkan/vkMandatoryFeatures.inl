@@ -361,6 +361,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_image_2d_view_of_3d"))
 		addFeatures(&physicalDeviceImage2DViewOf3DFeaturesEXT);
 
+	// VkPhysicalDeviceImageAlignmentControlFeaturesMESA for ext [VK_MESA_image_alignment_control]
+	vk::VkPhysicalDeviceImageAlignmentControlFeaturesMESA physicalDeviceImageAlignmentControlFeaturesMESA = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_MESA_image_alignment_control"))
+		addFeatures(&physicalDeviceImageAlignmentControlFeaturesMESA);
+
 	// VkPhysicalDeviceImageCompressionControlFeaturesEXT for ext [VK_EXT_image_compression_control]
 	vk::VkPhysicalDeviceImageCompressionControlFeaturesEXT physicalDeviceImageCompressionControlFeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_image_compression_control"))
@@ -385,6 +390,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	vk::VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT physicalDeviceImageSlicedViewOf3DFeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_image_sliced_view_of_3d"))
 		addFeatures(&physicalDeviceImageSlicedViewOf3DFeaturesEXT);
+
+	// VkPhysicalDeviceImageTilingControlFeaturesEXT for ext [VK_EXT_image_tiling_control]
+	vk::VkPhysicalDeviceImageTilingControlFeaturesEXT physicalDeviceImageTilingControlFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_image_tiling_control"))
+		addFeatures(&physicalDeviceImageTilingControlFeaturesEXT);
 
 	// VkPhysicalDeviceImageViewMinLodFeaturesEXT for ext [VK_EXT_image_view_min_lod]
 	vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT physicalDeviceImageViewMinLodFeaturesEXT = initVulkanStructure();
@@ -2666,6 +2676,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("deviceGeneratedCommands");
 	}
 
+	// VkPhysicalDeviceImageAlignmentControlFeaturesMESA
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_MESA_image_alignment_control")) )
+	{
+		if ( physicalDeviceImageAlignmentControlFeaturesMESA.imageAlignmentControl == VK_FALSE )
+			failMesages.push_back("imageAlignmentControl");
+	}
+
 	// VkPhysicalDevicePushConstantBankFeaturesNV
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_push_constant_bank")) )
 	{
@@ -2797,6 +2814,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDevicePrimitiveRestartIndexFeaturesEXT.primitiveRestartIndex == VK_FALSE )
 			failMesages.push_back("primitiveRestartIndex");
+	}
+
+	// VkPhysicalDeviceImageTilingControlFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_image_tiling_control")) )
+	{
+		if ( physicalDeviceImageTilingControlFeaturesEXT.imageTilingControl == VK_FALSE )
+			failMesages.push_back("imageTilingControl");
 	}
 
 	// VkPhysicalDeviceAccelerationStructureFeaturesKHR

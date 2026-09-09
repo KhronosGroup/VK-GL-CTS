@@ -301,10 +301,12 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceFrameBoundaryFeaturesEXT>(Vk
 template<> void initFeatureFromBlob<VkPhysicalDeviceGpaFeaturesAMD>(VkPhysicalDeviceGpaFeaturesAMD&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT>(VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceImage2DViewOf3DFeaturesEXT>(VkPhysicalDeviceImage2DViewOf3DFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceImageAlignmentControlFeaturesMESA>(VkPhysicalDeviceImageAlignmentControlFeaturesMESA&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceImageCompressionControlFeaturesEXT>(VkPhysicalDeviceImageCompressionControlFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT>(VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceImageProcessingFeaturesQCOM>(VkPhysicalDeviceImageProcessingFeaturesQCOM&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT>(VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceImageTilingControlFeaturesEXT>(VkPhysicalDeviceImageTilingControlFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceImageViewMinLodFeaturesEXT>(VkPhysicalDeviceImageViewMinLodFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceInheritedViewportScissorFeaturesNV>(VkPhysicalDeviceInheritedViewportScissorFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR>(VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR&, const AllFeaturesBlobs&) {}
@@ -481,11 +483,13 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceGraphicsPipelineLibraryFe
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceHostImageCopyFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_FEATURES, VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceHostQueryResetFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES, VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImage2DViewOf3DFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT, VK_EXT_IMAGE_2D_VIEW_OF_3D_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImageAlignmentControlFeaturesMESA>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA, VK_MESA_IMAGE_ALIGNMENT_CONTROL_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImageCompressionControlFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_FEATURES_EXT, VK_EXT_IMAGE_COMPRESSION_CONTROL_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT, VK_EXT_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImageProcessingFeaturesQCOM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_FEATURES_QCOM, VK_QCOM_IMAGE_PROCESSING_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImageRobustnessFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES, VK_EXT_IMAGE_ROBUSTNESS_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT, VK_EXT_IMAGE_SLICED_VIEW_OF_3D_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImageTilingControlFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_TILING_CONTROL_FEATURES_EXT, VK_EXT_IMAGE_TILING_CONTROL_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImageViewMinLodFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT, VK_EXT_IMAGE_VIEW_MIN_LOD_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImagelessFramebufferFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES, VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceIndexTypeUint8Features>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES, VK_KHR_INDEX_TYPE_UINT8_EXTENSION_NAME}; }
@@ -699,11 +703,13 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceHostImageCopyFeatures>, VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceHostQueryResetFeatures>, VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceImage2DViewOf3DFeaturesEXT>, VK_EXT_IMAGE_2D_VIEW_OF_3D_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceImageAlignmentControlFeaturesMESA>, VK_MESA_IMAGE_ALIGNMENT_CONTROL_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceImageCompressionControlFeaturesEXT>, VK_EXT_IMAGE_COMPRESSION_CONTROL_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT>, VK_EXT_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceImageProcessingFeaturesQCOM>, VK_QCOM_IMAGE_PROCESSING_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceImageRobustnessFeatures>, VK_EXT_IMAGE_ROBUSTNESS_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT>, VK_EXT_IMAGE_SLICED_VIEW_OF_3D_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceImageTilingControlFeaturesEXT>, VK_EXT_IMAGE_TILING_CONTROL_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceImageViewMinLodFeaturesEXT>, VK_EXT_IMAGE_VIEW_MIN_LOD_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceImagelessFramebufferFeatures>, VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceIndexTypeUint8Features>, VK_KHR_INDEX_TYPE_UINT8_EXTENSION_NAME },

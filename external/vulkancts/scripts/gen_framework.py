@@ -104,6 +104,7 @@ VK_EXT_image_compression_control
 VK_EXT_image_compression_control_swapchain
 VK_EXT_image_drm_format_modifier
 VK_EXT_image_sliced_view_of_3d
+VK_EXT_image_tiling_control
 VK_EXT_image_view_min_lod
 VK_EXT_index_type_uint8
 VK_EXT_legacy_dithering
@@ -303,6 +304,7 @@ VK_QCOM_multiview_per_view_viewports
 VK_QCOM_multiview_per_view_render_areas
 VK_QNX_external_memory_screen_buffer
 VK_VALVE_fragment_density_map_layered
+VK_MESA_image_alignment_control
 """.splitlines()
 
 INL_HEADER = """\
