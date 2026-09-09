@@ -3583,7 +3583,7 @@ tcu::TestStatus testPhysicalDeviceFeaturePipelineExecutablePropertiesFeaturesKHR
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
-tcu::TestStatus testPhysicalDeviceFeaturePipelineLibraryGroupHandlesFeaturesEXT (Context& context)
+tcu::TestStatus testPhysicalDeviceFeaturePipelineLibraryGroupHandlesFeaturesKHR (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
     const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
@@ -3593,31 +3593,31 @@ tcu::TestStatus testPhysicalDeviceFeaturePipelineLibraryGroupHandlesFeaturesEXT 
     VkPhysicalDeviceFeatures2     extFeatures;
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
-    VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT devicePipelineLibraryGroupHandlesFeaturesEXT[count];
-    const bool                                             isPipelineLibraryGroupHandlesFeaturesEXT = checkExtension(properties, "VK_EXT_pipeline_library_group_handles");
+    VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR devicePipelineLibraryGroupHandlesFeaturesKHR[count];
+    const bool                                             isPipelineLibraryGroupHandlesFeaturesKHR = checkExtension(properties, "VK_KHR_pipeline_library_group_handles") || checkExtension(properties, "VK_EXT_pipeline_library_group_handles");
 
-    if (!isPipelineLibraryGroupHandlesFeaturesEXT)
+    if (!isPipelineLibraryGroupHandlesFeaturesKHR)
         return tcu::TestStatus::pass("Querying not supported");
 
     for (int ndx = 0; ndx < count; ++ndx)
     {
-        deMemset(&devicePipelineLibraryGroupHandlesFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT));
-        devicePipelineLibraryGroupHandlesFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT;
-        devicePipelineLibraryGroupHandlesFeaturesEXT[ndx].pNext = nullptr;
+        deMemset(&devicePipelineLibraryGroupHandlesFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR));
+        devicePipelineLibraryGroupHandlesFeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_KHR;
+        devicePipelineLibraryGroupHandlesFeaturesKHR[ndx].pNext = nullptr;
 
         deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
         extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        extFeatures.pNext = &devicePipelineLibraryGroupHandlesFeaturesEXT[ndx];
+        extFeatures.pNext = &devicePipelineLibraryGroupHandlesFeaturesKHR[ndx];
 
         vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
     }
 
-    log << TestLog::Message << devicePipelineLibraryGroupHandlesFeaturesEXT[0] << TestLog::EndMessage;
+    log << TestLog::Message << devicePipelineLibraryGroupHandlesFeaturesKHR[0] << TestLog::EndMessage;
 
     if (
-        devicePipelineLibraryGroupHandlesFeaturesEXT[0].pipelineLibraryGroupHandles != devicePipelineLibraryGroupHandlesFeaturesEXT[1].pipelineLibraryGroupHandles)
+        devicePipelineLibraryGroupHandlesFeaturesKHR[0].pipelineLibraryGroupHandles != devicePipelineLibraryGroupHandlesFeaturesKHR[1].pipelineLibraryGroupHandles)
     {
-        TCU_FAIL("Mismatch between VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT");
+        TCU_FAIL("Mismatch between VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR");
     }
     return tcu::TestStatus::pass("Querying succeeded");
 }
@@ -7721,7 +7721,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "pipeline_binary_features_khr", testPhysicalDeviceFeaturePipelineBinaryFeaturesKHR);
 	addFunctionCase(testGroup, "pipeline_creation_cache_control_features", testPhysicalDeviceFeaturePipelineCreationCacheControlFeatures);
 	addFunctionCase(testGroup, "pipeline_executable_properties_features_khr", testPhysicalDeviceFeaturePipelineExecutablePropertiesFeaturesKHR);
-	addFunctionCase(testGroup, "pipeline_library_group_handles_features_ext", testPhysicalDeviceFeaturePipelineLibraryGroupHandlesFeaturesEXT);
+	addFunctionCase(testGroup, "pipeline_library_group_handles_features_khr", testPhysicalDeviceFeaturePipelineLibraryGroupHandlesFeaturesKHR);
 	addFunctionCase(testGroup, "pipeline_properties_features_ext", testPhysicalDeviceFeaturePipelinePropertiesFeaturesEXT);
 	addFunctionCase(testGroup, "pipeline_protected_access_features", testPhysicalDeviceFeaturePipelineProtectedAccessFeatures);
 	addFunctionCase(testGroup, "pipeline_robustness_features", testPhysicalDeviceFeaturePipelineRobustnessFeatures);

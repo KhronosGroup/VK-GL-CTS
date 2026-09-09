@@ -337,7 +337,7 @@ template<> void initFeatureFromBlob<VkPhysicalDevicePerformanceCountersByRegionF
 template<> void initFeatureFromBlob<VkPhysicalDevicePerformanceQueryFeaturesKHR>(VkPhysicalDevicePerformanceQueryFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePipelineBinaryFeaturesKHR>(VkPhysicalDevicePipelineBinaryFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR>(VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&, const AllFeaturesBlobs&) {}
-template<> void initFeatureFromBlob<VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT>(VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR>(VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePipelinePropertiesFeaturesEXT>(VkPhysicalDevicePipelinePropertiesFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePortabilitySubsetFeaturesKHR>(VkPhysicalDevicePortabilitySubsetFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePresentId2FeaturesKHR>(VkPhysicalDevicePresentId2FeaturesKHR&, const AllFeaturesBlobs&) {}
@@ -527,7 +527,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePerformanceQueryFeaturesK
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePipelineBinaryFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_FEATURES_KHR, VK_KHR_PIPELINE_BINARY_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePipelineCreationCacheControlFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES, VK_EXT_PIPELINE_CREATION_CACHE_CONTROL_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR, VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME}; }
-template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT, VK_EXT_PIPELINE_LIBRARY_GROUP_HANDLES_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_KHR, VK_KHR_PIPELINE_LIBRARY_GROUP_HANDLES_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePipelinePropertiesFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROPERTIES_FEATURES_EXT, VK_EXT_PIPELINE_PROPERTIES_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePipelineProtectedAccessFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES, VK_EXT_PIPELINE_PROTECTED_ACCESS_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePipelineRobustnessFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_ROBUSTNESS_FEATURES, VK_EXT_PIPELINE_ROBUSTNESS_EXTENSION_NAME}; }
@@ -745,7 +745,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDevicePipelineBinaryFeaturesKHR>, VK_KHR_PIPELINE_BINARY_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDevicePipelineCreationCacheControlFeatures>, VK_EXT_PIPELINE_CREATION_CACHE_CONTROL_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR>, VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME },
-	{ createFeatureStructWrapper<VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT>, VK_EXT_PIPELINE_LIBRARY_GROUP_HANDLES_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR>, VK_KHR_PIPELINE_LIBRARY_GROUP_HANDLES_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDevicePipelinePropertiesFeaturesEXT>, VK_EXT_PIPELINE_PROPERTIES_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDevicePipelineProtectedAccessFeatures>, VK_EXT_PIPELINE_PROTECTED_ACCESS_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDevicePipelineRobustnessFeatures>, VK_EXT_PIPELINE_ROBUSTNESS_EXTENSION_NAME },
@@ -858,6 +858,7 @@ const std::string getPreviousFeatureExtName (const std::string &name)
 		{ "VK_KHR_line_rasterization", "VK_EXT_line_rasterization" },
 		{ "VK_EXT_memory_decompression", "VK_NV_memory_decompression" },
 		{ "VK_EXT_mutable_descriptor_type", "VK_VALVE_mutable_descriptor_type" },
+		{ "VK_KHR_pipeline_library_group_handles", "VK_EXT_pipeline_library_group_handles" },
 		{ "VK_KHR_present_mode_fifo_latest_ready", "VK_EXT_present_mode_fifo_latest_ready" },
 		{ "VK_EXT_rasterization_order_attachment_access", "VK_ARM_rasterization_order_attachment_access" },
 		{ "VK_KHR_robustness2", "VK_EXT_robustness2" },

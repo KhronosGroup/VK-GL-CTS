@@ -119,7 +119,7 @@ auto fPerformanceQueryFeatures                          = m_context.getPerforman
 auto fPipelineBinaryFeatures                            = m_context.getPipelineBinaryFeatures();
 auto fPipelineCreationCacheControlFeatures              = m_context.getPipelineCreationCacheControlFeatures();
 auto fPipelineExecutablePropertiesFeatures              = m_context.getPipelineExecutablePropertiesFeatures();
-auto fPipelineLibraryGroupHandlesFeaturesEXT            = m_context.getPipelineLibraryGroupHandlesFeaturesEXT();
+auto fPipelineLibraryGroupHandlesFeatures               = m_context.getPipelineLibraryGroupHandlesFeatures();
 auto fPipelinePropertiesFeaturesEXT                     = m_context.getPipelinePropertiesFeaturesEXT();
 auto fPipelineProtectedAccessFeatures                   = m_context.getPipelineProtectedAccessFeatures();
 auto fPipelineRobustnessFeatures                        = m_context.getPipelineRobustnessFeatures();
@@ -332,7 +332,7 @@ std::vector<void *> pNextFeatures = {
 	&fPipelineBinaryFeatures,
 	&fPipelineCreationCacheControlFeatures,
 	&fPipelineExecutablePropertiesFeatures,
-	&fPipelineLibraryGroupHandlesFeaturesEXT,
+	&fPipelineLibraryGroupHandlesFeatures,
 	&fPipelinePropertiesFeaturesEXT,
 	&fPipelineProtectedAccessFeatures,
 	&fPipelineRobustnessFeatures,

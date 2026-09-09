@@ -1250,6 +1250,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_pipeline_library_group_handles")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_portability_enumeration")
 	{
 		return;
@@ -2004,6 +2008,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		functions.push_back("vkCreateUbmSurfaceSEC");
 		functions.push_back("vkGetPhysicalDeviceUbmPresentationSupportSEC");
+		return;
+	}
+	if (extName == "VK_VALVE_buffer_device_address_allocation_alignment")
+	{
 		return;
 	}
 	if (extName == "VK_VALVE_descriptor_set_host_mapping")
@@ -3783,6 +3791,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_pipeline_library_group_handles")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_portability_enumeration")
 	{
 		return;
@@ -4655,6 +4667,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_VALVE_buffer_device_address_allocation_alignment")
+	{
+		return;
+	}
 	if (extName == "VK_VALVE_descriptor_set_host_mapping")
 	{
 		functions.push_back("vkGetDescriptorSetLayoutHostMappingInfoVALVE");
@@ -4855,6 +4871,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_present_mode_fifo_latest_ready",
 	"VK_KHR_opacity_micromap",
 	"VK_KHR_maintenance10",
+	"VK_KHR_pipeline_library_group_handles",
 	"VK_KHR_maintenance11",
 	"VK_KHR_extended_flags",
 	"VK_NV_glsl_shader",
@@ -5155,6 +5172,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_image_tiling_control",
 	"VK_NV_cooperative_matrix_decode_vector",
 	"VK_NV_private_data_base_handle",
+	"VK_VALVE_buffer_device_address_allocation_alignment",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_KHR_ray_query",

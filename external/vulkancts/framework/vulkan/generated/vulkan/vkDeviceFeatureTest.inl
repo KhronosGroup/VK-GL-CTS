@@ -4465,7 +4465,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineExecutablePropert
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineLibraryGroupHandlesFeaturesEXT (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineLibraryGroupHandlesFeaturesKHR (Context& context)
 {
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
@@ -4485,13 +4485,13 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineLibraryGroupHandl
     const auto& extensionNames = context.getDeviceCreationExtensions();
     DE_UNREF(extensionNames); // In some cases this is not used.
 
-    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT>()))
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR>()))
     {
         static const Feature features[] =
         {
-        FEATURE_ITEM (VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT, pipelineLibraryGroupHandles),
+        FEATURE_ITEM (VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR, pipelineLibraryGroupHandles),
         };
-        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT*>(featuresStruct);
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR*>(featuresStruct);
         checkFeatures(instance, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
     }
 
@@ -8571,7 +8571,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "pipeline_binary_features_khr", createDeviceWithUnsupportedFeaturesTestPipelineBinaryFeaturesKHR);
 	addFunctionCase(testGroup, "pipeline_creation_cache_control_features", createDeviceWithUnsupportedFeaturesTestPipelineCreationCacheControlFeatures);
 	addFunctionCase(testGroup, "pipeline_executable_properties_features_khr", createDeviceWithUnsupportedFeaturesTestPipelineExecutablePropertiesFeaturesKHR);
-	addFunctionCase(testGroup, "pipeline_library_group_handles_features_ext", createDeviceWithUnsupportedFeaturesTestPipelineLibraryGroupHandlesFeaturesEXT);
+	addFunctionCase(testGroup, "pipeline_library_group_handles_features_khr", createDeviceWithUnsupportedFeaturesTestPipelineLibraryGroupHandlesFeaturesKHR);
 	addFunctionCase(testGroup, "pipeline_properties_features_ext", createDeviceWithUnsupportedFeaturesTestPipelinePropertiesFeaturesEXT);
 	addFunctionCase(testGroup, "pipeline_protected_access_features", createDeviceWithUnsupportedFeaturesTestPipelineProtectedAccessFeatures);
 	addFunctionCase(testGroup, "pipeline_robustness_features", createDeviceWithUnsupportedFeaturesTestPipelineRobustnessFeatures);

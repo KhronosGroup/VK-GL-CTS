@@ -2863,9 +2863,9 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePipelineExecutablePr
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT> (void)
+template<> VkStructureType getStructureType<VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDevicePipelinePropertiesFeaturesEXT> (void)

@@ -1306,7 +1306,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineBinaryF
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineBinaryPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineCreationCacheControlFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelinePropertiesFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineProtectedAccessFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineRobustnessFeatures& value);

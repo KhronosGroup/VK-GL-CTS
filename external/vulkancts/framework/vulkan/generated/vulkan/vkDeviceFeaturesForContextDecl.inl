@@ -118,7 +118,7 @@ const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&						getPerformanceQueryF
 const vk::VkPhysicalDevicePipelineBinaryFeaturesKHR&						getPipelineBinaryFeatures							(void) const;
 const vk::VkPhysicalDevicePipelineCreationCacheControlFeatures&				getPipelineCreationCacheControlFeatures				(void) const;
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&			getPipelineExecutablePropertiesFeatures				(void) const;
-const vk::VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT&			getPipelineLibraryGroupHandlesFeaturesEXT			(void) const;
+const vk::VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR&			getPipelineLibraryGroupHandlesFeatures				(void) const;
 const vk::VkPhysicalDevicePipelinePropertiesFeaturesEXT&					getPipelinePropertiesFeaturesEXT					(void) const;
 const vk::VkPhysicalDevicePipelineProtectedAccessFeatures&					getPipelineProtectedAccessFeatures					(void) const;
 const vk::VkPhysicalDevicePipelineRobustnessFeatures&						getPipelineRobustnessFeatures						(void) const;

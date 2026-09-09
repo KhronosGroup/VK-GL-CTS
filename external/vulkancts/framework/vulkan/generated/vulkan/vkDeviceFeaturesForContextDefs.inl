@@ -118,7 +118,7 @@ const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&						Context::getPerforma
 const vk::VkPhysicalDevicePipelineBinaryFeaturesKHR&						Context::getPipelineBinaryFeatures							(void) const { return m_device->getPipelineBinaryFeatures();						}
 const vk::VkPhysicalDevicePipelineCreationCacheControlFeatures&				Context::getPipelineCreationCacheControlFeatures			(void) const { return m_device->getPipelineCreationCacheControlFeatures();			}
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&			Context::getPipelineExecutablePropertiesFeatures			(void) const { return m_device->getPipelineExecutablePropertiesFeatures();			}
-const vk::VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT&			Context::getPipelineLibraryGroupHandlesFeaturesEXT			(void) const { return m_device->getPipelineLibraryGroupHandlesFeaturesEXT();		}
+const vk::VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR&			Context::getPipelineLibraryGroupHandlesFeatures				(void) const { return m_device->getPipelineLibraryGroupHandlesFeatures();			}
 const vk::VkPhysicalDevicePipelinePropertiesFeaturesEXT&					Context::getPipelinePropertiesFeaturesEXT					(void) const { return m_device->getPipelinePropertiesFeaturesEXT();					}
 const vk::VkPhysicalDevicePipelineProtectedAccessFeatures&					Context::getPipelineProtectedAccessFeatures					(void) const { return m_device->getPipelineProtectedAccessFeatures();				}
 const vk::VkPhysicalDevicePipelineRobustnessFeatures&						Context::getPipelineRobustnessFeatures						(void) const { return m_device->getPipelineRobustnessFeatures();					}
