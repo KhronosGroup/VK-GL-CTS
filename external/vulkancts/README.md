@@ -501,7 +501,9 @@ The conformance submission package must contain the following:
 4. Conformance statement
 
 Test logs (1) should be named `<submission pkg dir>/TestResults-<driver build type>-<fraction id>-of-<total fractions>.qpa`,
-for example `TestResults-armeabi-v7a-1-of-8.qpa`. On platforms where multiple different driver
+for example `TestResults-armeabi-v7a-0-of-8.qpa`. The `<fraction id>` is the zero-based
+index of the submission, which matches the `--deqp-fraction=I,N` I parameter used
+in the command line argument. On platforms where multiple different driver
 builds (for example 64-bit and 32-bit) are present, CTS logs must be provided
 for each driver build as part of the submission package. If CTS run was split into multiple
 fractions then result files for all fractions must be provided, each file must
