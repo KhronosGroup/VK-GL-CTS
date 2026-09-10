@@ -7278,7 +7278,7 @@ void DynamicA2CCase::initPrograms(vk::SourceCollections &programCollection) cons
     std::ostringstream comp;
     comp << "#version 460\n"
          << "layout (set=0, binding=0) uniform sampler2DMS resImage;\n"
-         << "layout (set=0, binding=0) uniform sampler2DMS refImage;\n"
+         << "layout (set=0, binding=1) uniform sampler2DMS refImage;\n"
          << "layout (set=0, binding=2, std430) buffer OutputBlock { uint flags[" << flagCount << "]; } outBuffer;\n"
          << "layout (local_size_x=" << sampleCount << ", local_size_y=1, local_size_z=1) in;\n"
          << "void main (void) {\n"

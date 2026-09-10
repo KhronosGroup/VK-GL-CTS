@@ -239,12 +239,13 @@ void RayTracingTestCase::initPrograms(SourceCollections &programCollection) cons
                "#extension GL_EXT_ray_tracing : require\n"
                "layout(location = 0) callableDataEXT float dummy;"
                "layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;\n"
+               "layout(push_constant) uniform PushConstants { int offset; } pc;\n"
                "\n"
                "void main()\n"
                "{\n"
                "  uint n = "
             << m_data.width
-            << " * gl_LaunchIDEXT.y + gl_LaunchIDEXT.x;\n"
+            << " * (gl_LaunchIDEXT.y + pc.offset) + gl_LaunchIDEXT.x;\n"
                "  executeCallableEXT(n, 0);\n"
                "}\n";
 
@@ -261,6 +262,7 @@ void RayTracingTestCase::initPrograms(SourceCollections &programCollection) cons
                    "#extension GL_EXT_ray_tracing : require\n"
                    "layout(location = 0) callableDataInEXT float dummy;\n"
                    "layout(r32ui, set = 0, binding = 0) uniform uimage2D image0_0;\n"
+                   "layout(push_constant) uniform PushConstants { int offset; } pc;\n"
                    "void main()\n"
                    "{\n"
                    "  uint r = ("
@@ -268,7 +270,7 @@ void RayTracingTestCase::initPrograms(SourceCollections &programCollection) cons
                 << ") % 199;\n"
                    "  uvec4 color = uvec4(r,0,0,1);\n"
                 << (dummyWork ? generateDummyWork(shaderNdx) : "")
-                << "  imageStore(image0_0, ivec2(gl_LaunchIDEXT.xy), color);\n"
+                << "  imageStore(image0_0, ivec2(gl_LaunchIDEXT.x, gl_LaunchIDEXT.y + pc.offset), color);\n"
                    "}\n";
 
             programCollection.glslSources.add("call" + de::toString(shaderNdx))
@@ -376,9 +378,19 @@ de::MovePtr<BufferWithMemory> RayTracingBuildLargeTestInstance::runTest(const ui
             .addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
             .addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
             .build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
-    const Move<VkDescriptorSet> descriptorSet   = makeDescriptorSet(vkd, device, *descriptorPool, *descriptorSetLayout);
-    const Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vkd, device, descriptorSetLayout.get());
-    const Move<VkCommandPool> cmdPool           = createCommandPool(vkd, device, 0, queueFamilyIndex);
+    const Move<VkDescriptorSet> descriptorSet = makeDescriptorSet(vkd, device, *descriptorPool, *descriptorSetLayout);
+
+    // Add push constant range to the pipeline layout
+    VkPushConstantRange pushConstantRange;
+    pushConstantRange.offset     = 0;
+    pushConstantRange.size       = sizeof(int32_t);
+    pushConstantRange.stageFlags = ALL_RAY_TRACING_STAGES;
+
+    const Move<VkPipelineLayout> pipelineLayout =
+        makePipelineLayout(vkd, device, descriptorSetLayout.get(), &pushConstantRange);
+
+    const Move<VkCommandPool> cmdPool =
+        createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
     const Move<VkCommandBuffer> cmdBuffer =
         allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -441,6 +453,8 @@ de::MovePtr<BufferWithMemory> RayTracingBuildLargeTestInstance::runTest(const ui
 
     beginCommandBuffer(vkd, *cmdBuffer, 0u);
     {
+        const int32_t pushConstantValue = 0;
+
         cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                       VK_PIPELINE_STAGE_TRANSFER_BIT, &preImageBarrier);
         vkd.cmdClearColorImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1,
@@ -471,8 +485,70 @@ de::MovePtr<BufferWithMemory> RayTracingBuildLargeTestInstance::runTest(const ui
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 
+        vkd.cmdPushConstants(*cmdBuffer, *pipelineLayout, ALL_RAY_TRACING_STAGES,
+                             0u,                  // offset
+                             sizeof(int32_t),     // size
+                             &pushConstantValue); // pValues
+
         cmdTraceRays(vkd, *cmdBuffer, &raygenShaderBindingTableRegion, &missShaderBindingTableRegion,
-                     &hitShaderBindingTableRegion, &callableShaderBindingTableRegion, m_data.width, m_data.height, 1);
+                     &hitShaderBindingTableRegion, &callableShaderBindingTableRegion, m_data.width, m_data.height / 2,
+                     1);
+
+        cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+                                 VK_PIPELINE_STAGE_TRANSFER_BIT, &postTraceMemoryBarrier);
+
+        vkd.cmdCopyImageToBuffer(*cmdBuffer, **image, VK_IMAGE_LAYOUT_GENERAL, **buffer, 1u, &bufferImageRegion);
+
+        cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &postCopyMemoryBarrier);
+    }
+    endCommandBuffer(vkd, *cmdBuffer);
+
+    submitCommandsAndWait(vkd, device, queue, cmdBuffer.get());
+
+    invalidateMappedMemoryRange(vkd, device, buffer->getAllocation().getMemory(), buffer->getAllocation().getOffset(),
+                                pixelCount * sizeof(uint32_t));
+
+    beginCommandBuffer(vkd, *cmdBuffer, 0u);
+    {
+        const int32_t pushConstantValue = m_data.height / 2;
+
+        cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                      VK_PIPELINE_STAGE_TRANSFER_BIT, &preImageBarrier);
+        cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                      VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, &postImageBarrier);
+
+        bottomLevelAccelerationStructure = initBottomAccelerationStructure(*cmdBuffer);
+        topLevelAccelerationStructure    = initTopAccelerationStructure(*cmdBuffer, bottomLevelAccelerationStructure);
+
+        const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
+        VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
+            nullptr,                                                           //  const void* pNext;
+            1u,                                                                //  uint32_t accelerationStructureCount;
+            topLevelAccelerationStructurePtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
+        };
+
+        DescriptorSetUpdateBuilder()
+            .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                         VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfo)
+            .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u),
+                         VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &accelerationStructureWriteDescriptorSet)
+            .update(vkd, device);
+
+        vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
+                                  &descriptorSet.get(), 0, nullptr);
+
+        vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
+
+        vkd.cmdPushConstants(*cmdBuffer, *pipelineLayout, ALL_RAY_TRACING_STAGES,
+                             0u,                  // offset
+                             sizeof(int32_t),     // size
+                             &pushConstantValue); // pValues
+
+        cmdTraceRays(vkd, *cmdBuffer, &raygenShaderBindingTableRegion, &missShaderBindingTableRegion,
+                     &hitShaderBindingTableRegion, &callableShaderBindingTableRegion, m_data.width, m_data.height / 2,
+                     1);
 
         cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
                                  VK_PIPELINE_STAGE_TRANSFER_BIT, &postTraceMemoryBarrier);
