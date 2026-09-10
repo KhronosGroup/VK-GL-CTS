@@ -752,7 +752,8 @@ tcu::TestStatus DrawIndexedMaintenance6::iterate(void)
 
     ptr = reinterpret_cast<uint8_t *>(countBuffer->getBoundMemory().getHostPtr());
 
-    deMemset(ptr, 1, 1);
+    const uint32_t drawCount = 1u;
+    deMemcpy(ptr, &drawCount, sizeof(drawCount));
     vk::flushAlloc(m_vk, device, countBuffer->getBoundMemory());
 
     const vk::VkBuffer vertexBuffer           = m_vertexBuffer->object();
