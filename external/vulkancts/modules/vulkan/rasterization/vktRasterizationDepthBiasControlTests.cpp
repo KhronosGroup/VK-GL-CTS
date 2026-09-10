@@ -232,6 +232,14 @@ std::string getMechanismName(const SetMechanism m)
     return "";
 }
 
+bool isForceUnormInexact(const MaybeRepr &reprInfo)
+{
+    return (reprInfo &&
+            reprInfo->depthBiasRepresentation ==
+                VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORCE_UNORM_EXT &&
+            reprInfo->depthBiasExact == VK_FALSE);
+}
+
 struct TestParams
 {
     const VkFormat attachmentFormat; // Depth attachment format.
@@ -661,6 +669,22 @@ tcu::TestStatus DepthBiasControlInstance::iterate(void)
     const double constantBiasMin        = constantFactorD * rValue.first;
     const double constantBiasMax        = constantFactorD * rValue.second;
     const double constantBiasErrorThres = constantBiasMax - constantBiasMin;
+    // For FORCE_UNORM + inexact with constant bias, keep zf in [zmin, zmax] = [0, 1] with
+    // depth clamping disabled; otherwise depth is undefined after range adjustment.
+    if (isForceUnormInexact(m_params.reprInfo) && m_params.usedFactor == UsedFactor::CONSTANT)
+    {
+        const double effectiveBiasMinD =
+            (noClamp ? constantBiasMin : std::min(constantBiasMin, static_cast<double>(m_params.depthBiasClamp)));
+        const double effectiveBiasMaxD =
+            (noClamp ? constantBiasMax : std::min(constantBiasMax, static_cast<double>(m_params.depthBiasClamp)));
+        const float expectedDepthMin = sampleDepth + static_cast<float>(effectiveBiasMinD);
+        const float expectedDepthMax = sampleDepth + static_cast<float>(effectiveBiasMaxD);
+
+        DE_UNREF(expectedDepthMin);
+        DE_UNREF(expectedDepthMax);
+        DE_ASSERT(expectedDepthMin >= 0.0f && expectedDepthMax <= 1.0f);
+        DE_ASSERT(expectedDepth >= 0.0f && expectedDepth <= 1.0f);
+    }
     const float depthThreshold =
         static_cast<float>(constantBiasErrorThres + getDepthErrorThreshold(tcuDepthFormat, expectedDepth));
     {
@@ -861,6 +885,17 @@ tcu::TestCaseGroup *createDepthBiasControlTests(tcu::TestContext &testCtx)
                                 default:
                                     DE_ASSERT(false);
                                     break;
+                                }
+
+                                // For FORCE_UNORM + inexact with constant bias, omit this selected parameter subset:
+                                // it is the subset where zf_max can go above zmax=1.0 with depth clamping disabled.
+                                if (usedFactorCase.usedFactor == UsedFactor::CONSTANT &&
+                                    isForceUnormInexact(reprInfoCase.reprInfo) &&
+                                    constantDepthCase.constantDepth == 0.625f && targetBiasCase.targetBias == 0.25f &&
+                                    (clampValueCase.clampCase == ClampCase::ZERO ||
+                                     clampValueCase.clampCase == ClampCase::LARGE))
+                                {
+                                    continue;
                                 }
 
                                 for (const auto &secondaryCmdBufferCase : secondaryCmdBufferCases)
