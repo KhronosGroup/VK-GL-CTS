@@ -2890,6 +2890,14 @@ dEQP-VK.binding_model.descriptor_heap_random.sets8.unifindexed.ubolimitlow.sboli
 dEQP-VK.binding_model.descriptor_heap_random.sets8.unifindexed.ubolimitlow.sbolimitlow.sampledimglow.outimgtexlow.frag.ialimitlow.0
 dEQP-VK.binding_model.descriptor_heap_random.sets8.unifindexed.ubolimitlow.sbolimitlow.sampledimglow.outimgtexlow.frag.noia.0
 dEQP-VK.binding_model.descriptor_heap_random.sets8.unifindexed.ubolimitlow.sbolimitlow.sampledimglow.outimgtexlow.vert.noia.0
+dEQP-VK.binding_model.descriptor_update.immutable_sampler.destroyed.g8_b8_r8_3plane_420_unorm
+dEQP-VK.binding_model.descriptor_update.immutable_sampler.destroyed.r8g8b8a8_unorm
+dEQP-VK.binding_model.descriptor_update.immutable_sampler.garbage.g8_b8_r8_3plane_420_unorm
+dEQP-VK.binding_model.descriptor_update.immutable_sampler.garbage.r8g8b8a8_unorm
+dEQP-VK.binding_model.descriptor_update.immutable_sampler.null.g8_b8_r8_3plane_420_unorm
+dEQP-VK.binding_model.descriptor_update.immutable_sampler.null.r8g8b8a8_unorm
+dEQP-VK.binding_model.descriptor_update.immutable_sampler.other.g8_b8_r8_3plane_420_unorm
+dEQP-VK.binding_model.descriptor_update.immutable_sampler.other.r8g8b8a8_unorm
 dEQP-VK.binding_model.descriptor_update.random.uniform_buffer_compute
 dEQP-VK.binding_model.descriptor_update.random.uniform_buffer_graphics
 dEQP-VK.binding_model.descriptor_update.samplerless.input_attachment_sampler_destroyed_general_layout_graphics

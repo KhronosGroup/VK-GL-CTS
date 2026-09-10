@@ -48,6 +48,8 @@ set(DEQP_VK_BINDING_MODEL_SRCS
 	vktBindingDescriptorInlineUniformTests.hpp
 	vktBindingUnusedInvalidDescriptorTests.cpp
 	vktBindingUnusedInvalidDescriptorTests.hpp
+	vktBindingImmutableSamplerTests.cpp
+	vktBindingImmutableSamplerTests.hpp
 	)
 
 PCH(DEQP_VK_BINDING_MODEL_SRCS ../pch.cpp)

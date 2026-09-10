@@ -24,6 +24,7 @@
 #include "vktBindingDescriptorUpdateTests.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktBindingDescriptorUpdateASTests.hpp"
+#include "vktBindingImmutableSamplerTests.hpp"
 #endif // CTS_USES_VULKANSC
 
 #include "vktTestCase.hpp"
@@ -1913,6 +1914,7 @@ tcu::TestCaseGroup *createDescriptorUpdateTests(tcu::TestContext &testCtx)
     group->addChild(createRandomDescriptorUpdateTests(testCtx));
 #ifndef CTS_USES_VULKANSC
     group->addChild(createDescriptorUpdateASTests(testCtx));
+    group->addChild(createImmutableSamplerTests(testCtx));
 #endif // CTS_USES_VULKANSC
 
     return group.release();
