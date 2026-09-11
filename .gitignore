@@ -13,3 +13,8 @@
 *.ivf
 *.obu
 *.yuv
+external/vulkancts/data/vulkan/video/av1
+external/vulkancts/data/vulkan/video/avc
+external/vulkancts/data/vulkan/video/hevc
+external/vulkancts/data/vulkan/video/vp9
+external/vulkancts/data/vulkan/video/yuv

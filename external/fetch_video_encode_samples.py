@@ -40,6 +40,11 @@ PACKAGES = [
         "yuv/FT_1920x1080_420_8le.yuv",
         "b02e215436c336e610cae4eb35c758534552d059776ec0571fd4703143b95b52",
         "yuv/1920x1080_420_8le.yuv"),
+    SourceFile(
+        "yuv/identical_2f_720x480_420_8le.yuv",
+        "95849e958fc8ec0543eb58ea7578567b5d42aa040cf6939e3e66fca69a1fc79e",
+        "yuv/identical_2f_720x480_420_8le.yuv"),
+
 ]
 
 
