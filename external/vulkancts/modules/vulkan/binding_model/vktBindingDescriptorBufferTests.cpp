@@ -73,6 +73,7 @@ constexpr uint32_t ConstMaxDescriptorArraySize = 3;   // at most define N-elemen
 constexpr uint32_t ConstRobustBufferAlignment  = 256; // 256 is the worst-case alignment required by UBOs in robustness2
 constexpr uint32_t ConstChecksPerBuffer        = 4;   // when verifying data in buffers, do at most N comparisons;
                                                       // this is to avoid excessive shader execution time
+constexpr uint32_t ConstCustomBorderSentinel = ~0u;   // value set in result.x on custom border color mismatch
 
 constexpr VkComponentMapping ComponentMappingIdentity = {
     VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -1227,6 +1228,16 @@ std::string glslOutputVerification(const TestParams &params, const std::vector<S
                         << ") &&\n"
                         << "        (textureLod(" << samplerStr.str() << ", vec2(-1, 0), 0) == " << expectedBorderColor
                         << ")) " << glslResultBlock("\t", bindingArgs);
+
+                    if (isCustomBorderColor)
+                    {
+                        // Only border color mismatched
+                        str << "    if ((textureLod(" << samplerStr.str() << ", vec2(0, 0), 0).r == " << expectedData
+                            << ") &&\n"
+                            << "        (textureLod(" << samplerStr.str()
+                            << ", vec2(-1, 0), 0) != " << expectedBorderColor << ")) "
+                            << "\t result.x = " << ConstCustomBorderSentinel << ";\n";
+                    }
                 }
                 else if (sb.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
                 {
@@ -1267,6 +1278,16 @@ std::string glslOutputVerification(const TestParams &params, const std::vector<S
                             << "        (textureLod(" << glslResourceName(sb.set, sb.binding) << subscript
                             << ", vec2(-1, 0), 0) == " << expectedBorderColor << ")) "
                             << glslResultBlock("\t", bindingArgs);
+
+                        if (isCustomBorderColor)
+                        {
+                            // Only border color mismatched
+                            str << "    if ((textureLod(" << glslResourceName(sb.set, sb.binding) << subscript
+                                << ", vec2(0, 0), 0).r == " << expectedData << ") &&\n"
+                                << "        (textureLod(" << glslResourceName(sb.set, sb.binding) << subscript
+                                << ", vec2(-1, 0), 0) != " << expectedBorderColor << ")) "
+                                << "\t result.x = " << ConstCustomBorderSentinel << ";\n";
+                        }
                     }
                 }
                 else if (sb.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
@@ -2734,6 +2755,7 @@ protected:
     const DeviceInterface *m_deviceInterface;
     VkQueue m_queue;
     uint32_t m_queueFamilyIndex;
+    bool m_queueSupportsGraphics; // whether the resolved m_queueFamilyIndex actually supports VK_QUEUE_GRAPHICS_BIT
     VkQueue m_sparseQueue;
     uint32_t m_sparseQueueFamilyIndex;
 
@@ -2797,6 +2819,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     , m_deviceInterface()
     , m_queue()
     , m_queueFamilyIndex()
+    , m_queueSupportsGraphics(false)
     , m_sparseQueue()
     , m_sparseQueueFamilyIndex()
     , m_memoryProperties()
@@ -2970,6 +2993,8 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     }
 
     DE_ASSERT(m_queueFamilyIndex != VK_QUEUE_FAMILY_IGNORED); // if this is hit then add new condition to checkSupport
+
+    m_queueSupportsGraphics = (queueProps[m_queueFamilyIndex].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0;
 
     VkPhysicalDeviceFeatures2 features2                                            = initVulkanStructure();
     VkPhysicalDeviceDescriptorBufferFeaturesEXT descriptorBufferFeatures           = initVulkanStructure();
@@ -5938,6 +5963,16 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
             }
 
             msg << ".";
+
+            // Per the Vulkan spec, implementations may return undefined values instead of the
+            // specified custom border color when it is used on a compute-only queue. So treat
+            // a mismatch here as an expected quality issue rather than a hard failure.
+            if ((actual == ConstCustomBorderSentinel) /* Border color mismatched */
+                && m_params.isCompute() && m_params.isComputeQueue() && !m_queueSupportsGraphics &&
+                (m_params.subcase == SubCase::CAPTURE_REPLAY_CUSTOM_BORDER_COLOR))
+                TCU_THROW(QualityWarning, "Implementation returned an undefined value for the custom border color "
+                                          "on a compute-only queue: " +
+                                              msg.str());
 
             return tcu::TestStatus::fail(msg.str());
         }

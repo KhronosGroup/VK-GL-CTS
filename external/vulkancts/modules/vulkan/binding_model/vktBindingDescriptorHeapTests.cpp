@@ -369,6 +369,7 @@ protected:
     uint32_t m_queueFamilyIndex{};
     VkPhysicalDeviceMemoryProperties m_memoryProperties{};
     VkPhysicalDeviceDescriptorHeapPropertiesEXT m_descriptorHeapProperties{};
+    bool m_queueSupportsGraphics; // whether the resolved m_queueFamilyIndex actually supports VK_QUEUE_GRAPHICS_BIT
 };
 
 class DescriptorHeapTestInstanceBasic final : public DescriptorHeapTestInstanceBase
@@ -389,7 +390,7 @@ private:
                           uint32_t heapIndexStride, uint32_t samplerStride, VkImage prePassImage,
                           const std::vector<uint32_t> &swizzlerData, uint32_t prePassClearColor,
                           char *resourceDescriptorHeapHostPtr, char *samplerDescriptorHeapHostPtr, de::Random &rnd,
-                          std::vector<int32_t> &expectedResult);
+                          std::vector<int32_t> &expectedResult, std::vector<int32_t> &expectedBorderColor);
 
     VkPipeline initComputePipeline(const std::vector<VkDescriptorSetAndBindingMappingEXT> &mappings,
                                    uint32_t queueIndex);
@@ -4211,6 +4212,7 @@ tcu::TestStatus DescriptorHeapTestInstanceWriteAfterRecord::iterate()
 DescriptorHeapTestInstanceBase::DescriptorHeapTestInstanceBase(Context &context, const TestParams &params)
     : TestInstance(context)
     , m_instance(context)
+    , m_queueSupportsGraphics(false)
 {
     auto &inst      = m_instance.getDriver();
     auto physDevice = m_instance.getPhysicalDevice();
@@ -4273,6 +4275,8 @@ DescriptorHeapTestInstanceBase::DescriptorHeapTestInstanceBase(Context &context,
     {
         TCU_THROW(NotSupportedError, "Queue not supported");
     }
+
+    m_queueSupportsGraphics = (queueProps[m_queueFamilyIndex].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0;
 
     const std::vector<float> priority(params.queueCount, 0.5f);
 
@@ -4689,7 +4693,12 @@ void DescriptorHeapTestCaseBasic::initQueuePrograms(vk::SourceCollections &progr
     else
     {
         str << "layout(set = 0, binding = 0) buffer Swizzler { int swizzler[]; };\n"
-               "layout(set = 0, binding = 1) buffer Output { int result[]; };\n";
+               "layout(set = 0, binding = 1) buffer Output {\n";
+
+        if (m_params.enableCustomBorderColor)
+            str << "  int border[" << m_params.dimension << "];\n";
+
+        str << "  int result[];\n};\n";
     }
 
     if (m_params.stage == VK_SHADER_STAGE_RAYGEN_BIT_KHR)
@@ -4735,13 +4744,17 @@ void DescriptorHeapTestCaseBasic::initQueuePrograms(vk::SourceCollections &progr
             indexing = "[" + std::to_string(binding.mapping.sourceData.constantOffset.heapOffset) + "]";
         }
 
+        const bool customBorderOnCompute =
+            (m_params.enableCustomBorderColor && (m_params.queue == VK_QUEUE_COMPUTE_BIT));
+        const std::string borderColor = customBorderOnCompute ? "(border[invocationId] = " : "";
+
         switch (binding.descriptorType)
         {
         case VK_DESCRIPTOR_TYPE_SAMPLER:
-            str << "temp ^= textureLod(isampler1D(desc" << binding.imageBindingUid;
+            str << "temp ^= " << borderColor << "textureLod(isampler1D(desc" << binding.imageBindingUid;
             if (binding.imageBindingArrayIndex >= 0)
                 str << "[nonuniformEXT(" << binding.imageBindingArrayIndex << ")]";
-            str << ", desc" << uid << indexing << "), -1.0, 0.0).r";
+            str << ", desc" << uid << indexing << "), -1.0, 0.0).r" << (customBorderOnCompute ? ")" : "");
             if (binding.shiftSamplerResult)
             {
                 str << " << swizzler[invocationId]";
@@ -4926,8 +4939,13 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
     const VkDeviceSize samplerHeapBindOffset =
         m_params.nonBufferAligned ? m_descriptorHeapProperties.samplerHeapAlignment : 0u;
 
-    const VkDeviceSize outputBufferSize   = alignUp(static_cast<VkDeviceSize>(m_params.dimension * sizeof(uint32_t)),
-                                                    physDevProps.limits.minStorageBufferOffsetAlignment);
+    const bool hasBorderOutput = m_params.enableCustomBorderColor && (m_params.stage != VK_SHADER_STAGE_FRAGMENT_BIT);
+    const uint32_t outputDataCount = (hasBorderOutput ? 2u : 1u);
+
+    const VkDeviceSize outputBufferSize =
+        alignUp(static_cast<VkDeviceSize>(m_params.dimension * sizeof(uint32_t) * outputDataCount),
+                physDevProps.limits.minStorageBufferOffsetAlignment);
+
     const VkDeviceSize swizzlerBufferSize = alignUp(static_cast<VkDeviceSize>(m_params.dimension * sizeof(uint32_t)),
                                                     physDevProps.limits.minStorageBufferOffsetAlignment);
 
@@ -4953,6 +4971,7 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
 
     std::vector<std::unique_ptr<Buffer>> outputBuffers;
     std::vector<std::vector<int32_t>> expectedResults;
+    std::vector<std::vector<int32_t>> expectedBorderColors;
 
     Move<VkCommandPool> cmdPool = makeCommandPool(vk, *m_device, m_queueFamilyIndex);
     std::vector<Move<VkCommandBuffer>> cmdBuffers;
@@ -5114,7 +5133,8 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
         outputDescriptorInfo.type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         outputDescriptorInfo.data.pAddressRange = &outputAddressRange;
 
-        std::vector<int32_t> &expectedResult = expectedResults.emplace_back(m_params.dimension);
+        std::vector<int32_t> &expectedResult      = expectedResults.emplace_back(m_params.dimension);
+        std::vector<int32_t> &expectedBorderColor = expectedBorderColors.emplace_back(m_params.dimension);
 
         // Begin command buffer
         cmdBuffers.push_back(allocateCommandBuffer(vk, *m_device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -5202,7 +5222,7 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
         {
             setupDescriptors(cmdBuf, binding, resourceStride, samplerStride, heapIndexStride, prePassImage,
                              swizzlerData, prePassClearColor, resourceHeapData.data(), samplerHeapData.data(), rnd,
-                             expectedResult);
+                             expectedResult, expectedBorderColor);
         }
 
         // Fill modified mappings
@@ -5436,12 +5456,26 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
 
     for (uint32_t queueIndex = 0; queueIndex < m_params.queueCount; ++queueIndex)
     {
-        std::vector<int32_t> result(m_params.dimension);
-        deMemcpy(result.data(), outputBuffers[queueIndex]->memory->getHostPtr(), result.size() * sizeof(int32_t));
-
-        for (size_t i = 0; i < result.size(); ++i)
+        struct ResultType
         {
-            if (result[i] != expectedResults[queueIndex][i])
+            std::vector<int32_t> result;
+            std::vector<int32_t> borderColor;
+        } results;
+
+        results.result.resize(m_params.dimension);
+        results.borderColor.resize(m_params.dimension);
+
+        const uint32_t resultOffset =
+            hasBorderOutput ? static_cast<uint32_t>(results.result.size()) * sizeof(int32_t) : 0u;
+        const uint8_t *outputBufferPtr = static_cast<uint8_t *>(outputBuffers[queueIndex]->memory->getHostPtr());
+
+        if (hasBorderOutput)
+            deMemcpy(results.borderColor.data(), outputBufferPtr, results.borderColor.size() * sizeof(int32_t));
+        deMemcpy(results.result.data(), outputBufferPtr + resultOffset, results.result.size() * sizeof(int32_t));
+
+        for (size_t i = 0; i < results.result.size(); ++i)
+        {
+            if (results.result[i] != expectedResults[queueIndex][i])
             {
                 std::stringstream stream;
                 stream << "At index " << i << ", ";
@@ -5449,7 +5483,24 @@ tcu::TestStatus DescriptorHeapTestInstanceBasic::iterate()
                 {
                     stream << "queue " << queueIndex << ", ";
                 }
-                stream << "expected 0x" << std::hex << expectedResults[queueIndex][i] << " but got 0x" << result[i];
+                stream << "expected 0x" << std::hex << expectedResults[queueIndex][i] << " but got 0x"
+                       << results.result[i];
+
+                // Per the Vulkan spec, implementations may return undefined values instead of the specified custom
+                // border color when it is used on a compute-only queue. So treat a mismatch here as
+                // an expected quality issue rather than a hard failure.
+
+                // Nonborder texels must match for Quality Warning
+                const int32_t actualTexel   = results.result[i] ^ results.borderColor[i];
+                const int32_t expectedTexel = expectedResults[queueIndex][i] ^ expectedBorderColors[queueIndex][i];
+
+                if (actualTexel == expectedTexel && m_params.enableCustomBorderColor &&
+                    (results.borderColor[i] != expectedBorderColors[queueIndex][i]) &&
+                    (m_params.queue == VK_QUEUE_COMPUTE_BIT) && !m_queueSupportsGraphics)
+                    TCU_THROW(QualityWarning, "Implementation returned an undefined value for the custom border color "
+                                              "on a compute-only queue: " +
+                                                  stream.str());
+
                 return tcu::TestStatus::fail(stream.str());
             }
         }
@@ -5562,13 +5613,11 @@ void DescriptorHeapTestInstanceBasic::writeEmbeddedSamplers(std::vector<ShaderBi
     }
 }
 
-void DescriptorHeapTestInstanceBasic::setupDescriptors(VkCommandBuffer cmdBuf, const ShaderBinding &binding,
-                                                       uint32_t resourceStride, uint32_t samplerStride,
-                                                       uint32_t heapIndexStride, VkImage prePassImage,
-                                                       const std::vector<uint32_t> &swizzlerData,
-                                                       uint32_t prePassClearColor, char *resourceDescriptorHeapHostPtr,
-                                                       char *samplerDescriptorHeapHostPtr, de::Random &rnd,
-                                                       std::vector<int32_t> &expectedResult)
+void DescriptorHeapTestInstanceBasic::setupDescriptors(
+    VkCommandBuffer cmdBuf, const ShaderBinding &binding, uint32_t resourceStride, uint32_t samplerStride,
+    uint32_t heapIndexStride, VkImage prePassImage, const std::vector<uint32_t> &swizzlerData,
+    uint32_t prePassClearColor, char *resourceDescriptorHeapHostPtr, char *samplerDescriptorHeapHostPtr,
+    de::Random &rnd, std::vector<int32_t> &expectedResult, std::vector<int32_t> &expectedBorderColor)
 {
     const auto &vk                          = m_device.getDriver();
     const auto indirectAddressBufferHostPtr = m_deferredIndirectAddressBuffer.data();
@@ -5766,6 +5815,7 @@ void DescriptorHeapTestInstanceBasic::setupDescriptors(VkCommandBuffer cmdBuf, c
 
     const int arraySize = binding.arrayed ? m_params.dimension : 1;
     std::vector<int32_t> descriptorValues;
+    std::vector<int32_t> customBorderColorValues;
 
     for (int arrayIndex = 0; arrayIndex < arraySize; ++arrayIndex)
     {
@@ -5786,6 +5836,7 @@ void DescriptorHeapTestInstanceBasic::setupDescriptors(VkCommandBuffer cmdBuf, c
             if (m_params.enableCustomBorderColor)
             {
                 borderColor = rnd.getInt32() | 3;
+                customBorderColorValues.push_back(borderColor);
             }
             else
             {
@@ -6233,6 +6284,23 @@ void DescriptorHeapTestInstanceBasic::setupDescriptors(VkCommandBuffer cmdBuf, c
         {
             const int swizzledIndex = swizzlerData[index];
             expectedResult[index] ^= descriptorValues[swizzledIndex];
+        }
+    }
+
+    if (m_params.enableCustomBorderColor && (binding.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER))
+    {
+        if (!binding.arrayed)
+        {
+            for (auto &value : expectedBorderColor)
+                value = customBorderColorValues[0];
+        }
+        else
+        {
+            for (int index = 0; index < arraySize; ++index)
+            {
+                const int swizzledIndex    = swizzlerData[index];
+                expectedBorderColor[index] = customBorderColorValues[swizzledIndex];
+            }
         }
     }
 }
