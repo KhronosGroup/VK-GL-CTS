@@ -7001,8 +7001,8 @@ void addAttachmentAllocationTests(tcu::TestCaseGroup *group, const TestConfigExt
                                 VkImageAspectFlags aspect = 0u;
                                 if (testConfigExternal.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
                                 {
-                                    bool col = colorAttachments.find(inputAttachmentIndex) != colorAttachments.end();
-                                    aspect   = col ? VK_IMAGE_ASPECT_COLOR_BIT : VK_IMAGE_ASPECT_DEPTH_BIT;
+                                    const VkFormat format = attachments[inputAttachmentIndex].getFormat();
+                                    aspect                = getImageAspectFlags(format);
                                 }
                                 inputAttachmentReferences.push_back(
                                     AttachmentReference((uint32_t)subpassInputAttachments[inputAttachmentNdx],
