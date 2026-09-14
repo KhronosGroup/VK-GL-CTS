@@ -797,6 +797,13 @@ public:
 
 tcu::TestStatus OuterEdgeDivisionTestInstance::iterate(void)
 {
+    // Each iteration of the loops below issues a draw, and each winding / point mode combination uses a
+    // distinct pipeline. Under Vulkan SC the main process records that resource usage so the subprocess
+    // can reserve it up front, which requires both passes to create the same pipelines. Returning as soon
+    // as a subtest fails would make the set of pipelines depend on the result, so record the failure and
+    // report it once every iteration has run.
+    bool anySubtestFailed = false;
+
     for (int outerEdgeIndex = 0; outerEdgeIndex < static_cast<int>(m_edgeDescriptions.size()); ++outerEdgeIndex)
         for (int outerEdgeLevelCaseNdx = 0; outerEdgeLevelCaseNdx < DE_LENGTH_OF_ARRAY(m_singleOuterEdgeLevels);
              ++outerEdgeLevelCaseNdx)
@@ -823,7 +830,10 @@ tcu::TestStatus OuterEdgeDivisionTestInstance::iterate(void)
                         draw(static_cast<uint32_t>(patchTessLevels.size()), patchTessLevels, winding, usePointMode);
 
                     if (!result.success)
-                        return tcu::TestStatus::fail("Invalid set of vertices");
+                    {
+                        anySubtestFailed = true;
+                        continue;
+                    }
 
                     // Check the vertices of each patch.
 
@@ -868,13 +878,15 @@ tcu::TestStatus OuterEdgeDivisionTestInstance::iterate(void)
                                 << "  - case A: " << containerStr(firstOuterEdgeVertices, 5, 14) << "\n"
                                 << "  - case B: " << containerStr(outerEdgeVertices, 5, 14) << tcu::TestLog::EndMessage;
 
-                            return tcu::TestStatus::fail("Invalid set of vertices");
+                            anySubtestFailed = true;
                         }
                     }
                     DE_ASSERT(primitiveNdx == result.numPrimitives);
                 } // for windingNdx, usePointModeNdx
         }         // for outerEdgeIndex, outerEdgeLevelCaseNdx
 
+    if (anySubtestFailed)
+        return tcu::TestStatus::fail("Invalid set of vertices");
     return tcu::TestStatus::pass("OK");
 }
 
@@ -896,6 +908,13 @@ public:
 
 tcu::TestStatus OuterEdgeIndexIndependenceTestInstance::iterate(void)
 {
+    // Each iteration of the loops below issues a draw, and each winding / point mode combination uses a
+    // distinct pipeline. Under Vulkan SC the main process records that resource usage so the subprocess
+    // can reserve it up front, which requires both passes to create the same pipelines. Returning as soon
+    // as a subtest fails would make the set of pipelines depend on the result, so record the failure and
+    // report it once every iteration has run.
+    bool anySubtestFailed = false;
+
     for (int outerEdgeLevelCaseNdx = 0; outerEdgeLevelCaseNdx < DE_LENGTH_OF_ARRAY(m_singleOuterEdgeLevels);
          ++outerEdgeLevelCaseNdx)
     {
@@ -916,7 +935,10 @@ tcu::TestStatus OuterEdgeIndexIndependenceTestInstance::iterate(void)
             // Verify case result
 
             if (!result.success)
-                return tcu::TestStatus::fail("Invalid set of vertices");
+            {
+                anySubtestFailed = true;
+                continue;
+            }
 
             Vec3Set currentEdgeVertices;
 
@@ -975,11 +997,13 @@ tcu::TestStatus OuterEdgeIndexIndependenceTestInstance::iterate(void)
                         << " edge:\n"
                         << containerStr(firstEdgeVertices, 5) << tcu::TestLog::EndMessage;
 
-                    return tcu::TestStatus::fail("Invalid set of vertices");
+                    anySubtestFailed = true;
                 }
             }
         }
     }
+    if (anySubtestFailed)
+        return tcu::TestStatus::fail("Invalid set of vertices");
     return tcu::TestStatus::pass("OK");
 }
 
@@ -1006,6 +1030,13 @@ public:
 
 tcu::TestStatus SymmetricOuterEdgeTestInstance::iterate(void)
 {
+    // Each iteration of the loops below issues a draw, and each winding / point mode combination uses a
+    // distinct pipeline. Under Vulkan SC the main process records that resource usage so the subprocess
+    // can reserve it up front, which requires both passes to create the same pipelines. Returning as soon
+    // as a subtest fails would make the set of pipelines depend on the result, so record the failure and
+    // report it once every iteration has run.
+    bool anySubtestFailed = false;
+
     for (int outerEdgeIndex = 0; outerEdgeIndex < static_cast<int>(m_edgeDescriptions.size()); ++outerEdgeIndex)
         for (int outerEdgeLevelCaseNdx = 0; outerEdgeLevelCaseNdx < DE_LENGTH_OF_ARRAY(m_singleOuterEdgeLevels);
              ++outerEdgeLevelCaseNdx)
@@ -1023,7 +1054,10 @@ tcu::TestStatus SymmetricOuterEdgeTestInstance::iterate(void)
             // Verify case result
 
             if (!result.success)
-                return tcu::TestStatus::fail("Invalid set of vertices");
+            {
+                anySubtestFailed = true;
+                continue;
+            }
 
             Vec3Set nonMirroredEdgeVertices;
             Vec3Set mirroredEdgeVertices;
@@ -1092,7 +1126,8 @@ tcu::TestStatus SymmetricOuterEdgeTestInstance::iterate(void)
                         << containerStr(nonMirroredEdgeVertices, 5) << "\nmirrored vertices:\n"
                         << containerStr(mirroredEdgeVertices, 5) << tcu::TestLog::EndMessage;
 
-                    return tcu::TestStatus::fail("Invalid set of vertices");
+                    anySubtestFailed = true;
+                    continue;
                 }
                 nonMirroredEdgeVertices.erase(endpointA);
                 nonMirroredEdgeVertices.erase(endpointB);
@@ -1108,9 +1143,11 @@ tcu::TestStatus SymmetricOuterEdgeTestInstance::iterate(void)
                     << containerStr(nonMirroredEdgeVertices, 5) << "\nmirrored vertices:\n"
                     << containerStr(mirroredEdgeVertices, 5) << tcu::TestLog::EndMessage;
 
-                return tcu::TestStatus::fail("Invalid set of vertices");
+                anySubtestFailed = true;
             }
         }
+    if (anySubtestFailed)
+        return tcu::TestStatus::fail("Invalid set of vertices");
     return tcu::TestStatus::pass("OK");
 }
 

@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkResourceInterface.hpp"
+#include <mutex>
 #include "vkQueryUtil.hpp"
 
 #ifdef CTS_USES_VULKANSC
@@ -349,6 +350,7 @@ VkDeviceObjectReservationCreateInfo ResourceInterface::getDefaultDeviceObjectRes
 
 VkPipelineCache ResourceInterface::getPipelineCache(VkDevice device) const
 {
+    std::lock_guard<std::mutex> lock(m_devicePipelineCachesMutex);
     auto pit = m_devicePipelineCaches.find(device);
     if (pit == end(m_devicePipelineCaches))
         TCU_THROW(InternalError, "Pipeline cache not found for this device");
@@ -380,6 +382,7 @@ void ResourceInterfaceStandard::initDevice(DeviceInterface &deviceInterface, VkD
     {
         if (m_cacheData.size() > 0)
         {
+            std::lock_guard<std::mutex> lock(m_devicePipelineCachesMutex);
             auto &pipelineCacheInfo = m_devicePipelineCaches[device];
             if (pipelineCacheInfo.refCount == 0)
             {
@@ -403,6 +406,7 @@ void ResourceInterfaceStandard::deinitDevice(VkDevice device)
 #ifdef CTS_USES_VULKANSC
     if (m_testCtx.getCommandLine().isSubProcess())
     {
+        std::lock_guard<std::mutex> lock(m_devicePipelineCachesMutex);
         auto it = m_devicePipelineCaches.find(device);
         if (it != m_devicePipelineCaches.end())
         {
@@ -551,6 +555,7 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines(VkDevice device, VkP
         const auto it = m_createGraphicsPipelinesFunc.find(device);
         if (it != end(m_createGraphicsPipelinesFunc))
         {
+            std::lock_guard<std::mutex> lock(m_devicePipelineCachesMutex);
             auto pit = m_devicePipelineCaches.find(device);
             if (pit != end(m_devicePipelineCaches))
             {
@@ -677,6 +682,7 @@ VkResult ResourceInterfaceStandard::createComputePipelines(VkDevice device, VkPi
         const auto it = m_createComputePipelinesFunc.find(device);
         if (it != end(m_createComputePipelinesFunc))
         {
+            std::lock_guard<std::mutex> lock(m_devicePipelineCachesMutex);
             auto pit = m_devicePipelineCaches.find(device);
             if (pit != end(m_devicePipelineCaches))
             {
@@ -993,12 +999,14 @@ void ResourceInterfaceStandard::resetPipelineCaches()
 {
     if (m_testCtx.getCommandLine().isSubProcess())
     {
+        std::lock_guard<std::mutex> lock(m_devicePipelineCachesMutex);
         m_devicePipelineCaches.clear();
     }
 }
 
 bool ResourceInterfaceStandard::resetPipelineCache(VkDevice device, bool onlyIfInSubprocess)
 {
+    std::lock_guard<std::mutex> lock(m_devicePipelineCachesMutex);
     if (auto it = m_devicePipelineCaches.find(device);
         it != m_devicePipelineCaches.end() && (!onlyIfInSubprocess || m_testCtx.getCommandLine().isSubProcess()))
     {
