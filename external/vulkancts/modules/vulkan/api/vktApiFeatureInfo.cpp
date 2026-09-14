@@ -4527,8 +4527,16 @@ tcu::TestStatus formatProperties(Context &context, VkFormat format)
 
             if (!isYCbCrFormat(format) && !isCompressedFormat(format))
             {
+#ifndef CTS_USES_VULKANSC
+                bool const allowedMultiChannelFormats =
+                    (context.getShaderAtomicFloat16VectorFeaturesNV().shaderFloat16VectorAtomics) &&
+                    ((format == VK_FORMAT_R16G16_SFLOAT || format == VK_FORMAT_R16G16B16A16_SFLOAT));
+#else
+                bool const allowedMultiChannelFormats = false;
+#endif
+
                 const tcu::TextureFormat tcuFormat = mapVkFormat(format);
-                if (tcu::getNumUsedChannels(tcuFormat.order) != 1 &&
+                if (tcu::getNumUsedChannels(tcuFormat.order) != 1 && !allowedMultiChannelFormats &&
                     (supported & (VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT |
                                   VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT)) != 0)
                 {
