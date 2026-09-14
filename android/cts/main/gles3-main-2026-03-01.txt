@@ -5,6 +5,8 @@ dEQP-GLES3.functional.occlusion_query.fbo_delete_conservative
 dEQP-GLES3.functional.occlusion_query.fbo_delete_conservative_nodraw
 dEQP-GLES3.functional.occlusion_query.fbo_delete_strict
 dEQP-GLES3.functional.occlusion_query.fbo_delete_strict_nodraw
+dEQP-GLES3.functional.pbo.upload.split_upload_last_line
+dEQP-GLES3.functional.pbo.upload.split_upload_last_pixel
 dEQP-GLES3.functional.shader_api.large_output_counts.compile_vertex_shader_1024_outputs
 dEQP-GLES3.functional.shader_api.large_output_counts.compile_vertex_shader_1300_outputs
 dEQP-GLES3.functional.shader_api.large_output_counts.compile_vertex_shader_256_outputs

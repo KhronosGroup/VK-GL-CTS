@@ -327,6 +327,8 @@ dEQP-GLES3.functional.pbo.renderbuffer.rgba8ui_clears
 dEQP-GLES3.functional.pbo.renderbuffer.rgba8ui_triangles
 dEQP-GLES3.functional.pbo.renderbuffer.srgb8_alpha8_clears
 dEQP-GLES3.functional.pbo.renderbuffer.srgb8_alpha8_triangles
+dEQP-GLES3.functional.pbo.upload.split_upload_last_line
+dEQP-GLES3.functional.pbo.upload.split_upload_last_pixel
 dEQP-GLES3.functional.prerequisite.clear_color
 dEQP-GLES3.functional.prerequisite.read_pixels
 dEQP-GLES3.functional.prerequisite.state_reset
