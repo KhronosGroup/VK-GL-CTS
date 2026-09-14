@@ -3128,7 +3128,22 @@ private:
 
 void ResolveTo3DImageTestCase::checkSupport(Context &context) const
 {
+    const auto &vki           = context.getInstanceInterface();
+    const auto physicalDevice = context.getPhysicalDevice();
     context.requireDeviceFunctionality("VK_KHR_maintenance1");
+
+    const uint32_t imageSize = 32u << m_params.resolveMipLevel;
+
+    VkImageFormatProperties properties;
+    const VkResult result = vki.getPhysicalDeviceImageFormatProperties(
+        physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TYPE_3D, VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT, &properties);
+    if (result == VK_ERROR_FORMAT_NOT_SUPPORTED || properties.maxExtent.width < imageSize ||
+        properties.maxExtent.height < imageSize)
+    {
+        TCU_THROW(NotSupportedError, "Required image parameters not supported");
+    }
 }
 
 void ResolveTo3DImageTestCase::initPrograms(SourceCollections &programCollection) const
