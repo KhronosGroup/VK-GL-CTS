@@ -34962,6 +34962,7 @@ dEQP-GLES3.functional.texture.specification.basic_teximage3d.srgb8_2d_array
 dEQP-GLES3.functional.texture.specification.basic_teximage3d.srgb8_3d
 dEQP-GLES3.functional.texture.specification.basic_teximage3d.srgb8_alpha8_2d_array
 dEQP-GLES3.functional.texture.specification.basic_teximage3d.srgb8_alpha8_3d
+dEQP-GLES3.functional.texture.specification.basic_texsubimage2d.astc_subimage_base_level
 dEQP-GLES3.functional.texture.specification.basic_texsubimage2d.r11f_g11f_b10f_2d
 dEQP-GLES3.functional.texture.specification.basic_texsubimage2d.r11f_g11f_b10f_cube
 dEQP-GLES3.functional.texture.specification.basic_texsubimage2d.r16f_2d
