@@ -28876,6 +28876,8 @@ dEQP-GLES3.functional.shaders.struct.local.basic_fragment
 dEQP-GLES3.functional.shaders.struct.local.basic_not_equal_fragment
 dEQP-GLES3.functional.shaders.struct.local.basic_not_equal_vertex
 dEQP-GLES3.functional.shaders.struct.local.basic_vertex
+dEQP-GLES3.functional.shaders.struct.local.complex_constructor_array_member_fragment
+dEQP-GLES3.functional.shaders.struct.local.complex_constructor_array_member_vertex
 dEQP-GLES3.functional.shaders.struct.local.conditional_assignment_fragment
 dEQP-GLES3.functional.shaders.struct.local.conditional_assignment_vertex
 dEQP-GLES3.functional.shaders.struct.local.dynamic_loop_assignment_fragment
