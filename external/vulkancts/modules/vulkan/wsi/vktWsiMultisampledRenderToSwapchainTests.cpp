@@ -52,6 +52,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
 
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -146,9 +147,12 @@ auto getRequiredInstanceExtensions(vk::wsi::Type wsiType)
     return requiredExtensions;
 }
 
-CustomInstance createInstanceWithWsi(Context &context, vk::wsi::Type wsiType)
+CustomInstance createInstanceWithWsi(Context &context, vk::wsi::Type wsiType,
+                                     const std::vector<std::string> &extensions = {})
 {
     auto requestedExtensions = getRequiredInstanceExtensions(wsiType);
+    for (const auto &ext : extensions)
+        requestedExtensions.push_back(ext);
     return vkt::createCustomInstanceWithExtensions(context, requestedExtensions);
 }
 
@@ -158,9 +162,9 @@ struct InstanceHelper
     const InstanceWrapper instance;
     const vk::InstanceInterface &vki;
 
-    InstanceHelper(Context &context, vk::wsi::Type wsiType)
+    InstanceHelper(Context &context, vk::wsi::Type wsiType, const std::vector<std::string> &extensions = {})
         : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
-        , instance(createInstanceWithWsi(context, wsiType))
+        , instance(createInstanceWithWsi(context, wsiType, extensions))
         , vki(instance.getDriver())
     {
     }
@@ -235,7 +239,7 @@ struct DeviceHelper
 
 vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(const vk::InstanceInterface &vki,
                                                          vk::VkPhysicalDevice physicalDevice, vk::VkSurfaceKHR surface,
-                                                         const TestParams &params)
+                                                         const TestParams &params, const tcu::UVec2 &desiredSize)
 {
     vk::VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = vk::initVulkanStructure();
     surfaceInfo.surface                             = surface;
@@ -271,6 +275,14 @@ vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(const vk::InstanceInter
             vk::VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR :
             capabilities.currentTransform;
 
+    VkExtent2D imageExtent = capabilities.currentExtent;
+    if (imageExtent.width == std::numeric_limits<uint32_t>::max())
+        imageExtent.width =
+            de::clamp(desiredSize.x(), capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+    if (imageExtent.height == std::numeric_limits<uint32_t>::max())
+        imageExtent.height =
+            de::clamp(desiredSize.y(), capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
     const VkSwapchainCreateFlagsKHR createFlags   = VK_SWAPCHAIN_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT;
     const vk::VkSwapchainCreateInfoKHR parameters = {vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
                                                      nullptr,
@@ -279,7 +291,7 @@ vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(const vk::InstanceInter
                                                      capabilities.minImageCount,
                                                      formats[formatNdx].format,
                                                      formats[formatNdx].colorSpace,
-                                                     capabilities.currentExtent,
+                                                     imageExtent,
                                                      1u,
                                                      vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | commonImageUsageFlags,
                                                      vk::VK_SHARING_MODE_EXCLUSIVE,
@@ -704,7 +716,8 @@ TestData::TestData(Context &contextIn, const TestParams &params)
     , vkd(devHelper.vkd)
     , device(*devHelper.device)
     , allocator(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice))
-    , swapchainInfo(getBasicSwapchainParameters(instHelper.vki, devHelper.physicalDevice, *surface, params))
+    , swapchainInfo(
+          getBasicSwapchainParameters(instHelper.vki, devHelper.physicalDevice, *surface, params, desiredSize))
     , swapchain(createSwapchainKHR(vkd, device, &swapchainInfo))
     , swapchainImages(vk::wsi::getSwapchainImages(vkd, device, *swapchain))
     , cmdPool(createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
@@ -2238,12 +2251,54 @@ struct SupportedFlagsParams
     VkSwapchainCreateFlagBitsKHR flag;
 };
 
+std::vector<std::string> getSupportedFlagsExtensions(const SupportedFlagsParams &params)
+{
+    if (params.flag == VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR)
+        return {"VK_KHR_device_group_creation"};
+    if (params.flag == VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR)
+        return {"VK_KHR_surface_protected_capabilities"};
+
+    return {};
+}
+
 void supportedFlagsCheckRequirements(Context &context, const SupportedFlagsParams params)
 {
     context.requireDeviceFunctionality("VK_EXT_multisampled_render_to_swapchain");
 
     for (const auto &ext : getRequiredInstanceExtensions(params.wsiType))
         context.requireInstanceFunctionality(ext);
+
+    for (const auto &ext : getSupportedFlagsExtensions(params))
+        context.requireInstanceFunctionality(ext);
+
+    if (params.flag == VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR)
+    {
+        context.requireDeviceFunctionality("VK_KHR_device_group");
+    }
+    else if (params.flag == VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR)
+    {
+        if (!context.getProtectedMemoryFeatures().protectedMemory)
+            TCU_THROW(NotSupportedError, "protectedMemory not supported");
+    }
+    else if (params.flag == VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR)
+    {
+        context.requireDeviceFunctionality("VK_KHR_swapchain_mutable_format");
+    }
+    else if (params.flag == VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_KHR)
+    {
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_swapchain_maintenance1") &&
+            !context.isDeviceFunctionalitySupported("VK_EXT_swapchain_maintenance1"))
+            TCU_THROW(NotSupportedError,
+                      "VK_KHR_swapchain_maintenance1 and VK_EXT_swapchain_maintenance1 not supported");
+    }
+    else if (params.flag == VK_SWAPCHAIN_CREATE_PRESENT_ID_2_BIT_KHR)
+    {
+        context.requireDeviceFunctionality("VK_KHR_present_id2");
+    }
+    else if (params.flag == VK_SWAPCHAIN_CREATE_PRESENT_WAIT_2_BIT_KHR)
+    {
+        context.requireDeviceFunctionality("VK_KHR_present_wait2");
+    }
 }
 
 void supportedFlagsInitPrograms(SourceCollections &, const SupportedFlagsParams)
@@ -2253,141 +2308,68 @@ void supportedFlagsInitPrograms(SourceCollections &, const SupportedFlagsParams)
 tcu::TestStatus supportedFlagsTest(Context &context, const SupportedFlagsParams params)
 {
     tcu::TestLog &log = context.getTestContext().getLog();
-    InstanceHelper instHelper(context, params.wsiType);
+    InstanceHelper instHelper(context, params.wsiType, getSupportedFlagsExtensions(params));
     NativeObjects native(context, instHelper.supportedExtensions, params.wsiType, 1u, tcu::just(tcu::UVec2(32u)));
     Move<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, params.wsiType, native.getDisplay(),
                                              native.getWindow(), context.getTestContext().getCommandLine()));
     VkPhysicalDevice physicalDevice =
         chooseDevice(instHelper.vki, instHelper.instance, context.getTestContext().getCommandLine());
 
+    if (params.flag == VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR)
+    {
+        uint32_t groupDeviceCount = 0u;
+        for (const auto &group : enumeratePhysicalDeviceGroups(instHelper.vki, instHelper.instance))
+        {
+            TCU_CHECK(group.physicalDeviceCount <= VK_MAX_DEVICE_GROUP_SIZE);
+            for (uint32_t deviceNdx = 0u; deviceNdx < group.physicalDeviceCount; ++deviceNdx)
+            {
+                if (group.physicalDevices[deviceNdx] == physicalDevice)
+                {
+                    TCU_CHECK(groupDeviceCount == 0u);
+                    groupDeviceCount = group.physicalDeviceCount;
+                }
+            }
+        }
+        TCU_CHECK(groupDeviceCount != 0u);
+
+        // VUID-VkSwapchainCreateInfoKHR-physicalDeviceCount-01429 forbids split-instance creation on a singleton.
+        if (groupDeviceCount == 1u)
+            TCU_THROW(NotSupportedError, "Split-instance binding requires a multi-physical-device group");
+    }
+
     vk::VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = vk::initVulkanStructure();
     surfaceInfo.surface                             = *surface;
 
     vk::VkSwapchainFlagsSurfaceCapabilitiesEXT swapchainFlagsSurfaceCapabilities = vk::initVulkanStructure();
+    vk::VkSurfaceProtectedCapabilitiesKHR protectedCapabilities                  = vk::initVulkanStructure();
 
     vk::VkSurfaceCapabilities2KHR surfaceCapabilities2 = vk::initVulkanStructure(&swapchainFlagsSurfaceCapabilities);
+    const auto addCapabilities                         = vk::makeStructChainAdder(&surfaceCapabilities2);
+
+    if (params.flag == VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR)
+        addCapabilities(&protectedCapabilities);
+
     VK_CHECK(
         instHelper.vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevice, &surfaceInfo, &surfaceCapabilities2));
 
-    std::vector<VkExtensionProperties> extensions =
-        enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, nullptr);
+    const auto flags         = swapchainFlagsSurfaceCapabilities.swapchainSupportedFlags;
+    const bool flagSupported = (flags & params.flag) != 0;
 
-    VkPhysicalDeviceProperties properties;
-    instHelper.vki.getPhysicalDeviceProperties(physicalDevice, &properties);
-
-    uint32_t apiVersion               = properties.apiVersion;
-    bool khr_swapchain                = false;
-    bool khr_device_group             = false;
-    bool khr_swapchain_mutable_format = false;
-    bool khr_present_id2              = false;
-    bool khr_present_wait2            = false;
-    bool khr_swapchain_maintenance1   = false;
-    bool ext_swapchain_maintenance1   = false;
-    for (const VkExtensionProperties &ext : extensions)
+    if (params.flag == VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR)
     {
-        if (std::strcmp(ext.extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0)
+        if (!protectedCapabilities.supportsProtected)
         {
-            khr_swapchain = true;
-        }
-        else if (std::strcmp(ext.extensionName, VK_KHR_DEVICE_GROUP_EXTENSION_NAME) == 0)
-        {
-            khr_device_group = true;
-        }
-        else if (std::strcmp(ext.extensionName, VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME) == 0)
-        {
-            khr_swapchain_mutable_format = true;
-        }
-        else if (std::strcmp(ext.extensionName, VK_KHR_PRESENT_ID_2_EXTENSION_NAME) == 0)
-        {
-            khr_present_id2 = true;
-        }
-        else if (std::strcmp(ext.extensionName, VK_KHR_PRESENT_WAIT_2_EXTENSION_NAME) == 0)
-        {
-            khr_present_wait2 = true;
-        }
-        else if (std::strcmp(ext.extensionName, VK_KHR_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME) == 0)
-        {
-            khr_swapchain_maintenance1 = true;
-        }
-        else if (std::strcmp(ext.extensionName, VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME) == 0)
-        {
-            ext_swapchain_maintenance1 = true;
+            TCU_THROW(NotSupportedError, "Protected swapchains are not supported for the surface");
         }
     }
 
-    const auto flags = swapchainFlagsSurfaceCapabilities.swapchainSupportedFlags;
-
-    if ((apiVersion >= VK_API_VERSION_1_1 || khr_device_group) && khr_swapchain)
+    if (!flagSupported && params.flag != VK_SWAPCHAIN_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT)
     {
-        if ((flags & VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR) == 0)
-        {
-            log << tcu::TestLog::Message
-                << "VkSwapchainFlagsSurfaceCapabilitiesEXT::swapchainSupportedFlags does not include "
-                   "VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR when required (related extensions are "
-                   "supported)"
-                << tcu::TestLog::EndMessage;
-            return tcu::TestStatus::fail("Fail");
-        }
-    }
-    if (apiVersion >= VK_API_VERSION_1_1 && khr_swapchain)
-    {
-        if ((flags & VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR) == 0)
-        {
-            log << tcu::TestLog::Message
-                << "VkSwapchainFlagsSurfaceCapabilitiesEXT::swapchainSupportedFlags does not include "
-                   "VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR when required (related extensions are "
-                   "supported)"
-                << tcu::TestLog::EndMessage;
-            return tcu::TestStatus::fail("Fail");
-        }
-    }
-    if (khr_swapchain_mutable_format)
-    {
-        if ((flags & VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR) == 0)
-        {
-            log << tcu::TestLog::Message
-                << "VkSwapchainFlagsSurfaceCapabilitiesEXT::swapchainSupportedFlags does not include "
-                   "VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR when required (related extensions are "
-                   "supported)"
-                << tcu::TestLog::EndMessage;
-            return tcu::TestStatus::fail("Fail");
-        }
-    }
-    if (khr_swapchain_maintenance1 || ext_swapchain_maintenance1)
-    {
-        if ((flags & VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_KHR) == 0)
-        {
-            log << tcu::TestLog::Message
-                << "VkSwapchainFlagsSurfaceCapabilitiesEXT::swapchainSupportedFlags does not include "
-                   "VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_KHR when required (related extensions are "
-                   "supported)"
-                << tcu::TestLog::EndMessage;
-            return tcu::TestStatus::fail("Fail");
-        }
-    }
-    if (khr_present_id2)
-    {
-        if ((flags & VK_SWAPCHAIN_CREATE_PRESENT_ID_2_BIT_KHR) == 0)
-        {
-            log << tcu::TestLog::Message
-                << "VkSwapchainFlagsSurfaceCapabilitiesEXT::swapchainSupportedFlags does not include "
-                   "VK_SWAPCHAIN_CREATE_PRESENT_ID_2_BIT_KHR when required (related extensions are "
-                   "supported)"
-                << tcu::TestLog::EndMessage;
-            return tcu::TestStatus::fail("Fail");
-        }
-    }
-    if (khr_present_wait2)
-    {
-        if ((flags & VK_SWAPCHAIN_CREATE_PRESENT_WAIT_2_BIT_KHR) == 0)
-        {
-            log << tcu::TestLog::Message
-                << "VkSwapchainFlagsSurfaceCapabilitiesEXT::swapchainSupportedFlags does not include "
-                   "VK_SWAPCHAIN_CREATE_PRESENT_WAIT_2_BIT_KHR when required (related extensions are "
-                   "supported)"
-                << tcu::TestLog::EndMessage;
-            return tcu::TestStatus::fail("Fail");
-        }
+        log << tcu::TestLog::Message << "VkSwapchainFlagsSurfaceCapabilitiesEXT::swapchainSupportedFlags "
+            << getSwapchainCreateFlagsKHRStr(flags) << " does not include "
+            << getSwapchainCreateFlagsKHRStr(params.flag) << " even though the related extension/feature is supported"
+            << tcu::TestLog::EndMessage;
+        return tcu::TestStatus::fail("Fail");
     }
 
     return tcu::TestStatus::pass("Pass");
@@ -2556,7 +2538,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, vk::wsi::Type
     {
         SupportedFlagsParams params;
         params.wsiType = wsiType;
-        params.flag    = VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR;
+        params.flag    = flag;
 
         std::string testName = getFlagTestName(flag);
         addFunctionCaseWithPrograms(swapchainSupportedFlagsGroup.get(), testName.c_str(),
