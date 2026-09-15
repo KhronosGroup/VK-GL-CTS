@@ -39,6 +39,7 @@
 #include "tcuVectorUtil.hpp"
 
 #include <iterator>
+#include <sstream>
 
 using namespace vk;
 using de::MovePtr;
@@ -58,6 +59,7 @@ enum class PassMethod
     PUSH_CONSTANTS_FUNCTION,
     ADDRESSES_IN_SSBO,
     PTR_ACCESS_CHAIN_FROM_UBO,
+    PUSH_CONSTANTS_FORWARD_PTRS,
 };
 
 struct TestParams
@@ -347,6 +349,17 @@ private:
     const TestParamsPtr m_params;
 };
 
+class SpvAsmPhysicalStorageBufferPushConstantsForwardPtrsTestInstance : public SpvAsmPhysicalStorageBufferTestInstance
+{
+public:
+    SpvAsmPhysicalStorageBufferPushConstantsForwardPtrsTestInstance(Context &ctx)
+        : SpvAsmPhysicalStorageBufferTestInstance(ctx)
+    {
+    }
+    tcu::TestStatus iterate(void);
+    static void initPrograms(vk::SourceCollections &programCollection, const TestParamsPtr params);
+};
+
 class SpvAsmPhysicalStorageBufferTestCase : public TestCase
 {
 public:
@@ -375,6 +388,23 @@ void SpvAsmPhysicalStorageBufferTestCase::checkSupport(Context &context) const
         if (!context.getDeviceFeatures().shaderInt64)
             TCU_THROW(NotSupportedError, "Int64 not supported");
     }
+
+    if (m_params->method == PassMethod::PUSH_CONSTANTS_FORWARD_PTRS)
+    {
+        context.requireDeviceFunctionality("VK_KHR_buffer_device_address");
+
+        if (!context.getDeviceFeatures().shaderInt64)
+            TCU_THROW(NotSupportedError, "Int64 not supported");
+
+        if (!context.getDeviceFeatures().shaderInt16)
+            TCU_THROW(NotSupportedError, "Int16 not supported");
+
+        if (!context.getShaderFloat16Int8Features().shaderInt8)
+            TCU_THROW(NotSupportedError, "Int8 not supported");
+
+        if (!context.get8BitStorageFeatures().storageBuffer8BitAccess)
+            TCU_THROW(NotSupportedError, "storageBuffer8BitAccess not supported");
+    }
 }
 
 TestInstance *SpvAsmPhysicalStorageBufferTestCase::createInstance(Context &ctx) const
@@ -390,6 +420,9 @@ TestInstance *SpvAsmPhysicalStorageBufferTestCase::createInstance(Context &ctx) 
 
     case PassMethod::PTR_ACCESS_CHAIN_FROM_UBO:
         return new SpvAsmPhysicalStorageBufferPtrAccessChainTestInstance(ctx, m_params);
+
+    case PassMethod::PUSH_CONSTANTS_FORWARD_PTRS:
+        return new SpvAsmPhysicalStorageBufferPushConstantsForwardPtrsTestInstance(ctx);
     }
 
     DE_ASSERT(false);
@@ -411,6 +444,10 @@ void SpvAsmPhysicalStorageBufferTestCase::initPrograms(vk::SourceCollections &pr
 
     case PassMethod::PTR_ACCESS_CHAIN_FROM_UBO:
         SpvAsmPhysicalStorageBufferPtrAccessChainTestInstance::initPrograms(programCollection, m_params);
+        break;
+
+    case PassMethod::PUSH_CONSTANTS_FORWARD_PTRS:
+        SpvAsmPhysicalStorageBufferPushConstantsForwardPtrsTestInstance::initPrograms(programCollection, m_params);
         break;
     }
 }
@@ -871,6 +908,140 @@ tcu::TestStatus SpvAsmPhysicalStorageBufferPtrAccessChainTestInstance::iterate(v
     return tcu::TestStatus::pass("Pass");
 }
 
+void SpvAsmPhysicalStorageBufferPushConstantsForwardPtrsTestInstance::initPrograms(
+    vk::SourceCollections &programCollection, const TestParamsPtr)
+{
+    std::string spirv = R"(               OpCapability PhysicalStorageBufferAddresses
+               OpCapability Int64
+               OpCapability Shader
+               OpExtension "SPV_KHR_physical_storage_buffer"
+               OpExtension "SPV_KHR_storage_buffer_storage_class"
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint GLCompute %2 "main" %13 %42
+               OpExecutionMode %2 LocalSize 64 1 1
+               OpSource Slang 1
+               OpName %7 "BLASValidationShaderPushData_std430"
+               OpMemberName %7 0 "last_build_as_geometries_gpu"
+               OpMemberName %7 1 "as_geometry_gpu"
+               OpName %13 "pc"
+               OpName %18 "last_build"
+               OpName %27 "geom_i"
+               OpName %39 "RWStructuredBuffer"
+               OpMemberName %39 0 "__member0"
+               OpName %42 "error_buffer"
+               OpName %2 "main"
+               OpName %8 "AccelerationStructureGeometriesGPU_natural"
+               OpMemberName %8 0 "count"
+               OpMemberName %8 1 "pad_"
+               OpName %10 "AccelerationStructureGeometryGPU_natural"
+               OpMemberName %10 0 "index_buffer_copies"
+               OpMemberName %10 1 "max_vertex"
+               OpMemberName %10 2 "primitive_count"
+               OpMemberName %10 3 "geometry_i"
+               OpMemberName %10 4 "pad_"
+               OpDecorate %9 ArrayStride 8
+               OpDecorate %11 ArrayStride 24
+               OpDecorate %7 Block
+               OpMemberDecorate %7 0 Offset 0
+               OpMemberDecorate %7 1 Offset 8
+               OpDecorate %25 ArrayStride 4
+               OpDecorate %37 ArrayStride 4
+               OpDecorate %40 ArrayStride 4
+               OpDecorate %39 Block
+               OpMemberDecorate %39 0 Offset 0
+               OpDecorate %42 Binding 0
+               OpDecorate %42 DescriptorSet 0
+               OpMemberDecorate %8 0 Offset 0
+               OpMemberDecorate %8 1 Offset 4
+               OpMemberDecorate %10 0 Offset 0
+               OpMemberDecorate %10 1 Offset 8
+               OpMemberDecorate %10 2 Offset 12
+               OpMemberDecorate %10 3 Offset 16
+               OpMemberDecorate %10 4 Offset 20
+          %1 = OpTypeVoid
+          %3 = OpTypeFunction %1
+               OpTypeForwardPointer %9 PhysicalStorageBuffer
+               OpTypeForwardPointer %11 PhysicalStorageBuffer
+          %7 = OpTypeStruct %9 %11
+         %12 = OpTypePointer PushConstant %7
+         %14 = OpTypeInt 32 1
+         %15 = OpConstant %14 0
+         %16 = OpTypePointer PushConstant %9
+         %19 = OpConstant %14 1
+         %20 = OpTypePointer PushConstant %11
+         %23 = OpConstant %14 3
+         %24 = OpTypeInt 32 0
+         %25 = OpTypePointer PhysicalStorageBuffer %24
+         %30 = OpTypeBool
+         %37 = OpTypePointer StorageBuffer %24
+         %40 = OpTypeRuntimeArray %24
+         %39 = OpTypeStruct %40
+         %41 = OpTypePointer StorageBuffer %39
+         %43 = OpConstant %24 1
+         %44 = OpConstant %24 0
+          %8 = OpTypeStruct %24 %24
+          %9 = OpTypePointer PhysicalStorageBuffer %8
+         %48 = OpTypeInt 64 0
+         %10 = OpTypeStruct %48 %24 %24 %24 %24
+         %11 = OpTypePointer PhysicalStorageBuffer %10
+         %13 = OpVariable %12 PushConstant
+         %42 = OpVariable %41 StorageBuffer
+          %2 = OpFunction %1 None %3
+          %4 = OpLabel
+               OpSelectionMerge %49 None
+               OpSwitch %44 %50
+         %50 = OpLabel
+         %17 = OpAccessChain %16 %13 %15
+         %18 = OpLoad %9 %17
+         %21 = OpAccessChain %20 %13 %19
+         %22 = OpLoad %11 %21
+         %26 = OpAccessChain %25 %22 %23
+         %27 = OpLoad %24 %26 Aligned 4
+         %28 = OpAccessChain %25 %18 %15
+         %29 = OpLoad %24 %28 Aligned 4
+         %31 = OpUGreaterThanEqual %30 %27 %29
+               OpSelectionMerge %6 None
+               OpBranchConditional %31 %5 %6
+          %5 = OpLabel
+               OpBranch %49
+          %6 = OpLabel
+         %56 = OpAccessChain %37 %42 %15 %15
+         %57 = OpAtomicIAdd %24 %56 %43 %44 %43
+               OpBranch %49
+         %49 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+    programCollection.spirvAsmSources.add("comp")
+        << spirv << vk::SpirVAsmBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, true);
+}
+
+tcu::TestStatus SpvAsmPhysicalStorageBufferPushConstantsForwardPtrsTestInstance::iterate(void)
+{
+    const DeviceInterface &vki = m_context.getDeviceInterface();
+    const VkDevice dev         = m_context.getDevice();
+
+    Move<VkShaderModule> shaderModule = createShaderModule(vki, dev, m_context.getBinaryCollection().get("comp"));
+
+    Move<VkDescriptorSetLayout> emptySetLayout = DescriptorSetLayoutBuilder().build(vki, dev);
+    Move<VkDescriptorSetLayout> setLayout =
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vki, dev);
+    const VkDescriptorSetLayout setLayouts[] = {*setLayout, *emptySetLayout};
+
+    VkPushConstantRange pushConstantRange = {VK_SHADER_STAGE_COMPUTE_BIT, 0, 20};
+
+    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vki, dev, 2u, setLayouts, 1u, &pushConstantRange);
+    Move<VkPipeline> pipeline             = makeComputePipeline(vki, dev, *pipelineLayout, *shaderModule);
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createPhysicalStorageBufferTestGroup(tcu::TestContext &testCtx)
@@ -884,6 +1055,7 @@ tcu::TestCaseGroup *createPhysicalStorageBufferTestGroup(tcu::TestContext &testC
         {PassMethod::PUSH_CONSTANTS_FUNCTION, "push_constants_function"},
         {PassMethod::ADDRESSES_IN_SSBO, "addrs_in_ssbo"},
         {PassMethod::PTR_ACCESS_CHAIN_FROM_UBO, "ptr_access_chain_from_ubo"},
+        {PassMethod::PUSH_CONSTANTS_FORWARD_PTRS, "push_constants_forward_ptrs"},
     };
 
     tcu::TestCaseGroup *group = new tcu::TestCaseGroup(testCtx, "physical_storage_buffer");
