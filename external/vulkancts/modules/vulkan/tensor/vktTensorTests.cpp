@@ -52,6 +52,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     tensorTests->addChild(createTensorRequiredFormatsTests(testCtx));
     tensorTests->addChild(createRobustnessTests(testCtx));
     tensorTests->addChild(createUpdateAfterBindTests(testCtx));
+    tensorTests->addChild(createFrameBoundaryTests(testCtx));
 
     return tensorTests.release();
 }

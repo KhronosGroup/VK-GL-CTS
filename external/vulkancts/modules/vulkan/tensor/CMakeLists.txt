@@ -23,6 +23,7 @@ set(DEQP_VK_TENSOR_SRCS
 	vktTensorRequiredFormats.cpp
 	vktTensorRobustness.cpp
 	vktTensorUpdateAfterBind.cpp
+	vktTensorFrameBoundary.cpp
 	shaders/vktTensorImageAccessShaders.cpp
 	shaders/vktTensorQueryDimensionsShaders.cpp
 	shaders/vktTensorAccessShaders.cpp

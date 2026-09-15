@@ -1978,6 +1978,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/tensor/vktTensorDescriptorBuffer.cpp",
         "external/vulkancts/modules/vulkan/tensor/vktTensorDescriptorsArray.cpp",
         "external/vulkancts/modules/vulkan/tensor/vktTensorDimensionQuery.cpp",
+        "external/vulkancts/modules/vulkan/tensor/vktTensorFrameBoundary.cpp",
         "external/vulkancts/modules/vulkan/tensor/vktTensorGraphicsPipeline.cpp",
         "external/vulkancts/modules/vulkan/tensor/vktTensorImageAliasing.cpp",
         "external/vulkancts/modules/vulkan/tensor/vktTensorRequired.cpp",
