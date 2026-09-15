@@ -35,6 +35,16 @@ namespace
 
 using namespace vk;
 
+// Prefer non-device-local host-visible memory to keep large staging buffers out of the scarce BAR1 aperture.
+// Falls back to plain host-visible memory when no such memory type exists.
+MemoryRequirement preferNonLocalHostVisible(const Context &context)
+{
+    const auto memProps =
+        getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+    const auto preferred = MemoryRequirement::HostVisible | MemoryRequirement::NonLocal;
+    return (getCompatibleMemoryTypes(memProps, preferred) != 0u) ? preferred : MemoryRequirement::HostVisible;
+}
+
 // Copy data to an image and then try to use it as an attachment or texture later.
 struct AfterUsageParams
 {
@@ -808,6 +818,10 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
                 vertices.emplace_back(xCoord, yCoord, depth, 1.0f);
             }
 
+    const auto hostWriteStagingReq = preferNonLocalHostVisible(m_context);
+    const auto hostWriteStagingReqDevAddr =
+        hostWriteStagingReq | (useDeviceAddresses ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any);
+
     const auto vertexBufferSize  = static_cast<VkDeviceSize>(de::dataSize(vertices));
     const auto vertexBufferUsage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
     const auto vertexBufferInfo  = makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage);
@@ -898,8 +912,6 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
     const auto memoryBufferUsage = static_cast<VkBufferUsageFlags>(
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
         (useDeviceAddresses ? static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) : 0u));
-    const VkMemoryAllocateFlags memAllocDevAddr =
-        useDeviceAddresses ? static_cast<VkMemoryAllocateFlags>(VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT) : 0u;
 
     if (isDS)
     {
@@ -907,7 +919,7 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
         const auto depthMemoryBufferInfo = makeBufferCreateInfo(depthMemoryBufferSize, memoryBufferUsage);
 
         memoryBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, depthMemoryBufferInfo,
-                                                HostIntent::W, true, memAllocDevAddr));
+                                                hostWriteStagingReqDevAddr));
         {
             auto &alloc = memoryBuffer->getAllocation();
             memcpy(alloc.getHostPtr(), de::dataOrNull(depthMemoryBytes), de::dataSize(depthMemoryBytes));
@@ -919,8 +931,8 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
         const auto texMemoryBufferSize = static_cast<VkDeviceSize>(itemSize * totalSampleCount);
         const auto texMemoryBufferInfo = makeBufferCreateInfo(texMemoryBufferSize, memoryBufferUsage);
 
-        memoryBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, texMemoryBufferInfo, HostIntent::W,
-                                                true, memAllocDevAddr));
+        memoryBuffer.reset(
+            new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, texMemoryBufferInfo, hostWriteStagingReqDevAddr));
         {
             auto &alloc = memoryBuffer->getAllocation();
             memcpy(alloc.getHostPtr(), textureAccess->getDataPtr(), static_cast<size_t>(texMemoryBufferSize));
@@ -1167,7 +1179,7 @@ tcu::TestStatus AfterUsageInstance::iterate(void)
             const auto copyBufferSize       = static_cast<VkDeviceSize>(de::dataSize(fragFillValues));
             const auto copyBufferCreateInfo = makeBufferCreateInfo(copyBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
             fillBuffer.reset(
-                new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, copyBufferCreateInfo, HostIntent::W));
+                new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, copyBufferCreateInfo, hostWriteStagingReq));
             {
                 auto &alloc = fillBuffer->getAllocation();
                 memcpy(alloc.getHostPtr(), de::dataOrNull(fragFillValues), de::dataSize(fragFillValues));
