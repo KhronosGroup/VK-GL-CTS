@@ -5956,6 +5956,10 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
     {
         basicComputeTests->addChild(
             cts_amber::createAmberTestCase(testCtx, "write_ssbo_array", "", "compute", "write_ssbo_array.amber"));
+        basicComputeTests->addChild(cts_amber::createAmberTestCase(
+            testCtx, "branching_uniform_array_access",
+            "Verify dynamic uniform array indexing across sequential conditional branches", "compute",
+            "branching_uniform_array_access.amber"));
         basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "atomic_barrier_sum_small", "", "compute",
                                                                    "atomic_barrier_sum_small.amber"));
         basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "vec2_nclamp_nan_component", "", "compute",

@@ -1,0 +1,100 @@
+#!amber
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# A compute shader that performs conditional uniform array access based
+# on a uniform value.
+
+SHADER compute compute_shader GLSL
+#version 450
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0, std430) buffer OutBuffer {
+    vec4 outData;
+};
+
+layout(set = 0, binding = 1, std140) uniform unis {
+    float i1;
+    vec4 i2;
+} uniforms;
+
+layout(set = 0, binding = 2, std140) uniform ar {
+    vec4 array[1];
+} array;
+
+void main() {
+    vec4 ext = vec4(0.0);
+    vec4 local1;
+    bool cond = uniforms.i1 > 0.0;
+
+    // This dead store to local1 is intentionally kept to see if the compiler optimizes it without functional issues.
+    if (cond)
+        local1 = array.array[int(ext.x)];
+    else
+        local1 = uniforms.i2;
+
+    if (cond)
+        local1 = array.array[int(ext.y)];
+
+    ext = local1;
+    outData = ext;
+}
+END
+
+# Output buffers
+BUFFER out_buf_then DATA_TYPE vec4<float> SIZE 1 FILL 0.0
+BUFFER out_buf_else DATA_TYPE vec4<float> SIZE 1 FILL 0.0
+
+# Uniforms: i1 (float), padding to vec4 alignment, then i2 (vec4)
+# std140 layout: i1 at offset 0, i2 at offset 16 (elements 4, 5, 6, 7 in float array)
+
+# Case 1: i1 = 1.0 (cond is true)
+BUFFER unis_buf_then DATA_TYPE float DATA
+ 1.0 0.0 0.0 0.0
+ 5.0 6.0 7.0 8.0
+END
+
+# Case 2: i1 = 0.0 (cond is false)
+BUFFER unis_buf_else DATA_TYPE float DATA
+ 0.0 0.0 0.0 0.0
+ 5.0 6.0 7.0 8.0
+END
+
+# Array buffer
+BUFFER ar_buf DATA_TYPE vec4<float> DATA
+ 1.0 2.0 3.0 4.0
+END
+
+PIPELINE compute pipeline_then
+  ATTACH compute_shader
+  BIND BUFFER out_buf_then AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER unis_buf_then AS uniform DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER ar_buf AS uniform DESCRIPTOR_SET 0 BINDING 2
+END
+
+PIPELINE compute pipeline_else
+  ATTACH compute_shader
+  BIND BUFFER out_buf_else AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER unis_buf_else AS uniform DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER ar_buf AS uniform DESCRIPTOR_SET 0 BINDING 2
+END
+
+RUN pipeline_then 1 1 1
+RUN pipeline_else 1 1 1
+
+# Check that the true branch writes the array value to the output buffer
+EXPECT out_buf_then IDX 0 EQ 1.0 2.0 3.0 4.0
+
+# Check that the false branch writes uniforms.i2 to the output buffer
+EXPECT out_buf_else IDX 0 EQ 5.0 6.0 7.0 8.0
