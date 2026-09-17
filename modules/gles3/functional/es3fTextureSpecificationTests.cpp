@@ -3557,6 +3557,127 @@ public:
     const uint32_t m_internalFormat;
 };
 
+// Verify FBO attachment completeness and rendering after texture respecification
+class TexImage3DFboRespecificationCase : public TestCase
+{
+public:
+    TexImage3DFboRespecificationCase(Context &context, const char *name, const char *desc, int width, int height,
+                                     int initialDepth, int reallocDepth, bool unbindFboBeforeRespecify)
+        : TestCase(context, name, desc)
+        , m_width(width)
+        , m_height(height)
+        , m_initialDepth(initialDepth)
+        , m_reallocDepth(reallocDepth)
+        , m_unbindFboBeforeRespecify(unbindFboBeforeRespecify)
+    {
+    }
+
+    ~TexImage3DFboRespecificationCase(void)
+    {
+    }
+
+    IterateResult iterate(void)
+    {
+        const glw::Functions &gl         = m_context.getRenderContext().getFunctions();
+        const glw::GLenum internalFormat = GL_RGBA8;
+
+        glw::GLint maxLayers = 0;
+        gl.getIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxLayers);
+        if (m_initialDepth > maxLayers || m_reallocDepth > maxLayers)
+        {
+            tcu::TestLog &log = m_testCtx.getLog();
+            log << tcu::TestLog::Message << "Texture layer count exceeds GL_MAX_ARRAY_TEXTURE_LAYERS (" << maxLayers
+                << "), skipping." << tcu::TestLog::EndMessage;
+            m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Array texture layers not supported");
+            return STOP;
+        }
+
+        glu::Texture tex(gl);
+        glu::Framebuffer fbo(gl);
+        const int reclaimBufferCount = 1000;
+        glu::BufferVector reclaimBuffers(gl, reclaimBufferCount);
+
+        gl.bindTexture(GL_TEXTURE_2D_ARRAY, *tex);
+        gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, internalFormat, m_width, m_height, m_initialDepth, 0, GL_RGBA,
+                      GL_UNSIGNED_BYTE, nullptr);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "Initial glTexImage3D failed");
+
+        gl.bindFramebuffer(GL_FRAMEBUFFER, *fbo);
+        gl.framebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, *tex, 0, 0);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTextureLayer failed");
+
+        TCU_CHECK(gl.checkFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+
+        gl.clearColor(1.0f, 0.0f, 0.0f, 1.0f);
+        gl.clear(GL_COLOR_BUFFER_BIT);
+        gl.finish();
+        GLU_EXPECT_NO_ERROR(gl.getError(), "Initial glClear failed");
+
+        if (m_unbindFboBeforeRespecify)
+        {
+            // Unbind FBO prior to re-specifying texture data.
+            gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
+        // Respecify texture backing memory with an altered layer count (within GLES 3.0 min spec limit of 256).
+        gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, internalFormat, m_width, m_height, m_reallocDepth, 0, GL_RGBA,
+                      GL_UNSIGNED_BYTE, nullptr);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "Second glTexImage3D failed");
+
+        // Allocate additional buffer objects to exercise heap memory reuse and verify attachment state integrity.
+        // 4864 bytes targets driver internal surface allocation slab size to ensure freed texture
+        // backing memory is reclaimed and stale attachment references are detected.
+        const int allocSizeInBytes = 4864;
+        vector<uint8_t> reclaimData(allocSizeInBytes, 0x41);
+        for (int i = 0; i < reclaimBufferCount; i++)
+        {
+            gl.bindBuffer(GL_ARRAY_BUFFER, reclaimBuffers[i]);
+            gl.bufferData(GL_ARRAY_BUFFER, allocSizeInBytes, reclaimData.data(), GL_STATIC_DRAW);
+        }
+        GLU_EXPECT_NO_ERROR(gl.getError(), "Buffer allocation failed");
+
+        // Rebind FBO (if unbound) and verify framebuffer completeness and clear operation after texture respecification.
+        if (m_unbindFboBeforeRespecify)
+        {
+            gl.bindFramebuffer(GL_FRAMEBUFFER, *fbo);
+        }
+
+        glw::GLenum status = gl.checkFramebufferStatus(GL_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_COMPLETE)
+        {
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "FBO became incomplete after respecifying texture");
+            return STOP;
+        }
+
+        gl.clearColor(0.0f, 1.0f, 0.0f, 1.0f);
+        gl.clear(GL_COLOR_BUFFER_BIT);
+        gl.finish();
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glClear after texture respecification failed");
+
+        uint8_t pixel[4] = {0, 0, 0, 0};
+        gl.readPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels failed");
+        if (pixel[0] != 0 || pixel[1] != 255 || pixel[2] != 0 || pixel[3] != 255)
+        {
+            m_testCtx.getLog() << tcu::TestLog::Message << "Expected green pixel (0, 255, 0, 255), got ("
+                               << (int)pixel[0] << ", " << (int)pixel[1] << ", " << (int)pixel[2] << ", "
+                               << (int)pixel[3] << ")" << tcu::TestLog::EndMessage;
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Cleared pixel value did not match expected green color");
+            return STOP;
+        }
+
+        m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+        return STOP;
+    }
+
+private:
+    int m_width;
+    int m_height;
+    int m_initialDepth;
+    int m_reallocDepth;
+    bool m_unbindFboBeforeRespecify;
+};
+
 TextureSpecificationTests::TextureSpecificationTests(Context &context)
     : TestCaseGroup(context, "specification", "Texture Specification Tests")
 {
@@ -4644,6 +4765,32 @@ void TextureSpecificationTests::init(void)
                 m_context, (std::string(depthStencilFormats[ndx].name) + "_2d_array").c_str(), "",
                 depthStencilFormats[ndx].internalFormat, tex3DWidth, tex3DHeight, tex3DDepth));
         }
+    }
+
+    // glTexImage3D() FBO attachment respecification tests.
+    {
+        tcu::TestCaseGroup *const fboRespecifyGroup = new tcu::TestCaseGroup(
+            m_testCtx, "teximage3d_fbo_respecify", "glTexImage3D() FBO attachment respecification");
+        addChild(fboRespecifyGroup);
+
+        fboRespecifyGroup->addChild(new TexImage3DFboRespecificationCase(
+            m_context, "rgba8_64x64_1_to_64_layers_unbound_fbo",
+            "Respecify 2D array texture attached to unbound FBO from 1 to 64 layers", 64, 64, 1, 64, true));
+        fboRespecifyGroup->addChild(new TexImage3DFboRespecificationCase(
+            m_context, "rgba8_64x64_1_to_64_layers_bound_fbo",
+            "Respecify 2D array texture attached to bound FBO from 1 to 64 layers", 64, 64, 1, 64, false));
+        fboRespecifyGroup->addChild(new TexImage3DFboRespecificationCase(
+            m_context, "rgba8_64x64_1_to_128_layers_unbound_fbo",
+            "Respecify 2D array texture attached to unbound FBO from 1 to 128 layers", 64, 64, 1, 128, true));
+        fboRespecifyGroup->addChild(new TexImage3DFboRespecificationCase(
+            m_context, "rgba8_64x64_1_to_128_layers_bound_fbo",
+            "Respecify 2D array texture attached to bound FBO from 1 to 128 layers", 64, 64, 1, 128, false));
+        fboRespecifyGroup->addChild(new TexImage3DFboRespecificationCase(
+            m_context, "rgba8_64x64_64_to_1_layers_unbound_fbo",
+            "Respecify 2D array texture attached to unbound FBO from 64 to 1 layers", 64, 64, 64, 1, true));
+        fboRespecifyGroup->addChild(new TexImage3DFboRespecificationCase(
+            m_context, "rgba8_64x64_64_to_1_layers_bound_fbo",
+            "Respecify 2D array texture attached to bound FBO from 64 to 1 layers", 64, 64, 64, 1, false));
     }
 
     // Basic TexSubImage3D usage.
