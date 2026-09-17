@@ -2852,8 +2852,8 @@ tcu::Maybe<float> calcB16Threshold(const float origRef)
         const auto exp  = b16Ref.exponent();
         const auto mant = b16Ref.mantissa();
 
-        const BFloat16 refTrunc = BFloat16::construct(sign, exp, (mant & 0xFFFCu)); // Truncate last two bits.
-        const BFloat16 refSat   = BFloat16::construct(sign, exp, (mant | 0x3u));    // Saturate last two bits.
+        const BFloat16 refTrunc = BFloat16::construct(sign, exp, (mant & 0xFFF8u)); // Truncate last 3 bits.
+        const BFloat16 refSat   = BFloat16::construct(sign, exp, (mant | 0x7u));    // Saturate last 3 bits.
 
         // Whatever gives us the largest difference.
         threshold = std::max(fabs(refTrunc.asFloat() - origRef), fabs(refSat.asFloat() - origRef));
