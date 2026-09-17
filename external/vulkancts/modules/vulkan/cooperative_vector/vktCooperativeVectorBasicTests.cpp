@@ -51,6 +51,8 @@
 #include <sstream>
 #include <set>
 #include <algorithm>
+#include <memory>
+#include <array>
 
 #define COOPERATIVE_VECTOR_EXTENDED_DEBUG 1
 
@@ -4252,9 +4254,6 @@ tcu::TestCaseGroup *createCooperativeVectorBasicTests(tcu::TestContext &testCtx,
 
 tcu::TestCaseGroup *createCooperativeVectorMatrixMulTests(tcu::TestContext &testCtx)
 {
-    de::MovePtr<tcu::TestCaseGroup> group(
-        new tcu::TestCaseGroup(testCtx, "matmul", "cooperative_vector matrix multiply tests"));
-
     typedef struct
     {
         uint32_t value;
@@ -4262,478 +4261,472 @@ tcu::TestCaseGroup *createCooperativeVectorMatrixMulTests(tcu::TestContext &test
         const char *description;
     } TestGroupCase;
 
-    TestGroupCase ttCases[] = {
-        {TT_MATRIXMUL, "matrixmul", "OpCooperativeVectorMatrixMulNV"},
-        {TT_MATRIXMAD, "matrixmuladd", "OpCooperativeVectorMatrixMulAddNV"},
-        {TT_MATRIXMADTRANSPOSE, "matrixmuladdtranspose", "OpCooperativeVectorMatrixMulAddNV"},
-        {TT_MATRIXMUL3, "matrixmul3", "OpCooperativeVectorMatrixMulNV"},
-        {TT_MATRIXMUL2ADDMUL2, "matrixmul2addmul2", "OpCooperativeVectorMatrixMulNV"},
-        {TT_MATRIXMUL2ADD, "matrixmul2add", "OpCooperativeVectorMatrixMulNV"},
-        {TT_MATRIXMUL_TRAININGBIAS, "matrixmultrainingbias", "Training layout with componentwise bias"},
-    };
+    std::shared_ptr<std::array<TestGroupCase, 7>> ttCases(new std::array<TestGroupCase, 7>{
+        TestGroupCase{TT_MATRIXMUL, "matrixmul", "OpCooperativeVectorMatrixMulNV"},
+        TestGroupCase{TT_MATRIXMAD, "matrixmuladd", "OpCooperativeVectorMatrixMulAddNV"},
+        TestGroupCase{TT_MATRIXMADTRANSPOSE, "matrixmuladdtranspose", "OpCooperativeVectorMatrixMulAddNV"},
+        TestGroupCase{TT_MATRIXMUL3, "matrixmul3", "OpCooperativeVectorMatrixMulNV"},
+        TestGroupCase{TT_MATRIXMUL2ADDMUL2, "matrixmul2addmul2", "OpCooperativeVectorMatrixMulNV"},
+        TestGroupCase{TT_MATRIXMUL2ADD, "matrixmul2add", "OpCooperativeVectorMatrixMulNV"},
+        TestGroupCase{TT_MATRIXMUL_TRAININGBIAS, "matrixmultrainingbias", "Training layout with componentwise bias"},
+    });
 
-    TestGroupCaseN<5> dtCases[] = {
+    //TestGroupCaseN<5>[12]
+    std::shared_ptr<std::array<TestGroupCaseN<5>, 12>> dtCases(new std::array<TestGroupCaseN<5>, 12>{
         //  inputType,                      inputInterpretation,            matrixInterpretation,           outputType,                     packed
-        {{VK_COMPONENT_TYPE_FLOAT16_NV, VK_COMPONENT_TYPE_FLOAT16_NV, VK_COMPONENT_TYPE_FLOAT16_NV,
-          VK_COMPONENT_TYPE_FLOAT16_NV, VK_FALSE},
-         "float16_float16_float16_float16",
-         "float16_float16_float16_float16"},
-        {{VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_UINT8_KHR,
-          VK_COMPONENT_TYPE_UINT32_KHR, VK_FALSE},
-         "uint8_uint8_uint8_uint32",
-         "uint8_uint8_uint8_uint32"},
-        {{VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_UINT8_KHR,
-          VK_COMPONENT_TYPE_SINT32_KHR, VK_FALSE},
-         "uint8_uint8_uint8_sint32",
-         "uint8_uint8_uint8_sint32"},
-        {{VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR,
-          VK_COMPONENT_TYPE_SINT32_KHR, VK_FALSE},
-         "uint8_uint8_sint8_sint32",
-         "uint8_uint8_sint8_sint32"},
-        {{VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_UINT8_KHR,
-          VK_COMPONENT_TYPE_SINT32_KHR, VK_FALSE},
-         "sint8_sint8_uint8_sint32",
-         "sint8_sint8_uint8_sint32"},
-        {{VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR,
-          VK_COMPONENT_TYPE_SINT32_KHR, VK_FALSE},
-         "sint8_sint8_sint8_sint32",
-         "sint8_sint8_sint8_sint32"},
-        {{VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR,
-          VK_COMPONENT_TYPE_SINT32_KHR, VK_TRUE},
-         "sint8packed_sint8_sint8_sint32",
-         "sint8packed_sint8_sint8_sint32"},
-        {{VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR,
-          VK_COMPONENT_TYPE_SINT32_KHR, VK_TRUE},
-         "uint8packed_uint8_sint8_sint32",
-         "uint8packed_uint8_sint8_sint32"},
-        {{VK_COMPONENT_TYPE_SINT32_KHR, VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR,
-          VK_COMPONENT_TYPE_SINT32_KHR, VK_FALSE},
-         "sint32_sint8_sint8_sint32",
-         "sint32_sint8_sint8_sint32"},
-        {{VK_COMPONENT_TYPE_FLOAT32_KHR, VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR,
-          VK_COMPONENT_TYPE_SINT32_KHR, VK_FALSE},
-         "float32_sint8_sint8_sint32",
-         "float32_sint8_sint8_sint32"},
-        {{VK_COMPONENT_TYPE_FLOAT16_NV, VK_COMPONENT_TYPE_FLOAT_E4M3_NV, VK_COMPONENT_TYPE_FLOAT_E4M3_NV,
-          VK_COMPONENT_TYPE_FLOAT16_NV, VK_FALSE},
-         "float16_floate4m3_floate4m3_float16",
-         "float16_floate4m3_floate4m3_float16"},
-        {{VK_COMPONENT_TYPE_FLOAT16_NV, VK_COMPONENT_TYPE_FLOAT_E5M2_NV, VK_COMPONENT_TYPE_FLOAT_E5M2_NV,
-          VK_COMPONENT_TYPE_FLOAT16_NV, VK_FALSE},
-         "float16_floate5m2_floate5m2_float16",
-         "float16_floate5m2_floate5m2_float16"},
-    };
+        TestGroupCaseN<5>{{VK_COMPONENT_TYPE_FLOAT16_NV, VK_COMPONENT_TYPE_FLOAT16_NV, VK_COMPONENT_TYPE_FLOAT16_NV,
+                           VK_COMPONENT_TYPE_FLOAT16_NV, VK_FALSE},
+                          "float16_float16_float16_float16",
+                          "float16_float16_float16_float16"},
+        TestGroupCaseN<5>{{VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_UINT8_KHR,
+                           VK_COMPONENT_TYPE_UINT32_KHR, VK_FALSE},
+                          "uint8_uint8_uint8_uint32",
+                          "uint8_uint8_uint8_uint32"},
+        TestGroupCaseN<5>{{VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_UINT8_KHR,
+                           VK_COMPONENT_TYPE_SINT32_KHR, VK_FALSE},
+                          "uint8_uint8_uint8_sint32",
+                          "uint8_uint8_uint8_sint32"},
+        TestGroupCaseN<5>{{VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR,
+                           VK_COMPONENT_TYPE_SINT32_KHR, VK_FALSE},
+                          "uint8_uint8_sint8_sint32",
+                          "uint8_uint8_sint8_sint32"},
+        TestGroupCaseN<5>{{VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_UINT8_KHR,
+                           VK_COMPONENT_TYPE_SINT32_KHR, VK_FALSE},
+                          "sint8_sint8_uint8_sint32",
+                          "sint8_sint8_uint8_sint32"},
+        TestGroupCaseN<5>{{VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR,
+                           VK_COMPONENT_TYPE_SINT32_KHR, VK_FALSE},
+                          "sint8_sint8_sint8_sint32",
+                          "sint8_sint8_sint8_sint32"},
+        TestGroupCaseN<5>{{VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR,
+                           VK_COMPONENT_TYPE_SINT32_KHR, VK_TRUE},
+                          "sint8packed_sint8_sint8_sint32",
+                          "sint8packed_sint8_sint8_sint32"},
+        TestGroupCaseN<5>{{VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR,
+                           VK_COMPONENT_TYPE_SINT32_KHR, VK_TRUE},
+                          "uint8packed_uint8_sint8_sint32",
+                          "uint8packed_uint8_sint8_sint32"},
+        TestGroupCaseN<5>{{VK_COMPONENT_TYPE_SINT32_KHR, VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR,
+                           VK_COMPONENT_TYPE_SINT32_KHR, VK_FALSE},
+                          "sint32_sint8_sint8_sint32",
+                          "sint32_sint8_sint8_sint32"},
+        TestGroupCaseN<5>{{VK_COMPONENT_TYPE_FLOAT32_KHR, VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR,
+                           VK_COMPONENT_TYPE_SINT32_KHR, VK_FALSE},
+                          "float32_sint8_sint8_sint32",
+                          "float32_sint8_sint8_sint32"},
+        TestGroupCaseN<5>{{VK_COMPONENT_TYPE_FLOAT16_NV, VK_COMPONENT_TYPE_FLOAT_E4M3_NV,
+                           VK_COMPONENT_TYPE_FLOAT_E4M3_NV, VK_COMPONENT_TYPE_FLOAT16_NV, VK_FALSE},
+                          "float16_floate4m3_floate4m3_float16",
+                          "float16_floate4m3_floate4m3_float16"},
+        TestGroupCaseN<5>{{VK_COMPONENT_TYPE_FLOAT16_NV, VK_COMPONENT_TYPE_FLOAT_E5M2_NV,
+                           VK_COMPONENT_TYPE_FLOAT_E5M2_NV, VK_COMPONENT_TYPE_FLOAT16_NV, VK_FALSE},
+                          "float16_floate5m2_floate5m2_float16",
+                          "float16_floate5m2_floate5m2_float16"},
+    });
 
     // Names are "NxK"
-    TestGroupCaseN<2> sizeCases[] = {
-        {{1, 1}, "1x1", "1 component input (K), 1 component output (N)"},
-        {{2, 2}, "2x2", "2 component input (K), 2 component output (N)"},
-        {{10, 1}, "10x1", "1 component input (K), 10 component output (N)"},
-        {{1, 10}, "1x10", "10 component input (K), 1 component output (N)"},
-        {{40, 5}, "40x5", "5 component input (K), 40 component output (N)"},
-        {{5, 40}, "5x40", "40 component input (K), 5 component output (N)"},
-        {{8, 8}, "8x8", "8 component input (K), 8 component output (N)"},
-        {{16, 8}, "16x8", "8 component input (K), 16 component output (N)"},
-        {{8, 16}, "8x16", "16 component input (K), 8 component output (N)"},
-        {{16, 16}, "16x16", "16 component input (K), 16 component output (N)"},
-        {{7, 13}, "7x13", "13 component input (K), 7 component output (N)"},
-        {{32, 32}, "32x32", "32 component input (K), 32 component output (N)"},
-        {{21, 35}, "21x35", "35 component input (K), 21 component output (N)"},
-        {{19, 51}, "19x51", "51 component input (K), 19 component output (N)"},
-        {{51, 19}, "51x19", "19 component input (K), 51 component output (N)"},
-        {{128, 128}, "128x128", "128 component input (K), 128 component output (N)"},
-    };
+    //TestGroupCaseN<2>[16]
+    std::shared_ptr<std::array<TestGroupCaseN<2>, 16>> sizeCases(new std::array<TestGroupCaseN<2>, 16>{
+        TestGroupCaseN<2>{{1, 1}, "1x1", "1 component input (K), 1 component output (N)"},
+        TestGroupCaseN<2>{{2, 2}, "2x2", "2 component input (K), 2 component output (N)"},
+        TestGroupCaseN<2>{{10, 1}, "10x1", "1 component input (K), 10 component output (N)"},
+        TestGroupCaseN<2>{{1, 10}, "1x10", "10 component input (K), 1 component output (N)"},
+        TestGroupCaseN<2>{{40, 5}, "40x5", "5 component input (K), 40 component output (N)"},
+        TestGroupCaseN<2>{{5, 40}, "5x40", "40 component input (K), 5 component output (N)"},
+        TestGroupCaseN<2>{{8, 8}, "8x8", "8 component input (K), 8 component output (N)"},
+        TestGroupCaseN<2>{{16, 8}, "16x8", "8 component input (K), 16 component output (N)"},
+        TestGroupCaseN<2>{{8, 16}, "8x16", "16 component input (K), 8 component output (N)"},
+        TestGroupCaseN<2>{{16, 16}, "16x16", "16 component input (K), 16 component output (N)"},
+        TestGroupCaseN<2>{{7, 13}, "7x13", "13 component input (K), 7 component output (N)"},
+        TestGroupCaseN<2>{{32, 32}, "32x32", "32 component input (K), 32 component output (N)"},
+        TestGroupCaseN<2>{{21, 35}, "21x35", "35 component input (K), 21 component output (N)"},
+        TestGroupCaseN<2>{{19, 51}, "19x51", "51 component input (K), 19 component output (N)"},
+        TestGroupCaseN<2>{{51, 19}, "51x19", "19 component input (K), 51 component output (N)"},
+        TestGroupCaseN<2>{{128, 128}, "128x128", "128 component input (K), 128 component output (N)"},
+    });
 
-    TestGroupCaseN<3> actCases[] = {
-        {{ACT_NONE, ACT_NONE, ACT_NONE}, "no_activation", ""},
-        {{ACT_MUL, ACT_MUL, ACT_MUL}, "actmul", ""},
-        {{ACT_MAX, ACT_MAX, ACT_MAX}, "actmax", ""},
-        {{ACT_NONUNIF, ACT_NONUNIF, ACT_NONUNIF}, "actnonuniform", ""},
-        {{ACT_DIVERGE, ACT_DIVERGE, ACT_DIVERGE}, "actdivergent", ""},
-        {{ACT_SIGMOID, ACT_SIGMOID, ACT_SIGMOID}, "actsigmoid", ""},
-        {{ACT_LEAKYRELUSTEP, ACT_LEAKYRELUSTEP, ACT_LEAKYRELUSTEP}, "actleakyrelustep", ""},
-        {{ACT_LEAKYRELUMAX, ACT_LEAKYRELUMAX, ACT_LEAKYRELUMAX}, "actleakyrelumax", ""},
-        {{ACT_HARDGELU, ACT_HARDGELU, ACT_HARDGELU}, "acthardgelu", ""},
-        {{ACT_LOAD, ACT_LOAD, ACT_LOAD}, "actload", ""},
-        {{ACT_LOAD_SHARED, ACT_LOAD_SHARED, ACT_LOAD_SHARED}, "actloadshared", ""},
-        {{ACT_LOAD_READONLY, ACT_LOAD_READONLY, ACT_LOAD_READONLY}, "actloadreadonly", ""},
-    };
+    //TestGroupCaseN<3>[12]
+    std::shared_ptr<std::array<TestGroupCaseN<3>, 12>> actCases(new std::array<TestGroupCaseN<3>, 12>{
+        TestGroupCaseN<3>{{ACT_NONE, ACT_NONE, ACT_NONE}, "no_activation", ""},
+        TestGroupCaseN<3>{{ACT_MUL, ACT_MUL, ACT_MUL}, "actmul", ""},
+        TestGroupCaseN<3>{{ACT_MAX, ACT_MAX, ACT_MAX}, "actmax", ""},
+        TestGroupCaseN<3>{{ACT_NONUNIF, ACT_NONUNIF, ACT_NONUNIF}, "actnonuniform", ""},
+        TestGroupCaseN<3>{{ACT_DIVERGE, ACT_DIVERGE, ACT_DIVERGE}, "actdivergent", ""},
+        TestGroupCaseN<3>{{ACT_SIGMOID, ACT_SIGMOID, ACT_SIGMOID}, "actsigmoid", ""},
+        TestGroupCaseN<3>{{ACT_LEAKYRELUSTEP, ACT_LEAKYRELUSTEP, ACT_LEAKYRELUSTEP}, "actleakyrelustep", ""},
+        TestGroupCaseN<3>{{ACT_LEAKYRELUMAX, ACT_LEAKYRELUMAX, ACT_LEAKYRELUMAX}, "actleakyrelumax", ""},
+        TestGroupCaseN<3>{{ACT_HARDGELU, ACT_HARDGELU, ACT_HARDGELU}, "acthardgelu", ""},
+        TestGroupCaseN<3>{{ACT_LOAD, ACT_LOAD, ACT_LOAD}, "actload", ""},
+        TestGroupCaseN<3>{{ACT_LOAD_SHARED, ACT_LOAD_SHARED, ACT_LOAD_SHARED}, "actloadshared", ""},
+        TestGroupCaseN<3>{{ACT_LOAD_READONLY, ACT_LOAD_READONLY, ACT_LOAD_READONLY}, "actloadreadonly", ""},
+    });
 
-    TestGroupCase colCases[] = {
-        {VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_ROW_MAJOR_NV, "rowMajor", "Row major"},
-        {VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_COLUMN_MAJOR_NV, "colMajor", "Column major"},
-        {VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV, "inferencingOptimal", "Inferencing Optimal"},
-        {VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_TRAINING_OPTIMAL_NV, "trainingOptimal", "Training Optimal"},
-    };
+    // TestGroupCase[4]
+    std::shared_ptr<std::array<TestGroupCase, 4>> colCases(new std::array<TestGroupCase, 4>{
+        TestGroupCase{VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_ROW_MAJOR_NV, "rowMajor", "Row major"},
+        TestGroupCase{VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_COLUMN_MAJOR_NV, "colMajor", "Column major"},
+        TestGroupCase{VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV, "inferencingOptimal",
+                      "Inferencing Optimal"},
+        TestGroupCase{VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_TRAINING_OPTIMAL_NV, "trainingOptimal", "Training Optimal"},
+    });
 
-    TestGroupCase nonunifCases[] = {
-        {0, "uniformoffset", "uniformoffset"},
-        {1, "nonuniformoffset", "nonuniformoffset"},
-    };
+    // TestGroupCase[2]
+    std::shared_ptr<std::array<TestGroupCase, 2>> nonunifCases(new std::array<TestGroupCase, 2>{
+        TestGroupCase{0, "uniformoffset", "uniformoffset"},
+        TestGroupCase{1, "nonuniformoffset", "nonuniformoffset"},
+    });
 
-    TestGroupCase cfCases[] = {
-        {0, "cfuniform", "control flow uniform"},
-        {1, "cfdivergent", "control flow divergent"},
-    };
+    // TestGroupCase[2]
+    std::shared_ptr<std::array<TestGroupCase, 2>> cfCases(new std::array<TestGroupCase, 2>{
+        TestGroupCase{0, "cfuniform", "control flow uniform"},
+        TestGroupCase{1, "cfdivergent", "control flow divergent"},
+    });
 
-    TestGroupCase scCases[] = {
-        {SC_BUFFER, "buffer", "SSBO"},
-        {SC_WORKGROUP, "workgroup", "shared memory"},
-        {SC_BUFFER_VARIABLE_POINTERS, "buffer_varptr", "SSBO w/variable pointers"},
-        {SC_WORKGROUP_VARIABLE_POINTERS, "workgroup_varptr", "shared memory w/variable pointers"},
-        {SC_PHYSICAL_STORAGE_BUFFER, "physical_buffer", "physical_storage_buffer"},
-    };
+    // TestGroupCase[5]
+    std::shared_ptr<std::array<TestGroupCase, 5>> scCases(new std::array<TestGroupCase, 5>{
+        TestGroupCase{SC_BUFFER, "buffer", "SSBO"},
+        TestGroupCase{SC_WORKGROUP, "workgroup", "shared memory"},
+        TestGroupCase{SC_BUFFER_VARIABLE_POINTERS, "buffer_varptr", "SSBO w/variable pointers"},
+        TestGroupCase{SC_WORKGROUP_VARIABLE_POINTERS, "workgroup_varptr", "shared memory w/variable pointers"},
+        TestGroupCase{SC_PHYSICAL_STORAGE_BUFFER, "physical_buffer", "physical_storage_buffer"},
+    });
 
-    TestGroupCaseN<3> stageCases[] = {
-        {{STAGE_COMPUTE, 71, 2}, "compute71x2", "compute71x2"},
-        {{STAGE_RAYGEN, 71, 2}, "raygen71x2", "raygen71x2"},
-        {{STAGE_INTERSECT, 71, 2}, "isect71x2", "intersect71x2"},
-        {{STAGE_ANY_HIT, 71, 2}, "ahit71x2", "any_hit71x2"},
-        {{STAGE_CLOSEST_HIT, 71, 2}, "chit71x2", "closest_hit71x2"},
-        {{STAGE_MISS, 71, 2}, "miss71x2", "miss71x2"},
-        {{STAGE_CALLABLE, 71, 2}, "callable71x2", "callable71x2"},
-        {{STAGE_VERTEX, 71, 1}, "vertex71x1", "vertex71x1"},
-        {{STAGE_FRAGMENT, 13, 8}, "fragment13x8", "fragment13x8"},
-        {{STAGE_GEOMETRY, 32, 1}, "geometry32x1", "geometry32x1"},
-        {{STAGE_TESS_CTRL, 32, 1}, "tessctrl32x1", "tessctrl32x1"},
-        {{STAGE_TESS_EVAL, 32, 1}, "tesseval32x1", "tesseval32x1"},
-        {{STAGE_TASK, 37, 2}, "task37x2", "task37x2"},
-        {{STAGE_MESH, 37, 2}, "mesh37x2", "mesh37x2"},
-        {{STAGE_TASK, 31, 1}, "task31x1", "task31x1"},
-        {{STAGE_MESH, 31, 1}, "mesh31x1", "mesh31x1"},
-    };
+    // TestGroupCaseN<3>[16]
+    std::shared_ptr<std::array<TestGroupCaseN<3>, 16>> stageCases(new std::array<TestGroupCaseN<3>, 16>{
+        TestGroupCaseN<3>{{STAGE_COMPUTE, 71, 2}, "compute71x2", "compute71x2"},
+        TestGroupCaseN<3>{{STAGE_RAYGEN, 71, 2}, "raygen71x2", "raygen71x2"},
+        TestGroupCaseN<3>{{STAGE_INTERSECT, 71, 2}, "isect71x2", "intersect71x2"},
+        TestGroupCaseN<3>{{STAGE_ANY_HIT, 71, 2}, "ahit71x2", "any_hit71x2"},
+        TestGroupCaseN<3>{{STAGE_CLOSEST_HIT, 71, 2}, "chit71x2", "closest_hit71x2"},
+        TestGroupCaseN<3>{{STAGE_MISS, 71, 2}, "miss71x2", "miss71x2"},
+        TestGroupCaseN<3>{{STAGE_CALLABLE, 71, 2}, "callable71x2", "callable71x2"},
+        TestGroupCaseN<3>{{STAGE_VERTEX, 71, 1}, "vertex71x1", "vertex71x1"},
+        TestGroupCaseN<3>{{STAGE_FRAGMENT, 13, 8}, "fragment13x8", "fragment13x8"},
+        TestGroupCaseN<3>{{STAGE_GEOMETRY, 32, 1}, "geometry32x1", "geometry32x1"},
+        TestGroupCaseN<3>{{STAGE_TESS_CTRL, 32, 1}, "tessctrl32x1", "tessctrl32x1"},
+        TestGroupCaseN<3>{{STAGE_TESS_EVAL, 32, 1}, "tesseval32x1", "tesseval32x1"},
+        TestGroupCaseN<3>{{STAGE_TASK, 37, 2}, "task37x2", "task37x2"},
+        TestGroupCaseN<3>{{STAGE_MESH, 37, 2}, "mesh37x2", "mesh37x2"},
+        TestGroupCaseN<3>{{STAGE_TASK, 31, 1}, "task31x1", "task31x1"},
+        TestGroupCaseN<3>{{STAGE_MESH, 31, 1}, "mesh31x1", "mesh31x1"},
+    });
 
-    for (int ttNdx = 0; ttNdx < DE_LENGTH_OF_ARRAY(ttCases); ttNdx++)
-    {
-        de::MovePtr<tcu::TestCaseGroup> ttGroup(
-            new tcu::TestCaseGroup(testCtx, ttCases[ttNdx].name, ttCases[ttNdx].description));
-        for (int dtNdx = 0; dtNdx < DE_LENGTH_OF_ARRAY(dtCases); dtNdx++)
+    // clang-format off
+    return createTestGroup2(testCtx, "matmul", [=](tcu::TestCaseGroup *group) {
+        for (size_t ttNdx = 0; ttNdx < ttCases->size(); ttNdx++)
         {
-            de::MovePtr<tcu::TestCaseGroup> dtGroup(
-                new tcu::TestCaseGroup(testCtx, dtCases[dtNdx].name, dtCases[dtNdx].description));
-            for (int scNdx = 0; scNdx < DE_LENGTH_OF_ARRAY(scCases); scNdx++)
-            {
-                de::MovePtr<tcu::TestCaseGroup> scGroup(
-                    new tcu::TestCaseGroup(testCtx, scCases[scNdx].name, scCases[scNdx].description));
-                for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizeCases); sizeNdx++)
+            group->addChild(createTestGroup2(group->getTestContext(), ttCases->at(ttNdx).name, [=](tcu::TestCaseGroup *ttGroup) {
+                for (size_t dtNdx = 0; dtNdx < dtCases->size(); dtNdx++)
                 {
-                    de::MovePtr<tcu::TestCaseGroup> sizeGroup(
-                        new tcu::TestCaseGroup(testCtx, sizeCases[sizeNdx].name, sizeCases[sizeNdx].description));
-                    for (int actNdx = 0; actNdx < DE_LENGTH_OF_ARRAY(actCases); actNdx++)
-                    {
-                        de::MovePtr<tcu::TestCaseGroup> activationGroup(
-                            new tcu::TestCaseGroup(testCtx, actCases[actNdx].name, actCases[actNdx].description));
-                        for (int nuNdx = 0; nuNdx < DE_LENGTH_OF_ARRAY(nonunifCases); nuNdx++)
+                    ttGroup->addChild(createTestGroup2(ttGroup->getTestContext(), dtCases->at(dtNdx).name, [=](tcu::TestCaseGroup *dtGroup) {
+                        for (size_t scNdx = 0; scNdx < scCases->size(); scNdx++)
                         {
-                            de::MovePtr<tcu::TestCaseGroup> nonunifGroup(new tcu::TestCaseGroup(
-                                testCtx, nonunifCases[nuNdx].name, nonunifCases[nuNdx].description));
-                            for (int cfNdx = 0; cfNdx < DE_LENGTH_OF_ARRAY(cfCases); cfNdx++)
-                            {
-                                de::MovePtr<tcu::TestCaseGroup> cfGroup(
-                                    new tcu::TestCaseGroup(testCtx, cfCases[cfNdx].name, cfCases[cfNdx].description));
-                                for (int colNdx = 0; colNdx < DE_LENGTH_OF_ARRAY(colCases); colNdx++)
+                            dtGroup->addChild(createTestGroup2(dtGroup->getTestContext(), scCases->at(scNdx).name, [=](tcu::TestCaseGroup *scGroup) {
+                                for (size_t sizeNdx = 0; sizeNdx < sizeCases->size(); sizeNdx++)
                                 {
-                                    de::MovePtr<tcu::TestCaseGroup> colGroup(new tcu::TestCaseGroup(
-                                        testCtx, colCases[colNdx].name, colCases[colNdx].description));
-                                    for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
-                                    {
-                                        TestType testType            = (TestType)ttCases[ttNdx].value;
-                                        VkComponentTypeKHR inputType = (VkComponentTypeKHR)dtCases[dtNdx].value[0];
-                                        VkComponentTypeKHR inputInterpretation =
-                                            (VkComponentTypeKHR)dtCases[dtNdx].value[1];
-                                        VkComponentTypeKHR matrixType = (VkComponentTypeKHR)dtCases[dtNdx].value[2];
-                                        VkComponentTypeKHR outputType = (VkComponentTypeKHR)dtCases[dtNdx].value[3];
-
-                                        if ((scCases[scNdx].value == SC_WORKGROUP ||
-                                             scCases[scNdx].value == SC_WORKGROUP_VARIABLE_POINTERS) &&
-                                            stageCases[stageNdx].value[0] != STAGE_COMPUTE)
+                                    scGroup->addChild(createTestGroup2(scGroup->getTestContext(), sizeCases->at(sizeNdx).name, [=](tcu::TestCaseGroup *sizeGroup) {
+                                        for (size_t actNdx = 0; actNdx < actCases->size(); actNdx++)
                                         {
-                                            continue;
+                                            sizeGroup->addChild(createTestGroup2(sizeGroup->getTestContext(), actCases->at(actNdx).name, [=](tcu::TestCaseGroup *activationGroup) {
+                                                for (size_t nuNdx = 0; nuNdx < nonunifCases->size(); nuNdx++)
+                                                {
+                                                    activationGroup->addChild(createTestGroup2(activationGroup->getTestContext(), nonunifCases->at(nuNdx).name, [=](tcu::TestCaseGroup *nonunifGroup) {
+                                                        for (size_t cfNdx = 0; cfNdx < cfCases->size(); cfNdx++)
+                                                        {
+                                                            nonunifGroup->addChild(createTestGroup2(nonunifGroup->getTestContext(), cfCases->at(cfNdx).name, [=](tcu::TestCaseGroup *cfGroup) {
+                                                                for (size_t colNdx = 0; colNdx < colCases->size(); colNdx++)
+                                                                {
+                                                                    cfGroup->addChild(createTestGroup2(cfGroup->getTestContext(), colCases->at(colNdx).name, [=](tcu::TestCaseGroup *colGroup) {
+                                                                        for (size_t stageNdx = 0; stageNdx < stageCases->size(); stageNdx++)
+                                                                        {
+                                                                            TestType testType                      = (TestType)ttCases->at(ttNdx).value;
+                                                                            VkComponentTypeKHR inputType           = (VkComponentTypeKHR)dtCases->at(dtNdx).value[0];
+                                                                            VkComponentTypeKHR inputInterpretation = (VkComponentTypeKHR)dtCases->at(dtNdx).value[1];
+                                                                            VkComponentTypeKHR matrixType          = (VkComponentTypeKHR)dtCases->at(dtNdx).value[2];
+                                                                            VkComponentTypeKHR outputType          = (VkComponentTypeKHR)dtCases->at(dtNdx).value[3];
+
+                                                                            if ((scCases->at(scNdx).value == SC_WORKGROUP ||
+                                                                                 scCases->at(scNdx).value == SC_WORKGROUP_VARIABLE_POINTERS) &&
+                                                                                stageCases->at(stageNdx).value[0] != STAGE_COMPUTE)
+                                                                            {
+                                                                                continue;
+                                                                            }
+
+                                                                            if (!(colCases->at(colNdx).value == VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV ||
+                                                                                  colCases->at(colNdx).value == VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_TRAINING_OPTIMAL_NV))
+                                                                            {
+                                                                                // Transpose is not supported for row/col-major
+                                                                                if (testType == TT_MATRIXMADTRANSPOSE)
+                                                                                {
+                                                                                    continue;
+                                                                                }
+
+                                                                                // FP8 matrix must be optimal
+                                                                                if (matrixType == VK_COMPONENT_TYPE_FLOAT_E4M3_NV ||
+                                                                                    matrixType == VK_COMPONENT_TYPE_FLOAT_E5M2_NV)
+                                                                                {
+                                                                                    continue;
+                                                                                }
+                                                                            }
+
+                                                                            if (!isFloatType(outputType))
+                                                                            {
+                                                                                // Some activations not supported for integer types
+                                                                                switch (actCases->at(actNdx).value[0])
+                                                                                {
+                                                                                case ACT_SIGMOID:
+                                                                                case ACT_LEAKYRELUSTEP:
+                                                                                case ACT_LEAKYRELUMAX:
+                                                                                    continue;
+                                                                                }
+                                                                            }
+
+                                                                            switch (actCases->at(actNdx).value[0])
+                                                                            {
+                                                                            case ACT_SIGMOID:
+                                                                            case ACT_HARDGELU:
+                                                                                // Nonlinear activation functions introduce imprecision which can be magnified
+                                                                                // with quantization to small types. Skip for now.
+                                                                                if (inputInterpretation == VK_COMPONENT_TYPE_FLOAT_E4M3_NV ||
+                                                                                    inputInterpretation == VK_COMPONENT_TYPE_FLOAT_E5M2_NV)
+                                                                                {
+                                                                                    continue;
+                                                                                }
+                                                                                break;
+                                                                            default:
+                                                                                break;
+                                                                            }
+
+                                                                            if (stageCases->at(stageNdx).value[0] != STAGE_COMPUTE &&
+                                                                                (isSIntType(inputType) != isSIntType(matrixType)) &&
+                                                                                !(sizeCases->at(sizeNdx).value[0] == 21 && sizeCases->at(sizeNdx).value[1] == 35))
+                                                                                continue;
+
+                                                                            if (actCases->at(actNdx).value[0] == ACT_LOAD_READONLY && !isFloatType(outputType))
+                                                                            {
+                                                                                continue;
+                                                                            }
+
+                                                                            // Limit combinations of tests we run with each activation function.
+                                                                            // Run mul everywhere. Run load for all dimensions. Run hardgelu with
+                                                                            // all sizes for float input type. Otherwise, run all activations only
+                                                                            // for 40x5 (chosen arbitrarily).
+                                                                            switch (actCases->at(actNdx).value[0])
+                                                                            {
+                                                                            case ACT_MUL:
+                                                                                break;
+                                                                            case ACT_LOAD:
+                                                                                if ((stageCases->at(stageNdx).value[0] == STAGE_COMPUTE ||
+                                                                                     stageCases->at(stageNdx).value[0] == STAGE_CLOSEST_HIT ||
+                                                                                     stageCases->at(stageNdx).value[0] == STAGE_VERTEX) &&
+                                                                                    nonunifCases->at(nuNdx).value &&
+                                                                                    colCases->at(colNdx).value == VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV &&
+                                                                                    !(scCases->at(scNdx).value == SC_WORKGROUP ||
+                                                                                      scCases->at(scNdx).value == SC_WORKGROUP_VARIABLE_POINTERS))
+                                                                                {
+                                                                                    break;
+                                                                                }
+                                                                                continue;
+                                                                            case ACT_LOAD_SHARED:
+                                                                                if (stageCases->at(stageNdx).value[0] == STAGE_COMPUTE &&
+                                                                                    colCases->at(colNdx).value == VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV &&
+                                                                                    (scCases->at(scNdx).value == SC_BUFFER ||
+                                                                                     scCases->at(scNdx).value == SC_WORKGROUP))
+                                                                                {
+                                                                                    break;
+                                                                                }
+                                                                                continue;
+                                                                            case ACT_HARDGELU:
+                                                                                if (inputType == VK_COMPONENT_TYPE_FLOAT32_KHR)
+                                                                                {
+                                                                                    break;
+                                                                                }
+                                                                                // fallthrough
+                                                                            default:
+                                                                                if (sizeCases->at(sizeNdx).value[0] == 40 && sizeCases->at(sizeNdx).value[1] == 5)
+                                                                                {
+                                                                                    break;
+                                                                                }
+                                                                                continue;
+                                                                            }
+
+                                                                            // Only run physical storage buffer and variable pointer tests for 16x16, to reduce test count
+                                                                            if ((scCases->at(scNdx).value == SC_PHYSICAL_STORAGE_BUFFER ||
+                                                                                 scCases->at(scNdx).value == SC_BUFFER_VARIABLE_POINTERS ||
+                                                                                 scCases->at(scNdx).value == SC_WORKGROUP_VARIABLE_POINTERS) &&
+                                                                                !(sizeCases->at(sizeNdx).value[0] == 16 && sizeCases->at(sizeNdx).value[1] == 16))
+                                                                            {
+                                                                                continue;
+                                                                            }
+
+                                                                            // reduce test count
+                                                                            if (ttCases->at(ttNdx).value != TT_MATRIXMUL2ADDMUL2 &&
+                                                                                scCases->at(scNdx).value != SC_BUFFER)
+                                                                            {
+                                                                                continue;
+                                                                            }
+
+                                                                            // reduce test count
+                                                                            if ((ttCases->at(ttNdx).value == TT_MATRIXMUL2ADD ||
+                                                                                ttCases->at(ttNdx).value == TT_MATRIXMUL) &&
+                                                                                stageCases->at(stageNdx).value[0] != STAGE_COMPUTE)
+                                                                            {
+                                                                                continue;
+                                                                            }
+
+                                                                            // reduce test count
+                                                                            if (stageCases->at(stageNdx).value[0] != STAGE_COMPUTE &&
+                                                                                sizeCases->at(sizeNdx).value[0] * sizeCases->at(sizeNdx).value[1] == 51 * 19)
+                                                                            {
+                                                                                continue;
+                                                                            }
+
+                                                                            // Only run uniformoffset tests for 16x16, to reduce test count
+                                                                            if (nonunifCases->at(nuNdx).value == false &&
+                                                                                !(sizeCases->at(sizeNdx).value[0] == 16 && sizeCases->at(sizeNdx).value[1] == 16))
+                                                                            {
+                                                                                continue;
+                                                                            }
+
+                                                                            // Only run control flow divergence tests for 21x35, to reduce test count
+                                                                            if (cfCases->at(cfNdx).value != 0 &&
+                                                                                !(sizeCases->at(sizeNdx).value[0] == 21 && sizeCases->at(sizeNdx).value[1] == 35))
+                                                                            {
+                                                                                continue;
+                                                                            }
+
+                                                                            // Only run non-inferencing layouts in compute/intersect/fragment, to reduce test count
+                                                                            if (colCases->at(colNdx).value != VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV &&
+                                                                                !(stageCases->at(stageNdx).value[0] == STAGE_COMPUTE ||
+                                                                                stageCases->at(stageNdx).value[0] == STAGE_INTERSECT ||
+                                                                                stageCases->at(stageNdx).value[0] == STAGE_FRAGMENT))
+                                                                            {
+                                                                                continue;
+                                                                            }
+
+                                                                            if (ttCases->at(ttNdx).value == TT_MATRIXMUL_TRAININGBIAS &&
+                                                                                colCases->at(colNdx).value != VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_TRAINING_OPTIMAL_NV)
+                                                                            {
+                                                                                continue;
+                                                                            }
+
+                                                                            // Spec only allows manually modifying the training layout for these types
+                                                                            if (ttCases->at(ttNdx).value == TT_MATRIXMUL_TRAININGBIAS &&
+                                                                                matrixType != VK_COMPONENT_TYPE_FLOAT16_KHR &&
+                                                                                matrixType != VK_COMPONENT_TYPE_FLOAT32_KHR)
+                                                                            {
+                                                                                continue;
+                                                                            }
+
+                                                                            // Test max size, but few variations because it'll be slower.
+                                                                            if (sizeCases->at(sizeNdx).value[0] == 128)
+                                                                            {
+                                                                                if (ttCases->at(ttNdx).value != TT_MATRIXMUL ||
+                                                                                    actCases->at(actNdx).value[0] != ACT_MUL)
+                                                                                {
+                                                                                    continue;
+                                                                                }
+                                                                            }
+
+                                                                            uint32_t threadsPerWorkgroupX = stageCases->at(stageNdx).value[1];
+                                                                            uint32_t threadsPerWorkgroupY = stageCases->at(stageNdx).value[2];
+                                                                            uint32_t workgroupsX          = 2u;
+                                                                            uint32_t workgroupsY          = 2u;
+
+                                                                            CaseDef c = {
+                                                                                (Stage)stageCases->at(stageNdx).value[0], // Stage stage;
+                                                                                testType,                                 // TestType testtype;
+                                                                                threadsPerWorkgroupX,                     // uint32_t threadsPerWorkgroupX;
+                                                                                threadsPerWorkgroupY,                     // uint32_t threadsPerWorkgroupY;
+                                                                                workgroupsX,                              // uint32_t workgroupsX;
+                                                                                workgroupsY,                              // uint32_t workgroupsY;
+                                                                                (VkComponentTypeKHR)inputType,            // VkComponentTypeKHR inputType;
+                                                                                (VkComponentTypeKHR) inputInterpretation, // VkComponentTypeKHR inputInterpretation;
+                                                                                (VkComponentTypeKHR)matrixType,           // VkComponentTypeKHR matrixType;
+                                                                                (VkComponentTypeKHR)outputType,           // VkComponentTypeKHR outputType;
+                                                                                !!dtCases->at(dtNdx).value[4],            // bool inputPacked;
+                                                                                {
+                                                                                    (VkCooperativeVectorMatrixLayoutNV)colCases->at(colNdx).value,
+                                                                                    swapRowColMajor((VkCooperativeVectorMatrixLayoutNV)colCases->at(colNdx).value),
+                                                                                    (VkCooperativeVectorMatrixLayoutNV)colCases->at(colNdx).value,
+                                                                                }, // VkCooperativeVectorMatrixLayoutNV matrixLayout;
+                                                                                testType == TT_MATRIXMADTRANSPOSE,         // bool transpose;
+                                                                                (StorageClass)scCases->at(scNdx).value,    // StorageClass storageClass;
+                                                                                sizeCases->at(sizeNdx).value[1],           // uint32_t inputVectorSize;
+                                                                                sizeCases->at(sizeNdx).value[0],           // uint32_t outputVectorSize;
+                                                                                (Activation)actCases->at(actNdx).value[0], // Activation act0;
+                                                                                (Activation)actCases->at(actNdx).value[1], // Activation act1;
+                                                                                (Activation)actCases->at(actNdx).value[2], // Activation act2;
+                                                                                !!nonunifCases->at(nuNdx).value,           // bool nonuniformOffset;
+                                                                                !!cfCases->at(cfNdx).value,                // bool cfDivergent;
+                                                                                RESULT_ADDR_UNIFORM,                       // ResultAddress resultAddr;
+                                                                                false,                                     // bool uses64BitIndexing;
+                                                                                false,                                     // bool useLongVector;
+                                                                            };
+
+                                                                            colGroup->addChild(new CooperativeVectorTestCase(colGroup->getTestContext(), stageCases->at(stageNdx).name, c));
+                                                                        }
+                                                                    }));
+                                                                }
+                                                            }));
+                                                        }
+                                                    }));
+                                                }
+                                            }));
                                         }
-
-                                        if (!(colCases[colNdx].value ==
-                                                  VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV ||
-                                              colCases[colNdx].value ==
-                                                  VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_TRAINING_OPTIMAL_NV))
-                                        {
-
-                                            // Transpose is not supported for row/col-major
-                                            if (testType == TT_MATRIXMADTRANSPOSE)
-                                            {
-                                                continue;
-                                            }
-                                            // FP8 matrix must be optimal
-                                            if (matrixType == VK_COMPONENT_TYPE_FLOAT_E4M3_NV ||
-                                                matrixType == VK_COMPONENT_TYPE_FLOAT_E5M2_NV)
-                                            {
-                                                continue;
-                                            }
-                                        }
-
-                                        if (!isFloatType(outputType))
-                                        {
-                                            // Some activations not supported for integer types
-                                            switch (actCases[actNdx].value[0])
-                                            {
-                                            case ACT_SIGMOID:
-                                            case ACT_LEAKYRELUSTEP:
-                                            case ACT_LEAKYRELUMAX:
-                                                continue;
-                                            }
-                                        }
-
-                                        switch (actCases[actNdx].value[0])
-                                        {
-                                        case ACT_SIGMOID:
-                                        case ACT_HARDGELU:
-                                            // Nonlinear activation functions introduce imprecision which can be magnified
-                                            // with quantization to small types. Skip for now.
-                                            if (inputInterpretation == VK_COMPONENT_TYPE_FLOAT_E4M3_NV ||
-                                                inputInterpretation == VK_COMPONENT_TYPE_FLOAT_E5M2_NV)
-                                            {
-                                                continue;
-                                            }
-                                            break;
-                                        default:
-                                            break;
-                                        }
-
-                                        if (stageCases[stageNdx].value[0] != STAGE_COMPUTE &&
-                                            (isSIntType(inputType) != isSIntType(matrixType)) &&
-                                            !(sizeCases[sizeNdx].value[0] == 21 && sizeCases[sizeNdx].value[1] == 35))
-                                            continue;
-
-                                        if (actCases[actNdx].value[0] == ACT_LOAD_READONLY && !isFloatType(outputType))
-                                        {
-                                            continue;
-                                        }
-                                        // Limit combinations of tests we run with each activation function.
-                                        // Run mul everywhere. Run load for all dimensions. Run hardgelu with
-                                        // all sizes for float input type. Otherwise, run all activations only
-                                        // for 40x5 (chosen arbitrarily).
-                                        switch (actCases[actNdx].value[0])
-                                        {
-                                        case ACT_MUL:
-                                            break;
-                                        case ACT_LOAD:
-                                            if ((stageCases[stageNdx].value[0] == STAGE_COMPUTE ||
-                                                 stageCases[stageNdx].value[0] == STAGE_CLOSEST_HIT ||
-                                                 stageCases[stageNdx].value[0] == STAGE_VERTEX) &&
-                                                nonunifCases[nuNdx].value &&
-                                                colCases[colNdx].value ==
-                                                    VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV &&
-                                                !(scCases[scNdx].value == SC_WORKGROUP ||
-                                                  scCases[scNdx].value == SC_WORKGROUP_VARIABLE_POINTERS))
-                                            {
-                                                break;
-                                            }
-                                            continue;
-                                        case ACT_LOAD_SHARED:
-                                            if (stageCases[stageNdx].value[0] == STAGE_COMPUTE &&
-                                                colCases[colNdx].value ==
-                                                    VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV &&
-                                                (scCases[scNdx].value == SC_BUFFER ||
-                                                 scCases[scNdx].value == SC_WORKGROUP))
-                                            {
-                                                break;
-                                            }
-                                            continue;
-                                        case ACT_HARDGELU:
-                                            if (inputType == VK_COMPONENT_TYPE_FLOAT32_KHR)
-                                            {
-                                                break;
-                                            }
-                                            // fallthrough
-                                        default:
-                                            if (sizeCases[sizeNdx].value[0] == 40 && sizeCases[sizeNdx].value[1] == 5)
-                                            {
-                                                break;
-                                            }
-                                            continue;
-                                        }
-
-                                        // Only run physical storage buffer and variable pointer tests for 16x16, to reduce test count
-                                        if ((scCases[scNdx].value == SC_PHYSICAL_STORAGE_BUFFER ||
-                                             scCases[scNdx].value == SC_BUFFER_VARIABLE_POINTERS ||
-                                             scCases[scNdx].value == SC_WORKGROUP_VARIABLE_POINTERS) &&
-                                            !(sizeCases[sizeNdx].value[0] == 16 && sizeCases[sizeNdx].value[1] == 16))
-                                        {
-                                            continue;
-                                        }
-
-                                        // reduce test count
-                                        if (ttCases[ttNdx].value != TT_MATRIXMUL2ADDMUL2 &&
-                                            scCases[scNdx].value != SC_BUFFER)
-                                        {
-                                            continue;
-                                        }
-
-                                        // reduce test count
-                                        if ((ttCases[ttNdx].value == TT_MATRIXMUL2ADD ||
-                                             ttCases[ttNdx].value == TT_MATRIXMUL) &&
-                                            stageCases[stageNdx].value[0] != STAGE_COMPUTE)
-                                        {
-                                            continue;
-                                        }
-
-                                        // reduce test count
-                                        if (stageCases[stageNdx].value[0] != STAGE_COMPUTE &&
-                                            sizeCases[sizeNdx].value[0] * sizeCases[sizeNdx].value[1] == 51 * 19)
-                                        {
-                                            continue;
-                                        }
-
-                                        // Only run uniformoffset tests for 16x16, to reduce test count
-                                        if (nonunifCases[nuNdx].value == false &&
-                                            !(sizeCases[sizeNdx].value[0] == 16 && sizeCases[sizeNdx].value[1] == 16))
-                                        {
-                                            continue;
-                                        }
-
-                                        // Only run control flow divergence tests for 21x35, to reduce test count
-                                        if (cfCases[cfNdx].value != 0 &&
-                                            !(sizeCases[sizeNdx].value[0] == 21 && sizeCases[sizeNdx].value[1] == 35))
-                                        {
-                                            continue;
-                                        }
-
-                                        // Only run non-inferencing layouts in compute/intersect/fragment, to reduce test count
-                                        if (colCases[colNdx].value !=
-                                                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV &&
-                                            !(stageCases[stageNdx].value[0] == STAGE_COMPUTE ||
-                                              stageCases[stageNdx].value[0] == STAGE_INTERSECT ||
-                                              stageCases[stageNdx].value[0] == STAGE_FRAGMENT))
-                                        {
-                                            continue;
-                                        }
-
-                                        if (ttCases[ttNdx].value == TT_MATRIXMUL_TRAININGBIAS &&
-                                            colCases[colNdx].value !=
-                                                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_TRAINING_OPTIMAL_NV)
-                                        {
-                                            continue;
-                                        }
-
-                                        // Spec only allows manually modifying the training layout for these types
-                                        if (ttCases[ttNdx].value == TT_MATRIXMUL_TRAININGBIAS &&
-                                            matrixType != VK_COMPONENT_TYPE_FLOAT16_KHR &&
-                                            matrixType != VK_COMPONENT_TYPE_FLOAT32_KHR)
-                                        {
-                                            continue;
-                                        }
-
-                                        // Test max size, but few variations because it'll be slower.
-                                        if (sizeCases[sizeNdx].value[0] == 128)
-                                        {
-                                            if (ttCases[ttNdx].value != TT_MATRIXMUL ||
-                                                actCases[actNdx].value[0] != ACT_MUL)
-                                            {
-                                                continue;
-                                            }
-                                        }
-
-                                        uint32_t threadsPerWorkgroupX = stageCases[stageNdx].value[1];
-                                        uint32_t threadsPerWorkgroupY = stageCases[stageNdx].value[2];
-                                        uint32_t workgroupsX          = 2u;
-                                        uint32_t workgroupsY          = 2u;
-
-                                        CaseDef c = {
-                                            (Stage)stageCases[stageNdx].value[0], // Stage stage;
-                                            testType,                             // TestType testtype;
-                                            threadsPerWorkgroupX,                 // uint32_t threadsPerWorkgroupX;
-                                            threadsPerWorkgroupY,                 // uint32_t threadsPerWorkgroupY;
-                                            workgroupsX,                          // uint32_t workgroupsX;
-                                            workgroupsY,                          // uint32_t workgroupsY;
-                                            (VkComponentTypeKHR)inputType,        // VkComponentTypeKHR inputType;
-                                            (VkComponentTypeKHR)
-                                                inputInterpretation,        // VkComponentTypeKHR inputInterpretation;
-                                            (VkComponentTypeKHR)matrixType, // VkComponentTypeKHR matrixType;
-                                            (VkComponentTypeKHR)outputType, // VkComponentTypeKHR outputType;
-                                            !!dtCases[dtNdx].value[4],      // bool inputPacked;
-                                            {
-                                                (VkCooperativeVectorMatrixLayoutNV)colCases[colNdx].value,
-                                                swapRowColMajor(
-                                                    (VkCooperativeVectorMatrixLayoutNV)colCases[colNdx].value),
-                                                (VkCooperativeVectorMatrixLayoutNV)colCases[colNdx].value,
-                                            }, // VkCooperativeVectorMatrixLayoutNV matrixLayout;
-                                            testType == TT_MATRIXMADTRANSPOSE,     // bool transpose;
-                                            (StorageClass)scCases[scNdx].value,    // StorageClass storageClass;
-                                            sizeCases[sizeNdx].value[1],           // uint32_t inputVectorSize;
-                                            sizeCases[sizeNdx].value[0],           // uint32_t outputVectorSize;
-                                            (Activation)actCases[actNdx].value[0], // Activation act0;
-                                            (Activation)actCases[actNdx].value[1], // Activation act1;
-                                            (Activation)actCases[actNdx].value[2], // Activation act2;
-                                            !!nonunifCases[nuNdx].value,           // bool nonuniformOffset;
-                                            !!cfCases[cfNdx].value,                // bool cfDivergent;
-                                            RESULT_ADDR_UNIFORM,                   // ResultAddress resultAddr;
-                                            false,                                 // bool uses64BitIndexing;
-                                            false,                                 // bool useLongVector;
-                                        };
-                                        colGroup->addChild(
-                                            new CooperativeVectorTestCase(testCtx, stageCases[stageNdx].name, c));
-                                    }
-                                    cfGroup->addChild(colGroup.release());
+                                    }));
                                 }
-                                nonunifGroup->addChild(cfGroup.release());
-                            }
-                            activationGroup->addChild(nonunifGroup.release());
+                            }));
                         }
-                        sizeGroup->addChild(activationGroup.release());
-                    }
-                    scGroup->addChild(sizeGroup.release());
+                    }));
                 }
-                dtGroup->addChild(scGroup.release());
-            }
-            ttGroup->addChild(dtGroup.release());
+            }));
         }
-        group->addChild(ttGroup.release());
-    }
 
-    de::MovePtr<tcu::TestCaseGroup> group64(new tcu::TestCaseGroup(testCtx, "64b_indexing"));
-
-    // 64bit indexing test cases
-    for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
-    {
-        uint32_t threadsPerWorkgroupX = stageCases[stageNdx].value[1];
-        uint32_t threadsPerWorkgroupY = stageCases[stageNdx].value[2];
-        uint32_t workgroupsX          = 2u;
-        uint32_t workgroupsY          = 2u;
-
-        CaseDef c = {
-            (Stage)stageCases[stageNdx].value[0], // Stage stage;
-            TT_MATRIXMAD,                         // TestType testtype;
-            threadsPerWorkgroupX,                 // uint32_t threadsPerWorkgroupX;
-            threadsPerWorkgroupY,                 // uint32_t threadsPerWorkgroupY;
-            workgroupsX,                          // uint32_t workgroupsX;
-            workgroupsY,                          // uint32_t workgroupsY;
-            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR inputType;
-            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR inputInterpretation;
-            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR matrixType;
-            VK_COMPONENT_TYPE_FLOAT16_NV,         // VkComponentTypeKHR outputType;
-            false,                                // bool inputPacked;
+        group->addChild(createTestGroup2(group->getTestContext(), "64b_indexing", [=](tcu::TestCaseGroup *group64) {
+            // 64bit indexing test cases
+            for (size_t stageNdx = 0; stageNdx < stageCases->size(); stageNdx++)
             {
-                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
-                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
-                VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
-            },                   // VkCooperativeVectorMatrixLayoutNV matrixLayout;
-            false,               // bool transpose;
-            SC_BUFFER,           // StorageClass storageClass;
-            5,                   // uint32_t inputVectorSize;
-            5,                   // uint32_t outputVectorSize;
-            ACT_NONE,            // Activation act0;
-            ACT_NONE,            // Activation act1;
-            ACT_NONE,            // Activation act2;
-            false,               // bool nonuniformOffset;
-            false,               // bool cfDivergent;
-            RESULT_ADDR_UNIFORM, // ResultAddress resultAddr;
-            true,                // bool uses64BitIndexing;
-        };
-        std::string name = std::string("muladd_") + stageCases[stageNdx].name;
-        group64->addChild(new CooperativeVectorTestCase(testCtx, name.c_str(), c));
-    }
-    group->addChild(group64.release());
+                uint32_t threadsPerWorkgroupX = stageCases->at(stageNdx).value[1];
+                uint32_t threadsPerWorkgroupY = stageCases->at(stageNdx).value[2];
+                uint32_t workgroupsX          = 2u;
+                uint32_t workgroupsY          = 2u;
 
-    return group.release();
+                CaseDef c = {
+                    (Stage)stageCases->at(stageNdx).value[0], // Stage stage;
+                    TT_MATRIXMAD,                             // TestType testtype;
+                    threadsPerWorkgroupX,                     // uint32_t threadsPerWorkgroupX;
+                    threadsPerWorkgroupY,                     // uint32_t threadsPerWorkgroupY;
+                    workgroupsX,                              // uint32_t workgroupsX;
+                    workgroupsY,                              // uint32_t workgroupsY;
+                    VK_COMPONENT_TYPE_FLOAT16_NV,             // VkComponentTypeKHR inputType;
+                    VK_COMPONENT_TYPE_FLOAT16_NV,             // VkComponentTypeKHR inputInterpretation;
+                    VK_COMPONENT_TYPE_FLOAT16_NV,             // VkComponentTypeKHR matrixType;
+                    VK_COMPONENT_TYPE_FLOAT16_NV,             // VkComponentTypeKHR outputType;
+                    false,                                    // bool inputPacked;
+                    {
+                        VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
+                        VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
+                        VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_INFERENCING_OPTIMAL_NV,
+                    },                   // VkCooperativeVectorMatrixLayoutNV matrixLayout;
+                    false,               // bool transpose;
+                    SC_BUFFER,           // StorageClass storageClass;
+                    5,                   // uint32_t inputVectorSize;
+                    5,                   // uint32_t outputVectorSize;
+                    ACT_NONE,            // Activation act0;
+                    ACT_NONE,            // Activation act1;
+                    ACT_NONE,            // Activation act2;
+                    false,               // bool nonuniformOffset;
+                    false,               // bool cfDivergent;
+                    RESULT_ADDR_UNIFORM, // ResultAddress resultAddr;
+                    true,                // bool uses64BitIndexing;
+                };
+                std::string name = std::string("muladd_") + stageCases->at(stageNdx).name;
+                group64->addChild(new CooperativeVectorTestCase(group64->getTestContext(), name.c_str(), c));
+            }
+        }));
+    });
+    // clang-format on
 }
 
 tcu::TestCaseGroup *createCooperativeVectorTrainingTests(tcu::TestContext &testCtx)
