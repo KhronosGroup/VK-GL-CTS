@@ -584,6 +584,62 @@ public:
     }
 };
 
+// Verify compilation stability when declaring a large number of active vertex shader output variables
+class CompileLargeVertexOutputCountCase : public ApiCase
+{
+public:
+    CompileLargeVertexOutputCountCase(Context &context, const char *name, const char *desc, int numOutputs)
+        : ApiCase(context, name, desc)
+        , m_numOutputs(numOutputs)
+    {
+    }
+
+    ~CompileLargeVertexOutputCountCase(void)
+    {
+    }
+
+    void test(void)
+    {
+        std::ostringstream src;
+        src << "#version 300 es\n";
+        for (int i = 0; i < m_numOutputs; i++)
+            src << "out highp float v" << i << ";\n";
+        src << "void main(void)\n{\n";
+        for (int i = 0; i < m_numOutputs; i++)
+            src << "    v" << i << " = 1.0;\n";
+        src << "    gl_Position = vec4(0.0);\n}\n";
+
+        const std::string sourceStr = src.str();
+        const char *sourcePtr       = sourceStr.c_str();
+
+        glu::Shader shader(m_context.getRenderContext(), glu::SHADERTYPE_VERTEX);
+        shader.setSources(1, &sourcePtr, nullptr);
+        shader.compile();
+
+        GLint maxOutputs = 0;
+        glGetIntegerv(GL_MAX_VERTEX_OUTPUT_COMPONENTS, &maxOutputs);
+        GLU_EXPECT_NO_ERROR(glGetError(), "glGetIntegerv()");
+
+        // The sum of active output components, including built-ins, must not exceed the limit.
+        // We write to gl_Position (4 components), making it active.
+        if (m_numOutputs + 4 <= maxOutputs)
+        {
+            if (!shader.getCompileStatus())
+            {
+                m_log << TestLog::Message << "Shader compilation failed within valid output limits ("
+                      << (m_numOutputs + 4) << " <= " << maxOutputs << "). InfoLog:\n"
+                      << shader.getInfoLog() << TestLog::EndMessage;
+                TCU_FAIL("Shader compilation failed within valid output limits");
+            }
+        }
+        // Note: If outputs exceed GL_MAX_VERTEX_OUTPUT_COMPONENTS, compilation is allowed to
+        // succeed or fail with a compile error, but must not crash the driver compiler backend.
+    }
+
+private:
+    int m_numOutputs;
+};
+
 class ShaderSourceReplaceCase : public ApiCase
 {
 public:
@@ -1829,6 +1885,34 @@ void ShaderApiTests::init(void)
 
         compileLinkGroup->addChild(
             new LinkVertexFragmentCase(m_context, "link_vertex_fragment", "Link vertex and fragment shaders"));
+    }
+
+    // large output counts
+    {
+        TestCaseGroup *largeOutputsGroup = new TestCaseGroup(
+            m_context, "large_output_counts", "Compile vertex shaders with large output variable counts");
+        addChild(largeOutputsGroup);
+
+        // 60 is the minimum spec limit (60 + 4 built-in gl_Position = 64); 64 is just above spec limit;
+        // 256 and 1024 are buffer power-of-two boundaries; 1300 and 8639 test high output counts.
+        largeOutputsGroup->addChild(new CompileLargeVertexOutputCountCase(
+            m_context, "compile_vertex_shader_60_outputs",
+            "Compile vertex shader with 60 scalar varying output components", 60));
+        largeOutputsGroup->addChild(new CompileLargeVertexOutputCountCase(
+            m_context, "compile_vertex_shader_64_outputs",
+            "Compile vertex shader with 64 scalar varying output components", 64));
+        largeOutputsGroup->addChild(new CompileLargeVertexOutputCountCase(
+            m_context, "compile_vertex_shader_256_outputs",
+            "Compile vertex shader with 256 scalar varying output components", 256));
+        largeOutputsGroup->addChild(new CompileLargeVertexOutputCountCase(
+            m_context, "compile_vertex_shader_1024_outputs",
+            "Compile vertex shader with 1024 scalar varying output components", 1024));
+        largeOutputsGroup->addChild(new CompileLargeVertexOutputCountCase(
+            m_context, "compile_vertex_shader_1300_outputs",
+            "Compile vertex shader with 1300 scalar varying output components", 1300));
+        largeOutputsGroup->addChild(new CompileLargeVertexOutputCountCase(
+            m_context, "compile_vertex_shader_8639_outputs",
+            "Compile vertex shader with 8639 scalar varying output components", 8639));
     }
 
     // shader source
