@@ -771,7 +771,8 @@ struct EncodeTestParam
      /* refSlots */ {{}, {0}},
      /* curSlot */ {0, 1},
      /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
-     /* encoderOptions */ static_cast<Option>(Option::UseStatusQueries | Option::UseFeedback2)},
+     /* encoderOptions */
+     static_cast<Option>(Option::DisableRateControl | Option::UseStatusQueries | Option::UseFeedback2)},
     {TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS,
      CLIP_H264_ENC_E,
      1, // 2 frames: IDR (intra only) and P (inter), identical input frames to drive skip
@@ -784,7 +785,8 @@ struct EncodeTestParam
      /* refSlots */ {{}, {0}},
      /* curSlot */ {0, 1},
      /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
-     /* encoderOptions */ static_cast<Option>(Option::UseStatusQueries | Option::UseFeedback2)},
+     /* encoderOptions */
+     static_cast<Option>(Option::DisableRateControl | Option::UseStatusQueries | Option::UseFeedback2)},
     {TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX,
      CLIP_H264_ENC_E,
      1, // 3 frames: QP=26, QP=minQp, QP=maxQp
@@ -1197,7 +1199,8 @@ struct EncodeTestParam
      /* refSlots */ {{}, {0}},
      /* curSlot */ {0, 1},
      /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
-     /* encoderOptions */ static_cast<Option>(Option::UseStatusQueries | Option::UseFeedback2)},
+     /* encoderOptions */
+     static_cast<Option>(Option::DisableRateControl | Option::UseStatusQueries | Option::UseFeedback2)},
     {TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS,
      CLIP_H265_ENC_F,
      1, // 2 frames: IDR (intra only) and P (inter), identical input frames to drive skip
@@ -1210,7 +1213,8 @@ struct EncodeTestParam
      /* refSlots */ {{}, {0}},
      /* curSlot */ {0, 1},
      /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
-     /* encoderOptions */ static_cast<Option>(Option::UseStatusQueries | Option::UseFeedback2)},
+     /* encoderOptions */
+     static_cast<Option>(Option::DisableRateControl | Option::UseStatusQueries | Option::UseFeedback2)},
     {TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX,
      CLIP_H265_ENC_F,
      1, // 3 frames: QP=26, QP=minQp, QP=maxQp
@@ -3706,8 +3710,9 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
         if (m_rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR)
         {
             TestType testType = m_testDefinition->getTestType();
-            if (testType == TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX)
+            switch (testType)
             {
+            case TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX:
                 // QP test: frame 0 = 26, frame 1 = minQp, frame 2 = maxQp
                 if (nalIdx == 0)
                     frameQp = 26;
@@ -3715,10 +3720,18 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
                     frameQp = m_minQpValue;
                 else if (nalIdx == 2)
                     frameQp = m_maxQpValue;
-            }
-            else
-            {
+                break;
+            case TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_PIXELS:
+            case TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS:
+                // QP test: frame 0 = minQp, frame 1 = maxQp
+                if (nalIdx == 0)
+                    frameQp = m_minQpValue;
+                else if (nalIdx == 1)
+                    frameQp = m_maxQpValue;
+                break;
+            default:
                 frameQp = m_constQp;
+                break;
             }
         }
 
@@ -3779,8 +3792,9 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
         if (m_rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR)
         {
             TestType testType = m_testDefinition->getTestType();
-            if (testType == TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX)
+            switch (testType)
             {
+            case TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX:
                 // QP test: frame 0 = 26, frame 1 = minQp, frame 2 = maxQp
                 if (nalIdx == 0)
                     frameQp = 26;
@@ -3788,10 +3802,18 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
                     frameQp = m_minQpValue;
                 else if (nalIdx == 2)
                     frameQp = m_maxQpValue;
-            }
-            else
-            {
+                break;
+            case TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_PIXELS:
+            case TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS:
+                // QP test: frame 0 = minQp, frame 1 = maxQp
+                if (nalIdx == 0)
+                    frameQp = m_minQpValue;
+                else if (nalIdx == 1)
+                    frameQp = m_maxQpValue;
+                break;
+            default:
                 frameQp = m_constQp;
+                break;
             }
         }
 
