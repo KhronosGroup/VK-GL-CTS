@@ -1417,7 +1417,7 @@ de::MovePtr<StdVideoH265VideoParameterSet> getStdVideoH265VideoParameterSet(
 }
 
 de::MovePtr<StdVideoH265ShortTermRefPicSet> getStdVideoH265ShortTermRefPicSet(StdVideoH265PictureType pictureType,
-                                                                              uint32_t frameIdx,
+                                                                              uint32_t framePoc,
                                                                               uint32_t consecutiveBFrameCount)
 {
     struct StdVideoH265ShortTermRefPicSet strps = {
@@ -1437,23 +1437,23 @@ de::MovePtr<StdVideoH265ShortTermRefPicSet> getStdVideoH265ShortTermRefPicSet(St
         {0},                                   //  uint16_t delta_poc_s1_minus1[STD_VIDEO_H265_MAX_DPB_SIZE];
     };
 
-    uint32_t frameIdxMod = frameIdx % (consecutiveBFrameCount + 1);
+    uint32_t framePocMod = framePoc % (consecutiveBFrameCount + 1);
 
     switch (pictureType)
     {
     case STD_VIDEO_H265_PICTURE_TYPE_P:
         strps.num_negative_pics = 1;
-        // For where frameIdx == 3, 6, 9, 12 in the h265.i_p_b_13 test, need to set 2.
+        // For where framePoc == 3, 6, 9, 12 in the h265.i_p_b_13 test, need to set 2.
         if (consecutiveBFrameCount)
-            strps.delta_poc_s0_minus1[0] = (frameIdxMod == 0) ? 2 : 0;
+            strps.delta_poc_s0_minus1[0] = (framePocMod == 0) ? 2 : 0;
         break;
 
     case STD_VIDEO_H265_PICTURE_TYPE_B:
         strps.used_by_curr_pic_s1_flag = 1;
         strps.num_negative_pics        = 1;
         strps.num_positive_pics        = 1;
-        strps.delta_poc_s1_minus1[0]   = (frameIdxMod == 1) ? 1 : 0;
-        strps.delta_poc_s0_minus1[0]   = (frameIdxMod == 2) ? 1 : 0;
+        strps.delta_poc_s1_minus1[0]   = (framePocMod == 1) ? 1 : 0;
+        strps.delta_poc_s0_minus1[0]   = (framePocMod == 2) ? 1 : 0;
         break;
 
     default:

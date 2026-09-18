@@ -338,11 +338,18 @@ enum Option : uint32_t
     UseMaxPartitions             = 1 << 19, // Use maximum number of partitions/slices
 };
 
-#define INTRA_REFRESH_ENCODE_TEST_PATTERN(testType, clipName, option)                                         \
+// To make the INTRA_REFRESH macros work, we need this hack to make the framePocs in the codec-specific macro
+#define VEC(...)          \
+    std::vector<uint32_t> \
+    {                     \
+        __VA_ARGS__       \
+    }
+
+#define INTRA_REFRESH_ENCODE_TEST_PATTERN(testType, clipName, option, framePocs)                              \
     {                                                                                                         \
         testType, clipName, 1, {IDR_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME,     \
                                 P_FRAME,   P_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME},    \
-            {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},                                           \
+            {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}, framePocs,                                \
             {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}, 4, {1, 0},                                \
             {refs(0, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0),  \
              refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0)}, \
@@ -358,11 +365,18 @@ enum Option : uint32_t
              refs<std::vector<uint8_t>>({13}, {}), refs<std::vector<uint8_t>>({14}, {})},                     \
             static_cast<Option>(option)                                                                       \
     }
+#define INTRA_REFRESH_ENCODE_TEST_PATTERN_H264(testType, clipName, option) \
+    INTRA_REFRESH_ENCODE_TEST_PATTERN(testType, clipName, option,          \
+                                      VEC(0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30))
 
-#define INTRA_REFRESH_MIDWAY_TEST_PATTERN(testType, clipName, option)                             \
+#define INTRA_REFRESH_ENCODE_TEST_PATTERN_H265(testType, clipName, option) \
+    INTRA_REFRESH_ENCODE_TEST_PATTERN(testType, clipName, option,          \
+                                      VEC(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15))
+
+#define INTRA_REFRESH_MIDWAY_TEST_PATTERN(testType, clipName, option, framePocs)                  \
     {                                                                                             \
         testType, clipName, 1, {IDR_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME}, \
-            {0, 1, 2, 3, 4, 5, 6}, {0, 1, 2, 3, 4, 5, 6}, 2, {1, 0},                              \
+            {0, 1, 2, 3, 4, 5, 6}, framePocs, {0, 1, 2, 3, 4, 5, 6}, 2, {1, 0},                   \
             {refs(0, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0)}, \
             {{}, {0}, {1}, {0}, {1}, {0}, {1}}, {0, 1, 0, 1, 0, 1, 0},                            \
             {refs<std::vector<uint8_t>>({}, {}),  refs<std::vector<uint8_t>>({0}, {}),            \
@@ -371,6 +385,11 @@ enum Option : uint32_t
              refs<std::vector<uint8_t>>({1}, {})},                                                \
             static_cast<Option>(option | Option::IntraRefreshMidway)                              \
     }
+#define INTRA_REFRESH_MIDWAY_TEST_PATTERN_H264(testType, clipName, option) \
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN(testType, clipName, option, VEC(0, 2, 4, 6, 8, 10, 12))
+
+#define INTRA_REFRESH_MIDWAY_TEST_PATTERN_H265(testType, clipName, option) \
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN(testType, clipName, option, VEC(0, 1, 2, 3, 4, 5, 6))
 
 struct EncodeTestParam
 {
@@ -379,6 +398,7 @@ struct EncodeTestParam
     uint32_t gops;
     std::vector<FrameType> encodePattern;
     std::vector<uint32_t> frameIdx;
+    std::vector<uint32_t> framePoc;
     std::vector<uint32_t> FrameNum;
     uint8_t spsMaxRefFrames;                                   // Sequence parameter set maximum reference frames.
     std::tuple<uint8_t, uint8_t> ppsNumActiveRefs;             // Picture parameter set number of active references
@@ -394,6 +414,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -407,6 +428,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 2},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -420,6 +442,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -433,6 +456,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 2},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -446,6 +470,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -459,6 +484,7 @@ struct EncodeTestParam
      3,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -472,6 +498,7 @@ struct EncodeTestParam
      3,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -485,6 +512,7 @@ struct EncodeTestParam
      3,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -498,6 +526,7 @@ struct EncodeTestParam
      3,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -511,6 +540,7 @@ struct EncodeTestParam
      2,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -524,6 +554,7 @@ struct EncodeTestParam
      2,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -537,6 +568,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -550,6 +582,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 2},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -563,6 +596,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 2},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -576,6 +610,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 2},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -589,6 +624,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -602,6 +638,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 2},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -615,6 +652,7 @@ struct EncodeTestParam
      2,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 2},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -629,6 +667,7 @@ struct EncodeTestParam
      {IDR_FRAME, P_FRAME, B_FRAME, B_FRAME, P_FRAME, B_FRAME, B_FRAME, P_FRAME, B_FRAME, B_FRAME, P_FRAME, B_FRAME,
       B_FRAME, P_FRAME},
      /* frameIdx */ {0, 3, 1, 2, 6, 4, 5, 9, 7, 8, 12, 10, 11, 13},
+     /* framePoc */ {0, 6, 2, 4, 12, 8, 10, 18, 14, 16, 24, 20, 22, 26},
      /* frameNum */ {0, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5},
      /* spsMaxRefFrames */ 4,
      /* ppsNumActiveRefs */ {2, 2},
@@ -660,19 +699,20 @@ struct EncodeTestParam
       refs<std::vector<uint8_t>>({3, 2}, {}), refs<std::vector<uint8_t>>({3, 2}, {4, 3}),
       refs<std::vector<uint8_t>>({3, 2}, {4, 3}), refs<std::vector<uint8_t>>({4, 3}, {})},
      /* encoderOptions */ Option::Default},
-    INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_PICTURE_PARTITION, CLIP_H264_ENC_E,
-                                      Option::IntraRefreshPicturePartition),
-    INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED, CLIP_H264_ENC_E,
-                                      Option::IntraRefreshBlockBased),
-    INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED, CLIP_H264_ENC_E,
-                                      Option::IntraRefreshBlockRow),
-    INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED, CLIP_H264_ENC_E,
-                                      Option::IntraRefreshBlockColumn),
+    INTRA_REFRESH_ENCODE_TEST_PATTERN_H264(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_PICTURE_PARTITION, CLIP_H264_ENC_E,
+                                           Option::IntraRefreshPicturePartition),
+    INTRA_REFRESH_ENCODE_TEST_PATTERN_H264(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED, CLIP_H264_ENC_E,
+                                           Option::IntraRefreshBlockBased),
+    INTRA_REFRESH_ENCODE_TEST_PATTERN_H264(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED, CLIP_H264_ENC_E,
+                                           Option::IntraRefreshBlockRow),
+    INTRA_REFRESH_ENCODE_TEST_PATTERN_H264(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED, CLIP_H264_ENC_E,
+                                           Option::IntraRefreshBlockColumn),
     {TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_EMPTY_REGION,
      CLIP_H264_ENC_E,
      1,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 2},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {1, 0},
@@ -686,6 +726,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 2},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {1, 0},
@@ -699,6 +740,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 2},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {1, 0},
@@ -708,14 +750,14 @@ struct EncodeTestParam
      /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
      /* encoderOptions */ static_cast<Option>(Option::IntraRefreshBlockColumn | Option::IntraRefreshEmptyRegion)},
     // Mid-way intra refresh tests for H264
-    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY, CLIP_H264_ENC_E,
-                                      Option::IntraRefreshPicturePartition),
-    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY, CLIP_H264_ENC_E,
-                                      Option::IntraRefreshBlockBased),
-    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY, CLIP_H264_ENC_E,
-                                      Option::IntraRefreshBlockRow),
-    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY, CLIP_H264_ENC_E,
-                                      Option::IntraRefreshBlockColumn),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN_H264(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY,
+                                           CLIP_H264_ENC_E, Option::IntraRefreshPicturePartition),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN_H264(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY, CLIP_H264_ENC_E,
+                                           Option::IntraRefreshBlockBased),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN_H264(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY, CLIP_H264_ENC_E,
+                                           Option::IntraRefreshBlockRow),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN_H264(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY, CLIP_H264_ENC_E,
+                                           Option::IntraRefreshBlockColumn),
 
     // VK_KHR_video_encode_feedback2 tests for H264
     {TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_1,
@@ -723,6 +765,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -736,6 +779,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -750,6 +794,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -764,6 +809,7 @@ struct EncodeTestParam
      1, // 2 frames: IDR (intra only) and P (inter), identical input frames to drive skip
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 0},
+     /* framePoc */ {0, 2},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -778,6 +824,7 @@ struct EncodeTestParam
      1, // 2 frames: IDR (intra only) and P (inter), identical input frames to drive skip
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 0},
+     /* framePoc */ {0, 2},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -792,6 +839,7 @@ struct EncodeTestParam
      1, // 3 frames: QP=26, QP=minQp, QP=maxQp
      {IDR_FRAME, IDR_FRAME, IDR_FRAME},
      /* frameIdx */ {0, 1, 2},
+     /* framePoc */ {0, 0, 0},
      /* FrameNum */ {0, 0, 0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -807,6 +855,7 @@ struct EncodeTestParam
      1, // 2 frames: one with qd_map_1, one with qd_map_max
      {IDR_FRAME, IDR_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 0},
      /* FrameNum */ {0, 0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -823,6 +872,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -836,6 +886,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 1},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -849,6 +900,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -862,6 +914,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 1},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -875,6 +928,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -888,6 +942,7 @@ struct EncodeTestParam
      3,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -901,6 +956,7 @@ struct EncodeTestParam
      3,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -914,6 +970,7 @@ struct EncodeTestParam
      3,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -927,6 +984,7 @@ struct EncodeTestParam
      3,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -940,6 +998,7 @@ struct EncodeTestParam
      2,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -953,6 +1012,7 @@ struct EncodeTestParam
      2,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -966,6 +1026,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -979,6 +1040,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 1},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -992,6 +1054,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 1},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -1005,6 +1068,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 1},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -1018,6 +1082,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -1031,6 +1096,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 1},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -1044,6 +1110,7 @@ struct EncodeTestParam
      2,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 1},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -1058,6 +1125,7 @@ struct EncodeTestParam
      {IDR_FRAME, P_FRAME, B_FRAME, B_FRAME, P_FRAME, B_FRAME, B_FRAME, P_FRAME, B_FRAME, B_FRAME, P_FRAME, B_FRAME,
       B_FRAME, P_FRAME},
      /* frameIdx */ {0, 3, 1, 2, 6, 4, 5, 9, 7, 8, 12, 10, 11, 13},
+     /* framePoc */ {0, 3, 1, 2, 6, 4, 5, 9, 7, 8, 12, 10, 11, 13},
      /* frameNum */ {0, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {1, 1},
@@ -1089,19 +1157,20 @@ struct EncodeTestParam
       refs<std::vector<uint8_t>>({3, 2}, {}), refs<std::vector<uint8_t>>({3, 2}, {4, 3}),
       refs<std::vector<uint8_t>>({3, 2}, {4, 3}), refs<std::vector<uint8_t>>({4, 3}, {})},
      /* encoderOptions */ Option::Default},
-    INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_PICTURE_PARTITION, CLIP_H265_ENC_F,
-                                      Option::IntraRefreshPicturePartition),
-    INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED, CLIP_H265_ENC_F,
-                                      Option::IntraRefreshBlockBased),
-    INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED, CLIP_H265_ENC_F,
-                                      Option::IntraRefreshBlockRow),
-    INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED, CLIP_H265_ENC_F,
-                                      Option::IntraRefreshBlockColumn),
+    INTRA_REFRESH_ENCODE_TEST_PATTERN_H265(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_PICTURE_PARTITION, CLIP_H265_ENC_F,
+                                           Option::IntraRefreshPicturePartition),
+    INTRA_REFRESH_ENCODE_TEST_PATTERN_H265(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED, CLIP_H265_ENC_F,
+                                           Option::IntraRefreshBlockBased),
+    INTRA_REFRESH_ENCODE_TEST_PATTERN_H265(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED, CLIP_H265_ENC_F,
+                                           Option::IntraRefreshBlockRow),
+    INTRA_REFRESH_ENCODE_TEST_PATTERN_H265(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED, CLIP_H265_ENC_F,
+                                           Option::IntraRefreshBlockColumn),
     {TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_EMPTY_REGION,
      CLIP_H265_ENC_F,
      1,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 1},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {1, 0},
@@ -1115,6 +1184,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 1},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {1, 0},
@@ -1128,6 +1198,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 1},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {1, 0},
@@ -1137,20 +1208,22 @@ struct EncodeTestParam
      /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
      /* encoderOptions */ static_cast<Option>(Option::IntraRefreshBlockColumn | Option::IntraRefreshEmptyRegion)},
     // Mid-way intra refresh tests for H265
-    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY, CLIP_H265_ENC_F,
-                                      Option::IntraRefreshPicturePartition),
-    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY, CLIP_H265_ENC_F,
-                                      Option::IntraRefreshBlockBased),
-    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY, CLIP_H265_ENC_F,
-                                      Option::IntraRefreshBlockRow),
-    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY, CLIP_H265_ENC_F,
-                                      Option::IntraRefreshBlockColumn),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN_H265(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY,
+                                           CLIP_H265_ENC_F, Option::IntraRefreshPicturePartition),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN_H265(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY, CLIP_H265_ENC_F,
+                                           Option::IntraRefreshBlockBased),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN_H265(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY, CLIP_H265_ENC_F,
+                                           Option::IntraRefreshBlockRow),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN_H265(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY, CLIP_H265_ENC_F,
+                                           Option::IntraRefreshBlockColumn),
+#undef VEC
     // VK_KHR_video_encode_feedback2 tests for H265
     {TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_1,
      CLIP_H265_ENC_F,
      1,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -1164,6 +1237,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -1178,6 +1252,7 @@ struct EncodeTestParam
      1,
      {IDR_FRAME},
      /* frameIdx */ {0},
+     /* framePoc */ {0},
      /* FrameNum */ {0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -1192,6 +1267,7 @@ struct EncodeTestParam
      1, // 2 frames: IDR (intra only) and P (inter), identical input frames to drive skip
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 0},
+     /* framePoc */ {0, 1},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -1206,6 +1282,7 @@ struct EncodeTestParam
      1, // 2 frames: IDR (intra only) and P (inter), identical input frames to drive skip
      {IDR_FRAME, P_FRAME},
      /* frameIdx */ {0, 0},
+     /* framePoc */ {0, 1},
      /* FrameNum */ {0, 1},
      /* spsMaxRefFrames */ 2,
      /* ppsNumActiveRefs */ {0, 0},
@@ -1220,6 +1297,7 @@ struct EncodeTestParam
      1, // 3 frames: QP=26, QP=minQp, QP=maxQp
      {IDR_FRAME, IDR_FRAME, IDR_FRAME},
      /* frameIdx */ {0, 1, 2},
+     /* framePoc */ {0, 0, 0},
      /* FrameNum */ {0, 0, 0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -1235,6 +1313,7 @@ struct EncodeTestParam
      1, // 2 frames: one with qd_map_1, one with qd_map_max
      {IDR_FRAME, IDR_FRAME},
      /* frameIdx */ {0, 1},
+     /* framePoc */ {0, 0},
      /* FrameNum */ {0, 0},
      /* spsMaxRefFrames */ 1,
      /* ppsNumActiveRefs */ {0, 0},
@@ -1558,6 +1637,11 @@ public:
     uint32_t frameIdx(uint32_t Idx) const
     {
         return m_params.frameIdx[Idx];
+    }
+
+    uint32_t framePoc(uint32_t Idx) const
+    {
+        return m_params.framePoc[Idx];
     }
 
     FrameType frameType(uint32_t Idx) const
@@ -3101,9 +3185,9 @@ void VideoEncodeTestInstance::prepareDPBResources(void)
 
         m_H264refInfos.push_back(getStdVideoEncodeH264ReferenceInfo(getH264PictureType(m_testDefinition->frameType(i)),
                                                                     m_testDefinition->frameNumber(i),
-                                                                    m_testDefinition->frameIdx(i) * 2));
+                                                                    m_testDefinition->framePoc(i)));
         m_H265refInfos.push_back(getStdVideoEncodeH265ReferenceInfo(getH265PictureType(m_testDefinition->frameType(i)),
-                                                                    m_testDefinition->frameIdx(i)));
+                                                                    m_testDefinition->framePoc(i)));
 
         m_H264dpbSlotInfos.push_back(getVideoEncodeH264DpbSlotInfo(m_H264refInfos[j].get()));
         m_H265dpbSlotInfos.push_back(getVideoEncodeH265DpbSlotInfo(m_H265refInfos[j].get()));
@@ -3745,7 +3829,7 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
         getVideoEncodeH264ReferenceListsInfo(H264RefPicList0, H264RefPicList1, numL0, numL1));
     H264pictureInfos.push_back(getStdVideoEncodeH264PictureInfo(
         getH264PictureType(m_testDefinition->frameType(nalIdx)), m_testDefinition->frameNumber(nalIdx),
-        m_testDefinition->frameIdx(nalIdx) * 2, gopIdx,
+        m_testDefinition->framePoc(nalIdx), gopIdx,
         nalIdx > 0 ? videoEncodeH264ReferenceListInfos.back().get() : nullptr));
 
     // Create H.264 picture info with all slices
@@ -3825,10 +3909,10 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
 
     videoEncodeH265ReferenceListInfos.push_back(getVideoEncodeH265ReferenceListsInfo(H265RefPicList0, H265RefPicList1));
     stdVideoH265ShortTermRefPicSets.push_back(getStdVideoH265ShortTermRefPicSet(
-        getH265PictureType(m_testDefinition->frameType(nalIdx)), m_testDefinition->frameIdx(nalIdx),
+        getH265PictureType(m_testDefinition->frameType(nalIdx)), m_testDefinition->framePoc(nalIdx),
         m_testDefinition->getConsecutiveBFrameCount()));
     H265pictureInfos.push_back(getStdVideoEncodeH265PictureInfo(
-        getH265PictureType(m_testDefinition->frameType(nalIdx)), m_testDefinition->frameIdx(nalIdx),
+        getH265PictureType(m_testDefinition->frameType(nalIdx)), m_testDefinition->framePoc(nalIdx),
         nalIdx > 0 ? videoEncodeH265ReferenceListInfos.back().get() : nullptr,
         stdVideoH265ShortTermRefPicSets.back().get()));
 
