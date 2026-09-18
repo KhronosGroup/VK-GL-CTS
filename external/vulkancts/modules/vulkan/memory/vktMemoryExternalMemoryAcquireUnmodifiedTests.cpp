@@ -66,7 +66,7 @@ class TestCase;
 class TestInstance;
 class ImageWithMemory;
 
-const VkExtent3D imageExtent                        = {512, 512, 1};
+const VkExtent3D imageExtent                        = {256, 256, 1};
 const VkImageSubresourceRange imageSubresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
 
 struct TestParams

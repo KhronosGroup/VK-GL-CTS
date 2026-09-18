@@ -247,7 +247,7 @@ void freeNonDispHandle(Handle handle, const VkAllocationCallbacks *pAllocator)
         }                                                                        \
     };
 
-#define VK_NULL_DEFINE_OBJ_2_WITH_POSTFIX(DEVICE_OR_INSTANCE, NAME, POSTFIX)      \
+#define VK_NULL_DEFINE_OBJ_WITH_POSTFIX2(DEVICE_OR_INSTANCE, NAME, POSTFIX)       \
     struct NAME##POSTFIX                                                          \
     {                                                                             \
         NAME##POSTFIX(DEVICE_OR_INSTANCE, const Vk##NAME##CreateInfo##POSTFIX *)  \
@@ -282,6 +282,7 @@ VK_NULL_DEFINE_DEVICE_OBJ(PrivateDataSlot);
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkInstance, DebugReportCallback, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Micromap, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, AccelerationStructure, NV)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX2(VkDevice, AccelerationStructure, KHR)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, NV)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, VideoSession, KHR)
@@ -292,7 +293,6 @@ VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, PipelineBinary, KHR)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Tensor, ARM)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, TensorView, ARM)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, DataGraphPipelineSession, ARM)
-VK_NULL_DEFINE_OBJ_2_WITH_POSTFIX(VkDevice, AccelerationStructure, KHR)
 #endif // CTS_USES_VULKANSC
 
 class Instance
@@ -317,6 +317,9 @@ class SurfaceKHR
 public:
 #ifndef CTS_USES_VULKANSC
     SurfaceKHR(VkInstance, const VkXlibSurfaceCreateInfoKHR *)
+    {
+    }
+    SurfaceKHR(VkInstance, const VkUbmSurfaceCreateInfoSEC *)
     {
     }
     SurfaceKHR(VkInstance, const VkXcbSurfaceCreateInfoKHR *)
@@ -356,9 +359,6 @@ public:
     {
     }
     SurfaceKHR(VkInstance, const VkDirectFBSurfaceCreateInfoEXT *)
-    {
-    }
-    SurfaceKHR(VkInstance, const VkUbmSurfaceCreateInfoSEC *)
     {
     }
 #endif // CTS_USES_VULKANSC

@@ -1323,7 +1323,8 @@ void RayTracingSERTestInstance::initBottomAccelerationStructure(BlasPtr blas) co
         VkAccelerationStructureGeometryMotionTrianglesDataNV motionTriangleData = {};
         motionTriangleData.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_MOTION_TRIANGLES_DATA_NV;
         motionTriangleData.vertexData.deviceAddress = getBufferDeviceAddress(vkd, device, m_motionBuffer->get(), 0);
-        blas->addGeometry(geometryData, true, 0, nullptr, &motionTriangleData);
+        blas->addGeometry(geometryData, true, 0, nullptr, nullptr, de::SharedPtr<MicromapAccelerationStructure>(),
+                          &motionTriangleData);
     }
     else
     {
