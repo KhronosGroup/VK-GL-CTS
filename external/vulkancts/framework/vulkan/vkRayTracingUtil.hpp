@@ -1292,18 +1292,18 @@ public:
                                   Allocator &allocator, const AccelerationStructBufferProperties &bufferProps,
                                   SerialStorage *storage, VkDeviceAddress deviceAddress = 0u,
                                   uint64_t bufferOpaqueCaptureAddr = 0u, uint64_t memoryOpaqueCaptureAddr = 0u);
-    virtual const VkAccelerationStructureKHR *getPtr(void) const                                               = 0;
-    virtual void updateGeometry(size_t geometryIndex, de::SharedPtr<RaytracedGeometryBase> &raytracedGeometry) = 0;
-    virtual void setGeometryTransform(size_t geometryIndex, VkTransformMatrixKHR transformMatrix)              = 0;
+    virtual const VkAccelerationStructureKHR *getPtr(void) const                                                 = 0;
+    virtual void updateGeometry(size_t geometryIndex, de::SharedPtr<RaytracedGeometryBase> &raytracedGeometry)   = 0;
+    virtual void setGeometryTransform(size_t geometryIndex, VkTransformMatrixKHR transformMatrix)                = 0;
+    virtual void setOpacityMicromap(size_t geometryIndex,
+                                    VkAccelerationStructureTrianglesOpacityMicromapKHR *opacityGeometryMicromap) = 0;
+    virtual void setOpacityMicromap(size_t geometryIndex,
+                                    VkAccelerationStructureTrianglesOpacityMicromapEXT *opacityGeometryMicromap) = 0;
 
     virtual void setVertexBufferAddressOffset(int32_t vertexBufferOffset)                                         = 0;
     virtual void setIndexBufferAddressOffset(int32_t indexBufferOffset)                                           = 0;
     virtual void setTransformBufferAddressOffset(int32_t transformBufferOffset)                                   = 0;
     virtual void setRadiusBufferAddressOffset(int32_t radiusBufferOffset)                                         = 0;
-    virtual void setOpacityMicromap(size_t geometryIndex,
-                                    VkAccelerationStructureTrianglesOpacityMicromapKHR *opacityGeometryMicromap)  = 0;
-    virtual void setOpacityMicromap(size_t geometryIndex,
-                                    VkAccelerationStructureTrianglesOpacityMicromapEXT *opacityGeometryMicromap)  = 0;
     virtual std::vector<VkDeviceSize> getSerializingSizes(const DeviceInterface &vk, const VkDevice device,
                                                           const VkQueue queue, const uint32_t queueFamilyIndex)   = 0;
     virtual std::vector<uint64_t> getSerializingAddresses(const DeviceInterface &vk, const VkDevice device) const = 0;

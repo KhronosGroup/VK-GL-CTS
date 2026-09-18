@@ -941,13 +941,13 @@ void BottomLevelAccelerationStructure::addGeometry(
     geometry->setGeometryFlags(geometryFlags);
     if (opacityGeometryMicromap)
         geometry->setOpacityMicromap(opacityGeometryMicromap);
-    if (motionData)
-        geometry->setMotionBlur(motionData);
     if (opacityGeometryMicromapKHR)
     {
         geometry->setOpacityMicromap(opacityGeometryMicromapKHR);
         m_opacityMicromapAccelerationStructure.push_back(opacityMicromapAccelerationStructure);
     }
+    if (motionData)
+        geometry->setMotionBlur(motionData);
 
     addGeometry(geometry);
 }
