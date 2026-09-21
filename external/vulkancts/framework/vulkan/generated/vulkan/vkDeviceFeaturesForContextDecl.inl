@@ -23,6 +23,7 @@ const vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT&					getConditionalRen
 const vk::VkPhysicalDeviceCooperativeMatrix2FeaturesNV&						getCooperativeMatrix2FeaturesNV						(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR&						getCooperativeMatrixFeatures						(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&						getCooperativeMatrixFeaturesNV						(void) const;
+const vk::VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT&			getCooperativeMatrixMaintenance1FeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceCooperativeVectorFeaturesNV&						getCooperativeVectorFeaturesNV						(void) const;
 const vk::VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR&					getCopyMemoryIndirectFeatures						(void) const;
 const vk::VkPhysicalDeviceCornerSampledImageFeaturesNV&						getCornerSampledImageFeatures						(void) const;

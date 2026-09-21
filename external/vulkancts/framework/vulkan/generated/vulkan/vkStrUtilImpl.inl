@@ -4949,6 +4949,16 @@ tcu::Format::Bitfield<32> getConditionalRenderingFlagsEXTStr (VkConditionalRende
 }
 
 
+tcu::Format::Bitfield<32> getCooperativeMatrixFlagsEXTStr (VkCooperativeMatrixFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_COOPERATIVE_MATRIX_SATURATING_ACCUMULATION_BIT_EXT,	"VK_COOPERATIVE_MATRIX_SATURATING_ACCUMULATION_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
 tcu::Format::Bitfield<32> getCullModeFlagsStr (VkCullModeFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -8515,6 +8525,22 @@ std::ostream& operator<< (std::ostream& s, const VkCooperativeMatrixFlexibleDime
 	s << "\tsaturatingAccumulation = " << value.saturatingAccumulation << '\n';
 	s << "\tscope = " << value.scope << '\n';
 	s << "\tworkgroupInvocations = " << value.workgroupInvocations << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCooperativeMatrixProperties2EXT& value)
+{
+	s << "VkCooperativeMatrixProperties2EXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tMGranularity = " << value.MGranularity << '\n';
+	s << "\tNGranularity = " << value.NGranularity << '\n';
+	s << "\tKGranularity = " << value.KGranularity << '\n';
+	s << "\tAType = " << value.AType << '\n';
+	s << "\tBType = " << value.BType << '\n';
+	s << "\tCType = " << value.CType << '\n';
+	s << "\tResultType = " << value.ResultType << '\n';
 	s << '}';
 	return s;
 }
@@ -13243,6 +13269,33 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCooperativeMatr
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tcooperativeMatrix = " << value.cooperativeMatrix << '\n';
 	s << "\tcooperativeMatrixRobustBufferAccess = " << value.cooperativeMatrixRobustBufferAccess << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCooperativeMatrixInfo2EXT& value)
+{
+	s << "VkPhysicalDeviceCooperativeMatrixInfo2EXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tscope = " << value.scope << '\n';
+	s << "\tinvocations = " << value.invocations << '\n';
+	s << "\tsubgroupSize = " << value.subgroupSize << '\n';
+	s << "\tflags = " << getCooperativeMatrixFlagsEXTStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcooperativeMatrixProperties2 = " << value.cooperativeMatrixProperties2 << '\n';
+	s << "\tcooperativeMatrixReductions = " << value.cooperativeMatrixReductions << '\n';
+	s << "\tcooperativeMatrixConversions = " << value.cooperativeMatrixConversions << '\n';
+	s << "\tcooperativeMatrixPerElementOperations = " << value.cooperativeMatrixPerElementOperations << '\n';
+	s << "\tcooperativeMatrixGetCoordinate = " << value.cooperativeMatrixGetCoordinate << '\n';
 	s << '}';
 	return s;
 }

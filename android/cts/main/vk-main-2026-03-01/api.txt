@@ -24424,6 +24424,7 @@ dEQP-VK.api.device_address.misc.memory_range_barrier
 dEQP-VK.api.device_address.misc.use_all_vertex_index_binds
 dEQP-VK.api.device_init.create_device_queue_priorities.basic
 dEQP-VK.api.device_init.create_device_queue_priorities.concurrent_submission
+dEQP-VK.api.device_init.create_device_unsupported_features.cooperative_matrix_maintenance1_features_ext
 dEQP-VK.api.device_init.create_device_unsupported_features.cooperative_vector_features_nv
 dEQP-VK.api.device_init.create_device_unsupported_features.copy_memory_indirect_features_khr
 dEQP-VK.api.device_init.create_device_unsupported_features.custom_resolve_features_ext
@@ -29458,6 +29459,7 @@ dEQP-VK.api.info.extended_flags_sparse_image_format_properties2.3d.optimal.r8g8b
 dEQP-VK.api.info.extended_flags_sparse_image_format_properties2.3d.optimal.s8_uint
 dEQP-VK.api.info.extended_flags_sparse_image_format_properties2.3d.optimal.undefined
 dEQP-VK.api.info.extended_flags_sparse_image_format_properties2.3d.optimal.x8_d24_unorm_pack32
+dEQP-VK.api.info.get_physical_device_properties2.features.cooperative_matrix_maintenance1_features_ext
 dEQP-VK.api.info.get_physical_device_properties2.features.copy_memory_indirect_features_khr
 dEQP-VK.api.info.get_physical_device_properties2.features.custom_resolve_features_ext
 dEQP-VK.api.info.get_physical_device_properties2.features.depth_clamp_zero_one_features_khr

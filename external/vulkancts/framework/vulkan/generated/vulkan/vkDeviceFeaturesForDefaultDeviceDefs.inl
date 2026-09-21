@@ -23,6 +23,7 @@ const VkPhysicalDeviceConditionalRenderingFeaturesEXT&					getConditionalRenderi
 const VkPhysicalDeviceCooperativeMatrix2FeaturesNV&						getCooperativeMatrix2FeaturesNV						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCooperativeMatrix2FeaturesNV>();					}
 const VkPhysicalDeviceCooperativeMatrixFeaturesKHR&						getCooperativeMatrixFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCooperativeMatrixFeaturesKHR>();					}
 const VkPhysicalDeviceCooperativeMatrixFeaturesNV&						getCooperativeMatrixFeaturesNV						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCooperativeMatrixFeaturesNV>();					}
+const VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT&			getCooperativeMatrixMaintenance1FeaturesEXT			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT>();		}
 const VkPhysicalDeviceCooperativeVectorFeaturesNV&						getCooperativeVectorFeaturesNV						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCooperativeVectorFeaturesNV>();					}
 const VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR&					getCopyMemoryIndirectFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR>();					}
 const VkPhysicalDeviceCornerSampledImageFeaturesNV&						getCornerSampledImageFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCornerSampledImageFeaturesNV>();					}

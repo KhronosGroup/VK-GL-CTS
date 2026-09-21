@@ -4690,6 +4690,13 @@ enum VkConditionalRenderingFlagBitsEXT
 };
 typedef uint32_t VkConditionalRenderingFlagsEXT;
 
+enum VkCooperativeMatrixFlagBitsEXT
+{
+	VK_COOPERATIVE_MATRIX_SATURATING_ACCUMULATION_BIT_EXT	= 0x00000001,
+	VK_COOPERATIVE_MATRIX_FLAG_BITS_MAX_ENUM_EXT			= 0x7FFFFFFF
+};
+typedef uint32_t VkCooperativeMatrixFlagsEXT;
+
 enum VkCullModeFlagBits
 {
 	VK_CULL_MODE_NONE				= 0,

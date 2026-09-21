@@ -828,6 +828,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* EnumeratePhysicalDeviceQueueFamilyPe
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRendering2EXTFunc)													(VkCommandBuffer commandBuffer, const VkRenderingEndInfoKHR* pRenderingEndInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRendering2KHRFunc)													(VkCommandBuffer commandBuffer, const VkRenderingEndInfoKHR* pRenderingEndInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginCustomResolveEXTFunc)												(VkCommandBuffer commandBuffer, const VkBeginCustomResolveInfoEXT* pBeginCustomResolveInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeMatrixProperties2EXTFunc)						(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceCooperativeMatrixInfo2EXT* pCooperativeMatrixInfo, uint32_t* pPropertyCount, VkCooperativeMatrixProperties2EXT* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateUbmSurfaceSECFunc)													(VkInstance instance, const VkUbmSurfaceCreateInfoSEC* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 typedef VKAPI_ATTR VkBool32				(VKAPI_CALL* GetPhysicalDeviceUbmPresentationSupportSECFunc)							(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, struct ubm_device* device);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetPrimitiveRestartIndexEXTFunc)										(VkCommandBuffer commandBuffer, uint32_t primitiveRestartIndex);

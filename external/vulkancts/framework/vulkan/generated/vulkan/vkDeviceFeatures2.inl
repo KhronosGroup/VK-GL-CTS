@@ -645,6 +645,49 @@ tcu::TestStatus testPhysicalDeviceFeatureCooperativeMatrixFeaturesKHR (Context& 
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureCooperativeMatrixMaintenance1FeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT deviceCooperativeMatrixMaintenance1FeaturesEXT[count];
+    const bool                                               isCooperativeMatrixMaintenance1FeaturesEXT = checkExtension(properties, "VK_EXT_cooperative_matrix_maintenance1");
+
+    if (!isCooperativeMatrixMaintenance1FeaturesEXT)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceCooperativeMatrixMaintenance1FeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT));
+        deviceCooperativeMatrixMaintenance1FeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_MAINTENANCE_1_FEATURES_EXT;
+        deviceCooperativeMatrixMaintenance1FeaturesEXT[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceCooperativeMatrixMaintenance1FeaturesEXT[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceCooperativeMatrixMaintenance1FeaturesEXT[0] << TestLog::EndMessage;
+
+    if (
+        deviceCooperativeMatrixMaintenance1FeaturesEXT[0].cooperativeMatrixProperties2 != deviceCooperativeMatrixMaintenance1FeaturesEXT[1].cooperativeMatrixProperties2 ||
+        deviceCooperativeMatrixMaintenance1FeaturesEXT[0].cooperativeMatrixReductions != deviceCooperativeMatrixMaintenance1FeaturesEXT[1].cooperativeMatrixReductions ||
+        deviceCooperativeMatrixMaintenance1FeaturesEXT[0].cooperativeMatrixConversions != deviceCooperativeMatrixMaintenance1FeaturesEXT[1].cooperativeMatrixConversions ||
+        deviceCooperativeMatrixMaintenance1FeaturesEXT[0].cooperativeMatrixPerElementOperations != deviceCooperativeMatrixMaintenance1FeaturesEXT[1].cooperativeMatrixPerElementOperations ||
+        deviceCooperativeMatrixMaintenance1FeaturesEXT[0].cooperativeMatrixGetCoordinate != deviceCooperativeMatrixMaintenance1FeaturesEXT[1].cooperativeMatrixGetCoordinate)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureCopyMemoryIndirectFeaturesKHR (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -7726,6 +7769,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "compute_shader_derivatives_features_khr", testPhysicalDeviceFeatureComputeShaderDerivativesFeaturesKHR);
 	addFunctionCase(testGroup, "conditional_rendering_features_ext", testPhysicalDeviceFeatureConditionalRenderingFeaturesEXT);
 	addFunctionCase(testGroup, "cooperative_matrix_features_khr", testPhysicalDeviceFeatureCooperativeMatrixFeaturesKHR);
+	addFunctionCase(testGroup, "cooperative_matrix_maintenance1_features_ext", testPhysicalDeviceFeatureCooperativeMatrixMaintenance1FeaturesEXT);
 	addFunctionCase(testGroup, "copy_memory_indirect_features_khr", testPhysicalDeviceFeatureCopyMemoryIndirectFeaturesKHR);
 	addFunctionCase(testGroup, "custom_border_color_features_ext", testPhysicalDeviceFeatureCustomBorderColorFeaturesEXT);
 	addFunctionCase(testGroup, "custom_resolve_features_ext", testPhysicalDeviceFeatureCustomResolveFeaturesEXT);

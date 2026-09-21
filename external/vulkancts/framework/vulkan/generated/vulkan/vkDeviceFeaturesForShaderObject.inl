@@ -24,6 +24,7 @@ auto fConditionalRenderingFeaturesEXT                   = m_context.getCondition
 auto fCooperativeMatrix2FeaturesNV                      = m_context.getCooperativeMatrix2FeaturesNV();
 auto fCooperativeMatrixFeatures                         = m_context.getCooperativeMatrixFeatures();
 auto fCooperativeMatrixFeaturesNV                       = m_context.getCooperativeMatrixFeaturesNV();
+auto fCooperativeMatrixMaintenance1FeaturesEXT          = m_context.getCooperativeMatrixMaintenance1FeaturesEXT();
 auto fCooperativeVectorFeaturesNV                       = m_context.getCooperativeVectorFeaturesNV();
 auto fCopyMemoryIndirectFeatures                        = m_context.getCopyMemoryIndirectFeatures();
 auto fCornerSampledImageFeatures                        = m_context.getCornerSampledImageFeatures();
@@ -239,6 +240,7 @@ std::vector<void *> pNextFeatures = {
 	&fCooperativeMatrix2FeaturesNV,
 	&fCooperativeMatrixFeatures,
 	&fCooperativeMatrixFeaturesNV,
+	&fCooperativeMatrixMaintenance1FeaturesEXT,
 	&fCooperativeVectorFeaturesNV,
 	&fCopyMemoryIndirectFeatures,
 	&fCornerSampledImageFeatures,

@@ -69,6 +69,7 @@ VK_EXT_calibrated_timestamps
 VK_EXT_color_write_enable
 VK_EXT_conditional_rendering
 VK_EXT_conservative_rasterization
+VK_EXT_cooperative_matrix_maintenance1
 VK_EXT_custom_border_color
 VK_EXT_custom_resolve
 VK_EXT_debug_marker

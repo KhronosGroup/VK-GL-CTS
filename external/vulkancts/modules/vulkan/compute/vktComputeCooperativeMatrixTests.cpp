@@ -52,6 +52,7 @@
 #include <string>
 #include <sstream>
 #include <set>
+#include <vector>
 #include <algorithm>
 #include <functional>
 #include <climits>
@@ -106,10 +107,10 @@ typedef enum
 {
     TT_LENGTH = 0,
     TT_CONSTANT,
+    TT_CONVERT_BASE,
     TT_CONVERT,
     TT_CONVERT_SAT,
-    TT_CONVERT_ACC_TO_A,
-    TT_CONVERT_ACC_TO_B,
+    TT_TRANSPOSE_ACC_TO_A,
     TT_TRANSPOSE_ACC_TO_B,
     TT_REDUCE_SUM_ROW,
     TT_REDUCE_SUM_COL,
@@ -134,6 +135,7 @@ typedef enum
     TT_MUL,
     TT_NEGATE,
     TT_MATRIXTIMESSCALAR,
+    TT_GETCOORDINATE,
     TT_FUNC,
     TT_FUNC_CONST_IN,
     TT_CLAMPCONSTANT,
@@ -192,6 +194,13 @@ enum SubgroupSizeMode
     SUBGROUP_SIZE_MAX  = 2,
 };
 
+enum CoopMatFeature
+{
+    CMF_BASE = 0,
+    CMF_NV2,
+    CMF_MAINT1,
+};
+
 const VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT;
 
 struct CaseDef
@@ -208,6 +217,8 @@ struct CaseDef
     AddrMethod addrMethod;
     StorageClass storageClass;
     UseType useType;
+    UseType useType2; // used for destination type for TT_CONVERT_* and TT_TRANSPOSE_ACC_TO_*
+    CoopMatFeature coopmatFeature;
     SubgroupSizeMode subgroupSizeMode;
     vk::ComputePipelineConstructionType computePipelineConstructionType;
     uint32_t inputComponentCount;
@@ -217,6 +228,16 @@ struct CaseDef
 bool isKhr(UseType useType)
 {
     return useType != UT_NV;
+}
+
+bool isCoopMatNV2(CoopMatFeature feature)
+{
+    return feature == CMF_NV2;
+}
+
+bool isCoopMatMaint1(CoopMatFeature feature)
+{
+    return feature == CMF_MAINT1;
 }
 
 bool isMatrixMulAddOp(TestType testType)
@@ -334,6 +355,27 @@ bool isSplitBarrierTest(TestType testType)
 {
     return testType == TT_MATRIXMULADD_SPLITBARRIER || testType == TT_MATRIXMULADD_SPLITBARRIER_LOOP ||
            testType == TT_MATRIXMULADD_SPLITBARRIER_SKEW;
+}
+
+bool isConvertOp(TestType testType)
+{
+    return testType == TT_CONVERT_BASE || testType == TT_CONVERT || testType == TT_CONVERT_SAT;
+}
+
+bool isSaturatedConvertOp(TestType testType)
+{
+    return testType == TT_CONVERT_SAT;
+}
+
+bool isTransposeTest(TestType testType)
+{
+    return testType == TT_TRANSPOSE_ACC_TO_A || testType == TT_TRANSPOSE_ACC_TO_B;
+}
+
+bool needsCoopMat2GLSL(const CaseDef &data)
+{
+    return data.scope == VK_SCOPE_WORKGROUP_KHR || data.addrMethod != ADDR_LINEAR ||
+           isTensorLayoutTest(data.testType) || isClampTest(data.testType) || isCoopMatNV2(data.coopmatFeature);
 }
 
 int32_t tensorLayout1dMatrixSize[][5] = {
@@ -708,6 +750,21 @@ uint32_t getSubgroupSizeFromMode(Context &context, const SubgroupSizeMode subgro
     }
 }
 
+// Returns true when the effective subgroup size of the dispatched compute shader can vary
+// at runtime within [minSubgroupSize, maxSubgroupSize] instead of being fixed to a single
+// value. Per interfaces.adoc, that varying-size semantic only applies when the
+// subgroupSizeControl feature is enabled and the pipeline either sets
+// VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT or uses a SPIR-V module
+// of version >= 1.6 with no required-size chained in. The GLSL path in this file emits
+// SPIR-V 1.6 and only chains a required size for SUBGROUP_SIZE_MIN / SUBGROUP_SIZE_MAX,
+// so SUBGROUP_SIZE_NONE varies on devices that support the feature. The handwritten
+// SPIR-V used by TT_MATRIXMULADD_CROSS is SPIR-V 1.3 and never varies.
+bool hasVaryingEffectiveSubgroupSize(Context &context, SubgroupSizeMode subgroupSizeMode, TestType testType)
+{
+    return subgroupSizeMode == SUBGROUP_SIZE_NONE && testType != TT_MATRIXMULADD_CROSS &&
+           context.getSubgroupSizeControlFeatures().subgroupSizeControl;
+}
+
 class CooperativeMatrixTestInstance : public MultiQueueRunnerTestInstance
 {
 public:
@@ -805,7 +862,14 @@ void CooperativeMatrixTestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "shaderFloat16 not supported");
     }
 
-#define REQUIRE(FEATURE)                                             \
+#define REQUIRE_CMM1(FEATURE)                                                     \
+    context.requireDeviceFunctionality("VK_EXT_cooperative_matrix_maintenance1"); \
+    if (!context.getCooperativeMatrixMaintenance1FeaturesEXT().FEATURE)           \
+    {                                                                             \
+        TCU_THROW(NotSupportedError, #FEATURE " not supported");                  \
+    }
+
+#define REQUIRE_CM2(FEATURE)                                         \
     context.requireDeviceFunctionality("VK_NV_cooperative_matrix2"); \
     if (!context.getCooperativeMatrix2FeaturesNV().FEATURE)          \
     {                                                                \
@@ -814,37 +878,86 @@ void CooperativeMatrixTestCase::checkSupport(Context &context) const
 
     if (m_data.scope == VK_SCOPE_WORKGROUP_KHR)
     {
-        REQUIRE(cooperativeMatrixWorkgroupScope)
+        REQUIRE_CM2(cooperativeMatrixWorkgroupScope)
+    }
+    else
+    {
+        // When the dispatched subgroup size varies at runtime, size the workgroup for the
+        // worst case (maxSubgroupSize) so every possible runtime choice fits. Otherwise the
+        // effective size is fixed and matches the SubgroupSizeMode. Skip on devices where
+        // the resulting workgroup would exceed the invocation limit.
+        const uint32_t effectiveSize =
+            hasVaryingEffectiveSubgroupSize(context, m_data.subgroupSizeMode, m_data.testType) ?
+                context.getSubgroupSizeControlProperties().maxSubgroupSize :
+                getSubgroupSizeFromMode(context, m_data.subgroupSizeMode);
+        const uint32_t invocations = effectiveSize * m_data.subgroupsPerWorkgroupX * m_data.subgroupsPerWorkgroupY;
+        if (invocations > context.getDeviceProperties().limits.maxComputeWorkGroupInvocations)
+            TCU_THROW(NotSupportedError, "workgroup too large for this device");
     }
     if (isReduceOp(m_data.testType))
     {
-        REQUIRE(cooperativeMatrixReductions)
+        if (isCoopMatMaint1(m_data.coopmatFeature))
+        {
+            REQUIRE_CMM1(cooperativeMatrixReductions)
+        }
+        if (isCoopMatNV2(m_data.coopmatFeature))
+        {
+            REQUIRE_CM2(cooperativeMatrixReductions)
+        }
     }
 
-    if (m_data.testType == TT_CONVERT_ACC_TO_A || m_data.testType == TT_CONVERT_ACC_TO_B ||
-        m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+    if (isTransposeTest(m_data.testType) && isCoopMatNV2(m_data.coopmatFeature))
     {
-        REQUIRE(cooperativeMatrixConversions)
+        REQUIRE_CM2(cooperativeMatrixConversions)
+    }
+
+    if (isTransposeTest(m_data.testType) && isCoopMatMaint1(m_data.coopmatFeature))
+    {
+        REQUIRE_CMM1(cooperativeMatrixConversions)
+    }
+
+    if (isConvertOp(m_data.testType))
+    {
+        if (isCoopMatNV2(m_data.coopmatFeature))
+        {
+            REQUIRE_CM2(cooperativeMatrixConversions)
+        }
+        if (isCoopMatMaint1(m_data.coopmatFeature))
+        {
+            REQUIRE_CMM1(cooperativeMatrixConversions)
+        }
     }
 
     if (isPerElemOp(m_data.testType))
     {
-        REQUIRE(cooperativeMatrixPerElementOperations)
+        if (isCoopMatMaint1(m_data.coopmatFeature))
+        {
+            REQUIRE_CMM1(cooperativeMatrixPerElementOperations)
+        }
+        if (isCoopMatNV2(m_data.coopmatFeature))
+        {
+            REQUIRE_CM2(cooperativeMatrixPerElementOperations)
+        }
+    }
+
+    if (m_data.testType == TT_GETCOORDINATE)
+    {
+        REQUIRE_CMM1(cooperativeMatrixGetCoordinate)
     }
 
     if (m_data.addrMethod != ADDR_LINEAR || isTensorLayoutTest(m_data.testType) || isClampTest(m_data.testType))
     {
-        REQUIRE(cooperativeMatrixTensorAddressing);
+        REQUIRE_CM2(cooperativeMatrixTensorAddressing);
     }
 
     if (isTensorLayoutTest(m_data.testType))
     {
-        REQUIRE(cooperativeMatrixFlexibleDimensions);
+        REQUIRE_CM2(cooperativeMatrixFlexibleDimensions);
     }
 
     if (m_data.addrMethod == ADDR_BLOCKSIZE || m_data.addrMethod == ADDR_DECODE)
     {
-        REQUIRE(cooperativeMatrixBlockLoads);
+        REQUIRE_CM2(cooperativeMatrixBlockLoads);
     }
 
     std::vector<VkCooperativeMatrixPropertiesKHR> properties =
@@ -874,15 +987,7 @@ void CooperativeMatrixTestCase::checkSupport(Context &context) const
         else
         {
             const VkComponentTypeKHR types[2] = {m_data.inputType, m_data.outputType};
-            UseType uses[2]                   = {m_data.useType, m_data.useType};
-            if (m_data.testType == TT_CONVERT_ACC_TO_A)
-            {
-                uses[1] = UT_KHR_A;
-            }
-            else if (m_data.testType == TT_CONVERT_ACC_TO_B || m_data.testType == TT_TRANSPOSE_ACC_TO_B)
-            {
-                uses[1] = UT_KHR_B;
-            }
+            UseType uses[2]                   = {m_data.useType, m_data.useType2};
 
             for (uint32_t j = 0; j < 2; ++j)
             {
@@ -924,7 +1029,11 @@ void CooperativeMatrixTestCase::checkSupport(Context &context) const
         }
     }
 
-    if (context.getCooperativeMatrix2FeaturesNV().cooperativeMatrixFlexibleDimensions)
+    const bool useFlexibleProperties = isKhr(m_data.useType);
+    const bool flexibleDimensionsSupported =
+        context.getCooperativeMatrix2FeaturesNV().cooperativeMatrixFlexibleDimensions;
+
+    if (useFlexibleProperties && flexibleDimensionsSupported)
     {
         uint32_t flexiblePropertyCount = 0;
         std::vector<VkCooperativeMatrixFlexibleDimensionsPropertiesNV> flexibleProperties;
@@ -968,15 +1077,7 @@ void CooperativeMatrixTestCase::checkSupport(Context &context) const
             else
             {
                 const VkComponentTypeKHR types[2] = {m_data.inputType, m_data.outputType};
-                UseType uses[2]                   = {m_data.useType, m_data.useType};
-                if (m_data.testType == TT_CONVERT_ACC_TO_A)
-                {
-                    uses[1] = UT_KHR_A;
-                }
-                else if (m_data.testType == TT_CONVERT_ACC_TO_B || m_data.testType == TT_TRANSPOSE_ACC_TO_B)
-                {
-                    uses[1] = UT_KHR_B;
-                }
+                UseType uses[2]                   = {m_data.useType, m_data.useType2};
 
                 for (uint32_t j = 0; j < 2; ++j)
                 {
@@ -1007,6 +1108,99 @@ void CooperativeMatrixTestCase::checkSupport(Context &context) const
                     }
                     default:
                         TCU_THROW(InternalError, "Unsupported use type");
+                    }
+                }
+            }
+        }
+    }
+
+    if (isKhr(m_data.useType) && context.getCooperativeMatrixMaintenance1FeaturesEXT().cooperativeMatrixProperties2)
+    {
+        // arbitrary lower/upper limits
+        for (uint32_t workgroupSize = 8; workgroupSize <= 256; workgroupSize *= 2)
+        {
+            uint32_t propertyCount = 0;
+            std::vector<VkCooperativeMatrixProperties2EXT> properties2;
+
+            VkPhysicalDeviceCooperativeMatrixInfo2EXT coopmatInfo2 = initVulkanStructure();
+            coopmatInfo2.scope                                     = m_data.scope;
+            // Match the dispatched configuration: subgroupSize=0 (varying) only when the
+            // runtime really will pick a varying size, otherwise the fixed size that will
+            // actually be used. MIN/MAX chain a VkPipelineShaderStageRequiredSubgroupSizeCreateInfo
+            // and must query that exact size; SUBGROUP_SIZE_NONE without the varying
+            // conditions runs at VkPhysicalDeviceSubgroupProperties::subgroupSize.
+            coopmatInfo2.subgroupSize =
+                hasVaryingEffectiveSubgroupSize(context, m_data.subgroupSizeMode, m_data.testType) ?
+                    0 :
+                    getSubgroupSizeFromMode(context, m_data.subgroupSizeMode);
+            coopmatInfo2.flags       = isMMASat ? VK_COOPERATIVE_MATRIX_SATURATING_ACCUMULATION_BIT_EXT : 0;
+            coopmatInfo2.invocations = m_data.scope == VK_SCOPE_WORKGROUP_KHR ? workgroupSize : 0;
+
+            const InstanceInterface &vki = context.getInstanceInterface();
+            VK_CHECK(vki.getPhysicalDeviceCooperativeMatrixProperties2EXT(context.getPhysicalDevice(), &coopmatInfo2,
+                                                                          &propertyCount, nullptr));
+
+            if (propertyCount > 0)
+            {
+                const VkCooperativeMatrixProperties2EXT sample = initVulkanStructureConst();
+
+                properties2.resize(propertyCount, sample);
+
+                VK_CHECK(vki.getPhysicalDeviceCooperativeMatrixProperties2EXT(
+                    context.getPhysicalDevice(), &coopmatInfo2, &propertyCount, properties2.data()));
+            }
+            else
+            {
+                properties2.clear();
+            }
+
+            for (size_t i = 0; i < properties2.size(); ++i)
+            {
+                const VkCooperativeMatrixProperties2EXT *p = &properties2[i];
+
+                if (isMMA)
+                {
+                    if (p->AType == m_data.inputType && p->BType == m_data.inputType && p->CType == m_data.outputType &&
+                        p->ResultType == m_data.outputType)
+                    {
+                        supported[0] = supported[1] = true;
+                    }
+                }
+                else
+                {
+                    const VkComponentTypeKHR types[2] = {m_data.inputType, m_data.outputType};
+                    UseType uses[2]                   = {m_data.useType, m_data.useType2};
+
+                    for (uint32_t j = 0; j < 2; ++j)
+                    {
+                        switch (uses[j])
+                        {
+                        case UT_NV:
+                            break;
+                        case UT_KHR_A:
+                        {
+                            if (p->AType == types[j])
+                                supported[j] = true;
+
+                            break;
+                        }
+                        case UT_KHR_B:
+                        {
+                            if (p->BType == types[j])
+                                supported[j] = true;
+
+                            break;
+                        }
+                        case UT_KHR_Result:
+                        {
+                            if (p->ResultType == types[j])
+                                supported[j] = true;
+
+                            break;
+                        }
+                        default:
+                            TCU_THROW(InternalError, "Unsupported use type");
+                        }
                     }
                 }
             }
@@ -1122,6 +1316,23 @@ bool isUIntType(VkComponentTypeKHR t)
     }
 }
 
+bool isNoArithmeticType(VkComponentTypeKHR t)
+{
+#ifdef CTS_USES_VULKANSC
+    return false;
+#else
+    switch (t)
+    {
+    case VK_COMPONENT_TYPE_BFLOAT16_KHR:
+    case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
+    case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
+        return true;
+    default:
+        return false;
+    }
+#endif
+}
+
 void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programCollection) const
 {
     const char *suffix = (isKhr(m_data.useType) ? "" : "NV");
@@ -1136,12 +1347,22 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
            "#extension GL_KHR_memory_scope_semantics : enable\n"
         << ext;
     css << "#extension GL_EXT_split_barrier : enable\n";
+
+    const bool enableMaintenance1 = isCoopMatMaint1(m_data.coopmatFeature);
+    if (enableMaintenance1)
+    {
+        css << "#extension GL_EXT_cooperative_matrix_maintenance1 : enable\n";
+    }
+    if (needsCoopMat2GLSL(m_data))
+    {
+        css << "#extension GL_NV_cooperative_matrix2 : enable\n";
+    }
+    const char *cm2OrMaint1Suffix = enableMaintenance1 ? "EXT" : "NV";
     css << "#extension GL_EXT_bfloat16 : enable\n"
            "#extension GL_EXT_float_e5m2 : enable\n"
            "#extension GL_EXT_float_e4m3 : enable\n";
     css << "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n"
            "#extension GL_EXT_buffer_reference : enable\n"
-           "#extension GL_NV_cooperative_matrix2 : enable\n"
            "#extension GL_EXT_bfloat16 : enable\n"
            "// strides overriden by spec constants\n"
            "layout(constant_id = 2) const int AStride = 1;\n"
@@ -1205,7 +1426,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
             dims[3].rows = "(M*" + std::to_string(reduceMScale(m_data.testType)) + ")";
             dims[3].cols = "(N*" + std::to_string(reduceNScale(m_data.testType)) + ")";
         }
-        else if (m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+        else if (isTransposeTest(m_data.testType))
         {
             dims[2].rows = "N";
             dims[2].cols = "M";
@@ -1344,25 +1565,27 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
 
     if (isKhr(m_data.useType))
     {
-        const bool useSame = !isMatrixMulAddOp(m_data.testType);
-        const char *atype  = useSame ? sameType : "gl_MatrixUseA";
-        const char *btype  = useSame ? sameType : "gl_MatrixUseB";
-        const char *ctype  = useSame ? sameType : "gl_MatrixUseAccumulator";
-        const char *rtype  = useSame ? sameType : "gl_MatrixUseAccumulator";
+        const char *atype, *btype, *ctype, *rtype;
 
-        if (m_data.testType == TT_CONVERT_ACC_TO_A)
+        auto const &useTypeStr = [](UseType u)
         {
-            atype = "gl_MatrixUseAccumulator";
-            btype = "gl_MatrixUseAccumulator";
-            ctype = "gl_MatrixUseA";
-            rtype = "gl_MatrixUseA";
+            return u == UT_KHR_A      ? "gl_MatrixUseA" :
+                   u == UT_KHR_B      ? "gl_MatrixUseB" :
+                   u == UT_KHR_Result ? "gl_MatrixUseAccumulator" :
+                                        "Invalid use";
+        };
+
+        if (isMatrixMulAddOp(m_data.testType))
+        {
+            atype = "gl_MatrixUseA";
+            btype = "gl_MatrixUseB";
+            ctype = "gl_MatrixUseAccumulator";
+            rtype = "gl_MatrixUseAccumulator";
         }
-        else if (m_data.testType == TT_CONVERT_ACC_TO_B || m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+        else
         {
-            atype = "gl_MatrixUseAccumulator";
-            btype = "gl_MatrixUseAccumulator";
-            ctype = "gl_MatrixUseB";
-            rtype = "gl_MatrixUseB";
+            atype = btype = useTypeStr(m_data.useType);
+            ctype = rtype = useTypeStr(m_data.useType2);
         }
 
         matAType << "coopmat<" << componentTypeInfo.at(m_data.inputType).typeName << ", " << scopeStr
@@ -1438,14 +1661,14 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
         css << type << " combineOp(const in " << type << " a, const in " << type << " b) {\n";
         if (isReduceSum(m_data.testType))
         {
-            if (m_data.inputType == VK_COMPONENT_TYPE_BFLOAT16_KHR)
+            if (isNoArithmeticType(m_data.inputType))
                 css << "    return " << type << "(float(a) + float(b));\n"; // GLSL does not support adding bfloat16_t
             else
                 css << "    return a + b;\n";
         }
         else if (isReduceMin(m_data.testType))
         {
-            if (m_data.inputType == VK_COMPONENT_TYPE_BFLOAT16_KHR)
+            if (isNoArithmeticType(m_data.inputType))
                 css << "    return " << type << "(min(float(a), float(b)));\n"; // GLSL does not support min bfloat16_t
             else
                 css << "    return min(a, b);\n";
@@ -1508,7 +1731,17 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
         css <<
             // matrixID is the x,y index of the matrix owned by this subgroup.
             "   uvec2 subgroupXY = uvec2(gl_SubgroupID % subgroupsPerWG.x, gl_SubgroupID / subgroupsPerWG.x);\n"
-            "   uvec2 matrixID = uvec2(gl_WorkGroupID.xy) * subgroupsPerWG + subgroupXY;\n";
+            "   uvec2 matrixID = uvec2(gl_WorkGroupID.xy) * subgroupsPerWG + subgroupXY;\n"
+            // local_size_x is sized for the worst-case (maxSubgroupSize) effective subgroup size
+            // so that the workgroup is always a multiple of whatever size the runtime picks under
+            // varying-subgroup-size semantics (SPIR-V 1.6, no required size). When the runtime
+            // picks a smaller size, the workgroup contains more subgroups than subgroupsPerWG;
+            // the extras have nothing to do. All barriers in this shader are scoped to the
+            // subgroup (gl_ScopeSubgroup) and each subgroup uses a disjoint region of shared
+            // memory, so the extras can safely skip the entire body without affecting the
+            // subgroups that are doing real work.
+            "   if (gl_SubgroupID >= subgroupsPerWG.x * subgroupsPerWG.y)\n"
+            "       return;\n";
     }
 
     if (m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER)
@@ -1669,6 +1902,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
                 {
                 case TT_CONSTANT:
                 case TT_LENGTH:
+                case TT_CONVERT_BASE:
                 case TT_CONVERT:
                 case TT_CONVERT_SAT:
                 case TT_NEGATE:
@@ -1677,8 +1911,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
                 case TT_MATRIXTIMESSCALAR:
                 case TT_MULTICOMPONENT_LOAD:
                 case TT_MULTICOMPONENT_SAVE:
-                case TT_CONVERT_ACC_TO_A:
-                case TT_CONVERT_ACC_TO_B:
+                case TT_TRANSPOSE_ACC_TO_A:
                 case TT_TRANSPOSE_ACC_TO_B:
                 case TT_PER_ELEMENT_OP:
                 case TT_PER_ELEMENT_OP_MAT:
@@ -1984,6 +2217,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     case TT_CONSTANT:
         css << "   matO = matConst;\n";
         break;
+    case TT_CONVERT_BASE:
     case TT_CONVERT:
         css << "   matO = " << outputMatType.str() << "(matA);\n";
         break;
@@ -2013,6 +2247,17 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     case TT_COMPOSITE_ARRAY:
         css << "   for (int i = 0; i < matA.length(); ++i) {\n"
                "       matOArr[1][i] = matAArr[1][i];\n"
+               "   }\n";
+        break;
+    case TT_GETCOORDINATE:
+        css << "   for (int i = 0; i < matA.length(); ++i) {\n"
+               "       uvec2 coord = coopMatGetCoordinateEXT(matA, i);\n"
+               "       coord.x += M * matrixID.y;\n" // rows
+               "       coord.y += N * matrixID.x;\n" // cols
+               "       uint coord1d = coord.y * 3 + coord.x;\n"
+               "       matO[i] = "
+            << componentTypeInfo.at(m_data.outputType).typeName
+            << "(coord1d);\n"
                "   }\n";
         break;
     case TT_ADD:
@@ -2104,12 +2349,9 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     case TT_MULTICOMPONENT_SAVE:
         css << "   matO = matA;\n";
         break;
-    case TT_CONVERT_ACC_TO_A:
-    case TT_CONVERT_ACC_TO_B:
-        css << "   matO = " << outputMatType.str() << "(matA);\n";
-        break;
+    case TT_TRANSPOSE_ACC_TO_A:
     case TT_TRANSPOSE_ACC_TO_B:
-        css << "   coopMatTransposeNV(matO, matA);\n";
+        css << "   coopMatTranspose" << cm2OrMaint1Suffix << "(matO, matA);\n";
         break;
     case TT_REDUCE_SUM_ROW:
     case TT_REDUCE_SUM_COL:
@@ -2123,28 +2365,29 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     case TT_REDUCE_MIN_ROWCOL:
     case TT_REDUCE_MIN_2X2:
     {
-        string rowCol = isReduce2x2(m_data.testType) ? "gl_CooperativeMatrixReduce2x2NV" :
-                        isReduceRow(m_data.testType) ? "gl_CooperativeMatrixReduceRowNV" :
-                        isReduceCol(m_data.testType) ? "gl_CooperativeMatrixReduceColumnNV" :
-                                                       "gl_CooperativeMatrixReduceRowAndColumnNV";
+        string rowCol =
+            isReduce2x2(m_data.testType) ? string("gl_CooperativeMatrixReduce2x2") + cm2OrMaint1Suffix :
+            isReduceRow(m_data.testType) ? string("gl_CooperativeMatrixReduceRow") + cm2OrMaint1Suffix :
+            isReduceCol(m_data.testType) ? string("gl_CooperativeMatrixReduceColumn") + cm2OrMaint1Suffix :
+                                           string("gl_CooperativeMatrixReduceRowAndColumn") + cm2OrMaint1Suffix;
 
-        css << "   coopMatReduceNV(matO, matA, " << rowCol << ", combineOp);\n";
+        css << "   coopMatReduce" << cm2OrMaint1Suffix << "(matO, matA, " << rowCol << ", combineOp);\n";
     }
     break;
     case TT_PER_ELEMENT_OP:
-        css << "   coopMatPerElementNV(matO, matA, elemOp, " << componentTypeInfo.at(m_data.inputType).typeName
-            << "(2.0));\n";
+        css << "   coopMatPerElement" << cm2OrMaint1Suffix << "(matO, matA, elemOp, "
+            << componentTypeInfo.at(m_data.inputType).typeName << "(2.0));\n";
         break;
     case TT_PER_ELEMENT_OP_MAT:
-        css << "   coopMatPerElementNV(matO, matA, elemOp, " << componentTypeInfo.at(m_data.inputType).typeName
-            << "(2.0) * matA);\n";
+        css << "   coopMatPerElement" << cm2OrMaint1Suffix << "(matO, matA, elemOp, "
+            << componentTypeInfo.at(m_data.inputType).typeName << "(2.0) * matA);\n";
         break;
     case TT_PER_ELEMENT_OP_ROW_COL:
-        css << "   coopMatPerElementNV(matO, matA, elemOpRowCol);\n";
+        css << "   coopMatPerElement" << cm2OrMaint1Suffix << "(matO, matA, elemOpRowCol);\n";
         break;
     case TT_PER_ELEMENT_OP_STRUCT:
         css << "   ParamType p; p.x = " << componentTypeInfo.at(m_data.inputType).typeName << "(2.0);\n";
-        css << "   coopMatPerElementNV(matO, matA, elemOp, p);\n";
+        css << "   coopMatPerElement" << cm2OrMaint1Suffix << "(matO, matA, elemOp, p);\n";
         break;
     case TT_TENSORLAYOUT_1D:
     case TT_TENSORLAYOUT_2D:
@@ -2993,7 +3236,16 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
     tcu::TestLog &log           = m_context.getTestContext().getLog();
     const bool saturated        = (m_data.testType == TT_MATRIXMULADD_SATURATED);
     const uint32_t subgroupSize = getSubgroupSizeFromMode(m_context, m_data.subgroupSizeMode);
-    const float epsilon         = 1.0f / float(1ull << 17); // 131072 is epsilon circa 1e-5
+    // When the dispatched subgroup size varies at runtime, size local_size_x for the worst
+    // case (maxSubgroupSize) so it's always a multiple of whatever effective size the
+    // runtime picks; any "extra" subgroups that appear when the runtime picks a smaller
+    // size early-return in the shader. Otherwise the effective size is fixed and equal to
+    // subgroupSize so local_size_x stays at subgroupSize * subgroupsPerWorkgroupX.
+    const bool varyingEffectiveSubgroupSize =
+        hasVaryingEffectiveSubgroupSize(m_context, m_data.subgroupSizeMode, m_data.testType);
+    const uint32_t localSizeXSubgroupSize =
+        varyingEffectiveSubgroupSize ? m_context.getSubgroupSizeControlProperties().maxSubgroupSize : subgroupSize;
+    const float epsilon = 1.0f / float(1ull << 17); // 131072 is epsilon circa 1e-5
     vk::VkPhysicalDeviceProperties vkproperties;
     const bool coopMat2Supported = m_context.isDeviceFunctionalitySupported("VK_NV_cooperative_matrix2");
 
@@ -3025,7 +3277,11 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
     };
 
     std::vector<VkCooperativeMatrixFlexibleDimensionsPropertiesNV> flexibleProperties;
-    if (m_context.getCooperativeMatrix2FeaturesNV().cooperativeMatrixFlexibleDimensions)
+    const bool useFlexibleProperties = isKhr(m_data.useType);
+    const bool flexibleDimensionsSupported =
+        m_context.getCooperativeMatrix2FeaturesNV().cooperativeMatrixFlexibleDimensions;
+
+    if (useFlexibleProperties && flexibleDimensionsSupported)
     {
         uint32_t flexiblePropertyCount = 0;
 
@@ -3103,7 +3359,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
 
             return true;
         };
-        if (m_context.getCooperativeMatrix2FeaturesNV().cooperativeMatrixFlexibleDimensions)
+        if (useFlexibleProperties && flexibleDimensionsSupported)
         {
             const auto isMMA    = isMatrixMulAddOp(m_data.testType);
             const auto isMMASat = m_data.testType == TT_MATRIXMULADD_SATURATED;
@@ -3138,15 +3394,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                 else
                 {
                     const VkComponentTypeKHR types[2] = {m_data.inputType, m_data.outputType};
-                    UseType uses[2]                   = {m_data.useType, m_data.useType};
-                    if (m_data.testType == TT_CONVERT_ACC_TO_A)
-                    {
-                        uses[1] = UT_KHR_A;
-                    }
-                    else if (m_data.testType == TT_CONVERT_ACC_TO_B || m_data.testType == TT_TRANSPOSE_ACC_TO_B)
-                    {
-                        uses[1] = UT_KHR_B;
-                    }
+                    UseType uses[2]                   = {m_data.useType, m_data.useType2};
 
                     auto const &SetGranularity = [&](const VkCooperativeMatrixFlexibleDimensionsPropertiesNV *p2,
                                                      VkComponentTypeKHR type, UseType use)
@@ -3160,9 +3408,17 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                         {
                             if (p2->AType == type)
                             {
-                                ok           = true;
-                                MGranularity = std::max(MGranularity, p2->MGranularity);
-                                NGranularity = std::max(NGranularity, p2->KGranularity);
+                                ok = true;
+                                if (isTransposeTest(m_data.testType))
+                                {
+                                    MGranularity = std::max(MGranularity, p2->KGranularity);
+                                    NGranularity = std::max(NGranularity, p2->MGranularity);
+                                }
+                                else
+                                {
+                                    MGranularity = std::max(MGranularity, p2->MGranularity);
+                                    NGranularity = std::max(NGranularity, p2->KGranularity);
+                                }
                             }
 
                             break;
@@ -3172,7 +3428,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                             if (p2->BType == type)
                             {
                                 ok = true;
-                                if (m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+                                if (isTransposeTest(m_data.testType))
                                 {
                                     MGranularity = std::max(MGranularity, p2->NGranularity);
                                     NGranularity = std::max(NGranularity, p2->KGranularity);
@@ -3257,8 +3513,227 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                 }
             }
         }
+
+        if (isKhr(m_data.useType) &&
+            m_context.getCooperativeMatrixMaintenance1FeaturesEXT().cooperativeMatrixProperties2)
+        {
+            const auto isMMA    = isMatrixMulAddOp(m_data.testType);
+            const auto isMMASat = m_data.testType == TT_MATRIXMULADD_SATURATED;
+
+            std::vector<uint32_t> invocationCounts;
+            if (m_data.scope == VK_SCOPE_WORKGROUP_KHR)
+            {
+                for (uint32_t workgroupSize = 8; workgroupSize <= 256; workgroupSize *= 2)
+                {
+                    invocationCounts.push_back(workgroupSize);
+                }
+            }
+            else
+            {
+                invocationCounts.push_back(0);
+            }
+
+            for (auto workgroupSize : invocationCounts)
+            {
+                uint32_t propertyCount = 0;
+                std::vector<VkCooperativeMatrixProperties2EXT> properties2;
+
+                VkPhysicalDeviceCooperativeMatrixInfo2EXT coopmatInfo2 = initVulkanStructure();
+                coopmatInfo2.scope                                     = m_data.scope;
+                // Match the dispatched configuration: subgroupSize=0 (varying) only when
+                // the runtime really will pick a varying size, otherwise the fixed size
+                // that will actually be used.
+                coopmatInfo2.subgroupSize =
+                    varyingEffectiveSubgroupSize ? 0 : getSubgroupSizeFromMode(m_context, m_data.subgroupSizeMode);
+                coopmatInfo2.flags       = isMMASat ? VK_COOPERATIVE_MATRIX_SATURATING_ACCUMULATION_BIT_EXT : 0;
+                coopmatInfo2.invocations = workgroupSize;
+
+                const InstanceInterface &vki = m_context.getInstanceInterface();
+                VK_CHECK(vki.getPhysicalDeviceCooperativeMatrixProperties2EXT(m_context.getPhysicalDevice(),
+                                                                              &coopmatInfo2, &propertyCount, nullptr));
+
+                if (propertyCount > 0)
+                {
+                    const VkCooperativeMatrixProperties2EXT sample = initVulkanStructureConst();
+
+                    properties2.resize(propertyCount, sample);
+
+                    VK_CHECK(vki.getPhysicalDeviceCooperativeMatrixProperties2EXT(
+                        m_context.getPhysicalDevice(), &coopmatInfo2, &propertyCount, properties2.data()));
+                }
+                else
+                {
+                    properties2.clear();
+                }
+
+                std::vector<TestTuple> sizes;
+                for (auto const &prop : properties2)
+                {
+                    auto const *p = &prop;
+
+                    uint32_t MGranularity = 0;
+                    uint32_t NGranularity = 0;
+                    uint32_t KGranularity = 0;
+                    bool ok               = false;
+
+                    if (isMMA)
+                    {
+                        if (p->AType == m_data.inputType && p->BType == m_data.inputType &&
+                            p->CType == m_data.outputType && p->ResultType == m_data.outputType)
+                        {
+                            ok           = true;
+                            MGranularity = p->MGranularity;
+                            NGranularity = p->NGranularity;
+                            KGranularity = p->KGranularity;
+                        }
+                    }
+                    else if (isReduceChangeDim(m_data.testType) && !flexibleDimensionsSupported)
+                    {
+                        // Without flexible dimensions, the granularities returned by the properties2 query
+                        // are exact dimensions. Only test a changed-dimension reduction when another returned
+                        // property supports the derived output matrix type exactly.
+                        DE_ASSERT(m_data.useType == UT_KHR_Result && m_data.useType2 == UT_KHR_Result);
+
+                        if (p->ResultType == m_data.inputType)
+                        {
+                            const uint32_t outputM = p->MGranularity * reduceMScale(m_data.testType);
+                            const uint32_t outputN = p->NGranularity * reduceNScale(m_data.testType);
+
+                            for (const auto &outputProp : properties2)
+                            {
+                                if (outputProp.ResultType == m_data.outputType && outputProp.MGranularity == outputM &&
+                                    outputProp.NGranularity == outputN)
+                                {
+                                    ok           = true;
+                                    MGranularity = p->MGranularity;
+                                    NGranularity = p->NGranularity;
+                                    KGranularity = p->KGranularity;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        const VkComponentTypeKHR types[2] = {m_data.inputType, m_data.outputType};
+                        UseType uses[2]                   = {m_data.useType, m_data.useType2};
+
+                        auto const &SetGranularity =
+                            [&](const VkCooperativeMatrixProperties2EXT *p2, VkComponentTypeKHR type, UseType use)
+                        {
+                            ok = false;
+                            switch (use)
+                            {
+                            case UT_NV:
+                                break;
+                            case UT_KHR_A:
+                            {
+                                if (p2->AType == type)
+                                {
+                                    ok = true;
+                                    if (isTransposeTest(m_data.testType))
+                                    {
+                                        MGranularity = std::max(MGranularity, p2->KGranularity);
+                                        NGranularity = std::max(NGranularity, p2->MGranularity);
+                                    }
+                                    else
+                                    {
+                                        MGranularity = std::max(MGranularity, p2->MGranularity);
+                                        NGranularity = std::max(NGranularity, p2->KGranularity);
+                                    }
+                                }
+
+                                break;
+                            }
+                            case UT_KHR_B:
+                            {
+                                if (p2->BType == type)
+                                {
+                                    ok = true;
+                                    if (isTransposeTest(m_data.testType))
+                                    {
+                                        MGranularity = std::max(MGranularity, p2->NGranularity);
+                                        NGranularity = std::max(NGranularity, p2->KGranularity);
+                                    }
+                                    else
+                                    {
+                                        MGranularity = std::max(MGranularity, p2->KGranularity);
+                                        NGranularity = std::max(NGranularity, p2->NGranularity);
+                                    }
+                                }
+
+                                break;
+                            }
+                            case UT_KHR_Result:
+                            {
+                                if (p2->ResultType == type)
+                                {
+                                    ok           = true;
+                                    MGranularity = std::max(MGranularity, p2->MGranularity);
+                                    NGranularity = std::max(NGranularity, p2->NGranularity);
+                                }
+
+                                break;
+                            }
+                            default:
+                                TCU_THROW(InternalError, "Unsupported use type");
+                            }
+                        };
+
+                        SetGranularity(p, types[0], uses[0]);
+
+                        if (!ok)
+                        {
+                            continue;
+                        }
+
+                        // Need to find a "matching" property for the other use/type
+                        // and take the max of the granularities
+                        for (auto const &prop2 : properties2)
+                        {
+                            auto const *p2 = &prop2;
+
+                            SetGranularity(p2, types[1], uses[1]);
+
+                            if (ok)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    if (ok)
+                    {
+                        DE_ASSERT(MGranularity && NGranularity && (!isMMA || KGranularity));
+
+                        sizes.emplace_back(1U * MGranularity, 1U * NGranularity, 1U * KGranularity, workgroupSize);
+                        if (m_context.getCooperativeMatrix2FeaturesNV().cooperativeMatrixFlexibleDimensions &&
+                            m_data.storageClass != SC_WORKGROUP &&
+                            m_data.storageClass != SC_WORKGROUP_VARIABLE_POINTERS)
+                        {
+                            sizes.emplace_back(3U * MGranularity, 1U * NGranularity, 1U * KGranularity, workgroupSize);
+                            sizes.emplace_back(1U * MGranularity, 3U * NGranularity, 1U * KGranularity, workgroupSize);
+                            if (isMatrixMulAddOp(m_data.testType))
+                            {
+                                sizes.emplace_back(2U * MGranularity, 2U * NGranularity, 3U * KGranularity,
+                                                   workgroupSize);
+                                sizes.emplace_back(1U * MGranularity, 1U * NGranularity, 3U * KGranularity,
+                                                   workgroupSize);
+                            }
+                        }
+                    }
+                }
+
+                for (auto &s : sizes)
+                {
+                    if (shmemOK(s.M, s.N, s.K))
+                    {
+                        testSizes.insert(s);
+                    }
+                }
+            }
+        }
     }
-    if (!isTensorLayoutTest(m_data.testType))
+    if (!isTensorLayoutTest(m_data.testType) && !isReduceChangeDim(m_data.testType))
     {
         if (isMatrixMulAddOp(m_data.testType))
         {
@@ -3277,15 +3752,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
         {
             set<TestTuple> typeSizes[2];
             VkComponentTypeKHR types[2] = {m_data.inputType, m_data.outputType};
-            UseType uses[2]             = {m_data.useType, m_data.useType};
-            if (m_data.testType == TT_CONVERT_ACC_TO_A)
-            {
-                uses[1] = UT_KHR_A;
-            }
-            else if (m_data.testType == TT_CONVERT_ACC_TO_B || m_data.testType == TT_TRANSPOSE_ACC_TO_B)
-            {
-                uses[1] = UT_KHR_B;
-            }
+            UseType uses[2]             = {m_data.useType, m_data.useType2};
 
             for (uint32_t i = 0; i < properties.size(); ++i)
             {
@@ -3299,10 +3766,19 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                     // For these tests, m_data.M/N are always the matrix size. Check if they match
                     // any input or output in the list.
                     if ((uses[j] == UT_KHR_A || uses[j] == UT_NV) && p->AType == types[j])
-                        typeSizes[j].insert(TestTuple(p->MSize, p->KSize, 0, 0));
+                    {
+                        if (isTransposeTest(m_data.testType))
+                        {
+                            typeSizes[j].insert(TestTuple(p->KSize, p->MSize, 0, 0));
+                        }
+                        else
+                        {
+                            typeSizes[j].insert(TestTuple(p->MSize, p->KSize, 0, 0));
+                        }
+                    }
                     if ((uses[j] == UT_KHR_B || uses[j] == UT_NV) && p->BType == types[j])
                     {
-                        if (m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+                        if (isTransposeTest(m_data.testType))
                         {
                             typeSizes[j].insert(TestTuple(p->NSize, p->KSize, 0, 0));
                         }
@@ -3373,7 +3849,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                 dims[3].rows = M * reduceMScale(m_data.testType);
                 dims[3].cols = N * reduceNScale(m_data.testType);
             }
-            else if (m_data.testType == TT_TRANSPOSE_ACC_TO_B)
+            else if (isTransposeTest(m_data.testType))
             {
                 dims[2].rows = N;
                 dims[2].cols = M;
@@ -3556,7 +4032,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
 
         const uint32_t specData[9] = {
             (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ? testSize.workgroupSize :
-                                                       (subgroupSize * m_data.subgroupsPerWorkgroupX),
+                                                       (localSizeXSubgroupSize * m_data.subgroupsPerWorkgroupX),
             (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ? 1 : m_data.subgroupsPerWorkgroupY,
             strides[0],
             strides[1],
@@ -3612,8 +4088,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                     {
                         setDataFloat(ptrs[i], dataTypes[i], j, 14.0);
                     }
-                    else if ((m_data.testType == TT_CONVERT || m_data.testType == TT_CONVERT_SAT) &&
-                             isFloatType(dataTypes[3]))
+                    else if (isConvertOp(m_data.testType) && isFloatType(dataTypes[3]))
                     {
                         if (j < specialFloats.size())
                         {
@@ -3625,8 +4100,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                                          ((float)(deRandom_getUint32(&rnd) & 0xff) - 64.0f) / 2.0f);
                         }
                     }
-                    else if ((m_data.testType == TT_CONVERT || m_data.testType == TT_CONVERT_SAT) &&
-                             isUIntType(m_data.outputType))
+                    else if (isConvertOp(m_data.testType) && isUIntType(m_data.outputType))
                         setDataFloat(ptrs[i], dataTypes[i], j, ((float)(deRandom_getUint32(&rnd) & 0xff)) / 4.0f);
                     else if (!isMatrixMulAddOp(m_data.testType) && !isReduceSum(m_data.testType))
                         setDataFloat(ptrs[i], dataTypes[i], j,
@@ -3814,138 +4288,276 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
 
         qpTestResult res = QP_TEST_RESULT_PASS;
 
-        if (m_data.testType == TT_CONVERT || m_data.testType == TT_CONVERT_SAT)
+        if (m_data.testType == TT_GETCOORDINATE)
         {
-            for (uint32_t i = 0; i < totalElements[3]; ++i)
+            uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                      m_data.workgroupsX :
+                                      (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+            uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                      m_data.workgroupsY :
+                                      (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+            for (uint32_t mX = 0; mX < numMatrixX; ++mX)
             {
-                // Store results as double, which has enough range to hold all the other types exactly.
-                double inputA, output;
-                tcu::RoundingDirection rd[2] = {tcu::ROUND_DOWNWARD, tcu::ROUND_UPWARD};
-                double inputAConverted[2];
-
-                for (uint32_t j = 0; j < 2; ++j)
+                for (uint32_t mY = 0; mY < numMatrixY; ++mY)
                 {
-                    // This loads the data according to dataTypes[0], and then converts to the template parameter type
-                    switch (dataTypes[3])
+                    for (uint32_t i = 0; i < M; ++i)
                     {
-                    case VK_COMPONENT_TYPE_UINT8_KHR:
-                        inputA = getDataConvertedToT<uint8_t>(ptrs[0], dataTypes[0], i);
-                        break;
-                    case VK_COMPONENT_TYPE_UINT16_KHR:
-                        inputA = getDataConvertedToT<uint16_t>(ptrs[0], dataTypes[0], i);
-                        break;
-                    case VK_COMPONENT_TYPE_UINT32_KHR:
-                        inputA = getDataConvertedToT<uint32_t>(ptrs[0], dataTypes[0], i);
-                        break;
-                    case VK_COMPONENT_TYPE_SINT8_KHR:
-                        inputA = getDataConvertedToT<int8_t>(ptrs[0], dataTypes[0], i);
-                        break;
-                    case VK_COMPONENT_TYPE_SINT16_KHR:
-                        inputA = getDataConvertedToT<int16_t>(ptrs[0], dataTypes[0], i);
-                        break;
-                    case VK_COMPONENT_TYPE_SINT32_KHR:
-                        inputA = getDataConvertedToT<int32_t>(ptrs[0], dataTypes[0], i);
-                        break;
-                    case VK_COMPONENT_TYPE_FLOAT32_KHR:
-                    case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
-                    case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
-                    case VK_COMPONENT_TYPE_FLOAT16_KHR:
-#ifndef CTS_USES_VULKANSC
-                    case VK_COMPONENT_TYPE_BFLOAT16_KHR:
-#endif //CTS_USES_VULKANSC
-                        inputA = getDataConvertedToT<float>(ptrs[0], dataTypes[0], i);
-                        break;
-                    default:
-                        TCU_THROW(InternalError, "Unexpected type");
-                    }
-
-                    inputAConverted[j] = inputA;
-
-                    switch (dataTypes[3])
-                    {
-                    case VK_COMPONENT_TYPE_UINT8_KHR:
-                        output = getDataConvertedToT<uint8_t>(ptrs[3], dataTypes[3], i);
-                        break;
-                    case VK_COMPONENT_TYPE_UINT16_KHR:
-                        output = getDataConvertedToT<uint16_t>(ptrs[3], dataTypes[3], i);
-                        break;
-                    case VK_COMPONENT_TYPE_UINT32_KHR:
-                        output = getDataConvertedToT<uint32_t>(ptrs[3], dataTypes[3], i);
-                        break;
-                    case VK_COMPONENT_TYPE_SINT8_KHR:
-                        output = getDataConvertedToT<int8_t>(ptrs[3], dataTypes[3], i);
-                        break;
-                    case VK_COMPONENT_TYPE_SINT16_KHR:
-                        output = getDataConvertedToT<int16_t>(ptrs[3], dataTypes[3], i);
-                        break;
-                    case VK_COMPONENT_TYPE_SINT32_KHR:
-                        output = getDataConvertedToT<int32_t>(ptrs[3], dataTypes[3], i);
-                        break;
-                    case VK_COMPONENT_TYPE_FLOAT32_KHR:
-                        output = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
-                        break;
-                    case VK_COMPONENT_TYPE_FLOAT16_KHR:
-                    {
-                        output             = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
-                        inputAConverted[j] = tcu::Float16(inputAConverted[j], rd[j]).asDouble();
-                        break;
-                    }
-                    case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
-                    {
-                        output             = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
-                        inputAConverted[j] = tcu::FloatE5M2(inputAConverted[j], rd[j]).asDouble();
-                        break;
-                    }
-                    case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
-                    {
-                        output             = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
-                        inputAConverted[j] = tcu::FloatE4M3(inputAConverted[j], rd[j]).asDouble();
-                        break;
-                    }
-#ifndef CTS_USES_VULKANSC
-                    case VK_COMPONENT_TYPE_BFLOAT16_KHR:
-                    {
-                        output             = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
-                        inputAConverted[j] = BFloat16(inputAConverted[j], rd[j]).asDouble();
-                        break;
-                    }
-#endif //CTS_USES_VULKANSC
-                    default:
-                        TCU_THROW(InternalError, "Unexpected type");
-                    }
-
-                    if (m_data.testType == TT_CONVERT_SAT)
-                    {
-                        switch (dataTypes[3])
+                        for (uint32_t j = 0; j < N; ++j)
                         {
-                        case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
-                        {
-                            if (fabs(inputA) > tcu::FloatE5M2::largestNormal(1).asFloat())
+                            uint32_t coordx, coordy;
+                            uint32_t ij;
+                            // for row-major, dst is MxN, so row,col = i,j
+                            if (m_data.colMajor)
                             {
-                                inputAConverted[j] = tcu::FloatE5M2::largestNormal(inputA > 0 ? 1 : -1).asFloat();
+                                coordx = mY * M + j;
+                                coordy = mX * N + i;
+                                ij     = mX * M + i + strides[3] * (mY * N + j);
                             }
-                            break;
-                        }
-                        case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
-                        {
-                            if (fabs(inputA) > tcu::FloatE4M3::largestNormal(1).asFloat())
+                            else
                             {
-                                inputAConverted[j] = tcu::FloatE4M3::largestNormal(inputA > 0 ? 1 : -1).asFloat();
+                                coordx = mY * M + i;
+                                coordy = mX * N + j;
+                                ij     = mX * N + j + strides[3] * (mY * M + i);
                             }
-                            break;
-                        }
-                        default:
-                            break;
+                            uint32_t coord1d = coordy * 3 + coordx;
+
+                            if (isFloatType(dataTypes[3]))
+                            {
+                                double output = getDataFloat(ptrs[3], dataTypes[3], ij);
+                                double ref    = coord1d;
+
+                                tcu::RoundingDirection rd[2] = {tcu::ROUND_DOWNWARD, tcu::ROUND_UPWARD};
+                                double refConverted[2]       = {ref, ref};
+
+                                for (uint32_t k = 0; k < 2; ++k)
+                                {
+
+                                    switch (dataTypes[3])
+                                    {
+                                    case VK_COMPONENT_TYPE_FLOAT16_KHR:
+                                        refConverted[k] = tcu::Float16(ref, rd[k]).asDouble();
+                                        break;
+                                    case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
+                                        refConverted[k] = tcu::FloatE5M2(ref, rd[k]).asDouble();
+                                        break;
+                                    case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
+                                        refConverted[k] = tcu::FloatE4M3(ref, rd[k]).asDouble();
+                                        break;
+#ifndef CTS_USES_VULKANSC
+                                    case VK_COMPONENT_TYPE_BFLOAT16_KHR:
+                                        refConverted[k] = BFloat16(ref, rd[k]).asDouble();
+                                        break;
+#endif //CTS_USES_VULKANSC
+                                    default:
+                                        break;
+                                    }
+                                }
+
+                                if (output != refConverted[0] && output != refConverted[1] &&
+                                    !((std::isnan(refConverted[0]) || std::isnan(refConverted[1])) &&
+                                      std::isnan(output)))
+                                {
+                                    //printf("mX %d mY %d i %d j %d ref %f output %f\n", mX, mY, i, j, ref, output);
+                                    res = QP_TEST_RESULT_FAIL;
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                uint32_t output = getDataInt(ptrs[3], dataTypes[3], ij);
+                                uint32_t ref    = coord1d;
+                                uint32_t bits   = componentTypeInfo.at(dataTypes[3]).bits;
+                                uint32_t mask   = (bits == 32) ? 0xFFFFFFFFU : ((1U << bits) - 1U);
+
+                                output &= mask;
+                                ref &= mask;
+
+                                if (output != ref)
+                                {
+                                    //printf("mX %d mY %d i %d j %d ref %d output %d\n", mX, mY, i, j, ref, output);
+                                    res = QP_TEST_RESULT_FAIL;
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
-
-                if (inputAConverted[0] != output && inputAConverted[1] != output &&
-                    !((std::isnan(inputAConverted[0]) || std::isnan(inputAConverted[1])) && std::isnan(output)))
+            }
+        }
+        else if (isConvertOp(m_data.testType) || isTransposeTest(m_data.testType))
+        {
+            uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                      m_data.workgroupsX :
+                                      (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
+            uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                                      m_data.workgroupsY :
+                                      (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+            for (uint32_t mX = 0; mX < numMatrixX; ++mX)
+            {
+                for (uint32_t mY = 0; mY < numMatrixY; ++mY)
                 {
-                    //printf("i %d inputA %f inputAConverted[RD] %f inputAConverted[RU] %f output %f\n", i, inputA, inputAConverted[0], inputAConverted[1], output);
-                    res = QP_TEST_RESULT_FAIL;
-                    break;
+                    for (uint32_t i = 0; i < M; ++i)
+                    {
+                        for (uint32_t j = 0; j < N; ++j)
+                        {
+                            // Store results as double, which has enough range to hold all the other types exactly.
+                            double inputA, output;
+                            tcu::RoundingDirection rd[2] = {tcu::ROUND_DOWNWARD, tcu::ROUND_UPWARD};
+                            double inputAConverted[2];
+
+                            for (uint32_t k = 0; k < 2; ++k)
+                            {
+
+                                uint32_t ij;
+                                // for row-major, src is MxN, so row,col = i,j
+                                if (m_data.colMajor)
+                                    ij = mX * M + i + strides[0] * mY * N + loadStrides[0] * j;
+                                else
+                                    ij = mX * N + j + strides[0] * mY * M + loadStrides[0] * i;
+
+                                // This loads the data according to dataTypes[0], and then converts to the template parameter type
+                                switch (dataTypes[3])
+                                {
+                                case VK_COMPONENT_TYPE_UINT8_KHR:
+                                    inputA = getDataConvertedToT<uint8_t>(ptrs[0], dataTypes[0], ij);
+                                    break;
+                                case VK_COMPONENT_TYPE_UINT16_KHR:
+                                    inputA = getDataConvertedToT<uint16_t>(ptrs[0], dataTypes[0], ij);
+                                    break;
+                                case VK_COMPONENT_TYPE_UINT32_KHR:
+                                    inputA = getDataConvertedToT<uint32_t>(ptrs[0], dataTypes[0], ij);
+                                    break;
+                                case VK_COMPONENT_TYPE_SINT8_KHR:
+                                    inputA = getDataConvertedToT<int8_t>(ptrs[0], dataTypes[0], ij);
+                                    break;
+                                case VK_COMPONENT_TYPE_SINT16_KHR:
+                                    inputA = getDataConvertedToT<int16_t>(ptrs[0], dataTypes[0], ij);
+                                    break;
+                                case VK_COMPONENT_TYPE_SINT32_KHR:
+                                    inputA = getDataConvertedToT<int32_t>(ptrs[0], dataTypes[0], ij);
+                                    break;
+                                case VK_COMPONENT_TYPE_FLOAT32_KHR:
+                                case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
+                                case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
+                                case VK_COMPONENT_TYPE_FLOAT16_KHR:
+#ifndef CTS_USES_VULKANSC
+                                case VK_COMPONENT_TYPE_BFLOAT16_KHR:
+#endif //CTS_USES_VULKANSC
+                                    inputA = getDataConvertedToT<float>(ptrs[0], dataTypes[0], ij);
+                                    break;
+                                default:
+                                    TCU_THROW(InternalError, "Unexpected type");
+                                }
+
+                                inputAConverted[k] = inputA;
+
+                                if (isTransposeTest(m_data.testType))
+                                {
+                                    // for row-major, dst is NxM, so row,col = j,i
+                                    if (m_data.colMajor)
+                                        ij = mX * N + j + strides[3] * (mY * M + i);
+                                    else
+                                        ij = mX * M + i + strides[3] * (mY * N + j);
+                                }
+                                else
+                                {
+                                    // for row-major, src is MxN, so row,col = i,j
+                                    if (m_data.colMajor)
+                                        ij = mX * M + i + strides[3] * (mY * N + j);
+                                    else
+                                        ij = mX * N + j + strides[3] * (mY * M + i);
+                                }
+                                switch (dataTypes[3])
+                                {
+                                case VK_COMPONENT_TYPE_UINT8_KHR:
+                                    output = getDataConvertedToT<uint8_t>(ptrs[3], dataTypes[3], ij);
+                                    break;
+                                case VK_COMPONENT_TYPE_UINT16_KHR:
+                                    output = getDataConvertedToT<uint16_t>(ptrs[3], dataTypes[3], ij);
+                                    break;
+                                case VK_COMPONENT_TYPE_UINT32_KHR:
+                                    output = getDataConvertedToT<uint32_t>(ptrs[3], dataTypes[3], ij);
+                                    break;
+                                case VK_COMPONENT_TYPE_SINT8_KHR:
+                                    output = getDataConvertedToT<int8_t>(ptrs[3], dataTypes[3], ij);
+                                    break;
+                                case VK_COMPONENT_TYPE_SINT16_KHR:
+                                    output = getDataConvertedToT<int16_t>(ptrs[3], dataTypes[3], ij);
+                                    break;
+                                case VK_COMPONENT_TYPE_SINT32_KHR:
+                                    output = getDataConvertedToT<int32_t>(ptrs[3], dataTypes[3], ij);
+                                    break;
+                                case VK_COMPONENT_TYPE_FLOAT32_KHR:
+                                    output = getDataConvertedToT<float>(ptrs[3], dataTypes[3], ij);
+                                    break;
+                                case VK_COMPONENT_TYPE_FLOAT16_KHR:
+                                {
+                                    output             = getDataConvertedToT<float>(ptrs[3], dataTypes[3], ij);
+                                    inputAConverted[k] = tcu::Float16(inputAConverted[k], rd[k]).asDouble();
+                                    break;
+                                }
+                                case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
+                                {
+                                    output             = getDataConvertedToT<float>(ptrs[3], dataTypes[3], ij);
+                                    inputAConverted[k] = tcu::FloatE5M2(inputAConverted[k], rd[k]).asDouble();
+                                    break;
+                                }
+                                case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
+                                {
+                                    output             = getDataConvertedToT<float>(ptrs[3], dataTypes[3], ij);
+                                    inputAConverted[k] = tcu::FloatE4M3(inputAConverted[k], rd[k]).asDouble();
+                                    break;
+                                }
+#ifndef CTS_USES_VULKANSC
+                                case VK_COMPONENT_TYPE_BFLOAT16_KHR:
+                                {
+                                    output             = getDataConvertedToT<float>(ptrs[3], dataTypes[3], ij);
+                                    inputAConverted[k] = BFloat16(inputAConverted[k], rd[k]).asDouble();
+                                    break;
+                                }
+#endif //CTS_USES_VULKANSC
+                                default:
+                                    TCU_THROW(InternalError, "Unexpected type");
+                                }
+
+                                if (isSaturatedConvertOp(m_data.testType))
+                                {
+                                    switch (dataTypes[3])
+                                    {
+                                    case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
+                                    {
+                                        if (fabs(inputA) > tcu::FloatE5M2::largestNormal(1).asFloat())
+                                        {
+                                            inputAConverted[k] =
+                                                tcu::FloatE5M2::largestNormal(inputA > 0 ? 1 : -1).asFloat();
+                                        }
+                                        break;
+                                    }
+                                    case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
+                                    {
+                                        if (fabs(inputA) > tcu::FloatE4M3::largestNormal(1).asFloat())
+                                        {
+                                            inputAConverted[k] =
+                                                tcu::FloatE4M3::largestNormal(inputA > 0 ? 1 : -1).asFloat();
+                                        }
+                                        break;
+                                    }
+                                    default:
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (inputAConverted[0] != output && inputAConverted[1] != output &&
+                                !((std::isnan(inputAConverted[0]) || std::isnan(inputAConverted[1])) &&
+                                  std::isnan(output)))
+                            {
+                                //printf("i %d inputA %f inputAConverted[RD] %f inputAConverted[RU] %f output %f\n", i, inputA, inputAConverted[0], inputAConverted[1], output);
+                                res = QP_TEST_RESULT_FAIL;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -4191,53 +4803,6 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                         else
                         {
                             DE_ASSERT(0);
-                        }
-                    }
-                }
-            }
-            else if (m_data.testType == TT_TRANSPOSE_ACC_TO_B)
-            {
-                uint32_t ij;
-                uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
-                                          m_data.workgroupsX :
-                                          (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
-                uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
-                                          m_data.workgroupsY :
-                                          (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
-                for (uint32_t mX = 0; mX < numMatrixX; ++mX)
-                {
-                    for (uint32_t mY = 0; mY < numMatrixY; ++mY)
-                    {
-                        for (uint32_t i = 0; i < M; ++i)
-                        {
-                            for (uint32_t j = 0; j < N; ++j)
-                            {
-                                // for row-major, src is MxN, so row,col = i,j
-                                if (m_data.colMajor)
-                                    ij = mX * M + i + strides[0] * mY * N + loadStrides[0] * j;
-                                else
-                                    ij = mX * N + j + strides[0] * mY * M + loadStrides[0] * i;
-
-                                float ref = getDataFloat(ptrs[0], dataTypes[0], ij);
-
-                                // for row-major, dst is NxM, so row,col = j,i
-                                if (m_data.colMajor)
-                                    ij = mX * N + j + strides[3] * (mY * M + i);
-                                else
-                                    ij = mX * M + i + strides[3] * (mY * N + j);
-
-                                float Dij = getDataFloat(ptrs[3], dataTypes[3], ij);
-
-                                uint32_t temp;
-                                setDataFloat(&temp, dataTypes[3], 0, ref);
-                                float convertedRef;
-                                convertedRef = getDataFloat(&temp, dataTypes[3], 0);
-
-                                if (convertedRef != Dij)
-                                {
-                                    res = QP_TEST_RESULT_FAIL;
-                                }
-                            }
                         }
                     }
                 }
@@ -4583,7 +5148,10 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                     case TT_LENGTH:
                         if (output < 1.0f || output > (float)(N * M))
                             res = QP_TEST_RESULT_FAIL;
-                        if (m_data.scope == VK_SCOPE_SUBGROUP_KHR)
+                        // The "even spread" warning assumes we know the runtime subgroup size.
+                        // Skip it when the effective size is varying (SPIR-V 1.6 + no required
+                        // size) because the expected value would depend on a runtime-chosen size.
+                        if (m_data.scope == VK_SCOPE_SUBGROUP_KHR && !varyingEffectiveSubgroupSize)
                         {
                             // We expect the matrix to be spread evenly across invocations, it is
                             // surprising (but not necessarily illegal) if not
@@ -4657,8 +5225,6 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                         break;
                     }
                     case TT_MULTICOMPONENT_SAVE:
-                    case TT_CONVERT_ACC_TO_A:
-                    case TT_CONVERT_ACC_TO_B:
                     {
                         uint32_t temp;
                         setDataFloat(&temp, dataTypes[3], 0, inputA);
@@ -5040,51 +5606,6 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                     }
                 }
             }
-            else if (m_data.testType == TT_TRANSPOSE_ACC_TO_B)
-            {
-                uint32_t ij;
-                uint32_t numMatrixX = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
-                                          m_data.workgroupsX :
-                                          (m_data.subgroupsPerWorkgroupX * m_data.workgroupsX);
-                uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
-                                          m_data.workgroupsY :
-                                          (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
-                int resultSize      = componentTypeInfo.at(dataTypes[3]).bits;
-                uint32_t mask       = resultSize == 32 ? ~0 : ((1 << resultSize) - 1);
-
-                for (uint32_t mX = 0; mX < numMatrixX; ++mX)
-                {
-                    for (uint32_t mY = 0; mY < numMatrixY; ++mY)
-                    {
-                        for (uint32_t i = 0; i < M; ++i)
-                        {
-                            for (uint32_t j = 0; j < N; ++j)
-                            {
-                                // for row-major, src is MxN, so row,col = i,j
-                                if (m_data.colMajor)
-                                    ij = mX * M + i + strides[0] * mY * N + loadStrides[0] * j;
-                                else
-                                    ij = mX * N + j + strides[0] * mY * M + loadStrides[0] * i;
-
-                                uint32_t ref = getDataInt(ptrs[0], dataTypes[0], ij);
-
-                                // for row-major, dst is NxM, so row,col = j,i
-                                if (m_data.colMajor)
-                                    ij = mX * N + j + strides[3] * (mY * M + i);
-                                else
-                                    ij = mX * M + i + strides[3] * (mY * N + j);
-
-                                uint32_t Dij = getDataInt(ptrs[3], dataTypes[3], ij);
-
-                                if ((ref & mask) != (Dij & mask))
-                                {
-                                    res = QP_TEST_RESULT_FAIL;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
             else if (m_data.testType == TT_SPACETODEPTH)
             {
                 uint32_t H = 32;
@@ -5428,7 +5949,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                     case TT_LENGTH:
                         if (output < 1 || output > N * M)
                             res = QP_TEST_RESULT_FAIL;
-                        if (m_data.scope == VK_SCOPE_SUBGROUP_KHR)
+                        // See float path above: skip the per-size warning for varying sizes.
+                        if (m_data.scope == VK_SCOPE_SUBGROUP_KHR && !varyingEffectiveSubgroupSize)
                         {
                             // We expect the matrix to be spread evenly across invocations, it is
                             // surprising (but not necessarily illegal) if not
@@ -5504,8 +6026,6 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                             res = QP_TEST_RESULT_FAIL;
                         break;
                     }
-                    case TT_CONVERT_ACC_TO_A:
-                    case TT_CONVERT_ACC_TO_B:
                     case TT_MULTICOMPONENT_SAVE:
                     {
                         if ((output & mask) != (inputA & mask))
@@ -5675,11 +6195,12 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
 {
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, getUseType(useType)));
 
-    typedef struct
+    struct TestGroupCase
     {
         uint32_t value;
         const char *name;
-    } TestGroupCase;
+        CoopMatFeature coopmatFeature = CMF_BASE;
+    };
 
     struct DataTypeTestGroupCase
     {
@@ -5758,28 +6279,44 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
         {TT_MATRIXMULADD_SPLITBARRIER_LOOP, "matrixmuladd_split_barrier_loop"},
         //OpCooperativeMatrixMulAdd /w split barrier and skewed looped subgroup work
         {TT_MATRIXMULADD_SPLITBARRIER_SKEW, "matrixmuladd_split_barrier_skew"},
-        // OpConvertCooperativeMatrixNV
-        {TT_CONVERT_ACC_TO_A, "convert_acc_to_a"},
-        {TT_CONVERT_ACC_TO_B, "convert_acc_to_b"},
         // OpTransposeCooperativeMatrixNV
+        {TT_TRANSPOSE_ACC_TO_A, "transpose_acc_to_a"},
         {TT_TRANSPOSE_ACC_TO_B, "transpose_acc_to_b"},
         // OpCooperativeMatrixReduceNV
-        {TT_REDUCE_SUM_ROW, "reduce_sum_row"},
-        {TT_REDUCE_SUM_COL, "reduce_sum_col"},
-        {TT_REDUCE_SUM_ROWCOL, "reduce_sum_rowcol"},
-        {TT_REDUCE_SUM_2X2, "reduce_sum_2x2"},
-        {TT_REDUCE_SUM_ROW_CHANGEDIM, "reduce_sum_row_changedim"},
-        {TT_REDUCE_SUM_COL_CHANGEDIM, "reduce_sum_col_changedim"},
-        {TT_REDUCE_SUM_ROWCOL_CHANGEDIM, "reduce_sum_rowcol_changedim"},
-        {TT_REDUCE_MIN_ROW, "reduce_min_row"},
-        {TT_REDUCE_MIN_COL, "reduce_min_col"},
-        {TT_REDUCE_MIN_ROWCOL, "reduce_min_rowcol"},
-        {TT_REDUCE_MIN_2X2, "reduce_min_2x2"},
+        {TT_REDUCE_SUM_ROW, "reduce_sum_row", CMF_NV2},
+        {TT_REDUCE_SUM_COL, "reduce_sum_col", CMF_NV2},
+        {TT_REDUCE_SUM_ROWCOL, "reduce_sum_rowcol", CMF_NV2},
+        {TT_REDUCE_SUM_2X2, "reduce_sum_2x2", CMF_NV2},
+        {TT_REDUCE_SUM_ROW_CHANGEDIM, "reduce_sum_row_changedim", CMF_NV2},
+        {TT_REDUCE_SUM_COL_CHANGEDIM, "reduce_sum_col_changedim", CMF_NV2},
+        {TT_REDUCE_SUM_ROWCOL_CHANGEDIM, "reduce_sum_rowcol_changedim", CMF_NV2},
+        {TT_REDUCE_MIN_ROW, "reduce_min_row", CMF_NV2},
+        {TT_REDUCE_MIN_COL, "reduce_min_col", CMF_NV2},
+        {TT_REDUCE_MIN_ROWCOL, "reduce_min_rowcol", CMF_NV2},
+        {TT_REDUCE_MIN_2X2, "reduce_min_2x2", CMF_NV2},
 
-        {TT_PER_ELEMENT_OP, "per_element_op"},
-        {TT_PER_ELEMENT_OP_ROW_COL, "per_element_op_row_col"},
-        {TT_PER_ELEMENT_OP_STRUCT, "per_element_op_struct"},
-        {TT_PER_ELEMENT_OP_MAT, "per_element_op_mat"},
+        {TT_PER_ELEMENT_OP, "per_element_op", CMF_NV2},
+        {TT_PER_ELEMENT_OP_ROW_COL, "per_element_op_row_col", CMF_NV2},
+        {TT_PER_ELEMENT_OP_STRUCT, "per_element_op_struct", CMF_NV2},
+        {TT_PER_ELEMENT_OP_MAT, "per_element_op_mat", CMF_NV2},
+
+        // Maintenance1 spelling for operations also available through CM2.
+        {TT_REDUCE_SUM_ROW, "reduce_sum_row_maint1", CMF_MAINT1},
+        {TT_REDUCE_SUM_COL, "reduce_sum_col_maint1", CMF_MAINT1},
+        {TT_REDUCE_SUM_ROWCOL, "reduce_sum_rowcol_maint1", CMF_MAINT1},
+        {TT_REDUCE_SUM_2X2, "reduce_sum_2x2_maint1", CMF_MAINT1},
+        {TT_REDUCE_SUM_ROW_CHANGEDIM, "reduce_sum_row_changedim_maint1", CMF_MAINT1},
+        {TT_REDUCE_SUM_COL_CHANGEDIM, "reduce_sum_col_changedim_maint1", CMF_MAINT1},
+        {TT_REDUCE_SUM_ROWCOL_CHANGEDIM, "reduce_sum_rowcol_changedim_maint1", CMF_MAINT1},
+        {TT_REDUCE_MIN_ROW, "reduce_min_row_maint1", CMF_MAINT1},
+        {TT_REDUCE_MIN_COL, "reduce_min_col_maint1", CMF_MAINT1},
+        {TT_REDUCE_MIN_ROWCOL, "reduce_min_rowcol_maint1", CMF_MAINT1},
+        {TT_REDUCE_MIN_2X2, "reduce_min_2x2_maint1", CMF_MAINT1},
+
+        {TT_PER_ELEMENT_OP, "per_element_op_maint1", CMF_MAINT1},
+        {TT_PER_ELEMENT_OP_ROW_COL, "per_element_op_row_col_maint1", CMF_MAINT1},
+        {TT_PER_ELEMENT_OP_STRUCT, "per_element_op_struct_maint1", CMF_MAINT1},
+        {TT_PER_ELEMENT_OP_MAT, "per_element_op_mat_maint1", CMF_MAINT1},
 
         {TT_TENSORLAYOUT_1D, "tensorlayout1d"},
         {TT_TENSORLAYOUT_2D, "tensorlayout2d"},
@@ -5797,6 +6334,8 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
         {TT_CLAMPTOEDGE, "clamptoedge"},
         {TT_CLAMPREPEAT, "clamprepeat"},
         {TT_CLAMPMIRRORREPEAT, "clampmirrorrepeat"},
+
+        {TT_GETCOORDINATE, "getcoordinate", CMF_MAINT1},
     };
     const std::vector<DataTypeTestGroupCase> dtCases{
         // A/B are fp32 C/D are fp32
@@ -5922,7 +6461,8 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
 
         for (int ttNdx = 0; ttNdx < DE_LENGTH_OF_ARRAY(ttCases); ttNdx++)
         {
-            const TestType testType = (TestType)ttCases[ttNdx].value;
+            const TestType testType             = (TestType)ttCases[ttNdx].value;
+            const CoopMatFeature coopmatFeature = ttCases[ttNdx].coopmatFeature;
 
             for (int sgsNdx = 0; sgsNdx < DE_LENGTH_OF_ARRAY(sgsCases); sgsNdx++)
             {
@@ -5960,6 +6500,14 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                                 const uint32_t outComponentCount    = dtCases[dtNdx].outComponentCount;
                                 const bool isMatrixMul              = isMatrixMulAddOp(testType);
 
+                                if (isCoopMatMaint1(coopmatFeature) &&
+                                    (isReduceOp(testType) || isPerElemOp(testType)) &&
+                                    (scopeCases[scopeNdx].value != VK_SCOPE_SUBGROUP_KHR ||
+                                     addrCases[addrNdx].value != ADDR_LINEAR))
+                                {
+                                    continue;
+                                }
+
                                 if (testType == TT_MATRIXMULADD_CROSS)
                                 {
                                     if (isFloatType(inputType) || isFloatType(outputType) || useType == UT_NV ||
@@ -5995,12 +6543,7 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                                         componentTypeInfo.at(inputType).bits > componentTypeInfo.at(outputType).bits)
                                         continue;
 
-                                    if (inputType == VK_COMPONENT_TYPE_BFLOAT16_KHR ||
-                                        outputType == VK_COMPONENT_TYPE_BFLOAT16_KHR ||
-                                        inputType == VK_COMPONENT_TYPE_FLOAT_E5M2_NV ||
-                                        outputType == VK_COMPONENT_TYPE_FLOAT_E5M2_NV ||
-                                        inputType == VK_COMPONENT_TYPE_FLOAT_E4M3_NV ||
-                                        outputType == VK_COMPONENT_TYPE_FLOAT_E4M3_NV)
+                                    if (isNoArithmeticType(inputType) || isNoArithmeticType(outputType))
                                     {
                                         if (useType == UT_NV)
                                             continue;
@@ -6014,9 +6557,7 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                                 {
                                     if (inputType != VK_COMPONENT_TYPE_FLOAT16_KHR
 #ifndef CTS_USES_VULKANSC
-                                        && inputType != VK_COMPONENT_TYPE_BFLOAT16_KHR &&
-                                        inputType != VK_COMPONENT_TYPE_FLOAT_E5M2_NV &&
-                                        inputType != VK_COMPONENT_TYPE_FLOAT_E4M3_NV
+                                        && !isNoArithmeticType(inputType)
 #endif
                                     )
                                     {
@@ -6050,9 +6591,7 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                                     continue;
                                 }
 
-                                if (!isMatrixMul && testType != TT_CONVERT_ACC_TO_A &&
-                                    testType != TT_CONVERT_ACC_TO_B && testType != TT_TRANSPOSE_ACC_TO_B &&
-                                    inputType != outputType)
+                                if (!isMatrixMul && inputType != outputType)
                                     continue;
 
                                 if (testType == TT_MUL && useType == UT_NV)
@@ -6069,6 +6608,9 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                                 if (testType == TT_MATRIXMULADD_STRIDE0 && useType == UT_NV)
                                     continue;
 
+                                if (testType == TT_GETCOORDINATE && useType == UT_NV)
+                                    continue;
+
                                 if (testType == TT_LENGTH && useType != UT_NV &&
                                     (outputType == VK_COMPONENT_TYPE_SINT8_KHR ||
                                      outputType == VK_COMPONENT_TYPE_UINT8_KHR))
@@ -6081,14 +6623,6 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                                 if (useType == UT_NV && (addrCases[addrNdx].value != ADDR_LINEAR ||
                                                          isReduceOp(testType) || isPerElemOp(testType)))
                                 {
-                                    continue;
-                                }
-
-                                if ((testType == TT_CONVERT_ACC_TO_A || testType == TT_CONVERT_ACC_TO_B ||
-                                     testType == TT_TRANSPOSE_ACC_TO_B) &&
-                                    useType != UT_KHR_Result)
-                                {
-                                    // These tests hardcode the use, no need to repeat them three times
                                     continue;
                                 }
 
@@ -6173,6 +6707,8 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                                     (AddrMethod)addrCases[addrNdx].value, //  AddrMethod addrMethod;
                                     (StorageClass)scCases[scNdx].value,   //  StorageClass storageClass;
                                     useType,                              //  UseType useType;
+                                    useType,                              //  UseType useType2;
+                                    coopmatFeature,                       //  CoopMatFeature coopmatFeature;
                                     sgsCases[sgsNdx].value,               //  SubgroupSizeMode subgroupSizeMode;
                                     computePipelineConstructionType, // vk::ComputePipelineConstructionType computePipelineConstructionType;
                                     inComponentCount,  //  uint32_t inputComponentCount;
@@ -6192,86 +6728,153 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
 
         if (useType != UT_KHR_C)
         {
-            for (bool sat : {false, true})
+            for (auto useTypeDst : {UT_NV, UT_KHR_A, UT_KHR_B, UT_KHR_Result})
             {
-                const string name = string("convert") + (sat ? "_sat" : "");
-                const string desc = string("OpFConvert/OpSConvert/OpUConvert/OpBitcast");
-                de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
-
-                for (int dtNdx1 = 0; dtNdx1 < DE_LENGTH_OF_ARRAY(allTypes); dtNdx1++)
+                if ((useType == UT_NV) != (useTypeDst == UT_NV))
                 {
-                    for (int dtNdx2 = 0; dtNdx2 < DE_LENGTH_OF_ARRAY(allTypes); dtNdx2++)
+                    continue;
+                }
+                if (useType != useTypeDst && (useType == UT_KHR_A || useType == UT_KHR_B) &&
+                    (useTypeDst == UT_KHR_A || useTypeDst == UT_KHR_B))
+                {
+                    // not supported in coopmatmaint1/2
+                    continue;
+                }
+
+                struct ConvCase
+                {
+                    TestType testType;
+                    CoopMatFeature coopmatFeature;
+                    const char *name;
+                };
+
+                std::vector<ConvCase> convCases;
+                if (useType == useTypeDst)
+                {
+                    // Same-use conversion works in the base cooperative matrix extension, and is also covered
+                    // by the extension-specific conversion paths.
+                    convCases.push_back({TT_CONVERT_BASE, CMF_BASE, "convert_base"});
+                    convCases.push_back({TT_CONVERT, CMF_NV2, "convert_nv"});
+                    convCases.push_back({TT_CONVERT_SAT, CMF_NV2, "convert_sat_nv"});
+                    if (useType != UT_NV)
                     {
-                        const VkComponentTypeKHR inputType  = (VkComponentTypeKHR)allTypes[dtNdx1];
-                        const VkComponentTypeKHR outputType = (VkComponentTypeKHR)allTypes[dtNdx2];
-
-                        if (sat)
-                        {
-                            if (inputType == VK_COMPONENT_TYPE_FLOAT_E5M2_NV ||
-                                inputType == VK_COMPONENT_TYPE_FLOAT_E4M3_NV)
-                            {
-                                continue;
-                            }
-                            if (outputType != VK_COMPONENT_TYPE_FLOAT_E5M2_NV &&
-                                outputType != VK_COMPONENT_TYPE_FLOAT_E4M3_NV)
-                            {
-                                continue;
-                            }
-                        }
-
-                        const string name2 = string("input_") + string(componentTypeInfo.at(inputType).typeName) +
-                                             string("_output_") + string(componentTypeInfo.at(outputType).typeName);
-                        de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, name2.c_str()));
-                        for (int scNdx = 0; scNdx < DE_LENGTH_OF_ARRAY(scCases); scNdx++)
-                        {
-                            de::MovePtr<tcu::TestCaseGroup> scGroup(
-                                new tcu::TestCaseGroup(testCtx, scCases[scNdx].name));
-                            for (int colNdx = 0; colNdx < DE_LENGTH_OF_ARRAY(colCases); colNdx++)
-                            {
-                                if (scCases[scNdx].value == SC_BUFFER_VARIABLE_POINTERS ||
-                                    scCases[scNdx].value == SC_WORKGROUP_VARIABLE_POINTERS)
-                                {
-                                    // trim test count
-                                    continue;
-                                }
-
-                                if (colCases[colNdx].value)
-                                {
-                                    // trim test count
-                                    continue;
-                                }
-
-                                AddrMethod addrMethod = (scopeCases[scopeNdx].value == VK_SCOPE_WORKGROUP_KHR) ?
-                                                            ADDR_TENSORLAYOUT :
-                                                            ADDR_LINEAR;
-
-                                CaseDef c = {
-                                    sat ? TT_CONVERT_SAT : TT_CONVERT,      //  TestType testtype;
-                                    (VkScopeKHR)scopeCases[scopeNdx].value, //  VkScopeKHR                      scope;
-                                    2u,                                     //  uint32_t subgroupsPerWorkgroupX;
-                                    2u,                                     //  uint32_t subgroupsPerWorkgroupY;
-                                    4u,                                     //  uint32_t workgroupsX;
-                                    4u,                                     //  uint32_t workgroupsY;
-                                    inputType,                              //  VkComponentTypeKHR inputType;
-                                    outputType,                             //  VkComponentTypeKHR outputType;
-                                    !!colCases[colNdx].value,               //  bool colMajor;
-                                    addrMethod,                             //  AddrMethod addrMethod;
-                                    (StorageClass)scCases[scNdx].value,     //  StorageClass storageClass;
-                                    useType,                                //  UseType useType;
-                                    SUBGROUP_SIZE_NONE,                     //  SubgroupSizeMode subgroupSizeMode;
-                                    computePipelineConstructionType, //  vk::ComputePipelineConstructionType computePipelineConstructionType;
-                                    1,                               //  uint32_t inputComponentCount;
-                                    1,                               //  uint32_t outputComponentCount;
-                                };
-
-                                scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, c));
-                            }
-                            dtGroup->addChild(scGroup.release());
-                        }
-                        ttGroup->addChild(dtGroup.release());
+                        convCases.push_back({TT_CONVERT, CMF_MAINT1, "convert_maint1"});
+                        convCases.push_back({TT_CONVERT_SAT, CMF_MAINT1, "convert_sat_maint1"});
                     }
                 }
-                scopeGroup->addChild(ttGroup.release());
+                else if (useType == UT_KHR_Result)
+                {
+                    // Result-to-A/B conversions can be expressed by either CM2 or CMM1.
+                    convCases.push_back({TT_CONVERT, CMF_NV2, "convert_nv"});
+                    convCases.push_back({TT_CONVERT, CMF_MAINT1, "convert_maint1"});
+                    convCases.push_back({TT_CONVERT_SAT, CMF_NV2, "convert_sat_nv"});
+                    convCases.push_back({TT_CONVERT_SAT, CMF_MAINT1, "convert_sat_maint1"});
+                }
+                else if (useTypeDst == UT_KHR_Result)
+                {
+                    // A/B-to-result conversions are tested through CMM1.
+                    convCases.push_back({TT_CONVERT, CMF_MAINT1, "convert_maint1"});
+                    convCases.push_back({TT_CONVERT_SAT, CMF_MAINT1, "convert_sat_maint1"});
+                }
+
+                if (useType == UT_KHR_Result && useTypeDst == UT_KHR_B)
+                {
+                    // Transpose conversion has separate CM2 and CMM1 entry points.
+                    convCases.push_back({TT_TRANSPOSE_ACC_TO_B, CMF_NV2, "transpose"});
+                    convCases.push_back({TT_TRANSPOSE_ACC_TO_B, CMF_MAINT1, "transpose_maint1"});
+                }
+                if (useType == UT_KHR_Result && useTypeDst == UT_KHR_A)
+                {
+                    convCases.push_back({TT_TRANSPOSE_ACC_TO_A, CMF_MAINT1, "transpose_maint1"});
+                }
+
+                for (const auto &convCase : convCases)
+                {
+                    const TestType testType = convCase.testType;
+                    string name             = convCase.name;
+                    name += string("_dst_") + getUseType(useTypeDst);
+
+                    const string desc = string("OpFConvert/OpSConvert/OpUConvert/OpBitcast");
+                    de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
+
+                    for (int dtNdx1 = 0; dtNdx1 < DE_LENGTH_OF_ARRAY(allTypes); dtNdx1++)
+                    {
+                        for (int dtNdx2 = 0; dtNdx2 < DE_LENGTH_OF_ARRAY(allTypes); dtNdx2++)
+                        {
+                            const VkComponentTypeKHR inputType  = (VkComponentTypeKHR)allTypes[dtNdx1];
+                            const VkComponentTypeKHR outputType = (VkComponentTypeKHR)allTypes[dtNdx2];
+
+                            if (isSaturatedConvertOp(testType))
+                            {
+                                if (inputType == VK_COMPONENT_TYPE_FLOAT_E5M2_NV ||
+                                    inputType == VK_COMPONENT_TYPE_FLOAT_E4M3_NV)
+                                {
+                                    continue;
+                                }
+                                if (outputType != VK_COMPONENT_TYPE_FLOAT_E5M2_NV &&
+                                    outputType != VK_COMPONENT_TYPE_FLOAT_E4M3_NV)
+                                {
+                                    continue;
+                                }
+                            }
+
+                            const string name2 = string("input_") + string(componentTypeInfo.at(inputType).typeName) +
+                                                 string("_output_") + string(componentTypeInfo.at(outputType).typeName);
+                            de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, name2.c_str()));
+                            for (int scNdx = 0; scNdx < DE_LENGTH_OF_ARRAY(scCases); scNdx++)
+                            {
+                                if (scCases[scNdx].value != SC_BUFFER)
+                                {
+                                    // Conversion coverage comes from the type/use/scope/dialect combinations;
+                                    // other storage classes duplicate load/store paths covered by the main tests.
+                                    continue;
+                                }
+
+                                de::MovePtr<tcu::TestCaseGroup> scGroup(
+                                    new tcu::TestCaseGroup(testCtx, scCases[scNdx].name));
+                                for (int colNdx = 0; colNdx < DE_LENGTH_OF_ARRAY(colCases); colNdx++)
+                                {
+                                    if (colCases[colNdx].value)
+                                    {
+                                        // trim test count
+                                        continue;
+                                    }
+
+                                    AddrMethod addrMethod = (scopeCases[scopeNdx].value == VK_SCOPE_WORKGROUP_KHR) ?
+                                                                ADDR_TENSORLAYOUT :
+                                                                ADDR_LINEAR;
+
+                                    CaseDef c = {
+                                        testType, //  TestType testtype;
+                                        (VkScopeKHR)scopeCases[scopeNdx]
+                                            .value,                         //  VkScopeKHR                      scope;
+                                        2u,                                 //  uint32_t subgroupsPerWorkgroupX;
+                                        2u,                                 //  uint32_t subgroupsPerWorkgroupY;
+                                        4u,                                 //  uint32_t workgroupsX;
+                                        4u,                                 //  uint32_t workgroupsY;
+                                        inputType,                          //  VkComponentTypeKHR inputType;
+                                        outputType,                         //  VkComponentTypeKHR outputType;
+                                        !!colCases[colNdx].value,           //  bool colMajor;
+                                        addrMethod,                         //  AddrMethod addrMethod;
+                                        (StorageClass)scCases[scNdx].value, //  StorageClass storageClass;
+                                        useType,                            //  UseType useType;
+                                        useTypeDst,                         //  UseType useType2;
+                                        convCase.coopmatFeature,            //  CoopMatFeature coopmatFeature;
+                                        SUBGROUP_SIZE_NONE,                 //  SubgroupSizeMode subgroupSizeMode;
+                                        computePipelineConstructionType, //  vk::ComputePipelineConstructionType computePipelineConstructionType;
+                                        1,                               //  uint32_t inputComponentCount;
+                                        1,                               //  uint32_t outputComponentCount;
+                                    };
+
+                                    scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, c));
+                                }
+                                dtGroup->addChild(scGroup.release());
+                            }
+                            ttGroup->addChild(dtGroup.release());
+                        }
+                    }
+                    scopeGroup->addChild(ttGroup.release());
+                }
             }
         }
 
@@ -6328,6 +6931,8 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                                     addrMethod,                             //  AddrMethod addrMethod;
                                     (StorageClass)scCases[scNdx].value,     //  StorageClass storageClass;
                                     useType,                                //  UseType useType;
+                                    useType,                                //  UseType useType2;
+                                    CMF_BASE,                               //  CoopMatFeature coopmatFeature;
                                     SUBGROUP_SIZE_NONE,                     //  SubgroupSizeMode subgroupSizeMode;
                                     computePipelineConstructionType, //  vk::ComputePipelineConstructionType computePipelineConstructionType;
                                     inputComponentCount,  //  uint32_t inputComponentCount;
@@ -6642,6 +7247,168 @@ tcu::TestStatus CoopMat64bTestInstance::queuePass(const vkt::QueueData &queueDat
     }
 }
 
+class CoopMatProperties2Test : public vkt::TestCase
+{
+public:
+    CoopMatProperties2Test(tcu::TestContext &testCtx, const std::string &name);
+
+    void checkSupport(Context &context) const override;
+    TestInstance *createInstance(Context &context) const override;
+};
+
+class CoopMatProperties2TestInstance : public vkt::TestInstance
+{
+public:
+    CoopMatProperties2TestInstance(Context &context);
+
+    tcu::TestStatus iterate(void) override;
+};
+
+CoopMatProperties2Test::CoopMatProperties2Test(tcu::TestContext &testCtx, const std::string &name)
+    : TestCase(testCtx, name)
+{
+}
+
+void CoopMatProperties2Test::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_EXT_cooperative_matrix_maintenance1");
+    if (!context.getCooperativeMatrixMaintenance1FeaturesEXT().cooperativeMatrixProperties2)
+        TCU_THROW(NotSupportedError, "cooperativeMatrixProperties2 not supported");
+}
+
+TestInstance *CoopMatProperties2Test::createInstance(Context &context) const
+{
+    return new CoopMatProperties2TestInstance(context);
+}
+
+CoopMatProperties2TestInstance::CoopMatProperties2TestInstance(Context &context) : TestInstance(context)
+{
+}
+
+tcu::TestStatus CoopMatProperties2TestInstance::iterate(void)
+{
+    const InstanceInterface &vki          = m_context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+    const uint32_t subgroupSize           = m_context.getSubgroupProperties().subgroupSize;
+    const auto &cm2Features               = m_context.getCooperativeMatrix2FeaturesNV();
+    const auto &cm2Properties             = m_context.getCooperativeMatrix2PropertiesNV();
+    tcu::TestLog &log                     = m_context.getTestContext().getLog();
+
+    struct TypeCombo
+    {
+        VkComponentTypeKHR AType;
+        VkComponentTypeKHR BType;
+        VkComponentTypeKHR CType;
+        VkComponentTypeKHR ResultType;
+    };
+
+    struct RequiredTypeGroup
+    {
+        std::vector<TypeCombo> alternatives;
+        const char *description;
+    };
+
+    const RequiredTypeGroup requiredTypeGroups[] = {
+        {{{VK_COMPONENT_TYPE_FLOAT16_KHR, VK_COMPONENT_TYPE_FLOAT16_KHR, VK_COMPONENT_TYPE_FLOAT16_KHR,
+           VK_COMPONENT_TYPE_FLOAT16_KHR},
+          {VK_COMPONENT_TYPE_FLOAT16_KHR, VK_COMPONENT_TYPE_FLOAT16_KHR, VK_COMPONENT_TYPE_FLOAT32_KHR,
+           VK_COMPONENT_TYPE_FLOAT32_KHR}},
+         "A=float16, B=float16, C/Result=float16 or float32"},
+        {{{VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_UINT32_KHR,
+           VK_COMPONENT_TYPE_UINT32_KHR},
+          {VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_UINT8_KHR, VK_COMPONENT_TYPE_SINT32_KHR,
+           VK_COMPONENT_TYPE_SINT32_KHR}},
+         "A=uint8, B=uint8, C/Result=uint32 or sint32"},
+        {{{VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_SINT8_KHR, VK_COMPONENT_TYPE_SINT32_KHR,
+           VK_COMPONENT_TYPE_SINT32_KHR}},
+         "A=sint8, B=sint8, C/Result=sint32"},
+    };
+
+    struct QueryParams
+    {
+        VkScopeKHR scope;
+        uint32_t invocations;
+        uint32_t subgroupSize;
+        string description;
+    };
+
+    std::vector<QueryParams> queries = {
+        {VK_SCOPE_SUBGROUP_KHR, 0, 0, "subgroup scope, subgroupSize=0"},
+        {VK_SCOPE_SUBGROUP_KHR, 0, subgroupSize, "subgroup scope, subgroupSize=device default"},
+    };
+
+    if (cm2Features.cooperativeMatrixWorkgroupScope)
+    {
+        const uint32_t maxWGSize = cm2Properties.cooperativeMatrixWorkgroupScopeMaxWorkgroupSize;
+        for (uint32_t invocations = subgroupSize; invocations <= maxWGSize; invocations *= 2)
+        {
+            const string invStr = std::to_string(invocations);
+            queries.push_back({VK_SCOPE_WORKGROUP_KHR, invocations, 0,
+                               "workgroup scope, invocations=" + invStr + ", subgroupSize=0"});
+            queries.push_back({VK_SCOPE_WORKGROUP_KHR, invocations, subgroupSize,
+                               "workgroup scope, invocations=" + invStr + ", subgroupSize=device default"});
+        }
+    }
+
+    bool passed = true;
+
+    for (const auto &query : queries)
+    {
+        VkPhysicalDeviceCooperativeMatrixInfo2EXT info = initVulkanStructure();
+        info.scope                                     = query.scope;
+        info.invocations                               = query.invocations;
+        info.subgroupSize                              = query.subgroupSize;
+        info.flags                                     = 0;
+
+        uint32_t propertyCount = 0;
+        VK_CHECK(vki.getPhysicalDeviceCooperativeMatrixProperties2EXT(physicalDevice, &info, &propertyCount, nullptr));
+
+        if (propertyCount == 0)
+        {
+            log << tcu::TestLog::Message << "FAIL: pPropertyCount is 0 for " << query.description
+                << tcu::TestLog::EndMessage;
+            passed = false;
+            continue;
+        }
+
+        const VkCooperativeMatrixProperties2EXT sample = initVulkanStructure();
+        std::vector<VkCooperativeMatrixProperties2EXT> properties(propertyCount, sample);
+
+        VK_CHECK(vki.getPhysicalDeviceCooperativeMatrixProperties2EXT(physicalDevice, &info, &propertyCount,
+                                                                      properties.data()));
+
+        for (const auto &group : requiredTypeGroups)
+        {
+            bool found = false;
+            for (const auto &alt : group.alternatives)
+            {
+                for (const auto &prop : properties)
+                {
+                    if (prop.AType == alt.AType && prop.BType == alt.BType && prop.CType == alt.CType &&
+                        prop.ResultType == alt.ResultType)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found)
+                    break;
+            }
+            if (!found)
+            {
+                log << tcu::TestLog::Message << "FAIL: Required type combination not found for " << query.description
+                    << ": " << group.description << tcu::TestLog::EndMessage;
+                passed = false;
+            }
+        }
+    }
+
+    if (passed)
+        return tcu::TestStatus::pass("All required properties2 combinations found");
+    else
+        return tcu::TestStatus::fail("Missing required properties2 combinations");
+}
+
 #endif
 
 } // namespace
@@ -6681,6 +7448,10 @@ tcu::TestCaseGroup *createCooperativeMatrixTests(tcu::TestContext &testCtx,
     group64->addChild(new CoopMat64bTest(testCtx, "coopmat_64b_tensorlayout_largeoffset", 2u * 1024 * 1024 * 1024,
                                          5u * 1024 * 1024 * 1024, true, computePipelineConstructionType));
     group->addChild(group64.release());
+
+    de::MovePtr<tcu::TestCaseGroup> groupMaint1(new tcu::TestCaseGroup(testCtx, "maintenance1"));
+    groupMaint1->addChild(new CoopMatProperties2Test(testCtx, "required_type_combinations"));
+    group->addChild(groupMaint1.release());
 #endif
     return group.release();
 }

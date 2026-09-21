@@ -1,0 +1,18 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT": [
+            {
+                "features": [
+                    "cooperativeMatrixProperties2"
+                ],
+                "requirements": [
+                    "VK_EXT_cooperative_matrix_maintenance1"
+                ]
+            }
+        ]
+    }
+}

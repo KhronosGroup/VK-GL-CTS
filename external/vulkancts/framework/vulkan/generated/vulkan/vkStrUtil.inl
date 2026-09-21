@@ -483,6 +483,7 @@ tcu::Format::Bitfield<32>	getCommandPoolCreateFlagsStr					(VkCommandPoolCreateF
 tcu::Format::Bitfield<32>	getCommandPoolResetFlagsStr						(VkCommandPoolResetFlags value);
 tcu::Format::Bitfield<32>	getCompositeAlphaFlagsKHRStr					(VkCompositeAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getConditionalRenderingFlagsEXTStr				(VkConditionalRenderingFlagsEXT value);
+tcu::Format::Bitfield<32>	getCooperativeMatrixFlagsEXTStr					(VkCooperativeMatrixFlagsEXT value);
 tcu::Format::Bitfield<32>	getCullModeFlagsStr								(VkCullModeFlags value);
 tcu::Format::Bitfield<64>	getDataGraphPipelineDispatchFlagsARMStr			(VkDataGraphPipelineDispatchFlagsARM value);
 tcu::Format::Bitfield<64>	getDataGraphPipelineSessionCreateFlagsARMStr	(VkDataGraphPipelineSessionCreateFlagsARM value);
@@ -737,6 +738,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkConditionalRenderingBeginInfo
 std::ostream&	operator<<	(std::ostream& s, const VkConformanceVersion& value);
 std::ostream&	operator<<	(std::ostream& s, const VkConvertCooperativeVectorMatrixInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCooperativeMatrixFlexibleDimensionsPropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCooperativeMatrixProperties2EXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCooperativeMatrixPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCooperativeMatrixPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCooperativeVectorPropertiesNV& value);
@@ -1136,6 +1138,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatr
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrix2PropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrixFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrixFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrixInfo2EXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrixPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrixPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeVectorFeaturesNV& value);
