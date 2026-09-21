@@ -8264,6 +8264,24 @@ public:
     {
     }
 
+    void checkSupport(Context &context) const override
+    {
+        DescriptorHeapTestCaseBase::checkSupport(context);
+
+        if (m_params.spirvTestType == SpirvTestType::AtomicImage2d64Bit)
+        {
+            const VkFormatFeatureFlags requiredFeatures =
+                VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+            const auto formatProperties = getPhysicalDeviceFormatProperties(
+                context.getInstanceInterface(), context.getPhysicalDevice(), VK_FORMAT_R64_UINT);
+
+            if ((formatProperties.optimalTilingFeatures & requiredFeatures) != requiredFeatures)
+            {
+                TCU_THROW(NotSupportedError, "VK_FORMAT_R64_UINT does not support the required transfer features");
+            }
+        }
+    }
+
     TestInstance *createInstance(Context &context) const override
     {
         return new DescriptorHeapTestInstanceSpirv(context, m_params);
