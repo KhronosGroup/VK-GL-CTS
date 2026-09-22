@@ -1994,6 +1994,7 @@ struct GraphicsPipelineWrapper::InternalData
     PipelineRepresentativeFragmentTestCreateInfoWrapper pRepresentativeFragmentTestState;
     PipelineRobustnessCreateInfoWrapper pPipelineRobustnessState;
     PipelineCustomResolveCreateInfoWrapper pPipelineCustomResolve;
+    const void *pFragmentShaderStageNext;
 
     TessellationDomainOriginStatePtr pTessellationDomainOrigin;
     bool useViewportState;
@@ -2196,6 +2197,7 @@ struct GraphicsPipelineWrapper::InternalData
         , pDynamicState                    (nullptr)
         , pRepresentativeFragmentTestState(nullptr)
         , pPipelineRobustnessState          (nullptr)
+        , pFragmentShaderStageNext        (nullptr)
         , pTessellationDomainOrigin        ()
         , useViewportState                (true)
         , useShaderModules                (true)
@@ -2584,6 +2586,16 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setViewportStatePnext(const vo
     DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_PRE_RASTERIZATION_SHADERS));
 
     m_internalData->viewportState.pNext = pNext;
+
+    return *this;
+}
+
+GraphicsPipelineWrapper &GraphicsPipelineWrapper::setFragmentShaderStagePnext(const void *pNext)
+{
+    // The fragment shader stage is set up in fragment shader state, make sure fragment shader state was not setup yet
+    DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_FRAGMENT_SHADER));
+
+    m_internalData->pFragmentShaderStageNext = pNext;
 
     return *this;
 }
@@ -3327,6 +3339,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
                 m_internalData->pipelineShaderStages[stageIndex].stage               = VK_SHADER_STAGE_FRAGMENT_BIT;
                 m_internalData->pipelineShaderStages[stageIndex].module              = shaderModule;
                 m_internalData->pipelineShaderStages[stageIndex].pSpecializationInfo = specializationInfo;
+                m_internalData->pipelineShaderStages[stageIndex].pNext = m_internalData->pFragmentShaderStageNext;
 #ifndef CTS_USES_VULKANSC
                 if (fragmentShaderModuleId.ptr)
                 {
@@ -3644,6 +3657,9 @@ vk::VkShaderCreateInfoEXT GraphicsPipelineWrapper::makeShaderCreateInfo(VkShader
 
     if (stage == VK_SHADER_STAGE_FRAGMENT_BIT && m_internalData->pPipelineCustomResolve.ptr)
         shaderCreateInfo.pNext = m_internalData->pPipelineCustomResolve.ptr;
+
+    if (stage == VK_SHADER_STAGE_FRAGMENT_BIT && m_internalData->pFragmentShaderStageNext)
+        shaderCreateInfo.pNext = m_internalData->pFragmentShaderStageNext;
 
     return shaderCreateInfo;
 }
@@ -4234,7 +4250,9 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
             //   * VUID-VkGraphicsPipelineCreateInfo-layout-07827
             //   * VUID-VkGraphicsPipelineCreateInfo-flags-06729
             //   * VUID-VkGraphicsPipelineCreateInfo-flags-06730
-            DE_ASSERT(m_internalData->monolithicPipelineCreateInfo.layout != VK_NULL_HANDLE);
+            // Only pipelines using VK_EXT_descriptor_heap must have NULL layout
+            DE_ASSERT(m_internalData->monolithicPipelineCreateInfo.layout != VK_NULL_HANDLE ||
+                      (m_internalData->pipelineFlags2 & VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT) != 0);
             m_internalData->finalPipelineCreateInfo.layout = m_internalData->monolithicPipelineCreateInfo.layout;
             m_internalData->finalPipelineCreateInfo.flags  = m_internalData->pipelineFlags;
             m_internalData->finalPipelineCreateInfo.pNext  = &m_internalData->finalPipelineLibraryCreateInfo;

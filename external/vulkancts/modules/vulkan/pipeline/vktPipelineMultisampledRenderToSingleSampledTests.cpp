@@ -210,6 +210,8 @@ struct TestParams
     bool renderToAttachment;
     //!< Whether the attachments are the first face of a cube compatible image instead of a plain 2D image
     bool useCubemapImages;
+    //!< Whether VK_EXT_descriptor_heap is used
+    bool useDescriptorHeap = false;
 
     ImageMemoryType imageMemoryType; //!< Whether the test use AHB images
 
@@ -428,6 +430,18 @@ struct WorkingData
     }
 };
 
+struct HeapObjects
+{
+    Move<VkBuffer> buffer;
+    MovePtr<Allocation> alloc;
+    VkBindHeapInfoEXT bindInfo;
+
+    std::vector<VkDescriptorSetAndBindingMappingEXT> unresolveMappings;
+    std::vector<VkDescriptorSetAndBindingMappingEXT> drawMappings;
+    VkShaderDescriptorSetAndBindingMappingInfoEXT unresolveMappingInfo;
+    VkShaderDescriptorSetAndBindingMappingInfoEXT drawMappingInfo;
+};
+
 // Accumulate objects throughout the test to avoid them getting deleted before the command buffer is submitted and waited on.
 // Speeds up the test by avoiding making multiple submissions and waits.
 class TestObjects
@@ -446,6 +460,7 @@ public:
     std::vector<Move<VkDescriptorSet>> descriptorSets;
     std::vector<RenderPassWrapper> renderPassFramebuffers;
     RenderPassWrapper dataRenderPassFramebuffer;
+    HeapObjects descriptorHeap;
 
 private:
     Context &context;
@@ -632,7 +647,8 @@ MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline(
     const ShaderWrapper fragmentModule, const Blend blend, const DepthTest depth, const StencilTest stencil,
     const uint32_t stencilWriteMask, const uint32_t intWriteMask, const uint32_t subpassNdx,
     const int32_t integerAttachmentLocation, const UVec4 &viewportIn, const UVec4 &scissorIn,
-    const VkSampleCountFlagBits numSamples, const bool garbageAttachment, const bool singleAttachment = false)
+    const VkSampleCountFlagBits numSamples, const bool garbageAttachment, const bool singleAttachment = false,
+    const VkShaderDescriptorSetAndBindingMappingInfoEXT *heapMappings = nullptr)
 {
     std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
@@ -791,6 +807,17 @@ MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline(
 
     MovePtr<GraphicsPipelineWrapper> graphicsPipeline = MovePtr<GraphicsPipelineWrapper>(
         new GraphicsPipelineWrapper(vki, vk, physicalDevice, device, deviceExtensions, pipelineConstructionType, 0u));
+
+    if (heapMappings)
+    {
+        if (!isConstructionTypeShaderObject(pipelineConstructionType))
+            graphicsPipeline->setPipelineCreateFlags2(VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT);
+        else
+            graphicsPipeline->setShaderCreateFlags(VK_SHADER_CREATE_DESCRIPTOR_HEAP_BIT_EXT);
+
+        graphicsPipeline->setFragmentShaderStagePnext(heapMappings);
+    }
+
     graphicsPipeline.get()
         ->setMonolithicPipelineLayout(pipelineLayout)
         .setupVertexInputState(&vertexInputStateInfo, &pipelineInputAssemblyStateInfo)
@@ -2196,6 +2223,11 @@ void checkRequirements(Context &context, TestParams params)
                 }
             }
         }
+    }
+
+    if (params.useDescriptorHeap)
+    {
+        context.requireDeviceFunctionality("VK_EXT_descriptor_heap");
     }
 
     if (params.isMultisampledRenderToSingleSampled)
@@ -6128,6 +6160,25 @@ void initResolveAsInputPrograms(SourceCollections &programCollection, const Test
     initConstantColorVerifyPrograms(programCollection, params);
 }
 
+void pushFragmentConstants(const DeviceInterface &vk, const TestParams &params, TestObjects &testObjects,
+                           const PipelineLayoutWrapper &pipelineLayout, const UVec4 &pushConstants)
+{
+    if (params.useDescriptorHeap)
+    {
+        VkPushDataInfoEXT pushDataInfo = initVulkanStructure();
+        pushDataInfo.offset            = 0;
+        pushDataInfo.data.address      = &pushConstants;
+        pushDataInfo.data.size         = sizeof(pushConstants);
+
+        vk.cmdPushDataEXT(*testObjects.cmdBuffer, &pushDataInfo);
+    }
+    else
+    {
+        vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+                            sizeof(pushConstants), &pushConstants);
+    }
+}
+
 void drawUnresolve(Context &context, const TestParams &params, WorkingData &wd, TestObjects &testObjects,
                    const ShaderWrapper &vertexModule, VkDescriptorSetLayout descriptorSetLayout,
                    const PipelineLayoutWrapper &pipelineLayout,
@@ -6147,52 +6198,59 @@ void drawUnresolve(Context &context, const TestParams &params, WorkingData &wd, 
     // unresolve stencil bit by bit.
     const ShaderWrapper fragmentModule(ShaderWrapper(vk, device, context.getBinaryCollection().get("unresolve"), 0u));
 
+    const VkShaderDescriptorSetAndBindingMappingInfoEXT *descriptorHeapMappings =
+        params.useDescriptorHeap ? &testObjects.descriptorHeap.unresolveMappingInfo : nullptr;
+
     testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
         vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType, pipelineLayout,
         VK_NULL_HANDLE, pipelineRenderingCreateInfo, renderingInputCreateInfo, vertexModule, fragmentModule, Blend::No,
         DepthTest::AlwaysAndWrite, params.useShaderStencilExport ? StencilTest::Replace : StencilTest::No,
         kAllStencilBits, 0, 0, params.perPass[0].intColorLocation, wd.renderArea, wd.renderArea,
-        params.perPass[0].numSamples, params.useGarbageAttachment));
+        params.perPass[0].numSamples, params.useGarbageAttachment, false, descriptorHeapMappings));
 
-    const VkDescriptorImageInfo color1Info =
-        makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.floatResolve1.view, wd.resolveColorLayout);
-    const VkDescriptorImageInfo color2Info =
-        makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.floatResolve2.view, wd.resolveColorLayout);
-    const VkDescriptorImageInfo color3Info =
-        makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.intResolve.view, wd.resolveColorLayout);
-    const VkDescriptorImageInfo depthInfo = makeDescriptorImageInfo(
-        VK_NULL_HANDLE,
-        isDepthFormat(params.depthStencilFormat) ? *wd.depthOnlyResolveImageView : *wd.stencilOnlyResolveImageView,
-        wd.resolveDepthStencilLayout);
-    const VkDescriptorImageInfo stencilInfo = makeDescriptorImageInfo(
-        VK_NULL_HANDLE,
-        isStencilFormat(params.depthStencilFormat) ? *wd.stencilOnlyResolveImageView : *wd.depthOnlyResolveImageView,
-        wd.resolveDepthStencilLayout);
+    if (!params.useDescriptorHeap)
+    {
+        const VkDescriptorImageInfo color1Info =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.floatResolve1.view, wd.resolveColorLayout);
+        const VkDescriptorImageInfo color2Info =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.floatResolve2.view, wd.resolveColorLayout);
+        const VkDescriptorImageInfo color3Info =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.intResolve.view, wd.resolveColorLayout);
+        const VkDescriptorImageInfo depthInfo = makeDescriptorImageInfo(
+            VK_NULL_HANDLE,
+            isDepthFormat(params.depthStencilFormat) ? *wd.depthOnlyResolveImageView : *wd.stencilOnlyResolveImageView,
+            wd.resolveDepthStencilLayout);
+        const VkDescriptorImageInfo stencilInfo =
+            makeDescriptorImageInfo(VK_NULL_HANDLE,
+                                    isStencilFormat(params.depthStencilFormat) ? *wd.stencilOnlyResolveImageView :
+                                                                                 *wd.depthOnlyResolveImageView,
+                                    wd.resolveDepthStencilLayout);
 
-    testObjects.descriptorSets.emplace_back(
-        makeDescriptorSet(vk, device, *testObjects.descriptorPools.back(), descriptorSetLayout));
+        testObjects.descriptorSets.emplace_back(
+            makeDescriptorSet(vk, device, *testObjects.descriptorPools.back(), descriptorSetLayout));
 
-    DescriptorSetUpdateBuilder builder;
+        DescriptorSetUpdateBuilder builder;
 
-    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(0u),
-                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color1Info);
-    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(1u),
-                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color2Info);
-    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(2u),
-                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color3Info);
-    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(3u),
-                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &depthInfo);
-    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(4u),
-                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &stencilInfo);
+        builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(0u),
+                            VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color1Info);
+        builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(1u),
+                            VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color2Info);
+        builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(2u),
+                            VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color3Info);
+        builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(3u),
+                            VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &depthInfo);
+        builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(4u),
+                            VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &stencilInfo);
 
-    builder.update(vk, device);
+        builder.update(vk, device);
+    }
 
     UVec4 pushConstants(0, 0, 0, 0);
-    vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4),
-                        &pushConstants);
+    pushFragmentConstants(vk, params, testObjects, pipelineLayout, pushConstants);
     (*testObjects.graphicsPipelines.back()).bind(*testObjects.cmdBuffer);
-    vk.cmdBindDescriptorSets(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                             &testObjects.descriptorSets.back().get(), 0u, nullptr);
+    if (!params.useDescriptorHeap)
+        vk.cmdBindDescriptorSets(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
+                                 &testObjects.descriptorSets.back().get(), 0u, nullptr);
     vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 
     if (isStencilFormat(params.depthStencilFormat) && !params.useShaderStencilExport &&
@@ -6209,11 +6267,10 @@ void drawUnresolve(Context &context, const TestParams &params, WorkingData &wd, 
                 pipelineLayout, VK_NULL_HANDLE, pipelineRenderingCreateInfo, renderingInputCreateInfo, vertexModule,
                 fragmentModuleStencil, Blend::No, DepthTest::No, StencilTest::Replace, 1u << bit, 0, 0,
                 params.perPass[0].intColorLocation, wd.renderArea, wd.renderArea, params.perPass[0].numSamples,
-                params.useGarbageAttachment));
+                params.useGarbageAttachment, false, descriptorHeapMappings));
 
             pushConstants[0] = bit;
-            vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4),
-                                &pushConstants);
+            pushFragmentConstants(vk, params, testObjects, pipelineLayout, pushConstants);
             (*testObjects.graphicsPipelines.back()).bind(*testObjects.cmdBuffer);
             vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
         }
@@ -6237,46 +6294,56 @@ void drawBlendIntoUnresolvedValues(Context &context, const TestParams &params, W
     // that rendering was indeed done multisampled.
     const ShaderWrapper fragmentModule(ShaderWrapper(vk, device, context.getBinaryCollection().get("frag"), 0u));
 
+    const VkShaderDescriptorSetAndBindingMappingInfoEXT *descriptorHeapMappings =
+        params.useDescriptorHeap ? &testObjects.descriptorHeap.drawMappingInfo : nullptr;
+
     testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
         vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType, pipelineLayout,
         VK_NULL_HANDLE, pipelineRenderingCreateInfo, renderingInputCreateInfo, vertexModule, fragmentModule, Blend::No,
         DepthTest::AlwaysAndWrite, StencilTest::IncrementAndClamp, kAllStencilBits, 0, 0,
         params.perPass[0].intColorLocation, wd.renderArea, wd.renderArea, params.perPass[0].numSamples,
-        params.useGarbageAttachment));
+        params.useGarbageAttachment, false, descriptorHeapMappings));
 
-    const VkDescriptorImageInfo color1Info =
-        makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.floatColor1.view, wd.colorLayout);
-    const VkDescriptorImageInfo color2Info =
-        makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.floatColor2.view, wd.colorLayout);
-    const VkDescriptorImageInfo color3Info = makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.intColor.view, wd.colorLayout);
-    const VkDescriptorImageInfo depthInfo  = makeDescriptorImageInfo(
-        VK_NULL_HANDLE, isDepthFormat(params.depthStencilFormat) ? *wd.depthOnlyImageView : *wd.stencilOnlyImageView,
-        wd.depthStencilLayout);
-    const VkDescriptorImageInfo stencilInfo = makeDescriptorImageInfo(
-        VK_NULL_HANDLE, isStencilFormat(params.depthStencilFormat) ? *wd.stencilOnlyImageView : *wd.depthOnlyImageView,
-        wd.depthStencilLayout);
+    if (!params.useDescriptorHeap)
+    {
+        const VkDescriptorImageInfo color1Info =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.floatColor1.view, wd.colorLayout);
+        const VkDescriptorImageInfo color2Info =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.floatColor2.view, wd.colorLayout);
+        const VkDescriptorImageInfo color3Info =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.intColor.view, wd.colorLayout);
+        const VkDescriptorImageInfo depthInfo = makeDescriptorImageInfo(
+            VK_NULL_HANDLE,
+            isDepthFormat(params.depthStencilFormat) ? *wd.depthOnlyImageView : *wd.stencilOnlyImageView,
+            wd.depthStencilLayout);
+        const VkDescriptorImageInfo stencilInfo = makeDescriptorImageInfo(
+            VK_NULL_HANDLE,
+            isStencilFormat(params.depthStencilFormat) ? *wd.stencilOnlyImageView : *wd.depthOnlyImageView,
+            wd.depthStencilLayout);
 
-    testObjects.descriptorSets.emplace_back(
-        makeDescriptorSet(vk, device, *testObjects.descriptorPools.back(), descriptorSetLayout));
+        testObjects.descriptorSets.emplace_back(
+            makeDescriptorSet(vk, device, *testObjects.descriptorPools.back(), descriptorSetLayout));
 
-    DescriptorSetUpdateBuilder builder;
+        DescriptorSetUpdateBuilder builder;
 
-    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(0u),
-                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color1Info);
-    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(1u),
-                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color2Info);
-    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(2u),
-                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color3Info);
-    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(3u),
-                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &depthInfo);
-    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(4u),
-                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &stencilInfo);
+        builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(0u),
+                            VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color1Info);
+        builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(1u),
+                            VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color2Info);
+        builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(2u),
+                            VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color3Info);
+        builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(3u),
+                            VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &depthInfo);
+        builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(4u),
+                            VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &stencilInfo);
 
-    builder.update(vk, device);
+        builder.update(vk, device);
+    }
 
     (*testObjects.graphicsPipelines.back()).bind(*testObjects.cmdBuffer);
-    vk.cmdBindDescriptorSets(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                             &testObjects.descriptorSets.back().get(), 0u, nullptr);
+    if (!params.useDescriptorHeap)
+        vk.cmdBindDescriptorSets(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
+                                 &testObjects.descriptorSets.back().get(), 0u, nullptr);
     vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
 }
 
@@ -6306,6 +6373,149 @@ void dispatchVerifyResolveAsInput(Context &context, const TestParams &params, Wo
     invalidateAlloc(vk, device, *wd.verificationBufferAlloc);
 }
 
+VkImageViewCreateInfo makeInputAttachmentViewCreateInfo(const VkImage image, const VkFormat format,
+                                                        const VkImageAspectFlags aspect)
+{
+    VkImageViewCreateInfo createInfo = initVulkanStructure();
+    createInfo.image                 = image;
+    createInfo.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+    createInfo.format                = format;
+    createInfo.components            = makeComponentMappingRGBA();
+    createInfo.subresourceRange      = makeImageSubresourceRange(aspect, 0u, 1u, 0u, 1u);
+    return createInfo;
+}
+
+VkDeviceSize alignUp(VkDeviceSize value, VkDeviceSize alignment)
+{
+    DE_ASSERT(deIsPowerOfTwo64(alignment));
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+
+void createDescriptorHeap(Context &context, const TestParams &params, WorkingData &wd, TestObjects &testObjects)
+{
+    const DeviceInterface &vk = context.getDeviceInterface();
+    const VkDevice device     = context.getDevice();
+    const auto &heapProps     = context.getDescriptorHeapPropertiesEXT();
+    HeapObjects &heap         = testObjects.descriptorHeap;
+
+    const bool hasDepth                    = isDepthFormat(params.depthStencilFormat);
+    const bool hasStencil                  = isStencilFormat(params.depthStencilFormat);
+    const VkImageAspectFlags depthAspect   = hasDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT;
+    const VkImageAspectFlags stencilAspect = hasStencil ? VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_DEPTH_BIT;
+
+    const std::vector<std::vector<VkImageViewCreateInfo>> viewCreateInfos = {
+        {
+            makeInputAttachmentViewCreateInfo(*wd.floatResolve1.image, params.floatColor1Format,
+                                              VK_IMAGE_ASPECT_COLOR_BIT),
+            makeInputAttachmentViewCreateInfo(*wd.floatResolve2.image, params.floatColor2Format,
+                                              VK_IMAGE_ASPECT_COLOR_BIT),
+            makeInputAttachmentViewCreateInfo(*wd.intResolve.image, params.intColorFormat, VK_IMAGE_ASPECT_COLOR_BIT),
+            makeInputAttachmentViewCreateInfo(*wd.depthStencilResolve.image, params.depthStencilFormat, depthAspect),
+            makeInputAttachmentViewCreateInfo(*wd.depthStencilResolve.image, params.depthStencilFormat, stencilAspect),
+        },
+        {
+            makeInputAttachmentViewCreateInfo(*wd.floatColor1.image, params.floatColor1Format,
+                                              VK_IMAGE_ASPECT_COLOR_BIT),
+            makeInputAttachmentViewCreateInfo(*wd.floatColor2.image, params.floatColor2Format,
+                                              VK_IMAGE_ASPECT_COLOR_BIT),
+            makeInputAttachmentViewCreateInfo(*wd.intColor.image, params.intColorFormat, VK_IMAGE_ASPECT_COLOR_BIT),
+            makeInputAttachmentViewCreateInfo(*wd.depthStencil.image, params.depthStencilFormat, depthAspect),
+            makeInputAttachmentViewCreateInfo(*wd.depthStencil.image, params.depthStencilFormat, stencilAspect),
+        },
+    };
+
+    const std::vector<VkImageLayout> colorLayouts        = {wd.resolveColorLayout, wd.colorLayout};
+    const std::vector<VkImageLayout> depthStencilLayouts = {wd.resolveDepthStencilLayout, wd.depthStencilLayout};
+
+    const uint32_t groupCount      = static_cast<uint32_t>(viewCreateInfos.size());
+    const uint32_t bindingCount    = static_cast<uint32_t>(viewCreateInfos[0].size());
+    const uint32_t descriptorCount = groupCount * bindingCount;
+
+    const VkDeviceSize descriptorStride = alignUp(heapProps.imageDescriptorSize, heapProps.imageDescriptorAlignment);
+    const VkDeviceSize userSize         = alignUp(descriptorCount * descriptorStride, heapProps.resourceHeapAlignment);
+    const VkDeviceSize heapSize         = userSize + heapProps.minResourceHeapReservedRange;
+
+    const VkBufferUsageFlags2KHR heapUsage =
+        VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
+
+    VkBufferUsageFlags2CreateInfoKHR heapUsageFlags2 = initVulkanStructure();
+    heapUsageFlags2.usage                            = heapUsage;
+
+    VkBufferCreateInfo heapBufferInfo = initVulkanStructure(&heapUsageFlags2);
+    heapBufferInfo.size               = heapSize;
+
+    heap.buffer = createBuffer(vk, device, &heapBufferInfo);
+    heap.alloc =
+        context.getDefaultAllocator().allocate(getBufferMemoryRequirements(vk, device, *heap.buffer),
+                                               MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    VK_CHECK(vk.bindBufferMemory(device, *heap.buffer, heap.alloc->getMemory(), heap.alloc->getOffset()));
+
+    VkBufferDeviceAddressInfo heapAddressInfo = initVulkanStructure();
+    heapAddressInfo.buffer                    = *heap.buffer;
+
+    heap.bindInfo                     = initVulkanStructure();
+    heap.bindInfo.heapRange.address   = vk.getBufferDeviceAddress(device, &heapAddressInfo);
+    heap.bindInfo.heapRange.size      = heapSize;
+    heap.bindInfo.reservedRangeOffset = userSize;
+    heap.bindInfo.reservedRangeSize   = heapProps.minResourceHeapReservedRange;
+
+    uint8_t *heapHostPtr = static_cast<uint8_t *>(heap.alloc->getHostPtr());
+
+    for (uint32_t group = 0; group < groupCount; ++group)
+    {
+        for (uint32_t binding = 0; binding < bindingCount; ++binding)
+        {
+            const uint32_t descriptorNdx = group * bindingCount + binding;
+            const bool isDepthStencil    = binding >= 3;
+
+            VkImageDescriptorInfoEXT imageInfo = initVulkanStructure();
+            imageInfo.pView                    = &viewCreateInfos[group][binding];
+            imageInfo.layout                   = isDepthStencil ? depthStencilLayouts[group] : colorLayouts[group];
+
+            VkResourceDescriptorInfoEXT descriptorInfo = initVulkanStructure();
+            descriptorInfo.type                        = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+            descriptorInfo.data.pImage                 = &imageInfo;
+
+            VkHostAddressRangeEXT descriptorRange{};
+            descriptorRange.address = heapHostPtr + descriptorNdx * descriptorStride;
+            descriptorRange.size    = static_cast<size_t>(descriptorStride);
+
+            VK_CHECK(vk.writeResourceDescriptorsEXT(device, 1u, &descriptorInfo, &descriptorRange));
+        }
+    }
+
+    flushAlloc(vk, device, *heap.alloc);
+
+    for (uint32_t group = 0; group < groupCount; ++group)
+    {
+        std::vector<VkDescriptorSetAndBindingMappingEXT> &mappings =
+            group == 0 ? heap.unresolveMappings : heap.drawMappings;
+        mappings.resize(bindingCount);
+
+        for (uint32_t binding = 0; binding < bindingCount; ++binding)
+        {
+            VkDescriptorSetAndBindingMappingEXT &mapping = mappings[binding];
+
+            mapping               = initVulkanStructure();
+            mapping.descriptorSet = 0;
+            mapping.firstBinding  = binding;
+            mapping.bindingCount  = 1;
+            mapping.resourceMask  = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+            mapping.source        = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+            mapping.sourceData.constantOffset.heapOffset =
+                static_cast<uint32_t>((group * bindingCount + binding) * descriptorStride);
+        }
+    }
+
+    heap.unresolveMappingInfo              = initVulkanStructure();
+    heap.unresolveMappingInfo.mappingCount = static_cast<uint32_t>(heap.unresolveMappings.size());
+    heap.unresolveMappingInfo.pMappings    = heap.unresolveMappings.data();
+
+    heap.drawMappingInfo              = initVulkanStructure();
+    heap.drawMappingInfo.mappingCount = static_cast<uint32_t>(heap.drawMappings.size());
+    heap.drawMappingInfo.pMappings    = heap.drawMappings.data();
+}
+
 void unresolveDrawAndResolve(Context &context, const TestParams &params, WorkingData &wd, TestObjects &testObjects)
 {
     const DeviceInterface &vk = context.getDeviceInterface();
@@ -6321,32 +6531,41 @@ void unresolveDrawAndResolve(Context &context, const TestParams &params, Working
 
     // The first draw call unresolves color and depth values.  If VK_EXT_shader_stencil_export is
     // supported, it will also unresolve stencil.
-    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
-        DescriptorSetLayoutBuilder()
-            .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
-            .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
-            .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
-            .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
-            .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
-            .build(vk, device));
+    Move<VkDescriptorSetLayout> descriptorSetLayout;
+    PipelineLayoutWrapper pipelineLayout;
 
-    testObjects.descriptorPools.emplace_back(
-        DescriptorPoolBuilder()
-            .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2u)
-            .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2u)
-            .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2u)
-            .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2u)
-            .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2u)
-            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u));
+    if (params.useDescriptorHeap)
+    {
+        createDescriptorHeap(context, params, wd, testObjects);
+    }
+    else
+    {
+        descriptorSetLayout = DescriptorSetLayoutBuilder()
+                                  .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
+                                  .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
+                                  .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
+                                  .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
+                                  .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
+                                  .build(vk, device);
 
-    const VkPushConstantRange &pushConstantRange = {
-        VK_SHADER_STAGE_FRAGMENT_BIT,         // VkShaderStageFlags    stageFlags;
-        0,                                    // uint32_t              offset;
-        static_cast<uint32_t>(sizeof(UVec4)), // uint32_t              size;
-    };
+        testObjects.descriptorPools.emplace_back(
+            DescriptorPoolBuilder()
+                .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2u)
+                .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2u)
+                .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2u)
+                .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2u)
+                .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2u)
+                .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u));
 
-    const PipelineLayoutWrapper pipelineLayout(params.pipelineConstructionType, vk, device, 1, &*descriptorSetLayout, 1,
+        const VkPushConstantRange &pushConstantRange = {
+            VK_SHADER_STAGE_FRAGMENT_BIT,         // VkShaderStageFlags    stageFlags;
+            0,                                    // uint32_t              offset;
+            static_cast<uint32_t>(sizeof(UVec4)), // uint32_t              size;
+        };
+
+        pipelineLayout = PipelineLayoutWrapper(params.pipelineConstructionType, vk, device, 1, &*descriptorSetLayout, 1,
                                                &pushConstantRange);
+    }
 
     std::vector<VkImage> images;
     std::vector<VkImageView> attachments;
@@ -6387,6 +6606,9 @@ void unresolveDrawAndResolve(Context &context, const TestParams &params, Working
         pipelineRenderingCreateInfo.depthAttachmentFormat = params.depthStencilFormat;
     if (isStencilFormat(params.depthStencilFormat))
         pipelineRenderingCreateInfo.stencilAttachmentFormat = params.depthStencilFormat;
+
+    if (params.useDescriptorHeap)
+        vk.cmdBindResourceHeapEXT(*testObjects.cmdBuffer, &testObjects.descriptorHeap.bindInfo);
 
     startRendering(context, params, wd, testObjects, static_cast<uint32_t>(colorAttachmentFormats.size()),
                    colorAttachmentInfos, depthAttachmentInfo, stencilAttachmentInfo, 0);
@@ -7090,6 +7312,12 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                             addFunctionCaseWithPrograms(group.get(), caseName.c_str(), checkRequirements,
                                                         initResolveAsInputPrograms, testResolveAsInput, testParams);
 
+                            testParams.useDescriptorHeap = true;
+                            addFunctionCaseWithPrograms(group.get(), (caseName + "_descriptor_heap").c_str(),
+                                                        checkRequirements, initResolveAsInputPrograms,
+                                                        testResolveAsInput, testParams);
+                            testParams.useDescriptorHeap = false;
+
                             if (isStencilFormat(depthStencilFormat))
                             {
                                 testParams.useShaderStencilExport = true;
@@ -7097,6 +7325,12 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                                 addFunctionCaseWithPrograms(group.get(), (caseName + "_with_stencil_export").c_str(),
                                                             checkRequirements, initResolveAsInputPrograms,
                                                             testResolveAsInput, testParams);
+
+                                testParams.useDescriptorHeap = true;
+                                addFunctionCaseWithPrograms(
+                                    group.get(), (caseName + "_with_stencil_export_descriptor_heap").c_str(),
+                                    checkRequirements, initResolveAsInputPrograms, testResolveAsInput, testParams);
+                                testParams.useDescriptorHeap = false;
                             }
                         }
 
@@ -7112,6 +7346,12 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
 
                         addFunctionCaseWithPrograms(group.get(), (caseName + "_no_ds_read").c_str(), checkRequirements,
                                                     initResolveAsInputPrograms, testResolveAsInput, testParams);
+
+                        testParams.useDescriptorHeap = true;
+                        addFunctionCaseWithPrograms(group.get(), (caseName + "_no_ds_read_descriptor_heap").c_str(),
+                                                    checkRequirements, initResolveAsInputPrograms, testResolveAsInput,
+                                                    testParams);
+                        testParams.useDescriptorHeap = false;
                     }
 
         rootGroup->addChild(group.release());
