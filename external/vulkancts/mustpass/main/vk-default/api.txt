@@ -206391,6 +206391,7 @@ dEQP-VK.api.device_init.create_device_queue2_all_families.basic
 dEQP-VK.api.device_init.create_device_queue2_all_families_protected.basic
 dEQP-VK.api.device_init.create_device_queue2_all_protected.basic
 dEQP-VK.api.device_init.create_device_queue2_all_unprotected.basic
+dEQP-VK.api.device_init.create_device_queue2_internally_synchronized_split.basic
 dEQP-VK.api.device_init.create_device_queue2_split.basic
 dEQP-VK.api.device_init.create_device_queue2_two_queues.basic
 dEQP-VK.api.device_init.create_device_queue_priorities.basic
