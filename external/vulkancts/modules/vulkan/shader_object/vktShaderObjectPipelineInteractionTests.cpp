@@ -54,6 +54,7 @@ enum TestType
     SHADER_OBJECT_MIN_PIPELINE,
     COMPUTE_SHADER_OBJECT_MIN_PIPELINE,
     SHADER_OBJECT_COMPUTE_PIPELINE,
+    REBIND_PIPELINE,
 };
 
 struct TestParams
@@ -122,6 +123,8 @@ uint32_t ShaderObjectPipelineInteractionInstance::getDrawCount(void)
     case COMPUTE_SHADER_OBJECT_MIN_PIPELINE:
         return 1;
     case SHADER_OBJECT_COMPUTE_PIPELINE:
+        return 1;
+    case REBIND_PIPELINE:
         return 1;
     }
     return 0;
@@ -594,7 +597,11 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline1);
     }
 
-    if (m_params.testType != COMPUTE_SHADER_OBJECT_MIN_PIPELINE && m_params.testType != SHADER_OBJECT_COMPUTE_PIPELINE)
+    const bool beginRenderingInTest = m_params.testType == COMPUTE_SHADER_OBJECT_MIN_PIPELINE ||
+                                      m_params.testType == SHADER_OBJECT_COMPUTE_PIPELINE ||
+                                      m_params.testType == REBIND_PIPELINE;
+
+    if (!beginRenderingInTest)
         vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL,
                            vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
 
@@ -730,8 +737,20 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
         vk.cmdDispatch(*cmdBuffer, dispatch_x_count, 1, 1);
     }
+    else if (m_params.testType == REBIND_PIPELINE)
+    {
+        vk::VkShaderStageFlagBits stages[] = {vk::VK_SHADER_STAGE_COMPUTE_BIT};
+        vk.cmdBindShadersEXT(*cmdBuffer, 1, stages, &*compShader);
 
-    if (m_params.testType != COMPUTE_SHADER_OBJECT_MIN_PIPELINE && m_params.testType != SHADER_OBJECT_COMPUTE_PIPELINE)
+        vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline1);
+
+        vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL,
+                           vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
+        vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
+        vk::endRendering(vk, *cmdBuffer);
+    }
+
+    if (!beginRenderingInTest)
         vk::endRendering(vk, *cmdBuffer);
 
     if (m_params.testType == COMPUTE_SHADER_OBJECT_MIN_PIPELINE || m_params.testType == SHADER_OBJECT_COMPUTE_PIPELINE)
@@ -1549,6 +1568,7 @@ tcu::TestCaseGroup *createShaderObjectPipelineInteractionTests(tcu::TestContext 
         {RENDER_PASS_PIPELINE_SHADER_OBJECT_AFTER_BEGIN, "render_pass_pipeline_shader_object_after_begin"},
         {COMPUTE_SHADER_OBJECT_MIN_PIPELINE, "compute_shader_object_min_pipeline"},
         {SHADER_OBJECT_COMPUTE_PIPELINE, "shader_object_compute_pipeline"},
+        {REBIND_PIPELINE, "rebind_pipeline"},
     };
 
     for (const auto &test : tests)
