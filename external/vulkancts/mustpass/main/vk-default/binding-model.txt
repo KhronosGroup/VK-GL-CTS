@@ -10958,6 +10958,7 @@ dEQP-VK.binding_model.descriptor_heap.resource_masking.input_attachment_read_onl
 dEQP-VK.binding_model.descriptor_heap.resource_masking.input_attachment_read_write
 dEQP-VK.binding_model.descriptor_heap.resource_masking.resource_masking
 dEQP-VK.binding_model.descriptor_heap.sampler_heap_access.compute
+dEQP-VK.binding_model.descriptor_heap.sampler_heap_access.embedded_reserved_range
 dEQP-VK.binding_model.descriptor_heap.sampler_heap_access.graphics
 dEQP-VK.binding_model.descriptor_heap.sampler_heap_access.untyped_sampler
 dEQP-VK.binding_model.descriptor_heap.sampler_heap_access.untyped_texture

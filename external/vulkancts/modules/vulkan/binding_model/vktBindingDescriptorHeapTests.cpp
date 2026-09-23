@@ -15117,6 +15117,305 @@ tcu::TestStatus DescriptorHeapTestInstanceSamplerHeapAccess::iterate()
     return tcu::TestStatus::pass("Pass");
 }
 
+class DescriptorHeapTestInstanceEmbeddedReservedRange final : public DescriptorHeapTestInstanceBase
+{
+public:
+    explicit DescriptorHeapTestInstanceEmbeddedReservedRange(Context &context, const TestParams &params)
+        : DescriptorHeapTestInstanceBase(context, params)
+        , m_params(params)
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    Move<VkPipeline> makePipeline(VkShaderModule module, const VkSamplerCreateInfo *embeddedSampler,
+                                  uint32_t samplerHeapOffset, uint32_t pushAddressOffset) const;
+
+    TestParams m_params;
+};
+
+Move<VkPipeline> DescriptorHeapTestInstanceEmbeddedReservedRange::makePipeline(
+    VkShaderModule module, const VkSamplerCreateInfo *embeddedSampler, uint32_t samplerHeapOffset,
+    uint32_t pushAddressOffset) const
+{
+    const auto &vkd = m_device.getDriver();
+
+    VkDescriptorSetAndBindingMappingEXT mappings[2];
+    mappings[0]                                            = initVulkanStructure();
+    mappings[0].descriptorSet                              = 0u;
+    mappings[0].firstBinding                               = 0u;
+    mappings[0].bindingCount                               = 1u;
+    mappings[0].resourceMask                               = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    mappings[0].source                                     = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mappings[0].sourceData.constantOffset.heapOffset       = 0u;
+    mappings[0].sourceData.constantOffset.heapArrayStride  = 0u;
+    mappings[0].sourceData.constantOffset.pEmbeddedSampler = embeddedSampler;
+    mappings[0].sourceData.constantOffset.samplerHeapOffset      = samplerHeapOffset;
+    mappings[0].sourceData.constantOffset.samplerHeapArrayStride = 0u;
+    mappings[1]                                                  = initVulkanStructure();
+    mappings[1].descriptorSet                                    = 0u;
+    mappings[1].firstBinding                                     = 1u;
+    mappings[1].bindingCount                                     = 1u;
+    mappings[1].resourceMask                                     = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    mappings[1].source                                           = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT;
+    mappings[1].sourceData.pushAddressOffset                     = pushAddressOffset;
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+    mappingInfo.mappingCount                                  = 2u;
+    mappingInfo.pMappings                                     = mappings;
+
+    VkPipelineCreateFlags2CreateInfoKHR pipelineFlags = initVulkanStructure();
+    pipelineFlags.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+    VkComputePipelineCreateInfo pipelineCreateInfo = initVulkanStructure(&pipelineFlags);
+    pipelineCreateInfo.stage                       = initVulkanStructure(&mappingInfo);
+    pipelineCreateInfo.stage.stage                 = VK_SHADER_STAGE_COMPUTE_BIT;
+    pipelineCreateInfo.stage.module                = module;
+    pipelineCreateInfo.stage.pName                 = "main";
+
+    return createComputePipeline(vkd, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
+}
+
+tcu::TestStatus DescriptorHeapTestInstanceEmbeddedReservedRange::iterate()
+{
+    const auto &vkd             = m_device.getDriver();
+    const auto device           = *m_device;
+    const auto queueFamilyIndex = m_queueFamilyIndex;
+    tcu::TestLog &log           = m_context.getTestContext().getLog();
+
+    const auto &props = m_descriptorHeapProperties;
+    if (props.minSamplerHeapReservedRange == props.minSamplerHeapReservedRangeWithEmbedded)
+        return tcu::TestStatus::pass("embedded and non-embedded limits are equal");
+
+    const uint32_t imageSize      = 2u;
+    const uint32_t outputCount    = imageSize * imageSize;
+    const VkFormat format         = VK_FORMAT_R32G32B32A32_SFLOAT;
+    const VkDeviceSize outputSize = outputCount * sizeof(tcu::Vec4);
+
+    const VkDeviceSize samplerStride         = getSamplerDescriptorStride(props);
+    const VkDeviceSize imageDescriptorStride = getImageDescriptorStride(props);
+    const auto subresourceRange              = makeDefaultImageSubresourceRange();
+
+    std::vector<tcu::Vec4> expected;
+    for (uint32_t i = 0; i < outputCount; ++i)
+        expected.push_back(tcu::Vec4(0.125f * float(i + 1), 0.25f, 0.5f * float(i % 2), 0.75f));
+
+    const VkDeviceSize heap1ReservedOffset = alignUp(samplerStride, props.samplerHeapAlignment);
+    const VkDeviceSize heap1SamplerOffset  = heap1ReservedOffset - samplerStride;
+    const VkDeviceSize requiredSize        = de::max(heap1ReservedOffset + props.minSamplerHeapReservedRange,
+                                                     props.minSamplerHeapReservedRangeWithEmbedded + samplerStride);
+    const VkDeviceSize samplerHeapSize     = alignUp(requiredSize, props.samplerHeapAlignment);
+
+    const auto heapUsage = VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
+    auto samplerHeap1    = createBufferAndMemory(samplerHeapSize, heapUsage);
+    auto samplerHeap2    = createBufferAndMemory(samplerHeapSize, heapUsage);
+
+    const VkDeviceSize resourceReservedOffset = alignUp(imageDescriptorStride, props.resourceHeapAlignment);
+    const VkDeviceSize resourceHeapSize       = resourceReservedOffset + props.minResourceHeapReservedRange;
+    auto resourceHeap                         = createBufferAndMemory(resourceHeapSize, heapUsage);
+
+    const auto outputUsage = VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
+    const VkDeviceSize outputBufferSize = 2u * outputSize;
+    auto outputBuffer                   = createBufferAndMemory(outputBufferSize, outputUsage);
+    deMemset(outputBuffer->memory->getHostPtr(), 0, static_cast<size_t>(outputBufferSize));
+    flushAlloc(vkd, device, *outputBuffer->memory);
+
+    auto stagingBuffer = createBufferAndMemory(outputSize, VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT_KHR);
+    deMemcpy(stagingBuffer->memory->getHostPtr(), expected.data(), static_cast<size_t>(outputSize));
+    flushAlloc(vkd, device, *stagingBuffer->memory);
+
+    VkImageCreateInfo imageCreateInfo = initVulkanStructure();
+    imageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.format            = format;
+    imageCreateInfo.extent            = {imageSize, imageSize, 1u};
+    imageCreateInfo.mipLevels         = 1u;
+    imageCreateInfo.arrayLayers       = 1u;
+    imageCreateInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.usage             = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    auto image                        = createImageAndMemory(imageCreateInfo);
+
+    VkImageViewCreateInfo imageViewCreateInfo = initVulkanStructure();
+    imageViewCreateInfo.image                 = *image->image;
+    imageViewCreateInfo.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+    imageViewCreateInfo.format                = format;
+    imageViewCreateInfo.components            = makeComponentMappingIdentity();
+    imageViewCreateInfo.subresourceRange      = subresourceRange;
+
+    VkImageDescriptorInfoEXT imageDescriptorInfo = initVulkanStructure();
+    imageDescriptorInfo.pView                    = &imageViewCreateInfo;
+    imageDescriptorInfo.layout                   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    VkResourceDescriptorInfoEXT resourceInfo = initVulkanStructure();
+    resourceInfo.type                        = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    resourceInfo.data.pImage                 = &imageDescriptorInfo;
+
+    VkHostAddressRangeEXT resourceHostRange{};
+    resourceHostRange.address = resourceHeap->memory->getHostPtr();
+    resourceHostRange.size    = static_cast<size_t>(imageDescriptorStride);
+    VK_CHECK(vkd.writeResourceDescriptorsEXT(device, 1u, &resourceInfo, &resourceHostRange));
+    flushAlloc(vkd, device, *resourceHeap->memory);
+
+    VkSamplerCreateInfo samplerCreateInfo     = initVulkanStructure();
+    samplerCreateInfo.magFilter               = VK_FILTER_NEAREST;
+    samplerCreateInfo.minFilter               = VK_FILTER_NEAREST;
+    samplerCreateInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+    samplerCreateInfo.addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerCreateInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerCreateInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerCreateInfo.maxAnisotropy           = 1.0f;
+    samplerCreateInfo.compareOp               = VK_COMPARE_OP_NEVER;
+    samplerCreateInfo.minLod                  = 0.0f;
+    samplerCreateInfo.maxLod                  = 0.0f;
+    samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+
+    VkHostAddressRangeEXT samplerHostRange{};
+    samplerHostRange.address = static_cast<uint8_t *>(samplerHeap1->memory->getHostPtr()) + heap1SamplerOffset;
+    samplerHostRange.size    = static_cast<size_t>(samplerStride);
+    VK_CHECK(vkd.writeSamplerDescriptorsEXT(device, 1u, &samplerCreateInfo, &samplerHostRange));
+    flushAlloc(vkd, device, *samplerHeap1->memory);
+
+    VkBindHeapInfoEXT resourceHeapBindInfo   = initVulkanStructure();
+    resourceHeapBindInfo.heapRange.address   = resourceHeap->address;
+    resourceHeapBindInfo.heapRange.size      = resourceHeapSize;
+    resourceHeapBindInfo.reservedRangeOffset = resourceReservedOffset;
+    resourceHeapBindInfo.reservedRangeSize   = props.minResourceHeapReservedRange;
+
+    VkBindHeapInfoEXT samplerHeap1BindInfo   = initVulkanStructure();
+    samplerHeap1BindInfo.heapRange.address   = samplerHeap1->address;
+    samplerHeap1BindInfo.heapRange.size      = samplerHeapSize;
+    samplerHeap1BindInfo.reservedRangeOffset = heap1ReservedOffset;
+    samplerHeap1BindInfo.reservedRangeSize   = props.minSamplerHeapReservedRange;
+
+    VkBindHeapInfoEXT samplerHeap2BindInfo   = initVulkanStructure();
+    samplerHeap2BindInfo.heapRange.address   = samplerHeap2->address;
+    samplerHeap2BindInfo.heapRange.size      = samplerHeapSize;
+    samplerHeap2BindInfo.reservedRangeOffset = 0u;
+    samplerHeap2BindInfo.reservedRangeSize   = props.minSamplerHeapReservedRangeWithEmbedded;
+
+    const auto module = createShaderModule(vkd, device, getShaderBinary("comp"));
+
+    const auto heapPipeline = makePipeline(*module, nullptr, static_cast<uint32_t>(heap1SamplerOffset), 0u);
+    const auto embeddedPipeline =
+        makePipeline(*module, &samplerCreateInfo, 0u, static_cast<uint32_t>(sizeof(VkDeviceAddress)));
+
+    const auto cmdPool      = makeCommandPool(vkd, device, queueFamilyIndex);
+    const auto cmdBufferPtr = allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    const auto cmdBuffer    = *cmdBufferPtr;
+
+    VkBufferImageCopy copyRegion{};
+    copyRegion.imageSubresource = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+    copyRegion.imageExtent      = imageCreateInfo.extent;
+
+    VkDeviceAddress pushAddresses[2];
+    pushAddresses[0] = outputBuffer->address;
+    pushAddresses[1] = outputBuffer->address + outputSize;
+
+    VkPushDataInfoEXT pushData = initVulkanStructure();
+    pushData.offset            = 0;
+    pushData.data.size         = sizeof(pushAddresses);
+    pushData.data.address      = pushAddresses;
+
+    const VkImageMemoryBarrier imageBarrier =
+        makeImageMemoryBarrier(VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *image->image, subresourceRange);
+    const VkImageMemoryBarrier transferBarrier = makeImageMemoryBarrier(
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, *image->image, subresourceRange);
+
+    beginCommandBuffer(vkd, cmdBuffer);
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr,
+                           0, nullptr, 1, &imageBarrier);
+    vkd.cmdCopyBufferToImage(cmdBuffer, *stagingBuffer->buffer, *image->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u,
+                             &copyRegion);
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0,
+                           nullptr, 0, nullptr, 1, &transferBarrier);
+
+    vkd.cmdBindResourceHeapEXT(cmdBuffer, &resourceHeapBindInfo);
+    vkd.cmdPushDataEXT(cmdBuffer, &pushData);
+
+    vkd.cmdBindSamplerHeapEXT(cmdBuffer, &samplerHeap1BindInfo);
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *heapPipeline);
+    vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+
+    vkd.cmdBindSamplerHeapEXT(cmdBuffer, &samplerHeap2BindInfo);
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *embeddedPipeline);
+    vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+
+    const VkMemoryBarrier hostBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1,
+                           &hostBarrier, 0, nullptr, 0, nullptr);
+    endCommandBuffer(vkd, cmdBuffer);
+    submitCommandsAndWait(vkd, device, m_queues[0], cmdBuffer);
+
+    invalidateAlloc(vkd, device, *outputBuffer->memory);
+
+    const auto *outputPtr       = static_cast<const uint8_t *>(outputBuffer->memory->getHostPtr());
+    const auto *heapResults     = reinterpret_cast<const tcu::Vec4 *>(outputPtr);
+    const auto *embeddedResults = reinterpret_cast<const tcu::Vec4 *>(outputPtr + outputSize);
+
+    bool fail = false;
+    for (uint32_t i = 0; i < outputCount; ++i)
+    {
+        if (heapResults[i] != expected[i])
+        {
+            log << tcu::TestLog::Message << "Heap sampler result " << i << " expected " << expected[i] << ", but was "
+                << heapResults[i] << tcu::TestLog::EndMessage;
+            fail = true;
+        }
+        if (embeddedResults[i] != expected[i])
+        {
+            log << tcu::TestLog::Message << "Embedded sampler result " << i << " expected " << expected[i]
+                << ", but was " << embeddedResults[i] << tcu::TestLog::EndMessage;
+            fail = true;
+        }
+    }
+
+    if (fail)
+        return tcu::TestStatus::fail("Fail");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class DescriptorHeapTestCaseEmbeddedReservedRange final : public DescriptorHeapTestCaseBase
+{
+public:
+    explicit DescriptorHeapTestCaseEmbeddedReservedRange(tcu::TestContext &testCtx, const std::string &name,
+                                                         const TestParams &params)
+        : DescriptorHeapTestCaseBase(testCtx, name, params)
+        , m_params(params)
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceEmbeddedReservedRange(context, m_params);
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+private:
+    TestParams m_params;
+};
+
+void DescriptorHeapTestCaseEmbeddedReservedRange::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::string computeShader = R"(#version 450
+layout(local_size_x=2, local_size_y=2) in;
+layout(set=0, binding=0) uniform sampler2D tex;
+layout(set=0, binding=1) buffer OutputBuffer {
+    vec4 results[];
+};
+
+void main() {
+    const vec2 coord = (vec2(gl_LocalInvocationID.xy) + 0.5f) * 0.5f;
+    results[gl_LocalInvocationIndex] = textureLod(tex, coord, 0.0f);
+}
+)";
+    programCollection.glslSources.add("comp") << glu::ComputeSource(computeShader);
+}
+
 struct TestParamsUntypedImageSampler : TestParams
 {
     bool untypedSampler = true;
@@ -20625,6 +20924,13 @@ void populateSamplerHeapAccessTests(tcu::TestCaseGroup *topGroup)
 
         const char *const testName = untypedSampler ? "untyped_sampler" : "untyped_texture";
         samplerHeapAccessGroup->addChild(new DescriptorHeapTestCaseUntypedImageSampler(testCtx, testName, params));
+    }
+
+    {
+        TestParams params{};
+        params.queue = VK_QUEUE_COMPUTE_BIT;
+        samplerHeapAccessGroup->addChild(
+            new DescriptorHeapTestCaseEmbeddedReservedRange(testCtx, "embedded_reserved_range", params));
     }
 
     topGroup->addChild(samplerHeapAccessGroup.release());
