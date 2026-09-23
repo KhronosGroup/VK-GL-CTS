@@ -8094,6 +8094,14 @@ dEQP-VK.pipeline.monolithic.blend.dual_source.multi_attachments.r8g8b8_unorm
 dEQP-VK.pipeline.monolithic.blend.dual_source.multi_attachments.r8g8b8a8_snorm
 dEQP-VK.pipeline.monolithic.blend.dual_source.multi_attachments.r8g8b8a8_srgb
 dEQP-VK.pipeline.monolithic.blend.dual_source.multi_attachments.r8g8b8a8_unorm
+dEQP-VK.pipeline.monolithic.blend.dual_source.output_scalarized.r16g16b16a16_sfloat.one_minus_src1_alpha_rsub
+dEQP-VK.pipeline.monolithic.blend.dual_source.output_scalarized.r16g16b16a16_sfloat.one_minus_src1_color_sub
+dEQP-VK.pipeline.monolithic.blend.dual_source.output_scalarized.r16g16b16a16_sfloat.src1_alpha_add
+dEQP-VK.pipeline.monolithic.blend.dual_source.output_scalarized.r16g16b16a16_sfloat.src1_color_add
+dEQP-VK.pipeline.monolithic.blend.dual_source.output_scalarized.r8g8b8a8_unorm.one_minus_src1_alpha_rsub
+dEQP-VK.pipeline.monolithic.blend.dual_source.output_scalarized.r8g8b8a8_unorm.one_minus_src1_color_sub
+dEQP-VK.pipeline.monolithic.blend.dual_source.output_scalarized.r8g8b8a8_unorm.src1_alpha_add
+dEQP-VK.pipeline.monolithic.blend.dual_source.output_scalarized.r8g8b8a8_unorm.src1_color_add
 dEQP-VK.pipeline.monolithic.blend.dynamic_dual_disable.att_count_1
 dEQP-VK.pipeline.monolithic.blend.dynamic_dual_disable.att_count_1_plus_1
 dEQP-VK.pipeline.monolithic.blend.dynamic_dual_disable.att_count_2

@@ -1698,6 +1698,54 @@ VkPipelineMultisampleStateCreateInfo AlphaToCoverageTest::getAlphaToCoverageStat
     return multisampleStateParams;
 }
 
+// AlphaToCoverageScalarizedTest
+// Alpha-to-coverage combined with fragment shader outputs
+class AlphaToCoverageScalarizedTest : public AlphaToCoverageTest
+{
+public:
+    AlphaToCoverageScalarizedTest(tcu::TestContext &testContext, const std::string &name,
+                                  const PipelineConstructionType pipelineConstructionType,
+                                  VkSampleCountFlagBits rasterizationSamples)
+        : AlphaToCoverageTest(testContext, name, pipelineConstructionType, rasterizationSamples,
+                              GEOMETRY_TYPE_TRANSLUCENT_QUAD, IMAGE_BACKING_MODE_REGULAR, false, false)
+    {
+    }
+
+    void initPrograms(SourceCollections &programCollection) const override;
+};
+
+void AlphaToCoverageScalarizedTest::initPrograms(SourceCollections &programCollection) const
+{
+    const std::string vert = "#version 450\n"
+                             "layout(location = 0) in vec4 position;\n"
+                             "layout(location = 1) in vec4 color;\n"
+                             "layout(location = 0) out highp vec4 vtxColor;\n"
+                             "void main (void)\n"
+                             "{\n"
+                             "    gl_Position = position;\n"
+                             "    vtxColor = color;\n"
+                             "}\n";
+
+    // Each component of the color is written through its own store,
+    const std::string frag = "#version 450\n"
+                             "layout(location = 0) in highp vec4 vtxColor;\n"
+                             "layout(location = 0, component = 0) out highp float fragColor_c0;\n"
+                             "layout(location = 0, component = 1) out highp float fragColor_c1;\n"
+                             "layout(location = 0, component = 2) out highp float fragColor_c2;\n"
+                             "layout(location = 0, component = 3) out highp float fragColor_c3;\n"
+                             "void main (void)\n"
+                             "{\n"
+                             "    fragColor_c0 = vtxColor.x;\n"
+                             "    fragColor_c1 = vtxColor.y;\n"
+                             "    fragColor_c2 = vtxColor.z;\n"
+                             "    fragColor_c3 = vtxColor.w;\n"
+                             "    gl_SampleMask[0] = 0xFF;\n"
+                             "}\n";
+
+    programCollection.glslSources.add("color_vert") << glu::VertexSource(vert);
+    programCollection.glslSources.add("color_frag") << glu::FragmentSource(frag);
+}
+
 // AlphaToCoverageNoColorAttachmentTest
 
 AlphaToCoverageNoColorAttachmentTest::AlphaToCoverageNoColorAttachmentTest(
@@ -7777,6 +7825,28 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
 
             alphaToCoverageTests->addChild(samplesTests.release());
         }
+
+        // Scalarized output style
+        {
+            TestCaseGroupPtr scalarizedTests(new tcu::TestCaseGroup(testCtx, "output_scalarized"));
+
+            static const VkSampleCountFlagBits scalarizedSamples[] = {
+                VK_SAMPLE_COUNT_4_BIT,
+                VK_SAMPLE_COUNT_8_BIT,
+            };
+
+            for (const VkSampleCountFlagBits sampleCount : scalarizedSamples)
+            {
+                std::ostringstream caseName;
+                caseName << "samples_" << sampleCount;
+
+                scalarizedTests->addChild(
+                    new AlphaToCoverageScalarizedTest(testCtx, caseName.str(), pipelineConstructionType, sampleCount));
+            }
+
+            alphaToCoverageTests->addChild(scalarizedTests.release());
+        }
+
         multisampleTests->addChild(alphaToCoverageTests.release());
     }
 

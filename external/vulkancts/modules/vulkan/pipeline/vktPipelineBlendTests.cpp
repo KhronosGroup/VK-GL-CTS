@@ -148,6 +148,13 @@ protected:
     VkPipelineColorBlendAttachmentState m_blendStates[QUAD_COUNT];
 };
 
+enum DualSourceBlendShaderOutputStyle
+{
+    DUAL_SOURCE_OUTPUT_VARIABLE = 0,
+    DUAL_SOURCE_OUTPUT_ARRAY,
+    DUAL_SOURCE_OUTPUT_SCALARIZED,
+};
+
 class DualSourceBlendTest : public vkt::TestCase
 {
 public:
@@ -162,7 +169,7 @@ public:
     DualSourceBlendTest(tcu::TestContext &testContext, const std::string &name,
                         PipelineConstructionType pipelineConstructionType, const VkFormat colorFormat,
                         const VkPipelineColorBlendAttachmentState blendStates[QUAD_COUNT],
-                        const bool shaderOutputInArray);
+                        const DualSourceBlendShaderOutputStyle shaderOutputStyle);
     virtual ~DualSourceBlendTest(void);
     virtual void initPrograms(SourceCollections &sourceCollections) const;
     virtual void checkSupport(Context &context) const;
@@ -171,7 +178,7 @@ public:
 private:
     const PipelineConstructionType m_pipelineConstructionType;
     const VkFormat m_colorFormat;
-    const bool m_shaderOutputInArray;
+    const DualSourceBlendShaderOutputStyle m_shaderOutputStyle;
     VkPipelineColorBlendAttachmentState m_blendStates[QUAD_COUNT];
 };
 
@@ -461,11 +468,11 @@ const tcu::Vec4 DualSourceBlendTest::s_blendConst = tcu::Vec4(0.1f, 0.2f, 0.3f, 
 DualSourceBlendTest::DualSourceBlendTest(tcu::TestContext &testContext, const std::string &name,
                                          PipelineConstructionType pipelineConstructionType, const VkFormat colorFormat,
                                          const VkPipelineColorBlendAttachmentState blendStates[QUAD_COUNT],
-                                         const bool shaderOutputInArray)
+                                         const DualSourceBlendShaderOutputStyle shaderOutputStyle)
     : vkt::TestCase(testContext, name)
     , m_pipelineConstructionType(pipelineConstructionType)
     , m_colorFormat(colorFormat)
-    , m_shaderOutputInArray(shaderOutputInArray)
+    , m_shaderOutputStyle(shaderOutputStyle)
 {
     deMemcpy(m_blendStates, blendStates, sizeof(VkPipelineColorBlendAttachmentState) * QUAD_COUNT);
 }
@@ -544,8 +551,39 @@ void DualSourceBlendTest::initPrograms(SourceCollections &sourceCollections) con
                                             "      discard;\n"
                                             "}\n";
 
-    sourceCollections.glslSources.add("color_frag")
-        << glu::FragmentSource(m_shaderOutputInArray ? fragmentSourceOutputArray : fragmentSourceOutputVariable);
+    const char *fragmentSourceOutputScalarized =
+        "#version 450\n"
+        "layout(location = 0) in highp vec4 vtxColor0;\n"
+        "layout(location = 1) in highp vec4 vtxColor1;\n"
+        "layout(location = 0, component = 0, index = 0) out highp float fragColor0_c0;\n"
+        "layout(location = 0, component = 1, index = 0) out highp float fragColor0_c1;\n"
+        "layout(location = 0, component = 2, index = 0) out highp float fragColor0_c2;\n"
+        "layout(location = 0, component = 3, index = 0) out highp float fragColor0_c3;\n"
+        "layout(location = 0, component = 0, index = 1) out highp float fragColor1_c0;\n"
+        "layout(location = 0, component = 1, index = 1) out highp float fragColor1_c1;\n"
+        "layout(location = 0, component = 2, index = 1) out highp float fragColor1_c2;\n"
+        "layout(location = 0, component = 3, index = 1) out highp float fragColor1_c3;\n"
+        "void main (void)\n"
+        "{\n"
+        "    fragColor0_c0 = vtxColor0.x;\n"
+        "    fragColor0_c1 = vtxColor0.y;\n"
+        "    fragColor0_c2 = vtxColor0.z;\n"
+        "    fragColor0_c3 = vtxColor0.w;\n"
+        "    fragColor1_c0 = vtxColor1.x;\n"
+        "    fragColor1_c1 = vtxColor1.y;\n"
+        "    fragColor1_c2 = vtxColor1.z;\n"
+        "    fragColor1_c3 = vtxColor1.w;\n"
+        "   if (int(gl_FragCoord.x) == 2 || int(gl_FragCoord.y) == 3)\n"
+        "      discard;\n"
+        "}\n";
+
+    const char *fragmentSource = fragmentSourceOutputVariable;
+    if (m_shaderOutputStyle == DUAL_SOURCE_OUTPUT_ARRAY)
+        fragmentSource = fragmentSourceOutputArray;
+    else if (m_shaderOutputStyle == DUAL_SOURCE_OUTPUT_SCALARIZED)
+        fragmentSource = fragmentSourceOutputScalarized;
+
+    sourceCollections.glslSources.add("color_frag") << glu::FragmentSource(fragmentSource);
 }
 
 const VkColorComponentFlags *BlendTestInstance::getColorWriteMasks() const
@@ -3111,9 +3149,9 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
 
     const uint32_t blendStatesPerFormat = 100 * BlendTest::QUAD_COUNT;
 
-    const std::pair<const char *, bool> shaderOutputTypes[]{
-        {"output_variable", false},
-        {"output_array", true},
+    const std::pair<const char *, DualSourceBlendShaderOutputStyle> shaderOutputTypes[]{
+        {"output_variable", DUAL_SOURCE_OUTPUT_VARIABLE},
+        {"output_array", DUAL_SOURCE_OUTPUT_ARRAY},
     };
 
     // Blend tests
@@ -3177,7 +3215,8 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
                 de::MovePtr<tcu::TestCaseGroup> formatTest(
                     new tcu::TestCaseGroup(testCtx, getFormatCaseName(format).c_str()));
 
-                for (const std::pair<const char *, bool> &shaderOutputType : shaderOutputTypes)
+                for (const std::pair<const char *, DualSourceBlendShaderOutputStyle> &shaderOutputType :
+                     shaderOutputTypes)
                 {
                     de::MovePtr<tcu::TestCaseGroup> shaderOutputTypeTests(
                         new tcu::TestCaseGroup(testCtx, shaderOutputType.first));
@@ -3218,6 +3257,75 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
                 dualSourceFormatTests->addChild(formatTest.release());
             }
         }
+    }
+
+    //  Scalarized output into four separate scalar outputs per index
+    if (genFormatTests)
+    {
+        de::MovePtr<tcu::TestCaseGroup> scalarizedTests(new tcu::TestCaseGroup(testCtx, "output_scalarized"));
+
+        static const VkFormat scalarizedFormats[] = {
+            VK_FORMAT_R8G8B8A8_UNORM,
+            VK_FORMAT_R16G16B16A16_SFLOAT,
+        };
+
+        struct ScalarizedBlendState
+        {
+            const char *name;
+            VkBlendFactor srcColor;
+            VkBlendFactor dstColor;
+            VkBlendOp colorOp;
+            VkBlendFactor srcAlpha;
+            VkBlendFactor dstAlpha;
+            VkBlendOp alphaOp;
+        };
+
+        static const ScalarizedBlendState scalarizedStates[] = {
+            // Reads the RGB half of the second source through an ADD op
+            {"src1_color_add", VK_BLEND_FACTOR_SRC1_COLOR, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE,
+             VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD},
+            // Reads the alpha half of the second source through an ADD op
+            {"src1_alpha_add", VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_SRC1_ALPHA,
+             VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD},
+            // Reads the RGB half via its complement through a SUBTRACT op
+            {"one_minus_src1_color_sub", VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR, VK_BLEND_FACTOR_ZERO,
+             VK_BLEND_OP_SUBTRACT, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_SUBTRACT},
+            // Reads the alpha half via its complement through a REVERSE_SUBTRACT op
+            {"one_minus_src1_alpha_rsub", VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_REVERSE_SUBTRACT,
+             VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_REVERSE_SUBTRACT},
+        };
+
+        for (const VkFormat format : scalarizedFormats)
+        {
+            de::MovePtr<tcu::TestCaseGroup> formatTest(
+                new tcu::TestCaseGroup(testCtx, getFormatCaseName(format).c_str()));
+
+            for (const ScalarizedBlendState &s : scalarizedStates)
+            {
+                VkPipelineColorBlendAttachmentState quadBlendConfigs[BlendTest::QUAD_COUNT];
+
+                for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
+                {
+                    quadBlendConfigs[quadNdx] = {
+                        VK_TRUE,                               // VkBool32 blendEnable;
+                        s.srcColor,                            // VkBlendFactor srcColorBlendFactor;
+                        s.dstColor,                            // VkBlendFactor dstColorBlendFactor;
+                        s.colorOp,                             // VkBlendOp colorBlendOp;
+                        s.srcAlpha,                            // VkBlendFactor srcAlphaBlendFactor;
+                        s.dstAlpha,                            // VkBlendFactor dstAlphaBlendFactor;
+                        s.alphaOp,                             // VkBlendOp alphaBlendOp;
+                        BlendTest::s_colorWriteMasks[quadNdx], // VkColorComponentFlags colorWriteMask;
+                    };
+                }
+
+                formatTest->addChild(new DualSourceBlendTest(testCtx, s.name, pipelineConstructionType, format,
+                                                             quadBlendConfigs, DUAL_SOURCE_OUTPUT_SCALARIZED));
+            }
+
+            scalarizedTests->addChild(formatTest.release());
+        }
+
+        dualSourceBlendTests->addChild(scalarizedTests.release());
     }
 
     // Subselection of formats that are easy to test for clamping.
