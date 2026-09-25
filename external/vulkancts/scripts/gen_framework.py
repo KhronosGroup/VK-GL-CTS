@@ -310,6 +310,38 @@ VK_VALVE_fragment_density_map_layered
 VK_MESA_image_alignment_control
 """.splitlines()
 
+# instance extensions not listed above; every non-core instance extension must be
+# in one of these lists so it is explicit that the framework is generated for it
+INSTANCE_EXTENSIONS_TESTED_BY_CTS = """
+VK_EXT_acquire_drm_display
+VK_EXT_acquire_xlib_display
+VK_EXT_application_parameters
+VK_EXT_debug_report
+VK_EXT_debug_utils
+VK_EXT_direct_mode_display
+VK_EXT_directfb_surface
+VK_EXT_display_surface_counter
+VK_EXT_headless_surface
+VK_EXT_layer_settings
+VK_EXT_metal_surface
+VK_EXT_surface_maintenance1
+VK_EXT_swapchain_colorspace
+VK_EXT_validation_features
+VK_EXT_validation_flags
+VK_FUCHSIA_imagepipe_surface
+VK_GGP_stream_descriptor_surface
+VK_GOOGLE_surfaceless_query
+VK_LUNARG_direct_driver_loading
+VK_MVK_ios_surface
+VK_MVK_macos_surface
+VK_NN_vi_surface
+VK_NV_display_stereo
+VK_NV_external_memory_capabilities
+VK_OHOS_surface
+VK_QNX_screen_surface
+VK_SEC_ubm_surface
+""".splitlines()
+
 INL_HEADER = """\
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
@@ -697,17 +729,18 @@ class ConformanceItemLists:
         # subset of vkObject extensions/enums/bitmasks/structs/commands that are tested by CTS;
         # by default framework is not generated for new extensions that are not core or not
         # explicitly added to KHR_EXT_EXTENSIONS_TESTED_BY_CTS or VENDOR_EXTENSIONS_TESTED_BY_CTS
-        self.extensions = KHR_EXT_EXTENSIONS_TESTED_BY_CTS + VENDOR_EXTENSIONS_TESTED_BY_CTS
+        self.extensions = KHR_EXT_EXTENSIONS_TESTED_BY_CTS + VENDOR_EXTENSIONS_TESTED_BY_CTS + INSTANCE_EXTENSIONS_TESTED_BY_CTS
 
     def setup(self, vkObject, isSC):
         for ext in vkObject.extensions.values():
             name = ext.name
-            # add all instance extensions
-            if ext.instance:
-                self.extensions.append(name)
-            # add core extensions
-            elif ext.promotedTo and 'VK_VERSION' in ext.promotedTo and name not in self.extensions:
-                self.extensions.append(name)
+            if name not in self.extensions:
+                # add core extensions
+                if ext.promotedTo and 'VK_VERSION' in ext.promotedTo:
+                    self.extensions.append(name)
+                # non core instance extensions must be listed explicitly
+                elif ext.instance:
+                    raise Exception(f'{name} is an instance extension, add it to INSTANCE_EXTENSIONS_TESTED_BY_CTS list')
 
         self.handles = self.filterToSupportedByCTS(vkObject.handles)
         self.enums = self.filterToSupportedByCTS(vkObject.enums)
