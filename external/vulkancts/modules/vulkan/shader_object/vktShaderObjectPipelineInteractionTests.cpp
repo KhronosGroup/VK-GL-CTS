@@ -734,6 +734,14 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
     if (m_params.testType != COMPUTE_SHADER_OBJECT_MIN_PIPELINE && m_params.testType != SHADER_OBJECT_COMPUTE_PIPELINE)
         vk::endRendering(vk, *cmdBuffer);
 
+    if (m_params.testType == COMPUTE_SHADER_OBJECT_MIN_PIPELINE || m_params.testType == SHADER_OBJECT_COMPUTE_PIPELINE)
+    {
+        const vk::VkBufferMemoryBarrier outputBufferBarrier = vk::makeBufferMemoryBarrier(
+            vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0u, bufferSizeBytes);
+        vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
+                              (vk::VkDependencyFlags)0u, 0u, nullptr, 1u, &outputBufferBarrier, 0u, nullptr);
+    }
+
     vk::endCommandBuffer(vk, *cmdBuffer);
 
     submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
@@ -754,8 +762,16 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
 
     vk::beginCommandBuffer(vk, *copyCmdBuffer, 0u);
     vk.cmdCopyImageToBuffer(*copyCmdBuffer, **image, vk::VK_IMAGE_LAYOUT_GENERAL, **colorOutputBuffer, 1u, &copyRegion);
+    {
+        const vk::VkBufferMemoryBarrier copyBufferBarrier = vk::makeBufferMemoryBarrier(
+            vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, **colorOutputBuffer, 0u, VK_WHOLE_SIZE);
+        vk.cmdPipelineBarrier(*copyCmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
+                              (vk::VkDependencyFlags)0u, 0u, nullptr, 1u, &copyBufferBarrier, 0u, nullptr);
+    }
     vk::endCommandBuffer(vk, *copyCmdBuffer);
     submitCommandsAndWait(vk, device, queue, copyCmdBuffer.get());
+
+    invalidateAlloc(m_context.getDeviceInterface(), m_context.getDevice(), colorOutputBuffer->getAllocation());
 
     if (!verifyImage(colorOutputBuffer, getDrawCount()))
         return tcu::TestStatus::fail("Fail");
@@ -1218,6 +1234,11 @@ tcu::TestStatus ShaderObjectStageBindingInstance::iterate(void)
 
     vk::endRendering(vk, *cmdBuffer);
 
+    const vk::VkBufferMemoryBarrier outputBufferBarrier = vk::makeBufferMemoryBarrier(
+        vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0u, bufferSizeBytes);
+    vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
+                          (vk::VkDependencyFlags)0u, 0u, nullptr, 1u, &outputBufferBarrier, 0u, nullptr);
+
     vk::endCommandBuffer(vk, *cmdBuffer);
 
     submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
@@ -1241,8 +1262,14 @@ tcu::TestStatus ShaderObjectStageBindingInstance::iterate(void)
         vk::beginCommandBuffer(vk, *copyCmdBuffer, 0u);
         vk.cmdCopyImageToBuffer(*copyCmdBuffer, **image, vk::VK_IMAGE_LAYOUT_GENERAL, **colorOutputBuffer, 1u,
                                 &copyRegion);
+        const vk::VkBufferMemoryBarrier copyBufferBarrier = vk::makeBufferMemoryBarrier(
+            vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, **colorOutputBuffer, 0u, VK_WHOLE_SIZE);
+        vk.cmdPipelineBarrier(*copyCmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
+                              (vk::VkDependencyFlags)0u, 0u, nullptr, 1u, &copyBufferBarrier, 0u, nullptr);
         vk::endCommandBuffer(vk, *copyCmdBuffer);
         submitCommandsAndWait(vk, device, queue, copyCmdBuffer.get());
+
+        invalidateAlloc(m_context.getDeviceInterface(), m_context.getDevice(), colorOutputBuffer->getAllocation());
 
         if (!verifyImage(colorOutputBuffer))
             return tcu::TestStatus::fail("Fail");

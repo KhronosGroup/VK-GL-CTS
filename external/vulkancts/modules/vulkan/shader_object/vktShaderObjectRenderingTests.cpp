@@ -973,6 +973,14 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
         vk.cmdCopyImageToBuffer(*cmdBuffer, **colorImages[i], vk::VK_IMAGE_LAYOUT_GENERAL, **colorOutputBuffers[i], 1u,
                                 &colorCopyRegion);
 
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+    {
+        const vk::VkBufferMemoryBarrier copyBufferBarrier = vk::makeBufferMemoryBarrier(
+            vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, **colorOutputBuffers[i], 0u, VK_WHOLE_SIZE);
+        vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
+                              (vk::VkDependencyFlags)0u, 0u, nullptr, 1u, &copyBufferBarrier, 0u, nullptr);
+    }
+
     vk::endCommandBuffer(vk, *cmdBuffer);
 
     vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
