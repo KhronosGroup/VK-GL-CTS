@@ -283,8 +283,8 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
         }
         std::vector<uint8_t> dataSeparate(dataSizeSeparate);
         std::vector<uint8_t> dataTogether(dataSizeTogether);
-        vk.getShaderBinaryDataEXT(device, shadersSeparate[i], &dataSizeSeparate, &dataSeparate[0]);
-        vk.getShaderBinaryDataEXT(device, shadersTogether[i], &dataSizeTogether, &dataTogether[0]);
+        vk.getShaderBinaryDataEXT(device, shadersSeparate[i], &dataSizeSeparate, dataSeparate.data());
+        vk.getShaderBinaryDataEXT(device, shadersTogether[i], &dataSizeTogether, dataTogether.data());
         for (uint32_t j = 0; j < dataSizeSeparate; ++j)
         {
             if (dataSeparate[j] != dataTogether[j])
@@ -567,11 +567,16 @@ tcu::TestStatus ShaderObjectStageInstance::iterate(void)
     {
         vk.getShaderBinaryDataEXT(device, shaders[i], &binarySizes[i], nullptr);
         binaryData[i].resize(binarySizes[i]);
-        vk.getShaderBinaryDataEXT(device, shaders[i], &binarySizes[i], (void *)&binaryData[i][0]);
+        vk.getShaderBinaryDataEXT(device, shaders[i], &binarySizes[i], binaryData[i].data());
     }
 
     for (const auto &shader : shaders)
         vk.destroyShaderEXT(device, shader, nullptr);
+
+    // A binary must be usable with vkCreateShadersEXT, whose codeSize must be greater than 0
+    for (size_t i = 0; i < count; ++i)
+        if (binarySizes[i] == 0)
+            return tcu::TestStatus::fail("vkGetShaderBinaryDataEXT returned a binary size of 0");
 
     const uint32_t failIndex = random.getUint32() % count;
 
@@ -582,7 +587,7 @@ tcu::TestStatus ShaderObjectStageInstance::iterate(void)
             shaderCreateInfos[i].codeSize = 1;
         else
             shaderCreateInfos[i].codeSize = binarySizes[i];
-        shaderCreateInfos[i].pCode = &binaryData[i][0];
+        shaderCreateInfos[i].pCode = binaryData[i].data();
     }
 
     vk::VkShaderEXT garbage{(void *)1234u};

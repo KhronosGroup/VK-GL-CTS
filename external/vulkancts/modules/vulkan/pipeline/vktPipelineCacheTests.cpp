@@ -1635,10 +1635,10 @@ Move<VkPipelineCache> MergeBlobsTestInstance::createPipelineCache(const Instance
         VK_CHECK(vk.getPipelineCacheData(device, *m_cache, (uintptr_t *)&dataSize, nullptr));
 
         std::vector<uint8_t> data(dataSize);
-        VK_CHECK(vk.getPipelineCacheData(device, *m_cache, (uintptr_t *)&dataSize, &data[0]));
+        VK_CHECK(vk.getPipelineCacheData(device, *m_cache, (uintptr_t *)&dataSize, data.data()));
 
         pipelineCacheCreateInfo.initialDataSize = data.size();
-        pipelineCacheCreateInfo.pInitialData    = &data[0];
+        pipelineCacheCreateInfo.pInitialData    = data.data();
         return vk::createPipelineCache(vk, device, &pipelineCacheCreateInfo);
     }
     case MergeBlobsType::HIT:
