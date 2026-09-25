@@ -915,6 +915,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_INTEL_device_info")
+	{
+		return;
+	}
 	if (extName == "VK_INTEL_performance_query")
 	{
 		return;
@@ -3312,6 +3316,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_INTEL_device_info")
+	{
+		return;
+	}
 	if (extName == "VK_INTEL_performance_query")
 	{
 		functions.push_back("vkInitializePerformanceApiINTEL");
@@ -5172,6 +5180,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_image_tiling_control",
 	"VK_NV_cooperative_matrix_decode_vector",
 	"VK_NV_private_data_base_handle",
+	"VK_INTEL_device_info",
 	"VK_VALVE_buffer_device_address_allocation_alignment",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",

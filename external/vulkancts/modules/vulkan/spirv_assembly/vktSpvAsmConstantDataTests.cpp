@@ -546,6 +546,11 @@ tcu::TestCaseGroup *createConstantDataTests(tcu::TestContext &testCtx)
                             const auto itemCount =
                                 (maybeItemCount == kMax ? kMaxDataBytes / itemSizeBytes : maybeItemCount);
                             for (const bool useEncodeDecoration : {false, true})
+                            {
+                                // UTFEncodedKHR requires elements with a Width of 8 bits, i.e. 1-byte items.
+                                if (useEncodeDecoration && itemSizeBytes != 1u)
+                                    continue;
+
                                 for (const bool forceSpecializedCountDeclaration : {false, true})
                                     for (const bool forceSpecializedDataDeclaration : {false, true})
                                         for (const auto stage :
@@ -572,6 +577,7 @@ tcu::TestCaseGroup *createConstantDataTests(tcu::TestContext &testCtx)
                                             addFunctionCaseWithPrograms(basicGroup, testName, checkSupport,
                                                                         initPrograms, runTest, params);
                                         }
+                            }
                         }
                 });
 

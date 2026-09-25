@@ -2430,6 +2430,18 @@ bool check_VK_IMG_relaxed_line_rasterization(const tcu::UVec2& v, const ExtPropV
 	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
+bool check_VK_INTEL_device_info(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_INTEL_device_info"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
 bool check_VK_INTEL_shader_integer_functions2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -5082,6 +5094,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_HUAWEI_subpass_shading",								&check_VK_HUAWEI_subpass_shading),
 	std::make_pair("VK_IMG_filter_linear_2d",								&check_VK_IMG_filter_linear_2d),
 	std::make_pair("VK_IMG_relaxed_line_rasterization",						&check_VK_IMG_relaxed_line_rasterization),
+	std::make_pair("VK_INTEL_device_info",									&check_VK_INTEL_device_info),
 	std::make_pair("VK_INTEL_shader_integer_functions2",						&check_VK_INTEL_shader_integer_functions2),
 	std::make_pair("VK_KHR_16bit_storage",									&check_VK_KHR_16bit_storage),
 	std::make_pair("VK_KHR_8bit_storage",									&check_VK_KHR_8bit_storage),
@@ -5508,6 +5521,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_IMG_filter_linear_2d"),
 	std::make_tuple(1, 0, "VK_IMG_format_pvrtc"),
 	std::make_tuple(1, 0, "VK_IMG_relaxed_line_rasterization"),
+	std::make_tuple(1, 0, "VK_INTEL_device_info"),
 	std::make_tuple(1, 0, "VK_INTEL_performance_query"),
 	std::make_tuple(1, 0, "VK_INTEL_shader_integer_functions2"),
 	std::make_tuple(1, 0, "VK_KHR_16bit_storage"),
