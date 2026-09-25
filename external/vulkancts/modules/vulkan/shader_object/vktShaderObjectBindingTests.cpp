@@ -512,9 +512,26 @@ tcu::TestStatus ShaderObjectBindingDrawInstance::iterate(void)
     const vk::VkBufferImageCopy copyRegion = vk::makeBufferImageCopy(extent, subresourceLayers);
     vk.cmdCopyImageToBuffer(*cmdBuffer, **image, vk::VK_IMAGE_LAYOUT_GENERAL, **colorOutputBuffer, 1u, &copyRegion);
 
+    const vk::VkBufferMemoryBarrier copyBufferBarrier = vk::makeBufferMemoryBarrier(
+        vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, **colorOutputBuffer, 0u, VK_WHOLE_SIZE);
+    vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
+                          (vk::VkDependencyFlags)0u, 0u, nullptr, 1u, &copyBufferBarrier, 0u, nullptr);
+
+    if (m_params.testType == DISPATCH_DRAW_DISPATCH)
+    {
+        vk::VkBufferMemoryBarrier outputBufferBarriers[2];
+        outputBufferBarriers[0] = vk::makeBufferMemoryBarrier(
+            vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, *outputBuffer1, 0u, bufferSizeBytes);
+        outputBufferBarriers[1] = vk::makeBufferMemoryBarrier(
+            vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, *outputBuffer2, 0u, bufferSizeBytes);
+        vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u,
+                              0u, nullptr, 2u, outputBufferBarriers, 0u, nullptr);
+    }
+
     vk::endCommandBuffer(vk, *cmdBuffer);
 
     vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+    invalidateAlloc(vk, device, colorOutputBuffer->getAllocation());
 
     tcu::ConstPixelBufferAccess resultBuffer = tcu::ConstPixelBufferAccess(
         vk::mapVkFormat(colorAttachmentFormat), renderArea.extent.width, renderArea.extent.height, 1,
@@ -1837,8 +1854,21 @@ tcu::TestStatus ShaderObjectUnbindInstance::iterate(void)
     };
     vk.cmdCopyImageToBuffer(*cmdBuffer, **image, vk::VK_IMAGE_LAYOUT_GENERAL, **colorOutputBuffer, 1u, &copyRegion);
 
+    const vk::VkBufferMemoryBarrier copyBufferBarrier = vk::makeBufferMemoryBarrier(
+        vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, **colorOutputBuffer, 0u, VK_WHOLE_SIZE);
+    vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
+                          (vk::VkDependencyFlags)0u, 0u, nullptr, 1u, &copyBufferBarrier, 0u, nullptr);
+
+    const vk::VkBufferMemoryBarrier outputBufferBarrier = vk::makeBufferMemoryBarrier(
+        vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0u, bufferSizeBytes);
+    vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
+                          (vk::VkDependencyFlags)0u, 0u, nullptr, 1u, &outputBufferBarrier, 0u, nullptr);
+
     vk::endCommandBuffer(vk, *cmdBuffer);
     submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+
+    invalidateAlloc(vk, device, colorOutputBuffer->getAllocation());
+
     tcu::ConstPixelBufferAccess resultBuffer = tcu::ConstPixelBufferAccess(
         vk::mapVkFormat(colorAttachmentFormat), renderArea.extent.width, renderArea.extent.height, 1,
         (const void *)colorOutputBuffer->getAllocation().getHostPtr());
