@@ -673,12 +673,14 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
         indirectDataPtr->firstVertex   = 0;
         indirectDataPtr->firstInstance = 0;
     }
+    vk::flushAlloc(vk, device, indirectBuffer.getAllocation());
 
     vk::BufferWithMemory countBuffer(
         vk, device, alloc, vk::makeBufferCreateInfo(sizeof(uint32_t), vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT),
         vk::MemoryRequirement::HostVisible);
     uint32_t *countDataPtr = reinterpret_cast<uint32_t *>(countBuffer.getAllocation().getHostPtr());
     countDataPtr[0]        = 1u;
+    vk::flushAlloc(vk, device, countBuffer.getAllocation());
 
     vk::BufferWithMemory indexBuffer(
         vk, device, alloc, vk::makeBufferCreateInfo(sizeof(uint32_t) * 4, vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT),
@@ -688,6 +690,7 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
     indexDataPtr[1]        = 1u;
     indexDataPtr[2]        = 2u;
     indexDataPtr[3]        = 3u;
+    vk::flushAlloc(vk, device, indexBuffer.getAllocation());
 
     const vk::VkDeviceSize bufferSize        = 64;
     de::MovePtr<vk::BufferWithMemory> buffer = de::MovePtr<vk::BufferWithMemory>(new vk::BufferWithMemory(
@@ -1010,6 +1013,7 @@ tcu::TestStatus ShaderObjectDispatchPerformanceInstance::iterate(void)
     indirectDataPtr->x = 1;
     indirectDataPtr->y = 1;
     indirectDataPtr->z = 1;
+    vk::flushAlloc(vk, device, indirectBuffer.getAllocation());
 
     std::chrono::nanoseconds time    = std::chrono::nanoseconds(0);
     std::chrono::nanoseconds refTime = std::chrono::nanoseconds(0);
