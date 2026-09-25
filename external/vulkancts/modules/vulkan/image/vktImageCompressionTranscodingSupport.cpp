@@ -1222,12 +1222,6 @@ void BasicComputeTestInstance::createImageInfos(ImageData &imageData, const vect
             VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
         };
 
-        VkImageFormatProperties imageFormatProperties;
-        if (m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
-                m_context.getPhysicalDevice(), compressedInfo.format, compressedInfo.imageType, compressedInfo.tiling,
-                compressedInfo.usage, compressedInfo.flags, &imageFormatProperties) != VK_SUCCESS)
-            TCU_THROW(NotSupportedError, "Image parameters not supported");
-
         imageData.addImageInfo(compressedInfo);
     }
     else
@@ -1316,12 +1310,6 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
             const VkDeviceSize bufferSizeComp =
                 getCompressedImageSizeInBytes(m_parameters.formatCompressed, bufferSizeExtent);
             const auto arrayLayers = (m_parameters.useMultiLayerViews() ? getLayerCount() : 1u);
-
-            VkFormatProperties properties;
-            m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(
-                m_context.getPhysicalDevice(), m_parameters.formatForVerify, &properties);
-            if (!(properties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
-                TCU_THROW(NotSupportedError, "Format storage feature not supported");
 
             const VkImageCreateInfo decompressedImageInfo = {
                 VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
@@ -2392,21 +2380,6 @@ VkImageCreateInfo GraphicsAttachmentsTestInstance::makeCreateImageInfo(const VkF
             0;
     const VkImageCreateFlags imageCreateFlags =
         (createFlags != nullptr) ? *createFlags : (imageCreateFlagsBase | imageCreateFlagsAddOn);
-
-    VkFormatProperties properties;
-    m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), format,
-                                                                       &properties);
-    if ((usageFlags & VK_IMAGE_USAGE_STORAGE_BIT) &&
-        !(properties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
-        TCU_THROW(NotSupportedError, "Format storage feature not supported");
-    if ((usageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) &&
-        !(properties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT))
-        TCU_THROW(NotSupportedError, "Format color attachment feature not supported");
-    if ((usageFlags & VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT) &&
-        !(properties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) &&
-        !(properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT))
-        TCU_THROW(NotSupportedError,
-                  "Format color/depth/stencil attachment feature not supported for input attachment usage");
 
     const VkImageCreateInfo createImageInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,    // VkStructureType sType;
@@ -3567,6 +3540,53 @@ void TexelViewCompatibleCase::checkSupport(Context &context) const
                 getPhysicalDeviceFormatProperties(vk, physicalDevice, m_parameters.formatUncompressed);
             if ((p.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
                 TCU_THROW(NotSupportedError, "Storage view format not supported");
+        }
+    }
+
+    if (m_parameters.shader == SHADER_TYPE_COMPUTE)
+    {
+        if ((m_parameters.operation == OPERATION_IMAGE_LOAD) || (m_parameters.operation == OPERATION_TEXEL_FETCH) ||
+            (m_parameters.operation == OPERATION_TEXTURE) || (m_parameters.operation == OPERATION_IMAGE_STORE))
+        {
+            VkImageCreateFlags flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT |
+                                       VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT |
+                                       VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
+            VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT |
+                                      VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+            VkImageFormatProperties imageFormatProperties;
+            if (vk.getPhysicalDeviceImageFormatProperties(physicalDevice, m_parameters.formatCompressed,
+                                                          mapImageType(m_parameters.imageType), VK_IMAGE_TILING_OPTIMAL,
+                                                          usage, flags, &imageFormatProperties) != VK_SUCCESS)
+                TCU_THROW(NotSupportedError, "Image parameters not supported");
+
+            VkFormatProperties properties;
+            vk.getPhysicalDeviceFormatProperties(physicalDevice, m_parameters.formatForVerify, &properties);
+            if (!(properties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+                TCU_THROW(NotSupportedError, "Format storage feature not supported");
+        }
+    }
+    else if ((m_parameters.operation == OPERATION_ATTACHMENT_READ) ||
+             (m_parameters.operation == OPERATION_ATTACHMENT_WRITE))
+    {
+        using FormatAndUsage = std::pair<VkFormat, VkImageUsageFlags>;
+        const std::initializer_list<FormatAndUsage> formatAndUsages{
+            {m_parameters.formatUncompressed, m_parameters.uncompressedImageUsage},
+            {m_parameters.formatCompressed, m_parameters.compressedImageUsage}};
+
+        for (const auto &[format, usage] : formatAndUsages)
+        {
+            VkFormatProperties properties;
+            vk.getPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
+            const auto features = properties.optimalTilingFeatures;
+
+            if ((usage & VK_IMAGE_USAGE_STORAGE_BIT) && !(features & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+                TCU_THROW(NotSupportedError, "Format storage feature not supported");
+            if ((usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) && !(features & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT))
+                TCU_THROW(NotSupportedError, "Format color attachment feature not supported");
+            if ((usage & VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT) && !(features & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) &&
+                !(features & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT))
+                TCU_THROW(NotSupportedError,
+                          "Format color/depth/stencil attachment feature not supported for input attachment usage");
         }
     }
 

@@ -22,30 +22,24 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktImagelessFramebufferTests.hpp"
-#include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deRandom.hpp"
 
-#include "tcuTextureUtil.hpp"
-#include "tcuVectorUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuRGBA.hpp"
 
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkObjUtil.hpp"
-#include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkBuilderUtil.hpp"
 
 #include <iostream>
 
-namespace vkt
-{
-namespace imageless
+namespace vkt::imageless
 {
 
 namespace
@@ -123,15 +117,13 @@ VkSampleCountFlagBits sampleCountBitFromSampleCount(uint32_t count)
 VkAttachmentReference2 convertAttachmentReference(const VkAttachmentReference &attachmentReference,
                                                   const VkImageAspectFlags aspectMask)
 {
-    const VkAttachmentReference2 attachmentReference2 = {
+    return {
         VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2, //  VkStructureType sType;
         nullptr,                                  //  const void* pNext;
         attachmentReference.attachment,           //  uint32_t attachment;
         attachmentReference.layout,               //  VkImageLayout layout;
         aspectMask                                //  VkImageAspectFlags aspectMask;
     };
-
-    return attachmentReference2;
 }
 
 std::vector<VkAttachmentDescription2> convertAttachmentDescriptions(
@@ -141,10 +133,9 @@ std::vector<VkAttachmentDescription2> convertAttachmentDescriptions(
 
     attachmentDescriptions2.reserve(attachmentDescriptions.size());
 
-    for (size_t adNdx = 0; adNdx < attachmentDescriptions.size(); ++adNdx)
+    for (const auto &attachmentDescription : attachmentDescriptions)
     {
-        const VkAttachmentDescription &attachmentDescription  = attachmentDescriptions[adNdx];
-        const VkAttachmentDescription2 attachmentDescription2 = {
+        const VkAttachmentDescription2 attachmentDescription2{
             VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2, //  VkStructureType sType;
             nullptr,                                    //  const void* pNext;
             attachmentDescription.flags,                //  VkAttachmentDescriptionFlags flags;
@@ -552,8 +543,8 @@ Move<VkRenderPass> makeSingleAttachmentRenderPass(const DeviceInterface &vk, con
 VkImageCreateInfo makeImageCreateInfo(const VkFormat format, const VkExtent2D size, const VkImageUsageFlags usage,
                                       VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT)
 {
-    const VkExtent3D extent             = {size.width, size.height, 1u};
-    const VkImageCreateInfo imageParams = {
+    const VkExtent3D extent = {size.width, size.height, 1u};
+    return {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
         nullptr,                             // const void* pNext;
         0u,                                  // VkImageCreateFlags flags;
@@ -570,7 +561,6 @@ VkImageCreateInfo makeImageCreateInfo(const VkFormat format, const VkExtent2D si
         nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
-    return imageParams;
 }
 
 Move<VkFramebuffer> makeFramebuffer(const DeviceInterface &vk, const VkDevice device, const VkRenderPass renderPass,
@@ -703,7 +693,9 @@ Move<VkFramebuffer> makeFramebuffer(const DeviceInterface &vk, const VkDevice de
             createFlags2Infos[i] = createFlags2Info;
             usageFlags2Infos[i]  = usageFlags2Info;
 
-            usageFlags2Infos[i].pNext                = &createFlags2Infos[i];
+            if (createFlags2Infos[i].flags != 0)
+                usageFlags2Infos[i].pNext = &createFlags2Infos[i];
+
             framebufferAttachmentImageInfos[i].pNext = &usageFlags2Infos[i];
 
             framebufferAttachmentImageInfos[i].flags = 0u;
@@ -859,39 +851,10 @@ void fillBuffer(const DeviceInterface &vk, const VkDevice device, Allocation &bu
 
 std::vector<float> getFullQuadVertices(void)
 {
-    const float verticesData[] = {
+    return {
         -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, +1.0f, 0.0f, 1.0f, +1.0f, -1.0f, 0.0f, 1.0f,
         -1.0f, +1.0f, 0.0f, 1.0f, +1.0f, -1.0f, 0.0f, 1.0f, +1.0f, +1.0f, 0.0f, 1.0f,
     };
-    const std::vector<float> vertices(verticesData, verticesData + DE_LENGTH_OF_ARRAY(verticesData));
-
-    return vertices;
-}
-
-void checkImageFormatProperties(const InstanceInterface &vki, const VkPhysicalDevice &physDevice, const VkFormat format,
-                                const VkImageUsageFlags imageUsageFlags, const VkExtent2D &requiredSize2D)
-{
-    const VkImageType imageType               = VK_IMAGE_TYPE_2D;
-    const VkImageTiling imageTiling           = VK_IMAGE_TILING_OPTIMAL;
-    const VkImageCreateFlags imageCreateFlags = static_cast<VkImageCreateFlags>(0u);
-    const uint32_t requiredLayers             = 1u;
-    const VkExtent3D requiredSize             = makeExtent3D(requiredSize2D.height, requiredSize2D.width, 1u);
-
-    VkImageFormatProperties imageFormatProperties;
-    VkResult result;
-
-    deMemset(&imageFormatProperties, 0, sizeof(imageFormatProperties));
-
-    result = vki.getPhysicalDeviceImageFormatProperties(physDevice, format, imageType, imageTiling, imageUsageFlags,
-                                                        imageCreateFlags, &imageFormatProperties);
-
-    if (result != VK_SUCCESS || imageFormatProperties.maxArrayLayers < requiredLayers ||
-        imageFormatProperties.maxExtent.height < requiredSize.height ||
-        imageFormatProperties.maxExtent.width < requiredSize.width ||
-        imageFormatProperties.maxExtent.depth < requiredSize.depth)
-    {
-        TCU_THROW(NotSupportedError, "Depth/stencil format is not supported");
-    }
 }
 
 VkFormat getStencilBufferFormat(VkFormat depthStencilImageFormat)
@@ -970,7 +933,6 @@ protected:
     virtual bool verifyBufferInternal(const void *resultData, const tcu::TextureFormat &textureFormat,
                                       const tcu::TextureLevel &referenceImage, const std::string &name);
 
-    const bool m_extensions;
     const VkExtent2D m_imageExtent2D;
     const TestParameters m_parameters;
     VkImageUsageFlags m_colorImageUsage;
@@ -978,21 +940,11 @@ protected:
 
 ColorImagelessTestInstance::ColorImagelessTestInstance(Context &context, const TestParameters &parameters)
     : TestInstance(context)
-    , m_extensions(context.requireDeviceFunctionality("VK_KHR_imageless_framebuffer"))
     , m_imageExtent2D(makeExtent2D(32u, 32u))
     , m_parameters(parameters)
     , m_colorImageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
                         VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)
 {
-    const InstanceInterface &vki      = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice = m_context.getPhysicalDevice();
-    const VkPhysicalDeviceImagelessFramebufferFeatures &imagelessFramebufferFeatures(
-        context.getImagelessFramebufferFeatures());
-
-    if (imagelessFramebufferFeatures.imagelessFramebuffer == false)
-        TCU_THROW(NotSupportedError, "Imageless framebuffer is not supported");
-
-    checkImageFormatProperties(vki, physDevice, m_parameters.colorFormat, m_colorImageUsage, m_imageExtent2D);
 }
 
 void ColorImagelessTestInstance::readOneSampleFromMultisampleImage(
@@ -1236,13 +1188,10 @@ MovePtr<tcu::TextureLevel> ColorImagelessTestInstance::generateReferenceImage(co
 
 std::vector<float> ColorImagelessTestInstance::getVertices(void)
 {
-    const float verticesData[] = {
+    return {
         -1.0f, 0.0f,  0.0f, 1.0f, -1.0f, +1.0f, 0.0f, 1.0f, +1.0f, 0.0f,  0.0f, 1.0f,
         -1.0f, +1.0f, 0.0f, 1.0f, +1.0f, 0.0f,  0.0f, 1.0f, +1.0f, +1.0f, 0.0f, 1.0f,
     };
-    const std::vector<float> vertices(verticesData, verticesData + DE_LENGTH_OF_ARRAY(verticesData));
-
-    return vertices;
 }
 
 tcu::TestStatus ColorImagelessTestInstance::iterate(void)
@@ -1365,10 +1314,6 @@ DepthImagelessTestInstance::DepthImagelessTestInstance(Context &context, const T
     : ColorImagelessTestInstance(context, parameters)
     , m_dsImageUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
 {
-    const InstanceInterface &vki      = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice = m_context.getPhysicalDevice();
-
-    checkImageFormatProperties(vki, physDevice, m_parameters.dsFormat, m_dsImageUsage, m_imageExtent2D);
 }
 
 MovePtr<tcu::TextureLevel> DepthImagelessTestInstance::generateReferenceImage(const tcu::TextureFormat &textureFormat,
@@ -1448,16 +1393,13 @@ MovePtr<tcu::TextureLevel> DepthImagelessTestInstance::generateReferenceImage(co
 
 std::vector<float> DepthImagelessTestInstance::getVertices(void)
 {
-    const float verticesData[] = {
+    return {
         -1.0f, 0.0f,  0.50f, 1.0f, -1.0f, +1.0f, 0.50f, 1.0f, +1.0f, 0.0f,  0.50f, 1.0f,
         -1.0f, +1.0f, 0.50f, 1.0f, +1.0f, 0.0f,  0.50f, 1.0f, +1.0f, +1.0f, 0.50f, 1.0f,
 
         0.0f,  0.0f,  0.25f, 1.0f, 0.0f,  +1.0f, 0.25f, 1.0f, +1.0f, 0.0f,  0.25f, 1.0f,
         0.0f,  +1.0f, 0.25f, 1.0f, +1.0f, 0.0f,  0.25f, 1.0f, +1.0f, +1.0f, 0.25f, 1.0f,
     };
-    const std::vector<float> vertices(verticesData, verticesData + DE_LENGTH_OF_ARRAY(verticesData));
-
-    return vertices;
 }
 
 tcu::TestStatus DepthImagelessTestInstance::iterate(void)
@@ -1648,13 +1590,8 @@ protected:
 ColorResolveImagelessTestInstance::ColorResolveImagelessTestInstance(Context &context, const TestParameters &parameters)
     : ColorImagelessTestInstance(context, parameters)
 {
-    const InstanceInterface &vki      = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice = m_context.getPhysicalDevice();
-
     // To validate per-sample image image must also be sampled
     m_colorImageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-
-    checkImageFormatProperties(vki, physDevice, m_parameters.colorFormat, m_colorImageUsage, m_imageExtent2D);
 }
 
 MovePtr<tcu::TextureLevel> ColorResolveImagelessTestInstance::generateReferenceImage(
@@ -1701,12 +1638,9 @@ MovePtr<tcu::TextureLevel> ColorResolveImagelessTestInstance::generateReferenceI
 
 std::vector<float> ColorResolveImagelessTestInstance::getVertices(void)
 {
-    const float verticesData[] = {
+    return {
         -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, +1.0f, 0.0f, 1.0f, +1.0f, -1.0f, 0.0f, 1.0f,
     };
-    const std::vector<float> vertices(verticesData, verticesData + DE_LENGTH_OF_ARRAY(verticesData));
-
-    return vertices;
 }
 
 tcu::TestStatus ColorResolveImagelessTestInstance::iterate(void)
@@ -1863,31 +1797,8 @@ protected:
 DepthResolveImagelessTestInstance::DepthResolveImagelessTestInstance(Context &context, const TestParameters &parameters)
     : DepthImagelessTestInstance(context, parameters)
 {
-    context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
-
-    const InstanceInterface &vki      = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice = m_context.getPhysicalDevice();
-    VkPhysicalDeviceProperties2 deviceProperties;
-    VkPhysicalDeviceDepthStencilResolveProperties dsResolveProperties;
-
-    deMemset(&deviceProperties, 0, sizeof(deviceProperties));
-    deMemset(&dsResolveProperties, 0, sizeof(dsResolveProperties));
-
-    deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-    deviceProperties.pNext = &dsResolveProperties;
-
-    dsResolveProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
-    dsResolveProperties.pNext = nullptr;
-
-    vki.getPhysicalDeviceProperties2(physDevice, &deviceProperties);
-
     m_colorImageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-
-    checkImageFormatProperties(vki, physDevice, m_parameters.colorFormat, m_colorImageUsage, m_imageExtent2D);
-
     m_dsImageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-
-    checkImageFormatProperties(vki, physDevice, m_parameters.dsFormat, m_dsImageUsage, m_imageExtent2D);
 }
 
 MovePtr<tcu::TextureLevel> DepthResolveImagelessTestInstance::generateReferenceImage(
@@ -1990,13 +1901,10 @@ MovePtr<tcu::TextureLevel> DepthResolveImagelessTestInstance::generateReferenceI
 
 std::vector<float> DepthResolveImagelessTestInstance::getVertices(void)
 {
-    const float verticesData[] = {
+    return {
         -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, +1.0f, 0.0f, 1.0f, +1.0f, -1.0f, 0.0f, 1.0f,
         -1.0f, -1.0f, 0.5f, 1.0f, -1.0f, +1.0f, 0.5f, 1.0f, +1.0f, -1.0f, 0.5f, 1.0f,
     };
-    const std::vector<float> vertices(verticesData, verticesData + DE_LENGTH_OF_ARRAY(verticesData));
-
-    return vertices;
 }
 
 tcu::TestStatus DepthResolveImagelessTestInstance::iterate(void)
@@ -2268,13 +2176,10 @@ MultisubpassTestInstance::MultisubpassTestInstance(Context &context, const TestP
 
 std::vector<float> MultisubpassTestInstance::getVertices(void)
 {
-    const float verticesData[] = {
+    return {
         -1.0f, 0.0f,  0.0f, 1.0f, -1.0f, +1.0f, 0.0f, 1.0f, +1.0f, 0.0f,  0.0f, 1.0f,
         -1.0f, +1.0f, 0.0f, 1.0f, +1.0f, 0.0f,  0.0f, 1.0f, +1.0f, +1.0f, 0.0f, 1.0f,
     };
-    const std::vector<float> vertices(verticesData, verticesData + DE_LENGTH_OF_ARRAY(verticesData));
-
-    return vertices;
 }
 
 MovePtr<tcu::TextureLevel> MultisubpassTestInstance::generateReferenceImage(const tcu::TextureFormat &textureFormat,
@@ -2523,13 +2428,10 @@ DifferentAttachmentsTestInstance::DifferentAttachmentsTestInstance(Context &cont
 
 std::vector<float> DifferentAttachmentsTestInstance::getVertices(void)
 {
-    const float verticesData[] = {
+    return {
         -1.0f, 0.0f,  0.0f, 1.0f, -1.0f, +1.0f, 0.0f, 1.0f, +1.0f, 0.0f,  0.0f, 1.0f,
         -1.0f, +1.0f, 0.0f, 1.0f, +1.0f, 0.0f,  0.0f, 1.0f, +1.0f, +1.0f, 0.0f, 1.0f,
     };
-    const std::vector<float> vertices(verticesData, verticesData + DE_LENGTH_OF_ARRAY(verticesData));
-
-    return vertices;
 }
 
 MovePtr<tcu::TextureLevel> DifferentAttachmentsTestInstance::generateReferenceImage(
@@ -2721,10 +2623,12 @@ class BaseTestCase : public TestCase
 {
 public:
     BaseTestCase(tcu::TestContext &context, const std::string &name, const TestParameters &parameters);
-    virtual ~BaseTestCase(void);
+    virtual ~BaseTestCase(void) = default;
 
 protected:
     virtual void checkSupport(Context &context) const;
+    void checkImageFormatProperties(Context &context, const VkFormat format, const VkImageUsageFlags imageUsageFlags,
+                                    const VkExtent2D &requiredSize2D) const;
     virtual void initPrograms(SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
 
@@ -2737,21 +2641,78 @@ BaseTestCase::BaseTestCase(tcu::TestContext &context, const std::string &name, c
 {
 }
 
-BaseTestCase::~BaseTestCase()
-{
-}
-
 void BaseTestCase::checkSupport(Context &context) const
 {
-    if (m_parameters.testType == TEST_TYPE_COLOR_RESOLVE || m_parameters.testType == TEST_TYPE_DEPTH_STENCIL_RESOLVE)
+    const auto imageExtent = vk::makeExtent2D(32u, 32u);
+
+    VkImageUsageFlags colorImageUsage =
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+    VkImageUsageFlags dsImageUsage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+    if ((m_parameters.testType == TEST_TYPE_COLOR) || (m_parameters.testType == TEST_TYPE_DEPTH_STENCIL) ||
+        (m_parameters.testType == TEST_TYPE_MULTISUBPASS) || (m_parameters.testType == TEST_TYPE_DIFFERENT_ATTACHMENTS))
+    {
+        context.requireDeviceFunctionality("VK_KHR_imageless_framebuffer");
+
+        const auto &imagelessFramebufferFeatures(context.getImagelessFramebufferFeatures());
+        if (imagelessFramebufferFeatures.imagelessFramebuffer == false)
+            TCU_THROW(NotSupportedError, "Imageless framebuffer is not supported");
+
+        checkImageFormatProperties(context, m_parameters.colorFormat, colorImageUsage, imageExtent);
+
+        if (m_parameters.testType == TEST_TYPE_DEPTH_STENCIL)
+            checkImageFormatProperties(context, m_parameters.dsFormat, dsImageUsage, imageExtent);
+    }
+    else if (m_parameters.testType == TEST_TYPE_COLOR_RESOLVE ||
+             m_parameters.testType == TEST_TYPE_DEPTH_STENCIL_RESOLVE)
     {
         if (!context.getDeviceProperties().limits.standardSampleLocations)
             TCU_THROW(NotSupportedError, "Non-standard sample locations are not supported");
+
+        colorImageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+        checkImageFormatProperties(context, m_parameters.colorFormat, colorImageUsage, imageExtent);
+
+        if (m_parameters.testType == TEST_TYPE_DEPTH_STENCIL_RESOLVE)
+        {
+            context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
+
+            dsImageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+            checkImageFormatProperties(context, m_parameters.dsFormat, dsImageUsage, imageExtent);
+        }
     }
 #ifndef CTS_USES_VULKANSC
     if (m_parameters.extendedFlags)
         context.requireDeviceFunctionality(VK_KHR_EXTENDED_FLAGS_EXTENSION_NAME);
 #endif
+}
+
+void BaseTestCase::checkImageFormatProperties(Context &context, const VkFormat format,
+                                              const VkImageUsageFlags imageUsageFlags,
+                                              const VkExtent2D &requiredSize2D) const
+{
+    const InstanceInterface &vki              = context.getInstanceInterface();
+    const VkPhysicalDevice physDevice         = context.getPhysicalDevice();
+    const VkImageType imageType               = VK_IMAGE_TYPE_2D;
+    const VkImageTiling imageTiling           = VK_IMAGE_TILING_OPTIMAL;
+    const VkImageCreateFlags imageCreateFlags = static_cast<VkImageCreateFlags>(0u);
+    const uint32_t requiredLayers             = 1u;
+    const VkExtent3D requiredSize             = makeExtent3D(requiredSize2D.height, requiredSize2D.width, 1u);
+
+    VkImageFormatProperties imageFormatProperties;
+    VkResult result;
+
+    deMemset(&imageFormatProperties, 0, sizeof(imageFormatProperties));
+
+    result = vki.getPhysicalDeviceImageFormatProperties(physDevice, format, imageType, imageTiling, imageUsageFlags,
+                                                        imageCreateFlags, &imageFormatProperties);
+
+    if (result != VK_SUCCESS || imageFormatProperties.maxArrayLayers < requiredLayers ||
+        imageFormatProperties.maxExtent.height < requiredSize.height ||
+        imageFormatProperties.maxExtent.width < requiredSize.width ||
+        imageFormatProperties.maxExtent.depth < requiredSize.depth)
+    {
+        TCU_THROW(NotSupportedError, "Depth/stencil format is not supported");
+    }
 }
 
 void BaseTestCase::initPrograms(SourceCollections &programCollection) const
@@ -3088,5 +3049,4 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     return imagelessFramebufferGroup.release();
 }
 
-} // namespace imageless
-} // namespace vkt
+} // namespace vkt::imageless
