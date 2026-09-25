@@ -1,11 +1,10 @@
+# Tests permanently or structurally excluded from mustpass for reasons other
+# than a broken test - e.g. performance-only tests that can't produce a hard
+# pass/fail, or tests that need a manual/non-automatable step. Not expected
+# to be re-enabled by a code fix; see test-issues.txt for those.
 
-
-dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_fragment
-dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_vertex
-dEQP-VK.ray_tracing_pipeline.build.cpuht*1048576_1_1
-dEQP-VK.ray_tracing_pipeline.build.cpuht*65536_4_4
-# VK-GL-CTS 4090
+# Issue 4090 (performance tests use quality-warning thresholds, not hard pass/fail, so they don't belong in mustpass)
 dEQP-VK.shader_object.performance.*
 
-# VK-GL-CTS 6296
+# Issue 6296 (requires manually rotating the physical screen, not automatable in CI)
 dEQP-VK.wsi.android.pre_transform.*

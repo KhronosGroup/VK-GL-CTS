@@ -1,4 +1,17 @@
-# Issue 448: Precision issues with software texture sampling on X86 Linux
+# Tests that are expected to be valid but are currently broken (by a bug in
+# the test itself, in the reference/comparison logic, or by an unresolved
+# spec question) and have been temporarily removed from mustpass pending a
+# fix. Re-enable once the underlying issue is resolved.
+
+# Issue 877 (same texturegrad driver failure as the other excluded samplercubeshadow variants)
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_fragment
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_vertex
+
+# Issue 3005 (random overlapping instances make ray traversal pathologically slow and time out)
+dEQP-VK.ray_tracing_pipeline.build.cpuht*1048576_1_1
+dEQP-VK.ray_tracing_pipeline.build.cpuht*65536_4_4
+
+# Issue 448 (excess x86 CPU floating-point precision in the reference renderer causes false failures)
 dEQP-VK.glsl.texture_functions.textureoffset.clamp_to_edge.isampler2darray_vertex
 dEQP-VK.glsl.texture_functions.textureoffset.clamp_to_border.isampler2darray_vertex
 dEQP-VK.glsl.texture_functions.textureoffset.repeat.isampler2darray_vertex
@@ -20,10 +33,10 @@ dEQP-VK.glsl.texture_functions.texturegradoffset.repeat.usampler2darray_vertex
 dEQP-VK.glsl.texture_functions.texturegradoffset.mirrored_repeat.usampler2darray_vertex
 dEQP-VK.glsl.texture_functions.texturegradoffset.mirrored.usampler2darray_vertex
 
-# Issue 4372
+# Issue 4372 (workgroup size 119 isn't a multiple of maxSubgroupSize, which the full-subgroups flag requires)
 dEQP-VK.subgroups.subgroup_uniform_control_flow.*partial*
 
-# Issue 4894
+# Issue 4894 (pending resolution of spec ambiguity vulkan/vulkan#3742 on extended usage bit compatibility)
 dEQP-VK.image.extended_usage_bit_compatibility.image_format_list.*
 
 # Issue 6828
