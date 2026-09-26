@@ -9349,6 +9349,11 @@ dEQP-VK.spirv_assembly.instruction.compute.indexing.input.struct.opptraccesschai
 dEQP-VK.spirv_assembly.instruction.compute.indexing.input.struct.opptraccesschain_u32_64bit_indexing
 dEQP-VK.spirv_assembly.instruction.compute.indexing.input.struct.opptraccesschain_u64
 dEQP-VK.spirv_assembly.instruction.compute.indexing.input.struct.opptraccesschain_u64_64bit_indexing
+dEQP-VK.spirv_assembly.instruction.compute.integer_division.sdiv_32bit
+dEQP-VK.spirv_assembly.instruction.compute.integer_division.smod_32bit
+dEQP-VK.spirv_assembly.instruction.compute.integer_division.srem_32bit
+dEQP-VK.spirv_assembly.instruction.compute.integer_division.udiv_32bit
+dEQP-VK.spirv_assembly.instruction.compute.integer_division.umod_32bit
 dEQP-VK.spirv_assembly.instruction.compute.ldexp.ldexp_f16vec2_i16vec2
 dEQP-VK.spirv_assembly.instruction.compute.ldexp.ldexp_f16vec2_i32vec2
 dEQP-VK.spirv_assembly.instruction.compute.ldexp.ldexp_f16vec2_i64vec2
