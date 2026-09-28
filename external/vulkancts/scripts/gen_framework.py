@@ -78,6 +78,7 @@ VK_EXT_depth_clamp_control
 VK_EXT_depth_clamp_zero_one
 VK_EXT_depth_clip_control
 VK_EXT_depth_clip_enable
+VK_EXT_depth_range_unrestricted
 VK_EXT_descriptor_buffer
 VK_EXT_descriptor_heap
 VK_EXT_device_address_binding_report
