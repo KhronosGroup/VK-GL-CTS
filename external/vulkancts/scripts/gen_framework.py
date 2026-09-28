@@ -131,6 +131,7 @@ VK_EXT_pci_bus_info
 VK_EXT_physical_device_drm
 VK_EXT_pipeline_library_group_handles
 VK_EXT_pipeline_properties
+VK_EXT_post_depth_coverage
 VK_EXT_present_mode_fifo_latest_ready
 VK_EXT_present_timing
 VK_EXT_primitive_topology_list_restart
