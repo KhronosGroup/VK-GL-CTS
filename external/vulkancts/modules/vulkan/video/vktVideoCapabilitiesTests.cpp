@@ -2448,6 +2448,7 @@ struct TestParams
     VkVideoCoreProfile coreProfile;
 
     VkImageUsageFlagBits usage;
+    bool maxArrayLayers = false;
 };
 
 std::string getTestName(const TestParams &params)
@@ -2539,6 +2540,9 @@ std::string getTestName(const TestParams &params)
     default:
         TCU_THROW(InternalError, "invalid bitdepth");
     }
+
+    if (params.maxArrayLayers)
+        ss << "_max_array_layers";
 
     return de::toLower(ss.str());
 }
@@ -2667,6 +2671,48 @@ std::vector<uint64_t> getDrmFormatModifier(Context &context, de::SharedPtr<TestP
     return drmModifiers;
 }
 
+// Create an image with the maxArrayLayers reported for the video profile and views of its layers
+tcu::TestStatus testMaxArrayLayers(Context &context, const TestParams &params,
+                                   const VkVideoFormatPropertiesKHR &formatProperty)
+{
+    const InstanceInterface &vki = context.getInstanceInterface();
+    const VkPhysicalDevice phys  = context.getPhysicalDevice();
+    const DeviceInterface &vkd   = context.getDeviceInterface();
+    const VkDevice device        = context.getDevice();
+    const auto profileList       = (VkVideoProfileListInfoKHR *)params.coreProfile.GetProfileListInfo();
+
+    VkPhysicalDeviceImageFormatInfo2 imageFormatInfo2 = initVulkanStructure(profileList);
+    imageFormatInfo2.format                           = formatProperty.format;
+    imageFormatInfo2.type                             = formatProperty.imageType;
+    imageFormatInfo2.tiling                           = formatProperty.imageTiling;
+    imageFormatInfo2.usage                            = params.usage;
+    VkImageFormatProperties2 imageFormatProperties2   = initVulkanStructure();
+
+    const VkResult r = vki.getPhysicalDeviceImageFormatProperties2(phys, &imageFormatInfo2, &imageFormatProperties2);
+    if (r != VK_SUCCESS)
+        return tcu::TestStatus::fail("getPhysicalDeviceImageFormatProperties2 returned " + de::toString(r) +
+                                     " for a format reported by getPhysicalDeviceVideoFormatPropertiesKHR");
+
+    const uint32_t layerCount       = imageFormatProperties2.imageFormatProperties.maxArrayLayers;
+    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+
+    context.getTestContext().getLog() << tcu::TestLog::Message << getImageTilingName(formatProperty.imageTiling)
+                                      << ": maxArrayLayers = " << layerCount << tcu::TestLog::EndMessage;
+
+    const VkImageCreateInfo imageCreateInfo =
+        makeImageCreateInfo(formatProperty.format, makeExtent2D(8u, 8u), 0u, &queueFamilyIndex, params.usage,
+                            profileList, layerCount, VK_IMAGE_LAYOUT_UNDEFINED, formatProperty.imageTiling);
+    const ImageWithMemory image(vkd, device, context.getDefaultAllocator(), imageCreateInfo, MemoryRequirement::Any);
+
+    const auto lastLayerRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, layerCount - 1u, 1u);
+    const auto allLayersRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, layerCount);
+
+    makeImageView(vkd, device, *image, VK_IMAGE_VIEW_TYPE_2D, formatProperty.format, lastLayerRange);
+    makeImageView(vkd, device, *image, VK_IMAGE_VIEW_TYPE_2D_ARRAY, formatProperty.format, allLayersRange);
+
+    return tcu::TestStatus::pass("OK");
+}
+
 tcu::TestStatus test(Context &context, de::SharedPtr<TestParams> params)
 {
     const InstanceInterface &vki          = context.getInstanceInterface();
@@ -2686,6 +2732,7 @@ tcu::TestStatus test(Context &context, de::SharedPtr<TestParams> params)
     }
 
     bool foundMatchingFormat = false;
+    std::set<VkImageTiling> maxArrayLayersTilings;
     for (const auto &formatProperty : videoFormatProperties.items)
     {
         if (formatProperty.format == params->format && ((formatProperty.imageUsageFlags & usage) != 0))
@@ -2732,6 +2779,7 @@ tcu::TestStatus test(Context &context, de::SharedPtr<TestParams> params)
                 VkImageFormatProperties2 imageFormatProperties2 = initVulkanStructure();
                 VkResult r =
                     vki.getPhysicalDeviceImageFormatProperties2(phys, &imageFormatInfo2, &imageFormatProperties2);
+                profileList->pNext = nullptr;
                 // Modifier is not compatible
                 if (formatProperty.imageTiling == VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT &&
                     r == VK_ERROR_FORMAT_NOT_SUPPORTED)
@@ -2751,6 +2799,15 @@ tcu::TestStatus test(Context &context, de::SharedPtr<TestParams> params)
 
             if (formatProperty.imageTiling == VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT && !foundCompatibleModifier)
                 return tcu::TestStatus::fail("no compatible modifier found");
+
+            // Test each tiling once, other entry fields are not used by testMaxArrayLayers
+            if (params->maxArrayLayers && formatProperty.imageTiling != VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT &&
+                maxArrayLayersTilings.insert(formatProperty.imageTiling).second)
+            {
+                const tcu::TestStatus status = testMaxArrayLayers(context, *params, formatProperty);
+                if (status.isFail())
+                    return status;
+            }
         }
     }
 
@@ -2894,6 +2951,21 @@ tcu::TestCaseGroup *createVideoFormatsTests(tcu::TestContext &testCtx)
         }
     };
 
+    // Reduce sampling combinations to 4:2:0 and depth to 8-bit or 10-bit
+    auto isTestedCombination = [](VkVideoCodecOperationFlagBitsKHR codec, VkVideoChromaSubsamplingFlagsKHR subsampling,
+                                  VkVideoComponentBitDepthFlagsKHR bitdepth)
+    {
+        if (subsampling != VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR ||
+            bitdepth == VK_VIDEO_COMPONENT_BIT_DEPTH_12_BIT_KHR)
+            return false;
+
+        if (bitdepth == VK_VIDEO_COMPONENT_BIT_DEPTH_10_BIT_KHR)
+            return codec == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR ||
+                   codec == VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR;
+
+        return true;
+    };
+
     for (VkVideoCodecOperationFlagBitsKHR codec : codecs)
         for (VkImageUsageFlagBits usage : usageFlags)
             for (VkFormat format : formats)
@@ -2958,6 +3030,17 @@ tcu::TestCaseGroup *createVideoFormatsTests(tcu::TestContext &testCtx)
 
                         std::string testName = getTestName(*params);
                         addFunctionCase(group.get(), testName.c_str(), formats::checkSupport, formats::test, params);
+
+                        if (isYCbCrFormat(format) && isTestedCombination(codec, subsampling, bitdepth) &&
+                            params->coreProfile.IsEncodeCodecType() ==
+                                ((usage & (VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR |
+                                           VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR)) != 0))
+                        {
+                            de::SharedPtr<formats::TestParams> layersParams(new formats::TestParams(*params));
+                            layersParams->maxArrayLayers = true;
+                            addFunctionCase(group.get(), getTestName(*layersParams).c_str(), formats::checkSupport,
+                                            formats::test, layersParams);
+                        }
                     }
 
     return group.release();
