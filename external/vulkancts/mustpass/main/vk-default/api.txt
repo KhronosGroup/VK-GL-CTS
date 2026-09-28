@@ -267486,6 +267486,7 @@ dEQP-VK.api.object_management.single_alloc_callbacks.sampler
 dEQP-VK.api.object_management.single_alloc_callbacks.semaphore
 dEQP-VK.api.object_management.single_alloc_callbacks.shader_module
 dEQP-VK.api.performance_counters_by_region.enumerate_counters
+dEQP-VK.api.pipeline.compiler_race.multithreaded_compilation
 dEQP-VK.api.pipeline.pipeline_invalid_pointers_unused_structs.compute
 dEQP-VK.api.pipeline.pipeline_invalid_pointers_unused_structs.graphics
 dEQP-VK.api.pipeline.pipeline_layout.lifetime.compute
