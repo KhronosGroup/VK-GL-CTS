@@ -38,6 +38,8 @@
 #include "vkObjUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkImageWithMemory.hpp"
+#include "tcuImageCompare.hpp"
 
 namespace vkt
 {
@@ -363,11 +365,270 @@ void RelaxedPrecisionTestCase::initPrograms(vk::SourceCollections &programCollec
     programCollection.spirvAsmSources.add("frag") << frag.str();
 }
 
+void checkNoSamplerPipelineSupport(Context &context)
+{
+    context.requireDeviceFunctionality("VK_KHR_sampler_ycbcr_conversion");
+    checkImageSupport(context, VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM, 0u, VK_IMAGE_TILING_OPTIMAL);
+
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
+    const VkFormatProperties ycbcrProperties =
+        getPhysicalDeviceFormatProperties(vki, physicalDevice, VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM);
+    const VkFormatFeatureFlags ycbcrRequiredFlags =
+        (VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT);
+
+    if ((ycbcrProperties.optimalTilingFeatures & ycbcrRequiredFlags) != ycbcrRequiredFlags)
+        TCU_THROW(
+            NotSupportedError,
+            "VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM does not support required features (sampled image and transfer dst)");
+
+    const VkFormatProperties fbProperties =
+        getPhysicalDeviceFormatProperties(vki, physicalDevice, VK_FORMAT_R8G8B8A8_UNORM);
+    const VkFormatFeatureFlags fbRequiredFlags =
+        (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
+
+    if ((fbProperties.optimalTilingFeatures & fbRequiredFlags) != fbRequiredFlags)
+        TCU_THROW(NotSupportedError,
+                  "VK_FORMAT_R8G8B8A8_UNORM does not support required features (color attachment and transfer src)");
+}
+
+void initNoSamplerPipelinePrograms(SourceCollections &dst)
+{
+    dst.glslSources.add("vert") << glu::VertexSource(
+        "#version 450\n"
+        "void main() {\n"
+        "    vec2 pos = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));\n"
+        "    gl_Position = vec4(pos * 2.0f - 1.0f, 0.0f, 1.0f);\n"
+        "}\n");
+
+    dst.glslSources.add("frag") << glu::FragmentSource("#version 450\n"
+                                                       "layout(location = 0) out vec4 outColor;\n"
+                                                       "layout(binding = 0) uniform sampler2D u_tex;\n"
+                                                       "void main() {\n"
+                                                       "    outColor = texture(u_tex, vec2(0.5));\n"
+                                                       "}\n");
+}
+
+tcu::TestStatus noSamplerPipelineBindingTest(Context &context)
+{
+    const DeviceInterface &vk             = context.getDeviceInterface();
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const VkDevice device                 = context.getDevice();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    Allocator &memAlloc                   = context.getDefaultAllocator();
+    const uint32_t queueFamilyIndex       = context.getUniversalQueueFamilyIndex();
+    const VkQueue queue                   = context.getUniversalQueue();
+
+    const tcu::IVec3 fbExtent(4, 4, 1);
+    const auto vkExtent  = makeExtent3D(fbExtent);
+    const auto fbFormat  = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto tcuFormat = mapVkFormat(fbFormat);
+    const auto fbUsage   = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+    const tcu::Vec4 clearColor(0.01f, 0.01f, 0.033f, 1.0f);
+
+    ImageWithBuffer colorBuffer(vk, device, memAlloc, vkExtent, fbFormat, fbUsage, VK_IMAGE_TYPE_2D);
+
+    const Move<VkRenderPass> renderPass(makeRenderPass(vk, device, fbFormat));
+    const Move<VkFramebuffer> framebuffer(
+        makeFramebuffer(vk, device, *renderPass, colorBuffer.getImageView(), fbExtent.x(), fbExtent.y()));
+
+    const VkFormat ycbcrFormat = VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM;
+    MultiPlaneImageData imageData(ycbcrFormat, tcu::UVec2(4, 4));
+    const tcu::Vec4 solidColor(0.2f, 0.4f, 0.6f, 1.0f);
+    fillGradient(&imageData, solidColor, solidColor);
+    // solidColor(0.2, 0.4, 0.6) -> 8-bit UNORM (Cr=51, Y=102, Cb=153) -> YCBCR_2020 + ITU_NARROW -> RGB(0, 146/255, 154/255)
+    const tcu::Vec4 expectColor(0.0f, 146.0f / 255.0f, 154.0f / 255.0f, 1.0f);
+
+    const VkImageCreateInfo srcTexCreateInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                            // sType
+        nullptr,                                                        // pNext
+        0u,                                                             // flags
+        VK_IMAGE_TYPE_2D,                                               // imageType
+        ycbcrFormat,                                                    // format
+        vkExtent,                                                       // extent
+        1u,                                                             // mipLevels
+        1u,                                                             // arrayLayers
+        VK_SAMPLE_COUNT_1_BIT,                                          // samples
+        VK_IMAGE_TILING_OPTIMAL,                                        // tiling
+        (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT), // usage
+        VK_SHARING_MODE_EXCLUSIVE,                                      // sharingMode
+        0u,                                                             // queueFamilyIndexCount
+        nullptr,                                                        // pQueueFamilyIndices
+        VK_IMAGE_LAYOUT_UNDEFINED                                       // initialLayout
+    };
+    ImageWithMemory srcTex(vk, device, memAlloc, srcTexCreateInfo, MemoryRequirement::Any);
+
+    uploadImage(vk, device, queueFamilyIndex, memAlloc, *srcTex, imageData, VK_ACCESS_SHADER_READ_BIT,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    const VkFormatProperties ycbcrProperties = getPhysicalDeviceFormatProperties(vki, physicalDevice, ycbcrFormat);
+    const VkChromaLocation chromaLocation =
+        (ycbcrProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT) ?
+            VK_CHROMA_LOCATION_MIDPOINT :
+            VK_CHROMA_LOCATION_COSITED_EVEN;
+
+    const VkSamplerYcbcrConversionCreateInfo conversionInfo = {
+        VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO, // sType
+        nullptr,                                                // pNext
+        ycbcrFormat,                                            // format
+        VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020,           // ycbcrModel
+        VK_SAMPLER_YCBCR_RANGE_ITU_NARROW,                      // ycbcrRange
+        {
+            VK_COMPONENT_SWIZZLE_IDENTITY,
+            VK_COMPONENT_SWIZZLE_IDENTITY,
+            VK_COMPONENT_SWIZZLE_IDENTITY,
+            VK_COMPONENT_SWIZZLE_IDENTITY,
+        },                 // components
+        chromaLocation,    // xChromaOffset
+        chromaLocation,    // yChromaOffset
+        VK_FILTER_NEAREST, // chromaFilter
+        VK_FALSE,          // forceExplicitReconstruction
+    };
+    const Move<VkSamplerYcbcrConversion> ycbcrConversion(createSamplerYcbcrConversion(vk, device, &conversionInfo));
+
+    const VkSamplerYcbcrConversionInfo samplerConversionInfo = {VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
+                                                                nullptr, *ycbcrConversion};
+
+    const VkSamplerCreateInfo samplerCreateInfo = {
+        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // sType
+        &samplerConversionInfo,                  // pNext
+        0u,                                      // flags
+        VK_FILTER_NEAREST,                       // magFilter
+        VK_FILTER_NEAREST,                       // minFilter
+        VK_SAMPLER_MIPMAP_MODE_NEAREST,          // mipmapMode
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // addressModeU
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // addressModeV
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // addressModeW
+        0.0f,                                    // mipLodBias
+        VK_FALSE,                                // anisotropyEnable
+        1.0f,                                    // maxAnisotropy
+        VK_FALSE,                                // compareEnable
+        VK_COMPARE_OP_ALWAYS,                    // compareOp
+        0.0f,                                    // minLod
+        0.0f,                                    // maxLod
+        VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK, // borderColor
+        VK_FALSE,                                // unnormalizedCoordinates
+    };
+    const Move<VkSampler> sampler(createSampler(vk, device, &samplerCreateInfo));
+
+    const VkImageViewCreateInfo viewInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,                             // sType
+        &samplerConversionInfo,                                               // pNext
+        0u,                                                                   // flags
+        *srcTex,                                                              // image
+        VK_IMAGE_VIEW_TYPE_2D,                                                // viewType
+        ycbcrFormat,                                                          // format
+        makeComponentMappingIdentity(),                                       // components
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u), // subresourceRange
+    };
+    const Move<VkImageView> imageView(createImageView(vk, device, &viewInfo));
+
+    const Move<VkDescriptorSetLayout> descriptorSetLayout(
+        DescriptorSetLayoutBuilder()
+            .addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, &*sampler)
+            .build(vk, device));
+
+    // A combined image sampler with a YCbCr conversion may consume more than one descriptor.
+    uint32_t combinedSamplerDescriptorCount = 1u;
+    {
+        const VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2, // sType
+            nullptr,                                               // pNext
+            ycbcrFormat,                                           // format
+            srcTexCreateInfo.imageType,                            // type
+            srcTexCreateInfo.tiling,                               // tiling
+            srcTexCreateInfo.usage,                                // usage
+            srcTexCreateInfo.flags,                                // flags
+        };
+        VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = initVulkanStructure();
+        VkImageFormatProperties2 imageFormatProperties = initVulkanStructure(&samplerYcbcrConversionImage);
+
+        VK_CHECK(vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &imageFormatProperties));
+        combinedSamplerDescriptorCount = samplerYcbcrConversionImage.combinedImageSamplerDescriptorCount;
+    }
+
+    const Move<VkDescriptorPool> descPool(
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, combinedSamplerDescriptorCount)
+            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+    const Move<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descPool, *descriptorSetLayout));
+
+    const VkDescriptorImageInfo descImageInfo = {*sampler, *imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                     VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &descImageInfo)
+        .update(vk, device);
+
+    const Move<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
+
+    const auto &binaries(context.getBinaryCollection());
+    const Move<VkShaderModule> vertModule(createShaderModule(vk, device, binaries.get("vert"), 0u));
+    const Move<VkShaderModule> fragModule(createShaderModule(vk, device, binaries.get("frag"), 0u));
+
+    const std::vector<VkViewport> viewports(1, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1, makeRect2D(fbExtent));
+    VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+    const Move<VkPipeline> pipeline = makeGraphicsPipeline(
+        vk, device, *pipelineLayout, *vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragModule,
+        *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &vertexInputState);
+
+    const Move<VkDescriptorSetLayout> noSamplerDescSetLayout(
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .build(vk, device));
+    const Move<VkPipelineLayout> noSamplerPipelineLayout(makePipelineLayout(vk, device, *noSamplerDescSetLayout));
+
+    const Move<VkPipeline> noSamplerPipeline = makeGraphicsPipeline(
+        vk, device, *noSamplerPipelineLayout, *vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragModule,
+        *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &vertexInputState);
+
+    const Move<VkCommandPool> cmdPool(createCommandPool(vk, device, 0u, queueFamilyIndex));
+    const Move<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    beginCommandBuffer(vk, *cmdBuffer);
+    beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(vkExtent.width, vkExtent.height), clearColor);
+
+    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u,
+                             nullptr);
+    vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+    vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
+
+    // Bind a pipeline that also declares (set=0, binding=0) without an immutable YCbCr
+    // sampler before ending the render pass to verify that the driver does not overwrite
+    // or deactivate the YCbCr conversion matrix state needed by the preceding draw.
+    vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *noSamplerPipeline);
+
+    endRenderPass(vk, *cmdBuffer);
+
+    copyImageToBuffer(vk, *cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), fbExtent.swizzle(0, 1));
+    endCommandBuffer(vk, *cmdBuffer);
+
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+    invalidateAlloc(vk, device, colorBuffer.getBufferAllocation());
+
+    tcu::PixelBufferAccess resultAccess(tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+    const tcu::Vec4 threshold(0.02f, 0.02f, 0.02f, 0.02f);
+
+    const bool isOk = tcu::floatThresholdCompare(context.getTestContext().getLog(), "Result", "Image comparison result",
+                                                 expectColor, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR);
+
+    if (!isOk)
+        TCU_FAIL("Image threshold comparison failed");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 
     miscGroup->addChild(new RelaxedPrecisionTestCase(testCtx, "relaxed_precision"));
+    addFunctionCaseWithPrograms(miscGroup.get(), "no_sampler_pipeline_binding", checkNoSamplerPipelineSupport,
+                                initNoSamplerPipelinePrograms, noSamplerPipelineBindingTest);
 
     return miscGroup.release();
 }
