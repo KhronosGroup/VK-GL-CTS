@@ -219,6 +219,8 @@ enum class SpirvTestType
     AtomicImage2d,
     AtomicImage2d64Bit,
     CopyObject,
+    CopyObjectStorageBuffer,
+    SplitAccessChain,
 };
 
 struct TestParamsSpirv : TestParams
@@ -9619,6 +9621,100 @@ void DescriptorHeapTestCaseSpirv::initPrograms(vk::SourceCollections &programCol
 )";
         spirvVersion = vk::SPIRV_VERSION_1_3;
         break;
+    case SpirvTestType::CopyObjectStorageBuffer:
+        assembly = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %ssbo_var
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %rta ArrayStride 4
+               OpDecorate %Data Block
+               OpMemberDecorate %Data 0 Offset 0
+               OpDecorate %ssbo_var DescriptorSet 0
+               OpDecorate %ssbo_var Binding 0
+       %void = OpTypeVoid
+    %fn_void = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_3 = OpConstant %int 3
+     %uint_4 = OpConstant %uint 4
+        %rta = OpTypeRuntimeArray %uint
+       %Data = OpTypeStruct %rta
+   %ptr_ssbo = OpTypePointer StorageBuffer %Data
+%ptr_ssbo_rta = OpTypePointer StorageBuffer %rta
+%ptr_ssbo_uint = OpTypePointer StorageBuffer %uint
+   %ssbo_var = OpVariable %ptr_ssbo StorageBuffer
+       %main = OpFunction %void None %fn_void
+      %entry = OpLabel
+  %ssbo_copy = OpCopyObject %ptr_ssbo %ssbo_var
+      %array = OpAccessChain %ptr_ssbo_rta %ssbo_copy %int_0
+       %elem = OpAccessChain %ptr_ssbo_uint %array %int_3
+               OpStore %elem %uint_4
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
+    case SpirvTestType::SplitAccessChain:
+        assembly = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %ssbo_var %ubo_var
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %arr_uint_4 ArrayStride 4
+               OpDecorate %A Block
+               OpMemberDecorate %A 0 Offset 0
+               OpMemberDecorate %A 1 Offset 16
+               OpDecorate %ssbo_var DescriptorSet 0
+               OpDecorate %ssbo_var Binding 0
+               OpDecorate %B Block
+               OpMemberDecorate %B 0 Offset 0
+               OpDecorate %ubo_var DescriptorSet 0
+               OpDecorate %ubo_var Binding 1
+       %void = OpTypeVoid
+    %fn_void = OpTypeFunction %void
+       %bool = OpTypeBool
+       %uint = OpTypeInt 32 0
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+      %int_2 = OpConstant %int 2
+     %uint_0 = OpConstant %uint 0
+     %uint_4 = OpConstant %uint 4
+      %uvec4 = OpTypeVector %uint 4
+ %arr_uint_4 = OpTypeArray %uint %uint_4
+          %A = OpTypeStruct %uint %arr_uint_4
+          %B = OpTypeStruct %uvec4
+   %ptr_ssbo = OpTypePointer StorageBuffer %A
+    %ptr_ubo = OpTypePointer Uniform %B
+%ptr_ssbo_arr = OpTypePointer StorageBuffer %arr_uint_4
+%ptr_ssbo_uint = OpTypePointer StorageBuffer %uint
+%ptr_ubo_uvec4 = OpTypePointer Uniform %uvec4
+%ptr_ubo_uint = OpTypePointer Uniform %uint
+   %ssbo_var = OpVariable %ptr_ssbo StorageBuffer
+    %ubo_var = OpVariable %ptr_ubo Uniform
+       %main = OpFunction %void None %fn_void
+      %entry = OpLabel
+    %ubo_vec = OpAccessChain %ptr_ubo_uvec4 %ubo_var %int_0
+   %ssbo_arr = OpAccessChain %ptr_ssbo_arr %ssbo_var %int_1
+               OpBranch %second
+     %second = OpLabel
+%ubo_vec_copy = OpCopyObject %ptr_ubo_uvec4 %ubo_vec
+      %ubo_y = OpAccessChain %ptr_ubo_uint %ubo_vec_copy %int_1
+      %value = OpLoad %uint %ubo_y
+       %cond = OpINotEqual %bool %value %uint_0
+               OpSelectionMerge %merge None
+               OpBranchConditional %cond %merge %third
+      %third = OpLabel
+               OpBranch %merge
+      %merge = OpLabel
+%ssbo_arr_copy = OpCopyObject %ptr_ssbo_arr %ssbo_arr
+  %ssbo_elem = OpAccessChain %ptr_ssbo_uint %ssbo_arr_copy %int_2
+               OpStore %ssbo_elem %value
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
     default:
         DE_ASSERT(0);
         break;
@@ -9758,6 +9854,12 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
     case SpirvTestType::CopyObject:
         expectedOutput = {0};
         heapUserSize   = 4 * resourceDescriptorStride;
+        break;
+    case SpirvTestType::CopyObjectStorageBuffer:
+        expectedOutput = {0, 0, 0, 4};
+        break;
+    case SpirvTestType::SplitAccessChain:
+        expectedOutput = {0, 0, 0, 0, 0, 0, 0xcafe, 0};
         break;
     default:
         DE_ASSERT(0);
@@ -10455,6 +10557,47 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
         }
 
         VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 4, resourceInfos.data(), hostAddressRanges.data()));
+        break;
+    }
+    case SpirvTestType::CopyObjectStorageBuffer:
+    {
+        mappings.resize(1);
+        mappings[0]                              = initVulkanStructure();
+        mappings[0].firstBinding                 = 0u;
+        mappings[0].bindingCount                 = 1u;
+        mappings[0].resourceMask                 = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+        mappings[0].source                       = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT;
+        mappings[0].sourceData.pushAddressOffset = 0u;
+
+        pushData.resize(sizeof(VkDeviceAddress));
+        deMemcpy(pushData.data(), &outputBuffer->address, sizeof(VkDeviceAddress));
+        break;
+    }
+    case SpirvTestType::SplitAccessChain:
+    {
+        const uint32_t uniformValues[4]      = {0x1111, 0xcafe, 0x3333, 0x4444};
+        const VkDeviceSize uniformBufferSize = static_cast<VkDeviceSize>(sizeof(uniformValues));
+        auto &uniformBuffer                  = stagingBuffers.emplace_back(createBufferAndMemory(
+            uniformBufferSize, VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT));
+        deMemcpy(uniformBuffer->memory->getHostPtr(), uniformValues, sizeof(uniformValues));
+
+        mappings.resize(2);
+        mappings[0]                              = initVulkanStructure();
+        mappings[0].firstBinding                 = 0u;
+        mappings[0].bindingCount                 = 1u;
+        mappings[0].resourceMask                 = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+        mappings[0].source                       = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT;
+        mappings[0].sourceData.pushAddressOffset = 0u;
+        mappings[1]                              = initVulkanStructure();
+        mappings[1].firstBinding                 = 1u;
+        mappings[1].bindingCount                 = 1u;
+        mappings[1].resourceMask                 = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+        mappings[1].source                       = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT;
+        mappings[1].sourceData.pushAddressOffset = static_cast<uint32_t>(sizeof(VkDeviceAddress));
+
+        pushData.resize(sizeof(VkDeviceAddress) * 2u);
+        deMemcpy(pushData.data(), &outputBuffer->address, sizeof(VkDeviceAddress));
+        deMemcpy(pushData.data() + sizeof(VkDeviceAddress), &uniformBuffer->address, sizeof(VkDeviceAddress));
         break;
     }
     default:
@@ -21271,6 +21414,8 @@ void populateSpirvTests(tcu::TestCaseGroup *topGroup)
         {SpirvTestType::AtomicImage2d, "atomic_image_2d"},
         {SpirvTestType::AtomicImage2d64Bit, "atomic_image_2d_64_bit"},
         {SpirvTestType::CopyObject, "copy_object"},
+        {SpirvTestType::CopyObjectStorageBuffer, "copy_object_storage_buffer"},
+        {SpirvTestType::SplitAccessChain, "split_access_chain"},
     };
     for (const auto &test : tests)
     {

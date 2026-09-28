@@ -11023,6 +11023,7 @@ dEQP-VK.binding_model.descriptor_heap.spirv.atomic_image_2d
 dEQP-VK.binding_model.descriptor_heap.spirv.atomic_image_2d_64_bit
 dEQP-VK.binding_model.descriptor_heap.spirv.atomic_image_within_function
 dEQP-VK.binding_model.descriptor_heap.spirv.copy_object
+dEQP-VK.binding_model.descriptor_heap.spirv.copy_object_storage_buffer
 dEQP-VK.binding_model.descriptor_heap.spirv.function_call_binding
 dEQP-VK.binding_model.descriptor_heap.spirv.function_call_binding_forward
 dEQP-VK.binding_model.descriptor_heap.spirv.function_call_untyped_buffer
@@ -11034,6 +11035,7 @@ dEQP-VK.binding_model.descriptor_heap.spirv.simple_storage_texel_buffer
 dEQP-VK.binding_model.descriptor_heap.spirv.simple_variable_pointers
 dEQP-VK.binding_model.descriptor_heap.spirv.size_of
 dEQP-VK.binding_model.descriptor_heap.spirv.size_of_64
+dEQP-VK.binding_model.descriptor_heap.spirv.split_access_chain
 dEQP-VK.binding_model.descriptor_heap.spirv.storage_texel_buffer_atomic64
 dEQP-VK.binding_model.descriptor_heap.spirv.untyped_2d_array
 dEQP-VK.binding_model.descriptor_heap.spirv.untyped_2d_array_stride_8
