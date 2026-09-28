@@ -27,6 +27,7 @@
 #include "deClock.h"
 #include "deStringUtil.hpp"
 
+#include <algorithm>
 #include <bitset>
 #include <cctype>
 #include <charconv>
