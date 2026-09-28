@@ -9772,6 +9772,7 @@ dEQP-GLES3.functional.shader_api.program_binary.binary_persistence.replace_shade
 dEQP-GLES3.functional.shader_api.program_binary.binary_persistence.replace_shader_vertex
 dEQP-GLES3.functional.shader_api.program_binary.binary_persistence.replace_source_fragment
 dEQP-GLES3.functional.shader_api.program_binary.binary_persistence.replace_source_vertex
+dEQP-GLES3.functional.shader_api.program_binary.simple.fragment_shading_rate_fallback
 dEQP-GLES3.functional.shader_api.program_binary.simple.get_program_binary_vertex_fragment
 dEQP-GLES3.functional.shader_api.program_binary.simple.uniform_reset_on_binary_load
 dEQP-GLES3.functional.shader_api.program_state.delete_shader_fragment

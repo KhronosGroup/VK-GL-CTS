@@ -5,6 +5,7 @@ dEQP-GLES3.functional.occlusion_query.fbo_delete_conservative
 dEQP-GLES3.functional.occlusion_query.fbo_delete_conservative_nodraw
 dEQP-GLES3.functional.occlusion_query.fbo_delete_strict
 dEQP-GLES3.functional.occlusion_query.fbo_delete_strict_nodraw
+dEQP-GLES3.functional.shader_api.program_binary.simple.fragment_shading_rate_fallback
 dEQP-GLES3.functional.texture.specification.texstorage2d.base_level.rgba8_1023x1023_level_5
 dEQP-GLES3.functional.texture.specification.texstorage2d.base_level.rgba8_1537x3_level_3
 dEQP-GLES3.functional.texture.specification.texstorage2d.base_level.rgba8_2047x1_level_3
