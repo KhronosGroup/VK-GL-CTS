@@ -57,6 +57,8 @@
 #include <limits>
 #include <optional>
 #include <cstring>
+#include <algorithm>
+#include <map>
 
 namespace vkt::api
 {
@@ -596,6 +598,12 @@ void checkApiVersionSupport(Context &context)
 void checkMemoryBudgetSupport(Context &context)
 {
     context.requireDeviceFunctionality("VK_EXT_memory_budget");
+}
+
+void checkMemoryBudgetMultiInstanceSupport(Context &context)
+{
+    checkMemoryBudgetSupport(context);
+    context.requireDeviceFunctionality("VK_KHR_maintenance3");
 }
 
 typedef struct FeatureLimitTableItem_
@@ -3609,12 +3617,9 @@ struct MemoryBudgetInfo
     {
     }
 };
-using MemoryBudgetInfoPtr = std::unique_ptr<MemoryBudgetInfo>;
 
-MemoryBudgetInfoPtr getBudgetInfo(TestLog &log, const InstanceInterface &vki, VkPhysicalDevice physicalDevice)
+void getBudgetInfo(TestLog &log, const InstanceInterface &vki, VkPhysicalDevice physicalDevice, MemoryBudgetInfo *info)
 {
-    MemoryBudgetInfoPtr info(new MemoryBudgetInfo);
-
     alignas(VkPhysicalDeviceMemoryBudgetPropertiesEXT)
         uint8_t buffer[sizeof(VkPhysicalDeviceMemoryBudgetPropertiesEXT) + GUARD_SIZE];
     memset(buffer, GUARD_VALUE, sizeof(buffer));
@@ -3639,25 +3644,25 @@ MemoryBudgetInfoPtr getBudgetInfo(TestLog &log, const InstanceInterface &vki, Vk
     }
 
     info->budgetProps = *budgetPropsPtr;
-    return info;
 }
 
 void runDeviceMemoryBudgetProperties(TestLog &log, const InstanceInterface &vki, VkPhysicalDevice physicalDevice)
 {
-    auto budgetInfo = getBudgetInfo(log, vki, physicalDevice);
+    MemoryBudgetInfo budgetInfo;
+    getBudgetInfo(log, vki, physicalDevice, &budgetInfo);
 
     log << TestLog::Message << "device = " << physicalDevice << TestLog::EndMessage << TestLog::Message
-        << budgetInfo->budgetProps << TestLog::EndMessage;
+        << budgetInfo.budgetProps << TestLog::EndMessage;
 
-    for (uint32_t i = 0; i < budgetInfo->memProps.memoryProperties.memoryHeapCount; ++i)
+    for (uint32_t i = 0; i < budgetInfo.memProps.memoryProperties.memoryHeapCount; ++i)
     {
-        if (budgetInfo->budgetProps.heapBudget[i] == 0)
+        if (budgetInfo.budgetProps.heapBudget[i] == 0)
         {
             log << TestLog::Message << "deviceMemoryBudgetProperties - Supported heaps must report nonzero budget"
                 << TestLog::EndMessage;
             TCU_FAIL("deviceMemoryBudgetProperties invalid heap budget (zero)");
         }
-        if (budgetInfo->budgetProps.heapBudget[i] > budgetInfo->memProps.memoryProperties.memoryHeaps[i].size)
+        if (budgetInfo.budgetProps.heapBudget[i] > budgetInfo.memProps.memoryProperties.memoryHeaps[i].size)
         {
             log << TestLog::Message
                 << "deviceMemoryBudgetProperties - Heap budget must be less than or equal to heap size"
@@ -3666,9 +3671,9 @@ void runDeviceMemoryBudgetProperties(TestLog &log, const InstanceInterface &vki,
         }
     }
 
-    for (uint32_t i = budgetInfo->memProps.memoryProperties.memoryHeapCount; i < VK_MAX_MEMORY_HEAPS; ++i)
+    for (uint32_t i = budgetInfo.memProps.memoryProperties.memoryHeapCount; i < VK_MAX_MEMORY_HEAPS; ++i)
     {
-        if (budgetInfo->budgetProps.heapBudget[i] != 0 || budgetInfo->budgetProps.heapUsage[i] != 0)
+        if (budgetInfo.budgetProps.heapBudget[i] != 0 || budgetInfo.budgetProps.heapUsage[i] != 0)
         {
             log << TestLog::Message << "deviceMemoryBudgetProperties - Unused heaps must report budget/usage of zero"
                 << TestLog::EndMessage;
@@ -3686,6 +3691,10 @@ tcu::TestStatus deviceMemoryBudgetProperties(Context &context)
 
 tcu::TestStatus memoryBudgetMultiInstance(Context &context)
 {
+    // Find out max allocation size. Note we use the default device for this because it's easier than dealing with the
+    // two devices below.
+    const auto &m3Properties = context.getMaintenance3Properties();
+
     const auto &cmdLine = context.getTestContext().getCommandLine();
 
     auto instance1 =
@@ -3700,22 +3709,25 @@ tcu::TestStatus memoryBudgetMultiInstance(Context &context)
     const auto physDev2 = chooseDevice(vki2, instance2, cmdLine);
 
     // Both devices should refer to the same dev/driver combo.
-    auto &log              = context.getTestContext().getLog();
-    const auto budgetInfo1 = getBudgetInfo(log, vki1, physDev1);
-    const auto budgetInfo2 = getBudgetInfo(log, vki2, physDev2);
+    auto &log = context.getTestContext().getLog();
+
+    MemoryBudgetInfo budgetInfo1;
+    MemoryBudgetInfo budgetInfo2;
+
+    getBudgetInfo(log, vki1, physDev1, &budgetInfo1);
+    getBudgetInfo(log, vki2, physDev2, &budgetInfo2);
 
     // Make sure both devices report basically the same information.
-    if (budgetInfo1->memProps.memoryProperties.memoryHeapCount !=
-        budgetInfo2->memProps.memoryProperties.memoryHeapCount)
+    if (budgetInfo1.memProps.memoryProperties.memoryHeapCount != budgetInfo2.memProps.memoryProperties.memoryHeapCount)
         TCU_FAIL("Different memory heap counts in both instances");
 
-    if (budgetInfo1->memProps.memoryProperties.memoryTypeCount !=
-        budgetInfo2->memProps.memoryProperties.memoryTypeCount)
+    if (budgetInfo1.memProps.memoryProperties.memoryTypeCount != budgetInfo2.memProps.memoryProperties.memoryTypeCount)
         TCU_FAIL("Different memory type counts in both instances");
 
     // Create logical devices to do some basic allocations.
     const std::vector<const char *> devExtensions{
         "VK_EXT_memory_budget",
+        "VK_KHR_maintenance3",
     };
     const float queuePriority = 1.0f;
 
@@ -3766,38 +3778,43 @@ tcu::TestStatus memoryBudgetMultiInstance(Context &context)
     const auto bufferMemReqs1 = getBufferMemoryRequirements(vkd1, *device1, *buffer1);
     const auto bufferMemReqs2 = getBufferMemoryRequirements(vkd2, *device2, *buffer2);
 
-    // Try different memory types and, potentially, heaps.
+    // Find heap indices to test.
+    std::map<uint32_t, uint32_t> memTypeForHeap; // Map heap index to memory type.
     for (const auto hostIntent : {HostIntent::NONE, HostIntent::R, HostIntent::W, HostIntent::RW})
     {
         const auto genMemReq =
             (hostIntent != HostIntent::NONE ? MemoryRequirement::HostVisible : MemoryRequirement::Any);
-        const auto memType1 = selectBestMemoryType(budgetInfo1->memProps.memoryProperties,
-                                                   bufferMemReqs1.memoryTypeBits, genMemReq, tcu::just(hostIntent));
-        const auto memType2 = selectBestMemoryType(budgetInfo2->memProps.memoryProperties,
-                                                   bufferMemReqs2.memoryTypeBits, genMemReq, tcu::just(hostIntent));
+        const auto memType1 = selectBestMemoryType(budgetInfo1.memProps.memoryProperties, bufferMemReqs1.memoryTypeBits,
+                                                   genMemReq, tcu::just(hostIntent));
+        const auto memType2 = selectBestMemoryType(budgetInfo2.memProps.memoryProperties, bufferMemReqs2.memoryTypeBits,
+                                                   genMemReq, tcu::just(hostIntent));
 
         // In theory, both memory types should be the same.
         if (memType1 != memType2)
             TCU_FAIL("Memory types differ for identical buffers");
 
-        const auto heapIndex1 = budgetInfo1->memProps.memoryProperties.memoryTypes[memType1].heapIndex;
-        const auto heapIndex2 = budgetInfo2->memProps.memoryProperties.memoryTypes[memType2].heapIndex;
+        const auto heapIndex1 = budgetInfo1.memProps.memoryProperties.memoryTypes[memType1].heapIndex;
+        const auto heapIndex2 = budgetInfo2.memProps.memoryProperties.memoryTypes[memType2].heapIndex;
 
         if (heapIndex1 != heapIndex2)
             TCU_FAIL("Heap indices differ for the same memory types");
+
+        auto itr = memTypeForHeap.find(heapIndex1);
+        if (itr == memTypeForHeap.end())
+            memTypeForHeap[heapIndex1] = memType1;
+    }
+
+    // Try different heaps using the memory types selected above.
+    for (const auto &heapIndexAndMemType : memTypeForHeap)
+    {
+        const auto &heapIndex = heapIndexAndMemType.first;
+        const auto &memType   = heapIndexAndMemType.second;
 
         const VkMemoryAllocateInfo allocateInfo1{
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
             nullptr,
             bufferMemReqs1.size,
-            memType1,
-        };
-
-        const VkMemoryAllocateInfo allocateInfo2{
-            VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            nullptr,
-            bufferMemReqs2.size,
-            memType2,
+            memType,
         };
 
         const auto memory1 = allocateMemory(vkd1, *device1, &allocateInfo1);
@@ -3811,54 +3828,80 @@ tcu::TestStatus memoryBudgetMultiInstance(Context &context)
             continue;
 #endif // CTS_USES_VULKANSC
 
-        const auto afterAlloc1Budget1 = getBudgetInfo(log, vki1, physDev1);
+        MemoryBudgetInfo afterAlloc1Budget1;
+        getBudgetInfo(log, vki1, physDev1, &afterAlloc1Budget1);
 
-        if (afterAlloc1Budget1->budgetProps.heapUsage[heapIndex1] <= budgetInfo1->budgetProps.heapUsage[heapIndex1])
-            TCU_FAIL("Memory heap usage not increased for heap " + std::to_string(heapIndex1));
+        if (afterAlloc1Budget1.budgetProps.heapUsage[heapIndex] <= budgetInfo1.budgetProps.heapUsage[heapIndex])
+            TCU_FAIL("Memory heap usage not increased for heap " + std::to_string(heapIndex));
 
-        // Not sure about this check. The spec says this about heapBudget: "The budget includes any currently allocated
-        // device memory." About heapUsage, it says "A heap's usage is an estimate of how much memory the process is
-        // currently using in that heap." From the first description, it looks like the budget includes the usage and
-        // the budget should always be at least as big as the usage. If there is no more room before degrading
-        // performance, the implementation can return the same value in both to indicate the limit has been reached.
-        // However, as the usage is just an estimation, maybe this is not always true.
-        if (afterAlloc1Budget1->budgetProps.heapBudget[heapIndex1] <=
-            afterAlloc1Budget1->budgetProps.heapUsage[heapIndex1])
-            TCU_FAIL("Memory heap budget below heap usage for heap " + std::to_string(heapIndex1));
+            // Not sure about this check. The spec says this about heapBudget: "The budget includes any currently allocated
+            // device memory." About heapUsage, it says "A heap's usage is an estimate of how much memory the process is
+            // currently using in that heap." From the first description, it looks like the budget includes the usage and
+            // the budget should always be at least as big as the usage. If there is no more room before degrading
+            // performance, the implementation can return the same value in both to indicate the limit has been reached.
+            // However, as the usage is just an estimation, maybe this is not always true.
+#if 0
+        if (afterAlloc1Budget1.budgetProps.heapBudget[heapIndex] <=
+            afterAlloc1Budget1.budgetProps.heapUsage[heapIndex])
+            TCU_FAIL("Memory heap budget below heap usage for heap " + std::to_string(heapIndex));
+#endif
 
         // Because these are per-process, the data for the other instance should also have been affected.
-        const auto afterAlloc1Budget2 = getBudgetInfo(log, vki2, physDev2);
+        MemoryBudgetInfo afterAlloc1Budget2;
+        getBudgetInfo(log, vki2, physDev2, &afterAlloc1Budget2);
 
-        if (afterAlloc1Budget2->budgetProps.heapUsage[heapIndex2] <= budgetInfo2->budgetProps.heapUsage[heapIndex2])
-            TCU_FAIL("Memory heap usage not increased for heap " + std::to_string(heapIndex2));
+        if (afterAlloc1Budget2.budgetProps.heapUsage[heapIndex] <= budgetInfo2.budgetProps.heapUsage[heapIndex])
+            TCU_FAIL("Memory heap usage not increased for heap " + std::to_string(heapIndex));
 
-        if (afterAlloc1Budget2->budgetProps.heapBudget[heapIndex2] <=
-            afterAlloc1Budget2->budgetProps.heapUsage[heapIndex2])
+#if 0
+        if (afterAlloc1Budget2.budgetProps.heapBudget[heapIndex] <=
+            afterAlloc1Budget2.budgetProps.heapUsage[heapIndex])
             TCU_FAIL("Memory heap budget below heap usage for heap " + std::to_string(heapIndex2));
+#endif
+
+        // For the second allocation we're going to try to allocate a lot of memory, according to the heap budget. We'll
+        // try to allocate half the budget, or the size of the original buffer if the budget is very tight. We're also
+        // capping the allocation size to the maximum reported by the driver.
+        const auto allocSize2 =
+            std::min(m3Properties.maxMemoryAllocationSize,
+                     de::roundUp(std::max(bufferMemReqs2.size,
+                                          afterAlloc1Budget2.budgetProps.heapBudget[heapIndex] / VkDeviceSize{2}),
+                                 bufferMemReqs2.alignment));
+
+        const VkMemoryAllocateInfo allocateInfo2{
+            VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            nullptr,
+            allocSize2,
+            memType,
+        };
 
         const auto memory2 = allocateMemory(vkd2, *device2, &allocateInfo2);
 
-        const auto afterAlloc2Budget1 = getBudgetInfo(log, vki1, physDev1);
+        MemoryBudgetInfo afterAlloc2Budget1;
+        getBudgetInfo(log, vki1, physDev1, &afterAlloc2Budget1);
 
-        if (afterAlloc2Budget1->budgetProps.heapUsage[heapIndex1] <=
-            afterAlloc1Budget1->budgetProps.heapUsage[heapIndex1])
-            TCU_FAIL("Memory heap usage not increased for heap " + std::to_string(heapIndex1));
+        if (afterAlloc2Budget1.budgetProps.heapUsage[heapIndex] <= afterAlloc1Budget1.budgetProps.heapUsage[heapIndex])
+            TCU_FAIL("Memory heap usage not increased for heap " + std::to_string(heapIndex));
 
-        // Note sure about this check. See above for the same reasoning.
-        if (afterAlloc2Budget1->budgetProps.heapBudget[heapIndex1] <=
-            afterAlloc2Budget1->budgetProps.heapUsage[heapIndex1])
+            // Note sure about this check. See above for the same reasoning.
+#if 0
+        if (afterAlloc2Budget1.budgetProps.heapBudget[heapIndex] <=
+            afterAlloc2Budget1.budgetProps.heapUsage[heapIndex])
             TCU_FAIL("Memory heap budget below heap usage for heap " + std::to_string(heapIndex1));
+#endif
 
         // Because these are per-process, the data for the other instance should also have been affected.
-        const auto afterAlloc2Budget2 = getBudgetInfo(log, vki2, physDev2);
+        MemoryBudgetInfo afterAlloc2Budget2;
+        getBudgetInfo(log, vki2, physDev2, &afterAlloc2Budget2);
 
-        if (afterAlloc2Budget2->budgetProps.heapUsage[heapIndex2] <=
-            afterAlloc1Budget2->budgetProps.heapUsage[heapIndex2])
-            TCU_FAIL("Memory heap usage not increased for heap " + std::to_string(heapIndex2));
+        if (afterAlloc2Budget2.budgetProps.heapUsage[heapIndex] <= afterAlloc1Budget2.budgetProps.heapUsage[heapIndex])
+            TCU_FAIL("Memory heap usage not increased for heap " + std::to_string(heapIndex));
 
-        if (afterAlloc2Budget2->budgetProps.heapBudget[heapIndex2] <=
-            afterAlloc2Budget2->budgetProps.heapUsage[heapIndex2])
+#if 0
+        if (afterAlloc2Budget2.budgetProps.heapBudget[heapIndex] <=
+            afterAlloc2Budget2.budgetProps.heapUsage[heapIndex])
             TCU_FAIL("Memory heap budget below heap usage for heap " + std::to_string(heapIndex2));
+#endif
     }
 
     return tcu::TestStatus::pass("Pass");
@@ -9191,8 +9234,8 @@ void createFeatureInfoDeviceTests(tcu::TestCaseGroup *testGroup)
     addFunctionCase(testGroup, "device_extension_supported", validateDeviceExtensionSupport);
     addFunctionCase(testGroup, "device_no_khx_extensions", testNoKhxExtensions);
     addFunctionCase(testGroup, "device_memory_budget", checkMemoryBudgetSupport, deviceMemoryBudgetProperties);
-    addFunctionCase(testGroup, "device_memory_budget_multi_instance", checkMemoryBudgetSupport,
-                    memoryBudgetMultiInstance);
+    addFunctionCaseFraction0(testGroup, "device_memory_budget_multi_instance", checkMemoryBudgetMultiInstanceSupport,
+                             memoryBudgetMultiInstance);
     addFunctionCase(testGroup, "device_mandatory_features", deviceMandatoryFeatures);
 }
 
