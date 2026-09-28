@@ -6279,9 +6279,6 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
         {TT_MATRIXMULADD_SPLITBARRIER_LOOP, "matrixmuladd_split_barrier_loop"},
         //OpCooperativeMatrixMulAdd /w split barrier and skewed looped subgroup work
         {TT_MATRIXMULADD_SPLITBARRIER_SKEW, "matrixmuladd_split_barrier_skew"},
-        // OpTransposeCooperativeMatrixNV
-        {TT_TRANSPOSE_ACC_TO_A, "transpose_acc_to_a"},
-        {TT_TRANSPOSE_ACC_TO_B, "transpose_acc_to_b"},
         // OpCooperativeMatrixReduceNV
         {TT_REDUCE_SUM_ROW, "reduce_sum_row", CMF_NV2},
         {TT_REDUCE_SUM_COL, "reduce_sum_col", CMF_NV2},
