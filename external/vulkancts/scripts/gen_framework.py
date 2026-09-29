@@ -319,6 +319,11 @@ VK_VALVE_fragment_density_map_layered
 VK_MESA_image_alignment_control
 """.splitlines()
 
+# extensions intentionally not tested by CTS, with the reason; framework is not generated for them
+EXTENSIONS_NOT_TESTED_BY_CTS = {
+    'VK_EXT_validation_cache': 'implemented by the validation layers, see VK-GL-CTS issue 1694',
+}
+
 # instance extensions not listed above; every non-core instance extension must be
 # in one of these lists so it is explicit that the framework is generated for it
 INSTANCE_EXTENSIONS_TESTED_BY_CTS = """
@@ -741,6 +746,9 @@ class ConformanceItemLists:
         self.extensions = KHR_EXT_EXTENSIONS_TESTED_BY_CTS + VENDOR_EXTENSIONS_TESTED_BY_CTS + INSTANCE_EXTENSIONS_TESTED_BY_CTS
 
     def setup(self, vkObject, isSC):
+        for name in EXTENSIONS_NOT_TESTED_BY_CTS:
+            if name in self.extensions:
+                raise Exception(f'{name} is in EXTENSIONS_NOT_TESTED_BY_CTS and in a list of tested extensions')
         for ext in vkObject.extensions.values():
             name = ext.name
             if name not in self.extensions:
