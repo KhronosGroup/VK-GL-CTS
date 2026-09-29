@@ -4359,9 +4359,12 @@ typedef enum VkDriverId {
     VK_DRIVER_ID_MESA_HONEYKRISP = 26,
     VK_DRIVER_ID_VULKAN_SC_EMULATION_ON_VULKAN = 27,
     VK_DRIVER_ID_MESA_KOSMICKRISP = 28,
+<<<<<<< HEAD
     VK_DRIVER_ID_MESA_GFXSTREAM = 29,
     VK_DRIVER_ID_APE_SOFT = 30,
     VK_DRIVER_ID_RESERVED_31 = 31,
+=======
+>>>>>>> vk-gl-cts/dev/VK_KHR_pipeline_library_group_handles
     VK_DRIVER_ID_MAX_ENUM = 0x7FFFFFFF
 } VkDriverId;
 
