@@ -99,6 +99,7 @@ VK_EXT_fragment_density_map_offset
 VK_EXT_fragment_shader_interlock
 VK_EXT_frame_boundary
 VK_EXT_full_screen_exclusive
+VK_EXT_global_priority
 VK_EXT_global_priority_query
 VK_EXT_graphics_pipeline_library
 VK_EXT_hdr_metadata
