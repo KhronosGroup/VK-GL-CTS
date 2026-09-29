@@ -114,6 +114,7 @@ VK_EXT_index_type_uint8
 VK_EXT_legacy_dithering
 VK_EXT_legacy_vertex_attributes
 VK_EXT_line_rasterization
+VK_EXT_load_store_op_none
 VK_EXT_map_memory_placed
 VK_EXT_memory_budget
 VK_EXT_memory_decompression
