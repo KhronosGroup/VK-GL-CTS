@@ -1650,6 +1650,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("maintenance10");
 	}
 
+	// VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_pipeline_library_group_handles")) )
+	{
+		if ( physicalDevicePipelineLibraryGroupHandlesFeaturesKHR.pipelineLibraryGroupHandles == VK_FALSE )
+			failMesages.push_back("pipelineLibraryGroupHandles");
+	}
+
 	// VkPhysicalDeviceMaintenance11FeaturesKHR
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_maintenance11")) )
 	{

@@ -209,6 +209,7 @@ VK_KHR_performance_query
 VK_KHR_pipeline_binary
 VK_KHR_pipeline_executable_properties
 VK_KHR_pipeline_library
+VK_KHR_pipeline_library_group_handles
 VK_KHR_portability_enumeration
 VK_KHR_portability_subset
 VK_KHR_present_id

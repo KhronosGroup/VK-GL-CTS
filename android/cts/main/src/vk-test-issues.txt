@@ -35,3 +35,6 @@ dEQP-VK.memory.pipeline_barrier.host_write_index_buffer.1048576
 
 # Issue 4894
 dEQP-VK.image.extended_usage_bit_compatibility.image_format_list.*
+
+# Issue 6828
+dEQP-VK.spirv_assembly.instruction.compute.ptr_access_chain.workgroup_bad_stride

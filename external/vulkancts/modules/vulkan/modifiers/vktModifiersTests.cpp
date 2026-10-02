@@ -475,7 +475,7 @@ Move<VkImage> createImageNoModifiers(const DeviceInterface &vkd, const VkDevice 
         VK_SHARING_MODE_EXCLUSIVE,
         0u,
         nullptr,
-        VK_IMAGE_LAYOUT_PREINITIALIZED,
+        VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
     return createImage(vkd, device, &createInfo);
@@ -1407,16 +1407,17 @@ bool exportImportMemoryExplicitModifiersWithSuballocationCase(Context &context, 
         vkd, device, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, format, UVec2(64, 64)));
 
     VkMemoryRequirements outImageMemoryReq           = getImageMemoryRequirements(vkd, device, *outImage);
+    const auto perImageSize                          = de::roundUp(outImageMemoryReq.size, outImageMemoryReq.alignment);
     const vk::VkMemoryAllocateInfo outAllocationInfo = {
         vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         nullptr,
-        outImageMemoryReq.size * 2,
+        perImageSize * 2,
         chooseMemoryType(outImageMemoryReq.memoryTypeBits),
     };
 
     vk::Move<vk::VkDeviceMemory> outMemory(vk::allocateMemory(vkd, device, &outAllocationInfo));
     VK_CHECK(vkd.bindImageMemory(device, *outImage, *outMemory, 0));
-    VK_CHECK(vkd.bindImageMemory(device, *outSubImage, *outMemory, 0));
+    VK_CHECK(vkd.bindImageMemory(device, *outSubImage, *outMemory, perImageSize));
 
     Unique<VkCommandBuffer> cmdBuffer2(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
     VK_CHECK(vkd.beginCommandBuffer(*cmdBuffer2, &cmdBufferBeginInfo));

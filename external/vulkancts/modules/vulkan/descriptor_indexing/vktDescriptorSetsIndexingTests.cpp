@@ -4136,7 +4136,7 @@ void StorageImageInstance::createAndPopulateDescriptors(IterateCommonVariables &
         {
             const PixelBufferAccess pa = getPixelAccess(imageIdx, imageExtent, imageFormat,
                                                         variables.descriptorsBufferInfos, variables.descriptorsBuffer);
-            tcu::clear(pa, tcu::UVec4(m_fillColor));
+            tcu::clear(pa, tcu::UVec4(m_fillColor, 0, 0, 0));
         }
         vk::flushAlloc(m_vki, m_vkd, *variables.descriptorsBuffer->alloc);
     }
@@ -4155,7 +4155,7 @@ void StorageImageInstance::createAndPopulateDescriptors(IterateCommonVariables &
             for (uint32_t x = 0; x < m_testParams.frameResolution.width; ++x, ++pixel)
             {
                 const uint32_t component = primes[pixel % variables.validDescriptorCount];
-                pa.setPixel(tcu::UVec4(component), x, y);
+                pa.setPixel(tcu::UVec4(component, 0, 0, 0), x, y);
             }
         }
 
@@ -4232,7 +4232,7 @@ void StorageImageInstance::iterateCollectResults(ut::UpdatablePixelBufferAccessP
                     getPixelAccess(imageIdx, variables.descriptorsImages[imageIdx]->extent,
                                    variables.descriptorsImages[imageIdx]->format, variables.descriptorsBufferInfos,
                                    variables.descriptorsBuffer);
-                dst.setPixel(tcu::Vector<m_imageFormat_t, 4>(src.getPixelT<m_imageFormat_t>(0, 0).x()), x, y);
+                dst.setPixel(tcu::Vector<m_imageFormat_t, 4>(src.getPixelT<m_imageFormat_t>(0, 0).x(), 0, 0, 0), x, y);
             }
         }
     }
@@ -4250,7 +4250,7 @@ void StorageImageInstance::iterateCollectResults(ut::UpdatablePixelBufferAccessP
             const uint32_t row          = invIdx / m_testParams.frameResolution.width;
             const uint32_t col          = invIdx % m_testParams.frameResolution.width;
             const m_imageFormat_t color = inc[invIdx % variables.validDescriptorCount];
-            dst.setPixel(tcu::Vector<m_imageFormat_t, 4>(color), col, row);
+            dst.setPixel(tcu::Vector<m_imageFormat_t, 4>(color, 0, 0, 0), col, row);
         }
     }
 }

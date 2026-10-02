@@ -577,7 +577,7 @@ class CustomResolveCase : public vkt::TestCase
 public:
     CustomResolveCase(tcu::TestContext &testCtx, const std::string &name, TestParamsPtr paramsPtr)
         : vkt::TestCase(testCtx, name)
-        , m_paramsPtr(paramsPtr)
+        , m_paramsPtr(std::make_shared<TestParams>(*paramsPtr)) // Copy: callers keep mutating their params.
         , m_params(*m_paramsPtr)
     {
     }
@@ -6673,6 +6673,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                         continue;
 
                     params.remapBeforeBeginCustomResolve = remapFirst;
+                    params.locationRemapping             = false; // Was left set by the previous iteration.
 
                     const auto remapSuffix = std::string(remapFirst ? "_remap_first" : "");
 
