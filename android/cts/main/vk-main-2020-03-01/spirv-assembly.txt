@@ -679,6 +679,7 @@ dEQP-VK.spirv_assembly.instruction.spirv1p4.opcopylogical.nested_arrays_differen
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opcopylogical.nested_arrays_different_outer_stride
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opcopylogical.nested_arrays_different_strides
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opcopylogical.same_array_two_ids
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opcopylogical.same_struct_different_decorations
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opcopylogical.same_struct_two_ids
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opcopylogical.ssbo_to_ubo
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opcopylogical.two_arrays_different_stride_1

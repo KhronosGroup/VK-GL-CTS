@@ -170,6 +170,8 @@ tcu::TestCaseGroup *createSpirvVersion1p4Group(tcu::TestContext &testCtx)
     group.add("nested_arrays_different_strides");
     // same array two ids
     group.add("same_array_two_ids");
+    // same struct different decorations
+    group.add("same_struct_different_decorations");
     // same struct two ids
     group.add("same_struct_two_ids");
     // ssbo_to_ubo
