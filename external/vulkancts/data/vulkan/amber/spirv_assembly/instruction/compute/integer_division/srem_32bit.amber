@@ -1,0 +1,303 @@
+#!amber
+# Copyright 2026 Nicholas Iquan Gaspard
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# 32-bit integer division with operands chosen to stress a lowering that
+# computes the quotient from a floating-point reciprocal.  A driver that
+# lowers unsigned division as q = umulhi(n, rcp_fixed(d)) followed by at most
+# two correction steps -- the shape used by nir_lower_idiv's emit_udiv() and by
+# the LLVM AMDGPU LowerUDIVREM it was ported from -- produces a reciprocal
+# that is off by roughly a factor of two when the hardware rcp instruction
+# returns a result 1 ulp above the correctly rounded one, because the integer
+# truncation of rcp * 0x1.fffffep31 then lands one above the intended value
+# and the fixed-point Newton step doubles the error.  Two correction steps
+# cannot recover from that, so the quotient comes back far too large.
+#
+# The divisors below are the ones where that truncation is sensitive to a
+# 1 ulp perturbation of the reciprocal, one or more per divisor exponent from
+# 2^16 to 2^29, so a driver whose rcp rounds up anywhere in the range is
+# caught.  703787787 / 47721859, 848906683 / 62245903 and 794003699 /
+# 204522253 are reproduced wrong on Adreno a690, x2-90 and a830.  Divisors
+# above 2^29 and reciprocals that are 1 ulp too small are not represented:
+# there the quotient is small enough that the correction steps absorb the
+# error, so no such lane can fail.
+#
+# A zero divisor is deliberately absent: the result is undefined.
+#
+# The signed lanes are the magnitudes above in all four sign combinations.
+# A lowering of this shape reduces signed division to the unsigned one on
+# absolute values, so these lanes fail for the same reason, and they also pin
+# the sign rules: OpSDiv truncates toward zero, OpSRem takes the sign of the
+# numerator, OpSMod the sign of the denominator.  INT_MIN / -1 is absent along
+# with the zero divisor: both are undefined.
+
+#
+# Based on the following GLSL shader.
+#
+# The OpSMod glslang emits for % is replaced by OpSRem in the
+# assembly below.
+#
+##version 430
+#
+#layout(set = 0, binding = 0) buffer block0
+#{
+#    ivec2 inputs[];
+#};
+#
+#layout(set = 0, binding = 1) buffer block1
+#{
+#    int outputs[];
+#};
+#
+#void main()
+#{
+#    for (int i = 0; i < inputs.length(); i++)
+#    {
+#        outputs[i] = inputs[i].x % inputs[i].y;
+#    }
+#}
+
+SHADER compute compute_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 45
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpName %main "main"
+               OpName %i "i"
+               OpName %block0 "block0"
+               OpMemberName %block0 0 "inputs"
+               OpName %_ ""
+               OpName %block1 "block1"
+               OpMemberName %block1 0 "outputs"
+               OpName %__0 ""
+               OpDecorate %_runtimearr_v2int ArrayStride 8
+               OpDecorate %block0 BufferBlock
+               OpMemberDecorate %block0 0 Offset 0
+               OpDecorate %_ Binding 0
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_runtimearr_int ArrayStride 4
+               OpDecorate %block1 BufferBlock
+               OpMemberDecorate %block1 0 Offset 0
+               OpDecorate %__0 Binding 1
+               OpDecorate %__0 DescriptorSet 0
+       %void = OpTypeVoid
+         %11 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+      %int_0 = OpConstant %int 0
+      %v2int = OpTypeVector %int 2
+%_runtimearr_v2int = OpTypeRuntimeArray %v2int
+     %block0 = OpTypeStruct %_runtimearr_v2int
+%_ptr_Uniform_block0 = OpTypePointer Uniform %block0
+          %_ = OpVariable %_ptr_Uniform_block0 Uniform
+       %uint = OpTypeInt 32 0
+       %bool = OpTypeBool
+%_runtimearr_int = OpTypeRuntimeArray %int
+     %block1 = OpTypeStruct %_runtimearr_int
+%_ptr_Uniform_block1 = OpTypePointer Uniform %block1
+        %__0 = OpVariable %_ptr_Uniform_block1 Uniform
+     %uint_0 = OpConstant %uint 0
+%_ptr_Uniform_int = OpTypePointer Uniform %int
+     %uint_1 = OpConstant %uint 1
+      %int_1 = OpConstant %int 1
+       %main = OpFunction %void None %11
+         %24 = OpLabel
+          %i = OpVariable %_ptr_Function_int Function
+               OpStore %i %int_0
+               OpBranch %25
+         %25 = OpLabel
+               OpLoopMerge %26 %27 None
+               OpBranch %28
+         %28 = OpLabel
+         %29 = OpLoad %int %i
+         %30 = OpArrayLength %uint %_ 0
+         %31 = OpBitcast %int %30
+         %32 = OpSLessThan %bool %29 %31
+               OpBranchConditional %32 %33 %26
+         %33 = OpLabel
+         %34 = OpLoad %int %i
+         %35 = OpLoad %int %i
+         %36 = OpAccessChain %_ptr_Uniform_int %_ %int_0 %35 %uint_0
+         %37 = OpLoad %int %36
+         %38 = OpLoad %int %i
+         %39 = OpAccessChain %_ptr_Uniform_int %_ %int_0 %38 %uint_1
+         %40 = OpLoad %int %39
+         %41 = OpSRem %int %37 %40
+         %42 = OpAccessChain %_ptr_Uniform_int %__0 %int_0 %34
+               OpStore %42 %41
+               OpBranch %27
+         %27 = OpLabel
+         %43 = OpLoad %int %i
+         %44 = OpIAdd %int %43 %int_1
+               OpStore %i %44
+               OpBranch %25
+         %26 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+BUFFER input DATA_TYPE vec2<int32> DATA
+703787787 47721859
+-703787787 47721859
+703787787 -47721859
+-703787787 -47721859
+848906683 62245903
+-848906683 62245903
+848906683 -62245903
+-848906683 -62245903
+794003699 204522253
+-794003699 204522253
+794003699 -204522253
+-794003699 -204522253
+175554 87776
+-175554 87776
+175554 -87776
+-175554 -87776
+353416 176704
+-353416 176704
+353416 -176704
+-353416 -176704
+706846 353408
+-706846 353408
+706846 -353408
+-706846 -353408
+1408302 704093
+-1408302 704093
+1408302 -704093
+-1408302 -704093
+2816834 1408186
+-2816834 1408186
+2816834 -1408186
+-2816834 -1408186
+5634592 2816372
+-5634592 2816372
+5634592 -2816372
+-5634592 -2816372
+11221339 5607007
+-11221339 5607007
+11221339 -5607007
+-11221339 -5607007
+22457346 11214014
+-22457346 11214014
+22457346 -11214014
+-22457346 -11214014
+45091521 22486740
+-45091521 22486740
+45091521 -22486740
+-45091521 -22486740
+93879067 46684428
+-93879067 46684428
+93879067 -46684428
+-93879067 -46684428
+188789772 93368856
+-188789772 93368856
+188789772 -93368856
+-188789772 -93368856
+381774871 186737712
+-381774871 186737712
+381774871 -186737712
+-381774871 -186737712
+818089009 390451584
+-818089009 390451584
+818089009 -390451584
+-818089009 -390451584
+END
+
+BUFFER output DATA_TYPE int32 SIZE 64 FILL 0
+
+BUFFER ref DATA_TYPE int32 DATA
+35681761
+-35681761
+35681761
+-35681761
+39709944
+-39709944
+39709944
+-39709944
+180436940
+-180436940
+180436940
+-180436940
+2
+-2
+2
+-2
+8
+-8
+8
+-8
+30
+-30
+30
+-30
+116
+-116
+116
+-116
+462
+-462
+462
+-462
+1848
+-1848
+1848
+-1848
+7325
+-7325
+7325
+-7325
+29318
+-29318
+29318
+-29318
+118041
+-118041
+118041
+-118041
+510211
+-510211
+510211
+-510211
+2052060
+-2052060
+2052060
+-2052060
+8299447
+-8299447
+8299447
+-8299447
+37185841
+-37185841
+37185841
+-37185841
+END
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+
+  BIND BUFFER input AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER output AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN pipeline 1 1 1
+
+EXPECT output EQ_BUFFER ref

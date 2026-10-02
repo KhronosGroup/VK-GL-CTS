@@ -21599,6 +21599,26 @@ tcu::TestCaseGroup *createOpMulExtendedGroup(tcu::TestContext &testCtx)
     return testGroup.release();
 }
 
+tcu::TestCaseGroup *createIntegerDivisionGroup(tcu::TestContext &testCtx)
+{
+    de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "integer_division"));
+
+#ifndef CTS_USES_VULKANSC
+    static const char dataDir[] = "spirv_assembly/instruction/compute/integer_division";
+
+    static const char *const cases[] = {"udiv_32bit", "umod_32bit", "sdiv_32bit", "srem_32bit", "smod_32bit"};
+
+    for (const auto &name : cases)
+    {
+        cts_amber::AmberTestCase *testCase =
+            cts_amber::createAmberTestCase(testCtx, name, "", dataDir, string(name) + ".amber");
+        testGroup->addChild(testCase);
+    }
+#endif // CTS_USES_VULKANSC
+
+    return testGroup.release();
+}
+
 tcu::TestCaseGroup *createQueryGroup(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_query"));
@@ -21749,6 +21769,7 @@ static void createComputeChildren(tcu::TestCaseGroup *computeTests)
 #endif // CTS_USES_VULKANSC
     computeTests->addChild(createPhysicalStorageBufferTestGroup(testCtx));
     computeTests->addChild(createOpMulExtendedGroup(testCtx));
+    computeTests->addChild(createIntegerDivisionGroup(testCtx));
     computeTests->addChild(createRawAccessChainGroup(testCtx));
 #ifndef CTS_USES_VULKANSC
     {
