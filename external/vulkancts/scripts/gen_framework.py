@@ -3387,15 +3387,28 @@ class ProfileTestsGenerator(CTSGenerator):
             return "LIM_MAX_FLOAT" if propComponent == 0 else "LIM_MIN_FLOAT"
         return "LIM_MIN_UINT32"
 
-    # helper function that adds property or feature structures to lists of struct initializers
-    def constructStruct(self, structName, structInitNamesList, structInitList):
-        # skip structures that already are in the chain
-        if structName in structInitNamesList:
+    # helper function that fills lists for features/properties
+    def fillStructLists(self, capabilityType, capabilityDefinition, capabilityDataList, structInitNamesList, structInitList):
+        # return if this capabilityType is not present
+        # (capabilityType should be "features" or "properties")
+        if capabilityType not in capabilityDefinition:
             return
-        structInitNamesList.append(structName)
-        # construct structure instance and connect it to chain
-        parentStruct = "" if (len(structInitNamesList) == 3) else "&vk" + structInitNamesList[-2]
-        structInitList.append(f"\tVkPhysicalDevice{structName} vk{structName} = initVulkanStructure({parentStruct});")
+        structList = capabilityDefinition[capabilityType]
+        # return if there is nothing to add
+        if len(structList) == 0 or not list(structList.values())[0]:
+            return
+        capabilityDataList.append(structList)
+        for struct in structList:
+            # remove prefix from structName
+            structName = struct[len("VkPhysicalDevice"):]
+            # skip structures that already are in the chain
+            if structName in structInitNamesList:
+                continue
+            # add struct name to list of names
+            structInitNamesList.append(structName)
+            # construct structure instance and connect it to chain
+            parentStruct = "" if (len(structInitNamesList) == 3) else "&vk" + structInitNamesList[-2]
+            structInitList.append(f"\tVkPhysicalDevice{structName} vk{structName} = initVulkanStructure({parentStruct});")
 
     # helper function handling strings representing property limit checks
     def addPropertyEntries(self, structName, propName, propLimit, propertyTableItems):
@@ -3438,36 +3451,32 @@ class ProfileTestsGenerator(CTSGenerator):
 
     def buildCapabilityCheckTables(self, capabilities, featureTableItems, propertyTableItems, extensionsList, formatsList):
         vkpdLen = len("VkPhysicalDevice")
+        featureSeparator = ""
+        propertySeparator = ""
         for capability in capabilities:
             if len(capability["feature_items"]) > 0 and list(capability["feature_items"])[0]:
-                featureTableItems.append(f"\t\t// {capability['name']}");
+                featureTableItems.append(f"{featureSeparator}\t\t// {capability['name']}");
                 for featureStructList in capability["feature_items"]:
                     for featureStruct, featureDict in featureStructList.items():
                         structName = featureStruct[vkpdLen:]
                         for feature, val in featureDict.items():
                             if val:
                                 featureTableItems.append(f"vk{structName}, {feature}")
-                        featureTableItems.append("\n")
+                featureSeparator = "\n"
             if len(capability["property_items"]) > 0 and list(capability["property_items"])[0]:
-                propertyTableItems.append(f"\t\t// {capability['name']}");
+                propertyTableItems.append(f"{propertySeparator}\t\t// {capability['name']}");
                 for propertyStructList in capability["property_items"]:
                     for propertyStruct, propertyDict in propertyStructList.items():
                         structName = propertyStruct[vkpdLen:]
                         for propName, propLimit in propertyDict.items():
                             self.addPropertyEntries("vk" + structName, propName, propLimit, propertyTableItems)
-                        propertyTableItems.append("\n")
+                propertySeparator = "\n"
             if capability["extensions"]:
                 extensionsList.extend(capability["extensions"])
             if capability["formats"]:
                 formatsList.update(capability["formats"])
 
         extensionsList[:] = list(dict.fromkeys(extensionsList))
-
-        # remove empty lines at the end
-        if len(featureTableItems) > 0:
-            featureTableItems.pop()
-        if len(propertyTableItems) > 0:
-            propertyTableItems.pop()
 
     def generate (self):
         vkpdLen = len("VkPhysicalDevice")
@@ -3482,6 +3491,7 @@ class ProfileTestsGenerator(CTSGenerator):
             for profileName, profileData in reversed(profilesDict["profiles"].items()):
                 requiredCapabilities = []
                 alternativeGroups = []
+                optionalCapabilities = []
                 featureStructInitList = []
                 featureStructInitNamesList = ["Features", "Features2"]
                 propertyStructInitList = []
@@ -3489,8 +3499,7 @@ class ProfileTestsGenerator(CTSGenerator):
                 highestMajor = 1
                 highestMinor = 0
 
-                allCapabilities = profileData["capabilities"]
-                for capability in allCapabilities:
+                for capability in profileData["capabilities"]:
                     capabilityList = capability if isinstance(capability, list) else [capability]
                     parsedCapabilities = []
 
@@ -3509,20 +3518,10 @@ class ProfileTestsGenerator(CTSGenerator):
                             "extensions": capabilityDefinition.get("extensions", []),
                             "formats": capabilityDefinition.get("formats", []),
                         }
-                        if "features" in capabilityDefinition:
-                            featureStructList = capabilityDefinition["features"]
-                            if len(featureStructList) > 0 and list(featureStructList.values())[0]:
-                                capabilityData["feature_items"].append(featureStructList)
-                                for featureStruct in featureStructList:
-                                    structName = featureStruct[vkpdLen:]
-                                    self.constructStruct(structName, featureStructInitNamesList, featureStructInitList)
-                        if "properties" in capabilityDefinition:
-                            propertyStructList = capabilityDefinition["properties"]
-                            if len(propertyStructList) > 0 and list(propertyStructList.values())[0]:
-                                capabilityData["property_items"].append(propertyStructList)
-                                for propertyStruct in propertyStructList:
-                                    structName = propertyStruct[vkpdLen:]
-                                    self.constructStruct(structName, propertyStructInitNamesList, propertyStructInitList)
+                        self.fillStructLists("features", capabilityDefinition, capabilityData["feature_items"],\
+                                             featureStructInitNamesList, featureStructInitList)
+                        self.fillStructLists("properties", capabilityDefinition, capabilityData["property_items"],\
+                                             propertyStructInitNamesList, propertyStructInitList)
                         parsedCapabilities.append(capabilityData)
 
                     if isinstance(capability, list):
@@ -3537,6 +3536,27 @@ class ProfileTestsGenerator(CTSGenerator):
                 propertyTableItems = []
                 formatsList = {}
                 self.buildCapabilityCheckTables(requiredCapabilities, featureTableItems, propertyTableItems, extensionList, formatsList)
+
+                # handle optional capabilities - they might require additional Feature or Property structures to be added to the chain
+                if "optionals" in profileData:
+                    for capability in profileData["optionals"]:
+                        capabilityList = capability if isinstance(capability, list) else [capability]
+                        for capabilityName in capabilityList:
+                            capabilityDefinition = capabilitiesDefinitionsDict[capabilityName]
+
+                            capabilityData = {
+                                "name": capabilityName,
+                                "feature_items": [],
+                                "property_items": [],
+                            }
+                            self.fillStructLists("features", capabilityDefinition, capabilityData["feature_items"],\
+                                                 featureStructInitNamesList, featureStructInitList)
+                            self.fillStructLists("properties", capabilityDefinition, capabilityData["property_items"],\
+                                                 propertyStructInitNamesList, propertyStructInitList)
+                            # if profile will ever contain optional formats or extensions, we will need to handle them in capabilityData
+                            if "extensions" in capabilityDefinition or "formats" in capabilityDefinition:
+                                raise AssertionError(f"{capabilityName} contains extensions/formats which are not handled")
+                            optionalCapabilities.append(capabilityData)
 
                 # remove "VP_KHR_" from roadmap profile name
                 if "VP_KHR_" in profileName:
@@ -3691,10 +3711,56 @@ class ProfileTestsGenerator(CTSGenerator):
                     "\t    oneOrMoreChecksFailed = true;\n"
                     "\t}\n")
 
-                stream.append("\n"
-                "\tif (oneOrMoreChecksFailed)\n"
-                "\t    TCU_THROW(NotSupportedError, \"Profile not supported\");\n"
-                "\treturn tcu::TestStatus::pass(\"Profile supported\");\n}\n")
+                optionalPropertyTableItems = []
+                optionalCapabilityConditions = []
+                for capabilityData in optionalCapabilities:
+                    # there is no generic way to handle optional capabilities, so we will just handle them individualy;
+                    # if more optional capabilities are added this code will triger assertion untill they are handled
+                    stream.append(f"\t// {capabilityData['name']}")
+                    for featureStructList in capabilityData["feature_items"]:
+                        for featureStruct, featureDict in featureStructList.items():
+                            structName = featureStruct[vkpdLen:]
+                            for feature, value in featureDict.items():
+                                condition = ""
+                                if feature == "largePoints" or feature == "wideLines":
+                                    # skip those features, they are handled in property checks
+                                    continue
+                                elif feature == "pipelineProtectedAccess":
+                                    condition = f"vkVulkan11Features.protectedMemory && "\
+                                                 "!vkVulkan14Features.pipelineProtectedAccess"
+                                else:
+                                    raise AssertionError(f"Unhandled optional feature: {feature}")
+                                optionalCapabilityConditions.append(condition)
+                    for propertyStructList in capabilityData["property_items"]:
+                        for propertyStruct, propertyDict in propertyStructList.items():
+                            for propName, value in propertyDict.items():
+                                if propName != "limits":
+                                    raise AssertionError(f"Unhandled optional property: {propName}")
+                                for limitName, limitValue in value.items():
+                                    if limitName == "pointSizeGranularity":
+                                        requiredFeature = "largePoints"
+                                    elif limitName == "lineWidthGranularity":
+                                        requiredFeature = "wideLines"
+                                    else:
+                                        raise AssertionError(f"Unhandled optional limit: {limitName}")
+                                    structName = "vk" + propertyStruct[vkpdLen:] + ".limits"
+                                    self.addPropertyEntries(structName, limitName, limitValue, optionalPropertyTableItems)
+                                    index = len(optionalPropertyTableItems) - 1
+                                    condition = f"vkFeatures.{requiredFeature} && !validateLimit(optionalPropertyTable.at({index}), log)"
+                                    optionalCapabilityConditions.append(condition)
+
+                if len(optionalCapabilityConditions):
+                    # if needed define vector of properties to check
+                    if len(optionalPropertyTableItems):
+                        stream.append("\tconst std::vector<FeatureLimitTableItem> optionalPropertyTable {")
+                        stream.extend(["\t\t{ PN(checkAlways), " + p + " }," if ("," in p) else p for p in optionalPropertyTableItems])
+                        stream.append("\t};\n")
+                    # check all optional capabilities
+                    stream.append("\n".join([f"\toneOrMoreChecksFailed |= {c};" for c in optionalCapabilityConditions]) + "\n")
+
+                stream.append("\tif (oneOrMoreChecksFailed)\n"
+                              "\t    TCU_THROW(NotSupportedError, \"Profile not supported\");\n"
+                              "\treturn tcu::TestStatus::pass(\"Profile supported\");\n}\n")
 
                 profilesList.append(f"\t{{ \"{profileName}\", checkApiVersionSupport<{highestMajor}, {highestMinor}>, validate_{profileName} }},")
 
