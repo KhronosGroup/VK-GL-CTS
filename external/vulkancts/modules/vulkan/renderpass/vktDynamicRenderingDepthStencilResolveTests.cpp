@@ -560,10 +560,11 @@ void DepthStencilResolveTest::submit(void)
 
     //  VUID-vkCmdBeginRendering-pRenderingInfo-09588
     const VkImageMemoryBarrier preRenderBarrierSinglesample = {
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // VkStructureType            sType
-        nullptr,                                          // const void*                pNext
-        VK_ACCESS_TRANSFER_WRITE_BIT,                     // VkAccessFlags              srcAccessMask
-        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,     // VkAccessFlags              dstAccessMask
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType
+        nullptr,                                // const void*                pNext
+        VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags              srcAccessMask
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,         // VkAccessFlags              dstAccessMask
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,             // VkImageLayout              oldLayout
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout              newLayout
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                   srcQueueFamilyIndex
@@ -573,10 +574,11 @@ void DepthStencilResolveTest::submit(void)
     };
 
     const VkImageMemoryBarrier preRenderBarrierMultisample = {
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // VkStructureType            sType
-        nullptr,                                          // const void*                pNext
-        VK_ACCESS_NONE_KHR,                               // VkAccessFlags              srcAccessMask
-        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,     // VkAccessFlags              dstAccessMask
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType
+        nullptr,                                // const void*                pNext
+        VK_ACCESS_NONE_KHR,                     // VkAccessFlags              srcAccessMask
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,         // VkAccessFlags              dstAccessMask
         VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout              oldLayout
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout              newLayout
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                   srcQueueFamilyIndex
@@ -1452,10 +1454,11 @@ void DepthStencilPushConstResolveTest::submit(void)
 
     //  VUID-vkCmdBeginRendering-pRenderingInfo-09588
     const VkImageMemoryBarrier preRenderBarrierSinglesample = {
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // VkStructureType            sType
-        nullptr,                                          // const void*                pNext
-        VK_ACCESS_TRANSFER_WRITE_BIT,                     // VkAccessFlags              srcAccessMask
-        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,     // VkAccessFlags              dstAccessMask
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType
+        nullptr,                                // const void*                pNext
+        VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags              srcAccessMask
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,         // VkAccessFlags              dstAccessMask
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,             // VkImageLayout              oldLayout
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout              newLayout
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                   srcQueueFamilyIndex
@@ -1465,10 +1468,11 @@ void DepthStencilPushConstResolveTest::submit(void)
     };
 
     const VkImageMemoryBarrier preRenderBarrierMultisample = {
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // VkStructureType            sType
-        nullptr,                                          // const void*                pNext
-        VK_ACCESS_NONE_KHR,                               // VkAccessFlags              srcAccessMask
-        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,     // VkAccessFlags              dstAccessMask
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType
+        nullptr,                                // const void*                pNext
+        VK_ACCESS_NONE_KHR,                     // VkAccessFlags              srcAccessMask
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,         // VkAccessFlags              dstAccessMask
         VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout              oldLayout
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout              newLayout
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                   srcQueueFamilyIndex
@@ -1641,14 +1645,15 @@ void DepthStencilPushConstResolveTest::submit(void)
 
         const auto colorSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
         const VkImageMemoryBarrier outImageBarrier =
-            makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+            makeImageMemoryBarrier(0u, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, **m_colorImage, colorSubresourceRange);
 
         // Render for testing push constants
         {
 
-            vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                   (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &outImageBarrier);
+            vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT,
+                                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, nullptr, 0,
+                                   nullptr, 1, &outImageBarrier);
             vkd.cmdBeginRendering(*cmdBuffer, &pcRenderingInfo);
             vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pcPipeline);
             vkd.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);

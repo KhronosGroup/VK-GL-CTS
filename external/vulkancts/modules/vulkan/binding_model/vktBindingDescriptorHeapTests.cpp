@@ -464,6 +464,13 @@ private:
     std::vector<VkHostAddressRangeEXT> m_deferredSamplerHostDescriptors;
 };
 
+struct ASCaptureReplayAddresses
+{
+    VkDeviceAddress deviceAddress    = 0;
+    uint64_t bufferOpaqueCaptureAddr = 0;
+    uint64_t memoryOpaqueCaptureAddr = 0;
+};
+
 class DescriptorHeapTestInstanceInvariance final : public DescriptorHeapTestInstanceBase
 {
 public:
@@ -493,8 +500,8 @@ private:
     Move<VkSamplerYcbcrConversion> m_samplerYcbcrConversion;
     std::array<char, 256> m_captureData{};
     VkDeviceAddress m_bufferCaptureAddress{};
-    VkDeviceAddress m_captureBlasAddress{};
-    VkDeviceAddress m_captureTlasAddress{};
+    ASCaptureReplayAddresses m_captureBlasAddresses{};
+    ASCaptureReplayAddresses m_captureTlasAddresses{};
     VkClearColorValue m_customBorderColor{};
     uint32_t m_customBorderColorIndex{};
 };
@@ -4910,6 +4917,35 @@ VkDeviceAddress getAccelerationStructureDeviceAddress(const DeviceInterface &dev
     return deviceAddress;
 }
 
+uint64_t getBufferOpaqueCaptureAddress(const DeviceInterface &vk, VkDevice device, VkBuffer buffer)
+{
+    VkBufferDeviceAddressInfo info = initVulkanStructure();
+
+    info.buffer = buffer;
+
+    return vk.getBufferOpaqueCaptureAddress(device, &info);
+}
+
+uint64_t getDeviceMemoryOpaqueCaptureAddress(const DeviceInterface &vk, VkDevice device, VkDeviceMemory memory)
+{
+    VkDeviceMemoryOpaqueCaptureAddressInfo info = initVulkanStructure();
+
+    info.memory = memory;
+
+    return vk.getDeviceMemoryOpaqueCaptureAddress(device, &info);
+}
+
+void fillASCaptureReplayAddresses(const DeviceInterface &vk, VkDevice device, VkAccelerationStructureKHR as,
+                                  VkBuffer buffer, VkDeviceMemory memory, ASCaptureReplayAddresses &out)
+{
+    VkAccelerationStructureDeviceAddressInfoKHR info = initVulkanStructure();
+    info.accelerationStructure                       = as;
+
+    out.deviceAddress           = vk.getAccelerationStructureDeviceAddressKHR(device, &info);
+    out.bufferOpaqueCaptureAddr = getBufferOpaqueCaptureAddress(vk, device, buffer);
+    out.memoryOpaqueCaptureAddr = getDeviceMemoryOpaqueCaptureAddress(vk, device, memory);
+}
+
 VkSamplerCreateInfo makeBorderCodedSamplerCreateInfo(bool useBlack)
 {
     VkSamplerCreateInfo samplerCreateInfo = initVulkanStructure();
@@ -7176,31 +7212,30 @@ VkResult DescriptorHeapTestInstanceInvariance::createInvarianceResources(bool ca
         }
 
         AccelerationStructBufferProperties bufferProps;
-        const VkDeviceAddress captureBlasAddress = replay ? m_captureBlasAddress : 0;
-        const VkDeviceAddress captureTlasAddress = replay ? m_captureTlasAddress : 0;
+        const ASCaptureReplayAddresses zeroAddresses{};
+        const ASCaptureReplayAddresses *blasAddrs = replay ? &m_captureBlasAddresses : &zeroAddresses;
+        const ASCaptureReplayAddresses *tlasAddrs = replay ? &m_captureTlasAddresses : &zeroAddresses;
 
         m_rtBlas = de::SharedPtr(makeBottomLevelAccelerationStructure().release());
         m_rtBlas->setCreateFlags(createFlags);
         m_rtBlas->setGeometryData(vertices, true);
-        m_rtBlas->create(vkd, *m_device, m_device.getAllocator(), bufferProps, 0, captureBlasAddress, 0, 0, nullptr,
-                         memoryReqs);
+        m_rtBlas->create(vkd, *m_device, m_device.getAllocator(), bufferProps, 0, blasAddrs->deviceAddress,
+                         blasAddrs->bufferOpaqueCaptureAddr, blasAddrs->memoryOpaqueCaptureAddr, nullptr, memoryReqs);
 
         m_rtTlas = makeTopLevelAccelerationStructure();
         m_rtTlas->addInstance(m_rtBlas);
         m_rtTlas->setCreateFlags(createFlags);
-        m_rtTlas->create(vkd, *m_device, m_device.getAllocator(), bufferProps, 0, captureTlasAddress, 0, 0, nullptr,
-                         memoryReqs);
+        m_rtTlas->create(vkd, *m_device, m_device.getAllocator(), bufferProps, 0, tlasAddrs->deviceAddress,
+                         tlasAddrs->bufferOpaqueCaptureAddr, tlasAddrs->memoryOpaqueCaptureAddr, nullptr, memoryReqs);
 
         if (capture)
         {
-            VkAccelerationStructureDeviceAddressInfoKHR blasAddressInfo = initVulkanStructure();
-            blasAddressInfo.accelerationStructure                       = *m_rtBlas->getPtr();
-
-            VkAccelerationStructureDeviceAddressInfoKHR tlasAddressInfo = initVulkanStructure();
-            tlasAddressInfo.accelerationStructure                       = *m_rtTlas->getPtr();
-
-            m_captureBlasAddress = vkd.getAccelerationStructureDeviceAddressKHR(*m_device, &blasAddressInfo);
-            m_captureTlasAddress = vkd.getAccelerationStructureDeviceAddressKHR(*m_device, &tlasAddressInfo);
+            fillASCaptureReplayAddresses(vkd, *m_device, *m_rtBlas->getPtr(),
+                                         m_rtBlas->getAccelerationStructureBuffer(),
+                                         m_rtBlas->getAllocation().getMemory(), m_captureBlasAddresses);
+            fillASCaptureReplayAddresses(vkd, *m_device, *m_rtTlas->getPtr(),
+                                         m_rtTlas->getAccelerationStructureBuffer(),
+                                         m_rtTlas->getAllocation().getMemory(), m_captureTlasAddresses);
         }
         break;
     }
