@@ -484,10 +484,10 @@ bool validConversion(const T1 &orig, const T2 &result, bool sat)
 {
     DE_UNREF(sat);
 
-    constexpr bool t1IsInt = std::is_same_v<T1, int32_t> || std::is_same_v<T1, uint32_t>;
-    constexpr bool t2IsInt = std::is_same_v<T2, int32_t> || std::is_same_v<T2, uint32_t>;
-    constexpr bool t1IsMx  = std::is_same_v<T1, tcu::FloatMXINT8>;
-    constexpr bool t2IsMx  = std::is_same_v<T2, tcu::FloatMXINT8>;
+    static constexpr bool t1IsInt = std::is_same_v<T1, int32_t> || std::is_same_v<T1, uint32_t>;
+    static constexpr bool t2IsInt = std::is_same_v<T2, int32_t> || std::is_same_v<T2, uint32_t>;
+    static constexpr bool t1IsMx  = std::is_same_v<T1, tcu::FloatMXINT8>;
+    static constexpr bool t2IsMx  = std::is_same_v<T2, tcu::FloatMXINT8>;
 
     if constexpr (t1IsMx)
     {
