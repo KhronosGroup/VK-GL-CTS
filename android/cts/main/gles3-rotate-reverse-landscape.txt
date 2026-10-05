@@ -204,6 +204,7 @@ dEQP-GLES3.functional.fence_sync.client_wait_sync_noflush
 dEQP-GLES3.functional.fence_sync.client_wait_sync_smalldraw
 dEQP-GLES3.functional.fence_sync.client_wait_sync_timeout_largedraw
 dEQP-GLES3.functional.fence_sync.client_wait_sync_timeout_smalldraw
+dEQP-GLES3.functional.fence_sync.fbo_and_fence_sync
 dEQP-GLES3.functional.fence_sync.wait_sync_largedraw
 dEQP-GLES3.functional.fence_sync.wait_sync_smalldraw
 dEQP-GLES3.functional.occlusion_query.all_occluders
