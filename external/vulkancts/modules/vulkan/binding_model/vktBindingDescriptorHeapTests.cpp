@@ -222,6 +222,8 @@ enum class SpirvTestType
     CopyObject,
     CopyObjectStorageBuffer,
     SplitAccessChain,
+    MultidimensionalStructOfDescriptorsPacked,
+    MultidimensionalStructOfDescriptorsPadded,
 };
 
 struct TestParamsSpirv : TestParams
@@ -9715,6 +9717,72 @@ void DescriptorHeapTestCaseSpirv::initPrograms(vk::SourceCollections &programCol
                OpFunctionEnd
 )";
         break;
+    case SpirvTestType::MultidimensionalStructOfDescriptorsPacked:
+        assembly = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %resource_heap
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+               OpDecorate %Data Block
+               OpMemberDecorate %Data 0 Offset 0
+               OpDecorateId %a_inner ArrayStrideIdEXT %buf_size
+               OpDecorateId %a_outer ArrayStrideIdEXT %N_x3
+               OpDecorateId %b_array ArrayStrideIdEXT %buf_size
+               OpMemberDecorateIdEXT %S 0 OffsetIdEXT %uint_0
+               OpMemberDecorateIdEXT %S 1 OffsetIdEXT %N_x6
+               OpDecorateId %S_inner ArrayStrideIdEXT %N_x8
+               OpDecorateId %S_outer ArrayStrideIdEXT %N_x24
+       %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+     %uint_6 = OpConstant %uint 6
+     %uint_8 = OpConstant %uint 8
+    %uint_24 = OpConstant %uint 24
+     %ptr_uc = OpTypeUntypedPointerKHR UniformConstant
+     %ptr_sb = OpTypeUntypedPointerKHR StorageBuffer
+%resource_heap = OpUntypedVariableKHR %ptr_uc UniformConstant
+       %Data = OpTypeStruct %uint
+   %buf_type = OpTypeBufferEXT StorageBuffer
+   %buf_size = OpConstantSizeOfEXT %uint %buf_type
+       %N_x3 = OpSpecConstantOp %uint IMul %buf_size %uint_3
+       %N_x6 = OpSpecConstantOp %uint IMul %buf_size %uint_6
+       %N_x8 = OpSpecConstantOp %uint IMul %buf_size %uint_8
+      %N_x24 = OpSpecConstantOp %uint IMul %buf_size %uint_24
+    %a_inner = OpTypeArray %buf_type %uint_3
+    %a_outer = OpTypeArray %a_inner %uint_2
+    %b_array = OpTypeArray %buf_type %uint_2
+          %S = OpTypeStruct %a_outer %b_array
+    %S_inner = OpTypeArray %S %uint_3
+    %S_outer = OpTypeArray %S_inner %uint_2
+       %main = OpFunction %void None %void_fn
+      %entry = OpLabel
+     %desc_1 = OpUntypedAccessChainKHR %ptr_uc %S_outer %resource_heap %uint_1 %uint_2 %uint_0 %uint_1 %uint_0
+      %buf_1 = OpBufferPointerEXT %ptr_sb %desc_1
+    %value_1 = OpUntypedAccessChainKHR %ptr_sb %Data %buf_1 %uint_0
+               OpStore %value_1 %uint_1
+   %struct_2 = OpUntypedAccessChainKHR %ptr_uc %S_outer %resource_heap %uint_0 %uint_1
+     %desc_2 = OpUntypedAccessChainKHR %ptr_uc %S %struct_2 %uint_1 %uint_1
+      %buf_2 = OpBufferPointerEXT %ptr_sb %desc_2
+    %value_2 = OpUntypedAccessChainKHR %ptr_sb %Data %buf_2 %uint_0
+               OpStore %value_2 %uint_2
+   %member_3 = OpUntypedAccessChainKHR %ptr_uc %S_outer %resource_heap %uint_1 %uint_0 %uint_0
+     %desc_3 = OpUntypedAccessChainKHR %ptr_uc %a_outer %member_3 %uint_0 %uint_2
+      %buf_3 = OpBufferPointerEXT %ptr_sb %desc_3
+    %value_3 = OpUntypedAccessChainKHR %ptr_sb %Data %buf_3 %uint_0
+               OpStore %value_3 %uint_3
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
     case SpirvTestType::SplitAccessChain:
         assembly = R"(
                OpCapability Shader
@@ -9771,6 +9839,72 @@ void DescriptorHeapTestCaseSpirv::initPrograms(vk::SourceCollections &programCol
 %ssbo_arr_copy = OpCopyObject %ptr_ssbo_arr %ssbo_arr
   %ssbo_elem = OpAccessChain %ptr_ssbo_uint %ssbo_arr_copy %int_2
                OpStore %ssbo_elem %value
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
+    case SpirvTestType::MultidimensionalStructOfDescriptorsPadded:
+        assembly = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %resource_heap
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+               OpDecorate %Data Block
+               OpMemberDecorate %Data 0 Offset 0
+               OpDecorateId %a_inner ArrayStrideIdEXT %buf_size
+               OpDecorateId %a_outer ArrayStrideIdEXT %N_x4
+               OpDecorateId %b_array ArrayStrideIdEXT %N_x2
+               OpMemberDecorateIdEXT %S 0 OffsetIdEXT %N_x4
+               OpMemberDecorateIdEXT %S 1 OffsetIdEXT %uint_0
+               OpDecorateId %S_inner ArrayStrideIdEXT %N_x12
+               OpDecorateId %S_outer ArrayStrideIdEXT %N_x40
+       %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+     %uint_4 = OpConstant %uint 4
+    %uint_12 = OpConstant %uint 12
+    %uint_40 = OpConstant %uint 40
+     %ptr_uc = OpTypeUntypedPointerKHR UniformConstant
+     %ptr_sb = OpTypeUntypedPointerKHR StorageBuffer
+%resource_heap = OpUntypedVariableKHR %ptr_uc UniformConstant
+       %Data = OpTypeStruct %uint
+   %buf_type = OpTypeBufferEXT StorageBuffer
+   %buf_size = OpConstantSizeOfEXT %uint %buf_type
+       %N_x2 = OpSpecConstantOp %uint IMul %buf_size %uint_2
+       %N_x4 = OpSpecConstantOp %uint IMul %buf_size %uint_4
+      %N_x12 = OpSpecConstantOp %uint IMul %buf_size %uint_12
+      %N_x40 = OpSpecConstantOp %uint IMul %buf_size %uint_40
+    %a_inner = OpTypeArray %buf_type %uint_3
+    %a_outer = OpTypeArray %a_inner %uint_2
+    %b_array = OpTypeArray %buf_type %uint_2
+          %S = OpTypeStruct %a_outer %b_array
+    %S_inner = OpTypeArray %S %uint_3
+    %S_outer = OpTypeArray %S_inner %uint_2
+       %main = OpFunction %void None %void_fn
+      %entry = OpLabel
+     %desc_1 = OpUntypedAccessChainKHR %ptr_uc %S_outer %resource_heap %uint_1 %uint_2 %uint_0 %uint_1 %uint_0
+      %buf_1 = OpBufferPointerEXT %ptr_sb %desc_1
+    %value_1 = OpUntypedAccessChainKHR %ptr_sb %Data %buf_1 %uint_0
+               OpStore %value_1 %uint_1
+   %struct_2 = OpUntypedAccessChainKHR %ptr_uc %S_outer %resource_heap %uint_0 %uint_1
+     %desc_2 = OpUntypedAccessChainKHR %ptr_uc %S %struct_2 %uint_1 %uint_1
+      %buf_2 = OpBufferPointerEXT %ptr_sb %desc_2
+    %value_2 = OpUntypedAccessChainKHR %ptr_sb %Data %buf_2 %uint_0
+               OpStore %value_2 %uint_2
+   %member_3 = OpUntypedAccessChainKHR %ptr_uc %S_outer %resource_heap %uint_1 %uint_0 %uint_0
+     %desc_3 = OpUntypedAccessChainKHR %ptr_uc %a_outer %member_3 %uint_0 %uint_2
+      %buf_3 = OpBufferPointerEXT %ptr_sb %desc_3
+    %value_3 = OpUntypedAccessChainKHR %ptr_sb %Data %buf_3 %uint_0
+               OpStore %value_3 %uint_3
                OpReturn
                OpFunctionEnd
 )";
@@ -9926,6 +10060,24 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
     case SpirvTestType::SplitAccessChain:
         expectedOutput = {0, 0, 0, 0, 0, 0, 0xcafe, 0};
         break;
+    case SpirvTestType::MultidimensionalStructOfDescriptorsPacked:
+    {
+        expectedOutput.resize(2 * 64 + 1, 0u);
+        expectedOutput[0]   = 1u;
+        expectedOutput[64]  = 2u;
+        expectedOutput[128] = 3u;
+        heapUserSize        = 48 * m_descriptorHeapProperties.bufferDescriptorSize;
+        break;
+    }
+    case SpirvTestType::MultidimensionalStructOfDescriptorsPadded:
+    {
+        expectedOutput.resize(2 * 64 + 1, 0u);
+        expectedOutput[0]   = 1u;
+        expectedOutput[64]  = 2u;
+        expectedOutput[128] = 3u;
+        heapUserSize        = 75 * m_descriptorHeapProperties.bufferDescriptorSize;
+        break;
+    }
     default:
         DE_ASSERT(0);
         break;
@@ -10696,6 +10848,34 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
         pushData.resize(sizeof(VkDeviceAddress) * 2u);
         deMemcpy(pushData.data(), &outputBuffer->address, sizeof(VkDeviceAddress));
         deMemcpy(pushData.data() + sizeof(VkDeviceAddress), &uniformBuffer->address, sizeof(VkDeviceAddress));
+        break;
+    }
+    case SpirvTestType::MultidimensionalStructOfDescriptorsPacked:
+    case SpirvTestType::MultidimensionalStructOfDescriptorsPadded:
+    {
+        const bool packed = m_params.spirvTestType == SpirvTestType::MultidimensionalStructOfDescriptorsPacked;
+        const std::array<uint32_t, 3> heapIndices =
+            packed ? std::array<uint32_t, 3>{43u, 15u, 26u} : std::array<uint32_t, 3>{72u, 14u, 46u};
+        const VkDeviceSize descriptorSize = m_descriptorHeapProperties.bufferDescriptorSize;
+
+        std::array<VkHostAddressRangeEXT, 3> hostAddressRanges{};
+        std::array<VkResourceDescriptorInfoEXT, 3> resourceInfos{};
+        std::array<VkDeviceAddressRangeEXT, 3> addressRanges{};
+
+        for (size_t i = 0; i < heapIndices.size(); ++i)
+        {
+            hostAddressRanges[i].address = reinterpret_cast<char *>(heapContents) + heapIndices[i] * descriptorSize;
+            hostAddressRanges[i].size    = static_cast<size_t>(descriptorSize);
+
+            addressRanges[i].address = outputBuffer->address + i * 256;
+            addressRanges[i].size    = sizeof(uint32_t);
+
+            resourceInfos[i]                    = initVulkanStructure();
+            resourceInfos[i].type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            resourceInfos[i].data.pAddressRange = &addressRanges[i];
+        }
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 3, resourceInfos.data(), hostAddressRanges.data()));
         break;
     }
     default:
@@ -21515,6 +21695,8 @@ void populateSpirvTests(tcu::TestCaseGroup *topGroup)
         {SpirvTestType::CopyObject, "copy_object"},
         {SpirvTestType::CopyObjectStorageBuffer, "copy_object_storage_buffer"},
         {SpirvTestType::SplitAccessChain, "split_access_chain"},
+        {SpirvTestType::MultidimensionalStructOfDescriptorsPacked, "multidimensional_struct_of_descriptors_packed"},
+        {SpirvTestType::MultidimensionalStructOfDescriptorsPadded, "multidimensional_struct_of_descriptors_padded"},
     };
     for (const auto &test : tests)
     {
