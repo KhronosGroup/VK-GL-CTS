@@ -3921,7 +3921,7 @@ public:
                              vk::VkQueue queue, vk::Allocator &allocator, vk::VkDescriptorType descriptorType,
                              DescriptorSetCount descriptorSetCount, ShaderInputInterface shaderInterface,
                              vk::VkImageViewType viewType, uint32_t numLevels, uint32_t baseMipLevel,
-                             uint32_t baseArraySlice);
+                             uint32_t baseArraySlice, bool computeOnly = false);
 
     static tcu::IVec3 getFetchPos(vk::VkImageViewType viewType, uint32_t baseMipLevel, uint32_t baseArraySlice,
                                   int fetchPosNdx);
@@ -3966,11 +3966,12 @@ ImageFetchInstanceImages::ImageFetchInstanceImages(const vk::DeviceInterface &vk
                                                    vk::Allocator &allocator, vk::VkDescriptorType descriptorType,
                                                    DescriptorSetCount descriptorSetCount,
                                                    ShaderInputInterface shaderInterface, vk::VkImageViewType viewType,
-                                                   uint32_t numLevels, uint32_t baseMipLevel, uint32_t baseArraySlice)
+                                                   uint32_t numLevels, uint32_t baseMipLevel, uint32_t baseArraySlice,
+                                                   bool computeOnly)
     : ImageInstanceImages(vki, device, queueFamilyIndex, queue, allocator, descriptorType, viewType,
                           getDescriptorSetCount(descriptorSetCount) *
                               getInterfaceNumResources(shaderInterface), // numImages
-                          numLevels, baseMipLevel, baseArraySlice)
+                          numLevels, baseMipLevel, baseArraySlice, computeOnly)
     , m_shaderInterface(shaderInterface)
 {
 }
@@ -4678,11 +4679,9 @@ private:
 #endif
     const vk::DeviceInterface &m_vki;
     const vk::VkDevice m_device;
-    const vk::VkQueue m_queue;
-    const uint32_t m_queueFamilyIndex;
     vk::Allocator &m_allocator;
     const ComputeInstanceResultBuffer m_result;
-    const ImageFetchInstanceImages m_images;
+    de::MovePtr<ImageFetchInstanceImages> m_images; //!< rebuilt by every queue pass on the queue of that pass
 #ifndef CTS_USES_VULKANSC
     std::vector<RawUpdateRegistry> m_updateRegistry;
 #endif
@@ -4712,12 +4711,9 @@ ImageFetchComputeInstance::ImageFetchComputeInstance(Context &context, Descripto
 #endif
     , m_vki(context.getDeviceInterface())
     , m_device(context.getDevice())
-    , m_queue(context.getUniversalQueue())
-    , m_queueFamilyIndex(context.getUniversalQueueFamilyIndex())
     , m_allocator(context.getDefaultAllocator())
     , m_result(m_vki, m_device, m_allocator)
-    , m_images(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_descriptorSetCount,
-               m_shaderInterface, m_viewType, m_numLevels, m_baseMipLevel, m_baseArraySlice)
+    , m_images()
 #ifndef CTS_USES_VULKANSC
     , m_updateRegistry()
 #endif
@@ -4825,9 +4821,9 @@ void ImageFetchComputeInstance::writeDescriptorSet(vk::VkDescriptorSet descripto
         m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
     const vk::VkImageLayout imageLayout           = getImageLayoutForDescriptorType(m_descriptorType);
     const vk::VkDescriptorImageInfo imageInfos[2] = {
-        makeDescriptorImageInfo(m_images.getImageView(setNdx * getInterfaceNumResources(m_shaderInterface)),
+        makeDescriptorImageInfo(m_images->getImageView(setNdx * getInterfaceNumResources(m_shaderInterface)),
                                 imageLayout),
-        makeDescriptorImageInfo(m_images.getImageView(setNdx * getInterfaceNumResources(m_shaderInterface) + 1),
+        makeDescriptorImageInfo(m_images->getImageView(setNdx * getInterfaceNumResources(m_shaderInterface) + 1),
                                 imageLayout),
     };
 
@@ -4905,9 +4901,9 @@ void ImageFetchComputeInstance::writeDescriptorSetWithTemplate(vk::VkDescriptorS
         m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
     const vk::VkImageLayout imageLayout           = getImageLayoutForDescriptorType(m_descriptorType);
     const vk::VkDescriptorImageInfo imageInfos[2] = {
-        makeDescriptorImageInfo(m_images.getImageView(setNdx * getInterfaceNumResources(m_shaderInterface)),
+        makeDescriptorImageInfo(m_images->getImageView(setNdx * getInterfaceNumResources(m_shaderInterface)),
                                 imageLayout),
-        makeDescriptorImageInfo(m_images.getImageView(setNdx * getInterfaceNumResources(m_shaderInterface) + 1),
+        makeDescriptorImageInfo(m_images->getImageView(setNdx * getInterfaceNumResources(m_shaderInterface) + 1),
                                 imageLayout),
     };
     std::vector<vk::VkDescriptorUpdateTemplateEntry> updateEntries;
@@ -5005,6 +5001,12 @@ tcu::TestStatus ImageFetchComputeInstance::queuePass(const vkt::QueueData &queue
     m_updateBuilder.clear();
     m_descriptorsPerSet.clear();
 
+    // The images are exclusive to one queue family, so each pass creates and uploads its own set on its queue.
+    m_images.clear();
+    m_images = de::MovePtr<ImageFetchInstanceImages>(new ImageFetchInstanceImages(
+        m_vki, m_device, queueData.familyIndex, queueData.handle, m_allocator, m_descriptorType, m_descriptorSetCount,
+        m_shaderInterface, m_viewType, m_numLevels, m_baseMipLevel, m_baseArraySlice, true));
+
     return testResourceAccess(queueData.handle, queueData.familyIndex);
 }
 
@@ -5033,7 +5035,7 @@ void ImageFetchComputeInstance::logTestPlan(void) const
     for (int resultNdx = 0; resultNdx < 4; ++resultNdx)
     {
         msg << "Test sample " << resultNdx << ": fetch at position "
-            << m_images.getFetchPos(m_viewType, m_baseMipLevel, m_baseArraySlice, resultNdx);
+            << ImageFetchInstanceImages::getFetchPos(m_viewType, m_baseMipLevel, m_baseArraySlice, resultNdx);
 
         if (m_shaderInterface != SHADER_INPUT_SINGLE_DESCRIPTOR)
         {
@@ -5125,7 +5127,7 @@ tcu::TestStatus ImageFetchComputeInstance::testResourceAccess(vk::VkQueue queue,
 
         tcu::Vec4 reference = tcu::Vec4(0.0f);
         for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
-            reference += m_images.fetchImageValue(resultNdx, setNdx);
+            reference += m_images->fetchImageValue(resultNdx, setNdx);
 
         if (getDescriptorSetCount(m_descriptorSetCount) > 1)
             reference = reference / tcu::Vec4((float)getDescriptorSetCount(m_descriptorSetCount));
@@ -6526,11 +6528,9 @@ private:
 
     const vk::DeviceInterface &m_vki;
     const vk::VkDevice m_device;
-    const vk::VkQueue m_queue;
-    const uint32_t m_queueFamilyIndex;
     vk::Allocator &m_allocator;
     const ComputeInstanceResultBuffer m_result;
-    const ImageSampleInstanceImages m_images;
+    de::MovePtr<ImageSampleInstanceImages> m_images; //!< rebuilt by every queue pass on the queue of that pass
 #ifndef CTS_USES_VULKANSC
     std::vector<RawUpdateRegistry> m_updateRegistry;
 #endif
@@ -6562,12 +6562,9 @@ ImageSampleComputeInstance::ImageSampleComputeInstance(Context &context, Descrip
 #endif
     , m_vki(context.getDeviceInterface())
     , m_device(context.getDevice())
-    , m_queue(context.getUniversalQueue())
-    , m_queueFamilyIndex(context.getUniversalQueueFamilyIndex())
     , m_allocator(context.getDefaultAllocator())
     , m_result(m_vki, m_device, m_allocator)
-    , m_images(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_descriptorSetCount,
-               m_shaderInterface, m_viewType, m_numLevels, m_baseMipLevel, m_baseArraySlice, isImmutableSampler)
+    , m_images()
 #ifndef CTS_USES_VULKANSC
     , m_updateRegistry()
 #endif
@@ -6579,8 +6576,8 @@ ImageSampleComputeInstance::ImageSampleComputeInstance(Context &context, Descrip
 vk::Move<vk::VkDescriptorSetLayout> ImageSampleComputeInstance::createDescriptorSetLayout(uint32_t setNdx) const
 {
     const vk::VkSampler samplers[2] = {
-        m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface)),
-        m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface) + 1),
+        m_images->getSampler(setNdx * getInterfaceNumResources(m_shaderInterface)),
+        m_images->getSampler(setNdx * getInterfaceNumResources(m_shaderInterface) + 1),
     };
 
     vk::DescriptorSetLayoutBuilder builder;
@@ -6608,7 +6605,7 @@ vk::Move<vk::VkDescriptorSetLayout> ImageSampleComputeInstance::createDescriptor
             builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT,
                                             binding++);
         builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++,
-                                               (m_images.isImmutable()) ? (&samplers[0]) : (nullptr));
+                                               (m_images->isImmutable()) ? (&samplers[0]) : (nullptr));
         break;
 
     case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
@@ -6616,19 +6613,19 @@ vk::Move<vk::VkDescriptorSetLayout> ImageSampleComputeInstance::createDescriptor
             builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT,
                                             binding++);
         builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++,
-                                               (m_images.isImmutable()) ? (&samplers[0]) : (nullptr));
+                                               (m_images->isImmutable()) ? (&samplers[0]) : (nullptr));
         builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++,
-                                               (m_images.isImmutable()) ? (&samplers[1]) : (nullptr));
+                                               (m_images->isImmutable()) ? (&samplers[1]) : (nullptr));
         break;
 
     case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
         builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding,
-                                               (m_images.isImmutable()) ? (&samplers[0]) : (nullptr));
+                                               (m_images->isImmutable()) ? (&samplers[0]) : (nullptr));
         if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
             builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT,
                                             binding + 1u);
         builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding + 2u,
-                                               (m_images.isImmutable()) ? (&samplers[1]) : (nullptr));
+                                               (m_images->isImmutable()) ? (&samplers[1]) : (nullptr));
         break;
 
     case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
@@ -6637,10 +6634,10 @@ vk::Move<vk::VkDescriptorSetLayout> ImageSampleComputeInstance::createDescriptor
                                             binding++);
         builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT,
                                                getArbitraryBindingIndex(0),
-                                               (m_images.isImmutable()) ? (&samplers[0]) : (nullptr));
+                                               (m_images->isImmutable()) ? (&samplers[0]) : (nullptr));
         builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT,
                                                getArbitraryBindingIndex(1),
-                                               (m_images.isImmutable()) ? (&samplers[1]) : (nullptr));
+                                               (m_images->isImmutable()) ? (&samplers[1]) : (nullptr));
         break;
 
     case SHADER_INPUT_DESCRIPTOR_ARRAY:
@@ -6648,7 +6645,7 @@ vk::Move<vk::VkDescriptorSetLayout> ImageSampleComputeInstance::createDescriptor
             builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT,
                                             binding++);
         builder.addArraySamplerBinding(m_descriptorType, 2u, vk::VK_SHADER_STAGE_COMPUTE_BIT,
-                                       (m_images.isImmutable()) ? (samplers) : (nullptr));
+                                       (m_images->isImmutable()) ? (samplers) : (nullptr));
         break;
 
     default:
@@ -6743,10 +6740,10 @@ void ImageSampleComputeInstance::writeSamplerDescriptorSet(vk::VkDescriptorSet d
     const vk::VkDescriptorBufferInfo resultInfo = vk::makeDescriptorBufferInfo(
         m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
     const vk::VkDescriptorImageInfo imageInfo =
-        makeDescriptorImageInfo(m_images.getImageView(setNdx), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        makeDescriptorImageInfo(m_images->getImageView(setNdx), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     const vk::VkDescriptorImageInfo samplersInfos[2] = {
-        makeDescriptorImageInfo(m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface))),
-        makeDescriptorImageInfo(m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface) + 1)),
+        makeDescriptorImageInfo(m_images->getSampler(setNdx * getInterfaceNumResources(m_shaderInterface))),
+        makeDescriptorImageInfo(m_images->getSampler(setNdx * getInterfaceNumResources(m_shaderInterface) + 1)),
     };
     uint32_t binding        = 0u;
     uint32_t numDescriptors = 0u;
@@ -6835,10 +6832,10 @@ void ImageSampleComputeInstance::writeSamplerDescriptorSetWithTemplate(vk::VkDes
     const vk::VkDescriptorBufferInfo resultInfo = vk::makeDescriptorBufferInfo(
         m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
     const vk::VkDescriptorImageInfo imageInfo =
-        makeDescriptorImageInfo(m_images.getImageView(setNdx), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        makeDescriptorImageInfo(m_images->getImageView(setNdx), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     const vk::VkDescriptorImageInfo samplersInfos[2] = {
-        makeDescriptorImageInfo(m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface))),
-        makeDescriptorImageInfo(m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface) + 1)),
+        makeDescriptorImageInfo(m_images->getSampler(setNdx * getInterfaceNumResources(m_shaderInterface))),
+        makeDescriptorImageInfo(m_images->getSampler(setNdx * getInterfaceNumResources(m_shaderInterface) + 1)),
     };
     vk::VkDescriptorUpdateTemplateCreateInfo templateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
@@ -6943,17 +6940,17 @@ void ImageSampleComputeInstance::writeImageSamplerDescriptorSet(vk::VkDescriptor
     const vk::VkSampler samplers[2] = {
         (m_isImmutableSampler && (m_updateMethod != DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)) ?
             VK_NULL_HANDLE :
-            (m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface))),
+            (m_images->getSampler(setNdx * getInterfaceNumResources(m_shaderInterface))),
         (m_isImmutableSampler && (m_updateMethod != DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)) ?
             VK_NULL_HANDLE :
-            (m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface) + 1)),
+            (m_images->getSampler(setNdx * getInterfaceNumResources(m_shaderInterface) + 1)),
     };
     const vk::VkDescriptorImageInfo imageSamplers[2] = {
         makeDescriptorImageInfo(samplers[0],
-                                m_images.getImageView(setNdx * getInterfaceNumResources(m_shaderInterface)),
+                                m_images->getImageView(setNdx * getInterfaceNumResources(m_shaderInterface)),
                                 vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
         makeDescriptorImageInfo(samplers[1],
-                                m_images.getImageView(setNdx * getInterfaceNumResources(m_shaderInterface) + 1),
+                                m_images->getImageView(setNdx * getInterfaceNumResources(m_shaderInterface) + 1),
                                 vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
     };
     uint32_t binding        = 0u;
@@ -7033,17 +7030,17 @@ void ImageSampleComputeInstance::writeImageSamplerDescriptorSetWithTemplate(vk::
     const vk::VkSampler samplers[2] = {
         (m_isImmutableSampler && !withPush) ?
             VK_NULL_HANDLE :
-            (m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface))),
+            (m_images->getSampler(setNdx * getInterfaceNumResources(m_shaderInterface))),
         (m_isImmutableSampler && !withPush) ?
             VK_NULL_HANDLE :
-            (m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface) + 1)),
+            (m_images->getSampler(setNdx * getInterfaceNumResources(m_shaderInterface) + 1)),
     };
     const vk::VkDescriptorImageInfo imageSamplers[2] = {
         makeDescriptorImageInfo(samplers[0],
-                                m_images.getImageView(setNdx * getInterfaceNumResources(m_shaderInterface)),
+                                m_images->getImageView(setNdx * getInterfaceNumResources(m_shaderInterface)),
                                 vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
         makeDescriptorImageInfo(samplers[1],
-                                m_images.getImageView(setNdx * getInterfaceNumResources(m_shaderInterface) + 1),
+                                m_images->getImageView(setNdx * getInterfaceNumResources(m_shaderInterface) + 1),
                                 vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
     };
     vk::VkDescriptorUpdateTemplateCreateInfo templateCreateInfo = {
@@ -7143,6 +7140,12 @@ tcu::TestStatus ImageSampleComputeInstance::queuePass(const vkt::QueueData &queu
     m_updateBuilder.clear();
     m_descriptorsPerSet.clear();
 
+    // The images are exclusive to one queue family, so each pass creates and uploads its own set on its queue.
+    m_images.clear();
+    m_images = de::MovePtr<ImageSampleInstanceImages>(new ImageSampleInstanceImages(
+        m_vki, m_device, queueData.familyIndex, queueData.handle, m_allocator, m_descriptorType, m_descriptorSetCount,
+        m_shaderInterface, m_viewType, m_numLevels, m_baseMipLevel, m_baseArraySlice, m_isImmutableSampler, true));
+
     return testResourceAccess(queueData.handle, queueData.familyIndex);
 }
 
@@ -7196,7 +7199,7 @@ void ImageSampleComputeInstance::logTestPlan(void) const
     for (int resultNdx = 0; resultNdx < 4; ++resultNdx)
     {
         msg << "Test sample " << resultNdx << ": sample at position "
-            << m_images.getSamplePos(m_viewType, m_baseMipLevel, m_baseArraySlice, resultNdx);
+            << ImageSampleInstanceImages::getSamplePos(m_viewType, m_baseMipLevel, m_baseArraySlice, resultNdx);
 
         if (m_shaderInterface != SHADER_INPUT_SINGLE_DESCRIPTOR)
         {
@@ -7296,7 +7299,7 @@ tcu::TestStatus ImageSampleComputeInstance::testResourceAccess(vk::VkQueue queue
         tcu::Vec4 reference               = tcu::Vec4(0.0f);
 
         for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
-            reference += m_images.fetchSampleValue(resultNdx, setNdx);
+            reference += m_images->fetchSampleValue(resultNdx, setNdx);
 
         reference = reference / tcu::Vec4((float)getDescriptorSetCount(m_descriptorSetCount));
 
@@ -7309,7 +7312,7 @@ tcu::TestStatus ImageSampleComputeInstance::testResourceAccess(vk::VkQueue queue
 
             m_context.getTestContext().getLog()
                 << tcu::TestLog::Message << "Test sample " << resultNdx << ":\n"
-                << "\tSampling at " << m_images.getSamplePos(m_viewType, m_baseMipLevel, m_baseArraySlice, resultNdx)
+                << "\tSampling at " << m_images->getSamplePos(m_viewType, m_baseMipLevel, m_baseArraySlice, resultNdx)
                 << "\n"
                 << "\tError expected " << reference << ", got " << result << tcu::TestLog::EndMessage;
         }
