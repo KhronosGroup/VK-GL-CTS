@@ -635,7 +635,7 @@ tcu::TestStatus createSwapchainTest(Context &context, TestParameters params)
         imageUsageFlags2Info.usage                           = curParams.imageUsage;
         if (params.extendedFlags)
         {
-            curParams.pNext      = imageUsageFlags2Info.pNext;
+            curParams.pNext      = &imageUsageFlags2Info;
             curParams.imageUsage = 0u;
         }
 
@@ -672,6 +672,9 @@ tcu::TestStatus createSwapchainTest(Context &context, TestParameters params)
         else
         {
             VkPhysicalDeviceImageFormatInfo2 imageFormatInfo2 = initVulkanStructure(&imageUsageFlags2Info);
+            imageFormatInfo2.format                           = curParams.imageFormat;
+            imageFormatInfo2.type                             = VK_IMAGE_TYPE_2D;
+            imageFormatInfo2.tiling                           = VK_IMAGE_TILING_OPTIMAL;
             VkImageFormatProperties2 imageFormatProperties2   = initVulkanStructure();
             propertiesResult                                  = instHelper.vki.getPhysicalDeviceImageFormatProperties2(
                 devHelper.physicalDevice, &imageFormatInfo2, &imageFormatProperties2);
