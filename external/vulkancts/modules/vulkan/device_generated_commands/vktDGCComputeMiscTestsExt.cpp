@@ -32,12 +32,14 @@
 #include "vktTestCase.hpp"
 #include "vktDGCUtilExt.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include <numeric>
 #include <sstream>
 #include <vector>
 #include <limits>
 #include <string>
+#include <memory>
 
 namespace vkt
 {
@@ -2516,108 +2518,347 @@ tcu::TestStatus DBPDInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
-} // namespace
-
-tcu::TestCaseGroup *createDGCComputeMiscTestsExt(tcu::TestContext &testCtx)
+namespace RebindAfterIES
 {
-    using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-    GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "misc"));
+struct Params
+{
+    bool shaderObjects;
+    bool preprocess;
 
-    for (const auto executeCount : {64u, 1024u, 8192u})
-        for (const auto useComputeQueue : {false, true})
-        {
-            const ManyDispatchesParams params{executeCount, useComputeQueue};
-            const auto queueVariant = (useComputeQueue ? "_compute_queue" : "_universal_queue");
-            const auto testName     = std::string("execute_many_") + std::to_string(executeCount) + queueVariant;
-            addFunctionCaseWithPrograms(mainGroup.get(), testName, manyDispatchesCheckSupport,
-                                        manyDispatchesInitPrograms, manyExecutesRun, params);
-        }
-
-    for (const auto executeCount : {64u, 1024u, 8192u, 131072u})
-        for (const auto useComputeQueue : {false, true})
-        {
-            const ManyDispatchesParams params{executeCount, useComputeQueue};
-            const auto queueVariant = (useComputeQueue ? "_compute_queue" : "_universal_queue");
-            const auto testName     = std::string("many_sequences_") + std::to_string(executeCount) + queueVariant;
-            addFunctionCaseWithPrograms(mainGroup.get(), testName, manyDispatchesCheckSupport,
-                                        manyDispatchesInitPrograms, manySequencesRun, params);
-        }
-
-    mainGroup->addChild(new ScratchSpaceCase(testCtx, "scratch_space"));
-
-    for (const uint32_t pcBytes : {128u, 256u, 4096u})
-        for (const bool partial : {false, true})
-            for (const bool preprocess : {false, true})
-                for (const bool useExecutionSet : {false, true})
-                    for (const bool useComputeQueue : {false, true})
-                        for (const bool pushDescriptor : {false, true})
-                        {
-                            const MaxPushConstantRangeInstance::Params params{
-                                pcBytes, partial, preprocess, useExecutionSet, pushDescriptor, useComputeQueue};
-
-                            const std::string testName =
-                                std::string("max_pc_range_") + std::to_string(pcBytes) +
-                                (partial ? "_partial" : "_full") + (preprocess ? "_preprocess" : "") +
-                                (useExecutionSet ? "_with_execution_set" : "") +
-                                (pushDescriptor ? "_push_descriptor" : "") + (useComputeQueue ? "_cq" : "");
-
-                            mainGroup->addChild(new MaxPushConstantRangeCase(testCtx, testName, params));
-                        }
-
-    for (const bool preprocess : {false, true})
-        for (const bool useComputeQueue : {false, true})
-        {
-            const MultipleSetsInstance::Params params{
-                preprocess,
-                useComputeQueue,
-            };
-
-            const std::string testName =
-                std::string("multiple_sets") + (preprocess ? "_preprocess" : "") + (useComputeQueue ? "_cq" : "");
-
-            mainGroup->addChild(new MultipleSetsCase(testCtx, testName, params));
-        }
-
-    for (const bool useExecutionSet : {false, true})
-        for (const bool splitSets : {false, true})
-            for (const bool useComputeQueue : {false, true})
-            {
-                const IUBUsageInstance::Params params{
-                    useExecutionSet,
-                    splitSets,
-                    useComputeQueue,
-                };
-
-                const std::string testName = std::string("iubs") + (useExecutionSet ? "_with_ies" : "") +
-                                             (splitSets ? "_multiset" : "") + (useComputeQueue ? "_cq" : "");
-
-                mainGroup->addChild(new IUBUsageCase(testCtx, testName, params));
-            }
-
-    for (const bool useExecutionSet : {false, true})
-        for (const bool useComputeQueue : {false, true})
-        {
-            const TwoCmdBuffersParams params{useExecutionSet, useComputeQueue};
-            const std::string testName =
-                std::string("two_cmd_buffers") + (useComputeQueue ? "_cq" : "") + (useExecutionSet ? "_with_ies" : "");
-            addFunctionCaseWithPrograms(mainGroup.get(), testName, twoCmdBuffersCheckSupport, twoCmdBuffersInitPrograms,
-                                        twoCmdBuffersRun, params);
-        }
-
-    for (const bool useExecutionSet : {false, true})
+    std::vector<uint32_t> getValues(void) const
     {
-        const DBPDInstance::Params params{useExecutionSet};
-        const std::string testName =
-            std::string("descriptor_buffer_push_descriptor") + (useExecutionSet ? "_with_ies" : "");
-        mainGroup->addChild(new DBPDCase(testCtx, testName, params));
+        const std::vector<uint32_t> values{100u, 200u};
+        return values;
     }
+};
+using ParamsPtr = std::shared_ptr<const Params>;
 
-    addFunctionCaseWithPrograms(mainGroup.get(), "null_set_layouts_info", nullSetLayoutsInfoCheckSupport,
-                                nullSetLayoutsInfoPrograms, nullSetLayoutsInfoRun);
-
-    return mainGroup.release();
+void checkSupport(Context &context, ParamsPtr params)
+{
+    if (params->shaderObjects)
+        context.requireDeviceFunctionality("VK_EXT_shader_object");
+    const auto supportType =
+        (params->shaderObjects ? DGCComputeSupportType::BIND_SHADER : DGCComputeSupportType::BIND_PIPELINE);
+    checkDGCExtComputeSupport(context, supportType);
 }
 
+void initPrograms(vk::SourceCollections &dst, ParamsPtr params)
+{
+    const auto values = params->getValues();
+
+    for (size_t i = 0; i < values.size(); ++i)
+    {
+        std::ostringstream comp;
+        comp << "#version 460\n"
+             << "layout (local_size_x=1, local_size_y=1, local_size_z=1) in;\n"
+             << "layout (set=0, binding=0, std430) writeonly buffer BufferBlock { uint value; } ssbo;\n"
+             << "void main(void) {\n"
+             << "    ssbo.value = " << values.at(i) << ";\n"
+             << "}\n";
+        const auto shaderName = "comp" + std::to_string(i);
+        dst.glslSources.add(shaderName) << glu::ComputeSource(comp.str());
+    }
+}
+
+tcu::TestStatus runTest(Context &context, ParamsPtr params)
+{
+    const auto ctx         = context.getContextCommonData();
+    const auto descType    = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const auto shaderStage = VK_SHADER_STAGE_COMPUTE_BIT;
+
+    // Buffer.
+    const auto outBufferInfo = makeBufferCreateInfo(DE_SIZEOF32(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    BufferWithMemory outBuffer(ctx.vkd, ctx.device, ctx.allocator, outBufferInfo, HostIntent::R);
+
+    // Descriptors.
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType);
+    const auto descPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    DescriptorSetLayoutBuilder layoutBuilder;
+    layoutBuilder.addSingleBinding(descType, shaderStage);
+    const auto setLayout = layoutBuilder.build(ctx.vkd, ctx.device);
+
+    const auto descriptorSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descPool, *setLayout);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+
+    DescriptorSetUpdateBuilder updateBuilder;
+    const auto descInfo = makeDescriptorBufferInfo(*outBuffer, 0ull, VK_WHOLE_SIZE);
+    updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descType, &descInfo);
+    updateBuilder.update(ctx.vkd, ctx.device);
+
+    // Pipelines or shaders.
+    using DGCComputePipelineExtPtr = std::unique_ptr<DGCComputePipelineExt>;
+    using DGCComputeShaderExtPtr   = std::unique_ptr<DGCComputeShaderExt>;
+
+    std::vector<DGCComputePipelineExtPtr> pipelines;
+    std::vector<DGCComputeShaderExtPtr> shaders;
+
+    const auto &binaries = context.getBinaryCollection();
+    const std::vector<VkDescriptorSetLayout> setLayouts{*setLayout};
+    const std::vector<vk::VkPushConstantRange> pcRanges; // Empty.
+
+    const auto values = params->getValues();
+    for (size_t i = 0; i < values.size(); ++i)
+    {
+        const auto shaderName = "comp" + std::to_string(i);
+
+        if (params->shaderObjects)
+            shaders.emplace_back(
+                new DGCComputeShaderExt(ctx.vkd, ctx.device, 0u, binaries.get(shaderName), setLayouts, pcRanges));
+        else
+        {
+            const auto shaderModule = createShaderModule(ctx.vkd, ctx.device, binaries.get(shaderName));
+            pipelines.emplace_back(
+                new DGCComputePipelineExt(ctx.vkd, ctx.device, 0u, *pipelineLayout, 0u, *shaderModule));
+        }
+    }
+
+    // IES
+    ExecutionSetManagerPtr iesManager;
+    if (params->shaderObjects)
+    {
+        const std::vector<IESStageInfo> stageInfos{
+            IESStageInfo(shaders.front()->get(), setLayouts),
+        };
+        iesManager = makeExecutionSetManagerShader(ctx.vkd, ctx.device, stageInfos, pcRanges, de::sizeU32(shaders));
+        for (uint32_t i = 0u; i < de::sizeU32(shaders); ++i)
+            iesManager->addShader(i, shaders.at(i)->get());
+    }
+    else
+    {
+        iesManager =
+            makeExecutionSetManagerPipeline(ctx.vkd, ctx.device, pipelines.front()->get(), de::sizeU32(pipelines));
+        for (uint32_t i = 0u; i < de::sizeU32(pipelines); ++i)
+            iesManager->addPipeline(i, pipelines.at(i)->get());
+    }
+    iesManager->update();
+    const auto iesHandle = iesManager->get();
+
+    // Indirect commands layout.
+    const auto cmdsLayoutFlags =
+        (params->preprocess ? VK_INDIRECT_COMMANDS_LAYOUT_USAGE_EXPLICIT_PREPROCESS_BIT_EXT : 0);
+    IndirectCommandsLayoutBuilderExt cmdsLayoutBuilder(cmdsLayoutFlags, shaderStage, *pipelineLayout);
+    const auto iesTokenType = (params->shaderObjects ? VK_INDIRECT_EXECUTION_SET_INFO_TYPE_SHADER_OBJECTS_EXT :
+                                                       VK_INDIRECT_EXECUTION_SET_INFO_TYPE_PIPELINES_EXT);
+    cmdsLayoutBuilder.addExecutionSetToken(0u, iesTokenType, shaderStage);
+    cmdsLayoutBuilder.addDispatchToken(cmdsLayoutBuilder.getStreamRange());
+    const auto cmdsLayout = cmdsLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    // Commands buffer.
+    const auto sequenceCount = de::sizeU32(values);
+    std::vector<uint32_t> dgcData;
+    dgcData.reserve(sequenceCount * cmdsLayoutBuilder.getStreamStride() / DE_SIZEOF32(uint32_t));
+
+    for (uint32_t i = 0u; i < sequenceCount; ++i)
+    {
+        dgcData.push_back(i);  // Pipeline or shader index in the execution set.
+        dgcData.push_back(1u); // Dispatch size x, y, z
+        dgcData.push_back(1u);
+        dgcData.push_back(1u);
+    }
+
+    DGCBuffer dgcBuffer(ctx.vkd, ctx.device, ctx.allocator, de::dataSize(dgcData));
+    {
+        auto &alloc   = dgcBuffer.getAllocation();
+        void *dataPtr = alloc.getHostPtr();
+        deMemcpy(dataPtr, de::dataOrNull(dgcData), de::dataSize(dgcData));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    const auto preprocessPipeline = VK_NULL_HANDLE;
+    PreprocessBufferExt preprocessBuffer(ctx.vkd, ctx.device, ctx.allocator, iesHandle, *cmdsLayout, sequenceCount, 0u,
+                                         preprocessPipeline);
+
+    const DGCGenCmdsInfo cmdsInfo(shaderStage, iesHandle, *cmdsLayout, dgcBuffer.getDeviceAddress(),
+                                  dgcBuffer.getSize(), preprocessBuffer.getDeviceAddress(), preprocessBuffer.getSize(),
+                                  sequenceCount, 0ull, 0u, preprocessPipeline);
+
+    const CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+    const auto bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+    if (params->shaderObjects)
+        ctx.vkd.cmdBindShadersEXT(cmdBuffer, 1u, &shaderStage, &shaders.front()->get());
+    else
+        ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, pipelines.front()->get());
+
+    Move<VkCommandBuffer> preprocessCmdBuffer;
+    if (params->preprocess)
+    {
+        preprocessCmdBuffer = allocateCommandBuffer(ctx.vkd, ctx.device, *cmd.cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        beginCommandBuffer(ctx.vkd, *preprocessCmdBuffer);
+        ctx.vkd.cmdPreprocessGeneratedCommandsEXT(*preprocessCmdBuffer, &cmdsInfo.get(), cmdBuffer);
+        preprocessToExecuteBarrierExt(ctx.vkd, *preprocessCmdBuffer);
+        endCommandBuffer(ctx.vkd, *preprocessCmdBuffer);
+    }
+    ctx.vkd.cmdExecuteGeneratedCommandsEXT(cmdBuffer, makeVkBool(params->preprocess), &cmdsInfo.get());
+
+    // Bind the first pipeline again.
+    if (params->shaderObjects)
+        ctx.vkd.cmdBindShadersEXT(cmdBuffer, 1u, &shaderStage, &shaders.front()->get());
+    else
+        ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, pipelines.front()->get());
+
+    {
+        // Sync previous dispatches with the upcoming one.
+        const auto access  = VK_ACCESS_SHADER_WRITE_BIT;
+        const auto stages  = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        const auto barrier = makeMemoryBarrier(access, access);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, stages, stages, &barrier);
+    }
+
+    ctx.vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+
+    {
+        // Sync with the host.
+        const auto srcAccess = VK_ACCESS_SHADER_WRITE_BIT;
+        const auto dstAccess = VK_ACCESS_HOST_READ_BIT;
+        const auto srcStage  = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        const auto dstStage  = VK_PIPELINE_STAGE_HOST_BIT;
+        const auto barrier   = makeMemoryBarrier(srcAccess, dstAccess);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, srcStage, dstStage, &barrier);
+    }
+
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitAndWaitWithPreprocess(ctx.vkd, ctx.device, ctx.queue, cmdBuffer, *preprocessCmdBuffer);
+
+    auto &alloc = outBuffer.getAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, alloc);
+
+    uint32_t outValue = 0u;
+    memcpy(&outValue, alloc.getHostPtr(), sizeof(outValue));
+
+    if (outValue != values.front())
+    {
+        std::ostringstream msg;
+        msg << "Unexpected value found in output buffer; expected " << values.front() << " but found " << outValue;
+        TCU_FAIL(msg.str());
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+} // namespace RebindAfterIES
+
+} // namespace
+
+tcu::TestCaseGroup *createDGCComputeMiscTestsExt(tcu::TestContext &testContext_)
+{
+    return createTestGroup2(
+        testContext_, "misc",
+        [](tcu::TestCaseGroup *mainGroup)
+        {
+            auto &testCtx = mainGroup->getTestContext();
+
+            for (const auto executeCount : {64u, 1024u, 8192u})
+                for (const auto useComputeQueue : {false, true})
+                {
+                    const ManyDispatchesParams params{executeCount, useComputeQueue};
+                    const auto queueVariant = (useComputeQueue ? "_compute_queue" : "_universal_queue");
+                    const auto testName = std::string("execute_many_") + std::to_string(executeCount) + queueVariant;
+                    addFunctionCaseWithPrograms(mainGroup, testName, manyDispatchesCheckSupport,
+                                                manyDispatchesInitPrograms, manyExecutesRun, params);
+                }
+
+            for (const auto executeCount : {64u, 1024u, 8192u, 131072u})
+                for (const auto useComputeQueue : {false, true})
+                {
+                    const ManyDispatchesParams params{executeCount, useComputeQueue};
+                    const auto queueVariant = (useComputeQueue ? "_compute_queue" : "_universal_queue");
+                    const auto testName = std::string("many_sequences_") + std::to_string(executeCount) + queueVariant;
+                    addFunctionCaseWithPrograms(mainGroup, testName, manyDispatchesCheckSupport,
+                                                manyDispatchesInitPrograms, manySequencesRun, params);
+                }
+
+            mainGroup->addChild(new ScratchSpaceCase(testCtx, "scratch_space"));
+
+            for (const uint32_t pcBytes : {128u, 256u, 4096u})
+                for (const bool partial : {false, true})
+                    for (const bool preprocess : {false, true})
+                        for (const bool useExecutionSet : {false, true})
+                            for (const bool useComputeQueue : {false, true})
+                                for (const bool pushDescriptor : {false, true})
+                                {
+                                    const MaxPushConstantRangeInstance::Params params{
+                                        pcBytes, partial, preprocess, useExecutionSet, pushDescriptor, useComputeQueue};
+
+                                    const std::string testName =
+                                        std::string("max_pc_range_") + std::to_string(pcBytes) +
+                                        (partial ? "_partial" : "_full") + (preprocess ? "_preprocess" : "") +
+                                        (useExecutionSet ? "_with_execution_set" : "") +
+                                        (pushDescriptor ? "_push_descriptor" : "") + (useComputeQueue ? "_cq" : "");
+
+                                    mainGroup->addChild(new MaxPushConstantRangeCase(testCtx, testName, params));
+                                }
+
+            for (const bool preprocess : {false, true})
+                for (const bool useComputeQueue : {false, true})
+                {
+                    const MultipleSetsInstance::Params params{
+                        preprocess,
+                        useComputeQueue,
+                    };
+
+                    const std::string testName = std::string("multiple_sets") + (preprocess ? "_preprocess" : "") +
+                                                 (useComputeQueue ? "_cq" : "");
+
+                    mainGroup->addChild(new MultipleSetsCase(testCtx, testName, params));
+                }
+
+            for (const bool useExecutionSet : {false, true})
+                for (const bool splitSets : {false, true})
+                    for (const bool useComputeQueue : {false, true})
+                    {
+                        const IUBUsageInstance::Params params{
+                            useExecutionSet,
+                            splitSets,
+                            useComputeQueue,
+                        };
+
+                        const std::string testName = std::string("iubs") + (useExecutionSet ? "_with_ies" : "") +
+                                                     (splitSets ? "_multiset" : "") + (useComputeQueue ? "_cq" : "");
+
+                        mainGroup->addChild(new IUBUsageCase(testCtx, testName, params));
+                    }
+
+            for (const bool useExecutionSet : {false, true})
+                for (const bool useComputeQueue : {false, true})
+                {
+                    const TwoCmdBuffersParams params{useExecutionSet, useComputeQueue};
+                    const std::string testName = std::string("two_cmd_buffers") + (useComputeQueue ? "_cq" : "") +
+                                                 (useExecutionSet ? "_with_ies" : "");
+                    addFunctionCaseWithPrograms(mainGroup, testName, twoCmdBuffersCheckSupport,
+                                                twoCmdBuffersInitPrograms, twoCmdBuffersRun, params);
+                }
+
+            for (const bool useExecutionSet : {false, true})
+            {
+                const DBPDInstance::Params params{useExecutionSet};
+                const std::string testName =
+                    std::string("descriptor_buffer_push_descriptor") + (useExecutionSet ? "_with_ies" : "");
+                mainGroup->addChild(new DBPDCase(testCtx, testName, params));
+            }
+
+            addFunctionCaseWithPrograms(mainGroup, "null_set_layouts_info", nullSetLayoutsInfoCheckSupport,
+                                        nullSetLayoutsInfoPrograms, nullSetLayoutsInfoRun);
+
+            for (const bool useESO : {false, true})
+                for (const bool preprocess : {false, true})
+                {
+                    auto testName = std::string("rebind_after_ies");
+                    if (useESO)
+                        testName += "_shader_objects";
+                    if (preprocess)
+                        testName += "_preprocess";
+                    RebindAfterIES::ParamsPtr params(new RebindAfterIES::Params{useESO, preprocess});
+                    addFunctionCaseWithPrograms(mainGroup, testName, RebindAfterIES::checkSupport,
+                                                RebindAfterIES::initPrograms, RebindAfterIES::runTest, params);
+                }
+        });
+}
 } // namespace DGC
 } // namespace vkt
