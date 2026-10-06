@@ -4121,11 +4121,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                             setDataInt(ptrs[i], VK_COMPONENT_TYPE_UINT8_KHR, j, value);
                         }
                     }
-                    else if (m_data.outputType == VK_COMPONENT_TYPE_BFLOAT16_KHR)
-                    {
-                        setDataFloat(ptrs[i], dataTypes[i], j, ((float)(deRandom_getUint32(&rnd) & 0x7) - 3.0f) / 2.0f);
-                    }
-                    else if (m_data.outputType == VK_COMPONENT_TYPE_BFLOAT16_KHR)
+                    else if (m_data.outputType == VK_COMPONENT_TYPE_BFLOAT16_KHR ||
+                             m_data.outputType == VK_COMPONENT_TYPE_FLOAT16_KHR)
                     {
                         setDataFloat(ptrs[i], dataTypes[i], j, ((float)(deRandom_getUint32(&rnd) & 0x7) - 3.0f) / 2.0f);
                     }
