@@ -1,6 +1,5 @@
 include_directories(
 	..
-	${DEQP_INL_DIR}
     ../amber
 	)
 

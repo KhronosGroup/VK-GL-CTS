@@ -1,7 +1,6 @@
 include_directories(
 	..
 	../ycbcr
-	${DEQP_INL_DIR}
 	)
 
 set(DEQP_VK_VKSC_PROTECTED_MEMORY_SRCS

@@ -3,7 +3,6 @@
 include_directories(
 	..
 	../draw
-	${DEQP_INL_DIR}
 	)
 
 set(DEQP_VK_VKSC_RENDER_PASS_SRCS

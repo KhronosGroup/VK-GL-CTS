@@ -4006,9 +4006,25 @@ def parseCmdLineArgs():
                         help="Enable verbose logging")
     return parser.parse_args()
 
+# Files that are no longer generated. Merging a branch that predates their removal can bring them
+# back, so refuse to run until they are deleted.
+OBSOLETE_GENERATED_FILES = [ "vkVulkan_c.inl" ]
+
+def checkObsoleteGeneratedFiles():
+    found = [os.path.normpath(os.path.join(outDir, name))
+             for outDir in DEFAULT_OUTPUT_DIR.values()
+             for name in OBSOLETE_GENERATED_FILES
+             if os.path.exists(os.path.join(outDir, name))]
+    if found:
+        for path in found:
+            print(f"ERROR: obsolete generated file present: {path}", file=sys.stderr)
+        print("These files are no longer generated, probably re-added by a merge of an older branch. Delete them with git rm.", file=sys.stderr)
+        sys.exit(1)
+
 if __name__ == "__main__":
     args = parseCmdLineArgs()
     initializeLogger(args.verbose)
+    checkObsoleteGeneratedFiles()
     isSC = (args.api=='vulkansc')
 
     # if argument was specified it is interpreted as a path to which .inl files will be written
@@ -4097,9 +4113,6 @@ if __name__ == "__main__":
         GenData('vkGetDeviceProcAddr.inl',                    GetDeviceProcAddrGenerator),
         GenData('vkFormatLists.inl',                          FormatListsGenerator),
         GenData('vkKnownConformanceVersions.inl',             ConformanceVersionsGenerator),
-
-        # NOTE: when new generators are added, they should also be added to the
-        # vk-gl-cts\external\vulkancts\framework\vulkan\CMakeLists.txt outputs list
     ]
 
     # append api-specific generators
