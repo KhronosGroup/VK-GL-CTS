@@ -135,6 +135,15 @@ struct CaseDef
     {
         return (attachmentUsage == AttachmentUsage::WITH_ATTACHMENT_WITHOUT_IMAGEVIEW);
     }
+
+    uint32_t getNumTriangles() const
+    {
+        // When using only SampleMask-out but not in, we need predictable coverage so that the output sample mask
+        // value directly reflects coverage, without having to peek at SampleMask-in. For that, we will generate a
+        // single full-screen triangle that provides full coverage in the whole framebuffer, and the SampleMask-out
+        // value will reflect the final coverage.
+        return ((useSampleMaskOut && !useSampleMaskIn) ? 1u : NUM_TRIANGLES);
+    }
 };
 
 class FSRTestInstance : public TestInstance
@@ -224,8 +233,8 @@ FSRTestInstance::FSRTestInstance(Context &context, const CaseDef &data)
     , m_data(data)
     , m_simulateValueCount(((4 * 4) | 4) + 1)
     , m_simulateCache(m_simulateValueCount * m_simulateValueCount * m_simulateValueCount, ~0)
-    , m_primIDToPrimitiveShadingRate(NUM_TRIANGLES, ~0)
-    , m_primIDToPipelineShadingRate(NUM_TRIANGLES, ~0)
+    , m_primIDToPrimitiveShadingRate(data.getNumTriangles(), ~0)
+    , m_primIDToPipelineShadingRate(data.getNumTriangles(), ~0)
 {
     m_supportedFragmentShadingRateCount = 0;
     m_context.getInstanceInterface().getPhysicalDeviceFragmentShadingRatesKHR(
@@ -715,11 +724,18 @@ void FSRTestCase::initPrograms(SourceCollections &programCollection) const
     if (m_data.useSampleMaskOut)
         fss << "  gl_SampleMask[0] = 0x55555555;\n";
 
-    if (m_data.useSampleMaskIn || m_data.useSampleMaskOut)
-        fss << "  col0.y = (gl_SampleMaskIn[0]" << (m_data.useSampleMaskOut ? " & 0x55555555" : "") << ");\n";
+    if (m_data.useSampleMaskIn)
+    {
+        if (m_data.useSampleMaskOut)
+            fss << "  col0.y = (gl_SampleMaskIn[0] & 0x55555555);\n";
+        else
+            fss << "  col0.y = gl_SampleMaskIn[0];\n";
+    }
+    else if (m_data.useSampleMaskOut)
+        fss << "  col0.y = 0x55555555;\n";
 
     if (m_data.fragDepth)
-        fss << "  gl_FragDepth = float(instanceIndex) / float(" << NUM_TRIANGLES << ");\n";
+        fss << "  gl_FragDepth = float(instanceIndex) / float(" << m_data.getNumTriangles() << ");\n";
 
     if (m_data.fragStencil)
         fss << "  gl_FragStencilRefARB = instanceIndex;\n";
@@ -1202,7 +1218,8 @@ tcu::TestStatus FSRTestInstance::iterate(void)
     uint32_t *abuf = (uint32_t *)atomicBuffer->getAllocation().getHostPtr();
 
     // NUM_TRIANGLES triangles, 3 vertices, 2 components of float position
-    VkDeviceSize vertexBufferSize = NUM_TRIANGLES * 3 * 2 * sizeof(float);
+    const auto kNumTriangles      = m_data.getNumTriangles();
+    VkDeviceSize vertexBufferSize = kNumTriangles * 3 * 2 * sizeof(float);
 
     de::MovePtr<BufferWithMemory> vertexBuffer;
     vertexBuffer = de::MovePtr<BufferWithMemory>(
@@ -1211,9 +1228,24 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                              MemoryRequirement::HostVisible | MemoryRequirement::Coherent));
 
     float *vbuf = (float *)vertexBuffer->getAllocation().getHostPtr();
-    for (int32_t i = 0; i < (int32_t)(vertexBufferSize / sizeof(float)); ++i)
+    if (kNumTriangles == 1u)
     {
-        vbuf[i] = deRandom_getFloat(&rnd) * 2.0f - 1.0f;
+        // Generate a single full-screen triangle. See getNumTriangles() for more details.
+        vbuf[0] = -1.0f;
+        vbuf[1] = -1.0f;
+
+        vbuf[2] = -1.0f;
+        vbuf[3] = 3.0f;
+
+        vbuf[4] = 3.0f;
+        vbuf[5] = -1.0f;
+    }
+    else
+    {
+        for (int32_t i = 0; i < (int32_t)(vertexBufferSize / sizeof(float)); ++i)
+        {
+            vbuf[i] = deRandom_getFloat(&rnd) * 2.0f - 1.0f;
+        }
     }
     flushAlloc(vk, device, vertexBuffer->getAllocation());
 
@@ -2389,7 +2421,7 @@ tcu::TestStatus FSRTestInstance::iterate(void)
 
                     std::vector<GraphicsPipelineWrapper> pipelines;
                     uint32_t pipelineCount =
-                        (m_data.useDynamicState ? 1u : NUM_TRIANGLES) + (m_data.multiSubpasses ? 1u : 0u);
+                        (m_data.useDynamicState ? 1u : kNumTriangles) + (m_data.multiSubpasses ? 1u : 0u);
                     pipelines.reserve(pipelineCount);
 
                     std::vector<VkDescriptorSet> descriptorSetsRaw;
@@ -2748,7 +2780,7 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                                         numUnexpected1x1Samples++;
                                     numTotalSamples++;
 
-                                    // Check that gl_FragDepth = primID / NUM_TRIANGLES
+                                    // Check that gl_FragDepth = primID / kNumTriangles
                                     if ((m_data.fragDepth && !m_data.multiSubpasses) ||
                                         (!m_data.fragDepth && m_data.useDepthStencil))
                                     {
@@ -2757,7 +2789,8 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                                                                     x) *
                                                                        m_data.samples +
                                                                    s];
-                                        float expected = (m_data.fragDepth ? ((float)primID / NUM_TRIANGLES) : 0.4f);
+                                        float expected =
+                                            (m_data.fragDepth ? ((float)primID / (float)kNumTriangles) : 0.4f);
                                         if (fabs(*dsample - expected) > 0.01)
                                         {
                                             log << tcu::TestLog::Message << std::hex << "depth write failed pixel (0x"
@@ -3530,7 +3563,7 @@ void FSRTestInstance::drawCommands(VkCommandBuffer cmdBuffer, std::vector<Graphi
         uint32_t instanceIndex;
     } pushConstantBlock;
 
-    for (int32_t i = 0; i < NUM_TRIANGLES; ++i)
+    for (int32_t i = 0; i < static_cast<int32_t>(m_data.getNumTriangles()); ++i)
     {
         if (!useMesh)
         {
@@ -3904,7 +3937,11 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                                             continue;
 
                                         bool useApiSampleMask = groupCaseId == TestGroupCaseId::APISAMPLEMASK;
-                                        bool useSampleMaskIn  = groupCaseId == TestGroupCaseId::SAMPLEMASKIN;
+                                        bool useSampleMaskIn =
+                                            (groupCaseId == TestGroupCaseId::SAMPLEMASKIN ||
+                                             (groupCaseId == TestGroupCaseId::SAMPLEMASKOUT &&
+                                              (seed % 4 == 3 ||
+                                               seed % 4 == 0))); // Half the SAMPLEMASKOUT cases, with an irregular gap.
                                         bool useSampleMaskOut = groupCaseId == TestGroupCaseId::SAMPLEMASKOUT;
                                         bool consRast         = groupCaseId == TestGroupCaseId::CONSERVATIVEUNDER ||
                                                         groupCaseId == TestGroupCaseId::CONSERVATIVEOVER;
