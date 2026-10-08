@@ -2139,6 +2139,7 @@ dEQP-GLES3.functional.fbo.api.delete_tex_cube_attached_to_not_bound_fbo
 dEQP-GLES3.functional.fbo.api.invalid_rbo_attachments
 dEQP-GLES3.functional.fbo.api.invalid_tex2d_attachments
 dEQP-GLES3.functional.fbo.api.invalid_texcube_attachments
+dEQP-GLES3.functional.fbo.api.teximage2d_to_texstorage2d_unbound
 dEQP-GLES3.functional.fbo.api.texture_levels
 dEQP-GLES3.functional.fbo.api.valid_rbo_attachments
 dEQP-GLES3.functional.fbo.api.valid_tex2d_attachments
