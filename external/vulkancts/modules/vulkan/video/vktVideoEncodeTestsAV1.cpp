@@ -24,6 +24,7 @@
 /*--------------------------------------------------------------------*/
 #include "tcuResultCollector.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestGroupUtil.hpp"
 #include "vktVideoClipInfo.hpp"
 #include "vktVideoEncodeTests.hpp"
 #include "vktVideoTestUtils.hpp"
@@ -2487,13 +2488,76 @@ static const std::vector<Feedback2Def> feedback2Tests = {
      0u, true, 64u, 128u, 128u, false, false},
 };
 
+namespace
+{
+struct GopGroupParams
+{
+    const FrameSizeDef *frameSize;
+    const BitDepthDef *bitDepth;
+    const ChromaSubsamplingDef *subsampling;
+    const GOPDef *gop;
+};
+
+// The full combination space is large and mostly discarded as invalid, so the
+// cases of each GOP group are only created when the group is actually entered.
+void createGopGroupTests(tcu::TestCaseGroup *gopGroup, GopGroupParams params)
+{
+    tcu::TestContext &testCtx   = gopGroup->getTestContext();
+    const auto &frameSizeTest   = *params.frameSize;
+    const auto &bitDepthTest    = *params.bitDepth;
+    const auto &subsamplingTest = *params.subsampling;
+    const auto &gopTest         = *params.gop;
+
+    for (const auto &tilingTest : tilingTests)
+    {
+        for (const auto &orderingTest : orderingTests)
+            for (const auto &resolutionChangeTest : resolutionChangeTests)
+                for (const auto &quantizationTest : quantizationTests)
+                    for (const auto &superblockTest : superblockTests)
+                        for (const auto &rateControlTest : rateControlTests)
+                            for (const auto &lfTest : lfTests)
+                                for (const auto &lrTest : lrTests)
+                                    for (const auto &cdefTest : cdefTests)
+                                        for (const auto &dpbModeTest : dpbModeTests)
+                                            for (const auto &intraRefreshTest : intraRefreshTests)
+                                            {
+                                                TestDefinition testDef = {
+                                                    frameSizeTest,    bitDepthTest, subsamplingTest,
+                                                    gopTest,          orderingTest, resolutionChangeTest,
+                                                    quantizationTest, tilingTest,   superblockTest,
+                                                    rateControlTest,  lfTest,       lrTest,
+                                                    cdefTest,         dpbModeTest,  intraRefreshTest,
+                                                    feedback2Disabled};
+                                                auto testCase = createVideoEncodeTestAV1(testCtx, testDef);
+                                                if (testCase != nullptr)
+                                                    gopGroup->addChild(testCase);
+
+                                                for (const auto &feedback2Test : feedback2Tests)
+                                                {
+                                                    const TestDefinition feedback2TestDef = {
+                                                        frameSizeTest,    bitDepthTest, subsamplingTest,
+                                                        gopTest,          orderingTest, resolutionChangeTest,
+                                                        quantizationTest, tilingTest,   superblockTest,
+                                                        rateControlTest,  lfTest,       lrTest,
+                                                        cdefTest,         dpbModeTest,  intraRefreshTest,
+                                                        feedback2Test};
+
+                                                    auto feedback2Case =
+                                                        createVideoEncodeTestAV1(testCtx, feedback2TestDef);
+                                                    if (feedback2Case != nullptr)
+                                                        gopGroup->addChild(feedback2Case);
+                                                }
+                                            }
+    }
+}
+} // namespace
+
 tcu::TestCaseGroup *createVideoEncodeTestsAV1(tcu::TestContext &testCtx)
 {
     MovePtr<tcu::TestCaseGroup> av1group(new tcu::TestCaseGroup(testCtx, "av1", "AV1 video codec"));
     std::ostringstream s;
     std::string groupName;
 
-    // Combine all tests types into a TestDefinition struct
     for (const auto &frameSizeTest : frameSizeTests)
         for (const auto &bitDepthTest : bitDepthTests)
             for (const auto &subsamplingTest : subsamplingTests)
@@ -2510,54 +2574,8 @@ tcu::TestCaseGroup *createVideoEncodeTestsAV1(tcu::TestContext &testCtx)
                     s.str("");
                     s << gopTest.subName << "_" << gopTest.frameCount;
                     groupName = s.str();
-                    MovePtr<tcu::TestCaseGroup> gopGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
-                    for (const auto &tilingTest : tilingTests)
-                    {
-                        for (const auto &orderingTest : orderingTests)
-                            for (const auto &resolutionChangeTest : resolutionChangeTests)
-                                for (const auto &quantizationTest : quantizationTests)
-                                    for (const auto &superblockTest : superblockTests)
-                                        for (const auto &rateControlTest : rateControlTests)
-                                            for (const auto &lfTest : lfTests)
-                                                for (const auto &lrTest : lrTests)
-                                                    for (const auto &cdefTest : cdefTests)
-                                                        for (const auto &dpbModeTest : dpbModeTests)
-                                                            for (const auto &intraRefreshTest : intraRefreshTests)
-                                                            {
-                                                                TestDefinition testDef = {
-                                                                    frameSizeTest,    bitDepthTest,
-                                                                    subsamplingTest,  gopTest,
-                                                                    orderingTest,     resolutionChangeTest,
-                                                                    quantizationTest, tilingTest,
-                                                                    superblockTest,   rateControlTest,
-                                                                    lfTest,           lrTest,
-                                                                    cdefTest,         dpbModeTest,
-                                                                    intraRefreshTest, feedback2Disabled};
-                                                                auto testCase =
-                                                                    createVideoEncodeTestAV1(testCtx, testDef);
-                                                                if (testCase != nullptr)
-                                                                    gopGroup->addChild(testCase);
-
-                                                                for (const auto &feedback2Test : feedback2Tests)
-                                                                {
-                                                                    const TestDefinition feedback2TestDef = {
-                                                                        frameSizeTest,    bitDepthTest,
-                                                                        subsamplingTest,  gopTest,
-                                                                        orderingTest,     resolutionChangeTest,
-                                                                        quantizationTest, tilingTest,
-                                                                        superblockTest,   rateControlTest,
-                                                                        lfTest,           lrTest,
-                                                                        cdefTest,         dpbModeTest,
-                                                                        intraRefreshTest, feedback2Test};
-
-                                                                    auto feedback2Case = createVideoEncodeTestAV1(
-                                                                        testCtx, feedback2TestDef);
-                                                                    if (feedback2Case != nullptr)
-                                                                        gopGroup->addChild(feedback2Case);
-                                                                }
-                                                            }
-                    }
-                    resGroup->addChild(gopGroup.release());
+                    const GopGroupParams params{&frameSizeTest, &bitDepthTest, &subsamplingTest, &gopTest};
+                    addTestGroup(resGroup.get(), groupName, createGopGroupTests, params);
                 }
                 av1group->addChild(resGroup.release());
             }
