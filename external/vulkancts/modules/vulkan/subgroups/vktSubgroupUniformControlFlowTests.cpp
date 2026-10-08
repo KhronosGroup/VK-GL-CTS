@@ -28,6 +28,7 @@
 
 #include "vkDefs.hpp"
 #include "vkDeviceUtil.hpp"
+#include "vkQueryUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktAmberTestCase.hpp"
 #include "vktSubgroupUniformControlFlowTests.hpp"
@@ -106,23 +107,13 @@ void SubgroupUniformControlFlowTestCase::checkSupport(Context &ctx) const
         ctx.requireDeviceFunctionality("VK_EXT_subgroup_size_control");
     }
 
-    vk::VkPhysicalDeviceSubgroupProperties subgroupProperties;
-    subgroupProperties.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-    subgroupProperties.pNext = nullptr;
-
-    vk::VkPhysicalDeviceProperties2 properties2;
-    properties2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-    properties2.pNext = &subgroupProperties;
+    vk::VkPhysicalDeviceSubgroupProperties subgroupProperties = vk::initVulkanStructure();
+    vk::VkPhysicalDeviceProperties2 properties2               = vk::initVulkanStructure(&subgroupProperties);
 
     ctx.getInstanceInterface().getPhysicalDeviceProperties2(ctx.getPhysicalDevice(), &properties2);
 
-    vk::VkPhysicalDeviceSubgroupSizeControlFeaturesEXT subgroupSizeControlFeatures;
-    subgroupSizeControlFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT;
-    subgroupSizeControlFeatures.pNext = nullptr;
-
-    vk::VkPhysicalDeviceFeatures2 features2;
-    features2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    features2.pNext = &subgroupSizeControlFeatures;
+    vk::VkPhysicalDeviceSubgroupSizeControlFeaturesEXT subgroupSizeControlFeatures = vk::initVulkanStructure();
+    vk::VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure(&subgroupSizeControlFeatures);
 
     ctx.getInstanceInterface().getPhysicalDeviceFeatures2(ctx.getPhysicalDevice(), &features2);
 

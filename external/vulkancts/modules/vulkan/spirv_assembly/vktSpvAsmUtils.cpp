@@ -346,14 +346,9 @@ bool isFloatControlsFeaturesSupported(const Context &context,
         return false;
 
     // perform query to get supported float control properties
-    vk::VkPhysicalDeviceFloatControlsProperties refControls;
+    vk::VkPhysicalDeviceFloatControlsProperties refControls = initVulkanStructure();
     {
-        refControls.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES;
-        refControls.pNext = nullptr;
-
-        VkPhysicalDeviceProperties2 deviceProperties;
-        deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-        deviceProperties.pNext = &refControls;
+        VkPhysicalDeviceProperties2 deviceProperties = initVulkanStructure(&refControls);
 
         const VkPhysicalDevice physicalDevice          = context.getPhysicalDevice();
         const vk::InstanceInterface &instanceInterface = context.getInstanceInterface();
