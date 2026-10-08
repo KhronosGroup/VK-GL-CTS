@@ -26266,6 +26266,8 @@ dEQP-GLES3.functional.shaders.precision.int.mediump_mul_fragment
 dEQP-GLES3.functional.shaders.precision.int.mediump_mul_vertex
 dEQP-GLES3.functional.shaders.precision.int.mediump_sub_fragment
 dEQP-GLES3.functional.shaders.precision.int.mediump_sub_vertex
+dEQP-GLES3.functional.shaders.precision.mediump_combine.branch_false
+dEQP-GLES3.functional.shaders.precision.mediump_combine.branch_true
 dEQP-GLES3.functional.shaders.precision.uint.highp_add_fragment
 dEQP-GLES3.functional.shaders.precision.uint.highp_add_vertex
 dEQP-GLES3.functional.shaders.precision.uint.highp_div_fragment
