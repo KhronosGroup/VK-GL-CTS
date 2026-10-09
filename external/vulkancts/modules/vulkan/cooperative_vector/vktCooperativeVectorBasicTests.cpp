@@ -1986,7 +1986,8 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
                 VK_CHECK(vk.convertCooperativeVectorMatrixNV(device, &info));
                 layerSizes[i] = (uint32_t)dstSize;
-                totalLayerSize += matrixSizeRaw + layerSizes[i];
+                // The converted matrix starts at the aligned offset, after the raw matrix
+                totalLayerSize = layerOffsets[i] + layerSizes[i];
             }
             totalLayerSize = (totalLayerSize + 63) & ~63;
         }
