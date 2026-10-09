@@ -627,7 +627,15 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines(VkDevice device, VkP
                         }
                         if (pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] ==
                             VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT)
-                            viewportStateRequired = true;
+                        {
+                            // Discard can be disabled at draw time, so preserve all rasterization state.
+                            viewportStateRequired          = true;
+                            viewportStateViewportsRequired = true;
+                            viewportStateScissorsRequired  = true;
+                            multiSampleStateRequired       = true;
+                            depthStencilStateRequired      = true;
+                            colorBlendStateRequired        = true;
+                        }
                     }
             }
             if (pCreateInfoCopies[i].pRasterizationState != nullptr)
