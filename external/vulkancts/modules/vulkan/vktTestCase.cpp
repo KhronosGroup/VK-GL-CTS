@@ -112,6 +112,7 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         "VK_QCOM_image_processing",
         "VK_ARM_performance_counters_by_region",
         "VK_IMG_format_pvrtc",
+        "VK_INTEL_performance_query",
     };
 
     const char *exclusions[] = {"VK_EXT_device_address_binding_report", "VK_EXT_device_memory_report"};
